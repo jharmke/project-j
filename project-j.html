@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Project J</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080808;
+    --surface: #111111;
+    --surface2: #1a1a1a;
+    --border: #222222;
+    --text: #e8e8e8;
+    --muted: #555555;
+    --muted2: #333333;
+    --blue: #3b82f6;
+    --green: #10b981;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --push: #3b82f6;
+    --pull: #10b981;
+    --legs: #f59e0b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    max-width: 480px;
+    margin: 0 auto;
+    padding-bottom: 80px;
+    overflow-x: hidden;
+  }
+  .bebas { font-family: 'Bebas Neue', sans-serif; letter-spacing: 1px; }
+
+  /* NAV */
+  .nav {
+    position: fixed;
+    bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 100%; max-width: 480px;
+    background: #0e0e0e;
+    border-top: 1px solid var(--border);
+    display: flex;
+    z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .nav-btn {
+    flex: 1; padding: 12px 0 10px;
+    background: none; border: none;
+    color: var(--muted); cursor: pointer;
+    display: flex; flex-direction: column;
+    align-items: center; gap: 3px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 10px; letter-spacing: 1px;
+    transition: color 0.15s;
+  }
+  .nav-btn.active { color: var(--text); }
+  .nav-btn svg { width: 20px; height: 20px; }
+
+  /* TABS */
+  .tab { display: none; padding: 0 16px 16px; }
+  .tab.active { display: block; }
+
+  /* HEADER */
+  .page-header {
+    padding: 20px 16px 12px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .page-header .label { font-size: 10px; letter-spacing: 4px; color: var(--muted); text-transform: uppercase; margin-bottom: 2px; }
+  .page-header h1 { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 2px; color: var(--text); }
+
+  /* CARDS */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .card-label {
+    font-size: 9px; letter-spacing: 3px;
+    color: var(--muted); text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  /* IF WINDOW */
+  .if-status { display: flex; align-items: center; justify-content: space-between; }
+  .if-badge {
+    font-size: 10px; letter-spacing: 2px;
+    padding: 3px 10px; border-radius: 20px;
+    font-weight: 600;
+  }
+  .if-badge.open { background: rgba(16,185,129,0.15); color: var(--green); }
+  .if-badge.closed { background: rgba(239,68,68,0.15); color: var(--red); }
+  .if-time { font-family: 'Bebas Neue', sans-serif; font-size: 42px; letter-spacing: 2px; color: var(--text); line-height: 1; margin: 8px 0; }
+  .if-sub { font-size: 12px; color: var(--muted); }
+  .if-bar { height: 3px; background: var(--border); border-radius: 3px; margin: 12px 0 14px; overflow: hidden; }
+  .if-bar-fill { height: 100%; border-radius: 3px; transition: width 1s linear; }
+  .if-start-btn {
+    width: 100%; padding: 12px;
+    background: rgba(16,185,129,0.12);
+    border: 1px solid rgba(16,185,129,0.3);
+    border-radius: 6px; color: var(--green);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px; letter-spacing: 2px;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .if-start-btn:active { background: rgba(16,185,129,0.2); }
+  .if-reset-btn {
+    background: none; border: none;
+    color: var(--muted); font-size: 11px;
+    cursor: pointer; margin-top: 8px;
+    text-decoration: underline; display: block;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  /* CALORIES */
+  .cal-numbers { display: flex; align-items: baseline; gap: 6px; margin-bottom: 10px; }
+  .cal-current { font-family: 'Bebas Neue', sans-serif; font-size: 48px; letter-spacing: 1px; line-height: 1; }
+  .cal-target { font-size: 14px; color: var(--muted); }
+  .cal-bar { height: 6px; background: var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 12px; }
+  .cal-bar-fill { height: 100%; border-radius: 6px; transition: width 0.3s; }
+  .cal-remaining { font-size: 12px; color: var(--muted); }
+  .cal-add { display: flex; gap: 8px; margin-top: 12px; }
+  .cal-add input {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); padding: 8px 12px;
+    font-family: 'DM Sans', sans-serif; font-size: 14px;
+  }
+  .cal-add input::placeholder { color: var(--muted); }
+  .btn-sm {
+    padding: 8px 16px; border-radius: 6px;
+    border: none; cursor: pointer;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px; letter-spacing: 1px;
+    transition: all 0.15s;
+  }
+  .btn-blue { background: rgba(59,130,246,0.15); color: var(--blue); border: 1px solid rgba(59,130,246,0.3); }
+  .btn-blue:active { background: rgba(59,130,246,0.25); }
+
+  /* WATER */
+  .water-numbers { display: flex; align-items: baseline; gap: 6px; margin-bottom: 10px; }
+  .water-current { font-family: 'Bebas Neue', sans-serif; font-size: 48px; letter-spacing: 1px; line-height: 1; color: var(--blue); }
+  .water-target { font-size: 14px; color: var(--muted); }
+  .water-btns { display: flex; gap: 8px; }
+  .water-btn {
+    flex: 1; padding: 10px 0;
+    background: rgba(59,130,246,0.1);
+    border: 1px solid rgba(59,130,246,0.25);
+    border-radius: 6px; color: var(--blue);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px; letter-spacing: 1px;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .water-btn:active { background: rgba(59,130,246,0.2); }
+  .water-bar { height: 6px; background: var(--border); border-radius: 6px; overflow: hidden; margin-bottom: 12px; }
+  .water-bar-fill { height: 100%; border-radius: 6px; background: var(--blue); transition: width 0.3s; }
+
+  /* WEIGHT */
+  .weight-row { display: flex; gap: 12px; }
+  .weight-stat { flex: 1; }
+  .weight-val { font-family: 'Bebas Neue', sans-serif; font-size: 32px; letter-spacing: 1px; line-height: 1; }
+  .weight-lbl { font-size: 10px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
+  .weight-add { display: flex; gap: 8px; margin-top: 14px; }
+  .weight-add input {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); padding: 8px 12px;
+    font-family: 'DM Sans', sans-serif; font-size: 14px;
+  }
+  .weight-add input::placeholder { color: var(--muted); }
+
+  /* TODAY'S WORKOUT CARD */
+  .workout-today { display: flex; align-items: center; justify-content: space-between; }
+  .workout-today-info h3 { font-family: 'Bebas Neue', sans-serif; font-size: 24px; letter-spacing: 1px; }
+  .workout-today-info p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .workout-pill {
+    font-size: 10px; letter-spacing: 2px; padding: 4px 12px;
+    border-radius: 20px; font-weight: 600; text-transform: uppercase;
+  }
+
+  /* WORKOUT TAB */
+  .day-tabs { display: flex; overflow-x: auto; gap: 8px; padding-bottom: 4px; margin-bottom: 16px; }
+  .day-tabs::-webkit-scrollbar { display: none; }
+  .day-tab {
+    flex-shrink: 0; padding: 8px 14px; border-radius: 6px;
+    border: 1px solid var(--border); background: transparent;
+    color: var(--muted); font-family: 'DM Sans', sans-serif;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .day-tab.active-day { color: var(--text); }
+  .exercise-item {
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--border);
+    border-radius: 6px; padding: 14px;
+    margin-bottom: 8px; cursor: pointer;
+    background: var(--surface);
+    transition: all 0.15s;
+  }
+  .exercise-item.done {
+    opacity: 0.5;
+  }
+  .exercise-name { font-weight: 600; font-size: 14px; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+  .exercise-meta { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .exercise-note { font-size: 11px; color: var(--muted2); font-style: italic; line-height: 1.5; }
+  .dropset-badge {
+    font-size: 9px; padding: 2px 6px; border-radius: 3px;
+    font-weight: 700; letter-spacing: 1px;
+  }
+  .check-circle {
+    width: 20px; height: 20px; border-radius: 50%;
+    border: 1px solid var(--border); display: flex;
+    align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 11px; margin-left: auto;
+    transition: all 0.15s;
+  }
+  .progress-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .progress-label { font-size: 13px; color: var(--muted); }
+  .progress-count { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 1px; }
+  .progress-bar { height: 2px; background: var(--border); border-radius: 2px; margin-bottom: 16px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; border-radius: 2px; transition: width 0.3s; }
+
+  /* NOTES */
+  .notes-area {
+    width: 100%; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 6px;
+    color: var(--text); padding: 10px 12px;
+    font-family: 'DM Sans', sans-serif; font-size: 13px;
+    resize: none; min-height: 80px; margin-top: 12px;
+    line-height: 1.5;
+  }
+  .notes-area::placeholder { color: var(--muted2); }
+  .save-note-btn {
+    margin-top: 8px; padding: 8px 16px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--muted);
+    font-family: 'DM Sans', sans-serif; font-size: 12px;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .save-note-btn:active { color: var(--text); }
+
+  /* LOG TAB */
+  .log-entry {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .log-entry:last-child { border-bottom: none; }
+  .log-entry-name { color: var(--text); }
+  .log-entry-cal { color: var(--muted); }
+  .log-entry-del { background: none; border: none; color: var(--muted2); cursor: pointer; font-size: 16px; padding: 0 4px; }
+  .meal-section { margin-bottom: 12px; }
+  .meal-header { font-size: 10px; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; margin-bottom: 8px; }
+  .add-entry { display: flex; gap: 8px; margin-top: 8px; }
+  .add-entry input {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); padding: 8px 10px;
+    font-family: 'DM Sans', sans-serif; font-size: 13px;
+  }
+  .add-entry input:first-child { flex: 2; }
+  .add-entry input:last-child { flex: 1; }
+
+  /* STATS TAB */
+  .chart-container { width: 100%; height: 160px; position: relative; margin: 8px 0; }
+  canvas { width: 100% !important; }
+  .toggle-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .toggle-btn {
+    padding: 6px 14px; border-radius: 20px;
+    border: 1px solid var(--border); background: transparent;
+    color: var(--muted); font-size: 12px; cursor: pointer;
+    font-family: 'DM Sans', sans-serif; transition: all 0.15s;
+  }
+  .toggle-btn.active { background: var(--surface2); color: var(--text); border-color: var(--muted); }
+
+  /* CARDIO DAY */
+  .cardio-card {
+    text-align: center; padding: 40px 20px;
+    border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface);
+  }
+  .cardio-icon { font-size: 48px; margin-bottom: 12px; }
+  .cardio-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; margin-bottom: 8px; }
+  .cardio-detail { font-size: 13px; color: var(--muted); line-height: 2; }
+
+  /* COMPLETE */
+  .complete-msg {
+    text-align: center; padding: 16px;
+    border: 1px solid; border-radius: 6px;
+    margin-top: 16px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px; letter-spacing: 3px;
+  }
+
+  .divider { height: 1px; background: var(--border); margin: 16px 0; }
+</style>
+</head>
+<body>
+
+<!-- TABS -->
+<div id="tab-home" class="tab active"></div>
+<div id="tab-workout" class="tab"></div>
+<div id="tab-log" class="tab"></div>
+<div id="tab-stats" class="tab"></div>
+
+<!-- NAV -->
+<nav class="nav">
+  <button class="nav-btn active" onclick="switchTab('home', this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955a1.5 1.5 0 012.092 0L22.5 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/></svg>
+    HOME
+  </button>
+  <button class="nav-btn" onclick="switchTab('workout', this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"/></svg>
+    WORKOUT
+  </button>
+  <button class="nav-btn" onclick="switchTab('log', this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+    LOG
+  </button>
+  <button class="nav-btn" onclick="switchTab('stats', this)">
+    <svg fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>
+    STATS
+  </button>
+</nav>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const CALORIE_TARGET = 1750;
+const WATER_TARGET = 96; // oz
+const WINDOW_HOURS = 8;
+
+const PROGRAM = {
+  Wed: { focus: 'Push', muscles: 'Chest · Shoulders · Triceps', color: '#3b82f6', type: 'lift',
+    exercises: [
+      { name: 'Machine Chest Press', sets: '4', reps: '10–12', rest: '60s', note: 'Controlled lower, full press. Keep back flat.' },
+      { name: 'Cable Fly (Low to High)', sets: '3', reps: '12–15', rest: '45s', note: 'Squeeze at the top. Lighter weight, feel the chest.' },
+      { name: 'Machine Shoulder Press', sets: '3', reps: '10–12', rest: '60s', note: "Don't shrug into it. Full ROM." },
+      { name: 'Cable Lateral Raise', sets: '3', reps: '15', rest: '30s', note: 'One arm at a time. Light weight, slow and controlled.' },
+      { name: 'Tricep Pushdown (Rope)', sets: '3', reps: '12', rest: '45s', note: 'Flare the rope at the bottom. Lock out each rep.' },
+      { name: 'Overhead Tricep Extension (Cable)', sets: '2', reps: '12 → drop → failure', rest: '60s', note: 'Dropset on last set.', dropset: true },
+    ]
+  },
+  Sat: { focus: 'Pull', muscles: 'Back · Biceps · Rear Delts', color: '#10b981', type: 'lift',
+    exercises: [
+      { name: 'Lat Pulldown (Wide Grip)', sets: '4', reps: '10–12', rest: '60s', note: 'Pull to upper chest. Feel the lats.' },
+      { name: 'Seated Cable Row', sets: '3', reps: '10–12', rest: '60s', note: 'Chest up, elbows back. Squeeze at the end.' },
+      { name: 'Machine Row', sets: '3', reps: '12', rest: '45s', note: 'Good for isolating without lower back load.' },
+      { name: 'Cable Face Pull', sets: '3', reps: '15–20', rest: '30s', note: 'Rope to forehead, elbows high. Great for rear delts and posture.' },
+      { name: 'Hammer Curl', sets: '3', reps: '12', rest: '45s', note: 'Neutral grip. Targets brachialis for arm thickness.' },
+      { name: 'Cable Curl', sets: '2', reps: '10 → drop → failure', rest: '60s', note: 'Dropset on last set. Squeeze hard at the top.', dropset: true },
+    ]
+  },
+  Sun: { focus: 'Legs + Core', muscles: 'Quads · Hamstrings · Glutes · Core', color: '#f59e0b', type: 'lift',
+    exercises: [
+      { name: 'Leg Press', sets: '4', reps: '10–12', rest: '90s', note: 'Feet shoulder width, mid platform. Knees track over toes.' },
+      { name: 'Leg Extension (Machine)', sets: '3', reps: '12–15', rest: '45s', note: 'Pause at the top briefly. Feel the quad.' },
+      { name: 'Hamstring Curl', sets: '3', reps: '12', rest: '45s', note: 'Full ROM. Do not rush the negative.' },
+      { name: 'Glute Kickback (Cable)', sets: '3', reps: '15 each', rest: '30s', note: 'Squeeze at the top. No spinal load.' },
+      { name: 'Plank', sets: '3', reps: '30–45s hold', rest: '30s', note: "Core is your back's best friend. Do not skip." },
+      { name: 'Dead Bug', sets: '3', reps: '10 each side', rest: '30s', note: 'Slow and controlled. Best exercise for lower back stability.' },
+      { name: 'Cable Crunch', sets: '3', reps: '15', rest: '30s', note: 'Kneel facing cable stack. Crunch down, not pull down.' },
+    ]
+  },
+  Mon: { focus: 'Cardio', type: 'cardio' },
+  Tue: { focus: 'Cardio', type: 'cardio' },
+  Thu: { focus: 'Cardio', type: 'cardio' },
+  Fri: { focus: 'Cardio', type: 'cardio' },
+};
+
+const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+function getToday() {
+  const d = new Date();
+  return ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
+}
+
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+}
+
+function load(key, def) {
+  try { const v = localStorage.getItem(key); return v !== null ? JSON.parse(v) : def; } catch { return def; }
+}
+function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
+
+// daily reset
+function getDayData() {
+  const key = 'pj_day_' + todayKey();
+  return load(key, {
+    calories: [],
+    water: 0,
+    weight: null,
+    ifStart: null,
+    workoutChecks: {},
+    workoutNotes: {},
+    dailyNote: '',
+  });
+}
+function saveDayData(data) { save('pj_day_' + todayKey(), data); }
+
+let state = getDayData();
+let activeWorkoutDay = getToday();
+let statsRange = 7;
+let ifInterval = null;
+
+// weight history
+function getWeightHistory() { return load('pj_weights', []); }
+function saveWeightHistory(h) { save('pj_weights', h); }
+
+// cal history for stats
+function getCalHistory() { return load('pj_cals', []); }
+function saveCalHistory(h) { save('pj_cals', h); }
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function totalCals() { return state.calories.reduce((s, e) => s + e.cal, 0); }
+
+function formatTime(ms) {
+  if (ms <= 0) return '00:00:00';
+  const h = Math.floor(ms / 3600000);
+  const m = Math.floor((ms % 3600000) / 60000);
+  const s = Math.floor((ms % 60000) / 1000);
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function getDayColor(day) {
+  if (!PROGRAM[day] || PROGRAM[day].type === 'cardio') return '#555';
+  return PROGRAM[day].color;
+}
+
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
+// ── RENDER HOME ───────────────────────────────────────────────────────────────
+function renderHome() {
+  const tab = document.getElementById('tab-home');
+  const todayDay = getToday();
+  const program = PROGRAM[todayDay];
+  const cals = totalCals();
+  const calPct = Math.min(100, (cals / CALORIE_TARGET) * 100);
+  const calColor = calPct > 100 ? '#ef4444' : calPct > 85 ? '#f59e0b' : '#10b981';
+  const waterPct = Math.min(100, (state.water / WATER_TARGET) * 100);
+
+  // weight
+  const wh = getWeightHistory();
+  const todayWeight = state.weight;
+  const startWeight = wh.length > 0 ? wh[0].w : null;
+  const yesterdayWeight = wh.length >= 2 ? wh[wh.length-1].w : null;
+  const totalLost = (startWeight && todayWeight) ? (startWeight - todayWeight).toFixed(1) : null;
+  const dayChange = (yesterdayWeight && todayWeight) ? (todayWeight - yesterdayWeight).toFixed(1) : null;
+
+  tab.innerHTML = `
+    <div class="page-header">
+      <div class="label">Project J</div>
+      <h1>${greeting()}, Justin</h1>
+    </div>
+
+    <!-- IF WINDOW -->
+    <div class="card" id="if-card">
+      <div class="card-label">Intermittent Fast · 16:8</div>
+      ${renderIFCard()}
+    </div>
+
+    <!-- CALORIES -->
+    <div class="card">
+      <div class="card-label">Calories Today</div>
+      <div class="cal-numbers">
+        <span class="cal-current" style="color:${calColor}">${cals}</span>
+        <span class="cal-target">/ ${CALORIE_TARGET} kcal</span>
+      </div>
+      <div class="cal-bar"><div class="cal-bar-fill" style="width:${calPct}%;background:${calColor}"></div></div>
+      <div class="cal-remaining">${cals < CALORIE_TARGET ? `${CALORIE_TARGET - cals} kcal remaining` : `${cals - CALORIE_TARGET} kcal over target`}</div>
+      <div class="cal-add">
+        <input type="number" id="home-cal-input" placeholder="Add calories..." style="flex:2">
+        <button class="btn-sm btn-blue" onclick="homeAddCal()">ADD</button>
+      </div>
+    </div>
+
+    <!-- WATER -->
+    <div class="card">
+      <div class="card-label">Water · ${state.water}oz / ${WATER_TARGET}oz</div>
+      <div class="water-bar"><div class="water-bar-fill" style="width:${waterPct}%"></div></div>
+      <div class="water-btns">
+        <button class="water-btn" onclick="addWater(12)">+12 oz</button>
+        <button class="water-btn" onclick="addWater(16)">+16 oz</button>
+        <button class="water-btn" onclick="addWater(22)">+22 oz</button>
+      </div>
+    </div>
+
+    <!-- WEIGHT -->
+    <div class="card">
+      <div class="card-label">Weight</div>
+      <div class="weight-row">
+        <div class="weight-stat">
+          <div class="weight-val">${todayWeight ? todayWeight + ' lbs' : '--'}</div>
+          <div class="weight-lbl">Today</div>
+        </div>
+        <div class="weight-stat">
+          <div class="weight-val" style="color:${dayChange < 0 ? '#10b981' : dayChange > 0 ? '#ef4444' : '#555'}">${dayChange !== null ? (dayChange > 0 ? '+' : '') + dayChange : '--'}</div>
+          <div class="weight-lbl">vs Yesterday</div>
+        </div>
+        <div class="weight-stat">
+          <div class="weight-val" style="color:#10b981">${totalLost ? '-' + totalLost : '--'}</div>
+          <div class="weight-lbl">Total Lost</div>
+        </div>
+      </div>
+      <div class="weight-add">
+        <input type="number" id="weight-input" placeholder="Enter weight (lbs)" step="0.1">
+        <button class="btn-sm btn-blue" onclick="logWeight()">LOG</button>
+      </div>
+    </div>
+
+    <!-- TODAY'S WORKOUT -->
+    <div class="card" onclick="switchTab('workout', document.querySelectorAll('.nav-btn')[1])" style="cursor:pointer">
+      <div class="card-label">Today's Workout</div>
+      <div class="workout-today">
+        <div class="workout-today-info">
+          <h3 class="bebas" style="font-size:22px;letter-spacing:1px">${todayDay} — ${program.focus}</h3>
+          <p>${program.type === 'lift' ? program.muscles : '60 min · 3.5mph · 5-6% incline'}</p>
+        </div>
+        <span class="workout-pill" style="background:${getDayColor(todayDay)}22;color:${getDayColor(todayDay)};border:1px solid ${getDayColor(todayDay)}44">
+          ${program.type === 'lift' ? 'LIFT' : 'CARDIO'}
+        </span>
+      </div>
+    </div>
+
+    <!-- DAILY NOTE -->
+    <div class="card">
+      <div class="card-label">Daily Note</div>
+      <textarea class="notes-area" id="daily-note-home" placeholder="How did today go? Workout, diet, energy...">${state.dailyNote}</textarea>
+      <button class="save-note-btn" onclick="saveDailyNote()">Save Note</button>
+    </div>
+  `;
+
+  startIFTimer();
+}
+
+function renderIFCard() {
+  if (!state.ifStart) {
+    return `
+      <button class="if-start-btn" onclick="startIF()">TAP WHEN YOU EAT YOUR FIRST MEAL</button>
+    `;
+  }
+  const now = Date.now();
+  const start = state.ifStart;
+  const windowEnd = start + WINDOW_HOURS * 3600000;
+  const windowOpen = now < windowEnd;
+  const remaining = windowEnd - now;
+  const elapsed = now - start;
+  const windowPct = Math.min(100, (elapsed / (WINDOW_HOURS * 3600000)) * 100);
+
+  return `
+    <div class="if-status">
+      <div>
+        <div class="bebas" style="font-size:13px;letter-spacing:2px;color:var(--muted)">Window ${windowOpen ? 'closes in' : 'closed'}</div>
+        <div class="if-time" id="if-countdown">${windowOpen ? formatTime(remaining) : 'CLOSED'}</div>
+        <div class="if-sub">Started ${new Date(start).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})} · Closes ${new Date(windowEnd).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</div>
+      </div>
+      <span class="if-badge ${windowOpen ? 'open' : 'closed'}">${windowOpen ? 'OPEN' : 'CLOSED'}</span>
+    </div>
+    <div class="if-bar"><div class="if-bar-fill" style="width:${windowPct}%;background:${windowOpen ? 'var(--green)' : 'var(--red)'}"></div></div>
+    <button class="if-reset-btn" onclick="resetIF()">Reset window</button>
+  `;
+}
+
+function startIF() {
+  state.ifStart = Date.now();
+  saveDayData(state);
+  document.getElementById('if-card').innerHTML = '<div class="card-label">Intermittent Fast · 16:8</div>' + renderIFCard();
+  startIFTimer();
+}
+
+function resetIF() {
+  state.ifStart = null;
+  saveDayData(state);
+  document.getElementById('if-card').innerHTML = '<div class="card-label">Intermittent Fast · 16:8</div>' + renderIFCard();
+  clearInterval(ifInterval);
+}
+
+function startIFTimer() {
+  clearInterval(ifInterval);
+  if (!state.ifStart) return;
+  ifInterval = setInterval(() => {
+    const el = document.getElementById('if-countdown');
+    if (!el) { clearInterval(ifInterval); return; }
+    const now = Date.now();
+    const windowEnd = state.ifStart + WINDOW_HOURS * 3600000;
+    const remaining = windowEnd - now;
+    if (remaining <= 0) {
+      el.textContent = 'CLOSED';
+      clearInterval(ifInterval);
+    } else {
+      el.textContent = formatTime(remaining);
+    }
+  }, 1000);
+}
+
+function homeAddCal() {
+  const input = document.getElementById('home-cal-input');
+  const val = parseInt(input.value);
+  if (!val || val <= 0) return;
+  state.calories.push({ name: 'Quick add', cal: val, time: Date.now() });
+  saveDayData(state);
+  updateCalHistory();
+  input.value = '';
+  renderHome();
+}
+
+function addWater(oz) {
+  state.water += oz;
+  saveDayData(state);
+  renderHome();
+}
+
+function logWeight() {
+  const input = document.getElementById('weight-input');
+  const val = parseFloat(input.value);
+  if (!val || val <= 0) return;
+  state.weight = val;
+  saveDayData(state);
+  const wh = getWeightHistory();
+  const todayStr = todayKey();
+  const existing = wh.findIndex(w => w.date === todayStr);
+  if (existing >= 0) wh[existing].w = val;
+  else wh.push({ date: todayStr, w: val });
+  saveWeightHistory(wh);
+  input.value = '';
+  renderHome();
+}
+
+function saveDailyNote() {
+  state.dailyNote = document.getElementById('daily-note-home').value;
+  saveDayData(state);
+}
+
+function updateCalHistory() {
+  const ch = getCalHistory();
+  const todayStr = todayKey();
+  const existing = ch.findIndex(c => c.date === todayStr);
+  const total = totalCals();
+  if (existing >= 0) ch[existing].cal = total;
+  else ch.push({ date: todayStr, cal: total });
+  saveCalHistory(ch);
+}
+
+// ── RENDER WORKOUT ────────────────────────────────────────────────────────────
+function renderWorkout() {
+  const tab = document.getElementById('tab-workout');
+  const day = activeWorkoutDay;
+  const program = PROGRAM[day];
+  const isLift = program.type === 'lift';
+  const checks = state.workoutChecks[day] || {};
+  const notes = state.workoutNotes[day] || '';
+  const total = isLift ? program.exercises.length : 0;
+  const done = isLift ? program.exercises.filter((_, i) => checks[i]).length : 0;
+
+  let html = `
+    <div class="page-header">
+      <div class="label">Project J</div>
+      <h1>Workout</h1>
+    </div>
+    <div class="day-tabs">
+      ${DAYS.map(d => {
+        const p = PROGRAM[d];
+        const color = getDayColor(d);
+        const isActive = d === day;
+        return `<button class="day-tab ${isActive ? 'active-day' : ''}" 
+          style="${isActive ? `border-color:${color};color:${color};background:${color}18` : ''}"
+          onclick="setWorkoutDay('${d}')">${d}<br><span style="font-size:9px;letter-spacing:1px;opacity:0.7">${p.focus.split(' ')[0].toUpperCase()}</span></button>`;
+      }).join('')}
+    </div>
+  `;
+
+  if (!isLift) {
+    html += `
+      <div class="cardio-card">
+        <div class="cardio-icon">🏃</div>
+        <div class="cardio-title">Cardio Day</div>
+        <div class="cardio-detail">
+          60 min treadmill<br>
+          3.5 mph avg · 4–8% incline<br>
+          Target avg HR: 135–145<br>
+          ~450 real calories burned
+        </div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <div class="card-label">Workout Notes</div>
+        <textarea class="notes-area" id="workout-note" placeholder="How'd it feel? Energy, HR, anything notable...">${notes}</textarea>
+        <button class="save-note-btn" onclick="saveWorkoutNote()">Save Note</button>
+      </div>
+    `;
+  } else {
+    html += `
+      <div class="progress-row">
+        <span class="progress-label">${program.focus} · ${program.muscles}</span>
+        <span class="progress-count" style="color:${program.color}">${done}/${total}</span>
+      </div>
+      <div class="progress-bar"><div class="progress-bar-fill" style="width:${total>0?(done/total)*100:0}%;background:${program.color}"></div></div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:16px">30 min treadmill first · then lift</div>
+    `;
+    program.exercises.forEach((ex, i) => {
+      const isDone = checks[i];
+      html += `
+        <div class="exercise-item ${isDone ? 'done' : ''}" 
+          style="border-left-color:${isDone ? program.color : 'var(--border)'};background:${isDone ? program.color+'08' : 'var(--surface)'}"
+          onclick="toggleExercise('${day}', ${i})">
+          <div style="display:flex;align-items:flex-start">
+            <div style="flex:1">
+              <div class="exercise-name" style="${isDone ? 'text-decoration:line-through;color:var(--muted)' : ''}">
+                ${ex.name}
+                ${ex.dropset ? `<span class="dropset-badge" style="background:${program.color}22;color:${program.color}">DROPSET</span>` : ''}
+              </div>
+              <div class="exercise-meta">${ex.sets} sets · ${ex.reps} reps · ${ex.rest} rest</div>
+              <div class="exercise-note">${ex.note}</div>
+            </div>
+            <div class="check-circle" style="${isDone ? `background:${program.color};border-color:${program.color};color:#000` : ''}">
+              ${isDone ? '✓' : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    if (done === total && total > 0) {
+      html += `<div class="complete-msg" style="color:${program.color};border-color:${program.color}44;background:${program.color}10">DONE. GO HOME.</div>`;
+    }
+
+    html += `
+      <div class="card" style="margin-top:16px">
+        <div class="card-label">Workout Notes</div>
+        <textarea class="notes-area" id="workout-note" placeholder="How'd it feel? What was heavy, what was easy...">${notes}</textarea>
+        <button class="save-note-btn" onclick="saveWorkoutNote()">Save Note</button>
+      </div>
+    `;
+  }
+
+  tab.innerHTML = html;
+}
+
+function setWorkoutDay(day) {
+  activeWorkoutDay = day;
+  renderWorkout();
+}
+
+function toggleExercise(day, idx) {
+  if (!state.workoutChecks[day]) state.workoutChecks[day] = {};
+  state.workoutChecks[day][idx] = !state.workoutChecks[day][idx];
+  saveDayData(state);
+  renderWorkout();
+}
+
+function saveWorkoutNote() {
+  const el = document.getElementById('workout-note');
+  if (!el) return;
+  if (!state.workoutNotes) state.workoutNotes = {};
+  state.workoutNotes[activeWorkoutDay] = el.value;
+  saveDayData(state);
+}
+
+// ── RENDER LOG ────────────────────────────────────────────────────────────────
+function renderLog() {
+  const tab = document.getElementById('tab-log');
+  const cals = totalCals();
+  const calPct = Math.min(100, (cals / CALORIE_TARGET) * 100);
+  const calColor = calPct > 100 ? '#ef4444' : calPct > 85 ? '#f59e0b' : '#10b981';
+
+  const meals = ['Morning', 'Lunch', 'Dinner', 'Snacks'];
+
+  let html = `
+    <div class="page-header">
+      <div class="label">Project J</div>
+      <h1>Food Log</h1>
+    </div>
+    <div class="card">
+      <div class="card-label">Today's Total</div>
+      <div class="cal-numbers">
+        <span class="cal-current" style="color:${calColor}">${cals}</span>
+        <span class="cal-target">/ ${CALORIE_TARGET} kcal</span>
+      </div>
+      <div class="cal-bar"><div class="cal-bar-fill" style="width:${calPct}%;background:${calColor}"></div></div>
+    </div>
+  `;
+
+  meals.forEach(meal => {
+    const entries = state.calories.filter(e => e.meal === meal);
+    const mealTotal = entries.reduce((s,e) => s + e.cal, 0);
+    html += `
+      <div class="card">
+        <div class="meal-header">${meal} ${mealTotal > 0 ? '· ' + mealTotal + ' kcal' : ''}</div>
+        ${entries.map((e, i) => `
+          <div class="log-entry">
+            <span class="log-entry-name">${e.name}</span>
+            <span style="display:flex;align-items:center;gap:8px">
+              <span class="log-entry-cal">${e.cal} kcal</span>
+              <button class="log-entry-del" onclick="deleteEntry('${meal}', ${state.calories.indexOf(e)})">×</button>
+            </span>
+          </div>
+        `).join('')}
+        <div class="add-entry">
+          <input type="text" id="name-${meal}" placeholder="Item name...">
+          <input type="number" id="cal-${meal}" placeholder="kcal">
+          <button class="btn-sm btn-blue" onclick="addEntry('${meal}')">+</button>
+        </div>
+      </div>
+    `;
+  });
+
+  // water log
+  html += `
+    <div class="card">
+      <div class="card-label">Water · ${state.water}oz</div>
+      <div class="water-btns">
+        <button class="water-btn" onclick="addWaterLog(12)">+12 oz</button>
+        <button class="water-btn" onclick="addWaterLog(16)">+16 oz</button>
+        <button class="water-btn" onclick="addWaterLog(22)">+22 oz</button>
+      </div>
+      ${state.water > 0 ? `<button class="save-note-btn" onclick="resetWater()" style="margin-top:8px">Reset water</button>` : ''}
+    </div>
+  `;
+
+  tab.innerHTML = html;
+}
+
+function addEntry(meal) {
+  const name = document.getElementById('name-' + meal).value.trim() || meal;
+  const cal = parseInt(document.getElementById('cal-' + meal).value);
+  if (!cal || cal <= 0) return;
+  state.calories.push({ name, cal, meal, time: Date.now() });
+  saveDayData(state);
+  updateCalHistory();
+  renderLog();
+}
+
+function deleteEntry(meal, idx) {
+  state.calories.splice(idx, 1);
+  saveDayData(state);
+  updateCalHistory();
+  renderLog();
+}
+
+function addWaterLog(oz) {
+  state.water += oz;
+  saveDayData(state);
+  renderLog();
+}
+
+function resetWater() {
+  state.water = 0;
+  saveDayData(state);
+  renderLog();
+}
+
+// ── RENDER STATS ──────────────────────────────────────────────────────────────
+function renderStats() {
+  const tab = document.getElementById('tab-stats');
+  tab.innerHTML = `
+    <div class="page-header">
+      <div class="label">Project J</div>
+      <h1>Stats</h1>
+    </div>
+    <div class="toggle-row">
+      <button class="toggle-btn ${statsRange===7?'active':''}" onclick="setRange(7)">7 Days</button>
+      <button class="toggle-btn ${statsRange===30?'active':''}" onclick="setRange(30)">30 Days</button>
+    </div>
+    <div class="card">
+      <div class="card-label">Weight Trend (lbs)</div>
+      <div class="chart-container"><canvas id="weight-chart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-label">Daily Calories vs Target</div>
+      <div class="chart-container"><canvas id="cal-chart"></canvas></div>
+    </div>
+  `;
+  drawCharts();
+}
+
+function setRange(r) {
+  statsRange = r;
+  renderStats();
+}
+
+function drawCharts() {
+  const wh = getWeightHistory().slice(-statsRange);
+  const ch = getCalHistory().slice(-statsRange);
+
+  drawLineChart('weight-chart', wh.map(w => w.date), wh.map(w => w.w), '#10b981', null);
+  drawBarChart('cal-chart', ch.map(c => c.date), ch.map(c => c.cal), '#3b82f6', CALORIE_TARGET);
+}
+
+function drawLineChart(id, labels, data, color, target) {
+  const canvas = document.getElementById(id);
+  if (!canvas || data.length === 0) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth * 2;
+  canvas.height = 320;
+  const W = canvas.width, H = canvas.height;
+  const pad = { top: 20, right: 20, bottom: 40, left: 50 };
+  const w = W - pad.left - pad.right;
+  const h = H - pad.top - pad.bottom;
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.scale(1,1);
+
+  const min = Math.min(...data) - 2;
+  const max = Math.max(...data) + 2;
+  const xStep = data.length > 1 ? w / (data.length - 1) : w;
+
+  const toX = i => pad.left + i * xStep;
+  const toY = v => pad.top + h - ((v - min) / (max - min)) * h;
+
+  // grid
+  ctx.strokeStyle = '#1f1f1f'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + (h / 4) * i;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + w, y); ctx.stroke();
+    const val = (max - (max - min) * (i / 4)).toFixed(1);
+    ctx.fillStyle = '#444'; ctx.font = '18px DM Sans'; ctx.textAlign = 'right';
+    ctx.fillText(val, pad.left - 8, y + 6);
+  }
+
+  // line
+  if (data.length > 1) {
+    const grad = ctx.createLinearGradient(0, pad.top, 0, pad.top + h);
+    grad.addColorStop(0, color + '44');
+    grad.addColorStop(1, color + '00');
+    ctx.beginPath();
+    ctx.moveTo(toX(0), toY(data[0]));
+    data.forEach((v, i) => { if (i > 0) ctx.lineTo(toX(i), toY(v)); });
+    ctx.lineTo(toX(data.length-1), pad.top + h);
+    ctx.lineTo(toX(0), pad.top + h);
+    ctx.closePath();
+    ctx.fillStyle = grad; ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(toX(0), toY(data[0]));
+    data.forEach((v, i) => { if (i > 0) ctx.lineTo(toX(i), toY(v)); });
+    ctx.strokeStyle = color; ctx.lineWidth = 3; ctx.stroke();
+  }
+
+  // dots
+  data.forEach((v, i) => {
+    ctx.beginPath();
+    ctx.arc(toX(i), toY(v), 5, 0, Math.PI*2);
+    ctx.fillStyle = color; ctx.fill();
+  });
+
+  // labels
+  ctx.fillStyle = '#444'; ctx.font = '16px DM Sans'; ctx.textAlign = 'center';
+  labels.forEach((l, i) => {
+    const parts = l.split('-');
+    ctx.fillText(`${parts[1]}/${parts[2]}`, toX(i), H - 8);
+  });
+}
+
+function drawBarChart(id, labels, data, color, target) {
+  const canvas = document.getElementById(id);
+  if (!canvas || data.length === 0) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width = canvas.offsetWidth * 2;
+  canvas.height = 320;
+  const W = canvas.width, H = canvas.height;
+  const pad = { top: 20, right: 20, bottom: 40, left: 50 };
+  const w = W - pad.left - pad.right;
+  const h = H - pad.top - pad.bottom;
+
+  ctx.clearRect(0, 0, W, H);
+
+  const max = Math.max(...data, target) * 1.1;
+  const barW = (w / data.length) * 0.6;
+  const barGap = w / data.length;
+
+  const toY = v => pad.top + h - (v / max) * h;
+
+  // grid
+  ctx.strokeStyle = '#1f1f1f'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = pad.top + (h / 4) * i;
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(pad.left + w, y); ctx.stroke();
+    const val = Math.round(max - (max / 4) * i);
+    ctx.fillStyle = '#444'; ctx.font = '18px DM Sans'; ctx.textAlign = 'right';
+    ctx.fillText(val, pad.left - 8, y + 6);
+  }
+
+  // target line
+  if (target) {
+    const ty = toY(target);
+    ctx.setLineDash([8, 6]);
+    ctx.strokeStyle = '#f59e0b88'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(pad.left, ty); ctx.lineTo(pad.left + w, ty); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#f59e0b'; ctx.font = '16px DM Sans'; ctx.textAlign = 'left';
+    ctx.fillText('TARGET', pad.left + 4, ty - 6);
+  }
+
+  // bars
+  data.forEach((v, i) => {
+    const x = pad.left + i * barGap + (barGap - barW) / 2;
+    const barH = (v / max) * h;
+    const barColor = v > target ? '#ef444488' : color + 'cc';
+    ctx.fillStyle = barColor;
+    ctx.beginPath();
+    ctx.roundRect(x, toY(v), barW, barH, [3, 3, 0, 0]);
+    ctx.fill();
+  });
+
+  // labels
+  ctx.fillStyle = '#444'; ctx.font = '16px DM Sans'; ctx.textAlign = 'center';
+  labels.forEach((l, i) => {
+    const x = pad.left + i * barGap + barGap / 2;
+    const parts = l.split('-');
+    ctx.fillText(`${parts[1]}/${parts[2]}`, x, H - 8);
+  });
+}
+
+// ── NAV ───────────────────────────────────────────────────────────────────────
+function switchTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+  clearInterval(ifInterval);
+  if (name === 'home') renderHome();
+  else if (name === 'workout') renderWorkout();
+  else if (name === 'log') renderLog();
+  else if (name === 'stats') renderStats();
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+renderHome();
+</script>
+</body>
+</html>

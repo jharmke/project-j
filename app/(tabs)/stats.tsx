@@ -5,6 +5,7 @@ import { useCallback, useRef, useState } from 'react';
 import { Animated, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Line, Polyline, Rect, Text as SvgText } from 'react-native-svg';
+import { useTheme } from '../../theme';
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const CAL_TARGET = 1750;
@@ -124,7 +125,7 @@ function CalorieBarChart({ data }: { data: { date: string, cal: number }[] }) {
   );
 }
 
-function CollapsibleCard({ label, defaultOpen = false, children }: { label: string, defaultOpen?: boolean, children: React.ReactNode }) {
+function CollapsibleCard({ label, defaultOpen = false, children, theme }: { label: string, defaultOpen?: boolean, children: React.ReactNode, theme: any }) {
   const [open, setOpen] = useState(defaultOpen);
   const animHeight = useRef(new Animated.Value(defaultOpen ? 1 : 0)).current;
   const [measuredHeight, setMeasuredHeight] = useState(0);
@@ -141,10 +142,10 @@ function CollapsibleCard({ label, defaultOpen = false, children }: { label: stri
   };
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
       <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }} onPress={toggle}>
-        <Text style={styles.cardLabel}>{label}</Text>
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={14} color="#666680" />
+        <Text style={[styles.cardLabel, { color: theme.textMuted }]}>{label}</Text>
+        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={14} color={theme.textMuted} />
       </TouchableOpacity>
       <Animated.View style={{
         overflow: 'hidden',
@@ -169,6 +170,7 @@ function CollapsibleCard({ label, defaultOpen = false, children }: { label: stri
 
 export default function StatsScreen() {
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
   const [weightHistory, setWeightHistory] = useState<{date: string, w: number}[]>([]);
   const [calHistory, setCalHistory] = useState<{date: string, cal: number}[]>([]);
   const [stepsHistory, setStepsHistory] = useState<{date: string, value: number}[]>([]);
@@ -360,47 +362,47 @@ export default function StatsScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0d0d0f', paddingTop: insets.top }}>
-      <View style={styles.header}>
+    <View style={{ flex: 1, backgroundColor: theme.bgPrimary, paddingTop: insets.top }}>
+      <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerLabel}>PROJECT J</Text>
-          <Text style={styles.headerTitle}>Stats</Text>
-          <Text style={{ fontSize: 9, color: '#666680', fontFamily: 'DMSans_700Bold', marginTop: 1, letterSpacing: 2, textTransform: 'uppercase' }}>
+          <Text style={[styles.headerLabel, { color: theme.textMuted }]}>PROJECT J</Text>
+          <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>Stats</Text>
+          <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', marginTop: 1, letterSpacing: 2, textTransform: 'uppercase' }}>
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </Text>
         </View>
-        <View style={{ backgroundColor: 'rgba(59,130,246,0.15)', borderWidth: 1, borderColor: 'rgba(59,130,246,0.3)', borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, opacity: 0 }}>
-          <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: '#3b82f6' }}>Library</Text>
+        <View style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, opacity: 0 }}>
+          <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: theme.accentBlue }}>Library</Text>
         </View>
       </View>
 
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView style={[styles.container, { backgroundColor: theme.bgPrimary }]} contentContainerStyle={styles.content}>
 
         {/* Calendar */}
-        <CollapsibleCard label="Calendar" defaultOpen={true}>
+        <CollapsibleCard label="Calendar" defaultOpen={true} theme={theme}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
             <TouchableOpacity onPress={goToPrevMonth} style={{ padding: 4 }}>
-              <Text style={{ color: '#3b82f6', fontSize: 18, fontFamily: 'DMSans_600SemiBold' }}>{'<'}</Text>
+              <Text style={{ color: theme.accentBlue, fontSize: 18, fontFamily: 'DMSans_600SemiBold' }}>{'<'}</Text>
             </TouchableOpacity>
-            <Text style={[styles.cardLabel, { marginBottom: 0 }]}>{MONTH_NAMES[month]} {year}</Text>
+            <Text style={[styles.cardLabel, { marginBottom: 0, color: theme.textMuted }]}>{MONTH_NAMES[month]} {year}</Text>
             <TouchableOpacity onPress={goToNextMonth} style={{ padding: 4 }}>
-              <Text style={{ color: '#3b82f6', fontSize: 18, fontFamily: 'DMSans_600SemiBold' }}>{'>'}</Text>
+              <Text style={{ color: theme.accentBlue, fontSize: 18, fontFamily: 'DMSans_600SemiBold' }}>{'>'}</Text>
             </TouchableOpacity>
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 12 }}>
-            <View style={{ backgroundColor: 'rgba(16,185,129,0.15)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.3)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
-              <Text style={{ color: '#10b981', fontSize: 10, fontFamily: 'DMSans_600SemiBold' }}>Full</Text>
+            <View style={{ backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
+              <Text style={{ color: theme.accentGreen, fontSize: 10, fontFamily: 'DMSans_600SemiBold' }}>Full</Text>
             </View>
             <View style={{ backgroundColor: 'rgba(245,158,11,0.15)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.3)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
-              <Text style={{ color: '#f59e0b', fontSize: 10, fontFamily: 'DMSans_600SemiBold' }}>Partial</Text>
+              <Text style={{ color: theme.statusWarn, fontSize: 10, fontFamily: 'DMSans_600SemiBold' }}>Partial</Text>
             </View>
-            <View style={{ backgroundColor: 'rgba(239,68,68,0.15)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
-              <Text style={{ color: '#ef4444', fontSize: 10, fontFamily: 'DMSans_600SemiBold' }}>Missed</Text>
+            <View style={{ backgroundColor: theme.accentRedBg, borderWidth: 1, borderColor: theme.accentRedBorder, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
+              <Text style={{ color: theme.accentRed, fontSize: 10, fontFamily: 'DMSans_600SemiBold' }}>Missed</Text>
             </View>
           </View>
           <View style={styles.calGrid}>
             {['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => (
-              <Text key={d} style={styles.calDayHeader}>{d}</Text>
+              <Text key={d} style={[styles.calDayHeader, { color: theme.textMuted }]}>{d}</Text>
             ))}
             {Array.from({ length: firstDay }).map((_, i) => (
               <View key={`empty-${i}`} style={{ width: '14.28%' }} />
@@ -413,7 +415,7 @@ export default function StatsScreen() {
               return (
                 <TouchableOpacity
                   key={day}
-                  style={[styles.calDay, { backgroundColor: colors.bg }, isToday && styles.calDayToday]}
+                  style={[styles.calDay, { backgroundColor: colors.bg }, isToday && [styles.calDayToday, { borderColor: theme.accentBlueBorder }]]}
                   onPress={() => {
                     const dk = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                     if (dk <= today) router.push({ pathname: '/day-detail', params: { date: dk } });
@@ -435,120 +437,120 @@ export default function StatsScreen() {
               );
             })}
           </View>
-        <View style={{ flexDirection: 'row', gap: 12, marginTop: 8, flexWrap: 'wrap' }}>
+          <View style={{ flexDirection: 'row', gap: 12, marginTop: 8, flexWrap: 'wrap' }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(245,158,11,0.6)' }} />
-              <Text style={{ fontSize: 9, color: '#666680', fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' }}>Diet excluded</Text>
+              <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' }}>Diet excluded</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(59,130,246,0.6)' }} />
-              <Text style={{ fontSize: 9, color: '#666680', fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' }}>Water excluded</Text>
+              <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' }}>Water excluded</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
               <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(239,68,68,0.6)' }} />
-              <Text style={{ fontSize: 9, color: '#666680', fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' }}>Exercise excluded</Text>
+              <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' }}>Exercise excluded</Text>
             </View>
           </View>
         </CollapsibleCard>
 
         {/* Weight Trend */}
-        <CollapsibleCard label="Weight Trend">
+        <CollapsibleCard label="Weight Trend" theme={theme}>
           <LineChart
             data={weightHistory.map(w => ({ date: w.date, value: w.w }))}
-            color="#e8e8f0"
+            color={theme.textPrimary}
             label="Weight"
             unit=" lbs"
           />
         </CollapsibleCard>
 
         {/* Calorie Trend */}
-        <CollapsibleCard label="Calorie Trend">
+        <CollapsibleCard label="Calorie Trend" theme={theme}>
           <CalorieBarChart data={calHistory} />
           <View style={{ flexDirection: 'row', gap: 12, marginTop: 8 }}>
-            <Text style={{ fontSize: 9, color: '#10b981', fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>{'● On target'}</Text>
-            <Text style={{ fontSize: 9, color: '#f59e0b', fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>{'● Close'}</Text>
-            <Text style={{ fontSize: 9, color: '#ef4444', fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>{'● Off'}</Text>
+            <Text style={{ fontSize: 9, color: theme.statusGood, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>{'● On target'}</Text>
+            <Text style={{ fontSize: 9, color: theme.statusWarn, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>{'● Close'}</Text>
+            <Text style={{ fontSize: 9, color: theme.statusBad, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>{'● Off'}</Text>
           </View>
         </CollapsibleCard>
 
         {/* Steps Trend */}
-        <CollapsibleCard label="Steps Trend">
+        <CollapsibleCard label="Steps Trend" theme={theme}>
           <LineChart
             data={stepsHistory}
-            color="#3b82f6"
+            color={theme.accentBlue}
             label="Steps"
             unit=""
             goalValue={stepGoal}
           />
           {stepsHistory.length < 2 && (
-            <Text style={{ fontSize: 9, color: '#666680', fontFamily: 'DMSans_400Regular', marginTop: 4, fontStyle: 'italic' }}>
+            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 4, fontStyle: 'italic' }}>
               Steps will populate here as you use the app going forward.
             </Text>
           )}
         </CollapsibleCard>
 
         {/* Active Calories Trend */}
-        <CollapsibleCard label="Active Calories Trend">
+        <CollapsibleCard label="Active Calories Trend" theme={theme}>
           <LineChart
             data={activeCalHistory}
-            color="#0d9268"
+            color={theme.macroProtein}
             label="Active Calories"
             unit=" kcal"
           />
           {activeCalHistory.length < 2 && (
-            <Text style={{ fontSize: 9, color: '#666680', fontFamily: 'DMSans_400Regular', marginTop: 4, fontStyle: 'italic' }}>
+            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 4, fontStyle: 'italic' }}>
               Active calories will populate here as you use the app going forward.
             </Text>
           )}
         </CollapsibleCard>
 
         {/* Period Summary */}
-        <CollapsibleCard label="Summary">
+        <CollapsibleCard label="Summary" theme={theme}>
           <View style={{ flexDirection: 'row', gap: 6, marginBottom: 14 }}>
             {(['7', '30', '90', '180', 'ytd'] as const).map(p => (
               <TouchableOpacity
                 key={p}
                 onPress={() => setActivePeriod(p)}
                 style={{ flex: 1, paddingVertical: 6, borderRadius: 6, alignItems: 'center',
-                  backgroundColor: activePeriod === p ? 'rgba(59,130,246,0.2)' : '#13131e',
-                  borderWidth: 1, borderColor: activePeriod === p ? 'rgba(59,130,246,0.5)' : 'rgba(255,255,255,0.08)' }}>
-                <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: activePeriod === p ? '#3b82f6' : '#666680' }}>
+                  backgroundColor: activePeriod === p ? theme.accentBlueBg : theme.bgInput,
+                  borderWidth: 1, borderColor: activePeriod === p ? theme.accentBlueBorder : theme.borderInput }}>
+                <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: activePeriod === p ? theme.accentBlue : theme.textMuted }}>
                   {p === 'ytd' ? 'YTD' : p === '7' ? '7D' : p === '30' ? '30D' : p === '90' ? '3M' : '6M'}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
-          <Text style={{ fontSize: 9, color: '#666680', fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 10 }}>
+          <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 10 }}>
             {periodData.loggedDays} logged days · excludes flagged days
           </Text>
-          <View style={styles.historyRow}>
-            <Text style={styles.historyDate}>Avg Calories / Day</Text>
-            <Text style={styles.historyVal}>{periodData.avgCal} kcal</Text>
+          <View style={[styles.historyRow, { borderBottomColor: theme.borderSubtle }]}>
+            <Text style={[styles.historyDate, { color: theme.textMuted }]}>Avg Calories / Day</Text>
+            <Text style={[styles.historyVal, { color: theme.textPrimary }]}>{periodData.avgCal} kcal</Text>
           </View>
-          <View style={styles.historyRow}>
-            <Text style={styles.historyDate}>Avg Protein / Day</Text>
-            <Text style={[styles.historyVal, { color: '#10b981' }]}>{periodData.avgProtein}g</Text>
+          <View style={[styles.historyRow, { borderBottomColor: theme.borderSubtle }]}>
+            <Text style={[styles.historyDate, { color: theme.textMuted }]}>Avg Protein / Day</Text>
+            <Text style={[styles.historyVal, { color: theme.macroProtein }]}>{periodData.avgProtein}g</Text>
           </View>
-          <View style={styles.historyRow}>
-            <Text style={styles.historyDate}>Avg Carbs / Day</Text>
-            <Text style={[styles.historyVal, { color: '#f59e0b' }]}>{periodData.avgCarbs}g</Text>
+          <View style={[styles.historyRow, { borderBottomColor: theme.borderSubtle }]}>
+            <Text style={[styles.historyDate, { color: theme.textMuted }]}>Avg Carbs / Day</Text>
+            <Text style={[styles.historyVal, { color: theme.macroCarbs }]}>{periodData.avgCarbs}g</Text>
           </View>
-          <View style={styles.historyRow}>
-            <Text style={styles.historyDate}>Avg Fat / Day</Text>
-            <Text style={[styles.historyVal, { color: '#ef4444' }]}>{periodData.avgFat}g</Text>
+          <View style={[styles.historyRow, { borderBottomColor: theme.borderSubtle }]}>
+            <Text style={[styles.historyDate, { color: theme.textMuted }]}>Avg Fat / Day</Text>
+            <Text style={[styles.historyVal, { color: theme.macroFat }]}>{periodData.avgFat}g</Text>
           </View>
-          <View style={styles.historyRow}>
-            <Text style={styles.historyDate}>Avg Water / Day</Text>
-            <Text style={styles.historyVal}>{periodData.avgWater} oz</Text>
+          <View style={[styles.historyRow, { borderBottomColor: theme.borderSubtle }]}>
+            <Text style={[styles.historyDate, { color: theme.textMuted }]}>Avg Water / Day</Text>
+            <Text style={[styles.historyVal, { color: theme.textPrimary }]}>{periodData.avgWater} oz</Text>
           </View>
-          <View style={styles.historyRow}>
-            <Text style={styles.historyDate}>Workout Days</Text>
-            <Text style={styles.historyVal}>{periodData.workoutDays} / {periodData.totalDays}</Text>
+          <View style={[styles.historyRow, { borderBottomColor: theme.borderSubtle }]}>
+            <Text style={[styles.historyDate, { color: theme.textMuted }]}>Workout Days</Text>
+            <Text style={[styles.historyVal, { color: theme.textPrimary }]}>{periodData.workoutDays} / {periodData.totalDays}</Text>
           </View>
           {periodData.startWeight && periodData.endWeight && (
-            <View style={styles.historyRow}>
-              <Text style={styles.historyDate}>Weight Change</Text>
-              <Text style={[styles.historyVal, { color: periodData.endWeight < periodData.startWeight ? '#10b981' : periodData.endWeight > periodData.startWeight ? '#ef4444' : '#e8e8f0' }]}>
+            <View style={[styles.historyRow, { borderBottomColor: theme.borderSubtle }]}>
+              <Text style={[styles.historyDate, { color: theme.textMuted }]}>Weight Change</Text>
+              <Text style={[styles.historyVal, { color: periodData.endWeight < periodData.startWeight ? theme.statusGood : periodData.endWeight > periodData.startWeight ? theme.statusBad : theme.textPrimary }]}>
                 {periodData.endWeight > periodData.startWeight ? '+' : ''}
                 {Math.round((periodData.endWeight - periodData.startWeight) * 10) / 10} lbs
               </Text>
@@ -557,23 +559,23 @@ export default function StatsScreen() {
         </CollapsibleCard>
 
         {/* Streaks */}
-        <CollapsibleCard label="Streaks">
+        <CollapsibleCard label="Streaks" theme={theme}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
             <View style={{ alignItems: 'center', flex: 1 }}>
-              <Text style={{ fontSize: 32, fontFamily: 'BebasNeue_400Regular', color: '#10b981' }}>{streaks.gym}</Text>
-              <Text style={{ fontSize: 9, color: '#666680', fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>Gym</Text>
+              <Text style={{ fontSize: 32, fontFamily: 'BebasNeue_400Regular', color: theme.statusGood }}>{streaks.gym}</Text>
+              <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>Gym</Text>
             </View>
             <View style={{ alignItems: 'center', flex: 1 }}>
-              <Text style={{ fontSize: 32, fontFamily: 'BebasNeue_400Regular', color: '#3b82f6' }}>{streaks.calories}</Text>
-              <Text style={{ fontSize: 9, color: '#666680', fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>Calories</Text>
+              <Text style={{ fontSize: 32, fontFamily: 'BebasNeue_400Regular', color: theme.accentBlue }}>{streaks.calories}</Text>
+              <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>Calories</Text>
             </View>
             <View style={{ alignItems: 'center', flex: 1 }}>
               <Text style={{ fontSize: 32, fontFamily: 'BebasNeue_400Regular', color: '#06b6d4' }}>{streaks.water}</Text>
-              <Text style={{ fontSize: 9, color: '#666680', fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>Water</Text>
+              <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>Water</Text>
             </View>
             <View style={{ alignItems: 'center', flex: 1 }}>
-              <Text style={{ fontSize: 32, fontFamily: 'BebasNeue_400Regular', color: '#f59e0b' }}>{streaks.bible}</Text>
-              <Text style={{ fontSize: 9, color: '#666680', fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>Bible</Text>
+              <Text style={{ fontSize: 32, fontFamily: 'BebasNeue_400Regular', color: theme.accentAmber }}>{streaks.bible}</Text>
+              <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>Bible</Text>
             </View>
           </View>
         </CollapsibleCard>
@@ -584,22 +586,22 @@ export default function StatsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0d0d0f' },
-  content: { padding: 16, paddingBottom: 80 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 0.5, borderBottomColor: 'rgba(255,255,255,0.06)', marginBottom: 16 },
-  headerLabel: { fontSize: 9, letterSpacing: 2, color: '#666680', textTransform: 'uppercase', marginBottom: 2, fontFamily: 'DMSans_700Bold' },
-  headerTitle: { fontSize: 32, color: '#e8e8f0', fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
-  card: { backgroundColor: '#1a1a24', borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.06)', borderTopColor: 'rgba(255,255,255,0.1)', borderTopWidth: 0.5, borderRadius: 14, padding: 16, marginBottom: 12 },
-  cardLabel: { fontSize: 9, letterSpacing: 3, color: '#666680', textTransform: 'uppercase', marginBottom: 0, fontFamily: 'DMSans_700Bold' },
-  legend: { flexDirection: 'row', gap: 14, marginBottom: 12 },
-  legendDot: { fontSize: 11, fontFamily: 'DMSans_500Medium' },
-  calGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  calDayHeader: { width: '14.28%', textAlign: 'center', fontSize: 9, letterSpacing: 1, color: '#666680', paddingVertical: 4, fontFamily: 'DMSans_700Bold' },
-  calDay: { width: '14.28%', height: 36, borderRadius: 6, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
-  calDayToday: { borderWidth: 1, borderColor: 'rgba(59,130,246,0.5)' },
-  calDayText: { fontSize: 14, fontFamily: 'DMSans_600SemiBold' },
-  emptyText: { fontSize: 13, color: '#666680', fontStyle: 'italic', fontFamily: 'DMSans_400Regular' },
-  historyRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 0.5, borderBottomColor: 'rgba(255,255,255,0.04)' },
-  historyDate: { fontSize: 12, color: '#666680', fontFamily: 'DMSans_400Regular' },
-  historyVal: { fontSize: 13, color: '#e8e8f0', fontFamily: 'DMSans_600SemiBold' },
+  container:      { flex: 1 },
+  content:        { padding: 16, paddingBottom: 80 },
+  header:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 0.5, marginBottom: 16 },
+  headerLabel:    { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2, fontFamily: 'DMSans_700Bold' },
+  headerTitle:    { fontSize: 32, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
+  card:           { borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, padding: 16, marginBottom: 12 },
+  cardLabel:      { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 0, fontFamily: 'DMSans_700Bold' },
+  legend:         { flexDirection: 'row', gap: 14, marginBottom: 12 },
+  legendDot:      { fontSize: 11, fontFamily: 'DMSans_500Medium' },
+  calGrid:        { flexDirection: 'row', flexWrap: 'wrap' },
+  calDayHeader:   { width: '14.28%', textAlign: 'center', fontSize: 9, letterSpacing: 1, paddingVertical: 4, fontFamily: 'DMSans_700Bold' },
+  calDay:         { width: '14.28%', height: 36, borderRadius: 6, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
+  calDayToday:    { borderWidth: 1 },
+  calDayText:     { fontSize: 14, fontFamily: 'DMSans_600SemiBold' },
+  emptyText:      { fontSize: 13, fontStyle: 'italic', fontFamily: 'DMSans_400Regular' },
+  historyRow:     { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 0.5 },
+  historyDate:    { fontSize: 12, fontFamily: 'DMSans_400Regular' },
+  historyVal:     { fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
 });

@@ -6,6 +6,7 @@ import { Alert, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, Sty
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useHealthKit } from '../../useHealthKit';
 import { DayProgram, DEFAULT_PROGRAM, Exercise } from '../../workoutData';
 
 
@@ -40,6 +41,105 @@ const [weeklyTemplate, setWeeklyTemplate] = useState<Record<string, DayProgram>>
 const [labelInput, setLabelInput] = useState('');
   const [form, setForm] = useState({ name: '', sets: '3', reps: '10–12', rest: '60s', note: '', isCardio: false, duration: '', distance: '', speed: '', incline: '', resistance: '', hr: '', calories: ''});
 const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
+  const [calBurnedSaved, setCalBurnedSaved] = useState(false);
+const { activeCalories, appleWorkouts } = useHealthKit();
+
+useEffect(() => {
+  if (activeCalories > 0) {
+    setCardioLogs(prev => {
+      const updated = { ...prev, [todayKey]: { ...(prev[todayKey] || {}), caloriesBurned: String(activeCalories) } };
+      AsyncStorage.getItem('pj_workout_state').then(saved => {
+        const current = saved ? JSON.parse(saved) : {};
+        AsyncStorage.setItem('pj_workout_state', JSON.stringify({ ...current, cardioLogs: updated }));
+      });
+      AsyncStorage.getItem(`pj_${todayKey}`).then(saved => {
+        const current = saved ? JSON.parse(saved) : {};
+        AsyncStorage.setItem(`pj_${todayKey}`, JSON.stringify({ ...current, caloriesBurned: activeCalories }));
+      });
+      return updated;
+    });
+    setCalBurnedSaved(true);
+  }
+}, [activeCalories]);
+
+const formatDuration = (seconds: number): string => {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  return `${m}:${String(s).padStart(2, '0')}`;
+};
+
+useEffect(() => {
+  if (!appleWorkouts || appleWorkouts.length === 0) return;
+
+  const WORKOUT_TYPE_NAMES: Record<number, string> = {
+    1: 'American Football', 2: 'Archery', 3: 'Australian Football', 4: 'Badminton',
+    5: 'Baseball', 6: 'Basketball', 7: 'Bowling', 8: 'Boxing',
+    9: 'Climbing', 10: 'Cricket', 11: 'Cross Training', 12: 'Curling',
+    13: 'Cycling', 14: 'Dance', 16: 'Elliptical', 17: 'Equestrian Sports',
+    18: 'Fencing', 19: 'Fishing', 20: 'Functional Strength Training',
+    21: 'Golf', 22: 'Gymnastics', 23: 'Handball', 24: 'Hiking',
+    25: 'Hockey', 26: 'Hunting', 27: 'Lacrosse', 28: 'Martial Arts',
+    29: 'Mind and Body', 30: 'Mixed Metabolic Cardio Training', 31: 'Paddle Sports',
+    32: 'Play', 33: 'Preparation and Recovery', 34: 'Racquetball', 35: 'Rowing',
+    36: 'Rugby', 37: 'Running', 38: 'Sailing', 39: 'Skating Sports',
+    40: 'Snow Sports', 41: 'Soccer', 42: 'Softball', 43: 'Squash',
+    44: 'Stair Climbing', 45: 'Surfing Sports', 46: 'Swimming', 47: 'Table Tennis',
+    48: 'Tennis', 49: 'Track and Field', 50: 'Traditional Strength Training',
+    51: 'Volleyball', 52: 'Walking', 53: 'Water Fitness', 54: 'Water Polo',
+    55: 'Water Sports', 56: 'Wrestling', 57: 'Yoga', 58: 'Barre',
+    59: 'Core Training', 60: 'Cross Country Skiing', 61: 'Downhill Skiing',
+    62: 'Flexibility', 63: 'High Intensity Interval Training', 64: 'Jump Rope',
+    65: 'Kickboxing', 66: 'Pilates', 67: 'Snowboarding', 68: 'Stairs',
+    69: 'Step Training', 70: 'Wheelchair Walk Pace', 71: 'Wheelchair Run Pace',
+    72: 'Tai Chi', 73: 'Mixed Cardio', 74: 'Hand Cycling', 75: 'Disc Sports',
+    76: 'Fitness Gaming', 3000: 'Other',
+  };
+
+  setPrograms(prev => {
+    const current: DayProgram = prev[todayKey] ? { ...prev[todayKey] } : { type: 'cardio', focus: 'Cardio', exercises: [] };
+    const existingUUIDs = new Set(current.exercises.map((e: any) => e.appleHealthUUID).filter(Boolean));
+    const newExercises: any[] = [];
+
+    for (const w of appleWorkouts) {
+      if (existingUUIDs.has(w.uuid)) continue;
+      const durationMin = formatDuration(w.duration.quantity);
+      const calories = Math.round(w.totalEnergyBurned?.quantity ?? 0);
+      const distanceMi = w.totalDistance ? Math.round((w.totalDistance.quantity / 1609.34) * 100) / 100 : null;
+      const name = WORKOUT_TYPE_NAMES[w.workoutActivityType] ?? 'Workout';
+      newExercises.push({
+        id: `apple_${w.uuid}`,
+        name,
+        sets: '',
+        reps: '',
+        rest: '',
+        note: '',
+        isCardio: true,
+        duration: String(durationMin),
+        distance: distanceMi ? String(distanceMi) : '',
+        calories: String(calories),
+        fromAppleHealth: true,
+        appleHealthUUID: w.uuid,
+        appleStartDate: w.startDate,
+      });
+    }
+
+    if (newExercises.length === 0) return prev;
+    const updated = {
+      ...prev,
+      [todayKey]: {
+        ...current,
+        exercises: [...current.exercises, ...newExercises],
+      },
+    };
+    AsyncStorage.getItem('pj_workout_state').then(saved => {
+      const current2 = saved ? JSON.parse(saved) : {};
+      AsyncStorage.setItem('pj_workout_state', JSON.stringify({ ...current2, programs: updated }));
+    });
+    return updated;
+  });
+}, [appleWorkouts]);
 
 const generate21Days = () => {
   const days = [];
@@ -281,18 +381,21 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: '#080808' }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <ScrollView style={styles.container} contentContainerStyle={[styles.content, { paddingTop: insets.top + .5 }]} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
-
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: '#0d0d0f' }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.header}>
-  <View>
-    <Text style={styles.headerLabel}>PROJECT J</Text>
-    <Text style={styles.headerTitle}>Workout</Text>
-  </View>
-  <TouchableOpacity onPress={() => router.push('/workout-library')} style={styles.libraryBtn}>
-    <Text style={styles.libraryBtnText}>Library</Text>
-  </TouchableOpacity>
-</View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.headerLabel}>PROJECT J</Text>
+            <Text style={styles.headerTitle}>Workout</Text>
+            <Text style={{ fontSize: 9, color: '#666680', fontFamily: 'DMSans_700Bold', marginTop: 1, letterSpacing: 2, textTransform: 'uppercase' }}>
+              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+            </Text>
+          </View>
+          <TouchableOpacity onPress={() => router.push('/workout-library')} style={[styles.libraryBtn, { height: 32, alignItems: 'center', justifyContent: 'center' }]}>
+            <Text style={styles.libraryBtnText}>Library</Text>
+          </TouchableOpacity>
+        </View>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
 
         <ScrollView 
   ref={dayScrollRef}
@@ -310,7 +413,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
       <TouchableOpacity
         key={key}
         style={[styles.dayTab, isActive && { borderColor: c, backgroundColor: c + '18' }, isToday && !isActive && { borderColor: '#ffffff', borderWidth: 2 }]}
-        onPress={() => setActiveDay(key)}>
+        onPress={() => { setActiveDay(key); setCalBurnedSaved(!!cardioLogs[key]?.caloriesBurned); }}>
         <Text style={[styles.dayTabText, isActive && { color: c }, !isActive && { color: isPast ? '#999999' : '#aaaaaa' }]}>{dayName}</Text>
         <Text style={[styles.dayTabText, isActive && { color: c }, !isActive && { color: isPast ? '#888888' : '#888888' }, { fontSize: 11 }]}>{label}</Text>
         <Text style={[styles.dayTabSub, isActive && { color: c }, !isActive && { color: isPast ? '#444444' : '#999999' }]}>{p?.focus?.split(' ')[0].toUpperCase()}</Text>
@@ -320,11 +423,11 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
 </ScrollView>
 
         <TouchableOpacity
-          style={{ alignSelf: 'flex-end', marginBottom: 12, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: '#333333' }}
+          style={{ alignSelf: 'flex-end', marginBottom: 12, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: 'rgba(59,130,246,0.3)', backgroundColor: 'rgba(59,130,246,0.15)' }}
           onPress={() => setShowDayEditModal(true)}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-  <Text style={{ color: '#888888', fontSize: 12, fontFamily: 'DMSans_500Medium' }}>Edit {activeDateObj?.dayName} {activeDateObj?.label}</Text>
-  <IconSymbol name="pencil" size={14} color="#555555" />
+  <Text style={{ color: '#3b82f6', fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Edit {activeDateObj?.dayName} {activeDateObj?.label}</Text>
+  <IconSymbol name="pencil" size={14} color="#3b82f6" />
 </View>
         </TouchableOpacity>
 
@@ -373,6 +476,11 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
             <View style={styles.exerciseInfo}>
               <View style={styles.exerciseNameRow}>
                 <Text style={[styles.exerciseName, isDone && styles.exerciseNameDone]}>{ex.name}</Text>
+                {ex.fromAppleHealth && (
+                  <View style={[styles.badge, { backgroundColor: 'rgba(13,146,104,0.15)', borderWidth: 1, borderColor: 'rgba(13,146,104,0.3)' }]}>
+                    <Text style={[styles.badgeText, { color: '#0d9268' }]}>APPLE HEALTH</Text>
+                  </View>
+                )}
                 {ex.dropset && (
                   <View style={[styles.badge, { backgroundColor: color + '22' }]}>
                     <Text style={[styles.badgeText, { color }]}>DROPSET</Text>
@@ -382,7 +490,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
              {ex.isCardio ? (
                 <Text style={styles.exerciseMeta}>
                   {[
-                    ex.duration ? `${ex.duration} min` : null,
+                    ex.duration ? (ex.fromAppleHealth ? ex.duration : `${ex.duration} min`) : null,
                     ex.distance ? `${ex.distance} mi` : null,
                     ex.speed ? `${ex.speed} mph` : null,
                     ex.incline ? `${ex.incline}% incline` : null,
@@ -428,33 +536,46 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
 )}
 <View style={[styles.card, { marginTop: 12 }]}>
           <Text style={styles.cardLabel}>Calories Burned</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <TextInput
-              style={[styles.notesInput, { minHeight: 0, flex: 1, textAlignVertical: 'center', paddingVertical: 10 }]}
-              placeholder="e.g. 450"
-              placeholderTextColor="#333333"
-              keyboardType="number-pad"
-              value={cardioLogs[activeDay]?.caloriesBurned || ''}
-              onChangeText={v => {
-                const newLogs = { ...cardioLogs, [activeDay]: { ...(cardioLogs[activeDay] || {}), caloriesBurned: v } };
-                setCardioLogs(newLogs);
-                saveState(checks, cardioComplete, programs, workoutNotes, newLogs);
-                const saveCalsBurned = async () => {
-  try {
-    const saved = await AsyncStorage.getItem(`pj_${activeDay}`);
-    const current = saved ? JSON.parse(saved) : {};
-    await AsyncStorage.setItem(`pj_${activeDay}`, JSON.stringify({ ...current, caloriesBurned: parseInt(v) || 0 }));
-  } catch (e) {}
-};
-                saveCalsBurned();
-              }}
-            />
-            <Text style={{ color: '#888888', fontSize: 13, fontFamily: 'DMSans_400Regular' }}>kcal</Text>
-            <TouchableOpacity
-              style={{ backgroundColor: 'rgba(16,185,129,0.15)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.3)', borderRadius: 6, paddingHorizontal: 12, paddingVertical: 8 }}
-              onPress={() => Keyboard.dismiss()}>
-              <Text style={{ color: '#10b981', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Save</Text>
-            </TouchableOpacity>
+          <View style={{ marginTop: 8 }}>
+            {calBurnedSaved ? (
+              <TouchableOpacity
+                onPress={() => setCalBurnedSaved(false)}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#13131e', borderWidth: 0.5, borderColor: 'rgba(13,146,104,0.3)', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 12 }}>
+                <Text style={{ color: '#e8e8f0', fontSize: 14, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>{cardioLogs[activeDay]?.caloriesBurned} <Text style={{ color: '#666680', fontSize: 10, letterSpacing: 2 }}>KCAL</Text></Text>
+                <Text style={{ color: '#444455', fontSize: 10, fontFamily: 'DMSans_600SemiBold', letterSpacing: 1, textTransform: 'uppercase' }}>tap to edit</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <TextInput
+                  style={[styles.notesInput, { minHeight: 0, flex: 1, textAlignVertical: 'center', paddingVertical: 10, marginTop: 0 }]}
+                  placeholder="e.g. 450 kcal"
+                  placeholderTextColor="#444455"
+                  keyboardType="number-pad"
+                  autoFocus={!!cardioLogs[activeDay]?.caloriesBurned}
+                  value={cardioLogs[activeDay]?.caloriesBurned || ''}
+                  onChangeText={v => {
+                    const newLogs = { ...cardioLogs, [activeDay]: { ...(cardioLogs[activeDay] || {}), caloriesBurned: v } };
+                    setCardioLogs(newLogs);
+                    saveState(checks, cardioComplete, programs, workoutNotes, newLogs);
+                    const saveCalsBurned = async () => {
+                      try {
+                        const saved = await AsyncStorage.getItem(`pj_${activeDay}`);
+                        const current = saved ? JSON.parse(saved) : {};
+                        await AsyncStorage.setItem(`pj_${activeDay}`, JSON.stringify({ ...current, caloriesBurned: parseInt(v) || 0 }));
+                      } catch (e) {}
+                    };
+                    saveCalsBurned();
+                  }}
+                />
+                {cardioLogs[activeDay]?.caloriesBurned ? (
+                  <TouchableOpacity
+                    style={{ backgroundColor: 'rgba(13,146,104,0.15)', borderWidth: 0.5, borderColor: 'rgba(13,146,104,0.3)', borderRadius: 6, paddingHorizontal: 12, paddingVertical: 8 }}
+                    onPress={() => { Keyboard.dismiss(); setCalBurnedSaved(true); }}>
+                    <Text style={{ color: '#0d9268', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Save</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            )}
           </View>
         </View>
               <View style={[styles.card, { marginTop: 12 }]}>
@@ -476,9 +597,9 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                         saveState(checks, cardioComplete, programs, workoutNotes, newLogs);
                       }}
                       style={{ flex: 1, height: 36, borderRadius: 8, alignItems: 'center', justifyContent: 'center',
-                        backgroundColor: selected ? effortColor + '33' : '#1e1e1e',
-                        borderWidth: 1, borderColor: selected ? effortColor : '#2a2a2a' }}>
-                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: selected ? effortColor : '#888888' }}>{n}</Text>
+                        backgroundColor: selected ? effortColor + '33' : '#13131e',
+borderWidth: 0.5, borderColor: selected ? effortColor : 'rgba(255,255,255,0.08)' }}>
+                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: selected ? effortColor : '#7070a0' }}>{n}</Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -491,7 +612,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
           <TextInput
             style={styles.notesInput}
             placeholder="How'd it feel? Energy, what was heavy..."
-            placeholderTextColor="#333333"
+            placeholderTextColor="#444455"
             multiline
             value={workoutNotes[activeDay] || ''}
             onChangeText={v => setWorkoutNotes(prev => ({ ...prev, [activeDay]: v }))}
@@ -639,6 +760,7 @@ saveState(checks, cardioComplete, updated, workoutNotes, cardioLogs, weeklyTempl
     </TouchableOpacity>
   </Modal>
 )}
+    </View>
     </KeyboardAvoidingView>
     </GestureHandlerRootView>
   );
@@ -646,65 +768,65 @@ saveState(checks, cardioComplete, updated, workoutNotes, cardioLogs, weeklyTempl
 
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#080808' },
- content: { padding: 16, paddingBottom: 300 },
-  header: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingVertical: 20, borderBottomWidth: 1, borderBottomColor: '#222222', marginBottom: 16 },
-  headerLabel: { fontSize: 10, letterSpacing: 4, color: '#999999', textTransform: 'uppercase', marginBottom: 2, fontFamily: 'DMSans_500Medium' },
-  headerTitle: { fontSize: 32, color: '#ffffff', fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
+  container: { flex: 1, backgroundColor: '#0d0d0f' },
+  content: { padding: 16, paddingBottom: 300 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 0.5, borderBottomColor: 'rgba(255,255,255,0.06)', marginBottom: 16 },
+  headerLabel: { fontSize: 9, letterSpacing: 2, color: '#666680', textTransform: 'uppercase', marginBottom: 2, fontFamily: 'DMSans_700Bold' },
+  headerTitle: { fontSize: 32, color: '#e8e8f0', fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
   dayTabsContainer: { marginBottom: 16 },
-  dayTab: { width: 72, paddingVertical: 8, borderRadius: 6, borderWidth: 1, borderColor: '#2a2a2a', marginRight: 8, alignItems: 'center' },
-  dayTabText: { fontSize: 13, fontWeight: '700', color: '#888888', fontFamily: 'DMSans_700Bold' },
-  dayTabSub: { fontSize: 9, letterSpacing: 1, color: '#888888', marginTop: 2, fontFamily: 'DMSans_500Medium' },
-  cardioCard: { backgroundColor: '#161616', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 10, padding: 28, alignItems: 'center' },
+  dayTab: { width: 72, paddingVertical: 8, borderRadius: 8, borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.06)', marginRight: 8, alignItems: 'center', backgroundColor: '#1a1a24' },
+  dayTabText: { fontSize: 13, fontWeight: '700', color: '#666680', fontFamily: 'DMSans_700Bold' },
+  dayTabSub: { fontSize: 9, letterSpacing: 1, color: '#666680', marginTop: 2, fontFamily: 'DMSans_700Bold' },
+  cardioCard: { backgroundColor: '#1a1a24', borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.06)', borderTopColor: 'rgba(255,255,255,0.1)', borderTopWidth: 0.5, borderRadius: 14, padding: 28, alignItems: 'center' },
   cardioIcon: { fontSize: 40, marginBottom: 12 },
-  cardioTitle: { fontSize: 26, color: '#ffffff', letterSpacing: 2, marginBottom: 8, fontFamily: 'BebasNeue_400Regular' },
-  cardioDetail: { fontSize: 13, color: '#999999', textAlign: 'center', lineHeight: 22, fontFamily: 'DMSans_400Regular', marginBottom: 16 },
-  cardioCompleteBtn: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(16,185,129,0.4)', backgroundColor: 'rgba(16,185,129,0.1)' },
-  cardioCompleteBtnDone: { backgroundColor: '#10b981', borderColor: '#10b981' },
-  cardioCompleteBtnText: { color: '#10b981', fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 2 },
+  cardioTitle: { fontSize: 26, color: '#e8e8f0', letterSpacing: 2, marginBottom: 8, fontFamily: 'BebasNeue_400Regular' },
+  cardioDetail: { fontSize: 10, color: '#666680', textAlign: 'center', lineHeight: 20, fontFamily: 'DMSans_700Bold', marginBottom: 16, letterSpacing: 1.5, textTransform: 'uppercase' },
+  cardioCompleteBtn: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8, borderWidth: 0.5, borderColor: 'rgba(13,146,104,0.4)', backgroundColor: 'rgba(13,146,104,0.1)' },
+  cardioCompleteBtnDone: { backgroundColor: '#0d9268', borderColor: '#0d9268' },
+  cardioCompleteBtnText: { color: '#0d9268', fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 2 },
   progressRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
-  progressLabel: { fontSize: 15, color: '#aaaaaa', flex: 1, fontFamily: 'DMSans_600SemiBold' },
+  progressLabel: { fontSize: 15, color: '#e8e8f0', flex: 1, fontFamily: 'DMSans_600SemiBold' },
   progressCount: { fontSize: 24, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
-  progressBarBg: { height: 2, backgroundColor: '#2a2a2a', borderRadius: 2, overflow: 'hidden', marginBottom: 16 },
+  progressBarBg: { height: 2, backgroundColor: '#12121a', borderRadius: 2, overflow: 'hidden', marginBottom: 16 },
   progressBarFill: { height: '100%', borderRadius: 2 },
-  exerciseItem: { backgroundColor: '#161616', borderWidth: 1, borderColor: '#2a2a2a', borderLeftWidth: 3, borderRadius: 8, padding: 14, marginBottom: 8 },
+  exerciseItem: { backgroundColor: '#1a1a24', borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.06)', borderLeftWidth: 3, borderRadius: 10, padding: 14, marginBottom: 8 },
   exerciseDone: { opacity: 0.87 },
   exerciseRow: { flexDirection: 'row', alignItems: 'flex-start' },
   exerciseInfo: { flex: 1 },
   exerciseNameRow: { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 },
-  exerciseName: { fontSize: 14, fontWeight: '600', color: '#ffffff', fontFamily: 'DMSans_600SemiBold' },
-  exerciseNameDone: { textDecorationLine: 'line-through', color: '#888888' },
-  exerciseMeta: { fontSize: 12, color: '#999999', marginBottom: 4, fontFamily: 'DMSans_400Regular' },
-  exerciseNote: { fontSize: 11, color: '#444444', fontStyle: 'italic', lineHeight: 16, fontFamily: 'DMSans_400Regular' },
+  exerciseName: { fontSize: 14, fontWeight: '600', color: '#e8e8f0', fontFamily: 'DMSans_600SemiBold' },
+  exerciseNameDone: { textDecorationLine: 'line-through', color: '#444455' },
+  exerciseMeta: { fontSize: 10, color: '#666680', marginBottom: 4, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' },
+  exerciseNote: { fontSize: 11, color: '#444455', fontStyle: 'italic', lineHeight: 16, fontFamily: 'DMSans_400Regular' },
   badge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 3 },
   badgeText: { fontSize: 9, fontWeight: '700', letterSpacing: 1, fontFamily: 'DMSans_700Bold' },
-  checkCircle: { width: 24, height: 24, borderRadius: 12, borderWidth: 1, borderColor: '#333333', alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
+  checkCircle: { width: 24, height: 24, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
   checkMark: { color: '#000000', fontSize: 13, fontWeight: '700' },
   exActions: { flexDirection: 'row', gap: 8, marginTop: 10 },
-  exActionBtn: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 4, borderWidth: 1, borderColor: '#2a2a2a', backgroundColor: '#1e1e1e' },
-  exActionBtnText: { fontSize: 11, color: '#888888', fontFamily: 'DMSans_500Medium' },
-  addExBtn: { marginTop: 12, padding: 14, backgroundColor: 'rgba(59,130,246,0.1)', borderWidth: 1, borderColor: 'rgba(59,130,246,0.25)', borderRadius: 8, alignItems: 'center' },
+  exActionBtn: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 6, borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.08)', backgroundColor: '#13131e' },
+  exActionBtnText: { fontSize: 11, color: '#7070a0', fontFamily: 'DMSans_600SemiBold' },
+  addExBtn: { marginTop: 12, padding: 14, backgroundColor: 'rgba(59,130,246,0.1)', borderWidth: 0.5, borderColor: 'rgba(59,130,246,0.25)', borderRadius: 10, alignItems: 'center' },
   addExBtnText: { color: '#3b82f6', fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 2 },
   completeMsg: { padding: 16, marginTop: 8, alignItems: 'center' },
-  completeMsgText: { fontSize: 32, letterSpacing: 4, fontFamily: 'BebasNeue_400Regular' },  
-  card: { backgroundColor: '#161616', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 10, padding: 16 },
-  cardLabel: { fontSize: 9, letterSpacing: 3, color: '#999999', textTransform: 'uppercase', fontFamily: 'DMSans_500Medium' },
-  notesInput: { backgroundColor: '#1e1e1e', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 6, color: '#ffffff', padding: 10, fontSize: 13, minHeight: 80, textAlignVertical: 'top', marginTop: 10, fontFamily: 'DMSans_400Regular' },
-  saveNoteBtn: { marginTop: 8, padding: 10, backgroundColor: '#1e1e1e', borderWidth: 1, borderColor: '#3a3a3a', borderRadius: 6, alignItems: 'center' },
-  saveNoteBtnText: { color: '#cccccc', fontSize: 12, fontFamily: 'DMSans_500Medium' },
+  completeMsgText: { fontSize: 32, letterSpacing: 4, fontFamily: 'BebasNeue_400Regular' },
+  card: { backgroundColor: '#1a1a24', borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.06)', borderTopColor: 'rgba(255,255,255,0.1)', borderTopWidth: 0.5, borderRadius: 14, padding: 16 },
+  cardLabel: { fontSize: 9, letterSpacing: 3, color: '#666680', textTransform: 'uppercase', fontFamily: 'DMSans_700Bold' },
+  notesInput: { backgroundColor: '#13131e', borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.06)', borderRadius: 8, color: '#e8e8f0', padding: 10, fontSize: 13, minHeight: 80, textAlignVertical: 'top', marginTop: 10, fontFamily: 'DMSans_400Regular' },
+  saveNoteBtn: { marginTop: 8, padding: 10, backgroundColor: '#13131e', borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 6, alignItems: 'center' },
+  saveNoteBtnText: { color: '#7070a0', fontSize: 12, fontFamily: 'DMSans_600SemiBold' },
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'flex-end' },
-  modal: { backgroundColor: '#161616', borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24, borderWidth: 1, borderColor: '#2a2a2a' },
-  modalTitle: { fontSize: 22, color: '#ffffff', fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginBottom: 16 },
-  modalInput: { backgroundColor: '#1e1e1e', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 6, color: '#ffffff', padding: 10, fontSize: 14, fontFamily: 'DMSans_400Regular', marginBottom: 10 },
+  modal: { backgroundColor: '#1a1a24', borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24, borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.06)' },
+  modalTitle: { fontSize: 22, color: '#e8e8f0', fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginBottom: 16 },
+  modalInput: { backgroundColor: '#13131e', borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 8, color: '#e8e8f0', padding: 10, fontSize: 14, fontFamily: 'DMSans_400Regular', marginBottom: 10 },
   modalRow: { flexDirection: 'row', gap: 8 },
   modalBtns: { flexDirection: 'row', gap: 8, marginTop: 8 },
-  modalCancelBtn: { flex: 1, padding: 12, backgroundColor: '#1e1e1e', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 6, alignItems: 'center' },
-  modalCancelBtnText: { color: '#999999', fontFamily: 'DMSans_500Medium', fontSize: 14 },
-  modalSaveBtn: { flex: 1, padding: 12, backgroundColor: '#3b82f6', borderRadius: 6, alignItems: 'center' },
+  modalCancelBtn: { flex: 1, padding: 12, backgroundColor: '#13131e', borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 8, alignItems: 'center' },
+  modalCancelBtnText: { color: '#7070a0', fontFamily: 'DMSans_600SemiBold', fontSize: 14 },
+  modalSaveBtn: { flex: 1, padding: 12, backgroundColor: '#3b82f6', borderRadius: 8, alignItems: 'center' },
   modalSaveBtnText: { color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 1 },
   libraryBtn: { backgroundColor: 'rgba(59,130,246,0.15)', borderWidth: 1, borderColor: 'rgba(59,130,246,0.3)', borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 },
-  libraryBtnText: { color: '#3b82f6', fontSize: 15, fontFamily: 'DMSans_700Bold' },
-  cardioFieldRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#1e1e1e' },
-  cardioFieldLabel: { fontSize: 13, color: '#888888', fontFamily: 'DMSans_400Regular', flex: 1 },
-  cardioFieldInput: { backgroundColor: '#1e1e1e', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 6, color: '#ffffff', padding: 8, fontSize: 14, fontFamily: 'DMSans_400Regular', width: 100, textAlign: 'right' },
+  libraryBtnText: { color: '#3b82f6', fontSize: 14, fontFamily: 'DMSans_700Bold' },
+  cardioFieldRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 0.5, borderBottomColor: 'rgba(255,255,255,0.04)' },
+  cardioFieldLabel: { fontSize: 13, color: '#7070a0', fontFamily: 'DMSans_400Regular', flex: 1 },
+  cardioFieldInput: { backgroundColor: '#13131e', borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.08)', borderRadius: 6, color: '#e8e8f0', padding: 8, fontSize: 14, fontFamily: 'DMSans_400Regular', width: 100, textAlign: 'right' },
 });

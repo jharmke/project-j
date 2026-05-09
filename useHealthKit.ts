@@ -3,6 +3,7 @@ import {
     isHealthDataAvailable,
     queryCategorySamples,
     queryStatisticsForQuantity,
+    queryWorkoutSamples,
     requestAuthorization,
 } from '@kingstinct/react-native-healthkit';
 import { useEffect, useState } from 'react';
@@ -13,8 +14,11 @@ export function useHealthKit() {
   const [steps, setSteps] = useState(0);
   const [distance, setDistance] = useState(0);
   const [sleepHours, setSleepHours] = useState<number | null>(null);
+  const [sleepStages, setSleepStages] = useState<{ core: number, deep: number, rem: number, totalMs: number } | null>(null);
+  const [sleepTimes, setSleepTimes] = useState<{ bed: string, wake: string } | null>(null);
   const [vo2Max, setVo2Max] = useState<number | null>(null);
   const [cardioRecovery, setCardioRecovery] = useState<number | null>(null);
+  const [appleWorkouts, setAppleWorkouts] = useState<readonly any[]>([]);
 
   useEffect(() => {
     const init = async () => {
@@ -30,6 +34,15 @@ export function useHealthKit() {
             'HKQuantityTypeIdentifierVO2Max',
             'HKQuantityTypeIdentifierHeartRateRecoveryOneMinute',
             'HKCategoryTypeIdentifierSleepAnalysis',
+            'HKWorkoutTypeIdentifier',
+            'HKQuantityTypeIdentifierHeartRate',
+            'HKQuantityTypeIdentifierBodyMass',
+            'HKQuantityTypeIdentifierBodyFatPercentage',
+            'HKQuantityTypeIdentifierRestingHeartRate',
+            'HKQuantityTypeIdentifierAppleExerciseTime',
+            'HKQuantityTypeIdentifierRespiratoryRate',
+            'HKQuantityTypeIdentifierOxygenSaturation',
+            'HKCategoryTypeIdentifierMindfulSession',
           ],
         });
 
@@ -83,17 +96,30 @@ export function useHealthKit() {
         { limit: 100, filter: { date: { startDate: sleepStart, endDate: sleepEnd } } }
       );
 
-      // Sum up asleep stages only (not inBed or awake)
-      const asleepStages = [3, 4, 5]; // asleepCore, asleepDeep, asleepREM only -- excludes unspecified and inBed
-      let totalSleepMs = 0;
+      // Sum up asleep stages separately
+      let coreMs = 0, deepMs = 0, remMs = 0;
+      let earliestBed: number | null = null;
+      let latestWake: number | null = null;
       for (const sample of sleepData) {
-        if (asleepStages.includes(sample.value as number)) {
-          const start = new Date(sample.startDate).getTime();
-          const end = new Date(sample.endDate).getTime();
-          totalSleepMs += end - start;
+        const start = new Date(sample.startDate).getTime();
+        const end = new Date(sample.endDate).getTime();
+        const dur = end - start;
+        if (sample.value === 3) coreMs += dur;
+        else if (sample.value === 4) deepMs += dur;
+        else if (sample.value === 5) remMs += dur;
+        if ([3, 4, 5].includes(sample.value as number)) {
+          if (earliestBed === null || start < earliestBed) earliestBed = start;
+          if (latestWake === null || end > latestWake) latestWake = end;
         }
       }
+      const totalSleepMs = coreMs + deepMs + remMs;
       setSleepHours(totalSleepMs > 0 ? Math.round((totalSleepMs / 3600000) * 10) / 10 : null);
+      setSleepStages(totalSleepMs > 0 ? { core: coreMs, deep: deepMs, rem: remMs, totalMs: totalSleepMs } : null);
+      if (earliestBed && latestWake) {
+        const bedStr = new Date(earliestBed).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const wakeStr = new Date(latestWake).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        setSleepTimes({ bed: bedStr, wake: wakeStr });
+      }
 
       // VO2 Max -- most recent
       const vo2Data = await getMostRecentQuantitySample('HKQuantityTypeIdentifierVO2Max');
@@ -103,10 +129,21 @@ export function useHealthKit() {
       const recoveryData = await getMostRecentQuantitySample('HKQuantityTypeIdentifierHeartRateRecoveryOneMinute');
       if (recoveryData) setCardioRecovery(Math.round(recoveryData.quantity as number));
 
+      // Apple Workouts
+      try {
+        const workouts = await queryWorkoutSamples({
+          limit: 20,
+          filter: { date: { startDate: startOfDay, endDate: now } }
+        });
+        setAppleWorkouts(workouts);
+      } catch (we) {
+        console.log('Workout query error:', we);
+      }
+
     } catch (e) {
       console.log('HealthKit fetch error', e);
     }
   };
 
-  return { authorized, activeCalories, steps, distance, sleepHours, vo2Max, cardioRecovery, fetchTodayData };
+  return { authorized, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, vo2Max, cardioRecovery, appleWorkouts, fetchTodayData };
 }

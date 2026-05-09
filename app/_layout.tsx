@@ -11,6 +11,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -30,6 +31,7 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <ThemeProvider value={DarkTheme}>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -40,9 +42,11 @@ export default function RootLayout() {
         <Stack.Screen name="edit-food" options={{ headerShown: false }} />
         <Stack.Screen name="recipe-builder" options={{ headerShown: false }} />
         <Stack.Screen name="recipe-log" options={{ headerShown: false }} />
-        <Stack.Screen name="day-detail" options={{ headerShown: false }} />
+        <Stack.Screen name="day-detail" options={{ headerShown: false, animation: 'none' }} />
+        <Stack.Screen name="settings" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="light" />
     </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }

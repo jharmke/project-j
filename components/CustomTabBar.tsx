@@ -1,0 +1,263 @@
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import * as Haptics from 'expo-haptics';
+import { useEffect, useRef, useState } from 'react';
+import { Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native';
+import Animated, {
+    useAnimatedStyle,
+    useSharedValue,
+    withRepeat,
+    withSpring,
+    withTiming,
+} from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const TAB_BAR_HEIGHT = 64;
+
+const TABS = [
+  { name: 'log', label: 'Log', icon: 'document-text', iconActive: 'document-text' },
+  { name: 'workout', label: 'Workout', icon: 'barbell-outline', iconActive: 'barbell' },
+  { name: 'index', label: 'Home', icon: 'home', iconActive: 'home', isHome: true },
+  { name: 'stats', label: 'Stats', icon: 'bar-chart-outline', iconActive: 'bar-chart' },
+  { name: 'profile', label: 'Profile', icon: 'person-outline', iconActive: 'person' },
+];
+
+function HomeButton({ isFocused, scale, homePulse, onPress }: { isFocused: boolean, scale: any, homePulse: any, onPress: () => void }) {
+  const animStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    shadowOpacity: isFocused ? homePulse.value : 0,
+  }));
+  return (
+    <TouchableOpacity style={{ flex: 1, alignItems: 'center', justifyContent: 'center', height: 64 }} onPress={onPress} activeOpacity={0.8}>
+      <Animated.View style={[{
+        width: 52, height: 52, borderRadius: 26,
+        backgroundColor: isFocused ? '#0d9268' : '#1a1a24',
+        alignItems: 'center', justifyContent: 'center',
+        borderWidth: 1.5,
+        borderColor: isFocused ? '#0d9268' : 'rgba(13,146,104,0.4)',
+        shadowColor: '#0d9268',
+        shadowOffset: { width: 0, height: 0 },
+        shadowRadius: 14,
+        elevation: 8,
+      }, animStyle]}>
+        <Ionicons name="home" size={22} color={isFocused ? '#ffffff' : '#a0a0b8'} />
+      </Animated.View>
+    </TouchableOpacity>
+  );
+}
+
+function LabelAnimated({ translate, opacity, label, color }: { translate: any, opacity: any, label: string, color: string }) {
+  const style = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+  }));
+  return <Animated.Text style={[{ fontSize: 9, fontFamily: 'DMSans_600SemiBold', letterSpacing: 0.5, textTransform: 'uppercase', color }, style]}>{label}</Animated.Text>;
+}
+
+export default function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+  const insets = useSafeAreaInsets();
+  const hapticsEnabled = useRef(true);
+  const [activeIndex, setActiveIndex] = useState(state.index);
+  const pillX = useSharedValue(0);
+  const tabWidth = SCREEN_WIDTH / 5;
+
+  useEffect(() => {
+    AsyncStorage.getItem('pj_settings').then(saved => {
+      if (saved) {
+        const data = JSON.parse(saved);
+        if (data.hapticsEnabled !== undefined) hapticsEnabled.current = data.hapticsEnabled;
+      }
+    });
+  }, []);
+
+  // Map router state index to our TABS order
+  const getTabsIndex = (routerIndex: number) => {
+    const routeName = state.routes[routerIndex]?.name;
+    return TABS.findIndex(t => t.name === routeName);
+  };
+
+  const currentTabsIndex = getTabsIndex(state.index);
+
+  const pillOpacity = useSharedValue(1);
+  const homePulse = useSharedValue(0.4);
+
+  useEffect(() => {
+    const tabIdx = getTabsIndex(state.index);
+    if (tabIdx !== 2) {
+      labelOpacities[tabIdx].value = 0;
+      labelOpacities[tabIdx].value = withTiming(1, { duration: 200 });
+    }
+  }, [state.index]);
+
+  useEffect(() => {
+    setActiveIndex(state.index);
+    const tabIdx = getTabsIndex(state.index);
+    const targetX = tabIdx * tabWidth + tabWidth / 2 - 36;
+    if (tabIdx === 2) {
+      // Going to home -- slide to home position and fade out
+      pillX.value = withSpring(targetX, { damping: 50, stiffness: 500 });
+      pillOpacity.value = withTiming(0, { duration: 200 });
+    } else {
+      // Going to a regular tab -- fade in and slide
+      pillOpacity.value = withTiming(1, { duration: 150 });
+      pillX.value = withSpring(targetX, { damping: 50, stiffness: 500 });
+    }
+  }, [state.index]);
+
+  const pillStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: pillX.value }],
+    opacity: pillOpacity.value,
+  }));
+
+  const scales = TABS.map(() => useSharedValue(1));
+  const labelTranslates = TABS.map(() => useSharedValue(8));
+  const labelOpacities = TABS.map(() => useSharedValue(0));
+
+  useEffect(() => {
+    homePulse.value = withRepeat(
+      withTiming(1, { duration: 1800 }),
+      -1,
+      true
+    );
+  }, []);
+
+  const handlePress = (tabName: string, tabIdx: number) => {
+    const routeIdx = state.routes.findIndex(r => r.name === tabName);
+    if (routeIdx === -1) return;
+
+    if (hapticsEnabled.current) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+
+    // Press down
+    scales[tabIdx].value = withSpring(0.85, { damping: 50, stiffness: 1500 });
+    // Bounce up past 1.0 then settle
+    setTimeout(() => {
+      scales[tabIdx].value = withSpring(1.04, { damping: 50, stiffness: 1500 });
+      setTimeout(() => {
+        scales[tabIdx].value = withSpring(1.0, { damping: 30, stiffness: 500 });
+      }, 80);
+    }, 80);
+
+    const isFocused = state.index === routeIdx;
+    const event = navigation.emit({
+      type: 'tabPress',
+      target: state.routes[routeIdx].key,
+      canPreventDefault: true,
+    });
+
+    if (!isFocused && !event.defaultPrevented) {
+      navigation.navigate(tabName);
+    }
+  };
+
+  return (
+    <View style={[styles.container, { paddingBottom: insets.bottom, height: TAB_BAR_HEIGHT + insets.bottom }]}>
+      <Animated.View style={[styles.pill, pillStyle]} />
+
+      {TABS.map((tab, i) => {
+        const routeIdx = state.routes.findIndex(r => r.name === tab.name);
+        const isFocused = state.index === routeIdx;
+        const color = isFocused ? '#e8e8f0' : '#555570';
+        const scaleStyle = useAnimatedStyle(() => ({
+          transform: [{ scale: scales[i].value }],
+        }));
+
+        if (tab.isHome) {
+          return (
+            <HomeButton
+              key={tab.name}
+              isFocused={isFocused}
+              scale={scales[i]}
+              homePulse={homePulse}
+              onPress={() => handlePress(tab.name, i)}
+            />
+          );
+        }
+
+        return (
+          <TouchableOpacity
+            key={tab.name}
+            style={styles.tab}
+            onPress={() => handlePress(tab.name, i)}
+            activeOpacity={0.8}>
+            <Animated.View style={[styles.tabInner, scaleStyle]}>
+              <Ionicons
+                name={(isFocused ? tab.iconActive : tab.icon) as any}
+                size={22}
+                color={color}
+              />
+              {isFocused && (
+                <LabelAnimated translate={labelTranslates[i]} opacity={labelOpacities[i]} label={tab.label} color={color} />
+              )}
+            </Animated.View>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flexDirection: 'row',
+    backgroundColor: '#0d0d0f',
+    borderTopWidth: 0.5,
+    borderTopColor: 'rgba(255,255,255,0.06)',
+    alignItems: 'center',
+    paddingHorizontal: 0,
+  },
+  pill: {
+    position: 'absolute',
+    top: 8,
+    width: 72,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderWidth: 0.5,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  tab: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: TAB_BAR_HEIGHT,
+  },
+  tabInner: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 2,
+  },
+  label: {
+    fontSize: 9,
+    fontFamily: 'DMSans_600SemiBold',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  homeTab: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: TAB_BAR_HEIGHT,
+  },
+  homeButton: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: '#1a1a24',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(13,146,104,0.4)',
+  },
+  homeButtonActive: {
+    backgroundColor: '#0d9268',
+    borderColor: '#0d9268',
+    shadowColor: '#0d9268',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+});

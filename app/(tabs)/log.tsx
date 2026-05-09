@@ -1,10 +1,12 @@
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { Alert, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, Animated, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
+import { useHealthKit } from '../../useHealthKit';
 
 
 const WATER_TARGET = 128;
@@ -58,11 +60,11 @@ function MacroDonut({ protein, carbs, fat, calories }: { protein: number; carbs:
     <View style={{ alignItems: 'center', justifyContent: 'center', width: size, height: size }}>
       <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
         <Circle cx={size/2} cy={size/2} r={radius} stroke="#2a2a2a" strokeWidth={strokeWidth} fill="none" />
-        <Circle cx={size/2} cy={size/2} r={radius} stroke="#10b981" strokeWidth={strokeWidth} fill="none"
+        <Circle cx={size/2} cy={size/2} r={radius} stroke="#0d9268" strokeWidth={strokeWidth} fill="none"
           strokeDasharray={`${proteinDash} ${circumference}`} strokeDashoffset={0} strokeLinecap="butt" />
-        <Circle cx={size/2} cy={size/2} r={radius} stroke="#f59e0b" strokeWidth={strokeWidth} fill="none"
+        <Circle cx={size/2} cy={size/2} r={radius} stroke="#c47d1a" strokeWidth={strokeWidth} fill="none"
           strokeDasharray={`${carbsDash} ${circumference}`} strokeDashoffset={carbsOffset} strokeLinecap="butt" />
-        <Circle cx={size/2} cy={size/2} r={radius} stroke="#ef4444" strokeWidth={strokeWidth} fill="none"
+        <Circle cx={size/2} cy={size/2} r={radius} stroke="#a83232" strokeWidth={strokeWidth} fill="none"
           strokeDasharray={`${fatDash} ${circumference}`} strokeDashoffset={fatOffset} strokeLinecap="butt" />
       </Svg>
       <View style={{ position: 'absolute', alignItems: 'center' }}>
@@ -79,18 +81,50 @@ export default function LogScreen() {
   const [entries, setEntries] = useState<FoodEntry[]>([]);
   const [water, setWater] = useState(0);
   const [calTarget, setCalTarget] = useState(0);
-  const [expandedMeals, setExpandedMeals] = useState<Record<string, boolean>>({});
-  const [caloriesBurned, setCaloriesBurned] = useState(0);
+  const [totalProtein, setTotalProtein] = useState(0);
+  const [totalCarbs, setTotalCarbs] = useState(0);
+  const [totalFat, setTotalFat] = useState(0);
   const [activePage, setActivePage] = useState(0);
-const [totalProtein, setTotalProtein] = useState(0);
-const [totalCarbs, setTotalCarbs] = useState(0);
-const [totalFat, setTotalFat] = useState(0);
-const today = new Date();
-const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const [caloriesBurned, setCaloriesBurned] = useState(0);
+  const today = new Date();
+  const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const [expandedMeals, setExpandedMeals] = useState<Record<string, boolean>>({});
+  const mealAnimations = useRef<Record<string, Animated.Value>>({});
+  const mealHeights = useRef<Record<string, number>>({});
+
+  const getMealAnim = (meal: string) => {
+    if (!mealAnimations.current[meal]) {
+      mealAnimations.current[meal] = new Animated.Value(0);
+    }
+    return mealAnimations.current[meal];
+  };
+  const [activeDate, setActiveDate] = useState(todayKey);
+  const { activeCalories } = useHealthKit();
+
+  const goToPrevDay = () => {
+    const d = new Date(activeDate + 'T12:00:00');
+    d.setDate(d.getDate() - 1);
+    setActiveDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+  };
+
+  const goToNextDay = () => {
+    const d = new Date(activeDate + 'T12:00:00');
+    d.setDate(d.getDate() + 1);
+    const next = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    if (next <= todayKey) setActiveDate(next);
+  };
+
+  const isToday = activeDate === todayKey;
+
+  const formatActiveDate = () => {
+    const d = new Date(activeDate + 'T12:00:00');
+    return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  };
+  
   const totalCals = entries.reduce((s, e) => s + e.cal, 0);
   const adjustedTarget = calTarget + caloriesBurned;
-const calPct = (totalCals / adjustedTarget) * 100;
-  const getAdvancedNutrient = (name: string, unitName?: string) => {
+  const calPct = adjustedTarget > 0 ? (totalCals / adjustedTarget) * 100 : 0;
+  const getAdvancedNutrient = (name: string) => {
     return Math.round(entries.reduce((s, e) => {
       const n = e.foodNutrients?.find((fn: any) => fn.nutrientName === name);
       return s + ((n?.value || 0) * ((e.calPer100g && e.calPer100g > 0) ? (e.cal / e.calPer100g) : 0));
@@ -106,9 +140,9 @@ const calPct = (totalCals / adjustedTarget) * 100;
 
   const saveField = async (field: string, value: any) => {
     try {
-      const existing = await AsyncStorage.getItem(`pj_${todayKey}`);
+      const existing = await AsyncStorage.getItem(`pj_${activeDate}`);
       const current = existing ? JSON.parse(existing) : {};
-      await AsyncStorage.setItem(`pj_${todayKey}`, JSON.stringify({ ...current, [field]: value }));
+      await AsyncStorage.setItem(`pj_${activeDate}`, JSON.stringify({ ...current, [field]: value }));
     } catch (e) {
       console.log('Save error', e);
     }
@@ -117,7 +151,7 @@ const calPct = (totalCals / adjustedTarget) * 100;
   useEffect(() => {
     const load = async () => {
     try {
-        const saved = await AsyncStorage.getItem(`pj_${todayKey}`);
+        const saved = await AsyncStorage.getItem(`pj_${activeDate}`);
         if (saved) {
           const data = JSON.parse(saved);
           if (data.entries && Array.isArray(data.entries)) {
@@ -127,13 +161,12 @@ const calPct = (totalCals / adjustedTarget) * 100;
   setTotalFat(Math.round(data.entries.reduce((s: number, e: any) => s + (e.fat || 0), 0) * 10) / 10);
 }
           if (typeof data.water === 'number') setWater(data.water);
-            if (data.caloriesBurned) setCaloriesBurned(parseInt(data.caloriesBurned) || 0);
         } else {
           const cloudData = await loadFromFirebase(todayKey);
           if (cloudData) {
             if (cloudData.entries && Array.isArray(cloudData.entries)) setEntries(cloudData.entries);
             if (typeof cloudData.water === 'number') setWater(cloudData.water);
-            await AsyncStorage.setItem(`pj_${todayKey}`, JSON.stringify(cloudData));
+            await AsyncStorage.setItem(`pj_${activeDate}`, JSON.stringify(cloudData));
           }
         }
         const profileData = await AsyncStorage.getItem('pj_profile');
@@ -149,7 +182,7 @@ const calPct = (totalCals / adjustedTarget) * 100;
             const ACTIVITY_MULTIPLIERS: Record<string, number> = {
               sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725, very_active: 1.9,
             };
-            const dayData = await AsyncStorage.getItem(`pj_${todayKey}`);
+            const dayData = await AsyncStorage.getItem(`pj_${activeDate}`);
             const weight = dayData ? JSON.parse(dayData)?.weight : null;
             if (weight && p.birthday && p.heightFt && p.heightIn) {
               const weightKg = weight * 0.453592;
@@ -176,8 +209,13 @@ const calPct = (totalCals / adjustedTarget) * 100;
   useFocusEffect(
     useCallback(() => {
       const reload = async () => {
+        setEntries([]);
+        setWater(0);
+        setTotalProtein(0);
+        setTotalCarbs(0);
+        setTotalFat(0);
         try {
-          const saved = await AsyncStorage.getItem(`pj_${todayKey}`);
+          const saved = await AsyncStorage.getItem(`pj_${activeDate}`);
           if (saved) {
             const data = JSON.parse(saved);
             if (data.entries && Array.isArray(data.entries)) {
@@ -187,6 +225,13 @@ const calPct = (totalCals / adjustedTarget) * 100;
   setTotalFat(Math.round(data.entries.reduce((s: number, e: any) => s + (e.fat || 0), 0) * 10) / 10);
 }
             if (typeof data.water === 'number') setWater(data.water);
+            if (data.caloriesBurned) setCaloriesBurned(parseInt(data.caloriesBurned) || 0);
+          } else {
+            setEntries([]);
+            setWater(0);
+            setTotalProtein(0);
+            setTotalCarbs(0);
+            setTotalFat(0);
           }
         const profileData = await AsyncStorage.getItem('pj_profile');
         if (profileData) {
@@ -201,7 +246,7 @@ const calPct = (totalCals / adjustedTarget) * 100;
             const ACTIVITY_MULTIPLIERS: Record<string, number> = {
               sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725, very_active: 1.9,
             };
-            const dayData = await AsyncStorage.getItem(`pj_${todayKey}`);
+            const dayData = await AsyncStorage.getItem(`pj_${activeDate}`);
             const weight = dayData ? JSON.parse(dayData)?.weight : null;
             if (weight && p.birthday && p.heightFt && p.heightIn) {
               const weightKg = weight * 0.453592;
@@ -221,17 +266,25 @@ const calPct = (totalCals / adjustedTarget) * 100;
         }
       };
       reload();
-    }, [])
+    }, [activeDate])
   );
 
   const deleteEntry = (idx: number) => {
     const newEntries = entries.filter((_, i) => i !== idx);
     setEntries(newEntries);
     saveField('entries', newEntries);
-    saveToFirebase(todayKey, 'entries', newEntries);
+    saveToFirebase(activeDate, 'entries', newEntries);
   };
 
   const toggleMeal = (meal: string) => {
+    const isCurrentlyOpen = expandedMeals[meal];
+    const anim = getMealAnim(meal);
+    Animated.spring(anim, {
+      toValue: isCurrentlyOpen ? 0 : 1,
+      useNativeDriver: false,
+      bounciness: 0,
+      speed: 20,
+    }).start();
     setExpandedMeals(prev => ({ ...prev, [meal]: !prev[meal] }));
   };
 
@@ -239,27 +292,37 @@ const calPct = (totalCals / adjustedTarget) * 100;
     const newWater = Math.max(0, Math.min(WATER_TARGET, water + oz));
     setWater(newWater);
     saveField('water', newWater);
-    saveToFirebase(todayKey, 'water', newWater);
+    saveToFirebase(activeDate, 'water', newWater);
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + .5 }]}
-      onScrollBeginDrag={() => {}}
-    >
-      {/* Header */}
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <View>
+        <View style={{ flex: 1 }}>
           <Text style={styles.headerLabel}>PROJECT J</Text>
           <Text style={styles.headerTitle}>Food Log</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 }}>
+            <TouchableOpacity onPress={goToPrevDay} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+              <Text style={{ color: '#3b82f6', fontSize: 11, fontFamily: 'DMSans_700Bold', lineHeight: 12 }}>‹</Text>
+            </TouchableOpacity>
+            <Text style={{ fontSize: 9, color: isToday ? '#666680' : '#f59e0b', fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', lineHeight: 12 }}>
+              {formatActiveDate()}
+            </Text>
+            <TouchableOpacity onPress={goToNextDay} disabled={isToday} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+              <Text style={{ color: isToday ? '#333344' : '#3b82f6', fontSize: 11, fontFamily: 'DMSans_700Bold', lineHeight: 12 }}>›</Text>
+            </TouchableOpacity>
+          </View>
         </View>
         <TouchableOpacity
-          style={styles.libraryBtn}
-          onPress={() => router.push({ pathname: '/add-food', params: { meal: 'Morning', date: todayKey } })}>
+          style={[styles.libraryBtn, { height: 32, alignItems: 'center', justifyContent: 'center' }]}
+          onPress={() => router.push({ pathname: '/add-food', params: { meal: 'Morning', date: activeDate } })}>
           <Text style={styles.libraryBtnText}>Library</Text>
         </TouchableOpacity>
       </View>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        onScrollBeginDrag={() => {}}
+      >
 
       {/* Totals Card - Scrollable */}
       <View style={styles.card}>
@@ -283,22 +346,22 @@ const calPct = (totalCals / adjustedTarget) * 100;
                   <View style={[styles.progressBarFill, { width: `${Math.min(calPct, 100)}%`, backgroundColor: calColor }]} />
                 </View>
                 <Text style={styles.calRemaining}>
-          {adjustedTarget > 0 ? (totalCals < adjustedTarget ? `${adjustedTarget - totalCals} kcal remaining (${caloriesBurned} burned)` : `${totalCals - adjustedTarget} kcal over target (${caloriesBurned} burned)`) : ''}
+          {adjustedTarget > 0 ? (totalCals < adjustedTarget ? `${adjustedTarget - totalCals} kcal remaining (${activeCalories} burned)` : `${totalCals - adjustedTarget} kcal over target (${activeCalories} burned)`) : ''}
         </Text>
               </View>
               <MacroDonut protein={totalProtein} carbs={totalCarbs} fat={totalFat} calories={totalCals} />
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#2a2a2a' }}>
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ color: '#10b981', fontSize: 16, fontFamily: 'BebasNeue_400Regular' }}>{totalProtein}g</Text>
+                <Text style={{ color: '#0d9268', fontSize: 16, fontFamily: 'BebasNeue_400Regular' }}>{totalProtein}g</Text>
                 <Text style={{ color: '#888888', fontSize: 10, fontFamily: 'DMSans_400Regular' }}>Protein</Text>
               </View>
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ color: '#f59e0b', fontSize: 16, fontFamily: 'BebasNeue_400Regular' }}>{totalCarbs}g</Text>
+                <Text style={{ color: '#c47d1a', fontSize: 16, fontFamily: 'BebasNeue_400Regular' }}>{totalCarbs}g</Text>
                 <Text style={{ color: '#888888', fontSize: 10, fontFamily: 'DMSans_400Regular' }}>Carbs</Text>
               </View>
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ color: '#ef4444', fontSize: 16, fontFamily: 'BebasNeue_400Regular' }}>{totalFat}g</Text>
+                <Text style={{ color: '#a83232', fontSize: 16, fontFamily: 'BebasNeue_400Regular' }}>{totalFat}g</Text>
                 <Text style={{ color: '#888888', fontSize: 10, fontFamily: 'DMSans_400Regular' }}>Fat</Text>
               </View>
             </View>
@@ -357,76 +420,84 @@ const calPct = (totalCals / adjustedTarget) * 100;
 
             {/* Chevron on right */}
             <TouchableOpacity style={styles.mealChevron} onPress={() => toggleMeal(meal)}>
-              <Text style={styles.mealChevronText}>{isExpanded ? '∧' : '∨'}</Text>
+              <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} color="#666680" />
             </TouchableOpacity>
 
             {/* Expanded food list */}
-            {isExpanded && mealEntries.length > 0 && (
+            {(
+              <Animated.View style={{
+                overflow: 'hidden',
+                width: '100%',
+                opacity: getMealAnim(meal),
+                height: getMealAnim(meal).interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, mealEntries.length === 0 ? 60 : (mealEntries.length * 60) + 16],
+                }),
+              }}>
               <View style={styles.mealExpanded}>
-                {mealEntries.map((entry, i) => (
-                  <TouchableOpacity
-  key={i}
-  style={styles.foodEntry}
-  onPress={() => router.push({
-    pathname: '/food-detail',
-    params: {
-    foodJson: JSON.stringify({
-  description: entry.name.replace(/\s*\(.*?\)\s*$/, ''),
-  calPer100g: entry.calPer100g || 0,
-  proteinPer100g: entry.proteinPer100g || 0,
-  carbsPer100g: entry.carbsPer100g || 0,
-  fatPer100g: entry.fatPer100g || 0,
-  existingCal: entry.cal,
-  existingProtein: entry.protein || 0,
-  existingCarbs: entry.carbs || 0,
-  existingFat: entry.fat || 0,
-  foodNutrients: (entry as any).foodNutrients || [],
-  existingAmount: (() => { const m = entry.name.match(/\((\d+\.?\d*)(g|oz|serving)\)/); return m ? m[1] : '100'; })(),
-  existingUnit: (() => { const m = entry.name.match(/\((\d+\.?\d*)(g|oz|serving)\)/); return m ? m[2] : 'g'; })(),
-  timestamp: entry.timestamp || Date.now(),
-}),
-      meal: entry.meal,
-      date: todayKey,
-      entryIndex: String(entries.indexOf(entry)),
-    }
-  })}>
-                    <View style={styles.foodEntryLeft}>
-                      <Text style={styles.foodEntryName} numberOfLines={1}>{entry.name}</Text>
-                      {(entry.protein || entry.carbs || entry.fat) ? (
-                        <Text style={styles.foodEntryMacros}>
-                          {entry.protein ? `P: ${entry.protein}g` : ''}
-                          {entry.carbs ? `  C: ${entry.carbs}g` : ''}
-                          {entry.fat ? `  F: ${entry.fat}g` : ''}
-                        </Text>
-                      ) : null}
-                    </View>
-                    <View style={styles.foodEntryRight}>
-                      <Text style={styles.foodEntryCal}>{entry.cal}</Text>
-                      <Text style={styles.foodEntryCalLabel}>kcal</Text>
-                      <TouchableOpacity 
-  onPress={() => {
-    Alert.alert(
-      'Remove Entry',
-      `Remove ${entry.name} from your log?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Remove', style: 'destructive', onPress: () => deleteEntry(entries.indexOf(entry)) }
-      ]
-    );
-  }} 
-  style={styles.foodEntryDelete}>
-  <Text style={styles.foodEntryDeleteText}>×</Text>
-</TouchableOpacity>
-                    </View>
-                  </TouchableOpacity>
-                ))}
+                {mealEntries.length === 0 ? (
+                  <Text style={styles.emptyMealText}>Nothing logged yet. Tap + to add.</Text>
+                ) : (
+                  mealEntries.map((entry, i) => (
+                    <TouchableOpacity
+                      key={i}
+                      style={styles.foodEntry}
+                      onPress={() => router.push({
+                        pathname: '/food-detail',
+                        params: {
+                          foodJson: JSON.stringify({
+                            description: entry.name.replace(/\s*\(.*?\)\s*$/, ''),
+                            calPer100g: entry.calPer100g || 0,
+                            proteinPer100g: entry.proteinPer100g || 0,
+                            carbsPer100g: entry.carbsPer100g || 0,
+                            fatPer100g: entry.fatPer100g || 0,
+                            existingCal: entry.cal,
+                            existingProtein: entry.protein || 0,
+                            existingCarbs: entry.carbs || 0,
+                            existingFat: entry.fat || 0,
+                            foodNutrients: (entry as any).foodNutrients || [],
+                            existingAmount: (() => { const m = entry.name.match(/\((\d+\.?\d*)(g|oz|serving)\)/); return m ? m[1] : '100'; })(),
+                            existingUnit: (() => { const m = entry.name.match(/\((\d+\.?\d*)(g|oz|serving)\)/); return m ? m[2] : 'g'; })(),
+                            timestamp: entry.timestamp || Date.now(),
+                          }),
+                          meal: entry.meal,
+                          date: todayKey,
+                          entryIndex: String(entries.indexOf(entry)),
+                        }
+                      })}>
+                      <View style={styles.foodEntryLeft}>
+                        <Text style={styles.foodEntryName} numberOfLines={1}>{entry.name}</Text>
+                        {(entry.protein || entry.carbs || entry.fat) ? (
+                          <Text style={styles.foodEntryMacros}>
+                            {entry.protein ? `P: ${entry.protein}g` : ''}
+                            {entry.carbs ? `  C: ${entry.carbs}g` : ''}
+                            {entry.fat ? `  F: ${entry.fat}g` : ''}
+                          </Text>
+                        ) : null}
+                      </View>
+                      <View style={styles.foodEntryRight}>
+                        <Text style={styles.foodEntryCal}>{entry.cal}</Text>
+                        <Text style={styles.foodEntryCalLabel}>kcal</Text>
+                        <TouchableOpacity
+                          onPress={() => {
+                            Alert.alert(
+                              'Remove Entry',
+                              `Remove ${entry.name} from your log?`,
+                              [
+                                { text: 'Cancel', style: 'cancel' },
+                                { text: 'Remove', style: 'destructive', onPress: () => deleteEntry(entries.indexOf(entry)) }
+                              ]
+                            );
+                          }}
+                          style={styles.foodEntryDelete}>
+                          <Text style={styles.foodEntryDeleteText}>×</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </TouchableOpacity>
+                  ))
+                )}
               </View>
-            )}
-
-            {isExpanded && mealEntries.length === 0 && (
-              <View style={styles.mealExpanded}>
-                <Text style={styles.emptyMealText}>Nothing logged yet. Tap + to add.</Text>
-              </View>
+              </Animated.View>
             )}
           </View>
         );
@@ -463,47 +534,48 @@ const calPct = (totalCals / adjustedTarget) * 100;
       </View>
 
     </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#080808' },
+  container: { flex: 1, backgroundColor: '#0d0d0f' },
   content: { padding: 16, paddingBottom: 80 },
-  header: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingVertical: 20, borderBottomWidth: 1, borderBottomColor: '#222222', marginBottom: 16 },
-  headerLabel: { fontSize: 10, letterSpacing: 4, color: '#999999', textTransform: 'uppercase', marginBottom: 2, fontFamily: 'DMSans_500Medium' },
-  headerTitle: { fontSize: 32, color: '#ffffff', fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 0.5, borderBottomColor: 'rgba(255,255,255,0.06)', marginBottom: 16 },
+  headerLabel: { fontSize: 9, letterSpacing: 2, color: '#666680', textTransform: 'uppercase', marginBottom: 2, fontFamily: 'DMSans_700Bold' },
+  headerTitle: { fontSize: 32, color: '#e8e8f0', fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
   libraryBtn: { backgroundColor: 'rgba(59,130,246,0.15)', borderWidth: 1, borderColor: 'rgba(59,130,246,0.3)', borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 },
-  libraryBtnText: { color: '#3b82f6', fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
-  card: { backgroundColor: '#161616', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 10, padding: 16, marginBottom: 12 },
-  cardLabel: { fontSize: 9, letterSpacing: 3, color: '#999999', textTransform: 'uppercase', marginBottom: 8, fontFamily: 'DMSans_500Medium' },
+  libraryBtnText: { color: '#3b82f6', fontSize: 14, fontFamily: 'DMSans_700Bold' },
+  card: { backgroundColor: '#1a1a24', borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.06)', borderTopColor: 'rgba(255,255,255,0.1)', borderTopWidth: 0.5, borderRadius: 14, padding: 16, marginBottom: 12 },
+  cardLabel: { fontSize: 9, letterSpacing: 3, color: '#666680', textTransform: 'uppercase', marginBottom: 8, fontFamily: 'DMSans_700Bold' },
   calRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6, marginBottom: 10 },
   calNumber: { fontSize: 52, lineHeight: 56, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
-  calTarget: { fontSize: 14, color: '#999999', fontFamily: 'DMSans_400Regular' },
-  progressBarBg: { height: 6, backgroundColor: '#2a2a2a', borderRadius: 6, overflow: 'hidden', marginBottom: 12 },
+  calTarget: { fontSize: 14, color: '#666680', fontFamily: 'DMSans_700Bold', letterSpacing: 0.3 },
+  progressBarBg: { height: 6, backgroundColor: '#12121a', borderRadius: 6, overflow: 'hidden', marginBottom: 12 },
   progressBarFill: { height: '100%', borderRadius: 6 },
-  calRemaining: { fontSize: 12, color: '#999999', fontFamily: 'DMSans_400Regular' },
-  mealRow: { backgroundColor: '#161616', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 10, marginBottom: 8, overflow: 'hidden' },
+  calRemaining: { fontSize: 10, color: '#666680', fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase' },
+  mealRow: { backgroundColor: '#1a1a24', borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.06)', borderTopColor: 'rgba(255,255,255,0.1)', borderTopWidth: 0.5, borderRadius: 14, marginBottom: 8, overflow: 'hidden' },
   mealAddBtn: { position: 'absolute', left: 14, top: 14, zIndex: 1, width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
-  mealAddBtnText: { color: '#10b981', fontSize: 22, fontFamily: 'DMSans_400Regular', lineHeight: 24 },
+  mealAddBtnText: { color: '#0d9268', fontSize: 22, fontFamily: 'DMSans_400Regular', lineHeight: 24 },
   mealInfo: { paddingLeft: 50, paddingRight: 40, paddingVertical: 14 },
-  mealName: { fontSize: 16, color: '#ffffff', fontFamily: 'DMSans_600SemiBold' },
-  mealCals: { fontSize: 12, color: '#999999', fontFamily: 'DMSans_400Regular', marginTop: 2 },
+  mealName: { fontSize: 16, color: '#e8e8f0', fontFamily: 'DMSans_600SemiBold' },
+  mealCals: { fontSize: 10, color: '#666680', fontFamily: 'DMSans_700Bold', marginTop: 2, letterSpacing: 1.5, textTransform: 'uppercase' },
   mealChevron: { position: 'absolute', right: 14, top: 14, width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
-  mealChevronText: { color: '#888888', fontSize: 14, fontFamily: 'DMSans_400Regular' },
-  mealExpanded: { borderTopWidth: 1, borderTopColor: '#2a2a2a', paddingHorizontal: 16, paddingVertical: 8 },
-  foodEntry: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#1e1e1e' },
+  mealChevronText: { color: '#666680', fontSize: 14, fontFamily: 'DMSans_400Regular' },
+  mealExpanded: { borderTopWidth: 0.5, borderTopColor: 'rgba(255,255,255,0.06)', paddingHorizontal: 16, paddingVertical: 8 },
+  foodEntry: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: 'rgba(255,255,255,0.04)' },
   foodEntryLeft: { flex: 1, marginRight: 8 },
-  foodEntryName: { fontSize: 13, color: '#e8e8e8', fontFamily: 'DMSans_400Regular' },
-  foodEntryMacros: { fontSize: 11, color: '#888888', fontFamily: 'DMSans_400Regular', marginTop: 2 },
+  foodEntryName: { fontSize: 13, color: '#e8e8f0', fontFamily: 'DMSans_400Regular' },
+  foodEntryMacros: { fontSize: 10, color: '#666680', fontFamily: 'DMSans_700Bold', marginTop: 2, letterSpacing: 1, textTransform: 'uppercase' },
   foodEntryRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  foodEntryCal: { fontSize: 16, color: '#10b981', fontFamily: 'BebasNeue_400Regular' },
-  foodEntryCalLabel: { fontSize: 10, color: '#888888', fontFamily: 'DMSans_400Regular' },
+  foodEntryCal: { fontSize: 16, color: '#0d9268', fontFamily: 'BebasNeue_400Regular' },
+  foodEntryCalLabel: { fontSize: 10, color: '#666680', fontFamily: 'DMSans_400Regular' },
   foodEntryDelete: { marginLeft: 8, padding: 4 },
-  foodEntryDeleteText: { fontSize: 18, color: '#444444' },
-  emptyMealText: { fontSize: 12, color: '#444444', fontFamily: 'DMSans_400Regular', fontStyle: 'italic', paddingVertical: 8 },
+  foodEntryDeleteText: { fontSize: 18, color: '#444455' },
+  emptyMealText: { fontSize: 11, color: '#444455', fontFamily: 'DMSans_400Regular', fontStyle: 'italic', paddingVertical: 8 },
   waterBtns: { flexDirection: 'row', gap: 8 },
-  waterBtn: { flex: 1, padding: 10, backgroundColor: 'rgba(59,130,246,0.1)', borderWidth: 1, borderColor: 'rgba(59,130,246,0.25)', borderRadius: 6, alignItems: 'center' },
+  waterBtn: { flex: 1, padding: 10, backgroundColor: 'rgba(59,130,246,0.1)', borderWidth: 0.5, borderColor: 'rgba(59,130,246,0.25)', borderRadius: 8, alignItems: 'center' },
   waterBtnText: { color: '#3b82f6', fontFamily: 'BebasNeue_400Regular', fontSize: 15, letterSpacing: 1 },
-  waterBtnRed: { flex: 1, padding: 10, backgroundColor: 'rgba(239,68,68,0.1)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.25)', borderRadius: 6, alignItems: 'center' },
-  waterBtnRedText: { color: '#ef4444', fontFamily: 'BebasNeue_400Regular', fontSize: 15, letterSpacing: 1 },
+  waterBtnRed: { flex: 1, padding: 10, backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 0.5, borderColor: 'rgba(239,68,68,0.2)', borderRadius: 8, alignItems: 'center' },
+  waterBtnRedText: { color: '#cc3333', fontFamily: 'BebasNeue_400Regular', fontSize: 15, letterSpacing: 1 },
 });

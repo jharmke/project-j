@@ -6,6 +6,7 @@ import { Alert, Keyboard, Modal, ScrollView, StyleSheet, Text, TextInput, Toucha
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { USDA_API_KEY } from '../config';
 import { saveToFirebase } from '../firebaseConfig';
+import { useTheme } from '../theme';
 
 interface Ingredient {
   id: string;
@@ -38,6 +39,7 @@ const WEIGHT_UNITS = ['g', 'oz', 'lbs', 'ml', 'cups'];
 
 export default function RecipeBuilderScreen() {
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
   const { recipeId } = useLocalSearchParams<{ recipeId: string }>();
 
   const [recipeName, setRecipeName] = useState('');
@@ -265,6 +267,7 @@ export default function RecipeBuilderScreen() {
     }
   };
 
+  const styles = useStyles(theme);
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
@@ -284,7 +287,7 @@ export default function RecipeBuilderScreen() {
         <TextInput
           style={styles.recipeNameInput}
           placeholder="Recipe name..."
-          placeholderTextColor="#444444"
+          placeholderTextColor={theme.textPlaceholder}
           value={recipeName}
           onChangeText={setRecipeName}
         />
@@ -294,7 +297,7 @@ export default function RecipeBuilderScreen() {
   <TouchableOpacity
     style={[styles.searchInput, { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }]}
     onPress={() => router.push({ pathname: '/add-food', params: { meal: 'recipe', date: 'recipe', recipeMode: 'true' } })}>
-    <Text style={{ color: '#3b82f6', fontSize: 16, fontFamily: 'DMSans_600SemiBold' }}>+ Add Ingredient</Text>
+    <Text style={{ color: theme.accentBlue, fontSize: 16, fontFamily: 'DMSans_600SemiBold' }}>+ Add Ingredient</Text>
   </TouchableOpacity>
   <TouchableOpacity style={styles.customBtn} onPress={() => setShowCustomFoodModal(true)}>
     <Text style={styles.customBtnText}>+</Text>
@@ -326,19 +329,19 @@ export default function RecipeBuilderScreen() {
             <Text style={styles.sectionLabel}>Total Nutrition</Text>
             <View style={styles.macroRow}>
               <View style={styles.macroStat}>
-                <Text style={[styles.macroVal, { color: '#10b981' }]}>{totalCal}</Text>
+                <Text style={[styles.macroVal, { color: theme.accentGreen }]}>{totalCal}</Text>
                 <Text style={styles.macroLabel}>Cal</Text>
               </View>
               <View style={styles.macroStat}>
-                <Text style={[styles.macroVal, { color: '#3b82f6' }]}>{totalProtein}g</Text>
+                <Text style={[styles.macroVal, { color: theme.macroProtein }]}>{totalProtein}g</Text>
                 <Text style={styles.macroLabel}>Protein</Text>
               </View>
               <View style={styles.macroStat}>
-                <Text style={[styles.macroVal, { color: '#f59e0b' }]}>{totalCarbs}g</Text>
+                <Text style={[styles.macroVal, { color: theme.macroCarbs }]}>{totalCarbs}g</Text>
                 <Text style={styles.macroLabel}>Carbs</Text>
               </View>
               <View style={styles.macroStat}>
-                <Text style={[styles.macroVal, { color: '#ef4444' }]}>{totalFat}g</Text>
+                <Text style={[styles.macroVal, { color: theme.macroFat }]}>{totalFat}g</Text>
                 <Text style={styles.macroLabel}>Fat</Text>
               </View>
             </View>
@@ -352,7 +355,7 @@ export default function RecipeBuilderScreen() {
             <TextInput
               style={[styles.searchInput, { flex: 1 }]}
               placeholder="e.g. 2000"
-              placeholderTextColor="#444444"
+              placeholderTextColor={theme.textPlaceholder}
               keyboardType="decimal-pad"
               value={totalWeight}
               onChangeText={setTotalWeight}
@@ -370,7 +373,7 @@ export default function RecipeBuilderScreen() {
             <TextInput
               style={[styles.searchInput, { width: 80 }]}
               placeholder="5"
-              placeholderTextColor="#444444"
+              placeholderTextColor={theme.textPlaceholder}
               keyboardType="number-pad"
               value={servingCount}
               onChangeText={setServingCount}
@@ -378,7 +381,7 @@ export default function RecipeBuilderScreen() {
             <TextInput
               style={[styles.searchInput, { flex: 1 }]}
               placeholder="servings, slices, scoops..."
-              placeholderTextColor="#444444"
+              placeholderTextColor={theme.textPlaceholder}
               value={servingName}
               onChangeText={setServingName}
             />
@@ -388,19 +391,19 @@ export default function RecipeBuilderScreen() {
               <Text style={styles.perServingTitle}>Per {servingName}</Text>
               <View style={styles.macroRow}>
                 <View style={styles.macroStat}>
-                  <Text style={[styles.macroVal, { color: '#10b981' }]}>{calPerServing}</Text>
+                  <Text style={[styles.macroVal, { color: theme.accentGreen }]}>{calPerServing}</Text>
                   <Text style={styles.macroLabel}>Cal</Text>
                 </View>
                 <View style={styles.macroStat}>
-                  <Text style={[styles.macroVal, { color: '#3b82f6' }]}>{proteinPerServing}g</Text>
+                  <Text style={[styles.macroVal, { color: theme.macroProtein }]}>{proteinPerServing}g</Text>
                   <Text style={styles.macroLabel}>Protein</Text>
                 </View>
                 <View style={styles.macroStat}>
-                  <Text style={[styles.macroVal, { color: '#f59e0b' }]}>{carbsPerServing}g</Text>
+                  <Text style={[styles.macroVal, { color: theme.macroCarbs }]}>{carbsPerServing}g</Text>
                   <Text style={styles.macroLabel}>Carbs</Text>
                 </View>
                 <View style={styles.macroStat}>
-                  <Text style={[styles.macroVal, { color: '#ef4444' }]}>{fatPerServing}g</Text>
+                  <Text style={[styles.macroVal, { color: theme.macroFat }]}>{fatPerServing}g</Text>
                   <Text style={styles.macroLabel}>Fat</Text>
                 </View>
               </View>
@@ -430,7 +433,7 @@ export default function RecipeBuilderScreen() {
                     key={u}
                     style={[styles.unitBtn, ingredientUnit === u && styles.unitBtnActive]}
                     onPress={() => setIngredientUnit(u)}>
-                    <Text style={[styles.unitBtnText, ingredientUnit === u && { color: '#3b82f6' }]}>{u}</Text>
+                    <Text style={[styles.unitBtnText, ingredientUnit === u && { color: theme.accentBlue }]}>{u}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -452,14 +455,14 @@ export default function RecipeBuilderScreen() {
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => Keyboard.dismiss()}>
           <View style={styles.modal}>
             <Text style={styles.modalTitle}>Add Custom Food</Text>
-            <TextInput style={styles.modalInput} placeholder="Food name" placeholderTextColor="#444" value={customFood.name} onChangeText={v => setCustomFood(p => ({ ...p, name: v }))} />
+            <TextInput style={styles.modalInput} placeholder="Food name" placeholderTextColor={theme.textPlaceholder} value={customFood.name} onChangeText={v => setCustomFood(p => ({ ...p, name: v }))} />
             <View style={styles.servingRow}>
-              <TextInput style={[styles.modalInput, { flex: 1 }]} placeholder="Calories" placeholderTextColor="#444" keyboardType="decimal-pad" value={customFood.cal} onChangeText={v => setCustomFood(p => ({ ...p, cal: v }))} />
-              <TextInput style={[styles.modalInput, { flex: 1 }]} placeholder="Protein g" placeholderTextColor="#444" keyboardType="decimal-pad" value={customFood.protein} onChangeText={v => setCustomFood(p => ({ ...p, protein: v }))} />
+              <TextInput style={[styles.modalInput, { flex: 1 }]} placeholder="Calories" placeholderTextColor={theme.textPlaceholder} keyboardType="decimal-pad" value={customFood.cal} onChangeText={v => setCustomFood(p => ({ ...p, cal: v }))} />
+              <TextInput style={[styles.modalInput, { flex: 1 }]} placeholder="Protein g" placeholderTextColor={theme.textPlaceholder} keyboardType="decimal-pad" value={customFood.protein} onChangeText={v => setCustomFood(p => ({ ...p, protein: v }))} />
             </View>
             <View style={styles.servingRow}>
-              <TextInput style={[styles.modalInput, { flex: 1 }]} placeholder="Carbs g" placeholderTextColor="#444" keyboardType="decimal-pad" value={customFood.carbs} onChangeText={v => setCustomFood(p => ({ ...p, carbs: v }))} />
-              <TextInput style={[styles.modalInput, { flex: 1 }]} placeholder="Fat g" placeholderTextColor="#444" keyboardType="decimal-pad" value={customFood.fat} onChangeText={v => setCustomFood(p => ({ ...p, fat: v }))} />
+              <TextInput style={[styles.modalInput, { flex: 1 }]} placeholder="Carbs g" placeholderTextColor={theme.textPlaceholder} keyboardType="decimal-pad" value={customFood.carbs} onChangeText={v => setCustomFood(p => ({ ...p, carbs: v }))} />
+              <TextInput style={[styles.modalInput, { flex: 1 }]} placeholder="Fat g" placeholderTextColor={theme.textPlaceholder} keyboardType="decimal-pad" value={customFood.fat} onChangeText={v => setCustomFood(p => ({ ...p, fat: v }))} />
             </View>
             <TouchableOpacity
               style={styles.saveToLibraryRow}
@@ -491,7 +494,7 @@ export default function RecipeBuilderScreen() {
                 key={u}
                 style={[styles.unitPickerOption, totalWeightUnit === u && styles.unitPickerOptionActive]}
                 onPress={() => { setTotalWeightUnit(u); setShowWeightUnitPicker(false); }}>
-                <Text style={[styles.unitPickerOptionText, totalWeightUnit === u && { color: '#3b82f6' }]}>{u}</Text>
+                <Text style={[styles.unitPickerOptionText, totalWeightUnit === u && { color: theme.accentBlue }]}>{u}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -515,69 +518,69 @@ export default function RecipeBuilderScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#080808' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: '#222222' },
+const useStyles = (theme: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.bgPrimary },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: theme.borderCard },
   backBtn: { width: 60 },
-  backBtnText: { color: '#3b82f6', fontSize: 14, fontFamily: 'DMSans_500Medium' },
-  headerTitle: { fontSize: 20, color: '#ffffff', fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
-  saveBtn: { backgroundColor: '#10b981', borderRadius: 6, paddingHorizontal: 16, paddingVertical: 6 },
-  saveBtnText: { color: '#000000', fontSize: 14, fontFamily: 'DMSans_700Bold' },
+  backBtnText: { color: theme.accentBlue, fontSize: 14, fontFamily: 'DMSans_500Medium' },
+  headerTitle: { fontSize: 20, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
+  saveBtn: { backgroundColor: theme.accentGreen, borderRadius: 6, paddingHorizontal: 16, paddingVertical: 6 },
+  saveBtnText: { color: theme.bgPrimary, fontSize: 14, fontFamily: 'DMSans_700Bold' },
   content: { padding: 16, paddingBottom: 80 },
-  recipeNameInput: { backgroundColor: '#161616', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 10, color: '#ffffff', padding: 14, fontSize: 18, fontFamily: 'DMSans_600SemiBold', marginBottom: 16 },
+  recipeNameInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 10, color: theme.textPrimary, padding: 14, fontSize: 18, fontFamily: 'DMSans_600SemiBold', marginBottom: 16 },
   searchRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  searchInput: { backgroundColor: '#161616', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 8, color: '#ffffff', padding: 12, fontSize: 14, fontFamily: 'DMSans_400Regular' },
-  scanBtn: { backgroundColor: 'rgba(245,158,11,0.15)', borderWidth: 1, borderColor: 'rgba(245,158,11,0.3)', borderRadius: 8, paddingHorizontal: 12, justifyContent: 'center' },
+  searchInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 14, fontFamily: 'DMSans_400Regular' },
+  scanBtn: { backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8, paddingHorizontal: 12, justifyContent: 'center' },
   scanBtnText: { fontSize: 18 },
-  customBtn: { backgroundColor: 'rgba(16,185,129,0.15)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.3)', borderRadius: 8, paddingHorizontal: 14, justifyContent: 'center' },
-  customBtnText: { color: '#10b981', fontSize: 22, fontFamily: 'DMSans_400Regular' },
-  searchResults: { backgroundColor: '#161616', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 8, marginBottom: 16, overflow: 'hidden' },
-  searchResult: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, borderBottomWidth: 1, borderBottomColor: '#1e1e1e' },
-  searchResultName: { fontSize: 13, color: '#e8e8e8', fontFamily: 'DMSans_400Regular', flex: 1, marginRight: 8 },
-  searchResultCal: { fontSize: 12, color: '#10b981', fontFamily: 'DMSans_600SemiBold' },
+  customBtn: { backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder, borderRadius: 8, paddingHorizontal: 14, justifyContent: 'center' },
+  customBtnText: { color: theme.accentGreen, fontSize: 22, fontFamily: 'DMSans_400Regular' },
+  searchResults: { backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 8, marginBottom: 16, overflow: 'hidden' },
+  searchResult: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, borderBottomWidth: 1, borderBottomColor: theme.borderSubtle },
+  searchResultName: { fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_400Regular', flex: 1, marginRight: 8 },
+  searchResultCal: { fontSize: 12, color: theme.accentGreen, fontFamily: 'DMSans_600SemiBold' },
   section: { marginBottom: 20 },
-  sectionLabel: { fontSize: 9, letterSpacing: 3, color: '#999999', textTransform: 'uppercase', fontFamily: 'DMSans_500Medium', marginBottom: 10 },
-  emptyText: { fontSize: 13, color: '#444444', fontFamily: 'DMSans_400Regular', fontStyle: 'italic' },
-  ingredientRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#161616', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 8, padding: 12, marginBottom: 8 },
+  sectionLabel: { fontSize: 9, letterSpacing: 3, color: theme.textMuted, textTransform: 'uppercase', fontFamily: 'DMSans_500Medium', marginBottom: 10 },
+  emptyText: { fontSize: 13, color: theme.textDim, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' },
+  ingredientRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 8, padding: 12, marginBottom: 8 },
   ingredientLeft: { flex: 1, marginRight: 8 },
-  ingredientName: { fontSize: 14, color: '#ffffff', fontFamily: 'DMSans_600SemiBold', marginBottom: 2 },
-  ingredientMeta: { fontSize: 11, color: '#888888', fontFamily: 'DMSans_400Regular' },
-  removeBtn: { fontSize: 20, color: '#444444', padding: 4 },
-  totalsCard: { backgroundColor: '#161616', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 10, padding: 16, marginBottom: 20 },
+  ingredientName: { fontSize: 14, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', marginBottom: 2 },
+  ingredientMeta: { fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular' },
+  removeBtn: { fontSize: 20, color: theme.textDim, padding: 4 },
+  totalsCard: { backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, padding: 16, marginBottom: 20 },
   macroRow: { flexDirection: 'row', justifyContent: 'space-between' },
   macroStat: { alignItems: 'center', flex: 1 },
   macroVal: { fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
-  macroLabel: { fontSize: 10, color: '#888888', fontFamily: 'DMSans_400Regular', marginTop: 2 },
+  macroLabel: { fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 2 },
   weightRow: { flexDirection: 'row', gap: 8 },
-  unitPickerBtn: { backgroundColor: '#161616', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 8, paddingHorizontal: 16, justifyContent: 'center' },
-  unitPickerBtnText: { color: '#3b82f6', fontSize: 14, fontFamily: 'DMSans_600SemiBold' },
+  unitPickerBtn: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingHorizontal: 16, justifyContent: 'center' },
+  unitPickerBtnText: { color: theme.accentBlue, fontSize: 14, fontFamily: 'DMSans_600SemiBold' },
   servingRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  perServingCard: { backgroundColor: '#0f1a14', borderWidth: 1, borderColor: '#1a3a25', borderRadius: 10, padding: 14, marginTop: 8 },
-  perServingTitle: { fontSize: 9, letterSpacing: 3, color: '#4a9e6a', textTransform: 'uppercase', fontFamily: 'DMSans_500Medium', marginBottom: 10 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'flex-end' },
-  modal: { backgroundColor: '#161616', borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24, borderWidth: 1, borderColor: '#2a2a2a' },
-  modalTitle: { fontSize: 18, color: '#ffffff', fontFamily: 'DMSans_600SemiBold', marginBottom: 4 },
-  modalSubtitle: { fontSize: 12, color: '#999999', fontFamily: 'DMSans_400Regular', marginBottom: 16 },
-  modalInput: { backgroundColor: '#1e1e1e', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 6, color: '#ffffff', padding: 10, fontSize: 14, fontFamily: 'DMSans_400Regular', marginBottom: 10 },
+  perServingCard: { backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder, borderRadius: 10, padding: 14, marginTop: 8 },
+  perServingTitle: { fontSize: 9, letterSpacing: 3, color: theme.accentGreen, textTransform: 'uppercase', fontFamily: 'DMSans_500Medium', marginBottom: 10 },
+  modalOverlay: { flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'flex-end' },
+  modal: { backgroundColor: theme.bgCard, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24, borderWidth: 1, borderColor: theme.borderCard },
+  modalTitle: { fontSize: 18, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', marginBottom: 4 },
+  modalSubtitle: { fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 16 },
+  modalInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: 'DMSans_400Regular', marginBottom: 10 },
   unitBtns: { flexDirection: 'row', gap: 6, flex: 1 },
-  unitBtn: { flex: 1, padding: 10, backgroundColor: '#1e1e1e', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 6, alignItems: 'center' },
-  unitBtnActive: { backgroundColor: 'rgba(59,130,246,0.15)', borderColor: 'rgba(59,130,246,0.4)' },
-  unitBtnText: { color: '#888888', fontSize: 13, fontFamily: 'DMSans_500Medium' },
+  unitBtn: { flex: 1, padding: 10, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, alignItems: 'center' },
+  unitBtnActive: { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder },
+  unitBtnText: { color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_500Medium' },
   modalBtns: { flexDirection: 'row', gap: 8, marginTop: 8 },
-  modalCancelBtn: { flex: 1, padding: 12, backgroundColor: '#1e1e1e', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 6, alignItems: 'center' },
-  modalCancelText: { color: '#999999', fontFamily: 'DMSans_500Medium', fontSize: 14 },
-  modalSaveBtn: { flex: 1, padding: 12, backgroundColor: '#3b82f6', borderRadius: 6, alignItems: 'center' },
-  modalSaveText: { color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 1 },
+  modalCancelBtn: { flex: 1, padding: 12, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, alignItems: 'center' },
+  modalCancelText: { color: theme.textMuted, fontFamily: 'DMSans_500Medium', fontSize: 14 },
+  modalSaveBtn: { flex: 1, padding: 12, backgroundColor: theme.accentBlue, borderRadius: 6, alignItems: 'center' },
+  modalSaveText: { color: theme.textWhite, fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 1 },
   saveToLibraryRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
-  checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 1, borderColor: '#444444', alignItems: 'center', justifyContent: 'center' },
-  checkboxChecked: { backgroundColor: '#10b981', borderColor: '#10b981' },
-  checkboxCheck: { color: '#000000', fontSize: 12, fontWeight: '700' },
-  saveToLibraryText: { color: '#888888', fontSize: 13, fontFamily: 'DMSans_400Regular' },
-  unitPickerOption: { padding: 14, borderBottomWidth: 1, borderBottomColor: '#1e1e1e' },
-  unitPickerOptionActive: { backgroundColor: 'rgba(59,130,246,0.1)' },
-  unitPickerOptionText: { fontSize: 16, color: '#888888', fontFamily: 'DMSans_500Medium' },
+  checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 1, borderColor: theme.borderInput, alignItems: 'center', justifyContent: 'center' },
+  checkboxChecked: { backgroundColor: theme.accentGreen, borderColor: theme.accentGreen },
+  checkboxCheck: { color: theme.bgPrimary, fontSize: 12, fontWeight: '700' },
+  saveToLibraryText: { color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular' },
+  unitPickerOption: { padding: 14, borderBottomWidth: 1, borderBottomColor: theme.borderSubtle },
+  unitPickerOptionActive: { backgroundColor: theme.accentBlueBg },
+  unitPickerOptionText: { fontSize: 16, color: theme.textMuted, fontFamily: 'DMSans_500Medium' },
   cameraOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100 },
   camera: { flex: 1 },
-  cancelScan: { position: 'absolute', bottom: 40, alignSelf: 'center', backgroundColor: 'rgba(0,0,0,0.7)', padding: 16, borderRadius: 8 },
-  cancelScanText: { color: '#ffffff', fontSize: 16, fontFamily: 'DMSans_600SemiBold' },
+  cancelScan: { position: 'absolute', bottom: 40, alignSelf: 'center', backgroundColor: theme.overlayBg, padding: 16, borderRadius: 8 },
+  cancelScanText: { color: theme.textPrimary, fontSize: 16, fontFamily: 'DMSans_600SemiBold' },
 });

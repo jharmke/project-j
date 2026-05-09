@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Alert, FlatList, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { saveToFirebase } from '../firebaseConfig';
+import { useTheme } from '../theme';
 
 interface LibraryExercise {
   id: string;
@@ -51,6 +52,7 @@ const DEFAULT_LIBRARY: LibraryExercise[] = [
 
 export default function WorkoutLibraryScreen() {
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
   const [library, setLibrary] = useState<LibraryExercise[]>([]);
   const [activeTab, setActiveTab] = useState<'all' | 'recent' | 'favorites'>('all');
   const [query, setQuery] = useState('');
@@ -152,6 +154,7 @@ else {
   });
 };
 
+  const styles = useStyles(theme);
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
@@ -203,7 +206,7 @@ else {
     <View style={styles.exLeft}>
       <View style={styles.exTopRow}>
         <View style={[styles.typeBadge, item.type === 'cardio' && styles.typeBadgeCardio]}>
-          <Text style={[styles.typeBadgeText, item.type === 'cardio' && { color: '#f59e0b' }]}>
+          <Text style={[styles.typeBadgeText, item.type === 'cardio' && { color: theme.accentAmber }]}>
             {item.type.toUpperCase()}
           </Text>
         </View>
@@ -217,13 +220,13 @@ else {
     <View style={styles.exActions}>
       {isSelectMode ? (
         <TouchableOpacity
-          style={{ backgroundColor: 'rgba(16,185,129,0.15)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.3)', borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 }}
+          style={{ backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 }}
           onPress={() => selectExercise(item)}>
-          <Text style={{ color: '#10b981', fontFamily: 'DMSans_600SemiBold', fontSize: 13 }}>+ Add</Text>
+          <Text style={{ color: theme.accentGreen, fontFamily: 'DMSans_600SemiBold', fontSize: 13 }}>+ Add</Text>
         </TouchableOpacity>
       ) : (
         <TouchableOpacity onPress={() => toggleFavorite(item.id)}>
-          <Text style={{ fontSize: 18, color: item.favorite ? '#f59e0b' : '#333333' }}>★</Text>
+          <Text style={{ fontSize: 18, color: item.favorite ? theme.accentAmber : theme.textDim }}>★</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -240,45 +243,45 @@ else {
       />
 {showDetailModal && selectedEx && (
   <Modal transparent animationType="fade" onRequestClose={() => setShowDetailModal(false)}>
-    <TouchableOpacity style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center' }} onPress={() => setShowDetailModal(false)}>
-      <TouchableOpacity activeOpacity={1} style={{ backgroundColor: '#1a1a1a', borderRadius: 12, padding: 20, width: '85%', borderWidth: 1, borderColor: '#2a2a2a' }}>
+    <TouchableOpacity style={{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center' }} onPress={() => setShowDetailModal(false)}>
+      <TouchableOpacity activeOpacity={1} style={{ backgroundColor: theme.bgCard, borderRadius: 12, padding: 20, width: '85%', borderWidth: 1, borderColor: theme.borderCard }}>
         <View style={[styles.typeBadge, selectedEx.type === 'cardio' && styles.typeBadgeCardio, { alignSelf: 'flex-start', marginBottom: 8 }]}>
-          <Text style={[styles.typeBadgeText, selectedEx.type === 'cardio' && { color: '#f59e0b' }]}>{selectedEx.type.toUpperCase()}</Text>
+          <Text style={[styles.typeBadgeText, selectedEx.type === 'cardio' && { color: theme.accentAmber }]}>{selectedEx.type.toUpperCase()}</Text>
         </View>
-        <Text style={{ color: '#ffffff', fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginBottom: 4 }}>{selectedEx.name}</Text>
+        <Text style={{ color: theme.textPrimary, fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginBottom: 4 }}>{selectedEx.name}</Text>
         {selectedEx.type === 'lift' && (
-          <Text style={{ color: '#888888', fontSize: 13, fontFamily: 'DMSans_400Regular', marginBottom: 16 }}>{selectedEx.defaultSets} sets · {selectedEx.defaultReps} reps · {selectedEx.defaultRest} rest</Text>
+          <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular', marginBottom: 16 }}>{selectedEx.defaultSets} sets · {selectedEx.defaultReps} reps · {selectedEx.defaultRest} rest</Text>
         )}
-        {selectedEx.note ? <Text style={{ color: '#999999', fontSize: 12, fontFamily: 'DMSans_400Regular', marginBottom: 16 }}>{selectedEx.note}</Text> : null}
+        {selectedEx.note ? <Text style={{ color: theme.textSecondary, fontSize: 12, fontFamily: 'DMSans_400Regular', marginBottom: 16 }}>{selectedEx.note}</Text> : null}
 
         <TouchableOpacity
-          style={{ backgroundColor: 'rgba(16,185,129,0.15)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.3)', borderRadius: 8, padding: 12, alignItems: 'center', marginBottom: 8 }}
+          style={{ backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder, borderRadius: 8, padding: 12, alignItems: 'center', marginBottom: 8 }}
           onPress={() => { setShowDayPicker(true); }}>
-          <Text style={{ color: '#10b981', fontFamily: 'DMSans_600SemiBold', fontSize: 14 }}>+ Add to Day</Text>
+          <Text style={{ color: theme.accentGreen, fontFamily: 'DMSans_600SemiBold', fontSize: 14 }}>+ Add to Day</Text>
         </TouchableOpacity>
 
         {showDayPicker && (
-  <View style={{ marginBottom: 8, backgroundColor: '#111111', borderRadius: 8, padding: 12 }}>
+  <View style={{ marginBottom: 8, backgroundColor: theme.bgInset, borderRadius: 8, padding: 12 }}>
     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
       <TouchableOpacity onPress={() => {
         if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1); }
         else setCalMonth(m => m - 1);
       }}>
-        <Text style={{ color: '#ffffff', fontSize: 20, paddingHorizontal: 8 }}>‹</Text>
+        <Text style={{ color: theme.textPrimary, fontSize: 20, paddingHorizontal: 8 }}>‹</Text>
       </TouchableOpacity>
-      <Text style={{ color: '#ffffff', fontFamily: 'DMSans_600SemiBold', fontSize: 14 }}>
+      <Text style={{ color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', fontSize: 14 }}>
         {['January','February','March','April','May','June','July','August','September','October','November','December'][calMonth]} {calYear}
       </Text>
       <TouchableOpacity onPress={() => {
         if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1); }
         else setCalMonth(m => m + 1);
       }}>
-        <Text style={{ color: '#ffffff', fontSize: 20, paddingHorizontal: 8 }}>›</Text>
+        <Text style={{ color: theme.textPrimary, fontSize: 20, paddingHorizontal: 8 }}>›</Text>
       </TouchableOpacity>
     </View>
     <View style={{ flexDirection: 'row', marginBottom: 4 }}>
       {['S','M','T','W','T','F','S'].map((d, i) => (
-        <Text key={i} style={{ flex: 1, textAlign: 'center', color: '#999999', fontSize: 11, fontFamily: 'DMSans_500Medium' }}>{d}</Text>
+        <Text key={i} style={{ flex: 1, textAlign: 'center', color: theme.textMuted, fontSize: 11, fontFamily: 'DMSans_500Medium' }}>{d}</Text>
       ))}
     </View>
     {(() => {
@@ -298,13 +301,13 @@ else {
             return (
               <TouchableOpacity
                 key={ci}
-                style={{ flex: 1, alignItems: 'center', paddingVertical: 6, borderRadius: 4, backgroundColor: isToday ? 'rgba(16,185,129,0.2)' : 'transparent' }}
+                style={{ flex: 1, alignItems: 'center', paddingVertical: 6, borderRadius: 4, backgroundColor: isToday ? theme.accentGreenBg : 'transparent' }}
                 onPress={() => {
                   setShowDayPicker(false);
                   setShowDetailModal(false);
                   if (selectedEx) selectExercise(selectedEx, dateKey);
                 }}>
-                <Text style={{ color: isToday ? '#10b981' : '#ffffff', fontSize: 13, fontFamily: 'DMSans_400Regular' }}>{d}</Text>
+                <Text style={{ color: isToday ? theme.accentGreen : theme.textPrimary, fontSize: 13, fontFamily: 'DMSans_400Regular' }}>{d}</Text>
               </TouchableOpacity>
             );
           })}
@@ -315,20 +318,20 @@ else {
 )}
 
         <TouchableOpacity
-          style={{ backgroundColor: '#1e1e1e', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 8, padding: 12, alignItems: 'center', marginBottom: 8 }}
+          style={{ backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderInset, borderRadius: 8, padding: 12, alignItems: 'center', marginBottom: 8 }}
           onPress={() => { setShowDetailModal(false); openEdit(selectedEx); }}>
-          <Text style={{ color: '#888888', fontFamily: 'DMSans_600SemiBold', fontSize: 14 }}>Edit</Text>
+          <Text style={{ color: theme.textMuted, fontFamily: 'DMSans_600SemiBold', fontSize: 14 }}>Edit</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={{ backgroundColor: 'rgba(239,68,68,0.1)', borderWidth: 1, borderColor: 'rgba(239,68,68,0.3)', borderRadius: 8, padding: 12, alignItems: 'center' }}
+          style={{ backgroundColor: theme.accentRedBg, borderWidth: 1, borderColor: theme.accentRedBorder, borderRadius: 8, padding: 12, alignItems: 'center' }}
           onPress={() => {
             Alert.alert('Remove Exercise', `Remove "${selectedEx.name}" from library?`, [
               { text: 'Cancel', style: 'cancel' },
               { text: 'Remove', style: 'destructive', onPress: () => { deleteExercise(selectedEx.id); setShowDetailModal(false); } }
             ]);
           }}>
-          <Text style={{ color: '#ef4444', fontFamily: 'DMSans_600SemiBold', fontSize: 14 }}>Remove</Text>
+          <Text style={{ color: theme.accentRed, fontFamily: 'DMSans_600SemiBold', fontSize: 14 }}>Remove</Text>
         </TouchableOpacity>
       </TouchableOpacity>
     </TouchableOpacity>
@@ -350,9 +353,9 @@ else {
                 <Text style={[styles.typeBtnText, form.type === 'lift' && { color: '#3b82f6' }]}>Lift</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.typeBtn, form.type === 'cardio' && { ...styles.typeBtnActive, borderColor: 'rgba(245,158,11,0.4)', backgroundColor: 'rgba(245,158,11,0.1)' }]}
-                onPress={() => setForm(p => ({ ...p, type: 'cardio' }))}>
-                <Text style={[styles.typeBtnText, form.type === 'cardio' && { color: '#f59e0b' }]}>Cardio</Text>
+                style={[styles.typeBtn, form.type === 'cardio' && { borderColor: `${theme.accentAmber}66`, backgroundColor: `${theme.accentAmber}1a` }]}
+              onPress={() => setForm(p => ({ ...p, type: 'cardio' }))}>
+            <Text style={[styles.typeBtnText, form.type === 'cardio' && { color: theme.accentAmber }]}>Cardio</Text>
               </TouchableOpacity>
             </View>
 
@@ -381,46 +384,46 @@ else {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#080808' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: '#222222' },
+const useStyles = (theme: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.bgPrimary },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: theme.borderCard },
   backBtn: { width: 60 },
-  backBtnText: { color: '#3b82f6', fontSize: 14, fontFamily: 'DMSans_500Medium' },
-  headerTitle: { fontSize: 20, color: '#ffffff', fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
+  backBtnText: { color: theme.accentBlue, fontSize: 14, fontFamily: 'DMSans_500Medium' },
+  headerTitle: { fontSize: 20, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
   addBtn: { width: 60, alignItems: 'flex-end' },
-  addBtnText: { color: '#3b82f6', fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
+  addBtnText: { color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
   searchRow: { padding: 12, paddingBottom: 8 },
-  searchInput: { backgroundColor: '#161616', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 8, color: '#ffffff', padding: 12, fontSize: 14, fontFamily: 'DMSans_400Regular' },
-  tabRow: { flexDirection: 'row', marginHorizontal: 12, marginBottom: 8, backgroundColor: '#161616', borderRadius: 8, padding: 4 },
+  searchInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 14, fontFamily: 'DMSans_400Regular' },
+  tabRow: { flexDirection: 'row', marginHorizontal: 12, marginBottom: 8, backgroundColor: theme.bgProgressTrack, borderRadius: 8, padding: 4 },
   tab: { flex: 1, padding: 8, alignItems: 'center', borderRadius: 6 },
-  tabActive: { backgroundColor: '#2a2a2a' },
-  tabText: { fontSize: 13, color: '#888888', fontFamily: 'DMSans_500Medium' },
-  tabTextActive: { color: '#ffffff' },
-  exItem: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', padding: 14, borderBottomWidth: 1, borderBottomColor: '#161616' },
+  tabActive: { backgroundColor: theme.bgCard },
+  tabText: { fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_500Medium' },
+  tabTextActive: { color: theme.textPrimary },
+  exItem: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', padding: 14, borderBottomWidth: 1, borderBottomColor: theme.borderSubtle },
   exLeft: { flex: 1, marginRight: 12 },
   exTopRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
-  typeBadge: { backgroundColor: 'rgba(59,130,246,0.15)', borderRadius: 3, paddingHorizontal: 5, paddingVertical: 1 },
-  typeBadgeCardio: { backgroundColor: 'rgba(245,158,11,0.15)' },
-  typeBadgeText: { fontSize: 8, color: '#3b82f6', fontFamily: 'DMSans_700Bold', letterSpacing: 1 },
-  exName: { fontSize: 14, color: '#e8e8e8', fontFamily: 'DMSans_600SemiBold', flex: 1 },
-  exMeta: { fontSize: 11, color: '#888888', fontFamily: 'DMSans_400Regular', marginBottom: 2 },
-  exNote: { fontSize: 11, color: '#444444', fontStyle: 'italic', fontFamily: 'DMSans_400Regular' },
+  typeBadge: { backgroundColor: theme.accentBlueBg, borderRadius: 3, paddingHorizontal: 5, paddingVertical: 1 },
+  typeBadgeCardio: { backgroundColor: `${theme.accentAmber}26` },
+  typeBadgeText: { fontSize: 8, color: theme.accentBlue, fontFamily: 'DMSans_700Bold', letterSpacing: 1 },
+  exName: { fontSize: 14, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', flex: 1 },
+  exMeta: { fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 2 },
+  exNote: { fontSize: 11, color: theme.textDim, fontStyle: 'italic', fontFamily: 'DMSans_400Regular' },
   exActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  exActionText: { fontSize: 12, color: '#888888', fontFamily: 'DMSans_500Medium' },
-  emptyText: { textAlign: 'center', color: '#888888', fontFamily: 'DMSans_400Regular', fontSize: 13, padding: 32, fontStyle: 'italic' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'flex-end' },
-  modal: { backgroundColor: '#161616', borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24, borderWidth: 1, borderColor: '#2a2a2a' },
-  modalTitle: { fontSize: 22, color: '#ffffff', fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginBottom: 16 },
-  modalInput: { backgroundColor: '#1e1e1e', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 6, color: '#ffffff', padding: 10, fontSize: 14, fontFamily: 'DMSans_400Regular', marginBottom: 10 },
-  modalLabel: { fontSize: 11, color: '#999999', fontFamily: 'DMSans_500Medium', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 },
+  exActionText: { fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_500Medium' },
+  emptyText: { textAlign: 'center', color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontSize: 13, padding: 32, fontStyle: 'italic' },
+  modalOverlay: { flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'flex-end' },
+  modal: { backgroundColor: theme.bgCard, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24, borderWidth: 1, borderColor: theme.borderCard },
+  modalTitle: { fontSize: 22, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginBottom: 16 },
+  modalInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: 'DMSans_400Regular', marginBottom: 10 },
+  modalLabel: { fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 },
   typeRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },
-  typeBtn: { flex: 1, padding: 10, backgroundColor: '#1e1e1e', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 6, alignItems: 'center' },
-  typeBtnActive: { backgroundColor: 'rgba(59,130,246,0.15)', borderColor: 'rgba(59,130,246,0.4)' },
-  typeBtnText: { color: '#888888', fontSize: 14, fontFamily: 'DMSans_500Medium' },
+  typeBtn: { flex: 1, padding: 10, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, alignItems: 'center' },
+  typeBtnActive: { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder },
+  typeBtnText: { color: theme.textMuted, fontSize: 14, fontFamily: 'DMSans_500Medium' },
   modalRow: { flexDirection: 'row', gap: 8 },
   modalBtns: { flexDirection: 'row', gap: 8, marginTop: 8 },
-  modalCancelBtn: { flex: 1, padding: 12, backgroundColor: '#1e1e1e', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 6, alignItems: 'center' },
-  modalCancelText: { color: '#999999', fontFamily: 'DMSans_500Medium', fontSize: 14 },
-  modalSaveBtn: { flex: 1, padding: 12, backgroundColor: '#3b82f6', borderRadius: 6, alignItems: 'center' },
-  modalSaveText: { color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 1 },
+  modalCancelBtn: { flex: 1, padding: 12, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, alignItems: 'center' },
+  modalCancelText: { color: theme.textMuted, fontFamily: 'DMSans_500Medium', fontSize: 14 },
+  modalSaveBtn: { flex: 1, padding: 12, backgroundColor: theme.accentBlue, borderRadius: 6, alignItems: 'center' },
+  modalSaveText: { color: theme.textWhite, fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 1 },
 });

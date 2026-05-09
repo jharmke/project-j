@@ -10,6 +10,7 @@ import ReAnimated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import PressableButton from '../../components/PressableButton';
+import { useToast } from '../../components/Toast';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { useTheme } from '../../theme';
 import { useHealthKit } from '../../useHealthKit';
@@ -92,7 +93,7 @@ const VERSES = [
 ];
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
-function MacroDonut({ protein, carbs, fat, calories }: { protein: number; carbs: number; fat: number; calories: number }) {
+function MacroDonut({ protein, carbs, fat, calories, theme }: { protein: number; carbs: number; fat: number; calories: number; theme: any }) {
   const size = 120;
   const strokeWidth = 14;
   const radius = (size - strokeWidth) / 2;
@@ -105,7 +106,7 @@ function MacroDonut({ protein, carbs, fat, calories }: { protein: number; carbs:
           <Circle cx={size/2} cy={size/2} r={radius} stroke="#2a2a2a" strokeWidth={strokeWidth} fill="none" />
         </Svg>
         <View style={{ position: 'absolute', alignItems: 'center' }}>
-          <Text style={{ color: '#333333', fontSize: 11, fontFamily: 'DMSans_400Regular' }}>no data</Text>
+          <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular' }}>no data</Text>
         </View>
       </View>
     );
@@ -127,8 +128,56 @@ function MacroDonut({ protein, carbs, fat, calories }: { protein: number; carbs:
           strokeDasharray={`${fatDash} ${circumference}`} strokeDashoffset={-((proteinPct + carbsPct) * circumference)} strokeLinecap="butt" />
       </Svg>
       <View style={{ position: 'absolute', alignItems: 'center' }}>
-        <Text style={{ color: '#ffffff', fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{calories}</Text>
-        <Text style={{ color: '#888888', fontSize: 9, fontFamily: 'DMSans_400Regular' }}>kcal</Text>
+        <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{calories}</Text>
+        <Text style={{ color: theme.textMuted, fontSize: 9, fontFamily: 'DMSans_400Regular' }}>kcal</Text>
+      </View>
+    </View>
+  );
+}
+
+const AnimCircle = ReAnimated.createAnimatedComponent(Circle);
+
+function SleepDonut({ coreFrac, deepFrac, remFrac, donutCirc, donutSize, donutStroke, donutRadius, coreColor, deepColor, remColor, trackColor, gapFrac, refreshKey }: {
+  coreFrac: number; deepFrac: number; remFrac: number; donutCirc: number;
+  donutSize: number; donutStroke: number; donutRadius: number;
+  coreColor: string; deepColor: string; remColor: string; trackColor: string; gapFrac: number; refreshKey?: number;
+}) {
+  const coreAnim = useSharedValue(0);
+  const deepAnim = useSharedValue(0);
+  const remAnim  = useSharedValue(0);
+
+  useEffect(() => {
+    coreAnim.value = 0;
+    deepAnim.value = 0;
+    remAnim.value  = 0;
+    setTimeout(() => {
+      coreAnim.value = withTiming(Math.max(0, coreFrac - gapFrac), { duration: 800 });
+    }, 200);
+    setTimeout(() => {
+      deepAnim.value = withTiming(Math.max(0, deepFrac - gapFrac), { duration: 700 });
+    }, 900);
+    setTimeout(() => {
+      remAnim.value = withTiming(Math.max(0, remFrac - gapFrac), { duration: 600 });
+    }, 1500);
+  }, [coreFrac, deepFrac, remFrac, refreshKey]);
+
+  const coreStyle = useAnimatedStyle(() => ({ strokeDasharray: `${coreAnim.value} ${donutCirc}` } as any));
+  const deepStyle = useAnimatedStyle(() => ({ strokeDasharray: `${deepAnim.value} ${donutCirc}` } as any));
+  const remStyle  = useAnimatedStyle(() => ({ strokeDasharray: `${remAnim.value} ${donutCirc}`  } as any));
+
+  return (
+    <View>
+      <Svg width={donutSize} height={donutSize}>
+        <Circle cx={donutSize/2} cy={donutSize/2} r={donutRadius} stroke={trackColor} strokeWidth={donutStroke} fill="none" />
+        <AnimCircle cx={donutSize/2} cy={donutSize/2} r={donutRadius} stroke={coreColor} strokeWidth={donutStroke} fill="none"
+          animatedProps={coreStyle} strokeDashoffset={0} strokeLinecap="butt" rotation="-90" origin={`${donutSize/2},${donutSize/2}`} />
+        <AnimCircle cx={donutSize/2} cy={donutSize/2} r={donutRadius} stroke={deepColor} strokeWidth={donutStroke} fill="none"
+          animatedProps={deepStyle} strokeDashoffset={-(coreFrac)} strokeLinecap="butt" rotation="-90" origin={`${donutSize/2},${donutSize/2}`} />
+        <AnimCircle cx={donutSize/2} cy={donutSize/2} r={donutRadius} stroke={remColor} strokeWidth={donutStroke} fill="none"
+          animatedProps={remStyle} strokeDashoffset={-(coreFrac+deepFrac)} strokeLinecap="butt" rotation="-90" origin={`${donutSize/2},${donutSize/2}`} />
+      </Svg>
+      <View style={{ position:'absolute', top:0, left:0, width:donutSize, height:donutSize, alignItems:'center', justifyContent:'center' }}>
+        <Ionicons name="moon" size={24} color={trackColor} />
       </View>
     </View>
   );
@@ -138,12 +187,14 @@ function AnimatedProgressBar({ pct, color, trackColor, refreshKey }: { pct: numb
   const width = useSharedValue(0);
   useEffect(() => {
     width.value = 0;
-    if (pct > 0) {
-      setTimeout(() => {
-        width.value = withTiming(Math.min(100, pct), { duration: 1200 });
-      }, 350);
-    }
-  }, [pct, refreshKey]);
+    setTimeout(() => {
+      width.value = withTiming(Math.min(100, pct), { duration: 1200 });
+    }, 350);
+  }, [refreshKey]);
+
+  useEffect(() => {
+    width.value = withTiming(Math.min(100, pct), { duration: 600 });
+  }, [pct]);
   const animStyle = useAnimatedStyle(() => ({ width: `${width.value}%` as any }));
   return (
     <View style={[styles.progressBarBg, { backgroundColor: trackColor ?? '#1e1e2e' }]}>
@@ -170,6 +221,7 @@ function MacroBar({ val, goal, color, trackColor }: { val: number; goal: number;
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
+  const { showToast } = useToast();
 
   // Layout state
   const [cardOrder,   setCardOrder]   = useState<CardId[]>(DEFAULT_ORDER);
@@ -181,13 +233,11 @@ export default function HomeScreen() {
 
   // App state
   const [loaded,          setLoaded]          = useState(false);
-  const [showRefreshToast,setShowRefreshToast] = useState(false);
   const [refreshKey,      setRefreshKey]       = useState(0);
   const [waterPresets,    setWaterPresets]     = useState<[number,number,number]>([12,16,22]);
   const [showWaterCustomModal, setShowWaterCustomModal] = useState(false);
   const [waterCustomInput,     setWaterCustomInput]     = useState('');
   const [waterCustomSign,      setWaterCustomSign]      = useState<'add'|'subtract'>('add');
-  const toastOpacity = useRef(new Animated.Value(0)).current;
 
   // IF state
   const [ifStart,       setIfStart]       = useState<number|null>(null);
@@ -198,9 +248,10 @@ export default function HomeScreen() {
 
   // Health / daily state
   const [water,          setWater]          = useState(0);
-  const [weight,         setWeight]         = useState<number|null>(null);
-  const [yesterdayWeight,setYesterdayWeight]= useState<number|null>(null);
-  const [earliestWeight, setEarliestWeight] = useState<number|null>(null);
+  const [weight,          setWeight]          = useState<number|null>(null);
+  const [yesterdayWeight, setYesterdayWeight] = useState<number|null>(null);
+  const [earliestWeight,  setEarliestWeight]  = useState<number|null>(null);
+  const [lastKnownWeight, setLastKnownWeight] = useState<{ val: number; daysAgo: number } | null>(null);
   const [weightInput,    setWeightInput]    = useState('');
   const [dailyNote,      setDailyNote]      = useState('');
   const [totalCals,      setTotalCals]      = useState(0);
@@ -210,6 +261,7 @@ export default function HomeScreen() {
   const [totalCarbs,     setTotalCarbs]     = useState(0);
   const [totalFat,       setTotalFat]       = useState(0);
   const [stepGoal,       setStepGoal]       = useState(10000);
+  const [macroGoals,     setMacroGoals]     = useState({ protein: 0, carbs: 0, fat: 0 });
   const [editingStepGoal,setEditingStepGoal]= useState(false);
   const [dailyVerse,     setDailyVerse]     = useState<{text:string;reference:string}|null>(null);
   const [workoutPrograms,setWorkoutPrograms]= useState<Record<string,any>>({});
@@ -337,6 +389,12 @@ export default function HomeScreen() {
           const yk = `${yesterday.getFullYear()}-${String(yesterday.getMonth()+1).padStart(2,'0')}-${String(yesterday.getDate()).padStart(2,'0')}`;
           const yd = await AsyncStorage.getItem(`pj_${yk}`);
           if (yd) { const ydp = JSON.parse(yd); if (ydp.weight) setYesterdayWeight(ydp.weight); }
+          for (let i = 1; i <= 30; i++) {
+            const d = new Date(); d.setDate(d.getDate()-i);
+            const dk = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            const ld = await AsyncStorage.getItem(`pj_${dk}`);
+            if (ld) { const ldp = JSON.parse(ld); if (ldp.weight) { setLastKnownWeight({ val: ldp.weight, daysAgo: i }); break; } }
+          }
           for (let i = 365; i >= 0; i--) {
             const d = new Date(); d.setDate(d.getDate()-i);
             const dk = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -372,7 +430,7 @@ export default function HomeScreen() {
         const existing = await AsyncStorage.getItem(`pj_${todayKey}`);
         const current  = existing ? JSON.parse(existing) : {};
         await AsyncStorage.setItem(`pj_${todayKey}`, JSON.stringify({
-          ...current, water, weight, ifStart, ifMethod, ifEnd, ifCustomHours, dailyNote,
+          ...current, ifStart, ifMethod, ifEnd, ifCustomHours, dailyNote,
         }));
       } catch (e) { console.log('Save error', e); }
     };
@@ -412,7 +470,32 @@ export default function HomeScreen() {
           if (p.stepGoal && parseInt(p.stepGoal) > 0) setStepGoal(parseInt(p.stepGoal));
           if (p.calTarget && parseInt(p.calTarget) > 0) {
             setCalTarget(parseInt(p.calTarget));
-          } else if (p.activityLevel && p.weightGoal) {
+          }
+
+          // Load macro goals
+          const kcalTarget = parseInt(p.calTarget) || 0;
+          if (p.macroMode === 'fixed' && p.macroProteinG && p.macroCarbsG && p.macroFatG) {
+            setMacroGoals({
+              protein: parseFloat(p.macroProteinG) || 0,
+              carbs:   parseFloat(p.macroCarbsG)   || 0,
+              fat:     parseFloat(p.macroFatG)      || 0,
+            });
+          } else if (p.macroProteinPct && p.macroCarbsPct && p.macroFatPct && kcalTarget > 0) {
+            setMacroGoals({
+              protein: Math.round(((parseFloat(p.macroProteinPct) || 35) / 100) * kcalTarget / 4),
+              carbs:   Math.round(((parseFloat(p.macroCarbsPct)   || 40) / 100) * kcalTarget / 4),
+              fat:     Math.round(((parseFloat(p.macroFatPct)     || 25) / 100) * kcalTarget / 9),
+            });
+          } else if (kcalTarget > 0) {
+            // Fallback - derive from calTarget using default 35/40/25 split
+            setMacroGoals({
+              protein: Math.round((0.35 * kcalTarget) / 4),
+              carbs:   Math.round((0.40 * kcalTarget) / 4),
+              fat:     Math.round((0.25 * kcalTarget) / 9),
+            });
+          }
+
+          if (p.activityLevel && p.weightGoal) {
             const ACTIVITY_MULTIPLIERS: Record<string,number> = {
               sedentary:1.2, light:1.375, moderate:1.55, active:1.725, very_active:1.9,
             };
@@ -477,16 +560,6 @@ export default function HomeScreen() {
   };
 
   const sheetTranslate = sheetAnim.interpolate({ inputRange: [0,1], outputRange: [600, 0] });
-
-  // ── Toast helper ─────────────────────────────────────────────────────────────
-  const showToast = () => {
-    setShowRefreshToast(true);
-    toastOpacity.setValue(1);
-    Animated.sequence([
-      Animated.delay(1500),
-      Animated.timing(toastOpacity, { toValue: 0, duration: 600, useNativeDriver: true }),
-    ]).start(() => setShowRefreshToast(false));
-  };
 
   // ─── Card Renderers ───────────────────────────────────────────────────────────
   const renderVerseCard = () => (
@@ -568,7 +641,7 @@ export default function HomeScreen() {
                   <Text style={{ color:'#10b981', fontSize:12, fontFamily:'DMSans_600SemiBold' }}>Confirm</Text>
                 </TouchableOpacity>
               </View>
-              <DateTimePicker mode="time" value={pickerTime||(ifEnd ? new Date(ifEnd) : new Date())} display="spinner" textColor="#ffffff" onChange={(_,d)=>{ if(d) setPrickerTime(d); }} />
+              <DateTimePicker mode="time" value={pickerTime||(ifEnd ? new Date(ifEnd) : new Date())} display="spinner" textColor={theme.textPrimary} onChange={(_,d)=>{ if(d) setPrickerTime(d); }} />
             </View>
           )}
         </View>
@@ -618,7 +691,7 @@ export default function HomeScreen() {
                   <Text style={{ color:'#10b981', fontSize:12, fontFamily:'DMSans_600SemiBold' }}>Confirm</Text>
                 </TouchableOpacity>
               </View>
-              <DateTimePicker mode="time" value={pickerTime||(ifStart ? new Date(ifStart) : new Date())} display="spinner" textColor="#ffffff" onChange={(_,d)=>{ if(d) setPrickerTime(d); }} />
+              <DateTimePicker mode="time" value={pickerTime||(ifStart ? new Date(ifStart) : new Date())} display="spinner" textColor={theme.textPrimary} onChange={(_,d)=>{ if(d) setPrickerTime(d); }} />
             </View>
           )}
         </View>
@@ -650,7 +723,6 @@ export default function HomeScreen() {
   );
 
   const renderMacrosCard = () => {
-    const macroGoals = { protein: 150, carbs: 200, fat: 65 }; // TODO: wire to pj_profile macro goals
     const macros = [
       { label: 'Protein', val: totalProtein, goal: macroGoals.protein, color: theme.macroProtein },
       { label: 'Carbs',   val: totalCarbs,   goal: macroGoals.carbs,   color: theme.macroCarbs },
@@ -700,7 +772,7 @@ export default function HomeScreen() {
       <AnimatedProgressBar pct={Math.min(100,(water/WATER_TARGET)*100)} color={theme.accentBlue} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} />
       <View style={styles.waterBtns}>
         {waterPresets.map((oz,i) => (
-          <PressableButton key={i} style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => { const n=Math.min(WATER_TARGET,water+oz); setWater(n); saveToFirebase(todayKey,'water',n); }}>
+          <PressableButton key={i} style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => { const n=Math.min(WATER_TARGET,water+oz); setWater(n); saveToFirebase(todayKey,'water',n); showToast('Water logged', `+${oz} oz · ${n} oz total`, 'info'); }}>
             <Text style={[styles.waterBtnText, { color: theme.accentBlue }]}>+{oz} oz</Text>
           </PressableButton>
         ))}
@@ -735,8 +807,12 @@ export default function HomeScreen() {
       </View>
       <View style={styles.weightRow}>
         <View style={styles.weightStat}>
-          <Text style={[styles.weightVal, { color: theme.textPrimary }]}>{weight ? `${weight} lbs` : '--'}</Text>
-          <Text style={[styles.weightLbl, { color: theme.textMuted }]}>Today</Text>
+          <Text style={[styles.weightVal, { color: weight ? theme.textPrimary : theme.textDim }]}>
+            {weight ? `${weight} lbs` : lastKnownWeight ? `${lastKnownWeight.val} lbs` : '--'}
+          </Text>
+          <Text style={[styles.weightLbl, { color: theme.textMuted }]}>
+            {weight ? 'Today' : lastKnownWeight ? `${lastKnownWeight.daysAgo}d ago` : 'Today'}
+          </Text>
         </View>
         <View style={styles.weightStat}>
           <Text style={[styles.weightVal, { color: weight&&yesterdayWeight ? weight<yesterdayWeight ? theme.statusGood : weight>yesterdayWeight ? theme.statusBad : theme.textPrimary : theme.textPrimary }]}>
@@ -1017,17 +1093,12 @@ export default function HomeScreen() {
                 )}
               </View>
               {sleepStages && (
-                <View>
-                  <Svg width={donutSize} height={donutSize}>
-                    <Circle cx={donutSize/2} cy={donutSize/2} r={donutRadius} stroke={theme.sleepTrack} strokeWidth={donutStroke} fill="none" />
-                    <Circle cx={donutSize/2} cy={donutSize/2} r={donutRadius} stroke={theme.sleepCore} strokeWidth={donutStroke} fill="none" strokeDasharray={`${Math.max(0,coreFrac-gapFrac)} ${donutCirc}`} strokeDashoffset={0} strokeLinecap="butt" rotation="-90" origin={`${donutSize/2},${donutSize/2}`} />
-                    <Circle cx={donutSize/2} cy={donutSize/2} r={donutRadius} stroke={theme.sleepDeep} strokeWidth={donutStroke} fill="none" strokeDasharray={`${Math.max(0,deepFrac-gapFrac)} ${donutCirc}`} strokeDashoffset={-(coreFrac)} strokeLinecap="butt" rotation="-90" origin={`${donutSize/2},${donutSize/2}`} />
-                    <Circle cx={donutSize/2} cy={donutSize/2} r={donutRadius} stroke={theme.sleepRem} strokeWidth={donutStroke} fill="none" strokeDasharray={`${Math.max(0,remFrac-gapFrac)} ${donutCirc}`} strokeDashoffset={-(coreFrac+deepFrac)} strokeLinecap="butt" rotation="-90" origin={`${donutSize/2},${donutSize/2}`} />
-                  </Svg>
-                  <View style={{ position:'absolute', top:0, left:0, width:donutSize, height:donutSize, alignItems:'center', justifyContent:'center' }}>
-                    <Ionicons name="moon" size={24} color={theme.textMuted} />
-                  </View>
-                </View>
+                <SleepDonut
+                  coreFrac={coreFrac} deepFrac={deepFrac} remFrac={remFrac}
+                  donutCirc={donutCirc} donutSize={donutSize} donutStroke={donutStroke} donutRadius={donutRadius}
+                  coreColor={theme.sleepCore} deepColor={theme.sleepDeep} remColor={theme.sleepRem}
+                  trackColor={theme.sleepTrack} gapFrac={gapFrac} refreshKey={refreshKey}
+                />
               )}
             </View>
           );
@@ -1123,7 +1194,7 @@ export default function HomeScreen() {
         </View>
 
         <View style={{ flexDirection:'row', gap:8 }}>
-            <TouchableOpacity onPress={() => { fetchTodayData(); setRefreshKey(k=>k+1); showToast(); }}
+            <TouchableOpacity onPress={() => { fetchTodayData(); setRefreshKey(k=>k+1); showToast('Health data refreshed', undefined, 'info'); }}
               style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
               <Ionicons name="refresh-outline" size={14} color={theme.accentBlue} />
             </TouchableOpacity>
@@ -1154,7 +1225,7 @@ export default function HomeScreen() {
               <TouchableOpacity style={{ flex:1, padding:12, borderRadius:8, backgroundColor: waterCustomSign==='add' ? theme.accentBlueBg : theme.accentRedBg, alignItems:'center' }}
                 onPress={() => {
                   const amt=parseInt(waterCustomInput);
-                  if(amt>0){ const n=waterCustomSign==='add'?Math.min(WATER_TARGET,water+amt):Math.max(0,water-amt); setWater(n); saveToFirebase(todayKey,'water',n); }
+                  if(amt>0){ const n=waterCustomSign==='add'?Math.min(WATER_TARGET,water+amt):Math.max(0,water-amt); setWater(n); saveToFirebase(todayKey,'water',n); showToast('Water logged', `${waterCustomSign==='add'?'+':'-'}${amt} oz · ${n} oz total`, 'info'); }
                   setShowWaterCustomModal(false);
                 }}>
                 <Text style={{ color: waterCustomSign==='add' ? theme.accentBlue : theme.accentRed, fontFamily:'DMSans_600SemiBold', fontSize:14 }}>
@@ -1164,18 +1235,6 @@ export default function HomeScreen() {
             </View>
           </View>
         </View>
-      )}
-
-      {/* ── Refresh toast ── */}
-      {showRefreshToast && (
-        <Animated.View style={{ position:'absolute', bottom:100, left:0, right:0, alignItems:'center', zIndex:999, opacity:toastOpacity }}>
-          <View style={{ backgroundColor: theme.bgCard, borderWidth:0.5, borderColor: theme.borderCardTop, borderRadius:8, paddingHorizontal:16, paddingVertical:10, flexDirection:'row', alignItems:'center', gap:10 }}>
-            <Text style={{ color: theme.textPrimary, fontSize:12, fontFamily:'DMSans_600SemiBold', letterSpacing:1 }}>Apple Health Refreshed</Text>
-            <TouchableOpacity onPress={() => { toastOpacity.setValue(0); setShowRefreshToast(false); }}>
-              <Ionicons name="close" size={14} color={theme.textMuted} />
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
       )}
 
       {/* ── Main content ── */}

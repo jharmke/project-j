@@ -4,11 +4,13 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { saveToFirebase } from '../firebaseConfig';
+import { useTheme } from '../theme';
 
 const MEALS = ['Morning', 'Lunch', 'Dinner', 'Snacks'];
 
 export default function RecipeLogScreen() {
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
   const { recipeJson, meal, date } = useLocalSearchParams<{ recipeJson: string; meal: string; date: string }>();
 
   const recipe = recipeJson ? JSON.parse(recipeJson) : null;
@@ -63,6 +65,7 @@ export default function RecipeLogScreen() {
     }
   };
 
+  const styles = useStyles(theme);
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -88,19 +91,19 @@ export default function RecipeLogScreen() {
           </Text>
           <View style={styles.macroRow}>
             <View style={styles.macroStat}>
-              <Text style={[styles.macroVal, { color: '#10b981' }]}>{Math.round(recipe.totalCal / servingCount)}</Text>
+              <Text style={[styles.macroVal, { color: theme.accentGreen }]}>{Math.round(recipe.totalCal / servingCount)}</Text>
               <Text style={styles.macroLabel}>cal/{recipe.servingName}</Text>
             </View>
             <View style={styles.macroStat}>
-              <Text style={[styles.macroVal, { color: '#3b82f6' }]}>{Math.round(recipe.totalProtein / servingCount * 10) / 10}g</Text>
+              <Text style={[styles.macroVal, { color: theme.macroProtein }]}>{Math.round(recipe.totalProtein / servingCount * 10) / 10}g</Text>
               <Text style={styles.macroLabel}>protein</Text>
             </View>
             <View style={styles.macroStat}>
-              <Text style={[styles.macroVal, { color: '#f59e0b' }]}>{Math.round(recipe.totalCarbs / servingCount * 10) / 10}g</Text>
+              <Text style={[styles.macroVal, { color: theme.macroCarbs }]}>{Math.round(recipe.totalCarbs / servingCount * 10) / 10}g</Text>
               <Text style={styles.macroLabel}>carbs</Text>
             </View>
             <View style={styles.macroStat}>
-              <Text style={[styles.macroVal, { color: '#ef4444' }]}>{Math.round(recipe.totalFat / servingCount * 10) / 10}g</Text>
+              <Text style={[styles.macroVal, { color: theme.macroFat }]}>{Math.round(recipe.totalFat / servingCount * 10) / 10}g</Text>
               <Text style={styles.macroLabel}>fat</Text>
             </View>
           </View>
@@ -124,7 +127,7 @@ export default function RecipeLogScreen() {
           <TouchableOpacity
             style={[styles.toggleBtn, logMode === 'serving' && styles.toggleBtnActive]}
             onPress={() => setLogMode('serving')}>
-            <Text style={[styles.toggleBtnText, logMode === 'serving' && { color: '#3b82f6' }]}>
+            <Text style={[styles.toggleBtnText, logMode === 'serving' && { color: theme.accentBlue }]}>
               By {recipe.servingName}
             </Text>
           </TouchableOpacity>
@@ -132,7 +135,7 @@ export default function RecipeLogScreen() {
             <TouchableOpacity
               style={[styles.toggleBtn, logMode === 'weight' && styles.toggleBtnActive]}
               onPress={() => setLogMode('weight')}>
-              <Text style={[styles.toggleBtnText, logMode === 'weight' && { color: '#3b82f6' }]}>
+              <Text style={[styles.toggleBtnText, logMode === 'weight' && { color: theme.accentBlue }]}>
                 By weight ({recipe.totalWeightUnit})
               </Text>
             </TouchableOpacity>
@@ -162,19 +165,19 @@ export default function RecipeLogScreen() {
           </Text>
           <View style={styles.macroRow}>
             <View style={styles.macroStat}>
-              <Text style={[styles.macroVal, { color: '#10b981', fontSize: 32 }]}>{calories}</Text>
+              <Text style={[styles.macroVal, { color: theme.accentGreen, fontSize: 32 }]}>{calories}</Text>
               <Text style={styles.macroLabel}>Calories</Text>
             </View>
             <View style={styles.macroStat}>
-              <Text style={[styles.macroVal, { color: '#3b82f6' }]}>{protein}g</Text>
+              <Text style={[styles.macroVal, { color: theme.macroProtein }]}>{protein}g</Text>
               <Text style={styles.macroLabel}>Protein</Text>
             </View>
             <View style={styles.macroStat}>
-              <Text style={[styles.macroVal, { color: '#f59e0b' }]}>{carbs}g</Text>
+              <Text style={[styles.macroVal, { color: theme.macroCarbs }]}>{carbs}g</Text>
               <Text style={styles.macroLabel}>Carbs</Text>
             </View>
             <View style={styles.macroStat}>
-              <Text style={[styles.macroVal, { color: '#ef4444' }]}>{fat}g</Text>
+              <Text style={[styles.macroVal, { color: theme.macroFat }]}>{fat}g</Text>
               <Text style={styles.macroLabel}>Fat</Text>
             </View>
           </View>
@@ -212,46 +215,46 @@ export default function RecipeLogScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#080808' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: '#222222' },
+const useStyles = (theme: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.bgPrimary },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: theme.borderCard },
   backBtn: { padding: 4, width: 60 },
-  backBtnText: { color: '#3b82f6', fontSize: 14, fontFamily: 'DMSans_500Medium' },
-  headerTitle: { fontSize: 20, color: '#ffffff', fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, flex: 1, textAlign: 'center' },
-  editBtn: { backgroundColor: 'rgba(59,130,246,0.15)', borderWidth: 1, borderColor: 'rgba(59,130,246,0.3)', borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 },
-  editBtnText: { color: '#3b82f6', fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
+  backBtnText: { color: theme.accentBlue, fontSize: 14, fontFamily: 'DMSans_500Medium' },
+  headerTitle: { fontSize: 20, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, flex: 1, textAlign: 'center' },
+  editBtn: { backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 },
+  editBtnText: { color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
   content: { padding: 16, paddingBottom: 80 },
-  infoCard: { backgroundColor: '#161616', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 10, padding: 16, marginBottom: 16 },
-  infoText: { fontSize: 12, color: '#999999', fontFamily: 'DMSans_400Regular', marginBottom: 12 },
+  infoCard: { backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, padding: 16, marginBottom: 16 },
+  infoText: { fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 12 },
   macroRow: { flexDirection: 'row', justifyContent: 'space-between' },
   macroStat: { alignItems: 'center', flex: 1 },
   macroVal: { fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
-  macroLabel: { fontSize: 10, color: '#888888', fontFamily: 'DMSans_400Regular', marginTop: 2, textAlign: 'center' },
+  macroLabel: { fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 2, textAlign: 'center' },
   section: { marginBottom: 16 },
-  sectionLabel: { fontSize: 9, letterSpacing: 3, color: '#999999', textTransform: 'uppercase', fontFamily: 'DMSans_500Medium', marginBottom: 8 },
-  ingredientRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#161616' },
-  ingredientName: { fontSize: 13, color: '#e8e8e8', fontFamily: 'DMSans_400Regular', flex: 1, marginRight: 8 },
-  ingredientMeta: { fontSize: 12, color: '#888888', fontFamily: 'DMSans_400Regular' },
+  sectionLabel: { fontSize: 9, letterSpacing: 3, color: theme.textMuted, textTransform: 'uppercase', fontFamily: 'DMSans_500Medium', marginBottom: 8 },
+  ingredientRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: theme.borderSubtle },
+  ingredientName: { fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_400Regular', flex: 1, marginRight: 8 },
+  ingredientMeta: { fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' },
   toggleRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  toggleBtn: { flex: 1, padding: 10, backgroundColor: '#161616', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 6, alignItems: 'center' },
-  toggleBtnActive: { backgroundColor: 'rgba(59,130,246,0.15)', borderColor: 'rgba(59,130,246,0.4)' },
-  toggleBtnText: { color: '#888888', fontSize: 13, fontFamily: 'DMSans_500Medium' },
+  toggleBtn: { flex: 1, padding: 10, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, alignItems: 'center' },
+  toggleBtnActive: { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder },
+  toggleBtnText: { color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_500Medium' },
   amountRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
-  amountLabel: { fontSize: 14, color: '#888888', fontFamily: 'DMSans_400Regular' },
- amountInput: { backgroundColor: '#161616', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 8, color: '#ffffff', padding: 12, fontSize: 24, fontFamily: 'BebasNeue_400Regular', width: 120, textAlign: 'center' },
+  amountLabel: { fontSize: 14, color: theme.textMuted, fontFamily: 'DMSans_400Regular' },
+  amountInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 24, fontFamily: 'BebasNeue_400Regular', width: 120, textAlign: 'center' },
   servingBtns: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  servingBtn: { flex: 1, padding: 10, backgroundColor: '#161616', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 6, alignItems: 'center' },
-  servingBtnActive: { backgroundColor: 'rgba(59,130,246,0.15)', borderColor: 'rgba(59,130,246,0.4)' },
-  servingBtnText: { color: '#888888', fontSize: 14, fontFamily: 'DMSans_500Medium' },
-  nutritionCard: { backgroundColor: '#161616', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 10, padding: 16, marginBottom: 20 },
-  nutritionTitle: { fontSize: 11, color: '#888888', fontFamily: 'DMSans_500Medium', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 },
-  logBtn: { backgroundColor: '#10b981', borderRadius: 10, padding: 16, alignItems: 'center' },
-  logBtnText: { color: '#000000', fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'flex-end' },
-  modal: { backgroundColor: '#161616', borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24, borderWidth: 1, borderColor: '#2a2a2a' },
-  modalTitle: { fontSize: 18, color: '#ffffff', fontFamily: 'DMSans_600SemiBold', marginBottom: 16 },
-  mealOption: { padding: 16, borderBottomWidth: 1, borderBottomColor: '#2a2a2a', alignItems: 'center' },
-  mealOptionText: { fontSize: 16, color: '#e8e8e8', fontFamily: 'DMSans_500Medium' },
+  servingBtn: { flex: 1, padding: 10, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, alignItems: 'center' },
+  servingBtnActive: { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder },
+  servingBtnText: { color: theme.textMuted, fontSize: 14, fontFamily: 'DMSans_500Medium' },
+  nutritionCard: { backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, padding: 16, marginBottom: 20 },
+  nutritionTitle: { fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 },
+  logBtn: { backgroundColor: theme.accentGreen, borderRadius: 10, padding: 16, alignItems: 'center' },
+  logBtnText: { color: theme.bgPrimary, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
+  modalOverlay: { flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'flex-end' },
+  modal: { backgroundColor: theme.bgCard, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24, borderWidth: 1, borderColor: theme.borderCard },
+  modalTitle: { fontSize: 18, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', marginBottom: 16 },
+  mealOption: { padding: 16, borderBottomWidth: 1, borderBottomColor: theme.borderSubtle, alignItems: 'center' },
+  mealOptionText: { fontSize: 16, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' },
   cancelBtn: { padding: 16, alignItems: 'center', marginTop: 4 },
-  cancelBtnText: { color: '#ef4444', fontSize: 14, fontFamily: 'DMSans_500Medium' },
+  cancelBtnText: { color: theme.accentRed, fontSize: 14, fontFamily: 'DMSans_500Medium' },
 });

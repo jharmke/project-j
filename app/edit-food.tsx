@@ -4,9 +4,11 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { saveToFirebase } from '../firebaseConfig';
+import { useTheme } from '../theme';
 
 export default function EditFoodScreen() {
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
   const { foodJson } = useLocalSearchParams<{ foodJson: string }>();
   const food = foodJson ? JSON.parse(foodJson) : null;
   const rawFood = food?.myFoodData || food;
@@ -67,6 +69,7 @@ console.log('food:', JSON.stringify(food));
     { label: 'Saturated Fat (g)', value: saturatedFat, onChange: setSaturatedFat, keyboard: 'decimal-pad' as const },
   ];
 
+  const styles = useStyles(theme);
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -100,16 +103,16 @@ console.log('food:', JSON.stringify(food));
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#080808' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: '#222222' },
+const useStyles = (theme: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.bgPrimary },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: theme.borderCard },
   backBtn: { width: 60 },
-  backBtnText: { color: '#3b82f6', fontSize: 14, fontFamily: 'DMSans_500Medium' },
-  headerTitle: { fontSize: 20, color: '#ffffff', fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
-  saveBtn: { backgroundColor: '#10b981', borderRadius: 6, paddingHorizontal: 16, paddingVertical: 6 },
-  saveBtnText: { color: '#000000', fontSize: 14, fontFamily: 'DMSans_700Bold' },
+  backBtnText: { color: theme.accentBlue, fontSize: 14, fontFamily: 'DMSans_500Medium' },
+  headerTitle: { fontSize: 20, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
+  saveBtn: { backgroundColor: theme.accentGreen, borderRadius: 6, paddingHorizontal: 16, paddingVertical: 6 },
+  saveBtnText: { color: theme.bgPrimary, fontSize: 14, fontFamily: 'DMSans_700Bold' },
   content: { padding: 16, paddingBottom: 80 },
   fieldRow: { marginBottom: 16 },
-  fieldLabel: { fontSize: 11, color: '#999999', fontFamily: 'DMSans_500Medium', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6 },
-  fieldInput: { backgroundColor: '#161616', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 8, color: '#ffffff', padding: 12, fontSize: 16, fontFamily: 'DMSans_400Regular' },
+  fieldLabel: { fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6 },
+  fieldInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 16, fontFamily: 'DMSans_400Regular' },
 });

@@ -7,6 +7,7 @@ import { Alert, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, Sty
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useToast } from '../../components/Toast';
 import { useTheme } from '../../theme';
 import { useHealthKit } from '../../useHealthKit';
 import { DayProgram, DEFAULT_PROGRAM, Exercise } from '../../workoutData';
@@ -26,6 +27,7 @@ const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart
 export default function WorkoutScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
+  const { showToast } = useToast();
   const [activeDay, setActiveDay] = useState(todayKey);
   const [loaded, setLoaded] = useState(false);
   const [checks, setChecks] = useState<Record<string, Record<string, boolean>>>({});
@@ -353,6 +355,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
   setDayLabel(newPrograms[activeDay]?.customLabel || '');
   saveState(checks, cardioComplete, newPrograms, workoutNotes, cardioLogs, weeklyTemplate);
   setShowAddModal(false);
+  showToast(editingExercise ? 'Exercise updated' : 'Exercise added', form.name, 'success');
 };
 
   const removeExercise = (day: string, id: string) => {
@@ -380,6 +383,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
 
   const saveNote = () => {
     saveState(checks, cardioComplete, programs, workoutNotes);
+    showToast('Note saved', undefined, 'success');
   };
 
   return (

@@ -3,12 +3,14 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../theme';
 
 const MEALS = ['Morning', 'Lunch', 'Dinner', 'Snacks'];
 const WATER_TARGET = 128;
 
 export default function DayDetailScreen() {
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
   const { date } = useLocalSearchParams<{ date: string }>();
   const [data, setData] = useState<any>(null);
   const [loaded, setLoaded] = useState(false);
@@ -80,6 +82,7 @@ export default function DayDetailScreen() {
   const exercises = dayprogram?.exercises || [];
   const donecount = exercises.filter((ex: any) => daychecks[ex.id]).length;
 
+  const styles = useStyles(theme);
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
@@ -96,9 +99,9 @@ export default function DayDetailScreen() {
                 router.replace({ pathname: '/day-detail', params: { date: prev } });
               }}
               style={{ padding: 12 }}>
-              <Text style={{ color: '#3b82f6', fontSize: 20 }}>‹</Text>
+              <Text style={{ color: theme.accentBlue, fontSize: 20 }}>‹</Text>
             </TouchableOpacity>
-            <Text style={[styles.headerDate, !isToday && { color: '#f59e0b' }]}>
+            <Text style={[styles.headerDate, !isToday && { color: theme.accentAmber }]}>
               {formatDate(date || todayKey)}
             </Text>
             <TouchableOpacity
@@ -110,7 +113,7 @@ export default function DayDetailScreen() {
                 if (next <= todayKey) router.replace({ pathname: '/day-detail', params: { date: next } });
               }}
               style={{ padding: 12 }}>
-              <Text style={{ color: isToday ? '#333333' : '#3b82f6', fontSize: 20 }}>›</Text>
+              <Text style={{ color: isToday ? theme.textDim : theme.accentBlue, fontSize: 20 }}>›</Text>
             </TouchableOpacity>
           </View>
           {!isToday && (
@@ -150,18 +153,18 @@ export default function DayDetailScreen() {
                   <Text style={styles.summaryLabel}>Net Cal</Text>
                 </View>
               </View>
-              <View style={{ height: 0.5, backgroundColor: 'rgba(255,255,255,0.06)', marginBottom: 12 }} />
+              <View style={{ height: 0.5, backgroundColor: theme.borderSubtle, marginBottom: 12 }} />
               <View style={{ flexDirection: 'row' }}>
                 <View style={styles.summaryStat}>
-                  <Text style={styles.summaryVal}>{totalProtein}<Text style={{ fontSize: 12, color: '#666680' }}>g</Text></Text>
+                  <Text style={styles.summaryVal}>{totalProtein}<Text style={{ fontSize: 12, color: theme.textDim }}>g</Text></Text>
                   <Text style={styles.summaryLabel}>Protein</Text>
                 </View>
                 <View style={styles.summaryStat}>
-                  <Text style={styles.summaryVal}>{totalCarbs}<Text style={{ fontSize: 12, color: '#666680' }}>g</Text></Text>
+                  <Text style={styles.summaryVal}>{totalCarbs}<Text style={{ fontSize: 12, color: theme.textDim }}>g</Text></Text>
                   <Text style={styles.summaryLabel}>Carbs</Text>
                 </View>
                 <View style={styles.summaryStat}>
-                  <Text style={styles.summaryVal}>{totalFat}<Text style={{ fontSize: 12, color: '#666680' }}>g</Text></Text>
+                  <Text style={styles.summaryVal}>{totalFat}<Text style={{ fontSize: 12, color: theme.textDim }}>g</Text></Text>
                   <Text style={styles.summaryLabel}>Fat</Text>
                 </View>
               </View>
@@ -187,15 +190,15 @@ export default function DayDetailScreen() {
 
             {/* Page 3 -- Advanced Nutrition */}
             <View style={{ width: CARD_WIDTH }}>
-              <Text style={{ fontSize: 9, color: '#666680', fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>Advanced Nutrition</Text>
+              <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>Advanced Nutrition</Text>
               {[
                 { label: 'Fiber', value: totalfiber, unit: 'g', color: '#6366f1' },
                 { label: 'Sugar', value: totalsugar, unit: 'g', color: '#ec4899' },
                 { label: 'Sodium', value: totalsodium, unit: 'mg', color: '#8b5cf6' },
               ].map(n => (
-                <View key={n.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: 0.5, borderBottomColor: 'rgba(255,255,255,0.04)' }}>
-                  <Text style={{ fontSize: 12, color: '#666680', fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' }}>{n.label}</Text>
-                  <Text style={{ fontSize: 12, color: n.value > 0 ? n.color : '#444455', fontFamily: 'DMSans_600SemiBold' }}>{n.value > 0 ? `${n.value}${n.unit}` : '--'}</Text>
+                <View key={n.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle }}>
+                  <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' }}>{n.label}</Text>
+                  <Text style={{ fontSize: 12, color: n.value > 0 ? n.color : theme.textPlaceholder, fontFamily: 'DMSans_600SemiBold' }}>{n.value > 0 ? `${n.value}${n.unit}` : '--'}</Text>
                 </View>
               ))}
             </View>
@@ -204,7 +207,7 @@ export default function DayDetailScreen() {
           {/* Page dots */}
           <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 12 }}>
             {[0, 1, 2].map(i => (
-              <View key={i} style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: summaryPage === i ? '#3b82f6' : '#2a2a2a' }} />
+              <View key={i} style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: summaryPage === i ? theme.accentBlue : theme.bgInset }} />
             ))}
           </View>
         </View>
@@ -215,7 +218,7 @@ export default function DayDetailScreen() {
             onPress={() => setWorkoutOpen(!workoutOpen)}
             style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <Text style={styles.cardLabel}>{dayprogram ? `${dayprogram.focus || dayprogram.type} · ${donecount}/${exercises.length}` : 'Workout'}</Text>
-            <Text style={{ color: '#666680', fontSize: 16 }}>{workoutOpen ? '▲' : '▼'}</Text>
+            <Text style={{ color: theme.textDim, fontSize: 16 }}>{workoutOpen ? '▲' : '▼'}</Text>
           </TouchableOpacity>
           {workoutOpen && (
             <View style={{ marginTop: 8 }}>
@@ -223,13 +226,13 @@ export default function DayDetailScreen() {
                 <Text style={styles.emptyText}>No workout logged.</Text>
               ) : (
                 exercises.map((ex: any) => (
-                  <View key={ex.id} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 7, borderBottomWidth: 0.5, borderBottomColor: 'rgba(255,255,255,0.04)' }}>
-                    <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: daychecks[ex.id] ? '#0d9268' : 'transparent', borderWidth: 1, borderColor: daychecks[ex.id] ? '#0d9268' : 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
-                      {daychecks[ex.id] && <Text style={{ color: '#000', fontSize: 10, fontWeight: '700' }}>✓</Text>}
+                  <View key={ex.id} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 7, borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle }}>
+                    <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: daychecks[ex.id] ? theme.accentGreen : 'transparent', borderWidth: 1, borderColor: daychecks[ex.id] ? theme.accentGreen : theme.borderSubtle, alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                      {daychecks[ex.id] && <Text style={{ color: theme.bgPrimary, fontSize: 10, fontWeight: '700' }}>✓</Text>}
                     </View>
-                    <Text style={{ flex: 1, fontSize: 13, color: daychecks[ex.id] ? '#444455' : '#e8e8f0', fontFamily: 'DMSans_400Regular', textDecorationLine: daychecks[ex.id] ? 'line-through' : 'none' }}>{ex.name}</Text>
+                    <Text style={{ flex: 1, fontSize: 13, color: daychecks[ex.id] ? theme.textDim : theme.textPrimary, fontFamily: 'DMSans_400Regular', textDecorationLine: daychecks[ex.id] ? 'line-through' : 'none' }}>{ex.name}</Text>
                     {ex.isCardio && (
-                      <Text style={{ fontSize: 10, color: '#666680', fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>
+                      <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>
                         {[ex.duration ? `${ex.duration}m` : null, ex.distance ? `${ex.distance}mi` : null].filter(Boolean).join(' · ')}
                       </Text>
                     )}
@@ -238,17 +241,17 @@ export default function DayDetailScreen() {
               )}
               {daycardiolog.effortScore && (
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
-                  <Text style={{ fontSize: 10, color: '#666680', fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>Effort Score</Text>
-                  <Text style={{ fontSize: 16, color: '#e8e8f0', fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{daycardiolog.effortScore} / 10</Text>
+                  <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>Effort Score</Text>
+                  <Text style={{ fontSize: 16, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{daycardiolog.effortScore} / 10</Text>
                 </View>
               )}
               {dayWorkoutNote ? (
-                <Text style={{ fontSize: 12, color: '#666680', fontFamily: 'DMSans_400Regular', marginTop: 8, fontStyle: 'italic' }}>{dayWorkoutNote}</Text>
+                <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 8, fontStyle: 'italic' }}>{dayWorkoutNote}</Text>
               ) : null}
               {daycardiolog.caloriesBurned ? (
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
-                  <Text style={{ fontSize: 10, color: '#666680', fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>Calories Burned</Text>
-                  <Text style={{ fontSize: 16, color: '#cc3333', fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{daycardiolog.caloriesBurned} kcal</Text>
+                  <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>Calories Burned</Text>
+                  <Text style={{ fontSize: 16, color: theme.accentRed, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{daycardiolog.caloriesBurned} kcal</Text>
                 </View>
               ) : null}
             </View>
@@ -261,7 +264,7 @@ export default function DayDetailScreen() {
             onPress={() => setMealsOpen(!mealsOpen)}
             style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <Text style={styles.cardLabel}>Meals · {totalCals} kcal</Text>
-            <Text style={{ color: '#666680', fontSize: 16 }}>{mealsOpen ? '▲' : '▼'}</Text>
+            <Text style={{ color: theme.textDim, fontSize: 16 }}>{mealsOpen ? '▲' : '▼'}</Text>
           </TouchableOpacity>
           {mealsOpen && (
             <View style={{ marginTop: 8 }}>
@@ -275,8 +278,8 @@ export default function DayDetailScreen() {
                   return (
                     <View key={meal} style={{ marginBottom: 12 }}>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-                        <Text style={{ fontSize: 10, color: '#666680', fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>{meal}</Text>
-                        <Text style={{ fontSize: 12, color: '#0d9268', fontFamily: 'DMSans_600SemiBold' }}>{mealTotal} kcal</Text>
+                        <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>{meal}</Text>
+                        <Text style={{ fontSize: 12, color: theme.accentGreen, fontFamily: 'DMSans_600SemiBold' }}>{mealTotal} kcal</Text>
                       </View>
                       {mealEntries.map((entry: any, i: number) => (
                         <View key={i} style={styles.foodRow}>
@@ -302,7 +305,7 @@ export default function DayDetailScreen() {
 
         <View style={styles.card}>
           <Text style={styles.cardLabel}>Exclude from Stats</Text>
-          <Text style={{ fontSize: 11, color: '#666680', fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12 }}>
+          <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12 }}>
             Excluded days skipped in averages
           </Text>
           <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -312,13 +315,13 @@ export default function DayDetailScreen() {
                 onPress={() => toggleExclude(key)}
                 style={{
                   flex: 1, paddingVertical: 8, borderRadius: 6, alignItems: 'center',
-                  backgroundColor: excluded[key] ? 'rgba(204,51,51,0.15)' : 'rgba(13,146,104,0.1)',
+                  backgroundColor: excluded[key] ? theme.accentRedBg : theme.accentGreenBg,
                   borderWidth: 0.5,
-                  borderColor: excluded[key] ? 'rgba(204,51,51,0.4)' : 'rgba(13,146,104,0.25)',
+                  borderColor: excluded[key] ? theme.accentRedBorder : theme.accentGreenBorder,
                 }}>
                 <Text style={{
                   fontSize: 10, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', letterSpacing: 1,
-                  color: excluded[key] ? '#cc3333' : '#0d9268',
+                  color: excluded[key] ? theme.accentRed : theme.accentGreen,
                 }}>
                   {excluded[key] ? `✕ ${key}` : `✓ ${key}`}
                 </Text>
@@ -338,25 +341,25 @@ export default function DayDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0d0d0f' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 0.5, borderBottomColor: 'rgba(255,255,255,0.06)' },
+const useStyles = (theme: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.bgPrimary },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard },
   backBtn: { width: 60 },
-  backBtnText: { color: '#3b82f6', fontSize: 14, fontFamily: 'DMSans_600SemiBold' },
-  headerDate: { fontSize: 13, color: '#e8e8f0', fontFamily: 'DMSans_600SemiBold', textAlign: 'center' },
-  historyBadge: { marginTop: 4, backgroundColor: 'rgba(245,158,11,0.15)', borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2 },
-  historyBadgeText: { fontSize: 9, color: '#f59e0b', fontFamily: 'DMSans_700Bold', letterSpacing: 2 },
+  backBtnText: { color: theme.accentBlue, fontSize: 14, fontFamily: 'DMSans_600SemiBold' },
+  headerDate: { fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', textAlign: 'center' },
+  historyBadge: { marginTop: 4, backgroundColor: `${theme.accentAmber}26`, borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2 },
+  historyBadgeText: { fontSize: 9, color: theme.accentAmber, fontFamily: 'DMSans_700Bold', letterSpacing: 2 },
   content: { padding: 16, paddingBottom: 80 },
-  card: { backgroundColor: '#1a1a24', borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.06)', borderTopColor: 'rgba(255,255,255,0.1)', borderTopWidth: 0.5, borderRadius: 14, padding: 16, marginBottom: 12 },
-  cardLabel: { fontSize: 9, letterSpacing: 3, color: '#666680', textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', marginBottom: 10 },
+  card: { backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, borderTopWidth: 0.5, borderRadius: 14, padding: 16, marginBottom: 12 },
+  cardLabel: { fontSize: 9, letterSpacing: 3, color: theme.textDim, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', marginBottom: 10 },
   summaryStat: { alignItems: 'center', flex: 1 },
-  summaryVal: { fontSize: 22, color: '#c8c8d8', fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
-  summaryLabel: { fontSize: 8, color: '#666680', fontFamily: 'DMSans_700Bold', marginTop: 2, letterSpacing: 1, textTransform: 'uppercase', textAlign: 'center' },
-  foodRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 0.5, borderBottomColor: 'rgba(255,255,255,0.04)' },
-  foodName: { fontSize: 13, color: '#e8e8f0', fontFamily: 'DMSans_400Regular', flex: 1, marginRight: 8 },
-  foodCal: { fontSize: 13, color: '#666680', fontFamily: 'DMSans_600SemiBold' },
-  emptyText: { fontSize: 13, color: '#444455', fontFamily: 'DMSans_400Regular', fontStyle: 'italic' },
-  noteText: { fontSize: 13, color: '#888899', fontFamily: 'DMSans_400Regular', lineHeight: 20 },
+  summaryVal: { fontSize: 22, color: theme.textSecondary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
+  summaryLabel: { fontSize: 8, color: theme.textDim, fontFamily: 'DMSans_700Bold', marginTop: 2, letterSpacing: 1, textTransform: 'uppercase', textAlign: 'center' },
+  foodRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle },
+  foodName: { fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_400Regular', flex: 1, marginRight: 8 },
+  foodCal: { fontSize: 13, color: theme.textDim, fontFamily: 'DMSans_600SemiBold' },
+  emptyText: { fontSize: 13, color: theme.textPlaceholder, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' },
+  noteText: { fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular', lineHeight: 20 },
   backToTodayBtn: { padding: 16, alignItems: 'center' },
-  backToTodayText: { color: '#3b82f6', fontSize: 14, fontFamily: 'DMSans_600SemiBold' },
+  backToTodayText: { color: theme.accentBlue, fontSize: 14, fontFamily: 'DMSans_600SemiBold' },
 });

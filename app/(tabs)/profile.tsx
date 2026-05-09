@@ -4,8 +4,9 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Animated, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useToast } from '../../components/Toast';
 import { saveToFirebase } from '../../firebaseConfig';
 import { useTheme } from '../../theme';
 
@@ -19,6 +20,13 @@ interface Profile {
   calTarget: string;
   weightGoal: string;
   waterPresets: [number, number, number];
+  macroMode: 'ratio' | 'fixed';
+  macroProteinPct: string;
+  macroCarbsPct: string;
+  macroFatPct: string;
+  macroProteinG: string;
+  macroCarbsG: string;
+  macroFatG: string;
 }
 
 const GOAL_DEFICITS: Record<string, number> = {
@@ -103,6 +111,7 @@ function CollapsibleCard({ label, defaultOpen = false, children, theme }: { labe
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
+  const { showToast } = useToast();
   const [profile, setProfile] = useState<Profile>({
     name: '',
     birthday: '',
@@ -113,6 +122,13 @@ export default function ProfileScreen() {
     calTarget: '',
     weightGoal: 'lose_1',
     waterPresets: [12, 16, 22],
+    macroMode: 'ratio',
+    macroProteinPct: '35',
+    macroCarbsPct: '40',
+    macroFatPct: '25',
+    macroProteinG: '',
+    macroCarbsG: '',
+    macroFatG: '',
   });
   const [currentWeight, setCurrentWeight] = useState<number | null>(null);
   const [saved, setSaved] = useState(false);
@@ -183,13 +199,46 @@ export default function ProfileScreen() {
     return tdee + deficit;
   };
 
+  const isMacroValid = () => {
+    const kcalTarget = parseFloat(profile.calTarget) || suggested || 0;
+    if (kcalTarget === 0) return true; // no target set yet, don't block
+    if (profile.macroMode === 'ratio') {
+      const total = (parseFloat(profile.macroProteinPct) || 0) + (parseFloat(profile.macroCarbsPct) || 0) + (parseFloat(profile.macroFatPct) || 0);
+      return total === 100;
+    } else {
+      const totalKcal = ((parseFloat(profile.macroProteinG) || 0) * 4) + ((parseFloat(profile.macroCarbsG) || 0) * 4) + ((parseFloat(profile.macroFatG) || 0) * 9);
+      return Math.abs(totalKcal - kcalTarget) <= 50;
+    }
+  };
+
   const saveProfile = async () => {
     try {
-      await AsyncStorage.setItem('pj_profile', JSON.stringify(profile));
-      await saveToFirebase('profile', 'data', profile);
+      const kcalTarget = parseFloat(profile.calTarget) || suggested || 0;
+      let synced = { ...profile };
+
+      if (profile.macroMode === 'ratio' && kcalTarget > 0) {
+        synced.macroProteinG = String(Math.round(((parseFloat(profile.macroProteinPct) || 0) / 100) * kcalTarget / 4));
+        synced.macroCarbsG   = String(Math.round(((parseFloat(profile.macroCarbsPct)   || 0) / 100) * kcalTarget / 4));
+        synced.macroFatG     = String(Math.round(((parseFloat(profile.macroFatPct)     || 0) / 100) * kcalTarget / 9));
+      } else if (profile.macroMode === 'fixed' && kcalTarget > 0) {
+        const pKcal = (parseFloat(profile.macroProteinG) || 0) * 4;
+        const cKcal = (parseFloat(profile.macroCarbsG)   || 0) * 4;
+        const fKcal = (parseFloat(profile.macroFatG)     || 0) * 9;
+        const totalKcal = pKcal + cKcal + fKcal;
+        if (totalKcal > 0) {
+          synced.macroProteinPct = String(Math.round((pKcal / totalKcal) * 100));
+          synced.macroCarbsPct   = String(Math.round((cKcal / totalKcal) * 100));
+          synced.macroFatPct     = String(Math.round((fKcal / totalKcal) * 100));
+        }
+      }
+
+      setProfile(synced);
+      await AsyncStorage.setItem('pj_profile', JSON.stringify(synced));
+      await saveToFirebase('profile', 'data', synced);
       setSaved(true);
       setHasChanges(false);
       setTimeout(() => setSaved(false), 2000);
+      showToast('Profile saved', undefined, 'success');
     } catch (e) {
       console.log('Save profile error', e);
     }
@@ -221,6 +270,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </View>
 
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
 
         <CollapsibleCard label="Basic Info" defaultOpen={true} theme={theme}>
@@ -383,16 +433,149 @@ export default function ProfileScreen() {
           />
         </CollapsibleCard>
 
+        <CollapsibleCard label="Macro Goals" theme={theme}>
+          <Text style={[styles.estimateNote, { color: theme.textMuted }]}>
+            {profile.macroMode === 'ratio'
+              ? 'Set percentages - grams update automatically when your calorie target changes.'
+              : 'Set grams directly. Percentages and kcal update live.'}
+          </Text>
+
+          {/* Mode toggle */}
+          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+            {(['ratio', 'fixed'] as const).map(mode => (
+              <TouchableOpacity
+                key={mode}
+                style={[styles.toggleBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput },
+                  profile.macroMode === mode && { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+                onPress={() => setProfile(prev => ({ ...prev, macroMode: mode }))}>
+                <Text style={[styles.toggleBtnText, { color: theme.textMuted },
+                  profile.macroMode === mode && { color: theme.accentBlue }]}>
+                  {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {profile.macroMode === 'ratio' ? (
+            <View>
+              {/* Ratio inputs */}
+              {[
+                { label: 'Protein', pctKey: 'macroProteinPct' as keyof Profile, color: theme.macroProtein },
+                { label: 'Carbs',   pctKey: 'macroCarbsPct'   as keyof Profile, color: theme.macroCarbs },
+                { label: 'Fat',     pctKey: 'macroFatPct'     as keyof Profile, color: theme.macroFat },
+              ].map(({ label, pctKey, color }) => {
+                const pct = parseFloat(profile[pctKey] as string) || 0;
+                const kcalTarget = parseFloat(profile.calTarget) || suggested || 0;
+                const calsPerGram = label === 'Fat' ? 9 : 4;
+                const kcal = Math.round((pct / 100) * kcalTarget);
+                const grams = Math.round(kcal / calsPerGram);
+                return (
+                  <View key={label} style={{ marginBottom: 12 }}>
+                    <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>{label}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                      <TextInput
+                        style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color, flex: 1, marginBottom: 0, textAlign: 'center', fontSize: 20, fontFamily: 'BebasNeue_400Regular' }]}
+                        value={profile[pctKey] as string}
+                        onChangeText={v => updateField(pctKey, v)}
+                        keyboardType="number-pad"
+                        maxLength={3}
+                        placeholder="0"
+                        placeholderTextColor={theme.textPlaceholder}
+                      />
+                      <Text style={{ color: theme.textMuted, fontSize: 16, fontFamily: 'DMSans_400Regular' }}>%</Text>
+                      <View style={{ flex: 2, backgroundColor: theme.bgInset, borderRadius: 8, padding: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
+                          <Text style={{ color, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{grams}</Text>
+                          <Text style={{ color, fontSize: 11, fontFamily: 'DMSans_500Medium' }}>g</Text>
+                        </View>
+                        <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: 'DMSans_400Regular', alignSelf: 'center' }}>{kcal} kcal</Text>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
+
+              {/* Validation */}
+              {(() => {
+                const total = (parseFloat(profile.macroProteinPct) || 0) + (parseFloat(profile.macroCarbsPct) || 0) + (parseFloat(profile.macroFatPct) || 0);
+                const color = total === 100 ? theme.accentGreen : theme.accentRed;
+                return (
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4, padding: 10, backgroundColor: theme.bgInset, borderRadius: 8 }}>
+                    <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Total</Text>
+                    <Text style={{ fontSize: 16, color, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>
+                      {total}% {total === 100 ? '✓' : `- needs to equal 100%`}
+                    </Text>
+                  </View>
+                );
+              })()}
+            </View>
+          ) : (
+            <View>
+              {/* Fixed inputs */}
+              {[
+                { label: 'Protein', gKey: 'macroProteinG' as keyof Profile, color: theme.macroProtein, calsPerGram: 4 },
+                { label: 'Carbs',   gKey: 'macroCarbsG'   as keyof Profile, color: theme.macroCarbs,   calsPerGram: 4 },
+                { label: 'Fat',     gKey: 'macroFatG'     as keyof Profile, color: theme.macroFat,     calsPerGram: 9 },
+              ].map(({ label, gKey, color, calsPerGram }) => {
+                const grams = parseFloat(profile[gKey] as string) || 0;
+                const kcal = Math.round(grams * calsPerGram);
+                const kcalTarget = parseFloat(profile.calTarget) || suggested || 0;
+                const pct = kcalTarget > 0 ? Math.round((kcal / kcalTarget) * 100) : 0;
+                return (
+                  <View key={label} style={{ marginBottom: 12 }}>
+                    <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>{label}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                      <TextInput
+                        style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color, flex: 1, marginBottom: 0, textAlign: 'center', fontSize: 20, fontFamily: 'BebasNeue_400Regular' }]}
+                        value={profile[gKey] as string}
+                        onChangeText={v => updateField(gKey, v)}
+                        keyboardType="number-pad"
+                        maxLength={4}
+                        placeholder="0"
+                        placeholderTextColor={theme.textPlaceholder}
+                      />
+                      <Text style={{ color: theme.textMuted, fontSize: 16, fontFamily: 'DMSans_400Regular' }}>g</Text>
+                      <View style={{ flex: 2, backgroundColor: theme.bgInset, borderRadius: 8, padding: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <Text style={{ color, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{kcal} kcal</Text>
+                        <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: 'DMSans_400Regular', alignSelf: 'center' }}>{pct}%</Text>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
+
+              {/* Fixed mode total */}
+              {(() => {
+                const totalKcal = ((parseFloat(profile.macroProteinG) || 0) * 4) + ((parseFloat(profile.macroCarbsG) || 0) * 4) + ((parseFloat(profile.macroFatG) || 0) * 9);
+                const kcalTarget = parseFloat(profile.calTarget) || suggested || 0;
+                const diff = Math.round(totalKcal - kcalTarget);
+                const color = Math.abs(diff) <= 50 ? theme.accentGreen : Math.abs(diff) <= 150 ? theme.accentAmber : theme.accentRed;
+                return (
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4, padding: 10, backgroundColor: theme.bgInset, borderRadius: 8 }}>
+                    <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Total · {Math.round(totalKcal)} kcal</Text>
+                    <Text style={{ fontSize: 13, color, fontFamily: 'DMSans_600SemiBold' }}>
+                      {Math.abs(diff) <= 50 ? 'Matches target ✓' : diff > 0 ? `+${diff} kcal over · adjust to save` : `${Math.abs(diff)} kcal under · adjust to save`}
+                    </Text>
+                  </View>
+                );
+              })()}
+            </View>
+          )}
+        </CollapsibleCard>
+
         <TouchableOpacity
           style={[styles.saveBtn, { backgroundColor: theme.accentBlue },
             saved && { backgroundColor: theme.accentGreen },
-            !hasChanges && { backgroundColor: theme.bgInput, borderWidth: 0.5, borderColor: theme.borderInput }]}
+            (!hasChanges || !isMacroValid()) && { backgroundColor: theme.bgInput, borderWidth: 0.5, borderColor: theme.borderInput }]}
           onPress={saveProfile}
-          disabled={!hasChanges}>
-          <Text style={[styles.saveBtnText, { color: !hasChanges ? theme.textMuted : theme.bgPrimary }]}>{saved ? 'SAVED' : 'SAVE PROFILE'}</Text>
+          disabled={!hasChanges || !isMacroValid()}>
+          <Text style={[styles.saveBtnText, { color: (!hasChanges || !isMacroValid()) ? theme.textMuted : theme.bgPrimary }]}>
+            {saved ? 'SAVED' : !isMacroValid() ? 'FIX MACROS TO SAVE' : 'SAVE PROFILE'}
+          </Text>
         </TouchableOpacity>
 
       </ScrollView>
+      </KeyboardAvoidingView>
     </LinearGradient>
   );
 }

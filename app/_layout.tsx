@@ -12,6 +12,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { ToastProvider } from '../components/Toast';
 import { ThemeProvider } from '../theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -34,6 +35,7 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
     <ThemeProvider>
+    <ToastProvider>
     <NavThemeProvider value={DarkTheme}>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -49,6 +51,7 @@ export default function RootLayout() {
       </Stack>
       <StatusBar style="light" />
     </NavThemeProvider>
+    </ToastProvider>
     </ThemeProvider>
     </GestureHandlerRootView>
   );

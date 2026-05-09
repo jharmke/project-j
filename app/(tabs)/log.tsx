@@ -32,7 +32,7 @@ interface FoodEntry {
 
 const SCREEN_WIDTH = Dimensions.get('window').width - 32 - 32; // full width minus padding minus card padding
 
-function MacroDonut({ protein, carbs, fat, calories }: { protein: number; carbs: number; fat: number; calories: number }) {
+function MacroDonut({ protein, carbs, fat, calories, theme }: { protein: number; carbs: number; fat: number; calories: number; theme: any }) {
   const size = 100;
   const strokeWidth = 12;
   const radius = (size - strokeWidth) / 2;
@@ -42,10 +42,10 @@ function MacroDonut({ protein, carbs, fat, calories }: { protein: number; carbs:
     return (
       <View style={{ alignItems: 'center', justifyContent: 'center', width: size, height: size }}>
         <Svg width={size} height={size}>
-          <Circle cx={size/2} cy={size/2} r={radius} stroke="#2a2a2a" strokeWidth={strokeWidth} fill="none" />
+          <Circle cx={size/2} cy={size/2} r={radius} stroke={theme.donutTrack} strokeWidth={strokeWidth} fill="none" />
         </Svg>
         <View style={{ position: 'absolute', alignItems: 'center' }}>
-          <Text style={{ color: '#444444', fontSize: 10, fontFamily: 'DMSans_400Regular' }}>no data</Text>
+          <Text style={{ color: theme.textDim, fontSize: 10, fontFamily: 'DMSans_400Regular' }}>no data</Text>
         </View>
       </View>
     );
@@ -61,17 +61,17 @@ function MacroDonut({ protein, carbs, fat, calories }: { protein: number; carbs:
   return (
     <View style={{ alignItems: 'center', justifyContent: 'center', width: size, height: size }}>
       <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
-        <Circle cx={size/2} cy={size/2} r={radius} stroke="#2a2a2a" strokeWidth={strokeWidth} fill="none" />
-        <Circle cx={size/2} cy={size/2} r={radius} stroke="#0d9268" strokeWidth={strokeWidth} fill="none"
+        <Circle cx={size/2} cy={size/2} r={radius} stroke={theme.donutTrack} strokeWidth={strokeWidth} fill="none" />
+        <Circle cx={size/2} cy={size/2} r={radius} stroke={theme.macroProtein} strokeWidth={strokeWidth} fill="none"
           strokeDasharray={`${proteinDash} ${circumference}`} strokeDashoffset={0} strokeLinecap="butt" />
-        <Circle cx={size/2} cy={size/2} r={radius} stroke="#c47d1a" strokeWidth={strokeWidth} fill="none"
+        <Circle cx={size/2} cy={size/2} r={radius} stroke={theme.macroCarbs} strokeWidth={strokeWidth} fill="none"
           strokeDasharray={`${carbsDash} ${circumference}`} strokeDashoffset={carbsOffset} strokeLinecap="butt" />
-        <Circle cx={size/2} cy={size/2} r={radius} stroke="#a83232" strokeWidth={strokeWidth} fill="none"
+        <Circle cx={size/2} cy={size/2} r={radius} stroke={theme.macroFat} strokeWidth={strokeWidth} fill="none"
           strokeDasharray={`${fatDash} ${circumference}`} strokeDashoffset={fatOffset} strokeLinecap="butt" />
       </Svg>
       <View style={{ position: 'absolute', alignItems: 'center' }}>
-        <Text style={{ color: '#ffffff', fontSize: 14, fontFamily: 'BebasNeue_400Regular' }}>{calories}</Text>
-        <Text style={{ color: '#888888', fontSize: 8, fontFamily: 'DMSans_400Regular' }}>kcal</Text>
+        <Text style={{ color: theme.textPrimary, fontSize: 14, fontFamily: 'BebasNeue_400Regular' }}>{calories}</Text>
+        <Text style={{ color: theme.textMuted, fontSize: 8, fontFamily: 'DMSans_400Regular' }}>kcal</Text>
       </View>
     </View>
   );
@@ -318,7 +318,7 @@ export default function LogScreen() {
         </View>
         <TouchableOpacity
           style={[styles.libraryBtn, { height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
-          onPress={() => router.push({ pathname: '/add-food', params: { meal: 'Morning', date: activeDate } })}>
+          onPress={() => router.push({ pathname: '/add-food', params: { meal: 'browse', date: activeDate } })}>
           <Text style={[styles.libraryBtnText, { color: theme.accentBlue }]}>Library</Text>
         </TouchableOpacity>
       </View>
@@ -352,7 +352,7 @@ export default function LogScreen() {
                   {adjustedTarget > 0 ? (totalCals < adjustedTarget ? `${adjustedTarget - totalCals} kcal remaining (${activeCalories} burned)` : `${totalCals - adjustedTarget} kcal over target (${activeCalories} burned)`) : ''}
                 </Text>
               </View>
-              <MacroDonut protein={totalProtein} carbs={totalCarbs} fat={totalFat} calories={totalCals} />
+              <MacroDonut protein={totalProtein} carbs={totalCarbs} fat={totalFat} calories={totalCals} theme={theme} />
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: theme.borderSubtle }}>
               <View style={{ alignItems: 'center' }}>

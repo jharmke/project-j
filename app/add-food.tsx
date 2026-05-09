@@ -8,6 +8,7 @@ import { Alert, FlatList, KeyboardAvoidingView, Modal, Platform, StyleSheet, Tex
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { USDA_API_KEY } from '../config';
 import { db, getUserId, loadFromFirebase, saveToFirebase } from '../firebaseConfig';
+import { useTheme } from '../theme';
 
 
 
@@ -38,6 +39,7 @@ interface SearchResult {
 
 export default function AddFoodScreen() {
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [myFoods, setMyFoods] = useState<MyFood[]>([]);
@@ -411,6 +413,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
     await saveToFirebase('my_foods', 'favorites', updated);
   };
 
+  const styles = useStyles(theme);
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
@@ -418,17 +421,17 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
   <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
     <Text style={styles.backBtnText}>← Back</Text>
   </TouchableOpacity>
-  <Text style={styles.headerTitle}>Add to {meal}</Text>
+  <Text style={styles.headerTitle}>{meal === 'browse' ? 'Food Library' : `Add to ${meal}`}</Text>
   <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
     <TouchableOpacity
       onPress={() => router.push('/recipe-builder')}
-      style={{ backgroundColor: 'rgba(16,185,129,0.15)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.3)', borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ color: '#10b981', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>+ Recipe</Text>
+      style={{ backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, alignItems: 'center', justifyContent: 'center' }}>
+      <Text style={{ color: theme.accentGreen, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>+ Recipe</Text>
     </TouchableOpacity>
     <TouchableOpacity
       onPress={startScan}
-      style={{ backgroundColor: 'rgba(59,130,246,0.15)', borderWidth: 1, borderColor: 'rgba(59,130,246,0.3)', borderRadius: 6, padding: 6, alignItems: 'center', justifyContent: 'center' }}>
-      <Ionicons name="camera-outline" size={24} color="#3b82f6" />
+      style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, padding: 6, alignItems: 'center', justifyContent: 'center' }}>
+      <Ionicons name="camera-outline" size={24} color={theme.accentBlue} />
     </TouchableOpacity>
   </View>
 </View>
@@ -544,15 +547,15 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                 </View>
               )}
               {item.isRecipe && (
-                <View style={[styles.savedBadge, { backgroundColor: 'rgba(16,185,129,0.2)' }]}>
-                  <Text style={[styles.savedBadgeText, { color: '#10b981' }]}>RECIPE</Text>
+                <View style={[styles.savedBadge, { backgroundColor: theme.accentGreenBg }]}>
+                  <Text style={[styles.savedBadgeText, { color: theme.accentGreen }]}>RECIPE</Text>
                 </View>
               )}
               <Text style={styles.resultName} numberOfLines={2}>{item.description}</Text>
             </View>
             <View style={styles.resultRight}>
               <TouchableOpacity onPress={() => toggleFavorite(item)} style={{ marginRight: 8 }}>
-                <Text style={{ fontSize: 16, color: favorites.some(f => f.name === item.description) ? '#f59e0b' : '#333333' }}>★</Text>
+                <Text style={{ fontSize: 16, color: favorites.some(f => f.name === item.description) ? theme.accentAmber : theme.textDim }}>★</Text>
               </TouchableOpacity>
               <Text style={styles.resultCal}>{getCalories(item)}</Text>
               <Text style={styles.resultCalLabel}>kcal</Text>
@@ -565,7 +568,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                       setShowEditMyFood(true);
                     }}
                     style={{ marginLeft: 8 }}>
-                    <Text style={{ fontSize: 12, color: '#888888', fontFamily: 'DMSans_500Medium' }}>Edit</Text>
+                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>Edit</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={() => deleteMyFood(myFoods.findIndex(f => f.name === item.description))} style={styles.deleteBtn}>
                     <Text style={styles.deleteBtnText}>×</Text>
@@ -654,50 +657,50 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#080808' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: '#222222' },
+const useStyles = (theme: any) => StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.bgPrimary },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: theme.borderCard },
   backBtn: { padding: 4 },
-  backBtnText: { color: '#3b82f6', fontSize: 14, fontFamily: 'DMSans_500Medium' },
-  headerTitle: { fontSize: 20, color: '#ffffff', fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
+  backBtnText: { color: theme.accentBlue, fontSize: 14, fontFamily: 'DMSans_500Medium' },
+  headerTitle: { fontSize: 20, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
   scanBtn: { padding: 4 },
   scanBtnText: { fontSize: 20 },
   searchRow: { flexDirection: 'row', alignItems: 'center', padding: 16, paddingBottom: 8 },
-  searchInput: { flex: 1, backgroundColor: '#161616', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 8, color: '#ffffff', padding: 12, fontSize: 15, fontFamily: 'DMSans_400Regular' },
-  searching: { color: '#888888', marginLeft: 8, fontFamily: 'DMSans_400Regular' },
-  addNewBtn: { marginHorizontal: 16, marginBottom: 8, padding: 10, backgroundColor: 'rgba(59,130,246,0.1)', borderWidth: 1, borderColor: 'rgba(59,130,246,0.25)', borderRadius: 6, alignItems: 'center' },
-  addNewBtnText: { color: '#3b82f6', fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
-  addNewForm: { marginHorizontal: 16, marginBottom: 8, backgroundColor: '#161616', borderRadius: 8, padding: 12, borderWidth: 1, borderColor: '#2a2a2a' },
-  formInput: { backgroundColor: '#1e1e1e', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 6, color: '#ffffff', padding: 10, fontSize: 14, fontFamily: 'DMSans_400Regular', marginBottom: 8 },
+  searchInput: { flex: 1, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 15, fontFamily: 'DMSans_400Regular' },
+  searching: { color: theme.textMuted, marginLeft: 8, fontFamily: 'DMSans_400Regular' },
+  addNewBtn: { marginHorizontal: 16, marginBottom: 8, padding: 10, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, alignItems: 'center' },
+  addNewBtnText: { color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
+  addNewForm: { marginHorizontal: 16, marginBottom: 8, backgroundColor: theme.bgCard, borderRadius: 8, padding: 12, borderWidth: 1, borderColor: theme.borderCard },
+  formInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: 'DMSans_400Regular', marginBottom: 8 },
   formRow: { flexDirection: 'row', gap: 8 },
-  saveBtn: { backgroundColor: 'rgba(16,185,129,0.15)', borderWidth: 1, borderColor: 'rgba(16,185,129,0.3)', borderRadius: 6, paddingHorizontal: 16, justifyContent: 'center' },
-  saveBtnText: { color: '#10b981', fontFamily: 'DMSans_600SemiBold', fontSize: 14 },
-  resultItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14, borderBottomWidth: 1, borderBottomColor: '#161616' },
+  saveBtn: { backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder, borderRadius: 6, paddingHorizontal: 16, justifyContent: 'center' },
+  saveBtnText: { color: theme.accentGreen, fontFamily: 'DMSans_600SemiBold', fontSize: 14 },
+  resultItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14, borderBottomWidth: 1, borderBottomColor: theme.borderSubtle },
   resultLeft: { flex: 1, marginRight: 12 },
-  savedBadge: { backgroundColor: 'rgba(16,185,129,0.2)', borderRadius: 3, paddingHorizontal: 5, paddingVertical: 1, alignSelf: 'flex-start', marginBottom: 4 },
-  savedBadgeText: { fontSize: 8, color: '#10b981', fontFamily: 'DMSans_700Bold' },
-  resultName: { fontSize: 13, color: '#e8e8e8', fontFamily: 'DMSans_400Regular' },
+  savedBadge: { backgroundColor: theme.accentGreenBg, borderRadius: 3, paddingHorizontal: 5, paddingVertical: 1, alignSelf: 'flex-start', marginBottom: 4 },
+  savedBadgeText: { fontSize: 8, color: theme.accentGreen, fontFamily: 'DMSans_700Bold' },
+  resultName: { fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_400Regular' },
   resultRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  resultCal: { fontSize: 18, color: '#10b981', fontFamily: 'BebasNeue_400Regular' },
-  resultCalLabel: { fontSize: 10, color: '#888888', fontFamily: 'DMSans_400Regular' },
+  resultCal: { fontSize: 18, color: theme.accentGreen, fontFamily: 'BebasNeue_400Regular' },
+  resultCalLabel: { fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular' },
   deleteBtn: { marginLeft: 8, padding: 4 },
-  deleteBtnText: { fontSize: 18, color: '#444444' },
+  deleteBtnText: { fontSize: 18, color: theme.textDim },
   cameraOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100 },
   camera: { flex: 1 },
-  cancelScan: { position: 'absolute', bottom: 40, alignSelf: 'center', backgroundColor: 'rgba(0,0,0,0.7)', padding: 16, borderRadius: 8 },
-  cancelScanText: { color: '#ffffff', fontSize: 16, fontFamily: 'DMSans_600SemiBold' },
-  tabRow: { flexDirection: 'row', marginHorizontal: 16, marginBottom: 8, backgroundColor: '#161616', borderRadius: 8, padding: 4 },
+  cancelScan: { position: 'absolute', bottom: 40, alignSelf: 'center', backgroundColor: theme.overlayBg, padding: 16, borderRadius: 8 },
+  cancelScanText: { color: theme.textPrimary, fontSize: 16, fontFamily: 'DMSans_600SemiBold' },
+  tabRow: { flexDirection: 'row', marginHorizontal: 16, marginBottom: 8, backgroundColor: theme.bgProgressTrack, borderRadius: 8, padding: 4 },
   tab: { flex: 1, padding: 8, alignItems: 'center', borderRadius: 6 },
-  tabActive: { backgroundColor: '#2a2a2a' },
-  tabText: { fontSize: 13, color: '#888888', fontFamily: 'DMSans_500Medium' },
-  tabTextActive: { color: '#ffffff' },
-  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'flex-end' },
-  modal: { backgroundColor: '#161616', borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24, borderWidth: 1, borderColor: '#2a2a2a' },
-  modalTitle: { fontSize: 18, color: '#ffffff', fontFamily: 'DMSans_600SemiBold', marginBottom: 16 },
-  modalInput: { backgroundColor: '#1e1e1e', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 6, color: '#ffffff', padding: 10, fontSize: 14, fontFamily: 'DMSans_400Regular', marginBottom: 10 },
+  tabActive: { backgroundColor: theme.bgCard },
+  tabText: { fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_500Medium' },
+  tabTextActive: { color: theme.textPrimary },
+  modalOverlay: { flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'flex-end' },
+  modal: { backgroundColor: theme.bgCard, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24, borderWidth: 1, borderColor: theme.borderCard },
+  modalTitle: { fontSize: 18, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', marginBottom: 16 },
+  modalInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: 'DMSans_400Regular', marginBottom: 10 },
   modalBtns: { flexDirection: 'row', gap: 8, marginTop: 8 },
-  modalCancelBtn: { flex: 1, padding: 12, backgroundColor: '#1e1e1e', borderWidth: 1, borderColor: '#2a2a2a', borderRadius: 6, alignItems: 'center' },
-  modalCancelText: { color: '#999999', fontFamily: 'DMSans_500Medium', fontSize: 14 },
-  modalSaveBtn: { flex: 1, padding: 12, backgroundColor: '#3b82f6', borderRadius: 6, alignItems: 'center' },
-  modalSaveText: { color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 1 },
+  modalCancelBtn: { flex: 1, padding: 12, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, alignItems: 'center' },
+  modalCancelText: { color: theme.textMuted, fontFamily: 'DMSans_500Medium', fontSize: 14 },
+  modalSaveBtn: { flex: 1, padding: 12, backgroundColor: theme.accentBlue, borderRadius: 6, alignItems: 'center' },
+  modalSaveText: { color: theme.textWhite, fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 1 },
 });

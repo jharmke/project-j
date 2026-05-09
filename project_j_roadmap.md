@@ -1,57 +1,60 @@
 DONE -- SHIPPED
-[x] Home card customization -- drag, reorder, show/hide, edit sheet slides up over home screen, dims behind
-[x] Card registry system -- CARD_REGISTRY at top of index.tsx, adding future cards is one line
-[x] Macro bars -- stacked horizontal bars replacing donut on home tab, animated, vs goal
-[x] Macro colors -- desaturated across home and log tabs (Protein #0d9268, Carbs #c47d1a, Fat #a83232)
+[x] Home card customization -- drag, reorder, show/hide
+[x] Card registry system -- CARD_REGISTRY at top of index.tsx
+[x] Macro bars -- animated, vs goal
+[x] Macro colors -- desaturated (Protein #0d9268, Carbs #c47d1a, Fat #a83232)
 [x] GestureHandlerRootView fix in _layout.tsx
 [x] Fitness Metrics no-data placeholder
-[x] Edit layout sheet -- slides up over home screen, dims behind, stays on tab, Add/Done header
-[x] Three header buttons -- refresh, calendar, grid (all matching style)
-[x] DraggableFlatList in edit sheet -- same library as workout tab
-[x] Card visibility persisted to pj_settings -- survives app restarts
+[x] Edit layout sheet -- slides up over home screen
+[x] Three header buttons -- refresh, calendar, grid
+[x] DraggableFlatList in edit sheet
+[x] Card visibility persisted to pj_settings
 [x] MacroBar component -- extracted to fix hooks-in-map error
-[x] Verse card in registry -- default on, fully optional, can be reordered or hidden
+[x] Verse card in registry
 [x] GitHub repo connected -- https://github.com/jharmke/project-j
 [x] Token/theme system -- theme.tsx, ThemeProvider wired to root layout
 [x] All 5 themes built -- Dark, Light, Slate, Warm, Blush
-[x] Theme selector UI in settings -- live and working
-[x] All main screens tokenized -- index, log, workout, stats, profile, settings
-[x] CustomTabBar -- fully themed, responds to theme changes
+[x] Theme selector UI in settings
+[x] All screens fully themed -- index, log, workout, stats, profile, settings, food-detail, add-food, workout-library, edit-food, recipe-builder, recipe-log, day-detail
+[x] CustomTabBar -- fully themed
 [x] Tab bar pill fix -- visible on light and blush themes
-[x] Background gradient -- all tabs, tokens in theme.tsx, LinearGradient implemented
-[x] Card shadows -- depth and elevation on all tabs
-[x] Tab fade transition -- replaces default slide
+[x] Background gradient -- all tabs
+[x] Card shadows -- depth and elevation
+[x] Tab fade transition
 [x] Card icons -- Ionicons on all home screen cards
-[x] Today's Training card -- combined workout summary + calories burned, replaces old workout card
-[x] Calories burned removed from workout tab
-[x] Text contrast bump -- textDim #555570 to #666680
-[x] Card label size bump -- fontSize 9 to 10 across all tabs
-[x] Blush gradient strengthened -- gradientStart #f0c0cc
-[x] Collapsible settings sections -- added to roadmap for future
+[x] Today's Training card -- combined workout summary + calories burned
+[x] Text contrast bump
+[x] Blush gradient strengthened
+[x] Macro goals -- ratio and fixed modes, wired to pj_profile, home bars pull from profile
+[x] Water bar animation fix -- no longer resets to 0 on increment
+[x] Sleep donut draw-on animation -- sequential fill, restarts on refresh
+[x] Toast system -- slide in from bottom, swipe to dismiss, themed, all major triggers wired
+[x] Weight carry-forward -- shows last known weight with days ago label
+[x] IF time picker light theme fix
+[x] Food Library header title fix -- shows "Food Library" not "Add to Morning"
+[x] Log tab MacroDonut light theme fix
+[x] All screens themed -- no hardcoded colors remaining
+
 
 SESSION PRIORITY -- DO FIRST
 
  GitHub repo setup -- private repo, push codebase (DONE)
  Claude Project setup -- create project, paste instructions doc, upload roadmap (DONE)
- Token/theme system -- theme.tsx, all colors as tokens (DONE)
- Light theme -- free tier (DONE)
- Dark theme -- current colors formalized as tokens (DONE)
- Midnight, Slate, Warm, Blush preset themes -- paid tier (DONE, Midnight dropped, 4 themes shipped)
- Accent color options per theme -- paid feature
+ Token/theme system (DONE)
+ All themes shipped (DONE)
+ All screens themed (DONE)
 
 
 HOME TAB
 Visual
 
- Background gradient polish -- dark theme gradient could be stronger, currently subtle (LOW)
- Card depth/shadows -- iOS shadow properties, cards float above background (DONE)
- Text contrast pass -- muted text bumped, card labels larger (DONE)
- Progress bar track color -- currently too dark, bring to #252535 minimum
- Card icons -- Ionicons next to each card label (DONE)
+ Background gradient polish -- dark theme gradient could be stronger (LOW)
+ Progress bar track color pass -- bring to #252535 minimum
+ Card icons (DONE)
 
 Animations
 
- Sleep donut draw-on animation -- fills clockwise on load
+ Sleep donut draw-on animation (DONE)
  Number counters animating up on load -- calories, steps, water count up from 0
  IF countdown digit roll animation
  Water ripple fill animation
@@ -62,17 +65,16 @@ Animations
  Tab bar pulse/bloom on tap
  Goal hit animations -- water, steps, calories celebration moment (HIGH)
  Streak numbers animating up on stats load
- Animation standard -- ALL bars and graphs animate, non-negotiable (DONE)
+ Animation standard -- ALL bars and graphs animate (DONE)
 
 Features
 
- Macro goals -- wire protein/carbs/fat targets to pj_profile (HIGH)
- Water bar reset fix -- bar must not reset to 0 when logging mid-day (HIGH)
+ Macro goals -- wired to pj_profile (DONE)
+ Water bar reset fix (DONE)
  Net calories display -- consumed minus burned (HIGH)
- Calories burned -- dedicated display in Today's Training card (DONE)
  Calorie card + Log button -- rethink or replace
  Calorie color scoring -- mode aware (HIGH)
- Weight carry-forward -- show last known weight instead of -- when none logged today
+ Weight carry-forward (DONE)
  Sleep goal field in profile
  Sleep quality score -- weighted algorithm, score 0-100 in donut center (HIGH)
  You vs Yesterday card -- live pacing comparison, optional home card
@@ -85,13 +87,13 @@ Features
 
 THEME POLISH PASS
 
- Slate theme -- background should be grey base, blue as accent not base tone. Needs its own identity
- Blush theme -- bgCard needs to be slightly darker, blending too much with background. Water buttons need differentiation, pink on pink doesn't work
- Blush save button on profile -- darker background, shadow, or thicker border
+ Slate theme -- needs identity rework, grey base not blue base
+ Blush theme -- bgCard needs darkening, water buttons need differentiation
+ Blush save button on profile -- darker background or thicker border
  All themes -- progress bar track color pass
  Accent color options per theme -- paid feature
  Theme selector UI polish
- Collapsible sections in settings page -- accordion pattern
+ Collapsible sections in settings page
 
 
 STATS TAB
@@ -104,10 +106,10 @@ STATS TAB
 
 WORKOUT TAB
 
- Workout tab nested scroll bug -- DraggableFlatList inside ScrollView warning, needs refactor (HIGH)
+ Workout tab nested scroll bug -- DraggableFlatList inside ScrollView warning (HIGH)
  Workout drag handle -- hit target too small (HIGH)
  Workout drag handle -- dead zone before drag triggers (HIGH)
- Workout tag system -- multiple tags per day, fully custom names and colors, color picker or palette, managed from settings. Replaces hardcoded Push/Pull/Legs/Cardio. Pills wrap naturally, no limit. (HIGH)
+ Workout tag system -- custom tags, color picker, replaces Push/Pull/Legs/Cardio (HIGH)
  HIIT mode -- Tabata, standard intervals, custom
  Workout rest timer between sets
  Lifting set tracker with progressive overload
@@ -142,7 +144,7 @@ FAITH FEATURES
 
 PROFILE / SETTINGS
 
- Settings page expansion -- font size, notifications, coaching mode, units, theme selector
+ Settings page expansion -- font size, notifications, coaching mode, units
  Collapsible sections in settings -- accordion pattern
  FAQ / help section (LOW)
  BMR/TDEE calculator polish
@@ -162,9 +164,9 @@ BODY / PROGRESS
 
 POLISH / UX
 
- Toast system -- water logged, food logged, workout saved (HIGH)
+ Toast system (DONE)
  Micro interactions -- card scale press, progress bar bounce
- Page transitions between tabs -- done, fade transition shipped
+ Page transitions between tabs (DONE)
  Empty states -- designed placeholders not blank cards (HIGH)
  Offline first behavior
  Daily summary push notification
@@ -186,18 +188,22 @@ MONETIZATION / FUTURE
 
 
 NOTES AND DECISIONS
-Workout tag system (new):
-Multiple tags per day, fully custom names and colors. Color picker or preset palette. Managed from settings. Replaces hardcoded Push/Pull/Legs/Cardio type system. Pills display on Today's Training home card, wrap naturally with no enforced limit. Tag ids stored as array on each day in workout state.
-Today's Training card:
-Combined workout summary and calories burned. Shows day type pill, exercise list capped at 4 with "+X more" overflow, done/undone state with strikethrough, calories burned from HealthKit or manual fallback. Tapping card navigates to workout tab with smooth fade. Replaces both old workout card and calories burned card.
-Coaching modes:
 
+Macro goals system:
+Two modes - Ratio (percentages that must equal 100%, grams auto-calculate from calorie target) and Fixed (input grams directly, kcal and % update live). Cross-mode sync on save. Validation blocks save if ratio doesn't equal 100% or fixed total is more than 50 kcal off target. Tied to calorie target - change target, macros update automatically.
+
+Workout tag system (planned):
+Multiple tags per day, fully custom names and colors. Color picker or preset palette. Managed from settings. Replaces hardcoded Push/Pull/Legs/Cardio type system. Pills display on Today's Training home card, wrap naturally. Tag ids stored as array on each day in workout state.
+
+Today's Training card:
+Combined workout summary and calories burned. Shows day type pill, exercise list capped at 4 with "+X more" overflow, done/undone state with strikethrough, calories burned from HealthKit or manual fallback. Tapping card navigates to workout tab.
+
+Coaching modes:
 Discipline -- strict both directions
 Balance -- forgiving on low end, strict on high
 Mindful -- wide green zone, awareness not numbers
 
 Theme presets:
-
 Dark (current) -- free
 Light -- free
 Slate (cool grey, navy accent) -- paid, needs identity rework
@@ -206,18 +212,22 @@ Blush (Megan's deep dusty rose) -- paid, needs bgCard darkening and water button
 
 Bible translation:
 WEB or ASV, both public domain and bundleable locally.
+
 Sleep quality score:
 Score 0-100: Duration 0-40pts, Deep % 0-30pts, REM % 0-30pts. Labels: 93-100 Excellent, 75-92 Good, 55-74 Fair, below 55 Poor.
-Progress photo pose overlay:
-First photo becomes transparent ghost on camera viewfinder for subsequent photos.
+
+Toast system:
+Slide in from bottom, fade out on auto-dismiss (2.2s), swipe down to dismiss, X button. Green left border for success, blue for info. Queue system. Themed. Triggers: water +/-, food logged, note saved, profile saved, exercise added/updated, workout note saved.
+
 Animation standard:
-Every bar, progress indicator, chart must animate. Non-negotiable. No static bars ever.
+Every bar, progress indicator, chart must animate. Non-negotiable.
+
 GitHub:
 Repo: https://github.com/jharmke/project-j
 Branch: master
-End of session commit: git add . / git commit -m "description" / git push origin master
-Process:
+End of session: git add . / git commit -m "description" / git push origin master
 
+Process:
 Every change gets a verdict before moving on
 Start new threads when current one gets long
 New threads always inside the Claude Project

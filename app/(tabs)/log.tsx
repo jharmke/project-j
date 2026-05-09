@@ -6,6 +6,7 @@ import { Alert, Animated, Dimensions, ScrollView, StyleSheet, Text, TouchableOpa
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
+import { useTheme } from '../../theme';
 import { useHealthKit } from '../../useHealthKit';
 
 
@@ -77,6 +78,7 @@ function MacroDonut({ protein, carbs, fat, calories }: { protein: number; carbs:
 
 export default function LogScreen() {
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
   const [loaded, setLoaded] = useState(false);
   const [entries, setEntries] = useState<FoodEntry[]>([]);
   const [water, setWater] = useState(0);
@@ -296,27 +298,27 @@ export default function LogScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.bgPrimary }]}>
+      <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerLabel}>PROJECT J</Text>
-          <Text style={styles.headerTitle}>Food Log</Text>
+          <Text style={[styles.headerLabel, { color: theme.textMuted }]}>PROJECT J</Text>
+          <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>Food Log</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 }}>
             <TouchableOpacity onPress={goToPrevDay} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-              <Text style={{ color: '#3b82f6', fontSize: 11, fontFamily: 'DMSans_700Bold', lineHeight: 12 }}>‹</Text>
+              <Text style={{ color: theme.accentBlue, fontSize: 11, fontFamily: 'DMSans_700Bold', lineHeight: 12 }}>‹</Text>
             </TouchableOpacity>
-            <Text style={{ fontSize: 9, color: isToday ? '#666680' : '#f59e0b', fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', lineHeight: 12 }}>
+            <Text style={{ fontSize: 9, color: isToday ? theme.textMuted : theme.accentAmber, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', lineHeight: 12 }}>
               {formatActiveDate()}
             </Text>
             <TouchableOpacity onPress={goToNextDay} disabled={isToday} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-              <Text style={{ color: isToday ? '#333344' : '#3b82f6', fontSize: 11, fontFamily: 'DMSans_700Bold', lineHeight: 12 }}>›</Text>
+              <Text style={{ color: isToday ? theme.textDim : theme.accentBlue, fontSize: 11, fontFamily: 'DMSans_700Bold', lineHeight: 12 }}>›</Text>
             </TouchableOpacity>
           </View>
         </View>
         <TouchableOpacity
-          style={[styles.libraryBtn, { height: 32, alignItems: 'center', justifyContent: 'center' }]}
+          style={[styles.libraryBtn, { height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
           onPress={() => router.push({ pathname: '/add-food', params: { meal: 'Morning', date: activeDate } })}>
-          <Text style={styles.libraryBtnText}>Library</Text>
+          <Text style={[styles.libraryBtnText, { color: theme.accentBlue }]}>Library</Text>
         </TouchableOpacity>
       </View>
       <ScrollView
@@ -325,8 +327,8 @@ export default function LogScreen() {
       >
 
       {/* Totals Card - Scrollable */}
-      <View style={styles.card}>
-        <Text style={styles.cardLabel}>Today's Total</Text>
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
+        <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Today's Total</Text>
         <ScrollView
           horizontal
           pagingEnabled
@@ -334,42 +336,42 @@ export default function LogScreen() {
           onMomentumScrollEnd={e => setActivePage(Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH))}
           style={{ width: SCREEN_WIDTH }}>
 
-         {/* Page 1 - Calories + Macros */}
+          {/* Page 1 - Calories + Macros */}
           <View style={{ width: SCREEN_WIDTH }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <View style={{ flex: 1 }}>
                 <View style={styles.calRow}>
                   <Text style={[styles.calNumber, { color: calColor }]}>{totalCals}</Text>
-                  <Text style={styles.calTarget}>/ {adjustedTarget} kcal</Text>
+                  <Text style={[styles.calTarget, { color: theme.textMuted }]}>/ {adjustedTarget} kcal</Text>
                 </View>
-                <View style={styles.progressBarBg}>
+                <View style={[styles.progressBarBg, { backgroundColor: theme.bgProgressTrack }]}>
                   <View style={[styles.progressBarFill, { width: `${Math.min(calPct, 100)}%`, backgroundColor: calColor }]} />
                 </View>
-                <Text style={styles.calRemaining}>
-          {adjustedTarget > 0 ? (totalCals < adjustedTarget ? `${adjustedTarget - totalCals} kcal remaining (${activeCalories} burned)` : `${totalCals - adjustedTarget} kcal over target (${activeCalories} burned)`) : ''}
-        </Text>
+                <Text style={[styles.calRemaining, { color: theme.textMuted }]}>
+                  {adjustedTarget > 0 ? (totalCals < adjustedTarget ? `${adjustedTarget - totalCals} kcal remaining (${activeCalories} burned)` : `${totalCals - adjustedTarget} kcal over target (${activeCalories} burned)`) : ''}
+                </Text>
               </View>
               <MacroDonut protein={totalProtein} carbs={totalCarbs} fat={totalFat} calories={totalCals} />
             </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: '#2a2a2a' }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: theme.borderSubtle }}>
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ color: '#0d9268', fontSize: 16, fontFamily: 'BebasNeue_400Regular' }}>{totalProtein}g</Text>
-                <Text style={{ color: '#888888', fontSize: 10, fontFamily: 'DMSans_400Regular' }}>Protein</Text>
+                <Text style={{ color: theme.macroProtein, fontSize: 16, fontFamily: 'BebasNeue_400Regular' }}>{totalProtein}g</Text>
+                <Text style={{ color: theme.textMuted, fontSize: 10, fontFamily: 'DMSans_400Regular' }}>Protein</Text>
               </View>
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ color: '#c47d1a', fontSize: 16, fontFamily: 'BebasNeue_400Regular' }}>{totalCarbs}g</Text>
-                <Text style={{ color: '#888888', fontSize: 10, fontFamily: 'DMSans_400Regular' }}>Carbs</Text>
+                <Text style={{ color: theme.macroCarbs, fontSize: 16, fontFamily: 'BebasNeue_400Regular' }}>{totalCarbs}g</Text>
+                <Text style={{ color: theme.textMuted, fontSize: 10, fontFamily: 'DMSans_400Regular' }}>Carbs</Text>
               </View>
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ color: '#a83232', fontSize: 16, fontFamily: 'BebasNeue_400Regular' }}>{totalFat}g</Text>
-                <Text style={{ color: '#888888', fontSize: 10, fontFamily: 'DMSans_400Regular' }}>Fat</Text>
+                <Text style={{ color: theme.macroFat, fontSize: 16, fontFamily: 'BebasNeue_400Regular' }}>{totalFat}g</Text>
+                <Text style={{ color: theme.textMuted, fontSize: 10, fontFamily: 'DMSans_400Regular' }}>Fat</Text>
               </View>
             </View>
           </View>
 
-          {/* Page 3 - Advanced Nutrition */}
+          {/* Page 2 - Advanced Nutrition */}
           <View style={{ width: SCREEN_WIDTH, paddingTop: 4 }}>
-            <Text style={{ fontSize: 9, letterSpacing: 2, color: '#888888', textTransform: 'uppercase', fontFamily: 'DMSans_500Medium', marginBottom: 10 }}>Advanced Nutrition</Text>
+            <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, textTransform: 'uppercase', fontFamily: 'DMSans_500Medium', marginBottom: 10 }}>Advanced Nutrition</Text>
             {[
               { label: 'Fiber', value: totalFiber, unit: 'g', color: '#6366f1' },
               { label: 'Sugar', value: totalSugar, unit: 'g', color: '#ec4899' },
@@ -377,9 +379,9 @@ export default function LogScreen() {
               { label: 'Cholesterol', value: totalCholesterol, unit: 'mg', color: '#14b8a6' },
               { label: 'Saturated Fat', value: totalSatFat, unit: 'g', color: '#f97316' },
             ].map(n => (
-              <View key={n.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: 1, borderBottomColor: '#1e1e1e' }}>
-                <Text style={{ fontSize: 12, color: '#888888', fontFamily: 'DMSans_400Regular' }}>{n.label}</Text>
-                <Text style={{ fontSize: 12, color: n.value > 0 ? n.color : '#444444', fontFamily: 'DMSans_600SemiBold' }}>
+              <View key={n.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: 1, borderBottomColor: theme.borderSubtle }}>
+                <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{n.label}</Text>
+                <Text style={{ fontSize: 12, color: n.value > 0 ? n.color : theme.textDim, fontFamily: 'DMSans_600SemiBold' }}>
                   {n.value > 0 ? `${n.value}${n.unit}` : '--'}
                 </Text>
               </View>
@@ -391,11 +393,10 @@ export default function LogScreen() {
         {/* Page dots */}
         <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 12 }}>
           {[0, 1].map(i => (
-            <View key={i} style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: activePage === i ? '#3b82f6' : '#2a2a2a' }} />
+            <View key={i} style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: activePage === i ? theme.accentBlue : theme.donutTrack }} />
           ))}
         </View>
       </View>
-
 
       {/* Meal Sections */}
       {MEALS.map(meal => {
@@ -404,23 +405,23 @@ export default function LogScreen() {
         const isExpanded = expandedMeals[meal];
 
         return (
-          <View key={meal} style={styles.mealRow}>
+          <View key={meal} style={[styles.mealRow, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
             {/* + button on left */}
             <TouchableOpacity
               style={styles.mealAddBtn}
               onPress={() => router.push({ pathname: '/add-food', params: { meal, date: todayKey } })}>
-              <Text style={styles.mealAddBtnText}>+</Text>
+              <Text style={[styles.mealAddBtnText, { color: theme.macroProtein }]}>+</Text>
             </TouchableOpacity>
 
             {/* Meal info middle */}
             <TouchableOpacity style={styles.mealInfo} onPress={() => toggleMeal(meal)}>
-              <Text style={styles.mealName}>{meal}</Text>
-              {mealTotal > 0 && <Text style={styles.mealCals}>{mealTotal} kcal</Text>}
+              <Text style={[styles.mealName, { color: theme.textPrimary }]}>{meal}</Text>
+              {mealTotal > 0 && <Text style={[styles.mealCals, { color: theme.textMuted }]}>{mealTotal} kcal</Text>}
             </TouchableOpacity>
 
             {/* Chevron on right */}
             <TouchableOpacity style={styles.mealChevron} onPress={() => toggleMeal(meal)}>
-              <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} color="#666680" />
+              <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={theme.textMuted} />
             </TouchableOpacity>
 
             {/* Expanded food list */}
@@ -434,14 +435,14 @@ export default function LogScreen() {
                   outputRange: [0, mealEntries.length === 0 ? 60 : (mealEntries.length * 60) + 16],
                 }),
               }}>
-              <View style={styles.mealExpanded}>
+              <View style={[styles.mealExpanded, { borderTopColor: theme.borderCard }]}>
                 {mealEntries.length === 0 ? (
-                  <Text style={styles.emptyMealText}>Nothing logged yet. Tap + to add.</Text>
+                  <Text style={[styles.emptyMealText, { color: theme.textDim }]}>Nothing logged yet. Tap + to add.</Text>
                 ) : (
                   mealEntries.map((entry, i) => (
                     <TouchableOpacity
                       key={i}
-                      style={styles.foodEntry}
+                      style={[styles.foodEntry, { borderBottomColor: theme.borderSubtle }]}
                       onPress={() => router.push({
                         pathname: '/food-detail',
                         params: {
@@ -466,9 +467,9 @@ export default function LogScreen() {
                         }
                       })}>
                       <View style={styles.foodEntryLeft}>
-                        <Text style={styles.foodEntryName} numberOfLines={1}>{entry.name}</Text>
+                        <Text style={[styles.foodEntryName, { color: theme.textPrimary }]} numberOfLines={1}>{entry.name}</Text>
                         {(entry.protein || entry.carbs || entry.fat) ? (
-                          <Text style={styles.foodEntryMacros}>
+                          <Text style={[styles.foodEntryMacros, { color: theme.textMuted }]}>
                             {entry.protein ? `P: ${entry.protein}g` : ''}
                             {entry.carbs ? `  C: ${entry.carbs}g` : ''}
                             {entry.fat ? `  F: ${entry.fat}g` : ''}
@@ -476,8 +477,8 @@ export default function LogScreen() {
                         ) : null}
                       </View>
                       <View style={styles.foodEntryRight}>
-                        <Text style={styles.foodEntryCal}>{entry.cal}</Text>
-                        <Text style={styles.foodEntryCalLabel}>kcal</Text>
+                        <Text style={[styles.foodEntryCal, { color: theme.macroProtein }]}>{entry.cal}</Text>
+                        <Text style={[styles.foodEntryCalLabel, { color: theme.textMuted }]}>kcal</Text>
                         <TouchableOpacity
                           onPress={() => {
                             Alert.alert(
@@ -490,7 +491,7 @@ export default function LogScreen() {
                             );
                           }}
                           style={styles.foodEntryDelete}>
-                          <Text style={styles.foodEntryDeleteText}>×</Text>
+                          <Text style={[styles.foodEntryDeleteText, { color: theme.textDim }]}>×</Text>
                         </TouchableOpacity>
                       </View>
                     </TouchableOpacity>
@@ -504,31 +505,31 @@ export default function LogScreen() {
       })}
 
       {/* Water Card */}
-      <View style={styles.card}>
-        <Text style={styles.cardLabel}>Water · {water}oz / {WATER_TARGET}oz</Text>
-        <View style={styles.progressBarBg}>
-          <View style={[styles.progressBarFill, { width: `${waterPct}%`, backgroundColor: '#3b82f6' }]} />
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
+        <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Water · {water}oz / {WATER_TARGET}oz</Text>
+        <View style={[styles.progressBarBg, { backgroundColor: theme.bgProgressTrack }]}>
+          <View style={[styles.progressBarFill, { width: `${waterPct}%`, backgroundColor: theme.accentBlue }]} />
         </View>
         <View style={styles.waterBtns}>
-          <TouchableOpacity style={styles.waterBtn} onPress={() => updateWater(12)}>
-            <Text style={styles.waterBtnText}>+12 oz</Text>
+          <TouchableOpacity style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => updateWater(12)}>
+            <Text style={[styles.waterBtnText, { color: theme.accentBlue }]}>+12 oz</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.waterBtn} onPress={() => updateWater(16)}>
-            <Text style={styles.waterBtnText}>+16 oz</Text>
+          <TouchableOpacity style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => updateWater(16)}>
+            <Text style={[styles.waterBtnText, { color: theme.accentBlue }]}>+16 oz</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.waterBtn} onPress={() => updateWater(22)}>
-            <Text style={styles.waterBtnText}>+22 oz</Text>
+          <TouchableOpacity style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => updateWater(22)}>
+            <Text style={[styles.waterBtnText, { color: theme.accentBlue }]}>+22 oz</Text>
           </TouchableOpacity>
         </View>
         <View style={[styles.waterBtns, { marginTop: 8 }]}>
-          <TouchableOpacity style={styles.waterBtnRed} onPress={() => updateWater(-12)}>
-            <Text style={styles.waterBtnRedText}>-12 oz</Text>
+          <TouchableOpacity style={[styles.waterBtnRed, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]} onPress={() => updateWater(-12)}>
+            <Text style={[styles.waterBtnRedText, { color: theme.accentRed }]}>-12 oz</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.waterBtnRed} onPress={() => updateWater(-16)}>
-            <Text style={styles.waterBtnRedText}>-16 oz</Text>
+          <TouchableOpacity style={[styles.waterBtnRed, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]} onPress={() => updateWater(-16)}>
+            <Text style={[styles.waterBtnRedText, { color: theme.accentRed }]}>-16 oz</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.waterBtnRed} onPress={() => updateWater(-22)}>
-            <Text style={styles.waterBtnRedText}>-22 oz</Text>
+          <TouchableOpacity style={[styles.waterBtnRed, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]} onPress={() => updateWater(-22)}>
+            <Text style={[styles.waterBtnRedText, { color: theme.accentRed }]}>-22 oz</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -539,43 +540,43 @@ export default function LogScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0d0d0f' },
-  content: { padding: 16, paddingBottom: 80 },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 0.5, borderBottomColor: 'rgba(255,255,255,0.06)', marginBottom: 16 },
-  headerLabel: { fontSize: 9, letterSpacing: 2, color: '#666680', textTransform: 'uppercase', marginBottom: 2, fontFamily: 'DMSans_700Bold' },
-  headerTitle: { fontSize: 32, color: '#e8e8f0', fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
-  libraryBtn: { backgroundColor: 'rgba(59,130,246,0.15)', borderWidth: 1, borderColor: 'rgba(59,130,246,0.3)', borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 },
-  libraryBtnText: { color: '#3b82f6', fontSize: 14, fontFamily: 'DMSans_700Bold' },
-  card: { backgroundColor: '#1a1a24', borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.06)', borderTopColor: 'rgba(255,255,255,0.1)', borderTopWidth: 0.5, borderRadius: 14, padding: 16, marginBottom: 12 },
-  cardLabel: { fontSize: 9, letterSpacing: 3, color: '#666680', textTransform: 'uppercase', marginBottom: 8, fontFamily: 'DMSans_700Bold' },
-  calRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6, marginBottom: 10 },
-  calNumber: { fontSize: 52, lineHeight: 56, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
-  calTarget: { fontSize: 14, color: '#666680', fontFamily: 'DMSans_700Bold', letterSpacing: 0.3 },
-  progressBarBg: { height: 6, backgroundColor: '#12121a', borderRadius: 6, overflow: 'hidden', marginBottom: 12 },
-  progressBarFill: { height: '100%', borderRadius: 6 },
-  calRemaining: { fontSize: 10, color: '#666680', fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase' },
-  mealRow: { backgroundColor: '#1a1a24', borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.06)', borderTopColor: 'rgba(255,255,255,0.1)', borderTopWidth: 0.5, borderRadius: 14, marginBottom: 8, overflow: 'hidden' },
-  mealAddBtn: { position: 'absolute', left: 14, top: 14, zIndex: 1, width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
-  mealAddBtnText: { color: '#0d9268', fontSize: 22, fontFamily: 'DMSans_400Regular', lineHeight: 24 },
-  mealInfo: { paddingLeft: 50, paddingRight: 40, paddingVertical: 14 },
-  mealName: { fontSize: 16, color: '#e8e8f0', fontFamily: 'DMSans_600SemiBold' },
-  mealCals: { fontSize: 10, color: '#666680', fontFamily: 'DMSans_700Bold', marginTop: 2, letterSpacing: 1.5, textTransform: 'uppercase' },
-  mealChevron: { position: 'absolute', right: 14, top: 14, width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
-  mealChevronText: { color: '#666680', fontSize: 14, fontFamily: 'DMSans_400Regular' },
-  mealExpanded: { borderTopWidth: 0.5, borderTopColor: 'rgba(255,255,255,0.06)', paddingHorizontal: 16, paddingVertical: 8 },
-  foodEntry: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: 'rgba(255,255,255,0.04)' },
-  foodEntryLeft: { flex: 1, marginRight: 8 },
-  foodEntryName: { fontSize: 13, color: '#e8e8f0', fontFamily: 'DMSans_400Regular' },
-  foodEntryMacros: { fontSize: 10, color: '#666680', fontFamily: 'DMSans_700Bold', marginTop: 2, letterSpacing: 1, textTransform: 'uppercase' },
-  foodEntryRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  foodEntryCal: { fontSize: 16, color: '#0d9268', fontFamily: 'BebasNeue_400Regular' },
-  foodEntryCalLabel: { fontSize: 10, color: '#666680', fontFamily: 'DMSans_400Regular' },
-  foodEntryDelete: { marginLeft: 8, padding: 4 },
-  foodEntryDeleteText: { fontSize: 18, color: '#444455' },
-  emptyMealText: { fontSize: 11, color: '#444455', fontFamily: 'DMSans_400Regular', fontStyle: 'italic', paddingVertical: 8 },
-  waterBtns: { flexDirection: 'row', gap: 8 },
-  waterBtn: { flex: 1, padding: 10, backgroundColor: 'rgba(59,130,246,0.1)', borderWidth: 0.5, borderColor: 'rgba(59,130,246,0.25)', borderRadius: 8, alignItems: 'center' },
-  waterBtnText: { color: '#3b82f6', fontFamily: 'BebasNeue_400Regular', fontSize: 15, letterSpacing: 1 },
-  waterBtnRed: { flex: 1, padding: 10, backgroundColor: 'rgba(239,68,68,0.08)', borderWidth: 0.5, borderColor: 'rgba(239,68,68,0.2)', borderRadius: 8, alignItems: 'center' },
-  waterBtnRedText: { color: '#cc3333', fontFamily: 'BebasNeue_400Regular', fontSize: 15, letterSpacing: 1 },
+  container:          { flex: 1 },
+  content:            { padding: 16, paddingBottom: 80 },
+  header:             { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 0.5, marginBottom: 16 },
+  headerLabel:        { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2, fontFamily: 'DMSans_700Bold' },
+  headerTitle:        { fontSize: 32, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
+  libraryBtn:         { borderWidth: 1, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 },
+  libraryBtnText:     { fontSize: 14, fontFamily: 'DMSans_700Bold' },
+  card:               { borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, padding: 16, marginBottom: 12 },
+  cardLabel:          { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8, fontFamily: 'DMSans_700Bold' },
+  calRow:             { flexDirection: 'row', alignItems: 'baseline', gap: 6, marginBottom: 10 },
+  calNumber:          { fontSize: 52, lineHeight: 56, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
+  calTarget:          { fontSize: 14, fontFamily: 'DMSans_700Bold', letterSpacing: 0.3 },
+  progressBarBg:      { height: 6, borderRadius: 6, overflow: 'hidden', marginBottom: 12 },
+  progressBarFill:    { height: '100%', borderRadius: 6 },
+  calRemaining:       { fontSize: 10, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase' },
+  mealRow:            { borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, marginBottom: 8, overflow: 'hidden' },
+  mealAddBtn:         { position: 'absolute', left: 14, top: 14, zIndex: 1, width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
+  mealAddBtnText:     { fontSize: 22, fontFamily: 'DMSans_400Regular', lineHeight: 24 },
+  mealInfo:           { paddingLeft: 50, paddingRight: 40, paddingVertical: 14 },
+  mealName:           { fontSize: 16, fontFamily: 'DMSans_600SemiBold' },
+  mealCals:           { fontSize: 10, fontFamily: 'DMSans_700Bold', marginTop: 2, letterSpacing: 1.5, textTransform: 'uppercase' },
+  mealChevron:        { position: 'absolute', right: 14, top: 14, width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
+  mealChevronText:    { fontSize: 14, fontFamily: 'DMSans_400Regular' },
+  mealExpanded:       { borderTopWidth: 0.5, paddingHorizontal: 16, paddingVertical: 8 },
+  foodEntry:          { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 0.5 },
+  foodEntryLeft:      { flex: 1, marginRight: 8 },
+  foodEntryName:      { fontSize: 13, fontFamily: 'DMSans_400Regular' },
+  foodEntryMacros:    { fontSize: 10, fontFamily: 'DMSans_700Bold', marginTop: 2, letterSpacing: 1, textTransform: 'uppercase' },
+  foodEntryRight:     { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  foodEntryCal:       { fontSize: 16, fontFamily: 'BebasNeue_400Regular' },
+  foodEntryCalLabel:  { fontSize: 10, fontFamily: 'DMSans_400Regular' },
+  foodEntryDelete:    { marginLeft: 8, padding: 4 },
+  foodEntryDeleteText:{ fontSize: 18 },
+  emptyMealText:      { fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', paddingVertical: 8 },
+  waterBtns:          { flexDirection: 'row', gap: 8 },
+  waterBtn:           { flex: 1, padding: 10, borderWidth: 0.5, borderRadius: 8, alignItems: 'center' },
+  waterBtnText:       { fontFamily: 'BebasNeue_400Regular', fontSize: 15, letterSpacing: 1 },
+  waterBtnRed:        { flex: 1, padding: 10, borderWidth: 0.5, borderRadius: 8, alignItems: 'center' },
+  waterBtnRedText:    { fontFamily: 'BebasNeue_400Regular', fontSize: 15, letterSpacing: 1 },
 });

@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -204,7 +205,7 @@ export default function ProfileScreen() {
   const suggested = calcGoalTarget();
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.bgPrimary, paddingTop: insets.top }}>
+    <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
       <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
         <View style={{ flex: 1 }}>
           <Text style={[styles.headerLabel, { color: theme.textMuted }]}>PROJECT J</Text>
@@ -220,7 +221,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={[styles.container, { backgroundColor: theme.bgPrimary }]} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
 
         <CollapsibleCard label="Basic Info" defaultOpen={true} theme={theme}>
           <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>Name</Text>
@@ -392,7 +393,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
 
       </ScrollView>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -402,8 +403,8 @@ const styles = StyleSheet.create({
   header:             { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 0.5, marginBottom: 16 },
   headerLabel:        { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2, fontFamily: 'DMSans_700Bold' },
   headerTitle:        { fontSize: 32, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
-  card:               { borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, padding: 16, marginBottom: 12 },
-  cardLabel:          { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 0, fontFamily: 'DMSans_700Bold' },
+  card:               { borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, padding: 16, marginBottom: 12, shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
+  cardLabel:          { fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 0, fontFamily: 'DMSans_700Bold' },
   fieldLabel:         { fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6, marginTop: 10 },
   input:              { borderWidth: 0.5, borderRadius: 8, padding: 10, fontSize: 15, fontFamily: 'DMSans_400Regular', marginBottom: 4 },
   heightRow:          { flexDirection: 'row', gap: 12 },

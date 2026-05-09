@@ -5,13 +5,14 @@ import * as Haptics from 'expo-haptics';
 import { useEffect, useRef, useState } from 'react';
 import { Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, {
-    useAnimatedStyle,
-    useSharedValue,
-    withRepeat,
-    withSpring,
-    withTiming,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSpring,
+  withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '../theme';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const TAB_BAR_HEIGHT = 64;
@@ -24,7 +25,7 @@ const TABS = [
   { name: 'profile', label: 'Profile', icon: 'person-outline', iconActive: 'person' },
 ];
 
-function HomeButton({ isFocused, scale, homePulse, onPress }: { isFocused: boolean, scale: any, homePulse: any, onPress: () => void }) {
+function HomeButton({ isFocused, scale, homePulse, onPress, bgCard, textSecondary, macroProtein }: { isFocused: boolean, scale: any, homePulse: any, onPress: () => void, bgCard: string, textSecondary: string, macroProtein: string }) {
   const animStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
     shadowOpacity: isFocused ? homePulse.value : 0,
@@ -33,16 +34,16 @@ function HomeButton({ isFocused, scale, homePulse, onPress }: { isFocused: boole
     <TouchableOpacity style={{ flex: 1, alignItems: 'center', justifyContent: 'center', height: 64 }} onPress={onPress} activeOpacity={0.8}>
       <Animated.View style={[{
         width: 52, height: 52, borderRadius: 26,
-        backgroundColor: isFocused ? '#0d9268' : '#1a1a24',
+        backgroundColor: isFocused ? macroProtein : bgCard,
         alignItems: 'center', justifyContent: 'center',
         borderWidth: 1.5,
-        borderColor: isFocused ? '#0d9268' : 'rgba(13,146,104,0.4)',
-        shadowColor: '#0d9268',
+        borderColor: isFocused ? macroProtein : `rgba(13,146,104,0.4)`,
+        shadowColor: macroProtein,
         shadowOffset: { width: 0, height: 0 },
         shadowRadius: 14,
         elevation: 8,
       }, animStyle]}>
-        <Ionicons name="home" size={22} color={isFocused ? '#ffffff' : '#a0a0b8'} />
+        <Ionicons name="home" size={22} color={isFocused ? '#ffffff' : textSecondary} />
       </Animated.View>
     </TouchableOpacity>
   );
@@ -57,6 +58,7 @@ function LabelAnimated({ translate, opacity, label, color }: { translate: any, o
 
 export default function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
   const hapticsEnabled = useRef(true);
   const [activeIndex, setActiveIndex] = useState(state.index);
   const pillX = useSharedValue(0);
@@ -153,13 +155,13 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
   };
 
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom, height: TAB_BAR_HEIGHT + insets.bottom }]}>
-      <Animated.View style={[styles.pill, pillStyle]} />
+    <View style={[styles.container, { paddingBottom: insets.bottom, height: TAB_BAR_HEIGHT + insets.bottom, backgroundColor: theme.bgPrimary, borderTopColor: theme.borderSubtle }]}>
+      <Animated.View style={[styles.pill, { backgroundColor: theme.borderSubtle, borderColor: theme.borderCard }, pillStyle]} />
 
       {TABS.map((tab, i) => {
         const routeIdx = state.routes.findIndex(r => r.name === tab.name);
         const isFocused = state.index === routeIdx;
-        const color = isFocused ? '#e8e8f0' : '#555570';
+        const color = isFocused ? theme.textPrimary : theme.textDim;
         const scaleStyle = useAnimatedStyle(() => ({
           transform: [{ scale: scales[i].value }],
         }));
@@ -172,6 +174,9 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
               scale={scales[i]}
               homePulse={homePulse}
               onPress={() => handlePress(tab.name, i)}
+              bgCard={theme.bgCard}
+              textSecondary={theme.textSecondary}
+              macroProtein={theme.macroProtein}
             />
           );
         }
@@ -205,8 +210,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#0d0d0f',
     borderTopWidth: 0.5,
     borderTopColor: 'rgba(255,255,255,0.06)',
-    alignItems: 'center',
-    paddingHorizontal: 0,
   },
   pill: {
     position: 'absolute',
@@ -214,9 +217,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 46,
     borderRadius: 23,
-    backgroundColor: 'rgba(255,255,255,0.06)',
     borderWidth: 0.5,
-    borderColor: 'rgba(255,255,255,0.08)',
   },
   tab: {
     flex: 1,

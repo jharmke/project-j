@@ -84,6 +84,10 @@ export interface Theme {
   iconMuted: string;            // muted icon color (no-data states)
   sheetHandle: string;          // bottom sheet drag handle
   overlayBg: string;            // modal overlay
+
+  // ── Gradient ─────────────────────────────────────────────────────────────────
+  gradientStart: string;        // top of screen gradient
+  gradientEnd: string;          // bottom of screen gradient (usually bgPrimary)
 }
 
 // ─── Dark Theme (current / default) ──────────────────────────────────────────
@@ -112,7 +116,7 @@ const dark: Theme = {
   textPrimary:      '#e8e8f0',
   textSecondary:    '#a0a0b8',
   textMuted:        '#8888aa',
-  textDim:          '#555570',
+  textDim:          '#666680',
   textPlaceholder:  '#444455',
   textWhite:        '#ffffff',
 
@@ -154,6 +158,9 @@ const dark: Theme = {
   iconMuted:        '#2a2a3a',
   sheetHandle:      'rgba(255,255,255,0.15)',
   overlayBg:        'rgba(0,0,0,0.60)',
+
+  gradientStart:    '#0d1a2e',
+  gradientEnd:      '#0d0d0f',
 };
 
 // ─── Light Theme ─────────────────────────────────────────────────────────────
@@ -224,6 +231,9 @@ const light: Theme = {
   iconMuted:        '#ccccdd',
   sheetHandle:      'rgba(0,0,0,0.12)',
   overlayBg:        'rgba(0,0,0,0.40)',
+
+  gradientStart:    '#e8e8f5',
+  gradientEnd:      '#f0f0f5',
 };
 
 // ─── Slate Theme (cool grey, navy accent) ─────────────────────────────────────
@@ -294,6 +304,9 @@ const slate: Theme = {
   iconMuted:        '#1e2840',
   sheetHandle:      'rgba(100,140,255,0.20)',
   overlayBg:        'rgba(0,0,0,0.65)',
+
+  gradientStart:    '#0e1628',
+  gradientEnd:      '#18191e',
 };
 
 // ─── Warm Theme (dark browns, amber accent) ───────────────────────────────────
@@ -364,6 +377,9 @@ const warm: Theme = {
   iconMuted:        '#2a1a08',
   sheetHandle:      'rgba(212,140,60,0.20)',
   overlayBg:        'rgba(0,0,0,0.65)',
+
+  gradientStart:    '#1a0e04',
+  gradientEnd:      '#0f0a06',
 };
 
 // ─── Blush Theme (light, airy, pink - Megan's) ────────────────────────────────
@@ -434,6 +450,9 @@ const blush: Theme = {
   iconMuted:        '#f0c8d4',
   sheetHandle:      'rgba(200,80,110,0.18)',
   overlayBg:        'rgba(60,10,20,0.40)',
+
+  gradientStart:    '#f0c0cc',
+  gradientEnd:      '#fdf0f3',
 };
 
 // ─── Theme Map ────────────────────────────────────────────────────────────────

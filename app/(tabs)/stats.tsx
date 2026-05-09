@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Animated, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -362,7 +363,7 @@ export default function StatsScreen() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.bgPrimary, paddingTop: insets.top }}>
+    <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
       <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
         <View style={{ flex: 1 }}>
           <Text style={[styles.headerLabel, { color: theme.textMuted }]}>PROJECT J</Text>
@@ -376,7 +377,7 @@ export default function StatsScreen() {
         </View>
       </View>
 
-      <ScrollView style={[styles.container, { backgroundColor: theme.bgPrimary }]} contentContainerStyle={styles.content}>
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
 
         {/* Calendar */}
         <CollapsibleCard label="Calendar" defaultOpen={true} theme={theme}>
@@ -581,7 +582,7 @@ export default function StatsScreen() {
         </CollapsibleCard>
 
       </ScrollView>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -591,8 +592,8 @@ const styles = StyleSheet.create({
   header:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 0.5, marginBottom: 16 },
   headerLabel:    { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2, fontFamily: 'DMSans_700Bold' },
   headerTitle:    { fontSize: 32, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
-  card:           { borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, padding: 16, marginBottom: 12 },
-  cardLabel:      { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 0, fontFamily: 'DMSans_700Bold' },
+  card:           { borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, padding: 16, marginBottom: 12, shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
+  cardLabel:      { fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 0, fontFamily: 'DMSans_700Bold' },
   legend:         { flexDirection: 'row', gap: 14, marginBottom: 12 },
   legendDot:      { fontSize: 11, fontFamily: 'DMSans_500Medium' },
   calGrid:        { flexDirection: 'row', flexWrap: 'wrap' },

@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Animated, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -298,7 +299,7 @@ export default function LogScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.bgPrimary }]}>
+    <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={[styles.container, { paddingTop: insets.top }]}>
       <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
         <View style={{ flex: 1 }}>
           <Text style={[styles.headerLabel, { color: theme.textMuted }]}>PROJECT J</Text>
@@ -505,7 +506,7 @@ export default function LogScreen() {
       })}
 
       {/* Water Card */}
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, shadowOpacity: 0, elevation: 0 }]}>
         <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Water · {water}oz / {WATER_TARGET}oz</Text>
         <View style={[styles.progressBarBg, { backgroundColor: theme.bgProgressTrack }]}>
           <View style={[styles.progressBarFill, { width: `${waterPct}%`, backgroundColor: theme.accentBlue }]} />
@@ -535,7 +536,7 @@ export default function LogScreen() {
       </View>
 
     </ScrollView>
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -547,15 +548,15 @@ const styles = StyleSheet.create({
   headerTitle:        { fontSize: 32, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
   libraryBtn:         { borderWidth: 1, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 },
   libraryBtnText:     { fontSize: 14, fontFamily: 'DMSans_700Bold' },
-  card:               { borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, padding: 16, marginBottom: 12 },
-  cardLabel:          { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8, fontFamily: 'DMSans_700Bold' },
+  card:               { borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, padding: 16, marginBottom: 12, shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
+  cardLabel:          { fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8, fontFamily: 'DMSans_700Bold' },
   calRow:             { flexDirection: 'row', alignItems: 'baseline', gap: 6, marginBottom: 10 },
   calNumber:          { fontSize: 52, lineHeight: 56, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
   calTarget:          { fontSize: 14, fontFamily: 'DMSans_700Bold', letterSpacing: 0.3 },
   progressBarBg:      { height: 6, borderRadius: 6, overflow: 'hidden', marginBottom: 12 },
   progressBarFill:    { height: '100%', borderRadius: 6 },
   calRemaining:       { fontSize: 10, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase' },
-  mealRow:            { borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, marginBottom: 8, overflow: 'hidden' },
+  mealRow:            { borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, marginBottom: 8, overflow: 'hidden', shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
   mealAddBtn:         { position: 'absolute', left: 14, top: 14, zIndex: 1, width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
   mealAddBtnText:     { fontSize: 22, fontFamily: 'DMSans_400Regular', lineHeight: 24 },
   mealInfo:           { paddingLeft: 50, paddingRight: 40, paddingVertical: 14 },

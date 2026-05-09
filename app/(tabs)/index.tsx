@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -41,7 +42,7 @@ const CARD_REGISTRY: CardMeta[] = [
   { id: 'macros',         label: 'Macros',             description: 'Protein, carbs & fat breakdown',         defaultVisible: true },
   { id: 'water',          label: 'Water',              description: 'Hydration tracking',                     defaultVisible: true },
   { id: 'weight',         label: 'Weight',             description: 'Daily weigh-in & total progress',        defaultVisible: true },
-  { id: 'workout',        label: "Today's Workout",    description: "Today's scheduled training focus",       defaultVisible: true },
+  { id: 'workout',        label: "Today's Training",   description: "Workout summary and calories burned",     defaultVisible: true },
   { id: 'steps',          label: 'Steps',              description: 'Step count from Apple Health',           defaultVisible: true },
   { id: 'sleep',          label: 'Sleep',              description: 'Sleep duration & stages from Apple Health', defaultVisible: true },
   { id: 'fitness_metrics',label: 'Fitness Metrics',    description: 'VO2 Max & cardio recovery score',        defaultVisible: true },
@@ -211,6 +212,9 @@ export default function HomeScreen() {
   const [stepGoal,       setStepGoal]       = useState(10000);
   const [editingStepGoal,setEditingStepGoal]= useState(false);
   const [dailyVerse,     setDailyVerse]     = useState<{text:string;reference:string}|null>(null);
+  const [workoutPrograms,setWorkoutPrograms]= useState<Record<string,any>>({});
+  const [workoutChecks,  setWorkoutChecks]  = useState<Record<string,any>>({});
+  const [workoutTemplate,setWorkoutTemplate]= useState<Record<string,any>>({});
 
   // Sleep state
   const [sleepOverride,   setSleepOverride]   = useState<number|null>(null);
@@ -394,6 +398,13 @@ export default function HomeScreen() {
           if (data.sleepWakeTime) setSleepStoredWake(data.sleepWakeTime);
           if (typeof data.water === 'number') setWater(data.water);
         }
+        const workoutData = await AsyncStorage.getItem('pj_workout_state');
+        if (workoutData) {
+          const wd = JSON.parse(workoutData);
+          if (wd.programs) setWorkoutPrograms(wd.programs);
+          if (wd.checks) setWorkoutChecks(wd.checks);
+          if (wd.weeklyTemplate) setWorkoutTemplate(wd.weeklyTemplate);
+        }
         const profileData = await AsyncStorage.getItem('pj_profile');
         if (profileData) {
           const p = JSON.parse(profileData);
@@ -480,7 +491,10 @@ export default function HomeScreen() {
   // ─── Card Renderers ───────────────────────────────────────────────────────────
   const renderVerseCard = () => (
     <View style={[styles.verseCard, { backgroundColor: theme.bgCardVerse, borderColor: theme.borderCardVerse }]}>
-      <Text style={[styles.verseLabel, { color: theme.textMuted }]}>TODAY'S VERSE</Text>
+      <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:8 }}>
+        <Ionicons name="book-outline" size={11} color={theme.textMuted} />
+        <Text style={[styles.verseLabel, { marginBottom:0, color: theme.textMuted }]}>TODAY'S VERSE</Text>
+      </View>
       <Text style={[styles.verseText, { color: theme.textSecondary }]}>"{dailyVerse?.text}"</Text>
       <Text style={[styles.verseRef, { color: theme.textMuted }]}>{dailyVerse?.reference}</Text>
     </View>
@@ -489,7 +503,10 @@ export default function HomeScreen() {
   const renderIFCard = () => (
     <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
       <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
-        <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Intermittent Fast · {ifMethod}</Text>
+        <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
+          <Ionicons name="timer-outline" size={11} color={theme.textMuted} />
+          <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Intermittent Fast · {ifMethod}</Text>
+        </View>
         {ifStart && (
           <View style={{ backgroundColor: ifEnd ? `${ifResultColor}22` : isOpen ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', borderWidth:1, borderColor: ifEnd ? `${ifResultColor}55` : isOpen ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)', borderRadius:5, paddingHorizontal:8, paddingVertical:3 }}>
             <Text style={{ fontSize:10, fontFamily:'DMSans_700Bold', letterSpacing:2, color: ifEnd ? ifResultColor : isOpen ? theme.accentGreen : theme.accentRed }}>
@@ -611,8 +628,11 @@ export default function HomeScreen() {
 
   const renderCaloriesCard = () => (
     <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
-      <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
-        <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Calories Today</Text>
+      <View style={{ flexDirection:'row', alignItems:'flex-start', justifyContent:'space-between', marginBottom:4 }}>
+        <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
+          <Ionicons name="flame-outline" size={11} color={theme.textMuted} />
+          <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Calories Today</Text>
+        </View>
         <TouchableOpacity onPress={() => router.push('/(tabs)/log')} activeOpacity={0.6}
           style={{ backgroundColor: theme.accentBlueBg, borderWidth:1, borderColor: theme.accentBlueBorder, borderRadius:6, paddingHorizontal:10, paddingVertical:4 }}>
           <Text style={{ color: theme.accentBlue, fontSize:12, fontFamily:'DMSans_600SemiBold' }}>+ Log</Text>
@@ -639,7 +659,10 @@ export default function HomeScreen() {
     return (
       <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
-          <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Macros Today</Text>
+          <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
+            <Ionicons name="pie-chart-outline" size={11} color={theme.textMuted} />
+            <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Macros Today</Text>
+          </View>
           <Text style={{ fontSize:9, color: theme.textDim, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase' }}>vs goal</Text>
         </View>
         <View style={{ gap:7 }}>
@@ -670,7 +693,10 @@ export default function HomeScreen() {
 
   const renderWaterCard = () => (
     <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
-      <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Water · {water}oz / {WATER_TARGET}oz</Text>
+      <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:10 }}>
+        <Ionicons name="water-outline" size={11} color={theme.textMuted} />
+        <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Water · {water}oz / {WATER_TARGET}oz</Text>
+      </View>
       <AnimatedProgressBar pct={Math.min(100,(water/WATER_TARGET)*100)} color={theme.accentBlue} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} />
       <View style={styles.waterBtns}>
         {waterPresets.map((oz,i) => (
@@ -703,7 +729,10 @@ export default function HomeScreen() {
 
   const renderWeightCard = () => (
     <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
-      <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Weight</Text>
+      <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:10 }}>
+        <Ionicons name="trending-down-outline" size={11} color={theme.textMuted} />
+        <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Weight</Text>
+      </View>
       <View style={styles.weightRow}>
         <View style={styles.weightStat}>
           <Text style={[styles.weightVal, { color: theme.textPrimary }]}>{weight ? `${weight} lbs` : '--'}</Text>
@@ -732,22 +761,90 @@ export default function HomeScreen() {
     </View>
   );
 
-  const renderWorkoutCard = () => (
-    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
-      <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Today's Workout</Text>
-      <View style={styles.workoutRow}>
-        <View>
-          <Text style={[styles.workoutDay, { color: theme.textPrimary }]}>{todayDay} — {todayProgram?.focus || 'Rest'}</Text>
-          <Text style={[styles.workoutMuscles, { color: theme.textMuted, fontFamily:'DMSans_700Bold', fontSize:9, letterSpacing:2, textTransform:'uppercase' }]}>
-            {isLift ? todayProgram.muscles : '60 min · 3.5mph · 5-6% incline'}
+  const renderWorkoutCard = () => {
+    const todayProgram = workoutPrograms[todayKey] || workoutTemplate[todayDay] || { type: 'cardio', focus: 'Cardio', color: '#888888', exercises: [] };
+    const exercises = todayProgram?.exercises || [];
+    const dayChecks = workoutChecks[todayKey] || {};
+    const doneCount = exercises.filter((ex: any) => dayChecks[ex.id]).length;
+    const pillColor = todayProgram?.color || '#888888';
+    const MAX_DISPLAY = 4;
+    const displayExercises = exercises.slice(0, MAX_DISPLAY);
+    const overflow = exercises.length - MAX_DISPLAY;
+    const burnedDisplay = hkCalories > 0 ? hkCalories : caloriesBurned;
+    const cardScale = new Animated.Value(1);
+
+    const onPressIn = () => Animated.timing(cardScale, { toValue: 0.97, duration: 100, useNativeDriver: true }).start();
+    const onPressOut = () => Animated.timing(cardScale, { toValue: 1, duration: 150, useNativeDriver: true }).start();
+
+    return (
+      <Animated.View style={{ transform: [{ scale: cardScale }] }}>
+      <TouchableOpacity
+        activeOpacity={0.99}
+        delayPressIn={0}
+        onPressIn={onPressIn}
+        onPressOut={onPressOut}
+        onPress={() => router.push('/(tabs)/workout')}
+        style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, padding: 16 }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
+            <Ionicons name="barbell-outline" size={11} color={theme.textMuted} />
+            <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Today's Training</Text>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <View style={{ backgroundColor: pillColor + '22', borderWidth: 1, borderColor: pillColor + '55', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
+              <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: pillColor }}>
+                {todayProgram?.customLabel || todayProgram?.focus || 'REST'}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {exercises.length === 0 ? (
+          <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>No exercises logged yet</Text>
+        ) : (
+          <View style={{ gap: 6, marginBottom: 10 }}>
+            {displayExercises.map((ex: any) => {
+              const done = dayChecks[ex.id];
+              return (
+                <View key={ex.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: done ? theme.textDim : pillColor }} />
+                  <Text style={{ fontSize: 12, fontFamily: done ? 'DMSans_400Regular' : 'DMSans_600SemiBold', color: done ? theme.textDim : theme.textPrimary, textDecorationLine: done ? 'line-through' : 'none', flex: 1 }}>
+                    {ex.name}
+                  </Text>
+                  {!ex.isCardio && (
+                    <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>{ex.sets}x{ex.reps}</Text>
+                  )}
+                  {ex.isCardio && ex.duration && (
+                    <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>{ex.duration}min</Text>
+                  )}
+                </View>
+              );
+            })}
+            {overflow > 0 && (
+              <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginTop: 2 }}>+{overflow} more · tap to view</Text>
+            )}
+          </View>
+        )}
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 10, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
+          <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>
+            {doneCount}/{exercises.length} complete
           </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
+            {burnedDisplay > 0 ? (
+              <>
+                <Text style={{ fontSize: 22, color: theme.accentAmber, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{burnedDisplay}</Text>
+                <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>kcal burned</Text>
+              </>
+            ) : (
+              <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>no burn data</Text>
+            )}
+          </View>
         </View>
-        <View style={[styles.workoutPill, { backgroundColor:dayColor+'22', borderColor:dayColor+'44' }]}>
-          <Text style={[styles.workoutPillText, { color:dayColor }]}>{todayProgram?.type?.toUpperCase()||'REST'}</Text>
-        </View>
-      </View>
-    </View>
-  );
+      </TouchableOpacity>
+      </Animated.View>
+    );
+  };
 
   const renderStepsCard = () => {
     const pct = stepGoal > 0 ? steps / stepGoal : 0;
@@ -755,7 +852,10 @@ export default function HomeScreen() {
     return (
       <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
-          <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Steps Today</Text>
+          <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
+            <Ionicons name="footsteps-outline" size={11} color={theme.textMuted} />
+            <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Steps Today</Text>
+          </View>
           <TouchableOpacity onPress={() => setEditingStepGoal(true)}
             style={{ backgroundColor: theme.accentBlueBg, borderWidth:1, borderColor: theme.accentBlueBorder, borderRadius:6, paddingHorizontal:10, paddingVertical:4 }}>
             <Text style={{ color: theme.accentBlue, fontSize:12, fontFamily:'DMSans_600SemiBold' }}>Goal: {stepGoal.toLocaleString()}</Text>
@@ -793,7 +893,10 @@ export default function HomeScreen() {
     return (
       <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
-          <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Sleep Last Night</Text>
+          <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
+            <Ionicons name="moon-outline" size={11} color={theme.textMuted} />
+            <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Sleep Last Night</Text>
+          </View>
           <TouchableOpacity onPress={() => setEditingSleep(!editingSleep)}
             style={{ backgroundColor: theme.accentBlueBg, borderWidth:1, borderColor: theme.accentBlueBorder, borderRadius:6, paddingHorizontal:10, paddingVertical:4 }}>
             <Text style={{ color: theme.accentBlue, fontSize:12, fontFamily:'DMSans_600SemiBold' }}>{sleepOverride ? 'Edited' : 'Edit'}</Text>
@@ -935,7 +1038,10 @@ export default function HomeScreen() {
 
   const renderFitnessMetricsCard = () => (
     <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
-      <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Fitness Metrics</Text>
+      <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:10 }}>
+        <Ionicons name="heart-outline" size={11} color={theme.textMuted} />
+        <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Fitness Metrics</Text>
+      </View>
       {(vo2Max === null && cardioRecovery === null) ? (
         <View style={{ alignItems:'center', paddingVertical:16, gap:6 }}>
           <Ionicons name="fitness-outline" size={28} color={theme.iconMuted} />
@@ -965,7 +1071,10 @@ export default function HomeScreen() {
 
   const renderDailyNoteCard = () => (
     <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
-      <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Daily Note</Text>
+      <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:10 }}>
+        <Ionicons name="journal-outline" size={11} color={theme.textMuted} />
+        <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Daily Note</Text>
+      </View>
       <TextInput style={[styles.notesInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} placeholder="How did today go? Workout, diet, energy..." placeholderTextColor={theme.textPlaceholder}
         multiline numberOfLines={4} value={dailyNote} onChangeText={setDailyNote} />
       <TouchableOpacity style={[styles.saveBtn, { backgroundColor: theme.bgInset, borderColor: theme.borderInset }]} onPress={() => {}}>
@@ -996,7 +1105,10 @@ export default function HomeScreen() {
 
   // ─── Render ───────────────────────────────────────────────────────────────────
   return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.bgPrimary }]}>
+    <LinearGradient
+      colors={[theme.gradientStart, theme.gradientEnd]}
+      style={[styles.container, { paddingTop: insets.top }]}
+    >
 
       {/* ── Header ── */}
       <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
@@ -1166,7 +1278,7 @@ export default function HomeScreen() {
         </Modal>
       )}
 
-    </View>
+    </LinearGradient>
   );
 }
 
@@ -1177,9 +1289,9 @@ const styles = StyleSheet.create({
   headerLabel:      { fontSize:9, letterSpacing:2, textTransform:'uppercase', marginBottom:2, fontFamily:'DMSans_700Bold' },
   headerTitle:      { fontSize:32, fontWeight:'700', fontFamily:'BebasNeue_400Regular', letterSpacing:2 },
   headerBtn:        { borderWidth:1, borderRadius:6, paddingHorizontal:12, paddingVertical:6, height:32, alignItems:'center', justifyContent:'center' },
-  card:             { borderWidth:0.5, borderRadius:14, padding:16, marginBottom:12, borderTopWidth:0.5 },
-  cardLabel:        { fontSize:9, letterSpacing:3, textTransform:'uppercase', fontFamily:'DMSans_700Bold', marginBottom:10 },
-  verseCard:        { borderWidth:1, borderRadius:14, padding:16, marginBottom:12 },
+  card:             { borderWidth:0.5, borderRadius:14, padding:16, marginBottom:12, borderTopWidth:0.5, shadowColor: '#000000', shadowOffset: { width:0, height:4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
+  cardLabel:        { fontSize:10, letterSpacing:3, textTransform:'uppercase', fontFamily:'DMSans_700Bold', marginBottom:10 },
+  verseCard:        { borderWidth:1, borderRadius:14, padding:16, marginBottom:12, shadowColor: '#000000', shadowOffset: { width:0, height:4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
   verseLabel:       { fontSize:9, letterSpacing:3, textTransform:'uppercase', marginBottom:8, fontFamily:'DMSans_700Bold' },
   verseText:        { fontSize:14, fontStyle:'italic', lineHeight:24, marginBottom:10, fontFamily:'DMSans_400Regular', textAlign:'center' },
   verseRef:         { fontSize:9, fontFamily:'DMSans_700Bold', textAlign:'center', letterSpacing:2, textTransform:'uppercase' },

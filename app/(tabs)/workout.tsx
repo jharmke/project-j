@@ -1,5 +1,6 @@
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -383,8 +384,8 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: theme.bgPrimary }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <View style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.bgPrimary }]}>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={[styles.container, { paddingTop: insets.top }]}>
         <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
           <View style={{ flex: 1 }}>
             <Text style={[styles.headerLabel, { color: theme.textMuted }]}>PROJECT J</Text>
@@ -550,51 +551,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
           </View>
         )}
 
-        {/* Calories Burned Card */}
-        <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, marginTop: 12 }]}>
-          <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Calories Burned</Text>
-          <View style={{ marginTop: 8 }}>
-            {calBurnedSaved ? (
-              <TouchableOpacity
-                onPress={() => setCalBurnedSaved(false)}
-                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.bgInput, borderWidth: 0.5, borderColor: theme.accentGreenBorder, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 12 }}>
-                <Text style={{ color: theme.textPrimary, fontSize: 14, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>{cardioLogs[activeDay]?.caloriesBurned} <Text style={{ color: theme.textMuted, fontSize: 10, letterSpacing: 2 }}>KCAL</Text></Text>
-                <Text style={{ color: theme.textDim, fontSize: 10, fontFamily: 'DMSans_600SemiBold', letterSpacing: 1, textTransform: 'uppercase' }}>tap to edit</Text>
-              </TouchableOpacity>
-            ) : (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <TextInput
-                  style={[styles.notesInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, minHeight: 0, flex: 1, textAlignVertical: 'center', paddingVertical: 10, marginTop: 0 }]}
-                  placeholder="e.g. 450 kcal"
-                  placeholderTextColor={theme.textPlaceholder}
-                  keyboardType="number-pad"
-                  autoFocus={!!cardioLogs[activeDay]?.caloriesBurned}
-                  value={cardioLogs[activeDay]?.caloriesBurned || ''}
-                  onChangeText={v => {
-                    const newLogs = { ...cardioLogs, [activeDay]: { ...(cardioLogs[activeDay] || {}), caloriesBurned: v } };
-                    setCardioLogs(newLogs);
-                    saveState(checks, cardioComplete, programs, workoutNotes, newLogs);
-                    const saveCalsBurned = async () => {
-                      try {
-                        const saved = await AsyncStorage.getItem(`pj_${activeDay}`);
-                        const current = saved ? JSON.parse(saved) : {};
-                        await AsyncStorage.setItem(`pj_${activeDay}`, JSON.stringify({ ...current, caloriesBurned: parseInt(v) || 0 }));
-                      } catch (e) {}
-                    };
-                    saveCalsBurned();
-                  }}
-                />
-                {cardioLogs[activeDay]?.caloriesBurned ? (
-                  <TouchableOpacity
-                    style={{ backgroundColor: theme.accentGreenBg, borderWidth: 0.5, borderColor: theme.accentGreenBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 8 }}
-                    onPress={() => { Keyboard.dismiss(); setCalBurnedSaved(true); }}>
-                    <Text style={{ color: theme.accentGreen, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Save</Text>
-                  </TouchableOpacity>
-                ) : null}
-              </View>
-            )}
-          </View>
-        </View>
+        
 
         {/* Effort Score Card */}
         <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, marginTop: 12 }]}>
@@ -781,7 +738,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
         </Modal>
       )}
 
-    </View>
+    </LinearGradient>
     </KeyboardAvoidingView>
     </GestureHandlerRootView>
   );
@@ -810,7 +767,7 @@ const styles = StyleSheet.create({
   progressCount:        { fontSize: 24, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
   progressBarBg:        { height: 2, borderRadius: 2, overflow: 'hidden', marginBottom: 16 },
   progressBarFill:      { height: '100%', borderRadius: 2 },
-  exerciseItem:         { borderWidth: 0.5, borderLeftWidth: 3, borderRadius: 10, padding: 14, marginBottom: 8 },
+  exerciseItem:         { borderWidth: 0.5, borderLeftWidth: 3, borderRadius: 10, padding: 14, marginBottom: 8, shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
   exerciseDone:         { opacity: 0.87 },
   exerciseRow:          { flexDirection: 'row', alignItems: 'flex-start' },
   exerciseInfo:         { flex: 1 },
@@ -830,8 +787,8 @@ const styles = StyleSheet.create({
   addExBtnText:         { fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 2 },
   completeMsg:          { padding: 16, marginTop: 8, alignItems: 'center' },
   completeMsgText:      { fontSize: 32, letterSpacing: 4, fontFamily: 'BebasNeue_400Regular' },
-  card:                 { borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, padding: 16 },
-  cardLabel:            { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold' },
+  card:                 { borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, padding: 16, shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
+  cardLabel:            { fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold' },
   notesInput:           { borderWidth: 0.5, borderRadius: 8, padding: 10, fontSize: 13, minHeight: 80, textAlignVertical: 'top', marginTop: 10, fontFamily: 'DMSans_400Regular' },
   saveNoteBtn:          { marginTop: 8, padding: 10, borderWidth: 0.5, borderRadius: 6, alignItems: 'center' },
   saveNoteBtnText:      { fontSize: 12, fontFamily: 'DMSans_600SemiBold' },

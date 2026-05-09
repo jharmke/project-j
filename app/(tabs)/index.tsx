@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import PressableButton from '../../components/PressableButton';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
+import { useTheme } from '../../theme';
 import { useHealthKit } from '../../useHealthKit';
 
 // ─── Card Registry ────────────────────────────────────────────────────────────
@@ -132,7 +133,7 @@ function MacroDonut({ protein, carbs, fat, calories }: { protein: number; carbs:
   );
 }
 
-function AnimatedProgressBar({ pct, color, refreshKey }: { pct: number; color: string; refreshKey?: number }) {
+function AnimatedProgressBar({ pct, color, trackColor, refreshKey }: { pct: number; color: string; trackColor?: string; refreshKey?: number }) {
   const width = useSharedValue(0);
   useEffect(() => {
     width.value = 0;
@@ -144,14 +145,14 @@ function AnimatedProgressBar({ pct, color, refreshKey }: { pct: number; color: s
   }, [pct, refreshKey]);
   const animStyle = useAnimatedStyle(() => ({ width: `${width.value}%` as any }));
   return (
-    <View style={styles.progressBarBg}>
+    <View style={[styles.progressBarBg, { backgroundColor: trackColor ?? '#1e1e2e' }]}>
       <ReAnimated.View style={[styles.progressBarFill, { backgroundColor: color }, animStyle]} />
     </View>
   );
 }
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
-function MacroBar({ val, goal, color }: { val: number; goal: number; color: string }) {
+function MacroBar({ val, goal, color, trackColor }: { val: number; goal: number; color: string; trackColor?: string }) {
   const pct = goal > 0 ? Math.min((val / goal) * 100, 100) : 0;
   const width = useSharedValue(0);
   useEffect(() => {
@@ -159,7 +160,7 @@ function MacroBar({ val, goal, color }: { val: number; goal: number; color: stri
   }, [pct]);
   const animStyle = useAnimatedStyle(() => ({ width: `${width.value}%` as any }));
   return (
-    <View style={{ height:6, backgroundColor:'#12121a', borderRadius:6, overflow:'hidden' }}>
+    <View style={{ height:6, backgroundColor: trackColor ?? '#1e1e2e', borderRadius:6, overflow:'hidden' }}>
       <ReAnimated.View style={[{ height:'100%', borderRadius:6, backgroundColor: color }, animStyle]} />
     </View>
   );
@@ -167,6 +168,7 @@ function MacroBar({ val, goal, color }: { val: number; goal: number; color: stri
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
 
   // Layout state
   const [cardOrder,   setCardOrder]   = useState<CardId[]>(DEFAULT_ORDER);
@@ -477,20 +479,20 @@ export default function HomeScreen() {
 
   // ─── Card Renderers ───────────────────────────────────────────────────────────
   const renderVerseCard = () => (
-    <View style={styles.verseCard}>
-      <Text style={styles.verseLabel}>TODAY'S VERSE</Text>
-      <Text style={styles.verseText}>"{dailyVerse?.text}"</Text>
-      <Text style={styles.verseRef}>{dailyVerse?.reference}</Text>
+    <View style={[styles.verseCard, { backgroundColor: theme.bgCardVerse, borderColor: theme.borderCardVerse }]}>
+      <Text style={[styles.verseLabel, { color: theme.textMuted }]}>TODAY'S VERSE</Text>
+      <Text style={[styles.verseText, { color: theme.textSecondary }]}>"{dailyVerse?.text}"</Text>
+      <Text style={[styles.verseRef, { color: theme.textMuted }]}>{dailyVerse?.reference}</Text>
     </View>
   );
 
   const renderIFCard = () => (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
       <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
-        <Text style={[styles.cardLabel,{marginBottom:0}]}>Intermittent Fast · {ifMethod}</Text>
+        <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Intermittent Fast · {ifMethod}</Text>
         {ifStart && (
           <View style={{ backgroundColor: ifEnd ? `${ifResultColor}22` : isOpen ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', borderWidth:1, borderColor: ifEnd ? `${ifResultColor}55` : isOpen ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)', borderRadius:5, paddingHorizontal:8, paddingVertical:3 }}>
-            <Text style={{ fontSize:10, fontFamily:'DMSans_700Bold', letterSpacing:2, color: ifEnd ? ifResultColor : isOpen ? '#10b981' : '#ef4444' }}>
+            <Text style={{ fontSize:10, fontFamily:'DMSans_700Bold', letterSpacing:2, color: ifEnd ? ifResultColor : isOpen ? theme.accentGreen : theme.accentRed }}>
               {ifEnd ? ifResultLabel : isOpen ? 'OPEN' : 'CLOSED'}
             </Text>
           </View>
@@ -499,46 +501,46 @@ export default function HomeScreen() {
       <View style={{ flexDirection:'row', gap:5, marginBottom:12, flexWrap:'wrap' }}>
         {Object.keys(IF_METHODS).map(m => (
           <TouchableOpacity key={m} onPress={() => { setIfMethod(m); saveToFirebase(todayKey,'ifMethod',m); }}
-            style={{ paddingHorizontal:10, paddingVertical:5, borderRadius:6, backgroundColor: ifMethod===m ? 'rgba(59,130,246,0.2)' : '#13131e', borderWidth:1, borderColor: ifMethod===m ? 'rgba(59,130,246,0.5)' : 'rgba(255,255,255,0.1)' }}>
-            <Text style={{ fontSize:11, fontFamily:'DMSans_600SemiBold', color: ifMethod===m ? '#3b82f6' : '#7070a0' }}>{m}</Text>
+            style={{ paddingHorizontal:10, paddingVertical:5, borderRadius:6, backgroundColor: ifMethod===m ? theme.accentBlueBg : theme.ifMethodBg, borderWidth:1, borderColor: ifMethod===m ? theme.accentBlueBorder : theme.ifMethodBorder }}>
+            <Text style={{ fontSize:11, fontFamily:'DMSans_600SemiBold', color: ifMethod===m ? theme.accentBlue : theme.ifMethodText }}>{m}</Text>
           </TouchableOpacity>
         ))}
       </View>
       {ifMethod === 'Custom' && (
         <View style={{ flexDirection:'row', alignItems:'center', gap:8, marginBottom:12 }}>
-          <Text style={{ fontSize:12, color:'#888888', fontFamily:'DMSans_400Regular' }}>Eating window:</Text>
-          <TextInput style={{ backgroundColor:'#1e1e1e', borderWidth:1, borderColor:'#2a2a2a', borderRadius:6, color:'#ffffff', padding:6, fontSize:14, fontFamily:'DMSans_600SemiBold', width:50, textAlign:'center' }}
+          <Text style={{ fontSize:12, color: theme.textMuted, fontFamily:'DMSans_400Regular' }}>Eating window:</Text>
+          <TextInput style={{ backgroundColor: theme.bgInput, borderWidth:1, borderColor: theme.borderInput, borderRadius:6, color: theme.textPrimary, padding:6, fontSize:14, fontFamily:'DMSans_600SemiBold', width:50, textAlign:'center' }}
             value={ifCustomHours} onChangeText={v => setIfCustomHours(v)} keyboardType="number-pad" maxLength={2} />
-          <Text style={{ fontSize:12, color:'#888888', fontFamily:'DMSans_400Regular' }}>hrs</Text>
+          <Text style={{ fontSize:12, color: theme.textMuted, fontFamily:'DMSans_400Regular' }}>hrs</Text>
         </View>
       )}
       {!ifStart ? (
-        <PressableButton style={styles.ifStartBtn} onPress={() => { setIfStart(Date.now()); setIfEnd(null); }} flex={0}>
-          <Text style={styles.ifStartBtnText}>TAP WHEN YOU EAT YOUR FIRST MEAL</Text>
+        <PressableButton style={[styles.ifStartBtn, { backgroundColor: theme.accentGreenBg, borderColor: theme.accentGreenBorder }]} onPress={() => { setIfStart(Date.now()); setIfEnd(null); }} flex={0}>
+          <Text style={[styles.ifStartBtnText, { color: theme.accentGreen }]}>TAP WHEN YOU EAT YOUR FIRST MEAL</Text>
         </PressableButton>
       ) : ifEnd ? (
         <View>
           <View style={{ backgroundColor:`${ifResultColor}11`, borderWidth:1, borderColor:`${ifResultColor}33`, borderRadius:8, padding:12, marginBottom:10 }}>
             <View style={{ flexDirection:'row', justifyContent:'space-between', marginBottom:6 }}>
-              <Text style={{ fontSize:11, color:'#888888', fontFamily:'DMSans_400Regular' }}>Target</Text>
+              <Text style={{ fontSize:11, color: theme.textMuted, fontFamily:'DMSans_400Regular' }}>Target</Text>
               <Text style={{ fontSize:13, color:ifResultColor, fontFamily:'DMSans_600SemiBold' }}>{formatHrMin(ifTargetMs)}</Text>
             </View>
             <View style={{ flexDirection:'row', justifyContent:'space-between', marginBottom:6 }}>
-              <Text style={{ fontSize:11, color:'#888888', fontFamily:'DMSans_400Regular' }}>Actual</Text>
-              <Text style={{ fontSize:13, color:'#e8e8f0', fontFamily:'DMSans_600SemiBold' }}>{ifActualMs ? formatHrMin(ifActualMs) : '--'}</Text>
+              <Text style={{ fontSize:11, color: theme.textMuted, fontFamily:'DMSans_400Regular' }}>Actual</Text>
+              <Text style={{ fontSize:13, color: theme.textPrimary, fontFamily:'DMSans_600SemiBold' }}>{ifActualMs ? formatHrMin(ifActualMs) : '--'}</Text>
             </View>
             <View style={{ flexDirection:'row', justifyContent:'space-between' }}>
-              <Text style={{ fontSize:11, color:'#888888', fontFamily:'DMSans_400Regular' }}>Window</Text>
-              <Text style={{ fontSize:11, color:'#888888', fontFamily:'DMSans_400Regular' }}>
+              <Text style={{ fontSize:11, color: theme.textMuted, fontFamily:'DMSans_400Regular' }}>Window</Text>
+              <Text style={{ fontSize:11, color: theme.textMuted, fontFamily:'DMSans_400Regular' }}>
                 {new Date(ifStart).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} → {new Date(ifEnd).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
               </Text>
             </View>
           </View>
           <View style={{ flexDirection:'row', gap:16, marginTop:4 }}>
-            <TouchableOpacity onPress={() => setShowTimePicker(true)}><Text style={styles.ifReset}>Edit start</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => setShowEndTimePicker(true)}><Text style={styles.ifReset}>Edit end</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowTimePicker(true)}><Text style={[styles.ifReset, { color: theme.textSecondary }]}>Edit start</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowEndTimePicker(true)}><Text style={[styles.ifReset, { color: theme.textSecondary }]}>Edit end</Text></TouchableOpacity>
             <TouchableOpacity onPress={() => { setIfStart(null); setIfEnd(null); saveToFirebase(todayKey,'ifStart',null); saveToFirebase(todayKey,'ifEnd',null); }}>
-              <Text style={[styles.ifReset,{color:'#ef4444'}]}>Reset</Text>
+              <Text style={[styles.ifReset, { color: theme.accentRed }]}>Reset</Text>
             </TouchableOpacity>
           </View>
           {showEndTimePicker && (
@@ -608,20 +610,20 @@ export default function HomeScreen() {
   );
 
   const renderCaloriesCard = () => (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
       <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
-        <Text style={styles.cardLabel}>Calories Today</Text>
+        <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Calories Today</Text>
         <TouchableOpacity onPress={() => router.push('/(tabs)/log')} activeOpacity={0.6}
-          style={{ backgroundColor:'rgba(59,130,246,0.15)', borderWidth:1, borderColor:'rgba(59,130,246,0.3)', borderRadius:6, paddingHorizontal:10, paddingVertical:4 }}>
-          <Text style={{ color:'#3b82f6', fontSize:12, fontFamily:'DMSans_600SemiBold' }}>+ Log</Text>
+          style={{ backgroundColor: theme.accentBlueBg, borderWidth:1, borderColor: theme.accentBlueBorder, borderRadius:6, paddingHorizontal:10, paddingVertical:4 }}>
+          <Text style={{ color: theme.accentBlue, fontSize:12, fontFamily:'DMSans_600SemiBold' }}>+ Log</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.calRow}>
-        <Text style={[styles.calNumber,{color:calColor}]}>{totalCals}</Text>
-        <Text style={styles.calTarget}>/ {adjustedTarget} kcal</Text>
+        <Text style={[styles.calNumber, { color:calColor }]}>{totalCals}</Text>
+        <Text style={[styles.calTarget, { color: theme.textSecondary }]}>/ {adjustedTarget} kcal</Text>
       </View>
-      <AnimatedProgressBar pct={calPct} color={calColor} refreshKey={refreshKey} />
-      <Text style={[styles.calRemaining,{color:'#666680',fontFamily:'DMSans_700Bold',fontSize:10,letterSpacing:1.5,textTransform:'uppercase'}]}>
+      <AnimatedProgressBar pct={calPct} color={calColor} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} />
+      <Text style={[styles.calRemaining, { color: theme.textMuted, fontFamily:'DMSans_700Bold', fontSize:10, letterSpacing:1.5, textTransform:'uppercase' }]}>
         {(() => { const diff = adjustedTarget - totalCals; return diff > 0 ? `${diff} kcal remaining · ${displayedBurned} burned` : `${Math.abs(diff)} kcal over · ${displayedBurned} burned`; })()}
       </Text>
     </View>
@@ -630,15 +632,15 @@ export default function HomeScreen() {
   const renderMacrosCard = () => {
     const macroGoals = { protein: 150, carbs: 200, fat: 65 }; // TODO: wire to pj_profile macro goals
     const macros = [
-      { label: 'Protein', val: totalProtein, goal: macroGoals.protein, color: '#0d9268' },
-      { label: 'Carbs',   val: totalCarbs,   goal: macroGoals.carbs,   color: '#c47d1a' },
-      { label: 'Fat',     val: totalFat,     goal: macroGoals.fat,     color: '#a83232' },
+      { label: 'Protein', val: totalProtein, goal: macroGoals.protein, color: theme.macroProtein },
+      { label: 'Carbs',   val: totalCarbs,   goal: macroGoals.carbs,   color: theme.macroCarbs },
+      { label: 'Fat',     val: totalFat,     goal: macroGoals.fat,     color: theme.macroFat },
     ];
     return (
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
-          <Text style={[styles.cardLabel, { marginBottom:0 }]}>Macros Today</Text>
-          <Text style={{ fontSize:9, color:'#444466', fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase' }}>vs goal</Text>
+          <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Macros Today</Text>
+          <Text style={{ fontSize:9, color: theme.textDim, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase' }}>vs goal</Text>
         </View>
         <View style={{ gap:7 }}>
           {macros.map(m => {
@@ -647,15 +649,15 @@ export default function HomeScreen() {
             return (
               <View key={m.label}>
                 <View style={{ flexDirection:'row', alignItems:'baseline', justifyContent:'space-between', marginBottom:4 }}>
-                  <Text style={{ fontSize:11, color:'#666680', fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', flex:1 }}>{m.label}</Text>
+                  <Text style={{ fontSize:11, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', flex:1 }}>{m.label}</Text>
                   <View style={{ flexDirection:'row', alignItems:'baseline', gap:4, width:120, justifyContent:'flex-end' }}>
-                    <Text style={{ fontSize:20, color: over ? '#a83232' : m.color, fontFamily:'BebasNeue_400Regular', letterSpacing:1, textAlign:'right' }}>{m.val}</Text>
-                    <Text style={{ fontSize:11, color: over ? '#a83232' : m.color, fontFamily:'DMSans_500Medium' }}>g</Text>
-                    <Text style={{ fontSize:11, color:'#555570', fontFamily:'DMSans_500Medium' }}>/ {m.goal} g</Text>
+                    <Text style={{ fontSize:20, color: over ? theme.macroOver : m.color, fontFamily:'BebasNeue_400Regular', letterSpacing:1, textAlign:'right' }}>{m.val}</Text>
+                    <Text style={{ fontSize:11, color: over ? theme.macroOver : m.color, fontFamily:'DMSans_500Medium' }}>g</Text>
+                    <Text style={{ fontSize:11, color: theme.textDim, fontFamily:'DMSans_500Medium' }}>/ {m.goal} g</Text>
                   </View>
                 </View>
-                <MacroBar val={m.val} goal={m.goal} color={over ? '#a83232' : m.color} />
-                <Text style={{ fontSize:9, color: over ? '#a83232' : m.color, fontFamily:'DMSans_500Medium', letterSpacing:0.5, marginTop:3, opacity:0.7 }}>
+                <MacroBar val={m.val} goal={m.goal} color={over ? theme.macroOver : m.color} trackColor={theme.bgProgressTrack} />
+                <Text style={{ fontSize:9, color: over ? theme.macroOver : m.color, fontFamily:'DMSans_500Medium', letterSpacing:0.5, marginTop:3, opacity:0.7 }}>
                   {over ? `${Math.round(m.val - m.goal)} g over` : `${Math.round(m.goal - m.val)} g remaining`}
                 </Text>
               </View>
@@ -667,32 +669,32 @@ export default function HomeScreen() {
   };
 
   const renderWaterCard = () => (
-    <View style={styles.card}>
-      <Text style={styles.cardLabel}>Water · {water}oz / {WATER_TARGET}oz</Text>
-      <AnimatedProgressBar pct={Math.min(100,(water/WATER_TARGET)*100)} color="#3b82f6" refreshKey={refreshKey} />
+    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
+      <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Water · {water}oz / {WATER_TARGET}oz</Text>
+      <AnimatedProgressBar pct={Math.min(100,(water/WATER_TARGET)*100)} color={theme.accentBlue} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} />
       <View style={styles.waterBtns}>
         {waterPresets.map((oz,i) => (
-          <PressableButton key={i} style={styles.waterBtn} onPress={() => { const n=Math.min(WATER_TARGET,water+oz); setWater(n); saveToFirebase(todayKey,'water',n); }}>
-            <Text style={styles.waterBtnText}>+{oz} oz</Text>
+          <PressableButton key={i} style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => { const n=Math.min(WATER_TARGET,water+oz); setWater(n); saveToFirebase(todayKey,'water',n); }}>
+            <Text style={[styles.waterBtnText, { color: theme.accentBlue }]}>+{oz} oz</Text>
           </PressableButton>
         ))}
-        <PressableButton style={styles.waterBtn} onPress={() => { setWaterCustomSign('add'); setWaterCustomInput(''); setShowWaterCustomModal(true); }}>
+        <PressableButton style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => { setWaterCustomSign('add'); setWaterCustomInput(''); setShowWaterCustomModal(true); }}>
           <View style={{ alignItems:'center', justifyContent:'center', width:20, height:20 }}>
-            <Ionicons name="water-outline" size={18} color="#3b82f6" />
-            <Text style={{ color:'#3b82f6', fontSize:9, fontFamily:'DMSans_700Bold', position:'absolute', bottom:-2, right:-4 }}>+</Text>
+            <Ionicons name="water-outline" size={18} color={theme.accentBlue} />
+            <Text style={{ color: theme.accentBlue, fontSize:9, fontFamily:'DMSans_700Bold', position:'absolute', bottom:-2, right:-4 }}>+</Text>
           </View>
         </PressableButton>
       </View>
-      <View style={[styles.waterBtns,{marginTop:8}]}>
+      <View style={[styles.waterBtns, { marginTop:8 }]}>
         {waterPresets.map((oz,i) => (
-          <PressableButton key={i} style={styles.waterBtnRed} onPress={() => { const n=Math.max(0,water-oz); setWater(n); saveToFirebase(todayKey,'water',n); }}>
-            <Text style={styles.waterBtnRedText}>-{oz} oz</Text>
+          <PressableButton key={i} style={[styles.waterBtnRed, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]} onPress={() => { const n=Math.max(0,water-oz); setWater(n); saveToFirebase(todayKey,'water',n); }}>
+            <Text style={[styles.waterBtnRedText, { color: theme.accentRed }]}>-{oz} oz</Text>
           </PressableButton>
         ))}
-        <PressableButton style={styles.waterBtnRed} onPress={() => { setWaterCustomSign('subtract'); setWaterCustomInput(''); setShowWaterCustomModal(true); }}>
+        <PressableButton style={[styles.waterBtnRed, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]} onPress={() => { setWaterCustomSign('subtract'); setWaterCustomInput(''); setShowWaterCustomModal(true); }}>
           <View style={{ alignItems:'center', justifyContent:'center', width:20, height:20 }}>
-            <Ionicons name="water-outline" size={18} color="#cc3333" />
-            <Text style={{ color:'#cc3333', fontSize:9, fontFamily:'DMSans_700Bold', position:'absolute', bottom:-2, right:-4 }}>-</Text>
+            <Ionicons name="water-outline" size={18} color={theme.accentRed} />
+            <Text style={{ color: theme.accentRed, fontSize:9, fontFamily:'DMSans_700Bold', position:'absolute', bottom:-2, right:-4 }}>-</Text>
           </View>
         </PressableButton>
       </View>
@@ -700,48 +702,48 @@ export default function HomeScreen() {
   );
 
   const renderWeightCard = () => (
-    <View style={styles.card}>
-      <Text style={styles.cardLabel}>Weight</Text>
+    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
+      <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Weight</Text>
       <View style={styles.weightRow}>
         <View style={styles.weightStat}>
-          <Text style={styles.weightVal}>{weight ? `${weight} lbs` : '--'}</Text>
-          <Text style={styles.weightLbl}>Today</Text>
+          <Text style={[styles.weightVal, { color: theme.textPrimary }]}>{weight ? `${weight} lbs` : '--'}</Text>
+          <Text style={[styles.weightLbl, { color: theme.textMuted }]}>Today</Text>
         </View>
         <View style={styles.weightStat}>
-          <Text style={[styles.weightVal,{color: weight&&yesterdayWeight ? weight<yesterdayWeight?'#10b981':weight>yesterdayWeight?'#cc3333':'#e8e8f0' : '#e8e8f0'}]}>
+          <Text style={[styles.weightVal, { color: weight&&yesterdayWeight ? weight<yesterdayWeight ? theme.statusGood : weight>yesterdayWeight ? theme.statusBad : theme.textPrimary : theme.textPrimary }]}>
             {weight&&yesterdayWeight ? `${weight>yesterdayWeight?'+':''}${Math.round((weight-yesterdayWeight)*10)/10}` : '--'}
           </Text>
-          <Text style={styles.weightLbl}>vs Yesterday</Text>
+          <Text style={[styles.weightLbl, { color: theme.textMuted }]}>vs Yesterday</Text>
         </View>
         <View style={styles.weightStat}>
-          <Text style={[styles.weightVal,{color: weight&&earliestWeight ? earliestWeight-weight>0?'#10b981':earliestWeight-weight<0?'#cc3333':'#e8e8f0' : '#e8e8f0'}]}>
+          <Text style={[styles.weightVal, { color: weight&&earliestWeight ? earliestWeight-weight>0 ? theme.statusGood : earliestWeight-weight<0 ? theme.statusBad : theme.textPrimary : theme.textPrimary }]}>
             {weight&&earliestWeight ? `${Math.round((earliestWeight-weight)*10)/10} lbs` : '--'}
           </Text>
-          <Text style={styles.weightLbl}>Total Lost</Text>
+          <Text style={[styles.weightLbl, { color: theme.textMuted }]}>Total Lost</Text>
         </View>
       </View>
       <View style={styles.weightAdd}>
-        <TextInput style={styles.weightInput} placeholder="Enter weight (lbs)" placeholderTextColor="#555555"
+        <TextInput style={[styles.weightInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} placeholder="Enter weight (lbs)" placeholderTextColor={theme.textPlaceholder}
           keyboardType="decimal-pad" value={weightInput} onChangeText={setWeightInput} />
-        <PressableButton style={styles.logBtn} onPress={logWeight}>
-          <Text style={styles.logBtnText}>LOG</Text>
+        <PressableButton style={[styles.logBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={logWeight}>
+          <Text style={[styles.logBtnText, { color: theme.accentBlue }]}>LOG</Text>
         </PressableButton>
       </View>
     </View>
   );
 
   const renderWorkoutCard = () => (
-    <View style={styles.card}>
-      <Text style={styles.cardLabel}>Today's Workout</Text>
+    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
+      <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Today's Workout</Text>
       <View style={styles.workoutRow}>
         <View>
-          <Text style={styles.workoutDay}>{todayDay} — {todayProgram?.focus || 'Rest'}</Text>
-          <Text style={[styles.workoutMuscles,{color:'#666680',fontFamily:'DMSans_700Bold',fontSize:9,letterSpacing:2,textTransform:'uppercase'}]}>
+          <Text style={[styles.workoutDay, { color: theme.textPrimary }]}>{todayDay} — {todayProgram?.focus || 'Rest'}</Text>
+          <Text style={[styles.workoutMuscles, { color: theme.textMuted, fontFamily:'DMSans_700Bold', fontSize:9, letterSpacing:2, textTransform:'uppercase' }]}>
             {isLift ? todayProgram.muscles : '60 min · 3.5mph · 5-6% incline'}
           </Text>
         </View>
-        <View style={[styles.workoutPill,{backgroundColor:dayColor+'22',borderColor:dayColor+'44'}]}>
-          <Text style={[styles.workoutPillText,{color:dayColor}]}>{todayProgram?.type?.toUpperCase()||'REST'}</Text>
+        <View style={[styles.workoutPill, { backgroundColor:dayColor+'22', borderColor:dayColor+'44' }]}>
+          <Text style={[styles.workoutPillText, { color:dayColor }]}>{todayProgram?.type?.toUpperCase()||'REST'}</Text>
         </View>
       </View>
     </View>
@@ -749,19 +751,19 @@ export default function HomeScreen() {
 
   const renderStepsCard = () => {
     const pct = stepGoal > 0 ? steps / stepGoal : 0;
-    const stepColor = pct >= 1 ? '#10b981' : pct >= 0.7 ? '#f59e0b' : '#ef4444';
+    const stepColor = pct >= 1 ? theme.statusGood : pct >= 0.7 ? theme.statusWarn : theme.statusBad;
     return (
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
-          <Text style={[styles.cardLabel,{marginBottom:0}]}>Steps Today</Text>
+          <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Steps Today</Text>
           <TouchableOpacity onPress={() => setEditingStepGoal(true)}
-            style={{ backgroundColor:'rgba(59,130,246,0.15)', borderWidth:1, borderColor:'rgba(59,130,246,0.3)', borderRadius:6, paddingHorizontal:10, paddingVertical:4 }}>
-            <Text style={{ color:'#3b82f6', fontSize:12, fontFamily:'DMSans_600SemiBold' }}>Goal: {stepGoal.toLocaleString()}</Text>
+            style={{ backgroundColor: theme.accentBlueBg, borderWidth:1, borderColor: theme.accentBlueBorder, borderRadius:6, paddingHorizontal:10, paddingVertical:4 }}>
+            <Text style={{ color: theme.accentBlue, fontSize:12, fontFamily:'DMSans_600SemiBold' }}>Goal: {stepGoal.toLocaleString()}</Text>
           </TouchableOpacity>
         </View>
         {editingStepGoal && (
           <View style={{ flexDirection:'row', alignItems:'center', gap:8, marginBottom:10 }}>
-            <TextInput style={{ flex:1, backgroundColor:'#1e1e1e', borderWidth:1, borderColor:'#2a2a2a', borderRadius:6, color:'#ffffff', padding:8, fontSize:14, fontFamily:'DMSans_400Regular' }}
+            <TextInput style={{ flex:1, backgroundColor: theme.bgInput, borderWidth:1, borderColor: theme.borderInput, borderRadius:6, color: theme.textPrimary, padding:8, fontSize:14, fontFamily:'DMSans_400Regular' }}
               value={String(stepGoal)} onChangeText={v => setStepGoal(parseInt(v)||0)} keyboardType="number-pad" autoFocus />
             <TouchableOpacity onPress={async () => {
               setEditingStepGoal(false);
@@ -769,19 +771,19 @@ export default function HomeScreen() {
               const p = saved ? JSON.parse(saved) : {};
               await AsyncStorage.setItem('pj_profile', JSON.stringify({...p, stepGoal: String(stepGoal)}));
               await saveToFirebase('profile','data',{...p, stepGoal: String(stepGoal)});
-            }} style={{ backgroundColor:'#10b981', borderRadius:6, paddingHorizontal:12, paddingVertical:8 }}>
-              <Text style={{ color:'#000000', fontSize:13, fontFamily:'DMSans_600SemiBold' }}>Save</Text>
+            }} style={{ backgroundColor: theme.accentGreen, borderRadius:6, paddingHorizontal:12, paddingVertical:8 }}>
+              <Text style={{ color: theme.bgPrimary, fontSize:13, fontFamily:'DMSans_600SemiBold' }}>Save</Text>
             </TouchableOpacity>
           </View>
         )}
         <View style={{ flexDirection:'row', alignItems:'baseline', gap:6, marginBottom:6 }}>
           <Text style={{ fontSize:36, color:stepColor, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>{steps.toLocaleString()}</Text>
-          <Text style={{ fontSize:13, color:'#888888', fontFamily:'DMSans_400Regular' }}>/ {stepGoal.toLocaleString()} steps</Text>
+          <Text style={{ fontSize:13, color: theme.textMuted, fontFamily:'DMSans_400Regular' }}>/ {stepGoal.toLocaleString()} steps</Text>
         </View>
         <View style={{ marginBottom:8 }}>
-          <AnimatedProgressBar pct={Math.min(pct*100,100)} color={stepColor} refreshKey={refreshKey} />
+          <AnimatedProgressBar pct={Math.min(pct*100,100)} color={stepColor} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} />
         </View>
-        <Text style={{ fontSize:9, color:'#666680', fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase' }}>{distance} mi walked today</Text>
+        <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase' }}>{distance} mi walked today</Text>
       </View>
     );
   };
@@ -789,51 +791,51 @@ export default function HomeScreen() {
   const renderSleepCard = () => {
     const displaySleep = sleepOverride ?? sleepHours;
     return (
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
-          <Text style={[styles.cardLabel,{marginBottom:0}]}>Sleep Last Night</Text>
+          <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Sleep Last Night</Text>
           <TouchableOpacity onPress={() => setEditingSleep(!editingSleep)}
-            style={{ backgroundColor:'rgba(59,130,246,0.15)', borderWidth:1, borderColor:'rgba(59,130,246,0.3)', borderRadius:6, paddingHorizontal:10, paddingVertical:4 }}>
-            <Text style={{ color:'#3b82f6', fontSize:12, fontFamily:'DMSans_600SemiBold' }}>{sleepOverride ? 'Edited' : 'Edit'}</Text>
+            style={{ backgroundColor: theme.accentBlueBg, borderWidth:1, borderColor: theme.accentBlueBorder, borderRadius:6, paddingHorizontal:10, paddingVertical:4 }}>
+            <Text style={{ color: theme.accentBlue, fontSize:12, fontFamily:'DMSans_600SemiBold' }}>{sleepOverride ? 'Edited' : 'Edit'}</Text>
           </TouchableOpacity>
         </View>
         {editingSleep && (
           <View style={{ marginBottom:10 }}>
             <View style={{ flexDirection:'row', gap:8, marginBottom:8 }}>
-              <TouchableOpacity onPress={() => setShowBedTimePicker(true)} style={{ flex:1, backgroundColor:'#1e1e1e', borderWidth:1, borderColor:'#2a2a2a', borderRadius:6, padding:10, alignItems:'center' }}>
-                <Text style={{ fontSize:10, color:'#888888', fontFamily:'DMSans_400Regular', marginBottom:2 }}>Bed Time</Text>
-                <Text style={{ fontSize:16, color: sleepBedTime ? '#ffffff' : '#444444', fontFamily:'DMSans_600SemiBold' }}>
+              <TouchableOpacity onPress={() => setShowBedTimePicker(true)} style={{ flex:1, backgroundColor: theme.bgInput, borderWidth:1, borderColor: theme.borderInput, borderRadius:6, padding:10, alignItems:'center' }}>
+                <Text style={{ fontSize:10, color: theme.textMuted, fontFamily:'DMSans_400Regular', marginBottom:2 }}>Bed Time</Text>
+                <Text style={{ fontSize:16, color: sleepBedTime ? theme.textPrimary : theme.textPlaceholder, fontFamily:'DMSans_600SemiBold' }}>
                   {sleepBedTime ? sleepBedTime.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : 'Tap to set'}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setShowWakeTimePicker(true)} style={{ flex:1, backgroundColor:'#1e1e1e', borderWidth:1, borderColor:'#2a2a2a', borderRadius:6, padding:10, alignItems:'center' }}>
-                <Text style={{ fontSize:10, color:'#888888', fontFamily:'DMSans_400Regular', marginBottom:2 }}>Wake Time</Text>
-                <Text style={{ fontSize:16, color: sleepWakeTime ? '#ffffff' : '#444444', fontFamily:'DMSans_600SemiBold' }}>
+              <TouchableOpacity onPress={() => setShowWakeTimePicker(true)} style={{ flex:1, backgroundColor: theme.bgInput, borderWidth:1, borderColor: theme.borderInput, borderRadius:6, padding:10, alignItems:'center' }}>
+                <Text style={{ fontSize:10, color: theme.textMuted, fontFamily:'DMSans_400Regular', marginBottom:2 }}>Wake Time</Text>
+                <Text style={{ fontSize:16, color: sleepWakeTime ? theme.textPrimary : theme.textPlaceholder, fontFamily:'DMSans_600SemiBold' }}>
                   {sleepWakeTime ? sleepWakeTime.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : 'Tap to set'}
                 </Text>
               </TouchableOpacity>
             </View>
             {sleepBedTime && sleepWakeTime && (
-              <Text style={{ fontSize:12, color:'#888888', fontFamily:'DMSans_400Regular', textAlign:'center', marginBottom:8 }}>
+              <Text style={{ fontSize:12, color: theme.textMuted, fontFamily:'DMSans_400Regular', textAlign:'center', marginBottom:8 }}>
                 {(() => { let diff=sleepWakeTime.getTime()-sleepBedTime.getTime(); if(diff<0) diff+=24*3600000; return `${Math.round(diff/3600000*10)/10} hrs of sleep`; })()}
               </Text>
             )}
             {showBedTimePicker && (
               <View>
                 <View style={{ flexDirection:'row', justifyContent:'space-between', marginBottom:8 }}>
-                  <TouchableOpacity onPress={() => setShowBedTimePicker(false)}><Text style={{ color:'#999999', fontSize:12, fontFamily:'DMSans_500Medium' }}>Cancel</Text></TouchableOpacity>
-                  <TouchableOpacity onPress={() => setShowBedTimePicker(false)}><Text style={{ color:'#10b981', fontSize:12, fontFamily:'DMSans_600SemiBold' }}>Confirm</Text></TouchableOpacity>
+                  <TouchableOpacity onPress={() => setShowBedTimePicker(false)}><Text style={{ color: theme.textSecondary, fontSize:12, fontFamily:'DMSans_500Medium' }}>Cancel</Text></TouchableOpacity>
+                  <TouchableOpacity onPress={() => setShowBedTimePicker(false)}><Text style={{ color: theme.accentGreen, fontSize:12, fontFamily:'DMSans_600SemiBold' }}>Confirm</Text></TouchableOpacity>
                 </View>
-                <DateTimePicker mode="time" value={sleepBedTime||new Date()} display="spinner" textColor="#ffffff" onChange={(_,d)=>{ if(d) setSleepBedTime(d); }} />
+                <DateTimePicker mode="time" value={sleepBedTime||new Date()} display="spinner" textColor={theme.textPrimary} onChange={(_,d)=>{ if(d) setSleepBedTime(d); }} />
               </View>
             )}
             {showWakeTimePicker && (
               <View>
                 <View style={{ flexDirection:'row', justifyContent:'space-between', marginBottom:8 }}>
-                  <TouchableOpacity onPress={() => setShowWakeTimePicker(false)}><Text style={{ color:'#999999', fontSize:12, fontFamily:'DMSans_500Medium' }}>Cancel</Text></TouchableOpacity>
-                  <TouchableOpacity onPress={() => setShowWakeTimePicker(false)}><Text style={{ color:'#10b981', fontSize:12, fontFamily:'DMSans_600SemiBold' }}>Confirm</Text></TouchableOpacity>
+                  <TouchableOpacity onPress={() => setShowWakeTimePicker(false)}><Text style={{ color: theme.textSecondary, fontSize:12, fontFamily:'DMSans_500Medium' }}>Cancel</Text></TouchableOpacity>
+                  <TouchableOpacity onPress={() => setShowWakeTimePicker(false)}><Text style={{ color: theme.accentGreen, fontSize:12, fontFamily:'DMSans_600SemiBold' }}>Confirm</Text></TouchableOpacity>
                 </View>
-                <DateTimePicker mode="time" value={sleepWakeTime||new Date()} display="spinner" textColor="#ffffff" onChange={(_,d)=>{ if(d) setSleepWakeTime(d); }} />
+                <DateTimePicker mode="time" value={sleepWakeTime||new Date()} display="spinner" textColor={theme.textPrimary} onChange={(_,d)=>{ if(d) setSleepWakeTime(d); }} />
               </View>
             )}
             <View style={{ flexDirection:'row', gap:8 }}>
@@ -850,8 +852,8 @@ export default function HomeScreen() {
                 await AsyncStorage.setItem(`pj_${todayKey}`,JSON.stringify({...current,sleepOverride:val,sleepBedTime:bedStr,sleepWakeTime:wakeStr}));
                 await saveToFirebase(todayKey,'sleepOverride',val);
                 setSleepStoredBed(bedStr); setSleepStoredWake(wakeStr); setEditingSleep(false);
-              }} style={{ flex:1, backgroundColor:'#10b981', borderRadius:6, padding:10, alignItems:'center' }}>
-                <Text style={{ color:'#000000', fontSize:13, fontFamily:'DMSans_600SemiBold' }}>Save</Text>
+              }} style={{ flex:1, backgroundColor: theme.accentGreen, borderRadius:6, padding:10, alignItems:'center' }}>
+                <Text style={{ color: theme.bgPrimary, fontSize:13, fontFamily:'DMSans_600SemiBold' }}>Save</Text>
               </TouchableOpacity>
               {sleepOverride && (
                 <TouchableOpacity onPress={async () => {
@@ -861,17 +863,17 @@ export default function HomeScreen() {
                   delete current.sleepOverride;
                   await AsyncStorage.setItem(`pj_${todayKey}`,JSON.stringify(current));
                   setEditingSleep(false);
-                }} style={{ backgroundColor:'rgba(239,68,68,0.15)', borderWidth:1, borderColor:'rgba(239,68,68,0.3)', borderRadius:6, paddingHorizontal:16, alignItems:'center' }}>
-                  <Text style={{ color:'#ef4444', fontSize:13, fontFamily:'DMSans_500Medium' }}>Clear</Text>
+                }} style={{ backgroundColor: theme.accentRedBg, borderWidth:1, borderColor: theme.accentRedBorder, borderRadius:6, paddingHorizontal:16, alignItems:'center' }}>
+                  <Text style={{ color: theme.accentRed, fontSize:13, fontFamily:'DMSans_500Medium' }}>Clear</Text>
                 </TouchableOpacity>
               )}
             </View>
           </View>
         )}
         {displaySleep === null ? (
-          <Text style={{ fontSize:13, color:'#444444', fontFamily:'DMSans_400Regular', fontStyle:'italic' }}>No sleep data for last night</Text>
+          <Text style={{ fontSize:13, color: theme.textDim, fontFamily:'DMSans_400Regular', fontStyle:'italic' }}>No sleep data for last night</Text>
         ) : (() => {
-          const sleepColor = displaySleep>=7?'#10b981':displaySleep>=6?'#f59e0b':'#ef4444';
+          const sleepColor = displaySleep>=7 ? theme.statusGood : displaySleep>=6 ? theme.statusWarn : theme.statusBad;
           const sleepLabel = displaySleep>=7?'Well rested':displaySleep>=6?'Could be better':'Need more sleep';
           const totalMs = sleepStages?.totalMs||(displaySleep*3600000);
           const coreMs  = sleepStages?.core||0;
@@ -895,16 +897,16 @@ export default function HomeScreen() {
                   {sleepLabel}{sleepOverride?' · manual':''}
                 </Text>
                 {((sleepStoredBed&&sleepStoredWake)||sleepTimes) ? (
-                  <Text style={{ fontSize:12, color:'#666680', fontFamily:'DMSans_500Medium', marginBottom:10 }}>
+                  <Text style={{ fontSize:12, color: theme.textMuted, fontFamily:'DMSans_500Medium', marginBottom:10 }}>
                     {sleepStoredBed||sleepTimes?.bed} → {sleepStoredWake||sleepTimes?.wake}
                   </Text>
                 ) : null}
                 {sleepStages && (
                   <View style={{ gap:6 }}>
-                    {[{label:'Core',color:'#60a5fa',val:coreMs},{label:'Deep',color:'#818cf8',val:deepMs},{label:'REM',color:'#34d399',val:remMs}].map(s => (
+                    {[{label:'Core',color:theme.sleepCore,val:coreMs},{label:'Deep',color:theme.sleepDeep,val:deepMs},{label:'REM',color:theme.sleepRem,val:remMs}].map(s => (
                       <View key={s.label} style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
                         <View style={{ width:8, height:8, borderRadius:4, backgroundColor:s.color }} />
-                        <Text style={{ fontSize:9, color:'#666680', fontFamily:'DMSans_700Bold', letterSpacing:1, textTransform:'uppercase' }}>{s.label}</Text>
+                        <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:1, textTransform:'uppercase' }}>{s.label}</Text>
                         <Text style={{ fontSize:11, color:s.color, fontFamily:'DMSans_600SemiBold' }}>{fmtMs(s.val)}</Text>
                       </View>
                     ))}
@@ -914,13 +916,13 @@ export default function HomeScreen() {
               {sleepStages && (
                 <View>
                   <Svg width={donutSize} height={donutSize}>
-                    <Circle cx={donutSize/2} cy={donutSize/2} r={donutRadius} stroke="#12121a" strokeWidth={donutStroke} fill="none" />
-                    <Circle cx={donutSize/2} cy={donutSize/2} r={donutRadius} stroke="#60a5fa" strokeWidth={donutStroke} fill="none" strokeDasharray={`${Math.max(0,coreFrac-gapFrac)} ${donutCirc}`} strokeDashoffset={0} strokeLinecap="butt" rotation="-90" origin={`${donutSize/2},${donutSize/2}`} />
-                    <Circle cx={donutSize/2} cy={donutSize/2} r={donutRadius} stroke="#818cf8" strokeWidth={donutStroke} fill="none" strokeDasharray={`${Math.max(0,deepFrac-gapFrac)} ${donutCirc}`} strokeDashoffset={-(coreFrac)} strokeLinecap="butt" rotation="-90" origin={`${donutSize/2},${donutSize/2}`} />
-                    <Circle cx={donutSize/2} cy={donutSize/2} r={donutRadius} stroke="#34d399" strokeWidth={donutStroke} fill="none" strokeDasharray={`${Math.max(0,remFrac-gapFrac)} ${donutCirc}`} strokeDashoffset={-(coreFrac+deepFrac)} strokeLinecap="butt" rotation="-90" origin={`${donutSize/2},${donutSize/2}`} />
+                    <Circle cx={donutSize/2} cy={donutSize/2} r={donutRadius} stroke={theme.sleepTrack} strokeWidth={donutStroke} fill="none" />
+                    <Circle cx={donutSize/2} cy={donutSize/2} r={donutRadius} stroke={theme.sleepCore} strokeWidth={donutStroke} fill="none" strokeDasharray={`${Math.max(0,coreFrac-gapFrac)} ${donutCirc}`} strokeDashoffset={0} strokeLinecap="butt" rotation="-90" origin={`${donutSize/2},${donutSize/2}`} />
+                    <Circle cx={donutSize/2} cy={donutSize/2} r={donutRadius} stroke={theme.sleepDeep} strokeWidth={donutStroke} fill="none" strokeDasharray={`${Math.max(0,deepFrac-gapFrac)} ${donutCirc}`} strokeDashoffset={-(coreFrac)} strokeLinecap="butt" rotation="-90" origin={`${donutSize/2},${donutSize/2}`} />
+                    <Circle cx={donutSize/2} cy={donutSize/2} r={donutRadius} stroke={theme.sleepRem} strokeWidth={donutStroke} fill="none" strokeDasharray={`${Math.max(0,remFrac-gapFrac)} ${donutCirc}`} strokeDashoffset={-(coreFrac+deepFrac)} strokeLinecap="butt" rotation="-90" origin={`${donutSize/2},${donutSize/2}`} />
                   </Svg>
                   <View style={{ position:'absolute', top:0, left:0, width:donutSize, height:donutSize, alignItems:'center', justifyContent:'center' }}>
-                    <Ionicons name="moon" size={24} color="#666680" />
+                    <Ionicons name="moon" size={24} color={theme.textMuted} />
                   </View>
                 </View>
               )}
@@ -932,28 +934,28 @@ export default function HomeScreen() {
   };
 
   const renderFitnessMetricsCard = () => (
-    <View style={styles.card}>
-      <Text style={styles.cardLabel}>Fitness Metrics</Text>
+    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
+      <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Fitness Metrics</Text>
       {(vo2Max === null && cardioRecovery === null) ? (
         <View style={{ alignItems:'center', paddingVertical:16, gap:6 }}>
-          <Ionicons name="fitness-outline" size={28} color="#2a2a3a" />
-          <Text style={{ fontSize:12, color:'#444466', fontFamily:'DMSans_400Regular', fontStyle:'italic' }}>No fitness data available</Text>
-          <Text style={{ fontSize:10, color:'#333355', fontFamily:'DMSans_400Regular', textAlign:'center' }}>VO2 Max & Cardio Recovery sync from Apple Health</Text>
+          <Ionicons name="fitness-outline" size={28} color={theme.iconMuted} />
+          <Text style={{ fontSize:12, color: theme.textDim, fontFamily:'DMSans_400Regular', fontStyle:'italic' }}>No fitness data available</Text>
+          <Text style={{ fontSize:10, color: theme.textDim, fontFamily:'DMSans_400Regular', textAlign:'center' }}>VO2 Max & Cardio Recovery sync from Apple Health</Text>
         </View>
       ) : (
         <View style={{ flexDirection:'row', gap:8 }}>
           {vo2Max !== null && (
-            <View style={{ flex:1, backgroundColor:'#1e1e1e', borderRadius:8, padding:12, alignItems:'center' }}>
-              <Text style={{ fontSize:28, color:'#3b82f6', fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>{vo2Max}</Text>
-              <Text style={{ fontSize:10, color:'#888888', fontFamily:'DMSans_500Medium', textTransform:'uppercase', letterSpacing:1, marginTop:2 }}>VO2 Max</Text>
-              <Text style={{ fontSize:9, color:'#555555', fontFamily:'DMSans_400Regular', marginTop:2 }}>ml/kg/min</Text>
+            <View style={{ flex:1, backgroundColor: theme.bgInset, borderRadius:8, padding:12, alignItems:'center' }}>
+              <Text style={{ fontSize:28, color: theme.accentBlue, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>{vo2Max}</Text>
+              <Text style={{ fontSize:10, color: theme.textMuted, fontFamily:'DMSans_500Medium', textTransform:'uppercase', letterSpacing:1, marginTop:2 }}>VO2 Max</Text>
+              <Text style={{ fontSize:9, color: theme.textDim, fontFamily:'DMSans_400Regular', marginTop:2 }}>ml/kg/min</Text>
             </View>
           )}
           {cardioRecovery !== null && (
-            <View style={{ flex:1, backgroundColor:'#1e1e1e', borderRadius:8, padding:12, alignItems:'center' }}>
-              <Text style={{ fontSize:28, color:'#10b981', fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>{cardioRecovery}</Text>
-              <Text style={{ fontSize:10, color:'#888888', fontFamily:'DMSans_500Medium', textTransform:'uppercase', letterSpacing:1, marginTop:2 }}>Cardio Recovery</Text>
-              <Text style={{ fontSize:9, color:'#555555', fontFamily:'DMSans_400Regular', marginTop:2 }}>bpm drop / 1min</Text>
+            <View style={{ flex:1, backgroundColor: theme.bgInset, borderRadius:8, padding:12, alignItems:'center' }}>
+              <Text style={{ fontSize:28, color: theme.accentGreen, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>{cardioRecovery}</Text>
+              <Text style={{ fontSize:10, color: theme.textMuted, fontFamily:'DMSans_500Medium', textTransform:'uppercase', letterSpacing:1, marginTop:2 }}>Cardio Recovery</Text>
+              <Text style={{ fontSize:9, color: theme.textDim, fontFamily:'DMSans_400Regular', marginTop:2 }}>bpm drop / 1min</Text>
             </View>
           )}
         </View>
@@ -962,12 +964,12 @@ export default function HomeScreen() {
   );
 
   const renderDailyNoteCard = () => (
-    <View style={styles.card}>
-      <Text style={styles.cardLabel}>Daily Note</Text>
-      <TextInput style={styles.notesInput} placeholder="How did today go? Workout, diet, energy..." placeholderTextColor="#333333"
+    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
+      <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Daily Note</Text>
+      <TextInput style={[styles.notesInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} placeholder="How did today go? Workout, diet, energy..." placeholderTextColor={theme.textPlaceholder}
         multiline numberOfLines={4} value={dailyNote} onChangeText={setDailyNote} />
-      <TouchableOpacity style={styles.saveBtn} onPress={() => {}}>
-        <Text style={styles.saveBtnText}>Save Note</Text>
+      <TouchableOpacity style={[styles.saveBtn, { backgroundColor: theme.bgInset, borderColor: theme.borderInset }]} onPress={() => {}}>
+        <Text style={[styles.saveBtnText, { color: theme.textSecondary }]}>Save Note</Text>
       </TouchableOpacity>
     </View>
   );
@@ -994,56 +996,56 @@ export default function HomeScreen() {
 
   // ─── Render ───────────────────────────────────────────────────────────────────
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.bgPrimary }]}>
 
       {/* ── Header ── */}
-      <View style={styles.header}>
+      <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
         <View style={{ flex:1 }}>
-          <Text style={styles.headerLabel}>PROJECT J</Text>
-          <Text style={styles.headerTitle}>
+          <Text style={[styles.headerLabel, { color: theme.textMuted }]}>PROJECT J</Text>
+          <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>
             {(() => { const h=new Date().getHours(); return h<12?'Good morning':h<17?'Good afternoon':'Good evening'; })()}
           </Text>
-          <Text style={{ fontSize:9, color:'#666680', fontFamily:'DMSans_700Bold', marginTop:1, letterSpacing:2, textTransform:'uppercase' }}>
+          <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', marginTop:1, letterSpacing:2, textTransform:'uppercase' }}>
             {new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}
           </Text>
         </View>
 
         <View style={{ flexDirection:'row', gap:8 }}>
             <TouchableOpacity onPress={() => { fetchTodayData(); setRefreshKey(k=>k+1); showToast(); }}
-              style={styles.headerBtn}>
-              <Ionicons name="refresh-outline" size={14} color="#3b82f6" />
+              style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
+              <Ionicons name="refresh-outline" size={14} color={theme.accentBlue} />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => router.push({ pathname:'/day-detail', params:{ date:todayKey } })}
-              style={styles.headerBtn}>
-              <Ionicons name="calendar-outline" size={14} color="#3b82f6" />
+              style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
+              <Ionicons name="calendar-outline" size={14} color={theme.accentBlue} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={enterEditMode} style={styles.headerBtn}>
-              <Ionicons name="grid-outline" size={14} color="#3b82f6" />
+            <TouchableOpacity onPress={enterEditMode} style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
+              <Ionicons name="grid-outline" size={14} color={theme.accentBlue} />
             </TouchableOpacity>
           </View>
       </View>
 
       {/* ── Water custom modal ── */}
       {showWaterCustomModal && (
-        <View style={{ position:'absolute', top:0, bottom:0, left:0, right:0, backgroundColor:'rgba(0,0,0,0.6)', justifyContent:'center', alignItems:'center', zIndex:999 }}>
-          <View style={{ backgroundColor:'#1a1a24', borderRadius:14, padding:24, width:'80%', borderWidth:0.5, borderColor:'rgba(255,255,255,0.1)' }}>
-            <Text style={{ fontSize:9, color:'#666680', fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:12 }}>
+        <View style={{ position:'absolute', top:0, bottom:0, left:0, right:0, backgroundColor: theme.overlayBg, justifyContent:'center', alignItems:'center', zIndex:999 }}>
+          <View style={{ backgroundColor: theme.bgCard, borderRadius:14, padding:24, width:'80%', borderWidth:0.5, borderColor: theme.borderCard }}>
+            <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:12 }}>
               {waterCustomSign==='add' ? 'Add Custom Amount' : 'Remove Custom Amount'}
             </Text>
-            <TextInput style={{ backgroundColor:'#13131e', borderWidth:0.5, borderColor:'rgba(255,255,255,0.08)', borderRadius:8, color:'#e8e8f0', padding:12, fontSize:24, fontFamily:'BebasNeue_400Regular', textAlign:'center', marginBottom:16 }}
-              value={waterCustomInput} onChangeText={setWaterCustomInput} keyboardType="number-pad" placeholder="0" placeholderTextColor="#444" autoFocus />
-            <Text style={{ fontSize:9, color:'#666680', fontFamily:'DMSans_700Bold', letterSpacing:1, textTransform:'uppercase', textAlign:'center', marginBottom:16 }}>oz</Text>
+            <TextInput style={{ backgroundColor: theme.bgInput, borderWidth:0.5, borderColor: theme.borderInput, borderRadius:8, color: theme.textPrimary, padding:12, fontSize:24, fontFamily:'BebasNeue_400Regular', textAlign:'center', marginBottom:16 }}
+              value={waterCustomInput} onChangeText={setWaterCustomInput} keyboardType="number-pad" placeholder="0" placeholderTextColor={theme.textPlaceholder} autoFocus />
+            <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:1, textTransform:'uppercase', textAlign:'center', marginBottom:16 }}>oz</Text>
             <View style={{ flexDirection:'row', gap:10 }}>
-              <TouchableOpacity style={{ flex:1, padding:12, borderRadius:8, backgroundColor:'#13131e', alignItems:'center' }} onPress={() => setShowWaterCustomModal(false)}>
-                <Text style={{ color:'#666680', fontFamily:'DMSans_600SemiBold', fontSize:14 }}>Cancel</Text>
+              <TouchableOpacity style={{ flex:1, padding:12, borderRadius:8, backgroundColor: theme.bgInput, alignItems:'center' }} onPress={() => setShowWaterCustomModal(false)}>
+                <Text style={{ color: theme.textMuted, fontFamily:'DMSans_600SemiBold', fontSize:14 }}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={{ flex:1, padding:12, borderRadius:8, backgroundColor: waterCustomSign==='add'?'rgba(59,130,246,0.2)':'rgba(204,51,51,0.2)', alignItems:'center' }}
+              <TouchableOpacity style={{ flex:1, padding:12, borderRadius:8, backgroundColor: waterCustomSign==='add' ? theme.accentBlueBg : theme.accentRedBg, alignItems:'center' }}
                 onPress={() => {
                   const amt=parseInt(waterCustomInput);
                   if(amt>0){ const n=waterCustomSign==='add'?Math.min(WATER_TARGET,water+amt):Math.max(0,water-amt); setWater(n); saveToFirebase(todayKey,'water',n); }
                   setShowWaterCustomModal(false);
                 }}>
-                <Text style={{ color: waterCustomSign==='add'?'#3b82f6':'#cc3333', fontFamily:'DMSans_600SemiBold', fontSize:14 }}>
+                <Text style={{ color: waterCustomSign==='add' ? theme.accentBlue : theme.accentRed, fontFamily:'DMSans_600SemiBold', fontSize:14 }}>
                   {waterCustomSign==='add'?'Add':'Remove'}
                 </Text>
               </TouchableOpacity>
@@ -1055,10 +1057,10 @@ export default function HomeScreen() {
       {/* ── Refresh toast ── */}
       {showRefreshToast && (
         <Animated.View style={{ position:'absolute', bottom:100, left:0, right:0, alignItems:'center', zIndex:999, opacity:toastOpacity }}>
-          <View style={{ backgroundColor:'#1a1a24', borderWidth:0.5, borderColor:'rgba(255,255,255,0.12)', borderRadius:8, paddingHorizontal:16, paddingVertical:10, flexDirection:'row', alignItems:'center', gap:10 }}>
-            <Text style={{ color:'#e8e8f0', fontSize:12, fontFamily:'DMSans_600SemiBold', letterSpacing:1 }}>Apple Health Refreshed</Text>
+          <View style={{ backgroundColor: theme.bgCard, borderWidth:0.5, borderColor: theme.borderCardTop, borderRadius:8, paddingHorizontal:16, paddingVertical:10, flexDirection:'row', alignItems:'center', gap:10 }}>
+            <Text style={{ color: theme.textPrimary, fontSize:12, fontFamily:'DMSans_600SemiBold', letterSpacing:1 }}>Apple Health Refreshed</Text>
             <TouchableOpacity onPress={() => { toastOpacity.setValue(0); setShowRefreshToast(false); }}>
-              <Ionicons name="close" size={14} color="#666680" />
+              <Ionicons name="close" size={14} color={theme.textMuted} />
             </TouchableOpacity>
           </View>
         </Animated.View>
@@ -1083,19 +1085,21 @@ export default function HomeScreen() {
             <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={exitEditMode} />
           </Animated.View>
           <Animated.View style={[styles.editSheet, {
+            backgroundColor: theme.bgSheet,
+            borderColor: theme.borderSheet,
             transform: [{ translateY: editSheetAnim.interpolate({ inputRange: [0,1], outputRange: [700, 0] }) }],
           }]}>
-            <View style={styles.editSheetHandle} />
-            <View style={styles.editSheetHeader}>
+            <View style={[styles.editSheetHandle, { backgroundColor: theme.sheetHandle }]} />
+            <View style={[styles.editSheetHeader, { borderBottomColor: theme.borderSubtle }]}>
               <TouchableOpacity onPress={openCardSheet}
-                style={{ backgroundColor:'rgba(59,130,246,0.15)', borderWidth:1, borderColor:'rgba(59,130,246,0.3)', borderRadius:6, paddingHorizontal:12, paddingVertical:6, height:32, alignItems:'center', justifyContent:'center', flexDirection:'row', gap:4 }}>
-                <Ionicons name="add" size={14} color="#3b82f6" />
-                <Text style={{ color:'#3b82f6', fontSize:12, fontFamily:'DMSans_600SemiBold' }}>Add</Text>
+                style={{ backgroundColor: theme.accentBlueBg, borderWidth:1, borderColor: theme.accentBlueBorder, borderRadius:6, paddingHorizontal:12, paddingVertical:6, height:32, alignItems:'center', justifyContent:'center', flexDirection:'row', gap:4 }}>
+                <Ionicons name="add" size={14} color={theme.accentBlue} />
+                <Text style={{ color: theme.accentBlue, fontSize:12, fontFamily:'DMSans_600SemiBold' }}>Add</Text>
               </TouchableOpacity>
-              <Text style={{ fontSize:13, color:'#666680', fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase' }}>Edit Layout</Text>
+              <Text style={{ fontSize:13, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase' }}>Edit Layout</Text>
               <TouchableOpacity onPress={exitEditMode}
-                style={{ backgroundColor:'rgba(16,185,129,0.15)', borderWidth:1, borderColor:'rgba(16,185,129,0.3)', borderRadius:6, paddingHorizontal:14, paddingVertical:6, height:32, alignItems:'center', justifyContent:'center' }}>
-                <Text style={{ color:'#10b981', fontSize:12, fontFamily:'DMSans_700Bold', letterSpacing:1 }}>DONE</Text>
+                style={{ backgroundColor: theme.accentGreenBg, borderWidth:1, borderColor: theme.accentGreenBorder, borderRadius:6, paddingHorizontal:14, paddingVertical:6, height:32, alignItems:'center', justifyContent:'center' }}>
+                <Text style={{ color: theme.accentGreen, fontSize:12, fontFamily:'DMSans_700Bold', letterSpacing:1 }}>DONE</Text>
               </TouchableOpacity>
             </View>
             <DraggableFlatList
@@ -1113,15 +1117,15 @@ export default function HomeScreen() {
                   <ScaleDecorator>
                     <View style={[styles.editCardRow, isActive && { opacity: 0.85 }]}>
                       <TouchableOpacity onPress={() => toggleCardVisible(id)}
-                        style={[styles.editBadge, { backgroundColor: visible ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)', borderColor: visible ? 'rgba(239,68,68,0.4)' : 'rgba(16,185,129,0.4)' }]}>
-                        <Ionicons name={visible ? 'remove' : 'add'} size={14} color={visible ? '#ef4444' : '#10b981'} />
+                        style={[styles.editBadge, { backgroundColor: visible ? theme.accentRedBg : theme.accentGreenBg, borderColor: visible ? theme.accentRedBorder : theme.accentGreenBorder }]}>
+                        <Ionicons name={visible ? 'remove' : 'add'} size={14} color={visible ? theme.accentRed : theme.accentGreen} />
                       </TouchableOpacity>
-                      <View style={[styles.editCardPreview, !visible && { opacity:0.35 }]}>
-                        <Text style={styles.editCardLabel}>{meta.label}</Text>
-                        <Text style={styles.editCardDesc}>{meta.description}</Text>
+                      <View style={[styles.editCardPreview, { backgroundColor: theme.bgEditCard, borderColor: theme.borderCard }, !visible && { opacity:0.35 }]}>
+                        <Text style={[styles.editCardLabel, { color: theme.textPrimary }]}>{meta.label}</Text>
+                        <Text style={[styles.editCardDesc, { color: theme.textDim }]}>{meta.description}</Text>
                       </View>
                       <TouchableOpacity onLongPress={drag} delayLongPress={0} style={styles.dragHandle}>
-                        <Ionicons name="menu-outline" size={20} color="#444466" />
+                        <Ionicons name="menu-outline" size={20} color={theme.textDim} />
                       </TouchableOpacity>
                     </View>
                   </ScaleDecorator>
@@ -1135,23 +1139,23 @@ export default function HomeScreen() {
       {/* ── Card library bottom sheet ── */}
       {showCardSheet && (
         <Modal transparent animationType="none" visible={showCardSheet} onRequestClose={closeCardSheet}>
-          <TouchableOpacity style={styles.sheetOverlay} activeOpacity={1} onPress={closeCardSheet} />
-          <Animated.View style={[styles.sheet, { transform:[{ translateY: sheetTranslate }] }]}>
-            <View style={styles.sheetHandle} />
-            <Text style={styles.sheetTitle}>Add Cards</Text>
-            <Text style={styles.sheetSubtitle}>Toggle cards to show or hide on your home screen</Text>
+          <TouchableOpacity style={[styles.sheetOverlay, { backgroundColor: theme.overlayBg }]} activeOpacity={1} onPress={closeCardSheet} />
+          <Animated.View style={[styles.sheet, { backgroundColor: theme.bgSheet, borderColor: theme.borderSheet, transform:[{ translateY: sheetTranslate }] }]}>
+            <View style={[styles.sheetHandle, { backgroundColor: theme.sheetHandle }]} />
+            <Text style={[styles.sheetTitle, { color: theme.textPrimary }]}>Add Cards</Text>
+            <Text style={[styles.sheetSubtitle, { color: theme.textDim }]}>Toggle cards to show or hide on your home screen</Text>
             <ScrollView showsVerticalScrollIndicator={false} style={{ marginTop:8 }}>
               {CARD_REGISTRY.map(meta => {
                 const visible = cardVisible[meta.id];
                 return (
                   <TouchableOpacity key={meta.id} onPress={() => toggleCardVisible(meta.id)}
-                    style={[styles.sheetRow, visible && styles.sheetRowActive]}>
+                    style={[styles.sheetRow, { borderBottomColor: theme.borderSubtle }]}>
                     <View style={{ flex:1 }}>
-                      <Text style={[styles.sheetRowLabel, visible && { color:'#e8e8f0' }]}>{meta.label}</Text>
-                      <Text style={styles.sheetRowDesc}>{meta.description}</Text>
+                      <Text style={[styles.sheetRowLabel, { color: visible ? theme.textPrimary : theme.textMuted }]}>{meta.label}</Text>
+                      <Text style={[styles.sheetRowDesc, { color: theme.textDim }]}>{meta.description}</Text>
                     </View>
-                    <View style={[styles.sheetToggle, visible && styles.sheetToggleOn]}>
-                      {visible && <Ionicons name="checkmark" size={14} color="#10b981" />}
+                    <View style={[styles.sheetToggle, { borderColor: theme.borderSubtle, backgroundColor: theme.bgCard }, visible && { borderColor: theme.accentGreenBorder, backgroundColor: theme.accentGreenBg }]}>
+                      {visible && <Ionicons name="checkmark" size={14} color={theme.accentGreen} />}
                     </View>
                   </TouchableOpacity>
                 );
@@ -1168,71 +1172,71 @@ export default function HomeScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container:        { flex:1, backgroundColor:'#0d0d0f' },
-  header:           { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:20, paddingVertical:16, borderBottomWidth:0.5, borderBottomColor:'rgba(255,255,255,0.06)', marginBottom:16 },
-  headerLabel:      { fontSize:9, letterSpacing:2, color:'#666680', textTransform:'uppercase', marginBottom:2, fontFamily:'DMSans_700Bold' },
-  headerTitle:      { fontSize:32, fontWeight:'700', color:'#e8e8f0', fontFamily:'BebasNeue_400Regular', letterSpacing:2 },
-  headerBtn:        { backgroundColor:'rgba(59,130,246,0.15)', borderWidth:1, borderColor:'rgba(59,130,246,0.3)', borderRadius:6, paddingHorizontal:12, paddingVertical:6, height:32, alignItems:'center', justifyContent:'center' },
-  card:             { backgroundColor:'#1a1a24', borderWidth:0.5, borderColor:'rgba(255,255,255,0.06)', borderRadius:14, padding:16, marginBottom:12, borderTopColor:'rgba(255,255,255,0.1)', borderTopWidth:0.5 },
-  cardLabel:        { fontSize:9, letterSpacing:3, color:'#7070a0', textTransform:'uppercase', fontFamily:'DMSans_700Bold', marginBottom:10 },
-  verseCard:        { backgroundColor:'#16162a', borderWidth:1, borderColor:'rgba(212,134,10,0.4)', borderRadius:14, padding:16, marginBottom:12 },
-  verseLabel:       { fontSize:9, letterSpacing:3, color:'#666680', textTransform:'uppercase', marginBottom:8, fontFamily:'DMSans_700Bold' },
-  verseText:        { fontSize:14, color:'#aaaacc', fontStyle:'italic', lineHeight:24, marginBottom:10, fontFamily:'DMSans_400Regular', textAlign:'center' },
-  verseRef:         { fontSize:9, color:'#666680', fontFamily:'DMSans_700Bold', textAlign:'center', letterSpacing:2, textTransform:'uppercase' },
-  ifStartBtn:       { backgroundColor:'rgba(16,185,129,0.12)', borderWidth:1, borderColor:'rgba(16,185,129,0.3)', borderRadius:6, padding:14, alignItems:'center' },
-  ifStartBtnText:   { color:'#10b981', fontFamily:'BebasNeue_400Regular', letterSpacing:2, fontSize:16 },
+  container:        { flex:1 },
+  header:           { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:20, paddingVertical:16, borderBottomWidth:0.5, marginBottom:16 },
+  headerLabel:      { fontSize:9, letterSpacing:2, textTransform:'uppercase', marginBottom:2, fontFamily:'DMSans_700Bold' },
+  headerTitle:      { fontSize:32, fontWeight:'700', fontFamily:'BebasNeue_400Regular', letterSpacing:2 },
+  headerBtn:        { borderWidth:1, borderRadius:6, paddingHorizontal:12, paddingVertical:6, height:32, alignItems:'center', justifyContent:'center' },
+  card:             { borderWidth:0.5, borderRadius:14, padding:16, marginBottom:12, borderTopWidth:0.5 },
+  cardLabel:        { fontSize:9, letterSpacing:3, textTransform:'uppercase', fontFamily:'DMSans_700Bold', marginBottom:10 },
+  verseCard:        { borderWidth:1, borderRadius:14, padding:16, marginBottom:12 },
+  verseLabel:       { fontSize:9, letterSpacing:3, textTransform:'uppercase', marginBottom:8, fontFamily:'DMSans_700Bold' },
+  verseText:        { fontSize:14, fontStyle:'italic', lineHeight:24, marginBottom:10, fontFamily:'DMSans_400Regular', textAlign:'center' },
+  verseRef:         { fontSize:9, fontFamily:'DMSans_700Bold', textAlign:'center', letterSpacing:2, textTransform:'uppercase' },
+  ifStartBtn:       { borderWidth:1, borderRadius:6, padding:14, alignItems:'center' },
+  ifStartBtnText:   { fontFamily:'BebasNeue_400Regular', letterSpacing:2, fontSize:16 },
   ifRow:            { flexDirection:'row', alignItems:'center', justifyContent:'space-between' },
-  ifLabel:          { fontSize:11, letterSpacing:2, color:'#999999', textTransform:'uppercase', fontFamily:'DMSans_500Medium' },
-  ifCountdown:      { fontSize:48, color:'#a0a0b8', lineHeight:52, fontFamily:'BebasNeue_400Regular', letterSpacing:2 },
-  ifReset:          { color:'#999999', fontSize:11, textDecorationLine:'underline', marginTop:8, fontFamily:'DMSans_400Regular' },
+  ifLabel:          { fontSize:11, letterSpacing:2, textTransform:'uppercase', fontFamily:'DMSans_500Medium' },
+  ifCountdown:      { fontSize:48, lineHeight:52, fontFamily:'BebasNeue_400Regular', letterSpacing:2 },
+  ifReset:          { fontSize:11, textDecorationLine:'underline', marginTop:8, fontFamily:'DMSans_400Regular' },
   calRow:           { flexDirection:'row', alignItems:'baseline', gap:6, marginBottom:10 },
   calNumber:        { fontSize:52, lineHeight:56, fontFamily:'BebasNeue_400Regular', letterSpacing:1 },
-  calTarget:        { fontSize:14, color:'#999999', fontFamily:'DMSans_400Regular' },
-  calRemaining:     { fontSize:12, color:'#999999', fontFamily:'DMSans_400Regular' },
-  progressBarBg:    { height:6, backgroundColor:'#2a2a2a', borderRadius:6, overflow:'hidden', marginBottom:12 },
+  calTarget:        { fontSize:14, fontFamily:'DMSans_400Regular' },
+  calRemaining:     { fontSize:12, fontFamily:'DMSans_400Regular' },
+  progressBarBg:    { height:6, borderRadius:6, overflow:'hidden', marginBottom:12 },
   progressBarFill:  { height:'100%', borderRadius:6 },
   waterBtns:        { flexDirection:'row', gap:8 },
-  waterBtn:         { flex:1, padding:10, backgroundColor:'rgba(59,130,246,0.1)', borderWidth:1, borderColor:'rgba(59,130,246,0.25)', borderRadius:6, alignItems:'center', justifyContent:'center' },
-  waterBtnText:     { color:'#3b82f6', fontFamily:'BebasNeue_400Regular', fontSize:15, letterSpacing:1 },
-  waterBtnRed:      { flex:1, padding:10, backgroundColor:'rgba(239,68,68,0.1)', borderWidth:1, borderColor:'rgba(239,68,68,0.25)', borderRadius:6, alignItems:'center', justifyContent:'center' },
-  waterBtnRedText:  { color:'#ef4444', fontFamily:'BebasNeue_400Regular', fontSize:15, letterSpacing:1 },
+  waterBtn:         { flex:1, padding:10, borderWidth:1, borderRadius:6, alignItems:'center', justifyContent:'center' },
+  waterBtnText:     { fontFamily:'BebasNeue_400Regular', fontSize:15, letterSpacing:1 },
+  waterBtnRed:      { flex:1, padding:10, borderWidth:1, borderRadius:6, alignItems:'center', justifyContent:'center' },
+  waterBtnRedText:  { fontFamily:'BebasNeue_400Regular', fontSize:15, letterSpacing:1 },
   weightRow:        { flexDirection:'row', gap:12, marginBottom:14 },
   weightStat:       { flex:1 },
-  weightVal:        { fontSize:28, color:'#ffffff', lineHeight:32, fontFamily:'BebasNeue_400Regular', letterSpacing:1 },
-  weightLbl:        { fontSize:10, color:'#999999', letterSpacing:2, textTransform:'uppercase', marginTop:2, fontFamily:'DMSans_500Medium' },
+  weightVal:        { fontSize:28, lineHeight:32, fontFamily:'BebasNeue_400Regular', letterSpacing:1 },
+  weightLbl:        { fontSize:10, letterSpacing:2, textTransform:'uppercase', marginTop:2, fontFamily:'DMSans_500Medium' },
   weightAdd:        { flexDirection:'row', gap:8 },
-  weightInput:      { flex:1, backgroundColor:'#1e1e1e', borderWidth:1, borderColor:'#2a2a2a', borderRadius:6, color:'#ffffff', padding:10, fontSize:14, fontFamily:'DMSans_400Regular' },
-  logBtn:           { backgroundColor:'rgba(59,130,246,0.15)', borderWidth:1, borderColor:'rgba(59,130,246,0.3)', borderRadius:6, paddingHorizontal:16, justifyContent:'center' },
-  logBtnText:       { color:'#3b82f6', fontFamily:'BebasNeue_400Regular', fontSize:16, letterSpacing:1 },
+  weightInput:      { flex:1, borderWidth:1, borderRadius:6, padding:10, fontSize:14, fontFamily:'DMSans_400Regular' },
+  logBtn:           { borderWidth:1, borderRadius:6, paddingHorizontal:16, justifyContent:'center' },
+  logBtnText:       { fontFamily:'BebasNeue_400Regular', fontSize:16, letterSpacing:1 },
   workoutRow:       { flexDirection:'row', alignItems:'center', justifyContent:'space-between' },
-  workoutDay:       { fontSize:22, color:'#ffffff', letterSpacing:1, fontFamily:'BebasNeue_400Regular' },
-  workoutMuscles:   { fontSize:12, color:'#999999', marginTop:2, fontFamily:'DMSans_400Regular' },
+  workoutDay:       { fontSize:22, letterSpacing:1, fontFamily:'BebasNeue_400Regular' },
+  workoutMuscles:   { fontSize:12, marginTop:2, fontFamily:'DMSans_400Regular' },
   workoutPill:      { paddingHorizontal:12, paddingVertical:4, borderRadius:20, borderWidth:1 },
   workoutPillText:  { fontSize:10, letterSpacing:2, fontFamily:'DMSans_600SemiBold' },
-  notesInput:       { backgroundColor:'#1e1e1e', borderWidth:1, borderColor:'#2a2a2a', borderRadius:6, color:'#ffffff', padding:10, fontSize:13, minHeight:80, textAlignVertical:'top', marginTop:8, fontFamily:'DMSans_400Regular' },
-  saveBtn:          { marginTop:8, padding:10, backgroundColor:'#1e1e1e', borderWidth:1, borderColor:'#3a3a3a', borderRadius:6, alignItems:'center' },
-  saveBtnText:      { color:'#cccccc', fontSize:12, fontFamily:'DMSans_500Medium' },
+  notesInput:       { borderWidth:1, borderRadius:6, padding:10, fontSize:13, minHeight:80, textAlignVertical:'top', marginTop:8, fontFamily:'DMSans_400Regular' },
+  saveBtn:          { marginTop:8, padding:10, borderWidth:1, borderRadius:6, alignItems:'center' },
+  saveBtnText:      { fontSize:12, fontFamily:'DMSans_500Medium' },
   // Edit sheet
-  editSheet:        { position:'absolute', bottom:0, left:0, right:0, backgroundColor:'#13131e', borderTopLeftRadius:20, borderTopRightRadius:20, maxHeight:'85%', borderTopWidth:0.5, borderColor:'rgba(255,255,255,0.1)', paddingBottom:40 },
-  editSheetHandle:  { width:36, height:4, backgroundColor:'rgba(255,255,255,0.15)', borderRadius:2, alignSelf:'center', marginTop:12, marginBottom:12 },
-  editSheetHeader:  { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:16, paddingBottom:16, borderBottomWidth:0.5, borderBottomColor:'rgba(255,255,255,0.06)', marginBottom:8 },
+  editSheet:        { position:'absolute', bottom:0, left:0, right:0, borderTopLeftRadius:20, borderTopRightRadius:20, maxHeight:'85%', borderTopWidth:0.5, paddingBottom:40 },
+  editSheetHandle:  { width:36, height:4, borderRadius:2, alignSelf:'center', marginTop:12, marginBottom:12 },
+  editSheetHeader:  { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:16, paddingBottom:16, borderBottomWidth:0.5, marginBottom:8 },
   // Edit mode
   editCardRow:      { flexDirection:'row', alignItems:'center', gap:10, marginBottom:10 },
   editBadge:        { width:28, height:28, borderRadius:14, borderWidth:1, alignItems:'center', justifyContent:'center' },
-  editCardPreview:  { flex:1, backgroundColor:'#1a1a24', borderWidth:0.5, borderColor:'rgba(255,255,255,0.08)', borderRadius:10, paddingHorizontal:14, paddingVertical:10 },
-  editCardLabel:    { fontSize:13, color:'#e8e8f0', fontFamily:'DMSans_600SemiBold', marginBottom:2 },
-  editCardDesc:     { fontSize:11, color:'#444466', fontFamily:'DMSans_400Regular' },
+  editCardPreview:  { flex:1, borderWidth:0.5, borderRadius:10, paddingHorizontal:14, paddingVertical:10 },
+  editCardLabel:    { fontSize:13, fontFamily:'DMSans_600SemiBold', marginBottom:2 },
+  editCardDesc:     { fontSize:11, fontFamily:'DMSans_400Regular' },
   dragHandle:       { padding:8 },
   // Bottom sheet
-  sheetOverlay:     { position:'absolute', top:0, left:0, right:0, bottom:0, backgroundColor:'rgba(0,0,0,0.6)' },
-  sheet:            { position:'absolute', bottom:0, left:0, right:0, backgroundColor:'#13131e', borderTopLeftRadius:20, borderTopRightRadius:20, padding:20, paddingBottom:40, maxHeight:'75%', borderTopWidth:0.5, borderColor:'rgba(255,255,255,0.1)' },
-  sheetHandle:      { width:36, height:4, backgroundColor:'rgba(255,255,255,0.15)', borderRadius:2, alignSelf:'center', marginBottom:16 },
-  sheetTitle:       { fontSize:18, color:'#e8e8f0', fontFamily:'BebasNeue_400Regular', letterSpacing:2, marginBottom:4 },
-  sheetSubtitle:    { fontSize:11, color:'#444466', fontFamily:'DMSans_400Regular', marginBottom:8 },
-  sheetRow:         { flexDirection:'row', alignItems:'center', paddingVertical:12, borderBottomWidth:0.5, borderBottomColor:'rgba(255,255,255,0.05)', gap:12 },
+  sheetOverlay:     { position:'absolute', top:0, left:0, right:0, bottom:0 },
+  sheet:            { position:'absolute', bottom:0, left:0, right:0, borderTopLeftRadius:20, borderTopRightRadius:20, padding:20, paddingBottom:40, maxHeight:'75%', borderTopWidth:0.5 },
+  sheetHandle:      { width:36, height:4, borderRadius:2, alignSelf:'center', marginBottom:16 },
+  sheetTitle:       { fontSize:18, fontFamily:'BebasNeue_400Regular', letterSpacing:2, marginBottom:4 },
+  sheetSubtitle:    { fontSize:11, fontFamily:'DMSans_400Regular', marginBottom:8 },
+  sheetRow:         { flexDirection:'row', alignItems:'center', paddingVertical:12, borderBottomWidth:0.5, gap:12 },
   sheetRowActive:   { },
-  sheetRowLabel:    { fontSize:14, color:'#666680', fontFamily:'DMSans_600SemiBold', marginBottom:2 },
-  sheetRowDesc:     { fontSize:11, color:'#333355', fontFamily:'DMSans_400Regular' },
-  sheetToggle:      { width:24, height:24, borderRadius:12, borderWidth:1, borderColor:'rgba(255,255,255,0.1)', backgroundColor:'#1a1a24', alignItems:'center', justifyContent:'center' },
-  sheetToggleOn:    { borderColor:'rgba(16,185,129,0.4)', backgroundColor:'rgba(16,185,129,0.1)' },
+  sheetRowLabel:    { fontSize:14, fontFamily:'DMSans_600SemiBold', marginBottom:2 },
+  sheetRowDesc:     { fontSize:11, fontFamily:'DMSans_400Regular' },
+  sheetToggle:      { width:24, height:24, borderRadius:12, borderWidth:1, alignItems:'center', justifyContent:'center' },
+  sheetToggleOn:    { },
 });

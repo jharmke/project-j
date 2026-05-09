@@ -1,9 +1,11 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 import CustomTabBar from '../../components/CustomTabBar';
+import { ThemeProvider } from '../../theme';
 
 export default function TabLayout() {
   return (
+    <ThemeProvider>
     <Tabs
       tabBar={props => <CustomTabBar {...props} />}
       screenOptions={{
@@ -15,5 +17,6 @@ export default function TabLayout() {
       <Tabs.Screen name="stats" options={{ title: 'Stats' }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
     </Tabs>
+    </ThemeProvider>
   );
 }

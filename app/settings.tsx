@@ -61,7 +61,7 @@ export default function SettingsScreen() {
               return (
                 <TouchableOpacity
                   key={id}
-                  onPress={() => !t.paid && setTheme(id)}
+                  onPress={() => setTheme(id)}
                   activeOpacity={t.paid ? 1 : 0.7}
                   style={{
                     flexDirection: 'row',

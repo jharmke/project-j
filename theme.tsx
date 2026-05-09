@@ -232,8 +232,8 @@ const slate: Theme = {
   name: 'Slate',
   paid: true,
 
-  bgPrimary:        '#0e1018',
-  bgCard:           '#161c28',
+  bgPrimary:        '#18191e',
+  bgCard:           '#2e3138',
   bgCardVerse:      '#131828',
   bgInput:          '#0e1220',
   bgProgressTrack:  '#1a2030',
@@ -373,7 +373,7 @@ const blush: Theme = {
   paid: true,
 
   bgPrimary:        '#fdf0f3',
-  bgCard:           '#ffffff',
+  bgCard:           '#fce8ed',
   bgCardVerse:      '#fff8f0',
   bgInput:          '#fce8ed',
   bgProgressTrack:  '#f8d8e0',

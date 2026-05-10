@@ -27,6 +27,7 @@ interface Profile {
   macroProteinG: string;
   macroCarbsG: string;
   macroFatG: string;
+  sleepGoal: string;
 }
 
 const GOAL_DEFICITS: Record<string, number> = {
@@ -64,6 +65,112 @@ const ACTIVITY_MULTIPLIERS: Record<string, number> = {
   active: 1.725,
   very_active: 1.9,
 };
+
+const HOUR_OPTIONS = ['5', '6', '7', '8', '9', '10'];
+const MINUTE_OPTIONS = ['00', '15', '30', '45'];
+const ITEM_HEIGHT = 44;
+
+function SleepGoalPicker({ value, onChange, theme }: { value: string; onChange: (v: string) => void; theme: any }) {
+  const currentGoal = parseFloat(value || '7');
+  const currentHours = Math.floor(currentGoal);
+  const currentMins = Math.round((currentGoal % 1) * 60);
+  const currentHourStr = String(currentHours);
+  const currentMinStr = String(currentMins).padStart(2, '0');
+
+  const hourScrollRef = useRef<ScrollView>(null);
+  const minScrollRef = useRef<ScrollView>(null);
+  const hourIndex = HOUR_OPTIONS.indexOf(currentHourStr);
+  const minIndex = MINUTE_OPTIONS.indexOf(currentMinStr);
+
+  useEffect(() => {
+    const validHourIndex = hourIndex >= 0 ? hourIndex : 2;
+    const validMinIndex = minIndex >= 0 ? minIndex : 0;
+    setTimeout(() => {
+      hourScrollRef.current?.scrollTo({ y: validHourIndex * ITEM_HEIGHT, animated: false });
+      minScrollRef.current?.scrollTo({ y: validMinIndex * ITEM_HEIGHT, animated: false });
+    }, 100);
+  }, []);
+
+  const handleHourScroll = (e: any) => {
+    const index = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
+    const clamped = Math.max(0, Math.min(HOUR_OPTIONS.length - 1, index));
+    const mins = currentMins / 60;
+    onChange(String(parseInt(HOUR_OPTIONS[clamped]) + mins));
+  };
+
+  const handleMinScroll = (e: any) => {
+    const index = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
+    const clamped = Math.max(0, Math.min(MINUTE_OPTIONS.length - 1, index));
+    const mins = parseInt(MINUTE_OPTIONS[clamped]) / 60;
+    onChange(String(currentHours + mins));
+  };
+
+  const displayGoal = `${currentHours}h${currentMins > 0 ? ` ${currentMins}m` : ''}`;
+
+  return (
+    <View>
+      <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', color: theme.textMuted, marginBottom: 12 }}>
+        How many hours of sleep are you aiming for each night?
+      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+        <View style={{ alignItems: 'center' }}>
+          <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6 }}>Hours</Text>
+          <View style={{ height: ITEM_HEIGHT * 3, width: 80, overflow: 'hidden' }}>
+            <View style={{ position: 'absolute', top: ITEM_HEIGHT, left: 0, right: 0, height: ITEM_HEIGHT, borderTopWidth: 0.5, borderBottomWidth: 0.5, borderColor: theme.accentBlueBorder, zIndex: 1 }} pointerEvents="none" />
+            <ScrollView
+              ref={hourScrollRef}
+              style={{ flex: 1 }}
+              showsVerticalScrollIndicator={false}
+              snapToInterval={ITEM_HEIGHT}
+              decelerationRate="fast"
+              contentContainerStyle={{ paddingVertical: ITEM_HEIGHT }}
+              onMomentumScrollEnd={handleHourScroll}
+              onScrollEndDrag={handleHourScroll}
+            >
+              {HOUR_OPTIONS.map((h, i) => {
+                const isSelected = h === currentHourStr;
+                return (
+                  <View key={h} style={{ height: ITEM_HEIGHT, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ fontSize: isSelected ? 30 : 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: isSelected ? theme.accentBlue : theme.textMuted, opacity: isSelected ? 1 : 0.4 }}>{h}</Text>
+                  </View>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+        <Text style={{ fontSize: 30, color: theme.textMuted, fontFamily: 'BebasNeue_400Regular', marginTop: 20 }}>:</Text>
+        <View style={{ alignItems: 'center' }}>
+          <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6 }}>Minutes</Text>
+          <View style={{ height: ITEM_HEIGHT * 3, width: 80, overflow: 'hidden' }}>
+            <View style={{ position: 'absolute', top: ITEM_HEIGHT, left: 0, right: 0, height: ITEM_HEIGHT, borderTopWidth: 0.5, borderBottomWidth: 0.5, borderColor: theme.accentBlueBorder, zIndex: 1 }} pointerEvents="none" />
+            <ScrollView
+              ref={minScrollRef}
+              style={{ flex: 1 }}
+              showsVerticalScrollIndicator={false}
+              snapToInterval={ITEM_HEIGHT}
+              decelerationRate="fast"
+              contentContainerStyle={{ paddingVertical: ITEM_HEIGHT }}
+              onMomentumScrollEnd={handleMinScroll}
+              onScrollEndDrag={handleMinScroll}
+            >
+              {MINUTE_OPTIONS.map((m) => {
+                const isSelected = m === currentMinStr;
+                return (
+                  <View key={m} style={{ height: ITEM_HEIGHT, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ fontSize: isSelected ? 30 : 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: isSelected ? theme.accentBlue : theme.textMuted, opacity: isSelected ? 1 : 0.4 }}>{m}</Text>
+                  </View>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </View>
+      <View style={{ alignItems: 'center', marginTop: 10 }}>
+        <Text style={{ fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold' }}>Goal: {displayGoal}</Text>
+      </View>
+    </View>
+  );
+}
 
 function CollapsibleCard({ label, defaultOpen = false, children, theme }: { label: string, defaultOpen?: boolean, children: React.ReactNode, theme: any }) {
   const [open, setOpen] = useState(defaultOpen);
@@ -129,18 +236,25 @@ export default function ProfileScreen() {
     macroProteinG: '',
     macroCarbsG: '',
     macroFatG: '',
+    sleepGoal: '7',
   });
   const [currentWeight, setCurrentWeight] = useState<number | null>(null);
   const [saved, setSaved] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [tempBirthday, setTempBirthday] = useState<Date | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
+  const [savedProfile, setSavedProfile] = useState<Profile | null>(null);
+  const floatAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const load = async () => {
       try {
         const data = await AsyncStorage.getItem('pj_profile');
-        if (data) setProfile(JSON.parse(data));
+        if (data) {
+          const parsed = JSON.parse(data);
+          setProfile(parsed);
+          setSavedProfile(parsed);
+        }
       } catch (e) {
         console.log('Load profile error', e);
       }
@@ -237,6 +351,8 @@ export default function ProfileScreen() {
       await saveToFirebase('profile', 'data', synced);
       setSaved(true);
       setHasChanges(false);
+      setSavedProfile(synced);
+      Animated.timing(floatAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start();
       setTimeout(() => setSaved(false), 2000);
       showToast('Profile saved', undefined, 'success');
     } catch (e) {
@@ -244,9 +360,19 @@ export default function ProfileScreen() {
     }
   };
 
-  const updateField = (field: keyof Profile, value: string) => {
-    setProfile(prev => ({ ...prev, [field]: value }));
-    setHasChanges(true);
+  const updateField = (field: keyof Profile, value: any) => {
+    setProfile(prev => {
+      const updated = { ...prev, [field]: value };
+      const isDifferent = JSON.stringify(updated) !== JSON.stringify(savedProfile);
+      if (isDifferent && !hasChanges) {
+        setHasChanges(true);
+        Animated.spring(floatAnim, { toValue: 1, useNativeDriver: true, tension: 65, friction: 11 }).start();
+      } else if (!isDifferent && hasChanges) {
+        setHasChanges(false);
+        Animated.timing(floatAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start();
+      }
+      return updated;
+    });
   };
 
   const bmr = calcBMR();
@@ -416,6 +542,14 @@ export default function ProfileScreen() {
           </View>
         </CollapsibleCard>
 
+        <CollapsibleCard label="Sleep Goal" theme={theme}>
+          <SleepGoalPicker
+            value={profile.sleepGoal || '7'}
+            onChange={v => updateField('sleepGoal', v)}
+            theme={theme}
+          />
+        </CollapsibleCard>
+
         <CollapsibleCard label="Daily Calorie Target" theme={theme}>
           <Text style={[styles.estimateNote, { color: theme.textMuted }]}>Set manually or use the recommended value above.</Text>
           {suggested > 0 && (
@@ -563,19 +697,41 @@ export default function ProfileScreen() {
           )}
         </CollapsibleCard>
 
-        <TouchableOpacity
-          style={[styles.saveBtn, { backgroundColor: theme.accentBlue },
-            saved && { backgroundColor: theme.accentGreen },
-            (!hasChanges || !isMacroValid()) && { backgroundColor: theme.bgInput, borderWidth: 0.5, borderColor: theme.borderInput }]}
-          onPress={saveProfile}
-          disabled={!hasChanges || !isMacroValid()}>
-          <Text style={[styles.saveBtnText, { color: (!hasChanges || !isMacroValid()) ? theme.textMuted : theme.bgPrimary }]}>
-            {saved ? 'SAVED' : !isMacroValid() ? 'FIX MACROS TO SAVE' : 'SAVE PROFILE'}
-          </Text>
-        </TouchableOpacity>
+        <View style={{ height: 100 }} />
 
       </ScrollView>
       </KeyboardAvoidingView>
+    {/* Floating save bar */}
+      <Animated.View style={{
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        paddingHorizontal: 16,
+        paddingTop: 12,
+        paddingBottom: 16,
+        backgroundColor: theme.bgSheet,
+        borderTopWidth: 0.5,
+        borderTopColor: theme.borderCard,
+        transform: [{ translateY: floatAnim.interpolate({ inputRange: [0, 1], outputRange: [200, 0] }) }],
+      }}>
+        <TouchableOpacity
+          onPress={saveProfile}
+          disabled={!isMacroValid()}
+          style={{
+            backgroundColor: isMacroValid() ? theme.accentBlue : theme.bgInput,
+            borderWidth: isMacroValid() ? 0 : 0.5,
+            borderColor: theme.borderInput,
+            borderRadius: 10,
+            padding: 16,
+            alignItems: 'center',
+          }}>
+          <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: isMacroValid() ? theme.bgPrimary : theme.textMuted }}>
+            {saved ? 'SAVED' : !isMacroValid() ? 'FIX MACROS TO SAVE' : 'SAVE PROFILE'}
+          </Text>
+        </TouchableOpacity>
+      </Animated.View>
+
     </LinearGradient>
   );
 }

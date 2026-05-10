@@ -37,7 +37,7 @@ interface CardMeta {
 }
 
 const CARD_REGISTRY: CardMeta[] = [
-  { id: 'verse',          label: 'Daily Verse',       description: 'Scripture for the day',                  defaultVisible: true },
+  { id: 'verse',          label: "Today's Message",   description: 'Scripture for the day',                  defaultVisible: true },
   { id: 'if',             label: 'Intermittent Fast',  description: 'Fasting window timer & tracker',         defaultVisible: true },
   { id: 'calories',       label: 'Calories',           description: 'Daily calorie intake & progress',        defaultVisible: true },
   { id: 'macros',         label: 'Macros',             description: 'Protein, carbs & fat breakdown',         defaultVisible: true },
@@ -182,10 +182,93 @@ function MacroDonut({ protein, carbs, fat, calories, theme }: { protein: number;
 
 const AnimCircle = ReAnimated.createAnimatedComponent(Circle);
 
-function SleepDonut({ coreFrac, deepFrac, remFrac, donutCirc, donutSize, donutStroke, donutRadius, coreColor, deepColor, remColor, trackColor, gapFrac, refreshKey }: {
+function calcSleepScore(
+  sleepHours: number | null,
+  sleepStages: { core: number; deep: number; rem: number; totalMs: number } | null,
+  sleepGoal: number
+): { score: number; hasStages: boolean } {
+  if (!sleepHours || sleepHours <= 0) return { score: 0, hasStages: false };
+
+  const durationPts = Math.min(40, (sleepHours / sleepGoal) * 40);
+
+  if (!sleepStages || sleepStages.totalMs <= 0) {
+    return { score: Math.round(Math.min(60, durationPts * 1.5)), hasStages: false };
+  }
+
+  const totalMs = sleepStages.totalMs;
+  const deepPct = sleepStages.deep / totalMs;
+  const remPct = sleepStages.rem / totalMs;
+
+  // Deep: peak at 20%, bell curve. Score falls off on both sides.
+  const deepIdeal = 0.20;
+  const deepDiff = Math.abs(deepPct - deepIdeal);
+  const deepPts = Math.max(0, 30 - (deepDiff / deepIdeal) * 30);
+
+  // REM: peak at 22%, bell curve.
+  const remIdeal = 0.22;
+  const remDiff = Math.abs(remPct - remIdeal);
+  const remPts = Math.max(0, 30 - (remDiff / remIdeal) * 30);
+
+  return { score: Math.round(durationPts + deepPts + remPts), hasStages: true };
+}
+
+const SLEEP_TIPS: Record<string, string[]> = {
+  low_deep: [
+    "Your deep sleep was lower than ideal. Try avoiding alcohol and heavy meals within 3 hours of bed.",
+    "Deep sleep is when your body physically repairs itself. A cooler room temperature can help increase it.",
+    "Consistent bedtimes train your body to hit deep sleep faster. Try locking in a set schedule.",
+  ],
+  low_rem: [
+    "REM supports memory and mood. Reducing screens 30-60 minutes before bed may help.",
+    "Stress and anxiety are the biggest REM killers. A short wind-down routine can make a real difference.",
+    "Caffeine late in the day can suppress REM. Try cutting off by early afternoon.",
+  ],
+  low_duration: [
+    "You fell short of your sleep goal. Try setting a consistent bedtime and sticking to it even on weekends.",
+    "Even 30 extra minutes of sleep compounds over time. Consider an earlier wind-down.",
+    "Sleep debt builds faster than you think. Prioritizing one early night can reset your rhythm.",
+  ],
+  good: [
+    "Solid night. Your body recovered well -- make the most of it today.",
+    "Great sleep. Consistency is the key -- same bedtime tonight.",
+    "Your body did its job last night. Fuel it well today.",
+  ],
+  catch_all: [
+    "Your sleep was decent but there's room to improve. Focus on consistency -- same bedtime and wake time every day.",
+    "Good effort but not quite there. Even small improvements to your sleep environment can add up.",
+    "You're close to a great night. Winding down 30 minutes earlier could push you over the edge.",
+  ],
+};
+
+function getSleepTip(
+  score: number,
+  sleepHours: number | null,
+  sleepStages: { core: number; deep: number; rem: number; totalMs: number } | null,
+  sleepGoal: number,
+  dateKey: string
+): string | null {
+  if (!sleepHours) return null;
+  const daySeed = parseInt(dateKey.replace(/-/g, '')) % 3;
+  if (score >= 85) return SLEEP_TIPS.good[daySeed];
+  if (!sleepStages) {
+    if (sleepHours < sleepGoal * 0.85) return SLEEP_TIPS.low_duration[daySeed];
+    return null;
+  }
+  const totalMs = sleepStages.totalMs;
+  const deepPct = sleepStages.deep / totalMs;
+  const remPct = sleepStages.rem / totalMs;
+  if (deepPct < 0.12) return SLEEP_TIPS.low_deep[daySeed];
+  if (remPct < 0.15) return SLEEP_TIPS.low_rem[daySeed];
+  if (sleepHours < sleepGoal * 0.85) return SLEEP_TIPS.low_duration[daySeed];
+  if (score < 85) return SLEEP_TIPS.catch_all[daySeed];
+  return null;
+}
+
+function SleepDonut({ coreFrac, deepFrac, remFrac, donutCirc, donutSize, donutStroke, donutRadius, coreColor, deepColor, remColor, trackColor, gapFrac, refreshKey, score, scoreColor }: {
   coreFrac: number; deepFrac: number; remFrac: number; donutCirc: number;
   donutSize: number; donutStroke: number; donutRadius: number;
   coreColor: string; deepColor: string; remColor: string; trackColor: string; gapFrac: number; refreshKey?: number;
+  score: number; scoreColor: string;
 }) {
   const coreAnim = useSharedValue(0);
   const deepAnim = useSharedValue(0);
@@ -222,7 +305,8 @@ function SleepDonut({ coreFrac, deepFrac, remFrac, donutCirc, donutSize, donutSt
           animatedProps={remStyle} strokeDashoffset={-(coreFrac+deepFrac)} strokeLinecap="butt" rotation="-90" origin={`${donutSize/2},${donutSize/2}`} />
       </Svg>
       <View style={{ position:'absolute', top:0, left:0, width:donutSize, height:donutSize, alignItems:'center', justifyContent:'center' }}>
-        <Ionicons name="moon" size={24} color={trackColor} />
+        <Text style={{ fontSize: 36, fontFamily: 'BebasNeue_400Regular', color: scoreColor, letterSpacing: 1, lineHeight: 38 }}>{score}</Text>
+        <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: scoreColor, textTransform: 'uppercase', opacity: 0.7 }}>/100</Text>
       </View>
     </View>
   );
@@ -306,6 +390,7 @@ export default function HomeScreen() {
   const [totalCarbs,     setTotalCarbs]     = useState(0);
   const [totalFat,       setTotalFat]       = useState(0);
   const [stepGoal,       setStepGoal]       = useState(10000);
+  const [sleepGoal,      setSleepGoal]      = useState(7);
   const [macroGoals,     setMacroGoals]     = useState({ protein: 0, carbs: 0, fat: 0 });
   const [editingStepGoal,setEditingStepGoal]= useState(false);
   const [dailyVerse,     setDailyVerse]     = useState<{text:string;reference:string}|null>(null);
@@ -546,6 +631,7 @@ export default function HomeScreen() {
           const p = JSON.parse(profileData);
           if (p.waterPresets)                    setWaterPresets(p.waterPresets);
           if (p.stepGoal && parseInt(p.stepGoal) > 0) setStepGoal(parseInt(p.stepGoal));
+          if (p.sleepGoal && parseFloat(p.sleepGoal) > 0) setSleepGoal(parseFloat(p.sleepGoal));
           if (p.calTarget && parseInt(p.calTarget) > 0) {
             setCalTarget(parseInt(p.calTarget));
           }
@@ -665,7 +751,7 @@ export default function HomeScreen() {
           <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
             <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
               <Ionicons name="book-outline" size={11} color={theme.textMuted} />
-              <Text style={[styles.verseLabel, { marginBottom:0, color: theme.textMuted }]}>TODAY'S VERSE</Text>
+              <Text style={[styles.verseLabel, { marginBottom:0, color: theme.textMuted }]}>TODAY'S MESSAGE</Text>
             </View>
             <Ionicons name="chevron-forward" size={12} color={theme.textDim} />
           </View>
@@ -1078,7 +1164,7 @@ export default function HomeScreen() {
           </View>
           <TouchableOpacity onPress={() => setEditingSleep(!editingSleep)}
             style={{ backgroundColor: theme.accentBlueBg, borderWidth:1, borderColor: theme.accentBlueBorder, borderRadius:6, paddingHorizontal:10, paddingVertical:4 }}>
-            <Text style={{ color: theme.accentBlue, fontSize:12, fontFamily:'DMSans_600SemiBold' }}>{sleepOverride ? 'Edited' : 'Edit'}</Text>
+            <Text style={{ color: theme.accentBlue, fontSize:12, fontFamily:'DMSans_600SemiBold' }}>{sleepOverride ? 'Manual' : 'Edit'}</Text>
           </TouchableOpacity>
         </View>
         {editingSleep && (
@@ -1155,8 +1241,6 @@ export default function HomeScreen() {
         {displaySleep === null ? (
           <Text style={{ fontSize:13, color: theme.textDim, fontFamily:'DMSans_400Regular', fontStyle:'italic' }}>No sleep data for last night</Text>
         ) : (() => {
-          const sleepColor = displaySleep>=7 ? theme.statusGood : displaySleep>=6 ? theme.statusWarn : theme.statusBad;
-          const sleepLabel = displaySleep>=7?'Well rested':displaySleep>=6?'Could be better':'Need more sleep';
           const totalMs = sleepStages?.totalMs||(displaySleep*3600000);
           const coreMs  = sleepStages?.core||0;
           const deepMs  = sleepStages?.deep||0;
@@ -1171,37 +1255,52 @@ export default function HomeScreen() {
           const donutCirc=2*Math.PI*donutRadius;
           const coreFrac=corePct*donutCirc, deepFrac=deepPct*donutCirc, remFrac=remPct*donutCirc;
           const gapFrac=0.03*donutCirc;
+          const { score, hasStages } = calcSleepScore(displaySleep, sleepStages, sleepGoal);
+          const scoreColor = score >= 85 ? theme.statusGood : score >= 70 ? theme.statusWarn : theme.statusBad;
+          const scoreLabel = score >= 85 ? 'Well Rested' : score >= 70 ? 'Could Be Better' : 'Poor Sleep';
+          const tip = getSleepTip(score, displaySleep, sleepStages, sleepGoal, todayKey);
           return (
-            <View style={{ flexDirection:'row', alignItems:'center' }}>
-              <View style={{ width:160, paddingRight:12 }}>
-                <Text style={{ fontSize:42, color:sleepColor, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>{hrs}h {mins}m</Text>
-                <Text style={{ fontSize:9, color:sleepColor, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:10 }}>
-                  {sleepLabel}{sleepOverride?' · manual':''}
-                </Text>
-                {((sleepStoredBed&&sleepStoredWake)||sleepTimes) ? (
-                  <Text style={{ fontSize:12, color: theme.textMuted, fontFamily:'DMSans_500Medium', marginBottom:10 }}>
-                    {sleepStoredBed||sleepTimes?.bed} → {sleepStoredWake||sleepTimes?.wake}
+            <View>
+              <View style={{ flexDirection:'row', alignItems:'flex-start' }}>
+                <View style={{ width:160, paddingRight:12 }}>
+                  <Text style={{ fontSize:42, color:scoreColor, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>{hrs}h {mins}m</Text>
+                  <Text style={{ fontSize:9, color:scoreColor, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:10 }}>
+                    {scoreLabel}{sleepOverride?' · manual':''}{!hasStages?' · duration only':''}
                   </Text>
-                ) : null}
+                  {((sleepStoredBed&&sleepStoredWake)||sleepTimes) ? (
+                    <Text style={{ fontSize:12, color: theme.textMuted, fontFamily:'DMSans_500Medium', marginBottom:10 }}>
+                      {sleepStoredBed||sleepTimes?.bed} → {sleepStoredWake||sleepTimes?.wake}
+                    </Text>
+                  ) : null}
+                  {sleepStages && (
+                    <View style={{ gap:6 }}>
+                      {[{label:'Core',color:theme.sleepCore,val:coreMs},{label:'Deep',color:theme.sleepDeep,val:deepMs},{label:'REM',color:theme.sleepRem,val:remMs}].map(s => (
+                        <View key={s.label} style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
+                          <View style={{ width:8, height:8, borderRadius:4, backgroundColor:s.color }} />
+                          <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:1, textTransform:'uppercase' }}>{s.label}</Text>
+                          <Text style={{ fontSize:11, color:s.color, fontFamily:'DMSans_600SemiBold' }}>{fmtMs(s.val)}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </View>
                 {sleepStages && (
-                  <View style={{ gap:6 }}>
-                    {[{label:'Core',color:theme.sleepCore,val:coreMs},{label:'Deep',color:theme.sleepDeep,val:deepMs},{label:'REM',color:theme.sleepRem,val:remMs}].map(s => (
-                      <View key={s.label} style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
-                        <View style={{ width:8, height:8, borderRadius:4, backgroundColor:s.color }} />
-                        <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:1, textTransform:'uppercase' }}>{s.label}</Text>
-                        <Text style={{ fontSize:11, color:s.color, fontFamily:'DMSans_600SemiBold' }}>{fmtMs(s.val)}</Text>
-                      </View>
-                    ))}
-                  </View>
+                  <SleepDonut
+                    coreFrac={coreFrac} deepFrac={deepFrac} remFrac={remFrac}
+                    donutCirc={donutCirc} donutSize={donutSize} donutStroke={donutStroke} donutRadius={donutRadius}
+                    coreColor={theme.sleepCore} deepColor={theme.sleepDeep} remColor={theme.sleepRem}
+                    trackColor={theme.sleepTrack} gapFrac={gapFrac} refreshKey={refreshKey}
+                    score={score} scoreColor={scoreColor}
+                  />
                 )}
               </View>
-              {sleepStages && (
-                <SleepDonut
-                  coreFrac={coreFrac} deepFrac={deepFrac} remFrac={remFrac}
-                  donutCirc={donutCirc} donutSize={donutSize} donutStroke={donutStroke} donutRadius={donutRadius}
-                  coreColor={theme.sleepCore} deepColor={theme.sleepDeep} remColor={theme.sleepRem}
-                  trackColor={theme.sleepTrack} gapFrac={gapFrac} refreshKey={refreshKey}
-                />
+              {tip && (
+                <View style={{ marginTop:10, paddingTop:10, borderTopWidth:0.5, borderTopColor:theme.borderSubtle }}>
+                  <View style={{ flexDirection:'row', alignItems:'flex-start', gap:6 }}>
+                    <Ionicons name="bulb-outline" size={11} color={theme.textMuted} style={{ marginTop:2 }} />
+                    <Text style={{ fontSize:11, color:theme.textMuted, fontFamily:'DMSans_400Regular', fontStyle:'italic', flex:1, lineHeight:17 }}>{tip}</Text>
+                  </View>
+                </View>
               )}
             </View>
           );

@@ -55,10 +55,10 @@ app/workout-library.tsx -- Workout library
 app/day-detail.tsx -- Day detail screen
 app/bible.tsx -- Bible reader screen
 app/journal.tsx -- Journal/reflections screen
-components/CustomTabBar.tsx -- Full custom animated tab bar
+components/CustomTabBar.tsx -- Full custom animated tab bar (TAB_BAR_HEIGHT = 64)
 components/PressableButton.tsx -- Animated spring button with haptics
 components/haptic-tab.tsx -- Custom animated tab button
-data/bible-web.ts -- WEB Bible data (currently key verses only, replacing with full JSON)
+data/bible-web.ts -- Full KJV Bible, all 66 books, fetch + cache per book
 useHealthKit.ts -- HealthKit hook
 firebaseConfig.ts, workoutData.ts, config.ts
 
@@ -68,10 +68,11 @@ AsyncStorage Keys
 pj_YYYY-MM-DD -- daily data (entries, water, weight, steps, activeCalories, caloriesBurned, sleep fields, IF fields, excluded)
 pj_workout_state -- workout (checks, cardioComplete, programs, workoutNotes, cardioLogs)
 pj_my_foods, pj_favorites, pj_recipes, pj_exercise_library
-pj_profile -- profile + waterPresets + stepGoal
+pj_profile -- profile + waterPresets + stepGoal + sleepGoal
 pj_settings -- app settings including hapticsEnabled, cardOrder, cardVisible, theme
 pj_bible_reflections -- all journal entries (verse, prayer, study, personal, gratitude categories)
 pj_verse_rotation -- shuffled verse rotation order and current index
+pj_bible_{BookName}_{chapterNum} -- cached KJV chapter verses
 
 
 EAS Build
@@ -99,6 +100,8 @@ Think through the full sequence before starting -- if a change has 4 parts, know
 Never chain changes that depend on each other without confirming the first one worked
 Read the file before touching it, never guess at what's in there
 One thing at a time, done right, confirmed working before moving on
+
+Mid-response correction standard -- NON NEGOTIABLE: If a find/replace is written and then recognized as wrong before the response ends, immediately place the warning header BEFORE any further text -- even if the correction immediately follows. No exceptions. Format: # ⚠️ STOP — DO NOT APPLY THE CHANGE ABOVE. Hard to miss is the requirement. This applies even when the fix comes right after.
 
 If a find/replace is wrong or needs to be walked back mid-response, mark it with a large visible warning header before continuing. Format: # ⚠️ STOP — DO NOT APPLY THE CHANGE ABOVE -- hard to miss, catches it before the user applies it.
 
@@ -138,6 +141,13 @@ Applied to every input+submit pair in the app. No exceptions.
 
 44x44pt Minimum Touch Targets
 Every tappable element must be at least 44x44 points. Use padding to increase hit area without changing visual size. Applies to icon buttons, drag handles, pills, checkboxes, close buttons, everything.
+
+Toast on Save Standard
+Any screen or card with a save action must fire a toast confirmation on successful save. No silent saves. Toast text follows pattern: '[Thing] saved' with success type. Applied at time of feature, never after.
+
+Floating Save Bar Standard
+Any settings or profile screen with editable fields uses a floating save bar instead of a static button. Bar animates up from bottom when hasChanges is true, animates away on save or when all fields are reverted to saved state. Never visible on fresh load. Sits above the custom tab bar -- use position: absolute, bottom: 0 since the tab bar renders on top via navigator z-order. Tab bar height is 64 + insets.bottom. Reference implementation: profile.tsx.
+
 Disclaimer Standard
 Any screen, card, or feature displaying health data, metrics, ranges, scores, or recommendations requires a disclaimer. Two tiers:
 
@@ -193,11 +203,11 @@ Periodic gentle in-app reminder (not push notification) for Exploring and Not ri
 Faith Journey and Coaching Modes (Discipline/Balance/Mindful) are designed together and should be built in the same session. They are deeply connected in how they shape the app experience.
 Today's Message Card
 
-Default label: "Today's Verse" for Rooted/Exploring
+Label: "TODAY'S MESSAGE" (renamed from "Today's Verse")
 Behavior changes based on Faith Journey setting
 Rooted/Exploring: taps to Bible screen, verse reflection flow
 Not right now: taps to simple intention/note modal, saves as Personal journal entry
-Full scripture rotation system planned: 52 built-in WEB verses + user-added custom scripture via book/chapter/verse picker that pulls from bible-web.ts
+Full scripture rotation system: 52 built-in KJV verses + user-added custom scripture via book/chapter/verse picker
 
 
 Journal System
@@ -205,7 +215,7 @@ Storage key: pj_bible_reflections
 Entry shape: { id, date, category, title, notes, verseRef?, verseText?, acknowledged?, bookRef? }
 Categories: verse, prayer, study, personal, gratitude
 
-Verse entries: only created via Bible screen reflect banner, never via FAB
+Verse entries: only created via Bible screen reflect button, never via FAB
 FAB creates: prayer, study, personal, gratitude only
 
 ID format:
@@ -230,7 +240,7 @@ Justin's Context
 28, Franklin TN, married to Megan, trying to have a child
 Starts Capgemini Jr. PM role at Nissan site soon
 Daily Planet Fitness 6am, treadmill 60min 3.5mph 5-6% incline, avg HR 140
-IF 16:8, calorie target ~1632-1800 kcal, water target 128oz, step goal 10k
+IF 16:8, calorie target ~1632-1800 kcal, water target 128oz, step goal 10k, sleep goal 7hrs
 Faith is central -- Bible verse, streaks, morning intention, prayer log all planned features
 Planning DFW move after Megan's pregnancy
 Simple guy -- gym, sports, video games
@@ -263,4 +273,4 @@ Never confidently state uncertain things as fact
 Every code change is find/replace format, no exceptions
 
 
-Updated after long planning session May 2026. Major decisions made this session documented in roadmap notes.
+Updated after session May 10 2026. Bible (KJV), sleep score, profile sleep goal wheel, floating save bar, Today's Message label all shipped this session.

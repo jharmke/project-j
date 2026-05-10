@@ -9,6 +9,7 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         animation: 'fade',
+        tabBarHideOnKeyboard: true,
       }}>
       <Tabs.Screen name="log" options={{ title: 'Log' }} />
       <Tabs.Screen name="workout" options={{ title: 'Workout' }} />

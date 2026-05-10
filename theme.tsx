@@ -372,8 +372,8 @@ const slate: Theme = {
   workoutLegs:      '#d4860a',
   workoutCardio:    '#8a9aaa',
 
-  ifMethodBg:       '#e8eaee',
-  ifMethodBorder:   'rgba(74,127,165,0.14)',
+  ifMethodBg:       'rgba(74,127,165,0.10)',
+  ifMethodBorder:   'rgba(74,127,165,0.20)',
   ifMethodText:     '#5a7088',
 
   donutTrack:       '#d4d8de',

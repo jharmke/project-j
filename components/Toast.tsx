@@ -51,10 +51,12 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
   })).current;
 
   // Slide in
-  Animated.parallel([
-    Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 65, friction: 11 }),
-    Animated.timing(fadeAnim,  { toValue: 1, duration: 250, useNativeDriver: true }),
-  ]).start();
+  useEffect(() => {
+    Animated.parallel([
+      Animated.spring(slideAnim, { toValue: 0, useNativeDriver: true, tension: 65, friction: 11 }),
+      Animated.timing(fadeAnim,  { toValue: 1, duration: 250, useNativeDriver: true }),
+    ]).start();
+  }, []);
 
   // Auto dismiss
   useEffect(() => {
@@ -71,8 +73,8 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
   return (
     <Animated.View
       style={[styles.toast, {
-        backgroundColor: theme.bgCard,
-        borderColor: theme.borderCard,
+        backgroundColor: theme.bgSheet,
+        borderColor: theme.borderSubtle,
         transform: [{ translateY: Animated.add(slideAnim, panY) }],
         opacity: fadeAnim,
       }]}

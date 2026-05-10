@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useNavigation } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Modal, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
@@ -356,6 +356,7 @@ export default function HomeScreen() {
   const [cardOrder,   setCardOrder]   = useState<CardId[]>(DEFAULT_ORDER);
   const [cardVisible, setCardVisible] = useState<Record<CardId, boolean>>(DEFAULT_VISIBLE);
   const [editMode,    setEditMode]    = useState(false);
+  const [editModalVisible, setEditModalVisible] = useState(false);
   const [showCardSheet, setShowCardSheet] = useState(false);
   const sheetAnim = useRef(new Animated.Value(0)).current;
   const editSheetAnim = useRef(new Animated.Value(0)).current;
@@ -510,11 +511,18 @@ export default function HomeScreen() {
           const data = JSON.parse(saved);
           if (data.water)         setWater(data.water);
           if (data.weight)        setWeight(data.weight);
-          if (data.ifStart)       setIfStart(data.ifStart);
           if (data.ifMethod)      setIfMethod(data.ifMethod);
-          if (data.ifEnd)         setIfEnd(data.ifEnd);
           if (data.ifCustomHours) setIfCustomHours(data.ifCustomHours);
           if (data.dailyNote)     setDailyNote(data.dailyNote);
+          // Only load IF start/end if they belong to today
+          if (data.ifStart) {
+            const startDate = new Date(data.ifStart);
+            const startKey = `${startDate.getFullYear()}-${String(startDate.getMonth()+1).padStart(2,'0')}-${String(startDate.getDate()).padStart(2,'0')}`;
+            if (startKey === todayKey) {
+              setIfStart(data.ifStart);
+              if (data.ifEnd) setIfEnd(data.ifEnd);
+            }
+          }
           const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
           const yk = `${yesterday.getFullYear()}-${String(yesterday.getMonth()+1).padStart(2,'0')}-${String(yesterday.getDate()).padStart(2,'0')}`;
           const yd = await AsyncStorage.getItem(`pj_${yk}`);
@@ -525,7 +533,7 @@ export default function HomeScreen() {
             const ld = await AsyncStorage.getItem(`pj_${dk}`);
             if (ld) { const ldp = JSON.parse(ld); if (ldp.weight) { setLastKnownWeight({ val: ldp.weight, daysAgo: i }); break; } }
           }
-          for (let i = 365; i >= 0; i--) {
+          for (let i = 365; i >= 1; i--) {
             const d = new Date(); d.setDate(d.getDate()-i);
             const dk = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
             const ed = await AsyncStorage.getItem(`pj_${dk}`);
@@ -593,7 +601,7 @@ export default function HomeScreen() {
         const existing = await AsyncStorage.getItem(`pj_${todayKey}`);
         const current  = existing ? JSON.parse(existing) : {};
         await AsyncStorage.setItem(`pj_${todayKey}`, JSON.stringify({
-          ...current, ifStart, ifMethod, ifEnd, ifCustomHours, dailyNote,
+          ...current, ifStart, ifMethod, ifEnd, ifCustomHours, dailyNote, weight,
         }));
       } catch (e) { console.log('Save error', e); }
     };
@@ -618,6 +626,24 @@ export default function HomeScreen() {
           if (data.sleepBedTime)  setSleepStoredBed(data.sleepBedTime);
           if (data.sleepWakeTime) setSleepStoredWake(data.sleepWakeTime);
           if (typeof data.water === 'number') setWater(data.water);
+        if (data.weight) setWeight(data.weight);
+        }
+        // Weight comparison loading
+        const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+        const yk = `${yesterday.getFullYear()}-${String(yesterday.getMonth()+1).padStart(2,'0')}-${String(yesterday.getDate()).padStart(2,'0')}`;
+        const yd = await AsyncStorage.getItem(`pj_${yk}`);
+        if (yd) { const ydp = JSON.parse(yd); if (ydp.weight) setYesterdayWeight(ydp.weight); else setYesterdayWeight(null); }
+        for (let i = 365; i >= 1; i--) {
+          const d = new Date(); d.setDate(d.getDate()-i);
+          const dk = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+          const ed = await AsyncStorage.getItem(`pj_${dk}`);
+          if (ed) { const edp = JSON.parse(ed); if (edp.weight) { setEarliestWeight(edp.weight); break; } }
+        }
+        for (let i = 1; i <= 30; i++) {
+          const d = new Date(); d.setDate(d.getDate()-i);
+          const dk = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+          const ld = await AsyncStorage.getItem(`pj_${dk}`);
+          if (ld) { const ldp = JSON.parse(ld); if (ldp.weight) { setLastKnownWeight({ val: ldp.weight, daysAgo: i }); break; } }
         }
         const workoutData = await AsyncStorage.getItem('pj_workout_state');
         if (workoutData) {
@@ -684,34 +710,42 @@ export default function HomeScreen() {
   }, []));
 
   // ── Weight log ───────────────────────────────────────────────────────────────
-  const logWeight = () => {
+  const logWeight = async () => {
     const val = parseFloat(weightInput);
     if (!val || val <= 0) return;
     setWeight(val);
     setWeightInput('');
     saveToFirebase(todayKey, 'weight', val);
+    try {
+      const existing = await AsyncStorage.getItem(`pj_${todayKey}`);
+      const current = existing ? JSON.parse(existing) : {};
+      await AsyncStorage.setItem(`pj_${todayKey}`, JSON.stringify({ ...current, weight: val }));
+    } catch (e) { console.log('Weight save error', e); }
   };
 
   // ── Edit mode ────────────────────────────────────────────────────────────────
+  const navigation = useNavigation();
+
   const enterEditMode = () => {
+    setEditModalVisible(true);
     setEditMode(true);
     editSheetAnim.setValue(0);
-    Animated.spring(editSheetAnim, {
+    Animated.timing(editSheetAnim, {
       toValue: 1,
+      duration: 380,
       useNativeDriver: true,
-      tension: 65,
-      friction: 14,
     }).start();
   };
 
   const exitEditMode = () => {
     Animated.timing(editSheetAnim, {
       toValue: 0,
-      duration: 300,
+      duration: 350,
       useNativeDriver: true,
     }).start(() => {
       setEditMode(false);
       setShowCardSheet(false);
+      setTimeout(() => setEditModalVisible(false), 100);
     });
   };
 
@@ -838,8 +872,8 @@ export default function HomeScreen() {
         <View>
           <View style={styles.ifRow}>
             <View style={{ flex:1 }}>
-              <Text style={[styles.ifLabel,{marginBottom:4}]}>{isOpen ? 'Window closes in' : 'Window closed'}</Text>
-              <Text style={styles.ifCountdown} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+              <Text style={[styles.ifLabel,{marginBottom:4, color: theme.textMuted}]}>{isOpen ? 'Window closes in' : 'Window closed'}</Text>
+              <Text style={[styles.ifCountdown, { color: theme.accentBlueRaw }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
                 {remaining ? formatTime(remaining) : 'CLOSED'}
               </Text>
             </View>
@@ -867,9 +901,9 @@ export default function HomeScreen() {
             </View>
           </View>
           <View style={{ flexDirection:'row', gap:16, marginTop:8 }}>
-            <TouchableOpacity onPress={() => setShowTimePicker(true)}><Text style={styles.ifReset}>Reset window</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowTimePicker(true)}><Text style={[styles.ifReset, { color: theme.textSecondary }]}>Reset window</Text></TouchableOpacity>
             <TouchableOpacity onPress={() => { setIfStart(null); setIfEnd(null); saveToFirebase(todayKey,'ifStart',null); }}>
-              <Text style={[styles.ifReset,{color:'#ef4444'}]}>Cancel fast</Text>
+              <Text style={[styles.ifReset,{ color: theme.accentRed }]}>Cancel fast</Text>
             </TouchableOpacity>
           </View>
           {showTimePicker && (
@@ -974,7 +1008,7 @@ export default function HomeScreen() {
       </View>
       <View style={[styles.waterBtns, { marginTop:8 }]}>
         {waterPresets.map((oz,i) => (
-          <PressableButton key={i} style={[styles.waterBtnRed, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]} onPress={() => { const n=Math.max(0,water-oz); setWater(n); saveToFirebase(todayKey,'water',n); }}>
+          <PressableButton key={i} style={[styles.waterBtnRed, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]} onPress={() => { const n=Math.max(0,water-oz); setWater(n); saveToFirebase(todayKey,'water',n); showToast('Water removed', `-${oz} oz · ${n} oz total`, 'info'); }}>
             <Text style={[styles.waterBtnRedText, { color: theme.accentRed }]}>-{oz} oz</Text>
           </PressableButton>
         ))}
@@ -1378,6 +1412,7 @@ export default function HomeScreen() {
 
   // ─── Render ───────────────────────────────────────────────────────────────────
   return (
+    <View style={{ flex: 1 }}>
     <LinearGradient
       colors={[theme.gradientStart, theme.gradientEnd]}
       style={[styles.container, { paddingTop: insets.top }]}
@@ -1457,8 +1492,9 @@ export default function HomeScreen() {
         ))}
       </ScrollView>
 
-      {editMode && (
-        <Modal transparent animationType="none" visible={editMode} onRequestClose={exitEditMode}>
+      </LinearGradient>
+      {editModalVisible && (
+        <Modal transparent animationType="none" visible={editModalVisible} onRequestClose={exitEditMode} statusBarTranslucent hardwareAccelerated>
           <Animated.View style={{
             position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
             backgroundColor: 'rgba(0,0,0,0.6)',
@@ -1469,7 +1505,7 @@ export default function HomeScreen() {
           <Animated.View style={[styles.editSheet, {
             backgroundColor: theme.bgSheet,
             borderColor: theme.borderSheet,
-            transform: [{ translateY: editSheetAnim.interpolate({ inputRange: [0,1], outputRange: [700, 0] }) }],
+            transform: [{ translateY: editSheetAnim.interpolate({ inputRange: [0,1], outputRange: [900, 0] }) }],
           }]}>
             <View style={[styles.editSheetHandle, { backgroundColor: theme.sheetHandle }]} />
             <View style={[styles.editSheetHeader, { borderBottomColor: theme.borderSubtle }]}>
@@ -1548,7 +1584,7 @@ export default function HomeScreen() {
         </Modal>
       )}
 
-    </LinearGradient>
+    </View>
   );
 }
 

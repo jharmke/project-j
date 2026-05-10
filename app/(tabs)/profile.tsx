@@ -258,7 +258,7 @@ export default function ProfileScreen() {
       <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
         <View style={{ flex: 1 }}>
           <Text style={[styles.headerLabel, { color: theme.textMuted }]}>PROJECT J</Text>
-          <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>Profile</Text>
+          <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>Profile</Text>
           <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', marginTop: 1, letterSpacing: 2, textTransform: 'uppercase' }}>
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </Text>

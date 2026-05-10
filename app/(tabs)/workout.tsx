@@ -393,7 +393,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
         <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
           <View style={{ flex: 1 }}>
             <Text style={[styles.headerLabel, { color: theme.textMuted }]}>PROJECT J</Text>
-            <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>Workout</Text>
+            <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>Workout</Text>
             <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', marginTop: 1, letterSpacing: 2, textTransform: 'uppercase' }}>
               {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </Text>
@@ -467,7 +467,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
               <Text style={[styles.progressCount, { color }]}>{doneCount}/{exercises.length}</Text>
             </View>
             <View style={[styles.progressBarBg, { backgroundColor: theme.bgProgressTrack }]}>
-              <View style={[styles.progressBarFill, { width: `${exercises.length > 0 ? (doneCount / exercises.length) * 100 : 0}%`, backgroundColor: color }]} />
+              <View style={[styles.progressBarFill, { width: `${exercises.length > 0 ? (doneCount / exercises.length) * 100 : 0}%`, backgroundColor: theme.accentBlue }]} />
             </View>
 
             <DraggableFlatList
@@ -486,7 +486,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                     <View style={[styles.exerciseItem, isDone && styles.exerciseDone, {
                       backgroundColor: theme.bgCard,
                       borderColor: theme.borderCard,
-                      borderLeftColor: isDone ? color : theme.textDim,
+                      borderLeftColor: isDone ? theme.accentBlue : theme.textDim,
                       opacity: isActive ? 0.9 : 1
                     }]}>
                       <View style={styles.exerciseRow}>
@@ -524,7 +524,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                           {ex.note ? <Text style={[styles.exerciseNote, { color: theme.textDim }]}>{ex.note}</Text> : null}
                         </View>
                         <TouchableOpacity
-                          style={[styles.checkCircle, { borderColor: theme.borderCard }, isDone && { backgroundColor: color, borderColor: color }]}
+                          style={[styles.checkCircle, { borderColor: theme.borderCard }, isDone && { backgroundColor: theme.accentBlue, borderColor: theme.accentBlue }]}
                           onPress={() => toggleExercise(ex.id)}>
                           {isDone && <Text style={[styles.checkMark, { color: theme.bgPrimary }]}>✓</Text>}
                         </TouchableOpacity>
@@ -545,7 +545,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
 
             {doneCount === exercises.length && exercises.length > 0 && (
               <View style={styles.completeMsg}>
-                <Text style={[styles.completeMsgText, { color }]}>DONE. GO HOME.</Text>
+                <Text style={[styles.completeMsgText, { color: theme.accentBlue }]}>DONE. GO HOME.</Text>
               </View>
             )}
 

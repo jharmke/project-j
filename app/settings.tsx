@@ -4,11 +4,11 @@ import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { THEME_ORDER, ThemeId, THEMES, useTheme } from '../theme';
+import { ACCENT_PALETTES, THEME_ORDER, ThemeId, THEMES, useTheme } from '../theme';
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
-  const { theme, themeId, setTheme } = useTheme();
+  const { theme, themeId, accentId, setTheme, setAccent } = useTheme();
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
 
   useEffect(() => {
@@ -90,6 +90,36 @@ export default function SettingsScreen() {
                 </TouchableOpacity>
               );
             })}
+          </View>
+
+          {/* ── Accent Color ── */}
+          <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Accent Color</Text>
+            <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
+              {ACCENT_PALETTES[themeId].map((accent) => {
+                const isActiveAccent = accentId === accent.id;
+                return (
+                  <TouchableOpacity
+                    key={accent.id}
+                    onPress={() => setAccent(accent.id)}
+                    style={{ alignItems: 'center', gap: 4 }}>
+                    <View style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 18,
+                      backgroundColor: accent.color,
+                      borderWidth: isActiveAccent ? 2.5 : 1.5,
+                      borderColor: isActiveAccent ? theme.textPrimary : 'transparent',
+                      shadowColor: accent.color,
+                      shadowOffset: { width: 0, height: 0 },
+                      shadowOpacity: isActiveAccent ? 0.6 : 0,
+                      shadowRadius: 6,
+                    }} />
+                    <Text style={{ fontSize: 9, color: isActiveAccent ? theme.textPrimary : theme.textMuted, fontFamily: 'DMSans_600SemiBold', letterSpacing: 0.5 }}>{accent.label}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
         </View>
 

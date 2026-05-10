@@ -15,9 +15,9 @@ DONE -- SHIPPED
 [x] Token/theme system -- theme.tsx, ThemeProvider wired to root layout
 [x] All 5 themes built -- Dark, Light, Slate, Warm, Blush
 [x] Theme selector UI in settings
-[x] All screens fully themed -- index, log, workout, stats, profile, settings, food-detail, add-food, workout-library, edit-food, recipe-builder, recipe-log, day-detail
+[x] All screens fully themed
 [x] CustomTabBar -- fully themed
-[x] Tab bar pill fix -- visible on light and blush themes
+[x] Tab bar pill fix
 [x] Background gradient -- all tabs
 [x] Card shadows -- depth and elevation
 [x] Tab fade transition
@@ -25,210 +25,283 @@ DONE -- SHIPPED
 [x] Today's Training card -- combined workout summary + calories burned
 [x] Text contrast bump
 [x] Blush gradient strengthened
-[x] Macro goals -- ratio and fixed modes, wired to pj_profile, home bars pull from profile
-[x] Water bar animation fix -- no longer resets to 0 on increment
-[x] Sleep donut draw-on animation -- sequential fill, restarts on refresh
-[x] Toast system -- slide in from bottom, swipe to dismiss, themed, all major triggers wired
-[x] Weight carry-forward -- shows last known weight with days ago label
+[x] Macro goals -- ratio and fixed modes
+[x] Water bar animation fix
+[x] Sleep donut draw-on animation
+[x] Toast system -- slide in from bottom, swipe to dismiss, themed
+[x] Weight carry-forward
 [x] IF time picker light theme fix
-[x] Food Library header title fix -- shows "Food Library" not "Add to Morning"
+[x] Food Library header title fix
 [x] Log tab MacroDonut light theme fix
 [x] All screens themed -- no hardcoded colors remaining
+[x] Pull to refresh -- swipe down on home screen
+[x] Accent color system -- per theme palettes, persisted
+[x] Home button follows accent -- accentBlueRaw token
+[x] Workout checkmarks, progress bar, left border, Done Go Home follow accent
+[x] Slate theme overhaul
+[x] Card transparency -- light 0.55, slate 0.65, blush 0.85
+[x] Gradient linked to accent
+[x] Per-theme accent palettes
+[x] accentBlueRaw token
+[x] Yellow accent buttonColor system
+[x] Verse card static amber glow
+[x] Tab header titles accent colored
+[x] Exercise library keyboard blocking
+[x] Verse card clickable -- routes to bible.tsx with press animation
+[x] Shuffled verse rotation -- no repeats until all verses used
+[x] Expanded VERSES array -- 52 verses, WEB translation
+[x] bible-web.ts -- WEB Bible data, NT + key OT books
+[x] bible.tsx -- Bible reader, book picker, chapter nav, highlighted verse, reflection modal
+[x] journal.tsx -- journal screen, categories, FAB, filter pills, edit, swipe delete (bugs outstanding)
+[x] _layout.tsx -- bible and journal routes added
+[x] Reflection banner on Bible screen -- accent colored, routes to journal
+[x] pj_bible_reflections -- merged entry format with id, category, title, notes
+JOURNAL -- BUGS OUTSTANDING (do first next session, before anything else)
+Root cause: SwipeableEntry defined inside JournalScreen. PanResponder recreates every render.
+Fix: full clean rewrite of journal.tsx. SwipeableEntry moves above JournalScreen as top-level component. Props passed down. panResponder wrapped in useRef. Reanimated for expand animation.
+Do not patch. Full rewrite, one shot, paste entire file.
+Specific bugs:
 
+Entry open animation pops, no slide
+Entry close has ~1 second delay
+Swipe to delete freezes and doesn't reset
+If swipe not fixed in 20 minutes, replace with trash icon inside expanded entry and move on
 
-SESSION PRIORITY -- DO FIRST
+JOURNAL -- REMAINING FEATURES
 
- GitHub repo setup -- private repo, push codebase (DONE)
- Claude Project setup -- create project, paste instructions doc, upload roadmap (DONE)
- Token/theme system (DONE)
- All themes shipped (DONE)
- All screens themed (DONE)
+Edit entry title (currently only notes and category editable)
+Journal icon on Stats tab header -- routes to journal.tsx
+Day detail integration -- show journal entries from that day at bottom of day detail screen
+Date on entries tappable -- routes to that day's day detail
+Long text stress test -- verify 500 word entries format correctly
+Multiple entries same day -- verify prayer + gratitude same day display correctly
+Swipe delete or trash icon -- whichever works, needs to be clean
+Search within journal entries (roadmapped, low priority)
 
+TODAY'S SESSION PRIORITY (in order, do not deviate)
+
+Journal rewrite -- full clean file, all three gates, do not move on until it passes
+Full WEB Bible JSON -- find reputable GitHub source, verify ALL 52 preset verses match word for word before committing, replace bible-web.ts, remove "key verses only" note
+Sleep score in donut center -- replace moon icon with 0-100 score, update color thresholds
+Remaining home tab bugs -- IF countdown text color, slate IF buttons, weight card colors, meal slot + signs, water/food remove toasts, edit layout sheet choppy
+Workout tag system -- custom tags, color picker, pills on Today's Training card
+Faith Journey setting -- ONLY if time allows after all above are solid. Do not start this and get pulled into coaching modes today. Journal/Bible day first.
+
+AFTER TODAY -- NEXT SESSIONS PRIORITY
+
+Faith Journey + Coaching Modes -- build together, same session, they are connected
+Stats tab dedicated session -- full plan before touching code, charts/graphs, premium vs free data tiers
+Onboarding flow -- animated, sets coaching mode and faith journey, "skip for now" not X, returnable from profile
+Firebase Auth -- Apple and Google sign in, pre-beta milestone, data migration from AsyncStorage to Firestore
+TestFlight setup -- when core features stable, internal testing first
+Workout tag system (if not done today)
+Net calories + calorie color scoring
+Barcode scanner fix
 
 HOME TAB
 Visual
-
- Background gradient polish -- dark theme gradient could be stronger (LOW)
- Progress bar track color pass -- bring to #252535 minimum
- Card icons (DONE)
-
+Background gradient polish -- dark theme could be stronger (LOW)
+Progress bar track color pass -- #252535 minimum
 Animations
-
- Sleep donut draw-on animation (DONE)
- Number counters animating up on load -- calories, steps, water count up from 0
- IF countdown digit roll animation
- Water ripple fill animation
- Weight odometer tick
- Calorie color smooth transition
- Card shimmer/sheen -- subtle light-hitting-glass effect
- Verse card glow -- slow golden breathing glow effect (HIGH)
- Tab bar pulse/bloom on tap
- Goal hit animations -- water, steps, calories celebration moment (HIGH)
- Streak numbers animating up on stats load
- Animation standard -- ALL bars and graphs animate (DONE)
-
+Number counters animating up on load
+IF countdown digit roll animation
+Water ripple fill animation
+Weight odometer tick
+Calorie color smooth transition
+Goal hit celebrations -- water, steps, calories (HIGH)
 Features
-
- Macro goals -- wired to pj_profile (DONE)
- Water bar reset fix (DONE)
- Net calories display -- consumed minus burned (HIGH)
- Calorie card + Log button -- rethink or replace
- Calorie color scoring -- mode aware (HIGH)
- Weight carry-forward (DONE)
- Sleep goal field in profile
- Sleep quality score -- weighted algorithm, score 0-100 in donut center (HIGH)
- You vs Yesterday card -- live pacing comparison, optional home card
- Streak card on home -- Bible, workout, calorie streaks (HIGH)
- Auto date rollover -- AppState listener, detect midnight (HIGH)
- Home screen date navigator -- editing for select fields
- Pull to refresh -- replace refresh header button (HIGH)
- One-time first-launch pull-to-refresh tooltip
-
-
+Net calories display (HIGH)
+Calorie color scoring -- mode aware (HIGH)
+Sleep score in donut center (TODAY)
+Sleep quality score algorithm -- Duration 0-40pts, Deep 0-30pts, REM 0-30pts
+Sleep grade thresholds review
+You vs Yesterday card
+Streak card -- Bible, workout, calorie streaks (HIGH)
+Auto date rollover -- AppState listener + midnight timer, both triggers (HIGH) -- currently data does not reset at midnight, user noticed this in real use
+Morning briefing card -- first open of day, customizable slots, faith first, yesterday recap, today targets, coaching voice line
+Today's Message customization -- scripture rotation manager, personal messages pool, book/chapter/verse picker pulling from bible-web.ts, preview matches card exactly
+Weight log button dim/inactive state -- dim when empty, accent when ready (BUG)
+Pull weight from Apple Health -- auto-populate if available, manual entry as fallback
 THEME POLISH PASS
-
- Slate theme -- needs identity rework, grey base not blue base
- Blush theme -- bgCard needs darkening, water buttons need differentiation
- Blush save button on profile -- darker background or thicker border
- All themes -- progress bar track color pass
- Accent color options per theme -- paid feature
- Theme selector UI polish
- Collapsible sections in settings page
-
-
+Warm theme button in settings -- same display bug as light theme tile
+Light theme tile goes grey on dark/warm mode in theme selector (BUG)
+Warm theme -- still rough, needs lighter caramel overhaul
+All themes -- progress bar track color pass
+Full theme audit -- all 5 themes x all accent options, every screen, before beta
 STATS TAB
-
- Stats calendar color logic -- read and document exactly what drives green/yellow/red
- Stats trend chart polish -- axis labels, more data points, tap for tooltip
- More trend data -- body measurements, sleep trends
- Streak numbers animating up on stats load
-
-
+Dedicated session required -- full plan before touching code
+Journal icon on stats header -- routes to journal.tsx
+Stats calendar color logic -- document exactly what drives green/yellow/red
+Stats trend chart polish -- axis labels, more data points, tap for tooltip
+Trends section -- active calories, steps, weight, sleep, HRV over selectable time range (like Apple Health)
+More trend data -- body measurements, sleep trends
+Streak numbers animating up on stats load
+Premium vs free data tiers -- non-standard charts/graphs as paid features
 WORKOUT TAB
-
- Workout tab nested scroll bug -- DraggableFlatList inside ScrollView warning (HIGH)
- Workout drag handle -- hit target too small (HIGH)
- Workout drag handle -- dead zone before drag triggers (HIGH)
- Workout tag system -- custom tags, color picker, replaces Push/Pull/Legs/Cardio (HIGH)
- HIIT mode -- Tabata, standard intervals, custom
- Workout rest timer between sets
- Lifting set tracker with progressive overload
- Apple Workouts backfill -- last 7 days on first setup
-
-
+Workout tag system -- custom tags, color picker, replaces Push/Pull/Legs/Cardio, pills on Today's Training (HIGH, TODAY if time)
+Workout tab nested scroll bug -- DraggableFlatList inside ScrollView warning (HIGH)
+Workout drag handle -- hit target too small (HIGH)
+Workout drag handle -- dead zone before drag triggers (HIGH)
+HIIT mode -- Tabata, standard intervals, custom
+Workout rest timer between sets
+Lifting set tracker with progressive overload
+Apple Workouts backfill -- last 7 days on first setup
+Estimated calories for manual workouts -- MET formula using height/weight/age/sex from profile, intensity selector (light/moderate/vigorous), shown with "estimated" label
 FOOD / LOG TAB
-
- Barcode scanner bug fix -- camera session not tearing down properly (HIGH)
- USDA food API speed -- local cache of top 500-1000 common foods
- Meal slots fully customizable -- rename, reorder, add custom slots (HIGH)
- Calorie breakdown by meal -- each slot gets a budget
- Cronometer style nutrition log redesign
- Recipe builder polish
- Long press food log items -- quick action menu
-
-
-EXERCISE LIBRARY
-
- Exercise library keyboard blocking (HIGH)
- Exercise library -- custom exercises, favorites, recents
-
-
+Barcode scanner bug fix -- camera session not tearing down (HIGH)
+Meal slot + signs to accent color (BUG)
+Toast on food remove (BUG)
+USDA food API speed -- local cache top 500-1000 common foods
+Meal slots fully customizable -- rename, reorder, add custom slots (HIGH)
+Calorie breakdown by meal -- each slot gets a budget
+Recipe builder polish
+Long press food log items -- quick action menu
+BUGS OUTSTANDING
+IF countdown timer text black across all themes
+Slate IF method buttons bright white
+Weight card colors off -- varies by theme
+Toast on water remove
+Edit layout sheet laggy/choppy open and close
+Weight log button no dim/inactive state
 FAITH FEATURES
-
- Bible reader -- local JSON bundle, WEB or ASV public domain (HIGH)
- Morning intention / prayer feature
- Prayer log
- Bible streak tracking
- Custom streaks
-
-
+Bible reader -- SHIPPED
+Journal -- SHIPPED (bugs outstanding)
+Full WEB Bible JSON -- TODAY, replace key verses with all 66 books
+Scripture rotation picker -- book/chapter/verse navigator, pulls from bible-web.ts, preview matches card, confirm gated on valid selection
+Faith Journey setting -- three tiers: Rooted, Exploring, Not right now. Periodic gentle in-app reminder for Exploring/Not right now. Toggleable reminder off in settings.
+Faith Journey + Coaching Modes -- build together same session
+Morning intention / prayer feature
+Custom streaks -- pick Ionicon or emoji, name it, track it
+Bible streak -- user creates via custom streak system, no preset
+Reading plans -- M'Cheyne, chronological, NT in a year (phase 2)
+Long press verse in Bible to create study reflection (roadmapped)
+Journal icon on Stats tab header (noted, not done)
+HEALTH / FITNESS METRICS
+HealthKit expansion -- weight, HRV, resting heart rate, walking HR average, blood oxygen SpO2, respiratory rate, basal calories
+Fitness metrics card expansion -- resting HR, HRV, blood oxygen, live heart rate
+HRV display -- needs personal baseline, 30-day average, color coded against own baseline, not just raw number
+(i) info bubbles -- on every metric that needs explanation. One tap shows inline tooltip (2-3 sentences). Tooltip has "Learn more" link. Tapping learn more opens detail sheet with full explanation, ranges, how to improve. Built at time of feature, never after.
+Health glossary -- all metrics defined, searchable, organized by feature area, accessible from (i) bubbles and settings
+Personalized health ranges -- age/sex/fitness level context, visual range bar with user's bracket highlighted, demographic data pulled from profile. Accurate ranges only, disclaimer required.
 PROFILE / SETTINGS
-
- Settings page expansion -- font size, notifications, coaching mode, units
- Collapsible sections in settings -- accordion pattern
- FAQ / help section (LOW)
- BMR/TDEE calculator polish
-
-
+Settings collapsible categories -- Display, Health, Faith, Notifications, Account
+Move relevant profile fields to appropriate settings categories
+Faith Journey setting -- lives in profile, returnable from onboarding
+Coaching mode selector -- Discipline/Balance/Mindful -- build with Faith Journey
+BMR/TDEE calculator polish
+Sleep goal field in profile
 ONBOARDING
-
- Onboarding flow -- animated, sets the tone (HIGH)
- Coaching mode selector -- Discipline / Balance / Mindful
-
-
+Onboarding flow -- animated, sets the tone (HIGH)
+Two key questions: Coaching mode + Faith Journey
+"Skip for now" button not X on every screen
+"You can update this anytime in your profile" shown on every screen
+Profile/settings has section to re-run or edit any onboarding answer individually
+First use tooltips fire after onboarding completes
+HELP SYSTEM
+First use tooltips -- unique AsyncStorage key per tooltip, fires once per install, all tooltips catalogued in Help section
+Help section in settings -- Tips and Guides (all tooltips by feature area), Health Glossary, FAQ, About
+Tooltips come back on reinstall -- correct behavior, no cloud sync needed for tooltip state
 BODY / PROGRESS
-
- Body measurements tracking
- Progress photos -- pose overlay ghost camera
-
-
+Body measurements tracking
+Progress photos -- pose overlay ghost camera
 POLISH / UX
-
- Toast system (DONE)
- Micro interactions -- card scale press, progress bar bounce
- Page transitions between tabs (DONE)
- Empty states -- designed placeholders not blank cards (HIGH)
- Offline first behavior
- Daily summary push notification
- In-app review prompt
- Accessibility -- respect system font size
- Day detail screen polish (LOW)
- Coaching mode personality
-
-
+Micro interactions -- card scale press, progress bar bounce
+Empty states -- designed placeholders (HIGH)
+Offline first behavior
+Daily summary push notification
+In-app review prompt
+Accessibility -- respect system font size
+Day detail screen polish (LOW)
+Coaching mode personality
 MONETIZATION / FUTURE
-
- Theme monetization -- Light/Dark free, rest paid
- Weight trend sparkline (LOW)
- Language / internationalization (LOW)
- Apple Watch companion app (LOW)
- iOS home screen widget (LOW)
- Animated app icon -- iOS 18 (LOW)
- App Store optimization (LOW)
-
-
+Theme monetization -- Light/Dark free, rest paid
+Accent color monetization -- TBD
+Stats premium tiers -- non-standard charts paid
+TestFlight -- internal beta when core features stable
+Firebase Auth -- Apple/Google login, pre-beta, data migration from AsyncStorage
+Today's Message management UI -- scripture on/off toggle, personal messages CRUD, rotation preference
+Weight trend sparkline (LOW)
+Language / internationalization (LOW)
+Apple Watch companion app (LOW)
+iOS home screen widget (LOW)
+Animated app icon -- iOS 18 (LOW)
+App Store optimization (LOW)
 NOTES AND DECISIONS
-
+Journal entry format:
+Storage key: pj_bible_reflections
+Entry shape: { id, date, category, title, notes, verseRef?, verseText?, acknowledged?, bookRef? }
+Categories: verse, prayer, study, personal, gratitude
+Verse entries only via Bible screen reflect banner
+FAB creates: prayer, study, personal, gratitude only
+id format -- verse: YYYY-MM-DD_verse, others: YYYY-MM-DD_timestamp
+Faith system decisions:
+Christian app by default, faith features on for all users out of the box
+Faith Journey is opt-out not opt-in
+"Not right now" not "Not for me" -- leaves door open
+Faith Journey and Coaching Modes built together same session
+Today's Message card behavior forks based on Faith Journey setting
+Bible decisions:
+WEB translation everywhere, no exceptions, verse card text must match Bible reader text exactly
+Full 66 book JSON replacing current key verses approach
+Scripture rotation picker uses book/chapter/verse navigator pulling from bible-web.ts
+Preview in picker matches card styling exactly
+Confirm button gated on valid verse selection
+Build standards (all non-negotiable, built at time of feature):
+Three gate rule -- works, looks premium, feels right
+Dim/inactive button states on all submittable buttons
+44x44pt minimum touch targets
+Disclaimer on all health features
+Haptics standard -- light/medium/heavy
+Animation standard -- Reanimated for expand/collapse, card press scale
+Empty states on all lists and cards
+Loading states on async operations
+Error states on fallible operations
+First use tooltips catalogued in help section
+Input validation before storage
+Testing standard:
+Primary theme: Slate with yellow accent
+Build on Slate yellow, audit all 5 themes x all accents before marking visual features done
+Never assume a bug is theme-specific without confirming on multiple themes
+Data/storage decisions:
+AsyncStorage keys all defined above
+Firebase Auth planned pre-beta -- Apple and Google sign in
+Data migration from AsyncStorage to Firestore per user when Auth is built
+Dev reset/export -- pin, build only if needed before TestFlight
 Macro goals system:
-Two modes - Ratio (percentages that must equal 100%, grams auto-calculate from calorie target) and Fixed (input grams directly, kcal and % update live). Cross-mode sync on save. Validation blocks save if ratio doesn't equal 100% or fixed total is more than 50 kcal off target. Tied to calorie target - change target, macros update automatically.
-
+Two modes - Ratio and Fixed. Cross-mode sync on save.
 Workout tag system (planned):
-Multiple tags per day, fully custom names and colors. Color picker or preset palette. Managed from settings. Replaces hardcoded Push/Pull/Legs/Cardio type system. Pills display on Today's Training home card, wrap naturally. Tag ids stored as array on each day in workout state.
-
-Today's Training card:
-Combined workout summary and calories burned. Shows day type pill, exercise list capped at 4 with "+X more" overflow, done/undone state with strikethrough, calories burned from HealthKit or manual fallback. Tapping card navigates to workout tab.
-
+Custom names, colors, multiple per day. Color picker or preset palette. Settings managed. Replaces Push/Pull/Legs/Cardio. Pills on Today's Training card.
+Sleep quality score:
+Score 0-100: Duration 0-40pts, Deep 0-30pts, REM 0-30pts
+Score displayed in donut center replacing moon icon
+Color thresholds need review
 Coaching modes:
 Discipline -- strict both directions
 Balance -- forgiving on low end, strict on high
 Mindful -- wide green zone, awareness not numbers
-
-Theme presets:
-Dark (current) -- free
-Light -- free
-Slate (cool grey, navy accent) -- paid, needs identity rework
-Warm (dark browns, amber) -- paid
-Blush (Megan's deep dusty rose) -- paid, needs bgCard darkening and water button fix
-
-Bible translation:
-WEB or ASV, both public domain and bundleable locally.
-
-Sleep quality score:
-Score 0-100: Duration 0-40pts, Deep % 0-30pts, REM % 0-30pts. Labels: 93-100 Excellent, 75-92 Good, 55-74 Fair, below 55 Poor.
-
-Toast system:
-Slide in from bottom, fade out on auto-dismiss (2.2s), swipe down to dismiss, X button. Green left border for success, blue for info. Queue system. Themed. Triggers: water +/-, food logged, note saved, profile saved, exercise added/updated, workout note saved.
-
-Animation standard:
-Every bar, progress indicator, chart must animate. Non-negotiable.
-
+Build with Faith Journey same session
+Morning briefing card:
+First open of day only
+Customizable slots -- faith first, yesterday recap, today targets, coaching voice
+Coaching voice line varies by mode
+Faith Journey setting affects what faith slots show
+HealthKit currently pulling:
+activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, vo2Max, cardioRecovery
+Not yet pulling: weight, HRV, resting HR, blood oxygen, respiratory rate, basal calories
+Estimated workout calories:
+MET formula: Calories = MET x weight kg x duration hours
+Intensity selector adjusts MET value
+Shown with "estimated" label, not from heart rate monitor
 GitHub:
 Repo: https://github.com/jharmke/project-j
 Branch: master
 End of session: git add . / git commit -m "description" / git push origin master
-
 Process:
-Every change gets a verdict before moving on
+Commit after every gate-passing feature not just end of session
+Three gate rule before marking anything done
+One feature at a time, no parallel half-builds
+Polish pass rule -- no new major feature until last one has zero open bugs
 Start new threads when current one gets long
 New threads always inside the Claude Project
 Roadmap updated at end of every session
+Screenshot before and after every visual change

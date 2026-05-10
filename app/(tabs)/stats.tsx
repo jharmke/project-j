@@ -367,14 +367,17 @@ export default function StatsScreen() {
       <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
         <View style={{ flex: 1 }}>
           <Text style={[styles.headerLabel, { color: theme.textMuted }]}>PROJECT J</Text>
-          <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>Stats</Text>
+          <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>Stats</Text>
           <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', marginTop: 1, letterSpacing: 2, textTransform: 'uppercase' }}>
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </Text>
         </View>
-        <View style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, opacity: 0 }}>
-          <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: theme.accentBlue }}>Library</Text>
-        </View>
+        <TouchableOpacity
+          onPress={() => router.push('/journal')}
+          style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}
+        >
+          <Ionicons name="journal-outline" size={14} color={theme.accentBlue} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>

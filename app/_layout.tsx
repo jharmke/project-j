@@ -48,6 +48,8 @@ export default function RootLayout() {
         <Stack.Screen name="recipe-log" options={{ headerShown: false }} />
         <Stack.Screen name="day-detail" options={{ headerShown: false, animation: 'none' }} />
         <Stack.Screen name="settings" options={{ headerShown: false }} />
+        <Stack.Screen name="bible" options={{ headerShown: false }} />
+        <Stack.Screen name="journal" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="light" />
     </NavThemeProvider>

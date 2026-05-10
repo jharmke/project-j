@@ -303,7 +303,7 @@ export default function LogScreen() {
       <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
         <View style={{ flex: 1 }}>
           <Text style={[styles.headerLabel, { color: theme.textMuted }]}>PROJECT J</Text>
-          <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>Food Log</Text>
+          <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>Food Log</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 }}>
             <TouchableOpacity onPress={goToPrevDay} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
               <Text style={{ color: theme.accentBlue, fontSize: 11, fontFamily: 'DMSans_700Bold', lineHeight: 12 }}>‹</Text>
@@ -318,7 +318,7 @@ export default function LogScreen() {
         </View>
         <TouchableOpacity
           style={[styles.libraryBtn, { height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
-          onPress={() => router.push({ pathname: '/add-food', params: { meal: 'browse', date: activeDate } })}>
+          onPress={() => router.push({ pathname: '/add-food', params: { meal: 'Morning', date: activeDate } })}>
           <Text style={[styles.libraryBtnText, { color: theme.accentBlue }]}>Library</Text>
         </TouchableOpacity>
       </View>

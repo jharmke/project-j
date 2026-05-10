@@ -37,7 +37,7 @@ function HomeButton({ isFocused, scale, homePulse, onPress, bgCard, textSecondar
         backgroundColor: isFocused ? macroProtein : bgCard,
         alignItems: 'center', justifyContent: 'center',
         borderWidth: 1.5,
-        borderColor: isFocused ? macroProtein : `rgba(13,146,104,0.4)`,
+        borderColor: isFocused ? macroProtein : `${macroProtein}66`,
         shadowColor: macroProtein,
         shadowOffset: { width: 0, height: 0 },
         shadowRadius: 14,
@@ -176,7 +176,7 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
               onPress={() => handlePress(tab.name, i)}
               bgCard={theme.bgCard}
               textSecondary={theme.textSecondary}
-              macroProtein={theme.macroProtein}
+              macroProtein={theme.accentBlue}
             />
           );
         }

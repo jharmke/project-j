@@ -4,7 +4,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Animated, Modal, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import ReAnimated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -76,20 +76,65 @@ const PROGRAM: Record<string, any> = {
 };
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const VERSES = [
-  { text: "I can do all things through Christ who strengthens me.", reference: "Philippians 4:13" },
-  { text: "Do you not know that your body is a temple of the Holy Spirit within you? You are not your own.", reference: "1 Corinthians 6:19" },
-  { text: "For God gave us a spirit not of fear but of power and love and self-control.", reference: "2 Timothy 1:7" },
-  { text: "Whatever you do, work heartily, as for the Lord and not for men.", reference: "Colossians 3:23" },
-  { text: "But they who wait for the Lord shall renew their strength; they shall mount up with wings like eagles.", reference: "Isaiah 40:31" },
-  { text: "No discipline seems pleasant at the time, but painful. Later on, however, it produces a harvest of righteousness.", reference: "Hebrews 12:11" },
-  { text: "So whether you eat or drink or whatever you do, do it all for the glory of God.", reference: "1 Corinthians 10:31" },
-  { text: "Train yourself to be godly. For physical training is of some value, but godliness has value for all things.", reference: "1 Timothy 4:7-8" },
-  { text: "Commit your work to the Lord, and your plans will be established.", reference: "Proverbs 16:3" },
-  { text: "Be strong and courageous. Do not be afraid; do not be discouraged, for the Lord your God will be with you.", reference: "Joshua 1:9" },
-  { text: "Let us not become weary in doing good, for at the proper time we will reap a harvest if we do not give up.", reference: "Galatians 6:9" },
-  { text: "And let us run with perseverance the race marked out for us, fixing our eyes on Jesus.", reference: "Hebrews 12:1-2" },
-  { text: "The Lord is my strength and my shield; my heart trusts in him, and he helps me.", reference: "Psalm 28:7" },
-  { text: "Create in me a clean heart, O God, and renew a right spirit within me.", reference: "Psalm 51:10" },
+  // Strength & Perseverance
+  { text: "I can do all things through Christ, who strengthens me.", reference: "Philippians 4:13" },
+  { text: "But those who wait for Yahweh will renew their strength. They will mount up with wings like eagles. They will run, and not be weary. They will walk, and not faint.", reference: "Isaiah 40:31" },
+  { text: "All discipline seems painful for the moment, not joyful. But afterward, it yields the peaceful fruit of righteousness to those who have been trained by it.", reference: "Hebrews 12:11" },
+  { text: "Let's not be weary in doing good, for we will reap in due season if we don't give up.", reference: "Galatians 6:9" },
+  { text: "Let's run with perseverance the race that is set before us, looking to Jesus, the author and perfecter of faith.", reference: "Hebrews 12:1-2" },
+  { text: "Be strong and courageous. Don't be afraid or scared of them; for Yahweh your God himself is who goes with you. He will not fail you nor forsake you.", reference: "Deuteronomy 31:6" },
+  { text: "Have I not commanded you? Be strong and courageous. Don't be afraid. Don't be dismayed, for Yahweh your God is with you wherever you go.", reference: "Joshua 1:9" },
+  { text: "I have fought the good fight. I have finished the course. I have kept the faith.", reference: "2 Timothy 4:7" },
+  { text: "He has said to me, \"My grace is sufficient for you, for my power is made perfect in weakness.\"", reference: "2 Corinthians 12:9" },
+  { text: "Yahweh is my strength and my shield. My heart has trusted in him, and I am helped.", reference: "Psalm 28:7" },
+  { text: "God is our refuge and strength, a very present help in trouble.", reference: "Psalm 46:1" },
+  { text: "He gives power to the weak. He increases the strength of him who has no might.", reference: "Isaiah 40:29" },
+  { text: "Yah is my strength and song. He has become my salvation. This is my God, and I will praise him; my father's God, and I will exalt him.", reference: "Exodus 15:2" },
+
+  // Faith & Trust
+  { text: "Trust in Yahweh with all your heart, and don't lean on your own understanding. In all your ways acknowledge him, and he will make your paths straight.", reference: "Proverbs 3:5-6" },
+  { text: "Commit your work to Yahweh, and your plans shall succeed.", reference: "Proverbs 16:3" },
+  { text: "for we walk by faith, not by sight.", reference: "2 Corinthians 5:7" },
+  { text: "Now faith is assurance of things hoped for, proof of things not seen.", reference: "Hebrews 11:1" },
+  { text: "Jesus said to him, \"If you can believe, all things are possible to him who believes.\"", reference: "Mark 9:23" },
+  { text: "Without faith it is impossible to be well pleasing to him, for he who comes to God must believe that he exists, and that he is a rewarder of those who seek him.", reference: "Hebrews 11:6" },
+  { text: "For God so loved the world, that he gave his one and only Son, that whoever believes in him should not perish, but have eternal life.", reference: "John 3:16" },
+  { text: "Jesus said to him, \"I am the way, the truth, and the life. No one comes to the Father, except through me.\"", reference: "John 14:6" },
+  { text: "In nothing be anxious, but in everything, by prayer and petition with thanksgiving, let your requests be made known to God.", reference: "Philippians 4:6" },
+
+  // Body & Discipline
+  { text: "Or don't you know that your body is a temple of the Holy Spirit which is in you, which you have from God? You are not your own,", reference: "1 Corinthians 6:19" },
+  { text: "Whether therefore you eat, or drink, or whatever you do, do all to the glory of God.", reference: "1 Corinthians 10:31" },
+  { text: "For bodily exercise has some value, but godliness has value in all things, having the promise of the life which is now, and of that which is to come.", reference: "1 Timothy 4:8" },
+  { text: "For God didn't give us a spirit of fear, but of power, love, and self-control.", reference: "2 Timothy 1:7" },
+  { text: "but I beat my body and bring it into submission, lest by any means, after I have preached to others, I myself should be disqualified.", reference: "1 Corinthians 9:27" },
+  { text: "Whatever you do, work heartily, as for the Lord, and not for people,", reference: "Colossians 3:23" },
+  { text: "Therefore I urge you, brothers, by the mercies of God, to present your bodies a living sacrifice, holy, acceptable to God, which is your spiritual service.", reference: "Romans 12:1" },
+
+  // Purpose & Identity
+  { text: "For we are his workmanship, created in Christ Jesus for good works, which God prepared before that we would walk in them.", reference: "Ephesians 2:10" },
+  { text: "Before I formed you in the belly, I knew you. Before you came forth out of the womb, I sanctified you. I have appointed you a prophet to the nations.", reference: "Jeremiah 1:5" },
+  { text: "For I know the thoughts that I think toward you, says Yahweh, thoughts of peace, and not of evil, to give you hope and a future.", reference: "Jeremiah 29:11" },
+  { text: "For you formed my inmost being. You knit me together in my mother's womb. I will give thanks to you, for I am fearfully and wonderfully made.", reference: "Psalm 139:13-14" },
+  { text: "Even so, let your light shine before men, that they may see your good works, and glorify your Father who is in heaven.", reference: "Matthew 5:16" },
+  { text: "But seek first God's Kingdom, and his righteousness; and all these things will be given to you as well.", reference: "Matthew 6:33" },
+
+  // Peace & Renewal
+  { text: "Create in me a clean heart, O God. Renew a right spirit within me.", reference: "Psalm 51:10" },
+  { text: "\"Peace I leave with you. My peace I give to you; not as the world gives, I give to you. Don't let your heart be troubled, neither let it be fearful.\"", reference: "John 14:27" },
+  { text: "And the peace of God, which surpasses all understanding, will guard your hearts and your thoughts in Christ Jesus.", reference: "Philippians 4:7" },
+  { text: "\"Come to me, all you who labor and are heavily burdened, and I will give you rest.\"", reference: "Matthew 11:28" },
+  { text: "Don't be conformed to this world, but be transformed by the renewing of your mind, so that you may prove what is the good, well-pleasing, and perfect will of God.", reference: "Romans 12:2" },
+  { text: "He restores my soul. He guides me in the paths of righteousness for his name's sake.", reference: "Psalm 23:3" },
+  { text: "Yahweh bless you, and keep you. Yahweh make his face to shine on you, and be gracious to you.", reference: "Numbers 6:24-25" },
+
+  // Love & Grace
+  { text: "We love him, because he first loved us.", reference: "1 John 4:19" },
+  { text: "But God commends his own love toward us, in that while we were yet sinners, Christ died for us.", reference: "Romans 5:8" },
+  { text: "for by grace you have been saved through faith, and that not of yourselves; it is the gift of God,", reference: "Ephesians 2:8" },
+  { text: "If we confess our sins, he is faithful and righteous to forgive us our sins, and to cleanse us from all unrighteousness.", reference: "1 John 1:9" },
+  { text: "There is therefore now no condemnation to those who are in Christ Jesus, who don't walk according to the flesh, but according to the Spirit.", reference: "Romans 8:1" },
+  { text: "For I am persuaded that neither death, nor life, nor angels, nor principalities, nor things present, nor things to come, nor powers, nor height, nor depth, nor any other created thing, will be able to separate us from the love of God, which is in Christ Jesus our Lord.", reference: "Romans 8:38-39" },
 ];
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -415,8 +460,41 @@ export default function HomeScreen() {
         console.log('Load error', e);
       } finally {
         setLoaded(true);
-        const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(),0,0).getTime()) / 86400000);
-        setDailyVerse(VERSES[dayOfYear % VERSES.length]);
+        // Shuffled verse rotation -- no repeats until all verses used
+        const todayStr = todayKey;
+        const rotationRaw = await AsyncStorage.getItem('pj_verse_rotation');
+        let rotation: { order: number[]; index: number; lastDate: string } = rotationRaw
+          ? JSON.parse(rotationRaw)
+          : { order: [], index: 0, lastDate: '' };
+
+        const shuffle = (arr: number[]) => {
+          const a = [...arr];
+          for (let i = a.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [a[i], a[j]] = [a[j], a[i]];
+          }
+          return a;
+        };
+
+        // If rotation is empty or exhausted, reshuffle
+        if (!rotation.order.length || rotation.index >= rotation.order.length) {
+          rotation = { order: shuffle(VERSES.map((_, i) => i)), index: 0, lastDate: todayStr };
+          await AsyncStorage.setItem('pj_verse_rotation', JSON.stringify(rotation));
+        }
+
+        // If it's a new day, advance the index
+        if (rotation.lastDate !== todayStr) {
+          rotation.index = rotation.lastDate === '' ? 0 : rotation.index + 1;
+          // Check again after advancing in case we just exhausted the list
+          if (rotation.index >= rotation.order.length) {
+            rotation = { order: shuffle(VERSES.map((_, i) => i)), index: 0, lastDate: todayStr };
+          } else {
+            rotation.lastDate = todayStr;
+          }
+          await AsyncStorage.setItem('pj_verse_rotation', JSON.stringify(rotation));
+        }
+
+        setDailyVerse(VERSES[rotation.order[rotation.index]]);
       }
     };
     loadData();
@@ -562,16 +640,41 @@ export default function HomeScreen() {
   const sheetTranslate = sheetAnim.interpolate({ inputRange: [0,1], outputRange: [600, 0] });
 
   // ─── Card Renderers ───────────────────────────────────────────────────────────
-  const renderVerseCard = () => (
-    <View style={[styles.verseCard, { backgroundColor: theme.bgCardVerse, borderColor: theme.borderCardVerse }]}>
-      <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:8 }}>
-        <Ionicons name="book-outline" size={11} color={theme.textMuted} />
-        <Text style={[styles.verseLabel, { marginBottom:0, color: theme.textMuted }]}>TODAY'S VERSE</Text>
-      </View>
-      <Text style={[styles.verseText, { color: theme.textSecondary }]}>"{dailyVerse?.text}"</Text>
-      <Text style={[styles.verseRef, { color: theme.textMuted }]}>{dailyVerse?.reference}</Text>
-    </View>
-  );
+  const renderVerseCard = () => {
+    const cardScale = new Animated.Value(1);
+    const onPressIn = () => Animated.timing(cardScale, { toValue: 0.97, duration: 100, useNativeDriver: true }).start();
+    const onPressOut = () => Animated.timing(cardScale, { toValue: 1, duration: 150, useNativeDriver: true }).start();
+
+    return (
+      <Animated.View style={{ transform: [{ scale: cardScale }] }}>
+        <TouchableOpacity
+          activeOpacity={0.99}
+          delayPressIn={0}
+          onPressIn={onPressIn}
+          onPressOut={onPressOut}
+          onPress={() => router.push({
+            pathname: '/bible',
+            params: {
+              verseRef: dailyVerse?.reference ?? '',
+              verseText: dailyVerse?.text ?? '',
+            },
+          })}
+          style={[styles.verseCard, { backgroundColor: theme.bgCardVerse, borderColor: theme.borderCardVerse,
+            shadowColor: '#d4860a', shadowOffset: { width: 0, height: 0 }, shadowOpacity: .85, shadowRadius: 8, elevation: 8 }]}
+        >
+          <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
+            <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
+              <Ionicons name="book-outline" size={11} color={theme.textMuted} />
+              <Text style={[styles.verseLabel, { marginBottom:0, color: theme.textMuted }]}>TODAY'S VERSE</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={12} color={theme.textDim} />
+          </View>
+          <Text style={[styles.verseText, { color: theme.textSecondary }]}>"{dailyVerse?.text}"</Text>
+          <Text style={[styles.verseRef, { color: theme.textMuted }]}>{dailyVerse?.reference}</Text>
+        </TouchableOpacity>
+      </Animated.View>
+    );
+  };
 
   const renderIFCard = () => (
     <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
@@ -1185,7 +1288,7 @@ export default function HomeScreen() {
       <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
         <View style={{ flex:1 }}>
           <Text style={[styles.headerLabel, { color: theme.textMuted }]}>PROJECT J</Text>
-          <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>
+          <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>
             {(() => { const h=new Date().getHours(); return h<12?'Good morning':h<17?'Good afternoon':'Good evening'; })()}
           </Text>
           <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', marginTop:1, letterSpacing:2, textTransform:'uppercase' }}>
@@ -1238,7 +1341,16 @@ export default function HomeScreen() {
       )}
 
       {/* ── Main content ── */}
-      <ScrollView contentContainerStyle={{ padding:16, paddingBottom:80 }}>
+      <ScrollView
+        contentContainerStyle={{ padding:16, paddingBottom:80 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={false}
+            onRefresh={() => { fetchTodayData(); setRefreshKey(k => k + 1); showToast('Health data refreshed', undefined, 'info'); }}
+            tintColor={theme.accentBlue}
+          />
+        }
+      >
         {visibleCards.map((id) => (
           <View key={id}>
             {renderCardById(id)}
@@ -1350,7 +1462,7 @@ const styles = StyleSheet.create({
   headerBtn:        { borderWidth:1, borderRadius:6, paddingHorizontal:12, paddingVertical:6, height:32, alignItems:'center', justifyContent:'center' },
   card:             { borderWidth:0.5, borderRadius:14, padding:16, marginBottom:12, borderTopWidth:0.5, shadowColor: '#000000', shadowOffset: { width:0, height:4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
   cardLabel:        { fontSize:10, letterSpacing:3, textTransform:'uppercase', fontFamily:'DMSans_700Bold', marginBottom:10 },
-  verseCard:        { borderWidth:1, borderRadius:14, padding:16, marginBottom:12, shadowColor: '#000000', shadowOffset: { width:0, height:4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
+  verseCard:        { borderWidth:2, borderRadius:14, padding:16, marginBottom:12, shadowColor: '#000000', shadowOffset: { width:0, height:4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
   verseLabel:       { fontSize:9, letterSpacing:3, textTransform:'uppercase', marginBottom:8, fontFamily:'DMSans_700Bold' },
   verseText:        { fontSize:14, fontStyle:'italic', lineHeight:24, marginBottom:10, fontFamily:'DMSans_400Regular', textAlign:'center' },
   verseRef:         { fontSize:9, fontFamily:'DMSans_700Bold', textAlign:'center', letterSpacing:2, textTransform:'uppercase' },

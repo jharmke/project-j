@@ -100,6 +100,8 @@ Never chain changes that depend on each other without confirming the first one w
 Read the file before touching it, never guess at what's in there
 One thing at a time, done right, confirmed working before moving on
 
+If a find/replace is wrong or needs to be walked back mid-response, mark it with a large visible warning header before continuing. Format: # ⚠️ STOP — DO NOT APPLY THE CHANGE ABOVE -- hard to miss, catches it before the user applies it.
+
 Justin uses PowerShell, not bash. All terminal commands must be PowerShell syntax, issued one at a time, never chained.
 
 Communication Style
@@ -153,7 +155,7 @@ Every interactive element gets appropriate haptics.
 Animation Standard
 
 Every bar and graph must animate. No static bars ever.
-Use Reanimated (useSharedValue + withTiming) for expand/collapse animations, not Animated API
+Expand/collapse animations -- never use maxHeight. It runs on the JS thread and drops frames regardless of duration. Correct pattern: render content off-screen with position absolute, opacity 0 to measure real height via onLayout, store in a ref, then animate height to that exact pixel value. Two coordinated animations -- container height on JS thread (useNativeDriver: false), content opacity/translateY on native thread (useNativeDriver: true). See journal.tsx SwipeableEntry for reference implementation.
 Use Easing.out(Easing.cubic) for opening, Easing.in(Easing.cubic) for closing
 Card press animations: scale down to 0.97 on pressIn, back to 1.0 on pressOut, timing not spring
 FAB and action button press: same scale pattern, simple down and up, no bounce
@@ -211,14 +213,7 @@ ID format:
 Verse entries: YYYY-MM-DD_verse
 Other entries: YYYY-MM-DD_timestamp
 
-Current bugs (fix first next session):
-SwipeableEntry is defined INSIDE JournalScreen. This causes PanResponder to recreate on every render. Root cause of all animation and swipe bugs. Fix: move SwipeableEntry above JournalScreen as proper top-level component, pass props down, wrap panResponder in useRef, use Reanimated for expand animation.
-Specific bugs:
-
-Entry open animation pops instead of sliding
-Entry close has delay before starting
-Swipe to delete freezes, doesn't reset on tap elsewhere
-If swipe delete cannot be fixed quickly, replace with trash icon inside expanded entry. Do not spend more than 20 minutes on swipe before switching approaches.
+Journal rewrite shipped -- all bugs resolved. SwipeableEntry is a top-level component, animations smooth, swipe delete working, edit mode with floating save bar, auto-expand from bible screen.
 
 
 Visual Philosophy -- Read This Carefully

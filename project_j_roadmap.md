@@ -80,12 +80,23 @@ Search within journal entries (roadmapped, low priority)
 
 TODAY'S SESSION PRIORITY (in order, do not deviate)
 
-Journal rewrite -- full clean file, all three gates, do not move on until it passes
-Full WEB Bible JSON -- find reputable GitHub source, verify ALL 52 preset verses match word for word before committing, replace bible-web.ts, remove "key verses only" note
-Sleep score in donut center -- replace moon icon with 0-100 score, update color thresholds
-Remaining home tab bugs -- IF countdown text color, slate IF buttons, weight card colors, meal slot + signs, water/food remove toasts, edit layout sheet choppy
-Workout tag system -- custom tags, color picker, pills on Today's Training card
-Faith Journey setting -- ONLY if time allows after all above are solid. Do not start this and get pulled into coaching modes today. Journal/Bible day first.
+Bible session -- do both of these together, same session:
+1. Full WEB Bible JSON -- find reputable GitHub source, verify ALL 52 preset verses match word for word before committing, replace bible-web.ts, remove "key verses only" note
+2. Bible verse tap-to-highlight + reflect rework:
+   - Any verse tappable, tapping highlights it
+   - Highlighted verse = active verse for reflection
+   - Banner replaced with simple Reflect button, visible whenever a verse is highlighted
+   - If highlighted verse already has a reflection saved today, button shows "View Reflection" instead
+   - Button swaps instantly as user taps between verses
+   - Reflecting on any verse saves as category 'verse' entry -- no code changes needed to journal
+   - Today's verse from home card is just the default highlight position, user can tap any other verse
+   - Whatever is highlighted when Reflect is tapped wins
+
+3. Sleep score in donut center -- replace moon icon with 0-100 score, update color thresholds
+4. Home tab bugs -- IF countdown text color, slate IF buttons, weight card colors, meal slot + signs, water/food remove toasts, edit layout sheet choppy
+5. Workout tag system -- custom tags, color picker, pills on Today's Training card
+6. Net calories + calorie color scoring
+7. Barcode scanner fix
 
 AFTER TODAY -- NEXT SESSIONS PRIORITY
 
@@ -231,71 +242,97 @@ Journal entry format:
 Storage key: pj_bible_reflections
 Entry shape: { id, date, category, title, notes, verseRef?, verseText?, acknowledged?, bookRef? }
 Categories: verse, prayer, study, personal, gratitude
-Verse entries only via Bible screen reflect banner
+Verse entries only via Bible screen reflect button
 FAB creates: prayer, study, personal, gratitude only
 id format -- verse: YYYY-MM-DD_verse, others: YYYY-MM-DD_timestamp
+
 Faith system decisions:
 Christian app by default, faith features on for all users out of the box
 Faith Journey is opt-out not opt-in
 "Not right now" not "Not for me" -- leaves door open
 Faith Journey and Coaching Modes built together same session
 Today's Message card behavior forks based on Faith Journey setting
+
 Bible decisions:
 WEB translation everywhere, no exceptions, verse card text must match Bible reader text exactly
 Full 66 book JSON replacing current key verses approach
 Scripture rotation picker uses book/chapter/verse navigator pulling from bible-web.ts
 Preview in picker matches card styling exactly
 Confirm button gated on valid verse selection
+Bible verse highlight + reflect decisions:
+  Tap any verse to highlight it. Highlighted verse is the active verse for reflection.
+  Banner above bible text replaced with simple Reflect / View Reflection button.
+  Button state driven by whether highlighted verse already has a reflection saved today.
+  Button swaps instantly on verse tap.
+  Today's daily verse is default highlight on load, not locked in.
+  Whatever verse is highlighted when Reflect is tapped is what gets saved.
+  Journal entry category stays 'verse' -- no storage changes needed.
+
 Build standards (all non-negotiable, built at time of feature):
 Three gate rule -- works, looks premium, feels right
 Dim/inactive button states on all submittable buttons
 44x44pt minimum touch targets
 Disclaimer on all health features
 Haptics standard -- light/medium/heavy
-Animation standard -- Reanimated for expand/collapse, card press scale
+Animation standard -- expand/collapse uses off-screen measure + dual animation pattern (see journal.tsx SwipeableEntry). Never use maxHeight. Container height on JS thread (useNativeDriver: false), content opacity/translateY on native thread (useNativeDriver: true).
+Card press scale -- down to 0.97 on pressIn, back to 1.0 on pressOut
 Empty states on all lists and cards
 Loading states on async operations
 Error states on fallible operations
 First use tooltips catalogued in help section
 Input validation before storage
+
 Testing standard:
 Primary theme: Slate with yellow accent
 Build on Slate yellow, audit all 5 themes x all accents before marking visual features done
 Never assume a bug is theme-specific without confirming on multiple themes
+
 Data/storage decisions:
 AsyncStorage keys all defined above
 Firebase Auth planned pre-beta -- Apple and Google sign in
 Data migration from AsyncStorage to Firestore per user when Auth is built
 Dev reset/export -- pin, build only if needed before TestFlight
+
 Macro goals system:
 Two modes - Ratio and Fixed. Cross-mode sync on save.
+
 Workout tag system (planned):
 Custom names, colors, multiple per day. Color picker or preset palette. Settings managed. Replaces Push/Pull/Legs/Cardio. Pills on Today's Training card.
+
 Sleep quality score:
 Score 0-100: Duration 0-40pts, Deep 0-30pts, REM 0-30pts
 Score displayed in donut center replacing moon icon
 Color thresholds need review
+
 Coaching modes:
 Discipline -- strict both directions
 Balance -- forgiving on low end, strict on high
 Mindful -- wide green zone, awareness not numbers
 Build with Faith Journey same session
+
 Morning briefing card:
 First open of day only
 Customizable slots -- faith first, yesterday recap, today targets, coaching voice
 Coaching voice line varies by mode
 Faith Journey setting affects what faith slots show
+
 HealthKit currently pulling:
 activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, vo2Max, cardioRecovery
 Not yet pulling: weight, HRV, resting HR, blood oxygen, respiratory rate, basal calories
+
 Estimated workout calories:
 MET formula: Calories = MET x weight kg x duration hours
 Intensity selector adjusts MET value
 Shown with "estimated" label, not from heart rate monitor
+
+Today's Message card:
+Rename from "Today's Verse" -- do when touching home screen next
+
 GitHub:
 Repo: https://github.com/jharmke/project-j
 Branch: master
 End of session: git add . / git commit -m "description" / git push origin master
+
 Process:
 Commit after every gate-passing feature not just end of session
 Three gate rule before marking anything done
@@ -305,3 +342,4 @@ Start new threads when current one gets long
 New threads always inside the Claude Project
 Roadmap updated at end of every session
 Screenshot before and after every visual change
+If a find/replace is wrong or needs to be walked back mid-response, mark it with a large visible warning header before continuing. Format: # ⚠️ STOP — DO NOT APPLY THE CHANGE ABOVE

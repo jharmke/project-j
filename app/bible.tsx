@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '../components/Toast';
-import { BIBLE_BOOKS, Book, Chapter, parseReference } from '../data/bible-web';
+import { BIBLE_BOOKS, Book, Chapter, Verse, fetchChapter, parseReference } from '../data/bible-web';
 import { useTheme } from '../theme';
 
 interface Reflection {
@@ -29,18 +29,36 @@ export default function BibleScreen() {
   // Navigation state
   const [selectedBook, setSelectedBook] = useState<Book>(BIBLE_BOOKS[0]);
   const [selectedChapter, setSelectedChapter] = useState<Chapter>(BIBLE_BOOKS[0].chapters[0]);
+  const [chapterVerses, setChapterVerses] = useState<Verse[]>([]);
+  const [chapterLoading, setChapterLoading] = useState(false);
   const [showBookPicker, setShowBookPicker] = useState(false);
   const [bookSearch, setBookSearch] = useState('');
 
-  // Highlighted verse from daily card
+  // Highlighted verse
   const [highlightedVerse, setHighlightedVerse] = useState<number | null>(null);
+  const [highlightedVerseRef, setHighlightedVerseRef] = useState<string | null>(null);
+  const [highlightedVerseText, setHighlightedVerseText] = useState<string | null>(null);
 
   // Reflection state
   const [showReflectionModal, setShowReflectionModal] = useState(false);
   const [reflectionText, setReflectionText] = useState('');
-  const [todayAcknowledged, setTodayAcknowledged] = useState(false);
+  const [highlightedVerseAcknowledged, setHighlightedVerseAcknowledged] = useState(false);
   const [dailyVerseRef, setDailyVerseRef] = useState<string | null>(null);
   const [dailyVerseText, setDailyVerseText] = useState<string | null>(null);
+
+  // Load verses when chapter changes
+  useEffect(() => {
+    let cancelled = false;
+    setChapterLoading(true);
+    setChapterVerses([]);
+    fetchChapter(selectedBook.name, selectedChapter.chapter).then(verses => {
+      if (!cancelled) {
+        setChapterVerses(verses);
+        setChapterLoading(false);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [selectedBook.name, selectedChapter.chapter]);
 
   // Sheet animation
   const bookSheetAnim = useRef(new Animated.Value(0)).current;
@@ -53,8 +71,8 @@ export default function BibleScreen() {
   // Re-check acknowledged state whenever screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      loadTodayAcknowledged();
-    }, [])
+      if (highlightedVerseRef) loadTodayAcknowledged(highlightedVerseRef);
+    }, [highlightedVerseRef])
   );
 
   // On mount - navigate to today's verse if passed via params
@@ -66,19 +84,22 @@ export default function BibleScreen() {
       if (text) setDailyVerseText(text);
       navigateToRef(ref);
     }
-    loadTodayAcknowledged();
   }, []);
 
-  const loadTodayAcknowledged = async () => {
+  const loadTodayAcknowledged = async (verseRef: string) => {
     try {
       const raw = await AsyncStorage.getItem('pj_bible_reflections');
       const all = raw ? JSON.parse(raw) : [];
-      const todayEntry = all.find((r: any) => r.category === 'verse' && r.date === todayKey);
+      const todayEntry = all.find((r: any) =>
+        r.category === 'verse' &&
+        r.date === todayKey &&
+        r.verseRef === verseRef
+      );
       if (todayEntry?.acknowledged) {
-        setTodayAcknowledged(true);
+        setHighlightedVerseAcknowledged(true);
         if (todayEntry.notes) setReflectionText(todayEntry.notes);
       } else {
-        setTodayAcknowledged(false);
+        setHighlightedVerseAcknowledged(false);
         setReflectionText('');
       }
     } catch (e) {
@@ -86,7 +107,7 @@ export default function BibleScreen() {
     }
   };
 
-  const navigateToRef = (ref: string) => {
+  const navigateToRef = (ref: string, verseText?: string) => {
     const parsed = parseReference(ref);
     if (!parsed) return;
     const book = BIBLE_BOOKS.find(b =>
@@ -100,6 +121,18 @@ export default function BibleScreen() {
     setSelectedBook(book);
     setSelectedChapter(chapter);
     setHighlightedVerse(parsed.verseStart);
+    setHighlightedVerseRef(ref);
+    setHighlightedVerseText(verseText || null);
+    if (ref) loadTodayAcknowledged(ref);
+  };
+
+  const handleVerseTap = (verseNum: number, verseText: string) => {
+    const ref = `${selectedBook.name} ${selectedChapter.chapter}:${verseNum}`;
+    setHighlightedVerse(verseNum);
+    setHighlightedVerseRef(ref);
+    setHighlightedVerseText(verseText);
+    setReflectionText('');
+    loadTodayAcknowledged(ref);
   };
 
   const openBookPicker = () => {
@@ -119,27 +152,42 @@ export default function BibleScreen() {
     setSelectedBook(book);
     setSelectedChapter(book.chapters[0]);
     setHighlightedVerse(null);
+    setHighlightedVerseRef(null);
+    setHighlightedVerseText(null);
+    setHighlightedVerseAcknowledged(false);
     closeBookPicker();
   };
 
   const selectChapter = (chapter: Chapter) => {
     setSelectedChapter(chapter);
     setHighlightedVerse(null);
+    setHighlightedVerseRef(null);
+    setHighlightedVerseText(null);
+    setHighlightedVerseAcknowledged(false);
   };
 
   const acknowledge = async () => {
+    if (!highlightedVerseRef) return;
     try {
       const raw = await AsyncStorage.getItem('pj_bible_reflections');
       const all = raw ? JSON.parse(raw) : [];
-      const existingIndex = all.findIndex((r: any) => r.category === 'verse' && r.date === todayKey);
+      const isDailyVerse = highlightedVerseRef === dailyVerseRef;
+      const entryId = isDailyVerse
+        ? `${todayKey}_verse`
+        : `${todayKey}_${Date.now()}`;
+      const existingIndex = all.findIndex((r: any) =>
+        r.category === 'verse' &&
+        r.date === todayKey &&
+        r.verseRef === highlightedVerseRef
+      );
       const entry = {
-        id: `${todayKey}_verse`,
+        id: entryId,
         date: todayKey,
         category: 'verse',
-        title: dailyVerseRef || 'Daily Verse',
+        title: highlightedVerseRef,
         notes: reflectionText.trim(),
-        verseRef: dailyVerseRef || '',
-        verseText: dailyVerseText || '',
+        verseRef: highlightedVerseRef,
+        verseText: highlightedVerseText || '',
         acknowledged: true,
       };
       if (existingIndex >= 0) {
@@ -148,14 +196,14 @@ export default function BibleScreen() {
         all.unshift(entry);
       }
       await AsyncStorage.setItem('pj_bible_reflections', JSON.stringify(all));
-      setTodayAcknowledged(true);
+      setHighlightedVerseAcknowledged(true);
       setShowReflectionModal(false);
       showToast(
         reflectionText.trim() ? 'Reflection saved' : 'Verse marked as read',
-        dailyVerseRef || undefined,
+        highlightedVerseRef,
         'success'
       );
-      router.push({ pathname: '/journal', params: { expandDate: `${todayKey}_verse` } });
+      router.push({ pathname: '/journal', params: { expandDate: entry.id } });
     } catch (e) {
       console.log('Reflection save error', e);
     }
@@ -232,26 +280,29 @@ export default function BibleScreen() {
         />
       </View>
 
-      {/* Today's verse acknowledgment banner */}
-      {dailyVerseRef && (
+      {/* Reflect button -- visible when a verse is highlighted */}
+      {highlightedVerse !== null && highlightedVerseRef && (
         <TouchableOpacity
-          onPress={() => todayAcknowledged ? router.push({ pathname: '/journal', params: { expandDate: `${todayKey}_verse` } }) : setShowReflectionModal(true)}
+          onPress={() => highlightedVerseAcknowledged
+            ? router.push({ pathname: '/journal', params: { expandDate: `${todayKey}_verse` } })
+            : setShowReflectionModal(true)
+          }
           style={[styles.acknowledgeBanner, {
-            backgroundColor: theme.accentBlueBg,
-            borderColor: theme.accentBlueBorder,
+            backgroundColor: highlightedVerseAcknowledged ? theme.accentGreenBg : theme.accentBlueBg,
+            borderColor: highlightedVerseAcknowledged ? theme.accentGreenBorder : theme.accentBlueBorder,
           }]}
         >
           <Ionicons
-            name={todayAcknowledged ? 'checkmark-circle-outline' : 'book-outline'}
+            name={highlightedVerseAcknowledged ? 'checkmark-circle-outline' : 'book-outline'}
             size={14}
-            color={theme.accentBlue}
+            color={highlightedVerseAcknowledged ? theme.accentGreen : theme.accentBlue}
           />
           <Text style={[styles.acknowledgeText, {
-            color: theme.accentBlue,
+            color: highlightedVerseAcknowledged ? theme.accentGreen : theme.accentBlue,
           }]}>
-            {todayAcknowledged
-              ? `Reflected · ${dailyVerseRef} · tap to view`
-              : `Tap to reflect on today's verse · ${dailyVerseRef}`}
+            {highlightedVerseAcknowledged
+              ? `Reflected · ${highlightedVerseRef}`
+              : `Reflect · ${highlightedVerseRef}`}
           </Text>
         </TouchableOpacity>
       )}
@@ -265,11 +316,22 @@ export default function BibleScreen() {
           {selectedBook.name} {selectedChapter.chapter}
         </Text>
 
-        {selectedChapter.verses.map(v => {
+        {chapterLoading ? (
+          <View style={{ paddingTop: 60, alignItems: 'center' }}>
+            <Text style={[styles.partialNote, { color: theme.textMuted }]}>Loading...</Text>
+          </View>
+        ) : chapterVerses.length === 0 ? (
+          <View style={{ paddingTop: 60, alignItems: 'center' }}>
+            <Text style={[styles.partialNote, { color: theme.textMuted }]}>Could not load chapter. Check your connection.</Text>
+          </View>
+        ) : null}
+        {!chapterLoading && chapterVerses.map(v => {
           const isHighlighted = v.verse === highlightedVerse;
           return (
-            <View
+            <TouchableOpacity
               key={v.verse}
+              activeOpacity={0.7}
+              onPress={() => handleVerseTap(v.verse, v.text)}
               style={[
                 styles.verseRow,
                 isHighlighted && {
@@ -280,19 +342,18 @@ export default function BibleScreen() {
                 }
               ]}
             >
-              <Text style={[styles.verseNum, { color: theme.accentBlue }]}>
+              <Text style={[styles.verseNum, { color: isHighlighted ? theme.accentAmber : theme.accentBlue }]}>
                 {v.verse}
               </Text>
               <Text style={[styles.verseText, { color: theme.textPrimary }]}>
                 {v.text}
               </Text>
-            </View>
+            </TouchableOpacity>
           );
         })}
 
-        {/* Note about partial chapters */}
         <Text style={[styles.partialNote, { color: theme.textDim }]}>
-          Showing key verses from this chapter · World English Bible (WEB)
+          King James Version (KJV)
         </Text>
       </ScrollView>
 
@@ -382,13 +443,13 @@ export default function BibleScreen() {
                 <Text style={[styles.reflectionTitle, { color: theme.textPrimary }]}>Today's Reflection</Text>
               </View>
 
-              {dailyVerseRef && (
+              {highlightedVerseRef && (
                 <View style={[styles.reflectionVerse, { backgroundColor: theme.bgSheet, borderColor: theme.borderCardVerse }]}>
                   <Text style={[styles.reflectionVerseText, { color: theme.textSecondary }]}>
-                    "{dailyVerseText}"
+                    "{highlightedVerseText}"
                   </Text>
                   <Text style={[styles.reflectionVerseRef, { color: theme.textMuted }]}>
-                    {dailyVerseRef}
+                    {highlightedVerseRef}
                   </Text>
                 </View>
               )}

@@ -335,7 +335,7 @@ export default function BibleScreen() {
               style={[
                 styles.verseRow,
                 isHighlighted && {
-                  backgroundColor: 'rgba(212,134,10,0.12)',
+                  backgroundColor: 'rgba(212,134,10,0.5)',
                   borderRadius: 8,
                   marginHorizontal: -8,
                   paddingHorizontal: 8,

@@ -988,9 +988,29 @@ export default function HomeScreen() {
         <Text style={[styles.calTarget, { color: theme.textSecondary }]}>/ {adjustedTarget} kcal</Text>
       </View>
       <AnimatedProgressBar pct={calPct} color={calColor} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} />
-      <Text style={[styles.calRemaining, { color: theme.textMuted, fontFamily:'DMSans_700Bold', fontSize:10, letterSpacing:1.5, textTransform:'uppercase' }]}>
-        {(() => { const diff = adjustedTarget - totalCals; return diff > 0 ? `${diff} kcal remaining · ${displayedBurned} burned` : `${Math.abs(diff)} kcal over · ${displayedBurned} burned`; })()}
-      </Text>
+      {(() => {
+        const remaining = adjustedTarget - totalCals;
+        const net = totalCals - displayedBurned;
+        const netColor = net <= calTarget ? theme.statusGood : theme.statusBad;
+        const stats = [
+          { label: remaining >= 0 ? 'REMAINING' : 'OVER', value: Math.abs(remaining), color: remaining >= 0 ? theme.accentBlue : theme.statusBad },
+          { label: 'ACTIVE', value: displayedBurned, color: theme.accentBlue },
+          { label: 'AFTER BURN', value: net, color: theme.accentBlue },
+        ];
+        return (
+          <View style={{ flexDirection:'row', marginTop:10 }}>
+            {stats.map((s, i) => (
+              <View key={i} style={{ flex:1, alignItems: i === 1 ? 'center' : i === 2 ? 'flex-end' : 'flex-start' }}>
+                <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase', marginBottom:2 }}>{s.label}</Text>
+                <View style={{ flexDirection:'row', alignItems:'baseline', gap:2 }}>
+                  <Text style={{ fontSize:18, color: s.color, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>{s.value}</Text>
+                  <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:1 }}>kcal</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        );
+      })()}
     </View>
   );
 

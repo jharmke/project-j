@@ -86,6 +86,9 @@ DONE -- SHIPPED
 [x] WORKOUT_TYPE_NAMES + formatWorkoutDuration extracted to workoutData.ts
 [x] VirtualizedLists warning suppressed in _layout.tsx
 [x] Day scroller extended to 30 days back
+[x] Goal weight + projected date -- profile Weight Goal card, live update, home weight card second row (Goal / To Go / Projected), only shows when goal weight set
+[x] Profile floating save bar -- Cancel reverts changes + dismisses keyboard, Save dismisses keyboard, bar rides above keyboard via KeyboardAvoidingView wrapping bar only
+[x] CRLF to LF conversion -- profile.tsx converted to Unix line endings
 
 JOURNAL -- REMAINING FEATURES
 Edit entry title (currently only notes and category editable)
@@ -97,13 +100,14 @@ Multiple entries same day -- verify prayer + gratitude same day display correctl
 Search within journal entries (roadmapped, low priority)
 
 NEXT SESSION PRIORITY (in order, do not deviate)
-1. Goal weight + projected date -- profile/weight section, live update as typed, adjusts with weekly deficit rate, milestone celebrations
-2. You vs Yesterday card -- discuss and finalize vision
-3. Celebration animations -- replace DONE GO HOME with confetti/slam effect, rare/milestone only, once per day cap
+1. Celebration animations -- replace DONE GO HOME with confetti/slam effect, rare/milestone only, once per day cap
+2. Goal weight milestones -- 25/50/75/100% celebrations, requires celebration system built first
+3. You vs Yesterday card -- discuss and finalize vision, build after celebrations
 4. Total Lost calculation bug -- earliest minus most recent known weight regardless of today having a log
 5. Sleep card -- clearer tip language when stages below ideal range, call out the number directly
 6. Fitness metrics card update
 7. Stats page -- discuss revamp, consolidation, pagination, paginated cards pattern
+8. Notification center -- bell icon in profile header, badge on new notifications, toast for real-time events (Apple Health sync, workout synced, sleep synced), bell for missed events, triggers: Health sync, streak milestones, goal hits
 8. Excluded dates -- discuss design and placement, neutral dim dot on calendar, excluded list view
 9. Calorie color scoring -- mode aware (Discipline/Balance/Mindful), stub mode for now default to Balance
 10. My Programs builder -- name it, assign focus/tags to each day, save it, load it
@@ -435,3 +439,5 @@ RN Modals create a new native window layer that sits above everything in the nor
 Updated after session May 11 2026 (session 3). Auto date rollover shipped. Barcode scanner identified as broken core feature, elevated to top priority. Extensive planning session -- goal weight, You vs Yesterday, celebration animations (confetti + slam effect for rare milestones), Today's Training layout, sleep tip language, stats revamp, excluded dates, state restoration, camera progress tracker, TestFlight all roadmapped. Day scroller focus labels being removed in favor of tag dots only. Journal gaining workout category. Daily Note and Workout Note both wiring to journal. No emojis in default app -- Ionicons only, user can add emojis in their own content. Program stats planned (days in program, milestones, photo tie-in) when My Programs builder ships.
 
 Updated after session May 11 2026 (session 4). Day scroller polish shipped. Clear Program with ACTIVE status row shipped and persists. Locked default tags (6: Push/Pull/Legs/Core/Cardio/Rest) shipped with drag reorder. Apple Health workout history import shipped in Settings with range picker and UUID dedup. activeProgramName persisted. DEFAULT_TAGS merge on load. DONE GO HOME flagged for replacement with celebration animation next session. Bible auto-scroll to verse added to priority list. Stats streaks card bug + collapsible tap target bugs added to bug list.
+
+Updated after session May 11 2026 (session 5). Goal weight + projected date shipped -- lives in profile Weight Goal card (input above Weekly Pace, projection box below), also surfaces on home weight card as second row (Goal / To Go / Projected), hidden when no goal weight set. Projected date based on weekly pace setting, updates live. Profile floating save bar overhauled -- Cancel reverts all changes and dismisses keyboard, Save dismisses keyboard, bar rides above keyboard via KeyboardAvoidingView wrapping bar only. CRLF line ending issue resolved in profile.tsx. Notification center system discussed and added to roadmap -- bell icon, badge, real-time toasts for Health sync events. Goal weight milestone celebrations (25/50/75/100%) roadmapped, blocked on celebration animation system. You vs Yesterday card vision discussed -- daily head-to-head across 3-4 metrics (calories, steps, sleep, weight), win/loss indicator per metric, streak counter for consecutive win days, motivational line at bottom.

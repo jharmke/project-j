@@ -1,5 +1,5 @@
 Project J -- Claude Project Instructions
-Last updated: May 11 2026 (session 4)
+Last updated: May 11 2026 (session 5)
 
 What This Is
 Project J is a React Native + Expo fitness and faith app built by Justin. It is his primary side project and passion build. Think MyFitnessPal meets YouVersion meets a personal coach. The differentiator is faith integration and a "you vs yesterday" philosophy. This is being built to eventually ship on the App Store.

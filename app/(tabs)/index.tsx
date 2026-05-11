@@ -11,6 +11,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import PressableButton from '../../components/PressableButton';
 import { useToast } from '../../components/Toast';
+import CelebrationOverlay from '../../components/CelebrationOverlay';
+import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, weightEntryIsPlausible, getWeightMilestonesCrossed, isGoalWeightHit } from '../../achievementData';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { useTheme } from '../../theme';
 import { useHealthKit } from '../../useHealthKit';
@@ -318,7 +320,7 @@ function AnimatedProgressBar({ pct, color, trackColor, refreshKey }: { pct: numb
     width.value = 0;
     setTimeout(() => {
       width.value = withTiming(Math.min(100, pct), { duration: 1200 });
-    }, 350);
+    }, 800);
   }, [refreshKey]);
 
   useEffect(() => {
@@ -396,6 +398,8 @@ export default function HomeScreen() {
   const [goalWeight,     setGoalWeight]     = useState<number|null>(null);
   const [weightGoalPace, setWeightGoalPace] = useState<string>('lose_1');
   const [editingStepGoal,setEditingStepGoal]= useState(false);
+  const prevStepGoal = useRef(10000);
+  const waterLoaded = useRef(false);
   const [dailyVerse,     setDailyVerse]     = useState<{text:string;reference:string}|null>(null);
   const [workoutPrograms,setWorkoutPrograms]= useState<Record<string,any>>({});
   const [workoutChecks,  setWorkoutChecks]  = useState<Record<string,any>>({});
@@ -414,6 +418,34 @@ export default function HomeScreen() {
   const [showTimePicker,    setShowTimePicker]      = useState(false);
   const [showEndTimePicker, setShowEndTimePicker]   = useState(false);
   const [pickerTime,        setPrickerTime]         = useState<Date|null>(null);
+
+  // Celebration state
+  const [celebVisible,    setCelebVisible]    = useState(false);
+  const [celebTier,       setCelebTier]       = useState<'small'|'medium'|'large'>('small');
+  const [celebLabel,      setCelebLabel]      = useState<string|undefined>(undefined);
+  const [achievementStore,setAchievementStore]= useState<AchievementsStore>({});
+
+  // Load achievements on mount
+  useEffect(() => {
+    loadAchievements().then(store => setAchievementStore(store));
+  }, []);
+
+  const fireCelebration = (tier: 'small'|'medium'|'large', label?: string) => {
+    setCelebTier(tier);
+    setCelebLabel(label);
+    setCelebVisible(true);
+  };
+
+  const handleAchievementUnlock = async (id: string, store: AchievementsStore) => {
+    const { newlyUnlocked, updatedStore } = await checkAndUnlock(id, store);
+    if (newlyUnlocked) {
+      setAchievementStore(updatedStore);
+      const def = ACHIEVEMENTS.find(a => a.id === id);
+      fireCelebration(def?.tier ?? 'small', def?.name);
+      return updatedStore;
+    }
+    return store;
+  };
 
   const { activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, vo2Max, cardioRecovery, fetchTodayData } = useHealthKit();
 
@@ -514,6 +546,17 @@ export default function HomeScreen() {
         }));
       });
     }
+    if (steps > 0 && steps >= stepGoal && stepGoal > 0) {
+      const prevSteps = steps - 1;
+      if (prevSteps < stepGoal) {
+        loadAchievements().then(async store => {
+          let s = store;
+          s = await handleAchievementUnlock('steps_first', s);
+          s = await handleAchievementUnlock('steps_10', s);
+          setAchievementStore(s);
+        });
+      }
+    }
   }, [activeCalories, steps]);
 
   // ── Load layout from settings ────────────────────────────────────────────────
@@ -557,7 +600,7 @@ export default function HomeScreen() {
         const saved = await AsyncStorage.getItem(`pj_${todayKey}`);
         if (saved) {
           const data = JSON.parse(saved);
-          if (data.water)         setWater(data.water);
+          if (data.water)         { setWater(data.water); waterLoaded.current = true; }
           if (data.weight)        setWeight(data.weight);
           if (data.ifMethod)      setIfMethod(data.ifMethod);
           if (data.ifCustomHours) setIfCustomHours(data.ifCustomHours);
@@ -636,6 +679,7 @@ export default function HomeScreen() {
         }
 
         setDailyVerse(VERSES[rotation.order[rotation.index]]);
+        setRefreshKey(k => k + 1);
       }
     };
     loadData();
@@ -649,12 +693,12 @@ export default function HomeScreen() {
         const existing = await AsyncStorage.getItem(`pj_${todayKey}`);
         const current  = existing ? JSON.parse(existing) : {};
         await AsyncStorage.setItem(`pj_${todayKey}`, JSON.stringify({
-          ...current, ifStart, ifMethod, ifEnd, ifCustomHours, dailyNote, weight,
+          ...current, ifStart, ifMethod, ifEnd, ifCustomHours, dailyNote, weight, water,
         }));
       } catch (e) { console.log('Save error', e); }
     };
     save();
-  }, [water, weight, ifStart, dailyNote, loaded]);
+  }, [water, weight, ifStart, ifEnd, dailyNote, loaded]);
 
   // ── Focus sync ───────────────────────────────────────────────────────────────
   useFocusEffect(useCallback(() => {
@@ -673,7 +717,7 @@ export default function HomeScreen() {
           if (data.sleepOverride) setSleepOverride(data.sleepOverride);
           if (data.sleepBedTime)  setSleepStoredBed(data.sleepBedTime);
           if (data.sleepWakeTime) setSleepStoredWake(data.sleepWakeTime);
-          if (typeof data.water === 'number') setWater(data.water);
+          if (typeof data.water === 'number') { setWater(data.water); waterLoaded.current = true; }
         if (data.weight) setWeight(data.weight);
         }
         // Weight comparison loading
@@ -776,6 +820,43 @@ export default function HomeScreen() {
       const current = existing ? JSON.parse(existing) : {};
       await AsyncStorage.setItem(`pj_${todayKey}`, JSON.stringify({ ...current, weight: val }));
     } catch (e) { console.log('Weight save error', e); }
+
+    // Achievement checks
+    const lastKnown = lastKnownWeight?.val ?? null;
+    if (!weightEntryIsPlausible(val, lastKnown)) return;
+
+    let store = achievementStore;
+
+    // 5lb increment milestones
+    if (earliestWeight) {
+      const crossed = getWeightMilestonesCrossed(earliestWeight, val, store);
+      if (crossed.length > 0) {
+        // Celebrate highest only, silently unlock the rest
+        const { newlyUnlocked, updatedStore } = await checkAndUnlock(crossed[0], store);
+        if (newlyUnlocked) {
+          store = updatedStore;
+          setAchievementStore(store);
+          const def = ACHIEVEMENTS.find(a => a.id === crossed[0]);
+          fireCelebration(def?.tier ?? 'medium', def?.name);
+        }
+        // Silently unlock remaining
+        for (let i = 1; i < crossed.length; i++) {
+          const { updatedStore: s } = await checkAndUnlock(crossed[i], store);
+          store = s;
+        }
+        setAchievementStore(store);
+      }
+    }
+
+    // Goal weight hit
+    if (goalWeight && isGoalWeightHit(val, goalWeight, store)) {
+      const { newlyUnlocked, updatedStore } = await checkAndUnlock('weight_goal', store);
+      if (newlyUnlocked) {
+        store = updatedStore;
+        setAchievementStore(store);
+        fireCelebration('large', 'GOAL WEIGHT');
+      }
+    }
   };
 
   // ── Edit mode ────────────────────────────────────────────────────────────────
@@ -1068,7 +1149,7 @@ export default function HomeScreen() {
       <AnimatedProgressBar pct={Math.min(100,(water/WATER_TARGET)*100)} color={theme.accentBlue} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} />
       <View style={styles.waterBtns}>
         {waterPresets.map((oz,i) => (
-          <PressableButton key={i} style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => { const n=Math.min(WATER_TARGET,water+oz); setWater(n); saveToFirebase(todayKey,'water',n); showToast('Water logged', `+${oz} oz · ${n} oz total`, 'info'); }}>
+          <PressableButton key={i} style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={async () => { const n=Math.min(WATER_TARGET,water+oz); setWater(n); saveToFirebase(todayKey,'water',n); showToast('Water logged', `+${oz} oz · ${n} oz total`, 'info'); if (n >= WATER_TARGET && water < WATER_TARGET) { let s = achievementStore; s = await handleAchievementUnlock('hydration_first', s); await handleAchievementUnlock('hydration_10', s); } }}>
             <Text style={[styles.waterBtnText, { color: theme.accentBlue }]}>+{oz} oz</Text>
           </PressableButton>
         ))}
@@ -1293,7 +1374,7 @@ export default function HomeScreen() {
             <Ionicons name="footsteps-outline" size={11} color={theme.textMuted} />
             <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Steps Today</Text>
           </View>
-          <TouchableOpacity onPress={() => setEditingStepGoal(true)}
+          <TouchableOpacity onPress={() => { prevStepGoal.current = stepGoal; setEditingStepGoal(true); }}
             style={{ backgroundColor: theme.accentBlueBg, borderWidth:1, borderColor: theme.accentBlueBorder, borderRadius:6, paddingHorizontal:10, paddingVertical:4 }}>
             <Text style={{ color: theme.accentBlue, fontSize:12, fontFamily:'DMSans_600SemiBold' }}>Goal: {stepGoal.toLocaleString()}</Text>
           </TouchableOpacity>
@@ -1302,6 +1383,10 @@ export default function HomeScreen() {
           <View style={{ flexDirection:'row', alignItems:'center', gap:8, marginBottom:10 }}>
             <TextInput style={{ flex:1, backgroundColor: theme.bgInput, borderWidth:1, borderColor: theme.borderInput, borderRadius:6, color: theme.textPrimary, padding:8, fontSize:14, fontFamily:'DMSans_400Regular' }}
               value={String(stepGoal)} onChangeText={v => setStepGoal(parseInt(v)||0)} keyboardType="number-pad" autoFocus />
+            <TouchableOpacity onPress={() => { setStepGoal(prevStepGoal.current); setEditingStepGoal(false); }}
+              style={{ backgroundColor: theme.accentRedBg, borderWidth:1, borderColor: theme.accentRedBorder, borderRadius:6, paddingHorizontal:12, paddingVertical:8 }}>
+              <Text style={{ color: theme.accentRed, fontSize:13, fontFamily:'DMSans_600SemiBold' }}>Cancel</Text>
+            </TouchableOpacity>
             <TouchableOpacity onPress={async () => {
               setEditingStepGoal(false);
               const saved = await AsyncStorage.getItem('pj_profile');
@@ -1598,9 +1683,9 @@ export default function HomeScreen() {
                 <Text style={{ color: theme.textMuted, fontFamily:'DMSans_600SemiBold', fontSize:14 }}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={{ flex:1, padding:12, borderRadius:8, backgroundColor: waterCustomSign==='add' ? theme.accentBlueBg : theme.accentRedBg, alignItems:'center' }}
-                onPress={() => {
+                onPress={async () => {
                   const amt=parseInt(waterCustomInput);
-                  if(amt>0){ const n=waterCustomSign==='add'?Math.min(WATER_TARGET,water+amt):Math.max(0,water-amt); setWater(n); saveToFirebase(todayKey,'water',n); showToast('Water logged', `${waterCustomSign==='add'?'+':'-'}${amt} oz · ${n} oz total`, 'info'); }
+                  if(amt>0){ const n=waterCustomSign==='add'?Math.min(WATER_TARGET,water+amt):Math.max(0,water-amt); setWater(n); saveToFirebase(todayKey,'water',n); showToast('Water logged', `${waterCustomSign==='add'?'+':'-'}${amt} oz · ${n} oz total`, 'info'); if (waterCustomSign==='add' && n >= WATER_TARGET && water < WATER_TARGET) { let s = achievementStore; s = await handleAchievementUnlock('hydration_first', s); await handleAchievementUnlock('hydration_10', s); } }
                   setShowWaterCustomModal(false);
                 }}>
                 <Text style={{ color: waterCustomSign==='add' ? theme.accentBlue : theme.accentRed, fontFamily:'DMSans_600SemiBold', fontSize:14 }}>
@@ -1721,6 +1806,14 @@ export default function HomeScreen() {
           </Animated.View>
         </Modal>
       )}
+
+    <CelebrationOverlay
+        visible={celebVisible}
+        tier={celebTier}
+        accentColor={theme.accentBlueRaw}
+        label={celebLabel}
+        onDismiss={() => setCelebVisible(false)}
+      />
 
     </View>
   );

@@ -3,12 +3,13 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, Dimensions, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { useTheme } from '../../theme';
 import { useHealthKit } from '../../useHealthKit';
+import ReAnimated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 
 const WATER_TARGET = 128;
@@ -77,6 +78,19 @@ function MacroDonut({ protein, carbs, fat, calories, theme }: { protein: number;
   );
 }
 
+function WaterBar({ pct, color, trackColor, refreshKey }: { pct: number; color: string; trackColor?: string; refreshKey?: number }) {
+  const width = useSharedValue(pct);
+  useEffect(() => {
+    width.value = withTiming(Math.min(100, pct), { duration: 600 });
+  }, [pct]);
+  const animStyle = useAnimatedStyle(() => ({ width: `${width.value}%` as any }));
+  return (
+    <View style={[{ height: 6, borderRadius: 6, overflow: 'hidden', marginBottom: 12 }, { backgroundColor: trackColor ?? '#1e1e2e' }]}>
+      <ReAnimated.View style={[{ height: '100%', borderRadius: 6, backgroundColor: color }, animStyle]} />
+    </View>
+  );
+}
+
 export default function LogScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
@@ -102,6 +116,11 @@ export default function LogScreen() {
     return mealAnimations.current[meal];
   };
   const [activeDate, setActiveDate] = useState(todayKey);
+  const [waterPresets, setWaterPresets] = useState<[number,number,number]>([12,16,22]);
+  const [showWaterCustomModal, setShowWaterCustomModal] = useState(false);
+  const [waterCustomSign, setWaterCustomSign] = useState<'add'|'subtract'>('add');
+  const [waterCustomInput, setWaterCustomInput] = useState('');
+  const [logRefreshKey, setLogRefreshKey] = useState(0);
   const { activeCalories } = useHealthKit();
 
   const goToPrevDay = () => {
@@ -175,6 +194,7 @@ export default function LogScreen() {
         const profileData = await AsyncStorage.getItem('pj_profile');
         if (profileData) {
           const p = JSON.parse(profileData);
+          if (p.waterPresets) setWaterPresets(p.waterPresets);
           const GOAL_DEFICITS: Record<string, number> = {
             lose_2: -1000, lose_1_5: -750, lose_1: -500, lose_0_5: -250,
             maintain: 0, gain_0_5: 250, gain_1: 500,
@@ -239,6 +259,7 @@ export default function LogScreen() {
         const profileData = await AsyncStorage.getItem('pj_profile');
         if (profileData) {
           const p = JSON.parse(profileData);
+          if (p.waterPresets) setWaterPresets(p.waterPresets);
           const GOAL_DEFICITS: Record<string, number> = {
             lose_2: -1000, lose_1_5: -750, lose_1: -500, lose_0_5: -250,
             maintain: 0, gain_0_5: 250, gain_1: 500,
@@ -264,6 +285,7 @@ export default function LogScreen() {
             }
           }
         }
+        setLogRefreshKey(k => k + 1);
         } catch (e) {
           console.log('Reload error', e);
         }
@@ -507,35 +529,72 @@ export default function LogScreen() {
 
       {/* Water Card */}
       <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, shadowOpacity: 0, elevation: 0 }]}>
-        <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Water · {water}oz / {WATER_TARGET}oz</Text>
-        <View style={[styles.progressBarBg, { backgroundColor: theme.bgProgressTrack }]}>
-          <View style={[styles.progressBarFill, { width: `${waterPct}%`, backgroundColor: theme.accentBlue }]} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+          <Ionicons name="water-outline" size={11} color={theme.textMuted} />
+          <Text style={[styles.cardLabel, { marginBottom: 0, color: theme.textMuted }]}>Water · {water}oz / {WATER_TARGET}oz</Text>
         </View>
+        <WaterBar pct={waterPct} color={theme.accentBlue} trackColor={theme.bgProgressTrack} refreshKey={logRefreshKey} />
         <View style={styles.waterBtns}>
-          <TouchableOpacity style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => updateWater(12)}>
-            <Text style={[styles.waterBtnText, { color: theme.accentBlue }]}>+12 oz</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => updateWater(16)}>
-            <Text style={[styles.waterBtnText, { color: theme.accentBlue }]}>+16 oz</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => updateWater(22)}>
-            <Text style={[styles.waterBtnText, { color: theme.accentBlue }]}>+22 oz</Text>
+          {waterPresets.map((oz, i) => (
+            <TouchableOpacity key={i} style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => updateWater(oz)}>
+              <Text style={[styles.waterBtnText, { color: theme.accentBlue }]}>+{oz} oz</Text>
+            </TouchableOpacity>
+          ))}
+          <TouchableOpacity style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => setShowWaterCustomModal(true)}>
+            <View style={{ alignItems: 'center', justifyContent: 'center', width: 20, height: 20 }}>
+              <Ionicons name="water-outline" size={18} color={theme.accentBlue} />
+              <Text style={{ color: theme.accentBlue, fontSize: 9, fontFamily: 'DMSans_700Bold', position: 'absolute', bottom: -2, right: -4 }}>+</Text>
+            </View>
           </TouchableOpacity>
         </View>
         <View style={[styles.waterBtns, { marginTop: 8 }]}>
-          <TouchableOpacity style={[styles.waterBtnRed, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]} onPress={() => updateWater(-12)}>
-            <Text style={[styles.waterBtnRedText, { color: theme.accentRed }]}>-12 oz</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.waterBtnRed, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]} onPress={() => updateWater(-16)}>
-            <Text style={[styles.waterBtnRedText, { color: theme.accentRed }]}>-16 oz</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.waterBtnRed, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]} onPress={() => updateWater(-22)}>
-            <Text style={[styles.waterBtnRedText, { color: theme.accentRed }]}>-22 oz</Text>
+          {waterPresets.map((oz, i) => (
+            <TouchableOpacity key={i} style={[styles.waterBtnRed, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]} onPress={() => updateWater(-oz)}>
+              <Text style={[styles.waterBtnRedText, { color: theme.accentRed }]}>-{oz} oz</Text>
+            </TouchableOpacity>
+          ))}
+          <TouchableOpacity style={[styles.waterBtnRed, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]} onPress={() => { setWaterCustomSign('subtract'); setShowWaterCustomModal(true); }}>
+            <View style={{ alignItems: 'center', justifyContent: 'center', width: 20, height: 20 }}>
+              <Ionicons name="water-outline" size={18} color={theme.accentRed} />
+              <Text style={{ color: theme.accentRed, fontSize: 9, fontFamily: 'DMSans_700Bold', position: 'absolute', bottom: -2, right: -4 }}>-</Text>
+            </View>
           </TouchableOpacity>
         </View>
       </View>
 
     </ScrollView>
+
+    {showWaterCustomModal && (
+      <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center', zIndex: 999 }}>
+        <View style={{ backgroundColor: theme.bgCard, borderRadius: 14, padding: 24, width: '80%', borderWidth: 0.5, borderColor: theme.borderCard }}>
+          <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 }}>
+            {waterCustomSign === 'add' ? 'Add Custom Amount' : 'Remove Custom Amount'}
+          </Text>
+          <TextInput
+            style={{ backgroundColor: theme.bgInput, borderWidth: 0.5, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 24, fontFamily: 'BebasNeue_400Regular', textAlign: 'center', marginBottom: 16 }}
+            value={waterCustomInput} onChangeText={setWaterCustomInput} keyboardType="number-pad" placeholder="0" placeholderTextColor={theme.textPlaceholder} autoFocus />
+          <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase', textAlign: 'center', marginBottom: 16 }}>oz</Text>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <TouchableOpacity style={{ flex: 1, padding: 12, borderRadius: 8, backgroundColor: theme.bgInput, alignItems: 'center' }} onPress={() => { setShowWaterCustomModal(false); setWaterCustomInput(''); }}>
+              <Text style={{ color: theme.textMuted, fontFamily: 'DMSans_600SemiBold', fontSize: 14 }}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{ flex: 1, padding: 12, borderRadius: 8, backgroundColor: waterCustomSign === 'add' ? theme.accentBlueBg : theme.accentRedBg, alignItems: 'center' }}
+              onPress={() => {
+                const amt = parseInt(waterCustomInput);
+                if (amt > 0) { updateWater(waterCustomSign === 'add' ? amt : -amt); }
+                setShowWaterCustomModal(false);
+                setWaterCustomInput('');
+              }}>
+              <Text style={{ color: waterCustomSign === 'add' ? theme.accentBlue : theme.accentRed, fontFamily: 'DMSans_600SemiBold', fontSize: 14 }}>
+                {waterCustomSign === 'add' ? 'Add' : 'Remove'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    )}
+
     </LinearGradient>
   );
 }

@@ -7,11 +7,17 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ACCENT_PALETTES, THEME_ORDER, ThemeId, THEMES, useTheme } from '../theme';
 import { useHealthKit } from '../useHealthKit';
 import { BLANK_DAY, WorkoutTag } from '../workoutData';
+import CelebrationOverlay from '../components/CelebrationOverlay';
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { theme, themeId, accentId, setTheme, setAccent } = useTheme();
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
+  const [devCelebVisible,  setDevCelebVisible]  = useState(false);
+  const [devCelebTier,     setDevCelebTier]     = useState<'small'|'medium'|'large'>('small');
+  const [devCelebLabel,    setDevCelebLabel]    = useState<string|undefined>(undefined);
+  const [devTapCount,      setDevTapCount]      = useState(0);
+  const [devUnlocked,      setDevUnlocked]      = useState(false);
   const [importRange, setImportRange] = useState<14 | 30 | 90>(30);
   const [importing, setImporting] = useState(false);
   const { fetchHistoricalWorkouts, authorized } = useHealthKit();
@@ -128,7 +134,13 @@ export default function SettingsScreen() {
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={[styles.headerLabel, { color: theme.textMuted }]}>PROJECT J</Text>
-          <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>Settings</Text>
+          <TouchableOpacity onPress={() => {
+            const next = devTapCount + 1;
+            setDevTapCount(next);
+            if (next >= 7) { setDevUnlocked(true); setDevTapCount(0); }
+          }}>
+            <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>Settings</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -294,7 +306,50 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </View>
 
+        {devUnlocked && (
+          <View style={[styles.section, { borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, backgroundColor: theme.bgCard, marginTop: 12 }]}>
+            <Text style={[styles.sectionLabel, { color: theme.accentRed }]}>Dev Tools</Text>
+            <TouchableOpacity
+              style={[styles.row, { borderTopColor: theme.borderCard }]}
+              onPress={async () => {
+                await AsyncStorage.removeItem('pj_achievements');
+                Alert.alert('Done', 'Achievements cleared.');
+              }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Reset Achievements</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Clears all unlocked achievements. Dev use only.</Text>
+              </View>
+              <Ionicons name="trophy-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+            {(['small', 'medium', 'large'] as const).map(tier => (
+              <TouchableOpacity
+                key={tier}
+                style={[styles.row, { borderTopColor: theme.borderCard }]}
+                onPress={() => {
+                  setDevCelebTier(tier);
+                  setDevCelebLabel(tier === 'small' ? 'NICE WORK' : tier === 'medium' ? 'MILESTONE' : 'GOAL WEIGHT');
+                  setDevCelebVisible(true);
+                }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Fire {tier.charAt(0).toUpperCase() + tier.slice(1)} Celebration</Text>
+                  <Text style={[styles.rowSub, { color: theme.textMuted }]}>{tier === 'small' ? 'Steps / water goal' : tier === 'medium' ? '5lb milestone' : 'Goal weight hit'}</Text>
+                </View>
+                <Ionicons name="sparkles-outline" size={18} color={theme.accentBlue} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
       </ScrollView>
+
+      <CelebrationOverlay
+        visible={devCelebVisible}
+        tier={devCelebTier}
+        accentColor={theme.accentBlueRaw}
+        label={devCelebLabel}
+        onDismiss={() => setDevCelebVisible(false)}
+      />
+
     </View>
   );
 }

@@ -74,6 +74,18 @@ DONE -- SHIPPED
 [x] Program system -- preset programs (PPL, Upper/Lower, Full Body 3x, Cardio Focus, Rest Heavy), Programs button in header, load with override warning, weeklyTemplate replaces DEFAULT_PROGRAM
 [x] Blank day default -- all days unassigned by default, no DEFAULT_PROGRAM
 [x] Tag pill contrast -- backgroundColor t.color+'99', borderColor t.color, text #ffffff across workout tab, home tab, assign tags modal, manage tags
+[x] Day scroller polish -- focus labels removed, dots only, borders visible, active day uses accent color not program color
+[x] Clear Program -- ACTIVE status row in Programs modal, only shows when program loaded, persists across app restarts
+[x] Workout label field -- placeholder text, pencil anchored left, truncates cleanly, only shows customLabel not focus/muscles
+[x] Count color fix -- uses accent color not tag/program color
+[x] Locked default tags -- Push, Pull, Legs, Core, Cardio, Rest -- locked=true, no edit/delete, lock icon in pill
+[x] Tag drag to reorder -- DraggableFlatList in manage tags sheet
+[x] DEFAULT_TAGS merge on load -- locked defaults always present, survives storage conflicts
+[x] Apple Health workout history import -- Settings > Health Data, range picker (2 weeks/1 month/3 months), UUID dedup, manual entries untouched
+[x] activeProgramName persisted to pj_workout_state
+[x] WORKOUT_TYPE_NAMES + formatWorkoutDuration extracted to workoutData.ts
+[x] VirtualizedLists warning suppressed in _layout.tsx
+[x] Day scroller extended to 30 days back
 
 JOURNAL -- REMAINING FEATURES
 Edit entry title (currently only notes and category editable)
@@ -85,28 +97,27 @@ Multiple entries same day -- verify prayer + gratitude same day display correctl
 Search within journal entries (roadmapped, low priority)
 
 NEXT SESSION PRIORITY (in order, do not deviate)
-1. Day scroller -- remove focus labels, empty when no tags assigned
-3. Clear Program option + unassigned day display decision
-4. Today's Training card touchup -- exercise row layout (stack duration under name left aligned), duration format fix (drop min label), Apple Health badge on imported workouts
-5. Net calories + active calories display on home screen
-6. Goal weight + projected date -- profile/weight section, live update as typed, adjusts with weekly deficit rate, milestone celebrations
-7. You vs Yesterday card -- discuss and finalize vision
-8. Celebration animations -- confetti, slam effect (rare/milestone moments only), accompanying card that doesn't block effect, once per day cap on dramatic animations
-9. Total Lost calculation bug -- should show earliest minus most recent known weight regardless of today having a log
-10. Sleep card -- clearer tip language when stages below ideal range, call out the number directly
-11. Fitness metrics card update
-12. Stats page -- discuss revamp, consolidation, pagination, paginated cards pattern
-13. Excluded dates -- discuss design and placement, neutral dim dot on calendar, excluded list view
-14. Calorie color scoring -- mode aware (Discipline/Balance/Mindful), stub mode for now default to Balance
-15. My Programs builder -- name it, assign focus/tags to each day, save it, load it
-16. Sessions tab in workout library -- save a day's exercise list as a named session, load onto any day
-17. Daily Note + Workout Note -- wire to journal, add workout category to journal alongside verse/prayer/study/personal/gratitude
-18. Bug sweep -- meal slot + signs accent color, toast on food remove, weight log dim/inactive state
-19. Macro bars animated + food log donut animated -- verify first, may already be done
-20. State restoration on launch -- save active tab/scroll position, restore on cold launch, seamless re-entry
-21. Bible reading programs / Bible studies
-22. Camera progress tracker with timelapse + program milestone integration (30/60/90 day anchors, tie to progress photos)
-23. TestFlight -- discuss setup, App Store Connect, tester invite flow
+1. Today's Training card touchup -- exercise row layout (stack duration under name left aligned), duration format fix (drop min label), Apple Health badge on imported workouts
+2. Net calories + active calories display on home screen
+3. Goal weight + projected date -- profile/weight section, live update as typed, adjusts with weekly deficit rate, milestone celebrations
+4. You vs Yesterday card -- discuss and finalize vision
+5. Celebration animations -- replace DONE GO HOME with confetti/slam effect, rare/milestone only, once per day cap
+6. Total Lost calculation bug -- earliest minus most recent known weight regardless of today having a log
+7. Sleep card -- clearer tip language when stages below ideal range, call out the number directly
+8. Fitness metrics card update
+9. Stats page -- discuss revamp, consolidation, pagination, paginated cards pattern
+10. Excluded dates -- discuss design and placement, neutral dim dot on calendar, excluded list view
+11. Calorie color scoring -- mode aware (Discipline/Balance/Mindful), stub mode for now default to Balance
+12. My Programs builder -- name it, assign focus/tags to each day, save it, load it
+13. Sessions tab in workout library -- save a day's exercise list as a named session, load onto any day
+14. Daily Note + Workout Note -- wire to journal, add workout category to journal alongside verse/prayer/study/personal/gratitude
+15. Bug sweep -- meal slot + signs accent color, toast on food remove, weight log dim/inactive state
+16. Macro bars animated + food log donut animated -- verify first, may already be done
+17. State restoration on launch -- save active tab/scroll position, restore on cold launch, seamless re-entry
+18. Bible auto-scroll to verse -- when opening from Today's Message card, auto-center on the highlighted verse
+19. Bible reading programs / Bible studies
+20. Camera progress tracker with timelapse + program milestone integration (30/60/90 day anchors, tie to progress photos)
+21. TestFlight -- discuss setup, App Store Connect, tester invite flow
 
 AFTER NEXT SESSION
 Faith Journey + Coaching Modes -- build together, same session, they are connected
@@ -162,7 +173,7 @@ Sessions tab in workout library -- save day's exercise list as named session, lo
 HIIT mode -- Tabata, standard intervals, custom
 Workout rest timer between sets
 Lifting set tracker with progressive overload
-Apple Workouts backfill -- last 7 days on first setup
+Apple Workouts backfill -- SHIPPED via Settings > Health Data import, 2 weeks/1 month/3 months range picker, UUID dedup
 Estimated calories for manual workouts -- MET formula using height/weight/age/sex from profile, intensity selector (light/moderate/vigorous), shown with "estimated" label
 
 FOOD / LOG TAB
@@ -179,6 +190,8 @@ BUGS OUTSTANDING
 Meal slot + signs to accent color
 Toast on water remove
 Weight log button no dim/inactive state
+Stats page streaks card -- choppy open animation, fails to reopen after first close. Needs onLayout measurement pattern audit.
+Collapsible card tap targets app-wide -- entire header row should trigger expand/collapse, not just label/chevron
 
 FAITH FEATURES
 Bible reader -- SHIPPED
@@ -330,7 +343,7 @@ Custom names, colors, multiple per day. Color picker or preset palette. Settings
 Tags stored in pj_settings under workoutTags key as WorkoutTag[].
 WorkoutTag shape: { id: string, label: string, color: string }
 DayProgram shape includes tags?: string[] (array of tag ids)
-Default tags: Push (blue), Pull (green), Legs + Core (amber), Cardio (orange), Rest (slate)
+Default tags: Push (blue), Pull (green), Legs (amber), Core (yellow), Cardio (orange), Rest (slate) -- 6 locked defaults, undeletable, uneditable, WorkoutTag.locked=true
 Tag color palette: 12 preset colors in TAG_COLOR_PALETTE (workoutData.ts)
 Limits: 6 tags per day, 20 tags in library, 20 char tag name max
 Pills render on Today's Training home card (3x2 grid) and workout tab (3 per row, 2 rows)
@@ -420,3 +433,5 @@ Toast above Modal (CRITICAL):
 RN Modals create a new native window layer that sits above everything in the normal view tree. Toast rendered in the normal tree is invisible behind any open Modal. Fix: export ToastRenderer from Toast.tsx (reads from ToastListContext), render <ToastRenderer /> directly inside the Modal JSX. ToastListContext provides toasts + dismiss + keyboardVisible to any renderer. Both the normal tree renderer and the in-modal renderer share the same state so toasts show correctly in both contexts.
 
 Updated after session May 11 2026 (session 3). Auto date rollover shipped. Barcode scanner identified as broken core feature, elevated to top priority. Extensive planning session -- goal weight, You vs Yesterday, celebration animations (confetti + slam effect for rare milestones), Today's Training layout, sleep tip language, stats revamp, excluded dates, state restoration, camera progress tracker, TestFlight all roadmapped. Day scroller focus labels being removed in favor of tag dots only. Journal gaining workout category. Daily Note and Workout Note both wiring to journal. No emojis in default app -- Ionicons only, user can add emojis in their own content. Program stats planned (days in program, milestones, photo tie-in) when My Programs builder ships.
+
+Updated after session May 11 2026 (session 4). Day scroller polish shipped. Clear Program with ACTIVE status row shipped and persists. Locked default tags (6: Push/Pull/Legs/Core/Cardio/Rest) shipped with drag reorder. Apple Health workout history import shipped in Settings with range picker and UUID dedup. activeProgramName persisted. DEFAULT_TAGS merge on load. DONE GO HOME flagged for replacement with celebration animation next session. Bible auto-scroll to verse added to priority list. Stats streaks card bug + collapsible tap target bugs added to bug list.

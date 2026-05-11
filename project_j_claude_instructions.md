@@ -1,5 +1,5 @@
 Project J -- Claude Project Instructions
-Last updated: May 11 2026 (session 3)
+Last updated: May 11 2026 (session 4)
 
 What This Is
 Project J is a React Native + Expo fitness and faith app built by Justin. It is his primary side project and passion build. Think MyFitnessPal meets YouVersion meets a personal coach. The differentiator is faith integration and a "you vs yesterday" philosophy. This is being built to eventually ship on the App Store.
@@ -346,4 +346,4 @@ Send changes in chunks, confirm each chunk before continuing
 When uncertain mid-response, stop and say so loudly before continuing
 
 
-Updated after session May 11 2026 (session 3). Barcode scanner fully shipped -- core scan-to-result bug fixed, abort timeout on fetch, barcode icon in header, cancel button gated behind cameraReady, theme-colored viewfinder corners, animated scan line with fade-out, flash + haptic on successful scan, torch toggle, fade in/out animation. Day scroller focus labels being removed in favor of tag dots only. Journal gaining workout category. Daily Note and Workout Note both wiring to journal. No emojis in default app -- Ionicons only, user can add emojis in their own content. Program stats planned (days in program, milestones, photo tie-in) when My Programs builder ships.
+Updated after session May 11 2026 (session 4). Day scroller polish shipped -- dots only, borders visible, active day uses accent color. Clear Program with ACTIVE status row shipped and persists. Locked default tags (6: Push/Pull/Legs/Core/Cardio/Rest) shipped with drag reorder. Apple Health workout history import shipped in Settings with range picker and UUID dedup. activeProgramName persisted. DEFAULT_TAGS merge on load. DONE GO HOME flagged for replacement with celebration animation. Bible auto-scroll to verse on priority list.

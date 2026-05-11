@@ -1079,7 +1079,7 @@ export default function HomeScreen() {
       </View>
       <View style={styles.weightRow}>
         <View style={styles.weightStat}>
-          <Text style={[styles.weightVal, { color: weight ? theme.textPrimary : theme.textDim }]}>
+          <Text style={[styles.weightVal, { color: weight ? theme.accentBlue : theme.textDim }]}>
             {weight ? `${weight} lbs` : lastKnownWeight ? `${lastKnownWeight.val} lbs` : '--'}
           </Text>
           <Text style={[styles.weightLbl, { color: theme.textMuted }]}>
@@ -1134,22 +1134,29 @@ export default function HomeScreen() {
         onPress={() => router.push('/(tabs)/workout')}
         style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, padding: 16 }]}>
         <View style={{ marginBottom: 12 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-            <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
-              <Ionicons name="barbell-outline" size={11} color={theme.textMuted} />
-              <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Today's Training</Text>
-            </View>
+          <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:8 }}>
+            <Ionicons name="barbell-outline" size={11} color={theme.textMuted} />
+            <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Today's Training</Text>
           </View>
           {(() => {
             const programTags = todayProgram?.tags || [];
+            const kcalBadge = burnedDisplay > 0 ? (
+              <View style={{ flexDirection:'row', alignItems:'baseline', gap:3, marginLeft:'auto' }}>
+                <Ionicons name="flame-outline" size={11} color={theme.accentBlue} style={{ marginBottom:2 }} />
+                <Text style={{ fontSize:20, color: theme.accentBlue, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>{burnedDisplay}</Text>
+                <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase' }}>kcal</Text>
+              </View>
+            ) : null;
+
             if (programTags.length === 0) {
               return (
-                <View style={{ flexDirection: 'row' }}>
+                <View style={{ flexDirection: 'row', alignItems:'center' }}>
                   <View style={{ borderWidth: 1, borderColor: theme.borderSubtle, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
                     <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.textDim }}>
                       {todayProgram?.customLabel || todayProgram?.focus || 'UNASSIGNED'}
                     </Text>
                   </View>
+                  {kcalBadge}
                 </View>
               );
             }
@@ -1167,17 +1174,19 @@ export default function HomeScreen() {
             };
             return (
               <View style={{ gap: 5 }}>
-                <View style={{ flexDirection: 'row', gap: 6 }}>
+                <View style={{ flexDirection: 'row', gap: 6, alignItems:'center' }}>
                   {row1.map(renderPill)}
+                  {row2.length === 0 && kcalBadge}
                 </View>
                 {row2.length > 0 && (
-                  <View style={{ flexDirection: 'row', gap: 6 }}>
+                  <View style={{ flexDirection: 'row', gap: 6, alignItems:'center' }}>
                     {row2.map(renderPill)}
                     {extra > 0 && (
                       <View style={{ borderWidth: 1, borderColor: theme.borderSubtle, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
                         <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.textDim }}>+{extra}</Text>
                       </View>
                     )}
+                    {kcalBadge}
                   </View>
                 )}
               </View>
@@ -1194,39 +1203,25 @@ export default function HomeScreen() {
               return (
                 <View key={ex.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                   <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: done ? theme.textDim : pillColor }} />
-                  <Text style={{ fontSize: 12, fontFamily: done ? 'DMSans_400Regular' : 'DMSans_600SemiBold', color: done ? theme.textDim : theme.textPrimary, textDecorationLine: done ? 'line-through' : 'none', flex: 1 }}>
+                  <Text style={{ fontSize: 12, fontFamily: 'DMSans_500Medium', color: theme.textMuted, textDecorationLine: done ? 'line-through' : 'none', flex: 1 }}>
                     {ex.name}
                   </Text>
                   {!ex.isCardio && (
-                    <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>{ex.sets}x{ex.reps}</Text>
+                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{ex.sets}x{ex.reps}</Text>
                   )}
                   {ex.isCardio && ex.duration && (
-                    <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>{ex.duration}min</Text>
+                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{ex.duration}</Text>
                   )}
                 </View>
               );
             })}
             {overflow > 0 && (
-              <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginTop: 2 }}>+{overflow} more · tap to view</Text>
+              <Text style={{ fontSize: 11, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold', marginTop: 2 }}>+{overflow} more exercises</Text>
             )}
           </View>
         )}
 
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 10, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
-          <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>
-            {doneCount}/{exercises.length} complete
-          </Text>
-          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
-            {burnedDisplay > 0 ? (
-              <>
-                <Text style={{ fontSize: 22, color: theme.accentAmber, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{burnedDisplay}</Text>
-                <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>kcal burned</Text>
-              </>
-            ) : (
-              <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>no burn data</Text>
-            )}
-          </View>
-        </View>
+        
       </TouchableOpacity>
       </Animated.View>
     );
@@ -1234,7 +1229,7 @@ export default function HomeScreen() {
 
   const renderStepsCard = () => {
     const pct = stepGoal > 0 ? steps / stepGoal : 0;
-    const stepColor = pct >= 1 ? theme.statusGood : pct >= 0.7 ? theme.statusWarn : theme.statusBad;
+    const stepColor = pct >= 1 ? theme.statusGood : theme.accentBlue;
     return (
       <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>

@@ -1115,8 +1115,8 @@ export default function HomeScreen() {
               const tag = workoutTags.find((t: any) => t.id === tagId);
               if (!tag) return null;
               return (
-                <View key={tagId} style={{ backgroundColor: tag.color + '22', borderWidth: 1, borderColor: tag.color + '55', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
-                  <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: tag.color }}>{tag.label.toUpperCase()}</Text>
+                <View key={tagId} style={{ backgroundColor: tag.color + '99', borderWidth: 1, borderColor: tag.color, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
+                  <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: '#ffffff' }}>{tag.label.toUpperCase()}</Text>
                 </View>
               );
             };

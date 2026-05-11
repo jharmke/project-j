@@ -7,6 +7,7 @@ import {
     requestAuthorization,
 } from '@kingstinct/react-native-healthkit';
 import { useEffect, useState } from 'react';
+import { formatWorkoutDuration, WORKOUT_TYPE_NAMES } from './workoutData';
 
 export function useHealthKit() {
   const [authorized, setAuthorized] = useState(false);
@@ -145,5 +146,66 @@ export function useHealthKit() {
     }
   };
 
-  return { authorized, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, vo2Max, cardioRecovery, appleWorkouts, fetchTodayData };
+  const fetchHistoricalWorkouts = async (days: number): Promise<any[]> => {
+    try {
+      const now = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+      startDate.setHours(0, 0, 0, 0);
+
+      const workouts = await queryWorkoutSamples({
+        limit: 500,
+        filter: { date: { startDate, endDate: now } }
+      });
+
+      if (!workouts || workouts.length === 0) return [];
+
+      // Group workouts by date key
+      const byDate: Record<string, any[]> = {};
+      for (const w of workouts) {
+        const d = new Date(w.startDate);
+        const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        if (!byDate[dateKey]) byDate[dateKey] = [];
+        byDate[dateKey].push(w);
+      }
+
+      // Build exercise objects keyed by date
+      const result: { dateKey: string; exercise: any }[] = [];
+      for (const [dateKey, dayWorkouts] of Object.entries(byDate)) {
+        for (const w of dayWorkouts) {
+          const durationFormatted = formatWorkoutDuration(w.duration.quantity);
+          const calories = Math.round(w.totalEnergyBurned?.quantity ?? 0);
+          const distanceMi = w.totalDistance
+            ? Math.round((w.totalDistance.quantity / 1609.34) * 100) / 100
+            : null;
+          const name = WORKOUT_TYPE_NAMES[w.workoutActivityType] ?? 'Workout';
+          result.push({
+            dateKey,
+            exercise: {
+              id: `apple_${w.uuid}`,
+              name,
+              sets: '',
+              reps: '',
+              rest: '',
+              note: '',
+              isCardio: true,
+              duration: String(durationFormatted),
+              distance: distanceMi ? String(distanceMi) : '',
+              calories: String(calories),
+              fromAppleHealth: true,
+              appleHealthUUID: w.uuid,
+              appleStartDate: w.startDate,
+            },
+          });
+        }
+      }
+
+      return result;
+    } catch (e) {
+      console.log('Historical workout fetch error', e);
+      return [];
+    }
+  };
+
+  return { authorized, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, vo2Max, cardioRecovery, appleWorkouts, fetchTodayData, fetchHistoricalWorkouts };
 }

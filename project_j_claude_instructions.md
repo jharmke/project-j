@@ -346,4 +346,4 @@ Send changes in chunks, confirm each chunk before continuing
 When uncertain mid-response, stop and say so loudly before continuing
 
 
-Updated after session May 10 2026 (session 2). Manage tags animation, toast above modal, program system, blank day default, tag pill contrast, Modal+ScrollView pattern all shipped and documented this session.
+Updated after session May 11 2026 (session 3). Barcode scanner fully shipped -- core scan-to-result bug fixed, abort timeout on fetch, barcode icon in header, cancel button gated behind cameraReady, theme-colored viewfinder corners, animated scan line with fade-out, flash + haptic on successful scan, torch toggle, fade in/out animation. Day scroller focus labels being removed in favor of tag dots only. Journal gaining workout category. Daily Note and Workout Note both wiring to journal. No emojis in default app -- Ionicons only, user can add emojis in their own content. Program stats planned (days in program, milestones, photo tie-in) when My Programs builder ships.

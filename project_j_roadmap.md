@@ -85,8 +85,7 @@ Multiple entries same day -- verify prayer + gratitude same day display correctl
 Search within journal entries (roadmapped, low priority)
 
 NEXT SESSION PRIORITY (in order, do not deviate)
-1. Barcode scanner -- teardown bug fix, full polish pass (scan confirmation flash, haptic, smooth transition, animated scan line 1-2 passes, theme colored viewfinder corners, torch toggle, scan-outline icon swap, food photo on food/recipe profile)
-2. Day scroller -- remove focus labels, empty when no tags assigned
+1. Day scroller -- remove focus labels, empty when no tags assigned
 3. Clear Program option + unassigned day display decision
 4. Today's Training card touchup -- exercise row layout (stack duration under name left aligned), duration format fix (drop min label), Apple Health badge on imported workouts
 5. Net calories + active calories display on home screen
@@ -167,7 +166,7 @@ Apple Workouts backfill -- last 7 days on first setup
 Estimated calories for manual workouts -- MET formula using height/weight/age/sex from profile, intensity selector (light/moderate/vigorous), shown with "estimated" label
 
 FOOD / LOG TAB
-Barcode scanner bug fix -- camera session not tearing down (HIGH)
+Barcode scanner -- SHIPPED
 Meal slot + signs to accent color (BUG)
 Toast on food remove (BUG)
 USDA food API speed -- local cache top 500-1000 common foods

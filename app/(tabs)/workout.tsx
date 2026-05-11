@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -53,6 +54,7 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
   const [tagModalInitialTags, setTagModalInitialTags] = useState<string[]>([]);
   const [showProgramModal, setShowProgramModal] = useState(false);
   const [programTab, setProgramTab] = useState<'presets' | 'mine'>('presets');
+  const [activeProgramName, setActiveProgramName] = useState<string | null>(null);
 
   const openProgramModal = () => setShowProgramModal(true);
   const closeProgramModal = () => { Keyboard.dismiss(); setShowProgramModal(false); };
@@ -205,7 +207,7 @@ useEffect(() => {
 
 const generate21Days = () => {
   const days = [];
-  for (let i = -7; i <= 30; i++) {
+  for (let i = -30; i <= 30; i++) {
     const d = new Date();
     d.setDate(d.getDate() + i);
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -254,7 +256,7 @@ const isRest = program?.type === 'rest';
 const exercises = program?.exercises || [];
 const dayChecks = checks[activeDay] || {};
 const doneCount = exercises.filter(ex => dayChecks[ex.id]).length;
-const color = program?.color || '#f97316';
+const color = theme.accentBlue;
 
 useEffect(() => {
   if (!loaded) return;
@@ -277,12 +279,28 @@ useEffect(() => {
           if (data.workoutNotes) setWorkoutNotes(data.workoutNotes);
           if (data.cardioLogs) setCardioLogs(data.cardioLogs);
           if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
+          if (data.activeProgramName) setActiveProgramName(data.activeProgramName);
         }
         const settings = await AsyncStorage.getItem('pj_settings');
-        if (settings) {
-          const s = JSON.parse(settings);
-          if (s.workoutTags && Array.isArray(s.workoutTags)) setTags(s.workoutTags);
+        const s = settings ? JSON.parse(settings) : {};
+        const savedTags: WorkoutTag[] = (s.workoutTags && Array.isArray(s.workoutTags)) ? s.workoutTags : [];
+
+        // Merge -- ensure all locked defaults always exist with correct data
+        const mergedTags = [...savedTags];
+        for (const def of DEFAULT_TAGS) {
+          const existingIdx = mergedTags.findIndex(t => t.id === def.id);
+          if (existingIdx === -1) {
+            // Missing entirely -- add at the front
+            mergedTags.unshift({ ...def });
+          } else {
+            // Exists -- force locked flag and correct color, preserve label if customized
+            mergedTags[existingIdx] = { ...mergedTags[existingIdx], locked: true, color: def.color };
+          }
         }
+
+        // Save merged tags back so storage stays clean
+        await AsyncStorage.setItem('pj_settings', JSON.stringify({ ...s, workoutTags: mergedTags }));
+        setTags(mergedTags);
       } catch (e) {
         console.log('Load error', e);
       } finally {
@@ -314,7 +332,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
     }, [])
   );
 
-  const saveState = async (newChecks = checks, newCardio = cardioComplete, newPrograms = programs, newNotes = workoutNotes, newCardioLogs = cardioLogs, newTemplate = weeklyTemplate) => {
+  const saveState = async (newChecks = checks, newCardio = cardioComplete, newPrograms = programs, newNotes = workoutNotes, newCardioLogs = cardioLogs, newTemplate = weeklyTemplate, newProgramName = activeProgramName) => {
   try {
     await AsyncStorage.setItem('pj_workout_state', JSON.stringify({
       checks: newChecks,
@@ -323,6 +341,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
       workoutNotes: newNotes,
       cardioLogs: newCardioLogs,
       weeklyTemplate: newTemplate,
+      activeProgramName: newProgramName,
     }));
   } catch (e) {
     console.log('Save error', e);
@@ -488,16 +507,16 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
           onLayout={() => {}}>
           {DATES.map(({ key, dayName, label }) => {
             const p = programs[key] || weeklyTemplate[dayName];
-            const c = p?.color || '#f97316';
+            const c = theme.accentBlue;
             const isActive = key === activeDay;
             const isToday = key === todayKey;
             const isPast = key < todayKey;
             return (
               <TouchableOpacity
                 key={key}
-                style={[styles.dayTab, { backgroundColor: theme.bgCard, borderColor: theme.borderCard },
-                  isActive && { borderColor: c, backgroundColor: c + '18' },
-                  isToday && !isActive && { borderColor: theme.textPrimary, borderWidth: 2 }]}
+                style={[styles.dayTab, { backgroundColor: theme.bgCard, borderColor: theme.borderSubtle },
+                  isActive && { borderColor: c, backgroundColor: c + '18', borderWidth: 1.5 },
+                  isToday && !isActive && { borderColor: theme.textSecondary, borderWidth: 1.5 }]}
                 onPress={() => { setActiveDay(key); setCalBurnedSaved(!!cardioLogs[key]?.caloriesBurned); }}>
                 {(() => {
                   const dayTagObjs = getDayTagObjects(key);
@@ -523,9 +542,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                       <Text style={[styles.dayTabText, { color: theme.textMuted, fontSize: 11 },
                         isActive && { color: c },
                         !isActive && { color: isPast ? theme.textMuted : theme.textMuted }]}>{label}</Text>
-                      {dayTagObjs.length === 0 && (
-                        <Text style={[styles.dayTabSub, { color: theme.textDim }, isActive && { color: c }]}>{p?.focus?.split(' ')[0].toUpperCase()}</Text>
-                      )}
+                      
                       {/* Right dots */}
                       {rightDots.length > 0 && (
                         <View style={{ position: 'absolute', right: 4, top: 0, bottom: 0, justifyContent: 'center', gap: 3 }}>
@@ -601,12 +618,12 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
           <View>
             <View style={styles.progressRow} key={programs[activeDay]?.customLabel || programs[activeDay]?.focus}>
               <TouchableOpacity style={{ flex: 1 }} onPress={() => {
-                setLabelInput(`${program?.customLabel || program?.focus || ''}${program?.muscles ? ' · ' + program.muscles : ''}`);
+                setLabelInput(program?.customLabel || '');
                 setShowLabelModal(true);
               }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Text style={[styles.progressLabel, { fontSize: 18, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', flex: 0 }]}>{programs[activeDay]?.customLabel || programs[activeDay]?.focus}{programs[activeDay]?.muscles ? ' · ' + programs[activeDay].muscles : ''}</Text>
-                  <IconSymbol name="pencil" size={16} color={theme.textMuted} />
+                  <IconSymbol name="pencil" size={14} color={theme.textMuted} />
+                  <Text style={[styles.progressLabel, { fontSize: 18, color: programs[activeDay]?.customLabel ? theme.textSecondary : theme.textDim, fontFamily: 'DMSans_600SemiBold', flex: 1 }]} numberOfLines={1} ellipsizeMode="tail">{programs[activeDay]?.customLabel || 'Add label...'}</Text>
                 </View>
               </TouchableOpacity>
               <Text style={[styles.progressCount, { color }]}>{doneCount}/{exercises.length}</Text>
@@ -930,32 +947,48 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                 <Text style={{ color: theme.textPrimary, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, marginBottom: 16 }}>MANAGE TAGS</Text>
 
                 {/* Existing tags list */}
-                <ScrollView style={{ maxHeight: 200 }} showsVerticalScrollIndicator={false} nestedScrollEnabled>
-                  {tags.map(t => {
-                    const isBeingEdited = editingTag?.id === t.id;
-                    const displayLabel = isBeingEdited ? (tagLabelInput || t.label) : t.label;
-                    const displayColor = isBeingEdited ? tagColorInput : t.color;
-                    return (
-                      <View key={t.id} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 10 }}>
-                        <View style={{ backgroundColor: displayColor + '99', borderWidth: 1, borderColor: displayColor, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, flex: 1 }}>
-                          <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: '#ffffff' }}>{displayLabel.toUpperCase()}</Text>
-                        </View>
-                        <TouchableOpacity onPress={() => { setEditingTag(t); setTagLabelInput(t.label); setTagColorInput(t.color); }}
-                          style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: isBeingEdited ? theme.accentGreenBorder : theme.accentBlueBorder, backgroundColor: isBeingEdited ? theme.accentGreenBg : theme.accentBlueBg }}>
-                          <Text style={{ fontSize: 11, color: isBeingEdited ? theme.accentGreen : theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>{isBeingEdited ? 'Editing' : 'Edit'}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => {
-                          Alert.alert('Delete Tag', `Delete "${t.label}"?`, [
-                            { text: 'Cancel', style: 'cancel' },
-                            { text: 'Delete', style: 'destructive', onPress: () => saveTags(tags.filter(x => x.id !== t.id)) },
-                          ]);
-                        }} style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: theme.accentRedBorder, backgroundColor: theme.accentRedBg }}>
-                          <Text style={{ fontSize: 11, color: theme.accentRed, fontFamily: 'DMSans_600SemiBold' }}>Delete</Text>
-                        </TouchableOpacity>
-                      </View>
-                    );
-                  })}
-                </ScrollView>
+                <View style={{ maxHeight: 280 }}>
+                  <DraggableFlatList
+                    data={tags}
+                    keyExtractor={t => t.id}
+                    onDragEnd={({ data }) => saveTags(data)}
+                    scrollEnabled
+                    renderItem={({ item: t, drag, isActive }: RenderItemParams<WorkoutTag>) => {
+                      const isBeingEdited = editingTag?.id === t.id;
+                      const displayLabel = isBeingEdited ? (tagLabelInput || t.label) : t.label;
+                      const displayColor = isBeingEdited ? tagColorInput : t.color;
+                      return (
+                        <ScaleDecorator>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 8, opacity: isActive ? 0.85 : 1 }}>
+                            <TouchableOpacity onLongPress={drag} style={{ paddingHorizontal: 4, paddingVertical: 8 }}>
+                              <Ionicons name="reorder-three-outline" size={18} color={theme.textDim} />
+                            </TouchableOpacity>
+                            <View style={{ backgroundColor: displayColor + '99', borderWidth: 1, borderColor: displayColor, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                              <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: '#ffffff', flex: 1 }}>{displayLabel.toUpperCase()}</Text>
+                              {t.locked && <Ionicons name="lock-closed" size={10} color="rgba(255,255,255,0.6)" />}
+                            </View>
+                            {!t.locked && (
+                              <TouchableOpacity onPress={() => { setEditingTag(t); setTagLabelInput(t.label); setTagColorInput(t.color); }}
+                                style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: isBeingEdited ? theme.accentGreenBorder : theme.accentBlueBorder, backgroundColor: isBeingEdited ? theme.accentGreenBg : theme.accentBlueBg }}>
+                                <Text style={{ fontSize: 11, color: isBeingEdited ? theme.accentGreen : theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>{isBeingEdited ? 'Editing' : 'Edit'}</Text>
+                              </TouchableOpacity>
+                            )}
+                            {!t.locked && (
+                              <TouchableOpacity onPress={() => {
+                                Alert.alert('Delete Tag', `Delete "${t.label}"?`, [
+                                  { text: 'Cancel', style: 'cancel' },
+                                  { text: 'Delete', style: 'destructive', onPress: () => saveTags(tags.filter(x => x.id !== t.id)) },
+                                ]);
+                              }} style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: theme.accentRedBorder, backgroundColor: theme.accentRedBg }}>
+                                <Text style={{ fontSize: 11, color: theme.accentRed, fontFamily: 'DMSans_600SemiBold' }}>Delete</Text>
+                              </TouchableOpacity>
+                            )}
+                          </View>
+                        </ScaleDecorator>
+                      );
+                    }}
+                  />
+                </View>
 
                 {/* Create / edit form */}
                 <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
@@ -1031,7 +1064,34 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                 <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
               </TouchableOpacity>
             <View style={{ paddingHorizontal: 20 }}>
-              <Text style={{ color: theme.textPrimary, fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, marginBottom: 16 }}>PROGRAMS</Text>
+              <Text style={{ color: theme.textPrimary, fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, marginBottom: activeProgramName ? 10 : 16 }}>PROGRAMS</Text>
+              {activeProgramName && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.bgInset, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 16 }}>
+                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, color: theme.textMuted }}>ACTIVE: <Text style={{ color: theme.textSecondary }}>{activeProgramName.toUpperCase()}</Text></Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      Alert.alert(
+                        'Clear Program',
+                        "This will clear your weekly template. Days you've already logged won't be affected.",
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'Clear', style: 'destructive', onPress: () => {
+                              setWeeklyTemplate({});
+                              setActiveProgramName(null);
+                              saveState(checks, cardioComplete, programs, workoutNotes, cardioLogs, {}, null);
+                              closeProgramModal();
+                              showToast('Program cleared', undefined, 'success');
+                            }
+                          },
+                        ]
+                      );
+                    }}
+                    style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: theme.accentRedBorder, backgroundColor: theme.accentRedBg }}>
+                    <Text style={{ color: theme.accentRed, fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>CLEAR PROGRAM</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
               {/* Tabs */}
               <View style={{ flexDirection: 'row', gap: 8, marginBottom: 20 }}>
                 <TouchableOpacity
@@ -1072,7 +1132,8 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                               {
                                 text: 'Load', onPress: () => {
                                   setWeeklyTemplate(preset.days);
-                                  saveState(checks, cardioComplete, programs, workoutNotes, cardioLogs, preset.days);
+                                  setActiveProgramName(preset.name);
+                                  saveState(checks, cardioComplete, programs, workoutNotes, cardioLogs, preset.days, preset.name);
                                   closeProgramModal();
                                   showToast('Program loaded', preset.name, 'success');
                                 }

@@ -2,14 +2,97 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ACCENT_PALETTES, THEME_ORDER, ThemeId, THEMES, useTheme } from '../theme';
+import { useHealthKit } from '../useHealthKit';
+import { BLANK_DAY, WorkoutTag } from '../workoutData';
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { theme, themeId, accentId, setTheme, setAccent } = useTheme();
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
+  const [importRange, setImportRange] = useState<14 | 30 | 90>(30);
+  const [importing, setImporting] = useState(false);
+  const { fetchHistoricalWorkouts, authorized } = useHealthKit();
+
+  const fixDefaultTags = async () => {
+    try {
+      const s = await AsyncStorage.getItem('pj_settings');
+      const current = s ? JSON.parse(s) : {};
+      let tags: WorkoutTag[] = current.workoutTags || [];
+
+      // Fix tag_push label
+      tags = tags.map(t => t.id === 'tag_push' ? { ...t, label: 'Push', locked: true, color: '#3b82f6' } : t);
+      // Fix tag_pull label
+      tags = tags.map(t => t.id === 'tag_pull' ? { ...t, label: 'Pull', locked: true, color: '#10b981' } : t);
+      // Fix tag_legs -- rename to Legs only
+      tags = tags.map(t => t.id === 'tag_legs' ? { ...t, label: 'Legs', locked: true, color: '#f59e0b' } : t);
+      // Add tag_core if missing
+      if (!tags.find(t => t.id === 'tag_core')) {
+        const legsIdx = tags.findIndex(t => t.id === 'tag_legs');
+        const coreTag: WorkoutTag = { id: 'tag_core', label: 'Core', color: '#eab308', locked: true };
+        if (legsIdx !== -1) {
+          tags.splice(legsIdx + 1, 0, coreTag);
+        } else {
+          tags.unshift(coreTag);
+        }
+      }
+      // Fix tag_cardio
+      tags = tags.map(t => t.id === 'tag_cardio' ? { ...t, label: 'Cardio', locked: true, color: '#f97316' } : t);
+      // Fix tag_rest
+      tags = tags.map(t => t.id === 'tag_rest' ? { ...t, label: 'Rest', locked: true, color: '#64748b' } : t);
+
+      await AsyncStorage.setItem('pj_settings', JSON.stringify({ ...current, workoutTags: tags }));
+      Alert.alert('Done', 'Default tags fixed. Restart the app to see changes.');
+    } catch (e) {
+      Alert.alert('Error', 'Something went wrong.');
+      console.log('Fix tags error', e);
+    }
+  };
+
+  const importWorkoutHistory = async () => {
+    if (!authorized) {
+      Alert.alert('HealthKit Not Authorized', 'Please allow health data access in your device settings.');
+      return;
+    }
+    setImporting(true);
+    try {
+      const results = await fetchHistoricalWorkouts(importRange);
+      if (results.length === 0) {
+        Alert.alert('No Workouts Found', `No Apple Health workouts found in the last ${importRange} days.`);
+        setImporting(false);
+        return;
+      }
+
+      // Load current workout state
+      const saved = await AsyncStorage.getItem('pj_workout_state');
+      const current = saved ? JSON.parse(saved) : {};
+      const programs = current.programs || {};
+
+      // Merge by date, deduplicate by UUID
+      let added = 0;
+      for (const { dateKey, exercise } of results) {
+        const existing = programs[dateKey] || { ...BLANK_DAY, type: 'cardio' as const, focus: 'Cardio' };
+        const existingUUIDs = new Set(
+          (existing.exercises || []).map((e: any) => e.appleHealthUUID).filter(Boolean)
+        );
+        if (existingUUIDs.has(exercise.appleHealthUUID)) continue;
+        programs[dateKey] = {
+          ...existing,
+          exercises: [...(existing.exercises || []), exercise],
+        };
+        added++;
+      }
+
+      await AsyncStorage.setItem('pj_workout_state', JSON.stringify({ ...current, programs }));
+      Alert.alert('Import Complete', `Added ${added} workout${added !== 1 ? 's' : ''} from the last ${importRange} days.`);
+    } catch (e) {
+      Alert.alert('Import Failed', 'Something went wrong. Please try again.');
+      console.log('Import error', e);
+    }
+    setImporting(false);
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -138,6 +221,77 @@ export default function SettingsScreen() {
               thumbColor={hapticsEnabled ? theme.accentBlue : theme.textMuted}
             />
           </View>
+        </View>
+
+      {/* ── Health Data ── */}
+        <View style={[styles.section, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
+          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>Health Data</Text>
+          <View style={{ paddingHorizontal: 16, paddingBottom: 16, gap: 12 }}>
+            <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, lineHeight: 18 }}>
+              Import your Apple Health workout history into Project J. Existing data and manual entries will not be affected.
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {([14, 30, 90] as const).map(d => (
+                <TouchableOpacity
+                  key={d}
+                  onPress={() => setImportRange(d)}
+                  style={{ flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: importRange === d ? theme.accentBlueBorder : theme.borderInput, backgroundColor: importRange === d ? theme.accentBlueBg : theme.bgInput }}>
+                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: importRange === d ? theme.accentBlue : theme.textMuted }}>
+                    {d === 14 ? '2 WEEKS' : d === 30 ? '1 MONTH' : '3 MONTHS'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TouchableOpacity
+              onPress={importWorkoutHistory}
+              disabled={importing}
+              style={{ paddingVertical: 12, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: theme.accentBlueBorder, backgroundColor: theme.accentBlueBg, opacity: importing ? 0.6 : 1, flexDirection: 'row', justifyContent: 'center', gap: 8 }}>
+              {importing
+                ? <ActivityIndicator size="small" color={theme.accentBlue} />
+                : <Ionicons name="download-outline" size={16} color={theme.accentBlue} />}
+              <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 1 }}>
+                {importing ? 'IMPORTING...' : 'IMPORT WORKOUT HISTORY'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* ── Dev Tools ── */}
+        <View style={[styles.section, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
+          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>Dev Tools</Text>
+          <TouchableOpacity
+            style={[styles.row, { borderTopColor: theme.borderCard }]}
+            onPress={fixDefaultTags}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.rowTitle, { color: theme.accentAmber }]}>Fix Default Tags</Text>
+              <Text style={[styles.rowSub, { color: theme.textMuted }]}>Resets default tag names/colors. Dev use only.</Text>
+            </View>
+            <Ionicons name="construct-outline" size={18} color={theme.accentAmber} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.row, { borderTopColor: theme.borderCard }]}
+            onPress={() => {
+              Alert.alert(
+                'Reset Workout State',
+                'This will clear all workout data including exercises, notes, cardio logs, and weekly template. Your food, profile, and settings data will not be affected.\n\nThis cannot be undone.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Reset', style: 'destructive',
+                    onPress: async () => {
+                      await AsyncStorage.removeItem('pj_workout_state');
+                      Alert.alert('Done', 'Workout state cleared. Restart the app.');
+                    }
+                  }
+                ]
+              );
+            }}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Reset Workout State</Text>
+              <Text style={[styles.rowSub, { color: theme.textMuted }]}>Clears exercises, notes, logs, template. Dev use only.</Text>
+            </View>
+            <Ionicons name="trash-outline" size={18} color={theme.accentRed} />
+          </TouchableOpacity>
         </View>
 
       </ScrollView>

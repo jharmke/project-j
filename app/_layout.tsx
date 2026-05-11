@@ -11,6 +11,9 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { LogBox } from 'react-native';
+
+LogBox.ignoreLogs(['VirtualizedLists should never be nested']);
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ToastProvider } from '../components/Toast';
 import { ThemeProvider } from '../theme';

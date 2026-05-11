@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { Animated, PanResponder, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Keyboard, PanResponder, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../theme';
 
 interface Toast {
@@ -93,9 +93,33 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
   );
 }
 
+const ToastListContext = createContext<{ toasts: Toast[]; dismiss: (id: number) => void; keyboardVisible: boolean }>({
+  toasts: [],
+  dismiss: () => {},
+  keyboardVisible: false,
+});
+
+export function ToastRenderer() {
+  const { toasts, dismiss, keyboardVisible } = useContext(ToastListContext);
+  return (
+    <View style={[styles.container, keyboardVisible ? { top: 60 } : { bottom: 100 }]} pointerEvents="box-none">
+      {toasts.map(t => (
+        <ToastItem key={t.id} toast={t} onDismiss={() => dismiss(t.id)} />
+      ))}
+    </View>
+  );
+}
+
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
   const counter = useRef(0);
+
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardWillShow', () => setKeyboardVisible(true));
+    const hide = Keyboard.addListener('keyboardWillHide', () => setKeyboardVisible(false));
+    return () => { show.remove(); hide.remove(); };
+  }, []);
 
   const showToast = useCallback((message: string, submessage?: string, type: 'success' | 'info' = 'success') => {
     const id = counter.current++;
@@ -107,21 +131,22 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <ToastContext.Provider value={{ showToast }}>
-      {children}
-      <View style={styles.container} pointerEvents="box-none">
-        {toasts.map(t => (
-          <ToastItem key={t.id} toast={t} onDismiss={() => dismiss(t.id)} />
-        ))}
-      </View>
-    </ToastContext.Provider>
+    <ToastListContext.Provider value={{ toasts, dismiss, keyboardVisible }}>
+      <ToastContext.Provider value={{ showToast }}>
+        {children}
+        <View style={[styles.container, keyboardVisible ? { top: 60 } : { bottom: 100 }]} pointerEvents="box-none">
+          {toasts.map(t => (
+            <ToastItem key={t.id} toast={t} onDismiss={() => dismiss(t.id)} />
+          ))}
+        </View>
+      </ToastContext.Provider>
+    </ToastListContext.Provider>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 100,
     left: 16,
     right: 16,
     gap: 8,

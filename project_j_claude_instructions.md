@@ -1,5 +1,5 @@
 Project J -- Claude Project Instructions
-Last updated: May 2026
+Last updated: May 10 2026
 
 What This Is
 Project J is a React Native + Expo fitness and faith app built by Justin. It is his primary side project and passion build. Think MyFitnessPal meets YouVersion meets a personal coach. The differentiator is faith integration and a "you vs yesterday" philosophy. This is being built to eventually ship on the App Store.
@@ -44,7 +44,8 @@ app/(tabs)/workout.tsx -- Workout tab
 app/(tabs)/log.tsx -- Food log tab
 app/(tabs)/stats.tsx -- Stats tab
 app/(tabs)/profile.tsx -- Profile tab
-app/(tabs)/_layout.tsx -- Custom tab bar
+app/(tabs)/_layout.tsx -- Tab layout (Tabs navigator + CustomTabBar)
+app/_layout.tsx -- Root layout (fonts, providers, Stack)
 app/settings.tsx -- Settings screen
 app/add-food.tsx -- Add food screen
 app/food-detail.tsx -- Food detail screen
@@ -58,6 +59,7 @@ app/journal.tsx -- Journal/reflections screen
 components/CustomTabBar.tsx -- Full custom animated tab bar (TAB_BAR_HEIGHT = 64)
 components/PressableButton.tsx -- Animated spring button with haptics
 components/haptic-tab.tsx -- Custom animated tab button
+components/Toast.tsx -- Toast system (ToastProvider, ToastItem, useToast)
 data/bible-web.ts -- Full KJV Bible, all 66 books, fetch + cache per book
 useHealthKit.ts -- HealthKit hook
 firebaseConfig.ts, workoutData.ts, config.ts
@@ -66,10 +68,10 @@ firebaseConfig.ts, workoutData.ts, config.ts
 AsyncStorage Keys
 
 pj_YYYY-MM-DD -- daily data (entries, water, weight, steps, activeCalories, caloriesBurned, sleep fields, IF fields, excluded)
-pj_workout_state -- workout (checks, cardioComplete, programs, workoutNotes, cardioLogs)
+pj_workout_state -- workout (checks, cardioComplete, programs, workoutNotes, cardioLogs, weeklyTemplate)
 pj_my_foods, pj_favorites, pj_recipes, pj_exercise_library
 pj_profile -- profile + waterPresets + stepGoal + sleepGoal
-pj_settings -- app settings including hapticsEnabled, cardOrder, cardVisible, theme
+pj_settings -- app settings including hapticsEnabled, cardOrder, cardVisible, theme, selectedAccent, workoutTags
 pj_bible_reflections -- all journal entries (verse, prayer, study, personal, gratitude categories)
 pj_verse_rotation -- shuffled verse rotation order and current index
 pj_bible_{BookName}_{chapterNum} -- cached KJV chapter verses
@@ -100,12 +102,12 @@ Think through the full sequence before starting -- if a change has 4 parts, know
 Never chain changes that depend on each other without confirming the first one worked
 Read the file before touching it, never guess at what's in there
 One thing at a time, done right, confirmed working before moving on
+Send changes in numbered chunks -- confirm each chunk works before sending the next
 
 Mid-response correction standard -- NON NEGOTIABLE: If a find/replace is written and then recognized as wrong before the response ends, immediately place the warning header BEFORE any further text -- even if the correction immediately follows. No exceptions. Format: # ⚠️ STOP — DO NOT APPLY THE CHANGE ABOVE. Hard to miss is the requirement. This applies even when the fix comes right after.
 
-If a find/replace is wrong or needs to be walked back mid-response, mark it with a large visible warning header before continuing. Format: # ⚠️ STOP — DO NOT APPLY THE CHANGE ABOVE -- hard to miss, catches it before the user applies it.
-
 Justin uses PowerShell, not bash. All terminal commands must be PowerShell syntax, issued one at a time, never chained.
+When telling Justin to commit, always send the three git commands explicitly (git add, git commit, git push) one at a time.
 
 Communication Style
 
@@ -125,16 +127,15 @@ Never assume which theme Justin is on. Primary testing theme is Slate with yello
 
 Build Standards -- NON NEGOTIABLE
 These apply to every feature built, every time. Not cleanup tasks, not afterthoughts. Built in from day one.
+
 Three Gate Rule
 No feature is marked done until it passes all three gates:
-
 It works correctly - no bugs
 It looks premium - matches the visual standard
 It feels right - animations, states, interactions all solid
 
 Dim/Inactive Button States
 Any button that submits, saves, or logs something must have two states:
-
 Dim/inactive when there is nothing valid to submit
 Full accent color when ready to submit
 Applied to every input+submit pair in the app. No exceptions.
@@ -150,39 +151,46 @@ Any settings or profile screen with editable fields uses a floating save bar ins
 
 Disclaimer Standard
 Any screen, card, or feature displaying health data, metrics, ranges, scores, or recommendations requires a disclaimer. Two tiers:
-
 Inline micro disclaimer: small muted text at bottom of metric detail sheets. "For informational purposes only. Not medical advice."
 First-use modal: one-time modal before accessing calorie targets, BMR/TDEE, health ranges, sleep scoring, HRV recommendations. User taps "Got it", never sees it again. Stored in AsyncStorage per feature.
 Legal areas requiring coverage: calorie/macro targets, BMR/TDEE, sleep scoring, HRV, VO2 Max classifications, health ranges by age/sex, weight loss projections, any "you should" language.
 
 Haptics Standard
-
 Light impact: toggles, selections, minor interactions
 Medium impact: confirms, saves, FAB tap
 Heavy impact: destructive actions like delete
 Every interactive element gets appropriate haptics.
 
-Animation Standard
+Keyboard Avoiding Standard -- NON NEGOTIABLE
+Every screen, modal, or sheet containing a text input must wrap its content in KeyboardAvoidingView with behavior={Platform.OS === 'ios' ? 'padding' : 'height'}. Built at time of feature, never added later. No exceptions.
 
+Animation Standard
 Every bar and graph must animate. No static bars ever.
 Expand/collapse animations -- never use maxHeight. It runs on the JS thread and drops frames regardless of duration. Correct pattern: render content off-screen with position absolute, opacity 0 to measure real height via onLayout, store in a ref, then animate height to that exact pixel value. Two coordinated animations -- container height on JS thread (useNativeDriver: false), content opacity/translateY on native thread (useNativeDriver: true). See journal.tsx SwipeableEntry for reference implementation.
 Use Easing.out(Easing.cubic) for opening, Easing.in(Easing.cubic) for closing
 Card press animations: scale down to 0.97 on pressIn, back to 1.0 on pressOut, timing not spring
 FAB and action button press: same scale pattern, simple down and up, no bounce
 All collapsible sections must animate open and closed consistently throughout the entire app
+Sheet/modal slide-up animation: use animationType="none" with manual Animated.Value translateY starting at 600+, spring to 0. Set the value BEFORE calling setVisible(true) using requestAnimationFrame to avoid flash. Overlay fades in separately via opacity animation. Reference: edit layout sheet in index.tsx.
 
 Empty States
 Every list or card that can be empty needs a designed placeholder. Icon, title, subtitle explaining what goes here and how to add it. Never a blank card or blank screen.
+
 Loading States
 Any async operation needs a visual indicator. HealthKit calls can lag.
+
 Error States
 Any operation that can fail must communicate it to the user.
+
 First Use Tooltips
 Any non-obvious interaction gets a first-use tooltip. Stored in AsyncStorage per unique key. Once dismissed, gone until reinstall. Every tooltip that fires gets added to the Help section in settings so users can find it again. Built at time of feature, never added later.
+
 Input Validation
 Never let bad data hit storage. Validate before save. Weight of 0, negative values, empty required fields all get caught before saving.
+
 Disclaimer on Health Features
 See Disclaimer Standard above. Every health metric needs it.
+
 
 Theme System
 Token-based. One theme.ts file. Every component references tokens, never hardcoded hex values.
@@ -190,19 +198,20 @@ Themes: Dark (free), Light (free), Midnight (paid), Slate (paid), Warm (paid), B
 Each theme has accent color options. Paid feature.
 Testing standard: Build on Slate with yellow accent as primary. Audit all 5 themes x all accent options before marking any visual feature done.
 
+
 Faith System
 This is a Christian app by default. Faith features are on, visible, and front and center for all users out of the box.
+
 Faith Journey Setting (planned, not yet built)
 Three tiers, lives in profile/settings:
-
 Rooted: Full faith experience. Daily verse, morning intention, prayer log, Bible reader, all features on.
 Exploring: Faith features present but gentle. Verse shown, no prompts or nudges. User can engage at their own pace.
 Not right now: Faith features quietly hidden. Pure fitness app experience. No judgment. Door always open.
 
 Periodic gentle in-app reminder (not push notification) for Exploring and Not right now users that faith journey settings can be updated. Dismissable, shows every 30 days, toggleable off in settings. Language is warm and inviting, never pushy.
 Faith Journey and Coaching Modes (Discipline/Balance/Mindful) are designed together and should be built in the same session. They are deeply connected in how they shape the app experience.
-Today's Message Card
 
+Today's Message Card
 Label: "TODAY'S MESSAGE" (renamed from "Today's Verse")
 Behavior changes based on Faith Journey setting
 Rooted/Exploring: taps to Bible screen, verse reflection flow
@@ -214,16 +223,26 @@ Journal System
 Storage key: pj_bible_reflections
 Entry shape: { id, date, category, title, notes, verseRef?, verseText?, acknowledged?, bookRef? }
 Categories: verse, prayer, study, personal, gratitude
-
 Verse entries: only created via Bible screen reflect button, never via FAB
 FAB creates: prayer, study, personal, gratitude only
-
 ID format:
-
 Verse entries: YYYY-MM-DD_verse
 Other entries: YYYY-MM-DD_timestamp
-
 Journal rewrite shipped -- all bugs resolved. SwipeableEntry is a top-level component, animations smooth, swipe delete working, edit mode with floating save bar, auto-expand from bible screen.
+
+
+Workout Tag System
+Shipped. Tags stored in pj_settings under workoutTags key as WorkoutTag[].
+WorkoutTag shape: { id: string, label: string, color: string }
+DayProgram shape includes tags?: string[] (array of tag ids)
+Default tags: Push (blue), Pull (green), Legs + Core (amber), Cardio (orange), Rest (slate)
+Tag color palette: 12 preset colors in TAG_COLOR_PALETTE (workoutData.ts)
+Limits: 6 tags per day, 20 tags in library, 20 char tag name max
+Pills render on Today's Training home card (3x2 grid) and workout tab (3 per row, 2 rows)
+Day scroller shows colored dots (left/right column distribution, max 6)
+Unassigned days show ghost "UNASSIGNED" pill
+Manage tags sheet: slide-up from bottom, handle tap to close, keyboard avoiding
+Known issue: manage tags slide-up animation not working (pops in instead of sliding). See BUGS OUTSTANDING.
 
 
 Visual Philosophy -- Read This Carefully
@@ -234,6 +253,7 @@ Visual weight hierarchy -- data values obviously more prominent than labels. Eye
 Text contrast -- readable at 40% screen brightness. Muted text minimum #8888aa.
 Animation standard -- see Build Standards above.
 Trust Justin's instincts -- when he says something looks off, he is right. Don't defend choices, fix them.
+
 
 Justin's Context
 
@@ -258,6 +278,7 @@ New threads always inside the Claude Project
 At end of every session: update roadmap, give Justin fresh download
 Justin runs on Claude Pro -- be efficient, don't repeat yourself
 Justin uses PowerShell only. One command at a time, never chained
+Always send git commands explicitly when telling Justin to commit
 
 
 What Justin Needs From Every New Thread
@@ -271,6 +292,7 @@ Know today's priority order before touching any code
 Be proactive -- suggest improvements, think ahead, flag problems
 Never confidently state uncertain things as fact
 Every code change is find/replace format, no exceptions
+Send changes in chunks, confirm each chunk before continuing
 
 
-Updated after session May 10 2026. Bible (KJV), sleep score, profile sleep goal wheel, floating save bar, Today's Message label all shipped this session.
+Updated after session May 10 2026. Home tab bug pass, workout tag system, toast keyboard position, IF daily reset all done this session.

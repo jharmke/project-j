@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router, useFocusEffect, useNavigation } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Modal, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
@@ -398,6 +398,7 @@ export default function HomeScreen() {
   const [workoutPrograms,setWorkoutPrograms]= useState<Record<string,any>>({});
   const [workoutChecks,  setWorkoutChecks]  = useState<Record<string,any>>({});
   const [workoutTemplate,setWorkoutTemplate]= useState<Record<string,any>>({});
+  const [workoutTags,    setWorkoutTags]    = useState<any[]>([]);
 
   // Sleep state
   const [sleepOverride,   setSleepOverride]   = useState<number|null>(null);
@@ -652,6 +653,11 @@ export default function HomeScreen() {
           if (wd.checks) setWorkoutChecks(wd.checks);
           if (wd.weeklyTemplate) setWorkoutTemplate(wd.weeklyTemplate);
         }
+        const settingsData = await AsyncStorage.getItem('pj_settings');
+        if (settingsData) {
+          const sd = JSON.parse(settingsData);
+          if (sd.workoutTags && Array.isArray(sd.workoutTags)) setWorkoutTags(sd.workoutTags);
+        }
         const profileData = await AsyncStorage.getItem('pj_profile');
         if (profileData) {
           const p = JSON.parse(profileData);
@@ -724,8 +730,6 @@ export default function HomeScreen() {
   };
 
   // ── Edit mode ────────────────────────────────────────────────────────────────
-  const navigation = useNavigation();
-
   const enterEditMode = () => {
     setEditModalVisible(true);
     setEditMode(true);
@@ -1084,18 +1088,56 @@ export default function HomeScreen() {
         onPressOut={onPressOut}
         onPress={() => router.push('/(tabs)/workout')}
         style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, padding: 16 }]}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-          <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
-            <Ionicons name="barbell-outline" size={11} color={theme.textMuted} />
-            <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Today's Training</Text>
-          </View>
-          <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-            <View style={{ backgroundColor: pillColor + '22', borderWidth: 1, borderColor: pillColor + '55', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
-              <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: pillColor }}>
-                {todayProgram?.customLabel || todayProgram?.focus || 'REST'}
-              </Text>
+        <View style={{ marginBottom: 12 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+            <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
+              <Ionicons name="barbell-outline" size={11} color={theme.textMuted} />
+              <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Today's Training</Text>
             </View>
           </View>
+          {(() => {
+            const programTags = todayProgram?.tags || [];
+            if (programTags.length === 0) {
+              return (
+                <View style={{ flexDirection: 'row' }}>
+                  <View style={{ borderWidth: 1, borderColor: theme.borderSubtle, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
+                    <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.textDim }}>
+                      {todayProgram?.customLabel || todayProgram?.focus || 'UNASSIGNED'}
+                    </Text>
+                  </View>
+                </View>
+              );
+            }
+            const row1 = programTags.slice(0, 3);
+            const row2 = programTags.slice(3, 6);
+            const extra = programTags.length > 6 ? programTags.length - 6 : 0;
+            const renderPill = (tagId: string) => {
+              const tag = workoutTags.find((t: any) => t.id === tagId);
+              if (!tag) return null;
+              return (
+                <View key={tagId} style={{ backgroundColor: tag.color + '22', borderWidth: 1, borderColor: tag.color + '55', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
+                  <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: tag.color }}>{tag.label.toUpperCase()}</Text>
+                </View>
+              );
+            };
+            return (
+              <View style={{ gap: 5 }}>
+                <View style={{ flexDirection: 'row', gap: 6 }}>
+                  {row1.map(renderPill)}
+                </View>
+                {row2.length > 0 && (
+                  <View style={{ flexDirection: 'row', gap: 6 }}>
+                    {row2.map(renderPill)}
+                    {extra > 0 && (
+                      <View style={{ borderWidth: 1, borderColor: theme.borderSubtle, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
+                        <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.textDim }}>+{extra}</Text>
+                      </View>
+                    )}
+                  </View>
+                )}
+              </View>
+            );
+          })()}
         </View>
 
         {exercises.length === 0 ? (

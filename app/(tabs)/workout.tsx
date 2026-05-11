@@ -3,14 +3,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, Keyboard, KeyboardAvoidingView, Modal, PanResponder, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import Reanimated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useToast } from '../../components/Toast';
+import { ToastRenderer, useToast } from '../../components/Toast';
 import { useTheme } from '../../theme';
 import { useHealthKit } from '../../useHealthKit';
-import { DayProgram, DEFAULT_PROGRAM, Exercise } from '../../workoutData';
+import { DEFAULT_PROGRAM, DEFAULT_TAGS, DayProgram, Exercise, TAG_COLOR_PALETTE, WorkoutTag } from '../../workoutData';
 
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -36,7 +37,6 @@ const [programs, setPrograms] = useState<Record<string, DayProgram>>({});
 const [workoutNotes, setWorkoutNotes] = useState<Record<string, string>>({});
 const [weeklyTemplate, setWeeklyTemplate] = useState<Record<string, DayProgram>>(DEFAULT_PROGRAM);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showDayEditModal, setShowDayEditModal] = useState(false);
   const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
   const [modalDay, setModalDay] = useState('');
   const [showLabelModal, setShowLabelModal] = useState(false);
@@ -47,6 +47,58 @@ const [labelInput, setLabelInput] = useState('');
   const [form, setForm] = useState({ name: '', sets: '3', reps: '10–12', rest: '60s', note: '', isCardio: false, duration: '', distance: '', speed: '', incline: '', resistance: '', hr: '', calories: ''});
 const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
   const [calBurnedSaved, setCalBurnedSaved] = useState(false);
+  const [tags, setTags] = useState<WorkoutTag[]>(DEFAULT_TAGS);
+  const [showTagModal, setShowTagModal] = useState(false);
+  const [showManageTagsModal, setShowManageTagsModal] = useState(false);
+  const [tagModalInitialTags, setTagModalInitialTags] = useState<string[]>([]);
+  const manageTagsAnim = useSharedValue(600);
+  const manageTagsOverlayAnim = useRef(new Animated.Value(0)).current;
+  
+
+  const manageTagsKeyboardOffset = useSharedValue(0);
+  const manageTagsKeyboardStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: manageTagsAnim.value - manageTagsKeyboardOffset.value }],
+  }));
+
+  const openManageTags = () => {
+    manageTagsOverlayAnim.setValue(0);
+    manageTagsAnim.value = 1200;
+    manageTagsKeyboardOffset.value = 0;
+    setShowManageTagsModal(true);
+  };
+
+  const closeManageTags = () => {
+    Keyboard.dismiss();
+    manageTagsKeyboardOffset.value = withTiming(0, { duration: 250 });
+    Animated.timing(manageTagsOverlayAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start();
+    manageTagsAnim.value = withTiming(600, { duration: 280 });
+    setTimeout(() => setShowManageTagsModal(false), 300);
+  };
+
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardWillShow', e => {
+      manageTagsKeyboardOffset.value = withTiming(e.endCoordinates.height, { duration: e.duration || 250 });
+    });
+    const hide = Keyboard.addListener('keyboardWillHide', e => {
+      manageTagsKeyboardOffset.value = withTiming(0, { duration: e.duration || 250 });
+    });
+    return () => { show.remove(); hide.remove(); };
+  }, []);
+
+  const manageTagsSheetStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: manageTagsAnim.value }],
+  }));
+  
+
+  const manageTagsPanResponder = useRef(PanResponder.create({
+    onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 8,
+    onPanResponderRelease: (_, g) => {
+      if (g.dy > 60) closeManageTags();
+    },
+  })).current;
+  const [editingTag, setEditingTag] = useState<WorkoutTag | null>(null);
+  const [tagLabelInput, setTagLabelInput] = useState('');
+  const [tagColorInput, setTagColorInput] = useState(TAG_COLOR_PALETTE[0]);
 const { activeCalories, appleWorkouts } = useHealthKit();
 
 useEffect(() => {
@@ -161,31 +213,7 @@ const generate21Days = () => {
 
 const DATES = generate21Days();
 const DAY_NAMES_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const DAY_TYPES = [
-  { label: 'Cardio', type: 'cardio' as const, focus: 'Cardio', color: '#f97316', exercises: [] },
-  { label: 'Push', type: 'lift' as const, focus: 'Push', muscles: 'Chest · Shoulders · Triceps', color: '#3b82f6', exercises: [
-    { id: `p${Date.now()}1`, name: 'Machine Chest Press', sets: '4', reps: '10–12', rest: '60s', note: '' },
-    { id: `p${Date.now()}2`, name: 'Cable Fly (Low to High)', sets: '3', reps: '12–15', rest: '45s', note: '' },
-    { id: `p${Date.now()}3`, name: 'Machine Shoulder Press', sets: '3', reps: '10–12', rest: '60s', note: '' },
-    { id: `p${Date.now()}4`, name: 'Cable Lateral Raise', sets: '3', reps: '15', rest: '30s', note: '' },
-    { id: `p${Date.now()}5`, name: 'Tricep Pushdown (Rope)', sets: '3', reps: '12', rest: '45s', note: '' },
-  ]},
-  { label: 'Pull', type: 'lift' as const, focus: 'Pull', muscles: 'Back · Biceps · Rear Delts', color: '#10b981', exercises: [
-    { id: `pl${Date.now()}1`, name: 'Lat Pulldown (Wide Grip)', sets: '4', reps: '10–12', rest: '60s', note: '' },
-    { id: `pl${Date.now()}2`, name: 'Seated Cable Row', sets: '3', reps: '10–12', rest: '60s', note: '' },
-    { id: `pl${Date.now()}3`, name: 'Machine Row', sets: '3', reps: '12', rest: '45s', note: '' },
-    { id: `pl${Date.now()}4`, name: 'Cable Face Pull', sets: '3', reps: '15–20', rest: '30s', note: '' },
-    { id: `pl${Date.now()}5`, name: 'Hammer Curl', sets: '3', reps: '12', rest: '45s', note: '' },
-  ]},
-  { label: 'Legs + Core', type: 'lift' as const, focus: 'Legs + Core', muscles: 'Quads · Hamstrings · Glutes · Core', color: '#f59e0b', exercises: [
-    { id: `l${Date.now()}1`, name: 'Leg Press', sets: '4', reps: '10–12', rest: '90s', note: '' },
-    { id: `l${Date.now()}2`, name: 'Leg Extension (Machine)', sets: '3', reps: '12–15', rest: '45s', note: '' },
-    { id: `l${Date.now()}3`, name: 'Hamstring Curl', sets: '3', reps: '12', rest: '45s', note: '' },
-    { id: `l${Date.now()}4`, name: 'Glute Kickback (Cable)', sets: '3', reps: '15 each', rest: '30s', note: '' },
-    { id: `l${Date.now()}5`, name: 'Plank', sets: '3', reps: '30–45s hold', rest: '30s', note: '' },
-  ]},
-  { label: 'Rest', type: 'rest' as const, focus: 'Rest', color: '#6b7280', exercises: [] },
-];
+
 const params = useLocalSearchParams<{ pendingExercise?: string; pendingDay?: string }>();
 
 useEffect(() => {
@@ -239,11 +267,16 @@ useEffect(() => {
         if (saved) {
           const data = JSON.parse(saved);
           if (data.checks) setChecks(data.checks);
-if (data.cardioComplete) setCardioComplete(data.cardioComplete);
-if (data.programs) setPrograms(data.programs);
-if (data.workoutNotes) setWorkoutNotes(data.workoutNotes);
-if (data.cardioLogs) setCardioLogs(data.cardioLogs);
-if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
+          if (data.cardioComplete) setCardioComplete(data.cardioComplete);
+          if (data.programs) setPrograms(data.programs);
+          if (data.workoutNotes) setWorkoutNotes(data.workoutNotes);
+          if (data.cardioLogs) setCardioLogs(data.cardioLogs);
+          if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
+        }
+        const settings = await AsyncStorage.getItem('pj_settings');
+        if (settings) {
+          const s = JSON.parse(settings);
+          if (s.workoutTags && Array.isArray(s.workoutTags)) setTags(s.workoutTags);
         }
       } catch (e) {
         console.log('Load error', e);
@@ -386,6 +419,39 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
     showToast('Note saved', undefined, 'success');
   };
 
+  const saveTags = async (newTags: WorkoutTag[]) => {
+    setTags(newTags);
+    try {
+      const s = await AsyncStorage.getItem('pj_settings');
+      const current = s ? JSON.parse(s) : {};
+      await AsyncStorage.setItem('pj_settings', JSON.stringify({ ...current, workoutTags: newTags }));
+    } catch (e) { console.log('Tag save error', e); }
+  };
+
+  const toggleDayTag = (tagId: string) => {
+    const baseProgram = programs[activeDay] || weeklyTemplate[activeDayName] || { type: 'unassigned' as const, focus: 'Unassigned', exercises: [] };
+    const currentTags = baseProgram.tags || [];
+    if (!currentTags.includes(tagId) && currentTags.length >= 6) {
+      showToast('Tag limit reached', 'Max 6 tags per day', 'info');
+      return;
+    }
+    const newTags = currentTags.includes(tagId)
+      ? currentTags.filter(t => t !== tagId)
+      : [...currentTags, tagId];
+    const newPrograms = {
+      ...programs,
+      [activeDay]: { ...baseProgram, tags: newTags },
+    };
+    setPrograms(newPrograms);
+    saveState(checks, cardioComplete, newPrograms, workoutNotes, cardioLogs, weeklyTemplate);
+  };
+
+  const getDayTagObjects = (dayKey: string): WorkoutTag[] => {
+    const p = programs[dayKey] || weeklyTemplate[DATES.find(d => d.key === dayKey)?.dayName || 'Mon'];
+    if (!p?.tags?.length) return [];
+    return p.tags.map(id => tags.find(t => t.id === id)).filter(Boolean) as WorkoutTag[];
+  };
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -423,28 +489,97 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                   isActive && { borderColor: c, backgroundColor: c + '18' },
                   isToday && !isActive && { borderColor: theme.textPrimary, borderWidth: 2 }]}
                 onPress={() => { setActiveDay(key); setCalBurnedSaved(!!cardioLogs[key]?.caloriesBurned); }}>
-                <Text style={[styles.dayTabText, { color: theme.textMuted },
-                  isActive && { color: c },
-                  !isActive && { color: isPast ? theme.textSecondary : theme.textMuted }]}>{dayName}</Text>
-                <Text style={[styles.dayTabText, { color: theme.textMuted, fontSize: 11 },
-                  isActive && { color: c },
-                  !isActive && { color: isPast ? theme.textMuted : theme.textMuted }]}>{label}</Text>
-                <Text style={[styles.dayTabSub, { color: theme.textDim },
-                  isActive && { color: c },
-                  !isActive && { color: isPast ? theme.textDim : theme.textMuted }]}>{p?.focus?.split(' ')[0].toUpperCase()}</Text>
+                {(() => {
+                  const dayTagObjs = getDayTagObjects(key);
+                  const n = Math.min(dayTagObjs.length, 6);
+                  const leftCount = Math.ceil(n / 2);
+                  const rightCount = Math.floor(n / 2);
+                  const leftDots = dayTagObjs.slice(0, leftCount);
+                  const rightDots = dayTagObjs.slice(leftCount, leftCount + rightCount);
+                  return (
+                    <View style={{ width: '100%', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                      {/* Left dots */}
+                      {leftDots.length > 0 && (
+                        <View style={{ position: 'absolute', left: 4, top: 0, bottom: 0, justifyContent: 'center', gap: 3 }}>
+                          {leftDots.map(t => (
+                            <View key={t.id} style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: t.color }} />
+                          ))}
+                        </View>
+                      )}
+                      {/* Center text */}
+                      <Text style={[styles.dayTabText, { color: theme.textMuted },
+                        isActive && { color: c },
+                        !isActive && { color: isPast ? theme.textSecondary : theme.textMuted }]}>{dayName}</Text>
+                      <Text style={[styles.dayTabText, { color: theme.textMuted, fontSize: 11 },
+                        isActive && { color: c },
+                        !isActive && { color: isPast ? theme.textMuted : theme.textMuted }]}>{label}</Text>
+                      {dayTagObjs.length === 0 && (
+                        <Text style={[styles.dayTabSub, { color: theme.textDim }, isActive && { color: c }]}>{p?.focus?.split(' ')[0].toUpperCase()}</Text>
+                      )}
+                      {/* Right dots */}
+                      {rightDots.length > 0 && (
+                        <View style={{ position: 'absolute', right: 4, top: 0, bottom: 0, justifyContent: 'center', gap: 3 }}>
+                          {rightDots.map(t => (
+                            <View key={t.id} style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: t.color }} />
+                          ))}
+                        </View>
+                      )}
+                    </View>
+                  );
+                })()}
               </TouchableOpacity>
             );
           })}
         </ScrollView>
 
-        <TouchableOpacity
-          style={{ alignSelf: 'flex-end', marginBottom: 12, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: theme.accentBlueBorder, backgroundColor: theme.accentBlueBg }}
-          onPress={() => setShowDayEditModal(true)}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <Text style={{ color: theme.accentBlue, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Edit {activeDateObj?.dayName} {activeDateObj?.label}</Text>
-            <IconSymbol name="pencil" size={14} color={theme.accentBlue} />
-          </View>
-        </TouchableOpacity>
+        <View style={{ marginBottom: 12 }}>
+          {(() => {
+            const dayTagObjs = getDayTagObjects(activeDay);
+            const row1 = dayTagObjs.slice(0, 3);
+            const row2 = dayTagObjs.slice(3, 6);
+            return (
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
+                <View style={{ flex: 1, gap: 5 }}>
+                  {dayTagObjs.length === 0 ? (
+                    <View style={{ flexDirection: 'row' }}>
+                      <View style={{ borderWidth: 1, borderColor: theme.borderSubtle, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
+                        <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.textDim }}>UNASSIGNED</Text>
+                      </View>
+                    </View>
+                  ) : (
+                    <>
+                      <View style={{ flexDirection: 'row', gap: 6 }}>
+                        {row1.map(t => (
+                          <View key={t.id} style={{ backgroundColor: t.color + '22', borderWidth: 1, borderColor: t.color + '55', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
+                            <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: t.color }}>{t.label.toUpperCase()}</Text>
+                          </View>
+                        ))}
+                      </View>
+                      {row2.length > 0 && (
+                        <View style={{ flexDirection: 'row', gap: 6 }}>
+                          {row2.map(t => (
+                            <View key={t.id} style={{ backgroundColor: t.color + '22', borderWidth: 1, borderColor: t.color + '55', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
+                              <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: t.color }}>{t.label.toUpperCase()}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+                    </>
+                  )}
+                </View>
+                <TouchableOpacity
+                  style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: theme.accentBlueBorder, backgroundColor: theme.accentBlueBg }}
+                  onPress={() => {
+                    const currentTags = programs[activeDay]?.tags || weeklyTemplate[activeDayName]?.tags || [];
+                    setTagModalInitialTags([...currentTags]);
+                    setShowTagModal(true);
+                  }}>
+                  <Text style={{ color: theme.accentBlue, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Tags</Text>
+                </TouchableOpacity>
+              </View>
+            );
+          })()}
+        </View>
 
         {isRest ? (
           <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, alignItems: 'center', paddingVertical: 32 }]}>
@@ -709,38 +844,167 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
         </Modal>
       )}
 
-      {/* Day Edit Modal */}
-      {showDayEditModal && (
-        <Modal transparent animationType="fade" onRequestClose={() => setShowDayEditModal(false)}>
-          <TouchableOpacity style={{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center' }} onPress={() => setShowDayEditModal(false)}>
-            <View style={{ backgroundColor: theme.bgCard, borderRadius: 12, padding: 20, width: '80%', borderWidth: 1, borderColor: theme.borderCard }}>
-              <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginBottom: 16 }}>CHANGE {activeDay.toUpperCase()} TO...</Text>
-              {DAY_TYPES.map(dt => (
-                <TouchableOpacity
-                  key={dt.label}
-                  style={{ paddingVertical: 12, paddingHorizontal: 16, borderRadius: 8, marginBottom: 8, borderWidth: 1, borderColor: dt.color + '50', backgroundColor: dt.color + '15' }}
-                  onPress={() => {
-                    const updated = {
-                      ...programs,
-                      [activeDay]: {
-                        type: dt.type,
-                        focus: dt.focus,
-                        muscles: dt.muscles || '',
-                        color: dt.color,
-                        exercises: dt.exercises.map(e => ({ ...e, id: e.id + Date.now() })),
-                      }
-                    };
-                    setPrograms(updated);
-                    saveState(checks, cardioComplete, updated, workoutNotes, cardioLogs, weeklyTemplate);
-                    setShowDayEditModal(false);
-                  }}>
-                  <Text style={{ color: dt.color, fontSize: 14, fontFamily: 'DMSans_600SemiBold' }}>{dt.label}</Text>
+      {/* Tag Assignment Modal */}
+      {showTagModal && (
+        <Modal transparent animationType="fade" onRequestClose={() => setShowTagModal(false)}>
+          <TouchableOpacity style={{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center' }} activeOpacity={1} onPress={() => setShowTagModal(false)}>
+            <TouchableOpacity activeOpacity={1} onPress={e => e.stopPropagation()}>
+              <View style={{ backgroundColor: theme.bgSheet, borderRadius: 16, padding: 20, width: 320, borderWidth: 1, borderColor: theme.borderCard }}>
+                <Text style={{ color: theme.textPrimary, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, marginBottom: 4 }}>ASSIGN TAGS</Text>
+                <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: 'DMSans_400Regular', marginBottom: 16 }}>{activeDateObj?.dayName} {activeDateObj?.label} · tap to toggle</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+                  {tags.map(t => {
+                    const active = (programs[activeDay]?.tags || weeklyTemplate[activeDayName]?.tags || []).includes(t.id);
+                    return (
+                      <TouchableOpacity key={t.id} onPress={() => toggleDayTag(t.id)}
+                        style={{ backgroundColor: active ? t.color + '33' : theme.bgInput, borderWidth: 1, borderColor: active ? t.color : theme.borderInput, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 }}>
+                        <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: active ? t.color : theme.textMuted }}>{t.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                {(() => {
+                  const currentTags = programs[activeDay]?.tags || weeklyTemplate[activeDayName]?.tags || [];
+                  const hasChanged = JSON.stringify(currentTags.slice().sort()) !== JSON.stringify(tagModalInitialTags.slice().sort());
+                  return hasChanged ? (
+                    <TouchableOpacity
+                      onPress={() => {
+                        setShowTagModal(false);
+                        showToast('Tags saved', undefined, 'success');
+                      }}
+                      style={{ marginBottom: 8, paddingVertical: 12, alignItems: 'center', borderRadius: 8, backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder }}>
+                      <Text style={{ color: theme.accentGreen, fontSize: 13, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>CONFIRM</Text>
+                    </TouchableOpacity>
+                  ) : null;
+                })()}
+                <TouchableOpacity onPress={() => {
+  setShowTagModal(false);
+  setEditingTag(null);
+  setTagLabelInput('');
+  setTagColorInput(TAG_COLOR_PALETTE[0]);
+  openManageTags();
+}}
+                  style={{ paddingVertical: 10, alignItems: 'center', borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
+                  <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Manage Tags</Text>
                 </TouchableOpacity>
-              ))}
-            </View>
+              </View>
+            </TouchableOpacity>
           </TouchableOpacity>
         </Modal>
       )}
+
+      {/* Manage Tags Modal */}
+      <Modal visible={showManageTagsModal} transparent animationType="none" onRequestClose={closeManageTags} statusBarTranslucent hardwareAccelerated onShow={() => {
+        manageTagsAnim.value = 1200;
+        Animated.timing(manageTagsOverlayAnim, { toValue: 1, duration: 150, useNativeDriver: true }).start();
+        manageTagsAnim.value = withSpring(0, { damping: 80, stiffness: 600 });
+      }}>
+          <ToastRenderer />
+          <Animated.View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: theme.overlayBg, opacity: manageTagsOverlayAnim }}>
+            <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={closeManageTags} />
+          </Animated.View>
+          <ToastRenderer />
+          <View style={{ flex: 1, justifyContent: 'flex-end' }} pointerEvents="box-none">
+            <Reanimated.View style={[{
+              backgroundColor: theme.bgSheet,
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              borderTopWidth: 0.5,
+              borderColor: theme.borderSheet,
+              paddingBottom: 40,
+            }, manageTagsKeyboardStyle]}>
+              <View style={{ maxHeight: '85%' }}>
+              <TouchableOpacity onPress={closeManageTags} {...manageTagsPanResponder.panHandlers} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 8 }}>
+                <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
+              </TouchableOpacity>
+              <View style={{ paddingHorizontal: 20 }}>
+                <Text style={{ color: theme.textPrimary, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, marginBottom: 16 }}>MANAGE TAGS</Text>
+
+                {/* Existing tags list */}
+                <ScrollView style={{ maxHeight: 200 }} showsVerticalScrollIndicator={false} nestedScrollEnabled>
+                  {tags.map(t => {
+                    const isBeingEdited = editingTag?.id === t.id;
+                    const displayLabel = isBeingEdited ? (tagLabelInput || t.label) : t.label;
+                    const displayColor = isBeingEdited ? tagColorInput : t.color;
+                    return (
+                      <View key={t.id} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, gap: 10 }}>
+                        <View style={{ backgroundColor: displayColor + '22', borderWidth: 1, borderColor: displayColor + '55', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, flex: 1 }}>
+                          <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: displayColor }}>{displayLabel.toUpperCase()}</Text>
+                        </View>
+                        <TouchableOpacity onPress={() => { setEditingTag(t); setTagLabelInput(t.label); setTagColorInput(t.color); }}
+                          style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: isBeingEdited ? theme.accentGreenBorder : theme.accentBlueBorder, backgroundColor: isBeingEdited ? theme.accentGreenBg : theme.accentBlueBg }}>
+                          <Text style={{ fontSize: 11, color: isBeingEdited ? theme.accentGreen : theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>{isBeingEdited ? 'Editing' : 'Edit'}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => {
+                          Alert.alert('Delete Tag', `Delete "${t.label}"?`, [
+                            { text: 'Cancel', style: 'cancel' },
+                            { text: 'Delete', style: 'destructive', onPress: () => saveTags(tags.filter(x => x.id !== t.id)) },
+                          ]);
+                        }} style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: theme.accentRedBorder, backgroundColor: theme.accentRedBg }}>
+                          <Text style={{ fontSize: 11, color: theme.accentRed, fontFamily: 'DMSans_600SemiBold' }}>Delete</Text>
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  })}
+                </ScrollView>
+
+                {/* Create / edit form */}
+                <View style={{ marginTop: 16, paddingTop: 16, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
+                  <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>
+                    {editingTag ? 'Edit Tag' : 'New Tag'}
+                  </Text>
+                  <TextInput
+                    style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: 'DMSans_400Regular', marginBottom: 12 }}
+                    placeholder="Tag name (max 20 chars)"
+                    placeholderTextColor={theme.textPlaceholder}
+                    value={tagLabelInput}
+                    onChangeText={v => setTagLabelInput(v.slice(0, 20))}
+                    maxLength={20}
+                  />
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+                    {TAG_COLOR_PALETTE.map(c => (
+                      <TouchableOpacity key={c} onPress={() => setTagColorInput(c)}
+                        style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: c, borderWidth: tagColorInput === c ? 3 : 0, borderColor: theme.textPrimary, alignItems: 'center', justifyContent: 'center' }}>
+                        {tagColorInput === c && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: 'rgba(255,255,255,0.6)' }} />}
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    {editingTag && (
+                      <TouchableOpacity onPress={() => { setEditingTag(null); setTagLabelInput(''); setTagColorInput(TAG_COLOR_PALETTE[0]); }}
+                        style={{ flex: 1, padding: 12, borderRadius: 8, borderWidth: 1, borderColor: theme.borderInput, backgroundColor: theme.bgInput, alignItems: 'center' }}>
+                        <Text style={{ color: theme.textMuted, fontFamily: 'DMSans_600SemiBold', fontSize: 14 }}>Cancel</Text>
+                      </TouchableOpacity>
+                    )}
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (!tagLabelInput.trim()) return;
+                        if (editingTag) {
+                          saveTags(tags.map(t => t.id === editingTag.id ? { ...t, label: tagLabelInput.trim(), color: tagColorInput } : t));
+                          setEditingTag(null);
+                        } else {
+                          if (tags.length >= 20) {
+                            showToast('Tag limit reached', 'Max 20 tags in library', 'info');
+                            return;
+                          }
+                          saveTags([...tags, { id: `tag_${Date.now()}`, label: tagLabelInput.trim(), color: tagColorInput }]);
+                        }
+                        const msg = editingTag ? 'Tag updated' : 'Tag created';
+                        const sub = tagLabelInput.trim();
+                        setTagLabelInput('');
+                        setTagColorInput(TAG_COLOR_PALETTE[0]);
+                        setTimeout(() => showToast(msg, sub, 'success'), 400);
+                      }}
+                      style={{ flex: 1, padding: 12, borderRadius: 8, backgroundColor: tagColorInput, alignItems: 'center' }}>
+                      <Text style={{ color: '#ffffff', fontFamily: 'DMSans_700Bold', fontSize: 14 }}>{editingTag ? 'Save Changes' : 'Create Tag'}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+              </View>
+            </Reanimated.View>
+          </View>
+        </Modal>
 
     </LinearGradient>
     </KeyboardAvoidingView>
@@ -756,7 +1020,7 @@ const styles = StyleSheet.create({
   headerLabel:          { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2, fontFamily: 'DMSans_700Bold' },
   headerTitle:          { fontSize: 32, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
   dayTabsContainer:     { marginBottom: 16 },
-  dayTab:               { width: 72, paddingVertical: 8, borderRadius: 8, borderWidth: 0.5, marginRight: 8, alignItems: 'center' },
+  dayTab:               { width: 72, height: 74, paddingVertical: 8, borderRadius: 8, borderWidth: 0.5, marginRight: 8, alignItems: 'center', justifyContent: 'center' },
   dayTabText:           { fontSize: 13, fontWeight: '700', fontFamily: 'DMSans_700Bold' },
   dayTabSub:            { fontSize: 9, letterSpacing: 1, marginTop: 2, fontFamily: 'DMSans_700Bold' },
   cardioCard:           { borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, padding: 28, alignItems: 'center' },

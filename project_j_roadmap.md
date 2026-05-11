@@ -5,7 +5,7 @@ DONE -- SHIPPED
 [x] Macro colors -- desaturated (Protein #0d9268, Carbs #c47d1a, Fat #a83232)
 [x] GestureHandlerRootView fix in _layout.tsx
 [x] Fitness Metrics no-data placeholder
-[x] Edit layout sheet -- slides up over home screen
+[x] Edit layout sheet -- slides up over home screen, Modal above tab bar
 [x] Three header buttons -- refresh, calendar, grid
 [x] DraggableFlatList in edit sheet
 [x] Card visibility persisted to pj_settings
@@ -28,7 +28,7 @@ DONE -- SHIPPED
 [x] Macro goals -- ratio and fixed modes
 [x] Water bar animation fix
 [x] Sleep donut draw-on animation
-[x] Toast system -- slide in from bottom, swipe to dismiss, themed
+[x] Toast system -- slide in from bottom, swipe to dismiss, themed, solid background, keyboard-aware (top when keyboard open)
 [x] Weight carry-forward
 [x] IF time picker light theme fix
 [x] Food Library header title fix
@@ -52,7 +52,7 @@ DONE -- SHIPPED
 [x] Expanded VERSES array -- 52 verses, now KJV translation
 [x] bible-web.ts -- full KJV Bible, all 66 books, fetch + cache per book from raw GitHub
 [x] bible.tsx -- Bible reader, book picker, chapter nav, highlighted verse, reflection modal
-[x] journal.tsx -- journal screen, categories, FAB, filter pills, edit, swipe delete (bugs outstanding)
+[x] journal.tsx -- journal screen, categories, FAB, filter pills, edit, swipe delete
 [x] _layout.tsx -- bible and journal routes added
 [x] Reflection banner on Bible screen -- accent colored, routes to journal
 [x] pj_bible_reflections -- merged entry format with id, category, title, notes
@@ -67,6 +67,25 @@ DONE -- SHIPPED
 [x] Sleep goal in profile -- scroll-driven wheel picker, auto-positions to current value, saves to pj_profile sleepGoal
 [x] Floating save bar on profile -- animates up on change, away on save, never shows on fresh load
 [x] Toast on profile save
+[x] IF countdown color -- accentBlueRaw across all themes
+[x] IF method buttons -- Slate theme fixed
+[x] IF daily reset bug -- date check on ifStart load, clears stale fast on new day
+[x] Water remove toasts -- -oz buttons now fire toast
+[x] Toast render bug -- slide-in animation wrapped in useEffect
+[x] Toast solid background -- bgSheet token, no transparency
+[x] Toast keyboard aware -- appears at top when keyboard open (keyboardWillShow/Hide listeners)
+[x] Weight persistence -- logWeight writes to AsyncStorage explicitly
+[x] Weight auto-save fix -- weight added to auto-save object, no longer wiped on state change
+[x] Weight comparison fields -- load in useFocusEffect, correct loop direction for earliest weight
+[x] Edit layout sheet -- Modal with smooth animation, renders above tab bar, separate modalVisible state
+[x] Window closes in / Reset window text colors fixed
+[x] Workout tag system -- custom tags, color picker, 6/day limit, 20 library limit, 20 char name limit
+[x] Tag pills on Today's Training home card -- 3x2 grid, unassigned ghost pill
+[x] Tag pills on workout tab -- 3 per row, 2 rows max, Tags button
+[x] Day scroller colored dots -- left/right column distribution, up to 6 dots
+[x] Manage tags sheet -- slide-up from bottom, keyboard avoiding, live preview while editing
+[x] Assign tags modal -- confirm button appears only on change, toast on confirm
+[x] workoutData.ts -- WorkoutTag interface, TAG_COLOR_PALETTE, DEFAULT_TAGS added
 
 JOURNAL -- REMAINING FEATURES
 Edit entry title (currently only notes and category editable)
@@ -77,12 +96,21 @@ Long text stress test -- verify 500 word entries format correctly
 Multiple entries same day -- verify prayer + gratitude same day display correctly
 Search within journal entries (roadmapped, low priority)
 
+BUGS OUTSTANDING
+Manage tags sheet slide-up animation not working -- sheet pops in instead of sliding up. Code is correct (translateY Animated.Value 600 to 0, useNativeDriver true, requestAnimationFrame before setVisible). Suspected cause: KeyboardAvoidingView with justifyContent flex-end and pointerEvents box-none interfering with transform. Try removing KeyboardAvoidingView entirely first to isolate, then add keyboard handling back separately.
+Toast appears behind manage tags Modal -- iOS platform limitation, Toast renders below Modal in native layer. Needs architectural solution: either render toast inside Modal or implement global portal system above all Modals.
+Meal slot + signs to accent color (BUG)
+Toast on food remove (BUG)
+Weight log button no dim/inactive state
+Warm theme button in settings display bug
+Light theme tile goes grey on dark/warm mode in theme selector
+
 NEXT SESSION PRIORITY (in order, do not deviate)
-1. Home tab bugs -- IF countdown text color, Slate IF buttons, weight card colors, meal slot + signs, water/food remove toasts, edit layout sheet choppy
-2. IF card daily reset bug -- card shows yesterday's start time and data, needs to reset each day like all other cards
-3. Workout tag system -- custom tags, color picker, pills on Today's Training card
-4. Net calories + calorie color scoring
-5. Barcode scanner fix
+1. Fix manage tags slide-up animation -- see bug description above
+2. Fix toast above Modal -- architectural solution needed
+3. Net calories + calorie color scoring
+4. Barcode scanner fix -- camera session not tearing down
+5. Schedule rework -- remove DEFAULT_PROGRAM, all days unassigned by default, preset schedule templates (PPL, Upper/Lower, Full Body), user can pick template or stay fluid
 
 AFTER NEXT SESSION
 Faith Journey + Coaching Modes -- build together, same session, they are connected
@@ -131,7 +159,7 @@ Streak numbers animating up on stats load
 Premium vs free data tiers -- non-standard charts/graphs as paid features
 
 WORKOUT TAB
-Workout tag system -- custom tags, color picker, replaces Push/Pull/Legs/Cardio, pills on Today's Training (HIGH, NEXT SESSION)
+Schedule rework -- remove DEFAULT_PROGRAM hardcoded schedule, all days unassigned at launch, preset schedule templates (PPL, Upper/Lower, Full Body, custom), fluid week-by-week option
 Workout tab nested scroll bug -- DraggableFlatList inside ScrollView warning (HIGH)
 Workout drag handle -- hit target too small (HIGH)
 Workout drag handle -- dead zone before drag triggers (HIGH)
@@ -150,15 +178,6 @@ Meal slots fully customizable -- rename, reorder, add custom slots (HIGH)
 Calorie breakdown by meal -- each slot gets a budget
 Recipe builder polish
 Long press food log items -- quick action menu
-
-BUGS OUTSTANDING
-IF countdown timer text black across all themes
-Slate IF method buttons bright white
-Weight card colors off -- varies by theme
-Toast on water remove
-Edit layout sheet laggy/choppy open and close
-Weight log button no dim/inactive state
-IF card shows yesterday's start time and data on new day -- needs daily reset
 
 FAITH FEATURES
 Bible reader -- SHIPPED
@@ -274,13 +293,27 @@ Sleep goal pulls from pj_profile sleepGoal field, defaults to 7 if not set
 Tips: 4 categories (low_deep, low_rem, low_duration, catch_all, good), 3 tips each, seeded by date so consistent within a day
 Sleep goal in profile uses scroll-driven wheel picker, 15-minute increments, auto-scrolls to current value on open
 
+Workout tag system decisions:
+Tags stored globally in pj_settings.workoutTags as WorkoutTag[]
+WorkoutTag: { id, label, color }
+DayProgram.tags: string[] of tag ids
+Default tags ship with app: Push, Pull, Legs + Core, Cardio, Rest
+Color palette: 12 preset colors in TAG_COLOR_PALETTE (workoutData.ts)
+Limits: 6 tags per day, 20 in library, 20 char name
+Unassigned days show ghost pill, no color
+Pills: 3x2 grid on home card, 3 per row on workout tab
+Day scroller: colored dots left/right of center text, max 6
+IF data is not saved to a separate history yet -- lives in pj_YYYY-MM-DD daily storage, accessible for stats later
+
 Build standards (all non-negotiable, built at time of feature):
 Three gate rule -- works, looks premium, feels right
 Dim/inactive button states on all submittable buttons
 44x44pt minimum touch targets
 Disclaimer on all health features
 Haptics standard -- light/medium/heavy
+Keyboard avoiding -- every modal/sheet/screen with text input wraps in KeyboardAvoidingView
 Animation standard -- expand/collapse uses off-screen measure + dual animation pattern (see journal.tsx SwipeableEntry). Never use maxHeight. Container height on JS thread (useNativeDriver: false), content opacity/translateY on native thread (useNativeDriver: true).
+Sheet slide-up -- animationType none, manual translateY from 600+ to 0, set value before setVisible via requestAnimationFrame
 Card press scale -- down to 0.97 on pressIn, back to 1.0 on pressOut
 Empty states on all lists and cards
 Loading states on async operations
@@ -298,15 +331,13 @@ Never assume a bug is theme-specific without confirming on multiple themes
 Data/storage decisions:
 AsyncStorage keys all defined above
 pj_profile now includes sleepGoal field (string, hours as decimal e.g. "7.5")
+pj_settings now includes workoutTags array
 Firebase Auth planned pre-beta -- Apple and Google sign in
 Data migration from AsyncStorage to Firestore per user when Auth is built
 Dev reset/export -- pin, build only if needed before TestFlight
 
 Macro goals system:
 Two modes - Ratio and Fixed. Cross-mode sync on save.
-
-Workout tag system (planned):
-Custom names, colors, multiple per day. Color picker or preset palette. Settings managed. Replaces Push/Pull/Legs/Cardio. Pills on Today's Training card.
 
 Coaching modes:
 Discipline -- strict both directions
@@ -348,3 +379,4 @@ Roadmap updated at end of every session
 Screenshot before and after every visual change
 If a find/replace is wrong or needs to be walked back mid-response, mark it with a large visible warning header before continuing. Format: # ⚠️ STOP — DO NOT APPLY THE CHANGE ABOVE
 Mid-response correction standard: if a find/replace is written and then recognized as wrong before the response ends, the warning header goes on IMMEDIATELY before any further text -- even if the correction immediately follows. No exceptions. Hard to miss is the requirement.
+Send changes in numbered chunks. Confirm each chunk before sending the next. Never dump all changes at once.

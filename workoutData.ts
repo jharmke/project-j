@@ -9,14 +9,35 @@ export interface Exercise {
   isCardio?: boolean;
 }
 
+export interface WorkoutTag {
+  id: string;
+  label: string;
+  color: string;
+}
+
 export interface DayProgram {
-  type: 'lift' | 'cardio' | 'rest';
+  type: 'lift' | 'cardio' | 'rest' | 'unassigned';
   focus: string;
   muscles?: string;
   color?: string;
   customLabel?: string;
   exercises: Exercise[];
+  tags?: string[];
 }
+
+export const TAG_COLOR_PALETTE = [
+  '#3b82f6', '#10b981', '#f59e0b', '#f97316',
+  '#ef4444', '#8b5cf6', '#14b8a6', '#ec4899',
+  '#6366f1', '#06b6d4', '#f43f5e', '#64748b',
+];
+
+export const DEFAULT_TAGS: WorkoutTag[] = [
+  { id: 'tag_push',    label: 'Push',         color: '#3b82f6' },
+  { id: 'tag_pull',    label: 'Pull',         color: '#10b981' },
+  { id: 'tag_legs',    label: 'Legs + Core',  color: '#f59e0b' },
+  { id: 'tag_cardio',  label: 'Cardio',       color: '#f97316' },
+  { id: 'tag_rest',    label: 'Rest',         color: '#64748b' },
+];
 
 export const DEFAULT_PROGRAM: Record<string, DayProgram> = {
   Wed: { type: 'lift', focus: 'Push', muscles: 'Chest · Shoulders · Triceps', color: '#3b82f6', exercises: [

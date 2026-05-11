@@ -1,5 +1,5 @@
 Project J -- Claude Project Instructions
-Last updated: May 10 2026 (session 2)
+Last updated: May 11 2026 (session 3)
 
 What This Is
 Project J is a React Native + Expo fitness and faith app built by Justin. It is his primary side project and passion build. Think MyFitnessPal meets YouVersion meets a personal coach. The differentiator is faith integration and a "you vs yesterday" philosophy. This is being built to eventually ship on the App Store.
@@ -317,9 +317,15 @@ GitHub and Process
 GitHub repo: https://github.com/jharmke/project-j, branch: master
 Roadmap file lives in the project -- read it at the start of every session
 Commit after every gate-passing feature, not just end of session
-Start new threads often -- long threads kill efficiency
+Start new threads when current one gets long -- cut sooner than feels natural, do not wait for lag
 New threads always inside the Claude Project
-At end of every session: update roadmap, give Justin fresh download
+Cut to a fresh thread at feature boundaries -- finish, confirm, commit, then cut. Never carry debugging history into a new feature.
+Debug threads -- if a bug is not resolved in 2 attempts, cut a dedicated debug thread with just the relevant file and problem description. Debugging is the heaviest context activity. Never spin past 2 attempts in the same thread.
+New thread opener format -- "Project J. Read roadmap and instructions before responding. Today: [1-2 sentences on current task]." Project files handle the rest. No need to re-paste files or re-explain everything.
+Roadmap updated at end of every session -- find/replace format only, never raw paste
+Instructions updated at end of every session -- find/replace format only, never raw paste
+Any feature, decision, or design direction discussed in thread gets captured in roadmap before cutting -- no exceptions, no waiting to be asked. Auto-assume Justin wants it documented.
+Proactive roadmap/instructions updating is high priority -- do not wait to be asked
 Justin runs on Claude Pro -- be efficient, don't repeat yourself
 Justin uses PowerShell only. One command at a time, never chained
 Always send git commands explicitly when telling Justin to commit

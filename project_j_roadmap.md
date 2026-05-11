@@ -85,11 +85,29 @@ Multiple entries same day -- verify prayer + gratitude same day display correctl
 Search within journal entries (roadmapped, low priority)
 
 NEXT SESSION PRIORITY (in order, do not deviate)
-1. Net calories + calorie color scoring
-2. Barcode scanner fix -- camera session not tearing down
-3. My Programs builder -- name it, assign focus/tags to each day, save it, load it
-4. Sessions tab in workout library -- save a day's exercise list as a named session, load onto any day
-5. Stats tab dedicated session -- full plan before touching code
+1. Barcode scanner -- teardown bug fix, full polish pass (scan confirmation flash, haptic, smooth transition, animated scan line 1-2 passes, theme colored viewfinder corners, torch toggle, scan-outline icon swap, food photo on food/recipe profile)
+2. Day scroller -- remove focus labels, empty when no tags assigned
+3. Clear Program option + unassigned day display decision
+4. Today's Training card touchup -- exercise row layout (stack duration under name left aligned), duration format fix (drop min label), Apple Health badge on imported workouts
+5. Net calories + active calories display on home screen
+6. Goal weight + projected date -- profile/weight section, live update as typed, adjusts with weekly deficit rate, milestone celebrations
+7. You vs Yesterday card -- discuss and finalize vision
+8. Celebration animations -- confetti, slam effect (rare/milestone moments only), accompanying card that doesn't block effect, once per day cap on dramatic animations
+9. Total Lost calculation bug -- should show earliest minus most recent known weight regardless of today having a log
+10. Sleep card -- clearer tip language when stages below ideal range, call out the number directly
+11. Fitness metrics card update
+12. Stats page -- discuss revamp, consolidation, pagination, paginated cards pattern
+13. Excluded dates -- discuss design and placement, neutral dim dot on calendar, excluded list view
+14. Calorie color scoring -- mode aware (Discipline/Balance/Mindful), stub mode for now default to Balance
+15. My Programs builder -- name it, assign focus/tags to each day, save it, load it
+16. Sessions tab in workout library -- save a day's exercise list as a named session, load onto any day
+17. Daily Note + Workout Note -- wire to journal, add workout category to journal alongside verse/prayer/study/personal/gratitude
+18. Bug sweep -- meal slot + signs accent color, toast on food remove, weight log dim/inactive state
+19. Macro bars animated + food log donut animated -- verify first, may already be done
+20. State restoration on launch -- save active tab/scroll position, restore on cold launch, seamless re-entry
+21. Bible reading programs / Bible studies
+22. Camera progress tracker with timelapse + program milestone integration (30/60/90 day anchors, tie to progress photos)
+23. TestFlight -- discuss setup, App Store Connect, tester invite flow
 
 AFTER NEXT SESSION
 Faith Journey + Coaching Modes -- build together, same session, they are connected
@@ -113,7 +131,7 @@ Net calories display (HIGH)
 Calorie color scoring -- mode aware (HIGH)
 You vs Yesterday card
 Streak card -- Bible, workout, calorie streaks (HIGH)
-Auto date rollover -- AppState listener + midnight timer, both triggers (HIGH) -- currently data does not reset at midnight, user noticed this in real use
+Auto date rollover -- AppState listener + midnight timer -- SHIPPED. todayKey and todayDay are now state-based, reset on AppState foreground and midnight timer. Daily state clears automatically on date change.
 Morning briefing card -- first open of day, customizable slots, faith first, yesterday recap, today targets, coaching voice line
 Today's Message customization -- scripture rotation manager, personal messages pool, book/chapter/verse picker pulling from bible-web.ts, preview matches card exactly
 Weight log button dim/inactive state -- dim when empty, accent when ready (BUG)
@@ -402,4 +420,4 @@ Standard Animated.Value translateY does NOT work reliably inside a Modal on iOS.
 Toast above Modal (CRITICAL):
 RN Modals create a new native window layer that sits above everything in the normal view tree. Toast rendered in the normal tree is invisible behind any open Modal. Fix: export ToastRenderer from Toast.tsx (reads from ToastListContext), render <ToastRenderer /> directly inside the Modal JSX. ToastListContext provides toasts + dismiss + keyboardVisible to any renderer. Both the normal tree renderer and the in-modal renderer share the same state so toasts show correctly in both contexts.
 
-Updated after session May 10 2026 (session 2). Manage tags animation, toast above modal, program system, blank day default, tag pill contrast all shipped this session.
+Updated after session May 11 2026 (session 3). Auto date rollover shipped. Barcode scanner identified as broken core feature, elevated to top priority. Extensive planning session -- goal weight, You vs Yesterday, celebration animations (confetti + slam effect for rare milestones), Today's Training layout, sleep tip language, stats revamp, excluded dates, state restoration, camera progress tracker, TestFlight all roadmapped. Day scroller focus labels being removed in favor of tag dots only. Journal gaining workout category. Daily Note and Workout Note both wiring to journal. No emojis in default app -- Ionicons only, user can add emojis in their own content. Program stats planned (days in program, milestones, photo tie-in) when My Programs builder ships.

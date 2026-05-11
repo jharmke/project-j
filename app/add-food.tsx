@@ -1,11 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Camera, CameraView } from 'expo-camera';
+import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import { doc, getDoc } from 'firebase/firestore';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, FlatList, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, FlatList, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Reanimated, { Easing as ReEasing, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { USDA_API_KEY } from '../config';
 import { db, getUserId, loadFromFirebase, saveToFirebase } from '../firebaseConfig';
 import { useTheme } from '../theme';
@@ -44,9 +46,42 @@ export default function AddFoodScreen() {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [myFoods, setMyFoods] = useState<MyFood[]>([]);
   const [scanning, setScanning] = useState(false);
+  const [closingCamera, setClosingCamera] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
+  const [torchOn, setTorchOn] = useState(false);
+  const [viewfinderHeight, setViewfinderHeight] = useState(0);
+  const scanFlash = useRef(new Animated.Value(0)).current;
+  const cameraOpacity = useRef(new Animated.Value(0)).current;
   const scanningRef = useRef(false);
   const cameraReadyTimer = useRef<any>(null);
+  const closeTimer = useRef<any>(null);
+
+  const scanLineY = useSharedValue(0);
+  const scanLineOpacity = useSharedValue(0);
+
+  const scanLineStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: scanLineY.value }],
+    opacity: scanLineOpacity.value,
+  }));
+
+  const startScanLineAnim = (containerHeight: number) => {
+    if (containerHeight <= 0) return;
+    scanLineY.value = 0;
+    scanLineOpacity.value = 1;
+    scanLineY.value = withRepeat(
+      withSequence(
+        withTiming(containerHeight - 2, { duration: 900, easing: ReEasing.inOut(ReEasing.quad) }),
+        withTiming(0, { duration: 900, easing: ReEasing.inOut(ReEasing.quad) })
+      ),
+      3,
+      false,
+      (finished) => {
+        if (finished) {
+          scanLineOpacity.value = withTiming(0, { duration: 200 });
+        }
+      }
+    );
+  };
   const [showAddNew, setShowAddNew] = useState(false);
   const [newName, setNewName] = useState('');
   const [newCal, setNewCal] = useState('');
@@ -244,27 +279,57 @@ const openFoodDetail = (food: SearchResult) => {
     const { status } = await Camera.requestCameraPermissionsAsync();
     if (status === 'granted') {
       scanningRef.current = true;
+      setClosingCamera(false);
+      setTorchOn(false);
+      setViewfinderHeight(0);
+      cameraOpacity.setValue(0);
       setScanning(true);
       setCameraReady(false);
-      cameraReadyTimer.current = setTimeout(() => setCameraReady(true), 435);
+      cameraReadyTimer.current = setTimeout(() => {
+        setCameraReady(true);
+        Animated.timing(cameraOpacity, { toValue: 1, duration: 250, useNativeDriver: true }).start();
+      }, 435);
     }
+  };
+
+  const stopScanning = (delay = 200) => {
+    scanningRef.current = false;
+    setCameraReady(false);
+    setClosingCamera(true);
+    if (cameraReadyTimer.current) clearTimeout(cameraReadyTimer.current);
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    Animated.timing(cameraOpacity, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
+      closeTimer.current = setTimeout(() => {
+        setScanning(false);
+        setClosingCamera(false);
+        setTorchOn(false);
+      }, delay);
+    });
   };
 
 const handleBarcodeScan = async ({ data }: { data: string }) => {
     if (scanningRef.current === false) return;
     scanningRef.current = false;
-    setScanning(false);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Animated.sequence([
+      Animated.timing(scanFlash, { toValue: 1, duration: 60, useNativeDriver: true }),
+      Animated.timing(scanFlash, { toValue: 0, duration: 300, useNativeDriver: true }),
+    ]).start();
     setCameraReady(false);
     if (cameraReadyTimer.current) clearTimeout(cameraReadyTimer.current);
+    setTimeout(() => stopScanning(200), 150);
     try {
-      // Try Open Food Facts first with retry logic
+      // Try Open Food Facts with timeout
       let result = null;
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 8000);
           const response = await fetch(
             `https://world.openfoodfacts.org/api/v0/product/${data}.json`,
-            { headers: { 'Accept': 'application/json' } }
+            { headers: { 'Accept': 'application/json' }, signal: controller.signal }
           );
+          clearTimeout(timeout);
           const text = await response.text();
           result = JSON.parse(text);
           break;
@@ -284,6 +349,8 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         );
         const name = product.product_name || 'Unknown Product';
         const brands = product.brands || '';
+        const displayName = `${name}${brands ? ' · ' + brands : ''}`;
+        setQuery(displayName);
         setResults([{
           description: `${name}${brands ? ' · ' + brands : ''}`,
           foodNutrients: [
@@ -431,7 +498,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
     <TouchableOpacity
       onPress={startScan}
       style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, padding: 6, alignItems: 'center', justifyContent: 'center' }}>
-      <Ionicons name="camera-outline" size={24} color={theme.accentBlue} />
+      <Ionicons name="barcode-outline" size={24} color={theme.accentBlue} />
     </TouchableOpacity>
   </View>
 </View>
@@ -617,41 +684,73 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
 
       {/* Camera */}
       {scanning && (
-        <View style={styles.cameraOverlay}>
+        <Animated.View style={[styles.cameraOverlay, { opacity: cameraOpacity }]}>
           <CameraView
             style={styles.camera}
-            onBarcodeScanned={handleBarcodeScan}
+            onBarcodeScanned={closingCamera ? undefined : handleBarcodeScan}
             barcodeScannerSettings={{ barcodeTypes: ['upc_a', 'upc_e', 'ean13', 'ean8'] }}
+            enableTorch={torchOn}
           />
-          {/* Viewfinder overlay */}
-          {cameraReady && <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
-            {/* Top dark band */}
-            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '30%', backgroundColor: 'rgba(0,0,0,0.55)' }} />
-            {/* Bottom dark band */}
-            <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '35%', backgroundColor: 'rgba(0,0,0,0.55)' }} />
-            {/* Left dark band */}
-            <View style={{ position: 'absolute', top: '30%', bottom: '35%', left: 0, width: '10%', backgroundColor: 'rgba(0,0,0,0.55)' }} />
-            {/* Right dark band */}
-            <View style={{ position: 'absolute', top: '30%', bottom: '35%', right: 0, width: '10%', backgroundColor: 'rgba(0,0,0,0.55)' }} />
-            {/* Corner brackets */}
-            <View style={{ width: '80%', aspectRatio: 2.5, position: 'relative' }}>
-              {/* Top-left */}
-              <View style={{ position: 'absolute', top: 0, left: 0, width: 28, height: 28, borderTopWidth: 3, borderLeftWidth: 3, borderColor: '#10b981', borderTopLeftRadius: 4 }} />
-              {/* Top-right */}
-              <View style={{ position: 'absolute', top: 0, right: 0, width: 28, height: 28, borderTopWidth: 3, borderRightWidth: 3, borderColor: '#10b981', borderTopRightRadius: 4 }} />
-              {/* Bottom-left */}
-              <View style={{ position: 'absolute', bottom: 0, left: 0, width: 28, height: 28, borderBottomWidth: 3, borderLeftWidth: 3, borderColor: '#10b981', borderBottomLeftRadius: 4 }} />
-              {/* Bottom-right */}
-              <View style={{ position: 'absolute', bottom: 0, right: 0, width: 28, height: 28, borderBottomWidth: 3, borderRightWidth: 3, borderColor: '#10b981', borderBottomRightRadius: 4 }} />
-              {/* Center line */}
-              <View style={{ position: 'absolute', top: '50%', left: '5%', right: '5%', height: 1, backgroundColor: 'rgba(16,185,129,0.5)' }} />
+          {/* Scan confirmation flash */}
+          <Animated.View
+            pointerEvents="none"
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: '#ffffff', opacity: scanFlash }}
+          />
+          {/* Viewfinder -- only show after camera is ready */}
+          {cameraReady && !closingCamera && (
+            <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
+              {/* Dark bands */}
+              <View style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '30%', backgroundColor: 'rgba(0,0,0,0.55)' }} />
+              <View style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: '35%', backgroundColor: 'rgba(0,0,0,0.55)' }} />
+              <View style={{ position: 'absolute', top: '30%', bottom: '35%', left: 0, width: '10%', backgroundColor: 'rgba(0,0,0,0.55)' }} />
+              <View style={{ position: 'absolute', top: '30%', bottom: '35%', right: 0, width: '10%', backgroundColor: 'rgba(0,0,0,0.55)' }} />
+              {/* Corner brackets + scan line */}
+              <View
+                style={{ width: '80%', aspectRatio: 2.5, position: 'relative' }}
+                onLayout={e => {
+                  const h = e.nativeEvent.layout.height;
+                  if (h > 0 && h !== viewfinderHeight) {
+                    setViewfinderHeight(h);
+                    startScanLineAnim(h);
+                  }
+                }}>
+                <View style={{ position: 'absolute', top: 0, left: 0, width: 28, height: 28, borderTopWidth: 3, borderLeftWidth: 3, borderColor: theme.accentBlueRaw, borderTopLeftRadius: 4 }} />
+                <View style={{ position: 'absolute', top: 0, right: 0, width: 28, height: 28, borderTopWidth: 3, borderRightWidth: 3, borderColor: theme.accentBlueRaw, borderTopRightRadius: 4 }} />
+                <View style={{ position: 'absolute', bottom: 0, left: 0, width: 28, height: 28, borderBottomWidth: 3, borderLeftWidth: 3, borderColor: theme.accentBlueRaw, borderBottomLeftRadius: 4 }} />
+                <View style={{ position: 'absolute', bottom: 0, right: 0, width: 28, height: 28, borderBottomWidth: 3, borderRightWidth: 3, borderColor: theme.accentBlueRaw, borderBottomRightRadius: 4 }} />
+                <Reanimated.View style={[
+                  { position: 'absolute', left: 4, right: 4, height: 2, backgroundColor: theme.accentBlueRaw, borderRadius: 1 },
+                  scanLineStyle,
+                ]} />
+              </View>
+              <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: 'DMSans_400Regular', marginTop: 12, letterSpacing: 1 }}>
+                Align barcode within frame
+              </Text>
+              {/* Torch toggle */}
+              <TouchableOpacity
+                onPress={() => setTorchOn(t => !t)}
+                style={{
+                  position: 'absolute',
+                  bottom: 100,
+                  alignSelf: 'center',
+                  backgroundColor: torchOn ? theme.accentBlueRaw : 'rgba(0,0,0,0.5)',
+                  borderRadius: 30,
+                  width: 52,
+                  height: 52,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderWidth: 1,
+                  borderColor: theme.accentBlueRaw,
+                }}>
+                <Ionicons name={torchOn ? 'flashlight' : 'flashlight-outline'} size={24} color="#ffffff" />
+              </TouchableOpacity>
+              {/* Cancel -- only shows when camera is ready */}
+              <TouchableOpacity style={{ position: 'absolute', bottom: 40, alignSelf: 'center', backgroundColor: 'rgba(0,0,0,0.5)', borderWidth: 1, borderColor: theme.accentBlueRaw, paddingHorizontal: 28, paddingVertical: 14, borderRadius: 8 }} onPress={() => stopScanning(200)}>
+                <Text style={{ color: '#ffffff', fontSize: 16, fontFamily: 'DMSans_600SemiBold' }}>Cancel</Text>
+              </TouchableOpacity>
             </View>
-            <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontFamily: 'DMSans_400Regular', marginTop: 12, letterSpacing: 1 }}>Align barcode within frame</Text>
-          </View>}
-          <TouchableOpacity style={styles.cancelScan} onPress={() => setScanning(false)}>
-            <Text style={styles.cancelScanText}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
+          )}
+        </Animated.View>
       )}
     </View>
   );

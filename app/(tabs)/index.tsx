@@ -393,6 +393,8 @@ export default function HomeScreen() {
   const [stepGoal,       setStepGoal]       = useState(10000);
   const [sleepGoal,      setSleepGoal]      = useState(7);
   const [macroGoals,     setMacroGoals]     = useState({ protein: 0, carbs: 0, fat: 0 });
+  const [goalWeight,     setGoalWeight]     = useState<number|null>(null);
+  const [weightGoalPace, setWeightGoalPace] = useState<string>('lose_1');
   const [editingStepGoal,setEditingStepGoal]= useState(false);
   const [dailyVerse,     setDailyVerse]     = useState<{text:string;reference:string}|null>(null);
   const [workoutPrograms,setWorkoutPrograms]= useState<Record<string,any>>({});
@@ -712,6 +714,8 @@ export default function HomeScreen() {
           if (p.calTarget && parseInt(p.calTarget) > 0) {
             setCalTarget(parseInt(p.calTarget));
           }
+          if (p.goalWeight && parseFloat(p.goalWeight) > 0) setGoalWeight(parseFloat(p.goalWeight));
+          if (p.weightGoal) setWeightGoalPace(p.weightGoal);
 
           // Load macro goals
           const kcalTarget = parseInt(p.calTarget) || 0;
@@ -1108,7 +1112,7 @@ export default function HomeScreen() {
         </View>
         <View style={styles.weightStat}>
           <Text style={[styles.weightVal, { color: weight&&yesterdayWeight ? weight<yesterdayWeight ? theme.statusGood : weight>yesterdayWeight ? theme.statusBad : theme.textPrimary : theme.textPrimary }]}>
-            {weight&&yesterdayWeight ? `${weight>yesterdayWeight?'+':''}${Math.round((weight-yesterdayWeight)*10)/10}` : '--'}
+            {weight&&yesterdayWeight ? `${weight>yesterdayWeight?'+':''}${Math.round((weight-yesterdayWeight)*10)/10} lbs` : '--'}
           </Text>
           <Text style={[styles.weightLbl, { color: theme.textMuted }]}>vs Yesterday</Text>
         </View>
@@ -1119,6 +1123,38 @@ export default function HomeScreen() {
           <Text style={[styles.weightLbl, { color: theme.textMuted }]}>Total Lost</Text>
         </View>
       </View>
+      {goalWeight && (() => {
+        const GOAL_DEFICITS: Record<string, number> = { lose_2: -1000, lose_1_5: -750, lose_1: -500, lose_0_5: -250, maintain: 0, gain_0_5: 250, gain_1: 500 };
+        const currentW = weight || lastKnownWeight?.val || null;
+        const deficit = GOAL_DEFICITS[weightGoalPace];
+        let projectedDate: string | null = null;
+        if (currentW && deficit && deficit !== 0) {
+          const lbsPerWeek = Math.abs(deficit) / 500;
+          const lbsToGo = currentW - goalWeight;
+          if ((deficit < 0 && lbsToGo > 0) || (deficit > 0 && lbsToGo < 0)) {
+            const projDate = new Date();
+            projDate.setDate(projDate.getDate() + Math.round((Math.abs(lbsToGo) / lbsPerWeek) * 7));
+            projectedDate = projDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+          }
+        }
+        const lbsToGo = currentW ? Math.abs(currentW - goalWeight) : null;
+        return (
+          <View style={[styles.weightRow, { paddingTop: 10, borderTopWidth: 0.5, borderTopColor: theme.borderCard }]}>
+            <View style={styles.weightStat}>
+              <Text style={[styles.weightVal, { color: theme.accentBlue }]}>{goalWeight} lbs</Text>
+              <Text style={[styles.weightLbl, { color: theme.textMuted }]}>Goal</Text>
+            </View>
+            <View style={styles.weightStat}>
+              <Text style={[styles.weightVal, { color: theme.accentBlue }]}>{lbsToGo !== null ? `${Math.round(lbsToGo * 10) / 10} lbs` : '--'}</Text>
+              <Text style={[styles.weightLbl, { color: theme.textMuted }]}>To Go</Text>
+            </View>
+            <View style={styles.weightStat}>
+              <Text style={[styles.weightVal, { color: theme.accentBlue }]}>{projectedDate || '--'}</Text>
+              <Text style={[styles.weightLbl, { color: theme.textMuted }]}>Projected</Text>
+            </View>
+          </View>
+        );
+      })()}
       <View style={styles.weightAdd}>
         <TextInput style={[styles.weightInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} placeholder="Enter weight (lbs)" placeholderTextColor={theme.textPlaceholder}
           keyboardType="decimal-pad" value={weightInput} onChangeText={setWeightInput} />
@@ -1720,7 +1756,7 @@ const styles = StyleSheet.create({
   waterBtnText:     { fontFamily:'BebasNeue_400Regular', fontSize:15, letterSpacing:1 },
   waterBtnRed:      { flex:1, padding:10, borderWidth:1, borderRadius:6, alignItems:'center', justifyContent:'center' },
   waterBtnRedText:  { fontFamily:'BebasNeue_400Regular', fontSize:15, letterSpacing:1 },
-  weightRow:        { flexDirection:'row', gap:12, marginBottom:14 },
+  weightRow:        { flexDirection:'row', gap:12, marginBottom:10 },
   weightStat:       { flex:1 },
   weightVal:        { fontSize:28, lineHeight:32, fontFamily:'BebasNeue_400Regular', letterSpacing:1 },
   weightLbl:        { fontSize:10, letterSpacing:2, textTransform:'uppercase', marginTop:2, fontFamily:'DMSans_500Medium' },

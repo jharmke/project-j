@@ -97,24 +97,24 @@ Multiple entries same day -- verify prayer + gratitude same day display correctl
 Search within journal entries (roadmapped, low priority)
 
 NEXT SESSION PRIORITY (in order, do not deviate)
-1. Today's Training card touchup -- exercise row layout (stack duration under name left aligned), duration format fix (drop min label), Apple Health badge on imported workouts
-2. Net calories + active calories display on home screen
-3. Goal weight + projected date -- profile/weight section, live update as typed, adjusts with weekly deficit rate, milestone celebrations
-4. You vs Yesterday card -- discuss and finalize vision
-5. Celebration animations -- replace DONE GO HOME with confetti/slam effect, rare/milestone only, once per day cap
-6. Total Lost calculation bug -- earliest minus most recent known weight regardless of today having a log
-7. Sleep card -- clearer tip language when stages below ideal range, call out the number directly
-8. Fitness metrics card update
-9. Stats page -- discuss revamp, consolidation, pagination, paginated cards pattern
-10. Excluded dates -- discuss design and placement, neutral dim dot on calendar, excluded list view
-11. Calorie color scoring -- mode aware (Discipline/Balance/Mindful), stub mode for now default to Balance
-12. My Programs builder -- name it, assign focus/tags to each day, save it, load it
-13. Sessions tab in workout library -- save a day's exercise list as a named session, load onto any day
-14. Daily Note + Workout Note -- wire to journal, add workout category to journal alongside verse/prayer/study/personal/gratitude
-15. Bug sweep -- meal slot + signs accent color, toast on food remove, weight log dim/inactive state
-16. Macro bars animated + food log donut animated -- verify first, may already be done
-17. State restoration on launch -- save active tab/scroll position, restore on cold launch, seamless re-entry
-18. Bible auto-scroll to verse -- when opening from Today's Message card, auto-center on the highlighted verse
+1. Goal weight + projected date -- profile/weight section, live update as typed, adjusts with weekly deficit rate, milestone celebrations
+2. You vs Yesterday card -- discuss and finalize vision
+3. Celebration animations -- replace DONE GO HOME with confetti/slam effect, rare/milestone only, once per day cap
+4. Total Lost calculation bug -- earliest minus most recent known weight regardless of today having a log
+5. Sleep card -- clearer tip language when stages below ideal range, call out the number directly
+6. Fitness metrics card update
+7. Stats page -- discuss revamp, consolidation, pagination, paginated cards pattern
+8. Excluded dates -- discuss design and placement, neutral dim dot on calendar, excluded list view
+9. Calorie color scoring -- mode aware (Discipline/Balance/Mindful), stub mode for now default to Balance
+10. My Programs builder -- name it, assign focus/tags to each day, save it, load it
+11. Sessions tab in workout library -- save a day's exercise list as a named session, load onto any day
+12. Daily Note + Workout Note -- wire to journal, add workout category to journal alongside verse/prayer/study/personal/gratitude
+13. Bug sweep -- meal slot + signs accent color, toast on food remove, weight log dim/inactive state
+14. Macro bars animated + food log donut animated -- verify first, may already be done
+15. State restoration on launch -- save active tab/scroll position, restore on cold launch, seamless re-entry
+16. Bible auto-scroll to verse -- when opening from Today's Message card, auto-center on the highlighted verse
+17. (i) tooltip system -- info icon on cards with color coding or non-obvious metrics, one-time modal on tap, lives in Settings > Help, high priority
+18. Apple Health badge on imported workouts -- add source field at import time, badge on Today's Training card
 19. Bible reading programs / Bible studies
 20. Camera progress tracker with timelapse + program milestone integration (30/60/90 day anchors, tie to progress photos)
 21. TestFlight -- discuss setup, App Store Connect, tester invite flow

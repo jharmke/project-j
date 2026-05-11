@@ -346,4 +346,4 @@ Send changes in chunks, confirm each chunk before continuing
 When uncertain mid-response, stop and say so loudly before continuing
 
 
-Updated after session May 11 2026 (session 4). Day scroller polish shipped -- dots only, borders visible, active day uses accent color. Clear Program with ACTIVE status row shipped and persists. Locked default tags (6: Push/Pull/Legs/Core/Cardio/Rest) shipped with drag reorder. Apple Health workout history import shipped in Settings with range picker and UUID dedup. activeProgramName persisted. DEFAULT_TAGS merge on load. DONE GO HOME flagged for replacement with celebration animation. Bible auto-scroll to verse on priority list.
+Updated after session May 11 2026 (session 5). Today's Training card overhauled -- footer removed, kcal moved to tags row with flame icon, exercise colors unified to textMuted, strikethrough only for done state. Steps and weight now use accent color, steps flips green at goal. Calories card gains 3-stat row: REMAINING, ACTIVE, AFTER BURN -- all accent color. Big calorie number stays color coded. (i) tooltip system flagged as high priority. Net calories formula: consumed minus active burn.

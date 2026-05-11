@@ -4,7 +4,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Animated, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '../../components/Toast';
 import { saveToFirebase } from '../../firebaseConfig';
@@ -19,6 +19,7 @@ interface Profile {
   activityLevel: string;
   calTarget: string;
   weightGoal: string;
+  goalWeight: string;
   waterPresets: [number, number, number];
   macroMode: 'ratio' | 'fixed';
   macroProteinPct: string;
@@ -228,6 +229,7 @@ export default function ProfileScreen() {
     activityLevel: 'moderate',
     calTarget: '',
     weightGoal: 'lose_1',
+    goalWeight: '',
     waterPresets: [12, 16, 22],
     macroMode: 'ratio',
     macroProteinPct: '35',
@@ -245,13 +247,22 @@ export default function ProfileScreen() {
   const [hasChanges, setHasChanges] = useState(false);
   const [savedProfile, setSavedProfile] = useState<Profile | null>(null);
   const floatAnim = useRef(new Animated.Value(0)).current;
+  const scrollRef = useRef<ScrollView>(null);
+  const goalWeightInputY = useRef(0);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', e => { console.log('KB HEIGHT:', e.endCoordinates.height); setKeyboardHeight(e.endCoordinates.height); });
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardHeight(0));
+    return () => { show.remove(); hide.remove(); };
+  }, []);
 
   useEffect(() => {
     const load = async () => {
       try {
         const data = await AsyncStorage.getItem('pj_profile');
         if (data) {
-          const parsed = JSON.parse(data);
+          const parsed = { goalWeight: '', ...JSON.parse(data) };
           setProfile(parsed);
           setSavedProfile(parsed);
         }
@@ -313,6 +324,22 @@ export default function ProfileScreen() {
     return tdee + deficit;
   };
 
+  const calcProjectedDate = (): string | null => {
+    const gw = parseFloat(profile.goalWeight);
+    if (!gw || !currentWeight) return null;
+    const deficit = GOAL_DEFICITS[profile.weightGoal];
+    if (!deficit || deficit === 0) return null; // maintain/gain -- no projection
+    const lbsPerWeek = Math.abs(deficit) / 500;
+    const lbsToGo = currentWeight - gw;
+    // Direction check -- goal must make sense for pace
+    if (deficit < 0 && lbsToGo <= 0) return null; // losing but already at/below goal
+    if (deficit > 0 && lbsToGo >= 0) return null; // gaining but already at/above goal
+    const weeksToGoal = Math.abs(lbsToGo) / lbsPerWeek;
+    const projDate = new Date();
+    projDate.setDate(projDate.getDate() + Math.round(weeksToGoal * 7));
+    return projDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  };
+
   const isMacroValid = () => {
     const kcalTarget = parseFloat(profile.calTarget) || suggested || 0;
     if (kcalTarget === 0) return true; // no target set yet, don't block
@@ -354,6 +381,7 @@ export default function ProfileScreen() {
       setSavedProfile(synced);
       Animated.timing(floatAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start();
       setTimeout(() => setSaved(false), 2000);
+      Keyboard.dismiss();
       showToast('Profile saved', undefined, 'success');
     } catch (e) {
       console.log('Save profile error', e);
@@ -396,8 +424,7 @@ export default function ProfileScreen() {
         </TouchableOpacity>
       </View>
 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView ref={scrollRef} style={styles.container} contentContainerStyle={styles.content}>
 
         <CollapsibleCard label="Basic Info" defaultOpen={true} theme={theme}>
           <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>Name</Text>
@@ -507,6 +534,36 @@ export default function ProfileScreen() {
         )}
 
         <CollapsibleCard label="Weight Goal" theme={theme}>
+          {/* Goal weight input -- lives above pace so the story reads top to bottom */}
+          <Text style={[styles.fieldLabel, { color: theme.textMuted, marginTop: 0 }]}>Goal Weight (optional)</Text>
+          <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', color: theme.textMuted, marginBottom: 10 }}>
+            Skip this if you're focused on general health rather than a specific number.
+          </Text>
+          <View
+            onLayout={e => { goalWeightInputY.current = e.nativeEvent.layout.y; }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <TextInput
+                style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, flex: 1, marginBottom: 0 }]}
+                value={profile.goalWeight}
+                onChangeText={v => updateField('goalWeight', v)}
+                keyboardType="decimal-pad"
+                placeholder="e.g. 185"
+                placeholderTextColor={theme.textPlaceholder}
+                maxLength={6}
+                onFocus={() => {
+                  setTimeout(() => {
+                    scrollRef.current?.scrollTo({ y: goalWeightInputY.current + 300, animated: true });
+                  }, 150);
+                }}
+              />
+              <Text style={{ color: theme.textMuted, fontSize: 14, fontFamily: 'DMSans_400Regular' }}>lbs</Text>
+            </View>
+          </View>
+
+          <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard, marginTop: 14, marginBottom: 10 }} />
+          <Text style={[styles.fieldLabel, { color: theme.textMuted, marginTop: 0, marginBottom: 6 }]}>Weekly Pace</Text>
+
           {Object.entries(GOAL_LABELS).map(([key, label]) => (
             <TouchableOpacity
               key={key}
@@ -516,7 +573,42 @@ export default function ProfileScreen() {
               <Text style={[styles.activityLabel, { color: theme.textMuted }, profile.weightGoal === key && { color: theme.textPrimary }]}>{label}</Text>
             </TouchableOpacity>
           ))}
-        </CollapsibleCard>
+
+          {(() => {
+            const projected = calcProjectedDate();
+            const gw = parseFloat(profile.goalWeight);
+            const deficit = GOAL_DEFICITS[profile.weightGoal];
+            if (!profile.goalWeight) return null;
+            if (!currentWeight) return (
+              <View style={{ marginTop: 14, padding: 12, backgroundColor: theme.bgInset, borderRadius: 8 }}>
+                <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>
+                  Log your weight today to see a projected date.
+                </Text>
+              </View>
+            );
+            if (!projected) return (
+              <View style={{ marginTop: 14, padding: 12, backgroundColor: theme.bgInset, borderRadius: 8 }}>
+                <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>
+                  {deficit === 0 ? 'Set a loss or gain pace above to see a projected date.' : 'Your goal weight is already met at your current pace.'}
+                </Text>
+              </View>
+            );
+            const lbsToGo = Math.abs(currentWeight - gw);
+            return (
+              <View style={{ marginTop: 14, padding: 12, backgroundColor: theme.bgInset, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View>
+                  <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 3 }}>Projected</Text>
+                  <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.accentBlue }}>{projected}</Text>
+                </View>
+                <View style={{ alignItems: 'flex-end' }}>
+                  <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 3 }}>To Go</Text>
+                  <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.textPrimary }}>{Math.round(lbsToGo * 10) / 10} lbs</Text>
+                </View>
+              </View>
+            );
+          })()}
+
+          </CollapsibleCard>
 
         <CollapsibleCard label="Water Presets" theme={theme}>
           <Text style={[styles.estimateNote, { color: theme.textMuted }]}>Customize your quick-add water amounts (oz).</Text>
@@ -700,37 +792,60 @@ export default function ProfileScreen() {
         <View style={{ height: 100 }} />
 
       </ScrollView>
-      </KeyboardAvoidingView>
     {/* Floating save bar */}
+      <KeyboardAvoidingView behavior="padding" style={{ position: 'absolute', bottom: 0, left: 0, right: 0, display: hasChanges ? 'flex' : 'none' }}>
       <Animated.View style={{
-        position: 'absolute',
         bottom: 0,
         left: 0,
         right: 0,
         paddingHorizontal: 16,
         paddingTop: 12,
-        paddingBottom: 16,
+        paddingBottom: keyboardHeight > 0 ? 12 : 16,
         backgroundColor: theme.bgSheet,
         borderTopWidth: 0.5,
         borderTopColor: theme.borderCard,
         transform: [{ translateY: floatAnim.interpolate({ inputRange: [0, 1], outputRange: [200, 0] }) }],
       }}>
-        <TouchableOpacity
-          onPress={saveProfile}
-          disabled={!isMacroValid()}
-          style={{
-            backgroundColor: isMacroValid() ? theme.accentBlue : theme.bgInput,
-            borderWidth: isMacroValid() ? 0 : 0.5,
-            borderColor: theme.borderInput,
-            borderRadius: 10,
-            padding: 16,
-            alignItems: 'center',
-          }}>
-          <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: isMacroValid() ? theme.bgPrimary : theme.textMuted }}>
-            {saved ? 'SAVED' : !isMacroValid() ? 'FIX MACROS TO SAVE' : 'SAVE PROFILE'}
-          </Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          <TouchableOpacity
+            onPress={() => {
+              Keyboard.dismiss();
+              if (savedProfile) setProfile(savedProfile);
+              setHasChanges(false);
+              Animated.timing(floatAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start();
+            }}
+            style={{
+              backgroundColor: theme.bgInput,
+              borderWidth: 0.5,
+              borderColor: theme.borderInput,
+              borderRadius: 10,
+              padding: 16,
+              alignItems: 'center',
+              width: 90,
+            }}>
+            <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.textMuted }}>
+              CANCEL
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={saveProfile}
+            disabled={!isMacroValid()}
+            style={{
+              flex: 1,
+              backgroundColor: isMacroValid() ? theme.accentBlue : theme.bgInput,
+              borderWidth: isMacroValid() ? 0 : 0.5,
+              borderColor: theme.borderInput,
+              borderRadius: 10,
+              padding: 16,
+              alignItems: 'center',
+            }}>
+            <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: isMacroValid() ? theme.bgPrimary : theme.textMuted }}>
+              {saved ? 'SAVED' : !isMacroValid() ? 'FIX MACROS TO SAVE' : 'SAVE PROFILE'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </Animated.View>
+      </KeyboardAvoidingView>
 
     </LinearGradient>
   );

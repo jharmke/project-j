@@ -1,5 +1,5 @@
 Project J -- Claude Project Instructions
-Last updated: May 10 2026
+Last updated: May 10 2026 (session 2)
 
 What This Is
 Project J is a React Native + Expo fitness and faith app built by Justin. It is his primary side project and passion build. Think MyFitnessPal meets YouVersion meets a personal coach. The differentiator is faith integration and a "you vs yesterday" philosophy. This is being built to eventually ship on the App Store.
@@ -35,6 +35,7 @@ Progress bar backgrounds: #12121a
 Interactive buttons: backgroundColor: rgba(59,130,246,0.15), borderWidth: 1, borderColor: rgba(59,130,246,0.3), borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4, color: #3b82f6, fontSize: 12, fontFamily: DMSans_600SemiBold
 Verse card: backgroundColor: #16162a, borderWidth: 1, borderColor: rgba(212,134,10,0.4)
 Macro colors: Protein #0d9268, Carbs #c47d1a, Fat #a83232
+Tag pills: backgroundColor t.color+'99', borderColor t.color, text color #ffffff -- applies everywhere pills render throughout the app
 
 
 File Structure
@@ -59,7 +60,7 @@ app/journal.tsx -- Journal/reflections screen
 components/CustomTabBar.tsx -- Full custom animated tab bar (TAB_BAR_HEIGHT = 64)
 components/PressableButton.tsx -- Animated spring button with haptics
 components/haptic-tab.tsx -- Custom animated tab button
-components/Toast.tsx -- Toast system (ToastProvider, ToastItem, useToast)
+components/Toast.tsx -- Toast system (ToastProvider, ToastItem, ToastRenderer, useToast)
 data/bible-web.ts -- Full KJV Bible, all 66 books, fetch + cache per book
 useHealthKit.ts -- HealthKit hook
 firebaseConfig.ts, workoutData.ts, config.ts
@@ -109,6 +110,9 @@ Mid-response correction standard -- NON NEGOTIABLE: If a find/replace is written
 Justin uses PowerShell, not bash. All terminal commands must be PowerShell syntax, issued one at a time, never chained.
 When telling Justin to commit, always send the three git commands explicitly (git add, git commit, git push) one at a time.
 
+VS Code auto-organizeImports setting:
+Justin's .vscode/settings.json has "source.organizeImports": "never" to stop VS Code from dropping imports on save. If imports disappear on save, check this setting first.
+
 Communication Style
 
 Straight talk. Dude/man/brother language is fine. Humor encouraged
@@ -123,6 +127,16 @@ If something will take multiple steps, state the full plan before starting anyth
 Weave in Biblical perspective where naturally relevant, never forced or preachy
 Be proactively helpful -- suggest process improvements, flag issues before they become problems, think ahead. Do not wait for Justin to discover better ways of working
 Never assume which theme Justin is on. Primary testing theme is Slate with yellow accent. Always test and build for all themes, never assume a bug is theme-specific without confirming
+When uncertain mid-response, stop and flag it loudly before continuing. Never just keep going and hope it works. Justin will catch it and it wastes both time and his patience.
+
+# ⚠️ BANNED BEHAVIORS -- VIOLATION OF ANY OF THESE IS UNACCEPTABLE
+- NEVER say "actually", "wait", "hmm", "let me think", or any mid-response course correction without immediately stopping and posting the full ⚠️ STOP warning header before continuing
+- NEVER write a find/replace and then say "oh wait that's not right" -- if you catch it, the warning header goes FIRST, before any explanation
+- NEVER spin on the same problem more than 2 attempts without stopping and explicitly saying "I don't know the answer, here's what I need from you to figure it out"
+- NEVER write a FIND that you haven't verified exists in the file Justin sent. If you don't have the current file, ASK for it before writing anything
+- NEVER keep trying random fixes hoping one sticks. If something isn't working after 2 attempts, stop, explain what you know and don't know, and ask a direct question
+- NEVER confidently state something as fact when you are uncertain. Flag uncertainty explicitly every single time with a confidence note
+- NEVER write partial changes mid-response and then correct them without the warning header. The warning header is non-negotiable even when the correction immediately follows
 
 
 Build Standards -- NON NEGOTIABLE
@@ -163,6 +177,7 @@ Every interactive element gets appropriate haptics.
 
 Keyboard Avoiding Standard -- NON NEGOTIABLE
 Every screen, modal, or sheet containing a text input must wrap its content in KeyboardAvoidingView with behavior={Platform.OS === 'ios' ? 'padding' : 'height'}. Built at time of feature, never added later. No exceptions.
+Exception: bottom sheets using Reanimated transforms -- KAV overrides transforms and breaks animation. Use Keyboard.addListener keyboardWillShow/Hide and animate a keyboardOffset shared value instead. Reference: manage tags sheet in workout.tsx.
 
 Animation Standard
 Every bar and graph must animate. No static bars ever.
@@ -171,7 +186,7 @@ Use Easing.out(Easing.cubic) for opening, Easing.in(Easing.cubic) for closing
 Card press animations: scale down to 0.97 on pressIn, back to 1.0 on pressOut, timing not spring
 FAB and action button press: same scale pattern, simple down and up, no bounce
 All collapsible sections must animate open and closed consistently throughout the entire app
-Sheet/modal slide-up animation: use animationType="none" with manual Animated.Value translateY starting at 600+, spring to 0. Set the value BEFORE calling setVisible(true) using requestAnimationFrame to avoid flash. Overlay fades in separately via opacity animation. Reference: edit layout sheet in index.tsx.
+Sheet/modal slide-up animation: MUST use react-native-reanimated useSharedValue + useAnimatedStyle + withSpring. Standard Animated.Value translateY does NOT work reliably inside iOS Modals -- the native compositor ignores it even when the animation runs. Fire the animation in the Modal's onShow callback, not requestAnimationFrame or setTimeout. Sheet must be in a View with flex:1 justifyContent:flex-end, NOT position:absolute bottom:0. Reference: manage tags sheet in workout.tsx.
 
 Empty States
 Every list or card that can be empty needs a designed placeholder. Icon, title, subtitle explaining what goes here and how to add it. Never a blank card or blank screen.
@@ -190,6 +205,17 @@ Never let bad data hit storage. Validate before save. Weight of 0, negative valu
 
 Disclaimer on Health Features
 See Disclaimer Standard above. Every health metric needs it.
+
+Modal + ScrollView Pattern -- NON NEGOTIABLE
+When a Modal contains a ScrollView that needs to scroll AND the overlay background should dismiss on tap, NEVER wrap the card in a TouchableOpacity to stop propagation -- it steals scroll gestures and breaks scrolling entirely. Correct pattern:
+1. Render a separate absolute-positioned TouchableOpacity for the overlay dismiss (position: absolute, top/left/right/bottom: 0, backgroundColor: theme.overlayBg)
+2. Render the card container in a plain View with pointerEvents="box-none" for layout (flex:1, justifyContent:center, alignItems:center)
+3. Use plain View wrappers for the card itself, never TouchableOpacity
+4. ScrollView works freely because nothing above it steals touches
+Reference implementation: Programs modal in workout.tsx.
+
+Toast Above Modal -- NON NEGOTIABLE
+RN Modals create a new native window layer that sits above everything in the normal view tree. Toast rendered in the normal tree is invisible behind any open Modal. Fix: export ToastRenderer from Toast.tsx, render <ToastRenderer /> directly inside the Modal JSX above all other modal content. ToastListContext in Toast.tsx provides toasts + dismiss + keyboardVisible to any renderer. Import: import { ToastRenderer, useToast } from '../../components/Toast'. Every modal that fires toasts needs <ToastRenderer /> inside it.
 
 
 Theme System
@@ -241,8 +267,26 @@ Limits: 6 tags per day, 20 tags in library, 20 char tag name max
 Pills render on Today's Training home card (3x2 grid) and workout tab (3 per row, 2 rows)
 Day scroller shows colored dots (left/right column distribution, max 6)
 Unassigned days show ghost "UNASSIGNED" pill
-Manage tags sheet: slide-up from bottom, handle tap to close, keyboard avoiding
-Known issue: manage tags slide-up animation not working (pops in instead of sliding). See BUGS OUTSTANDING.
+Tag pill style everywhere: backgroundColor t.color+'99', borderColor t.color, text color #ffffff
+Manage tags sheet: slide-up from bottom using Reanimated, onShow fires animation, handle tap to close, keyboard via listeners not KAV
+Assign tags modal: center-screen fade modal, tap to toggle, confirm button on change
+
+
+Program System
+Shipped. No DEFAULT_PROGRAM. All days blank (BLANK_DAY) by default.
+PRESET_PROGRAMS in workoutData.ts -- 5 presets: Push/Pull/Legs, Upper/Lower, Full Body 3x, Cardio Focus, Rest Heavy
+PresetProgram shape: { id, name, description, days: Record<string, DayProgram> }
+Programs button in workout header, Programs modal uses animationType="fade"
+Loading a preset shows Alert warning then sets weeklyTemplate and saves state
+My Programs tab is "Coming Soon" placeholder -- builder next session
+weeklyTemplate stored in pj_workout_state, loaded on mount
+
+
+Sessions System (planned)
+Save a day's exercise list as a named Session
+Sessions tab in workout library alongside exercises
+Star/favorite system for most-used sessions
+Load a session onto any day in one tap
 
 
 Visual Philosophy -- Read This Carefully
@@ -293,6 +337,7 @@ Be proactive -- suggest improvements, think ahead, flag problems
 Never confidently state uncertain things as fact
 Every code change is find/replace format, no exceptions
 Send changes in chunks, confirm each chunk before continuing
+When uncertain mid-response, stop and say so loudly before continuing
 
 
-Updated after session May 10 2026. Home tab bug pass, workout tag system, toast keyboard position, IF daily reset all done this session.
+Updated after session May 10 2026 (session 2). Manage tags animation, toast above modal, program system, blank day default, tag pill contrast, Modal+ScrollView pattern all shipped and documented this session.

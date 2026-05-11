@@ -4,7 +4,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Modal, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Animated, AppState, Modal, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import ReAnimated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -415,14 +415,14 @@ export default function HomeScreen() {
 
   const { activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, vo2Max, cardioRecovery, fetchTodayData } = useHealthKit();
 
-  const today    = new Date();
-  const todayKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  const getDateKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const [todayKey, setTodayKey] = useState(() => getDateKey(new Date()));
+  const [todayDay, setTodayDay] = useState(() => DAY_NAMES[new Date().getDay()]);
   const hkCalories    = activeCalories > 0 ? activeCalories : caloriesBurned;
   const adjustedTarget= calTarget + hkCalories;
   const displayedBurned = hkCalories;
   const calPct   = adjustedTarget > 0 ? (totalCals / adjustedTarget) * 100 : 0;
   const calColor = calPct > 114 ? '#ef4444' : calPct > 106 ? '#f59e0b' : calPct >= 80 ? '#10b981' : calPct >= 63 ? '#f59e0b' : '#ef4444';
-  const todayDay = DAY_NAMES[new Date().getDay()];
   const todayProgram = PROGRAM[todayDay];
   const isLift   = todayProgram?.type === 'lift';
   const dayColor = isLift ? todayProgram.color : '#888888';
@@ -453,6 +453,51 @@ export default function HomeScreen() {
   useEffect(() => {
     const interval = setInterval(() => setCurrentTime(Date.now()), 1000);
     return () => clearInterval(interval);
+  }, []);
+
+  // ── Date rollover -- AppState + midnight timer ───────────────────────────────
+  useEffect(() => {
+    const checkDateRollover = () => {
+      const newKey = getDateKey(new Date());
+      const newDay = DAY_NAMES[new Date().getDay()];
+      setTodayKey(prev => {
+        if (prev !== newKey) {
+          setTodayDay(newDay);
+          // Reset daily state
+          setWater(0);
+          setWeight(null);
+          setIfStart(null);
+          setIfEnd(null);
+          setDailyNote('');
+          setTotalCals(0);
+          setTotalProtein(0);
+          setTotalCarbs(0);
+          setTotalFat(0);
+          setCaloriesBurned(0);
+          setSleepOverride(null);
+          setSleepStoredBed(null);
+          setSleepStoredWake(null);
+          return newKey;
+        }
+        return prev;
+      });
+    };
+
+    const subscription = AppState.addEventListener('change', state => {
+      if (state === 'active') checkDateRollover();
+    });
+
+    // Midnight timer
+    const now = new Date();
+    const msUntilMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() - now.getTime();
+    const midnightTimer = setTimeout(() => {
+      checkDateRollover();
+    }, msUntilMidnight);
+
+    return () => {
+      subscription.remove();
+      clearTimeout(midnightTimer);
+    };
   }, []);
 
   // ── Persist HealthKit to storage ────────────────────────────────────────────

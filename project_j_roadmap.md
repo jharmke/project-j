@@ -5,7 +5,7 @@ DONE -- SHIPPED
 [x] Macro colors -- desaturated (Protein #0d9268, Carbs #c47d1a, Fat #a83232)
 [x] GestureHandlerRootView fix in _layout.tsx
 [x] Fitness Metrics no-data placeholder
-[x] Edit layout sheet -- slides up over home screen, Modal above tab bar
+[x] Edit layout sheet -- slides up over home screen
 [x] Three header buttons -- refresh, calendar, grid
 [x] DraggableFlatList in edit sheet
 [x] Card visibility persisted to pj_settings
@@ -28,7 +28,7 @@ DONE -- SHIPPED
 [x] Macro goals -- ratio and fixed modes
 [x] Water bar animation fix
 [x] Sleep donut draw-on animation
-[x] Toast system -- slide in from bottom, swipe to dismiss, themed, solid background, keyboard-aware (top when keyboard open)
+[x] Toast system -- slide in from bottom, swipe to dismiss, themed
 [x] Weight carry-forward
 [x] IF time picker light theme fix
 [x] Food Library header title fix
@@ -52,7 +52,7 @@ DONE -- SHIPPED
 [x] Expanded VERSES array -- 52 verses, now KJV translation
 [x] bible-web.ts -- full KJV Bible, all 66 books, fetch + cache per book from raw GitHub
 [x] bible.tsx -- Bible reader, book picker, chapter nav, highlighted verse, reflection modal
-[x] journal.tsx -- journal screen, categories, FAB, filter pills, edit, swipe delete
+[x] journal.tsx -- journal screen, categories, FAB, filter pills, edit, swipe delete (bugs outstanding)
 [x] _layout.tsx -- bible and journal routes added
 [x] Reflection banner on Bible screen -- accent colored, routes to journal
 [x] pj_bible_reflections -- merged entry format with id, category, title, notes
@@ -67,25 +67,13 @@ DONE -- SHIPPED
 [x] Sleep goal in profile -- scroll-driven wheel picker, auto-positions to current value, saves to pj_profile sleepGoal
 [x] Floating save bar on profile -- animates up on change, away on save, never shows on fresh load
 [x] Toast on profile save
-[x] IF countdown color -- accentBlueRaw across all themes
-[x] IF method buttons -- Slate theme fixed
-[x] IF daily reset bug -- date check on ifStart load, clears stale fast on new day
-[x] Water remove toasts -- -oz buttons now fire toast
-[x] Toast render bug -- slide-in animation wrapped in useEffect
-[x] Toast solid background -- bgSheet token, no transparency
-[x] Toast keyboard aware -- appears at top when keyboard open (keyboardWillShow/Hide listeners)
-[x] Weight persistence -- logWeight writes to AsyncStorage explicitly
-[x] Weight auto-save fix -- weight added to auto-save object, no longer wiped on state change
-[x] Weight comparison fields -- load in useFocusEffect, correct loop direction for earliest weight
-[x] Edit layout sheet -- Modal with smooth animation, renders above tab bar, separate modalVisible state
-[x] Window closes in / Reset window text colors fixed
-[x] Workout tag system -- custom tags, color picker, 6/day limit, 20 library limit, 20 char name limit
-[x] Tag pills on Today's Training home card -- 3x2 grid, unassigned ghost pill
-[x] Tag pills on workout tab -- 3 per row, 2 rows max, Tags button
-[x] Day scroller colored dots -- left/right column distribution, up to 6 dots
-[x] Manage tags sheet -- slide-up from bottom, keyboard avoiding, live preview while editing
-[x] Assign tags modal -- confirm button appears only on change, toast on confirm
-[x] workoutData.ts -- WorkoutTag interface, TAG_COLOR_PALETTE, DEFAULT_TAGS added
+[x] Home tab bug pass -- IF countdown color, IF method buttons Slate, IF daily reset, water remove toasts, toast render bug, toast solid background, weight persistence, weight auto-save fix, weight comparison fields, edit layout sheet Modal above tab bar
+[x] Workout tag system -- custom tags, color picker, 6/day limit, 20 library limit, pills on Today's Training card, day scroller dot grid, manage tags sheet, assign tags modal with confirm button
+[x] Manage tags slide-up animation -- fixed using react-native-reanimated useSharedValue + withSpring, onShow callback pattern
+[x] Toast above Modal -- fixed using ToastRenderer exported from Toast.tsx, rendered inside Modal JSX
+[x] Program system -- preset programs (PPL, Upper/Lower, Full Body 3x, Cardio Focus, Rest Heavy), Programs button in header, load with override warning, weeklyTemplate replaces DEFAULT_PROGRAM
+[x] Blank day default -- all days unassigned by default, no DEFAULT_PROGRAM
+[x] Tag pill contrast -- backgroundColor t.color+'99', borderColor t.color, text #ffffff across workout tab, home tab, assign tags modal, manage tags
 
 JOURNAL -- REMAINING FEATURES
 Edit entry title (currently only notes and category editable)
@@ -96,25 +84,15 @@ Long text stress test -- verify 500 word entries format correctly
 Multiple entries same day -- verify prayer + gratitude same day display correctly
 Search within journal entries (roadmapped, low priority)
 
-BUGS OUTSTANDING
-Manage tags sheet slide-up animation not working -- sheet pops in instead of sliding up. Code is correct (translateY Animated.Value 600 to 0, useNativeDriver true, requestAnimationFrame before setVisible). Suspected cause: KeyboardAvoidingView with justifyContent flex-end and pointerEvents box-none interfering with transform. Try removing KeyboardAvoidingView entirely first to isolate, then add keyboard handling back separately.
-Toast appears behind manage tags Modal -- iOS platform limitation, Toast renders below Modal in native layer. Needs architectural solution: either render toast inside Modal or implement global portal system above all Modals.
-Meal slot + signs to accent color (BUG)
-Toast on food remove (BUG)
-Weight log button no dim/inactive state
-Warm theme button in settings display bug
-Light theme tile goes grey on dark/warm mode in theme selector
-
 NEXT SESSION PRIORITY (in order, do not deviate)
-1. Fix manage tags slide-up animation -- see bug description above
-2. Fix toast above Modal -- architectural solution needed
-3. Net calories + calorie color scoring
-4. Barcode scanner fix -- camera session not tearing down
-5. Schedule rework -- remove DEFAULT_PROGRAM, all days unassigned by default, preset schedule templates (PPL, Upper/Lower, Full Body), user can pick template or stay fluid
+1. Net calories + calorie color scoring
+2. Barcode scanner fix -- camera session not tearing down
+3. My Programs builder -- name it, assign focus/tags to each day, save it, load it
+4. Sessions tab in workout library -- save a day's exercise list as a named session, load onto any day
+5. Stats tab dedicated session -- full plan before touching code
 
 AFTER NEXT SESSION
 Faith Journey + Coaching Modes -- build together, same session, they are connected
-Stats tab dedicated session -- full plan before touching code, charts/graphs, premium vs free data tiers
 Onboarding flow -- animated, sets coaching mode and faith journey, "skip for now" not X, returnable from profile
 Firebase Auth -- Apple and Google sign in, pre-beta milestone, data migration from AsyncStorage to Firestore
 TestFlight setup -- when core features stable, internal testing first
@@ -159,10 +137,11 @@ Streak numbers animating up on stats load
 Premium vs free data tiers -- non-standard charts/graphs as paid features
 
 WORKOUT TAB
-Schedule rework -- remove DEFAULT_PROGRAM hardcoded schedule, all days unassigned at launch, preset schedule templates (PPL, Upper/Lower, Full Body, custom), fluid week-by-week option
 Workout tab nested scroll bug -- DraggableFlatList inside ScrollView warning (HIGH)
 Workout drag handle -- hit target too small (HIGH)
 Workout drag handle -- dead zone before drag triggers (HIGH)
+My Programs builder -- name it, assign focus/tags/color per day, save, load (HIGH)
+Sessions tab in workout library -- save day's exercise list as named session, load onto any day (HIGH)
 HIIT mode -- Tabata, standard intervals, custom
 Workout rest timer between sets
 Lifting set tracker with progressive overload
@@ -178,6 +157,11 @@ Meal slots fully customizable -- rename, reorder, add custom slots (HIGH)
 Calorie breakdown by meal -- each slot gets a budget
 Recipe builder polish
 Long press food log items -- quick action menu
+
+BUGS OUTSTANDING
+Meal slot + signs to accent color
+Toast on water remove
+Weight log button no dim/inactive state
 
 FAITH FEATURES
 Bible reader -- SHIPPED
@@ -293,27 +277,13 @@ Sleep goal pulls from pj_profile sleepGoal field, defaults to 7 if not set
 Tips: 4 categories (low_deep, low_rem, low_duration, catch_all, good), 3 tips each, seeded by date so consistent within a day
 Sleep goal in profile uses scroll-driven wheel picker, 15-minute increments, auto-scrolls to current value on open
 
-Workout tag system decisions:
-Tags stored globally in pj_settings.workoutTags as WorkoutTag[]
-WorkoutTag: { id, label, color }
-DayProgram.tags: string[] of tag ids
-Default tags ship with app: Push, Pull, Legs + Core, Cardio, Rest
-Color palette: 12 preset colors in TAG_COLOR_PALETTE (workoutData.ts)
-Limits: 6 tags per day, 20 in library, 20 char name
-Unassigned days show ghost pill, no color
-Pills: 3x2 grid on home card, 3 per row on workout tab
-Day scroller: colored dots left/right of center text, max 6
-IF data is not saved to a separate history yet -- lives in pj_YYYY-MM-DD daily storage, accessible for stats later
-
 Build standards (all non-negotiable, built at time of feature):
 Three gate rule -- works, looks premium, feels right
 Dim/inactive button states on all submittable buttons
 44x44pt minimum touch targets
 Disclaimer on all health features
 Haptics standard -- light/medium/heavy
-Keyboard avoiding -- every modal/sheet/screen with text input wraps in KeyboardAvoidingView
 Animation standard -- expand/collapse uses off-screen measure + dual animation pattern (see journal.tsx SwipeableEntry). Never use maxHeight. Container height on JS thread (useNativeDriver: false), content opacity/translateY on native thread (useNativeDriver: true).
-Sheet slide-up -- animationType none, manual translateY from 600+ to 0, set value before setVisible via requestAnimationFrame
 Card press scale -- down to 0.97 on pressIn, back to 1.0 on pressOut
 Empty states on all lists and cards
 Loading states on async operations
@@ -331,13 +301,42 @@ Never assume a bug is theme-specific without confirming on multiple themes
 Data/storage decisions:
 AsyncStorage keys all defined above
 pj_profile now includes sleepGoal field (string, hours as decimal e.g. "7.5")
-pj_settings now includes workoutTags array
 Firebase Auth planned pre-beta -- Apple and Google sign in
 Data migration from AsyncStorage to Firestore per user when Auth is built
 Dev reset/export -- pin, build only if needed before TestFlight
 
 Macro goals system:
 Two modes - Ratio and Fixed. Cross-mode sync on save.
+
+Workout tag system (shipped):
+Custom names, colors, multiple per day. Color picker or preset palette. Settings managed.
+Tags stored in pj_settings under workoutTags key as WorkoutTag[].
+WorkoutTag shape: { id: string, label: string, color: string }
+DayProgram shape includes tags?: string[] (array of tag ids)
+Default tags: Push (blue), Pull (green), Legs + Core (amber), Cardio (orange), Rest (slate)
+Tag color palette: 12 preset colors in TAG_COLOR_PALETTE (workoutData.ts)
+Limits: 6 tags per day, 20 tags in library, 20 char tag name max
+Pills render on Today's Training home card (3x2 grid) and workout tab (3 per row, 2 rows)
+Day scroller shows colored dots (left/right column distribution, max 6)
+Unassigned days show ghost "UNASSIGNED" pill
+Tag pill style: backgroundColor t.color+'99', borderColor t.color, text color #ffffff -- applies everywhere pills render
+Manage tags sheet: slide-up from bottom using Reanimated, handle tap to close, keyboard avoiding via manual keyboard listeners
+Assign tags modal: center-screen fade modal, tap to toggle, confirm button on change
+
+Program system (shipped):
+BLANK_DAY is the default for all unassigned days -- no DEFAULT_PROGRAM
+PRESET_PROGRAMS in workoutData.ts -- 5 presets: Push/Pull/Legs, Upper/Lower, Full Body 3x, Cardio Focus, Rest Heavy
+Programs button in workout header opens Programs modal
+Programs modal uses animationType="fade", centered card, scrollable preset list
+Loading a preset shows Alert warning then sets weeklyTemplate and saves state
+My Programs tab is "Coming Soon" placeholder -- builder coming next session
+PresetProgram shape: { id, name, description, days: Record<string, DayProgram> }
+
+Sessions system (planned):
+Save a day's exercise list as a named Session
+Sessions tab in workout library alongside exercises
+Star/favorite system to surface most-used sessions
+Load a session onto any day in one tap
 
 Coaching modes:
 Discipline -- strict both directions
@@ -379,4 +378,28 @@ Roadmap updated at end of every session
 Screenshot before and after every visual change
 If a find/replace is wrong or needs to be walked back mid-response, mark it with a large visible warning header before continuing. Format: # ⚠️ STOP — DO NOT APPLY THE CHANGE ABOVE
 Mid-response correction standard: if a find/replace is written and then recognized as wrong before the response ends, the warning header goes on IMMEDIATELY before any further text -- even if the correction immediately follows. No exceptions. Hard to miss is the requirement.
-Send changes in numbered chunks. Confirm each chunk before sending the next. Never dump all changes at once.
+
+# ⚠️ BANNED BEHAVIORS -- VIOLATION OF ANY OF THESE IS UNACCEPTABLE
+- NEVER say "actually", "wait", "hmm", or any mid-response course correction without immediately posting the full ⚠️ STOP warning header before continuing
+- NEVER write a find/replace and then say "oh wait that's not right" without the warning header first
+- NEVER spin on the same problem more than 2 attempts without stopping and explicitly saying "I don't know the answer, here's what I need from you to figure it out"
+- NEVER write a FIND that you haven't verified exists in the file Justin sent. If you don't have the current file, ASK before writing anything
+- NEVER keep trying random fixes hoping one sticks. If something isn't working after 2 attempts, stop, explain what you know and don't know, and ask a direct question
+- NEVER confidently state something as fact when uncertain. Flag uncertainty explicitly every time with a confidence note
+- NEVER write partial changes mid-response and then correct them without the warning header. Non-negotiable even when the correction immediately follows
+
+Modal + ScrollView pattern (CRITICAL -- learned the hard way):
+When a Modal contains a ScrollView that needs to scroll AND the overlay background should dismiss on tap, NEVER wrap the card in a TouchableOpacity to stop propagation -- it steals scroll gestures. Correct pattern:
+1. Render a separate absolute-positioned TouchableOpacity for the overlay dismiss (position: absolute, top/left/right/bottom: 0)
+2. Render the card in a plain View with pointerEvents="box-none" for layout
+3. Use plain View wrappers for the card itself, never TouchableOpacity
+4. ScrollView works freely because nothing above it steals touches
+Reference implementation: Programs modal in workout.tsx
+
+Manage tags animation (CRITICAL -- learned the hard way):
+Standard Animated.Value translateY does NOT work reliably inside a Modal on iOS. The native compositor plants the view at its resolved layout position and ignores the transform even when the animation runs (confirmed via logs). Fix: use react-native-reanimated useSharedValue + useAnimatedStyle + withSpring. The sheet must be in a View with flex:1 justifyContent:flex-end (not position:absolute bottom:0) for the transform to be respected. Use onShow callback on the Modal to fire the animation after the modal is fully mounted -- not requestAnimationFrame or setTimeout, those fire before the modal renders. Keyboard handling: use Keyboard.addListener keyboardWillShow/Hide and animate a separate keyboardOffset shared value, combine with sheet translateY in useAnimatedStyle. Never use KeyboardAvoidingView wrapping the sheet -- it overrides transforms.
+
+Toast above Modal (CRITICAL):
+RN Modals create a new native window layer that sits above everything in the normal view tree. Toast rendered in the normal tree is invisible behind any open Modal. Fix: export ToastRenderer from Toast.tsx (reads from ToastListContext), render <ToastRenderer /> directly inside the Modal JSX. ToastListContext provides toasts + dismiss + keyboardVisible to any renderer. Both the normal tree renderer and the in-modal renderer share the same state so toasts show correctly in both contexts.
+
+Updated after session May 10 2026 (session 2). Manage tags animation, toast above modal, program system, blank day default, tag pill contrast all shipped this session.

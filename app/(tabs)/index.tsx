@@ -12,6 +12,7 @@ import Svg, { Circle } from 'react-native-svg';
 import PressableButton from '../../components/PressableButton';
 import { useToast } from '../../components/Toast';
 import CelebrationOverlay from '../../components/CelebrationOverlay';
+import { showAchievementToast } from '../../components/AchievementToast';
 import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, weightEntryIsPlausible, getWeightMilestonesCrossed, isGoalWeightHit } from '../../achievementData';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { useTheme } from '../../theme';
@@ -353,6 +354,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const { showToast } = useToast();
+  // showAchievementToast is now a direct import
 
   // Layout state
   const [cardOrder,   setCardOrder]   = useState<CardId[]>(DEFAULT_ORDER);
@@ -442,6 +444,7 @@ export default function HomeScreen() {
       setAchievementStore(updatedStore);
       const def = ACHIEVEMENTS.find(a => a.id === id);
       fireCelebration(def?.tier ?? 'small', def?.name);
+      if (def) showAchievementToast(def);
       return updatedStore;
     }
     return store;

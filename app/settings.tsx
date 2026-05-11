@@ -8,10 +8,13 @@ import { ACCENT_PALETTES, THEME_ORDER, ThemeId, THEMES, useTheme } from '../them
 import { useHealthKit } from '../useHealthKit';
 import { BLANK_DAY, WorkoutTag } from '../workoutData';
 import CelebrationOverlay from '../components/CelebrationOverlay';
+import { showAchievementToast } from '../components/AchievementToast';
+import { ACHIEVEMENTS } from '../achievementData';
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { theme, themeId, accentId, setTheme, setAccent } = useTheme();
+  // showAchievementToast is now a direct import
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
   const [devCelebVisible,  setDevCelebVisible]  = useState(false);
   const [devCelebTier,     setDevCelebTier]     = useState<'small'|'medium'|'large'>('small');
@@ -337,6 +340,20 @@ export default function SettingsScreen() {
                 <Ionicons name="sparkles-outline" size={18} color={theme.accentBlue} />
               </TouchableOpacity>
             ))}
+            <TouchableOpacity
+              style={[styles.row, { borderTopColor: theme.borderCard }]}
+              onPress={() => {
+                console.log('button pressed');
+                const testDef = ACHIEVEMENTS.find(a => a.id === 'weight_goal');
+                console.log('testDef', testDef?.name);
+                if (testDef) showAchievementToast(testDef);
+              }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Fire Achievement Toast</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Tests the slide-in achievement notification.</Text>
+              </View>
+              <Ionicons name="trophy-outline" size={18} color={theme.accentBlue} />
+            </TouchableOpacity>
           </View>
         )}
 

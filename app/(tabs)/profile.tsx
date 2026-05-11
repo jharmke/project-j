@@ -417,11 +417,18 @@ export default function ProfileScreen() {
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </Text>
         </View>
-        <TouchableOpacity
-          onPress={() => router.push('/settings')}
-          style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}>
-          <Ionicons name="settings-outline" size={14} color={theme.accentBlue} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <TouchableOpacity
+            onPress={() => router.push('/achievements' as any)}
+            style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="trophy-outline" size={14} color={theme.accentBlue} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push('/settings')}
+            style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="settings-outline" size={14} color={theme.accentBlue} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView ref={scrollRef} style={styles.container} contentContainerStyle={styles.content}>

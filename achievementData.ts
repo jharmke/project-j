@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type AchievementCategory = 'hydration' | 'steps' | 'weight' | 'streak' | 'faith' | 'nutrition' | 'general';
 export type AchievementTier = 'small' | 'medium' | 'large';
+export type AchievementDisplayTier = 'bronze' | 'silver' | 'gold' | 'platinum';
 
 export interface AchievementDef {
   id: string;
@@ -12,6 +13,7 @@ export interface AchievementDef {
   icon: string;           // Ionicons name
   iconColor: string;      // fixed color for the icon
   bgColor: string;        // badge background
+  displayTier?: AchievementDisplayTier; // overrides default tier mapping if set
   // Progress tracking -- optional, for locked display
   progressKey?: string;   // which stat to read for progress bar
   progressTarget?: number;// the number that unlocks it
@@ -74,6 +76,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     description: 'Hit your water goal 100 times. You are basically a fish.',
     category: 'hydration',
     tier: 'large',
+    displayTier: 'platinum',
     icon: 'water',
     iconColor: '#93c5fd',
     bgColor: 'rgba(59,130,246,0.25)',
@@ -121,9 +124,10 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'steps_100',
     name: 'Walked to Texas',
-    description: 'Hit your step goal 100 times. Franklin to Dallas, basically.',
+    description: 'Hit your step goal 100 times. You could walk across the state.',
     category: 'steps',
     tier: 'large',
+    displayTier: 'platinum',
     icon: 'footsteps',
     iconColor: '#6ee7b7',
     bgColor: 'rgba(16,185,129,0.25)',
@@ -198,6 +202,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     description: 'Hit your goal weight. This is what it\'s all for.',
     category: 'weight',
     tier: 'large',
+    displayTier: 'platinum',
     icon: 'trophy',
     iconColor: '#fbbf24',
     bgColor: 'rgba(251,191,36,0.25)',
@@ -235,6 +240,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     description: 'Logged 30 days in a row. Habit locked in.',
     category: 'streak',
     tier: 'large',
+    displayTier: 'platinum',
     icon: 'flame',
     iconColor: '#fb923c',
     bgColor: 'rgba(249,115,22,0.22)',

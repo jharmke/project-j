@@ -89,6 +89,14 @@ DONE -- SHIPPED
 [x] Goal weight + projected date -- profile Weight Goal card, live update, home weight card second row (Goal / To Go / Projected), only shows when goal weight set
 [x] Profile floating save bar -- Cancel reverts changes + dismisses keyboard, Save dismisses keyboard, bar rides above keyboard via KeyboardAvoidingView wrapping bar only
 [x] CRLF to LF conversion -- profile.tsx converted to Unix line endings
+[x] Celebration overlay system -- particle burst, 3 tiers (small/medium/large), accent-aware colors, auto-dismiss, tap-to-dismiss pill, pointerEvents="none" so app stays interactive
+[x] Achievement engine -- achievementData.ts, pj_achievements storage, unlock logic, cooldown system, sanity gate for weight entries
+[x] Achievement triggers -- water goal (small), step goal (small), weight 5/10/15/20/25lb milestones (medium, one-time each), goal weight hit (large, 90 day cooldown)
+[x] Achievement definitions -- 20 achievements across hydration, steps, weight, streak, faith, general categories
+[x] Dev tools -- hidden behind 7-tap on Settings title, fire small/medium/large celebration, reset achievements
+[x] Water card sync -- home and log tab now share water value, persists on reload, animated bar in log tab, custom amount button in log tab, waterPresets loaded from profile in log tab
+[x] Step goal cancel button -- Cancel reverts to previous value, no floating bar needed
+[x] Water auto-save fix -- water now included in home tab auto-save dependency
 
 JOURNAL -- REMAINING FEATURES
 Edit entry title (currently only notes and category editable)
@@ -100,16 +108,15 @@ Multiple entries same day -- verify prayer + gratitude same day display correctl
 Search within journal entries (roadmapped, low priority)
 
 NEXT SESSION PRIORITY (in order, do not deviate)
-1. Celebration animations -- replace DONE GO HOME with confetti/slam effect, rare/milestone only, once per day cap
-2. Goal weight milestones -- 25/50/75/100% celebrations, requires celebration system built first
-3. You vs Yesterday card -- discuss and finalize vision, build after celebrations
-4. Total Lost calculation bug -- earliest minus most recent known weight regardless of today having a log
-5. Sleep card -- clearer tip language when stages below ideal range, call out the number directly
-6. Fitness metrics card update
-7. Stats page -- discuss revamp, consolidation, pagination, paginated cards pattern
-8. Notification center -- bell icon in profile header, badge on new notifications, toast for real-time events (Apple Health sync, workout synced, sleep synced), bell for missed events, triggers: Health sync, streak milestones, goal hits
-8. Excluded dates -- discuss design and placement, neutral dim dot on calendar, excluded list view
-9. Calorie color scoring -- mode aware (Discipline/Balance/Mindful), stub mode for now default to Balance
+1. You vs Yesterday card -- discuss and finalize vision, build
+2. Total Lost calculation bug -- earliest minus most recent known weight regardless of today having a log
+3. Sleep card -- clearer tip language when stages below ideal range, call out the number directly
+4. Fitness metrics card update
+5. Stats page -- discuss revamp, consolidation, pagination, paginated cards pattern
+6. Notification center -- bell icon in profile header, badge on new notifications, toast for real-time events (Apple Health sync, workout synced, sleep synced), bell for missed events, triggers: Health sync, streak milestones, goal hits
+7. Excluded dates -- discuss design and placement, neutral dim dot on calendar, excluded list view
+8. Calorie color scoring -- mode aware (Discipline/Balance/Mindful), stub mode for now default to Balance
+9. Achievement page -- trophy icon in profile header, categorized grid, locked with progress bars, unlocked with glow and date, accessible from profile
 10. My Programs builder -- name it, assign focus/tags to each day, save it, load it
 11. Sessions tab in workout library -- save a day's exercise list as a named session, load onto any day
 12. Daily Note + Workout Note -- wire to journal, add workout category to journal alongside verse/prayer/study/personal/gratitude
@@ -119,9 +126,10 @@ NEXT SESSION PRIORITY (in order, do not deviate)
 16. Bible auto-scroll to verse -- when opening from Today's Message card, auto-center on the highlighted verse
 17. (i) tooltip system -- info icon on cards with color coding or non-obvious metrics, one-time modal on tap, lives in Settings > Help, high priority
 18. Apple Health badge on imported workouts -- add source field at import time, badge on Today's Training card
-19. Bible reading programs / Bible studies
-20. Camera progress tracker with timelapse + program milestone integration (30/60/90 day anchors, tie to progress photos)
-21. TestFlight -- discuss setup, App Store Connect, tester invite flow
+19. Workout completion celebration -- add back when workout flow is clearer, currently cut
+20. Bible reading programs / Bible studies
+21. Camera progress tracker with timelapse + program milestone integration (30/60/90 day anchors, tie to progress photos)
+22. TestFlight -- discuss setup, App Store Connect, tester invite flow
 
 AFTER NEXT SESSION
 Faith Journey + Coaching Modes -- build together, same session, they are connected
@@ -441,3 +449,5 @@ Updated after session May 11 2026 (session 3). Auto date rollover shipped. Barco
 Updated after session May 11 2026 (session 4). Day scroller polish shipped. Clear Program with ACTIVE status row shipped and persists. Locked default tags (6: Push/Pull/Legs/Core/Cardio/Rest) shipped with drag reorder. Apple Health workout history import shipped in Settings with range picker and UUID dedup. activeProgramName persisted. DEFAULT_TAGS merge on load. DONE GO HOME flagged for replacement with celebration animation next session. Bible auto-scroll to verse added to priority list. Stats streaks card bug + collapsible tap target bugs added to bug list.
 
 Updated after session May 11 2026 (session 5). Goal weight + projected date shipped -- lives in profile Weight Goal card (input above Weekly Pace, projection box below), also surfaces on home weight card as second row (Goal / To Go / Projected), hidden when no goal weight set. Projected date based on weekly pace setting, updates live. Profile floating save bar overhauled -- Cancel reverts all changes and dismisses keyboard, Save dismisses keyboard, bar rides above keyboard via KeyboardAvoidingView wrapping bar only. CRLF line ending issue resolved in profile.tsx. Notification center system discussed and added to roadmap -- bell icon, badge, real-time toasts for Health sync events. Goal weight milestone celebrations (25/50/75/100%) roadmapped, blocked on celebration animation system. You vs Yesterday card vision discussed -- daily head-to-head across 3-4 metrics (calories, steps, sleep, weight), win/loss indicator per metric, streak counter for consecutive win days, motivational line at bottom.
+
+Updated after session May 11 2026 (session 6). Celebration overlay system shipped -- particle burst, 3 tiers, accent-aware colors, multi-wave large tier, auto-dismiss with fade, tap-to-dismiss pill. Achievement engine shipped -- achievementData.ts, 20 hardcoded achievements across 6 categories, pj_achievements storage, unlock/cooldown logic, 20lb sanity gate on weight entries. Triggers wired: water goal, step goal, weight 5lb increments (one-time each), goal weight (90 day cooldown). Dev tools section in settings (7-tap unlock) for firing celebrations and resetting achievements -- remove before App Store. Water card fully synced between home and log tabs -- persists on reload, animated bar in log, custom amount button in log, presets loaded from profile. Step goal edit now has Cancel button. Dismiss pill on CelebrationOverlay is pointerEvents="box-none" so it is tappable but particles are non-blocking -- note for future: large tier has no dismiss pill by design (unskippable). Water bar animation on tab switch is a known limitation of tab-scoped state -- would require global state manager (Context/Zustand) to fix, deferred.

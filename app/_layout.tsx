@@ -15,6 +15,7 @@ import { LogBox } from 'react-native';
 
 LogBox.ignoreLogs(['VirtualizedLists should never be nested']);
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { AchievementToastProvider, AchievementToastRenderer } from '../components/AchievementToast';
 import { ToastProvider } from '../components/Toast';
 import { ThemeProvider } from '../theme';
 
@@ -39,6 +40,7 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
     <ThemeProvider>
     <ToastProvider>
+    <AchievementToastProvider>
     <NavThemeProvider value={DarkTheme}>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -53,9 +55,12 @@ export default function RootLayout() {
         <Stack.Screen name="settings" options={{ headerShown: false }} />
         <Stack.Screen name="bible" options={{ headerShown: false }} />
         <Stack.Screen name="journal" options={{ headerShown: false }} />
+        <Stack.Screen name="achievements" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="light" />
+      <AchievementToastRenderer />
     </NavThemeProvider>
+    </AchievementToastProvider>
     </ToastProvider>
     </ThemeProvider>
     </GestureHandlerRootView>

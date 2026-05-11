@@ -1,0 +1,715 @@
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'expo-linear-gradient';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react'; // useRef used in PlatinumAnimatedBorder and PlatinumGlow
+import { Animated, Easing, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Defs, LinearGradient as SvgLinearGradient, Path, Stop } from 'react-native-svg';
+import {
+  ACHIEVEMENTS,
+  AchievementDef,
+  AchievementDisplayTier,
+  AchievementsStore,
+  loadAchievements,
+} from '../achievementData';
+import { useTheme } from '../theme';
+
+// ─── Tier Config ──────────────────────────────────────────────────────────────
+
+interface TierConfig {
+  label: string;
+  badgeColor: string;       // main fill
+  badgeColorDark: string;   // inner gradient darker stop
+  borderColor: string;
+  glowColor: string;
+  iconColor: string;
+}
+
+const TIER_CONFIG: Record<AchievementDisplayTier, TierConfig> = {
+  bronze: {
+    label: 'Bronze',
+    badgeColor:     '#cd7f32',
+    badgeColorDark: '#8b5220',
+    borderColor:    'rgba(205,127,50,0.6)',
+    glowColor:      'rgba(205,127,50,0.35)',
+    iconColor:      '#fff8f0',
+  },
+  silver: {
+    label: 'Silver',
+    badgeColor:     '#a8a8c0',
+    badgeColorDark: '#6a6a88',
+    borderColor:    'rgba(168,168,192,0.6)',
+    glowColor:      'rgba(168,168,192,0.35)',
+    iconColor:      '#ffffff',
+  },
+  gold: {
+    label: 'Gold',
+    badgeColor:     '#d4860a',
+    badgeColorDark: '#8a5200',
+    borderColor:    'rgba(212,134,10,0.6)',
+    glowColor:      'rgba(212,134,10,0.40)',
+    iconColor:      '#fff8e0',
+  },
+  platinum: {
+    label: 'Platinum',
+    badgeColor:     '#bfdbfe',
+    badgeColorDark: '#60a5c8',
+    borderColor:    'rgba(191,219,254,0.7)',
+    glowColor:      'rgba(191,219,254,0.45)',
+    iconColor:      '#ffffff',
+  },
+};
+
+// Derive display tier from def
+function getDisplayTier(def: AchievementDef): AchievementDisplayTier {
+  if (def.displayTier) return def.displayTier;
+  if (def.tier === 'small')  return 'bronze';
+  if (def.tier === 'medium') return 'silver';
+  return 'gold';
+}
+
+// ─── Hexagon Path ─────────────────────────────────────────────────────────────
+// Flat-top hexagon centered in a square of given size
+
+function hexPath(size: number): string {
+  const cx = size / 2;
+  const cy = size / 2;
+  const r  = size * 0.46; // slight inset from edge
+  const points: string[] = [];
+  for (let i = 0; i < 6; i++) {
+    const angle = (Math.PI / 180) * (60 * i - 30);
+    points.push(`${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`);
+  }
+  return `M ${points.join(' L ')} Z`;
+}
+
+// ─── Platinum Animated Border ─────────────────────────────────────────────────
+
+function PlatinumAnimatedBorder({ size }: { size: number }) {
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 4500,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    ).start();
+  }, []);
+
+  // We fake a rotating border by overlaying a thin ring that has a gradient shimmer
+  // Implemented as a subtle rotating opacity overlay on the hex outline
+  const rotate = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
+  return (
+    <Animated.View
+      style={{
+        position: 'absolute',
+        width: size,
+        height: size,
+        transform: [{ rotate }],
+      }}
+      pointerEvents="none"
+    >
+      <Svg width={size} height={size}>
+        <Defs>
+          <SvgLinearGradient id="plat_border" x1="0" y1="0" x2="1" y2="1">
+            <Stop offset="0"   stopColor="#ffffff" stopOpacity="0.9" />
+            <Stop offset="0.3" stopColor="#bfdbfe" stopOpacity="0.6" />
+            <Stop offset="0.6" stopColor="#60a5fa" stopOpacity="0.2" />
+            <Stop offset="1"   stopColor="#ffffff" stopOpacity="0.0" />
+          </SvgLinearGradient>
+        </Defs>
+        <Path
+          d={hexPath(size)}
+          fill="none"
+          stroke="url(#plat_border)"
+          strokeWidth={2.5}
+        />
+      </Svg>
+    </Animated.View>
+  );
+}
+
+// ─── Platinum Breathing Glow ──────────────────────────────────────────────────
+
+function PlatinumGlow({ size }: { size: number }) {
+  const glowAnim = useRef(new Animated.Value(0.3)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowAnim, { toValue: 0.8, duration: 2200, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(glowAnim, { toValue: 0.3, duration: 2200, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      ])
+    ).start();
+  }, []);
+
+  return (
+    <Animated.View
+      style={{
+        position: 'absolute',
+        width: size,
+        height: size,
+        opacity: glowAnim,
+      }}
+      pointerEvents="none"
+    >
+      <Svg width={size} height={size}>
+        <Defs>
+          <SvgLinearGradient id="plat_glow" x1="0.5" y1="0" x2="0.5" y2="1">
+            <Stop offset="0"   stopColor="#e0f2fe" stopOpacity="0.5" />
+            <Stop offset="0.5" stopColor="#bfdbfe" stopOpacity="0.3" />
+            <Stop offset="1"   stopColor="#93c5fd" stopOpacity="0.0" />
+          </SvgLinearGradient>
+        </Defs>
+        <Path d={hexPath(size)} fill="url(#plat_glow)" />
+      </Svg>
+    </Animated.View>
+  );
+}
+
+// ─── Hex Badge ────────────────────────────────────────────────────────────────
+
+interface HexBadgeProps {
+  def: AchievementDef;
+  unlocked: boolean;
+  size?: number;
+}
+
+function HexBadge({ def, unlocked, size = 64 }: HexBadgeProps) {
+  const tier    = getDisplayTier(def);
+  const config  = TIER_CONFIG[tier];
+  const isPlat  = tier === 'platinum';
+  const gradId  = `grad_${def.id}`;
+  const lockId  = `lock_${def.id}`;
+
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      <Svg width={size} height={size}>
+        <Defs>
+          {/* Unlocked fill gradient */}
+          <SvgLinearGradient id={gradId} x1="0.5" y1="0" x2="0.5" y2="1">
+            <Stop offset="0"   stopColor={unlocked ? config.badgeColor     : '#2a2a3a'} stopOpacity="1" />
+            <Stop offset="1"   stopColor={unlocked ? config.badgeColorDark : '#1a1a28'} stopOpacity="1" />
+          </SvgLinearGradient>
+          {/* Locked mystery gradient -- slightly lighter than bg */}
+          <SvgLinearGradient id={lockId} x1="0.5" y1="0" x2="0.5" y2="1">
+            <Stop offset="0" stopColor={isPlat ? '#2a3060' : '#252535'} stopOpacity="1" />
+            <Stop offset="1" stopColor={isPlat ? '#1a2040' : '#18182a'} stopOpacity="1" />
+          </SvgLinearGradient>
+        </Defs>
+        {/* Main hex fill */}
+        <Path
+          d={hexPath(size)}
+          fill={`url(#${unlocked ? gradId : lockId})`}
+        />
+        {/* Border */}
+        <Path
+          d={hexPath(size)}
+          fill="none"
+          stroke={unlocked ? config.borderColor : (isPlat ? 'rgba(100,120,200,0.4)' : 'rgba(255,255,255,0.08)')}
+          strokeWidth={unlocked ? 1.5 : 1}
+        />
+      </Svg>
+
+      {/* Platinum effects -- only when unlocked */}
+      {isPlat && unlocked && <PlatinumAnimatedBorder size={size} />}
+      {isPlat && unlocked && <PlatinumGlow size={size} />}
+
+      {/* Outer glow shadow when unlocked */}
+      {unlocked && (
+        <View style={{
+          position: 'absolute',
+          width: size * 0.85,
+          height: size * 0.85,
+          borderRadius: size,
+          backgroundColor: 'transparent',
+          shadowColor: config.glowColor,
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: isPlat ? 0.9 : 0.7,
+          shadowRadius: isPlat ? 14 : 10,
+        }} pointerEvents="none" />
+      )}
+
+      {/* Icon or lock */}
+      <View style={{ position: 'absolute', alignItems: 'center', justifyContent: 'center', width: size, height: size }}>
+        {unlocked ? (
+          <Ionicons
+            name={def.icon as any}
+            size={size * 0.36}
+            color={unlocked ? config.iconColor : 'rgba(255,255,255,0.15)'}
+          />
+        ) : (
+          <Ionicons
+            name="lock-closed"
+            size={size * 0.30}
+            color={isPlat ? 'rgba(160,180,255,0.5)' : 'rgba(255,255,255,0.18)'}
+          />
+        )}
+      </View>
+    </View>
+  );
+}
+
+// ─── Achievement Card ─────────────────────────────────────────────────────────
+
+interface AchievementCardProps {
+  def: AchievementDef;
+  unlocked: UnlockedInfo | null;
+  progressValue?: number; // current value toward progressTarget
+}
+
+interface UnlockedInfo {
+  unlockedAt: string;
+  count: number;
+}
+
+function AchievementCard({ def, unlocked, progressValue = 0 }: AchievementCardProps) {
+  const { theme } = useTheme();
+  const tier      = getDisplayTier(def);
+  const config    = TIER_CONFIG[tier];
+  const isPlat    = tier === 'platinum';
+  const isUnlocked = !!unlocked;
+
+  const hasProgress = def.progressTarget !== undefined && !isUnlocked;
+  const progress    = hasProgress
+    ? Math.min(progressValue / (def.progressTarget ?? 1), 1)
+    : 0;
+
+  const dateStr = unlocked
+    ? new Date(unlocked.unlockedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : null;
+
+  return (
+    <View style={[
+      styles.card,
+      {
+        backgroundColor: isUnlocked
+          ? (isPlat ? 'rgba(30,40,80,0.85)' : theme.bgCard)
+          : theme.bgCard,
+        borderColor: isUnlocked ? config.borderColor : theme.borderCard,
+        borderTopColor: isUnlocked ? config.borderColor : theme.borderCardTop,
+        shadowColor: isUnlocked ? config.glowColor : '#000',
+        shadowOpacity: isUnlocked ? (isPlat ? 0.5 : 0.3) : 0.15,
+        shadowRadius: isUnlocked ? (isPlat ? 16 : 10) : 6,
+        opacity: isUnlocked ? 1 : 0.75,
+      }
+    ]}>
+      {/* Tier pip */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+        <View style={{
+          backgroundColor: isUnlocked ? config.badgeColor : 'rgba(255,255,255,0.08)',
+          borderRadius: 3,
+          paddingHorizontal: 5,
+          paddingVertical: 2,
+        }}>
+          <Text style={{
+            fontSize: 7,
+            fontFamily: 'DMSans_700Bold',
+            letterSpacing: 1.5,
+            textTransform: 'uppercase',
+            color: isUnlocked ? '#000000aa' : theme.textDim,
+          }}>
+            {config.label}
+          </Text>
+        </View>
+        {unlocked && unlocked.count > 1 && (
+          <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_500Medium', marginLeft: 6 }}>
+            x{unlocked.count}
+          </Text>
+        )}
+      </View>
+
+      {/* Badge */}
+      <View style={{ alignItems: 'center', marginBottom: 10 }}>
+        <HexBadge def={def} unlocked={isUnlocked} size={72} />
+      </View>
+
+      {/* Name */}
+      <Text style={{
+        fontSize: 13,
+        fontFamily: 'DMSans_700Bold',
+        color: isUnlocked ? theme.textPrimary : theme.textMuted,
+        textAlign: 'center',
+        marginBottom: 4,
+        letterSpacing: 0.3,
+      }}>
+        {def.name}
+      </Text>
+
+      {/* Description */}
+      <Text style={{
+        fontSize: 10,
+        fontFamily: 'DMSans_400Regular',
+        color: theme.textMuted,
+        textAlign: 'center',
+        lineHeight: 14,
+        marginBottom: isUnlocked || hasProgress ? 8 : 0,
+      }}>
+        {def.description}
+      </Text>
+
+      {/* Unlocked date */}
+      {isUnlocked && dateStr && (
+        <Text style={{
+          fontSize: 9,
+          fontFamily: 'DMSans_600SemiBold',
+          color: isPlat ? '#93c5fd' : config.badgeColor,
+          textAlign: 'center',
+          letterSpacing: 0.5,
+          opacity: 0.85,
+        }}>
+          {dateStr}
+        </Text>
+      )}
+
+      {/* Progress bar for locked */}
+      {hasProgress && def.progressTarget !== undefined && (
+        <View>
+          <View style={{
+            height: 3,
+            backgroundColor: theme.bgProgressTrack,
+            borderRadius: 2,
+            overflow: 'hidden',
+            marginBottom: 4,
+          }}>
+            <View style={{
+              width: `${progress * 100}%`,
+              height: '100%',
+              backgroundColor: isPlat ? '#60a5fa' : config.badgeColor,
+              borderRadius: 2,
+            }} />
+          </View>
+          <Text style={{
+            fontSize: 9,
+            fontFamily: 'DMSans_600SemiBold',
+            color: theme.textDim,
+            textAlign: 'center',
+          }}>
+            {Math.min(progressValue, def.progressTarget)} / {def.progressTarget}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ─── Category Config ──────────────────────────────────────────────────────────
+
+const CATEGORY_CONFIG: Record<string, { label: string; icon: string }> = {
+  hydration: { label: 'Hydration',  icon: 'water-outline'      },
+  steps:     { label: 'Steps',      icon: 'footsteps-outline'   },
+  weight:    { label: 'Weight',     icon: 'trending-down-outline'},
+  streak:    { label: 'Streaks',    icon: 'flame-outline'       },
+  faith:     { label: 'Faith',      icon: 'book-outline'        },
+  nutrition: { label: 'Nutrition',  icon: 'nutrition-outline'   },
+  general:   { label: 'General',    icon: 'star-outline'        },
+};
+
+const CATEGORY_ORDER = ['general', 'hydration', 'steps', 'weight', 'streak', 'faith', 'nutrition'];
+
+// ─── Progress Value Loader ────────────────────────────────────────────────────
+// Reads AsyncStorage to figure out current progress toward each progressKey
+
+async function loadProgressValues(): Promise<Record<string, number>> {
+  const values: Record<string, number> = {};
+
+  try {
+    // waterGoalDays and stepGoalDays -- count days in storage where goal was hit
+    // We scan last 365 days
+    const profile = await AsyncStorage.getItem('pj_profile');
+    const parsed  = profile ? JSON.parse(profile) : {};
+    const waterTarget = 128; // default, could read from profile
+
+    let waterDays = 0;
+    let stepDays  = 0;
+    const stepGoal = parsed.stepGoal ? parseInt(parsed.stepGoal) : 10000;
+
+    const today = new Date();
+    for (let i = 0; i < 365; i++) {
+      const d  = new Date(today);
+      d.setDate(d.getDate() - i);
+      const dk = d.toISOString().split('T')[0];
+      try {
+        const raw = await AsyncStorage.getItem(`pj_${dk}`);
+        if (raw) {
+          const day = JSON.parse(raw);
+          if ((day.water ?? 0) >= waterTarget) waterDays++;
+          if ((day.steps ?? 0) >= stepGoal)    stepDays++;
+        }
+      } catch { /* skip */ }
+    }
+
+    values['waterGoalDays'] = waterDays;
+    values['stepGoalDays']  = stepDays;
+
+    // totalLost -- earliest vs most recent weight
+    let earliestWeight: number | null = null;
+    let mostRecentWeight: number | null = null;
+    for (let i = 364; i >= 0; i--) {
+      const d  = new Date(today);
+      d.setDate(d.getDate() - i);
+      const dk = d.toISOString().split('T')[0];
+      try {
+        const raw = await AsyncStorage.getItem(`pj_${dk}`);
+        if (raw) {
+          const day = JSON.parse(raw);
+          if (day.weight) {
+            if (!earliestWeight) earliestWeight = day.weight;
+            mostRecentWeight = day.weight;
+          }
+        }
+      } catch { /* skip */ }
+    }
+    if (earliestWeight && mostRecentWeight) {
+      values['totalLost'] = Math.max(0, earliestWeight - mostRecentWeight);
+    } else {
+      values['totalLost'] = 0;
+    }
+
+    // logStreak -- count consecutive days from today going back that have any data
+    let streak = 0;
+    for (let i = 0; i < 365; i++) {
+      const d  = new Date(today);
+      d.setDate(d.getDate() - i);
+      const dk = d.toISOString().split('T')[0];
+      try {
+        const raw = await AsyncStorage.getItem(`pj_${dk}`);
+        if (raw) {
+          streak++;
+        } else {
+          break;
+        }
+      } catch { break; }
+    }
+    values['logStreak'] = streak;
+
+    // journalEntries -- count entries in pj_bible_reflections
+    const journalRaw = await AsyncStorage.getItem('pj_bible_reflections');
+    if (journalRaw) {
+      const entries = JSON.parse(journalRaw);
+      values['journalEntries'] = Array.isArray(entries) ? entries.length : 0;
+    } else {
+      values['journalEntries'] = 0;
+    }
+
+  } catch (e) {
+    console.log('Progress load error', e);
+  }
+
+  return values;
+}
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
+
+export default function AchievementsScreen() {
+  const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
+
+  const [store,    setStore]    = useState<AchievementsStore>({});
+  const [progress, setProgress] = useState<Record<string, number>>({});
+  const [loading,  setLoading]  = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      const load = async () => {
+        setLoading(true);
+        const [s, p] = await Promise.all([
+          loadAchievements(),
+          loadProgressValues(),
+        ]);
+        if (active) {
+          setStore(s);
+          setProgress(p);
+          setLoading(false);
+        }
+      };
+      load();
+      return () => { active = false; };
+    }, [])
+  );
+
+  // Group achievements by category
+  const grouped = CATEGORY_ORDER.reduce<Record<string, AchievementDef[]>>((acc, cat) => {
+    const defs = ACHIEVEMENTS.filter(a => a.category === cat);
+    if (defs.length > 0) acc[cat] = defs;
+    return acc;
+  }, {});
+
+  // Count unlocked
+  const totalUnlocked = ACHIEVEMENTS.filter(a => !!store[a.id]).length;
+  const totalCount    = ACHIEVEMENTS.length;
+
+  return (
+    <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
+
+      {/* Header */}
+      <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="chevron-back" size={22} color={theme.accentBlue} />
+        </TouchableOpacity>
+        <View style={{ flex: 1, marginLeft: 4 }}>
+          <Text style={[styles.headerLabel, { color: theme.textMuted }]}>PROJECT J</Text>
+          <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>Achievements</Text>
+        </View>
+        <View style={{
+          backgroundColor: theme.accentBlueBg,
+          borderWidth: 1,
+          borderColor: theme.accentBlueBorder,
+          borderRadius: 8,
+          paddingHorizontal: 10,
+          paddingVertical: 6,
+          alignItems: 'center',
+        }}>
+          <Text style={{ fontSize: 16, fontFamily: 'BebasNeue_400Regular', color: theme.accentBlue, letterSpacing: 1 }}>
+            {totalUnlocked}/{totalCount}
+          </Text>
+          <Text style={{ fontSize: 7, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', color: theme.textMuted }}>
+            Earned
+          </Text>
+        </View>
+      </View>
+
+      {loading ? (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <Text style={{ color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontSize: 13 }}>Loading...</Text>
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+
+          {/* Overall progress bar */}
+          <View style={{ marginBottom: 24 }}>
+            <View style={{
+              height: 4,
+              backgroundColor: theme.bgProgressTrack,
+              borderRadius: 2,
+              overflow: 'hidden',
+            }}>
+              <View style={{
+                width: `${(totalUnlocked / totalCount) * 100}%`,
+                height: '100%',
+                backgroundColor: theme.accentBlueRaw,
+                borderRadius: 2,
+              }} />
+            </View>
+            <Text style={{
+              fontSize: 9,
+              fontFamily: 'DMSans_500Medium',
+              color: theme.textMuted,
+              marginTop: 6,
+              letterSpacing: 1,
+              textTransform: 'uppercase',
+            }}>
+              {Math.round((totalUnlocked / totalCount) * 100)}% Complete
+            </Text>
+          </View>
+
+          {/* Categories */}
+          {Object.entries(grouped).map(([cat, defs]) => {
+            const catConfig  = CATEGORY_CONFIG[cat];
+            const catUnlocked = defs.filter(d => !!store[d.id]).length;
+
+            return (
+              <View key={cat} style={{ marginBottom: 28 }}>
+                {/* Category header */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14, gap: 8 }}>
+                  <Ionicons name={catConfig.icon as any} size={14} color={theme.textMuted} />
+                  <Text style={{
+                    fontSize: 9,
+                    fontFamily: 'DMSans_700Bold',
+                    letterSpacing: 3,
+                    textTransform: 'uppercase',
+                    color: theme.textMuted,
+                    flex: 1,
+                  }}>
+                    {catConfig.label}
+                  </Text>
+                  <Text style={{
+                    fontSize: 9,
+                    fontFamily: 'DMSans_600SemiBold',
+                    color: catUnlocked === defs.length ? theme.accentGreen : theme.textMuted,
+                    letterSpacing: 1,
+                  }}>
+                    {catUnlocked}/{defs.length}
+                  </Text>
+                </View>
+
+                {/* 2-column grid */}
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                  {defs.map(def => {
+                    const unlockedEntry = store[def.id] ?? null;
+                    const progressVal   = def.progressKey ? (progress[def.progressKey] ?? 0) : 0;
+                    return (
+                      <View key={def.id} style={{ width: '47.5%' }}>
+                        <AchievementCard
+                          def={def}
+                          unlocked={unlockedEntry ? { unlockedAt: unlockedEntry.unlockedAt, count: unlockedEntry.count } : null}
+                          progressValue={progressVal}
+                        />
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+            );
+          })}
+
+          {/* Disclaimer */}
+          <Text style={{
+            fontSize: 9,
+            fontFamily: 'DMSans_400Regular',
+            color: theme.textDim,
+            textAlign: 'center',
+            marginTop: 8,
+            lineHeight: 14,
+          }}>
+            For informational purposes only. Not medical advice.
+          </Text>
+
+        </ScrollView>
+      )}
+    </LinearGradient>
+  );
+}
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    borderBottomWidth: 0.5,
+    marginBottom: 0,
+  },
+  headerLabel: {
+    fontSize: 9,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    marginBottom: 2,
+    fontFamily: 'DMSans_700Bold',
+  },
+  headerTitle: {
+    fontSize: 28,
+    fontFamily: 'BebasNeue_400Regular',
+    letterSpacing: 2,
+  },
+  card: {
+    borderWidth: 0.5,
+    borderTopWidth: 0.5,
+    borderRadius: 14,
+    padding: 14,
+    shadowOffset: { width: 0, height: 4 },
+  },
+});

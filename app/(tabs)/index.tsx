@@ -30,7 +30,8 @@ export type CardId =
   | 'steps'
   | 'sleep'
   | 'fitness_metrics'
-  | 'daily_note';
+  | 'daily_note'
+  | 'vs_yesterday';
 
 interface CardMeta {
   id: CardId;
@@ -51,6 +52,7 @@ const CARD_REGISTRY: CardMeta[] = [
   { id: 'sleep',          label: 'Sleep',              description: 'Sleep duration & stages from Apple Health', defaultVisible: true },
   { id: 'fitness_metrics',label: 'Fitness Metrics',    description: 'VO2 Max & cardio recovery score',        defaultVisible: true },
   { id: 'daily_note',     label: 'Daily Note',         description: 'Journal entry for the day',             defaultVisible: true },
+  { id: 'vs_yesterday',   label: 'You vs Yesterday',   description: 'Daily head-to-head across key metrics', defaultVisible: true },
 ];
 
 const DEFAULT_ORDER: CardId[] = CARD_REGISTRY.map(c => c.id);
@@ -422,6 +424,15 @@ export default function HomeScreen() {
   const [showEndTimePicker, setShowEndTimePicker]   = useState(false);
   const [pickerTime,        setPrickerTime]         = useState<Date|null>(null);
 
+  // You vs Yesterday state
+  const [ydCals,          setYdCals]          = useState<number|null>(null);
+  const [ydSteps,         setYdSteps]         = useState<number|null>(null);
+  const [ydSleepScore,    setYdSleepScore]    = useState<number|null>(null);
+  const [ydSleepHours,    setYdSleepHours]    = useState<number|null>(null);
+  const [ydWater,         setYdWater]         = useState<number|null>(null);
+  const [ydActiveCalories,setYdActiveCalories]= useState<number|null>(null);
+  const [vsStreak,        setVsStreak]        = useState(0);
+
   // Celebration state
   const [celebVisible,    setCelebVisible]    = useState(false);
   const [celebTier,       setCelebTier]       = useState<'small'|'medium'|'large'>('small');
@@ -570,7 +581,10 @@ export default function HomeScreen() {
         const s = await AsyncStorage.getItem('pj_settings');
         if (s) {
           const parsed = JSON.parse(s);
-          if (parsed.cardOrder   && Array.isArray(parsed.cardOrder))   setCardOrder(parsed.cardOrder);
+          if (parsed.cardOrder && Array.isArray(parsed.cardOrder)) {
+            const merged = [...parsed.cardOrder, ...DEFAULT_ORDER.filter(id => !parsed.cardOrder.includes(id))];
+            setCardOrder(merged);
+          }
           if (parsed.cardVisible && typeof parsed.cardVisible === 'object') setCardVisible({ ...DEFAULT_VISIBLE, ...parsed.cardVisible });
         }
       } catch (e) {
@@ -741,6 +755,40 @@ export default function HomeScreen() {
           const ld = await AsyncStorage.getItem(`pj_${dk}`);
           if (ld) { const ldp = JSON.parse(ld); if (ldp.weight) { setLastKnownWeight({ val: ldp.weight, daysAgo: i }); break; } }
         }
+        // Load yesterday's metrics for You vs Yesterday card
+        const ydRaw = await AsyncStorage.getItem(`pj_${yk}`);
+        if (ydRaw) {
+          const yd2 = JSON.parse(ydRaw);
+          // Yesterday calories
+          if (yd2.entries && Array.isArray(yd2.entries)) {
+            const ydConsumed = yd2.entries.reduce((s: number, e: any) => s + e.cal, 0);
+            const ydBurned = yd2.activeCalories || yd2.caloriesBurned || 0;
+            setYdCals(ydConsumed - ydBurned);
+          }
+          // Yesterday steps
+          if (yd2.steps) setYdSteps(yd2.steps);
+          // Yesterday water
+          if (typeof yd2.water === 'number') setYdWater(yd2.water);
+          // Yesterday active calories
+          if (yd2.activeCalories) setYdActiveCalories(yd2.activeCalories);
+          // Yesterday sleep score
+          if (yd2.sleepOverride || yd2.sleepHours) {
+            const ydHours = yd2.sleepOverride || yd2.sleepHours;
+            setYdSleepHours(ydHours);
+            const ydStages = yd2.sleepStages || null;
+            const { score: ydScore, hasStages: ydHasStages } = calcSleepScore(ydHours, ydStages, sleepGoal);
+            if (ydHasStages) setYdSleepScore(ydScore);
+            else setYdSleepScore(null);
+          }
+        }
+
+        // Load vs streak
+        const streakRaw = await AsyncStorage.getItem('pj_vs_streak');
+        if (streakRaw) {
+          const streakData = JSON.parse(streakRaw);
+          setVsStreak(streakData.streak || 0);
+        }
+
         const workoutData = await AsyncStorage.getItem('pj_workout_state');
         if (workoutData) {
           const wd = JSON.parse(workoutData);
@@ -1617,6 +1665,250 @@ export default function HomeScreen() {
     </View>
   );
 
+  const renderVsYesterdayCard = () => {
+    // ── Today's values ──
+    const todayNet = totalCals - displayedBurned;
+    const todaySleepScore = sleepHours ? calcSleepScore(sleepHours, sleepStages, sleepGoal) : null;
+    const todaySleepHours = sleepOverride ?? sleepHours ?? null;
+    const todayHasSleepScore = todaySleepScore?.hasStages ?? false;
+
+    // ── Metric definitions ──
+    type MetricId = 'net' | 'steps' | 'sleepScore' | 'water' | 'weight' | 'activeCals' | 'sleepHours';
+    interface Metric {
+      id: MetricId;
+      label: string;
+      sub: string;
+      todayVal: number | null;
+      ydVal: number | null;
+      format: (v: number) => string;
+      unit: string;
+      winCondition: (today: number, yd: number) => 'win' | 'lose' | 'tie';
+    }
+
+    const sleepFmt = (h: number) => {
+      const hrs = Math.floor(h);
+      const mins = Math.round((h - hrs) * 60);
+      return mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`;
+    };
+
+    const allMetrics: Metric[] = [
+      {
+        id: 'net',
+        label: 'Net Calories',
+        sub: `${calTarget} Kcal Target`,
+        todayVal: totalCals > 0 || displayedBurned > 0 ? todayNet : null,
+        ydVal: ydCals,
+        format: v => Math.abs(Math.round(v)).toLocaleString(),
+        unit: 'kcal',
+        winCondition: (t, y) => {
+          const tDiff = Math.abs(t - calTarget);
+          const yDiff = Math.abs(y - calTarget);
+          if (Math.abs(tDiff - yDiff) < 25) return 'tie';
+          return tDiff < yDiff ? 'win' : 'lose';
+        },
+      },
+      {
+        id: 'steps',
+        label: 'Steps',
+        sub: `${stepGoal.toLocaleString()} Goal`,
+        todayVal: steps > 0 ? steps : null,
+        ydVal: ydSteps,
+        format: v => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : Math.round(v).toString(),
+        unit: 'steps',
+        winCondition: (t, y) => Math.abs(t - y) < 100 ? 'tie' : t > y ? 'win' : 'lose',
+      },
+      {
+        id: 'sleepScore',
+        label: 'Sleep Score',
+        sub: `${sleepGoal}h Goal`,
+        todayVal: todayHasSleepScore ? (todaySleepScore?.score ?? null) : null,
+        ydVal: ydSleepScore,
+        format: v => Math.round(v).toString(),
+        unit: '/100',
+        winCondition: (t, y) => Math.abs(t - y) < 3 ? 'tie' : t > y ? 'win' : 'lose',
+      },
+      {
+        id: 'water',
+        label: 'Water',
+        sub: `${WATER_TARGET} Oz Goal`,
+        todayVal: water > 0 ? water : null,
+        ydVal: ydWater,
+        format: v => Math.round(v).toString(),
+        unit: 'oz',
+        winCondition: (t, y) => Math.abs(t - y) < 4 ? 'tie' : t > y ? 'win' : 'lose',
+      },
+      {
+        id: 'weight',
+        label: 'Weight',
+        sub: goalWeight ? `${goalWeight} Lb Goal` : 'Trending',
+        todayVal: weight,
+        ydVal: yesterdayWeight,
+        format: v => v.toFixed(1),
+        unit: 'lbs',
+        winCondition: (t, y) => {
+          if (Math.abs(t - y) < 0.2) return 'tie';
+          const losing = weightGoalPace.startsWith('lose');
+          const gaining = weightGoalPace.startsWith('gain');
+          if (losing) return t < y ? 'win' : 'lose';
+          if (gaining) return t > y ? 'win' : 'lose';
+          return Math.abs(t - y) < 0.5 ? 'win' : 'lose';
+        },
+      },
+      {
+        id: 'activeCals',
+        label: 'Active Cals',
+        sub: 'Burned Today',
+        todayVal: displayedBurned > 0 ? displayedBurned : null,
+        ydVal: ydActiveCalories,
+        format: v => Math.round(v).toLocaleString(),
+        unit: 'kcal',
+        winCondition: (t, y) => Math.abs(t - y) < 25 ? 'tie' : t > y ? 'win' : 'lose',
+      },
+      {
+        id: 'sleepHours',
+        label: 'Sleep',
+        sub: `${sleepGoal}h Goal`,
+        todayVal: !todayHasSleepScore && todaySleepHours ? todaySleepHours : null,
+        ydVal: !ydSleepScore ? ydSleepHours : null,
+        format: sleepFmt,
+        unit: 'hrs',
+        winCondition: (t, y) => Math.abs(t - y) < 0.25 ? 'tie' : t > y ? 'win' : 'lose',
+      },
+    ];
+
+    // ── Tier priority ──
+    const tier1Ids: MetricId[] = ['net', 'steps', 'sleepScore', 'water'];
+    const tier2Ids: MetricId[] = ['weight', 'activeCals', 'sleepHours'];
+
+    const metricMap = Object.fromEntries(allMetrics.map(m => [m.id, m])) as Record<MetricId, Metric>;
+
+    const isEligible = (m: Metric) =>
+      m.todayVal !== null && m.ydVal !== null;
+
+    const selected: Metric[] = [];
+    for (const id of tier1Ids) {
+      if (selected.length >= 4) break;
+      const m = metricMap[id];
+      if (isEligible(m)) selected.push(m);
+    }
+    for (const id of tier2Ids) {
+      if (selected.length >= 4) break;
+      const m = metricMap[id];
+      if (isEligible(m)) selected.push(m);
+    }
+
+    // ── Not enough data ──
+    if (selected.length < 2) return null;
+
+    // ── Score ──
+    type Result = 'win' | 'lose' | 'tie';
+    const results: Result[] = selected.map(m => {
+      if (m.todayVal === null || m.ydVal === null) return 'tie';
+      return m.winCondition(m.todayVal, m.ydVal);
+    });
+    const wins   = results.filter(r => r === 'win').length;
+    const losses = results.filter(r => r === 'lose').length;
+    const overallResult: Result = wins > losses ? 'win' : losses > wins ? 'lose' : 'tie';
+
+    const motivationalLines: Record<Result, string[]> = {
+      win:  ['You just raised the bar.', 'Today beats yesterday. Keep going.', "Standard's rising. Keep the intensity.", 'Better than yesterday. Build on it.'],
+      lose: ['Yesterday set the bar high. Chase it.', 'Strong day. Yesterday was stronger.', 'Good effort. Yesterday had more.', 'Yesterday was built different. Match it.'],
+      tie:  ['Dead even. Tomorrow breaks it.', 'Matched yesterday exactly. Push past it.', 'Too close to call. Break the tie tomorrow.', 'Even match. Make tomorrow count.'],
+    };
+    const motLine = motivationalLines[overallResult][Math.floor(new Date().getDate() % motivationalLines[overallResult].length)];
+
+    const accentRaw = theme.accentBlueRaw;
+    const winColor  = accentRaw;
+    const loseColor = theme.textDim;
+    const tieColor  = theme.textMuted;
+
+    return (
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
+        {/* Header */}
+        <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
+          <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
+            <Ionicons name="trophy" size={11} color={theme.textMuted} />
+            <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>You vs Yesterday</Text>
+          </View>
+          {vsStreak > 0 && (
+            <View style={{ flexDirection:'row', alignItems:'center', gap:5, backgroundColor: `${accentRaw}18`, borderWidth:1, borderColor:`${accentRaw}40`, borderRadius:6, paddingHorizontal:8, paddingVertical:3 }}>
+              <Text style={{ fontSize:11, color: accentRaw, fontFamily:'DMSans_700Bold' }}>🔥</Text>
+              <Text style={{ fontSize:13, color: accentRaw, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>{vsStreak}</Text>
+              <Text style={{ fontSize:9, color: accentRaw, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase' }}>day streak</Text>
+            </View>
+          )}
+        </View>
+
+        {/* Column headers */}
+        <View style={{ flexDirection:'row', marginBottom:6 }}>
+          <View style={{ flex:1 }} />
+          <View style={{ width:80, alignItems:'center' }}>
+            <Text style={{ fontSize:9, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', color: accentRaw }}>Today</Text>
+          </View>
+          <View style={{ width:80, alignItems:'center' }}>
+            <Text style={{ fontSize:9, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', color: theme.textDim }}>Yesterday</Text>
+          </View>
+        </View>
+
+        {/* Metric rows */}
+        {selected.map((m, i) => {
+          const result = results[i];
+          const todayColor = result === 'win' ? winColor : result === 'tie' ? tieColor : theme.textDim;
+          const ydColor    = result === 'lose' ? theme.textSecondary : result === 'tie' ? tieColor : theme.textDim;
+          const showWinBar = result === 'win';
+          const showYdBar  = result === 'lose';
+          return (
+            <View key={m.id} style={{ flexDirection:'row', alignItems:'center', paddingVertical:9,
+              borderBottomWidth: i < selected.length - 1 ? 0.5 : 0,
+              borderBottomColor: theme.borderSubtle }}>
+              <View style={{ flex:1 }}>
+                <Text style={{ fontSize:10, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', color: theme.textPrimary }}>{m.label}</Text>
+                <Text style={{ fontSize:10, fontFamily:'DMSans_400Regular', color: theme.textDim, marginTop:1 }}>{m.sub}</Text>
+              </View>
+              <View style={{ width:80, alignItems:'center' }}>
+                {showWinBar && (
+                  <View style={{ position:'absolute', left:2, top:'10%', width:3, height:'80%', backgroundColor: accentRaw, borderRadius:2 }} />
+                )}
+                <Text style={{ fontSize:20, fontFamily:'BebasNeue_400Regular', letterSpacing:1, color: todayColor }}>
+                  {m.todayVal !== null ? m.format(m.todayVal) : '--'}
+                </Text>
+                <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:1, textTransform:'uppercase', color: todayColor, opacity:0.6 }}>{m.unit}</Text>
+              </View>
+              <View style={{ width:80, alignItems:'center' }}>
+                {showYdBar && (
+                  <View style={{ position:'absolute', right:2, top:'10%', width:3, height:'80%', backgroundColor: theme.textSecondary, borderRadius:2 }} />
+                )}
+                <Text style={{ fontSize:20, fontFamily:'BebasNeue_400Regular', letterSpacing:1, color: ydColor }}>
+                  {m.ydVal !== null ? m.format(m.ydVal) : '--'}
+                </Text>
+                <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:1, textTransform:'uppercase', color: ydColor, opacity:0.6 }}>{m.unit}</Text>
+              </View>
+            </View>
+          );
+        })}
+
+        {/* Score bar */}
+        <View style={{ marginTop:14, backgroundColor: theme.bgInset, borderRadius:10, overflow:'hidden' }}>
+          <View style={{ height:2, backgroundColor: overallResult === 'win' ? accentRaw : overallResult === 'lose' ? theme.accentRed : theme.textDim, opacity: 0.5 }} />
+          <View style={{ flexDirection:'row', alignItems:'center', padding:12, gap:8 }}>
+            <View style={{ alignItems:'center', minWidth:28 }}>
+              <Text style={{ fontSize:28, fontFamily:'BebasNeue_400Regular', letterSpacing:1, lineHeight:30, color: overallResult === 'win' ? accentRaw : overallResult === 'tie' ? tieColor : theme.textDim }}>{wins}</Text>
+              <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase', color: overallResult === 'win' ? accentRaw : theme.textDim, opacity:0.7 }}>YOU</Text>
+            </View>
+            <Text style={{ fontSize:16, fontFamily:'BebasNeue_400Regular', color: theme.textDim, letterSpacing:1, paddingBottom:6 }}>-</Text>
+            <View style={{ alignItems:'center', minWidth:28 }}>
+              <Text style={{ fontSize:28, fontFamily:'BebasNeue_400Regular', letterSpacing:1, lineHeight:30, color: overallResult === 'lose' ? theme.textSecondary : theme.textDim }}>{losses}</Text>
+              <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase', color: overallResult === 'lose' ? theme.textSecondary : theme.textDim, opacity:0.7 }}>YESTERDAY</Text>
+            </View>
+            <View style={{ flex:1, paddingLeft:8, alignItems:'center', justifyContent:'center' }}>
+              <Text style={{ fontSize:16, fontFamily:'BebasNeue_400Regular', letterSpacing:1, color: overallResult === 'win' ? accentRaw : overallResult === 'lose' ? theme.textSecondary : tieColor, lineHeight:19, textAlign:'center', maxWidth:140 }}>{motLine}</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
   const renderCardById = (id: CardId) => {
     switch (id) {
       case 'verse':           return renderVerseCard();
@@ -1630,6 +1922,7 @@ export default function HomeScreen() {
       case 'sleep':           return renderSleepCard();
       case 'fitness_metrics': return renderFitnessMetricsCard();
       case 'daily_note':      return renderDailyNoteCard();
+      case 'vs_yesterday':    return renderVsYesterdayCard();
       default:                return null;
     }
   };

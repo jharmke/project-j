@@ -96,46 +96,38 @@ DONE -- SHIPPED
 [x] Achievement toast -- components/AchievementToast.tsx, slides in from right, hex badge, staggered text, double shimmer, tier-colored left border, global emitter pattern, AchievementToastRenderer in _layout.tsx
 [x] Theme preview rows -- hardcoded opaque bg + text + border per theme so rows always look correct regardless of active theme
 
-NEXT PRIORITY (session 8 -- combined + updated to do list)
-1. TikTok/marketing -- account setup (anonymous, no contacts permission), content plan, name from shortlist, meme format content, branding direction
-2. Verse card border -- bump opacity/brightness so it reads on gold/yellow accent themes
-3. Header icon buttons -- swap outline variants to filled/solid across home, stats, profile headers. Add to build standards as permanent rule: all tab header icon buttons use filled not outline variants.
-4. Sleep card -- fix duration math (7h57m showing as 8h0m), fix poor sleep label threshold (7h57m against 7hr goal should not be poor), add donut on manual entry, confirm manual entry overrides HealthKit, review sleep scoring logic before touching thresholds
-5. You vs Yesterday card -- daily head-to-head across calories, steps, sleep, weight. Win/loss per metric, streak counter for consecutive win days, motivational line at bottom
-6. Total Lost bug -- earliest minus most recent known weight regardless of today having a log
-7. Today's Training empty/rest day states -- encouragement text when no exercises logged on unassigned day, intentional acknowledgment message on planned rest day
-8. Rename AFTER BURN to NET on calories card
-9. Achievement toast improvements -- tappable routes to achievements page, add trigger context under name, tap for details hint text. Achievement wording update before App Store launch.
-10. Animation audit pass -- living document (see ANIMATION AUDIT section below), must be updated when any animation is built or changed
-11. Default theme to Light -- swap Light and Dark order in settings, Light is default for new users
-12. Profile current weight field -- use accent color for the value text
-13. Food log donut -- thicker ring, show macro targets inside ring when empty instead of "no data"
-14. Effort score -- card stays on workout tab, smart nudge fires when workout is completed (last exercise checked off or cardio marked done), visual polish on buttons with proper selected state
-15. Workout notes -- keyboard avoiding view fix (keyboard covers field), Save Note button dim/inactive standard, wire to journal on save as workout category
-16. Custom water amount -- replace text input with centered fade-in drag modal. Spec: .5oz increments, 48oz max, live oz display updates as you drag, tappable value opens numpad (0-9 plus .5 key only, no free decimal), KAV so card slides up with keyboard, single Add button, fade out on confirm, toast fires. Never leaves home screen.
-17. Custom water modal card -- fix transparency on current modal, should be solid card
-18. Tab bar top border -- borderTopWidth 0.5 across all themes for clear separation
-19. Shadow pass -- increase shadow opacity and darkness on light themes (Slate, Light, Blush, Warm)
-20. Gradient pass -- more visible gradient range on all light themes
-21. Stats page revamp -- dedicated session, discuss consolidation, pagination, paginated cards pattern, sleep detail page with nap tracking, per-metric exclusion UI
-22. Per-metric sleep exclusion -- exclude sleep data for a day without excluding full day calories/steps/workout data. Note: revisit during stats revamp. Also consider nap tracking (Apple Health tracks naps separately iOS 16+).
-23. Notification center -- bell icon in profile header, badge on new notifications, real-time toasts for Health sync events
-24. Excluded dates -- design and placement, neutral dim dot on calendar, excluded list view
-25. Calorie color scoring -- mode aware, stub default to Balance
-26. My Programs builder -- name it, assign focus/tags to each day, save it, load it
-27. Sessions tab in workout library -- save a day's exercise list as a named session, load onto any day
-28. Daily Note + Workout Note -- wire to journal, workout category added to journal
-29. Bug sweep -- meal slot +/- signs accent color, toast on food remove, weight log dim/inactive state
-30. Macro bars + food log donut animated -- verify first, may already be done
-31. State restoration on launch -- save active tab/scroll position, restore on cold launch
-32. Bible auto-scroll to verse -- when opening from Today's Message card, auto-center on highlighted verse
-33. (i) tooltip system -- info icon on cards, one-time modal on tap, lives in Settings > Help, HIGH PRIORITY
-34. Apple Health badge on imported workouts
-35. Bible reading programs / Bible studies
-36. Camera progress tracker -- timelapse, program milestone integration
-37. TestFlight -- discuss setup, App Store Connect, tester invite flow
-38. App name -- finalize from shortlist (Prevail, Steadfast, Worthy, Haven, Witness, Sown), verify App Store availability, verify TikTok handle availability before committing
-39. First use onboarding moments -- non-blocking, one time only, fires alongside action not instead of it, subtle celebration. Rules: never halts user flow, never repeats, user missing it is not a loss.
+NEXT PRIORITY (session 10)
+1. You vs Yesterday card -- daily head-to-head across calories, steps, sleep, weight. Win/loss per metric, streak counter for consecutive win days, motivational line at bottom
+2. Sleep card -- fix duration math (7h57m showing as 8h0m), fix poor sleep label threshold (7h57m against 7hr goal should not be poor), add donut on manual entry, confirm manual entry overrides HealthKit, review sleep scoring logic before touching thresholds
+3. Today's Training empty/rest day states -- encouragement text when no exercises logged on unassigned day, intentional acknowledgment message on planned rest day
+4. Food log donut -- thicker ring, show macro targets inside ring when empty instead of "no data"
+5. Effort score -- card stays on workout tab, smart nudge fires when workout is completed (last exercise checked off or cardio marked done), visual polish on buttons with proper selected state
+6. Workout notes -- keyboard avoiding view fix (keyboard covers field), Save Note button dim/inactive standard, wire to journal on save as workout category
+7. Custom water amount -- replace text input with centered fade-in drag modal. Spec: .5oz increments, 48oz max, live oz display updates as you drag, tappable value opens numpad (0-9 plus .5 key only, no free decimal), KAV so card slides up with keyboard, single Add button, fade out on confirm, toast fires. Never leaves home screen.
+8. Custom water modal card -- fix transparency on current modal, should be solid card
+9. Shadow pass -- increase shadow opacity and darkness on light themes (Slate, Light, Blush, Warm)
+10. Gradient pass -- more visible gradient range on all light themes
+11. Stats page revamp -- dedicated session, discuss consolidation, pagination, paginated cards pattern, sleep detail page with nap tracking, per-metric exclusion UI
+12. Per-metric sleep exclusion -- exclude sleep data for a day without excluding full day calories/steps/workout data. Note: revisit during stats revamp. Also consider nap tracking (Apple Health tracks naps separately iOS 16+).
+13. Notification center -- bell icon in profile header, badge on new notifications, real-time toasts for Health sync events
+14. Excluded dates -- design and placement, neutral dim dot on calendar, excluded list view
+15. Calorie color scoring -- mode aware, stub default to Balance
+16. My Programs builder -- name it, assign focus/tags to each day, save it, load it
+17. Sessions tab in workout library -- save a day's exercise list as a named session, load onto any day
+18. Daily Note + Workout Note -- wire to journal, workout category added to journal
+19. Bug sweep -- toast on water remove
+20. Macro bars + food log donut animated -- verify first, may already be done
+21. State restoration on launch -- save active tab/scroll position, restore on cold launch
+22. Bible auto-scroll to verse -- when opening from Today's Message card, auto-center on highlighted verse
+23. (i) tooltip system -- info icon on cards, one-time modal on tap, lives in Settings > Help, HIGH PRIORITY
+24. Apple Health badge on imported workouts
+25. Bible reading programs / Bible studies
+26. Camera progress tracker -- timelapse, program milestone integration
+27. TestFlight -- discuss setup, App Store Connect, tester invite flow
+28. App name -- finalize from shortlist (Prevail, Steadfast, Worthy, Haven, Witness, Sown), verify App Store availability, verify TikTok handle availability before committing
+29. First use onboarding moments -- non-blocking, one time only, fires alongside action not instead of it, subtle celebration. Rules: never halts user flow, never repeats, user missing it is not a loss.
+30. Achievement toast improvements -- tappable routes to achievements page, add trigger context under name, tap for details hint text. Achievement wording update before App Store launch.
+31. TikTok/marketing -- account setup, content plan, meme formats, branding direction
 
 ANIMATION AUDIT -- LIVING DOCUMENT
 This list must be updated whenever an animation is built or changed. Reference this before any animation work.

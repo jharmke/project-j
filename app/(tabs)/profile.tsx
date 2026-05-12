@@ -421,12 +421,12 @@ export default function ProfileScreen() {
           <TouchableOpacity
             onPress={() => router.push('/achievements' as any)}
             style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="trophy-outline" size={14} color={theme.accentBlue} />
+            <Ionicons name="trophy" size={14} color={theme.accentBlue} />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => router.push('/settings')}
             style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="settings-outline" size={14} color={theme.accentBlue} />
+            <Ionicons name="settings" size={14} color={theme.accentBlue} />
           </TouchableOpacity>
         </View>
       </View>
@@ -484,7 +484,7 @@ export default function ProfileScreen() {
 
           <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>Current Weight</Text>
           <View style={[styles.weightDisplay, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }]}>
-            <Text style={[styles.weightVal, { color: theme.textPrimary }]}>{currentWeight ? `${currentWeight} lbs` : '--'}</Text>
+            <Text style={[styles.weightVal, { color: theme.accentBlue }]}>{currentWeight ? `${currentWeight} lbs` : '--'}</Text>
             <Text style={[styles.weightSub, { color: theme.textMuted }]}>Pulled from your daily log</Text>
           </View>
 

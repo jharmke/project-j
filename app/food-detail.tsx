@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import { useToast } from '../components/Toast';
@@ -191,7 +191,7 @@ const fat = calPer100g > 0 ? Math.round(fatPer100g * multiplier * 10) / 10 : (fo
       }
       await AsyncStorage.setItem(`pj_${date}`, JSON.stringify({ ...current, entries }));
       await saveToFirebase(date, 'entries', entries);
-      showToast(isEditing ? 'Entry updated' : 'Food logged', `${calories} kcal · ${currentMeal}`, 'success');
+      showToast(isEditing ? 'Entry updated' : 'Entry logged', `${calories} kcal · ${currentMeal}`, 'success');
       router.back();
       if (!isEditing) router.back();
     } catch (e) {
@@ -347,17 +347,27 @@ const fat = calPer100g > 0 ? Math.round(fatPer100g * multiplier * 10) / 10 : (fo
         {isEditing && (
           <TouchableOpacity
             style={styles.deleteBtn}
-            onPress={async () => {
-              try {
-                const saved = await AsyncStorage.getItem(`pj_${date}`);
-                const current = saved ? JSON.parse(saved) : {};
-                const entries = (current.entries || []).filter((_: any, i: number) => i !== parseInt(entryIndex));
-                await AsyncStorage.setItem(`pj_${date}`, JSON.stringify({ ...current, entries }));
-                await saveToFirebase(date, 'entries', entries);
-                router.back();
-              } catch (e) {
-                console.log('Delete error', e);
-              }
+            onPress={() => {
+              Alert.alert(
+                'Remove Entry',
+                'Remove this entry from your log?',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Remove', style: 'destructive', onPress: async () => {
+                    try {
+                      const saved = await AsyncStorage.getItem(`pj_${date}`);
+                      const current = saved ? JSON.parse(saved) : {};
+                      const entries = (current.entries || []).filter((_: any, i: number) => i !== parseInt(entryIndex));
+                      await AsyncStorage.setItem(`pj_${date}`, JSON.stringify({ ...current, entries }));
+                      await saveToFirebase(date, 'entries', entries);
+                      showToast('Removed from log', undefined, 'success');
+                      router.back();
+                    } catch (e) {
+                      console.log('Delete error', e);
+                    }
+                  }},
+                ]
+              );
             }}>
             <Text style={styles.deleteBtnText}>Remove Entry</Text>
           </TouchableOpacity>

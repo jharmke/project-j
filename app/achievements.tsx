@@ -393,7 +393,7 @@ function AchievementCard({ def, unlocked, progressValue = 0 }: AchievementCardPr
             color: theme.textDim,
             textAlign: 'center',
           }}>
-            {Math.min(progressValue, def.progressTarget)} / {def.progressTarget}
+            {Math.round(Math.min(progressValue, def.progressTarget) * 10) / 10} / {def.progressTarget}
           </Text>
         </View>
       )}

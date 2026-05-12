@@ -156,6 +156,16 @@ export default function SettingsScreen() {
             {THEME_ORDER.map((id: ThemeId) => {
               const t = THEMES[id];
               const isActive = themeId === id;
+              const previewBg: Record<string, string> = {
+                dark: '#1a1a24',
+                light: '#ffffff',
+                slate: '#d8dde4',
+                warm: '#6b5a48',
+                blush: '#f5e8ec',
+              };
+              const previewText:   Record<string, string> = { dark: '#e8e8f0', light: '#1a1a2e', slate: '#1c2533', warm: '#f0e8d8', blush: '#3a1a24' };
+              const previewAccent: Record<string, string> = { dark: '#3b82f6', light: '#2563eb', slate: '#4a7fa5', warm: '#f0a040', blush: '#d4607a' };
+              const previewAmber:  Record<string, string> = { dark: '#d4860a', light: '#b45309', slate: '#a07820', warm: '#f0a040', blush: '#c07840' };
               return (
                 <TouchableOpacity
                   key={id}
@@ -164,26 +174,24 @@ export default function SettingsScreen() {
                   style={{
                     flexDirection: 'row',
                     alignItems: 'center',
-                    backgroundColor: t.bgCard,
+                    backgroundColor: previewBg[id] ?? t.bgCard,
                     borderWidth: isActive ? 1.5 : 1,
-                    borderColor: isActive ? t.accentBlue : t.borderCard,
+                    borderColor: isActive ? previewAccent[id] : 'transparent',
                     borderRadius: 10,
                     paddingHorizontal: 14,
                     paddingVertical: 12,
                     opacity: 1,
                   }}>
-                  {/* Name in theme's own text color */}
-                  <Text style={{ flex: 1, fontSize: 14, color: t.textPrimary, fontFamily: 'DMSans_600SemiBold' }}>
+                  <Text style={{ flex: 1, fontSize: 14, color: previewText[id], fontFamily: 'DMSans_600SemiBold' }}>
                     {t.name}
                   </Text>
-                  {/* Badges */}
                   {t.paid && (
-                    <View style={{ backgroundColor: `${t.accentAmber}33`, borderWidth: 1, borderColor: `${t.accentAmber}66`, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, marginRight: 8 }}>
-                      <Text style={{ fontSize: 9, color: t.accentAmber, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>PRO</Text>
+                    <View style={{ backgroundColor: `${previewAmber[id]}33`, borderWidth: 1, borderColor: `${previewAmber[id]}66`, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, marginRight: 8 }}>
+                      <Text style={{ fontSize: 9, color: previewAmber[id], fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>PRO</Text>
                     </View>
                   )}
                   {isActive && (
-                    <Ionicons name="checkmark-circle" size={18} color={t.accentBlue} />
+                    <Ionicons name="checkmark-circle" size={18} color={previewAccent[id]} />
                   )}
                 </TouchableOpacity>
               );

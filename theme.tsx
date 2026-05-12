@@ -180,7 +180,7 @@ const dark: Theme = {
 
   borderCard:       'rgba(255,255,255,0.06)',
   borderCardTop:    'rgba(255,255,255,0.10)',
-  borderCardVerse:  'rgba(212,134,10,0.40)',
+  borderCardVerse:  'rgba(212,134,10,0.70)',
   borderInput:      'rgba(255,255,255,0.08)',
   borderSubtle:     'rgba(255,255,255,0.05)',
   borderSheet:      'rgba(255,255,255,0.10)',
@@ -254,7 +254,7 @@ const light: Theme = {
 
   borderCard:       'rgba(0,0,0,0.06)',
   borderCardTop:    'rgba(0,0,0,0.10)',
-  borderCardVerse:  'rgba(212,134,10,0.35)',
+  borderCardVerse:  'rgba(212,134,10,0.65)',
   borderInput:      'rgba(0,0,0,0.10)',
   borderSubtle:     'rgba(0,0,0,0.05)',
   borderSheet:      'rgba(0,0,0,0.08)',
@@ -328,7 +328,7 @@ const slate: Theme = {
 
   borderCard:       'rgba(74,127,165,0.10)',
   borderCardTop:    'rgba(74,127,165,0.18)',
-  borderCardVerse:  'rgba(212,134,10,0.35)',
+  borderCardVerse:  'rgba(212,134,10,0.65)',
   borderInput:      'rgba(74,127,165,0.14)',
   borderSubtle:     'rgba(74,127,165,0.08)',
   borderSheet:      'rgba(74,127,165,0.12)',
@@ -402,7 +402,7 @@ const warm: Theme = {
 
   borderCard:       'rgba(212,140,60,0.18)',
   borderCardTop:    'rgba(212,140,60,0.28)',
-  borderCardVerse:  'rgba(212,134,10,0.55)',
+  borderCardVerse:  'rgba(212,134,10,0.70)',
   borderInput:      'rgba(212,140,60,0.20)',
   borderSubtle:     'rgba(212,140,60,0.12)',
   borderSheet:      'rgba(212,140,60,0.20)',
@@ -476,7 +476,7 @@ const blush: Theme = {
 
   borderCard:       'rgba(200,80,110,0.08)',
   borderCardTop:    'rgba(200,80,110,0.14)',
-  borderCardVerse:  'rgba(212,134,10,0.35)',
+  borderCardVerse:  'rgba(212,134,10,0.65)',
   borderInput:      'rgba(200,80,110,0.12)',
   borderSubtle:     'rgba(200,80,110,0.06)',
   borderSheet:      'rgba(200,80,110,0.10)',
@@ -536,7 +536,7 @@ const blush: Theme = {
 // ─── Theme Map ────────────────────────────────────────────────────────────────
 export const THEMES: Record<ThemeId, Theme> = { dark, light, slate, warm, blush };
 
-export const THEME_ORDER: ThemeId[] = ['dark', 'light', 'slate', 'warm', 'blush'];
+export const THEME_ORDER: ThemeId[] = ['light', 'dark', 'slate', 'warm', 'blush'];
 
 // ─── Context ──────────────────────────────────────────────────────────────────
 // Drop ThemeProvider in app/_layout.tsx wrapping everything.
@@ -562,7 +562,7 @@ const ThemeContext = createContext<ThemeContextValue>({
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }): React.ReactElement {
-  const [themeId, setThemeId] = useState<ThemeId>('dark');
+  const [themeId, setThemeId] = useState<ThemeId>('light');
   const [accentId, setAccentId] = useState<AccentId>('default');
 
   useEffect(() => {

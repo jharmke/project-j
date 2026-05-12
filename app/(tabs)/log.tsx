@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { useTheme } from '../../theme';
+import { useToast } from '../../components/Toast';
 import { useHealthKit } from '../../useHealthKit';
 import ReAnimated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
@@ -94,6 +95,7 @@ function WaterBar({ pct, color, trackColor, refreshKey }: { pct: number; color: 
 export default function LogScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
+  const { showToast } = useToast();
   const [loaded, setLoaded] = useState(false);
   const [entries, setEntries] = useState<FoodEntry[]>([]);
   const [water, setWater] = useState(0);
@@ -433,7 +435,7 @@ export default function LogScreen() {
             <TouchableOpacity
               style={styles.mealAddBtn}
               onPress={() => router.push({ pathname: '/add-food', params: { meal, date: todayKey } })}>
-              <Text style={[styles.mealAddBtnText, { color: theme.macroProtein }]}>+</Text>
+              <Text style={[styles.mealAddBtnText, { color: theme.accentBlue }]}>+</Text>
             </TouchableOpacity>
 
             {/* Meal info middle */}
@@ -509,12 +511,15 @@ export default function LogScreen() {
                               `Remove ${entry.name} from your log?`,
                               [
                                 { text: 'Cancel', style: 'cancel' },
-                                { text: 'Remove', style: 'destructive', onPress: () => deleteEntry(entries.indexOf(entry)) }
+                                { text: 'Remove', style: 'destructive', onPress: () => {
+                                  deleteEntry(entries.indexOf(entry));
+                                  showToast('Entry removed', `${entry.cal} kcal · ${entry.meal}`, 'success');
+                                }},
                               ]
                             );
                           }}
                           style={styles.foodEntryDelete}>
-                          <Text style={[styles.foodEntryDeleteText, { color: theme.textDim }]}>×</Text>
+                          <Text style={[styles.foodEntryDeleteText, { color: theme.accentBlue }]}>×</Text>
                         </TouchableOpacity>
                       </View>
                     </TouchableOpacity>

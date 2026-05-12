@@ -376,7 +376,7 @@ export default function StatsScreen() {
           onPress={() => router.push('/journal')}
           style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}
         >
-          <Ionicons name="journal-outline" size={14} color={theme.accentBlue} />
+          <Ionicons name="journal" size={14} color={theme.accentBlue} />
         </TouchableOpacity>
       </View>
 

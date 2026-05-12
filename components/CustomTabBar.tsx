@@ -18,7 +18,7 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 const TAB_BAR_HEIGHT = 64;
 
 const TABS = [
-  { name: 'log', label: 'Log', icon: 'document-text', iconActive: 'document-text' },
+  { name: 'log', label: 'Log', icon: 'restaurant', iconActive: 'restaurant' },
   { name: 'workout', label: 'Workout', icon: 'barbell-outline', iconActive: 'barbell' },
   { name: 'index', label: 'Home', icon: 'home', iconActive: 'home', isHome: true },
   { name: 'stats', label: 'Stats', icon: 'bar-chart-outline', iconActive: 'bar-chart' },
@@ -155,7 +155,7 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
   };
 
   return (
-    <View style={[styles.container, { paddingBottom: insets.bottom, height: TAB_BAR_HEIGHT + insets.bottom, backgroundColor: theme.bgPrimary, borderTopColor: theme.borderSubtle }]}>
+    <View style={[styles.container, { paddingBottom: insets.bottom, height: TAB_BAR_HEIGHT + insets.bottom, backgroundColor: theme.bgPrimary, borderTopColor: theme.borderCardTop }]}>
       <Animated.View style={[styles.pill, { backgroundColor: theme.borderSubtle, borderColor: theme.borderCard }, pillStyle]} />
 
       {TABS.map((tab, i) => {
@@ -176,7 +176,7 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
               onPress={() => handlePress(tab.name, i)}
               bgCard={theme.bgCard}
               textSecondary={theme.textSecondary}
-              macroProtein={theme.accentBlue}
+              macroProtein={theme.accentBlueRaw}
             />
           );
         }

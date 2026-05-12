@@ -4,7 +4,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, AppState, Modal, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Animated, AppState, KeyboardAvoidingView, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import ReAnimated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -401,6 +401,7 @@ export default function HomeScreen() {
   const [weightGoalPace, setWeightGoalPace] = useState<string>('lose_1');
   const [editingStepGoal,setEditingStepGoal]= useState(false);
   const prevStepGoal = useRef(10000);
+  const scrollRef = useRef<any>(null);
   const waterLoaded = useRef(false);
   const [dailyVerse,     setDailyVerse]     = useState<{text:string;reference:string}|null>(null);
   const [workoutPrograms,setWorkoutPrograms]= useState<Record<string,any>>({});
@@ -1083,7 +1084,7 @@ export default function HomeScreen() {
         const stats = [
           { label: remaining >= 0 ? 'REMAINING' : 'OVER', value: Math.abs(remaining), color: remaining >= 0 ? theme.accentBlue : theme.statusBad },
           { label: 'ACTIVE', value: displayedBurned, color: theme.accentBlue },
-          { label: 'AFTER BURN', value: net, color: theme.accentBlue },
+          { label: 'NET', value: net, color: theme.accentBlue },
         ];
         return (
           <View style={{ flexDirection:'row', marginTop:10 }}>
@@ -1195,14 +1196,14 @@ export default function HomeScreen() {
           </Text>
         </View>
         <View style={styles.weightStat}>
-          <Text style={[styles.weightVal, { color: weight&&yesterdayWeight ? weight<yesterdayWeight ? theme.statusGood : weight>yesterdayWeight ? theme.statusBad : theme.textPrimary : theme.textPrimary }]}>
+          <Text style={[styles.weightVal, { color: weight&&yesterdayWeight ? weight<yesterdayWeight ? theme.statusGood : weight>yesterdayWeight ? theme.statusBad : theme.textPrimary : theme.accentBlue }]}>
             {weight&&yesterdayWeight ? `${weight>yesterdayWeight?'+':''}${Math.round((weight-yesterdayWeight)*10)/10} lbs` : '--'}
           </Text>
           <Text style={[styles.weightLbl, { color: theme.textMuted }]}>vs Yesterday</Text>
         </View>
         <View style={styles.weightStat}>
-          <Text style={[styles.weightVal, { color: weight&&earliestWeight ? earliestWeight-weight>0 ? theme.statusGood : earliestWeight-weight<0 ? theme.statusBad : theme.textPrimary : theme.textPrimary }]}>
-            {weight&&earliestWeight ? `${Math.round((earliestWeight-weight)*10)/10} lbs` : '--'}
+          <Text style={[styles.weightVal, { color: (weight||lastKnownWeight?.val)&&earliestWeight ? earliestWeight-(weight||lastKnownWeight!.val)>0 ? theme.statusGood : earliestWeight-(weight||lastKnownWeight!.val)<0 ? theme.statusBad : theme.textPrimary : theme.textPrimary }]}>
+            {(weight||lastKnownWeight?.val)&&earliestWeight ? `${Math.round((earliestWeight-(weight||lastKnownWeight!.val))*10)/10} lbs` : '--'}
           </Text>
           <Text style={[styles.weightLbl, { color: theme.textMuted }]}>Total Lost</Text>
         </View>
@@ -1242,8 +1243,8 @@ export default function HomeScreen() {
       <View style={styles.weightAdd}>
         <TextInput style={[styles.weightInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} placeholder="Enter weight (lbs)" placeholderTextColor={theme.textPlaceholder}
           keyboardType="decimal-pad" value={weightInput} onChangeText={setWeightInput} />
-        <PressableButton style={[styles.logBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={logWeight}>
-          <Text style={[styles.logBtnText, { color: theme.accentBlue }]}>LOG</Text>
+        <PressableButton style={[styles.logBtn, { backgroundColor: weightInput.trim() ? theme.accentBlueBg : theme.bgInput, borderColor: weightInput.trim() ? theme.accentBlueBorder : theme.borderInput, opacity: weightInput.trim() ? 1 : 0.5 }]} onPress={logWeight}>
+          <Text style={[styles.logBtnText, { color: weightInput.trim() ? theme.accentBlue : theme.textDim }]}>LOG</Text>
         </PressableButton>
       </View>
     </View>
@@ -1659,14 +1660,14 @@ export default function HomeScreen() {
         <View style={{ flexDirection:'row', gap:8 }}>
             <TouchableOpacity onPress={() => { fetchTodayData(); setRefreshKey(k=>k+1); showToast('Health data refreshed', undefined, 'info'); }}
               style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
-              <Ionicons name="refresh-outline" size={14} color={theme.accentBlue} />
+              <Ionicons name="refresh" size={14} color={theme.accentBlue} />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => router.push({ pathname:'/day-detail', params:{ date:todayKey } })}
               style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
-              <Ionicons name="calendar-outline" size={14} color={theme.accentBlue} />
+              <Ionicons name="calendar" size={14} color={theme.accentBlue} />
             </TouchableOpacity>
             <TouchableOpacity onPress={enterEditMode} style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
-              <Ionicons name="grid-outline" size={14} color={theme.accentBlue} />
+              <Ionicons name="grid" size={14} color={theme.accentBlue} />
             </TouchableOpacity>
           </View>
       </View>
@@ -1702,6 +1703,8 @@ export default function HomeScreen() {
 
       {/* ── Main content ── */}
       <ScrollView
+        ref={scrollRef}
+        automaticallyAdjustKeyboardInsets={true}
         contentContainerStyle={{ padding:16, paddingBottom:80 }}
         refreshControl={
           <RefreshControl

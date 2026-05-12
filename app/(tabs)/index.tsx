@@ -1987,7 +1987,29 @@ export default function HomeScreen() {
       case 'sleep':           return renderSleepCard();
       case 'fitness_metrics': return renderFitnessMetricsCard();
       case 'daily_note':      return renderDailyNoteCard();
-      case 'vs_yesterday':    return renderVsYesterdayCard();
+      case 'vs_yesterday': {
+        const cardContent = renderVsYesterdayCard();
+        if (!cardContent) return null;
+        const today = new Date();
+        const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+        const fmtD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        const vsCardScale = new Animated.Value(1);
+        const onPressIn = () => Animated.timing(vsCardScale, { toValue: 0.97, duration: 100, useNativeDriver: true }).start();
+        const onPressOut = () => Animated.timing(vsCardScale, { toValue: 1, duration: 150, useNativeDriver: true }).start();
+        return (
+          <Animated.View style={{ transform: [{ scale: vsCardScale }] }}>
+            <TouchableOpacity
+              activeOpacity={0.99}
+              delayPressIn={0}
+              onPressIn={onPressIn}
+              onPressOut={onPressOut}
+              onPress={() => router.push({ pathname: '/head-to-head', params: { dateA: fmtD(today), dateB: fmtD(yesterday) } })}
+            >
+              {cardContent}
+            </TouchableOpacity>
+          </Animated.View>
+        );
+      }
       default:                return null;
     }
   };

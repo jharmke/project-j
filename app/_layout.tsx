@@ -56,6 +56,7 @@ export default function RootLayout() {
         <Stack.Screen name="bible" options={{ headerShown: false }} />
         <Stack.Screen name="journal" options={{ headerShown: false }} />
         <Stack.Screen name="achievements" options={{ headerShown: false }} />
+        <Stack.Screen name="head-to-head" options={{ headerShown: false, animation: 'fade' }} />
       </Stack>
       <StatusBar style="light" />
       <AchievementToastRenderer />

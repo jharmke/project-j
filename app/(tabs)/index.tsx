@@ -424,6 +424,15 @@ export default function HomeScreen() {
   const [showEndTimePicker, setShowEndTimePicker]   = useState(false);
   const [pickerTime,        setPrickerTime]         = useState<Date|null>(null);
 
+  // BMR state
+  const [profileBmr,      setProfileBmr]      = useState(0);
+  const runningBmr = profileBmr > 0
+    ? Math.round((profileBmr / 1440) * (() => {
+        const now = new Date(currentTime);
+        return now.getHours() * 60 + now.getMinutes();
+      })())
+    : 0;
+
   // You vs Yesterday state
   const [ydCals,          setYdCals]          = useState<number|null>(null);
   const [ydSteps,         setYdSteps]         = useState<number|null>(null);
@@ -763,7 +772,8 @@ export default function HomeScreen() {
           if (yd2.entries && Array.isArray(yd2.entries)) {
             const ydConsumed = yd2.entries.reduce((s: number, e: any) => s + e.cal, 0);
             const ydBurned = yd2.activeCalories || yd2.caloriesBurned || 0;
-            setYdCals(ydConsumed - ydBurned);
+            if (ydConsumed >= 400) setYdCals(ydConsumed - ydBurned - profileBmr);
+            else setYdCals(null);
           }
           // Yesterday steps
           if (yd2.steps) setYdSteps(yd2.steps);
@@ -844,13 +854,24 @@ export default function HomeScreen() {
               lose_2:-1000, lose_1_5:-750, lose_1:-500, lose_0_5:-250, maintain:0, gain_0_5:250, gain_1:500,
             };
             const dayData = await AsyncStorage.getItem(`pj_${todayKey}`);
-            const w = dayData ? JSON.parse(dayData)?.weight : null;
+            const todayW = dayData ? JSON.parse(dayData)?.weight : null;
+            // Fall back to last known weight so BMR loads even without today's weigh-in
+            let w = todayW;
+            if (!w) {
+              for (let i = 1; i <= 30; i++) {
+                const d = new Date(); d.setDate(d.getDate()-i);
+                const dk = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+                const ld = await AsyncStorage.getItem(`pj_${dk}`);
+                if (ld) { const ldp = JSON.parse(ld); if (ldp.weight) { w = ldp.weight; break; } }
+              }
+            }
             if (w && p.birthday && p.heightFt && p.heightIn) {
               const wKg  = w * 0.453592;
               const hCm  = (parseFloat(p.heightFt)*30.48) + (parseFloat(p.heightIn)*2.54);
               const age  = Math.floor((Date.now() - new Date(p.birthday).getTime()) / (365.25*24*3600*1000));
               const bmr  = p.sex === 'male' ? Math.round((10*wKg)+(6.25*hCm)-(5*age)+5) : Math.round((10*wKg)+(6.25*hCm)-(5*age)-161);
               const tdee = Math.round(bmr * (ACTIVITY_MULTIPLIERS[p.activityLevel]||1.55));
+              setProfileBmr(bmr);
               setCalTarget(tdee + (GOAL_DEFICITS[p.weightGoal]??-500));
             }
           }
@@ -1127,7 +1148,7 @@ export default function HomeScreen() {
       <AnimatedProgressBar pct={calPct} color={calColor} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} />
       {(() => {
         const remaining = adjustedTarget - totalCals;
-        const net = totalCals - displayedBurned;
+        const net = totalCals - displayedBurned - runningBmr;
         const netColor = net <= calTarget ? theme.statusGood : theme.statusBad;
         const stats = [
           { label: remaining >= 0 ? 'REMAINING' : 'OVER', value: Math.abs(remaining), color: remaining >= 0 ? theme.accentBlue : theme.statusBad },
@@ -1290,7 +1311,17 @@ export default function HomeScreen() {
       })()}
       <View style={styles.weightAdd}>
         <TextInput style={[styles.weightInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} placeholder="Enter weight (lbs)" placeholderTextColor={theme.textPlaceholder}
-          keyboardType="decimal-pad" value={weightInput} onChangeText={setWeightInput} />
+          keyboardType="decimal-pad" value={weightInput} onChangeText={v => {
+            const stripped = v.replace(/[^0-9.]/g, '');
+            const dot = stripped.indexOf('.');
+            if (dot === -1) {
+              if (stripped.length <= 3) setWeightInput(stripped);
+            } else {
+              const before = stripped.slice(0, dot);
+              const after = stripped.slice(dot + 1).replace(/\./g, '').slice(0, 1);
+              if (before.length <= 3) setWeightInput(before + '.' + after);
+            }
+          }} />
         <PressableButton style={[styles.logBtn, { backgroundColor: weightInput.trim() ? theme.accentBlueBg : theme.bgInput, borderColor: weightInput.trim() ? theme.accentBlueBorder : theme.borderInput, opacity: weightInput.trim() ? 1 : 0.5 }]} onPress={logWeight}>
           <Text style={[styles.logBtnText, { color: weightInput.trim() ? theme.accentBlue : theme.textDim }]}>LOG</Text>
         </PressableButton>
@@ -1667,7 +1698,7 @@ export default function HomeScreen() {
 
   const renderVsYesterdayCard = () => {
     // ── Today's values ──
-    const todayNet = totalCals - displayedBurned;
+    const todayNet = totalCals - displayedBurned - runningBmr;
     const todaySleepScore = sleepHours ? calcSleepScore(sleepHours, sleepStages, sleepGoal) : null;
     const todaySleepHours = sleepOverride ?? sleepHours ?? null;
     const todayHasSleepScore = todaySleepScore?.hasStages ?? false;
@@ -1695,7 +1726,18 @@ export default function HomeScreen() {
       {
         id: 'net',
         label: 'Net Calories',
-        sub: `${calTarget} Kcal Target`,
+        sub: (() => {
+          const paceLabels: Record<string, string> = {
+            lose_2:   'Lose 2 lbs / wk pace',
+            lose_1_5: 'Lose 1.5 lbs / wk pace',
+            lose_1:   'Lose 1 lb / wk pace',
+            lose_0_5: 'Lose 0.5 lbs / wk pace',
+            maintain: 'Maintain weight pace',
+            gain_0_5: 'Gain 0.5 lbs / wk pace',
+            gain_1:   'Gain 1 lb / wk pace',
+          };
+          return paceLabels[weightGoalPace] ?? 'Calorie target pace';
+        })(),
         todayVal: totalCals > 0 || displayedBurned > 0 ? todayNet : null,
         ydVal: ydCals,
         format: v => Math.abs(Math.round(v)).toLocaleString(),
@@ -1746,12 +1788,12 @@ export default function HomeScreen() {
         format: v => v.toFixed(1),
         unit: 'lbs',
         winCondition: (t, y) => {
-          if (Math.abs(t - y) < 0.2) return 'tie';
+          if (Math.round(Math.abs(t - y) * 10) / 10 <= 0.3) return 'tie';
           const losing = weightGoalPace.startsWith('lose');
           const gaining = weightGoalPace.startsWith('gain');
           if (losing) return t < y ? 'win' : 'lose';
           if (gaining) return t > y ? 'win' : 'lose';
-          return Math.abs(t - y) < 0.5 ? 'win' : 'lose';
+          return 'tie';
         },
       },
       {
@@ -1808,6 +1850,7 @@ export default function HomeScreen() {
     });
     const wins   = results.filter(r => r === 'win').length;
     const losses = results.filter(r => r === 'lose').length;
+    const ties   = results.filter(r => r === 'tie').length;
     const overallResult: Result = wins > losses ? 'win' : losses > wins ? 'lose' : 'tie';
 
     const motivationalLines: Record<Result, string[]> = {
@@ -1820,7 +1863,7 @@ export default function HomeScreen() {
     const accentRaw = theme.accentBlueRaw;
     const winColor  = accentRaw;
     const loseColor = theme.textDim;
-    const tieColor  = theme.textMuted;
+    const tieColor  = theme.textDim;
 
     return (
       <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
@@ -1853,8 +1896,10 @@ export default function HomeScreen() {
         {/* Metric rows */}
         {selected.map((m, i) => {
           const result = results[i];
-          const todayColor = result === 'win' ? winColor : result === 'tie' ? tieColor : theme.textDim;
-          const ydColor    = result === 'lose' ? theme.textSecondary : result === 'tie' ? tieColor : theme.textDim;
+          const todayColor = result === 'win' ? winColor : theme.textDim;
+          const todayOpacity = 1;
+          const ydColor    = result === 'lose' ? theme.textSecondary : theme.textDim;
+          const ydOpacity  = 1;
           const showWinBar = result === 'win';
           const showYdBar  = result === 'lose';
           return (
@@ -1869,19 +1914,19 @@ export default function HomeScreen() {
                 {showWinBar && (
                   <View style={{ position:'absolute', left:2, top:'10%', width:3, height:'80%', backgroundColor: accentRaw, borderRadius:2 }} />
                 )}
-                <Text style={{ fontSize:20, fontFamily:'BebasNeue_400Regular', letterSpacing:1, color: todayColor }}>
+                <Text style={{ fontSize:20, fontFamily:'BebasNeue_400Regular', letterSpacing:1, color: todayColor, opacity: todayOpacity }}>
                   {m.todayVal !== null ? m.format(m.todayVal) : '--'}
                 </Text>
-                <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:1, textTransform:'uppercase', color: todayColor, opacity:0.6 }}>{m.unit}</Text>
+                <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:1, textTransform:'uppercase', color: todayColor, opacity: result === 'tie' ? 0.3 : 0.6 }}>{m.unit}</Text>
               </View>
               <View style={{ width:80, alignItems:'center' }}>
                 {showYdBar && (
                   <View style={{ position:'absolute', right:2, top:'10%', width:3, height:'80%', backgroundColor: theme.textSecondary, borderRadius:2 }} />
                 )}
-                <Text style={{ fontSize:20, fontFamily:'BebasNeue_400Regular', letterSpacing:1, color: ydColor }}>
+                <Text style={{ fontSize:20, fontFamily:'BebasNeue_400Regular', letterSpacing:1, color: ydColor, opacity: ydOpacity }}>
                   {m.ydVal !== null ? m.format(m.ydVal) : '--'}
                 </Text>
-                <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:1, textTransform:'uppercase', color: ydColor, opacity:0.6 }}>{m.unit}</Text>
+                <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:1, textTransform:'uppercase', color: ydColor, opacity: result === 'tie' ? 0.3 : 0.6 }}>{m.unit}</Text>
               </View>
             </View>
           );
@@ -1889,22 +1934,42 @@ export default function HomeScreen() {
 
         {/* Score bar */}
         <View style={{ marginTop:14, backgroundColor: theme.bgInset, borderRadius:10, overflow:'hidden' }}>
-          <View style={{ height:2, backgroundColor: overallResult === 'win' ? accentRaw : overallResult === 'lose' ? theme.accentRed : theme.textDim, opacity: 0.5 }} />
+          <View style={{ height:2, backgroundColor: accentRaw, opacity: 0.7 }} />
           <View style={{ flexDirection:'row', alignItems:'center', padding:12, gap:8 }}>
             <View style={{ alignItems:'center', minWidth:28 }}>
-              <Text style={{ fontSize:28, fontFamily:'BebasNeue_400Regular', letterSpacing:1, lineHeight:30, color: overallResult === 'win' ? accentRaw : overallResult === 'tie' ? tieColor : theme.textDim }}>{wins}</Text>
+              <Text style={{ fontSize:28, fontFamily:'BebasNeue_400Regular', letterSpacing:1, lineHeight:30, color: overallResult === 'win' ? accentRaw : theme.textDim }}>{wins}</Text>
               <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase', color: overallResult === 'win' ? accentRaw : theme.textDim, opacity:0.7 }}>YOU</Text>
             </View>
-            <Text style={{ fontSize:16, fontFamily:'BebasNeue_400Regular', color: theme.textDim, letterSpacing:1, paddingBottom:6 }}>-</Text>
+            <Text style={{ fontSize:16, fontFamily:'BebasNeue_400Regular', color: theme.textDim, letterSpacing:1, paddingBottom:6 }}>·</Text>
             <View style={{ alignItems:'center', minWidth:28 }}>
               <Text style={{ fontSize:28, fontFamily:'BebasNeue_400Regular', letterSpacing:1, lineHeight:30, color: overallResult === 'lose' ? theme.textSecondary : theme.textDim }}>{losses}</Text>
               <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase', color: overallResult === 'lose' ? theme.textSecondary : theme.textDim, opacity:0.7 }}>YESTERDAY</Text>
+            </View>
+            <Text style={{ fontSize:16, fontFamily:'BebasNeue_400Regular', color: theme.textDim, letterSpacing:1, paddingBottom:6 }}>·</Text>
+            <View style={{ alignItems:'center', minWidth:28 }}>
+              <Text style={{ fontSize:28, fontFamily:'BebasNeue_400Regular', letterSpacing:1, lineHeight:30, color: ties > 0 ? tieColor : theme.textDim }}>{ties}</Text>
+              <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase', color: ties > 0 ? tieColor : theme.textDim, opacity:0.7 }}>TIED</Text>
             </View>
             <View style={{ flex:1, paddingLeft:8, alignItems:'center', justifyContent:'center' }}>
               <Text style={{ fontSize:16, fontFamily:'BebasNeue_400Regular', letterSpacing:1, color: overallResult === 'win' ? accentRaw : overallResult === 'lose' ? theme.textSecondary : tieColor, lineHeight:19, textAlign:'center', maxWidth:140 }}>{motLine}</Text>
             </View>
           </View>
         </View>
+        {/* Results countdown */}
+        {(() => {
+          const now = new Date();
+          const msLeft = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() - now.getTime();
+          const h = Math.floor(msLeft / 3600000);
+          const m = Math.floor((msLeft % 3600000) / 60000);
+          const s = Math.floor((msLeft % 60000) / 1000);
+          const fmt = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+          return (
+            <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'center', gap:4, marginTop:12, marginBottom:-4 }}>
+              <Ionicons name="timer-outline" size={10} color={theme.textDim} />
+              <Text style={{ fontSize:10, fontFamily:'DMSans_500Medium', color: theme.textDim, letterSpacing:0.5 }}>Results in {fmt}</Text>
+            </View>
+          );
+        })()}
       </View>
     );
   };

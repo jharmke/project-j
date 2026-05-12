@@ -95,13 +95,15 @@ DONE -- SHIPPED
 [x] Platinum tier -- dark navy card, icy blue hex, rotating animated border, breathing glow, always-on effects
 [x] Achievement toast -- components/AchievementToast.tsx, slides in from right, hex badge, staggered text, double shimmer, tier-colored left border, global emitter pattern, AchievementToastRenderer in _layout.tsx
 [x] Theme preview rows -- hardcoded opaque bg + text + border per theme so rows always look correct regardless of active theme
+[x] You vs Yesterday card -- tier/priority metric system (Tier 1: net cals, steps, sleep score, water; Tier 2: weight, active cals, sleep hours), 4 metrics shown always, win/loss/tie per metric, accent bar on winner, score bar with YOU vs YESTERDAY, cycling motivational lines per result, streak badge, cardOrder merge fix for new cards
 
-NEXT PRIORITY (session 10)
-1. You vs Yesterday card -- daily head-to-head across calories, steps, sleep, weight. Win/loss per metric, streak counter for consecutive win days, motivational line at bottom
-2. Sleep card -- fix duration math (7h57m showing as 8h0m), fix poor sleep label threshold (7h57m against 7hr goal should not be poor), add donut on manual entry, confirm manual entry overrides HealthKit, review sleep scoring logic before touching thresholds
-3. Today's Training empty/rest day states -- encouragement text when no exercises logged on unassigned day, intentional acknowledgment message on planned rest day
-4. Food log donut -- thicker ring, show macro targets inside ring when empty instead of "no data"
-5. Effort score -- card stays on workout tab, smart nudge fires when workout is completed (last exercise checked off or cardio marked done), visual polish on buttons with proper selected state
+NEXT PRIORITY (session 11)
+1. Running BMR -- incorporate passively growing BMR into net calories formula app-wide. BMR per minute = profile BMR / 1440, accumulates from midnight. Updates home calories card NET stat in real time. Wire into You vs Yesterday net metric automatically. Add countdown to midnight in You vs Yesterday score bar so user sees race is still running. Requires profile BMR already calculated.
+2. Head to Head drill-down screen -- tap You vs Yesterday card, fade transition to full page. Date pickers for any two dates. All available metrics shown expanded. Richer than home card quick view. Lives in stats tab or own screen.
+3. Sleep card -- fix duration math (7h57m showing as 8h0m), fix poor sleep label threshold (7h57m against 7hr goal should not be poor), add donut on manual entry, confirm manual entry overrides HealthKit, review sleep scoring logic before touching thresholds. Also: manual save must validate both bed time and wake time filled -- toast error if not. Clear button alignment bug fix.
+4. Today's Training empty/rest day states -- encouragement text when no exercises logged on unassigned day, intentional acknowledgment message on planned rest day
+5. Food log donut -- thicker ring, show macro targets inside ring when empty instead of "no data"
+6. Effort score -- card stays on workout tab, smart nudge fires when workout is completed (last exercise checked off or cardio marked done), visual polish on buttons with proper selected state
 6. Workout notes -- keyboard avoiding view fix (keyboard covers field), Save Note button dim/inactive standard, wire to journal on save as workout category
 7. Custom water amount -- replace text input with centered fade-in drag modal. Spec: .5oz increments, 48oz max, live oz display updates as you drag, tappable value opens numpad (0-9 plus .5 key only, no free decimal), KAV so card slides up with keyboard, single Add button, fade out on confirm, toast fires. Never leaves home screen.
 8. Custom water modal card -- fix transparency on current modal, should be solid card

@@ -94,6 +94,8 @@ const { meal, date, selectMode, day, recipeMode } = useLocalSearchParams<{ meal:
 const isRecipeMode = recipeMode === 'true';
 const [showEditMyFood, setShowEditMyFood] = useState(false);
 const [editingMyFood, setEditingMyFood] = useState<{idx: number, name: string, cal: string} | null>(null);
+const [lastScannedBarcode, setLastScannedBarcode] = useState<string | null>(null);
+const [barcodeOverrides, setBarcodeOverrides] = useState<Record<string, any>>({});
 
 const saveEditMyFood = async () => {
     if (!editingMyFood || !editingMyFood.name || !editingMyFood.cal) return;
@@ -112,7 +114,32 @@ const saveEditMyFood = async () => {
     loadRecent();
     loadFavorites();
     loadRecipes();
+    loadBarcodeOverrides();
   }, []);
+
+  const loadBarcodeOverrides = async () => {
+    try {
+      const saved = await AsyncStorage.getItem('pj_barcode_overrides');
+      if (saved) setBarcodeOverrides(JSON.parse(saved));
+    } catch (e) {
+      console.log('Load barcode overrides error', e);
+    }
+  };
+
+  const saveOverride = async (item: any) => {
+    if (!lastScannedBarcode) return;
+    try {
+      const confirmedItem = { ...item, isOverride: true };
+      const updated = { ...barcodeOverrides, [lastScannedBarcode]: confirmedItem };
+      setBarcodeOverrides(updated);
+      await AsyncStorage.setItem('pj_barcode_overrides', JSON.stringify(updated));
+      setResults(prev => prev.map(r => r.description === item.description ? { ...r, isOverride: true } : r));
+      setLastScannedBarcode(null);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (e) {
+      console.log('Save override error', e);
+    }
+  };
 
   useEffect(() => {
     if (!query.trim()) {
@@ -144,14 +171,21 @@ const saveEditMyFood = async () => {
     setResults(filtered);
   };
 
+  const searchDebounceTimer = useRef<any>(null);
+  const searchIdRef = useRef(0);
+  const isBarcodeSearchRef = useRef(false);
+
   const searchFood = async (query: string) => {
     setQuery(query);
+    if (isBarcodeSearchRef.current) return;
     if (!query.trim()) {
       setResults([]);
+      setSearching(false);
+      if (searchDebounceTimer.current) clearTimeout(searchDebounceTimer.current);
       return;
     }
 
-    // My Foods first
+    // My Foods match immediately -- no debounce needed
     const myFoodResults = myFoods
       .filter(f => f.name.toLowerCase().includes(query.toLowerCase()))
       .map(f => ({
@@ -159,56 +193,54 @@ const saveEditMyFood = async () => {
         foodNutrients: [{ nutrientName: 'Energy', unitName: 'KCAL', value: f.cal }],
         isMyFood: true,
       }));
+    if (!isBarcodeSearchRef.current) setResults(myFoodResults);
 
-    setResults(myFoodResults);
-    setSearching(true);
+    // Debounce the API calls
+    if (searchDebounceTimer.current) clearTimeout(searchDebounceTimer.current);
+    searchDebounceTimer.current = setTimeout(async () => {
+      const thisSearchId = ++searchIdRef.current;
+      setSearching(true);
 
-    try {
-      // Open Food Facts search
-      const offResponse = await fetch(
-        `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&search_simple=1&action=process&json=1&page_size=10`
-      );
-      const offText = await offResponse.text();
-      let offResults: SearchResult[] = [];
       try {
-        const offData = JSON.parse(offText);
-        offResults = (offData.products || [])
-          .filter((p: any) => p.product_name && p.nutriments?.['energy-kcal_100g'])
-          .map((p: any) => ({
-            description: `${p.product_name}${p.brands ? ' · ' + p.brands : ''}`,
-            foodNutrients: [
-              { nutrientName: 'Energy', unitName: 'KCAL', value: Math.round(p.nutriments?.['energy-kcal_100g'] || 0) },
-              { nutrientName: 'Protein', unitName: 'G', value: p.nutriments?.proteins_100g || 0 },
-              { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: p.nutriments?.carbohydrates_100g || 0 },
-              { nutrientName: 'Total lipid (fat)', unitName: 'G', value: p.nutriments?.fat_100g || 0 },
-              { nutrientName: 'Fiber, total dietary', unitName: 'G', value: p.nutriments?.fiber_100g || 0 },
-              { nutrientName: 'Sugars, total including NLEA', unitName: 'G', value: p.nutriments?.sugars_100g || 0 },
-              { nutrientName: 'Sodium, Na', unitName: 'MG', value: (p.nutriments?.sodium_100g || 0) * 1000 },
-            ],
-            fromOFF: true,
-          }));
-      } catch (e) {
-        console.log('OFF parse error', e);
-      }
-
-      // USDA search as backup
-      let usdaResults: SearchResult[] = [];
-      try {
-        const usdaResponse = await fetch(
-          `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(query)}&pageSize=5&api_key=${USDA_API_KEY}`
+        // Open Food Facts -- full phrase search, 20 results
+        const offResponse = await fetch(
+          `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&action=process&json=1&page_size=20`
         );
-        const usdaData = await usdaResponse.json();
-        usdaResults = usdaData.foods || [];
-      } catch (e) {
-        console.log('USDA error', e);
-      }
+        const offText = await offResponse.text();
+        let offResults: SearchResult[] = [];
+        try {
+          const offData = JSON.parse(offText);
+          offResults = (offData.products || [])
+            .filter((p: any) => p.product_name && p.nutriments?.['energy-kcal_100g'])
+            .map((p: any) => ({
+              description: `${p.product_name}${p.brands ? ' · ' + p.brands : ''}`,
+              foodNutrients: [
+                { nutrientName: 'Energy', unitName: 'KCAL', value: Math.round(p.nutriments?.['energy-kcal_100g'] || 0) },
+                { nutrientName: 'Protein', unitName: 'G', value: p.nutriments?.proteins_100g || 0 },
+                { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: p.nutriments?.carbohydrates_100g || 0 },
+                { nutrientName: 'Total lipid (fat)', unitName: 'G', value: p.nutriments?.fat_100g || 0 },
+                { nutrientName: 'Fiber, total dietary', unitName: 'G', value: p.nutriments?.fiber_100g || 0 },
+                { nutrientName: 'Sugars, total including NLEA', unitName: 'G', value: p.nutriments?.sugars_100g || 0 },
+                { nutrientName: 'Sodium, Na', unitName: 'MG', value: (p.nutriments?.sodium_100g || 0) * 1000 },
+              ],
+              fromOFF: true,
+            }));
+        } catch (e) {
+          console.log('OFF parse error', e);
+        }
 
-      setResults([...myFoodResults, ...offResults, ...usdaResults]);
-    } catch (e) {
-      console.log('Search error', e);
-    } finally {
-      setSearching(false);
-    }
+        // Only apply if this is still the latest search
+        if (thisSearchId === searchIdRef.current) {
+          setResults([...myFoodResults, ...offResults]);
+        }
+      } catch (e) {
+        console.log('Search error', e);
+      } finally {
+        if (thisSearchId === searchIdRef.current) {
+          setSearching(false);
+        }
+      }
+    }, 400);
   };
 
   const getCalories = (food: SearchResult) => {
@@ -318,8 +350,58 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
     setCameraReady(false);
     if (cameraReadyTimer.current) clearTimeout(cameraReadyTimer.current);
     setTimeout(() => stopScanning(200), 150);
+
+    setLastScannedBarcode(null);
+
+    // Check overrides first -- still fire name search, just pin override at top
+    if (barcodeOverrides[data]) {
+      const override = { ...barcodeOverrides[data], isOverride: true };
+      const overrideName = override.description;
+
+      if (searchDebounceTimer.current) clearTimeout(searchDebounceTimer.current);
+      ++searchIdRef.current;
+      isBarcodeSearchRef.current = true;
+      setQuery(overrideName);
+      setSearching(true);
+      try {
+        const offResponse = await fetch(
+          `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(overrideName)}&action=process&json=1&page_size=20`
+        );
+        const offData = JSON.parse(await offResponse.text());
+        const offResults: SearchResult[] = (offData.products || [])
+          .filter((p: any) => p.product_name && p.nutriments?.['energy-kcal_100g'])
+          .map((p: any) => ({
+            description: `${p.product_name}${p.brands ? ' · ' + p.brands : ''}`,
+            foodNutrients: [
+              { nutrientName: 'Energy', unitName: 'KCAL', value: Math.round(p.nutriments?.['energy-kcal_100g'] || 0) },
+              { nutrientName: 'Protein', unitName: 'G', value: p.nutriments?.proteins_100g || 0 },
+              { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: p.nutriments?.carbohydrates_100g || 0 },
+              { nutrientName: 'Total lipid (fat)', unitName: 'G', value: p.nutriments?.fat_100g || 0 },
+              { nutrientName: 'Fiber, total dietary', unitName: 'G', value: p.nutriments?.fiber_100g || 0 },
+              { nutrientName: 'Sugars, total including NLEA', unitName: 'G', value: p.nutriments?.sugars_100g || 0 },
+              { nutrientName: 'Sodium, Na', unitName: 'MG', value: (p.nutriments?.sodium_100g || 0) * 1000 },
+            ],
+          }));
+        const deduped = offResults.filter(r => r.description !== overrideName);
+        setResults([override, ...deduped]);
+      } catch (e) {
+        console.log('Override search error', e);
+        setResults([override]);
+      } finally {
+        isBarcodeSearchRef.current = false;
+        setSearching(false);
+      }
+      return;
+    }
+
+    setLastScannedBarcode(data);
+
+    // Cancel any pending debounced search so it doesn't overwrite barcode results
+    if (searchDebounceTimer.current) clearTimeout(searchDebounceTimer.current);
+    ++searchIdRef.current;
+
     try {
-      // Try Open Food Facts with timeout
+      // Fetch barcode from OFF
       let result = null;
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
@@ -339,6 +421,9 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         }
       }
 
+      let barcodeResult: SearchResult | null = null;
+      let searchName = '';
+
       if (result?.status === 1 && result.product) {
         const product = result.product;
         const cal = Math.round(
@@ -349,10 +434,10 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         );
         const name = product.product_name || 'Unknown Product';
         const brands = product.brands || '';
-        const displayName = `${name}${brands ? ' · ' + brands : ''}`;
-        setQuery(displayName);
-        setResults([{
-          description: `${name}${brands ? ' · ' + brands : ''}`,
+        searchName = `${name}${brands ? ' · ' + brands : ''}`;
+        barcodeResult = {
+          description: searchName,
+          fromBarcode: true,
           foodNutrients: [
             { nutrientName: 'Energy', unitName: 'KCAL', value: cal },
             { nutrientName: 'Protein', unitName: 'G', value: product.nutriments?.proteins_100g || 0 },
@@ -362,15 +447,23 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
             { nutrientName: 'Sugars, total including NLEA', unitName: 'G', value: product.nutriments?.sugars_100g || 0 },
             { nutrientName: 'Sodium, Na', unitName: 'MG', value: (product.nutriments?.sodium_100g || 0) * 1000 },
           ],
-        }]);
+        } as any;
       } else {
+        searchName = '';
+      }
+
+      if (searchName) {
+        isBarcodeSearchRef.current = true;
+        setQuery(searchName);
+        isBarcodeSearchRef.current = false;
+        if (barcodeResult) setResults([barcodeResult]);
+      } else {
+        setQuery('');
+        setResults([]);
         Alert.alert(
           'Product Not Found',
-          'This barcode wasn\'t found in the database. Would you like to search manually?',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Search', onPress: () => {} }
-          ]
+          'This barcode wasn\'t found in the database. Search manually to find it and set it as the correct item.',
+          [{ text: 'OK' }]
         );
       }
     } catch (e) {
@@ -516,6 +609,14 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         {searching && <Text style={styles.searching}>...</Text>}
       </View>
 
+{/* Scan banner -- shows while lastScannedBarcode is set */}
+      {lastScannedBarcode && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 8, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 }}>
+          <Ionicons name="information-circle" size={14} color={theme.accentBlue} style={{ marginRight: 6 }} />
+          <Text style={{ flex: 1, fontSize: 12, color: theme.accentBlue, fontFamily: 'DMSans_500Medium' }}>Tap SET on the correct item to save it for future scans</Text>
+        </View>
+      )}
+
 {/* Tabs -- only show when not searching */}
       {!query.trim() && (
         <View style={styles.tabRow}>
@@ -621,6 +722,16 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
               <Text style={styles.resultName} numberOfLines={2}>{item.description}</Text>
             </View>
             <View style={styles.resultRight}>
+              {(item as any).isOverride && (
+                <Ionicons name="checkmark-circle" size={16} color={theme.accentGreen} style={{ marginRight: 6 }} />
+              )}
+              {lastScannedBarcode && !(item as any).isOverride && (
+                <TouchableOpacity
+                  onPress={() => saveOverride(item)}
+                  style={{ marginRight: 6, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 3 }}>
+                  <Text style={{ fontSize: 10, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>SET</Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity onPress={() => toggleFavorite(item)} style={{ marginRight: 8 }}>
                 <Text style={{ fontSize: 16, color: favorites.some(f => f.name === item.description) ? theme.accentAmber : theme.textDim }}>★</Text>
               </TouchableOpacity>
@@ -647,6 +758,19 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         )}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
+        ListFooterComponent={
+          lastScannedBarcode && results.length === 1 ? (
+            <TouchableOpacity
+              onPress={() => {
+                const q = results[0]?.description || '';
+                isBarcodeSearchRef.current = false;
+                searchFood(q);
+              }}
+              style={{ margin: 16, padding: 12, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8, alignItems: 'center' }}>
+              <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Search for more results</Text>
+            </TouchableOpacity>
+          ) : null
+        }
       />
 
      {/* Edit My Food Modal */}

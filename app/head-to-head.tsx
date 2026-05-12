@@ -166,7 +166,7 @@ function CalendarModal({
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
         <TouchableOpacity style={StyleSheet.absoluteFill} onPress={onClose} />
         <View style={{
-          backgroundColor: theme.bgCard,
+          backgroundColor: theme.bgSheet,
           borderRadius: 16,
           padding: 20,
           width: 320,

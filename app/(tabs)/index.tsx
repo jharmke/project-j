@@ -560,13 +560,16 @@ export default function HomeScreen() {
 
   // ── Persist HealthKit to storage ────────────────────────────────────────────
   useEffect(() => {
-    if (activeCalories > 0 || steps > 0) {
+    if (activeCalories > 0 || steps > 0 || sleepHours !== null) {
       AsyncStorage.getItem(`pj_${todayKey}`).then(saved => {
         const current = saved ? JSON.parse(saved) : {};
         AsyncStorage.setItem(`pj_${todayKey}`, JSON.stringify({
           ...current,
           ...(activeCalories > 0 ? { activeCalories } : {}),
           ...(steps > 0 ? { steps } : {}),
+          ...(sleepHours !== null ? { sleepHours } : {}),
+          ...(sleepStages !== null ? { sleepStages } : {}),
+          ...(sleepTimes !== null ? { sleepBedTime: sleepTimes.bed, sleepWakeTime: sleepTimes.wake } : {}),
         }));
       });
     }
@@ -581,7 +584,7 @@ export default function HomeScreen() {
         });
       }
     }
-  }, [activeCalories, steps]);
+  }, [activeCalories, steps, sleepHours, sleepStages]);
 
   // ── Load layout from settings ────────────────────────────────────────────────
   useEffect(() => {

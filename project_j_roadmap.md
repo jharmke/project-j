@@ -118,6 +118,9 @@ DONE -- SHIPPED
 [x] You vs Yesterday yesterday net cal race condition -- inline BMR calculation instead of relying on profileBmr state, now consistent with Head to Head
 [x] _layout.tsx day-detail animation reverted to 'none'
 [x] You vs Yesterday water + steps tie bug fixed -- exact integer comparison, no buffer, same fix in head-to-head.tsx
+[x] Edit exercise modal -- transparent background fixed (bgSheet), Reanimated slide-up refactor, handle + tap-outside-to-close, accent colored title, withTiming both directions for consistent speed
+[x] Exercise interface cardio fields -- duration, distance, speed, incline, resistance, hr, calories added to workoutData.ts Exercise type
+[x] Exercise name color in workout tab -- textPrimary swapped to textSecondary to match theme
 
 NOW -- active this session
 Bugs -- fix these first
@@ -127,6 +130,9 @@ Edit Layout Add button -- deferred. Currently redundant with inline toggle. Will
 Custom water modal card transparent background -- should be solid card.
 Sleep score label -- poor sleep showing for near-goal durations, review thresholds.
 Head to Head opponent date -- should be textPrimary color, currently accent color.
+Edit exercise modal -- transparent background bug fixed (bgSheet), Reanimated slide-up refactor complete, handle + tap-outside-to-close added, accent title, withTiming both directions for consistent speed. DONE.
+Exercise name color in workout tab -- textPrimary swapped to textSecondary to match theme. DONE.
+Exercise type cardio fields -- duration, distance, speed, incline, resistance, hr, calories added to Exercise interface in workoutData.ts. DONE.
 
 
 FatSecret integration -- code complete, pending account activation

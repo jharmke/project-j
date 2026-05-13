@@ -7,6 +7,13 @@ export interface Exercise {
   note: string;
   dropset?: boolean;
   isCardio?: boolean;
+  duration?: string;
+  distance?: string;
+  speed?: string;
+  incline?: string;
+  resistance?: string;
+  hr?: string;
+  calories?: string;
 }
 
 export interface WorkoutTag {

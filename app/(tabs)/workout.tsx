@@ -60,6 +60,49 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
   const closeProgramModal = () => { Keyboard.dismiss(); setShowProgramModal(false); };
   const manageTagsAnim = useSharedValue(600);
   const manageTagsOverlayAnim = useRef(new Animated.Value(0)).current;
+
+  const addExerciseAnim = useSharedValue(800);
+  const addExerciseOverlayAnim = useRef(new Animated.Value(0)).current;
+  const addExerciseKeyboardOffset = useSharedValue(0);
+  const addExerciseKeyboardStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: addExerciseAnim.value - addExerciseKeyboardOffset.value }],
+  }));
+
+  const openAddExerciseModal = (day: string, exercise: Exercise | null = null) => {
+    addExerciseOverlayAnim.setValue(0);
+    addExerciseAnim.value = 800;
+    addExerciseKeyboardOffset.value = 0;
+    setModalDay(day);
+    setEditingExercise(exercise);
+    if (exercise) {
+      setForm({
+        name: exercise.name,
+        sets: exercise.sets,
+        reps: exercise.reps,
+        rest: exercise.rest,
+        note: exercise.note,
+        isCardio: exercise.isCardio ?? false,
+        duration: exercise.duration ?? '',
+        distance: exercise.distance ?? '',
+        speed: exercise.speed ?? '',
+        incline: exercise.incline ?? '',
+        resistance: exercise.resistance ?? '',
+        hr: exercise.hr ?? '',
+        calories: exercise.calories ?? '',
+      });
+    } else {
+      setForm({ name: '', sets: '3', reps: '10–12', rest: '60s', note: '', isCardio: false, duration: '', distance: '', speed: '', incline: '', resistance: '', hr: '', calories: '' });
+    }
+    setShowAddModal(true);
+  };
+
+  const closeAddExerciseModal = () => {
+    Keyboard.dismiss();
+    addExerciseKeyboardOffset.value = withTiming(0, { duration: 250 });
+    Animated.timing(addExerciseOverlayAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start();
+    addExerciseAnim.value = withTiming(800, { duration: 280 });
+    setTimeout(() => setShowAddModal(false), 300);
+  };
   
 
   const manageTagsKeyboardOffset = useSharedValue(0);
@@ -85,9 +128,11 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
   useEffect(() => {
     const show = Keyboard.addListener('keyboardWillShow', e => {
       manageTagsKeyboardOffset.value = withTiming(e.endCoordinates.height, { duration: e.duration || 250 });
+      addExerciseKeyboardOffset.value = withTiming(e.endCoordinates.height, { duration: e.duration || 250 });
     });
     const hide = Keyboard.addListener('keyboardWillHide', e => {
       manageTagsKeyboardOffset.value = withTiming(0, { duration: e.duration || 250 });
+      addExerciseKeyboardOffset.value = withTiming(0, { duration: e.duration || 250 });
     });
     return () => { show.remove(); hide.remove(); };
   }, []);
@@ -362,33 +407,9 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
     saveState(checks, newCardio);
   };
 
-  const openAddModal = (day: string) => {
-    setModalDay(day);
-    setEditingExercise(null);
-    setForm({ name: '', sets: '3', reps: '10–12', rest: '60s', note: '', isCardio: false, duration: '', distance: '', speed: '', incline: '', resistance: '', hr: '', calories: '' });
-    setShowAddModal(true);
-  };
+  const openAddModal = (day: string) => openAddExerciseModal(day, null);
 
-  const openEditModal = (day: string, exercise: Exercise) => {
-    setModalDay(day);
-    setEditingExercise(exercise);
-    setForm({ 
-      name: exercise.name, 
-      sets: exercise.sets, 
-      reps: exercise.reps, 
-      rest: exercise.rest, 
-      note: exercise.note,
-      isCardio: exercise.isCardio || false,
-      duration: (exercise as any).duration || '',
-      distance: (exercise as any).distance || '',
-      speed: (exercise as any).speed || '',
-      incline: (exercise as any).incline || '',
-      resistance: (exercise as any).resistance || '',
-      hr: (exercise as any).hr || '',
-      calories: (exercise as any).calories || '',
-    });
-    setShowAddModal(true);
-  };
+  const openEditModal = (day: string, exercise: Exercise) => openAddExerciseModal(day, exercise);
 
   const saveExercise = () => {
   if (!form.name.trim()) return;
@@ -411,7 +432,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
   setPrograms(newPrograms);
   setDayLabel(newPrograms[activeDay]?.customLabel || '');
   saveState(checks, cardioComplete, newPrograms, workoutNotes, cardioLogs, weeklyTemplate);
-  setShowAddModal(false);
+  closeAddExerciseModal();
   showToast(editingExercise ? 'Exercise updated' : 'Exercise added', form.name, 'success');
 };
 
@@ -657,7 +678,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                         </TouchableOpacity>
                         <View style={styles.exerciseInfo}>
                           <View style={styles.exerciseNameRow}>
-                            <Text style={[styles.exerciseName, { color: theme.textPrimary }, isDone && [styles.exerciseNameDone, { color: theme.textDim }]]}>{ex.name}</Text>
+                            <Text style={[styles.exerciseName, { color: theme.textSecondary }, isDone && [styles.exerciseNameDone, { color: theme.textDim }]]}>{ex.name}</Text>
                             {ex.fromAppleHealth && (
                               <View style={[styles.badge, { backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder }]}>
                                 <Text style={[styles.badgeText, { color: theme.accentGreen }]}>APPLE HEALTH</Text>
@@ -769,12 +790,28 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
       </ScrollView>
 
       {/* Add/Edit Modal */}
-      <Modal visible={showAddModal} transparent animationType="slide">
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-          <TouchableOpacity style={[styles.modalOverlay, { backgroundColor: theme.overlayBg }]} activeOpacity={1} onPress={() => Keyboard.dismiss()}>
-            <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'flex-end' }} keyboardShouldPersistTaps="handled">
-              <View style={[styles.modal, { backgroundColor: theme.bgCard, borderColor: theme.borderCard }]}>
-                <Text style={[styles.modalTitle, { color: theme.textPrimary }]}>{editingExercise ? 'Edit Exercise' : 'Add Exercise'}</Text>
+      <Modal visible={showAddModal} transparent animationType="none" statusBarTranslucent hardwareAccelerated onShow={() => {
+        addExerciseAnim.value = 800;
+        Animated.timing(addExerciseOverlayAnim, { toValue: 1, duration: 150, useNativeDriver: true }).start();
+        addExerciseAnim.value = withTiming(0, { duration: 280 });
+      }}>
+        <Animated.View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: theme.overlayBg, opacity: addExerciseOverlayAnim }}>
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={closeAddExerciseModal} />
+        </Animated.View>
+        <View style={{ flex: 1, justifyContent: 'flex-end' }} pointerEvents="box-none">
+          <Reanimated.View style={[{
+            backgroundColor: theme.bgSheet,
+            borderTopLeftRadius: 16,
+            borderTopRightRadius: 16,
+            borderTopWidth: 0.5,
+            borderColor: theme.borderCard,
+            padding: 24,
+          }, addExerciseKeyboardStyle]}>
+            <TouchableOpacity onPress={closeAddExerciseModal} style={{ alignItems: 'center', paddingBottom: 12 }}>
+              <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
+            </TouchableOpacity>
+            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+              <Text style={[styles.modalTitle, { color: theme.accentBlue }]}>{editingExercise ? 'EDIT EXERCISE' : 'ADD EXERCISE'}</Text>
                 <TextInput style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} placeholder="Exercise name" placeholderTextColor={theme.textPlaceholder} value={form.name} onChangeText={v => setForm(p => ({ ...p, name: v }))} />
                 <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
                   <TouchableOpacity
@@ -820,17 +857,16 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                 )}
                 <TextInput style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} placeholder="Note (optional)" placeholderTextColor={theme.textPlaceholder} value={form.note} onChangeText={v => setForm(p => ({ ...p, note: v }))} />
                 <View style={styles.modalBtns}>
-                  <TouchableOpacity style={[styles.modalCancelBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }]} onPress={() => setShowAddModal(false)}>
+                  <TouchableOpacity style={[styles.modalCancelBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }]} onPress={closeAddExerciseModal}>
                     <Text style={[styles.modalCancelBtnText, { color: theme.textMuted }]}>Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.modalSaveBtn, { backgroundColor: theme.accentBlue }]} onPress={saveExercise}>
                     <Text style={[styles.modalSaveBtnText, { color: theme.bgPrimary }]}>{editingExercise ? 'Save' : 'Add'}</Text>
                   </TouchableOpacity>
                 </View>
-              </View>
-            </ScrollView>
-          </TouchableOpacity>
-        </KeyboardAvoidingView>
+              </ScrollView>
+          </Reanimated.View>
+        </View>
       </Modal>
 
       {/* Label Modal */}

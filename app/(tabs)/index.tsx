@@ -4,7 +4,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, AppState, KeyboardAvoidingView, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Animated, AppState, Dimensions, Easing, KeyboardAvoidingView, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import ReAnimated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -404,6 +404,7 @@ export default function HomeScreen() {
   const [editingStepGoal,setEditingStepGoal]= useState(false);
   const prevStepGoal = useRef(10000);
   const scrollRef = useRef<any>(null);
+  const editSheetHeight = useRef<number>(Dimensions.get('window').height);
   const waterLoaded = useRef(false);
   const [dailyVerse,     setDailyVerse]     = useState<{text:string;reference:string}|null>(null);
   const [workoutPrograms,setWorkoutPrograms]= useState<Record<string,any>>({});
@@ -937,20 +938,16 @@ export default function HomeScreen() {
 
   // ── Edit mode ────────────────────────────────────────────────────────────────
   const enterEditMode = () => {
+    editSheetAnim.setValue(0);
     setEditModalVisible(true);
     setEditMode(true);
-    editSheetAnim.setValue(0);
-    Animated.timing(editSheetAnim, {
-      toValue: 1,
-      duration: 380,
-      useNativeDriver: true,
-    }).start();
   };
 
   const exitEditMode = () => {
     Animated.timing(editSheetAnim, {
       toValue: 0,
-      duration: 350,
+      duration: 180,
+      easing: Easing.in(Easing.quad),
       useNativeDriver: true,
     }).start(() => {
       setEditMode(false);
@@ -2106,20 +2103,26 @@ export default function HomeScreen() {
 
       </LinearGradient>
       {editModalVisible && (
-        <Modal transparent animationType="none" visible={editModalVisible} onRequestClose={exitEditMode} statusBarTranslucent hardwareAccelerated>
-          <Animated.View style={{
-            position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.6)',
-            opacity: editSheetAnim,
+        <Modal transparent animationType="none" visible={editModalVisible} onRequestClose={exitEditMode} statusBarTranslucent hardwareAccelerated
+          onShow={() => {
+            editSheetAnim.setValue(0);
+            Animated.timing(editSheetAnim, {
+              toValue: 1,
+              duration: 220,
+              easing: Easing.out(Easing.quad),
+              useNativeDriver: true,
+            }).start();
           }}>
-            <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={exitEditMode} />
-          </Animated.View>
-          <Animated.View style={[styles.editSheet, {
-            backgroundColor: theme.bgSheet,
-            borderColor: theme.borderSheet,
-            transform: [{ translateY: editSheetAnim.interpolate({ inputRange: [0,1], outputRange: [900, 0] }) }],
-          }]}>
-            <View style={[styles.editSheetHandle, { backgroundColor: theme.sheetHandle }]} />
+          <Animated.View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', opacity: editSheetAnim, justifyContent: 'center', alignItems: 'center' }}>
+            <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={exitEditMode} />
+            <Animated.View style={[styles.editSheet, {
+              backgroundColor: theme.bgSheet,
+              borderColor: theme.borderSheet,
+              opacity: editSheetAnim,
+            }]}>
+            <TouchableOpacity onPress={exitEditMode} style={{ alignSelf:'center', paddingVertical:10, paddingHorizontal:40 }}>
+              <View style={[styles.editSheetHandle, { backgroundColor: theme.sheetHandle }]} />
+            </TouchableOpacity>
             <View style={[styles.editSheetHeader, { borderBottomColor: theme.borderSubtle }]}>
               <TouchableOpacity onPress={openCardSheet}
                 style={{ backgroundColor: theme.accentBlueBg, borderWidth:1, borderColor: theme.accentBlueBorder, borderRadius:6, paddingHorizontal:12, paddingVertical:6, height:32, alignItems:'center', justifyContent:'center', flexDirection:'row', gap:4 }}>
@@ -2135,7 +2138,7 @@ export default function HomeScreen() {
             <DraggableFlatList
               data={cardOrder}
               keyExtractor={(item) => item}
-              contentContainerStyle={{ paddingHorizontal:16, paddingBottom:40 }}
+              contentContainerStyle={{ paddingHorizontal:16, paddingBottom:80 }}
               onDragEnd={({ data }) => {
                 setCardOrder(data);
                 saveLayout(data, cardVisible);
@@ -2162,18 +2165,16 @@ export default function HomeScreen() {
                 );
               }}
             />
+            </Animated.View>
           </Animated.View>
-        </Modal>
-      )}
-
-      {/* ── Card library bottom sheet ── */}
-      {showCardSheet && (
-        <Modal transparent animationType="none" visible={showCardSheet} onRequestClose={closeCardSheet}>
-          <TouchableOpacity style={[styles.sheetOverlay, { backgroundColor: theme.overlayBg }]} activeOpacity={1} onPress={closeCardSheet} />
-          <Animated.View style={[styles.sheet, { backgroundColor: theme.bgSheet, borderColor: theme.borderSheet, transform:[{ translateY: sheetTranslate }] }]}>
-            <View style={[styles.sheetHandle, { backgroundColor: theme.sheetHandle }]} />
-            <Text style={[styles.sheetTitle, { color: theme.textPrimary }]}>Add Cards</Text>
-            <Text style={[styles.sheetSubtitle, { color: theme.textDim }]}>Toggle cards to show or hide on your home screen</Text>
+        {/* ── Card library sheet -- inside edit Modal so touches work ── */}
+          {showCardSheet && (
+            <>
+              <TouchableOpacity style={[styles.sheetOverlay, { backgroundColor: theme.overlayBg }]} activeOpacity={1} onPress={closeCardSheet} />
+              <Animated.View style={[styles.sheet, { backgroundColor: theme.bgSheet, borderColor: theme.borderSheet, transform:[{ translateY: sheetTranslate }] }]}>
+                <View style={[styles.sheetHandle, { backgroundColor: theme.sheetHandle }]} />
+                <Text style={[styles.sheetTitle, { color: theme.textPrimary }]}>Add Cards</Text>
+                <Text style={[styles.sheetSubtitle, { color: theme.textDim }]}>Toggle cards to show or hide on your home screen</Text>
             <ScrollView showsVerticalScrollIndicator={false} style={{ marginTop:8 }}>
               {CARD_REGISTRY.map(meta => {
                 const visible = cardVisible[meta.id];
@@ -2193,6 +2194,8 @@ export default function HomeScreen() {
               <View style={{ height:32 }} />
             </ScrollView>
           </Animated.View>
+        </>
+          )}
         </Modal>
       )}
 
@@ -2255,7 +2258,7 @@ const styles = StyleSheet.create({
   saveBtn:          { marginTop:8, padding:10, borderWidth:1, borderRadius:6, alignItems:'center' },
   saveBtnText:      { fontSize:12, fontFamily:'DMSans_500Medium' },
   // Edit sheet
-  editSheet:        { position:'absolute', bottom:0, left:0, right:0, borderTopLeftRadius:20, borderTopRightRadius:20, maxHeight:'85%', borderTopWidth:0.5, paddingBottom:40 },
+  editSheet:        { width:'92%', borderRadius:20, maxHeight:'72%', borderWidth:0.5, paddingBottom:20, overflow:'hidden', flex:1 },
   editSheetHandle:  { width:36, height:4, borderRadius:2, alignSelf:'center', marginTop:12, marginBottom:12 },
   editSheetHeader:  { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:16, paddingBottom:16, borderBottomWidth:0.5, marginBottom:8 },
   // Edit mode

@@ -8,9 +8,12 @@ import { useEffect, useRef, useState } from 'react';
 import { Alert, Animated, FlatList, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Reanimated, { Easing as ReEasing, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
+import { Svg, Path, G } from 'react-native-svg';
+import { useToast } from '../components/Toast';
 import { USDA_API_KEY } from '../config';
 import { db, getUserId, loadFromFirebase, saveToFirebase } from '../firebaseConfig';
 import { useTheme } from '../theme';
+import CryptoJS from 'crypto-js';
 
 
 
@@ -39,6 +42,182 @@ interface SearchResult {
   cal?: number;
 }
 
+// ─── FatSecret OAuth 1.0a helpers ───────────────────────────────────────────
+
+const FS_KEY = 'b8543feaeabd412f81427bc901e2f3b9';
+const FS_SECRET = '863ef00fa6d844789c0c28f665793182';
+const FS_BASE = 'https://platform.fatsecret.com/rest/server.api';
+
+function hmacSha1(key: string, message: string): string {
+  return CryptoJS.HmacSHA1(message, key).toString(CryptoJS.enc.Base64);
+}
+
+function buildOAuthParams(): Record<string, string> {
+  return {
+    oauth_consumer_key: FS_KEY,
+    oauth_nonce: Math.random().toString(36).substring(2) + Date.now().toString(36),
+    oauth_signature_method: 'HMAC-SHA1',
+    oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
+    oauth_version: '1.0',
+  };
+}
+
+function signRequest(method: string, url: string, params: Record<string, string>): string {
+  const sorted = Object.keys(params).sort().map(k =>
+    `${encodeURIComponent(k)}=${encodeURIComponent(params[k])}`
+  ).join('&');
+  const base = `${method}&${encodeURIComponent(url)}&${encodeURIComponent(sorted)}`;
+  const signingKey = `${encodeURIComponent(FS_SECRET)}&`;
+  return hmacSha1(signingKey, base);
+}
+
+function buildFatSecretUrl(apiParams: Record<string, string>): string {
+  const oauth = buildOAuthParams();
+  const allParams = { ...oauth, ...apiParams };
+  const sig = signRequest('GET', FS_BASE, allParams);
+  const finalParams = { ...allParams, oauth_signature: sig };
+  const qs = Object.keys(finalParams).sort().map(k =>
+    `${encodeURIComponent(k)}=${encodeURIComponent((finalParams as Record<string, string>)[k])}`
+  ).join('&');
+  return `${FS_BASE}?${qs}`;
+}
+
+// Parse FatSecret food_description string: "Per 1 cup - Calories: 52kcal | Fat: 0.17g | Carbs: 13.81g | Protein: 0.26g"
+function parseFsDescription(desc: string) {
+  const cal = parseFloat(desc.match(/Calories:\s*([\d.]+)/i)?.[1] || '0');
+  const fat = parseFloat(desc.match(/Fat:\s*([\d.]+)/i)?.[1] || '0');
+  const carbs = parseFloat(desc.match(/Carbs:\s*([\d.]+)/i)?.[1] || '0');
+  const protein = parseFloat(desc.match(/Protein:\s*([\d.]+)/i)?.[1] || '0');
+  return { cal, fat, carbs, protein };
+}
+
+// Convert FatSecret food object (from foods.search) to SearchResult shape
+function normalizeFsSearchResult(food: any): SearchResult {
+  const desc = food.food_description || '';
+  const { cal, fat, carbs, protein } = parseFsDescription(desc);
+  const brand = food.brand_name ? ` · ${food.brand_name}` : '';
+  return {
+    description: `${food.food_name}${brand}`,
+    foodNutrients: [
+      { nutrientName: 'Energy', unitName: 'KCAL', value: Math.round(cal) },
+      { nutrientName: 'Protein', unitName: 'G', value: protein },
+      { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: carbs },
+      { nutrientName: 'Total lipid (fat)', unitName: 'G', value: fat },
+    ],
+    fsId: food.food_id,
+  } as any;
+}
+
+// Convert FatSecret food.get serving to SearchResult shape
+function normalizeFsServing(food: any): SearchResult | null {
+  try {
+    let servings = food.servings?.serving;
+    if (!servings) return null;
+    if (!Array.isArray(servings)) servings = [servings];
+    // Prefer first non-100g serving, fall back to first
+    const serving = servings.find((s: any) => !s.serving_description?.toLowerCase().includes('100g')) || servings[0];
+    const brand = food.brand_name ? ` · ${food.brand_name}` : '';
+    return {
+      description: `${food.food_name}${brand}`,
+      fromBarcode: true,
+      foodNutrients: [
+        { nutrientName: 'Energy', unitName: 'KCAL', value: Math.round(parseFloat(serving.calories || '0')) },
+        { nutrientName: 'Protein', unitName: 'G', value: parseFloat(serving.protein || '0') },
+        { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: parseFloat(serving.carbohydrate || '0') },
+        { nutrientName: 'Total lipid (fat)', unitName: 'G', value: parseFloat(serving.fat || '0') },
+        { nutrientName: 'Fiber, total dietary', unitName: 'G', value: parseFloat(serving.fiber || '0') },
+        { nutrientName: 'Sugars, total including NLEA', unitName: 'G', value: parseFloat(serving.sugar || '0') },
+        { nutrientName: 'Sodium, Na', unitName: 'MG', value: parseFloat(serving.sodium || '0') },
+        { nutrientName: 'Cholesterol', unitName: 'MG', value: parseFloat(serving.cholesterol || '0') },
+        { nutrientName: 'Fatty acids, total saturated', unitName: 'G', value: parseFloat(serving.saturated_fat || '0') },
+      ],
+      fsId: food.food_id,
+      fsServingDesc: serving.serving_description,
+    } as any;
+  } catch { return null; }
+}
+
+async function fetchFatSecretSearch(q: string): Promise<SearchResult[]> {
+  try {
+    const apiParams = {
+      method: 'foods.search',
+      search_expression: q,
+      max_results: '20',
+      format: 'json',
+    };
+    const oauth = buildOAuthParams();
+    const allParams = { ...oauth, ...apiParams };
+    const sig = signRequest('POST', FS_BASE, allParams);
+    const finalParams = { ...allParams, oauth_signature: sig };
+    const body = Object.keys(finalParams).sort().map(k =>
+      `${encodeURIComponent(k)}=${encodeURIComponent((finalParams as Record<string, string>)[k])}`
+    ).join('&');
+    const res = await fetch(FS_BASE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body,
+    });
+    const data = await res.json();
+    
+    const foods = data?.foods?.food;
+    if (!foods) return [];
+    const arr = Array.isArray(foods) ? foods : [foods];
+    return arr.map(normalizeFsSearchResult);
+  } catch (e) {
+    console.log('FatSecret search error', e);
+    return [];
+  }
+}
+
+async function fetchFatSecretBarcode(barcode: string): Promise<SearchResult | null> {
+  try {
+    // Step 1: barcode -> food_id
+    const lookupUrl = buildFatSecretUrl({
+      method: 'food.find_id_for_barcode',
+      barcode,
+      format: 'json',
+    });
+    const lookupRes = await fetch(lookupUrl);
+    const lookupData = await lookupRes.json();
+    const foodId = lookupData?.food_id?.value;
+    if (!foodId) return null;
+
+    // Step 2: food_id -> full food data
+    const getUrl = buildFatSecretUrl({
+      method: 'food.get.v4',
+      food_id: foodId,
+      format: 'json',
+    });
+    const getRes = await fetch(getUrl);
+    const getData = await getRes.json();
+    const food = getData?.food;
+    if (!food) return null;
+    return normalizeFsServing(food);
+  } catch (e) {
+    console.log('FatSecret barcode error', e);
+    return null;
+  }
+}
+
+// ─── End FatSecret helpers ───────────────────────────────────────────────────
+
+function AnimatedSweep({ sweepProgress, color }: { sweepProgress: Animated.Value; color: string }) {
+  const [arc, setArc] = useState('');
+  useEffect(() => {
+    const id = sweepProgress.addListener(({ value }) => {
+      const angle = value * 360;
+      const rad = (angle - 0.001) * Math.PI / 180;
+      const x = 12 + 10 * Math.cos(rad);
+      const y = 12 + 10 * Math.sin(rad);
+      const large = angle > 180 ? 1 : 0;
+      setArc(`M 12 2 A 10 10 0 ${large} 1 ${x.toFixed(3)} ${y.toFixed(3)}`);
+    });
+    return () => sweepProgress.removeListener(id);
+  }, []);
+  if (!arc) return null;
+  return <Path d={arc} stroke={color} strokeWidth={2.5} fill="none" strokeLinecap="round" />;
+}
+
 export default function AddFoodScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
@@ -55,6 +234,27 @@ export default function AddFoodScreen() {
   const scanningRef = useRef(false);
   const cameraReadyTimer = useRef<any>(null);
   const closeTimer = useRef<any>(null);
+
+  const SCAN_COOLDOWN_MS = 10000;
+  const { showToast } = useToast();
+  const [scanCooldownActive, setScanCooldownActive] = useState(false);
+  const scanCooldownTimer = useRef<any>(null);
+  const sweepProgress = useRef(new Animated.Value(0)).current;
+
+  const startCooldown = () => {
+    setScanCooldownActive(true);
+    sweepProgress.setValue(0);
+    Animated.timing(sweepProgress, {
+      toValue: 1,
+      duration: SCAN_COOLDOWN_MS,
+      useNativeDriver: false,
+    }).start();
+    if (scanCooldownTimer.current) clearTimeout(scanCooldownTimer.current);
+    scanCooldownTimer.current = setTimeout(() => {
+      setScanCooldownActive(false);
+      sweepProgress.setValue(0);
+    }, SCAN_COOLDOWN_MS);
+  };
 
   const scanLineY = useSharedValue(0);
   const scanLineOpacity = useSharedValue(0);
@@ -202,36 +402,11 @@ const saveEditMyFood = async () => {
       setSearching(true);
 
       try {
-        // Open Food Facts -- full phrase search, 20 results
-        const offResponse = await fetch(
-          `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(query)}&action=process&json=1&page_size=20`
-        );
-        const offText = await offResponse.text();
-        let offResults: SearchResult[] = [];
-        try {
-          const offData = JSON.parse(offText);
-          offResults = (offData.products || [])
-            .filter((p: any) => p.product_name && p.nutriments?.['energy-kcal_100g'])
-            .map((p: any) => ({
-              description: `${p.product_name}${p.brands ? ' · ' + p.brands : ''}`,
-              foodNutrients: [
-                { nutrientName: 'Energy', unitName: 'KCAL', value: Math.round(p.nutriments?.['energy-kcal_100g'] || 0) },
-                { nutrientName: 'Protein', unitName: 'G', value: p.nutriments?.proteins_100g || 0 },
-                { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: p.nutriments?.carbohydrates_100g || 0 },
-                { nutrientName: 'Total lipid (fat)', unitName: 'G', value: p.nutriments?.fat_100g || 0 },
-                { nutrientName: 'Fiber, total dietary', unitName: 'G', value: p.nutriments?.fiber_100g || 0 },
-                { nutrientName: 'Sugars, total including NLEA', unitName: 'G', value: p.nutriments?.sugars_100g || 0 },
-                { nutrientName: 'Sodium, Na', unitName: 'MG', value: (p.nutriments?.sodium_100g || 0) * 1000 },
-              ],
-              fromOFF: true,
-            }));
-        } catch (e) {
-          console.log('OFF parse error', e);
-        }
+        const fsResults = await fetchFatSecretSearch(query.trim());
 
         // Only apply if this is still the latest search
         if (thisSearchId === searchIdRef.current) {
-          setResults([...myFoodResults, ...offResults]);
+          setResults([...myFoodResults, ...fsResults]);
         }
       } catch (e) {
         console.log('Search error', e);
@@ -351,115 +526,68 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
     if (cameraReadyTimer.current) clearTimeout(cameraReadyTimer.current);
     setTimeout(() => stopScanning(200), 150);
 
-    setLastScannedBarcode(null);
+    if (searchDebounceTimer.current) clearTimeout(searchDebounceTimer.current);
+    ++searchIdRef.current;
+    isBarcodeSearchRef.current = true;
 
-    // Check overrides first -- still fire name search, just pin override at top
+    // Check for saved SET override
     if (barcodeOverrides[data]) {
       const override = { ...barcodeOverrides[data], isOverride: true };
       const overrideName = override.description;
-
-      if (searchDebounceTimer.current) clearTimeout(searchDebounceTimer.current);
-      ++searchIdRef.current;
-      isBarcodeSearchRef.current = true;
+      setLastScannedBarcode(null);
       setQuery(overrideName);
-      setSearching(true);
-      try {
-        const offResponse = await fetch(
-          `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(overrideName)}&action=process&json=1&page_size=20`
-        );
-        const offData = JSON.parse(await offResponse.text());
-        const offResults: SearchResult[] = (offData.products || [])
-          .filter((p: any) => p.product_name && p.nutriments?.['energy-kcal_100g'])
-          .map((p: any) => ({
-            description: `${p.product_name}${p.brands ? ' · ' + p.brands : ''}`,
-            foodNutrients: [
-              { nutrientName: 'Energy', unitName: 'KCAL', value: Math.round(p.nutriments?.['energy-kcal_100g'] || 0) },
-              { nutrientName: 'Protein', unitName: 'G', value: p.nutriments?.proteins_100g || 0 },
-              { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: p.nutriments?.carbohydrates_100g || 0 },
-              { nutrientName: 'Total lipid (fat)', unitName: 'G', value: p.nutriments?.fat_100g || 0 },
-              { nutrientName: 'Fiber, total dietary', unitName: 'G', value: p.nutriments?.fiber_100g || 0 },
-              { nutrientName: 'Sugars, total including NLEA', unitName: 'G', value: p.nutriments?.sugars_100g || 0 },
-              { nutrientName: 'Sodium, Na', unitName: 'MG', value: (p.nutriments?.sodium_100g || 0) * 1000 },
-            ],
-          }));
-        const deduped = offResults.filter(r => r.description !== overrideName);
-        setResults([override, ...deduped]);
-      } catch (e) {
-        console.log('Override search error', e);
-        setResults([override]);
-      } finally {
-        isBarcodeSearchRef.current = false;
-        setSearching(false);
-      }
+      setResults([override]);
+      isBarcodeSearchRef.current = false;
+
+      // Auto-load full results after delay
+      setTimeout(async () => {
+        try {
+          setSearching(true);
+          const fsResults = await fetchFatSecretSearch(overrideName);
+          const deduped = fsResults.filter(r => r.description !== overrideName);
+          setResults([override, ...deduped]);
+        } catch (e) {
+          console.log('Override name search failed', e);
+        } finally {
+          setSearching(false);
+        }
+      }, 1500);
       return;
     }
 
-    setLastScannedBarcode(data);
-
-    // Cancel any pending debounced search so it doesn't overwrite barcode results
-    if (searchDebounceTimer.current) clearTimeout(searchDebounceTimer.current);
-    ++searchIdRef.current;
-
+    // No override -- fetch barcode from FatSecret
     try {
-      // Fetch barcode from OFF
-      let result = null;
-      for (let attempt = 0; attempt < 3; attempt++) {
-        try {
-          const controller = new AbortController();
-          const timeout = setTimeout(() => controller.abort(), 8000);
-          const response = await fetch(
-            `https://world.openfoodfacts.org/api/v0/product/${data}.json`,
-            { headers: { 'Accept': 'application/json' }, signal: controller.signal }
-          );
-          clearTimeout(timeout);
-          const text = await response.text();
-          result = JSON.parse(text);
-          break;
-        } catch (e) {
-          console.log(`Attempt ${attempt + 1} failed`, e);
-          if (attempt < 2) await new Promise(r => setTimeout(r, 500));
-        }
-      }
+      setSearching(true);
+      const barcodeResult = await fetchFatSecretBarcode(data);
 
-      let barcodeResult: SearchResult | null = null;
-      let searchName = '';
-
-      if (result?.status === 1 && result.product) {
-        const product = result.product;
-        const cal = Math.round(
-          product.nutriments?.['energy-kcal_serving'] ||
-          product.nutriments?.['energy-kcal'] ||
-          product.nutriments?.['energy-kcal_100g'] ||
-          0
-        );
-        const name = product.product_name || 'Unknown Product';
-        const brands = product.brands || '';
-        searchName = `${name}${brands ? ' · ' + brands : ''}`;
-        barcodeResult = {
-          description: searchName,
-          fromBarcode: true,
-          foodNutrients: [
-            { nutrientName: 'Energy', unitName: 'KCAL', value: cal },
-            { nutrientName: 'Protein', unitName: 'G', value: product.nutriments?.proteins_100g || 0 },
-            { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: product.nutriments?.carbohydrates_100g || 0 },
-            { nutrientName: 'Total lipid (fat)', unitName: 'G', value: product.nutriments?.fat_100g || 0 },
-            { nutrientName: 'Fiber, total dietary', unitName: 'G', value: product.nutriments?.fiber_100g || 0 },
-            { nutrientName: 'Sugars, total including NLEA', unitName: 'G', value: product.nutriments?.sugars_100g || 0 },
-            { nutrientName: 'Sodium, Na', unitName: 'MG', value: (product.nutriments?.sodium_100g || 0) * 1000 },
-          ],
-        } as any;
-      } else {
-        searchName = '';
-      }
-
-      if (searchName) {
+      if (barcodeResult) {
+        const searchName = barcodeResult.description;
         isBarcodeSearchRef.current = true;
         setQuery(searchName);
         isBarcodeSearchRef.current = false;
-        if (barcodeResult) setResults([barcodeResult]);
+        setLastScannedBarcode(data);
+        setResults([barcodeResult]);
+        setSearching(false);
+        startCooldown();
+
+        // Auto-load full search results after delay
+        setTimeout(async () => {
+          try {
+            setSearching(true);
+            const fsResults = await fetchFatSecretSearch(searchName);
+            const deduped = fsResults.filter(r => r.description !== searchName);
+            setResults([barcodeResult, ...deduped]);
+          } catch (e) {
+            console.log('Name search failed', e);
+          } finally {
+            setSearching(false);
+          }
+        }, 1500);
       } else {
+        setLastScannedBarcode(null);
         setQuery('');
         setResults([]);
+        setSearching(false);
         Alert.alert(
           'Product Not Found',
           'This barcode wasn\'t found in the database. Search manually to find it and set it as the correct item.',
@@ -468,7 +596,10 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
       }
     } catch (e) {
       console.log('Barcode error', e);
+      setSearching(false);
       Alert.alert('Scan Error', 'Something went wrong. Please try again.');
+    } finally {
+      isBarcodeSearchRef.current = false;
     }
   };
   const loadRecent = async () => {
@@ -589,9 +720,34 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
       <Text style={{ color: theme.accentGreen, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>+ Recipe</Text>
     </TouchableOpacity>
     <TouchableOpacity
-      onPress={startScan}
-      style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, padding: 6, alignItems: 'center', justifyContent: 'center' }}>
-      <Ionicons name="barcode-outline" size={24} color={theme.accentBlue} />
+      onPress={() => {
+        if (scanCooldownActive) {
+          showToast('Scanner cooling down', 'Database limit -- ready shortly', 'info');
+          return;
+        }
+        startScan();
+      }}
+      style={{ backgroundColor: scanCooldownActive ? theme.bgInput : theme.accentBlueBg, borderWidth: 1, borderColor: scanCooldownActive ? theme.borderCard : theme.accentBlueBorder, borderRadius: 6, padding: 6, alignItems: 'center', justifyContent: 'center', width: 38, height: 38 }}>
+      {scanCooldownActive ? (
+        <Animated.View style={{ width: 24, height: 24, alignItems: 'center', justifyContent: 'center' }}>
+          <Svg width={24} height={24} viewBox="0 0 24 24">
+            <G rotation="-90" origin="12, 12">
+              {/* Background circle */}
+              <Path
+                d="M 12 2 A 10 10 0 1 1 11.9999 2"
+                stroke={theme.borderCard}
+                strokeWidth={2.5}
+                fill="none"
+              />
+              {/* Sweep arc -- driven by sweepProgress */}
+              <AnimatedSweep sweepProgress={sweepProgress} color={theme.accentBlueRaw} />
+            </G>
+          </Svg>
+          <Ionicons name="barcode-outline" size={12} color={theme.textDim} style={{ position: 'absolute' }} />
+        </Animated.View>
+      ) : (
+        <Ionicons name="barcode-outline" size={24} color={theme.accentBlue} />
+      )}
     </TouchableOpacity>
   </View>
 </View>
@@ -758,19 +914,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         )}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
-        ListFooterComponent={
-          lastScannedBarcode && results.length === 1 ? (
-            <TouchableOpacity
-              onPress={() => {
-                const q = results[0]?.description || '';
-                isBarcodeSearchRef.current = false;
-                searchFood(q);
-              }}
-              style={{ margin: 16, padding: 12, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8, alignItems: 'center' }}>
-              <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Search for more results</Text>
-            </TouchableOpacity>
-          ) : null
-        }
+        ListFooterComponent={null}
       />
 
      {/* Edit My Food Modal */}

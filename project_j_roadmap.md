@@ -1,3 +1,8 @@
+🚨🚨🚨 REAL-TIME DOC UPDATES -- NON NEGOTIABLE 🚨🚨🚨
+Claude must generate a find/replace doc update THE MOMENT anything happens that belongs here -- feature ships, bug found, bug fixed, decision made, something deferred, new standard added. Hand it to Justin immediately. He pastes it in VS Code before the next task starts. NOT at end of thread. NOT in a summary. RIGHT THEN.
+Before adding ANY item to this roadmap, state the item and proposed bucket (NOW/SOON/BACKLOG) with a one-line reason and wait for Justin to confirm. No autonomous edits.
+Every thread that skips real-time updates makes the next thread dumber. No exceptions.
+
 DONE -- SHIPPED
 [x] Home card customization -- drag, reorder, show/hide
 [x] Card registry system -- CARD_REGISTRY at top of index.tsx
@@ -95,287 +100,271 @@ DONE -- SHIPPED
 [x] Platinum tier -- dark navy card, icy blue hex, rotating animated border, breathing glow, always-on effects
 [x] Achievement toast -- components/AchievementToast.tsx, slides in from right, hex badge, staggered text, double shimmer, tier-colored left border, global emitter pattern, AchievementToastRenderer in _layout.tsx
 [x] Theme preview rows -- hardcoded opaque bg + text + border per theme so rows always look correct regardless of active theme
+[x] Default theme changed to Light -- Light/Dark order swapped in settings list
+[x] Header icon buttons -- all swapped to filled/solid variants, permanent build standard going forward
 [x] You vs Yesterday card -- tier/priority metric system (Tier 1: net cals, steps, sleep score, water; Tier 2: weight, active cals, sleep hours), 4 metrics shown always, win/loss/tie per metric, accent bar on winner, score bar with YOU vs YESTERDAY, cycling motivational lines per result, streak badge, cardOrder merge fix for new cards
+[x] Running BMR -- NET formula app-wide updated to consumed minus active burn minus running BMR
+[x] Sleep HealthKit persistence -- sleepHours, sleepStages, sleepTimes now written to pj_YYYY-MM-DD in HealthKit persist useEffect. sleepBedTime/sleepWakeTime use same keys as manual entry path.
+[x] Calendar modal transparency -- CalendarModal in head-to-head.tsx swapped bgCard to bgSheet, fully opaque on all themes
+[x] Food search overhaul -- debounce 400ms, race condition fixed via searchIdRef, OFF search_simple=1 removed, page size 20, USDA removed entirely
+[x] Barcode override system -- pj_barcode_overrides storage key, SET button on result rows during active scan session, green checkmark on confirmed items, persistent scan banner, Search for more button, override pins confirmed item at top of results
+[x] Head to Head screen -- app/head-to-head.tsx, fade transition, any two dates, all 7 metric cards, score bar, delta lines, win/loss/tie badges
+[x] Edit layout sheet -- bottom padding fixed, handle tap to close, centered fade modal, smooth in/out animation, overflow contained
 
-NEXT PRIORITY (session 13)
-1. Sleep history persistence bug -- HealthKit sleep not saving to AsyncStorage. Day detail empty for last 2 days. Head to Head yesterday sleep always blank until fixed. Debug thread -- bring useHealthKit.ts and index.tsx sleep persistence section.
-2. CalendarModal transparency bug -- head-to-head.tsx calendar appears transparent on light themes. Must read theme.ts before touching. Do NOT hardcode colors as fix.
-3. Sleep card -- fix duration math (7h57m showing as 8h0m), fix poor sleep label threshold (7h57m against 7hr goal should not be poor), add donut on manual entry, confirm manual entry overrides HealthKit, review sleep scoring logic before touching thresholds. Manual save must validate both bed time and wake time filled -- toast error if not. Clear button alignment bug fix.
-4. Today's Training empty/rest day states -- encouragement text when no exercises logged on unassigned day, intentional acknowledgment message on planned rest day
-5. Food log donut -- thicker ring, show macro targets inside ring when empty instead of "no data"
-6. Effort score -- card stays on workout tab, smart nudge fires when workout is completed (last exercise checked off or cardio marked done), visual polish on buttons with proper selected state
-7. Workout notes -- keyboard avoiding view fix (keyboard covers field), Save Note button dim/inactive standard, wire to journal on save as workout category
-8. Custom water amount -- replace text input with centered fade-in drag modal. Spec: .5oz increments, 48oz max, live oz display updates as you drag, tappable value opens numpad (0-9 plus .5 key only, no free decimal), KAV so card slides up with keyboard, single Add button, fade out on confirm, toast fires. Never leaves home screen.
-9. Custom water modal card -- fix transparency on current modal, should be solid card
-10. Shadow pass -- increase shadow opacity and darkness on light themes (Slate, Light, Blush, Warm)
-11. Gradient pass -- more visible gradient range on all light themes
-12. Barcode override system -- scan returns wrong item, show "Wrong item?" fires text search by product name, user picks correct item, saves to pj_barcode_overrides keyed by barcode string. Every future scan checks overrides first. Phase 2: sync to Firestore as community-corrected database. Build local-only first.
-13. Stats page revamp -- dedicated session, discuss consolidation, pagination, paginated cards pattern, sleep detail page with nap tracking, per-metric exclusion UI
-14. Per-metric sleep exclusion -- exclude sleep data for a day without excluding full day calories/steps/workout data. Note: revisit during stats revamp. Also consider nap tracking (Apple Health tracks naps separately iOS 16+).
-15. Notification center -- bell icon in profile header, badge on new notifications, real-time toasts for Health sync events
-16. Excluded dates -- design and placement, neutral dim dot on calendar, excluded list view
-17. Calorie color scoring -- mode aware, stub default to Balance
-18. My Programs builder -- name it, assign focus/tags to each day, save it, load it
-19. Sessions tab in workout library -- save a day's exercise list as a named session, load onto any day
-20. Daily Note + Workout Note -- wire to journal, workout category added to journal
-21. Bug sweep -- toast on water remove
-22. Macro bars + food log donut animated -- verify first, may already be done
-23. State restoration on launch -- save active tab/scroll position, restore on cold launch
-24. Bible auto-scroll to verse -- when opening from Today's Message card, auto-center on highlighted verse
-25. (i) tooltip system -- info icon on cards, one-time modal on tap, lives in Settings > Help, HIGH PRIORITY
-26. Apple Health badge on imported workouts
-27. Bible reading programs / Bible studies
-28. Camera progress tracker -- timelapse, program milestone integration
-29. TestFlight -- discuss setup, App Store Connect, tester invite flow
-30. App name -- finalize from shortlist (Prevail, Steadfast, Worthy, Haven, Witness, Sown), verify App Store availability, verify TikTok handle availability before committing
-31. First use onboarding moments -- non-blocking, one time only, fires alongside action not instead of it, subtle celebration. Rules: never halts user flow, never repeats, user missing it is not a loss.
-32. Achievement toast improvements -- tappable routes to achievements page, add trigger context under name, tap for details hint text. Achievement wording update before App Store launch.
-33. Head to Head polish -- HEAD TO HEAD title accent color
-34. TikTok/marketing -- account setup, content plan, meme formats, branding direction
+NOW -- active this session
+Bugs -- fix these first
 
-ANIMATION AUDIT -- LIVING DOCUMENT
-This list must be updated whenever an animation is built or changed. Reference this before any animation work.
+Edit Layout Add button -- deferred. Currently redundant with inline toggle. Will become "browse and discover" entry point when card library grows (30+ cards, categories, premium content). Build out properly then.
+You vs Yesterday water + steps tie bug -- should be exact integer comparison only, no threshold or buffer. Only weight gets 0.3 lb fuzzy threshold.
+You vs Yesterday + day detail net calories bug -- running BMR not propagated to head-to-head.tsx and day-detail.tsx. Home screen has correct formula.
+You vs Yesterday (i) tooltip needed -- weight tie threshold (<=0.3 lbs), net calories win condition (closest to target wins), pace sublabel context.
+Weight log button no dim/inactive state -- build standard violation, dim when empty, accent when ready.
+Custom water modal card transparent background -- should be solid card.
+Sleep score label -- poor sleep showing for near-goal durations, review thresholds.
+Meal slot +/- signs to accent color.
+Toast on water remove -- verify if already done, close or fix.
 
-Contextual Achievement Toast Animations (phase 2):
-- Water goal -- water filling up inside the toast badge
-- Steps goal -- animated footprints or walking figure across the toast
-- Weight milestone -- scale needle swinging or numbers ticking down
-- Streak milestone -- flame growing or chain link clicking into place
-- First workout logged -- dumbbell or barbell animation
-- Sleep goal hit -- moon and stars, ZZZ floating up
-- Calorie goal hit -- plate clearing or flame extinguishing
-- IF fast completion -- clock hands spinning then unlocking
-- Bible verse read -- subtle page turn or bookmark placing
-- Journal entry saved -- ink spreading or pen stroke
-- Morning intention set -- sun rising animation
-- Workout fully checked off -- card completion pulse or flash
+FatSecret integration -- code complete, pending account activation
 
-Number Transitions (HIGH PRIORITY -- affects entire app):
-- All big numbers tick/roll to new value like a scoreboard when they update
-- Applies to: calories, steps, weight, water, macros, streak counts, any meaningful number
-- Should feel like an old scoreboard or odometer, not a snap
+OAuth 1.0a signing working (CryptoJS), POST request structure correct, search and barcode wired up. Blocked on FatSecret account being upgraded to Premier Free by James (email sent). Test search the moment account is confirmed upgraded -- no code changes needed. OFF stays in code until FatSecret passes all three gate checks.
 
-Progress Bars and Rings:
-- Calorie progress bar animates on every load
-- Macro bars animate on log tab entry
-- Food log donut ring fills on load
-- Water bar bounce when updated
-- Sleep donut animates on load
+(i) Tooltip system -- build as infrastructure first
 
-Goal Moments:
-- Water goal crossed -- water fill animation on the bar itself
-- Step goal crossed -- footprint or walking animation on bar
-- Streak milestone -- 7 day and 30 day deserve distinct moments beyond standard toast
+Build tooltip system as foundational infrastructure. Info icon on cards, one-time modal on tap, catalogued in Settings > Help. Every future feature drops tooltips in at build time, never retrofit.
 
-Interaction Polish:
-- Effort score selection -- punchy scale up with haptic on tap
-- Exercise checkoff -- more satisfying checkmark animation
-- Weight log confirmed -- number ticks to new value
-- Day selector -- active day card subtle pulse or glow
-- Water preset buttons -- bar bounces on update
+Sleep -- close the loop
 
-Tab Transitions:
-- Log tab -- food item drops in on enter
-- Workout tab -- weight plates slide on enter
-- Stats tab -- bars grow up on enter
-- Subtle, not distracting, fits the tab content
+Sleep card fixes -- duration math (7h57m showing as 8h0m), poor sleep label threshold, donut on manual entry, manual save validation (toast error if bed/wake not both filled), clear button alignment.
+Sleep history persistence -- verify last night's Apple Health sleep saved correctly to AsyncStorage and shows in day-detail and head-to-head.
 
-Streak and Milestone Moments:
-- 7 day streak -- distinct animation beyond toast
-- 30 day streak -- bigger moment, close to achievement toast tier
-- Goal weight hit -- biggest non-platinum celebration moment
+Verify and close
 
-First Use Moments (non-blocking, one-time only):
-- First calorie logged
-- First workout checked off
-- First verse read
-- First water goal hit
-- First step goal hit
-Rules: never halts user flow, never repeats, subtle enough that missing it is not a loss, fires alongside the action not instead of it
+Macro bars + food log donut animated -- quick verify, either mark done or fix.
+Day Detail screen -- needs fade transition wired in _layout.tsx. Currently pops with no animation.
+Weight input flicker -- known iOS limitation, acceptable. Close this bug.
 
-MARKETING / DISTRIBUTION
-App name shortlist (verify App Store availability before committing):
-Prevail, Steadfast, Worthy, Haven, Witness, Sown
-Dropped: Abide (taken by existing Christian meditation app)
 
-Branding direction:
-NOT marketed as a "Christian app" -- positioned as intentional, encouraging, whole-person wellness
-Faith features are present, unapologetic, and front and center -- but not the marketing lead
-Tagline direction: "The app that actually cares about you" -- discipline, intentionality, habits, growth
-User realizes organically that these values are Christianity. Chick-fil-A model.
-Target: people who want the fitness features, discover the faith layer naturally
+SOON -- confirmed next few sessions
+Food and barcode
 
-TikTok strategy:
-- Anonymous account for now, no contacts permission, rebrand to app name when locked
-- Personal brand style account, not a logo account -- transition to app account at launch
-- Interactive series format, not vloggy, not ad-like
-- Crowd-sources decisions to build audience investment before launch
-- Meme formats mixed in -- best performing content doesn't feel like an ad
+Custom water amount modal -- drag interaction, .5oz increments, 48oz max, live oz display, tappable numpad with .5 key, KAV, fade in/out, centered. (top of SOON)
+Save New Food to Library -- full macro fields in proper modal, not just name + calories. (top of SOON)
+Favorites bug -- identical food names share favorite state, both toggle together. Reassess after FatSecret.
+Barcode scanner cooldown -- SVG arc animation has rendering bug past 180 degrees. Reassess after FatSecret -- remove cooldown entirely if FatSecret covers barcodes well, keep only as OFF fallback.
+Barcode override unset -- food detail page Remove button with Alert warning. Reassess after FatSecret.
+Barcode-to-My-Food assignment -- link barcode permanently to manually built food. Reassess after FatSecret.
+Meal slots fully customizable -- rename, reorder, add custom slots. (HIGH)
+Calorie breakdown by meal -- each slot gets a budget.
 
-Content series ideas:
-- Help me name my wellness app (poll sticker, engagement)
-- Help me design my wellness app
-- Help me pick the color themes
-- What features would you actually use
-- Would you download this
-- Things fitness apps get wrong -- last second cut to yours doing it right
-- "This app knows if you had a good day before you do"
-- "I built a fitness app that prays for you"
-- "What if your fitness app actually knew your why"
-- "I built this entire app with AI and I can't code" -- vibe coding angle
-- Day X of building a wellness app series
+Workout
 
-Distribution path:
-First target: 200-300 genuinely engaged users
-That gets: word of mouth, real feedback, App Store reviews for launch day velocity
-Christian community is the warmest early audience -- churches, small groups, Christian fitness influencers
-ProductHunt launch when ready
-Reddit: r/Christianity, r/fitness, r/selfimprovement -- genuine participation not spam
+Today's Training empty/rest day states -- encouragement on unassigned day, acknowledgment on rest day.
+Effort score -- smart nudge on workout completion, visual polish on buttons with proper selected state.
+Workout notes -- KAV fix (keyboard covers field), dim/inactive save button, wire to journal as workout category.
+My Programs builder -- name it, assign focus/tags/color per day, save, load. (planned, not yet built)
+Workout tab nested scroll bug -- DraggableFlatList inside ScrollView warning. (HIGH)
+Workout drag handle -- hit target too small + dead zone before drag triggers. (HIGH)
 
-JOURNAL -- REMAINING FEATURES
-Edit entry title (currently only notes and category editable)
-Journal icon on Stats tab header -- routes to journal.tsx
-Day detail integration -- show journal entries from that day at bottom of day detail screen
-Date on entries tappable -- routes to that day's day detail
-Long text stress test -- verify 500 word entries format correctly
-Multiple entries same day -- verify prayer + gratitude same day display correctly
-Search within journal entries (low priority)
+Home and stats
 
-AFTER CURRENT PRIORITIES
-Faith Journey + Coaching Modes -- build together, same session, they are deeply connected
+Food log donut -- thicker ring, show macro targets inside when empty instead of "no data".
+Weekly calorie bar chart -- 7 day bars macro color stacking, today highlighted, PocketScale style. (HIGH)
+Stats page revamp -- dedicated session, consolidation, pagination, sleep detail page, per-metric exclusion UI.
+Day detail dedicated polish session -- full feature audit, polish pass, decision on what stays/goes.
+Streak card -- Bible, workout, calorie streaks. (HIGH)
+Morning briefing card -- first open of day, faith first, yesterday recap, today targets.
+
+Faith and Bible
+
+Bible auto-scroll to verse -- auto-center highlighted verse when opening from Today's Message. (very soon)
+Achievement toast improvements -- tappable routes to achievements page, trigger context under name, wording update before App Store launch.
+
+Process and infrastructure
+
+(i) Tooltip planned coverage: sleep score, VO2 Max, cardio recovery, IF countdown, calorie color scoring.
+Help section in Settings -- Tips and Guides, Health Glossary, FAQ, About.
+Head to Head polish -- HEAD TO HEAD title accent color.
+App name -- finalize from shortlist (Prevail, Steadfast, Worthy, Haven, Witness, Sown), verify App Store + TikTok handle availability before committing.
+TestFlight -- setup, App Store Connect, tester invite flow.
+Firebase Auth -- Apple/Google login, pre-beta requirement, data migration from AsyncStorage.
+
+Visual polish (do together)
+
+Shadow pass -- increase shadow opacity and darkness on light themes (Slate, Light, Blush, Warm).
+Gradient pass -- more visible gradient range on all light themes.
+Full theme audit -- all 5 themes x all accents, every screen, before beta.
+Progress bar track color pass across all themes.
+Collapsible card tap targets app-wide -- entire header row should trigger expand/collapse.
+Stats page streaks card -- choppy open animation, fails to reopen after first close.
+Empty states -- designed placeholders for all lists and cards. (HIGH)
+
+Journal
+
+Edit entry title -- currently only notes and category editable.
+Journal icon on Stats tab header -- routes to journal.tsx.
+Day detail integration -- show journal entries from that day at bottom of screen.
+Date on entries tappable -- routes to that day's day detail.
+
+
+BACKLOG -- parked, good ideas, not imminent
+Faith system -- build all together in one session, deeply connected
+
+Faith Journey setting: Rooted / Exploring / Not right now
+Coaching Modes: Discipline / Balance / Mindful
+Today's Message card behavior forks by Faith Journey setting
+Periodic gentle reminder for Exploring/Not right now users (every 30 days, dismissable, toggleable)
+Calorie color scoring -- mode aware, stub default to Balance
+Coaching mode personality
+Gratitude before meals -- one tap give thanks before logging, unapologetically Christian
+Faith-based fasting -- intentional spiritual fasting with prayer log, separate from 16:8 IF
+Weekly body stewardship reflection -- gentle faith-based weekly prompt, never preachy
 Onboarding flow -- animated, sets coaching mode and faith journey, "skip for now" not X, returnable from profile
-Firebase Auth -- Apple and Google sign in, pre-beta milestone, data migration from AsyncStorage to Firestore
-TestFlight setup -- when core features stable, internal testing first
 
-HOME TAB
-Features
-Net calories display (HIGH) -- rename AFTER BURN to NET, formula: consumed minus active burn
-Calorie color scoring -- mode aware (HIGH)
-You vs Yesterday card
-Streak card -- Bible, workout, calorie streaks (HIGH)
-Morning briefing card -- first open of day, customizable slots, faith first, yesterday recap, today targets
-Today's Message customization -- scripture rotation manager, personal messages pool, book/chapter/verse picker
-Weight log button dim/inactive state -- dim when empty, accent when ready (BUG)
-Pull weight from Apple Health -- auto-populate if available, manual entry as fallback
+Food intelligence -- post coaching modes
 
-THEME POLISH PASS
-Theme preview rows in settings -- SHIPPED. Hardcoded opaque colors per row so they always look correct regardless of active theme.
-All themes -- progress bar track color pass
-Full theme audit -- all 5 themes x all accent options, every screen, before beta
-Shadow pass -- light themes need stronger shadow opacity
-Gradient pass -- light themes need more visible gradient range
-Tab bar top border -- needs borderTopWidth 0.5 for clear separation from content
+Food health score -- per item score based on how well it fits current goals at that moment
+Coach insight -- one line explanation under food item, contextual not generic
+Why did you eat -- quick tag (Hungry, Tired, Cravings, Bored, Social, Why not?)
+How did it feel -- post meal tag (Satisfied, Happy, Unsatisfied, Stuffed, Nostalgic)
+Hunger level logging -- 1-5 scale one tap before eating
+Calorie periodization -- higher calories on workout days, automated suggestion
+Restaurant menu lookup -- scan/search restaurant, pull nutrition from FatSecret. Post-FatSecret feature.
+Protein timing badge -- hit protein within 2 hours post workout, simple yes/no badge
 
-STATS TAB
-Dedicated session required -- full plan before touching code
-Journal icon on stats header -- routes to journal.tsx
-Stats calendar color logic -- document exactly what drives green/yellow/red
-Stats trend chart polish -- axis labels, more data points, tap for tooltip
-Trends section -- active calories, steps, weight, sleep, HRV over selectable time range
-Sleep detail page -- full night breakdown, stages, nap logged, HRV, all in one place
-Per-metric exclusion UI -- exclude sleep/steps/etc for a day without excluding the full day
-Premium vs free data tiers -- non-standard charts as paid features
+Stats and insights -- dedicated session
 
-WORKOUT TAB
-Workout tab nested scroll bug -- DraggableFlatList inside ScrollView warning (HIGH)
-Workout drag handle -- hit target too small (HIGH)
-Workout drag handle -- dead zone before drag triggers (HIGH)
-My Programs builder -- name it, assign focus/tags/color per day, save, load (HIGH)
-Sessions tab in workout library -- save day's exercise list as named session, load onto any day (HIGH)
-Effort score -- smart nudge fires on workout completion, not passive static card
+Time of day food heat map -- visualized as grid, high differentiation value
+Energy level tracking -- correlates with food choices, "you always crash at 3pm on high carb days"
+Sleep vs food correlation -- connect sleep data to prior day food choices, unique insight
+Hydration timing insights -- not just how much but when
+Per-metric sleep exclusion -- exclude sleep without excluding full day data. Revisit during stats revamp.
+Nap tracking -- Apple Health tracks naps separately iOS 16+
+
+Workout features
+
+Sessions tab in workout library -- save day's exercise list as named session, load onto any day. Depends on My Programs.
 HIIT mode -- Tabata, standard intervals, custom
 Workout rest timer between sets
 Lifting set tracker with progressive overload
+Apple Health badge on imported workouts
 
-FOOD / LOG TAB
-Barcode scanner -- SHIPPED
-Meal slot +/- signs to accent color (BUG)
-Toast on food remove (BUG)
-Food log donut -- thicker ring, macro targets inside when empty
-USDA food API speed -- local cache top 500-1000 common foods
-Meal slots fully customizable -- rename, reorder, add custom slots (HIGH)
-Calorie breakdown by meal -- each slot gets a budget
-Recipe builder polish
-Long press food log items -- quick action menu
+Body and progress
 
-WATER
-Custom water amount modal -- drag interaction, .5oz increments, 48oz max, live oz display, tappable numpad with .5 key, KAV, fade in/out, centered
-Custom water modal card transparency -- fix to solid card (BUG)
-Preset buttons (4) -- keep exactly as is, they are perfect
-
-BUGS OUTSTANDING
-Weight log button no dim/inactive state
-Sleep score label -- poor sleep showing for near-goal durations, review thresholds
-Stats page streaks card -- choppy open animation, fails to reopen after first close
-Collapsible card tap targets app-wide -- entire header row should trigger expand/collapse
-Custom water modal card transparent background
-Weight input flicker -- flickers on 4th consecutive integer and 2nd decimal attempt, known iOS onChangeText limitation, acceptable for now
-You vs Yesterday (i) tooltip needed -- weight tie threshold (<=0.3 lbs), net calories win condition (closest to calorie target wins), pace sublabel context
-
-PROFILE TAB
-Current weight value -- should use accent color
-Water presets -- SHIPPED, saved to profile
 Body measurements tracking
 Progress photos -- pose overlay ghost camera
+Camera progress tracker -- timelapse, 30/60/90 day anchors
 
-SETTINGS
-Theme preview rows -- SHIPPED
-Default theme -- change to Light, swap Light/Dark order in list
-Header icon buttons -- swap outline to filled variants (build standard going forward)
+Social and sharing
 
-FAITH SYSTEM (planned)
-Faith Journey setting: Rooted / Exploring / Not right now
-Built together with Coaching Modes in same session
-Today's Message card behavior forks by Faith Journey setting
-Periodic gentle in-app reminder for Exploring/Not right now users (every 30 days, dismissable, toggleable)
+Accountability partner -- share streaks with one person only, private and intentional
+Pastor/coach view -- share week summary, read-only, no account needed on their end ideally
 
-(i) TOOLTIP SYSTEM (HIGH PRIORITY)
-Info icon on cards with non-obvious metrics or color coding
-One-time modal on tap explaining the metric
-Tooltips catalogued in Settings > Help section
-Built at time of feature, not after
+Bible and faith content
 
-TOOLTIPS PLANNED
-Sleep score -- what the number means, how it's calculated
-VO2 Max -- classification ranges by age/sex
-Cardio Recovery -- what bpm drop/min means
-IF countdown -- how the window is calculated
-Calorie color scoring -- what colors mean when built
+Bible reading programs / Bible studies
+Search within journal entries (low priority)
+Long text stress test -- verify 500 word entries format correctly
+Multiple entries same day -- verify prayer + gratitude same day display correctly
+Today's Message management UI -- scripture rotation manager, personal messages CRUD
 
-HELP SECTION IN SETTINGS
-Tips and Guides (all tooltips by feature area)
-Health Glossary
-FAQ
-About
+App infrastructure
 
-BODY / PROGRESS
-Body measurements tracking
-Progress photos -- pose overlay ghost camera
-Camera progress tracker -- timelapse, program milestone integration (30/60/90 day anchors)
-
-POLISH / UX
-Micro interactions -- card scale press, progress bar bounce
-Empty states -- designed placeholders (HIGH)
+State restoration on launch -- save active tab/scroll position, restore on cold launch. (top of backlog)
+Pull weight from Apple Health -- auto-populate if available, manual entry as fallback
 Offline first behavior
 Daily summary push notification
 In-app review prompt
 Accessibility -- respect system font size
-Day detail screen polish (LOW)
-Coaching mode personality
+Excluded dates -- design and placement, neutral dim dot on calendar, excluded list view. Revisit during stats revamp.
+Notification center -- bell icon in profile header, badge on new notifications, real-time toasts for Health sync events
 
-MONETIZATION / FUTURE
+Monetization and launch
+
 Theme monetization -- Light/Dark free, rest paid
 Accent color monetization -- TBD
 Stats premium tiers -- non-standard charts paid
-TestFlight -- internal beta when core features stable
-Firebase Auth -- Apple/Google login, pre-beta, data migration from AsyncStorage
-Today's Message management UI -- scripture on/off toggle, personal messages CRUD
+App Store optimization
 Weight trend sparkline (LOW)
 Language / internationalization (LOW)
 Apple Watch companion app (LOW)
 iOS home screen widget (LOW)
 Animated app icon -- iOS 18 (LOW)
-App Store optimization (LOW)
+
+Marketing
+
+TikTok strategy -- anonymous account for now, rebrand to app name when locked, interactive series format, crowd-sourced decisions, meme formats
+App name content series -- "help me name my app" poll sticker, "help me design my app", etc
+Photo logging anti-gimmick angle -- decided against photo logging because it's inaccurate (can't see oil, portion weight, prep method). "We don't guess, we track" is a potential marketing hook.
+Distribution path: 200-300 genuinely engaged users first, Christian community warmest early audience, ProductHunt, Reddit (r/Christianity, r/fitness, r/selfimprovement)
+
+
+ANIMATION AUDIT -- LIVING DOCUMENT
+This list must be updated whenever an animation is built or changed. Reference this before any animation work.
+Contextual Achievement Toast Animations (phase 2):
+
+Water goal -- water filling up inside the toast badge
+Steps goal -- animated footprints or walking figure across the toast
+Weight milestone -- scale needle swinging or numbers ticking down
+Streak milestone -- flame growing or chain link clicking into place
+First workout logged -- dumbbell or barbell animation
+Sleep goal hit -- moon and stars, ZZZ floating up
+Calorie goal hit -- plate clearing or flame extinguishing
+IF fast completion -- clock hands spinning then unlocking
+Bible verse read -- subtle page turn or bookmark placing
+Journal entry saved -- ink spreading or pen stroke
+Morning intention set -- sun rising animation
+Workout fully checked off -- card completion pulse or flash
+
+Number Transitions (HIGH PRIORITY -- affects entire app):
+
+All big numbers tick/roll to new value like a scoreboard when they update
+Applies to: calories, steps, weight, water, macros, streak counts, any meaningful number
+Should feel like an old scoreboard or odometer, not a snap
+
+Progress Bars and Rings:
+
+Calorie progress bar animates on every load
+Macro bars animate on log tab entry
+Food log donut ring fills on load
+Water bar bounce when updated
+Sleep donut animates on load
+
+Goal Moments:
+
+Water goal crossed -- water fill animation on the bar itself
+Step goal crossed -- footprint or walking animation on bar
+Streak milestone -- 7 day and 30 day deserve distinct moments beyond standard toast
+
+Interaction Polish:
+
+Effort score selection -- punchy scale up with haptic on tap
+Exercise checkoff -- more satisfying checkmark animation
+Weight log confirmed -- number ticks to new value
+Day selector -- active day card subtle pulse or glow
+Water preset buttons -- bar bounces on update
+
+Tab Transitions:
+
+Log tab -- food item drops in on enter
+Workout tab -- weight plates slide on enter
+Stats tab -- bars grow up on enter
+Subtle, not distracting, fits the tab content
+
+Streak and Milestone Moments:
+
+7 day streak -- distinct animation beyond toast
+30 day streak -- bigger moment, close to achievement toast tier
+Goal weight hit -- biggest non-platinum celebration moment
+
+First Use Moments (non-blocking, one-time only):
+
+First calorie logged
+First workout checked off
+First verse read
+First water goal hit
+First step goal hit
+Rules: never halts user flow, never repeats, subtle enough that missing it is not a loss, fires alongside the action not instead of it
+
 
 NOTES AND DECISIONS
 Journal entry format:
@@ -385,20 +374,17 @@ Categories: verse, prayer, study, personal, gratitude, workout (planned)
 Verse entries only via Bible screen reflect button
 FAB creates: prayer, study, personal, gratitude only
 id format -- verse: YYYY-MM-DD_verse, others: YYYY-MM-DD_timestamp
-
 Faith system decisions:
 Christian app by default, faith features on for all users out of the box
 Faith Journey is opt-out not opt-in
 "Not right now" not "Not for me" -- leaves door open
 Faith Journey and Coaching Modes built together same session
 Today's Message card behavior forks based on Faith Journey setting
-
 Bible decisions:
 KJV translation in use throughout
 Full 66 books via aruljohn/Bible-kjv on GitHub, fetched at runtime, cached per book in AsyncStorage
 Cache key format: pj_bible_{BookName}_{chapterNum}
 52 preset rotation verses updated to KJV
-
 Sleep score decisions:
 Score 0-100 displayed in donut center
 Algorithm: Duration 40pts (sleepHours/sleepGoal * 40, capped at 40) + Deep % 30pts (peak at 20%) + REM % 30pts (peak at 22%)
@@ -407,7 +393,16 @@ Color thresholds: 85-100 green "Well Rested", 70-84 amber "Could Be Better", 0-6
 Sleep goal pulls from pj_profile sleepGoal field, defaults to 7 if not set
 Manual entry vs HealthKit entry scored differently -- review thresholds carefully before changing
 Nap tracking: Apple Health tracks naps separately iOS 16+, worth exploring for stats page
-
+Food database decisions:
+FatSecret Premier Free is primary -- Consumer Key and Secret held by Justin, OAuth 1.0a signing required
+USDA dropped permanently -- garbage results for branded foods
+OFF stays as fallback only until FatSecret passes all three gate checks, then removed entirely
+Barcode override system: pj_barcode_overrides AsyncStorage key, local first, Firebase community database phase 2
+You vs Yesterday decisions:
+Water and steps: exact integer comparison only, no threshold or buffer
+Weight: 0.3 lb fuzzy threshold (floating point rounding)
+Net calories: closest-to-target wins
+All other metrics: straight greater/less than/equal
 Build standards (all non-negotiable, built at time of feature):
 Three gate rule -- works, looks premium, feels right
 Dim/inactive button states on all submittable buttons
@@ -425,84 +420,77 @@ Toast on save -- any screen with a save action fires a toast. No silent saves.
 Floating save bar -- any settings/profile screen with editable fields
 Tab header icon buttons -- always use filled/solid Ionicons variants, never outline. Applies to all tabs, all new features.
 Animation audit -- any new feature with meaningful state changes gets added to the animation audit list
-
 Testing standard:
 Primary theme: Slate with yellow accent
 Build on Slate yellow, audit all 5 themes x all accents before marking visual features done
 Never assume a bug is theme-specific without confirming on multiple themes
-
 Data/storage decisions:
 AsyncStorage keys all defined in instructions
 pj_profile now includes sleepGoal field
 Firebase Auth planned pre-beta
 Dev reset/export -- pin, build only if needed before TestFlight
-
 Macro goals system:
 Two modes - Ratio and Fixed. Cross-mode sync on save.
-
 Workout tag system (shipped):
 Tags stored in pj_settings under workoutTags key as WorkoutTag[]
 WorkoutTag shape: { id: string, label: string, color: string }
 DayProgram shape includes tags?: string[]
 Default tags: Push/Pull/Legs/Core/Cardio/Rest -- 6 locked defaults, undeletable
 Tag pill style: backgroundColor t.color+'99', borderColor t.color, text #ffffff -- everywhere pills render
-
 Program system (shipped):
 BLANK_DAY is the default for all unassigned days -- no DEFAULT_PROGRAM
 PRESET_PROGRAMS in workoutData.ts -- 5 presets
 Programs modal uses animationType="fade"
 Loading a preset shows Alert warning then sets weeklyTemplate
-My Programs tab is "Coming Soon" placeholder -- builder coming next session
-
+My Programs tab is "Coming Soon" placeholder -- planned, not yet built
 Sessions system (planned):
 Save a day's exercise list as a named Session
 Sessions tab in workout library alongside exercises
 Star/favorite system for most-used sessions
 Load a session onto any day in one tap
-
 Coaching modes:
 Discipline -- strict both directions
 Balance -- forgiving on low end, strict on high
 Mindful -- wide green zone, awareness not numbers
 Build with Faith Journey same session
-
 HealthKit currently pulling:
 activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, vo2Max, cardioRecovery
 Not yet pulling: weight, HRV, resting HR, blood oxygen, respiratory rate, basal calories
-
 GitHub:
 Repo: https://github.com/jharmke/project-j
 Branch: master
 End of session: git add . / git commit -m "description" / git push origin master
-
 Process:
 Commit after every gate-passing feature not just end of session
 Three gate rule before marking anything done
 One feature at a time, no parallel half-builds
 Start new threads when current one gets long
 New threads always inside the Claude Project
-Roadmap updated at end of every session -- find/replace format or full rewrite, never raw paste
+Roadmap updated in real time -- find/replace format, never raw paste, never end-of-thread reconstruction
 Instructions updated at end of every session
 Any feature, decision, or design direction discussed gets captured before cutting thread
-Pin mid-thread ideas and decisions for end-of-session doc updates -- do not wait to be asked
+Pin mid-thread ideas and decisions throughout -- do not wait to be asked
 Animation audit must be updated whenever an animation is built or changed
-
+Navigation transition standards:
+Slide from right -- navigating to a dedicated screen (Bible, Day Detail, Achievements, Head to Head)
+Fade -- overlays, sheets, contextual panels on current screen (Edit Layout, modals)
+Today's Training tap -- fade, not slide left (slide left = "back" in iOS convention)
+Consistent within each pattern matters more than strict rules
 Modal + ScrollView pattern (CRITICAL):
 Never wrap card in TouchableOpacity to stop propagation -- steals scroll gestures
 Correct pattern: separate absolute-positioned TouchableOpacity for overlay, plain View with pointerEvents="box-none" for card layout
 Reference: Programs modal in workout.tsx
-
 Manage tags animation (CRITICAL):
 Standard Animated.Value translateY does NOT work inside iOS Modals
 Fix: use react-native-reanimated useSharedValue + useAnimatedStyle + withSpring
 Sheet must be in View with flex:1 justifyContent:flex-end, fire animation in onShow callback
 Keyboard: use Keyboard.addListener, never KeyboardAvoidingView wrapping the sheet
-
 Toast above Modal (CRITICAL):
 RN Modals create a new native window layer -- normal toast tree is invisible behind Modal
 Fix: export ToastRenderer from Toast.tsx, render <ToastRenderer /> inside Modal JSX
 Reference: any modal that fires toasts
-
-Updated after session May 12 2026 (session 11). Running BMR shipped -- profileBmr state loaded from last known weight fallback, runningBmr derived from currentTime (ticks every second), NET formula app-wide updated to consumed - active burn - running BMR. Yesterday net gates at 400 kcal minimum to avoid garbage test data. You vs Yesterday scorebug updated to 0 · 3 · 1 format with TIED column. Tie color matches losing side (textDim, full opacity). Weight tie threshold fixed -- floating point issue resolved with Math.round before compare, threshold set to <= 0.3 lbs. Score bar top line always accent color at 0.7 opacity. Results in countdown below score bar. Net calories sublabel shows weight goal pace (Lose 1 lb / wk pace etc). Weight input validation -- 3 digits max before decimal, 1 decimal place max, flicker on edge cases is known iOS limitation acceptable for now. Active calories intentionally not polled -- tab focus refresh is sufficient, battery concern outweighs benefit.
-
-Updated after session May 12 2026 (session 8). Settings theme preview rows fixed -- hardcoded opaque bg/text/accent per theme row so preview always looks correct regardless of active theme. Extensive review and planning session: full app screenshot audit across all themes, identified shadow/gradient/tab bar border needs, sleep card bugs documented, animation audit list created as living document, number transitions flagged as high priority full-app improvement, contextual achievement toast animations specced (water fill, footprints, etc), first use onboarding moments designed with non-blocking rules, custom water drag modal fully specced (.5oz increments, 48oz max, numpad with .5 key, KAV), AFTER BURN renamed to NET, effort score redesigned as smart contextual nudge on workout completion, marketing and distribution strategy discussed in depth, app name shortlist finalized (Prevail/Steadfast/Worthy/Haven/Witness/Sown, Abide dropped -- already taken), TikTok content strategy mapped out (anonymous account, interactive series, meme formats, crowd-sourced decisions), branding direction locked (Chick-fil-A model -- faith present and unapologetic but not the marketing lead, positions as intentional whole-person wellness app).
+Marketing decisions:
+App name shortlist: Prevail, Steadfast, Worthy, Haven, Witness, Sown. Dropped: Abide (taken by existing Christian meditation app).
+Branding: NOT marketed as a "Christian app" -- positioned as intentional whole-person wellness. Faith present and unapologetic but not the marketing lead. Chick-fil-A model.
+Tagline direction: "The app that actually cares about you"
+TikTok: anonymous account for now, interactive series format, crowd-sourced decisions, meme formats mixed in

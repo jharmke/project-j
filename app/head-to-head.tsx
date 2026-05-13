@@ -381,7 +381,7 @@ export default function HeadToHeadScreen() {
       valB: snapB.steps,
       format: v => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : Math.round(v).toString(),
       unit: 'steps',
-      winCondition: (a, b) => Math.abs(a - b) < 100 ? 'tie' : a > b ? 'win' : 'lose',
+      winCondition: (a, b) => a === b ? 'tie' : a > b ? 'win' : 'lose',
     },
     {
       id: 'sleepScore',
@@ -403,7 +403,7 @@ export default function HeadToHeadScreen() {
       valB: snapB.water,
       format: v => Math.round(v).toString(),
       unit: 'oz',
-      winCondition: (a, b) => Math.abs(a - b) < 4 ? 'tie' : a > b ? 'win' : 'lose',
+      winCondition: (a, b) => a === b ? 'tie' : a > b ? 'win' : 'lose',
     },
     {
       id: 'activeCals',
@@ -505,7 +505,7 @@ export default function HeadToHeadScreen() {
         <TouchableOpacity onPress={() => router.back()} style={{ padding: 4 }}>
           <Ionicons name="chevron-back" size={24} color={theme.textPrimary} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 24, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.textPrimary, flex: 1 }}>
+        <Text style={{ fontSize: 24, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: accentRaw, flex: 1 }}>
           HEAD TO HEAD
         </Text>
         <TouchableOpacity onPress={() => router.push('/achievements')} style={{ padding: 4 }}>
@@ -543,8 +543,8 @@ export default function HeadToHeadScreen() {
             }}
           >
             <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: accentRaw, marginBottom: 4 }}>YOU</Text>
-            <Text style={{ fontSize: 15, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary }}>{labelA}</Text>
-            <Ionicons name="calendar" size={12} color={theme.textDim} style={{ marginTop: 4 }} />
+            <Text style={{ fontSize: 15, fontFamily: 'DMSans_600SemiBold', color: accentRaw }}>{labelA}</Text>
+            <Ionicons name="calendar" size={12} color={accentRaw} style={{ marginTop: 4 }} />
           </TouchableOpacity>
 
           {/* VS divider */}

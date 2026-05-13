@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router, useLocalSearchParams } from 'expo-router';
+
+import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,22 +9,25 @@ import { useTheme } from '../theme';
 const MEALS = ['Morning', 'Lunch', 'Dinner', 'Snacks'];
 const WATER_TARGET = 128;
 
-export default function DayDetailScreen() {
+export default function DayDetailScreen() { return null; }
+
+export function DayDetailContent({ date, onClose, todayBurned }: { date: string; onClose: () => void; todayBurned?: number }) {
   const insets = useSafeAreaInsets();
-  const { theme } = useTheme();
-  const { date } = useLocalSearchParams<{ date: string }>();
+  const { theme, themeId } = useTheme();
   const [data, setData] = useState<any>(null);
   const [loaded, setLoaded] = useState(false);
   const [excluded, setExcluded] = useState({ diet: false, water: false, exercise: false });
   const [workoutState, setWorkoutState] = useState<any>(null);
+  const [currentDate, setCurrentDate] = useState(date);
   const [mealsOpen, setMealsOpen] = useState(true);
   const [workoutOpen, setWorkoutOpen] = useState(true);
   const [summaryPage, setSummaryPage] = useState(0);
-  const CARD_WIDTH = Dimensions.get('window').width - 32 - 32;
+  const [profileBmr, setProfileBmr] = useState(0);
+  const CARD_WIDTH = (Dimensions.get('window').width * 0.92) - 32 - 32;
 
   const today = new Date();
   const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-  const isToday = date === todayKey;
+  const isToday = currentDate === todayKey;
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr + 'T12:00:00');
@@ -33,7 +37,7 @@ export default function DayDetailScreen() {
   useEffect(() => {
     const load = async () => {
       try {
-        const saved = await AsyncStorage.getItem(`pj_${date}`);
+        const saved = await AsyncStorage.getItem(`pj_${currentDate}`);
         if (saved) {
           const parsed = JSON.parse(saved);
           setData(parsed);
@@ -41,6 +45,28 @@ export default function DayDetailScreen() {
         } else setData({});
         const ws = await AsyncStorage.getItem('pj_workout_state');
         if (ws) setWorkoutState(JSON.parse(ws));
+        const profileRaw = await AsyncStorage.getItem('pj_profile');
+        if (profileRaw) {
+          const p = JSON.parse(profileRaw);
+          let w = null;
+          const dayRaw = await AsyncStorage.getItem(`pj_${currentDate}`);
+          if (dayRaw) { const dp = JSON.parse(dayRaw); if (dp.weight) w = dp.weight; }
+          if (!w) {
+            for (let i = 1; i <= 30; i++) {
+              const d = new Date(currentDate + 'T12:00:00'); d.setDate(d.getDate() - i);
+              const dk = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+              const ld = await AsyncStorage.getItem(`pj_${dk}`);
+              if (ld) { const ldp = JSON.parse(ld); if (ldp.weight) { w = ldp.weight; break; } }
+            }
+          }
+          if (w && p.birthday && p.heightFt && p.heightIn) {
+            const wKg = w * 0.453592;
+            const hCm = (parseFloat(p.heightFt) * 30.48) + (parseFloat(p.heightIn) * 2.54);
+            const age = Math.floor((Date.now() - new Date(p.birthday).getTime()) / (365.25 * 24 * 3600 * 1000));
+            const bmr = p.sex === 'male' ? Math.round((10*wKg)+(6.25*hCm)-(5*age)+5) : Math.round((10*wKg)+(6.25*hCm)-(5*age)-161);
+            setProfileBmr(bmr);
+          }
+        }
       } catch (e) {
         setData({});
       } finally {
@@ -48,15 +74,15 @@ export default function DayDetailScreen() {
       }
     };
     load();
-  }, [date]);
+  }, [currentDate]);
 
   const toggleExclude = async (key: 'diet' | 'water' | 'exercise') => {
     const updated = { ...excluded, [key]: !excluded[key] };
     setExcluded(updated);
     try {
-      const saved = await AsyncStorage.getItem(`pj_${date}`);
+      const saved = await AsyncStorage.getItem(`pj_${currentDate}`);
       const current = saved ? JSON.parse(saved) : {};
-      await AsyncStorage.setItem(`pj_${date}`, JSON.stringify({ ...current, excluded: updated }));
+      await AsyncStorage.setItem(`pj_${currentDate}`, JSON.stringify({ ...current, excluded: updated }));
     } catch (e) {}
   };
 
@@ -69,61 +95,62 @@ export default function DayDetailScreen() {
   const totalFat = Math.round(entries.reduce((s: number, e: any) => s + (e.fat || 0), 0) * 10) / 10;
   const water = data?.water || 0;
   const weight = data?.weight || null;
-  const caloriesBurned = data?.caloriesBurned || 0;
-  const netcals = totalCals - caloriesBurned;
+  const caloriesBurned = isToday && todayBurned != null ? todayBurned : (data?.activeCalories || data?.caloriesBurned || 0);
+  const now = new Date();
+  const minutesToday = now.getHours() * 60 + now.getMinutes();
+  const runningBmr = isToday && profileBmr > 0 ? Math.round((profileBmr / 1440) * minutesToday) : profileBmr;
+  const netcals = totalCals - caloriesBurned - runningBmr;
   const totalfiber = Math.round(entries.reduce((s: number, e: any) => { const n = e.foodnutrients?.find((fn: any) => fn.nutrientname === 'fiber, total dietary'); return s + ((n?.value || 0) * (e.calper100g > 0 ? e.cal / e.calper100g : 0)); }, 0) * 10) / 10;
   const totalsodium = Math.round(entries.reduce((s: number, e: any) => { const n = e.foodnutrients?.find((fn: any) => fn.nutrientname === 'sodium, na'); return s + ((n?.value || 0) * (e.calper100g > 0 ? e.cal / e.calper100g : 0)); }, 0));
   const totalsugar = Math.round(entries.reduce((s: number, e: any) => { const n = e.foodnutrients?.find((fn: any) => fn.nutrientname === 'sugars, total including nlea'); return s + ((n?.value || 0) * (e.calper100g > 0 ? e.cal / e.calper100g : 0)); }, 0) * 10) / 10;
 
-  const dayprogram = workoutState?.programs?.[date];
-  const daychecks = workoutState?.checks?.[date] || {};
-  const daycardiolog = workoutState?.cardiologs?.[date] || {};
-  const dayWorkoutNote = workoutState?.workoutNotes?.[date] || '';
+  const dayprogram = workoutState?.programs?.[currentDate];
+  const daychecks = workoutState?.checks?.[currentDate] || {};
+  const daycardiolog = workoutState?.cardiologs?.[currentDate] || {};
+  const dayWorkoutNote = workoutState?.workoutNotes?.[currentDate] || '';
   const exercises = dayprogram?.exercises || [];
   const donecount = exercises.filter((ex: any) => daychecks[ex.id]).length;
 
-  const styles = useStyles(theme);
+  const styles = useStyles(theme, themeId);
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backBtnText}>← Back</Text>
-        </TouchableOpacity>
-        <View style={{ flex: 1, alignItems: 'center' }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <TouchableOpacity
-              onPress={() => {
-                const d = new Date(date + 'T12:00:00');
-                d.setDate(d.getDate() - 1);
-                const prev = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                router.replace({ pathname: '/day-detail', params: { date: prev } });
-              }}
-              style={{ padding: 12 }}>
-              <Text style={{ color: theme.accentBlue, fontSize: 20 }}>‹</Text>
-            </TouchableOpacity>
-            <Text style={[styles.headerDate, !isToday && { color: theme.accentAmber }]}>
-              {formatDate(date || todayKey)}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
+          <TouchableOpacity
+            onPress={() => {
+              const d = new Date(currentDate + 'T12:00:00');
+              d.setDate(d.getDate() - 1);
+              const prev = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+              setCurrentDate(prev);
+            }}
+            style={{ padding: 8 }}>
+            <Text style={{ color: theme.accentBlue, fontSize: 20 }}>‹</Text>
+          </TouchableOpacity>
+          <View style={{ alignItems: 'center' }}>
+            <Text style={[styles.headerDate, { color: theme.accentBlueRaw }]}>
+              {formatDate(currentDate || todayKey)}
             </Text>
-            <TouchableOpacity
-              disabled={isToday}
-              onPress={() => {
-                const d = new Date(date + 'T12:00:00');
-                d.setDate(d.getDate() + 1);
-                const next = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                if (next <= todayKey) router.replace({ pathname: '/day-detail', params: { date: next } });
-              }}
-              style={{ padding: 12 }}>
-              <Text style={{ color: isToday ? theme.textDim : theme.accentBlue, fontSize: 20 }}>›</Text>
-            </TouchableOpacity>
           </View>
-          {!isToday && (
-            <View style={styles.historyBadge}>
-              <Text style={styles.historyBadgeText}>HISTORY</Text>
-            </View>
-          )}
+          <TouchableOpacity
+            disabled={isToday}
+            onPress={() => {
+              const d = new Date(currentDate + 'T12:00:00');
+              d.setDate(d.getDate() + 1);
+              const next = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+              if (next <= todayKey) setCurrentDate(next);
+            }}
+            style={{ padding: 8 }}>
+            <Text style={{ color: isToday ? theme.textDim : theme.accentBlue, fontSize: 20 }}>›</Text>
+          </TouchableOpacity>
         </View>
-        <View style={{ width: 60 }} />
-      </View>
+        </View>
+      {!isToday && (
+        <View style={{ alignItems: 'center', paddingVertical: 5 }}>
+          <View style={styles.historyBadge}>
+            <Text style={styles.historyBadgeText}>HISTORY</Text>
+          </View>
+        </View>
+      )}
 
       <ScrollView contentContainerStyle={styles.content}>
 
@@ -230,7 +257,7 @@ export default function DayDetailScreen() {
                     <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: daychecks[ex.id] ? theme.accentGreen : 'transparent', borderWidth: 1, borderColor: daychecks[ex.id] ? theme.accentGreen : theme.borderSubtle, alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
                       {daychecks[ex.id] && <Text style={{ color: theme.bgPrimary, fontSize: 10, fontWeight: '700' }}>✓</Text>}
                     </View>
-                    <Text style={{ flex: 1, fontSize: 13, color: daychecks[ex.id] ? theme.textDim : theme.textPrimary, fontFamily: 'DMSans_400Regular', textDecorationLine: daychecks[ex.id] ? 'line-through' : 'none' }}>{ex.name}</Text>
+                    <Text style={{ flex: 1, fontSize: 13, color: daychecks[ex.id] ? theme.textDim : theme.textSecondary, fontFamily: 'DMSans_600SemiBold', textDecorationLine: daychecks[ex.id] ? 'line-through' : 'none' }}>{ex.name}</Text>
                     {ex.isCardio && (
                       <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>
                         {[ex.duration ? `${ex.duration}m` : null, ex.distance ? `${ex.distance}mi` : null].filter(Boolean).join(' · ')}
@@ -331,8 +358,8 @@ export default function DayDetailScreen() {
         </View>
 
         {!isToday && (
-          <TouchableOpacity style={styles.backToTodayBtn} onPress={() => router.back()}>
-            <Text style={styles.backToTodayText}>← Back to Today</Text>
+          <TouchableOpacity style={styles.backToTodayBtn} onPress={onClose}>
+            <Text style={styles.backToTodayText}>Back to Today</Text>
           </TouchableOpacity>
         )}
 
@@ -341,25 +368,27 @@ export default function DayDetailScreen() {
   );
 }
 
-const useStyles = (theme: any) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.bgPrimary },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard },
-  backBtn: { width: 60 },
-  backBtnText: { color: theme.accentBlue, fontSize: 14, fontFamily: 'DMSans_600SemiBold' },
-  headerDate: { fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', textAlign: 'center' },
-  historyBadge: { marginTop: 4, backgroundColor: `${theme.accentAmber}26`, borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2 },
-  historyBadgeText: { fontSize: 9, color: theme.accentAmber, fontFamily: 'DMSans_700Bold', letterSpacing: 2 },
+const useStyles = (theme: any, themeId: string) => {
+  const shadowOpacity = ({ light: 0.35, dark: 0.14, slate: 0.28, warm: 0.30, blush: 0.30 } as Record<string, number>)[themeId] ?? 0.18;
+  return StyleSheet.create({
+  container: { flex: 1, backgroundColor: theme.bgSheet },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, height: 48, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard },
+  
+  headerDate: { fontSize: 20, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1.5, textAlign: 'center' },
+  historyBadge: { marginTop: 4, backgroundColor: `${theme.accentBlueRaw}26`, borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2 },
+  historyBadgeText: { fontSize: 9, color: theme.accentBlueRaw, fontFamily: 'DMSans_700Bold', letterSpacing: 2 },
   content: { padding: 16, paddingBottom: 80 },
-  card: { backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, borderTopWidth: 0.5, borderRadius: 14, padding: 16, marginBottom: 12 },
+  card: { backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, borderTopWidth: 1, borderRadius: 14, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity, shadowRadius: 6, elevation: 3 },
   cardLabel: { fontSize: 9, letterSpacing: 3, color: theme.textDim, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', marginBottom: 10 },
   summaryStat: { alignItems: 'center', flex: 1 },
   summaryVal: { fontSize: 22, color: theme.textSecondary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
   summaryLabel: { fontSize: 8, color: theme.textDim, fontFamily: 'DMSans_700Bold', marginTop: 2, letterSpacing: 1, textTransform: 'uppercase', textAlign: 'center' },
   foodRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle },
-  foodName: { fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_400Regular', flex: 1, marginRight: 8 },
+  foodName: { fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', flex: 1, marginRight: 8 },
   foodCal: { fontSize: 13, color: theme.textDim, fontFamily: 'DMSans_600SemiBold' },
   emptyText: { fontSize: 13, color: theme.textPlaceholder, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' },
   noteText: { fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular', lineHeight: 20 },
   backToTodayBtn: { padding: 16, alignItems: 'center' },
   backToTodayText: { color: theme.accentBlue, fontSize: 14, fontFamily: 'DMSans_600SemiBold' },
-});
+  });
+};

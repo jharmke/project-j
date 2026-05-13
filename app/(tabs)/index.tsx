@@ -17,6 +17,7 @@ import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, weig
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { useTheme } from '../../theme';
 import { useHealthKit } from '../../useHealthKit';
+import { DayDetailContent } from '../day-detail';
 
 // ─── Card Registry ────────────────────────────────────────────────────────────
 export type CardId =
@@ -364,8 +365,18 @@ export default function HomeScreen() {
   const [editMode,    setEditMode]    = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [showCardSheet, setShowCardSheet] = useState(false);
+  const [dayDetailDate, setDayDetailDate] = useState<string | null>(null);
   const sheetAnim = useRef(new Animated.Value(0)).current;
   const editSheetAnim = useRef(new Animated.Value(0)).current;
+  const dayDetailAnim = useRef(new Animated.Value(0)).current;
+  const closeDayDetail = () => {
+    Animated.timing(dayDetailAnim, {
+      toValue: 0,
+      duration: 180,
+      easing: Easing.in(Easing.quad),
+      useNativeDriver: true,
+    }).start(() => setDayDetailDate(null));
+  };
 
   // App state
   const [loaded,          setLoaded]          = useState(false);
@@ -776,7 +787,25 @@ export default function HomeScreen() {
           if (yd2.entries && Array.isArray(yd2.entries)) {
             const ydConsumed = yd2.entries.reduce((s: number, e: any) => s + e.cal, 0);
             const ydBurned = yd2.activeCalories || yd2.caloriesBurned || 0;
-            if (ydConsumed >= 400) setYdCals(ydConsumed - ydBurned - profileBmr);
+            const profileRaw2 = await AsyncStorage.getItem('pj_profile');
+            let ydBmr = 0;
+            if (profileRaw2) {
+              const p2 = JSON.parse(profileRaw2);
+              let w: number | null = null;
+              for (let i = 0; i <= 30; i++) {
+                const dd = new Date(); dd.setDate(dd.getDate() - i);
+                const dk = `${dd.getFullYear()}-${String(dd.getMonth()+1).padStart(2,'0')}-${String(dd.getDate()).padStart(2,'0')}`;
+                const ld = await AsyncStorage.getItem(`pj_${dk}`);
+                if (ld) { const ldp = JSON.parse(ld); if (ldp.weight) { w = ldp.weight; break; } }
+              }
+              if (w && p2.birthday && p2.heightFt && p2.heightIn) {
+                const wKg = w * 0.453592;
+                const hCm = (parseFloat(p2.heightFt) * 30.48) + (parseFloat(p2.heightIn) * 2.54);
+                const age = Math.floor((Date.now() - new Date(p2.birthday).getTime()) / (365.25 * 24 * 3600 * 1000));
+                ydBmr = p2.sex === 'male' ? Math.round((10*wKg)+(6.25*hCm)-(5*age)+5) : Math.round((10*wKg)+(6.25*hCm)-(5*age)-161);
+              }
+            }
+            if (ydConsumed >= 400) setYdCals(ydConsumed - ydBurned - ydBmr);
             else setYdCals(null);
           }
           // Yesterday steps
@@ -1757,7 +1786,7 @@ export default function HomeScreen() {
         ydVal: ydSteps,
         format: v => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : Math.round(v).toString(),
         unit: 'steps',
-        winCondition: (t, y) => Math.abs(t - y) < 100 ? 'tie' : t > y ? 'win' : 'lose',
+        winCondition: (t, y) => t === y ? 'tie' : t > y ? 'win' : 'lose',
       },
       {
         id: 'sleepScore',
@@ -1777,7 +1806,7 @@ export default function HomeScreen() {
         ydVal: ydWater,
         format: v => Math.round(v).toString(),
         unit: 'oz',
-        winCondition: (t, y) => Math.abs(t - y) < 4 ? 'tie' : t > y ? 'win' : 'lose',
+        winCondition: (t, y) => t === y ? 'tie' : t > y ? 'win' : 'lose',
       },
       {
         id: 'weight',
@@ -2042,7 +2071,7 @@ export default function HomeScreen() {
               style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
               <Ionicons name="refresh" size={14} color={theme.accentBlue} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.push({ pathname:'/day-detail', params:{ date:todayKey } })}
+            <TouchableOpacity onPress={() => { dayDetailAnim.setValue(0); setDayDetailDate(todayKey); }}
               style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
               <Ionicons name="calendar" size={14} color={theme.accentBlue} />
             </TouchableOpacity>
@@ -2079,6 +2108,42 @@ export default function HomeScreen() {
             </View>
           </View>
         </View>
+      )}
+
+      {/* ── Day Detail Modal ── */}
+      {dayDetailDate !== null && (
+        <Modal transparent animationType="none" visible={dayDetailDate !== null} onRequestClose={() => setDayDetailDate(null)} statusBarTranslucent hardwareAccelerated
+          onShow={() => {
+            dayDetailAnim.setValue(0);
+            Animated.timing(dayDetailAnim, {
+              toValue: 1,
+              duration: 220,
+              easing: Easing.out(Easing.quad),
+              useNativeDriver: true,
+            }).start();
+          }}>
+          <Animated.View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', opacity: dayDetailAnim, justifyContent: 'center', alignItems: 'center' }}>
+            <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={closeDayDetail} />
+            <Animated.View style={{
+              width: '92%',
+              height: '75%',
+              borderRadius: 20,
+              backgroundColor: theme.bgSheet,
+              borderWidth: 0.5,
+              borderColor: theme.borderSheet,
+              overflow: 'hidden',
+              opacity: dayDetailAnim,
+            }}>
+              <TouchableOpacity onPress={closeDayDetail} style={{ alignSelf: 'center', paddingVertical: 6, paddingHorizontal: 40 }}>
+                <View style={[styles.editSheetHandle, { backgroundColor: theme.sheetHandle }]} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={closeDayDetail} style={{ position: 'absolute', top: 20, left: 16, zIndex: 10, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4 }}>
+                <Text style={{ color: theme.accentBlueRaw, fontSize: 12, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5 }}>CLOSE</Text>
+              </TouchableOpacity>
+              <DayDetailContent date={dayDetailDate} onClose={closeDayDetail} todayBurned={displayedBurned} />
+            </Animated.View>
+          </Animated.View>
+        </Modal>
       )}
 
       {/* ── Main content ── */}
@@ -2129,7 +2194,7 @@ export default function HomeScreen() {
                 <Ionicons name="add" size={14} color={theme.accentBlue} />
                 <Text style={{ color: theme.accentBlue, fontSize:12, fontFamily:'DMSans_600SemiBold' }}>Add</Text>
               </TouchableOpacity>
-              <Text style={{ fontSize:13, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase' }}>Edit Layout</Text>
+              <Text style={{ fontSize:13, color: theme.accentBlueRaw, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase' }}>Edit Layout</Text>
               <TouchableOpacity onPress={exitEditMode}
                 style={{ backgroundColor: theme.accentGreenBg, borderWidth:1, borderColor: theme.accentGreenBorder, borderRadius:6, paddingHorizontal:14, paddingVertical:6, height:32, alignItems:'center', justifyContent:'center' }}>
                 <Text style={{ color: theme.accentGreen, fontSize:12, fontFamily:'DMSans_700Bold', letterSpacing:1 }}>DONE</Text>

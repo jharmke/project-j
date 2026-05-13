@@ -11,6 +11,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { useTheme } from '../theme';
 import { LogBox } from 'react-native';
 
 LogBox.ignoreLogs(['VirtualizedLists should never be nested']);
@@ -20,6 +21,11 @@ import { ToastProvider } from '../components/Toast';
 import { ThemeProvider } from '../theme';
 
 SplashScreen.preventAutoHideAsync();
+
+function ThemedStatusBar() {
+  const { themeId } = useTheme();
+  return <StatusBar style={themeId === 'dark' ? 'light' : 'dark'} />;
+}
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -58,7 +64,7 @@ export default function RootLayout() {
         <Stack.Screen name="achievements" options={{ headerShown: false }} />
         <Stack.Screen name="head-to-head" options={{ headerShown: false, animation: 'fade' }} />
       </Stack>
-      <StatusBar style="light" />
+      <ThemedStatusBar />
       <AchievementToastRenderer />
     </NavThemeProvider>
     </AchievementToastProvider>

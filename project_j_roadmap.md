@@ -110,19 +110,24 @@ DONE -- SHIPPED
 [x] Barcode override system -- pj_barcode_overrides storage key, SET button on result rows during active scan session, green checkmark on confirmed items, persistent scan banner, Search for more button, override pins confirmed item at top of results
 [x] Head to Head screen -- app/head-to-head.tsx, fade transition, any two dates, all 7 metric cards, score bar, delta lines, win/loss/tie badges
 [x] Edit layout sheet -- bottom padding fixed, handle tap to close, centered fade modal, smooth in/out animation, overflow contained
+[x] Day Detail modal conversion -- DayDetailContent component with date+onClose props, wired into index.tsx as fade modal, prev/next day navigation via ‹ › arrows, CLOSE button, bgSheet background, calendar button in home header opens modal
+[x] ThemedStatusBar -- switches light/dark based on themeId, wired into _layout.tsx
+[x] Head to Head polish -- HEAD TO HEAD title, date text, calendar icon, EDIT LAYOUT title all accent color
+[x] Day detail card polish -- stronger borders, per-theme shadow opacity, food/exercise entry names bumped to DMSans_600SemiBold + textSecondary token
+[x] Day detail net cal -- profileBmr calculation added, todayBurned prop passed from index.tsx, history days use stored activeCalories fallback
+[x] You vs Yesterday yesterday net cal race condition -- inline BMR calculation instead of relying on profileBmr state, now consistent with Head to Head
+[x] _layout.tsx day-detail animation reverted to 'none'
+[x] You vs Yesterday water + steps tie bug fixed -- exact integer comparison, no buffer, same fix in head-to-head.tsx
 
 NOW -- active this session
 Bugs -- fix these first
 
 Edit Layout Add button -- deferred. Currently redundant with inline toggle. Will become "browse and discover" entry point when card library grows (30+ cards, categories, premium content). Build out properly then.
-You vs Yesterday water + steps tie bug -- should be exact integer comparison only, no threshold or buffer. Only weight gets 0.3 lb fuzzy threshold.
-You vs Yesterday + day detail net calories bug -- running BMR not propagated to head-to-head.tsx and day-detail.tsx. Home screen has correct formula.
-You vs Yesterday (i) tooltip needed -- weight tie threshold (<=0.3 lbs), net calories win condition (closest to target wins), pace sublabel context.
-Weight log button no dim/inactive state -- build standard violation, dim when empty, accent when ready.
+
 Custom water modal card transparent background -- should be solid card.
 Sleep score label -- poor sleep showing for near-goal durations, review thresholds.
-Meal slot +/- signs to accent color.
-Toast on water remove -- verify if already done, close or fix.
+Head to Head opponent date -- should be textPrimary color, currently accent color.
+
 
 FatSecret integration -- code complete, pending account activation
 
@@ -183,7 +188,7 @@ Process and infrastructure
 
 (i) Tooltip planned coverage: sleep score, VO2 Max, cardio recovery, IF countdown, calorie color scoring.
 Help section in Settings -- Tips and Guides, Health Glossary, FAQ, About.
-Head to Head polish -- HEAD TO HEAD title accent color.
+
 App name -- finalize from shortlist (Prevail, Steadfast, Worthy, Haven, Witness, Sown), verify App Store + TikTok handle availability before committing.
 TestFlight -- setup, App Store Connect, tester invite flow.
 Firebase Auth -- Apple/Google login, pre-beta requirement, data migration from AsyncStorage.
@@ -476,6 +481,7 @@ Slide from right -- navigating to a dedicated screen (Bible, Day Detail, Achieve
 Fade -- overlays, sheets, contextual panels on current screen (Edit Layout, modals)
 Today's Training tap -- fade, not slide left (slide left = "back" in iOS convention)
 Consistent within each pattern matters more than strict rules
+Edit Layout sheet -- centered fade modal card, NOT a bottom sheet. Width 92%, maxHeight 72%, borderRadius 20, dim overlay behind it. Never rebuild as slide-up.
 Modal + ScrollView pattern (CRITICAL):
 Never wrap card in TouchableOpacity to stop propagation -- steals scroll gestures
 Correct pattern: separate absolute-positioned TouchableOpacity for overlay, plain View with pointerEvents="box-none" for card layout

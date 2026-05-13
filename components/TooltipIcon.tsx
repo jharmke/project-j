@@ -1,17 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, TouchableOpacity } from 'react-native';
 import { useTooltip } from '../useTooltip';
 import { useTheme } from '../theme';
+import TooltipModal from './TooltipModal';
 
 interface Props {
   tooltipKey: string;
-  onPress: () => void;
 }
 
-export default function TooltipIcon({ tooltipKey, onPress }: Props) {
+export default function TooltipIcon({ tooltipKey }: Props) {
   const { theme } = useTheme();
-  const { seen } = useTooltip(tooltipKey);
+  const { seen, markSeen } = useTooltip(tooltipKey);
+  const [modalVisible, setModalVisible] = useState(false);
   const scale = useRef(new Animated.Value(1)).current;
   const hasAnimated = useRef(false);
 
@@ -34,15 +35,27 @@ export default function TooltipIcon({ tooltipKey, onPress }: Props) {
     }
   }, [seen]);
 
+  const handleClose = () => {
+    markSeen();
+    setModalVisible(false);
+  };
+
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-      activeOpacity={0.7}
-    >
-      <Animated.View style={{ transform: [{ scale }] }}>
-        <Ionicons name="information-circle" size={13} color={theme.textMuted} />
-      </Animated.View>
-    </TouchableOpacity>
+    <>
+      <TouchableOpacity
+        onPress={() => setModalVisible(true)}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        activeOpacity={0.7}
+      >
+        <Animated.View style={{ transform: [{ scale }] }}>
+          <Ionicons name="information-circle" size={13} color={theme.textMuted} />
+        </Animated.View>
+      </TouchableOpacity>
+      <TooltipModal
+        tooltipKey={tooltipKey}
+        visible={modalVisible}
+        onClose={handleClose}
+      />
+    </>
   );
 }

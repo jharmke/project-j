@@ -124,6 +124,8 @@ DONE -- SHIPPED
 [x] Calorie bar stutter on full reload -- AnimatedProgressBar now accepts ready prop, calorie bar gates on calTarget > 0 with 300ms HealthKit settle delay, water/steps use original 800ms path unchanged
 [x] MacroDonut draw-on animation -- protein/carbs/fat animate in sequence, same pattern as SleepDonut. PENDING FATSECRET TESTING -- cannot verify until API is live
 [x] Today's Message chevron removed -- whole card already tappable, chevron was redundant
+[x] TooltipIcon refactored -- self-contained component, manages own modal + markSeen, callers pass tooltipKey only
+[x] Calories Today (i) wired -- definitions array: Remaining, Active, Net, Color Coding. Example block for NET formula. tooltipRegistry category field added to all entries.
 [x] (i) Tooltip system -- full infrastructure shipped: useTooltip hook (pj_tooltip_* AsyncStorage keys), TooltipModal component, TooltipIcon component (pulse animation, 3 pulses, 1500ms delay, fires once per cold launch until seen), tooltipRegistry.ts, Settings > Help section (collapsible, Definitions + Tips & Guides shell, Show Again per entry, auto-scroll on expand), sleep score (i) wired as first live card, Reset Tooltip States in dev tools
 [x] ToggleSwitch component -- custom sliding pill toggle, replaces RN Switch. Full theme control, accent thumb when ON, muted when OFF. Use everywhere going forward.
 [x] Settings SETTINGS header -- accent colored
@@ -151,7 +153,15 @@ FatSecret integration -- code complete, pending account activation
 OAuth 1.0a signing working (CryptoJS), POST request structure correct, search and barcode wired up. Blocked on FatSecret account being upgraded to Premier Free by James (email sent). Test search the moment account is confirmed upgraded -- no code changes needed. OFF stays in code until FatSecret passes all three gate checks.
 
 (i) Tooltip system -- DONE. See DONE section above.
-Remaining (i) cards to wire: net calories formula, VO2 Max, cardio recovery, IF countdown, You vs Yesterday scoring, calorie color coding. Wire each at time of next visit to that card.
+TooltipIcon refactored -- self-contained, manages its own modal state and markSeen. Callers pass tooltipKey only, no onPress or external modal needed. All future tooltips follow this pattern. DONE.
+Calories Today (i) wired -- covers Remaining, Active, Net formula + worked example, Color Coding. tooltipRegistry category field added to all entries. DONE.
+Tooltip modal template locked -- required sections: icon circle, Bebas title all caps, body intro, definitions array (bold term + explanation), conditional example block, Got it button, footer. Definitions render as bold textPrimary term + textSecondary explanation, no dividers, vertical gap between each. DONE.
+[x] IF countdown (i) wired -- definitions: Fasting Method, Starting Your Window, Closing Your Window, Result. No example block.
+[x] You vs Yesterday (i) wired -- definitions: Metrics, Win/Loss/Tie, Score. No example block.
+[x] Fitness Metrics (i) wired -- definitions: VO2 Max, Cardio Recovery. No example block.
+[x] Macros Today (i) wired -- definitions: Protein/Carbs/Fat, Goals, Color Coding. No example block.
+[x] All home screen tooltips complete. Remaining cards (Water, Weight, Today's Training, Steps, Daily Note, Today's Message) confirmed self-explanatory, no (i) needed.
+tooltipRegistry category field + Settings Help grouping -- category field shipped. Settings Help rendering needs update to group by Nutrition / Fitness / Sleep & Recovery with section headers. Replaces current flat DEFINITIONS list.
 
 Sleep overhaul -- DONE. Three scoring paths shipped. Path 1 HealthKit full (score always shows). Path 2 HealthKit hours only + Path 3 manual -- feel rating 1-5 required, no score until answered. Feel bonus 1→+0 through 5→+40, max score 100. Score labels 85+ Well Rested / 70-84 Could Be Better / below 70 Poor Sleep. You vs Yesterday and Head to Head gate sleep score on feel rating for Path 2/3, fall back to sleepHours. sleepFeelRating stored in pj_YYYY-MM-DD.
 Sleep score label bug -- fixed as byproduct of sleep overhaul. DONE.
@@ -176,6 +186,7 @@ Calorie breakdown by meal -- each slot gets a budget.
 Workout
 
 Today's Training empty/rest day states -- encouragement on unassigned day, acknowledgment on rest day.
+You vs Yesterday streak (vsStreak) -- state declared and badge renders but never calculated or persisted. Always 0. Needs full implementation: calculate win/loss result at end of day, persist streak count to AsyncStorage, reset on loss.
 Effort score -- smart nudge on workout completion, visual polish on buttons with proper selected state.
 Workout notes -- KAV fix (keyboard covers field), dim/inactive save button, wire to journal as workout category.
 My Programs builder -- name it, assign focus/tags/color per day, save, load. (planned, not yet built)
@@ -194,11 +205,13 @@ Morning briefing card -- first open of day, faith first, yesterday recap, today 
 
 Faith and Bible
 
+Faith/Bible Settings panel -- Bible page gear icon opens Faith Settings sheet: font size for reading text, translation selector (future), faith-specific Help/definitions (streak, journal categories), reading plan settings placeholder. Faith category in tooltipRegistry.ts as placeholder. Main settings Help stays Nutrition/Fitness/Sleep & Recovery only. Dedicated session.
 Bible auto-scroll to verse -- auto-center highlighted verse when opening from Today's Message. (very soon)
 Achievement toast improvements -- tappable routes to achievements page, trigger context under name, wording update before App Store launch.
 
 Process and infrastructure
 
+Tooltip wording polish pass -- dedicated pass over all tooltip copy after all cards are wired. Known issues: Active (Apple Health fallback language for non-watch users), Remaining (confirm algorithm accuracy vs what's described), Net (explain running BMR before using the term), Color Coding ("big calorie number" needs rewrite). Do as one session with full context of every card.
 Settings > Help section -- two subsections: Definitions (auto-populates from tooltip registry, Show Again per entry) and Tips & Guides (shell built now, placeholder entry, mini help articles filled over time e.g. "How to improve your sleep score"). About row planned, not built yet.
 Settings page overhaul -- collapsible card sections, CPP. Planned sections: Account, Appearance, Health, Notifications, Faith, Help, About/Legal. Profile/settings boundary cleanup included. Dedicated future session.
 
@@ -431,6 +444,8 @@ Tips & Guides content direction: mini help articles ("How to improve your sleep 
 Tooltip system decisions:
 Footer wording: "More definitions and guides in Settings → Help"
 Pulse: 3 pulses, 1500ms delay on mount, fires once per cold launch while seen === false, permanently stops after user taps (i) and Got it
+Tooltip scope rule: (i) explains the whole card. Definitions are sections within the card tooltip, never a standalone tooltip for a single stat. One (i) per card, full picture of everything non-obvious on that card.
+Tooltip categories: Nutrition, Fitness, Sleep & Recovery. Faith category reserved as placeholder for Faith/Bible Settings panel (future session). Settings Help renders grouped by category with section headers.
 ToggleSwitch replaces RN Switch everywhere in app -- RN Switch thumb color unreliable on iOS
 Settings > Help auto-scrolls to reveal expanded content after animation completes
 Build standards (all non-negotiable, built at time of feature):

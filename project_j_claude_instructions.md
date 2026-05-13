@@ -166,7 +166,9 @@ Footer: "More definitions and guides in Settings → Help" -- textMuted, small, 
 Pulse: TooltipIcon pulses 3 times with 1500ms delay on mount when seen === false. Stops permanently after user taps Got it (markSeen called on close). Fires once per cold launch until seen.
 Every (i) modal entry must be added to tooltipRegistry.ts -- auto-appears in Settings > Help with Show Again button.
 Cards that warrant (i): non-obvious metrics, algorithms, scoring systems. Cards that don't: self-explanatory values (water oz, steps, weight).
-Wired so far: sleep score. Remaining: net calories formula, VO2 Max, cardio recovery, IF countdown, You vs Yesterday scoring, calorie color coding.Input Validation
+Tooltip scope rule (NON-NEGOTIABLE): The (i) explains the whole card. Definitions for individual stats are sections within that card's tooltip modal -- never a standalone tooltip for a single stat in isolation. One (i) per card, one modal, full picture. User tapping (i) expects to understand the card, not get one random definition.
+Tooltip categories: Nutrition, Fitness, Sleep & Recovery. Faith reserved as placeholder for future Faith/Bible Settings panel. tooltipRegistry.ts entries each have a category field. Settings Help renders grouped by category with section headers -- not a flat list.
+Wired so far: sleep score. Remaining: Calories Today card (covers net cal formula, Remaining, Active, color coding -- one (i), one modal), IF countdown, You vs Yesterday scoring, VO2 Max, cardio recovery.Input Validation
 Never let bad data hit storage. Validate before save. Weight of 0, negative values, empty required fields all get caught before saving.Disclaimer on Health Features
 See Disclaimer Standard above. Every health metric needs it.Modal + ScrollView Pattern -- NON NEGOTIABLE
 When a Modal contains a ScrollView that needs to scroll AND the overlay background should dismiss on tap, NEVER wrap the card in a TouchableOpacity to stop propagation -- it steals scroll gestures and breaks scrolling entirely. Correct pattern:

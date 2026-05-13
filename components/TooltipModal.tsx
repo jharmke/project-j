@@ -140,6 +140,38 @@ export default function TooltipModal({ tooltipKey, visible, onClose }: Props) {
               {def.body}
             </Animated.Text>
 
+            {/* Definitions */}
+            {def.definitions && (
+              <Animated.View style={{
+                opacity: contentOpacity,
+                transform: [{ translateY: contentTranslateY }],
+                width: '100%',
+                marginBottom: 16,
+                gap: 12,
+              }}>
+                {def.definitions.map((d, i) => (
+                  <View key={i}>
+                    <Text style={{
+                      fontFamily: 'DMSans_700Bold',
+                      fontSize: 13,
+                      color: theme.textPrimary,
+                      marginBottom: 3,
+                    }}>
+                      {d.term}
+                    </Text>
+                    <Text style={{
+                      fontFamily: 'DMSans_400Regular',
+                      fontSize: 13,
+                      lineHeight: 20,
+                      color: theme.textSecondary,
+                    }}>
+                      {d.explanation}
+                    </Text>
+                  </View>
+                ))}
+              </Animated.View>
+            )}
+
             {/* Example block */}
             {def.example && (
               <Animated.View style={[

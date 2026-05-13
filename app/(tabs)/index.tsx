@@ -468,8 +468,7 @@ export default function HomeScreen() {
   const [sleepStoredBed,  setSleepStoredBed]  = useState<string|null>(null);
   const [sleepStoredWake, setSleepStoredWake] = useState<string|null>(null);
   const [editingSleep,    setEditingSleep]    = useState(false);
-  const [showSleepTooltip, setShowSleepTooltip] = useState(false);
-  const { markSeen: markSleepTooltipSeen } = useTooltip('sleep_score');
+  
   const [sleepBedTime,    setSleepBedTime]    = useState<Date|null>(null);
   const [sleepWakeTime,   setSleepWakeTime]   = useState<Date|null>(null);
   const [showBedTimePicker, setShowBedTimePicker]   = useState(false);
@@ -1090,6 +1089,7 @@ export default function HomeScreen() {
         <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
           <Ionicons name="timer-outline" size={11} color={theme.textMuted} />
           <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Intermittent Fast · {ifMethod}</Text>
+          <TooltipIcon tooltipKey="if_countdown" />
         </View>
         {ifStart && (
           <View style={{ backgroundColor: ifEnd ? `${ifResultColor}22` : isOpen ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', borderWidth:1, borderColor: ifEnd ? `${ifResultColor}55` : isOpen ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)', borderRadius:5, paddingHorizontal:8, paddingVertical:3 }}>
@@ -1216,6 +1216,7 @@ export default function HomeScreen() {
         <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
           <Ionicons name="flame-outline" size={11} color={theme.textMuted} />
           <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Calories Today</Text>
+          <TooltipIcon tooltipKey="calories_today" />
         </View>
         <TouchableOpacity onPress={() => router.push('/(tabs)/log')} activeOpacity={0.6}
           style={{ backgroundColor: theme.accentBlueBg, borderWidth:1, borderColor: theme.accentBlueBorder, borderRadius:6, paddingHorizontal:10, paddingVertical:4 }}>
@@ -1265,6 +1266,7 @@ export default function HomeScreen() {
           <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
             <Ionicons name="pie-chart-outline" size={11} color={theme.textMuted} />
             <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Macros Today</Text>
+            <TooltipIcon tooltipKey="macros_today" />
           </View>
           <Text style={{ fontSize:9, color: theme.textDim, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase' }}>vs goal</Text>
         </View>
@@ -1582,18 +1584,14 @@ export default function HomeScreen() {
           <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
             <Ionicons name="moon-outline" size={11} color={theme.textMuted} />
             <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Sleep Last Night</Text>
-            <TooltipIcon tooltipKey="sleep_score" onPress={() => setShowSleepTooltip(true)} />
+            <TooltipIcon tooltipKey="sleep_score" />
           </View>
           <TouchableOpacity onPress={() => setEditingSleep(!editingSleep)}
             style={{ backgroundColor: theme.accentBlueBg, borderWidth:1, borderColor: theme.accentBlueBorder, borderRadius:6, paddingHorizontal:10, paddingVertical:4 }}>
             <Text style={{ color: theme.accentBlue, fontSize:12, fontFamily:'DMSans_600SemiBold' }}>{sleepOverride ? 'Manual' : 'Edit'}</Text>
           </TouchableOpacity>
         </View>
-        <TooltipModal
-          tooltipKey="sleep_score"
-          visible={showSleepTooltip}
-          onClose={() => { setShowSleepTooltip(false); markSleepTooltipSeen(); }}
-        />
+        
         {editingSleep && (
           <View style={{ marginBottom:10 }}>
             <View style={{ flexDirection:'row', gap:8, marginBottom:8 }}>
@@ -1798,6 +1796,7 @@ export default function HomeScreen() {
       <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:10 }}>
         <Ionicons name="heart-outline" size={11} color={theme.textMuted} />
         <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Fitness Metrics</Text>
+        <TooltipIcon tooltipKey="fitness_metrics" />
       </View>
       {(vo2Max === null && cardioRecovery === null) ? (
         <View style={{ alignItems:'center', paddingVertical:16, gap:6 }}>
@@ -2018,6 +2017,7 @@ export default function HomeScreen() {
           <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
             <Ionicons name="trophy" size={11} color={theme.textMuted} />
             <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>You vs Yesterday</Text>
+            <TooltipIcon tooltipKey="vs_yesterday" />
           </View>
           {vsStreak > 0 && (
             <View style={{ flexDirection:'row', alignItems:'center', gap:5, backgroundColor: `${accentRaw}18`, borderWidth:1, borderColor:`${accentRaw}40`, borderRadius:6, paddingHorizontal:8, paddingVertical:3 }}>

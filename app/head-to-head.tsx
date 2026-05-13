@@ -30,26 +30,34 @@ interface DaySnapshot {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+const FEEL_BONUS: Record<number, number> = { 1: 0, 2: 10, 3: 20, 4: 30, 5: 40 };
+
 function calcSleepScore(
   sleepHours: number | null,
   sleepStages: { core: number; deep: number; rem: number; totalMs: number } | null,
-  sleepGoal: number
-): { score: number; hasStages: boolean } {
-  if (!sleepHours || sleepHours <= 0) return { score: 0, hasStages: false };
-  const durationPts = Math.min(40, (sleepHours / sleepGoal) * 40);
-  if (!sleepStages || sleepStages.totalMs <= 0) {
-    return { score: Math.round(Math.min(60, durationPts * 1.5)), hasStages: false };
+  sleepGoal: number,
+  feelRating?: number | null,
+  isManual?: boolean,
+): { score: number | null; hasStages: boolean; path: 1 | 2 | 3 } {
+  if (!sleepHours || sleepHours <= 0) return { score: null, hasStages: false, path: 3 };
+  if (sleepStages && sleepStages.totalMs > 0) {
+    const durationPts = Math.min(40, (sleepHours / sleepGoal) * 40);
+    const totalMs = sleepStages.totalMs;
+    const deepPct = sleepStages.deep / totalMs;
+    const remPct = sleepStages.rem / totalMs;
+    const deepIdeal = 0.20;
+    const deepDiff = Math.abs(deepPct - deepIdeal);
+    const deepPts = Math.max(0, 30 - (deepDiff / deepIdeal) * 30);
+    const remIdeal = 0.22;
+    const remDiff = Math.abs(remPct - remIdeal);
+    const remPts = Math.max(0, 30 - (remDiff / remIdeal) * 30);
+    return { score: Math.round(durationPts + deepPts + remPts), hasStages: true, path: 1 };
   }
-  const totalMs = sleepStages.totalMs;
-  const deepPct = sleepStages.deep / totalMs;
-  const remPct = sleepStages.rem / totalMs;
-  const deepIdeal = 0.20;
-  const deepDiff = Math.abs(deepPct - deepIdeal);
-  const deepPts = Math.max(0, 30 - (deepDiff / deepIdeal) * 30);
-  const remIdeal = 0.22;
-  const remDiff = Math.abs(remPct - remIdeal);
-  const remPts = Math.max(0, 30 - (remDiff / remIdeal) * 30);
-  return { score: Math.round(durationPts + deepPts + remPts), hasStages: true };
+  const path = isManual ? 3 : 2;
+  if (!feelRating) return { score: null, hasStages: false, path };
+  const durationPts = Math.min(60, (sleepHours / sleepGoal) * 60);
+  const bonus = FEEL_BONUS[feelRating] ?? 0;
+  return { score: Math.round(Math.min(100, durationPts + bonus)), hasStages: false, path };
 }
 
 function fmt(d: Date) {
@@ -102,8 +110,10 @@ async function loadSnapshot(dateKey: string, sleepGoal: number, calTarget: numbe
     if (hours) {
       snap.sleepHours = hours;
       const stages = d.sleepStages || null;
-      const { score, hasStages } = calcSleepScore(hours, stages, sleepGoal);
-      if (hasStages) snap.sleepScore = score;
+      const feelRating = d.sleepFeelRating ?? null;
+      const isManual = !!d.sleepOverride;
+      const { score, path } = calcSleepScore(hours, stages, sleepGoal, feelRating, isManual);
+      if (path === 1 || feelRating) snap.sleepScore = score;
     }
   } catch (e) {
     console.log('snapshot load error', e);
@@ -503,7 +513,7 @@ export default function HeadToHeadScreen() {
         gap: 12,
       }}>
         <TouchableOpacity onPress={() => router.back()} style={{ padding: 4 }}>
-          <Ionicons name="chevron-back" size={24} color={theme.textPrimary} />
+          <Ionicons name="chevron-back" size={24} color={accentRaw} />
         </TouchableOpacity>
         <Text style={{ fontSize: 24, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: accentRaw, flex: 1 }}>
           HEAD TO HEAD
@@ -569,9 +579,9 @@ export default function HeadToHeadScreen() {
               shadowRadius: 6,
             }}
           >
-            <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: theme.textDim, marginBottom: 4 }}>OPPONENT</Text>
-            <Text style={{ fontSize: 15, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary }}>{labelB}</Text>
-            <Ionicons name="calendar" size={12} color={theme.textDim} style={{ marginTop: 4 }} />
+            <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: theme.textSecondary, marginBottom: 4 }}>OPPONENT</Text>
+            <Text style={{ fontSize: 15, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary }}>{labelB}</Text>
+            <Ionicons name="calendar" size={12} color={theme.textSecondary} style={{ marginTop: 4 }} />
           </TouchableOpacity>
         </View>
 

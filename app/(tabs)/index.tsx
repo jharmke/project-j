@@ -188,34 +188,38 @@ function MacroDonut({ protein, carbs, fat, calories, theme }: { protein: number;
 
 const AnimCircle = ReAnimated.createAnimatedComponent(Circle);
 
+const FEEL_BONUS: Record<number, number> = { 1: 0, 2: 10, 3: 20, 4: 30, 5: 40 };
+
 function calcSleepScore(
   sleepHours: number | null,
   sleepStages: { core: number; deep: number; rem: number; totalMs: number } | null,
-  sleepGoal: number
-): { score: number; hasStages: boolean } {
-  if (!sleepHours || sleepHours <= 0) return { score: 0, hasStages: false };
+  sleepGoal: number,
+  feelRating?: number | null,
+  isManual?: boolean,
+): { score: number | null; hasStages: boolean; path: 1 | 2 | 3 } {
+  if (!sleepHours || sleepHours <= 0) return { score: null, hasStages: false, path: 3 };
 
-  const durationPts = Math.min(40, (sleepHours / sleepGoal) * 40);
-
-  if (!sleepStages || sleepStages.totalMs <= 0) {
-    return { score: Math.round(Math.min(60, durationPts * 1.5)), hasStages: false };
+  // Path 1 -- HealthKit hours + stages
+  if (sleepStages && sleepStages.totalMs > 0) {
+    const durationPts = Math.min(40, (sleepHours / sleepGoal) * 40);
+    const totalMs = sleepStages.totalMs;
+    const deepPct = sleepStages.deep / totalMs;
+    const remPct = sleepStages.rem / totalMs;
+    const deepIdeal = 0.20;
+    const deepDiff = Math.abs(deepPct - deepIdeal);
+    const deepPts = Math.max(0, 30 - (deepDiff / deepIdeal) * 30);
+    const remIdeal = 0.22;
+    const remDiff = Math.abs(remPct - remIdeal);
+    const remPts = Math.max(0, 30 - (remDiff / remIdeal) * 30);
+    return { score: Math.round(durationPts + deepPts + remPts), hasStages: true, path: 1 };
   }
 
-  const totalMs = sleepStages.totalMs;
-  const deepPct = sleepStages.deep / totalMs;
-  const remPct = sleepStages.rem / totalMs;
-
-  // Deep: peak at 20%, bell curve. Score falls off on both sides.
-  const deepIdeal = 0.20;
-  const deepDiff = Math.abs(deepPct - deepIdeal);
-  const deepPts = Math.max(0, 30 - (deepDiff / deepIdeal) * 30);
-
-  // REM: peak at 22%, bell curve.
-  const remIdeal = 0.22;
-  const remDiff = Math.abs(remPct - remIdeal);
-  const remPts = Math.max(0, 30 - (remDiff / remIdeal) * 30);
-
-  return { score: Math.round(durationPts + deepPts + remPts), hasStages: true };
+  // Path 2 (HealthKit hours only) or Path 3 (manual) -- feel rating required
+  const path = isManual ? 3 : 2;
+  if (!feelRating) return { score: null, hasStages: false, path };
+  const durationPts = Math.min(60, (sleepHours / sleepGoal) * 60);
+  const bonus = FEEL_BONUS[feelRating] ?? 0;
+  return { score: Math.round(Math.min(100, durationPts + bonus)), hasStages: false, path };
 }
 
 const SLEEP_TIPS: Record<string, string[]> = {
@@ -318,18 +322,37 @@ function SleepDonut({ coreFrac, deepFrac, remFrac, donutCirc, donutSize, donutSt
   );
 }
 
-function AnimatedProgressBar({ pct, color, trackColor, refreshKey }: { pct: number; color: string; trackColor?: string; refreshKey?: number }) {
+function AnimatedProgressBar({ pct, color, trackColor, refreshKey, ready }: { pct: number; color: string; trackColor?: string; refreshKey?: number; ready?: boolean }) {
   const width = useSharedValue(0);
+  const hasFired = useRef(false);
   useEffect(() => {
+    hasFired.current = false;
     width.value = 0;
-    setTimeout(() => {
-      width.value = withTiming(Math.min(100, pct), { duration: 1200 });
-    }, 800);
+    if (ready === undefined) {
+      setTimeout(() => {
+        width.value = withTiming(Math.min(100, pct), { duration: 1200 });
+        hasFired.current = true;
+      }, 800);
+    } else if (ready) {
+      setTimeout(() => {
+        width.value = withTiming(Math.min(100, pct), { duration: 1200 });
+        hasFired.current = true;
+      }, 300);
+    }
   }, [refreshKey]);
 
   useEffect(() => {
-    width.value = withTiming(Math.min(100, pct), { duration: 600 });
-  }, [pct]);
+    if (ready === undefined) {
+      if (!hasFired.current) return;
+      width.value = withTiming(Math.min(100, pct), { duration: 600 });
+      return;
+    }
+    if (!ready) return;
+    setTimeout(() => {
+      width.value = withTiming(Math.min(100, pct), { duration: 1200 });
+      hasFired.current = true;
+    }, 300);
+  }, [pct, ready]);
   const animStyle = useAnimatedStyle(() => ({ width: `${width.value}%` as any }));
   return (
     <View style={[styles.progressBarBg, { backgroundColor: trackColor ?? '#1e1e2e' }]}>
@@ -378,6 +401,18 @@ export default function HomeScreen() {
     }).start(() => setDayDetailDate(null));
   };
 
+  const openWaterCustomModal = (sign: 'add' | 'subtract') => {
+    setWaterCustomSign(sign);
+    setWaterCustomInput('');
+    setShowWaterCustomModal(true);
+    waterModalAnim.setValue(0);
+    Animated.timing(waterModalAnim, { toValue: 1, duration: 180, useNativeDriver: true }).start();
+  };
+  const closeWaterCustomModal = () => {
+    waterCustomInputRef.current?.blur();
+    Animated.timing(waterModalAnim, { toValue: 0, duration: 140, useNativeDriver: true }).start(() => setShowWaterCustomModal(false));
+  };
+
   // App state
   const [loaded,          setLoaded]          = useState(false);
   const [refreshKey,      setRefreshKey]       = useState(0);
@@ -385,6 +420,8 @@ export default function HomeScreen() {
   const [showWaterCustomModal, setShowWaterCustomModal] = useState(false);
   const [waterCustomInput,     setWaterCustomInput]     = useState('');
   const [waterCustomSign,      setWaterCustomSign]      = useState<'add'|'subtract'>('add');
+  const waterModalAnim = useRef(new Animated.Value(0)).current;
+  const waterCustomInputRef = useRef<any>(null);
 
   // IF state
   const [ifStart,       setIfStart]       = useState<number|null>(null);
@@ -432,9 +469,14 @@ export default function HomeScreen() {
   const [sleepWakeTime,   setSleepWakeTime]   = useState<Date|null>(null);
   const [showBedTimePicker, setShowBedTimePicker]   = useState(false);
   const [showWakeTimePicker,setShowWakeTimePicker]  = useState(false);
+  const [activeSleepPicker, setActiveSleepPicker]   = useState<'bed'|'wake'|null>(null);
   const [showTimePicker,    setShowTimePicker]      = useState(false);
   const [showEndTimePicker, setShowEndTimePicker]   = useState(false);
   const [pickerTime,        setPrickerTime]         = useState<Date|null>(null);
+  const [sleepFeelRating,   setSleepFeelRating]     = useState<number|null>(null);
+  const [sleepManualCore,   setSleepManualCore]     = useState<string>('');
+  const [sleepManualDeep,   setSleepManualDeep]     = useState<string>('');
+  const [sleepManualRem,    setSleepManualRem]      = useState<string>('');
 
   // BMR state
   const [profileBmr,      setProfileBmr]      = useState(0);
@@ -759,8 +801,12 @@ export default function HomeScreen() {
           if (data.sleepOverride) setSleepOverride(data.sleepOverride);
           if (data.sleepBedTime)  setSleepStoredBed(data.sleepBedTime);
           if (data.sleepWakeTime) setSleepStoredWake(data.sleepWakeTime);
+          if (data.sleepFeelRating) setSleepFeelRating(data.sleepFeelRating);
+          if (data.sleepManualCore) setSleepManualCore(String(data.sleepManualCore));
+          if (data.sleepManualDeep) setSleepManualDeep(String(data.sleepManualDeep));
+          if (data.sleepManualRem)  setSleepManualRem(String(data.sleepManualRem));
           if (typeof data.water === 'number') { setWater(data.water); waterLoaded.current = true; }
-        if (data.weight) setWeight(data.weight);
+          if (data.weight) setWeight(data.weight);
         }
         // Weight comparison loading
         const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
@@ -819,8 +865,10 @@ export default function HomeScreen() {
             const ydHours = yd2.sleepOverride || yd2.sleepHours;
             setYdSleepHours(ydHours);
             const ydStages = yd2.sleepStages || null;
-            const { score: ydScore, hasStages: ydHasStages } = calcSleepScore(ydHours, ydStages, sleepGoal);
-            if (ydHasStages) setYdSleepScore(ydScore);
+            const ydFeel = yd2.sleepFeelRating ?? null;
+            const ydIsManual = !!yd2.sleepOverride;
+            const { score: ydScore, path: ydPath } = calcSleepScore(ydHours, ydStages, sleepGoal, ydFeel, ydIsManual);
+            if (ydPath === 1 || ydFeel) setYdSleepScore(ydScore);
             else setYdSleepScore(null);
           }
         }
@@ -1174,7 +1222,7 @@ export default function HomeScreen() {
         <Text style={[styles.calNumber, { color:calColor }]}>{totalCals}</Text>
         <Text style={[styles.calTarget, { color: theme.textSecondary }]}>/ {adjustedTarget} kcal</Text>
       </View>
-      <AnimatedProgressBar pct={calPct} color={calColor} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} />
+      <AnimatedProgressBar pct={calPct} color={calColor} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} ready={calTarget > 0} />
       {(() => {
         const remaining = adjustedTarget - totalCals;
         const net = totalCals - displayedBurned - runningBmr;
@@ -1255,7 +1303,7 @@ export default function HomeScreen() {
             <Text style={[styles.waterBtnText, { color: theme.accentBlue }]}>+{oz} oz</Text>
           </PressableButton>
         ))}
-        <PressableButton style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => { setWaterCustomSign('add'); setWaterCustomInput(''); setShowWaterCustomModal(true); }}>
+        <PressableButton style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => openWaterCustomModal('add')}>
           <View style={{ alignItems:'center', justifyContent:'center', width:20, height:20 }}>
             <Ionicons name="water-outline" size={18} color={theme.accentBlue} />
             <Text style={{ color: theme.accentBlue, fontSize:9, fontFamily:'DMSans_700Bold', position:'absolute', bottom:-2, right:-4 }}>+</Text>
@@ -1268,7 +1316,7 @@ export default function HomeScreen() {
             <Text style={[styles.waterBtnRedText, { color: theme.accentRed }]}>-{oz} oz</Text>
           </PressableButton>
         ))}
-        <PressableButton style={[styles.waterBtnRed, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]} onPress={() => { setWaterCustomSign('subtract'); setWaterCustomInput(''); setShowWaterCustomModal(true); }}>
+        <PressableButton style={[styles.waterBtnRed, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]} onPress={() => openWaterCustomModal('subtract')}>
           <View style={{ alignItems:'center', justifyContent:'center', width:20, height:20 }}>
             <Ionicons name="water-outline" size={18} color={theme.accentRed} />
             <Text style={{ color: theme.accentRed, fontSize:9, fontFamily:'DMSans_700Bold', position:'absolute', bottom:-2, right:-4 }}>-</Text>
@@ -1539,13 +1587,17 @@ export default function HomeScreen() {
         {editingSleep && (
           <View style={{ marginBottom:10 }}>
             <View style={{ flexDirection:'row', gap:8, marginBottom:8 }}>
-              <TouchableOpacity onPress={() => setShowBedTimePicker(true)} style={{ flex:1, backgroundColor: theme.bgInput, borderWidth:1, borderColor: theme.borderInput, borderRadius:6, padding:10, alignItems:'center' }}>
+              <TouchableOpacity
+                onPress={() => setActiveSleepPicker(activeSleepPicker === 'bed' ? null : 'bed')}
+                style={{ flex:1, backgroundColor: activeSleepPicker === 'bed' ? theme.accentBlueBg : theme.bgInput, borderWidth:1, borderColor: activeSleepPicker === 'bed' ? theme.accentBlueBorder : theme.borderInput, borderRadius:6, padding:10, alignItems:'center' }}>
                 <Text style={{ fontSize:10, color: theme.textMuted, fontFamily:'DMSans_400Regular', marginBottom:2 }}>Bed Time</Text>
                 <Text style={{ fontSize:16, color: sleepBedTime ? theme.textPrimary : theme.textPlaceholder, fontFamily:'DMSans_600SemiBold' }}>
                   {sleepBedTime ? sleepBedTime.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : 'Tap to set'}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setShowWakeTimePicker(true)} style={{ flex:1, backgroundColor: theme.bgInput, borderWidth:1, borderColor: theme.borderInput, borderRadius:6, padding:10, alignItems:'center' }}>
+              <TouchableOpacity
+                onPress={() => setActiveSleepPicker(activeSleepPicker === 'wake' ? null : 'wake')}
+                style={{ flex:1, backgroundColor: activeSleepPicker === 'wake' ? theme.accentBlueBg : theme.bgInput, borderWidth:1, borderColor: activeSleepPicker === 'wake' ? theme.accentBlueBorder : theme.borderInput, borderRadius:6, padding:10, alignItems:'center' }}>
                 <Text style={{ fontSize:10, color: theme.textMuted, fontFamily:'DMSans_400Regular', marginBottom:2 }}>Wake Time</Text>
                 <Text style={{ fontSize:16, color: sleepWakeTime ? theme.textPrimary : theme.textPlaceholder, fontFamily:'DMSans_600SemiBold' }}>
                   {sleepWakeTime ? sleepWakeTime.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : 'Tap to set'}
@@ -1557,25 +1609,26 @@ export default function HomeScreen() {
                 {(() => { let diff=sleepWakeTime.getTime()-sleepBedTime.getTime(); if(diff<0) diff+=24*3600000; return `${Math.round(diff/3600000*10)/10} hrs of sleep`; })()}
               </Text>
             )}
-            {showBedTimePicker && (
-              <View>
-                <View style={{ flexDirection:'row', justifyContent:'space-between', marginBottom:8 }}>
-                  <TouchableOpacity onPress={() => setShowBedTimePicker(false)}><Text style={{ color: theme.textSecondary, fontSize:12, fontFamily:'DMSans_500Medium' }}>Cancel</Text></TouchableOpacity>
-                  <TouchableOpacity onPress={() => setShowBedTimePicker(false)}><Text style={{ color: theme.accentGreen, fontSize:12, fontFamily:'DMSans_600SemiBold' }}>Confirm</Text></TouchableOpacity>
-                </View>
-                <DateTimePicker mode="time" value={sleepBedTime||new Date()} display="spinner" textColor={theme.textPrimary} onChange={(_,d)=>{ if(d) setSleepBedTime(d); }} />
-              </View>
-            )}
-            {showWakeTimePicker && (
-              <View>
-                <View style={{ flexDirection:'row', justifyContent:'space-between', marginBottom:8 }}>
-                  <TouchableOpacity onPress={() => setShowWakeTimePicker(false)}><Text style={{ color: theme.textSecondary, fontSize:12, fontFamily:'DMSans_500Medium' }}>Cancel</Text></TouchableOpacity>
-                  <TouchableOpacity onPress={() => setShowWakeTimePicker(false)}><Text style={{ color: theme.accentGreen, fontSize:12, fontFamily:'DMSans_600SemiBold' }}>Confirm</Text></TouchableOpacity>
-                </View>
-                <DateTimePicker mode="time" value={sleepWakeTime||new Date()} display="spinner" textColor={theme.textPrimary} onChange={(_,d)=>{ if(d) setSleepWakeTime(d); }} />
+            {activeSleepPicker !== null && (
+              <View style={{ marginBottom:8 }}>
+                <DateTimePicker
+                  mode="time"
+                  value={activeSleepPicker === 'bed' ? (sleepBedTime || new Date()) : (sleepWakeTime || new Date())}
+                  display="spinner"
+                  textColor={theme.textPrimary}
+                  onChange={(_, d) => {
+                    if (!d) return;
+                    if (activeSleepPicker === 'bed') setSleepBedTime(d);
+                    else setSleepWakeTime(d);
+                  }}
+                />
               </View>
             )}
             <View style={{ flexDirection:'row', gap:8 }}>
+              <TouchableOpacity onPress={() => { setEditingSleep(false); setActiveSleepPicker(null); }}
+                style={{ flex:1, backgroundColor: theme.bgInput, borderWidth:1, borderColor: theme.borderInput, borderRadius:6, padding:10, alignItems:'center' }}>
+                <Text style={{ color: theme.textMuted, fontSize:13, fontFamily:'DMSans_600SemiBold' }}>Cancel</Text>
+              </TouchableOpacity>
               <TouchableOpacity onPress={async () => {
                 if(!sleepBedTime||!sleepWakeTime) return;
                 let diff=sleepWakeTime.getTime()-sleepBedTime.getTime();
@@ -1588,18 +1641,20 @@ export default function HomeScreen() {
                 const wakeStr=sleepWakeTime.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
                 await AsyncStorage.setItem(`pj_${todayKey}`,JSON.stringify({...current,sleepOverride:val,sleepBedTime:bedStr,sleepWakeTime:wakeStr}));
                 await saveToFirebase(todayKey,'sleepOverride',val);
-                setSleepStoredBed(bedStr); setSleepStoredWake(wakeStr); setEditingSleep(false);
+                setSleepStoredBed(bedStr); setSleepStoredWake(wakeStr); setEditingSleep(false); setActiveSleepPicker(null);
               }} style={{ flex:1, backgroundColor: theme.accentGreen, borderRadius:6, padding:10, alignItems:'center' }}>
                 <Text style={{ color: theme.bgPrimary, fontSize:13, fontFamily:'DMSans_600SemiBold' }}>Save</Text>
               </TouchableOpacity>
               {sleepOverride && (
                 <TouchableOpacity onPress={async () => {
                   setSleepOverride(null);
+                  setSleepFeelRating(null);
                   const saved=await AsyncStorage.getItem(`pj_${todayKey}`);
                   const current=saved?JSON.parse(saved):{};
                   delete current.sleepOverride;
+                  delete current.sleepFeelRating;
                   await AsyncStorage.setItem(`pj_${todayKey}`,JSON.stringify(current));
-                  setEditingSleep(false);
+                  setEditingSleep(false); setActiveSleepPicker(null);
                 }} style={{ backgroundColor: theme.accentRedBg, borderWidth:1, borderColor: theme.accentRedBorder, borderRadius:6, paddingHorizontal:16, alignItems:'center' }}>
                   <Text style={{ color: theme.accentRed, fontSize:13, fontFamily:'DMSans_500Medium' }}>Clear</Text>
                 </TouchableOpacity>
@@ -1610,6 +1665,10 @@ export default function HomeScreen() {
         {displaySleep === null ? (
           <Text style={{ fontSize:13, color: theme.textDim, fontFamily:'DMSans_400Regular', fontStyle:'italic' }}>No sleep data for last night</Text>
         ) : (() => {
+          const isManual = !!sleepOverride;
+          const { score, hasStages, path } = calcSleepScore(displaySleep, sleepStages, sleepGoal, sleepFeelRating, isManual);
+          const scoreColor = score !== null ? (score >= 85 ? theme.statusGood : score >= 70 ? theme.statusWarn : theme.statusBad) : theme.textDim;
+          const scoreLabel = score !== null ? (score >= 85 ? 'Well Rested' : score >= 70 ? 'Could Be Better' : 'Poor Sleep') : null;
           const totalMs = sleepStages?.totalMs||(displaySleep*3600000);
           const coreMs  = sleepStages?.core||0;
           const deepMs  = sleepStages?.deep||0;
@@ -1624,18 +1683,37 @@ export default function HomeScreen() {
           const donutCirc=2*Math.PI*donutRadius;
           const coreFrac=corePct*donutCirc, deepFrac=deepPct*donutCirc, remFrac=remPct*donutCirc;
           const gapFrac=0.03*donutCirc;
-          const { score, hasStages } = calcSleepScore(displaySleep, sleepStages, sleepGoal);
-          const scoreColor = score >= 85 ? theme.statusGood : score >= 70 ? theme.statusWarn : theme.statusBad;
-          const scoreLabel = score >= 85 ? 'Well Rested' : score >= 70 ? 'Could Be Better' : 'Poor Sleep';
-          const tip = getSleepTip(score, displaySleep, sleepStages, sleepGoal, todayKey);
+          const tip = score !== null ? getSleepTip(score, displaySleep, sleepStages, sleepGoal, todayKey) : null;
+
+          const FEEL_DESCRIPTORS: Record<number, string> = {
+            1: 'Rough night',
+            2: 'Not great',
+            3: 'Decent',
+            4: 'Good night',
+            5: 'Slept great',
+          };
+
+          const saveFeel = async (rating: number) => {
+            setSleepFeelRating(rating);
+            const saved = await AsyncStorage.getItem(`pj_${todayKey}`);
+            const current = saved ? JSON.parse(saved) : {};
+            await AsyncStorage.setItem(`pj_${todayKey}`, JSON.stringify({ ...current, sleepFeelRating: rating }));
+          };
+
           return (
             <View>
               <View style={{ flexDirection:'row', alignItems:'flex-start' }}>
                 <View style={{ width:160, paddingRight:12 }}>
-                  <Text style={{ fontSize:42, color:scoreColor, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>{hrs}h {mins}m</Text>
-                  <Text style={{ fontSize:9, color:scoreColor, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:10 }}>
-                    {scoreLabel}{sleepOverride?' · manual':''}{!hasStages?' · duration only':''}
-                  </Text>
+                  <Text style={{ fontSize:42, color: score !== null ? scoreColor : theme.textPrimary, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>{hrs}h {mins}m</Text>
+                  {scoreLabel ? (
+                    <Text style={{ fontSize:9, color:scoreColor, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:10 }}>
+                      {scoreLabel}{isManual ? ' · manual' : ''}
+                    </Text>
+                  ) : (
+                    <Text style={{ fontSize:9, color: theme.textDim, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:10 }}>
+                      {isManual ? 'MANUAL' : 'HEALTHKIT'}
+                    </Text>
+                  )}
                   {((sleepStoredBed&&sleepStoredWake)||sleepTimes) ? (
                     <Text style={{ fontSize:12, color: theme.textMuted, fontFamily:'DMSans_500Medium', marginBottom:10 }}>
                       {sleepStoredBed||sleepTimes?.bed} → {sleepStoredWake||sleepTimes?.wake}
@@ -1659,10 +1737,37 @@ export default function HomeScreen() {
                     donutCirc={donutCirc} donutSize={donutSize} donutStroke={donutStroke} donutRadius={donutRadius}
                     coreColor={theme.sleepCore} deepColor={theme.sleepDeep} remColor={theme.sleepRem}
                     trackColor={theme.sleepTrack} gapFrac={gapFrac} refreshKey={refreshKey}
-                    score={score} scoreColor={scoreColor}
+                    score={score ?? 0} scoreColor={scoreColor}
                   />
                 )}
               </View>
+
+              {/* Feel rating prompt -- Path 2/3 only */}
+              {path !== 1 && (
+                <View style={{ marginTop:12, paddingTop:12, borderTopWidth:0.5, borderTopColor:theme.borderSubtle }}>
+                  <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:10 }}>
+                    {sleepFeelRating ? 'HOW DID YOU SLEEP?' : 'HOW DID YOU SLEEP? · REQUIRED FOR SCORE'}
+                  </Text>
+                  <View style={{ flexDirection:'row', gap:6 }}>
+                    {[1,2,3,4,5].map(r => (
+                      <TouchableOpacity key={r} onPress={() => saveFeel(r)} style={{
+                        flex:1, paddingVertical:8, borderRadius:8, alignItems:'center',
+                        backgroundColor: sleepFeelRating === r ? theme.accentBlueBg : theme.bgInput,
+                        borderWidth:1,
+                        borderColor: sleepFeelRating === r ? theme.accentBlueBorder : theme.borderInput,
+                      }}>
+                        <Text style={{ fontSize:16, fontFamily:'BebasNeue_400Regular', color: sleepFeelRating === r ? theme.accentBlue : theme.textDim }}>{r}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  {sleepFeelRating && (
+                    <Text style={{ fontSize:10, color: theme.accentBlue, fontFamily:'DMSans_600SemiBold', marginTop:6, textAlign:'center' }}>
+                      {FEEL_DESCRIPTORS[sleepFeelRating]}
+                    </Text>
+                  )}
+                </View>
+              )}
+
               {tip && (
                 <View style={{ marginTop:10, paddingTop:10, borderTopWidth:0.5, borderTopColor:theme.borderSubtle }}>
                   <View style={{ flexDirection:'row', alignItems:'flex-start', gap:6 }}>
@@ -1728,9 +1833,11 @@ export default function HomeScreen() {
   const renderVsYesterdayCard = () => {
     // ── Today's values ──
     const todayNet = totalCals - displayedBurned - runningBmr;
-    const todaySleepScore = sleepHours ? calcSleepScore(sleepHours, sleepStages, sleepGoal) : null;
+    const todaySleepScore = sleepHours ? calcSleepScore(sleepHours, sleepStages, sleepGoal, sleepFeelRating, !!sleepOverride) : null;
     const todaySleepHours = sleepOverride ?? sleepHours ?? null;
-    const todayHasSleepScore = todaySleepScore?.hasStages ?? false;
+    const todayHasSleepScore = todaySleepScore !== null &&
+        todaySleepScore.score !== null &&
+        (todaySleepScore.path === 1 || sleepFeelRating !== null);
 
     // ── Metric definitions ──
     type MetricId = 'net' | 'steps' | 'sleepScore' | 'water' | 'weight' | 'activeCals' | 'sleepHours';
@@ -2083,23 +2190,24 @@ export default function HomeScreen() {
 
       {/* ── Water custom modal ── */}
       {showWaterCustomModal && (
-        <View style={{ position:'absolute', top:0, bottom:0, left:0, right:0, backgroundColor: theme.overlayBg, justifyContent:'center', alignItems:'center', zIndex:999 }}>
-          <View style={{ backgroundColor: theme.bgCard, borderRadius:14, padding:24, width:'80%', borderWidth:0.5, borderColor: theme.borderCard }}>
+        <Animated.View style={{ position:'absolute', top:0, bottom:0, left:0, right:0, backgroundColor: theme.overlayBg, justifyContent:'center', alignItems:'center', zIndex:999, opacity: waterModalAnim }}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} onPress={closeWaterCustomModal} activeOpacity={1} />
+          <View style={{ backgroundColor: theme.bgSheet, borderRadius:14, padding:24, width:'80%', borderWidth:0.5, borderColor: theme.borderCard }}>
             <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:12 }}>
               {waterCustomSign==='add' ? 'Add Custom Amount' : 'Remove Custom Amount'}
             </Text>
-            <TextInput style={{ backgroundColor: theme.bgInput, borderWidth:0.5, borderColor: theme.borderInput, borderRadius:8, color: theme.textPrimary, padding:12, fontSize:24, fontFamily:'BebasNeue_400Regular', textAlign:'center', marginBottom:16 }}
+            <TextInput ref={waterCustomInputRef} style={{ backgroundColor: theme.bgInput, borderWidth:0.5, borderColor: theme.borderInput, borderRadius:8, color: theme.textPrimary, padding:12, fontSize:24, fontFamily:'BebasNeue_400Regular', textAlign:'center', marginBottom:16 }}
               value={waterCustomInput} onChangeText={setWaterCustomInput} keyboardType="number-pad" placeholder="0" placeholderTextColor={theme.textPlaceholder} autoFocus />
             <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:1, textTransform:'uppercase', textAlign:'center', marginBottom:16 }}>oz</Text>
             <View style={{ flexDirection:'row', gap:10 }}>
-              <TouchableOpacity style={{ flex:1, padding:12, borderRadius:8, backgroundColor: theme.bgInput, alignItems:'center' }} onPress={() => setShowWaterCustomModal(false)}>
+              <TouchableOpacity style={{ flex:1, padding:12, borderRadius:8, backgroundColor: theme.bgInput, alignItems:'center' }} onPress={() => closeWaterCustomModal()}>
                 <Text style={{ color: theme.textMuted, fontFamily:'DMSans_600SemiBold', fontSize:14 }}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={{ flex:1, padding:12, borderRadius:8, backgroundColor: waterCustomSign==='add' ? theme.accentBlueBg : theme.accentRedBg, alignItems:'center' }}
                 onPress={async () => {
                   const amt=parseInt(waterCustomInput);
                   if(amt>0){ const n=waterCustomSign==='add'?Math.min(WATER_TARGET,water+amt):Math.max(0,water-amt); setWater(n); saveToFirebase(todayKey,'water',n); showToast('Water logged', `${waterCustomSign==='add'?'+':'-'}${amt} oz · ${n} oz total`, 'info'); if (waterCustomSign==='add' && n >= WATER_TARGET && water < WATER_TARGET) { let s = achievementStore; s = await handleAchievementUnlock('hydration_first', s); await handleAchievementUnlock('hydration_10', s); } }
-                  setShowWaterCustomModal(false);
+                  closeWaterCustomModal();
                 }}>
                 <Text style={{ color: waterCustomSign==='add' ? theme.accentBlue : theme.accentRed, fontFamily:'DMSans_600SemiBold', fontSize:14 }}>
                   {waterCustomSign==='add'?'Add':'Remove'}
@@ -2107,7 +2215,7 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </Animated.View>
       )}
 
       {/* ── Day Detail Modal ── */}

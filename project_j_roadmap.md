@@ -121,15 +121,20 @@ DONE -- SHIPPED
 [x] Edit exercise modal -- transparent background fixed (bgSheet), Reanimated slide-up refactor, handle + tap-outside-to-close, accent colored title, withTiming both directions for consistent speed
 [x] Exercise interface cardio fields -- duration, distance, speed, incline, resistance, hr, calories added to workoutData.ts Exercise type
 [x] Exercise name color in workout tab -- textPrimary swapped to textSecondary to match theme
+[x] Calorie bar stutter on full reload -- AnimatedProgressBar now accepts ready prop, calorie bar gates on calTarget > 0 with 300ms HealthKit settle delay, water/steps use original 800ms path unchanged
+[x] MacroDonut draw-on animation -- protein/carbs/fat animate in sequence, same pattern as SleepDonut. PENDING FATSECRET TESTING -- cannot verify until API is live
 
 NOW -- active this session
 Bugs -- fix these first
 
 Edit Layout Add button -- deferred. Currently redundant with inline toggle. Will become "browse and discover" entry point when card library grows (30+ cards, categories, premium content). Build out properly then.
 
-Custom water modal card transparent background -- should be solid card.
-Sleep score label -- poor sleep showing for near-goal durations, review thresholds.
-Head to Head opponent date -- should be textPrimary color, currently accent color.
+Custom water modal transparent background -- fixed (bgSheet). DONE.
+Custom water modal fade in/out -- wired with Animated.Value, blur on close, tap outside to dismiss. DONE.
+Sleep score label -- fixed as byproduct of sleep overhaul. DONE.
+Head to Head opponent date -- fixed (textSecondary). DONE.
+Head to Head back chevron -- fixed (accentRaw). DONE.
+Sleep edit picker -- single activeSleepPicker instance, no flicker, Cancel button added, Clear wipes sleepFeelRating. DONE.
 Edit exercise modal -- transparent background bug fixed (bgSheet), Reanimated slide-up refactor complete, handle + tap-outside-to-close added, accent title, withTiming both directions for consistent speed. DONE.
 Exercise name color in workout tab -- textPrimary swapped to textSecondary to match theme. DONE.
 Exercise type cardio fields -- duration, distance, speed, incline, resistance, hr, calories added to Exercise interface in workoutData.ts. DONE.
@@ -143,16 +148,12 @@ OAuth 1.0a signing working (CryptoJS), POST request structure correct, search an
 
 Build tooltip system as foundational infrastructure. Info icon on cards, one-time modal on tap, catalogued in Settings > Help. Every future feature drops tooltips in at build time, never retrofit.
 
-Sleep -- close the loop
-
-Sleep card fixes -- duration math (7h57m showing as 8h0m), poor sleep label threshold, donut on manual entry, manual save validation (toast error if bed/wake not both filled), clear button alignment.
-Sleep history persistence -- verify last night's Apple Health sleep saved correctly to AsyncStorage and shows in day-detail and head-to-head.
+Sleep overhaul -- DONE. Three scoring paths shipped. Path 1 HealthKit full (score always shows). Path 2 HealthKit hours only + Path 3 manual -- feel rating 1-5 required, no score until answered. Feel bonus 1→+0 through 5→+40, max score 100. Score labels 85+ Well Rested / 70-84 Could Be Better / below 70 Poor Sleep. You vs Yesterday and Head to Head gate sleep score on feel rating for Path 2/3, fall back to sleepHours. sleepFeelRating stored in pj_YYYY-MM-DD.
+Sleep score label bug -- fixed as byproduct of sleep overhaul. DONE.
 
 Verify and close
 
-Macro bars + food log donut animated -- quick verify, either mark done or fix.
-Day Detail screen -- needs fade transition wired in _layout.tsx. Currently pops with no animation.
-Weight input flicker -- known iOS limitation, acceptable. Close this bug.
+Macro bars confirmed animated. Calorie bar stutter fixed. MacroDonut draw-on animation built -- pending FatSecret testing.
 
 
 SOON -- confirmed next few sessions
@@ -399,7 +400,7 @@ Cache key format: pj_bible_{BookName}_{chapterNum}
 Sleep score decisions:
 Score 0-100 displayed in donut center
 Algorithm: Duration 40pts (sleepHours/sleepGoal * 40, capped at 40) + Deep % 30pts (peak at 20%) + REM % 30pts (peak at 22%)
-No stages case: duration only, capped at 60, shows "duration only" label
+No stages case: Path 2 (HealthKit hours only) or Path 3 (manual) -- feel rating required, score gated until answered. Feel bonus 1→+0 through 5→+40, max 100.
 Color thresholds: 85-100 green "Well Rested", 70-84 amber "Could Be Better", 0-69 red "Poor Sleep"
 Sleep goal pulls from pj_profile sleepGoal field, defaults to 7 if not set
 Manual entry vs HealthKit entry scored differently -- review thresholds carefully before changing

@@ -10,7 +10,7 @@ import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { useTheme } from '../../theme';
 import { useToast } from '../../components/Toast';
 import { useHealthKit } from '../../useHealthKit';
-import ReAnimated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import ReAnimated, { useAnimatedStyle, useSharedValue, withTiming, useAnimatedProps } from 'react-native-reanimated';
 
 
 const WATER_TARGET = 128;
@@ -34,12 +34,45 @@ interface FoodEntry {
 
 const SCREEN_WIDTH = Dimensions.get('window').width - 32 - 32; // full width minus padding minus card padding
 
+const AnimCircle = ReAnimated.createAnimatedComponent(Circle);
+
 function MacroDonut({ protein, carbs, fat, calories, theme }: { protein: number; carbs: number; fat: number; calories: number; theme: any }) {
   const size = 100;
   const strokeWidth = 12;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const total = protein + carbs + fat;
+
+  const proteinAnim = useSharedValue(0);
+  const carbsAnim   = useSharedValue(0);
+  const fatAnim     = useSharedValue(0);
+
+  useEffect(() => {
+    proteinAnim.value = 0;
+    carbsAnim.value   = 0;
+    fatAnim.value     = 0;
+    if (total === 0) return;
+    const proteinTarget = (protein / total) * circumference;
+    const carbsTarget   = (carbs   / total) * circumference;
+    const fatTarget     = (fat     / total) * circumference;
+    setTimeout(() => {
+      proteinAnim.value = withTiming(proteinTarget, { duration: 800 });
+    }, 200);
+    setTimeout(() => {
+      carbsAnim.value = withTiming(carbsTarget, { duration: 700 });
+    }, 900);
+    setTimeout(() => {
+      fatAnim.value = withTiming(fatTarget, { duration: 600 });
+    }, 1500);
+  }, [protein, carbs, fat]);
+
+  const proteinProps = useAnimatedProps(() => ({ strokeDasharray: `${proteinAnim.value} ${circumference}` } as any));
+  const carbsProps   = useAnimatedProps(() => ({ strokeDasharray: `${carbsAnim.value} ${circumference}` } as any));
+  const fatProps     = useAnimatedProps(() => ({ strokeDasharray: `${fatAnim.value} ${circumference}` } as any));
+
+  const proteinPct = total > 0 ? protein / total : 0;
+  const carbsPct   = total > 0 ? carbs   / total : 0;
+
   if (total === 0) {
     return (
       <View style={{ alignItems: 'center', justifyContent: 'center', width: size, height: size }}>
@@ -52,24 +85,17 @@ function MacroDonut({ protein, carbs, fat, calories, theme }: { protein: number;
       </View>
     );
   }
-  const proteinPct = protein / total;
-  const carbsPct = carbs / total;
-  const fatPct = fat / total;
-  const proteinDash = proteinPct * circumference;
-  const carbsDash = carbsPct * circumference;
-  const fatDash = fatPct * circumference;
-  const carbsOffset = -(proteinPct * circumference);
-  const fatOffset = -((proteinPct + carbsPct) * circumference);
+
   return (
     <View style={{ alignItems: 'center', justifyContent: 'center', width: size, height: size }}>
       <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
         <Circle cx={size/2} cy={size/2} r={radius} stroke={theme.donutTrack} strokeWidth={strokeWidth} fill="none" />
-        <Circle cx={size/2} cy={size/2} r={radius} stroke={theme.macroProtein} strokeWidth={strokeWidth} fill="none"
-          strokeDasharray={`${proteinDash} ${circumference}`} strokeDashoffset={0} strokeLinecap="butt" />
-        <Circle cx={size/2} cy={size/2} r={radius} stroke={theme.macroCarbs} strokeWidth={strokeWidth} fill="none"
-          strokeDasharray={`${carbsDash} ${circumference}`} strokeDashoffset={carbsOffset} strokeLinecap="butt" />
-        <Circle cx={size/2} cy={size/2} r={radius} stroke={theme.macroFat} strokeWidth={strokeWidth} fill="none"
-          strokeDasharray={`${fatDash} ${circumference}`} strokeDashoffset={fatOffset} strokeLinecap="butt" />
+        <AnimCircle cx={size/2} cy={size/2} r={radius} stroke={theme.macroProtein} strokeWidth={strokeWidth} fill="none"
+          animatedProps={proteinProps} strokeDashoffset={0} strokeLinecap="butt" />
+        <AnimCircle cx={size/2} cy={size/2} r={radius} stroke={theme.macroCarbs} strokeWidth={strokeWidth} fill="none"
+          animatedProps={carbsProps} strokeDashoffset={-(proteinPct * circumference)} strokeLinecap="butt" />
+        <AnimCircle cx={size/2} cy={size/2} r={radius} stroke={theme.macroFat} strokeWidth={strokeWidth} fill="none"
+          animatedProps={fatProps} strokeDashoffset={-((proteinPct + carbsPct) * circumference)} strokeLinecap="butt" />
       </Svg>
       <View style={{ position: 'absolute', alignItems: 'center' }}>
         <Text style={{ color: theme.textPrimary, fontSize: 14, fontFamily: 'BebasNeue_400Regular' }}>{calories}</Text>

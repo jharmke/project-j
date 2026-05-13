@@ -50,8 +50,13 @@ components/CustomTabBar.tsx -- Full custom animated tab bar (TAB_BAR_HEIGHT = 64
 components/PressableButton.tsx -- Animated spring button with haptics
 components/haptic-tab.tsx -- Custom animated tab button
 components/Toast.tsx -- Toast system (ToastProvider, ToastItem, ToastRenderer, useToast)
+components/TooltipModal.tsx -- Reusable (i) tooltip modal, fade in, staggered content, example block, Got it button, footer
+components/TooltipIcon.tsx -- Reusable (i) icon with pulse animation, gated on useTooltip seen state
+components/ToggleSwitch.tsx -- Custom sliding pill toggle, replaces RN Switch everywhere. Accent thumb when ON, muted when OFF.
 data/bible-web.ts -- Full KJV Bible, all 66 books, fetch + cache per book
 useHealthKit.ts -- HealthKit hook
+useTooltip.ts -- AsyncStorage-backed hook, returns seen + markSeen + reset per tooltip key
+tooltipRegistry.ts -- Central list of all tooltip definitions (key, title, body, example). Settings > Help auto-populates from this.
 firebaseConfig.ts, workoutData.ts, config.tsAsyncStorage Keyspj_YYYY-MM-DD -- daily data (entries, water, weight, steps, activeCalories, caloriesBurned, sleep fields, IF fields, excluded)
 pj_workout_state -- workout (checks, cardioComplete, programs, workoutNotes, cardioLogs, weeklyTemplate)
 pj_my_foods, pj_favorites, pj_recipes, pj_exercise_library
@@ -59,7 +64,8 @@ pj_profile -- profile + waterPresets + stepGoal + sleepGoal
 pj_settings -- app settings including hapticsEnabled, cardOrder, cardVisible, theme, selectedAccent, workoutTags
 pj_bible_reflections -- all journal entries (verse, prayer, study, personal, gratitude categories)
 pj_verse_rotation -- shuffled verse rotation order and current index
-pj_bible_{BookName}_{chapterNum} -- cached KJV chapter versesEAS BuildCommand: eas build --profile development --platform ios
+pj_bible_{BookName}_{chapterNum} -- cached KJV chapter verses
+pj_tooltip_{key} -- seen state per tooltip ('true' when user has tapped and dismissed). One key per tooltip. Reset via dev tools.EAS BuildCommand: eas build --profile development --platform ios
 If git errors: run $env:EAS_NO_VCS=1 first, then the build command
 New native packages or new HealthKit permissions require a new build
 Pure JS changes never need a rebuildCode Change Process -- NON NEGOTIABLE
@@ -117,8 +123,9 @@ Build Standards -- NON NEGOTIABLE
 These apply to every feature built, every time. Not cleanup tasks, not afterthoughts. Built in from day one.Three Gate Rule
 No feature is marked done until it passes all three gates:
 It works correctly - no bugs
-It looks premium - matches the visual standard
-It feels right - animations, states, interactions all solidDim/Inactive Button States
+It looks premium - matches the visual standard -- CPP (Clean, Professional, Premium) is the test. If it doesn't feel CPP it fails gate 2.
+It feels right - animations, states, interactions all solid
+CPP is a core product principle. Applies to every visual, interaction, and feature across the entire app.Dim/Inactive Button States
 Any button that submits, saves, or logs something must have two states:
 Dim/inactive when there is nothing valid to submit
 Full accent color when ready to submit
@@ -148,7 +155,18 @@ All tab header icon buttons (refresh, calendar, grid, bell, trophy, settings, et
 Every list or card that can be empty needs a designed placeholder. Icon, title, subtitle explaining what goes here and how to add it. Never a blank card or blank screen.Loading States
 Any async operation needs a visual indicator. HealthKit calls can lag.Error States
 Any operation that can fail must communicate it to the user.First Use Tooltips
-Any non-obvious interaction gets a first-use tooltip. Stored in AsyncStorage per unique key. Once dismissed, gone until reinstall. Every tooltip that fires gets added to the Help section in settings so users can find it again. Built at time of feature, never added later.Input Validation
+Any non-obvious interaction gets a first-use tooltip. Stored in AsyncStorage per unique key. Once dismissed, gone until reinstall. Every tooltip that fires gets added to the Help section in settings so users can find it again. Built at time of feature, never added later.
+(i) Tooltip system -- build standard (non-negotiable):
+Placement: inline with card label, immediately to the right of label text. Small Ionicons information-circle, textMuted color.
+Use TooltipIcon component (not raw TouchableOpacity + Ionicons) -- handles pulse animation automatically.
+Use TooltipModal component -- pass tooltipKey, visible, onClose. Reads definition from tooltipRegistry.ts.
+Modal: fade in, content staggered fade + translateY (~8-10px) 100ms after card, Got it last. ScrollView inside always. bgSheet background, large accent icon in accent-tinted circle (accentRaw+'22'), Bebas Neue accent colored title, DMSans textSecondary body, standard accent Got it button, accent-tinted top border.
+Example block: where an algorithm or formula exists, include a concrete worked example. Inset bgCard box, left accent border, "EXAMPLE" label in card label style. Numbers and results clearly formatted, never raw inline.
+Footer: "More definitions and guides in Settings → Help" -- textMuted, small, not tappable.
+Pulse: TooltipIcon pulses 3 times with 1500ms delay on mount when seen === false. Stops permanently after user taps Got it (markSeen called on close). Fires once per cold launch until seen.
+Every (i) modal entry must be added to tooltipRegistry.ts -- auto-appears in Settings > Help with Show Again button.
+Cards that warrant (i): non-obvious metrics, algorithms, scoring systems. Cards that don't: self-explanatory values (water oz, steps, weight).
+Wired so far: sleep score. Remaining: net calories formula, VO2 Max, cardio recovery, IF countdown, You vs Yesterday scoring, calorie color coding.Input Validation
 Never let bad data hit storage. Validate before save. Weight of 0, negative values, empty required fields all get caught before saving.Disclaimer on Health Features
 See Disclaimer Standard above. Every health metric needs it.Modal + ScrollView Pattern -- NON NEGOTIABLE
 When a Modal contains a ScrollView that needs to scroll AND the overlay background should dismiss on tap, NEVER wrap the card in a TouchableOpacity to stop propagation -- it steals scroll gestures and breaks scrolling entirely. Correct pattern:

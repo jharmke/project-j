@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ACCENT_PALETTES, THEME_ORDER, ThemeId, THEMES, useTheme } from '../theme';
 import { useHealthKit } from '../useHealthKit';
@@ -10,6 +10,10 @@ import { BLANK_DAY, WorkoutTag } from '../workoutData';
 import CelebrationOverlay from '../components/CelebrationOverlay';
 import { showAchievementToast } from '../components/AchievementToast';
 import { ACHIEVEMENTS } from '../achievementData';
+import { TOOLTIP_REGISTRY } from '../tooltipRegistry';
+import { useTooltip } from '../useTooltip';
+import TooltipModal from '../components/TooltipModal';
+import ToggleSwitch from '../components/ToggleSwitch';
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
@@ -23,6 +27,13 @@ export default function SettingsScreen() {
   const [devUnlocked,      setDevUnlocked]      = useState(false);
   const [importRange, setImportRange] = useState<14 | 30 | 90>(30);
   const [importing, setImporting] = useState(false);
+  const [helpExpanded, setHelpExpanded] = useState(false);
+  const [activeTooltipKey, setActiveTooltipKey] = useState<string | null>(null);
+  const helpHeight = useRef(new Animated.Value(0)).current;
+  const helpOpacity = useRef(new Animated.Value(0)).current;
+  const helpContentHeight = useRef(0);
+  const [helpMeasured, setHelpMeasured] = useState(false);
+  const scrollViewRef = useRef<any>(null);
   const { fetchHistoricalWorkouts, authorized } = useHealthKit();
 
   const fixDefaultTags = async () => {
@@ -142,12 +153,12 @@ export default function SettingsScreen() {
             setDevTapCount(next);
             if (next >= 7) { setDevUnlocked(true); setDevTapCount(0); }
           }}>
-            <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>Settings</Text>
+            <Text style={[styles.headerTitle, { color: theme.accentBlue }]}>Settings</Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView ref={scrollViewRef} contentContainerStyle={styles.content}>
 
         {/* ── Theme Selector ── */}
         <View style={[styles.section, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
@@ -237,12 +248,7 @@ export default function SettingsScreen() {
               <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Haptic Feedback</Text>
               <Text style={[styles.rowSub, { color: theme.textMuted }]}>Vibration on button press</Text>
             </View>
-            <Switch
-              value={hapticsEnabled}
-              onValueChange={toggleHaptics}
-              trackColor={{ false: theme.bgProgressTrack, true: theme.accentBlueBg }}
-              thumbColor={hapticsEnabled ? theme.accentBlue : theme.textMuted}
-            />
+            <ToggleSwitch value={hapticsEnabled} onValueChange={toggleHaptics} />
           </View>
         </View>
 
@@ -332,6 +338,20 @@ export default function SettingsScreen() {
               </View>
               <Ionicons name="trophy-outline" size={18} color={theme.accentRed} />
             </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.row, { borderTopColor: theme.borderCard }]}
+              onPress={async () => {
+                const keys = await AsyncStorage.getAllKeys();
+                const tooltipKeys = keys.filter(k => k.startsWith('pj_tooltip_'));
+                await AsyncStorage.multiRemove(tooltipKeys);
+                Alert.alert('Done', 'Tooltip seen states cleared. Restart the app to see pulses.');
+              }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Reset Tooltip States</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Re-enables pulse animation on all (i) icons. Dev use only.</Text>
+              </View>
+              <Ionicons name="information-circle-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
             {(['small', 'medium', 'large'] as const).map(tier => (
               <TouchableOpacity
                 key={tier}
@@ -365,7 +385,115 @@ export default function SettingsScreen() {
           </View>
         )}
 
+      {/* ── Help ── */}
+        <View style={[styles.section, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
+          <TouchableOpacity
+            onPress={() => {
+              if (!helpMeasured) return;
+              const opening = !helpExpanded;
+              setHelpExpanded(opening);
+              Animated.parallel([
+                Animated.timing(helpHeight,  { toValue: opening ? helpContentHeight.current : 0, duration: 260, useNativeDriver: false }),
+                Animated.timing(helpOpacity, { toValue: opening ? 1 : 0, duration: 200, useNativeDriver: false }),
+              ]).start(() => {
+                if (opening) {
+                  setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 50);
+                }
+              });
+            }}
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 14 }}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.sectionLabel, { color: theme.textMuted, paddingHorizontal: 0, paddingTop: 0, paddingBottom: 0 }]}>Help</Text>
+            <Ionicons name={helpExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={theme.textMuted} />
+          </TouchableOpacity>
+
+          {/* Off-screen measure -- renders once at full size, invisible, just to get height */}
+          {!helpMeasured && (
+            <View
+              style={{ position: 'absolute', top: 10000, left: 0, right: 0, opacity: 0 }}
+              onLayout={e => {
+                const h = e.nativeEvent.layout.height;
+                if (h > 0) {
+                  helpContentHeight.current = h;
+                  setHelpMeasured(true);
+                }
+              }}
+            >
+              <View style={{ paddingBottom: 8 }}>
+                <Text style={{ fontSize: 9, letterSpacing: 3, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', color: theme.textMuted, paddingHorizontal: 16, paddingBottom: 8 }}>
+                  Definitions
+                </Text>
+                {TOOLTIP_REGISTRY.map((def) => (
+                  <View key={def.key} style={[styles.row, { borderTopColor: theme.borderCard, justifyContent: 'space-between' }]}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>{def.title}</Text>
+                    </View>
+                    <View style={{ borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4 }}>
+                      <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Show Again</Text>
+                    </View>
+                  </View>
+                ))}
+                <Text style={{ fontSize: 9, letterSpacing: 3, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', color: theme.textMuted, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>
+                  Tips {'&'} Guides
+                </Text>
+                <View style={[styles.row, { borderTopColor: theme.borderCard }]}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Coming Soon</Text>
+                    <Text style={[styles.rowSub, { color: theme.textMuted }]}>Guides and tips will appear here.</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* Animated container */}
+          <Animated.View style={{ height: helpHeight, opacity: helpOpacity, overflow: 'hidden' }}>
+            <View style={{ paddingBottom: 8 }}>
+              {/* Definitions */}
+              <Text style={{ fontSize: 9, letterSpacing: 3, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', color: theme.textMuted, paddingHorizontal: 16, paddingBottom: 8 }}>
+                Definitions
+              </Text>
+              {TOOLTIP_REGISTRY.map((def) => (
+                <View
+                  key={def.key}
+                  style={[styles.row, { borderTopColor: theme.borderCard, justifyContent: 'space-between' }]}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>{def.title}</Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => setActiveTooltipKey(def.key)}
+                    style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4 }}
+                  >
+                    <Text style={{ color: theme.accentBlue, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Show Again</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+
+              {/* Tips & Guides */}
+              <Text style={{ fontSize: 9, letterSpacing: 3, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', color: theme.textMuted, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>
+                Tips {'&'} Guides
+              </Text>
+              <View style={[styles.row, { borderTopColor: theme.borderCard }]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Coming Soon</Text>
+                  <Text style={[styles.rowSub, { color: theme.textMuted }]}>Guides and tips will appear here.</Text>
+                </View>
+              </View>
+            </View>
+          </Animated.View>
+        </View>
+
       </ScrollView>
+
+      {activeTooltipKey && (
+        <TooltipModal
+          tooltipKey={activeTooltipKey}
+          visible={!!activeTooltipKey}
+          onClose={() => setActiveTooltipKey(null)}
+        />
+      )}
 
       <CelebrationOverlay
         visible={devCelebVisible}
@@ -384,7 +512,7 @@ const styles = StyleSheet.create({
   headerLabel:  { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2, fontFamily: 'DMSans_700Bold' },
   headerTitle:  { fontSize: 32, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
   content:      { padding: 16, paddingBottom: 80 },
-  section:      { borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, marginBottom: 12, overflow: 'hidden' },
+  section:      { borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, marginBottom: 12, overflow: 'hidden', shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 12, elevation: 6 },
   sectionLabel: { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8 },
   row:          { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: 0.5 },
   rowTitle:     { fontSize: 14, fontFamily: 'DMSans_500Medium', marginBottom: 2 },

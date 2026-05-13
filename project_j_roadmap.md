@@ -123,11 +123,17 @@ DONE -- SHIPPED
 [x] Exercise name color in workout tab -- textPrimary swapped to textSecondary to match theme
 [x] Calorie bar stutter on full reload -- AnimatedProgressBar now accepts ready prop, calorie bar gates on calTarget > 0 with 300ms HealthKit settle delay, water/steps use original 800ms path unchanged
 [x] MacroDonut draw-on animation -- protein/carbs/fat animate in sequence, same pattern as SleepDonut. PENDING FATSECRET TESTING -- cannot verify until API is live
+[x] Today's Message chevron removed -- whole card already tappable, chevron was redundant
+[x] (i) Tooltip system -- full infrastructure shipped: useTooltip hook (pj_tooltip_* AsyncStorage keys), TooltipModal component, TooltipIcon component (pulse animation, 3 pulses, 1500ms delay, fires once per cold launch until seen), tooltipRegistry.ts, Settings > Help section (collapsible, Definitions + Tips & Guides shell, Show Again per entry, auto-scroll on expand), sleep score (i) wired as first live card, Reset Tooltip States in dev tools
+[x] ToggleSwitch component -- custom sliding pill toggle, replaces RN Switch. Full theme control, accent thumb when ON, muted when OFF. Use everywhere going forward.
+[x] Settings SETTINGS header -- accent colored
+[x] Settings card depth/shadow pass -- shadowOpacity 0.18 on section StyleSheet
 
 NOW -- active this session
 Bugs -- fix these first
 
 Edit Layout Add button -- deferred. Currently redundant with inline toggle. Will become "browse and discover" entry point when card library grows (30+ cards, categories, premium content). Build out properly then.
+Today's Message chevron -- removed. DONE.
 
 Custom water modal transparent background -- fixed (bgSheet). DONE.
 Custom water modal fade in/out -- wired with Animated.Value, blur on close, tap outside to dismiss. DONE.
@@ -144,9 +150,8 @@ FatSecret integration -- code complete, pending account activation
 
 OAuth 1.0a signing working (CryptoJS), POST request structure correct, search and barcode wired up. Blocked on FatSecret account being upgraded to Premier Free by James (email sent). Test search the moment account is confirmed upgraded -- no code changes needed. OFF stays in code until FatSecret passes all three gate checks.
 
-(i) Tooltip system -- build as infrastructure first
-
-Build tooltip system as foundational infrastructure. Info icon on cards, one-time modal on tap, catalogued in Settings > Help. Every future feature drops tooltips in at build time, never retrofit.
+(i) Tooltip system -- DONE. See DONE section above.
+Remaining (i) cards to wire: net calories formula, VO2 Max, cardio recovery, IF countdown, You vs Yesterday scoring, calorie color coding. Wire each at time of next visit to that card.
 
 Sleep overhaul -- DONE. Three scoring paths shipped. Path 1 HealthKit full (score always shows). Path 2 HealthKit hours only + Path 3 manual -- feel rating 1-5 required, no score until answered. Feel bonus 1→+0 through 5→+40, max score 100. Score labels 85+ Well Rested / 70-84 Could Be Better / below 70 Poor Sleep. You vs Yesterday and Head to Head gate sleep score on feel rating for Path 2/3, fall back to sleepHours. sleepFeelRating stored in pj_YYYY-MM-DD.
 Sleep score label bug -- fixed as byproduct of sleep overhaul. DONE.
@@ -182,6 +187,7 @@ Home and stats
 Food log donut -- thicker ring, show macro targets inside when empty instead of "no data".
 Weekly calorie bar chart -- 7 day bars macro color stacking, today highlighted, PocketScale style. (HIGH)
 Stats page revamp -- dedicated session, consolidation, pagination, sleep detail page, per-metric exclusion UI.
+Stats page depth/shadow pass -- same shadow treatment as settings cards (shadowOpacity 0.18). Do during stats overhaul session.
 Day detail dedicated polish session -- full feature audit, polish pass, decision on what stays/goes.
 Streak card -- Bible, workout, calorie streaks. (HIGH)
 Morning briefing card -- first open of day, faith first, yesterday recap, today targets.
@@ -193,8 +199,8 @@ Achievement toast improvements -- tappable routes to achievements page, trigger 
 
 Process and infrastructure
 
-(i) Tooltip planned coverage: sleep score, VO2 Max, cardio recovery, IF countdown, calorie color scoring.
-Help section in Settings -- Tips and Guides, Health Glossary, FAQ, About.
+Settings > Help section -- two subsections: Definitions (auto-populates from tooltip registry, Show Again per entry) and Tips & Guides (shell built now, placeholder entry, mini help articles filled over time e.g. "How to improve your sleep score"). About row planned, not built yet.
+Settings page overhaul -- collapsible card sections, CPP. Planned sections: Account, Appearance, Health, Notifications, Faith, Help, About/Legal. Profile/settings boundary cleanup included. Dedicated future session.
 
 App name -- finalize from shortlist (Prevail, Steadfast, Worthy, Haven, Witness, Sown), verify App Store + TikTok handle availability before committing.
 TestFlight -- setup, App Store Connect, tester invite flow.
@@ -282,6 +288,7 @@ Today's Message management UI -- scripture rotation manager, personal messages C
 App infrastructure
 
 State restoration on launch -- save active tab/scroll position, restore on cold launch. (top of backlog)
+Tooltip pulse visibility awareness -- only fire pulse animation when card is actually visible in ScrollView viewport. Currently pulses on mount regardless of scroll position; user may miss it if card is off-screen. Options: intersection observer pattern or scroll position tracking. Complex, not blocking.
 Pull weight from Apple Health -- auto-populate if available, manual entry as fallback
 Offline first behavior
 Daily summary push notification
@@ -415,6 +422,17 @@ Water and steps: exact integer comparison only, no threshold or buffer
 Weight: 0.3 lb fuzzy threshold (floating point rounding)
 Net calories: closest-to-target wins
 All other metrics: straight greater/less than/equal
+CPP -- Clean, Professional, Premium:
+Core product principle. Every visual, interaction, and feature is tested against CPP before passing gate 2. If it doesn't feel CPP it doesn't ship.
+Premium and monetization principles:
+No carrot dangling -- locked/premium content is discoverable but never pushed in user's face
+Trial system planned -- build properly when monetization session comes, not before
+Tips & Guides content direction: mini help articles ("How to improve your sleep score", "Hitting your calorie goal") -- shell built, content filled over time
+Tooltip system decisions:
+Footer wording: "More definitions and guides in Settings → Help"
+Pulse: 3 pulses, 1500ms delay on mount, fires once per cold launch while seen === false, permanently stops after user taps (i) and Got it
+ToggleSwitch replaces RN Switch everywhere in app -- RN Switch thumb color unreliable on iOS
+Settings > Help auto-scrolls to reveal expanded content after animation completes
 Build standards (all non-negotiable, built at time of feature):
 Three gate rule -- works, looks premium, feels right
 Dim/inactive button states on all submittable buttons

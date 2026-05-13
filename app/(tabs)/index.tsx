@@ -18,6 +18,9 @@ import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { useTheme } from '../../theme';
 import { useHealthKit } from '../../useHealthKit';
 import { DayDetailContent } from '../day-detail';
+import TooltipModal from '../../components/TooltipModal';
+import TooltipIcon from '../../components/TooltipIcon';
+import { useTooltip } from '../../useTooltip';
 
 // ─── Card Registry ────────────────────────────────────────────────────────────
 export type CardId =
@@ -465,6 +468,8 @@ export default function HomeScreen() {
   const [sleepStoredBed,  setSleepStoredBed]  = useState<string|null>(null);
   const [sleepStoredWake, setSleepStoredWake] = useState<string|null>(null);
   const [editingSleep,    setEditingSleep]    = useState(false);
+  const [showSleepTooltip, setShowSleepTooltip] = useState(false);
+  const { markSeen: markSleepTooltipSeen } = useTooltip('sleep_score');
   const [sleepBedTime,    setSleepBedTime]    = useState<Date|null>(null);
   const [sleepWakeTime,   setSleepWakeTime]   = useState<Date|null>(null);
   const [showBedTimePicker, setShowBedTimePicker]   = useState(false);
@@ -1066,12 +1071,11 @@ export default function HomeScreen() {
           style={[styles.verseCard, { backgroundColor: theme.bgCardVerse, borderColor: theme.borderCardVerse,
             shadowColor: '#d4860a', shadowOffset: { width: 0, height: 0 }, shadowOpacity: .85, shadowRadius: 8, elevation: 8 }]}
         >
-          <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
-            <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
-              <Ionicons name="book-outline" size={11} color={theme.textMuted} />
+          <View style={{ flexDirection:'row', alignItems:'center', marginBottom:8 }}>
+            <Ionicons name="book-outline" size={11} color={theme.textMuted} />
+            <View style={{ marginLeft:6 }}>
               <Text style={[styles.verseLabel, { marginBottom:0, color: theme.textMuted }]}>TODAY'S MESSAGE</Text>
             </View>
-            <Ionicons name="chevron-forward" size={12} color={theme.textDim} />
           </View>
           <Text style={[styles.verseText, { color: theme.textSecondary }]}>"{dailyVerse?.text}"</Text>
           <Text style={[styles.verseRef, { color: theme.textMuted }]}>{dailyVerse?.reference}</Text>
@@ -1578,12 +1582,18 @@ export default function HomeScreen() {
           <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
             <Ionicons name="moon-outline" size={11} color={theme.textMuted} />
             <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Sleep Last Night</Text>
+            <TooltipIcon tooltipKey="sleep_score" onPress={() => setShowSleepTooltip(true)} />
           </View>
           <TouchableOpacity onPress={() => setEditingSleep(!editingSleep)}
             style={{ backgroundColor: theme.accentBlueBg, borderWidth:1, borderColor: theme.accentBlueBorder, borderRadius:6, paddingHorizontal:10, paddingVertical:4 }}>
             <Text style={{ color: theme.accentBlue, fontSize:12, fontFamily:'DMSans_600SemiBold' }}>{sleepOverride ? 'Manual' : 'Edit'}</Text>
           </TouchableOpacity>
         </View>
+        <TooltipModal
+          tooltipKey="sleep_score"
+          visible={showSleepTooltip}
+          onClose={() => { setShowSleepTooltip(false); markSleepTooltipSeen(); }}
+        />
         {editingSleep && (
           <View style={{ marginBottom:10 }}>
             <View style={{ flexDirection:'row', gap:8, marginBottom:8 }}>

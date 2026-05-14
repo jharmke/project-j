@@ -76,6 +76,7 @@ export default function RootLayout() {
         <Stack.Screen name="onboarding/profile-setup" options={{ headerShown: false, animation: 'fade' }} />
         <Stack.Screen name="onboarding/style-survey" options={{ headerShown: false, animation: 'fade' }} />
         <Stack.Screen name="onboarding/your-style" options={{ headerShown: false, animation: 'fade' }} />
+        <Stack.Screen name="onboarding/commitment" options={{ headerShown: false, animation: 'fade' }} />
         <Stack.Screen name="onboarding/faith-journey" options={{ headerShown: false, animation: 'fade' }} />
         <Stack.Screen name="onboarding/apple-health" options={{ headerShown: false, animation: 'fade' }} />
         <Stack.Screen name="onboarding/all-set" options={{ headerShown: false, animation: 'fade' }} />

@@ -27,12 +27,19 @@ const GOAL_LABELS: Record<string, string> = {
   gain_1:   'Gain 1 lb / week',
 };
 
-const ACTIVITY_OPTIONS = [
-  { key: 'sedentary',   label: 'Mostly Sedentary',  sub: 'Desk job, little daily movement, minimal exercise',                    multiplier: 1.2   },
-  { key: 'light',       label: 'Lightly Active',    sub: 'Some walking or light activity daily, gym 1–3x / week',               multiplier: 1.375 },
-  { key: 'moderate',    label: 'Moderately Active', sub: 'Desk job but active outside work, gym 3–5x / week',                   multiplier: 1.55  },
-  { key: 'active',      label: 'Very Active',       sub: 'Physical job or on your feet most of the day',                        multiplier: 1.725 },
-  { key: 'very_active', label: 'Extremely Active',  sub: 'Hard physical labor daily, or training twice a day professionally',   multiplier: 1.9   },
+const LIFESTYLE_OPTIONS = [
+  { key: 'sedentary',   label: 'Sedentary',      sub: 'Desk job, minimal movement outside of workouts',        multiplier: 1.2  },
+  { key: 'light',       label: 'Lightly Active', sub: 'Some walking, on your feet occasionally during the day', multiplier: 1.3  },
+  { key: 'active',      label: 'Active',         sub: 'On your feet a lot -- server, teacher, retail, trades',  multiplier: 1.45 },
+  { key: 'very_active', label: 'Very Active',    sub: 'Hard physical labor most of the day',                    multiplier: 1.6  },
+];
+
+const TRAINING_OPTIONS = [
+  { key: 'none',  label: 'Not currently training',  sub: 'Little to no structured exercise',         dailyBonus: 0   },
+  { key: '1x',    label: '1-2x / week',             sub: 'Light or occasional sessions',             dailyBonus: 100 },
+  { key: '3x',    label: '3-4x / week',             sub: 'Consistent training most weeks',           dailyBonus: 200 },
+  { key: '5x',    label: '5-6x / week',             sub: 'High frequency, serious commitment',       dailyBonus: 300 },
+  { key: 'daily', label: 'Daily / twice daily',     sub: 'Elite or professional training volume',    dailyBonus: 400 },
 ];
 
 const MACRO_PRESETS = {
@@ -89,10 +96,11 @@ export default function YourStyleScreen() {
   const { mode: recommended, score: scoreStr } = useLocalSearchParams<{ mode: string; score: string }>();
   const score = parseInt(scoreStr || '8');
 
-  const [selectedMode,  setSelectedMode]  = useState(recommended || 'balanced');
-  const [macroPreset,   setMacroPreset]   = useState(recommended === 'discipline' ? 'high_protein' : 'balanced');
-  const [activity,      setActivity]      = useState('moderate');
-  const [goalWeight,    setGoalWeight]    = useState('');
+  const [selectedMode,       setSelectedMode]       = useState(recommended || 'balanced');
+  const [macroPreset,        setMacroPreset]        = useState(recommended === 'discipline' ? 'high_protein' : 'balanced');
+  const [lifestyleActivity,  setLifestyleActivity]  = useState('sedentary');
+  const [trainingFrequency,  setTrainingFrequency]  = useState('none');
+  const [goalWeight,         setGoalWeight]         = useState('');
   const [weightGoal,    setWeightGoal]    = useState('lose_1');
   const [suggestedCals, setSuggestedCals] = useState<number | null>(null);
   const [profileData,   setProfileData]   = useState<any>(null);
@@ -135,11 +143,12 @@ export default function YourStyleScreen() {
     const bmr = sx === 'female'
       ? (10 * kg) + (6.25 * cm) - (5 * age) - 161
       : (10 * kg) + (6.25 * cm) - (5 * age) + 5;
-    const multiplier = ACTIVITY_OPTIONS.find(o => o.key === activity)?.multiplier ?? 1.55;
-    const tdee       = bmr * multiplier;
-    const deficit    = GOAL_DEFICITS[weightGoal] ?? -500;
+    const lifestyleMultiplier = LIFESTYLE_OPTIONS.find(o => o.key === lifestyleActivity)?.multiplier ?? 1.2;
+    const trainingDailyBonus  = TRAINING_OPTIONS.find(o => o.key === trainingFrequency)?.dailyBonus ?? 0;
+    const tdee    = Math.round((bmr * lifestyleMultiplier) + trainingDailyBonus);
+    const deficit = GOAL_DEFICITS[weightGoal] ?? -500;
     setSuggestedCals(Math.max(1200, Math.round(tdee + deficit)));
-  }, [profileData, activity, weightGoal]);
+  }, [profileData, lifestyleActivity, trainingFrequency, weightGoal]);
 
   // When user switches mode, update macro preset default
   const handleModeSelect = (mode: string) => {
@@ -166,9 +175,10 @@ export default function YourStyleScreen() {
       await AsyncStorage.setItem('pj_profile', JSON.stringify({
         ...prof,
         weightGoal,
-        goalWeight:    goalWeight || '',
-        activityLevel: activity,
-        calTarget:     suggestedCals ? String(suggestedCals) : prof.calTarget || '',
+        goalWeight:         goalWeight || '',
+        lifestyleActivity,
+        trainingFrequency,
+        calTarget:          suggestedCals ? String(suggestedCals) : prof.calTarget || '',
       }));
 
       // Save macro ratios to profile if not mindful
@@ -252,26 +262,52 @@ export default function YourStyleScreen() {
             You can always change this in Settings.
           </Text>
 
-          {/* Activity Level */}
-          <Text style={[styles.sectionLabel, { color: theme.textMuted, marginTop: 28 }]}>ACTIVITY LEVEL</Text>
-          <View style={{ gap: 8, marginTop: 8 }}>
-            {ACTIVITY_OPTIONS.map(o => (
+          {/* Lifestyle Activity */}
+          <Text style={[styles.sectionLabel, { color: theme.textMuted, marginTop: 28 }]}>LIFESTYLE ACTIVITY</Text>
+          <Text style={[styles.sectionSub, { color: theme.textDim, marginBottom: 8 }]}>Your day-to-day movement, not counting workouts.</Text>
+          <View style={{ gap: 8 }}>
+            {LIFESTYLE_OPTIONS.map(o => (
               <TouchableOpacity
                 key={o.key}
-                onPress={() => setActivity(o.key)}
+                onPress={() => setLifestyleActivity(o.key)}
                 style={[
                   styles.presetBtn,
                   { backgroundColor: theme.bgInput, borderColor: theme.borderInput },
-                  activity === o.key && { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder },
+                  lifestyleActivity === o.key && { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder },
                 ]}
               >
                 <View style={{ flex: 1 }}>
-                  <Text style={[{ fontSize: 13, fontFamily: 'DMSans_500Medium', color: activity === o.key ? theme.accentBlue : theme.textPrimary }]}>
+                  <Text style={[{ fontSize: 13, fontFamily: 'DMSans_500Medium', color: lifestyleActivity === o.key ? theme.accentBlue : theme.textPrimary }]}>
                     {o.label}
                   </Text>
                   <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 1 }}>{o.sub}</Text>
                 </View>
-                {activity === o.key && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: theme.accentBlueRaw }} />}
+                {lifestyleActivity === o.key && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: theme.accentBlueRaw }} />}
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Training Frequency */}
+          <Text style={[styles.sectionLabel, { color: theme.textMuted, marginTop: 20 }]}>TRAINING FREQUENCY</Text>
+          <Text style={[styles.sectionSub, { color: theme.textDim, marginBottom: 8 }]}>How often you do structured workouts.</Text>
+          <View style={{ gap: 8 }}>
+            {TRAINING_OPTIONS.map(o => (
+              <TouchableOpacity
+                key={o.key}
+                onPress={() => setTrainingFrequency(o.key)}
+                style={[
+                  styles.presetBtn,
+                  { backgroundColor: theme.bgInput, borderColor: theme.borderInput },
+                  trainingFrequency === o.key && { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder },
+                ]}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={[{ fontSize: 13, fontFamily: 'DMSans_500Medium', color: trainingFrequency === o.key ? theme.accentBlue : theme.textPrimary }]}>
+                    {o.label}
+                  </Text>
+                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 1 }}>{o.sub}</Text>
+                </View>
+                {trainingFrequency === o.key && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: theme.accentBlueRaw }} />}
               </TouchableOpacity>
             ))}
           </View>

@@ -231,20 +231,24 @@ export default function LogScreen() {
           };
           if (p.calTarget && parseInt(p.calTarget) > 0) {
             setCalTarget(parseInt(p.calTarget));
-          } else if (p.activityLevel && p.weightGoal) {
-            const ACTIVITY_MULTIPLIERS: Record<string, number> = {
-              sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725, very_active: 1.9,
+          } else if (p.lifestyleActivity && p.trainingFrequency && p.weightGoal) {
+            const LIFESTYLE_MULTIPLIERS: Record<string, number> = {
+              sedentary: 1.2, light: 1.3, active: 1.45, very_active: 1.6,
+            };
+            const TRAINING_BONUSES: Record<string, number> = {
+              none: 0, '1x': 100, '3x': 200, '5x': 300, daily: 400,
             };
             const dayData = await AsyncStorage.getItem(`pj_${activeDate}`);
             const weight = dayData ? JSON.parse(dayData)?.weight : null;
             if (weight && p.birthday && p.heightFt && p.heightIn) {
               const weightKg = weight * 0.453592;
               const heightCm = (parseFloat(p.heightFt) * 30.48) + (parseFloat(p.heightIn) * 2.54);
-              const age = Math.floor((Date.now() - new Date(p.birthday).getTime()) / (365.25 * 24 * 3600 * 1000));
+              const parts = p.birthday.split('-');
+              const age = Math.floor((Date.now() - new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2])).getTime()) / (365.25 * 24 * 3600 * 1000));
               const bmr = p.sex === 'male'
                 ? Math.round((10 * weightKg) + (6.25 * heightCm) - (5 * age) + 5)
                 : Math.round((10 * weightKg) + (6.25 * heightCm) - (5 * age) - 161);
-              const tdee = Math.round(bmr * (ACTIVITY_MULTIPLIERS[p.activityLevel] || 1.55));
+              const tdee = Math.round((bmr * (LIFESTYLE_MULTIPLIERS[p.lifestyleActivity] ?? 1.2)) + (TRAINING_BONUSES[p.trainingFrequency] ?? 0));
               const deficit = GOAL_DEFICITS[p.weightGoal] ?? -500;
               setCalTarget(tdee + deficit);
             }
@@ -296,20 +300,24 @@ export default function LogScreen() {
           };
           if (p.calTarget && parseInt(p.calTarget) > 0) {
             setCalTarget(parseInt(p.calTarget));
-          } else if (p.activityLevel && p.weightGoal) {
-            const ACTIVITY_MULTIPLIERS: Record<string, number> = {
-              sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725, very_active: 1.9,
+          } else if (p.lifestyleActivity && p.trainingFrequency && p.weightGoal) {
+            const LIFESTYLE_MULTIPLIERS: Record<string, number> = {
+              sedentary: 1.2, light: 1.3, active: 1.45, very_active: 1.6,
+            };
+            const TRAINING_BONUSES: Record<string, number> = {
+              none: 0, '1x': 100, '3x': 200, '5x': 300, daily: 400,
             };
             const dayData = await AsyncStorage.getItem(`pj_${activeDate}`);
             const weight = dayData ? JSON.parse(dayData)?.weight : null;
             if (weight && p.birthday && p.heightFt && p.heightIn) {
               const weightKg = weight * 0.453592;
               const heightCm = (parseFloat(p.heightFt) * 30.48) + (parseFloat(p.heightIn) * 2.54);
-              const age = Math.floor((Date.now() - new Date(p.birthday).getTime()) / (365.25 * 24 * 3600 * 1000));
+              const parts = p.birthday.split('-');
+              const age = Math.floor((Date.now() - new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2])).getTime()) / (365.25 * 24 * 3600 * 1000));
               const bmr = p.sex === 'male'
                 ? Math.round((10 * weightKg) + (6.25 * heightCm) - (5 * age) + 5)
                 : Math.round((10 * weightKg) + (6.25 * heightCm) - (5 * age) - 161);
-              const tdee = Math.round(bmr * (ACTIVITY_MULTIPLIERS[p.activityLevel] || 1.55));
+              const tdee = Math.round((bmr * (LIFESTYLE_MULTIPLIERS[p.lifestyleActivity] ?? 1.2)) + (TRAINING_BONUSES[p.trainingFrequency] ?? 0));
               const deficit = GOAL_DEFICITS[p.weightGoal] ?? -500;
               setCalTarget(tdee + deficit);
             }

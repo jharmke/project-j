@@ -135,6 +135,7 @@ DONE -- SHIPPED
 [x] Fitness Metrics (i) wired -- definitions: VO2 Max, Cardio Recovery. No example block.
 [x] Macros Today (i) wired -- definitions: Protein/Carbs/Fat, Goals, Color Coding. No example block.
 [x] All home screen tooltips complete. Remaining cards (Water, Weight, Today's Training, Steps, Daily Note, Today's Message) confirmed self-explanatory, no (i) needed.
+[x] Activity level architecture overhaul -- DONE. All 5 files updated: profile.tsx, your-style.tsx, index.tsx, log.tsx, head-to-head.tsx. New formula: Math.round((bmr * lifestyleMultiplier) + trainingDailyBonus). Birthday parse fix in all calc blocks. Old activityLevel replaced by lifestyleActivity + trainingFrequency throughout.
 
 
 NOW -- active this session
@@ -615,7 +616,7 @@ User selects one, sets macro targets automatically. Can be changed in settings p
 Discipline defaults to High Protein pre-selected. Balanced defaults to Balanced pre-selected.
 
 WHAT IS DEFERRED (build in future sessions)
-- Activity level architecture overhaul -- IN PROGRESS. profile.tsx DONE and confirmed working. Remaining: your-style.tsx (Screen 4), index.tsx, log.tsx (two places), head-to-head.tsx. All need same formula: Math.round((bmr * lifestyleMultiplier) + trainingDailyBonus). Birthday parse fix already shipped in profile.tsx -- same fix needed in index.tsx and log.tsx. your-style.tsx needs two-question UI replacing single activity selector. Next thread picks up at your-style.tsx.
+
 - Daily summary / morning card (mode-aware language) -- SOON
 - Scripture weighting by mode + verse tagging system -- SOON
 - Streak break Acknowledgement Modal -- needs streak system built first, SOON
@@ -639,7 +640,7 @@ BUILD STATUS
 [ ] Mindful calorie card simplification
 [ ] Mindful You vs Yesterday reframe (no W/L/T, "YOUR DAY" label, score hidden)
 [ ] Mindful onboarding -- encouragement language, no projection graph, no macro presets
-[ ] Discipline commitment screen
+[x] Discipline commitment screen -- tappable rows, spring checkmark animation, bg deepen, button unlocks when all three confirmed, Bebas throughout
 [ ] Default card orders per mode applied on first onboarding complete
 [ ] Post-onboarding mode switch Acknowledgement Modal
 [ ] Daily Intention card for Not right now users
@@ -778,6 +779,19 @@ Onboarding files built so far:
 - app/onboarding/all-set.tsx -- Screen 7, NOT YET BUILT
 - app/onboarding/commitment.tsx -- Discipline commitment screen, NOT YET BUILT
 Boot gate lives in app/_layout.tsx -- checks pj_onboarding_complete on launch, redirects to welcome if missing.
+
+🚨 ONBOARDING DATA SAFETY -- NON-NEGOTIABLE 🚨
+Completing onboarding must NEVER wipe, overwrite, reset, or replace any existing pj_* AsyncStorage data under any circumstances. Justin has real logged data -- food entries, workout history, journal entries, achievements, daily logs, weight history -- and losing it is an unacceptable failure.
+Rules that apply to every single onboarding screen without exception:
+- Only WRITE new keys or MERGE into existing ones. Never wholesale replace.
+- pj_profile saves: always read existing profile first, spread it, then write only the new fields on top. Never write a fresh object from scratch.
+- pj_settings saves: same -- read existing, spread, write new fields on top only.
+- pj_onboarding_complete: the only key onboarding is allowed to SET fresh without reading first.
+- Never call AsyncStorage.clear() anywhere in the onboarding flow. Ever.
+- Never overwrite pj_YYYY-MM-DD daily log keys.
+- Never touch pj_achievements, pj_bible_reflections, pj_workout_state, pj_my_foods, pj_favorites, pj_recipes, pj_exercise_library, pj_barcode_overrides.
+- Dev "Reset Onboarding" button clears pj_onboarding_complete ONLY. Nothing else. This is already implemented correctly -- do not change it.
+Before writing any AsyncStorage save in any onboarding screen, Claude must explicitly verify the save is a merge, not a replace. If uncertain, read the key first, spread the result, then write.
 Onboarding screen layout decisions:
 - Screen 2 collects: name, current weight, height, birthday, sex ONLY
 - Screen 4 collects: activity level, goal weight, weekly pace, live calorie target, style selection, macro presets

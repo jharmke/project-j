@@ -5,9 +5,12 @@ import { useEffect, useState } from 'react';
 import { Alert, Image, Linking, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
+import Reanimated, { useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useToast } from '../components/Toast';
 import { saveToFirebase } from '../firebaseConfig';
 import { useTheme } from '../theme';
+
+const AnimCircle = Reanimated.createAnimatedComponent(Circle);
 
 function MacroDonut({ protein, carbs, fat, calories, theme }: { protein: number; carbs: number; fat: number; calories: number; theme: any }) {
   const size = 100;
@@ -15,6 +18,30 @@ function MacroDonut({ protein, carbs, fat, calories, theme }: { protein: number;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const total = protein + carbs + fat;
+
+  const proteinAnim = useSharedValue(0);
+  const carbsAnim = useSharedValue(0);
+  const fatAnim = useSharedValue(0);
+
+  useEffect(() => {
+    proteinAnim.value = 0;
+    carbsAnim.value = 0;
+    fatAnim.value = 0;
+    if (total === 0) return;
+    const proteinTarget = (protein / total) * circumference;
+    const carbsTarget = (carbs / total) * circumference;
+    const fatTarget = (fat / total) * circumference;
+    setTimeout(() => { proteinAnim.value = withTiming(proteinTarget, { duration: 800 }); }, 200);
+    setTimeout(() => { carbsAnim.value = withTiming(carbsTarget, { duration: 700 }); }, 900);
+    setTimeout(() => { fatAnim.value = withTiming(fatTarget, { duration: 600 }); }, 1500);
+  }, [protein, carbs, fat]);
+
+  const proteinProps = useAnimatedProps(() => ({ strokeDasharray: `${proteinAnim.value} ${circumference}` } as any));
+  const carbsProps = useAnimatedProps(() => ({ strokeDasharray: `${carbsAnim.value} ${circumference}` } as any));
+  const fatProps = useAnimatedProps(() => ({ strokeDasharray: `${fatAnim.value} ${circumference}` } as any));
+
+  const proteinPct = total > 0 ? protein / total : 0;
+  const carbsPct = total > 0 ? carbs / total : 0;
 
   if (total === 0) {
     return (
@@ -29,25 +56,16 @@ function MacroDonut({ protein, carbs, fat, calories, theme }: { protein: number;
     );
   }
 
-  const proteinPct = protein / total;
-  const carbsPct = carbs / total;
-  const fatPct = fat / total;
-  const proteinDash = proteinPct * circumference;
-  const carbsDash = carbsPct * circumference;
-  const fatDash = fatPct * circumference;
-  const carbsOffset = -(proteinPct * circumference);
-  const fatOffset = -((proteinPct + carbsPct) * circumference);
-
   return (
     <View style={{ alignItems: 'center', justifyContent: 'center', width: size, height: size }}>
       <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
         <Circle cx={size/2} cy={size/2} r={radius} stroke={theme.donutTrack} strokeWidth={strokeWidth} fill="none" />
-        <Circle cx={size/2} cy={size/2} r={radius} stroke={theme.macroProtein} strokeWidth={strokeWidth} fill="none"
-          strokeDasharray={`${proteinDash} ${circumference}`} strokeDashoffset={0} strokeLinecap="butt" />
-        <Circle cx={size/2} cy={size/2} r={radius} stroke={theme.macroCarbs} strokeWidth={strokeWidth} fill="none"
-          strokeDasharray={`${carbsDash} ${circumference}`} strokeDashoffset={carbsOffset} strokeLinecap="butt" />
-        <Circle cx={size/2} cy={size/2} r={radius} stroke={theme.macroFat} strokeWidth={strokeWidth} fill="none"
-          strokeDasharray={`${fatDash} ${circumference}`} strokeDashoffset={fatOffset} strokeLinecap="butt" />
+        <AnimCircle cx={size/2} cy={size/2} r={radius} stroke={theme.macroProtein} strokeWidth={strokeWidth} fill="none"
+          animatedProps={proteinProps} strokeDashoffset={0} strokeLinecap="butt" />
+        <AnimCircle cx={size/2} cy={size/2} r={radius} stroke={theme.macroCarbs} strokeWidth={strokeWidth} fill="none"
+          animatedProps={carbsProps} strokeDashoffset={-(proteinPct * circumference)} strokeLinecap="butt" />
+        <AnimCircle cx={size/2} cy={size/2} r={radius} stroke={theme.macroFat} strokeWidth={strokeWidth} fill="none"
+          animatedProps={fatProps} strokeDashoffset={-((proteinPct + carbsPct) * circumference)} strokeLinecap="butt" />
       </Svg>
       <View style={{ position: 'absolute', alignItems: 'center' }}>
         <Text style={{ color: theme.textPrimary, fontSize: 14, fontFamily: 'BebasNeue_400Regular' }}>{calories}</Text>
@@ -107,13 +125,41 @@ const isRecipeMode = recipeMode === 'true';
       if (isFav) {
         favs = favs.filter((f: any) => f.name !== food.description);
       } else {
+        const getN = (nName: string, unitName: string = 'G') => {
+          // Prefer selectedServing data when available
+          if (selectedServing) {
+            const map: Record<string, number> = {
+              'Protein': selectedServing.protein || 0,
+              'Carbohydrate, by difference': selectedServing.carbs || 0,
+              'Total lipid (fat)': selectedServing.fat || 0,
+              'Fiber, total dietary': selectedServing.fiber || 0,
+              'Sugars, total including NLEA': selectedServing.sugar || 0,
+              'Sodium, Na': selectedServing.sodium || 0,
+              'Cholesterol': selectedServing.cholesterol || 0,
+              'Fatty acids, total saturated': selectedServing.saturatedFat || 0,
+            };
+            if (nName in map) return Math.round(map[nName] * 10) / 10;
+          }
+          const n = (food.foodNutrients || []).find((fn: any) => fn.nutrientName === nName && fn.unitName === unitName);
+          return Math.round((n?.value || 0) * 10) / 10;
+        };
         favs.push({
           name: food.description,
-          cal: food.calPer100g || 0,
+          cal: calories,
+          protein: food.existingProtein ?? getN('Protein'),
+          carbs: food.existingCarbs ?? getN('Carbohydrate, by difference'),
+          fat: food.existingFat ?? getN('Total lipid (fat)'),
+          fiber: getN('Fiber, total dietary'),
+          sugar: getN('Sugars, total including NLEA'),
+          sodium: getN('Sodium, Na', 'MG'),
+          cholesterol: getN('Cholesterol', 'MG'),
+          saturatedFat: getN('Fatty acids, total saturated'),
           calPer100g: food.calPer100g || 0,
           proteinPer100g: food.proteinPer100g || 0,
           carbsPer100g: food.carbsPer100g || 0,
           fatPer100g: food.fatPer100g || 0,
+          loggedAmount: amount,
+          loggedUnit: unit,
           foodNutrients: food.foodNutrients || [],
         });
       }
@@ -125,12 +171,12 @@ const isRecipeMode = recipeMode === 'true';
     const [entryTime, setEntryTime] = useState<Date>( food?.timestamp ? new Date(food.timestamp) : new Date());
 const [showTimePicker, setShowTimePicker] = useState(false);
   const isEditing = entryIndex !== undefined && entryIndex !== '';
-  const [amount, setAmount] = useState(
-    food?.existingAmount || 
+  const originalAmount = food?.existingAmount || 
     (food?.fsServings?.length > 0 && food.fsServings[0].grams > 0 
       ? food.fsServings[0].grams.toString() 
-      : '100')
-  );
+      : '100');
+  const [amount, setAmount] = useState(originalAmount);
+  const [amountChanged, setAmountChanged] = useState(false);
   const [unit, setUnit] = useState<'g' | 'oz' | 'serving'>(food?.existingUnit || 'g');
     const [showMealPicker, setShowMealPicker] = useState(false);
 const [currentMeal, setCurrentMeal] = useState(meal || 'Morning');
@@ -156,19 +202,30 @@ const [currentMeal, setCurrentMeal] = useState(meal || 'Morning');
 
   const multiplier = getMultiplier();
 
+  // In edit mode, use stored absolute values until the user changes the amount
+  const useExisting = isEditing && !amountChanged && food.existingCal !== undefined;
+
   const grams = parseFloat(amount) || 0;
-  const calories = servingRates
-    ? Math.round(servingRates.calories * grams)
-    : calPer100g > 0 ? Math.round(calPer100g * multiplier) : (food.existingCal || 0);
-  const protein = servingRates
-    ? Math.round(servingRates.protein * grams * 10) / 10
-    : calPer100g > 0 ? Math.round(proteinPer100g * multiplier * 10) / 10 : (food.existingProtein || 0);
-  const carbs = servingRates
-    ? Math.round(servingRates.carbs * grams * 10) / 10
-    : calPer100g > 0 ? Math.round(carbsPer100g * multiplier * 10) / 10 : (food.existingCarbs || 0);
-  const fat = servingRates
-    ? Math.round(servingRates.fat * grams * 10) / 10
-    : calPer100g > 0 ? Math.round(fatPer100g * multiplier * 10) / 10 : (food.existingFat || 0);
+  const calories = useExisting
+    ? (food.existingCal || 0)
+    : servingRates
+      ? Math.round(servingRates.calories * grams)
+      : calPer100g > 0 ? Math.round(calPer100g * multiplier) : (food.existingCal || 0);
+  const protein = useExisting
+    ? (food.existingProtein || 0)
+    : servingRates
+      ? Math.round(servingRates.protein * grams * 10) / 10
+      : calPer100g > 0 ? Math.round(proteinPer100g * multiplier * 10) / 10 : (food.existingProtein || 0);
+  const carbs = useExisting
+    ? (food.existingCarbs || 0)
+    : servingRates
+      ? Math.round(servingRates.carbs * grams * 10) / 10
+      : calPer100g > 0 ? Math.round(carbsPer100g * multiplier * 10) / 10 : (food.existingCarbs || 0);
+  const fat = useExisting
+    ? (food.existingFat || 0)
+    : servingRates
+      ? Math.round(servingRates.fat * grams * 10) / 10
+      : calPer100g > 0 ? Math.round(fatPer100g * multiplier * 10) / 10 : (food.existingFat || 0);
 
   const saveEntry = async () => {
     if (!calories && calories !== 0) return;
@@ -209,6 +266,8 @@ const [currentMeal, setCurrentMeal] = useState(meal || 'Morning');
   proteinPer100g,
   carbsPer100g,
   fatPer100g,
+  loggedAmount: amount,
+  loggedUnit: unit,
   foodNutrients: food.foodNutrients || [],
   timestamp: entryTime.getTime(),
 };
@@ -273,7 +332,7 @@ const [currentMeal, setCurrentMeal] = useState(meal || 'Morning');
           <TextInput
             style={styles.amountInput}
             value={amount}
-            onChangeText={v => { setAmount(v); }}
+            onChangeText={v => { setAmount(v); setAmountChanged(true); }}
             keyboardType="decimal-pad"
             selectTextOnFocus
           />

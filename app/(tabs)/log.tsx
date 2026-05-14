@@ -483,7 +483,7 @@ export default function LogScreen() {
                 opacity: getMealAnim(meal),
                 height: getMealAnim(meal).interpolate({
                   inputRange: [0, 1],
-                  outputRange: [0, mealEntries.length === 0 ? 60 : (mealEntries.length * 60) + 16],
+                  outputRange: [0, mealEntries.length === 0 ? 60 : (mealEntries.length * 54) + 16],
                 }),
               }}>
               <View style={[styles.mealExpanded, { borderTopColor: theme.borderCard }]}>
@@ -508,8 +508,8 @@ export default function LogScreen() {
                             existingCarbs: entry.carbs || 0,
                             existingFat: entry.fat || 0,
                             foodNutrients: (entry as any).foodNutrients || [],
-                            existingAmount: (() => { const m = entry.name.match(/\((\d+\.?\d*)(g|oz|serving)\)/); return m ? m[1] : '100'; })(),
-                            existingUnit: (() => { const m = entry.name.match(/\((\d+\.?\d*)(g|oz|serving)\)/); return m ? m[2] : 'g'; })(),
+                            existingAmount: (entry as any).loggedAmount || (() => { const m = entry.name.match(/\((\d+\.?\d*)(g|oz|serving)\)/); return m ? m[1] : '100'; })(),
+                            existingUnit: (entry as any).loggedUnit || (() => { const m = entry.name.match(/\((\d+\.?\d*)(g|oz|serving)\)/); return m ? m[2] : 'g'; })(),
                             timestamp: entry.timestamp || Date.now(),
                           }),
                           meal: entry.meal,
@@ -518,18 +518,32 @@ export default function LogScreen() {
                         }
                       })}>
                       <View style={styles.foodEntryLeft}>
-                        <Text style={[styles.foodEntryName, { color: theme.textPrimary }]} numberOfLines={1}>{entry.name}</Text>
-                        {(entry.protein || entry.carbs || entry.fat) ? (
-                          <Text style={[styles.foodEntryMacros, { color: theme.textMuted }]}>
-                            {entry.protein ? `P: ${entry.protein}g` : ''}
-                            {entry.carbs ? `  C: ${entry.carbs}g` : ''}
-                            {entry.fat ? `  F: ${entry.fat}g` : ''}
-                          </Text>
-                        ) : null}
+                        {(() => {
+                          const rawName = entry.name.replace(/\s*\(.*?\)\s*$/, '');
+                          const parts = rawName.split(' · ');
+                          const foodName = parts[0];
+                          const brand = parts.length > 1 ? parts.slice(1).join(' · ') : null;
+                          const amountMatch = entry.name.match(/\((\d+\.?\d*(?:g|oz|serving))\)$/);
+                          const amountLabel = amountMatch ? amountMatch[1] : null;
+                          return (
+                            <>
+                              <Text style={[styles.foodEntryName, { color: theme.textPrimary }]} numberOfLines={1}>{foodName}{amountLabel ? ` · ${amountLabel}` : ''}</Text>
+                              {(entry.protein || entry.carbs || entry.fat) ? (
+                                <Text style={[styles.foodEntryMacros, { color: theme.textMuted }]}>
+                                  {entry.protein ? `P: ${entry.protein}g` : ''}
+                                  {entry.carbs ? `  C: ${entry.carbs}g` : ''}
+                                  {entry.fat ? `  F: ${entry.fat}g` : ''}
+                                </Text>
+                              ) : null}
+                            </>
+                          );
+                        })()}
                       </View>
                       <View style={styles.foodEntryRight}>
-                        <Text style={[styles.foodEntryCal, { color: theme.macroProtein }]}>{entry.cal}</Text>
-                        <Text style={[styles.foodEntryCalLabel, { color: theme.textMuted }]}>kcal</Text>
+                        <View style={{ alignItems: 'flex-end' }}>
+                          <Text style={[styles.foodEntryCal, { color: theme.macroProtein }]}>{entry.cal}</Text>
+                          <Text style={[styles.foodEntryCalLabel, { color: theme.textMuted }]}>kcal</Text>
+                        </View>
                         <TouchableOpacity
                           onPress={() => {
                             Alert.alert(
@@ -657,9 +671,9 @@ const styles = StyleSheet.create({
   mealExpanded:       { borderTopWidth: 0.5, paddingHorizontal: 16, paddingVertical: 8 },
   foodEntry:          { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 0.5 },
   foodEntryLeft:      { flex: 1, marginRight: 8 },
-  foodEntryName:      { fontSize: 13, fontFamily: 'DMSans_400Regular' },
+  foodEntryName:      { fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
   foodEntryMacros:    { fontSize: 10, fontFamily: 'DMSans_700Bold', marginTop: 2, letterSpacing: 1, textTransform: 'uppercase' },
-  foodEntryRight:     { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  foodEntryRight:     { flexDirection: 'row', alignItems: 'center', gap: 6 },
   foodEntryCal:       { fontSize: 16, fontFamily: 'BebasNeue_400Regular' },
   foodEntryCalLabel:  { fontSize: 10, fontFamily: 'DMSans_400Regular' },
   foodEntryDelete:    { marginLeft: 8, padding: 4 },

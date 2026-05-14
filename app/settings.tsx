@@ -340,6 +340,35 @@ export default function SettingsScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.row, { borderTopColor: theme.borderCard }]}
+              onPress={() => {
+                Alert.alert(
+                  'Clear Food History',
+                  'This will remove all logged food entries from the last 90 days. Water, steps, sleep, and weight data will not be affected.',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Clear', style: 'destructive', onPress: async () => {
+                      const keys = await AsyncStorage.getAllKeys();
+                      const dayKeys = keys.filter(k => k.match(/^pj_\d{4}-\d{2}-\d{2}$/));
+                      for (const key of dayKeys) {
+                        const saved = await AsyncStorage.getItem(key);
+                        if (saved) {
+                          const data = JSON.parse(saved);
+                          await AsyncStorage.setItem(key, JSON.stringify({ ...data, entries: [] }));
+                        }
+                      }
+                      Alert.alert('Done', 'Food history cleared.');
+                    }},
+                  ]
+                );
+              }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Clear Food History</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Wipes logged food entries only. Water, steps, sleep, weight untouched. Dev use only.</Text>
+              </View>
+              <Ionicons name="fast-food-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.row, { borderTopColor: theme.borderCard }]}
               onPress={async () => {
                 const keys = await AsyncStorage.getAllKeys();
                 const tooltipKeys = keys.filter(k => k.startsWith('pj_tooltip_'));

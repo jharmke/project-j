@@ -157,18 +157,29 @@ Visual hierarchy pass -- exercise rows, Apple Health badge, stats line spacing a
 Food and search polish
 
 Bugs -- fix first:
-Macros not persisting to recents/favorites -- protein/carbs/fat all 0g when logging from library/recents paths. Calories save correctly. Full macro payload must be written on first log and passed through all library paths. (HIGH)
-Favorites bug -- identical food names share favorite state, both toggle together.
-Food Library title bug -- shows "Add to Morning" when navigating from library button. One-line fix.
+Macros not persisting to recents/favorites -- DONE. loadRecent now carries full macro payload, showMyFoods and My Foods FlatList tab map all nutrients, favorites tab already correct.
+Favorites bug -- identical food names share favorite state, both toggle together. (still open)
+Food Library title bug -- shows "Add to Morning" when navigating from library button. One-line fix. (still open)
+Edit entry scaling bug -- opening entry from log showed macros scaled to 100g instead of logged amount. DONE. amountChanged flag added to food-detail, useExisting gates on isEditing + unchanged amount.
+Recent tap 100g bug -- tapping recent food opened to 100g instead of logged amount. DONE. openFoodDetail extracts amount from description for isRecent items.
+Favorites serving size bug -- favorites opened to 100g instead of label serving. OPEN -- fsId save + fetch on tap still needed (next batch).
+Favorites extended nutrition 0 -- DONE. toggleFav pulls from selectedServing when available, saves full flat macro shape.
+FatSecret badge showing mid-type with no results -- DONE. Badge hidden when query has no results.
 
 Search results CPP pass -- DONE. Card-style rows, brand name separated, macro strip, per-theme shadows, accent left border, SET card green border, fixed cal alignment, header accent colored, scan banner plain text, barcode cooldown removed, Save New Food gated to library only.
 Macros on search result rows -- DONE. Protein/carbs/fat strip under food name, macro colors match app system.
-food.get on search result tap -- DONE. Fetches real servings on text search tap via fetchFatSecretServings helper.
+food.get on search result tap -- DONE. Fetches real servings on text search tap via fetchFatSecretServings helper. Extended nutrition (fiber/sodium/etc) only available after food.get.v4 call -- not available on search list rows by design (20 simultaneous API calls per search not viable). Extended nutrition always present on food detail screen after tap.
 Serving size picker on food detail -- DONE. Serving picker modal, grams defaults to real serving grams, per-gram rates locked for accurate manual gram scaling.
 SET banner tip -- plain icon + text in place but still needs CPP polish pass.
 UNSET feature -- SET button toggle on search results page, unset on food detail near star.
 Rename food on entry -- editable name field on food detail before logging, custom name stored with entry.
-Save New Food to Library -- full macro fields in proper modal, not just name + calories.
+Save New Food to Library -- full macro fields in proper modal, not just name + calories. SUPERSEDED by Custom Food Creator below.
+Custom Food Creator -- full modal accessible from any add-food screen and library. Required: name, calories. Optional: brand, all macros, extended nutrition (fiber/sugar/sodium/cholesterol/sat fat), serving size in grams, serving label (e.g. "1 scoop"). Saves to pj_my_foods with custom_XXXXX ID. Serving size stored so favorites/recents always open to correct serving. Photo upload in SOON.
+Save as Copy -- "..." menu on food detail header (next to star). Opens Custom Food Creator prefilled with all FatSecret data -- name, brand, every macro, serving. User can edit anything before saving. Solves FatSecret name/data cleanup without touching shared database.
+loggedAmount / loggedUnit -- now stored as separate fields on each entry alongside the name string. Enables accurate edit entry serving restoration.
+Loading spinner -- DONE. Instant on keypress, ActivityIndicator + Searching... text.
+Clear Food History dev tool -- DONE. Wipes entries only, water/steps/sleep/weight untouched.
+Recent description strips amount suffix -- DONE. Star matching now works correctly across all paths.
 Barcode-to-My-Food assignment -- link barcode permanently to manually built food.
 Meal slots fully customizable -- rename, reorder, add custom slots. (HIGH)
 FatSecret attribution -- "Powered by FatSecret" lockup required by API terms. Display on food search results screen and food detail screen. Pull exact logo/sizing requirements from FatSecret brand guidelines before building. Non-negotiable for App Store. DONE -- badge on both screens, opacity 0.65, tappable to fatsecret.com. App Store description phrase required at submission time.
@@ -181,16 +192,21 @@ Food detail polish pass:
 - Amount field color consistency fix
 - Section label "NUTRITION FOR XG" to card label style (9px, uppercase, 3 letter-spacing, textMuted)
 - Macro values lowercase g (6g not 6G)
-- Star/favorite -- spring animation on tap, haptic, toast (Added to favorites / Removed from favorites), snappier response
+- Star/favorite -- spring animation on tap, haptic, toast (Added to favorites / Removed from favorites) (NEXT BATCH)
+- Empty states on all 4 library tabs (Recent / My Foods / Favorites / Recipes) -- icon, title, subtitle per tab (NEXT BATCH)
+- Search no-results empty state -- DONE. Search icon, "No results for X", subtitle.
+- Favorites fsId save + fetch real label serving on tap (NEXT BATCH)
+- "..." menu on food detail → Save as Copy, opens Custom Food Creator prefilled (NEXT BATCH)
 - Search results brand contrast/separation improvement
 
 Food log screen polish pass:
 - X delete button on entry rows to muted red
 - Macro donut center calorie number -- remove, redundant with number displayed outside donut (NOW)
 - Macro donut sequential segment animation with pauses -- each macro fills then brief pause before next, same pattern as sleep donut (NOW)
+- Macro donut animation on food detail -- DONE. Animated version matching log.tsx MacroDonut.
 - Macro dots on collapsed meal rows (protein/carbs/fat colored dots + grams)
 - Collapsed meal row item count -- show "X items · XXX kcal" on collapsed state
-- Food name / brand split on entry rows -- name bold on top, brand smaller below, truncate name not brand
+- Food name / brand split on entry rows -- DONE. Brand removed from log entries by design. Amount inline after food name. Entry height fixed at 54px per entry, no clipping.
 - Meal header total more visually prominent than individual entry calories
 - Empty state big "0" to textMuted until food logged
 - Advanced nutrition page 2 visual polish -- card label style header, accent/textPrimary values when data exists, textMuted when empty

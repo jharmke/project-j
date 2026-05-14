@@ -2,10 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Camera, CameraView } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { doc, getDoc } from 'firebase/firestore';
-import { useEffect, useRef, useState } from 'react';
-import { Alert, Animated, FlatList, Image, KeyboardAvoidingView, Linking, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Animated, FlatList, Image, KeyboardAvoidingView, Linking, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Reanimated, { Easing as ReEasing, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { Svg, Path, G } from 'react-native-svg';
@@ -345,10 +345,15 @@ const saveEditMyFood = async () => {
   useEffect(() => {
     loadMyFoods();
     loadRecent();
-    loadFavorites();
     loadRecipes();
     loadBarcodeOverrides();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadFavorites();
+    }, [])
+  );
 
   const loadBarcodeOverrides = async () => {
     try {
@@ -398,7 +403,12 @@ const saveEditMyFood = async () => {
       .filter(f => !q || f.name.toLowerCase().includes(q.toLowerCase()))
       .map(f => ({
         description: f.name,
-        foodNutrients: [{ nutrientName: 'Energy', unitName: 'KCAL', value: f.cal }],
+        foodNutrients: [
+          { nutrientName: 'Energy', unitName: 'KCAL', value: f.cal },
+          { nutrientName: 'Protein', unitName: 'G', value: f.protein || 0 },
+          { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: f.carbs || 0 },
+          { nutrientName: 'Total lipid (fat)', unitName: 'G', value: f.fat || 0 },
+        ],
         isMyFood: true,
       }));
     setResults(filtered);
@@ -418,12 +428,20 @@ const saveEditMyFood = async () => {
       return;
     }
 
+    // Show spinner immediately so there's no blank gap before debounce fires
+    setSearching(true);
+
     // My Foods match immediately -- no debounce needed
     const myFoodResults = myFoods
       .filter(f => f.name.toLowerCase().includes(query.toLowerCase()))
       .map(f => ({
         description: f.name,
-        foodNutrients: [{ nutrientName: 'Energy', unitName: 'KCAL', value: f.cal }],
+        foodNutrients: [
+          { nutrientName: 'Energy', unitName: 'KCAL', value: f.cal },
+          { nutrientName: 'Protein', unitName: 'G', value: f.protein || 0 },
+          { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: f.carbs || 0 },
+          { nutrientName: 'Total lipid (fat)', unitName: 'G', value: f.fat || 0 },
+        ],
         isMyFood: true,
       }));
     if (!isBarcodeSearchRef.current) setResults(myFoodResults);
@@ -498,6 +516,14 @@ const openFoodDetail = async (food: SearchResult) => {
     if (fsId && !(food as any).fromBarcode) {
       fsServings = await fetchFatSecretServings(fsId);
     }
+    // Extract logged amount from description for recent items e.g. "Peanut Butter Powder (16g)"
+    let existingAmount: string | undefined;
+    let existingUnit: string | undefined;
+    if ((food as any).isRecent) {
+      const sourceName = (food as any).fullName || food.description;
+      const m = sourceName.match(/\((\d+\.?\d*)(g|oz|serving)\)$/);
+      if (m) { existingAmount = m[1]; existingUnit = m[2]; }
+    }
     router.push({
       pathname: '/food-detail',
       params: {
@@ -506,6 +532,7 @@ const openFoodDetail = async (food: SearchResult) => {
           isMyFood: food.isMyFood,
           myFoodData: myFoodMatch,
           fsServings: fsServings.length > 0 ? fsServings : undefined,
+          ...(existingAmount ? { existingAmount, existingUnit: existingUnit || 'g' } : {}),
         }),
         meal,
         date,
@@ -656,7 +683,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
   const loadRecent = async () => {
     try {
       // Pull last 30 days of entries and get unique foods
-      const recent: {name: string, cal: number}[] = [];
+      const recent: {name: string, cal: number, protein?: number, carbs?: number, fat?: number, calPer100g?: number, proteinPer100g?: number, carbsPer100g?: number, fatPer100g?: number, foodNutrients?: any[]}[] = [];
       const seen = new Set<string>();
       for (let i = 0; i < 30; i++) {
         const d = new Date();
@@ -669,15 +696,25 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
             data.entries.reverse().forEach((e: any) => {
               if (!seen.has(e.name)) {
                 seen.add(e.name);
-                recent.push({ name: e.name, cal: e.cal });
+                recent.push({ name: e.name, cal: e.cal, protein: e.protein, carbs: e.carbs, fat: e.fat, calPer100g: e.calPer100g, proteinPer100g: e.proteinPer100g, carbsPer100g: e.carbsPer100g, fatPer100g: e.fatPer100g, foodNutrients: e.foodNutrients });
               }
             });
           }
         }
       }
       setRecentFoods(recent.slice(0, 15).map(f => ({
-        description: f.name,
-        foodNutrients: [{ nutrientName: 'Energy', unitName: 'KCAL', value: f.cal }],
+        description: f.name.replace(/\s*\(.*?\)\s*$/, ''),
+        fullName: f.name,
+        foodNutrients: [
+          { nutrientName: 'Energy', unitName: 'KCAL', value: f.cal },
+          { nutrientName: 'Protein', unitName: 'G', value: f.protein || 0 },
+          { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: f.carbs || 0 },
+          { nutrientName: 'Total lipid (fat)', unitName: 'G', value: f.fat || 0 },
+        ],
+        calPer100g: f.calPer100g,
+        proteinPer100g: f.proteinPer100g,
+        carbsPer100g: f.carbsPer100g,
+        fatPer100g: f.fatPer100g,
         isMyFood: false,
         isRecent: true,
       })));
@@ -788,8 +825,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
           onChangeText={searchFood}
           
         />
-        {searching && <Text style={styles.searching}>...</Text>}
-      </View>
+        </View>
 
 {/* Scan banner -- shows while lastScannedBarcode is set */}
       {lastScannedBarcode && (
@@ -858,6 +894,27 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         </View>
       )}
 
+      {/* Loading indicator -- shows when searching and no results yet */}
+      {searching && query.trim() && results.length === 0 && (
+        <View style={{ alignItems: 'center', paddingTop: 40, gap: 10 }}>
+          <ActivityIndicator size="small" color={theme.accentBlueRaw} />
+          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Searching...</Text>
+        </View>
+      )}
+
+      {/* No results state */}
+      {!searching && query.trim() && results.length === 0 && (
+        <View style={{ alignItems: 'center', paddingTop: 60, paddingHorizontal: 32, gap: 12 }}>
+          <Ionicons name="search-outline" size={40} color={theme.textDim} />
+          <Text style={{ fontSize: 16, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', textAlign: 'center' }}>
+            No results for "{query}"
+          </Text>
+          <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular', textAlign: 'center', lineHeight: 20 }}>
+            Try a different search term or scan the barcode
+          </Text>
+        </View>
+      )}
+
       {/* Results */}
       <FlatList
         data={query.trim() ? results : 
@@ -886,7 +943,12 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
           })) :
           myFoods.map(f => ({
             description: f.name,
-            foodNutrients: [{ nutrientName: 'Energy', unitName: 'KCAL', value: f.cal }],
+            foodNutrients: [
+              { nutrientName: 'Energy', unitName: 'KCAL', value: f.cal },
+              { nutrientName: 'Protein', unitName: 'G', value: f.protein || 0 },
+              { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: f.carbs || 0 },
+              { nutrientName: 'Total lipid (fat)', unitName: 'G', value: f.fat || 0 },
+            ],
             isMyFood: true,
           }))
         }
@@ -976,15 +1038,17 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         ListFooterComponent={() => (
-          <TouchableOpacity
-            onPress={() => Linking.openURL('https://platform.fatsecret.com')}
-            style={{ alignItems: 'center', paddingVertical: 20, paddingBottom: 32, opacity: 0.65 }}>
-            <Image
-              source={{ uri: 'https://platform.fatsecret.com/api/static/images/powered_by_fatsecret_horizontal_brand.png' }}
-              style={{ width: 140, height: 34 }}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
+          (!query.trim() || results.length > 0) ? (
+            <TouchableOpacity
+              onPress={() => Linking.openURL('https://platform.fatsecret.com')}
+              style={{ alignItems: 'center', paddingVertical: 20, paddingBottom: 32, opacity: 0.65 }}>
+              <Image
+                source={{ uri: 'https://platform.fatsecret.com/api/static/images/powered_by_fatsecret_horizontal_brand.png' }}
+                style={{ width: 140, height: 34 }}
+                resizeMode="contain"
+              />
+            </TouchableOpacity>
+          ) : null
         )}
       />
 

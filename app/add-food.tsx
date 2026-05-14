@@ -5,7 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import { doc, getDoc } from 'firebase/firestore';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Animated, FlatList, KeyboardAvoidingView, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, FlatList, Image, KeyboardAvoidingView, Linking, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Reanimated, { Easing as ReEasing, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { Svg, Path, G } from 'react-native-svg';
@@ -975,7 +975,17 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
-        ListFooterComponent={null}
+        ListFooterComponent={() => (
+          <TouchableOpacity
+            onPress={() => Linking.openURL('https://platform.fatsecret.com')}
+            style={{ alignItems: 'center', paddingVertical: 20, paddingBottom: 32, opacity: 0.65 }}>
+            <Image
+              source={{ uri: 'https://platform.fatsecret.com/api/static/images/powered_by_fatsecret_horizontal_brand.png' }}
+              style={{ width: 140, height: 34 }}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
+        )}
       />
 
      {/* Edit My Food Modal */}

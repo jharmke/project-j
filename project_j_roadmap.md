@@ -130,9 +130,36 @@ DONE -- SHIPPED
 [x] ToggleSwitch component -- custom sliding pill toggle, replaces RN Switch. Full theme control, accent thumb when ON, muted when OFF. Use everywhere going forward.
 [x] Settings SETTINGS header -- accent colored
 [x] Settings card depth/shadow pass -- shadowOpacity 0.18 on section StyleSheet
+[x] IF countdown (i) wired -- definitions: Fasting Method, Starting Your Window, Closing Your Window, Result. No example block.
+[x] You vs Yesterday (i) wired -- definitions: Metrics, Win/Loss/Tie, Score. No example block.
+[x] Fitness Metrics (i) wired -- definitions: VO2 Max, Cardio Recovery. No example block.
+[x] Macros Today (i) wired -- definitions: Protein/Carbs/Fat, Goals, Color Coding. No example block.
+[x] All home screen tooltips complete. Remaining cards (Water, Weight, Today's Training, Steps, Daily Note, Today's Message) confirmed self-explanatory, no (i) needed.
+
 
 NOW -- active this session
+Auth and onboarding
+
+Firebase Auth -- Apple/Google login, both required (App Store rules mandate Apple login if any third party login offered). Firestore setup, data migration from AsyncStorage. Pre-TestFlight requirement.
+Onboarding flow -- full 7-screen flow per spec in MODES & ONBOARDING section. Profile setup, style survey, mode recommendation, faith journey, Apple Health permissions, You're All Set.
+Apple Health onboarding screen -- "Project J works best with Apple Health", permissions prompt, Maybe Later option, one-time dismissable home banner for users who skip.
+
+Workout tab facelift
+
+Effort score redesign -- large satisfying tiles, proper selected state with accent fill, replaces flat grid survey feel.
+Workout notes overhaul -- KAV fix, dim/inactive save button, toast on save, wire to journal as workout category entry.
+Done. Go Home. -- remove entirely or replace with smarter completion state that surfaces effort + notes naturally when all exercises checked.
+Add Exercise button -- fix visibility on light themes, redesign so it reads as a clear primary action.
+Edit/Remove button redesign -- style to match app design system, not plain unstyled web buttons.
+Progress/momentum element -- running tally of exercises completed visible during session.
+Visual hierarchy pass -- exercise rows, Apple Health badge, stats line spacing and weight.
+
 Food and search polish
+
+Bugs -- fix first:
+Macros not persisting to recents/favorites -- protein/carbs/fat all 0g when logging from library/recents paths. Calories save correctly. Full macro payload must be written on first log and passed through all library paths. (HIGH)
+Favorites bug -- identical food names share favorite state, both toggle together.
+Food Library title bug -- shows "Add to Morning" when navigating from library button. One-line fix.
 
 Search results CPP pass -- DONE. Card-style rows, brand name separated, macro strip, per-theme shadows, accent left border, SET card green border, fixed cal alignment, header accent colored, scan banner plain text, barcode cooldown removed, Save New Food gated to library only.
 Macros on search result rows -- DONE. Protein/carbs/fat strip under food name, macro colors match app system.
@@ -141,11 +168,42 @@ Serving size picker on food detail -- DONE. Serving picker modal, grams defaults
 SET banner tip -- plain icon + text in place but still needs CPP polish pass.
 UNSET feature -- SET button toggle on search results page, unset on food detail near star.
 Rename food on entry -- editable name field on food detail before logging, custom name stored with entry.
-Food Library title bug -- shows "Add to Morning" when navigating from library button. One-line fix.
 Save New Food to Library -- full macro fields in proper modal, not just name + calories.
-Favorites bug -- identical food names share favorite state, both toggle together.
 Barcode-to-My-Food assignment -- link barcode permanently to manually built food.
 Meal slots fully customizable -- rename, reorder, add custom slots. (HIGH)
+FatSecret attribution -- "Powered by FatSecret" lockup required by API terms. Display on food search results screen and food detail screen. Pull exact logo/sizing requirements from FatSecret brand guidelines before building. Non-negotiable for App Store. DONE -- badge on both screens, opacity 0.65, tappable to fatsecret.com. App Store description phrase required at submission time.
+
+Food detail polish pass:
+- Depth/shadow pass, general CPP treatment
+- Title "FOOD DETAIL" to accent color -- DONE (covers Edit Entry header too)
+- Back chevron to accent color
+- Serving amount + unit row redesign -- quantity and serving unit visually linked on one row
+- Amount field color consistency fix
+- Section label "NUTRITION FOR XG" to card label style (9px, uppercase, 3 letter-spacing, textMuted)
+- Macro values lowercase g (6g not 6G)
+- Star/favorite -- spring animation on tap, haptic, toast (Added to favorites / Removed from favorites), snappier response
+- Search results brand contrast/separation improvement
+
+Food log screen polish pass:
+- X delete button on entry rows to muted red
+- Macro donut center calorie number -- remove, redundant with number displayed outside donut (NOW)
+- Macro donut sequential segment animation with pauses -- each macro fills then brief pause before next, same pattern as sleep donut (NOW)
+- Macro dots on collapsed meal rows (protein/carbs/fat colored dots + grams)
+- Collapsed meal row item count -- show "X items · XXX kcal" on collapsed state
+- Food name / brand split on entry rows -- name bold on top, brand smaller below, truncate name not brand
+- Meal header total more visually prominent than individual entry calories
+- Empty state big "0" to textMuted until food logged
+- Advanced nutrition page 2 visual polish -- card label style header, accent/textPrimary values when data exists, textMuted when empty
+- Entry row padding/breathing room
+- Bottom safe area padding on library screen
+- Tab bar (Recent/My Foods/Favorites/Recipes) polish pass -- selected state weight, container depth
+- Sources of recommendations -- wire as (i) tooltip on calorie target result screen
+
+Active calorie accuracy:
+- Calorie discrepancy bug -- log tab shows different active burn than home calories card. Diagnose where the two cards differ in calculation. (NOW, data accuracy)
+- Sleep duration bug -- HealthKit bed/wake times correct but displayed hours off (11:08pm-5:12am showing 6h 0m). Diagnose in index.tsx. (NOW)
+- Active calorie overestimate disclaimer -- small disclaimer on any screen showing active or net calories. Apple Watch and most wearables overestimate active burn. "Active calorie estimates from Apple Health may vary. Use as a guide, not a guarantee." Exact wording TBD.
+- Burn accuracy adjustment setting -- optional user-controlled percentage modifier on active calories (e.g. apply 80% of reported burn). Fully explained with worked example. (i) tooltip on setting. Linked Tips & Guides help article. Surfaces in settings under Health. Differentiator -- no other app does this honestly.
 
 Bugs -- fix these first
 
@@ -171,11 +229,6 @@ OAuth 1.0a signing working (CryptoJS), search and barcode both returning real da
 TooltipIcon refactored -- self-contained, manages its own modal state and markSeen. Callers pass tooltipKey only, no onPress or external modal needed. All future tooltips follow this pattern. DONE.
 Calories Today (i) wired -- covers Remaining, Active, Net formula + worked example, Color Coding. tooltipRegistry category field added to all entries. DONE.
 Tooltip modal template locked -- required sections: icon circle, Bebas title all caps, body intro, definitions array (bold term + explanation), conditional example block, Got it button, footer. Definitions render as bold textPrimary term + textSecondary explanation, no dividers, vertical gap between each. DONE.
-[x] IF countdown (i) wired -- definitions: Fasting Method, Starting Your Window, Closing Your Window, Result. No example block.
-[x] You vs Yesterday (i) wired -- definitions: Metrics, Win/Loss/Tie, Score. No example block.
-[x] Fitness Metrics (i) wired -- definitions: VO2 Max, Cardio Recovery. No example block.
-[x] Macros Today (i) wired -- definitions: Protein/Carbs/Fat, Goals, Color Coding. No example block.
-[x] All home screen tooltips complete. Remaining cards (Water, Weight, Today's Training, Steps, Daily Note, Today's Message) confirmed self-explanatory, no (i) needed.
 tooltipRegistry category field + Settings Help grouping -- category field shipped. Settings Help rendering needs update to group by Nutrition / Fitness / Sleep & Recovery with section headers. Replaces current flat DEFINITIONS list.
 
 Sleep overhaul -- DONE. Three scoring paths shipped. Path 1 HealthKit full (score always shows). Path 2 HealthKit hours only + Path 3 manual -- feel rating 1-5 required, no score until answered. Feel bonus 1→+0 through 5→+40, max score 100. Score labels 85+ Well Rested / 70-84 Could Be Better / below 70 Poor Sleep. You vs Yesterday and Head to Head gate sleep score on feel rating for Path 2/3, fall back to sleepHours. sleepFeelRating stored in pj_YYYY-MM-DD.
@@ -187,6 +240,8 @@ Macro bars confirmed animated. Calorie bar stutter fixed. MacroDonut draw-on ani
 
 
 SOON -- confirmed next few sessions
+Primary button audit -- sweep app-wide, upgrade all primary CTAs to full accent fill, demote transparent bordered style to secondary actions only (Edit, Cancel, filter pills). Applies to every screen.
+
 Food and barcode
 
 Custom water amount modal -- drag interaction, .5oz increments, 48oz max, live oz display, tappable numpad with .5 key, KAV, fade in/out, centered. (top of SOON)
@@ -196,11 +251,11 @@ Workout
 
 Today's Training empty/rest day states -- encouragement on unassigned day, acknowledgment on rest day.
 You vs Yesterday streak (vsStreak) -- state declared and badge renders but never calculated or persisted. Always 0. Needs full implementation: calculate win/loss result at end of day, persist streak count to AsyncStorage, reset on loss.
-Effort score -- smart nudge on workout completion, visual polish on buttons with proper selected state.
-Workout notes -- KAV fix (keyboard covers field), dim/inactive save button, wire to journal as workout category.
 My Programs builder -- name it, assign focus/tags/color per day, save, load. (planned, not yet built)
 Workout tab nested scroll bug -- DraggableFlatList inside ScrollView warning. (HIGH)
 Workout drag handle -- hit target too small + dead zone before drag triggers. (HIGH)
+Edit exercise input validation -- decimal/integer restrictions on all numeric fields, same standard as weight input. (SOON)
+Apple Health avg HR per workout -- research whether kingstinct library exposes avg HR per workout sample; if yes, auto-populate on workout sync. (SOON)
 
 Home and stats
 
@@ -212,6 +267,11 @@ Day detail dedicated polish session -- full feature audit, polish pass, decision
 Streak card -- Bible, workout, calorie streaks. (HIGH)
 Morning briefing card -- first open of day, faith first, yesterday recap, today targets.
 
+Health data
+
+HealthKit source detection -- read source identifier on HealthKit samples to show "via Garmin", "via Whoop", "via Oura" labels on sleep/HRV data. Garmin/Whoop/Oura all sync to Apple Health natively -- source passthrough is the right architecture, no direct integrations needed.
+Food group pattern detection -- if user logs zero whole foods (fruits, vegetables, lean proteins) for X consecutive days, surface a gentle tip. Discipline: direct. Mindful: warm/observational. Never judgmental.
+
 Faith and Bible
 
 Faith/Bible Settings panel -- Bible page gear icon opens Faith Settings sheet: font size for reading text, translation selector (future), faith-specific Help/definitions (streak, journal categories), reading plan settings placeholder. Faith category in tooltipRegistry.ts as placeholder. Main settings Help stays Nutrition/Fitness/Sleep & Recovery only. Dedicated session.
@@ -221,12 +281,11 @@ Achievement toast improvements -- tappable routes to achievements page, trigger 
 Process and infrastructure
 
 Tooltip wording polish pass -- dedicated pass over all tooltip copy after all cards are wired. Known issues: Active (Apple Health fallback language for non-watch users), Remaining (confirm algorithm accuracy vs what's described), Net (explain running BMR before using the term), Color Coding ("big calorie number" needs rewrite). Do as one session with full context of every card.
-Settings > Help section -- two subsections: Definitions (auto-populates from tooltip registry, Show Again per entry) and Tips & Guides (shell built now, placeholder entry, mini help articles filled over time e.g. "How to improve your sleep score"). About row planned, not built yet.
+Settings > Help section -- two subsections: Definitions (auto-populates from tooltip registry, Show Again per entry) and Tips & Guides (shell built now, placeholder entry, mini help articles filled over time e.g. "How to improve your sleep score", "Understanding your active calorie estimate"). About row planned, not built yet.
 Settings page overhaul -- collapsible card sections, CPP. Planned sections: Account, Appearance, Health, Notifications, Faith, Help, About/Legal. Profile/settings boundary cleanup included. Dedicated future session.
 
-App name -- finalize from shortlist (Prevail, Steadfast, Worthy, Haven, Witness, Sown), verify App Store + TikTok handle availability before committing.
-TestFlight -- setup, App Store Connect, tester invite flow.
-Firebase Auth -- Apple/Google login, pre-beta requirement, data migration from AsyncStorage.
+App name -- finalize from shortlist (Prevail, Steadfast, Worthy, Haven, Witness, Sown), verify App Store + TikTok handle availability before committing. Prevail is strongest -- punchy, fitness-forward, faith-adjacent without screaming it.
+TestFlight -- setup, App Store Connect, tester invite flow. Friends and family first, not wide beta.
 
 Visual polish (do together)
 
@@ -247,6 +306,9 @@ Date on entries tappable -- routes to that day's day detail.
 
 
 BACKLOG -- parked, good ideas, not imminent
+Water log timestamps -- store timestamp with each water entry, enables habit reporting and distribution analysis.
+Customized tip push notification system -- personalized notis based on habit patterns: late bedtimes, bad sleep scores, under/over calories, water distribution gaps (e.g. only drinking in AM). Requires notification infrastructure + habit tracking logic. Build after core features stable.
+
 Faith system -- see MODES & ONBOARDING section for full spec
 
 Gratitude before meals -- one tap give thanks before logging, unapologetically Christian
@@ -311,6 +373,7 @@ In-app review prompt
 Accessibility -- respect system font size
 Excluded dates -- design and placement, neutral dim dot on calendar, excluded list view. Revisit during stats revamp.
 Notification center -- bell icon in profile header, badge on new notifications, real-time toasts for Health sync events
+Android -- React Native core code is largely reusable. HealthKit is iOS only; Android equivalent is Health Connect (Google API). Android is v2 launch after iOS is solid. UI, food logging, workout tracking, Firebase all work cross-platform already.
 
 Monetization and launch
 
@@ -339,35 +402,60 @@ STORAGE
 styleMode stored in pj_settings -- values: 'discipline' | 'balanced' | 'mindful'. Default: 'balanced'
 faithJourney stored in pj_settings -- values: 'rooted' | 'exploring' | 'notrightnow'. Default: 'rooted'
 fitnessGoal stored in pj_settings -- values: 'lose_weight' | 'build_muscle' | 'improve_endurance' | 'feel_better' | 'healthier_relationship' | 'move_more'. Default: 'feel_better'
+macroPreset stored in pj_settings -- values: 'high_protein' | 'balanced' | 'low_carb' | 'performance'. Default: 'balanced'
 onboardingComplete stored as pj_onboarding_complete -- value: 'true'. Gate key. If present, skip onboarding entirely. Zero other keys touched by onboarding logic.
 Dev tools: "Reset Onboarding" button added to 7-tap dev tools. Clears pj_onboarding_complete only. All other data preserved.
 
-ONBOARDING FLOW -- 4 SCREENS
+ONBOARDING FLOW -- 7 SCREENS
+Progress bar chrome shown on all screens except Welcome. Simple segmented bar top of screen, fills as user advances. Not a step counter, just visual momentum.
+
 Screen 1: Welcome
-PROJECT J in Bebas Neue, large, centered. Tagline placeholder underneath. Background is dark with subtle animated gradient. Elite smooth entrance animation -- staggered fade+translateY on logo, tagline, continue button. CPP level, no excuses. Continue button at bottom.
+PROJECT J in Bebas Neue, large, centered. Tagline placeholder underneath. Background is dark with subtle animated gradient. Elite smooth entrance animation -- staggered fade+translateY on logo, tagline, continue button. CPP level, no excuses. Continue button at bottom. No progress bar on this screen.
 
-Screen 2: Your Style
-Title: "Your Style" in Bebas Neue accent color.
-Subtitle: warm, one line, sets the tone.
-Three cards, tappable, one selected at a time. Selected state has accent border + accent tinted background.
-Below the three style cards, a single question appears: "What's your main focus right now?" -- options change based on style selected (see goal options per mode below).
-Discipline gets a commitment screen before Continue fires -- see below.
-Skip option: small dimmed text top right "Skip for now" -- applies 'balanced' default silently.
+Screen 2: Profile Setup
+Name, current weight, goal weight, goal pace. Calorie target calculated and shown live at bottom as fields are filled. Clean card layout, KAV, floating continue button.
 
-Screen 3: Faith Journey
+Screen 3: Style Survey
+Title: "Let's find your style" in Bebas Neue accent color.
+4 questions, each with 3 answer options worth 1, 2, or 3 points. Higher = more Discipline-leaning.
+Questions:
+1. What's your biggest challenge? (Stress eating → 1, Portion control → 2, Staying consistent → 3)
+2. What's your primary goal? (Feel better overall → 1, Build healthy habits → 2, Hit specific targets → 3)
+3. How do you handle setbacks? (I give myself grace → 1, Somewhere in between → 2, I analyze and recommit → 3)
+4. How important is tracking numbers? (Numbers stress me out → 1, General awareness is fine → 2, I want full visibility → 3)
+Scoring: 4-6 → Mindful, 7-9 → Balanced, 10-12 → Discipline.
+No skip -- answers required to generate recommendation.
+
+Screen 4: Your Style (Recommendation)
+Shows recommended mode based on survey score with personalized one-liner referencing their answers. Example: "You want results but you give yourself grace -- that's exactly what Balanced is built for."
+Three style cards shown, recommended card pre-selected with accent border. User can override recommendation.
+"You can always change this in Settings" as small muted text below cards.
+Macro presets shown for Discipline and Balanced only -- not shown to Mindful. Discipline defaults to High Protein pre-selected. Balanced defaults to Balanced pre-selected.
+Weight projection graph shown for Discipline and Balanced only -- SVG curve from current weight to goal weight with projected date. Not shown to Mindful.
+Mindful gets warm encouragement language instead of graph and presets: "You've already taken the first step."
+Discipline gets commitment screen before Continue fires.
+
+Screen 5: Faith Journey
 Title: "Your Faith Journey" in Bebas Neue warm amber color.
 Background vibe: warm embers. Animated amber/gold particles drift upward slowly like embers. Soft ambient glow. Warm, not intense -- hearth/candle energy, not fire.
-Three cards, same tappable pattern. Warm, inviting copy per option (see below).
+Three cards, same tappable pattern. Warm, inviting copy per option (see FAITH JOURNEY COPY below).
 Skip option: small dimmed text top right "Skip for now" -- applies 'rooted' default silently.
 
-Screen 4: You're All Set
+Screen 6: Apple Health
+Title: "Project J works best with Apple Health" in Bebas Neue accent color.
+Clean explanation of what is read: steps, sleep, active calories, weight, heart rate.
+Single "Connect Apple Health" button fires native permissions prompt.
+"Maybe later" small muted text below -- skips without connecting.
+Users who skip get a one-time dismissable banner on home screen the first time a HealthKit card shows no data.
+
+Screen 7: You're All Set
 Clean, celebratory, brief. Accent icon, short affirming line.
 Mindful and Balanced users: "Want to set up your home screen now or later?" -- three options: "Set it up myself" (opens card picker), "Let the app decide" (applies curated default silently), "I'll do it later" (same as let app decide but they know they can change it). "Let the app decide" is the visually prominent option for Mindful.
 Discipline users: no card picker prompt. Their layout is set. That is part of the commitment.
 Tapping any option saves onboardingComplete and navigates to home.
 
 DISCIPLINE COMMITMENT SCREEN
-Fires between style selection and Continue on Screen 2 when Discipline is picked.
+Fires between style selection and Continue on Screen 4 when Discipline is picked.
 Also fires when switching TO Discipline post-onboarding from settings.
 Does NOT re-fire on subsequent opens if already onboarded as Discipline.
 Three short commitments in clean centered typography -- exact copy TBD during build, tone: direct, resolute, no fluff.
@@ -411,6 +499,12 @@ Mindful:
 - Daily summary language: leads with what they DID (not what they didn't). Numbers present but not in bold accent colors. Emphasis on encouragement. Specific data included but framed neutrally.
 - Mode nudge notifications: gentle, warm, 30 day cooldown. "You've been showing up. Whenever you're ready, there's more here for you." Dismissable, toggleable.
 - Home card setup: "You're All Set" screen gives three options (set it up myself / let app decide / later). "Let the app decide" is visually prominent.
+- Macro presets: NOT shown to Mindful users. Numbers-focused, contradicts the philosophy.
+- Weight projection graph: NOT shown to Mindful users. Showing a weight loss curve to Mindful users is the wrong energy.
+- Burn accuracy adjustment: shown but framed as "calibrate your data" not "fix your numbers." Neutral language only.
+
+MODE-AWARENESS RULE -- NON-NEGOTIABLE
+Every new feature must define its Mindful behavior at build time, not retroactively. Before shipping any feature, ask: "Does this behave differently in Mindful?" If yes, build both versions. If no, document why. No backtracking later to add Mindful versions to shipped features. This is a build gate, same as disclaimer standard and dim/inactive button states.
 
 FITNESS GOAL OPTIONS PER MODE
 Discipline and Balanced:
@@ -448,7 +542,7 @@ Not right now:
 - User can add custom intentions. No Bible routing. Card always present -- never removed entirely.
 - Faith features quietly hidden. No journal verse category surfaced. Bible tab still accessible via navigation.
 
-FAITH JOURNEY COPY (ONBOARDING SCREEN 3)
+FAITH JOURNEY COPY (ONBOARDING SCREEN 5)
 Rooted: "Faith is central to how I live. I want it woven into everything."
 Exploring: "I'm curious. I want to engage with faith at my own pace."
 Not right now: "I'm here for the fitness. The door's always open."
@@ -463,6 +557,7 @@ When user taps a new Style in settings, Acknowledgement Modal fires before savin
 - Switching FROM Discipline: simple confirmation modal, no drama.
 Faith Journey switch: brief descriptor of what changes, single confirm button. No layout choice (faith journey does not control card order).
 After any mode change: toast fires -- "[Mode] style applied."
+"You can always change this in Settings" -- messaging present on mode recommendation screen (Screen 4) and visible in settings header for Style and Faith Journey sections.
 
 ACKNOWLEDGEMENT MODAL -- REUSABLE PATTERN
 Established pattern for moments requiring explicit user acknowledgement before proceeding.
@@ -471,6 +566,23 @@ Behavior: cannot be dismissed by tapping outside. Requires button press. Used sp
 
 MODE NUDGE NOTIFICATIONS -- DEFERRED TO SOON
 All three tiers have mode nudge notifications in spec above. Deferred -- needs notification infrastructure first. Add to SOON when notification system is built.
+
+WEIGHT PROJECTION GRAPH
+Shown on Style recommendation screen (Screen 4) for Discipline and Balanced users only. Not shown to Mindful.
+Uses current weight, goal weight, and goal pace to draw a smooth SVG curve from today to projected goal date.
+Shows start weight, goal weight, and projected month/year at endpoint.
+Also shown on profile page near goal weight field post-onboarding.
+Built using existing SVG library.
+
+MACRO PRESETS
+Shown on Style recommendation screen (Screen 4) for Discipline and Balanced users only. Not shown to Mindful.
+4 named presets:
+- High Protein: 35p / 35c / 30f
+- Balanced: 30p / 40c / 30f
+- Low Carb: 35p / 25c / 40f
+- Performance: 25p / 50c / 25f
+User selects one, sets macro targets automatically. Can be changed in settings post-onboarding.
+Discipline defaults to High Protein pre-selected. Balanced defaults to Balanced pre-selected.
 
 WHAT IS DEFERRED (build in future sessions)
 - Daily summary / morning card (mode-aware language) -- SOON
@@ -484,16 +596,27 @@ WHAT IS DEFERRED (build in future sessions)
 
 BUILD STATUS
 [ ] Onboarding flow -- not started
-[ ] pj_settings styleMode + faithJourney + fitnessGoal fields
+[ ] pj_settings styleMode + faithJourney + fitnessGoal + macroPreset fields
 [ ] App boot logic -- pj_onboarding_complete gate
 [ ] Dev tools reset onboarding button
+[ ] Style survey -- 4 questions, 1-2-3 scoring, buckets: 4-6 Mindful / 7-9 Balanced / 10-12 Discipline
+[ ] Mode recommendation screen -- personalized one-liner, pre-selected card, override allowed
+[ ] Weight projection graph -- profile + onboarding, Discipline/Balanced only
+[ ] Macro presets -- onboarding + settings, Discipline/Balanced only, not shown to Mindful
+[ ] Progress bar chrome on onboarding screens 2-7
+[ ] Apple Health onboarding screen -- permissions prompt, skip option, home banner for skippers
 [ ] Mindful calorie card simplification
 [ ] Mindful You vs Yesterday reframe (no W/L/T, "YOUR DAY" label, score hidden)
+[ ] Mindful onboarding -- encouragement language, no projection graph, no macro presets
 [ ] Discipline commitment screen
 [ ] Default card orders per mode applied on first onboarding complete
 [ ] Post-onboarding mode switch Acknowledgement Modal
 [ ] Daily Intention card for Not right now users
 [ ] Settings exposure for Style and Faith Journey post-onboarding
+[ ] "You can always change this in Settings" messaging on mode recommendation screen
+[ ] Firebase Auth -- Apple + Google login, Firestore migration
+[ ] FatSecret attribution -- "Powered by FatSecret" on search + food detail screens
+
 
 ANIMATION AUDIT -- LIVING DOCUMENT
 This list must be updated whenever an animation is built or changed. Reference this before any animation work.
@@ -528,39 +651,15 @@ Sleep donut animates on load
 
 Goal Moments:
 
-Water goal crossed -- water fill animation on the bar itself
-Step goal crossed -- footprint or walking animation on bar
-Streak milestone -- 7 day and 30 day deserve distinct moments beyond standard toast
+Water goal hit -- bar fills to accent, pulse animation
+Step goal hit -- steps number flips green
+Calorie goal hit -- number color transition
 
-Interaction Polish:
+Workout:
 
-Effort score selection -- punchy scale up with haptic on tap
-Exercise checkoff -- more satisfying checkmark animation
-Weight log confirmed -- number ticks to new value
-Day selector -- active day card subtle pulse or glow
-Water preset buttons -- bar bounces on update
-
-Tab Transitions:
-
-Log tab -- food item drops in on enter
-Workout tab -- weight plates slide on enter
-Stats tab -- bars grow up on enter
-Subtle, not distracting, fits the tab content
-
-Streak and Milestone Moments:
-
-7 day streak -- distinct animation beyond toast
-30 day streak -- bigger moment, close to achievement toast tier
-Goal weight hit -- biggest non-platinum celebration moment
-
-First Use Moments (non-blocking, one-time only):
-
-First calorie logged
-First workout checked off
-First verse read
-First water goal hit
-First step goal hit
-Rules: never halts user flow, never repeats, subtle enough that missing it is not a loss, fires alongside the action not instead of it
+Exercise checkmark -- spring scale on check
+Progress bar fills smoothly as exercises checked
+Day scroller dots -- color transition on active day change
 
 
 NOTES AND DECISIONS
@@ -595,17 +694,20 @@ FatSecret Premier Free is primary -- Consumer Key and Secret held by Justin, OAu
 USDA dropped permanently -- garbage results for branded foods
 OFF stays as fallback only until FatSecret passes all three gate checks, then removed entirely
 Barcode override system: pj_barcode_overrides AsyncStorage key, local first, Firebase community database phase 2
+FatSecret attribution: "Powered by FatSecret" required on food search and food detail screens per API terms. Non-negotiable for App Store. Pull exact brand guidelines from FatSecret before building.
 You vs Yesterday decisions:
 Water and steps: exact integer comparison only, no threshold or buffer
 Weight: 0.3 lb fuzzy threshold (floating point rounding)
 Net calories: closest-to-target wins
 All other metrics: straight greater/less than/equal
+Button design standard:
+Primary CTA buttons (Save, Log, Confirm, any submit action) get full accent fill always. Transparent bordered style is secondary only -- Edit, Cancel, filter pills, destructive actions. Using transparent bordered on a primary CTA reads as cheap. This applies to all new builds and will be audited app-wide in a dedicated SOON session.
 CPP -- Clean, Professional, Premium:
 Core product principle. Every visual, interaction, and feature is tested against CPP before passing gate 2. If it doesn't feel CPP it doesn't ship.
 Premium and monetization principles:
 No carrot dangling -- locked/premium content is discoverable but never pushed in user's face
 Trial system planned -- build properly when monetization session comes, not before
-Tips & Guides content direction: mini help articles ("How to improve your sleep score", "Hitting your calorie goal") -- shell built, content filled over time
+Tips & Guides content direction: mini help articles ("How to improve your sleep score", "Hitting your calorie goal", "Understanding your active calorie estimate") -- shell built, content filled over time
 Tooltip system decisions:
 Footer wording: "More definitions and guides in Settings → Help"
 Pulse: 3 pulses, 1500ms delay on mount, fires once per cold launch while seen === false, permanently stops after user taps (i) and Got it
@@ -630,6 +732,7 @@ Toast on save -- any screen with a save action fires a toast. No silent saves.
 Floating save bar -- any settings/profile screen with editable fields
 Tab header icon buttons -- always use filled/solid Ionicons variants, never outline. Applies to all tabs, all new features.
 Animation audit -- any new feature with meaningful state changes gets added to the animation audit list
+Mode-awareness -- every new feature must define its Mindful behavior at build time, not retroactively. Ask "does this behave differently in Mindful?" before shipping. If yes, build both versions. Same gate as disclaimer standard.
 Testing standard:
 Primary theme: Slate with yellow accent
 Build on Slate yellow, audit all 5 themes x all accents before marking visual features done
@@ -637,7 +740,7 @@ Never assume a bug is theme-specific without confirming on multiple themes
 Data/storage decisions:
 AsyncStorage keys all defined in instructions
 pj_profile now includes sleepGoal field
-Firebase Auth planned pre-beta
+Firebase Auth planned pre-beta -- Apple + Google login, Firestore migration from AsyncStorage
 Dev reset/export -- pin, build only if needed before TestFlight
 Macro goals system:
 Two modes - Ratio and Fixed. Cross-mode sync on save.
@@ -667,6 +770,7 @@ Built same session as Faith Journey -- onboarding flow is the delivery vehicle f
 HealthKit currently pulling:
 activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, vo2Max, cardioRecovery
 Not yet pulling: weight, HRV, resting HR, blood oxygen, respiratory rate, basal calories
+HealthKit source detection: HealthKit metadata includes source identifier on every sample. Can display "via Garmin", "via Whoop", "via Oura" labels. Garmin/Whoop/Oura sync to Apple Health natively -- no direct integrations needed. Same pattern as existing Apple Health badge on exercises.
 GitHub:
 Repo: https://github.com/jharmke/project-j
 Branch: master
@@ -702,7 +806,7 @@ RN Modals create a new native window layer -- normal toast tree is invisible beh
 Fix: export ToastRenderer from Toast.tsx, render <ToastRenderer /> inside Modal JSX
 Reference: any modal that fires toasts
 Marketing decisions:
-App name shortlist: Prevail, Steadfast, Worthy, Haven, Witness, Sown. Dropped: Abide (taken by existing Christian meditation app).
+App name shortlist: Prevail, Steadfast, Worthy, Haven, Witness, Sown. Dropped: Abide (taken by existing Christian meditation app). Prevail is strongest -- punchy, fitness-forward, faith-adjacent without screaming it.
 Branding: NOT marketed as a "Christian app" -- positioned as intentional whole-person wellness. Faith present and unapologetic but not the marketing lead. Chick-fil-A model.
 Tagline direction: "The app that actually cares about you"
 TikTok: anonymous account for now, interactive series format, crowd-sourced decisions, meme formats mixed in

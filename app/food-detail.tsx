@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Linking, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import { useToast } from '../components/Toast';
@@ -373,7 +373,7 @@ const [currentMeal, setCurrentMeal] = useState(meal || 'Morning');
   </Text>
 </TouchableOpacity>
 
-        {isEditing && (
+{isEditing && (
           <TouchableOpacity
             style={styles.deleteBtn}
             onPress={() => {
@@ -401,6 +401,16 @@ const [currentMeal, setCurrentMeal] = useState(meal || 'Morning');
             <Text style={styles.deleteBtnText}>Remove Entry</Text>
           </TouchableOpacity>
         )}
+
+        <TouchableOpacity
+          onPress={() => Linking.openURL('https://platform.fatsecret.com')}
+          style={{ alignItems: 'center', marginTop: 20, marginBottom: 8, opacity: 0.65 }}>
+          <Image
+            source={{ uri: 'https://platform.fatsecret.com/api/static/images/powered_by_fatsecret_horizontal_brand.png' }}
+            style={{ width: 160, height: 38 }}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
       </ScrollView>
 
       {/* Serving Picker Modal */}
@@ -451,7 +461,7 @@ const useStyles = (theme: any) => StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: theme.borderCard },
   backBtn: { padding: 4, width: 60 },
   backBtnText: { color: theme.accentBlue, fontSize: 14, fontFamily: 'DMSans_500Medium' },
-  headerTitle: { fontSize: 20, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, flex: 1, textAlign: 'center' },
+  headerTitle: { fontSize: 20, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, flex: 1, textAlign: 'center' },
   content: { padding: 16 },
   foodName: { fontSize: 18, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', marginBottom: 20, lineHeight: 24 },
   unitRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
@@ -471,8 +481,8 @@ const useStyles = (theme: any) => StyleSheet.create({
   noDataText: { fontSize: 12, color: theme.textMuted, fontStyle: 'italic', fontFamily: 'DMSans_400Regular', marginBottom: 16, textAlign: 'center' },
   logBtn: { backgroundColor: theme.accentGreen, borderRadius: 10, padding: 16, alignItems: 'center', marginBottom: 12 },
   logBtnText: { color: theme.bgPrimary, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
-  deleteBtn: { padding: 16, alignItems: 'center' },
-  deleteBtnText: { color: theme.accentRed, fontSize: 14, fontFamily: 'DMSans_500Medium' },
+  deleteBtn: { backgroundColor: '#cc3333', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 16, alignItems: 'center', marginTop: 8, alignSelf: 'center', minWidth: 220 },
+  deleteBtnText: { color: theme.bgPrimary, fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
   mealSelector: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, padding: 12, marginBottom: 10 },
   mealSelectorLabel: { fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' },
   mealSelectorValue: { fontSize: 14, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' },

@@ -141,7 +141,7 @@ NOW -- active this session
 Auth and onboarding
 
 Firebase Auth -- Apple/Google login, both required (App Store rules mandate Apple login if any third party login offered). Firestore setup, data migration from AsyncStorage. Pre-TestFlight requirement.
-Onboarding flow -- full 7-screen flow per spec in MODES & ONBOARDING section. Profile setup, style survey, mode recommendation, faith journey, Apple Health permissions, You're All Set.
+Onboarding flow -- in progress. Screens 1-4 built and working. Screens 5 (Faith Journey), 6 (Apple Health), 7 (All Set) remaining. Commitment screen (Discipline path) remaining.
 Apple Health onboarding screen -- "Project J works best with Apple Health", permissions prompt, Maybe Later option, one-time dismissable home banner for users who skip.
 
 Workout tab facelift
@@ -615,6 +615,7 @@ User selects one, sets macro targets automatically. Can be changed in settings p
 Discipline defaults to High Protein pre-selected. Balanced defaults to Balanced pre-selected.
 
 WHAT IS DEFERRED (build in future sessions)
+- Activity level architecture overhaul -- split single activityLevel field into lifestyleActivity + trainingFrequency. Formula: BMR × lifestyle_multiplier + weekly_training_bonus ÷ 7. Affects profile.tsx calcBMR, onboarding Screen 4, recommended cal toggle, anywhere activityLevel is read. Current multipliers are known to overestimate for desk workers who train. Default changed to sedentary until this is rebuilt. Do as dedicated session -- touches profile deeply.
 - Daily summary / morning card (mode-aware language) -- SOON
 - Scripture weighting by mode + verse tagging system -- SOON
 - Streak break Acknowledgement Modal -- needs streak system built first, SOON
@@ -625,11 +626,11 @@ WHAT IS DEFERRED (build in future sessions)
 - Gratitude prompt card -- SOON
 
 BUILD STATUS
-[ ] Onboarding flow -- not started
-[ ] pj_settings styleMode + faithJourney + fitnessGoal + macroPreset fields
-[ ] App boot logic -- pj_onboarding_complete gate
-[ ] Dev tools reset onboarding button
-[ ] Style survey -- 4 questions, 1-2-3 scoring, buckets: 4-6 Mindful / 7-9 Balanced / 10-12 Discipline
+[x] Onboarding flow -- in progress (screens 1-4 built, screens 5-7 remaining)
+[x] pj_settings styleMode + faithJourney + fitnessGoal + macroPreset fields -- wired in Screen 4
+[x] App boot logic -- pj_onboarding_complete gate
+[x] Dev tools reset onboarding button
+[x] Style survey -- 4 questions, 1-2-3 scoring, buckets: 4-6 Mindful / 7-9 Balanced / 10-12 Discipline
 [ ] Mode recommendation screen -- personalized one-liner, pre-selected card, override allowed
 [ ] Weight projection graph -- profile + onboarding, Discipline/Balanced only
 [ ] Macro presets -- onboarding + settings, Discipline/Balanced only, not shown to Mindful
@@ -765,6 +766,13 @@ Animation audit -- any new feature with meaningful state changes gets added to t
 Mode-awareness -- every new feature must define its Mindful behavior at build time, not retroactively. Ask "does this behave differently in Mindful?" before shipping. If yes, build both versions. Same gate as disclaimer standard.
 Testing standard:
 Primary theme: Slate with yellow accent
+Onboarding screens always force Light theme (THEMES['light'] direct import, never useTheme()). Apply this pattern to every onboarding screen.
+Onboarding screen layout decisions:
+- Screen 2 collects: name, current weight, height, birthday, sex ONLY
+- Screen 4 collects: activity level, goal weight, weekly pace, live calorie target, style selection, macro presets
+- Calorie estimate uses real Mifflin-St Jeor BMR, reads biometrics from pj_profile + today's weight from pj_YYYY-MM-DD
+- Activity level default is sedentary until two-question architecture is rebuilt
+- Discipline color: #c2621a (amber/orange). Balanced: #2563eb (blue). Mindful: #059669 (green).
 Build on Slate yellow, audit all 5 themes x all accents before marking visual features done
 Never assume a bug is theme-specific without confirming on multiple themes
 Data/storage decisions:

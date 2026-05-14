@@ -290,6 +290,23 @@ export default function SettingsScreen() {
           <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>Dev Tools</Text>
           <TouchableOpacity
             style={[styles.row, { borderTopColor: theme.borderCard }]}
+            onPress={() => {
+              Alert.alert('Reset Onboarding', 'This will send you back to the welcome screen on next app launch.', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Reset', style: 'destructive', onPress: async () => {
+                  await AsyncStorage.removeItem('pj_onboarding_complete');
+                  Alert.alert('Done', 'Onboarding reset. Restart the app.');
+                }},
+              ]);
+            }}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.rowTitle, { color: theme.accentBlue }]}>Reset Onboarding</Text>
+              <Text style={[styles.rowSub, { color: theme.textMuted }]}>Returns to welcome screen on next launch. Dev use only.</Text>
+            </View>
+            <Ionicons name="refresh-outline" size={18} color={theme.accentBlue} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.row, { borderTopColor: theme.borderCard }]}
             onPress={fixDefaultTags}>
             <View style={{ flex: 1 }}>
               <Text style={[styles.rowTitle, { color: theme.accentAmber }]}>Fix Default Tags</Text>

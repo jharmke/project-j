@@ -7,12 +7,13 @@ import {
 } from '@expo-google-fonts/dm-sans';
 import { DarkTheme, ThemeProvider as NavThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTheme } from '../theme';
 import { LogBox } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 LogBox.ignoreLogs(['VirtualizedLists should never be nested']);
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -35,12 +36,33 @@ export default function RootLayout() {
     DMSans_700Bold,
     BebasNeue_400Regular,
   });
+  const [onboardingChecked, setOnboardingChecked] = useState(false);
+  const [onboardingComplete, setOnboardingComplete] = useState(false);
 
   useEffect(() => {
-    if (fontsLoaded) SplashScreen.hideAsync();
-  }, [fontsLoaded]);
+    const checkOnboarding = async () => {
+      try {
+        const val = await AsyncStorage.getItem('pj_onboarding_complete');
+        setOnboardingComplete(val === 'true');
+      } catch (e) {
+        setOnboardingComplete(false);
+      } finally {
+        setOnboardingChecked(true);
+      }
+    };
+    checkOnboarding();
+  }, []);
 
-  if (!fontsLoaded) return null;
+  useEffect(() => {
+    if (fontsLoaded && onboardingChecked) {
+      SplashScreen.hideAsync();
+      if (!onboardingComplete) {
+        router.replace('/onboarding/welcome');
+      }
+    }
+  }, [fontsLoaded, onboardingChecked, onboardingComplete]);
+
+  if (!fontsLoaded || !onboardingChecked) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -50,6 +72,13 @@ export default function RootLayout() {
     <NavThemeProvider value={DarkTheme}>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="onboarding/welcome" options={{ headerShown: false, animation: 'fade' }} />
+        <Stack.Screen name="onboarding/profile-setup" options={{ headerShown: false, animation: 'fade' }} />
+        <Stack.Screen name="onboarding/style-survey" options={{ headerShown: false, animation: 'fade' }} />
+        <Stack.Screen name="onboarding/your-style" options={{ headerShown: false, animation: 'fade' }} />
+        <Stack.Screen name="onboarding/faith-journey" options={{ headerShown: false, animation: 'fade' }} />
+        <Stack.Screen name="onboarding/apple-health" options={{ headerShown: false, animation: 'fade' }} />
+        <Stack.Screen name="onboarding/all-set" options={{ headerShown: false, animation: 'fade' }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         <Stack.Screen name="workout-library" options={{ headerShown: false }} />
         <Stack.Screen name="add-food" options={{ headerShown: false }} />

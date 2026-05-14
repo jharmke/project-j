@@ -7,6 +7,7 @@ import { Alert, Animated, Dimensions, ScrollView, StyleSheet, Text, TextInput, T
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
+import CustomFoodCreator from '../../components/CustomFoodCreator';
 import { useTheme } from '../../theme';
 import { useToast } from '../../components/Toast';
 import { useHealthKit } from '../../useHealthKit';
@@ -150,6 +151,7 @@ export default function LogScreen() {
   const [waterCustomInput, setWaterCustomInput] = useState('');
   const [logRefreshKey, setLogRefreshKey] = useState(0);
   const { activeCalories } = useHealthKit();
+  const [showCreateFood, setShowCreateFood] = useState(false);
 
   const goToPrevDay = () => {
     const d = new Date(activeDate + 'T12:00:00');
@@ -172,7 +174,7 @@ export default function LogScreen() {
   };
   
   const totalCals = entries.reduce((s, e) => s + e.cal, 0);
-  const adjustedTarget = calTarget + caloriesBurned;
+  const adjustedTarget = calTarget + (activeCalories > 0 ? activeCalories : caloriesBurned);
   const calPct = adjustedTarget > 0 ? (totalCals / adjustedTarget) * 100 : 0;
   const getAdvancedNutrient = (name: string) => {
     return Math.round(entries.reduce((s, e) => {
@@ -369,11 +371,23 @@ export default function LogScreen() {
             </TouchableOpacity>
           </View>
         </View>
-        <TouchableOpacity
-          style={[styles.libraryBtn, { height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
-          onPress={() => router.push({ pathname: '/add-food', params: { meal: 'Morning', date: activeDate } })}>
-          <Text style={[styles.libraryBtnText, { color: theme.accentBlue }]}>Library</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+          <TouchableOpacity
+            style={[styles.libraryBtn, { height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+            onPress={() => router.push({ pathname: '/add-food', params: { meal: 'browse', date: activeDate } })}>
+            <Text style={[styles.libraryBtnText, { color: theme.accentBlue }]}>Library</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.libraryBtn, { height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+            onPress={() => setShowCreateFood(true)}>
+            <Text style={[styles.libraryBtnText, { color: theme.accentBlue }]}>+ Food</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.libraryBtn, { height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+            onPress={() => router.push('/recipe-builder')}>
+            <Text style={[styles.libraryBtnText, { color: theme.accentBlue }]}>+ Recipe</Text>
+          </TouchableOpacity>
+        </View>
       </View>
       <ScrollView
         contentContainerStyle={styles.content}
@@ -653,6 +667,11 @@ export default function LogScreen() {
       </View>
     )}
 
+    <CustomFoodCreator
+        visible={showCreateFood}
+        onClose={() => setShowCreateFood(false)}
+        onSaved={() => {}}
+      />
     </LinearGradient>
   );
 }

@@ -31,6 +31,7 @@ interface MyFood {
   saturatedFat?: number;
   servingSize?: number;
   servingUnit?: string;
+  fsId?: string | null;
 }
 
 interface SearchResult {
@@ -329,6 +330,11 @@ const [showEditMyFood, setShowEditMyFood] = useState(false);
 const [editingMyFood, setEditingMyFood] = useState<{idx: number, name: string, cal: string} | null>(null);
 const [lastScannedBarcode, setLastScannedBarcode] = useState<string | null>(null);
 const [barcodeOverrides, setBarcodeOverrides] = useState<Record<string, any>>({});
+const favoriteOpacities = useRef<Record<string, Animated.Value>>({}).current;
+const getFavOpacity = (name: string) => {
+  if (!favoriteOpacities[name]) favoriteOpacities[name] = new Animated.Value(1);
+  return favoriteOpacities[name];
+};
 
 const saveEditMyFood = async () => {
     if (!editingMyFood || !editingMyFood.name || !editingMyFood.cal) return;
@@ -510,8 +516,11 @@ const openFoodDetail = async (food: SearchResult) => {
       });
       return;
     }
+
     const myFoodMatch = food.isMyFood ? myFoods.find(f => f.name === food.description) : null;
     const fsId = (food as any).fsId;
+    const customServingSize = (food as any).servingSize;
+    const isCustomFood = !!(food as any).isCustom || !!(myFoodMatch as any)?.isCustom;
     let fsServings: any[] = [];
     if (fsId && !(food as any).fromBarcode) {
       fsServings = await fetchFatSecretServings(fsId);
@@ -530,9 +539,19 @@ const openFoodDetail = async (food: SearchResult) => {
         foodJson: JSON.stringify({ 
           ...food, 
           isMyFood: food.isMyFood,
+          isCustom: (food as any).isCustom || (myFoodMatch as any)?.isCustom || false,
+          brand: (myFoodMatch as any)?.brand || null,
           myFoodData: myFoodMatch,
           fsServings: fsServings.length > 0 ? fsServings : undefined,
           ...(existingAmount ? { existingAmount, existingUnit: existingUnit || 'g' } : {}),
+          ...(customServingSize && !existingAmount ? { existingAmount: customServingSize.toString(), existingUnit: 'g' } : {}),
+          ...(isCustomFood && myFoodMatch ? {
+            existingCal: myFoodMatch.cal,
+            existingProtein: myFoodMatch.protein || 0,
+            existingCarbs: myFoodMatch.carbs || 0,
+            existingFat: myFoodMatch.fat || 0,
+            foodNutrients: (myFoodMatch as any).foodNutrients || food.foodNutrients || [],
+          } : {}),
         }),
         meal,
         date,
@@ -683,7 +702,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
   const loadRecent = async () => {
     try {
       // Pull last 30 days of entries and get unique foods
-      const recent: {name: string, cal: number, protein?: number, carbs?: number, fat?: number, calPer100g?: number, proteinPer100g?: number, carbsPer100g?: number, fatPer100g?: number, foodNutrients?: any[]}[] = [];
+      const recent: {name: string, cal: number, protein?: number, carbs?: number, fat?: number, calPer100g?: number, proteinPer100g?: number, carbsPer100g?: number, fatPer100g?: number, foodNutrients?: any[], fsId?: string | null}[] = [];
       const seen = new Set<string>();
       for (let i = 0; i < 30; i++) {
         const d = new Date();
@@ -696,7 +715,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
             data.entries.reverse().forEach((e: any) => {
               if (!seen.has(e.name)) {
                 seen.add(e.name);
-                recent.push({ name: e.name, cal: e.cal, protein: e.protein, carbs: e.carbs, fat: e.fat, calPer100g: e.calPer100g, proteinPer100g: e.proteinPer100g, carbsPer100g: e.carbsPer100g, fatPer100g: e.fatPer100g, foodNutrients: e.foodNutrients });
+                recent.push({ name: e.name, cal: e.cal, protein: e.protein, carbs: e.carbs, fat: e.fat, calPer100g: e.calPer100g, proteinPer100g: e.proteinPer100g, carbsPer100g: e.carbsPer100g, fatPer100g: e.fatPer100g, foodNutrients: e.foodNutrients, fsId: e.fsId || null });
               }
             });
           }
@@ -717,6 +736,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         fatPer100g: f.fatPer100g,
         isMyFood: false,
         isRecent: true,
+        fsId: f.fsId || null,
       })));
     } catch (e) {
       console.log('Load recent error', e);
@@ -774,11 +794,15 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
           { text: 'Cancel', style: 'cancel' },
           { text: 'Remove', style: 'destructive', onPress: async () => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            const updated = favorites.filter(f => f.name !== name);
-            setFavorites(updated);
-            await AsyncStorage.setItem('pj_favorites', JSON.stringify(updated));
-            await saveToFirebase('my_foods', 'favorites', updated);
-            showToast('Removed from favorites', name, 'info');
+            const opacity = getFavOpacity(name);
+            Animated.timing(opacity, { toValue: 0, duration: 250, useNativeDriver: true }).start(async () => {
+              delete favoriteOpacities[name];
+              const updated = favorites.filter(f => f.name !== name);
+              setFavorites(updated);
+              await AsyncStorage.setItem('pj_favorites', JSON.stringify(updated));
+              await saveToFirebase('my_foods', 'favorites', updated);
+              showToast('Removed from favorites', name, 'info');
+            });
           }},
         ]
       );
@@ -805,6 +829,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         sodium: getN('Sodium, Na', 'MG'),
         cholesterol: getN('Cholesterol', 'MG'),
         saturatedFat: getN('Fatty acids, total saturated'),
+        fsId: (food as any).fsId || null,
       }];
     }
     setFavorites(updated);
@@ -822,11 +847,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
   </TouchableOpacity>
   <Text style={styles.headerTitle}>{meal === 'browse' ? 'Food Library' : `Add to ${meal}`}</Text>
   <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-    <TouchableOpacity
-      onPress={() => router.push('/recipe-builder')}
-      style={{ backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ color: theme.accentGreen, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>+ Recipe</Text>
-    </TouchableOpacity>
+    
     <TouchableOpacity
       onPress={startScan}
       style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, padding: 6, alignItems: 'center', justifyContent: 'center', width: 38, height: 38 }}>
@@ -971,6 +992,9 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
               { nutrientName: 'Total lipid (fat)', unitName: 'G', value: f.fat || 0 },
             ],
             isMyFood: true,
+          servingSize: (f as any).servingSize || null,
+          servingUnit: (f as any).servingUnit || null,
+          isCustom: (f as any).isCustom || false,
           }))
         }
         keyExtractor={(_, i) => i.toString()}
@@ -980,6 +1004,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
           const foodName = nameParts[0];
           const brandName = nameParts.length > 1 ? nameParts.slice(1).join(' · ') : null;
           return (
+            <Animated.View style={{ opacity: activeTab === 'favorites' && !query.trim() ? getFavOpacity(item.description) : 1 }}>
             <TouchableOpacity style={[styles.resultItem, (item as any).isOverride && styles.resultItemSet]} onPress={() => openFoodDetail(item)}>
               <View style={styles.resultLeft}>
                 {/* Badges */}
@@ -1054,6 +1079,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                 )}
               </View>
             </TouchableOpacity>
+            </Animated.View>
           );
         }}
         ListEmptyComponent={() => {

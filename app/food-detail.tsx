@@ -255,7 +255,7 @@ const [showTimePicker, setShowTimePicker] = useState(false);
   const [amountChanged, setAmountChanged] = useState(false);
   const [unit, setUnit] = useState<'g' | 'oz' | 'serving'>(food?.existingUnit || 'g');
     const [showMealPicker, setShowMealPicker] = useState(false);
-const [currentMeal, setCurrentMeal] = useState(meal || 'Morning');
+const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Morning' : meal);
 
   if (!food) return null;
 
@@ -278,8 +278,8 @@ const [currentMeal, setCurrentMeal] = useState(meal || 'Morning');
 
   const multiplier = getMultiplier();
 
-  // In edit mode, use stored absolute values until the user changes the amount
-  const useExisting = isEditing && !amountChanged && food.existingCal !== undefined;
+  // In edit mode OR for custom foods, use stored absolute values until the user changes the amount
+  const useExisting = (isEditing || food.isCustom) && !amountChanged && food.existingCal !== undefined;
 
   const grams = parseFloat(amount) || 0;
   const calories = useExisting
@@ -395,6 +395,9 @@ const [currentMeal, setCurrentMeal] = useState(meal || 'Morning');
 
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.foodName}>{food.description}</Text>
+        {food.brand && (
+          <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium', marginTop: -14, marginBottom: 16 }}>{food.brand}</Text>
+        )}
 
         {/* Serving picker -- only shows when FatSecret servings available */}
         {fsServings.length > 0 && (
@@ -456,7 +459,7 @@ const [currentMeal, setCurrentMeal] = useState(meal || 'Morning');
             const n = food.foodNutrients?.find((fn: any) => 
               fn.nutrientName === nutrient.key
             );
-            const val = n ? Math.round((n.value || 0) * multiplier * 10) / 10 : null;
+            const val = n ? Math.round((n.value || 0) * (useExisting ? 1 : multiplier) * 10) / 10 : null;
             const unit2 = nutrient.unitName === 'MG' ? 'mg' : 'g';
             if (val === null) return null;
             return (
@@ -629,7 +632,7 @@ const useStyles = (theme: any) => StyleSheet.create({
   mealSelectorLabel: { fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' },
   mealSelectorValue: { fontSize: 14, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' },
   modalOverlay: { flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'flex-end' },
-  modal: { backgroundColor: theme.bgCard, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24, borderWidth: 1, borderColor: theme.borderCard },
+  modal: { backgroundColor: theme.bgSheet, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24, borderWidth: 1, borderColor: theme.borderCard },
   modalTitle: { fontSize: 18, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', marginBottom: 16 },
   servingPickerBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, borderRadius: 10, padding: 14, marginBottom: 12 },
   servingPickerLabel: { fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 3 },

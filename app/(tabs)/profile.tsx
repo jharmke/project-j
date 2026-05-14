@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import ToggleSwitch from '../../components/ToggleSwitch';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '../../components/Toast';
 import { saveToFirebase } from '../../firebaseConfig';
@@ -29,6 +30,7 @@ interface Profile {
   macroCarbsG: string;
   macroFatG: string;
   sleepGoal: string;
+  useRecommendedCal: boolean;
 }
 
 const GOAL_DEFICITS: Record<string, number> = {
@@ -239,6 +241,7 @@ export default function ProfileScreen() {
     macroCarbsG: '',
     macroFatG: '',
     sleepGoal: '7',
+    useRecommendedCal: true,
   });
   const [currentWeight, setCurrentWeight] = useState<number | null>(null);
   const [saved, setSaved] = useState(false);
@@ -354,8 +357,8 @@ export default function ProfileScreen() {
 
   const saveProfile = async () => {
     try {
-      const kcalTarget = parseFloat(profile.calTarget) || suggested || 0;
-      let synced = { ...profile };
+      const kcalTarget = profile.useRecommendedCal && suggested > 0 ? suggested : parseFloat(profile.calTarget) || suggested || 0;
+      let synced = { ...profile, ...(profile.useRecommendedCal && suggested > 0 ? { calTarget: suggested.toString() } : {}) };
 
       if (profile.macroMode === 'ratio' && kcalTarget > 0) {
         synced.macroProteinG = String(Math.round(((parseFloat(profile.macroProteinPct) || 0) / 100) * kcalTarget / 4));
@@ -650,20 +653,26 @@ export default function ProfileScreen() {
         </CollapsibleCard>
 
         <CollapsibleCard label="Daily Calorie Target" theme={theme}>
-          <Text style={[styles.estimateNote, { color: theme.textMuted }]}>Set manually or use the recommended value above.</Text>
-          {suggested > 0 && (
-            <TouchableOpacity style={[styles.useRecommended, { backgroundColor: theme.accentGreenBg, borderColor: theme.accentGreenBorder }]} onPress={() => updateField('calTarget', suggested.toString())}>
-              <Text style={[styles.useRecommendedText, { color: theme.accentGreen }]}>Use recommended ({suggested} kcal)</Text>
-            </TouchableOpacity>
-          )}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Use recommended value</Text>
+            <ToggleSwitch
+              value={profile.useRecommendedCal !== false}
+              onValueChange={v => updateField('useRecommendedCal', v)}
+            />
+          </View>
+          <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginTop: -12, marginBottom: 12 }}>Based on your BMR, activity level, and weight goal.</Text>
           <TextInput
-            style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
-            value={profile.calTarget}
+            style={[styles.input, { backgroundColor: profile.useRecommendedCal !== false ? theme.bgProgressTrack : theme.bgInput, borderColor: theme.borderInput, color: profile.useRecommendedCal !== false ? theme.textMuted : theme.textPrimary }]}
+            value={profile.useRecommendedCal !== false ? (suggested > 0 ? suggested.toString() : 'Set stats above') : profile.calTarget}
             onChangeText={v => updateField('calTarget', v)}
             keyboardType="number-pad"
             placeholder="e.g. 1750"
             placeholderTextColor={theme.textPlaceholder}
+            editable={profile.useRecommendedCal === false}
           />
+          {profile.useRecommendedCal === false && (
+            <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginTop: 4 }}>Enter a custom calorie target.</Text>
+          )}
         </CollapsibleCard>
 
         <CollapsibleCard label="Macro Goals" theme={theme}>

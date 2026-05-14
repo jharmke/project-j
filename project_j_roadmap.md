@@ -157,12 +157,17 @@ Visual hierarchy pass -- exercise rows, Apple Health badge, stats line spacing a
 Food and search polish
 
 Bugs -- fix first:
+Recents math bug -- fsId not passed through from recent entries, caused per-100g scaling instead of correct serving data. FIXED.
+[x] Recents math bug -- fsId now stored and passed through loadRecent in add-food.tsx, food-detail uses correct serving data instead of per-100g scaling. DONE.
 Macros not persisting to recents/favorites -- DONE. loadRecent now carries full macro payload, showMyFoods and My Foods FlatList tab map all nutrients, favorites tab already correct.
 Favorites bug -- identical food names share favorite state, both toggle together. (still open)
-Food Library title bug -- shows "Add to Morning" when navigating from library button. One-line fix. (still open)
+fsId saved on star from search results list in add-food.tsx -- favorites now open to label serving. DONE.
+Favorites fsId fix -- label serving saved on favorite, fetched on tap from favorites tab, on-demand fetch in food-detail when fsServings empty, non-100g sort fix. DONE.
+fsId saved on diary entries in saveEntry, passed through edit entry path in log.tsx. DONE.
+Food Library title bug -- shows "Add to Morning" when navigating from library button. DONE.
 Edit entry scaling bug -- opening entry from log showed macros scaled to 100g instead of logged amount. DONE. amountChanged flag added to food-detail, useExisting gates on isEditing + unchanged amount.
 Recent tap 100g bug -- tapping recent food opened to 100g instead of logged amount. DONE. openFoodDetail extracts amount from description for isRecent items.
-Favorites serving size bug -- favorites opened to 100g instead of label serving. OPEN -- fsId save + fetch on tap still needed (next batch).
+Favorites serving size bug -- favorites opened to label serving. DONE.
 Favorites extended nutrition 0 -- DONE. toggleFav pulls from selectedServing when available, saves full flat macro shape.
 FatSecret badge showing mid-type with no results -- DONE. Badge hidden when query has no results.
 
@@ -174,7 +179,7 @@ SET banner tip -- plain icon + text in place but still needs CPP polish pass.
 UNSET feature -- SET button toggle on search results page, unset on food detail near star.
 Rename food on entry -- editable name field on food detail before logging, custom name stored with entry.
 Save New Food to Library -- full macro fields in proper modal, not just name + calories. SUPERSEDED by Custom Food Creator below.
-Custom Food Creator -- full modal accessible from any add-food screen and library. Required: name, calories. Optional: brand, all macros, extended nutrition (fiber/sugar/sodium/cholesterol/sat fat), serving size in grams, serving label (e.g. "1 scoop"). Saves to pj_my_foods with custom_XXXXX ID. Serving size stored so favorites/recents always open to correct serving. Photo upload in SOON.
+Custom Food Creator -- DONE. components/CustomFoodCreator.tsx, centered modal with scale-in animation, required name + calories with * markers, optional brand/macros/extended nutrition in collapsible section, serving size + serving label, saves to pj_my_foods with custom_XXXXX ID. Entry point: + Food button in log.tsx header. + Recipe also moved to log.tsx header. Custom foods open to correct serving with absolute macros (useExisting extended to isCustom flag). Extended nutrition saves as foodNutrients array. Brand shows under food name in food detail. Photo upload, vitamins/minerals deferred to SOON.
 Save as Copy -- "..." menu on food detail header (next to star). Opens Custom Food Creator prefilled with all FatSecret data -- name, brand, every macro, serving. User can edit anything before saving. Solves FatSecret name/data cleanup without touching shared database.
 loggedAmount / loggedUnit -- now stored as separate fields on each entry alongside the name string. Enables accurate edit entry serving restoration.
 Loading spinner -- DONE. Instant on keypress, ActivityIndicator + Searching... text.
@@ -192,10 +197,10 @@ Food detail polish pass:
 - Amount field color consistency fix
 - Section label "NUTRITION FOR XG" to card label style (9px, uppercase, 3 letter-spacing, textMuted)
 - Macro values lowercase g (6g not 6G)
-- Star/favorite -- spring animation on tap, haptic, toast (Added to favorites / Removed from favorites) (NEXT BATCH)
-- Empty states on all 4 library tabs (Recent / My Foods / Favorites / Recipes) -- icon, title, subtitle per tab (NEXT BATCH)
+- Star/favorite -- spring animation on tap, haptic, toast on food-detail. Haptic + toast + confirm Alert on FlatList star rows in add-food. DONE.
+- Empty states on all 4 library tabs (Recent / My Foods / Favorites / Recipes) -- icon, title, subtitle per tab. DONE.
 - Search no-results empty state -- DONE. Search icon, "No results for X", subtitle.
-- Favorites fsId save + fetch real label serving on tap (NEXT BATCH)
+- Favorites fsId save + fetch real label serving on tap -- DONE via food-detail path. add-food list path still open (see bug above).
 - "..." menu on food detail → Save as Copy, opens Custom Food Creator prefilled (NEXT BATCH)
 - Search results brand contrast/separation improvement
 
@@ -204,19 +209,20 @@ Food log screen polish pass:
 - Macro donut center calorie number -- remove, redundant with number displayed outside donut (NOW)
 - Macro donut sequential segment animation with pauses -- each macro fills then brief pause before next, same pattern as sleep donut (NOW)
 - Macro donut animation on food detail -- DONE. Animated version matching log.tsx MacroDonut.
-- Macro dots on collapsed meal rows (protein/carbs/fat colored dots + grams)
+- Macro dots on collapsed meal rows (protein/carbs/fat colored dots + grams) -- DONE. Colored circles, always shows all 3 even at 0, lowercase g.
 - Collapsed meal row item count -- show "X items · XXX kcal" on collapsed state
 - Food name / brand split on entry rows -- DONE. Brand removed from log entries by design. Amount inline after food name. Entry height fixed at 54px per entry, no clipping.
 - Meal header total more visually prominent than individual entry calories
 - Empty state big "0" to textMuted until food logged
 - Advanced nutrition page 2 visual polish -- card label style header, accent/textPrimary values when data exists, textMuted when empty
 - Entry row padding/breathing room
+- Favorites fade-on-remove animation -- item should fade out before disappearing when removed from favorites FlatList. DONE.
 - Bottom safe area padding on library screen
 - Tab bar (Recent/My Foods/Favorites/Recipes) polish pass -- selected state weight, container depth
 - Sources of recommendations -- wire as (i) tooltip on calorie target result screen
 
 Active calorie accuracy:
-- Calorie discrepancy bug -- log tab shows different active burn than home calories card. Diagnose where the two cards differ in calculation. (NOW, data accuracy)
+- Calorie discrepancy bug -- root cause was calorie TARGET mismatch between home (using live recommended) and log (using stale saved value). Fixed via useRecommendedCal toggle in profile -- toggle ON keeps calTarget live and in sync, toggle OFF lets user set custom static value. FIXED.
 - Sleep duration bug -- HealthKit bed/wake times correct but displayed hours off (11:08pm-5:12am showing 6h 0m). Diagnose in index.tsx. (NOW)
 - Active calorie overestimate disclaimer -- small disclaimer on any screen showing active or net calories. Apple Watch and most wearables overestimate active burn. "Active calorie estimates from Apple Health may vary. Use as a guide, not a guarantee." Exact wording TBD.
 - Burn accuracy adjustment setting -- optional user-controlled percentage modifier on active calories (e.g. apply 80% of reported burn). Fully explained with worked example. (i) tooltip on setting. Linked Tips & Guides help article. Surfaces in settings under Health. Differentiator -- no other app does this honestly.
@@ -253,6 +259,10 @@ Sleep score label bug -- fixed as byproduct of sleep overhaul. DONE.
 Verify and close
 
 Macro bars confirmed animated. Calorie bar stutter fixed. MacroDonut draw-on animation built -- pending FatSecret testing.
+Log.tsx calorie progress bar animates on entry add/delete. DONE.
+Log.tsx deleteEntry immediately recalculates totalProtein/totalCarbs/totalFat. DONE.
+Today's Total macro row lowercase g, DMSans font. DONE.
+fsId saved on diary entries in saveEntry, passed through edit entry path in log.tsx. DONE.
 
 
 SOON -- confirmed next few sessions
@@ -261,6 +271,10 @@ Primary button audit -- sweep app-wide, upgrade all primary CTAs to full accent 
 Food and barcode
 
 Custom water amount modal -- drag interaction, .5oz increments, 48oz max, live oz display, tappable numpad with .5 key, KAV, fade in/out, centered. (top of SOON)
+Vitamins & minerals fields on Custom Food Creator -- Vitamin D, Calcium, Iron, Potassium. Power users track these, feeds future reporting. (SOON)
+My Foods delete warning -- confirm Alert before × delete on library list rows. (SOON)
+Custom Food Creator photo upload -- photo field on create/edit. (SOON)
+"Adding to" UX from library -- when food detail opened from library, meal selector should be more prominent since user must always pick. Currently defaults to Morning. (SOON)
 Calorie breakdown by meal -- each slot gets a budget. Unclear if needed, revisit later.
 
 Workout

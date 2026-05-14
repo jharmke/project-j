@@ -17,7 +17,8 @@ interface Profile {
   heightFt: string;
   heightIn: string;
   sex: 'male' | 'female';
-  activityLevel: string;
+  lifestyleActivity: string;
+  trainingFrequency: string;
   calTarget: string;
   weightGoal: string;
   goalWeight: string;
@@ -53,21 +54,20 @@ const GOAL_LABELS: Record<string, string> = {
   gain_1: 'Gain 1 lb / week',
 };
 
-const ACTIVITY_LABELS: Record<string, string> = {
-  sedentary: 'Sedentary (desk job, little exercise)',
-  light: 'Light (1-3 days/week)',
-  moderate: 'Moderate (3-5 days/week)',
-  active: 'Active (6-7 days/week)',
-  very_active: 'Very Active (physical job + exercise)',
-};
+const LIFESTYLE_OPTIONS = [
+  { key: 'sedentary',   label: 'Sedentary',      sub: 'Desk job, minimal movement outside of workouts',         multiplier: 1.2  },
+  { key: 'light',       label: 'Lightly Active',  sub: 'Some walking, on your feet occasionally during the day', multiplier: 1.3  },
+  { key: 'active',      label: 'Active',           sub: 'On your feet a lot -- server, teacher, retail, trades',  multiplier: 1.45 },
+  { key: 'very_active', label: 'Very Active',      sub: 'Hard physical labor most of the day',                   multiplier: 1.6  },
+];
 
-const ACTIVITY_MULTIPLIERS: Record<string, number> = {
-  sedentary: 1.2,
-  light: 1.375,
-  moderate: 1.55,
-  active: 1.725,
-  very_active: 1.9,
-};
+const TRAINING_OPTIONS = [
+  { key: 'none',  label: 'Not currently training',   sub: 'Little to no structured exercise',         dailyBonus: 0   },
+  { key: '1x',    label: '1–2x / week',              sub: 'Light or occasional sessions',             dailyBonus: 100 },
+  { key: '3x',    label: '3–4x / week',              sub: 'Consistent training most weeks',           dailyBonus: 200 },
+  { key: '5x',    label: '5–6x / week',              sub: 'High frequency, serious commitment',       dailyBonus: 300 },
+  { key: 'daily', label: 'Daily / twice daily',      sub: 'Elite or professional training volume',    dailyBonus: 400 },
+];
 
 const HOUR_OPTIONS = ['5', '6', '7', '8', '9', '10'];
 const MINUTE_OPTIONS = ['00', '15', '30', '45'];
@@ -228,7 +228,8 @@ export default function ProfileScreen() {
     heightFt: '',
     heightIn: '',
     sex: 'male',
-    activityLevel: 'moderate',
+    lifestyleActivity: 'sedentary',
+    trainingFrequency: 'none',
     calTarget: '',
     weightGoal: 'lose_1',
     goalWeight: '',
@@ -305,7 +306,14 @@ export default function ProfileScreen() {
     const weightKg = (currentWeight || 0) * 0.453592;
     const heightCm = (parseFloat(profile.heightFt) * 30.48) + (parseFloat(profile.heightIn) * 2.54);
     if (!profile.birthday) return 0;
-    const age = Math.floor((Date.now() - new Date(profile.birthday).getTime()) / (365.25 * 24 * 3600 * 1000));
+    // Safe date parse -- handles both ISO (1997-09-05) and M/D/YYYY (9/5/1997) formats
+    const parts = profile.birthday.split(/[-\/T]/);
+    const isISO = parts[0].length === 4;
+    console.log('BMR DEBUG:', { birthday: profile.birthday, parts, isISO, weightKg, heightCm });
+    const birthDate = isISO
+      ? new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]))
+      : new Date(parseInt(parts[2]), parseInt(parts[0]) - 1, parseInt(parts[1]));
+    const age = Math.floor((Date.now() - birthDate.getTime()) / (365.25 * 24 * 3600 * 1000));
     if (!weightKg || !heightCm || !age) return 0;
     if (profile.sex === 'male') {
       return Math.round((10 * weightKg) + (6.25 * heightCm) - (5 * age) + 5);
@@ -317,7 +325,9 @@ export default function ProfileScreen() {
   const calcTDEE = () => {
     const bmr = calcBMR();
     if (!bmr) return 0;
-    return Math.round(bmr * ACTIVITY_MULTIPLIERS[profile.activityLevel]);
+    const lifestyleOpt = LIFESTYLE_OPTIONS.find(o => o.key === profile.lifestyleActivity) || LIFESTYLE_OPTIONS[0];
+    const trainingOpt  = TRAINING_OPTIONS.find(o => o.key === profile.trainingFrequency)  || TRAINING_OPTIONS[0];
+    return Math.round((bmr * lifestyleOpt.multiplier) + trainingOpt.dailyBonus);
   };
 
   const calcGoalTarget = () => {
@@ -509,13 +519,41 @@ export default function ProfileScreen() {
         </CollapsibleCard>
 
         <CollapsibleCard label="Activity Level" theme={theme}>
-          {Object.entries(ACTIVITY_LABELS).map(([key, label]) => (
+          <Text style={[styles.fieldLabel, { color: theme.textMuted, marginTop: 0 }]}>LIFESTYLE</Text>
+          <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', color: theme.textMuted, marginBottom: 8 }}>Your day-to-day movement, not counting workouts.</Text>
+          {LIFESTYLE_OPTIONS.map(o => (
             <TouchableOpacity
-              key={key}
-              style={[styles.activityBtn, profile.activityLevel === key && { backgroundColor: theme.accentBlueBg }]}
-              onPress={() => updateField('activityLevel', key)}>
-              <View style={[styles.activityDot, { backgroundColor: theme.textDim }, profile.activityLevel === key && { backgroundColor: theme.accentBlue }]} />
-              <Text style={[styles.activityLabel, { color: theme.textMuted }, profile.activityLevel === key && { color: theme.textPrimary }]}>{label}</Text>
+              key={o.key}
+              style={[styles.activityBtn, { borderWidth: 0.5, borderColor: theme.borderInput, backgroundColor: theme.bgInput },
+                profile.lifestyleActivity === o.key && { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+              onPress={() => updateField('lifestyleActivity', o.key)}>
+              <View style={[styles.activityDot, { backgroundColor: theme.textDim },
+                profile.lifestyleActivity === o.key && { backgroundColor: theme.accentBlue }]} />
+              <View style={{ flex: 1 }}>
+                <Text style={[{ fontSize: 13, fontFamily: 'DMSans_500Medium' }, { color: theme.textMuted },
+                  profile.lifestyleActivity === o.key && { color: theme.textPrimary }]}>{o.label}</Text>
+                <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginTop: 1 }}>{o.sub}</Text>
+              </View>
+            </TouchableOpacity>
+          ))}
+
+          <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard, marginTop: 12, marginBottom: 12 }} />
+
+          <Text style={[styles.fieldLabel, { color: theme.textMuted, marginTop: 0 }]}>TRAINING FREQUENCY</Text>
+          <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', color: theme.textMuted, marginBottom: 8 }}>How often you do structured workouts.</Text>
+          {TRAINING_OPTIONS.map(o => (
+            <TouchableOpacity
+              key={o.key}
+              style={[styles.activityBtn, { borderWidth: 0.5, borderColor: theme.borderInput, backgroundColor: theme.bgInput },
+                profile.trainingFrequency === o.key && { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+              onPress={() => updateField('trainingFrequency', o.key)}>
+              <View style={[styles.activityDot, { backgroundColor: theme.textDim },
+                profile.trainingFrequency === o.key && { backgroundColor: theme.accentBlue }]} />
+              <View style={{ flex: 1 }}>
+                <Text style={[{ fontSize: 13, fontFamily: 'DMSans_500Medium' }, { color: theme.textMuted },
+                  profile.trainingFrequency === o.key && { color: theme.textPrimary }]}>{o.label}</Text>
+                <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginTop: 1 }}>{o.sub}</Text>
+              </View>
             </TouchableOpacity>
           ))}
         </CollapsibleCard>

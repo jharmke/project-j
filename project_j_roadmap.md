@@ -615,7 +615,7 @@ User selects one, sets macro targets automatically. Can be changed in settings p
 Discipline defaults to High Protein pre-selected. Balanced defaults to Balanced pre-selected.
 
 WHAT IS DEFERRED (build in future sessions)
-- Activity level architecture overhaul -- split single activityLevel field into lifestyleActivity + trainingFrequency. Formula: BMR × lifestyle_multiplier + weekly_training_bonus ÷ 7. Affects profile.tsx calcBMR, onboarding Screen 4, recommended cal toggle, anywhere activityLevel is read. Current multipliers are known to overestimate for desk workers who train. Default changed to sedentary until this is rebuilt. Do as dedicated session -- touches profile deeply.
+- Activity level architecture overhaul -- IN PROGRESS. profile.tsx DONE and confirmed working. Remaining: your-style.tsx (Screen 4), index.tsx, log.tsx (two places), head-to-head.tsx. All need same formula: Math.round((bmr * lifestyleMultiplier) + trainingDailyBonus). Birthday parse fix already shipped in profile.tsx -- same fix needed in index.tsx and log.tsx. your-style.tsx needs two-question UI replacing single activity selector. Next thread picks up at your-style.tsx.
 - Daily summary / morning card (mode-aware language) -- SOON
 - Scripture weighting by mode + verse tagging system -- SOON
 - Streak break Acknowledgement Modal -- needs streak system built first, SOON
@@ -767,17 +767,29 @@ Mode-awareness -- every new feature must define its Mindful behavior at build ti
 Testing standard:
 Primary theme: Slate with yellow accent
 Onboarding screens always force Light theme (THEMES['light'] direct import, never useTheme()). Apply this pattern to every onboarding screen.
+
+Onboarding files built so far:
+- app/onboarding/welcome.tsx -- Screen 1, animated entrance, GET STARTED button, DEV skip button
+- app/onboarding/profile-setup.tsx -- Screen 2, name/weight/height/birthday/sex only
+- app/onboarding/style-survey.tsx -- Screen 3, 4 questions, 1-2-3 scoring
+- app/onboarding/your-style.tsx -- Screen 4, recommendation, activity level, goal weight, pace, calorie target, macro presets
+- app/onboarding/faith-journey.tsx -- Screen 5, NOT YET BUILT
+- app/onboarding/apple-health.tsx -- Screen 6, NOT YET BUILT
+- app/onboarding/all-set.tsx -- Screen 7, NOT YET BUILT
+- app/onboarding/commitment.tsx -- Discipline commitment screen, NOT YET BUILT
+Boot gate lives in app/_layout.tsx -- checks pj_onboarding_complete on launch, redirects to welcome if missing.
 Onboarding screen layout decisions:
 - Screen 2 collects: name, current weight, height, birthday, sex ONLY
 - Screen 4 collects: activity level, goal weight, weekly pace, live calorie target, style selection, macro presets
 - Calorie estimate uses real Mifflin-St Jeor BMR, reads biometrics from pj_profile + today's weight from pj_YYYY-MM-DD
-- Activity level default is sedentary until two-question architecture is rebuilt
+- Activity level defaults: lifestyleActivity = 'sedentary', trainingFrequency = 'none' -- both conservative by design
 - Discipline color: #c2621a (amber/orange). Balanced: #2563eb (blue). Mindful: #059669 (green).
 Build on Slate yellow, audit all 5 themes x all accents before marking visual features done
 Never assume a bug is theme-specific without confirming on multiple themes
 Data/storage decisions:
 AsyncStorage keys all defined in instructions
 pj_profile now includes sleepGoal field
+pj_profile activity fields: activityLevel (old, being replaced) → lifestyleActivity + trainingFrequency. Both string fields. Defaults: lifestyleActivity = 'sedentary', trainingFrequency = 'none'. All other tabs and cards read calTarget directly -- they do NOT need changes when this ships. Only profile.tsx, your-style.tsx, and head-to-head.tsx touch the activity fields directly.
 Firebase Auth planned pre-beta -- Apple + Google login, Firestore migration from AsyncStorage
 Dev reset/export -- pin, build only if needed before TestFlight
 Macro goals system:
@@ -843,6 +855,69 @@ Toast above Modal (CRITICAL):
 RN Modals create a new native window layer -- normal toast tree is invisible behind Modal
 Fix: export ToastRenderer from Toast.tsx, render <ToastRenderer /> inside Modal JSX
 Reference: any modal that fires toasts
+ACTIVITY LEVEL ARCHITECTURE -- FULL SPEC
+
+Formula: TDEE = (BMR × lifestyle_multiplier) + (weekly_training_bonus ÷ 7)
+BMR formula: unchanged -- Mifflin-St Jeor
+  Male:   (10 × kg) + (6.25 × cm) - (5 × age) + 5
+  Female: (10 × kg) + (6.25 × cm) - (5 × age) - 161
+
+LIFESTYLE ACTIVITY options (replaces old activityLevel, sets base multiplier):
+  sedentary   | Sedentary       | Desk job, minimal movement outside of workouts        | 1.2
+  light       | Lightly Active  | Some walking, on your feet occasionally during the day | 1.3
+  active      | Active          | On your feet a lot -- server, teacher, retail, trades  | 1.45
+  very_active | Very Active     | Hard physical labor most of the day                   | 1.6
+
+TRAINING FREQUENCY options (adds flat daily bonus on top of TDEE):
+  none   | Not currently training      | Little to no structured exercise          | +0 kcal/day
+  1x     | 1-2x / week                 | Light or occasional sessions              | +100 kcal/day
+  3x     | 3-4x / week                 | Consistent training most weeks            | +200 kcal/day
+  5x     | 5-6x / week                 | High frequency, serious commitment        | +300 kcal/day
+  daily  | Daily / twice daily         | Elite or professional training volume     | +400 kcal/day
+(weekly bonus = daily × 7: 0 / 700 / 1400 / 2100 / 2800)
+
+Defaults: lifestyleActivity = 'sedentary', trainingFrequency = 'none'
+
+FILES TO UPDATE -- in order:
+1. profile.tsx
+   - Profile interface: remove activityLevel, add lifestyleActivity: string + trainingFrequency: string
+   - Remove ACTIVITY_MULTIPLIERS and ACTIVITY_LABELS constants entirely
+   - Add LIFESTYLE_OPTIONS array (key, label, sub, multiplier) and TRAINING_OPTIONS array (key, label, sub, dailyBonus)
+   - Fix birthday date parsing bug: replace new Date(profile.birthday) with date-safe parser that splits string manually to avoid iOS UTC midnight issue
+   - calcTDEE: new formula = Math.round((bmr * lifestyleMultiplier) + trainingDailyBonus)
+   - Activity Level collapsible card UI: two sections -- Lifestyle Activity (4 options) and Training Frequency (5 options), same button style as existing
+   - Default state: activityLevel: 'moderate' removed, lifestyleActivity: 'sedentary' + trainingFrequency: 'none' added
+
+2. your-style.tsx (Screen 4)
+   - Remove ACTIVITY_OPTIONS array and single activity selector
+   - Add LIFESTYLE_OPTIONS and TRAINING_OPTIONS arrays (same values as profile.tsx)
+   - Replace single activity state with lifestyleActivity + trainingFrequency state, both defaulting to 'sedentary'/'none'
+   - Update calorie calculation to use new formula
+   - Update AsyncStorage save to write lifestyleActivity + trainingFrequency instead of activityLevel
+   - UI: two labeled sections replacing one, same card style
+
+3. index.tsx
+   - Lines ~934-961: inline ACTIVITY_MULTIPLIERS and TDEE calc block, gated on p.activityLevel && p.weightGoal
+   - Update gate condition to: p.lifestyleActivity && p.trainingFrequency && p.weightGoal
+   - Replace inline ACTIVITY_MULTIPLIERS with LIFESTYLE_OPTIONS lookup and training daily bonus
+   - New formula: tdee = Math.round((bmr * lifestyleMultiplier) + trainingDailyBonus)
+   - Fix birthday date parsing bug here too -- same fix as profile.tsx
+   - setCalTarget and setProfileBmr calls remain, just fed correct numbers
+
+4. log.tsx
+   - TWO separate inline TDEE calc blocks (lines ~234-247 and ~299-312), both gated on p.activityLevel
+   - Update both blocks identically -- same formula change as index.tsx
+   - Fix birthday date parsing in both blocks
+
+5. head-to-head.tsx
+   - Read lifestyleActivity + trainingFrequency from pj_profile instead of activityLevel
+   - Update TDEE calc to use new formula matching profile.tsx
+
+MARKETING ANGLE (locked):
+"Most calorie calculators blend your lifestyle and your workouts into one number -- and consistently overshoot for desk workers who train. We separate them. Your office job is your office job. Your gym time is your gym time."
+Short in-app tooltip version: "Most apps overestimate for desk workers who train. We don't."
+Potential tagline/marketing hook -- this is a real known flaw in standard TDEE calculators, positioning is factual not arrogant.
+
 Marketing decisions:
 App name shortlist: Prevail, Steadfast, Worthy, Haven, Witness, Sown. Dropped: Abide (taken by existing Christian meditation app). Prevail is strongest -- punchy, fitness-forward, faith-adjacent without screaming it.
 Branding: NOT marketed as a "Christian app" -- positioned as intentional whole-person wellness. Faith present and unapologetic but not the marketing lead. Chick-fil-A model.

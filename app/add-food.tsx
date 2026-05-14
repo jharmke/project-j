@@ -766,6 +766,26 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
     const name = food.description;
     const cal = getCalories(food);
     const isFav = favorites.some(f => f.name === name);
+    if (isFav) {
+      Alert.alert(
+        'Remove from Favorites',
+        `Remove ${name} from your favorites?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Remove', style: 'destructive', onPress: async () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            const updated = favorites.filter(f => f.name !== name);
+            setFavorites(updated);
+            await AsyncStorage.setItem('pj_favorites', JSON.stringify(updated));
+            await saveToFirebase('my_foods', 'favorites', updated);
+            showToast('Removed from favorites', name, 'info');
+          }},
+        ]
+      );
+      return;
+    }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    showToast('Added to favorites', name, 'success');
     let updated;
     if (isFav) {
       updated = favorites.filter(f => f.name !== name);
@@ -933,6 +953,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
     { nutrientName: 'Fatty acids, total saturated', unitName: 'G', value: f.saturatedFat || 0 },
   ],
   isMyFood: false,
+  fsId: (f as any).fsId || null,
 })) :
           activeTab === 'recipes' ? recipes.map((r: any) => ({
             description: r.name,
@@ -1033,6 +1054,44 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                 )}
               </View>
             </TouchableOpacity>
+          );
+        }}
+        ListEmptyComponent={() => {
+          if (query.trim()) return null;
+          const configs: Record<string, { icon: string; title: string; subtitle: string }> = {
+            recent: {
+              icon: 'time-outline',
+              title: 'No recent foods',
+              subtitle: 'Foods you log will appear here for quick access',
+            },
+            myfoods: {
+              icon: 'bookmark-outline',
+              title: 'No saved foods',
+              subtitle: 'Save custom foods to your library for quick logging',
+            },
+            favorites: {
+              icon: 'star-outline',
+              title: 'No favorites yet',
+              subtitle: 'Tap the star on any food to save it here',
+            },
+            recipes: {
+              icon: 'restaurant-outline',
+              title: 'No recipes yet',
+              subtitle: 'Build a recipe to log multiple ingredients at once',
+            },
+          };
+          const config = configs[activeTab];
+          if (!config) return null;
+          return (
+            <View style={{ alignItems: 'center', paddingTop: 60, paddingHorizontal: 32, gap: 12 }}>
+              <Ionicons name={config.icon as any} size={40} color={theme.textDim} />
+              <Text style={{ fontSize: 16, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', textAlign: 'center' }}>
+                {config.title}
+              </Text>
+              <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular', textAlign: 'center', lineHeight: 20 }}>
+                {config.subtitle}
+              </Text>
+            </View>
           );
         }}
         keyboardShouldPersistTaps="handled"

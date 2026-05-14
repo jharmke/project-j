@@ -1,14 +1,17 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Alert, Image, Linking, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Alert, Animated, Image, Linking, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import Reanimated, { useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useToast } from '../components/Toast';
 import { saveToFirebase } from '../firebaseConfig';
 import { useTheme } from '../theme';
+import CryptoJS from 'crypto-js';
 
 const AnimCircle = Reanimated.createAnimatedComponent(Circle);
 
@@ -74,6 +77,63 @@ function MacroDonut({ protein, carbs, fat, calories, theme }: { protein: number;
     </View>
   );
 }
+async function fetchFatSecretServings(fsId: string): Promise<any[]> {
+  try {
+    const FS_KEY = 'b8543feaeabd412f81427bc901e2f3b9';
+    const FS_SECRET = '659c1da30b4e48eaab5788534cb2b77a';
+    const FS_BASE = 'https://platform.fatsecret.com/rest/server.api';
+    const oauth: Record<string, string> = {
+      oauth_consumer_key: FS_KEY,
+      oauth_nonce: Math.random().toString(36).substring(2) + Date.now().toString(36),
+      oauth_signature_method: 'HMAC-SHA1',
+      oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
+      oauth_version: '1.0',
+    };
+    const apiParams: Record<string, string> = { method: 'food.get.v4', food_id: fsId, format: 'json' };
+    const allParams = { ...oauth, ...apiParams };
+    const sorted = Object.keys(allParams).sort().map(k =>
+      `${encodeURIComponent(k)}=${encodeURIComponent(allParams[k])}`
+    ).join('&');
+    const base = `GET&${encodeURIComponent(FS_BASE)}&${encodeURIComponent(sorted)}`;
+    const signingKey = `${encodeURIComponent(FS_SECRET)}&`;
+    const sig = CryptoJS.HmacSHA1(base, signingKey).toString(CryptoJS.enc.Base64);
+    const finalParams: Record<string, string> = { ...allParams, oauth_signature: sig };
+    const qs = Object.keys(finalParams).sort().map(k =>
+      `${encodeURIComponent(k)}=${encodeURIComponent(finalParams[k])}`
+    ).join('&');
+    const res = await fetch(`${FS_BASE}?${qs}`);
+    const data = await res.json();
+    const food = data?.food;
+    if (!food) return [];
+    let servings = food.servings?.serving;
+    if (!servings) return [];
+    if (!Array.isArray(servings)) servings = [servings];
+    // Sort so non-100g servings come first -- matches normalizeFsServing behavior in add-food
+    servings = [...servings].sort((a: any, b: any) => {
+      const aIs100g = a.serving_description?.toLowerCase().includes('100g');
+      const bIs100g = b.serving_description?.toLowerCase().includes('100g');
+      if (aIs100g && !bIs100g) return 1;
+      if (!aIs100g && bIs100g) return -1;
+      return 0;
+    });
+    return servings.map((s: any) => ({
+      label: s.serving_description,
+      calories: Math.round(parseFloat(s.calories || '0')),
+      protein: parseFloat(s.protein || '0'),
+      carbs: parseFloat(s.carbohydrate || '0'),
+      fat: parseFloat(s.fat || '0'),
+      fiber: parseFloat(s.fiber || '0'),
+      sugar: parseFloat(s.sugar || '0'),
+      sodium: parseFloat(s.sodium || '0'),
+      cholesterol: parseFloat(s.cholesterol || '0'),
+      saturatedFat: parseFloat(s.saturated_fat || '0'),
+      grams: parseFloat(s.metric_serving_amount || '0'),
+    }));
+  } catch (e) {
+    return [];
+  }
+}
+
 export default function FoodDetailScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
@@ -89,6 +149,7 @@ const isRecipeMode = recipeMode === 'true';
   const fsServings: any[] = food?.fsServings || [];
   const { showToast } = useToast();
   const [isFav, setIsFav] = useState(false);
+  const starScale = useRef(new Animated.Value(1)).current;
   const [showServingPicker, setShowServingPicker] = useState(false);
   const [selectedServing, setSelectedServing] = useState<any>(fsServings.length > 0 ? fsServings[0] : null);
 
@@ -119,36 +180,51 @@ const isRecipeMode = recipeMode === 'true';
   }, []);
 
   const toggleFav = async () => {
+    // Spring animation
+    Animated.sequence([
+      Animated.timing(starScale, { toValue: 1.4, duration: 120, useNativeDriver: true }),
+      Animated.spring(starScale, { toValue: 1, useNativeDriver: true, friction: 4, tension: 200 }),
+    ]).start();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       const saved = await AsyncStorage.getItem('pj_favorites');
       let favs = saved ? JSON.parse(saved) : [];
       if (isFav) {
         favs = favs.filter((f: any) => f.name !== food.description);
+        showToast('Removed from favorites', food.description, 'info');
       } else {
+        // Use the first (label) serving for saved macros -- not the current text box amount.
+        // This ensures favorites always open to the correct label serving.
+        // If servings weren't pre-loaded (e.g. edit entry path), fetch them now on demand.
+        let resolvedServings = fsServings;
+        if (resolvedServings.length === 0 && food.fsId) {
+          resolvedServings = await fetchFatSecretServings(food.fsId);
+        }
+        const labelServing = resolvedServings.length > 0 ? resolvedServings[0] : null;
         const getN = (nName: string, unitName: string = 'G') => {
-          // Prefer selectedServing data when available
-          if (selectedServing) {
+          if (labelServing) {
             const map: Record<string, number> = {
-              'Protein': selectedServing.protein || 0,
-              'Carbohydrate, by difference': selectedServing.carbs || 0,
-              'Total lipid (fat)': selectedServing.fat || 0,
-              'Fiber, total dietary': selectedServing.fiber || 0,
-              'Sugars, total including NLEA': selectedServing.sugar || 0,
-              'Sodium, Na': selectedServing.sodium || 0,
-              'Cholesterol': selectedServing.cholesterol || 0,
-              'Fatty acids, total saturated': selectedServing.saturatedFat || 0,
+              'Protein': labelServing.protein || 0,
+              'Carbohydrate, by difference': labelServing.carbs || 0,
+              'Total lipid (fat)': labelServing.fat || 0,
+              'Fiber, total dietary': labelServing.fiber || 0,
+              'Sugars, total including NLEA': labelServing.sugar || 0,
+              'Sodium, Na': labelServing.sodium || 0,
+              'Cholesterol': labelServing.cholesterol || 0,
+              'Fatty acids, total saturated': labelServing.saturatedFat || 0,
             };
             if (nName in map) return Math.round(map[nName] * 10) / 10;
           }
           const n = (food.foodNutrients || []).find((fn: any) => fn.nutrientName === nName && fn.unitName === unitName);
           return Math.round((n?.value || 0) * 10) / 10;
         };
+        const labelCal = labelServing ? labelServing.calories : calories;
         favs.push({
           name: food.description,
-          cal: calories,
-          protein: food.existingProtein ?? getN('Protein'),
-          carbs: food.existingCarbs ?? getN('Carbohydrate, by difference'),
-          fat: food.existingFat ?? getN('Total lipid (fat)'),
+          cal: labelCal,
+          protein: getN('Protein'),
+          carbs: getN('Carbohydrate, by difference'),
+          fat: getN('Total lipid (fat)'),
           fiber: getN('Fiber, total dietary'),
           sugar: getN('Sugars, total including NLEA'),
           sodium: getN('Sodium, Na', 'MG'),
@@ -158,10 +234,10 @@ const isRecipeMode = recipeMode === 'true';
           proteinPer100g: food.proteinPer100g || 0,
           carbsPer100g: food.carbsPer100g || 0,
           fatPer100g: food.fatPer100g || 0,
-          loggedAmount: amount,
-          loggedUnit: unit,
           foodNutrients: food.foodNutrients || [],
+          fsId: food.fsId || null,
         });
+        showToast('Added to favorites', food.description, 'success');
       }
       await AsyncStorage.setItem('pj_favorites', JSON.stringify(favs));
       await saveToFirebase('my_foods', 'favorites', favs);
@@ -270,6 +346,7 @@ const [currentMeal, setCurrentMeal] = useState(meal || 'Morning');
   loggedUnit: unit,
   foodNutrients: food.foodNutrients || [],
   timestamp: entryTime.getTime(),
+  fsId: food.fsId || null,
 };
       if (isEditing) {
         entries[parseInt(entryIndex)] = { ...entries[parseInt(entryIndex)], ...newEntry };
@@ -305,7 +382,13 @@ const [currentMeal, setCurrentMeal] = useState(meal || 'Morning');
             </TouchableOpacity>
           )}
           <TouchableOpacity onPress={toggleFav} style={{ padding: 4 }}>
-            <Text style={{ fontSize: 22, color: isFav ? theme.accentAmber : theme.textDim }}>★</Text>
+            <Animated.View style={{ transform: [{ scale: starScale }] }}>
+              <Ionicons
+                name={isFav ? 'star' : 'star-outline'}
+                size={22}
+                color={isFav ? theme.accentAmber : theme.textDim}
+              />
+            </Animated.View>
           </TouchableOpacity>
         </View>
       </View>

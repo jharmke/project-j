@@ -325,6 +325,9 @@ export default function LogScreen() {
   const deleteEntry = (idx: number) => {
     const newEntries = entries.filter((_, i) => i !== idx);
     setEntries(newEntries);
+    setTotalProtein(Math.round(newEntries.reduce((s, e) => s + (e.protein || 0), 0) * 10) / 10);
+    setTotalCarbs(Math.round(newEntries.reduce((s, e) => s + (e.carbs || 0), 0) * 10) / 10);
+    setTotalFat(Math.round(newEntries.reduce((s, e) => s + (e.fat || 0), 0) * 10) / 10);
     saveField('entries', newEntries);
     saveToFirebase(activeDate, 'entries', newEntries);
   };
@@ -396,7 +399,7 @@ export default function LogScreen() {
                   <Text style={[styles.calTarget, { color: theme.textMuted }]}>/ {adjustedTarget} kcal</Text>
                 </View>
                 <View style={[styles.progressBarBg, { backgroundColor: theme.bgProgressTrack }]}>
-                  <View style={[styles.progressBarFill, { width: `${Math.min(calPct, 100)}%`, backgroundColor: calColor }]} />
+                  <ReAnimated.View style={[styles.progressBarFill, useAnimatedStyle(() => ({ width: withTiming(`${Math.min(calPct, 100)}%` as any, { duration: 400 }) })), { backgroundColor: calColor }]} />
                 </View>
                 <Text style={[styles.calRemaining, { color: theme.textMuted }]}>
                   {adjustedTarget > 0 ? (totalCals < adjustedTarget ? `${adjustedTarget - totalCals} kcal remaining (${activeCalories} burned)` : `${totalCals - adjustedTarget} kcal over target (${activeCalories} burned)`) : ''}
@@ -406,15 +409,15 @@ export default function LogScreen() {
             </View>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: theme.borderSubtle }}>
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ color: theme.macroProtein, fontSize: 16, fontFamily: 'BebasNeue_400Regular' }}>{totalProtein}g</Text>
+                <Text style={{ color: theme.macroProtein, fontSize: 16, fontFamily: 'DMSans_600SemiBold' }}>{totalProtein}<Text style={{ fontSize: 11 }}>g</Text></Text>
                 <Text style={{ color: theme.textMuted, fontSize: 10, fontFamily: 'DMSans_400Regular' }}>Protein</Text>
               </View>
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ color: theme.macroCarbs, fontSize: 16, fontFamily: 'BebasNeue_400Regular' }}>{totalCarbs}g</Text>
+                <Text style={{ color: theme.macroCarbs, fontSize: 16, fontFamily: 'DMSans_600SemiBold' }}>{totalCarbs}<Text style={{ fontSize: 11 }}>g</Text></Text>
                 <Text style={{ color: theme.textMuted, fontSize: 10, fontFamily: 'DMSans_400Regular' }}>Carbs</Text>
               </View>
               <View style={{ alignItems: 'center' }}>
-                <Text style={{ color: theme.macroFat, fontSize: 16, fontFamily: 'BebasNeue_400Regular' }}>{totalFat}g</Text>
+                <Text style={{ color: theme.macroFat, fontSize: 16, fontFamily: 'DMSans_600SemiBold' }}>{totalFat}<Text style={{ fontSize: 11 }}>g</Text></Text>
                 <Text style={{ color: theme.textMuted, fontSize: 10, fontFamily: 'DMSans_400Regular' }}>Fat</Text>
               </View>
             </View>
@@ -511,6 +514,7 @@ export default function LogScreen() {
                             existingAmount: (entry as any).loggedAmount || (() => { const m = entry.name.match(/\((\d+\.?\d*)(g|oz|serving)\)/); return m ? m[1] : '100'; })(),
                             existingUnit: (entry as any).loggedUnit || (() => { const m = entry.name.match(/\((\d+\.?\d*)(g|oz|serving)\)/); return m ? m[2] : 'g'; })(),
                             timestamp: entry.timestamp || Date.now(),
+                            fsId: (entry as any).fsId || null,
                           }),
                           meal: entry.meal,
                           date: todayKey,
@@ -528,12 +532,21 @@ export default function LogScreen() {
                           return (
                             <>
                               <Text style={[styles.foodEntryName, { color: theme.textPrimary }]} numberOfLines={1}>{foodName}{amountLabel ? ` · ${amountLabel}` : ''}</Text>
-                              {(entry.protein || entry.carbs || entry.fat) ? (
-                                <Text style={[styles.foodEntryMacros, { color: theme.textMuted }]}>
-                                  {entry.protein ? `P: ${entry.protein}g` : ''}
-                                  {entry.carbs ? `  C: ${entry.carbs}g` : ''}
-                                  {entry.fat ? `  F: ${entry.fat}g` : ''}
-                                </Text>
+                              {(entry.protein !== undefined || entry.carbs !== undefined || entry.fat !== undefined) ? (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 3 }}>
+                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#0d9268' }} />
+                                    <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{entry.protein ?? 0}g</Text>
+                                  </View>
+                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#c47d1a' }} />
+                                    <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{entry.carbs ?? 0}g</Text>
+                                  </View>
+                                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#a83232' }} />
+                                    <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{entry.fat ?? 0}g</Text>
+                                  </View>
+                                </View>
                               ) : null}
                             </>
                           );

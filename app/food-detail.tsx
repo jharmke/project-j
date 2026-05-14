@@ -68,8 +68,24 @@ export default function FoodDetailScreen() {
   }>();
 const isRecipeMode = recipeMode === 'true';
   const food = foodJson ? JSON.parse(foodJson) : null;
+  const fsServings: any[] = food?.fsServings || [];
   const { showToast } = useToast();
   const [isFav, setIsFav] = useState(false);
+  const [showServingPicker, setShowServingPicker] = useState(false);
+  const [selectedServing, setSelectedServing] = useState<any>(fsServings.length > 0 ? fsServings[0] : null);
+
+  // Per-gram rates derived from selected serving -- used for manual gram input scaling
+  const servingRates = selectedServing && selectedServing.grams > 0 ? {
+    calories: selectedServing.calories / selectedServing.grams,
+    protein: selectedServing.protein / selectedServing.grams,
+    carbs: selectedServing.carbs / selectedServing.grams,
+    fat: selectedServing.fat / selectedServing.grams,
+    fiber: selectedServing.fiber / selectedServing.grams,
+    sugar: selectedServing.sugar / selectedServing.grams,
+    sodium: selectedServing.sodium / selectedServing.grams,
+    cholesterol: selectedServing.cholesterol / selectedServing.grams,
+    saturatedFat: selectedServing.saturatedFat / selectedServing.grams,
+  } : null;
 
   useEffect(() => {
     const loadFav = async () => {
@@ -109,7 +125,12 @@ const isRecipeMode = recipeMode === 'true';
     const [entryTime, setEntryTime] = useState<Date>( food?.timestamp ? new Date(food.timestamp) : new Date());
 const [showTimePicker, setShowTimePicker] = useState(false);
   const isEditing = entryIndex !== undefined && entryIndex !== '';
-  const [amount, setAmount] = useState(food?.existingAmount || '100');
+  const [amount, setAmount] = useState(
+    food?.existingAmount || 
+    (food?.fsServings?.length > 0 && food.fsServings[0].grams > 0 
+      ? food.fsServings[0].grams.toString() 
+      : '100')
+  );
   const [unit, setUnit] = useState<'g' | 'oz' | 'serving'>(food?.existingUnit || 'g');
     const [showMealPicker, setShowMealPicker] = useState(false);
 const [currentMeal, setCurrentMeal] = useState(meal || 'Morning');
@@ -130,17 +151,24 @@ const [currentMeal, setCurrentMeal] = useState(meal || 'Morning');
 
   const getMultiplier = () => {
     const val = parseFloat(amount) || 0;
-    if (unit === 'g') return val / 100;
-    if (unit === 'oz') return (val * 28.3495) / 100;
-    if (unit === 'serving') return val;
-    return 0;
+    return val / 100;
   };
 
   const multiplier = getMultiplier();
-  const calories = calPer100g > 0 ? Math.round(calPer100g * multiplier) : (food.existingCal || 0);
-const protein = calPer100g > 0 ? Math.round(proteinPer100g * multiplier * 10) / 10 : (food.existingProtein || 0);
-const carbs = calPer100g > 0 ? Math.round(carbsPer100g * multiplier * 10) / 10 : (food.existingCarbs || 0);
-const fat = calPer100g > 0 ? Math.round(fatPer100g * multiplier * 10) / 10 : (food.existingFat || 0);
+
+  const grams = parseFloat(amount) || 0;
+  const calories = servingRates
+    ? Math.round(servingRates.calories * grams)
+    : calPer100g > 0 ? Math.round(calPer100g * multiplier) : (food.existingCal || 0);
+  const protein = servingRates
+    ? Math.round(servingRates.protein * grams * 10) / 10
+    : calPer100g > 0 ? Math.round(proteinPer100g * multiplier * 10) / 10 : (food.existingProtein || 0);
+  const carbs = servingRates
+    ? Math.round(servingRates.carbs * grams * 10) / 10
+    : calPer100g > 0 ? Math.round(carbsPer100g * multiplier * 10) / 10 : (food.existingCarbs || 0);
+  const fat = servingRates
+    ? Math.round(servingRates.fat * grams * 10) / 10
+    : calPer100g > 0 ? Math.round(fatPer100g * multiplier * 10) / 10 : (food.existingFat || 0);
 
   const saveEntry = async () => {
     if (!calories && calories !== 0) return;
@@ -226,25 +254,26 @@ const fat = calPer100g > 0 ? Math.round(fatPer100g * multiplier * 10) / 10 : (fo
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.foodName}>{food.description}</Text>
 
-        {/* Unit Toggle */}
-        <View style={styles.unitRow}>
-          {(['g', 'oz', 'serving'] as const).map(u => (
-            <TouchableOpacity
-              key={u}
-              style={[styles.unitBtn, unit === u && styles.unitBtnActive]}
-              onPress={() => { setUnit(u); setAmount(u === 'serving' ? '1' : '100'); }}>
-              <Text style={[styles.unitBtnText, unit === u && styles.unitBtnTextActive]}>{u}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        {/* Serving picker -- only shows when FatSecret servings available */}
+        {fsServings.length > 0 && (
+          <TouchableOpacity
+            style={styles.servingPickerBtn}
+            onPress={() => setShowServingPicker(true)}>
+            <View>
+              <Text style={styles.servingPickerLabel}>Serving Size</Text>
+              <Text style={styles.servingPickerValue}>{selectedServing?.label || 'Select serving'}</Text>
+            </View>
+            <Text style={styles.servingPickerCal}>{selectedServing?.calories || 0} kcal ▼</Text>
+          </TouchableOpacity>
+        )}
 
-        {/* Amount Input */}
+        {/* Grams input */}
         <View style={styles.amountRow}>
-          <Text style={styles.amountLabel}>Amount ({unit})</Text>
+          <Text style={styles.amountLabel}>Amount (g)</Text>
           <TextInput
             style={styles.amountInput}
             value={amount}
-            onChangeText={setAmount}
+            onChangeText={v => { setAmount(v); }}
             keyboardType="decimal-pad"
             selectTextOnFocus
           />
@@ -374,6 +403,28 @@ const fat = calPer100g > 0 ? Math.round(fatPer100g * multiplier * 10) / 10 : (fo
         )}
       </ScrollView>
 
+      {/* Serving Picker Modal */}
+      <Modal visible={showServingPicker} transparent animationType="slide">
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowServingPicker(false)}>
+          <View style={styles.modal}>
+            <Text style={styles.modalTitle}>Select Serving Size</Text>
+            {fsServings.map((s: any, i: number) => (
+              <TouchableOpacity
+                key={i}
+                style={[styles.mealOption, selectedServing?.label === s.label && styles.mealOptionActive]}
+                onPress={() => {
+                  setSelectedServing(s);
+                  setAmount(s.grams > 0 ? s.grams.toString() : '100');
+                  setShowServingPicker(false);
+                }}>
+                <Text style={[styles.mealOptionText, selectedServing?.label === s.label && { color: theme.accentGreen }]}>{s.label}</Text>
+                <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{s.calories} kcal</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
       {/* Meal Picker Modal */}
       <Modal visible={showMealPicker} transparent animationType="slide">
         <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowMealPicker(false)}>
@@ -428,6 +479,10 @@ const useStyles = (theme: any) => StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'flex-end' },
   modal: { backgroundColor: theme.bgCard, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24, borderWidth: 1, borderColor: theme.borderCard },
   modalTitle: { fontSize: 18, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', marginBottom: 16 },
+  servingPickerBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, borderRadius: 10, padding: 14, marginBottom: 12 },
+  servingPickerLabel: { fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 3 },
+  servingPickerValue: { fontSize: 15, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold' },
+  servingPickerCal: { fontSize: 18, color: theme.accentGreen, fontFamily: 'BebasNeue_400Regular' },
   mealOption: { padding: 16, borderBottomWidth: 1, borderBottomColor: theme.borderSubtle, alignItems: 'center' },
   mealOptionActive: { backgroundColor: theme.accentGreenBg },
   mealOptionText: { fontSize: 16, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' },

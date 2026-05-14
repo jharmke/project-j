@@ -45,7 +45,7 @@ interface SearchResult {
 // ─── FatSecret OAuth 1.0a helpers ───────────────────────────────────────────
 
 const FS_KEY = 'b8543feaeabd412f81427bc901e2f3b9';
-const FS_SECRET = '863ef00fa6d844789c0c28f665793182';
+const FS_SECRET = '659c1da30b4e48eaab5788534cb2b77a';
 const FS_BASE = 'https://platform.fatsecret.com/rest/server.api';
 
 function hmacSha1(key: string, message: string): string {
@@ -199,6 +199,39 @@ async function fetchFatSecretBarcode(barcode: string): Promise<SearchResult | nu
   }
 }
 
+async function fetchFatSecretServings(fsId: string): Promise<any[]> {
+  try {
+    const url = buildFatSecretUrl({
+      method: 'food.get.v4',
+      food_id: fsId,
+      format: 'json',
+    });
+    const res = await fetch(url);
+    const data = await res.json();
+    const food = data?.food;
+    if (!food) return [];
+    let servings = food.servings?.serving;
+    if (!servings) return [];
+    if (!Array.isArray(servings)) servings = [servings];
+    return servings.map((s: any) => ({
+      label: s.serving_description,
+      calories: Math.round(parseFloat(s.calories || '0')),
+      protein: parseFloat(s.protein || '0'),
+      carbs: parseFloat(s.carbohydrate || '0'),
+      fat: parseFloat(s.fat || '0'),
+      fiber: parseFloat(s.fiber || '0'),
+      sugar: parseFloat(s.sugar || '0'),
+      sodium: parseFloat(s.sodium || '0'),
+      cholesterol: parseFloat(s.cholesterol || '0'),
+      saturatedFat: parseFloat(s.saturated_fat || '0'),
+      grams: parseFloat(s.metric_serving_amount || '0'),
+    }));
+  } catch (e) {
+    console.log('FatSecret servings error', e);
+    return [];
+  }
+}
+
 // ─── End FatSecret helpers ───────────────────────────────────────────────────
 
 function AnimatedSweep({ sweepProgress, color }: { sweepProgress: Animated.Value; color: string }) {
@@ -220,7 +253,7 @@ function AnimatedSweep({ sweepProgress, color }: { sweepProgress: Animated.Value
 
 export default function AddFoodScreen() {
   const insets = useSafeAreaInsets();
-  const { theme } = useTheme();
+  const { theme, themeId } = useTheme();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [myFoods, setMyFoods] = useState<MyFood[]>([]);
@@ -423,7 +456,19 @@ const saveEditMyFood = async () => {
     return Math.round(e?.value || 0);
   };
 
-const openFoodDetail = (food: SearchResult) => {
+  const getMacros = (food: SearchResult) => {
+    const p = food.foodNutrients?.find((n: any) => n.nutrientName === 'Protein');
+    const c = food.foodNutrients?.find((n: any) => n.nutrientName === 'Carbohydrate, by difference');
+    const f = food.foodNutrients?.find((n: any) => n.nutrientName === 'Total lipid (fat)');
+    if (!p && !c && !f) return null;
+    return {
+      protein: Math.round(p?.value || 0),
+      carbs: Math.round(c?.value || 0),
+      fat: Math.round(f?.value || 0),
+    };
+  };
+
+const openFoodDetail = async (food: SearchResult) => {
     if ((food as any).isRecipe) {
       router.push({
         pathname: '/recipe-log',
@@ -448,6 +493,11 @@ const openFoodDetail = (food: SearchResult) => {
       return;
     }
     const myFoodMatch = food.isMyFood ? myFoods.find(f => f.name === food.description) : null;
+    const fsId = (food as any).fsId;
+    let fsServings: any[] = [];
+    if (fsId && !(food as any).fromBarcode) {
+      fsServings = await fetchFatSecretServings(fsId);
+    }
     router.push({
       pathname: '/food-detail',
       params: {
@@ -455,6 +505,7 @@ const openFoodDetail = (food: SearchResult) => {
           ...food, 
           isMyFood: food.isMyFood,
           myFoodData: myFoodMatch,
+          fsServings: fsServings.length > 0 ? fsServings : undefined,
         }),
         meal,
         date,
@@ -704,7 +755,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
     await saveToFirebase('my_foods', 'favorites', updated);
   };
 
-  const styles = useStyles(theme);
+  const styles = useStyles(theme, themeId);
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
@@ -720,34 +771,9 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
       <Text style={{ color: theme.accentGreen, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>+ Recipe</Text>
     </TouchableOpacity>
     <TouchableOpacity
-      onPress={() => {
-        if (scanCooldownActive) {
-          showToast('Scanner cooling down', 'Database limit -- ready shortly', 'info');
-          return;
-        }
-        startScan();
-      }}
-      style={{ backgroundColor: scanCooldownActive ? theme.bgInput : theme.accentBlueBg, borderWidth: 1, borderColor: scanCooldownActive ? theme.borderCard : theme.accentBlueBorder, borderRadius: 6, padding: 6, alignItems: 'center', justifyContent: 'center', width: 38, height: 38 }}>
-      {scanCooldownActive ? (
-        <Animated.View style={{ width: 24, height: 24, alignItems: 'center', justifyContent: 'center' }}>
-          <Svg width={24} height={24} viewBox="0 0 24 24">
-            <G rotation="-90" origin="12, 12">
-              {/* Background circle */}
-              <Path
-                d="M 12 2 A 10 10 0 1 1 11.9999 2"
-                stroke={theme.borderCard}
-                strokeWidth={2.5}
-                fill="none"
-              />
-              {/* Sweep arc -- driven by sweepProgress */}
-              <AnimatedSweep sweepProgress={sweepProgress} color={theme.accentBlueRaw} />
-            </G>
-          </Svg>
-          <Ionicons name="barcode-outline" size={12} color={theme.textDim} style={{ position: 'absolute' }} />
-        </Animated.View>
-      ) : (
-        <Ionicons name="barcode-outline" size={24} color={theme.accentBlue} />
-      )}
+      onPress={startScan}
+      style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, padding: 6, alignItems: 'center', justifyContent: 'center', width: 38, height: 38 }}>
+      <Ionicons name="barcode-outline" size={24} color={theme.accentBlue} />
     </TouchableOpacity>
   </View>
 </View>
@@ -767,9 +793,9 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
 
 {/* Scan banner -- shows while lastScannedBarcode is set */}
       {lastScannedBarcode && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 8, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8 }}>
-          <Ionicons name="information-circle" size={14} color={theme.accentBlue} style={{ marginRight: 6 }} />
-          <Text style={{ flex: 1, fontSize: 12, color: theme.accentBlue, fontFamily: 'DMSans_500Medium' }}>Tap SET on the correct item to save it for future scans</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 8, paddingVertical: 2 }}>
+          <Ionicons name="information-circle-outline" size={13} color={theme.textMuted} style={{ marginRight: 5 }} />
+          <Text style={{ flex: 1, fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Tap SET on the correct item to confirm it for future scans</Text>
         </View>
       )}
 
@@ -800,9 +826,12 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
       )}
 
       {/* Add New Food */}
-      <TouchableOpacity style={styles.addNewBtn} onPress={() => setShowAddNew(!showAddNew)}>
-        <Text style={styles.addNewBtnText}>+ Save New Food to Library</Text>
-      </TouchableOpacity>
+      {meal === 'browse' && (
+        <TouchableOpacity style={styles.addNewBtn} onPress={() => setShowAddNew(!showAddNew)}>
+          <Ionicons name="add-circle-outline" size={13} color={theme.accentBlue} />
+          <Text style={styles.addNewBtnText}>Save New Food to Library</Text>
+        </TouchableOpacity>
+      )}
 
       {showAddNew && (
         <View style={styles.addNewForm}>
@@ -862,56 +891,88 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
           }))
         }
         keyExtractor={(_, i) => i.toString()}
-        renderItem={({ item, index }) => (
-          <TouchableOpacity style={styles.resultItem} onPress={() => openFoodDetail(item)}>
-            <View style={styles.resultLeft}>
-              {item.isMyFood && (
-                <View style={styles.savedBadge}>
-                  <Text style={styles.savedBadgeText}>SAVED</Text>
-                </View>
-              )}
-              {item.isRecipe && (
-                <View style={[styles.savedBadge, { backgroundColor: theme.accentGreenBg }]}>
-                  <Text style={[styles.savedBadgeText, { color: theme.accentGreen }]}>RECIPE</Text>
-                </View>
-              )}
-              <Text style={styles.resultName} numberOfLines={2}>{item.description}</Text>
-            </View>
-            <View style={styles.resultRight}>
-              {(item as any).isOverride && (
-                <Ionicons name="checkmark-circle" size={16} color={theme.accentGreen} style={{ marginRight: 6 }} />
-              )}
-              {lastScannedBarcode && !(item as any).isOverride && (
-                <TouchableOpacity
-                  onPress={() => saveOverride(item)}
-                  style={{ marginRight: 6, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 3 }}>
-                  <Text style={{ fontSize: 10, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>SET</Text>
-                </TouchableOpacity>
-              )}
-              <TouchableOpacity onPress={() => toggleFavorite(item)} style={{ marginRight: 8 }}>
-                <Text style={{ fontSize: 16, color: favorites.some(f => f.name === item.description) ? theme.accentAmber : theme.textDim }}>★</Text>
-              </TouchableOpacity>
-              <Text style={styles.resultCal}>{getCalories(item)}</Text>
-              <Text style={styles.resultCalLabel}>kcal</Text>
-              {item.isMyFood && (
-                <>
+        renderItem={({ item, index }) => {
+          const macros = getMacros(item);
+          const nameParts = item.description.split(' · ');
+          const foodName = nameParts[0];
+          const brandName = nameParts.length > 1 ? nameParts.slice(1).join(' · ') : null;
+          return (
+            <TouchableOpacity style={[styles.resultItem, (item as any).isOverride && styles.resultItemSet]} onPress={() => openFoodDetail(item)}>
+              <View style={styles.resultLeft}>
+                {/* Badges */}
+                {(item.isMyFood || item.isRecipe) && (
+                  <View style={item.isRecipe ? [styles.savedBadge, { backgroundColor: theme.accentGreenBg }] : styles.savedBadge}>
+                    <Text style={item.isRecipe ? [styles.savedBadgeText, { color: theme.accentGreen }] : styles.savedBadgeText}>
+                      {item.isRecipe ? 'RECIPE' : 'SAVED'}
+                    </Text>
+                  </View>
+                )}
+                {/* Food name + brand */}
+                <Text style={styles.resultName} numberOfLines={2}>{foodName}</Text>
+                {brandName && (
+                  <Text style={styles.resultBrand} numberOfLines={1}>{brandName}</Text>
+                )}
+                {/* Macro strip */}
+                {macros && (
+                  <View style={styles.macroStrip}>
+                    <View style={styles.macroDot}>
+                      <View style={[styles.dotCircle, { backgroundColor: '#0d9268' }]} />
+                      <Text style={styles.macroVal}>{macros.protein}g</Text>
+                    </View>
+                    <View style={styles.macroDot}>
+                      <View style={[styles.dotCircle, { backgroundColor: '#c47d1a' }]} />
+                      <Text style={styles.macroVal}>{macros.carbs}g</Text>
+                    </View>
+                    <View style={styles.macroDot}>
+                      <View style={[styles.dotCircle, { backgroundColor: '#a83232' }]} />
+                      <Text style={styles.macroVal}>{macros.fat}g</Text>
+                    </View>
+                  </View>
+                )}
+              </View>
+              {/* Right side -- fixed layout so everything aligns */}
+              <View style={styles.resultRight}>
+                {(item as any).isOverride && (
+                  <Ionicons name="checkmark-circle" size={16} color={theme.accentGreen} style={{ marginRight: 6 }} />
+                )}
+                {lastScannedBarcode && !(item as any).isOverride && (
                   <TouchableOpacity
-                    onPress={() => {
-                      const idx = myFoods.findIndex(f => f.name === item.description);
-                      setEditingMyFood({ idx, name: myFoods[idx].name, cal: myFoods[idx].cal.toString() });
-                      setShowEditMyFood(true);
-                    }}
-                    style={{ marginLeft: 8 }}>
-                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>Edit</Text>
+                    onPress={() => saveOverride(item)}
+                    style={{ marginRight: 6, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 3 }}>
+                    <Text style={{ fontSize: 10, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>SET</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => deleteMyFood(myFoods.findIndex(f => f.name === item.description))} style={styles.deleteBtn}>
-                    <Text style={styles.deleteBtnText}>×</Text>
-                  </TouchableOpacity>
-                </>
-              )}
-            </View>
-          </TouchableOpacity>
-        )}
+                )}
+                <TouchableOpacity onPress={() => toggleFavorite(item)} style={styles.starBtn}>
+                  <Ionicons
+                    name={favorites.some(f => f.name === item.description) ? 'star' : 'star-outline'}
+                    size={16}
+                    color={favorites.some(f => f.name === item.description) ? theme.accentAmber : theme.textDim}
+                  />
+                </TouchableOpacity>
+                <View style={styles.calBlock}>
+                  <Text style={styles.resultCal}>{getCalories(item)}</Text>
+                  <Text style={styles.resultCalLabel}>kcal</Text>
+                </View>
+                {item.isMyFood && (
+                  <>
+                    <TouchableOpacity
+                      onPress={() => {
+                        const idx = myFoods.findIndex(f => f.name === item.description);
+                        setEditingMyFood({ idx, name: myFoods[idx].name, cal: myFoods[idx].cal.toString() });
+                        setShowEditMyFood(true);
+                      }}
+                      style={{ marginLeft: 8 }}>
+                      <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => deleteMyFood(myFoods.findIndex(f => f.name === item.description))} style={styles.deleteBtn}>
+                      <Text style={styles.deleteBtnText}>×</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </View>
+            </TouchableOpacity>
+          );
+        }}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         ListFooterComponent={null}
@@ -1024,32 +1085,50 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
   );
 }
 
-const useStyles = (theme: any) => StyleSheet.create({
+const useStyles = (theme: any, themeId: string) => {
+  const shadowOpacity = ({ light: 0.35, dark: 0.14, slate: 0.28, warm: 0.30, blush: 0.30 } as Record<string, number>)[themeId] ?? 0.18;
+  return StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.bgPrimary },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: theme.borderCard },
   backBtn: { padding: 4 },
   backBtnText: { color: theme.accentBlue, fontSize: 14, fontFamily: 'DMSans_500Medium' },
-  headerTitle: { fontSize: 20, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
+  headerTitle: { fontSize: 20, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
   scanBtn: { padding: 4 },
   scanBtnText: { fontSize: 20 },
   searchRow: { flexDirection: 'row', alignItems: 'center', padding: 16, paddingBottom: 8 },
   searchInput: { flex: 1, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 15, fontFamily: 'DMSans_400Regular' },
   searching: { color: theme.textMuted, marginLeft: 8, fontFamily: 'DMSans_400Regular' },
-  addNewBtn: { marginHorizontal: 16, marginBottom: 8, padding: 10, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, alignItems: 'center' },
-  addNewBtnText: { color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
+  addNewBtn: { marginHorizontal: 16, marginBottom: 8, paddingVertical: 6, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', gap: 5, alignSelf: 'flex-start', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6 },
+  addNewBtnText: { color: theme.accentBlue, fontSize: 12, fontFamily: 'DMSans_600SemiBold' },
   addNewForm: { marginHorizontal: 16, marginBottom: 8, backgroundColor: theme.bgCard, borderRadius: 8, padding: 12, borderWidth: 1, borderColor: theme.borderCard },
   formInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: 'DMSans_400Regular', marginBottom: 8 },
   formRow: { flexDirection: 'row', gap: 8 },
   saveBtn: { backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder, borderRadius: 6, paddingHorizontal: 16, justifyContent: 'center' },
   saveBtnText: { color: theme.accentGreen, fontFamily: 'DMSans_600SemiBold', fontSize: 14 },
-  resultItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14, borderBottomWidth: 1, borderBottomColor: theme.borderSubtle },
+  resultItem: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    marginHorizontal: 12, marginVertical: 4,
+    backgroundColor: theme.bgCard,
+    borderWidth: 0.5, borderColor: theme.borderCard,
+    borderTopColor: 'rgba(255,255,255,0.1)',
+    borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw,
+    borderRadius: 10, padding: 14,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity, shadowRadius: 6,
+  },
   resultLeft: { flex: 1, marginRight: 12 },
-  savedBadge: { backgroundColor: theme.accentGreenBg, borderRadius: 3, paddingHorizontal: 5, paddingVertical: 1, alignSelf: 'flex-start', marginBottom: 4 },
-  savedBadgeText: { fontSize: 8, color: theme.accentGreen, fontFamily: 'DMSans_700Bold' },
-  resultName: { fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_400Regular' },
-  resultRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  resultCal: { fontSize: 18, color: theme.accentGreen, fontFamily: 'BebasNeue_400Regular' },
-  resultCalLabel: { fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular' },
+  savedBadge: { backgroundColor: theme.accentBlueBg, borderRadius: 3, paddingHorizontal: 5, paddingVertical: 1, alignSelf: 'flex-start', marginBottom: 4 },
+  savedBadgeText: { fontSize: 8, color: theme.accentBlue, fontFamily: 'DMSans_700Bold' },
+  resultName: { fontSize: 14, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold' },
+  resultBrand: { fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 1 },
+  macroStrip: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 5 },
+  macroDot: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  dotCircle: { width: 6, height: 6, borderRadius: 3 },
+  macroVal: { fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular' },
+  resultRight: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  starBtn: { padding: 4 },
+  calBlock: { alignItems: 'flex-end', minWidth: 46 },
+  resultCal: { fontSize: 20, color: theme.accentGreen, fontFamily: 'BebasNeue_400Regular', textAlign: 'right' },
+  resultCalLabel: { fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_400Regular', textAlign: 'right', marginTop: -2 },
   deleteBtn: { marginLeft: 8, padding: 4 },
   deleteBtnText: { fontSize: 18, color: theme.textDim },
   cameraOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100 },
@@ -1070,4 +1149,6 @@ const useStyles = (theme: any) => StyleSheet.create({
   modalCancelText: { color: theme.textMuted, fontFamily: 'DMSans_500Medium', fontSize: 14 },
   modalSaveBtn: { flex: 1, padding: 12, backgroundColor: theme.accentBlue, borderRadius: 6, alignItems: 'center' },
   modalSaveText: { color: theme.textWhite, fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 1 },
-});
+  resultItemSet: { borderLeftColor: '#0d9268' },
+  });
+};

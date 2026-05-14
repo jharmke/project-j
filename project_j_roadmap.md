@@ -132,6 +132,21 @@ DONE -- SHIPPED
 [x] Settings card depth/shadow pass -- shadowOpacity 0.18 on section StyleSheet
 
 NOW -- active this session
+Food and search polish
+
+Search results CPP pass -- DONE. Card-style rows, brand name separated, macro strip, per-theme shadows, accent left border, SET card green border, fixed cal alignment, header accent colored, scan banner plain text, barcode cooldown removed, Save New Food gated to library only.
+Macros on search result rows -- DONE. Protein/carbs/fat strip under food name, macro colors match app system.
+food.get on search result tap -- DONE. Fetches real servings on text search tap via fetchFatSecretServings helper.
+Serving size picker on food detail -- DONE. Serving picker modal, grams defaults to real serving grams, per-gram rates locked for accurate manual gram scaling.
+SET banner tip -- plain icon + text in place but still needs CPP polish pass.
+UNSET feature -- SET button toggle on search results page, unset on food detail near star.
+Rename food on entry -- editable name field on food detail before logging, custom name stored with entry.
+Food Library title bug -- shows "Add to Morning" when navigating from library button. One-line fix.
+Save New Food to Library -- full macro fields in proper modal, not just name + calories.
+Favorites bug -- identical food names share favorite state, both toggle together.
+Barcode-to-My-Food assignment -- link barcode permanently to manually built food.
+Meal slots fully customizable -- rename, reorder, add custom slots. (HIGH)
+
 Bugs -- fix these first
 
 Edit Layout Add button -- deferred. Currently redundant with inline toggle. Will become "browse and discover" entry point when card library grows (30+ cards, categories, premium content). Build out properly then.
@@ -148,9 +163,9 @@ Exercise name color in workout tab -- textPrimary swapped to textSecondary to ma
 Exercise type cardio fields -- duration, distance, speed, incline, resistance, hr, calories added to Exercise interface in workoutData.ts. DONE.
 
 
-FatSecret integration -- code complete, pending account activation
+FatSecret integration -- passes initial gate check, extended testing in progress
 
-OAuth 1.0a signing working (CryptoJS), POST request structure correct, search and barcode wired up. Blocked on FatSecret account being upgraded to Premier Free by James (email sent). Test search the moment account is confirmed upgraded -- no code changes needed. OFF stays in code until FatSecret passes all three gate checks.
+OAuth 1.0a signing working (CryptoJS), search and barcode both returning real data, barcode override system working. FS_SECRET updated to 659c1da30b4e48eaab5788534cb2b77a. Extended testing still needed: food detail via text search, end-to-end log entry with real macros, edge cases (no brand, missing nutrients). OFF stays in code until fully confirmed.
 
 (i) Tooltip system -- DONE. See DONE section above.
 TooltipIcon refactored -- self-contained, manages its own modal state and markSeen. Callers pass tooltipKey only, no onPress or external modal needed. All future tooltips follow this pattern. DONE.
@@ -175,13 +190,7 @@ SOON -- confirmed next few sessions
 Food and barcode
 
 Custom water amount modal -- drag interaction, .5oz increments, 48oz max, live oz display, tappable numpad with .5 key, KAV, fade in/out, centered. (top of SOON)
-Save New Food to Library -- full macro fields in proper modal, not just name + calories. (top of SOON)
-Favorites bug -- identical food names share favorite state, both toggle together. Reassess after FatSecret.
-Barcode scanner cooldown -- SVG arc animation has rendering bug past 180 degrees. Reassess after FatSecret -- remove cooldown entirely if FatSecret covers barcodes well, keep only as OFF fallback.
-Barcode override unset -- food detail page Remove button with Alert warning. Reassess after FatSecret.
-Barcode-to-My-Food assignment -- link barcode permanently to manually built food. Reassess after FatSecret.
-Meal slots fully customizable -- rename, reorder, add custom slots. (HIGH)
-Calorie breakdown by meal -- each slot gets a budget.
+Calorie breakdown by meal -- each slot gets a budget. Unclear if needed, revisit later.
 
 Workout
 
@@ -238,18 +247,11 @@ Date on entries tappable -- routes to that day's day detail.
 
 
 BACKLOG -- parked, good ideas, not imminent
-Faith system -- build all together in one session, deeply connected
+Faith system -- see MODES & ONBOARDING section for full spec
 
-Faith Journey setting: Rooted / Exploring / Not right now
-Coaching Modes: Discipline / Balance / Mindful
-Today's Message card behavior forks by Faith Journey setting
-Periodic gentle reminder for Exploring/Not right now users (every 30 days, dismissable, toggleable)
-Calorie color scoring -- mode aware, stub default to Balance
-Coaching mode personality
 Gratitude before meals -- one tap give thanks before logging, unapologetically Christian
 Faith-based fasting -- intentional spiritual fasting with prayer log, separate from 16:8 IF
 Weekly body stewardship reflection -- gentle faith-based weekly prompt, never preachy
-Onboarding flow -- animated, sets coaching mode and faith journey, "skip for now" not X, returnable from profile
 
 Food intelligence -- post coaching modes
 
@@ -329,6 +331,169 @@ App name content series -- "help me name my app" poll sticker, "help me design m
 Photo logging anti-gimmick angle -- decided against photo logging because it's inaccurate (can't see oil, portion weight, prep method). "We don't guess, we track" is a potential marketing hook.
 Distribution path: 200-300 genuinely engaged users first, Christian community warmest early audience, ProductHunt, Reddit (r/Christianity, r/fitness, r/selfimprovement)
 
+
+MODES & ONBOARDING -- FULL SPEC
+This section is the authoritative reference for Your Style, Faith Journey, and the onboarding flow. All build decisions live here.
+
+STORAGE
+styleMode stored in pj_settings -- values: 'discipline' | 'balanced' | 'mindful'. Default: 'balanced'
+faithJourney stored in pj_settings -- values: 'rooted' | 'exploring' | 'notrightnow'. Default: 'rooted'
+fitnessGoal stored in pj_settings -- values: 'lose_weight' | 'build_muscle' | 'improve_endurance' | 'feel_better' | 'healthier_relationship' | 'move_more'. Default: 'feel_better'
+onboardingComplete stored as pj_onboarding_complete -- value: 'true'. Gate key. If present, skip onboarding entirely. Zero other keys touched by onboarding logic.
+Dev tools: "Reset Onboarding" button added to 7-tap dev tools. Clears pj_onboarding_complete only. All other data preserved.
+
+ONBOARDING FLOW -- 4 SCREENS
+Screen 1: Welcome
+PROJECT J in Bebas Neue, large, centered. Tagline placeholder underneath. Background is dark with subtle animated gradient. Elite smooth entrance animation -- staggered fade+translateY on logo, tagline, continue button. CPP level, no excuses. Continue button at bottom.
+
+Screen 2: Your Style
+Title: "Your Style" in Bebas Neue accent color.
+Subtitle: warm, one line, sets the tone.
+Three cards, tappable, one selected at a time. Selected state has accent border + accent tinted background.
+Below the three style cards, a single question appears: "What's your main focus right now?" -- options change based on style selected (see goal options per mode below).
+Discipline gets a commitment screen before Continue fires -- see below.
+Skip option: small dimmed text top right "Skip for now" -- applies 'balanced' default silently.
+
+Screen 3: Faith Journey
+Title: "Your Faith Journey" in Bebas Neue warm amber color.
+Background vibe: warm embers. Animated amber/gold particles drift upward slowly like embers. Soft ambient glow. Warm, not intense -- hearth/candle energy, not fire.
+Three cards, same tappable pattern. Warm, inviting copy per option (see below).
+Skip option: small dimmed text top right "Skip for now" -- applies 'rooted' default silently.
+
+Screen 4: You're All Set
+Clean, celebratory, brief. Accent icon, short affirming line.
+Mindful and Balanced users: "Want to set up your home screen now or later?" -- three options: "Set it up myself" (opens card picker), "Let the app decide" (applies curated default silently), "I'll do it later" (same as let app decide but they know they can change it). "Let the app decide" is the visually prominent option for Mindful.
+Discipline users: no card picker prompt. Their layout is set. That is part of the commitment.
+Tapping any option saves onboardingComplete and navigates to home.
+
+DISCIPLINE COMMITMENT SCREEN
+Fires between style selection and Continue on Screen 2 when Discipline is picked.
+Also fires when switching TO Discipline post-onboarding from settings.
+Does NOT re-fire on subsequent opens if already onboarded as Discipline.
+Three short commitments in clean centered typography -- exact copy TBD during build, tone: direct, resolute, no fluff.
+Single button: "I'm in." Cannot continue without tapping it.
+
+YOUR STYLE -- WHAT EACH MODE CHANGES
+
+Discipline:
+- Calorie color coding: tight thresholds. Green within 50 kcal of target, amber starts at 51 over, red at 150+ over.
+- Macro color coding: strict tolerances.
+- Calorie card: full REMAINING / ACTIVE / NET display with running BMR. All data shown.
+- You vs Yesterday: full W/L/T framing. Motivational lines are firm ("Push harder tomorrow", "Don't let up", "Finish what you started").
+- You vs Yesterday default card position: high (position 3 in default order).
+- Language throughout: direct. "You're 200 over" not "You're close."
+- Effort score: present, prompted on workout completion. If effort score is consistently under 3 for 5+ days, morning briefing card surfaces a callout ("Your effort scores have been low this week. Is something getting in the way?"). Never a push notification, never a modal -- morning card only.
+- Streak card: default higher in card order.
+- Default card order: Today's Training → Calories → You vs Yesterday → Steps → Water → Sleep → everything else.
+- Daily summary language: hard truth + challenge. Leads with calorie/goal delta.
+- Streak break: Acknowledgement Modal fires on next app open. Requires button press, cannot be dismissed by tapping outside. Direct but not shaming.
+- Mode nudge notifications: "Still committed?" check-in if inconsistent 2+ weeks. Single fire, dismissable.
+
+Balanced:
+- Calorie color coding: current behavior. Green zone wide (within 150 kcal), amber buffer, red only significant overage.
+- Macro color coding: forgiving tolerances.
+- Calorie card: full display same as Discipline.
+- You vs Yesterday: full W/L/T framing. Motivational lines are encouraging, middle of road.
+- Language: encouraging. "A little over today, you'll find it tomorrow."
+- Default card order: same as current app default.
+- Daily summary language: genuine recap, leads with biggest win of the day. Order: win → delta → encouragement.
+- Mode nudge notifications: "Feeling ready to level up? Your Style can change anytime." 60 day cooldown, dismissable, toggleable.
+- Differentiator from Discipline: no commitment screen, no streak break modal, no effort score callout, forgiving language, forgiveness moments in daily summary.
+
+Mindful:
+- Calorie color coding: OFF. No color judgment on calories ever.
+- Macro color coding: OFF.
+- Calorie card: simplified. Shows "Logged today: X kcal" and goal neutral. No REMAINING/ACTIVE/NET breakdown shown by default. No running BMR math visible. If they want full detail they can enable in settings (opt-in).
+- You vs Yesterday: W/L/T hidden. No score bar. Card reframed as "YOUR DAY" -- shows deltas only ("Yesterday: 1,840 cal / Today: 2,100 cal"). No winner declared. Card hidden by default in Mindful home layout but available in Edit Layout.
+- Language: observational, never judgmental. "You logged today" is celebrated regardless of number. "You showed up" energy.
+- Logging encouragement: the fact they logged anything is celebrated. No "you're over" framing ever.
+- Default card order: Today's Message → Water → Sleep → Steps → Today's Training → Calories → everything else. You vs Yesterday hidden.
+- Daily summary language: leads with what they DID (not what they didn't). Numbers present but not in bold accent colors. Emphasis on encouragement. Specific data included but framed neutrally.
+- Mode nudge notifications: gentle, warm, 30 day cooldown. "You've been showing up. Whenever you're ready, there's more here for you." Dismissable, toggleable.
+- Home card setup: "You're All Set" screen gives three options (set it up myself / let app decide / later). "Let the app decide" is visually prominent.
+
+FITNESS GOAL OPTIONS PER MODE
+Discipline and Balanced:
+- Lose weight
+- Build muscle
+- Improve endurance
+- Feel better overall
+
+Mindful:
+- Feel more energized
+- Build a healthier relationship with food
+- Move my body more
+- Feel better overall
+No weight loss language in Mindful goal options. Designed for users with eating disorders, diet fatigue, or anyone who needs a safe non-judgmental experience.
+
+FAITH JOURNEY -- WHAT EACH TIER CHANGES
+
+Rooted:
+- Full Today's Message experience. KJV verse, amber glow, routes to Bible screen, full reflection flow.
+- Today's Message card sits at top of home screen by default regardless of Style.
+- Verse rotation weighted toward theme matching Style (perseverance/strength for Discipline, grace/rest for Mindful, balanced for Balanced). Not 100% -- healthy skew, still full range.
+- All faith features on and visible.
+
+Exploring:
+- Full Today's Message experience same as Rooted.
+- Faith features present but no prompts or nudges beyond the card itself.
+- User engages at their own pace.
+
+Not right now:
+- Today's Message card becomes Daily Intention card. No verse, no amber glow. Neutral styling, same card shape.
+- Daily Intention prompt varies by Style:
+  Discipline: "What will you commit to today?"
+  Balanced: "What does a good day look like for you today?"
+  Mindful: "What's one kind thing you can do for yourself today?"
+- User can add custom intentions. No Bible routing. Card always present -- never removed entirely.
+- Faith features quietly hidden. No journal verse category surfaced. Bible tab still accessible via navigation.
+
+FAITH JOURNEY COPY (ONBOARDING SCREEN 3)
+Rooted: "Faith is central to how I live. I want it woven into everything."
+Exploring: "I'm curious. I want to engage with faith at my own pace."
+Not right now: "I'm here for the fitness. The door's always open."
+Tone: warm, inviting, zero judgment. User never feels pressured or evaluated.
+
+POST-ONBOARDING MODE SWITCHING
+Accessing from: Settings (both style and faith journey changeable post-onboarding).
+When user taps a new Style in settings, Acknowledgement Modal fires before saving:
+- Top half: brief warm description of what they're switching to (2 sentences max).
+- Bottom half: two buttons -- "Keep my layout" (behavior changes, card order stays) and "Apply [Mode] defaults" (behavior changes + card order resets).
+- Switching TO Discipline: commitment screen fires again. They are recommitting. Intentional.
+- Switching FROM Discipline: simple confirmation modal, no drama.
+Faith Journey switch: brief descriptor of what changes, single confirm button. No layout choice (faith journey does not control card order).
+After any mode change: toast fires -- "[Mode] style applied."
+
+ACKNOWLEDGEMENT MODAL -- REUSABLE PATTERN
+Established pattern for moments requiring explicit user acknowledgement before proceeding.
+Use cases confirmed: Discipline commitment screen, streak break on Discipline, mode switch confirmation.
+Behavior: cannot be dismissed by tapping outside. Requires button press. Used sparingly -- only for genuinely significant moments.
+
+MODE NUDGE NOTIFICATIONS -- DEFERRED TO SOON
+All three tiers have mode nudge notifications in spec above. Deferred -- needs notification infrastructure first. Add to SOON when notification system is built.
+
+WHAT IS DEFERRED (build in future sessions)
+- Daily summary / morning card (mode-aware language) -- SOON
+- Scripture weighting by mode + verse tagging system -- SOON
+- Streak break Acknowledgement Modal -- needs streak system built first, SOON
+- Contextual first-open setup for Log tab (calorie/macro goal prompt) and Workout tab (fitness focus prompt) -- SOON
+- Effort score callout logic in morning briefing -- SOON
+- Mode nudge notifications -- SOON, needs notification infrastructure
+- Mood check-in card (Mindful-first, available to all) -- SOON
+- Gratitude prompt card -- SOON
+
+BUILD STATUS
+[ ] Onboarding flow -- not started
+[ ] pj_settings styleMode + faithJourney + fitnessGoal fields
+[ ] App boot logic -- pj_onboarding_complete gate
+[ ] Dev tools reset onboarding button
+[ ] Mindful calorie card simplification
+[ ] Mindful You vs Yesterday reframe (no W/L/T, "YOUR DAY" label, score hidden)
+[ ] Discipline commitment screen
+[ ] Default card orders per mode applied on first onboarding complete
+[ ] Post-onboarding mode switch Acknowledgement Modal
+[ ] Daily Intention card for Not right now users
+[ ] Settings exposure for Style and Faith Journey post-onboarding
 
 ANIMATION AUDIT -- LIVING DOCUMENT
 This list must be updated whenever an animation is built or changed. Reference this before any animation work.
@@ -493,11 +658,12 @@ Save a day's exercise list as a named Session
 Sessions tab in workout library alongside exercises
 Star/favorite system for most-used sessions
 Load a session onto any day in one tap
-Coaching modes:
-Discipline -- strict both directions
-Balance -- forgiving on low end, strict on high
-Mindful -- wide green zone, awareness not numbers
-Build with Faith Journey same session
+Coaching modes (Your Style):
+Full spec in MODES & ONBOARDING section above.
+Mode name confirmed: "Your Style" -- over "Coaching Mode" or "Your Rhythm"
+Three modes: Discipline / Balanced / Mindful
+Default: Balanced
+Built same session as Faith Journey -- onboarding flow is the delivery vehicle for both
 HealthKit currently pulling:
 activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, vo2Max, cardioRecovery
 Not yet pulling: weight, HRV, resting HR, blood oxygen, respiratory rate, basal calories

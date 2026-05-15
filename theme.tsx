@@ -6,7 +6,7 @@
 // Paid:  slate, warm, blush
 
 export type ThemeId = 'dark' | 'light' | 'slate' | 'warm' | 'blush';
-export type AccentId = 'default' | 'purple' | 'teal' | 'rose' | 'indigo' | 'green' | 'orange' | 'cyan' | 'rust' | 'sage' | 'mauve' | 'lilac' | 'silver';
+export type AccentId = 'default' | 'purple' | 'teal' | 'rose' | 'indigo' | 'green' | 'orange' | 'cyan' | 'rust' | 'sage' | 'mauve' | 'lilac' | 'silver' | 'discipline' | 'mindful';
 
 export interface AccentOption {
   id: AccentId;
@@ -44,7 +44,9 @@ export const ACCENT_PALETTES: Record<ThemeId, AccentOption[]> = {
     { id: 'orange',  label: 'Gold',    color: '#d97706', accentBlue: '#d97706', accentBlueBg: 'rgba(217,119,6,0.12)',   accentBlueBorder: 'rgba(217,119,6,0.28)',   gradientStart: '#e8dcc0' },
     { id: 'cyan',    label: 'Coral',   color: '#f05050', accentBlue: '#f05050', accentBlueBg: 'rgba(240,80,80,0.10)',   accentBlueBorder: 'rgba(240,80,80,0.25)',   gradientStart: '#e8c8c8' },
     { id: 'mauve',   label: 'Hot Pink',color: '#db2777', accentBlue: '#db2777', accentBlueBg: 'rgba(219,39,119,0.10)', accentBlueBorder: 'rgba(219,39,119,0.25)',  gradientStart: '#e8c0d4' },
-    { id: 'rust',    label: 'Black',   color: '#1a1a2e', accentBlue: '#1a1a2e', accentBlueBg: 'rgba(26,26,46,0.10)',   accentBlueBorder: 'rgba(26,26,46,0.25)',    gradientStart: '#c8c8d0' },
+    { id: 'rust',       label: 'Black',  color: '#1a1a2e', accentBlue: '#1a1a2e', accentBlueBg: 'rgba(26,26,46,0.10)',   accentBlueBorder: 'rgba(26,26,46,0.25)',    gradientStart: '#c8c8d0' },
+    { id: 'discipline', label: 'Amber',  color: '#c2621a', accentBlue: '#c2621a', accentBlueBg: 'rgba(194,98,26,0.12)',  accentBlueBorder: 'rgba(194,98,26,0.28)',   gradientStart: '#e8d0b8' },
+    { id: 'mindful',    label: 'Forest', color: '#0d9268', accentBlue: '#0d9268', accentBlueBg: 'rgba(13,146,104,0.10)', accentBlueBorder: 'rgba(13,146,104,0.25)',  gradientStart: '#c8e8d8' },
   ],
   slate: [
     { id: 'default', label: 'Steel',   color: '#4a7fa5', accentBlue: '#4a7fa5', accentBlueBg: 'rgba(74,127,165,0.12)',  accentBlueBorder: 'rgba(74,127,165,0.28)',  gradientStart: '#98a4b4' },

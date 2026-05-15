@@ -896,6 +896,13 @@ export default function HomeScreen() {
           const sd = JSON.parse(settingsData);
           if (sd.workoutTags && Array.isArray(sd.workoutTags)) setWorkoutTags(sd.workoutTags);
         }
+
+        // Onboarding -- open Edit Layout sheet if flagged from Screen 7
+        const openEditFlag = await AsyncStorage.getItem('pj_open_edit_layout');
+        if (openEditFlag === 'true') {
+          await AsyncStorage.removeItem('pj_open_edit_layout');
+          setEditModalVisible(true);
+        }
         const profileData = await AsyncStorage.getItem('pj_profile');
         if (profileData) {
           const p = JSON.parse(profileData);

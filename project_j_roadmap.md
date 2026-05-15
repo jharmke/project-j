@@ -143,7 +143,7 @@ NOW -- active this session
 Auth and onboarding
 
 Firebase Auth -- Apple/Google login, both required (App Store rules mandate Apple login if any third party login offered). Firestore setup, data migration from AsyncStorage. Pre-TestFlight requirement.
-Onboarding flow -- in progress. Screens 1-5 built and working. Screen 7 (All Set) remaining.
+Onboarding flow -- COMPLETE. All 7 screens built and working.
 
 Workout tab facelift
 
@@ -228,7 +228,23 @@ Active calorie accuracy:
 - Active calorie overestimate disclaimer -- small disclaimer on any screen showing active or net calories. Apple Watch and most wearables overestimate active burn. "Active calorie estimates from Apple Health may vary. Use as a guide, not a guarantee." Exact wording TBD.
 - Burn accuracy adjustment setting -- optional user-controlled percentage modifier on active calories (e.g. apply 80% of reported burn). Fully explained with worked example. (i) tooltip on setting. Linked Tips & Guides help article. Surfaces in settings under Health. Differentiator -- no other app does this honestly. NOW -- Justin flagged as high priority, do not lose. First-use tooltip on home screen when active calories first appear: "These numbers come from Apple Health -- tap to adjust if they seem off." Build after onboarding complete.
 
-Bugs -- fix these first
+Bugs and polish -- fix these first
+
+Birthday scroll confirm button -- tap target too small or overlay dismiss intercepting confirm. Fix so confirm is easy to hit. Remove tap-outside-to-close or add dead zone around picker.
+Decimal input validation -- one decimal max enforced on all numeric text inputs app-wide. Audit every field in code -- food detail, edit entry, macro fields, create food, create recipe, edit/add exercise, weight goal in profile, onboarding weight fields. Never allow multiple decimal points.
+FatSecret logo hit bar -- touchable area spans full screen width, needs to be contained to logo only.
+"G" to "g" -- grams label showing as uppercase G throughout app. Audit all screens and fix to lowercase g everywhere.
+Daily note card KAV -- keyboard covers card when it sits low on screen. Fix.
+Macros Today refresh animation -- only fires on first load after app kill, not on manual refresh tap. Fix so animation fires every time refresh is tapped.
+
+Edit Layout Add button -- deferred.Bugs and polish -- fix these first
+
+Birthday scroll confirm button -- tap target too small or overlay dismiss intercepting confirm. Fix so confirm is easy to hit. Remove tap-outside-to-close or add dead zone around picker.
+Decimal input validation -- one decimal max enforced on all numeric text inputs app-wide. Audit every field in code -- food detail, edit entry, macro fields, create food, create recipe, edit/add exercise, weight goal in profile, onboarding weight fields. Never allow multiple decimal points.
+FatSecret logo hit bar -- touchable area spans full screen width, needs to be contained to logo only.
+"G" to "g" -- grams label showing as uppercase G throughout app. Audit all screens and fix to lowercase g everywhere.
+Daily note card KAV -- keyboard covers card when it sits low on screen. Fix.
+Macros Today refresh animation -- only fires on first load after app kill, not on manual refresh tap. Fix so animation fires every time refresh is tapped.
 
 Edit Layout Add button -- deferred. Currently redundant with inline toggle. Will become "browse and discover" entry point when card library grows (30+ cards, categories, premium content). Build out properly then.
 Today's Message chevron -- removed. DONE.
@@ -272,6 +288,49 @@ Primary button audit -- sweep app-wide, upgrade all primary CTAs to full accent 
 Food and barcode
 
 Custom water amount modal -- drag interaction, .5oz increments, 48oz max, live oz display, tappable numpad with .5 key, KAV, fade in/out, centered. (top of SOON)
+
+Women's health and HealthKit
+
+Women's health -- TOP OF SOON. Discuss exact feature needs with Megan before building. HealthKit exposes menstrual cycle data, ovulation test results, basal body temperature, cervical mucus quality, spotting, cycle start/end dates. Smart correlation with nutrition patterns (undereating flagged alongside irregular cycle) is the goal. Do not release without this -- huge differentiator for female users.
+HealthKit permissions audit -- review full list of available HealthKit data types against currently requested permissions in useHealthKit.ts. Add all women's health metrics. Also add any missing high-value metrics (HRV, resting HR, basal body temp, blood oxygen, flights climbed, basal calories) in next build so data is available before features need it. Do not waste a build later on permissions that should have been requested now.
+Smart insights and trends layer -- auto-detect patterns automatically and surface them gently. Undereating, irregular meal timing, sleep and nutrition correlation, habit gaps. Discipline: direct language. Mindful: warm and observational. Never judgmental.
+
+Home screen and cards
+
+Mindful mode content hiding -- weight graphs, body comp data, and performance-heavy cards should not show for Mindful users. Audit all cards and hide irrelevant content per mode.
+Tab bar scroll-to-top -- tapping the active tab icon when already on that tab should scroll the screen back to top.
+Big dimmed card icon watermark -- large version of each card's icon sitting behind card content at ~5% opacity. Subtle texture, gives cards more identity. Apply to all home screen cards.
+Steps goal button -- remove goal button from steps card top right. Move step goal setting to profile/settings alongside other goals.
+Weight projected graph in profile -- add alongside weight goal card in profile.
+
+Sleep
+
+Sleep edit disclaimer -- when user opens manual sleep edit, show disclaimer that manual entry will overwrite Apple Health synced data.
+
+Workout
+
+Workout notes KAV -- keyboard covers notes input. Fix.
+Add exercise numeric keypad -- reps, sets, and rest duration fields should use numeric keypad not full keyboard.
+Profile card collapse animation lag -- very laggy on expand/collapse. Likely JS thread issue. Diagnose and fix.
+Workout notes auto-sync to journal -- new Fitness category added to journal categories. When workout notes saved in workout tab, silently create journal entry tagged Fitness with that day's date. Subtle toast: "Note saved to journal." User views it in journal tab. No navigation from workout card needed.
+
+Faith and community
+
+Mission statement screen -- dedicated screen written in Justin's voice. Covers faith integration philosophy, TDEE accuracy differentiator, You vs Yesterday concept, what makes this app different from MFP and Cronometer. Findable via hotlink on splash screen and in profile/settings. Written warmly, not corporate.
+Prayer request feature -- user can submit a prayer request via email. Two entry points minimum: verse/Today's Message card and profile/settings. Do not bury. Requires email collection at signup or onboarding.
+
+Streaks
+
+Streak grace day system -- mode-aware. Discipline: earn grace days by hitting milestones (streak length or cumulative days), cap 1 saved at a time. Balanced: same earn system, cap 3. Mindful: no punishment mechanic, streaks are informational only or default to gentle habit-forming ones.
+Custom streaks system -- all three modes get full access to all streak options. User can create custom streaks with name and emoji, check in manually. Defaults differ per mode: Discipline/Balanced default to performance metrics (calories, steps, workout). Mindful defaults to gentle habit-forming ones (gratitude entry, hydration, morning intention). Architecture is the same across all modes.
+
+Visual polish
+
+Empty state illustrations -- replace icon + text empty states with tasteful SVG illustrations. Consistent style, theme-aware colors. Apply across all lists and cards that can be empty.
+
+Social
+
+Social and accountability -- lightweight accountability partner feature, not a full social feed. One person you share your daily score with. Strava-inspired but scoped way down. (BACKLOG -- not urgent)
 Vitamins & minerals fields on Custom Food Creator -- Vitamin D, Calcium, Iron, Potassium. Power users track these, feeds future reporting. (SOON)
 My Foods delete warning -- confirm Alert before × delete on library list rows. (SOON)
 Custom Food Creator photo upload -- photo field on create/edit. (SOON)
@@ -294,7 +353,7 @@ Food log donut -- thicker ring, show macro targets inside when empty instead of 
 Weekly calorie bar chart -- 7 day bars macro color stacking, today highlighted, PocketScale style. (HIGH)
 Stats page revamp -- dedicated session, consolidation, pagination, sleep detail page, per-metric exclusion UI.
 Stats page depth/shadow pass -- same shadow treatment as settings cards (shadowOpacity 0.18). Do during stats overhaul session.
-Day detail dedicated polish session -- full feature audit, polish pass, decision on what stays/goes.
+Day detail dedicated polish session -- full feature audit, heavy polish pass, decision on what stays/goes. HIGH PRIORITY NOW.
 Streak card -- Bible, workout, calorie streaks. (HIGH)
 Morning briefing card -- first open of day, faith first, yesterday recap, today targets.
 
@@ -313,6 +372,7 @@ Process and infrastructure
 
 Tooltip wording polish pass -- dedicated pass over all tooltip copy after all cards are wired. Known issues: Active (Apple Health fallback language for non-watch users), Remaining (confirm algorithm accuracy vs what's described), Net (explain running BMR before using the term), Color Coding ("big calorie number" needs rewrite). Do as one session with full context of every card.
 Settings > Help section -- two subsections: Definitions (auto-populates from tooltip registry, Show Again per entry) and Tips & Guides (shell built now, placeholder entry, mini help articles filled over time e.g. "How to improve your sleep score", "Understanding your active calorie estimate"). About row planned, not built yet.
+Coaching style deep-dive page -- dedicated screen explaining all three modes in depth. Who each mode is for, what changes per mode, why certain features are hidden in Mindful, language differences, worked examples. Written warmly, not like a help doc. Findable from settings and from onboarding. NOW -- high value, reduces churn from users who feel they picked wrong.
 Settings page overhaul -- collapsible card sections, CPP. Planned sections: Account, Appearance, Health, Notifications, Faith, Help, About/Legal. Profile/settings boundary cleanup included. Dedicated future session.
 
 App name -- finalize from shortlist (Prevail, Steadfast, Worthy, Haven, Witness, Sown), verify App Store + TikTok handle availability before committing. Prevail is strongest -- punchy, fitness-forward, faith-adjacent without screaming it.
@@ -337,6 +397,9 @@ Date on entries tappable -- routes to that day's day detail.
 
 
 BACKLOG -- parked, good ideas, not imminent
+Social and accountability partner -- lightweight, one person you share daily score with. Not a full social feed. Strava-inspired but scoped. Build after core features stable and onboarding complete.
+App name and tagline finalization -- finalize from shortlist (Prevail, Steadfast, Worthy, Haven, Witness, Sown). Verify App Store + TikTok handle availability. Prevail is strongest. Current tagline "the app that actually cares" needs replacing -- doesn't land. Prevail direction has a tagline waiting in it.
+Onboarding illustrations -- tasteful SVG illustrations, one per screen, consistent style, theme-aware. High return on effort, do after onboarding flow is fully functional.
 Water log timestamps -- store timestamp with each water entry, enables habit reporting and distribution analysis.
 Customized tip push notification system -- personalized notis based on habit patterns: late bedtimes, bad sleep scores, under/over calories, water distribution gaps (e.g. only drinking in AM). Requires notification infrastructure + habit tracking logic. Build after core features stable.
 
@@ -488,10 +551,15 @@ Skip: saves pj_healthkit_skip:'true' (new key, no existing keys touched), routes
 Home banner for skippers triggered by pj_healthkit_skip -- one-time dismissable, build pending.
 
 Screen 7: You're All Set
-Clean, celebratory, brief. Accent icon, short affirming line.
-Mindful and Balanced users: "Want to set up your home screen now or later?" -- three options: "Set it up myself" (opens card picker), "Let the app decide" (applies curated default silently), "I'll do it later" (same as let app decide but they know they can change it). "Let the app decide" is the visually prominent option for Mindful.
-Discipline users: no card picker prompt. Their layout is set. That is part of the commitment.
-Tapping any option saves onboardingComplete and navigates to home.
+Clean, celebratory, brief. Accent icon, short affirming one-liner (varies by mode -- see below). Mode-aware affirming line before options.
+Mindful and Balanced users: two options for home screen setup. "Set it up myself" (opens card picker, secondary style button) and "We'll set it up for you" (applies curated default for their mode silently, primary accent button). No third option -- two choices only, clean and unambiguous.
+Discipline users: no card picker prompt. Their layout is set. That is part of the commitment. One button: "Let's go." Full accent, centered.
+All options save pj_onboarding_complete and navigate to home.
+Affirming one-liner by mode:
+  Discipline: "You came here for a reason. Let's make it count."
+  Balanced: "You've got everything you need. Let's build something real."
+  Mindful: "Every day is a new start. We're glad you're here."
+Card picker: tapping "Set it up myself" opens the Edit Layout sheet directly on the home screen after navigation. Do not block navigation -- navigate first, then trigger sheet open via a flag or param.
 
 DISCIPLINE COMMITMENT SCREEN
 Fires between style selection and Continue on Screen 4 when Discipline is picked.
@@ -511,7 +579,7 @@ Discipline:
 - Language throughout: direct. "You're 200 over" not "You're close."
 - Effort score: present, prompted on workout completion. If effort score is consistently under 3 for 5+ days, morning briefing card surfaces a callout ("Your effort scores have been low this week. Is something getting in the way?"). Never a push notification, never a modal -- morning card only.
 - Streak card: default higher in card order.
-- Default card order: Today's Training → Calories → You vs Yesterday → Steps → Water → Sleep → everything else.
+- Default card order: verse → calories → workout → vs_yesterday → macros → weight → sleep → water → fitness_metrics → IF → daily_note. All cards visible by default.
 - Daily summary language: hard truth + challenge. Leads with calorie/goal delta.
 - Streak break: Acknowledgement Modal fires on next app open. Requires button press, cannot be dismissed by tapping outside. Direct but not shaming.
 - Mode nudge notifications: "Still committed?" check-in if inconsistent 2+ weeks. Single fire, dismissable.
@@ -522,7 +590,7 @@ Balanced:
 - Calorie card: full display same as Discipline.
 - You vs Yesterday: full W/L/T framing. Motivational lines are encouraging, middle of road.
 - Language: encouraging. "A little over today, you'll find it tomorrow."
-- Default card order: same as current app default.
+- Default card order: verse → calories → workout → macros → water → steps → sleep → weight → vs_yesterday → IF → fitness_metrics → daily_note. All cards visible by default.
 - Daily summary language: genuine recap, leads with biggest win of the day. Order: win → delta → encouragement.
 - Mode nudge notifications: "Feeling ready to level up? Your Style can change anytime." 60 day cooldown, dismissable, toggleable.
 - Differentiator from Discipline: no commitment screen, no streak break modal, no effort score callout, forgiving language, forgiveness moments in daily summary.
@@ -561,9 +629,11 @@ No weight loss language in Mindful goal options. Designed for users with eating 
 
 FAITH JOURNEY -- WHAT EACH TIER CHANGES
 
+TODAY'S MESSAGE CARD -- UNIVERSAL RULE
+Today's Message (verse id: 'verse') is default slot 1 for ALL users regardless of Style or Faith Journey combination. It is moveable and hideable by the user after onboarding like any other card -- but always starts at position 1. The card content morphs based on Faith Journey setting, not its position.
+
 Rooted:
 - Full Today's Message experience. KJV verse, amber glow, routes to Bible screen, full reflection flow.
-- Today's Message card sits at top of home screen by default regardless of Style.
 - Verse rotation weighted toward theme matching Style (perseverance/strength for Discipline, grace/rest for Mindful, balanced for Balanced). Not 100% -- healthy skew, still full range.
 - All faith features on and visible.
 
@@ -573,12 +643,13 @@ Exploring:
 - User engages at their own pace.
 
 Not right now:
-- Today's Message card becomes Daily Intention card. No verse, no amber glow. Neutral styling, same card shape.
+- Today's Message card stays in slot 1 but content switches to Daily Intention mode. No verse, no amber glow. Neutral styling, same card shape. Card is never removed -- only the content changes.
 - Daily Intention prompt varies by Style:
   Discipline: "What will you commit to today?"
   Balanced: "What does a good day look like for you today?"
   Mindful: "What's one kind thing you can do for yourself today?"
-- User can add custom intentions. No Bible routing. Card always present -- never removed entirely.
+- Motivational/intentional messages rotate in place of scripture. Tone matches Style.
+- User can add custom intentions. No Bible routing.
 - Faith features quietly hidden. No journal verse category surfaced. Bible tab still accessible via navigation.
 
 FAITH JOURNEY COPY (ONBOARDING SCREEN 5)
@@ -657,7 +728,8 @@ BUILD STATUS
 [ ] Mindful onboarding -- encouragement language, no projection graph, no macro presets
 [x] Discipline commitment screen -- tappable rows, spring checkmark animation, bg deepen, button unlocks when all three confirmed, Bebas throughout
 [x] Faith Journey onboarding screen -- dark charcoal/navy background, multi-color ember particles (26, warm palette), three tappable cards with breathing amber border, animated verse fade-swap per selection (Colossians 2:7 / Jeremiah 29:13 / 2 Corinthians 5:17), diamond icons, finalized copy, change note animates in with verse, routes to apple-health
-[ ] Default card orders per mode applied on first onboarding complete
+[x] Default card orders per mode applied on first onboarding complete -- Screen 7 applies correct order + visibility per styleMode on any button tap. pj_open_edit_layout flag triggers Edit Layout sheet on home for "Set it up myself" path.
+[x] Default accent + theme per mode on onboarding complete -- Discipline → Amber, Mindful → Forest, Balanced → Blue. discipline + mindful AccentIds added to Light palette in theme file. setTheme/setAccent called live in all-set.tsx so no cold restart needed. Steps missing from Discipline order fixed.
 [ ] Post-onboarding mode switch Acknowledgement Modal
 [ ] Daily Intention card for Not right now users
 [ ] Settings exposure for Style and Faith Journey post-onboarding
@@ -803,8 +875,8 @@ Onboarding files built so far:
 - app/onboarding/style-survey.tsx -- Screen 3, 4 questions, 1-2-3 scoring
 - app/onboarding/your-style.tsx -- Screen 4, recommendation, activity level, goal weight, pace, calorie target, macro presets
 - app/onboarding/faith-journey.tsx -- Screen 5, BUILT
-- app/onboarding/apple-health.tsx -- Screen 6, NOT YET BUILT
-- app/onboarding/all-set.tsx -- Screen 7, NOT YET BUILT
+- app/onboarding/apple-health.tsx -- Screen 6, BUILT
+- app/onboarding/all-set.tsx -- Screen 7, BUILT
 - app/onboarding/commitment.tsx -- Discipline commitment screen, BUILT
 Boot gate lives in app/_layout.tsx -- checks pj_onboarding_complete on launch, redirects to welcome if missing.
 

@@ -143,7 +143,7 @@ DONE -- SHIPPED
 [x] Style switcher in settings -- Your Style section added to settings.tsx. Three mode rows, active checkmark, Discipline commitment Alert, saves styleMode to pj_settings. Persists on kill/reopen.
 [x] Calorie color coding mode-aware -- Discipline ±50/±51-149/±150+, Balanced ±150/±151-300/±301+, Mindful textSecondary no color ever. calDelta = Math.abs(totalCals - adjustedTarget). index.tsx + log.tsx both updated and consistent.
 [x] Mindful calorie card -- textSecondary big number, no color coding, progress bar neutral blue, REMAINING/ACTIVE/NET hidden, evening nudge after 8pm, no redundant goal line.
-[x] You & Yesterday renamed app-wide. Mindful reframe -- no score bar, no countdown, no net calories, no tier2 fallback, not tappable, neutral columns, cycling 4th slot (Showing Up / Log a Meal / Worked Out), side bars removed. Balanced/Discipline unchanged.
+[x] You vs Yesterday card -- "You & Yesterday" label in Mindful only, "You vs Yesterday" stays for Balanced/Discipline. Mindful reframe -- no score bar, no countdown, no net calories, no tier2 fallback, not tappable, neutral columns, cycling 4th slot (Showing Up / Log a Meal / Worked Out), side bars removed. Balanced/Discipline fully unchanged.
 [x] Macro color coding -- macroOver red removed from ALL modes. Macros always show identity colors (protein green, carbs amber, fat red). "X g over" sublabel removed, shows "X g remaining" only.
 [x] Weight card Mindful neutralization -- current weight, vs yesterday, total lost, goal row all textSecondary in Mindful. No green/red color judgment on weight numbers.
 
@@ -315,7 +315,7 @@ Workout
 Workout notes KAV -- keyboard covers notes input. Fix.
 Add exercise numeric keypad -- reps, sets, and rest duration fields should use numeric keypad not full keyboard.
 Profile card collapse animation lag -- very laggy on expand/collapse. Likely JS thread issue. Diagnose and fix.
-Collapsible card animation fix (stats.tsx + profile.tsx) -- both use wrong pattern (spring on interpolated 0→1 value, JS thread only). Fix: onLayout-based real height measurement, dual animation (container height JS thread + content opacity/translateY native thread), Easing.out(Easing.cubic) open / Easing.in(Easing.cubic) close. Per animation standard in instructions. NOW.
+Collapsible card animation fix (stats.tsx + profile.tsx) -- both use wrong pattern (spring on interpolated 0→1 value, JS thread only). Fix: onLayout-based real height measurement, dual animation (container height JS thread + content opacity/translateY native thread), Easing.out(Easing.cubic) open / Easing.in(Easing.cubic) close. Per animation standard in instructions. DONE -- animation lag remains, see BACKLOG.
 Workout notes auto-sync to journal -- new Fitness category added to journal categories. When workout notes saved in workout tab, silently create journal entry tagged Fitness with that day's date. Subtle toast: "Note saved to journal." User views it in journal tab. No navigation from workout card needed.
 
 Faith and community
@@ -388,8 +388,8 @@ Shadow pass -- increase shadow opacity and darkness on light themes (Slate, Ligh
 Gradient pass -- more visible gradient range on all light themes.
 Full theme audit -- all 5 themes x all accents, every screen, before beta.
 Progress bar track color pass across all themes.
-Collapsible card tap targets app-wide -- entire header row should trigger expand/collapse.
-Stats page streaks card -- choppy open animation, fails to reopen after first close.
+Collapsible card tap targets app-wide -- DONE. 44pt minHeight + paddingVertical on header touchable in stats.tsx and profile.tsx.
+Stats page streaks card -- reopen-after-close bug fixed. Choppiness tracked in BACKLOG under collapsible card animation performance.
 Empty states -- designed placeholders for all lists and cards. (HIGH)
 
 Journal
@@ -401,6 +401,7 @@ Date on entries tappable -- routes to that day's day detail.
 
 
 BACKLOG -- parked, good ideas, not imminent
+Collapsible card animation performance -- DONE. Replaced JS thread height animation with instant height snap + opacity fade (300ms open, 100ms close, useNativeDriver: true). Applied to stats.tsx (CollapsibleCard), profile.tsx (CollapsibleCard), and log.tsx (meal sections). All smooth, no lag.
 Social and accountability partner -- lightweight, one person you share daily score with. Not a full social feed. Strava-inspired but scoped. Build after core features stable and onboarding complete.
 App name and tagline finalization -- finalize from shortlist (Prevail, Steadfast, Worthy, Haven, Witness, Sown). Verify App Store + TikTok handle availability. Prevail is strongest. Current tagline "the app that actually cares" needs replacing -- doesn't land. Prevail direction has a tagline waiting in it.
 Onboarding illustrations -- tasteful SVG illustrations, one per screen, consistent style, theme-aware. High return on effort, do after onboarding flow is fully functional.
@@ -603,7 +604,7 @@ Mindful:
 - Calorie color coding: OFF. No color judgment on calories ever.
 - Macro color coding: OFF. Note: macroOver red removed from ALL modes app-wide -- identity colors always used regardless of mode.
 - Calorie card: simplified. Big number textSecondary (softer than textPrimary, no color coding ever). Progress bar stays neutral blue. REMAINING/ACTIVE/NET row hidden. No goal line (redundant with target shown next to number). Soft warm nudge text shown after 8pm -- rotates through 4 messages, no numbers, no over/under language. Active/Remaining opt-in via card settings affordance -- spec locked, build deferred to SOON.
-- You vs Yesterday: card renamed "YOU & YESTERDAY" app-wide (all modes). Mindful behavior: W/L/T hidden. No score bar. No winner declared. Shows deltas only for 3 locked metrics: steps, sleep, water. 4th slot cycles contextually -- "Logged a meal" checkmark once any food logged, "Worked out" checkmark once workout logged, "Journaled" once journal entry saved. Rooted/Exploring faith users get "Read today's verse" or "Reflect" in the 4th slot rotation. Main 3 locked, 4th cycles based on what's most relevant. Card hidden by default in Mindful home layout but available in Edit Layout.
+- You vs Yesterday: card label is "YOU & YESTERDAY" in Mindful only. "You vs Yesterday" stays for Balanced/Discipline. Mindful behavior: W/L/T hidden. No score bar. No winner declared. Shows deltas only for 3 locked metrics: steps, sleep, water. 4th slot cycles contextually -- "Logged a meal" checkmark once any food logged, "Worked out" checkmark once workout logged, "Journaled" once journal entry saved. Rooted/Exploring faith users get "Read today's verse" or "Reflect" in the 4th slot rotation. Main 3 locked, 4th cycles based on what's most relevant. Card hidden by default in Mindful home layout but available in Edit Layout.
 - Language: observational, never judgmental. "You logged today" is celebrated regardless of number. "You showed up" energy.
 - Logging encouragement: the fact they logged anything is celebrated. No "you're over" framing ever.
 - Default card order: Today's Message → Water → Sleep → Steps → Today's Training → Calories → everything else. You vs Yesterday hidden.

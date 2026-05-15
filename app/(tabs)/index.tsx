@@ -56,7 +56,7 @@ const CARD_REGISTRY: CardMeta[] = [
   { id: 'sleep',          label: 'Sleep',              description: 'Sleep duration & stages from Apple Health', defaultVisible: true },
   { id: 'fitness_metrics',label: 'Fitness Metrics',    description: 'VO2 Max & cardio recovery score',        defaultVisible: true },
   { id: 'daily_note',     label: 'Daily Note',         description: 'Journal entry for the day',             defaultVisible: true },
-  { id: 'vs_yesterday',   label: 'You & Yesterday',    description: 'Daily head-to-head across key metrics', defaultVisible: true },
+  { id: 'vs_yesterday',   label: 'You vs Yesterday',   description: 'Daily head-to-head across key metrics', defaultVisible: true },
 ];
 
 const DEFAULT_ORDER: CardId[] = CARD_REGISTRY.map(c => c.id);
@@ -2098,7 +2098,9 @@ export default function HomeScreen() {
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
             <Ionicons name="trophy" size={11} color={theme.textMuted} />
-            <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>You & Yesterday</Text>
+            <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>
+              {isMindful ? 'You & Yesterday' : 'You vs Yesterday'}
+            </Text>
             {!isMindful && <TooltipIcon tooltipKey="vs_yesterday" />}
           </View>
           {!isMindful && vsStreak > 0 && (

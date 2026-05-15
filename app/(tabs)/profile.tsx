@@ -177,42 +177,36 @@ function SleepGoalPicker({ value, onChange, theme }: { value: string; onChange: 
 
 function CollapsibleCard({ label, defaultOpen = false, children, theme }: { label: string, defaultOpen?: boolean, children: React.ReactNode, theme: any }) {
   const [open, setOpen] = useState(defaultOpen);
-  const animHeight = useRef(new Animated.Value(defaultOpen ? 1 : 0)).current;
-  const [measuredHeight, setMeasuredHeight] = useState(0);
+  const [visible, setVisible] = useState(defaultOpen);
+  const fadeAnim = useRef(new Animated.Value(defaultOpen ? 1 : 0)).current;
 
   const toggle = () => {
-    const toValue = open ? 0 : 1;
-    Animated.spring(animHeight, {
-      toValue,
-      useNativeDriver: false,
-      bounciness: 0,
-      speed: 20,
-    }).start();
-    setOpen(o => !o);
+    const opening = !open;
+    setOpen(opening);
+    if (opening) {
+      setVisible(true);
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 100,
+        useNativeDriver: true,
+      }).start(() => setVisible(false));
+    }
   };
 
   return (
     <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
-      <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }} onPress={toggle}>
+      <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 44, paddingVertical: 12, marginVertical: -12 }} onPress={toggle}>
         <Text style={[styles.cardLabel, { color: theme.textMuted }]}>{label}</Text>
         <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={14} color={theme.textMuted} />
       </TouchableOpacity>
-      <Animated.View style={{
-        overflow: 'hidden',
-        height: measuredHeight > 0 ? animHeight.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0, measuredHeight + 12],
-        }) : undefined,
-        opacity: animHeight,
-      }}>
-        <View
-          style={{ marginTop: 12 }}
-          onLayout={e => {
-            const h = e.nativeEvent.layout.height;
-            if (h > 0 && h !== measuredHeight) setMeasuredHeight(h);
-          }}>
-          {children}
-        </View>
+      <Animated.View style={{ marginTop: 12, opacity: fadeAnim, display: visible ? 'flex' : 'none' }}>
+        {children}
       </Animated.View>
     </View>
   );

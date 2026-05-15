@@ -135,8 +135,8 @@ export default function LogScreen() {
   const today = new Date();
   const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   const [expandedMeals, setExpandedMeals] = useState<Record<string, boolean>>({});
+  const [visibleMeals, setVisibleMeals] = useState<Record<string, boolean>>({});
   const mealAnimations = useRef<Record<string, Animated.Value>>({});
-  const mealHeights = useRef<Record<string, number>>({});
 
   const getMealAnim = (meal: string) => {
     if (!mealAnimations.current[meal]) {
@@ -358,13 +358,22 @@ export default function LogScreen() {
   const toggleMeal = (meal: string) => {
     const isCurrentlyOpen = expandedMeals[meal];
     const anim = getMealAnim(meal);
-    Animated.spring(anim, {
-      toValue: isCurrentlyOpen ? 0 : 1,
-      useNativeDriver: false,
-      bounciness: 0,
-      speed: 20,
-    }).start();
-    setExpandedMeals(prev => ({ ...prev, [meal]: !prev[meal] }));
+    if (!isCurrentlyOpen) {
+      setVisibleMeals(prev => ({ ...prev, [meal]: true }));
+      setExpandedMeals(prev => ({ ...prev, [meal]: true }));
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      setExpandedMeals(prev => ({ ...prev, [meal]: false }));
+      Animated.timing(anim, {
+        toValue: 0,
+        duration: 100,
+        useNativeDriver: true,
+      }).start(() => setVisibleMeals(prev => ({ ...prev, [meal]: false })));
+    }
   };
 
   const updateWater = (oz: number) => {
@@ -514,15 +523,10 @@ export default function LogScreen() {
             </TouchableOpacity>
 
             {/* Expanded food list */}
-            {(
+            {visibleMeals[meal] && (
               <Animated.View style={{
-                overflow: 'hidden',
                 width: '100%',
                 opacity: getMealAnim(meal),
-                height: getMealAnim(meal).interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [0, mealEntries.length === 0 ? 60 : (mealEntries.length * 54) + 16],
-                }),
               }}>
               <View style={[styles.mealExpanded, { borderTopColor: theme.borderCard }]}>
                 {mealEntries.length === 0 ? (

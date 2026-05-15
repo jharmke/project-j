@@ -137,6 +137,15 @@ DONE -- SHIPPED
 [x] All home screen tooltips complete. Remaining cards (Water, Weight, Today's Training, Steps, Daily Note, Today's Message) confirmed self-explanatory, no (i) needed.
 [x] Activity level architecture overhaul -- DONE. All 5 files updated: profile.tsx, your-style.tsx, index.tsx, log.tsx, head-to-head.tsx. New formula: Math.round((bmr * lifestyleMultiplier) + trainingDailyBonus). Birthday parse fix in all calc blocks. Old activityLevel replaced by lifestyleActivity + trainingFrequency throughout.
 [x] Onboarding Screen 6 (Apple Health) -- DONE. Light theme, red beating heart (iOS Health red #FF3B30, double-beat pulse loop), 5 health data rows with staggered fade+slide entrance, static layout (no scroll), centered CONNECT APPLE HEALTH button, Maybe later skip, read-only line in footer. requestAuthorization call via require('@kingstinct/react-native-healthkit'). Saves healthKitConnected to pj_settings (merge-safe). Skip saves pj_healthkit_skip = 'true'. Routes to Screen 7. Home banner for skippers -- wired via pj_healthkit_skip flag, banner build pending (next session or Screen 7 thread).
+[x] Food library + Food and + Recipe buttons -- copied from log.tsx header to add-food.tsx library header. Both screens retain the buttons. Order: + Food | + Recipe | barcode. + Food opens CustomFoodCreator (wired into add-food.tsx). + Recipe routes to recipe-builder.
+[x] Save New Food to Library inline form killed -- button and 2-field inline form removed entirely from add-food.tsx.
+[x] Edit button on My Foods rows -- routes to full edit-food.tsx screen. Old slide-up 2-field modal killed entirely.
+[x] Style switcher in settings -- Your Style section added to settings.tsx. Three mode rows, active checkmark, Discipline commitment Alert, saves styleMode to pj_settings. Persists on kill/reopen.
+[x] Calorie color coding mode-aware -- Discipline ±50/±51-149/±150+, Balanced ±150/±151-300/±301+, Mindful textSecondary no color ever. calDelta = Math.abs(totalCals - adjustedTarget). index.tsx + log.tsx both updated and consistent.
+[x] Mindful calorie card -- textSecondary big number, no color coding, progress bar neutral blue, REMAINING/ACTIVE/NET hidden, evening nudge after 8pm, no redundant goal line.
+[x] You & Yesterday renamed app-wide. Mindful reframe -- no score bar, no countdown, no net calories, no tier2 fallback, not tappable, neutral columns, cycling 4th slot (Showing Up / Log a Meal / Worked Out), side bars removed. Balanced/Discipline unchanged.
+[x] Macro color coding -- macroOver red removed from ALL modes. Macros always show identity colors (protein green, carbs amber, fat red). "X g over" sublabel removed, shows "X g remaining" only.
+[x] Weight card Mindful neutralization -- current weight, vs yesterday, total lost, goal row all textSecondary in Mindful. No green/red color judgment on weight numbers.
 
 
 NOW -- active this session
@@ -230,21 +239,12 @@ Active calorie accuracy:
 
 Bugs and polish -- fix these first
 
-Birthday scroll confirm button -- tap target too small or overlay dismiss intercepting confirm. Fix so confirm is easy to hit. Remove tap-outside-to-close or add dead zone around picker.
-Decimal input validation -- one decimal max enforced on all numeric text inputs app-wide. Audit every field in code -- food detail, edit entry, macro fields, create food, create recipe, edit/add exercise, weight goal in profile, onboarding weight fields. Never allow multiple decimal points.
-FatSecret logo hit bar -- touchable area spans full screen width, needs to be contained to logo only.
+Birthday scroll confirm button -- fixed. Larger tap targets on Cancel/Confirm, overlay bottom tightened to stop intercept. DONE.
+Edit exercise input validation -- DONE. Cardio fields use filterDecimal (one decimal max). Sets/reps/rest fixed to number-pad with integer-only validation.
+FatSecret logo hit bar -- fixed. alignSelf: 'center' on TouchableOpacity in add-food.tsx and food-detail.tsx. DONE.
 "G" to "g" -- grams label showing as uppercase G throughout app. Audit all screens and fix to lowercase g everywhere.
-Daily note card KAV -- keyboard covers card when it sits low on screen. Fix.
-Macros Today refresh animation -- only fires on first load after app kill, not on manual refresh tap. Fix so animation fires every time refresh is tapped.
-
-Edit Layout Add button -- deferred.Bugs and polish -- fix these first
-
-Birthday scroll confirm button -- tap target too small or overlay dismiss intercepting confirm. Fix so confirm is easy to hit. Remove tap-outside-to-close or add dead zone around picker.
-Decimal input validation -- one decimal max enforced on all numeric text inputs app-wide. Audit every field in code -- food detail, edit entry, macro fields, create food, create recipe, edit/add exercise, weight goal in profile, onboarding weight fields. Never allow multiple decimal points.
-FatSecret logo hit bar -- touchable area spans full screen width, needs to be contained to logo only.
-"G" to "g" -- grams label showing as uppercase G throughout app. Audit all screens and fix to lowercase g everywhere.
-Daily note card KAV -- keyboard covers card when it sits low on screen. Fix.
-Macros Today refresh animation -- only fires on first load after app kill, not on manual refresh tap. Fix so animation fires every time refresh is tapped.
+Daily note card KAV -- fixed. onFocus scrollToEnd brings card into view above keyboard. DONE.
+Macros Today refresh animation -- fixed. refreshKey prop added to MacroBar, 800ms delay matches other bars. DONE.
 
 Edit Layout Add button -- deferred. Currently redundant with inline toggle. Will become "browse and discover" entry point when card library grows (30+ cards, categories, premium content). Build out properly then.
 Today's Message chevron -- removed. DONE.
@@ -288,6 +288,9 @@ Primary button audit -- sweep app-wide, upgrade all primary CTAs to full accent 
 Food and barcode
 
 Custom water amount modal -- drag interaction, .5oz increments, 48oz max, live oz display, tappable numpad with .5 key, KAV, fade in/out, centered. (top of SOON)
+Edit Food screen (edit-food.tsx) full CPP polish pass -- currently a raw unstyled form. Needs card styling, field grouping, accent title, floating save bar, depth. Dedicated polish session.
+Recipe builder screen polish -- needs accent title and floating save bar at minimum. Full CPP pass needed. (SOON)
+App-wide OZ to oz audit -- index.tsx and log.tsx fixed this session. day-detail and any other screens not yet checked. Complete audit needed. (SOON)
 
 Women's health and HealthKit
 
@@ -312,6 +315,7 @@ Workout
 Workout notes KAV -- keyboard covers notes input. Fix.
 Add exercise numeric keypad -- reps, sets, and rest duration fields should use numeric keypad not full keyboard.
 Profile card collapse animation lag -- very laggy on expand/collapse. Likely JS thread issue. Diagnose and fix.
+Collapsible card animation fix (stats.tsx + profile.tsx) -- both use wrong pattern (spring on interpolated 0→1 value, JS thread only). Fix: onLayout-based real height measurement, dual animation (container height JS thread + content opacity/translateY native thread), Easing.out(Easing.cubic) open / Easing.in(Easing.cubic) close. Per animation standard in instructions. NOW.
 Workout notes auto-sync to journal -- new Fitness category added to journal categories. When workout notes saved in workout tab, silently create journal entry tagged Fitness with that day's date. Subtle toast: "Note saved to journal." User views it in journal tab. No navigation from workout card needed.
 
 Faith and community
@@ -571,7 +575,7 @@ Single button: "I'm in." Cannot continue without tapping it.
 YOUR STYLE -- WHAT EACH MODE CHANGES
 
 Discipline:
-- Calorie color coding: tight thresholds. Green within 50 kcal of target, amber starts at 51 over, red at 150+ over.
+- Calorie color coding: tight thresholds, symmetric both directions. Green: within ±50 kcal of NET target. Amber: ±51-149 kcal. Red: ±150+ kcal. Applies to the final NET number (consumed minus active burn minus running BMR). Same calc as built, thresholds change per mode.
 - Macro color coding: strict tolerances.
 - Calorie card: full REMAINING / ACTIVE / NET display with running BMR. All data shown.
 - You vs Yesterday: full W/L/T framing. Motivational lines are firm ("Push harder tomorrow", "Don't let up", "Finish what you started").
@@ -585,7 +589,7 @@ Discipline:
 - Mode nudge notifications: "Still committed?" check-in if inconsistent 2+ weeks. Single fire, dismissable.
 
 Balanced:
-- Calorie color coding: current behavior. Green zone wide (within 150 kcal), amber buffer, red only significant overage.
+- Calorie color coding: forgiving thresholds, symmetric both directions. Green: within ±150 kcal of NET target. Amber: ±151-300 kcal. Red: ±301+ kcal.
 - Macro color coding: forgiving tolerances.
 - Calorie card: full display same as Discipline.
 - You vs Yesterday: full W/L/T framing. Motivational lines are encouraging, middle of road.
@@ -597,9 +601,9 @@ Balanced:
 
 Mindful:
 - Calorie color coding: OFF. No color judgment on calories ever.
-- Macro color coding: OFF.
-- Calorie card: simplified. Shows "Logged today: X kcal" and goal neutral. No REMAINING/ACTIVE/NET breakdown shown by default. No running BMR math visible. If they want full detail they can enable in settings (opt-in).
-- You vs Yesterday: W/L/T hidden. No score bar. Card reframed as "YOUR DAY" -- shows deltas only ("Yesterday: 1,840 cal / Today: 2,100 cal"). No winner declared. Card hidden by default in Mindful home layout but available in Edit Layout.
+- Macro color coding: OFF. Note: macroOver red removed from ALL modes app-wide -- identity colors always used regardless of mode.
+- Calorie card: simplified. Big number textSecondary (softer than textPrimary, no color coding ever). Progress bar stays neutral blue. REMAINING/ACTIVE/NET row hidden. No goal line (redundant with target shown next to number). Soft warm nudge text shown after 8pm -- rotates through 4 messages, no numbers, no over/under language. Active/Remaining opt-in via card settings affordance -- spec locked, build deferred to SOON.
+- You vs Yesterday: card renamed "YOU & YESTERDAY" app-wide (all modes). Mindful behavior: W/L/T hidden. No score bar. No winner declared. Shows deltas only for 3 locked metrics: steps, sleep, water. 4th slot cycles contextually -- "Logged a meal" checkmark once any food logged, "Worked out" checkmark once workout logged, "Journaled" once journal entry saved. Rooted/Exploring faith users get "Read today's verse" or "Reflect" in the 4th slot rotation. Main 3 locked, 4th cycles based on what's most relevant. Card hidden by default in Mindful home layout but available in Edit Layout.
 - Language: observational, never judgmental. "You logged today" is celebrated regardless of number. "You showed up" energy.
 - Logging encouragement: the fact they logged anything is celebrated. No "you're over" framing ever.
 - Default card order: Today's Message → Water → Sleep → Steps → Today's Training → Calories → everything else. You vs Yesterday hidden.
@@ -723,8 +727,9 @@ BUILD STATUS
 [ ] Macro presets -- onboarding + settings, Discipline/Balanced only, not shown to Mindful
 [ ] Progress bar chrome on onboarding screens 2-7
 [ ] Apple Health onboarding screen -- permissions prompt, skip option, home banner for skippers
-[ ] Mindful calorie card simplification
-[ ] Mindful You vs Yesterday reframe (no W/L/T, "YOUR DAY" label, score hidden)
+[x] Mindful calorie card simplification -- big number textSecondary no color coding, progress bar neutral blue, REMAINING/ACTIVE/NET row hidden, soft warm nudge after 8pm, redundant goal line removed. Consistent across index.tsx and log.tsx.
+[x] You & Yesterday renamed app-wide (all modes). Mindful reframe -- no score bar, no countdown, no net calories, no tier2 fallback, no tap-to-head-to-head, neutral columns, cycling 4th slot (Showing Up / Log a Meal / Worked Out), side bars removed.
+[x] Calorie color coding mode-aware -- Discipline ±50/±51-149/±150+, Balanced ±150/±151-300/±301+, Mindful textSecondary no color. calDelta = Math.abs(totalCals - adjustedTarget). Consistent across index.tsx and log.tsx.
 [ ] Mindful onboarding -- encouragement language, no projection graph, no macro presets
 [x] Discipline commitment screen -- tappable rows, spring checkmark animation, bg deepen, button unlocks when all three confirmed, Bebas throughout
 [x] Faith Journey onboarding screen -- dark charcoal/navy background, multi-color ember particles (26, warm palette), three tappable cards with breathing amber border, animated verse fade-swap per selection (Colossians 2:7 / Jeremiah 29:13 / 2 Corinthians 5:17), diamond icons, finalized copy, change note animates in with verse, routes to apple-health
@@ -732,7 +737,7 @@ BUILD STATUS
 [x] Default accent + theme per mode on onboarding complete -- Discipline → Amber, Mindful → Forest, Balanced → Blue. discipline + mindful AccentIds added to Light palette in theme file. setTheme/setAccent called live in all-set.tsx so no cold restart needed. Steps missing from Discipline order fixed.
 [ ] Post-onboarding mode switch Acknowledgement Modal
 [ ] Daily Intention card for Not right now users
-[ ] Settings exposure for Style and Faith Journey post-onboarding
+[x] Settings exposure for Style and Faith Journey post-onboarding -- Style switcher built in settings.tsx. Three rows (Discipline/Balanced/Mindful), active selection checkmarked in accent, Discipline shows commitment Alert, others show description + Switch confirm. Reads/writes styleMode to pj_settings. Full Acknowledgement Modal with layout choice deferred to SOON.
 [ ] "You can always change this in Settings" messaging on mode recommendation screen
 [ ] Firebase Auth -- Apple + Google login, Firestore migration
 [ ] FatSecret attribution -- "Powered by FatSecret" on search + food detail screens

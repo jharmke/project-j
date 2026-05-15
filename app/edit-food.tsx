@@ -56,17 +56,28 @@ console.log('food:', JSON.stringify(food));
     }
   };
 
+  const filterDecimal = (v: string, set: (s: string) => void) => {
+    const stripped = v.replace(/[^0-9.]/g, '');
+    const dot = stripped.indexOf('.');
+    if (dot === -1) { set(stripped); }
+    else {
+      const before = stripped.slice(0, dot);
+      const after = stripped.slice(dot + 1).replace(/\./g, '').slice(0, 1);
+      set(before + '.' + after);
+    }
+  };
+
   const fields = [
     { label: 'Food Name', value: name, onChange: setName, keyboard: 'default' as const },
-    { label: 'Calories (kcal)', value: cal, onChange: setCal, keyboard: 'decimal-pad' as const },
-    { label: 'Protein (g)', value: protein, onChange: setProtein, keyboard: 'decimal-pad' as const },
-    { label: 'Carbs (g)', value: carbs, onChange: setCarbs, keyboard: 'decimal-pad' as const },
-    { label: 'Fat (g)', value: fat, onChange: setFat, keyboard: 'decimal-pad' as const },
-    { label: 'Fiber (g)', value: fiber, onChange: setFiber, keyboard: 'decimal-pad' as const },
-    { label: 'Sugar (g)', value: sugar, onChange: setSugar, keyboard: 'decimal-pad' as const },
-    { label: 'Sodium (mg)', value: sodium, onChange: setSodium, keyboard: 'decimal-pad' as const },
-    { label: 'Cholesterol (mg)', value: cholesterol, onChange: setCholesterol, keyboard: 'decimal-pad' as const },
-    { label: 'Saturated Fat (g)', value: saturatedFat, onChange: setSaturatedFat, keyboard: 'decimal-pad' as const },
+    { label: 'Calories (kcal)', value: cal, onChange: (v: string) => filterDecimal(v, setCal), keyboard: 'decimal-pad' as const },
+    { label: 'Protein (g)', value: protein, onChange: (v: string) => filterDecimal(v, setProtein), keyboard: 'decimal-pad' as const },
+    { label: 'Carbs (g)', value: carbs, onChange: (v: string) => filterDecimal(v, setCarbs), keyboard: 'decimal-pad' as const },
+    { label: 'Fat (g)', value: fat, onChange: (v: string) => filterDecimal(v, setFat), keyboard: 'decimal-pad' as const },
+    { label: 'Fiber (g)', value: fiber, onChange: (v: string) => filterDecimal(v, setFiber), keyboard: 'decimal-pad' as const },
+    { label: 'Sugar (g)', value: sugar, onChange: (v: string) => filterDecimal(v, setSugar), keyboard: 'decimal-pad' as const },
+    { label: 'Sodium (mg)', value: sodium, onChange: (v: string) => filterDecimal(v, setSodium), keyboard: 'decimal-pad' as const },
+    { label: 'Cholesterol (mg)', value: cholesterol, onChange: (v: string) => filterDecimal(v, setCholesterol), keyboard: 'decimal-pad' as const },
+    { label: 'Saturated Fat (g)', value: saturatedFat, onChange: (v: string) => filterDecimal(v, setSaturatedFat), keyboard: 'decimal-pad' as const },
   ];
 
   const styles = useStyles(theme);

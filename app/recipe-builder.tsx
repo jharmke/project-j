@@ -37,6 +37,17 @@ interface Recipe {
 const makeId = () => Math.random().toString(36).substr(2, 9);
 const WEIGHT_UNITS = ['g', 'oz', 'lbs', 'ml', 'cups'];
 
+const filterDecimal = (v: string, set: (s: string) => void) => {
+  const stripped = v.replace(/[^0-9.]/g, '');
+  const dot = stripped.indexOf('.');
+  if (dot === -1) { set(stripped); }
+  else {
+    const before = stripped.slice(0, dot);
+    const after = stripped.slice(dot + 1).replace(/\./g, '').slice(0, 1);
+    set(before + '.' + after);
+  }
+};
+
 export default function RecipeBuilderScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
@@ -358,7 +369,7 @@ export default function RecipeBuilderScreen() {
               placeholderTextColor={theme.textPlaceholder}
               keyboardType="decimal-pad"
               value={totalWeight}
-              onChangeText={setTotalWeight}
+              onChangeText={v => filterDecimal(v, setTotalWeight)}
             />
             <TouchableOpacity style={styles.unitPickerBtn} onPress={() => setShowWeightUnitPicker(true)}>
               <Text style={styles.unitPickerBtnText}>{totalWeightUnit} ▼</Text>
@@ -423,7 +434,7 @@ export default function RecipeBuilderScreen() {
               <TextInput
                 style={[styles.searchInput, { width: 100 }]}
                 value={ingredientAmount}
-                onChangeText={setIngredientAmount}
+                onChangeText={v => filterDecimal(v, setIngredientAmount)}
                 keyboardType="decimal-pad"
                 selectTextOnFocus
               />
@@ -457,12 +468,12 @@ export default function RecipeBuilderScreen() {
             <Text style={styles.modalTitle}>Add Custom Food</Text>
             <TextInput style={styles.modalInput} placeholder="Food name" placeholderTextColor={theme.textPlaceholder} value={customFood.name} onChangeText={v => setCustomFood(p => ({ ...p, name: v }))} />
             <View style={styles.servingRow}>
-              <TextInput style={[styles.modalInput, { flex: 1 }]} placeholder="Calories" placeholderTextColor={theme.textPlaceholder} keyboardType="decimal-pad" value={customFood.cal} onChangeText={v => setCustomFood(p => ({ ...p, cal: v }))} />
-              <TextInput style={[styles.modalInput, { flex: 1 }]} placeholder="Protein g" placeholderTextColor={theme.textPlaceholder} keyboardType="decimal-pad" value={customFood.protein} onChangeText={v => setCustomFood(p => ({ ...p, protein: v }))} />
+              <TextInput style={[styles.modalInput, { flex: 1 }]} placeholder="Calories" placeholderTextColor={theme.textPlaceholder} keyboardType="decimal-pad" value={customFood.cal} onChangeText={v => filterDecimal(v, s => setCustomFood(p => ({ ...p, cal: s })))} />
+              <TextInput style={[styles.modalInput, { flex: 1 }]} placeholder="Protein g" placeholderTextColor={theme.textPlaceholder} keyboardType="decimal-pad" value={customFood.protein} onChangeText={v => filterDecimal(v, s => setCustomFood(p => ({ ...p, protein: s })))} />
             </View>
             <View style={styles.servingRow}>
-              <TextInput style={[styles.modalInput, { flex: 1 }]} placeholder="Carbs g" placeholderTextColor={theme.textPlaceholder} keyboardType="decimal-pad" value={customFood.carbs} onChangeText={v => setCustomFood(p => ({ ...p, carbs: v }))} />
-              <TextInput style={[styles.modalInput, { flex: 1 }]} placeholder="Fat g" placeholderTextColor={theme.textPlaceholder} keyboardType="decimal-pad" value={customFood.fat} onChangeText={v => setCustomFood(p => ({ ...p, fat: v }))} />
+              <TextInput style={[styles.modalInput, { flex: 1 }]} placeholder="Carbs g" placeholderTextColor={theme.textPlaceholder} keyboardType="decimal-pad" value={customFood.carbs} onChangeText={v => filterDecimal(v, s => setCustomFood(p => ({ ...p, carbs: s })))} />
+              <TextInput style={[styles.modalInput, { flex: 1 }]} placeholder="Fat g" placeholderTextColor={theme.textPlaceholder} keyboardType="decimal-pad" value={customFood.fat} onChangeText={v => filterDecimal(v, s => setCustomFood(p => ({ ...p, fat: s })))} />
             </View>
             <TouchableOpacity
               style={styles.saveToLibraryRow}

@@ -418,7 +418,17 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
           <TextInput
             style={styles.amountInput}
             value={amount}
-            onChangeText={v => { setAmount(v); setAmountChanged(true); }}
+            onChangeText={v => {
+              const stripped = v.replace(/[^0-9.]/g, '');
+              const dot = stripped.indexOf('.');
+              if (dot === -1) {
+                setAmount(stripped); setAmountChanged(true);
+              } else {
+                const before = stripped.slice(0, dot);
+                const after = stripped.slice(dot + 1).replace(/\./g, '').slice(0, 1);
+                setAmount(before + '.' + after); setAmountChanged(true);
+              }
+            }}
             keyboardType="decimal-pad"
             selectTextOnFocus
           />
@@ -552,7 +562,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
 
         <TouchableOpacity
           onPress={() => Linking.openURL('https://platform.fatsecret.com')}
-          style={{ alignItems: 'center', marginTop: 20, marginBottom: 8, opacity: 0.65 }}>
+          style={{ alignItems: 'center', marginTop: 20, marginBottom: 8, opacity: 0.65, alignSelf: 'center' }}>
           <Image
             source={{ uri: 'https://platform.fatsecret.com/api/static/images/powered_by_fatsecret_horizontal_brand.png' }}
             style={{ width: 160, height: 38 }}

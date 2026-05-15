@@ -56,7 +56,7 @@ const CARD_REGISTRY: CardMeta[] = [
   { id: 'sleep',          label: 'Sleep',              description: 'Sleep duration & stages from Apple Health', defaultVisible: true },
   { id: 'fitness_metrics',label: 'Fitness Metrics',    description: 'VO2 Max & cardio recovery score',        defaultVisible: true },
   { id: 'daily_note',     label: 'Daily Note',         description: 'Journal entry for the day',             defaultVisible: true },
-  { id: 'vs_yesterday',   label: 'You vs Yesterday',   description: 'Daily head-to-head across key metrics', defaultVisible: true },
+  { id: 'vs_yesterday',   label: 'You & Yesterday',    description: 'Daily head-to-head across key metrics', defaultVisible: true },
 ];
 
 const DEFAULT_ORDER: CardId[] = CARD_REGISTRY.map(c => c.id);
@@ -365,12 +365,15 @@ function AnimatedProgressBar({ pct, color, trackColor, refreshKey, ready }: { pc
 }
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
-function MacroBar({ val, goal, color, trackColor }: { val: number; goal: number; color: string; trackColor?: string }) {
+function MacroBar({ val, goal, color, trackColor, refreshKey }: { val: number; goal: number; color: string; trackColor?: string; refreshKey?: number }) {
   const pct = goal > 0 ? Math.min((val / goal) * 100, 100) : 0;
   const width = useSharedValue(0);
   useEffect(() => {
-    width.value = withTiming(pct, { duration: 1000 });
-  }, [pct]);
+    width.value = 0;
+    setTimeout(() => {
+      width.value = withTiming(pct, { duration: 1000 });
+    }, 800);
+  }, [pct, refreshKey]);
   const animStyle = useAnimatedStyle(() => ({ width: `${width.value}%` as any }));
   return (
     <View style={{ height:6, backgroundColor: trackColor ?? '#1e1e2e', borderRadius:6, overflow:'hidden' }}>
@@ -482,6 +485,9 @@ export default function HomeScreen() {
   const [sleepManualDeep,   setSleepManualDeep]     = useState<string>('');
   const [sleepManualRem,    setSleepManualRem]      = useState<string>('');
 
+  // Style mode
+  const [styleMode, setStyleMode] = useState<'discipline' | 'balanced' | 'mindful'>('balanced');
+
   // BMR state
   const [profileBmr,      setProfileBmr]      = useState(0);
   const runningBmr = profileBmr > 0
@@ -538,7 +544,17 @@ export default function HomeScreen() {
   const adjustedTarget= calTarget + hkCalories;
   const displayedBurned = hkCalories;
   const calPct   = adjustedTarget > 0 ? (totalCals / adjustedTarget) * 100 : 0;
-  const calColor = calPct > 114 ? '#ef4444' : calPct > 106 ? '#f59e0b' : calPct >= 80 ? '#10b981' : calPct >= 63 ? '#f59e0b' : '#ef4444';
+  const net = totalCals - displayedBurned - runningBmr;
+  const calDelta = Math.abs(totalCals - adjustedTarget);
+  const calColor = styleMode === 'mindful'
+    ? theme.textSecondary
+    : styleMode === 'discipline'
+      ? calDelta <= 50  ? theme.statusGood
+      : calDelta <= 149 ? theme.statusWarn
+      : theme.statusBad
+    : /* balanced */ calDelta <= 150 ? theme.statusGood
+      : calDelta <= 300 ? theme.statusWarn
+      : theme.statusBad;
   const todayProgram = PROGRAM[todayDay];
   const isLift   = todayProgram?.type === 'lift';
   const dayColor = isLift ? todayProgram.color : '#888888';
@@ -895,6 +911,7 @@ export default function HomeScreen() {
         if (settingsData) {
           const sd = JSON.parse(settingsData);
           if (sd.workoutTags && Array.isArray(sd.workoutTags)) setWorkoutTags(sd.workoutTags);
+          if (sd.styleMode) setStyleMode(sd.styleMode);
         }
 
         // Onboarding -- open Edit Layout sheet if flagged from Screen 7
@@ -1221,34 +1238,56 @@ export default function HomeScreen() {
     </View>
   );
 
-  const renderCaloriesCard = () => (
-    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
-      <View style={{ flexDirection:'row', alignItems:'flex-start', justifyContent:'space-between', marginBottom:4 }}>
-        <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
-          <Ionicons name="flame-outline" size={11} color={theme.textMuted} />
-          <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Calories Today</Text>
-          <TooltipIcon tooltipKey="calories_today" />
+  const renderCaloriesCard = () => {
+    const remaining = adjustedTarget - totalCals;
+    const stats = [
+      { label: remaining >= 0 ? 'REMAINING' : 'OVER', value: Math.abs(remaining), color: remaining >= 0 ? theme.accentBlue : theme.statusBad },
+      { label: 'ACTIVE', value: displayedBurned, color: theme.accentBlue },
+      { label: 'NET', value: net, color: theme.accentBlue },
+    ];
+
+    // Mindful: check if it's after 8pm for potential nudge
+    const nowHour = new Date(currentTime).getHours();
+    const showMindfulNudge = styleMode === 'mindful' && nowHour >= 20 && totalCals > 0;
+    const MINDFUL_NUDGES = [
+      "You showed up today.",
+      "Every day you log is a win.",
+      "You're doing great. Keep going.",
+      "Progress isn't always a number.",
+    ];
+    const nudgeText = MINDFUL_NUDGES[new Date().getDate() % MINDFUL_NUDGES.length];
+
+    return (
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
+        <View style={{ flexDirection:'row', alignItems:'flex-start', justifyContent:'space-between', marginBottom:4 }}>
+          <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
+            <Ionicons name="flame-outline" size={11} color={theme.textMuted} />
+            <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Calories Today</Text>
+            {styleMode !== 'mindful' && <TooltipIcon tooltipKey="calories_today" />}
+          </View>
+          <TouchableOpacity onPress={() => router.push('/(tabs)/log')} activeOpacity={0.6}
+            style={{ backgroundColor: theme.accentBlueBg, borderWidth:1, borderColor: theme.accentBlueBorder, borderRadius:6, paddingHorizontal:10, paddingVertical:4 }}>
+            <Text style={{ color: theme.accentBlue, fontSize:12, fontFamily:'DMSans_600SemiBold' }}>+ Log</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity onPress={() => router.push('/(tabs)/log')} activeOpacity={0.6}
-          style={{ backgroundColor: theme.accentBlueBg, borderWidth:1, borderColor: theme.accentBlueBorder, borderRadius:6, paddingHorizontal:10, paddingVertical:4 }}>
-          <Text style={{ color: theme.accentBlue, fontSize:12, fontFamily:'DMSans_600SemiBold' }}>+ Log</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.calRow}>
-        <Text style={[styles.calNumber, { color:calColor }]}>{totalCals}</Text>
-        <Text style={[styles.calTarget, { color: theme.textSecondary }]}>/ {adjustedTarget} kcal</Text>
-      </View>
-      <AnimatedProgressBar pct={calPct} color={calColor} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} ready={calTarget > 0} />
-      {(() => {
-        const remaining = adjustedTarget - totalCals;
-        const net = totalCals - displayedBurned - runningBmr;
-        const netColor = net <= calTarget ? theme.statusGood : theme.statusBad;
-        const stats = [
-          { label: remaining >= 0 ? 'REMAINING' : 'OVER', value: Math.abs(remaining), color: remaining >= 0 ? theme.accentBlue : theme.statusBad },
-          { label: 'ACTIVE', value: displayedBurned, color: theme.accentBlue },
-          { label: 'NET', value: net, color: theme.accentBlue },
-        ];
-        return (
+
+        {/* Big number row */}
+        <View style={styles.calRow}>
+          <Text style={[styles.calNumber, { color: styleMode === 'mindful' ? theme.textSecondary : calColor }]}>{totalCals}</Text>
+          <Text style={[styles.calTarget, { color: theme.textSecondary }]}>/ {styleMode === 'mindful' ? calTarget : adjustedTarget} kcal</Text>
+        </View>
+
+        {/* Progress bar -- neutral color in Mindful */}
+        <AnimatedProgressBar
+          pct={styleMode === 'mindful' ? Math.min((totalCals / calTarget) * 100, 100) : calPct}
+          color={styleMode === 'mindful' ? theme.accentBlue : calColor}
+          trackColor={theme.bgProgressTrack}
+          refreshKey={refreshKey}
+          ready={calTarget > 0}
+        />
+
+        {/* Stat row -- hidden in Mindful */}
+        {styleMode !== 'mindful' && (
           <View style={{ flexDirection:'row', marginTop:10 }}>
             {stats.map((s, i) => (
               <View key={i} style={{ flex:1, alignItems: i === 1 ? 'center' : i === 2 ? 'flex-end' : 'flex-start' }}>
@@ -1260,10 +1299,19 @@ export default function HomeScreen() {
               </View>
             ))}
           </View>
-        );
-      })()}
-    </View>
-  );
+        )}
+
+        
+
+        {/* Mindful evening nudge */}
+        {showMindfulNudge && (
+          <Text style={{ fontSize:11, color: theme.textMuted, fontFamily:'DMSans_400Regular', fontStyle:'italic', marginTop:6 }}>
+            {nudgeText}
+          </Text>
+        )}
+      </View>
+    );
+  };
 
   const renderMacrosCard = () => {
     const macros = [
@@ -1284,7 +1332,7 @@ export default function HomeScreen() {
         <View style={{ gap:7 }}>
           {macros.map(m => {
             const pct = m.goal > 0 ? Math.min((m.val / m.goal) * 100, 100) : 0;
-            const over = m.goal > 0 && m.val > m.goal;
+            const over = false; // macro over-threshold color removed -- always use identity colors
             return (
               <View key={m.label}>
                 <View style={{ flexDirection:'row', alignItems:'baseline', justifyContent:'space-between', marginBottom:4 }}>
@@ -1295,9 +1343,9 @@ export default function HomeScreen() {
                     <Text style={{ fontSize:11, color: theme.textDim, fontFamily:'DMSans_500Medium' }}>/ {m.goal} g</Text>
                   </View>
                 </View>
-                <MacroBar val={m.val} goal={m.goal} color={over ? theme.macroOver : m.color} trackColor={theme.bgProgressTrack} />
-                <Text style={{ fontSize:9, color: over ? theme.macroOver : m.color, fontFamily:'DMSans_500Medium', letterSpacing:0.5, marginTop:3, opacity:0.7 }}>
-                  {over ? `${Math.round(m.val - m.goal)} g over` : `${Math.round(m.goal - m.val)} g remaining`}
+                <MacroBar val={m.val} goal={m.goal} color={over ? theme.macroOver : m.color} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} />
+                <Text style={{ fontSize:9, color: m.color, fontFamily:'DMSans_500Medium', letterSpacing:0.5, marginTop:3, opacity:0.7 }}>
+                  {`${Math.round(Math.max(0, m.goal - m.val))} g remaining`}
                 </Text>
               </View>
             );
@@ -1354,7 +1402,7 @@ export default function HomeScreen() {
       </View>
       <View style={styles.weightRow}>
         <View style={styles.weightStat}>
-          <Text style={[styles.weightVal, { color: weight ? theme.accentBlue : theme.textDim }]}>
+          <Text style={[styles.weightVal, { color: styleMode === 'mindful' ? theme.textSecondary : weight ? theme.accentBlue : theme.textDim }]}>
             {weight ? `${weight} lbs` : lastKnownWeight ? `${lastKnownWeight.val} lbs` : '--'}
           </Text>
           <Text style={[styles.weightLbl, { color: theme.textMuted }]}>
@@ -1362,13 +1410,13 @@ export default function HomeScreen() {
           </Text>
         </View>
         <View style={styles.weightStat}>
-          <Text style={[styles.weightVal, { color: weight&&yesterdayWeight ? weight<yesterdayWeight ? theme.statusGood : weight>yesterdayWeight ? theme.statusBad : theme.textPrimary : theme.accentBlue }]}>
+          <Text style={[styles.weightVal, { color: styleMode === 'mindful' ? theme.textSecondary : weight&&yesterdayWeight ? weight<yesterdayWeight ? theme.statusGood : weight>yesterdayWeight ? theme.statusBad : theme.textPrimary : theme.accentBlue }]}>
             {weight&&yesterdayWeight ? `${weight>yesterdayWeight?'+':''}${Math.round((weight-yesterdayWeight)*10)/10} lbs` : '--'}
           </Text>
           <Text style={[styles.weightLbl, { color: theme.textMuted }]}>vs Yesterday</Text>
         </View>
         <View style={styles.weightStat}>
-          <Text style={[styles.weightVal, { color: (weight||lastKnownWeight?.val)&&earliestWeight ? earliestWeight-(weight||lastKnownWeight!.val)>0 ? theme.statusGood : earliestWeight-(weight||lastKnownWeight!.val)<0 ? theme.statusBad : theme.textPrimary : theme.textPrimary }]}>
+          <Text style={[styles.weightVal, { color: styleMode === 'mindful' ? theme.textSecondary : (weight||lastKnownWeight?.val)&&earliestWeight ? earliestWeight-(weight||lastKnownWeight!.val)>0 ? theme.statusGood : earliestWeight-(weight||lastKnownWeight!.val)<0 ? theme.statusBad : theme.textPrimary : theme.textPrimary }]}>
             {(weight||lastKnownWeight?.val)&&earliestWeight ? `${Math.round((earliestWeight-(weight||lastKnownWeight!.val))*10)/10} lbs` : '--'}
           </Text>
           <Text style={[styles.weightLbl, { color: theme.textMuted }]}>Total Lost</Text>
@@ -1392,15 +1440,15 @@ export default function HomeScreen() {
         return (
           <View style={[styles.weightRow, { paddingTop: 10, borderTopWidth: 0.5, borderTopColor: theme.borderCard }]}>
             <View style={styles.weightStat}>
-              <Text style={[styles.weightVal, { color: theme.accentBlue }]}>{goalWeight} lbs</Text>
+              <Text style={[styles.weightVal, { color: styleMode === 'mindful' ? theme.textSecondary : theme.accentBlue }]}>{goalWeight} lbs</Text>
               <Text style={[styles.weightLbl, { color: theme.textMuted }]}>Goal</Text>
             </View>
             <View style={styles.weightStat}>
-              <Text style={[styles.weightVal, { color: theme.accentBlue }]}>{lbsToGo !== null ? `${Math.round(lbsToGo * 10) / 10} lbs` : '--'}</Text>
+              <Text style={[styles.weightVal, { color: styleMode === 'mindful' ? theme.textSecondary : theme.accentBlue }]}>{lbsToGo !== null ? `${Math.round(lbsToGo * 10) / 10} lbs` : '--'}</Text>
               <Text style={[styles.weightLbl, { color: theme.textMuted }]}>To Go</Text>
             </View>
             <View style={styles.weightStat}>
-              <Text style={[styles.weightVal, { color: theme.accentBlue }]}>{projectedDate || '--'}</Text>
+              <Text style={[styles.weightVal, { color: styleMode === 'mindful' ? theme.textSecondary : theme.accentBlue }]}>{projectedDate || '--'}</Text>
               <Text style={[styles.weightLbl, { color: theme.textMuted }]}>Projected</Text>
             </View>
           </View>
@@ -1846,7 +1894,8 @@ export default function HomeScreen() {
         <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Daily Note</Text>
       </View>
       <TextInput style={[styles.notesInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} placeholder="How did today go? Workout, diet, energy..." placeholderTextColor={theme.textPlaceholder}
-        multiline numberOfLines={4} value={dailyNote} onChangeText={setDailyNote} />
+        multiline numberOfLines={4} value={dailyNote} onChangeText={setDailyNote}
+        onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100)} />
       <TouchableOpacity style={[styles.saveBtn, { backgroundColor: theme.bgInset, borderColor: theme.borderInset }]} onPress={() => {}}>
         <Text style={[styles.saveBtnText, { color: theme.textSecondary }]}>Save Note</Text>
       </TouchableOpacity>
@@ -1978,7 +2027,8 @@ export default function HomeScreen() {
     ];
 
     // ── Tier priority ──
-    const tier1Ids: MetricId[] = ['net', 'steps', 'sleepScore', 'water'];
+    const isMindful = styleMode === 'mindful';
+    const tier1Ids: MetricId[] = isMindful ? ['steps', 'sleepScore', 'water'] : ['net', 'steps', 'sleepScore', 'water'];
     const tier2Ids: MetricId[] = ['weight', 'activeCals', 'sleepHours'];
 
     const metricMap = Object.fromEntries(allMetrics.map(m => [m.id, m])) as Record<MetricId, Metric>;
@@ -1992,10 +2042,12 @@ export default function HomeScreen() {
       const m = metricMap[id];
       if (isEligible(m)) selected.push(m);
     }
-    for (const id of tier2Ids) {
-      if (selected.length >= 4) break;
-      const m = metricMap[id];
-      if (isEligible(m)) selected.push(m);
+    if (!isMindful) {
+      for (const id of tier2Ids) {
+        if (selected.length >= 4) break;
+        const m = metricMap[id];
+        if (isEligible(m)) selected.push(m);
+      }
     }
 
     // ── Not enough data ──
@@ -2024,16 +2076,32 @@ export default function HomeScreen() {
     const loseColor = theme.textDim;
     const tieColor  = theme.textDim;
 
+    // ── Mindful 4th slot cycling ──
+    let mindfulSelected = [...selected];
+    if (isMindful && mindfulSelected.length <= 3) {
+      const todayDate = new Date().getDate();
+      const hasFood = totalCals > 0;
+      const hasWorkout = Object.values(workoutChecks[todayKey] || {}).some(Boolean);
+      const cycleOptions = [
+        !hasFood   ? { id: 'log_meal',   label: 'Log a Meal',    sub: 'Tap + Log to add food',   done: false } : null,
+        !hasWorkout? { id: 'workout_check', label: 'Worked Out', sub: 'Log a workout today',      done: false } : null,
+        { id: 'showing_up', label: 'Showing Up',  sub: 'You logged today',          done: hasFood },
+      ].filter(Boolean) as { id: string; label: string; sub: string; done: boolean }[];
+      const slot4 = cycleOptions[todayDate % cycleOptions.length];
+      if (slot4) mindfulSelected = [...mindfulSelected, slot4 as any];
+    }
+    const displayMetrics = isMindful ? mindfulSelected : selected;
+
     return (
       <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
         {/* Header */}
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
             <Ionicons name="trophy" size={11} color={theme.textMuted} />
-            <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>You vs Yesterday</Text>
-            <TooltipIcon tooltipKey="vs_yesterday" />
+            <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>You & Yesterday</Text>
+            {!isMindful && <TooltipIcon tooltipKey="vs_yesterday" />}
           </View>
-          {vsStreak > 0 && (
+          {!isMindful && vsStreak > 0 && (
             <View style={{ flexDirection:'row', alignItems:'center', gap:5, backgroundColor: `${accentRaw}18`, borderWidth:1, borderColor:`${accentRaw}40`, borderRadius:6, paddingHorizontal:8, paddingVertical:3 }}>
               <Text style={{ fontSize:11, color: accentRaw, fontFamily:'DMSans_700Bold' }}>🔥</Text>
               <Text style={{ fontSize:13, color: accentRaw, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>{vsStreak}</Text>
@@ -2046,7 +2114,7 @@ export default function HomeScreen() {
         <View style={{ flexDirection:'row', marginBottom:6 }}>
           <View style={{ flex:1 }} />
           <View style={{ width:80, alignItems:'center' }}>
-            <Text style={{ fontSize:9, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', color: accentRaw }}>Today</Text>
+            <Text style={{ fontSize:9, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', color: isMindful ? theme.textMuted : accentRaw }}>Today</Text>
           </View>
           <View style={{ width:80, alignItems:'center' }}>
             <Text style={{ fontSize:9, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', color: theme.textDim }}>Yesterday</Text>
@@ -2054,69 +2122,83 @@ export default function HomeScreen() {
         </View>
 
         {/* Metric rows */}
-        {selected.map((m, i) => {
-          const result = results[i];
-          const todayColor = result === 'win' ? winColor : theme.textDim;
-          const todayOpacity = 1;
-          const ydColor    = result === 'lose' ? theme.textSecondary : theme.textDim;
-          const ydOpacity  = 1;
-          const showWinBar = result === 'win';
-          const showYdBar  = result === 'lose';
+        {displayMetrics.map((m: any, i: number) => {
+          const result = isMindful ? 'tie' : results[i];
+          const isSlot4 = isMindful && m.id && !['steps','sleepScore','water','net'].includes(m.id);
+          const rowColor = theme.textSecondary;
+          const todayColor = isMindful ? rowColor : (result === 'win' ? winColor : theme.textDim);
+          const ydColor    = isMindful ? theme.textDim : (result === 'lose' ? theme.textSecondary : theme.textDim);
+          const showWinBar = !isMindful && result === 'win';
+          const showYdBar  = !isMindful && result === 'lose';
           return (
-            <View key={m.id} style={{ flexDirection:'row', alignItems:'center', paddingVertical:9,
-              borderBottomWidth: i < selected.length - 1 ? 0.5 : 0,
+            <View key={m.id || i} style={{ flexDirection:'row', alignItems:'center', paddingVertical:9,
+              borderBottomWidth: i < displayMetrics.length - 1 ? 0.5 : 0,
               borderBottomColor: theme.borderSubtle }}>
               <View style={{ flex:1 }}>
                 <Text style={{ fontSize:10, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', color: theme.textPrimary }}>{m.label}</Text>
                 <Text style={{ fontSize:10, fontFamily:'DMSans_400Regular', color: theme.textDim, marginTop:1 }}>{m.sub}</Text>
               </View>
-              <View style={{ width:80, alignItems:'center' }}>
-                {showWinBar && (
-                  <View style={{ position:'absolute', left:2, top:'10%', width:3, height:'80%', backgroundColor: accentRaw, borderRadius:2 }} />
-                )}
-                <Text style={{ fontSize:20, fontFamily:'BebasNeue_400Regular', letterSpacing:1, color: todayColor, opacity: todayOpacity }}>
-                  {m.todayVal !== null ? m.format(m.todayVal) : '--'}
-                </Text>
-                <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:1, textTransform:'uppercase', color: todayColor, opacity: result === 'tie' ? 0.3 : 0.6 }}>{m.unit}</Text>
-              </View>
-              <View style={{ width:80, alignItems:'center' }}>
-                {showYdBar && (
-                  <View style={{ position:'absolute', right:2, top:'10%', width:3, height:'80%', backgroundColor: theme.textSecondary, borderRadius:2 }} />
-                )}
-                <Text style={{ fontSize:20, fontFamily:'BebasNeue_400Regular', letterSpacing:1, color: ydColor, opacity: ydOpacity }}>
-                  {m.ydVal !== null ? m.format(m.ydVal) : '--'}
-                </Text>
-                <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:1, textTransform:'uppercase', color: ydColor, opacity: result === 'tie' ? 0.3 : 0.6 }}>{m.unit}</Text>
-              </View>
+              {isSlot4 ? (
+                <>
+                  <View style={{ width:80, alignItems:'center' }}>
+                    <Ionicons name={m.done ? 'checkmark-circle' : 'ellipse-outline'} size={22} color={m.done ? theme.statusGood : theme.textDim} />
+                  </View>
+                  <View style={{ width:80 }} />
+                </>
+              ) : (
+                <>
+                  <View style={{ width:80, alignItems:'center' }}>
+                    {showWinBar && (
+                      <View style={{ position:'absolute', left:2, top:'10%', width:3, height:'80%', backgroundColor: accentRaw, borderRadius:2 }} />
+                    )}
+                    <Text style={{ fontSize:20, fontFamily:'BebasNeue_400Regular', letterSpacing:1, color: todayColor }}>
+                      {m.todayVal !== null ? m.format(m.todayVal) : '--'}
+                    </Text>
+                    <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:1, textTransform:'uppercase', color: todayColor, opacity: result === 'tie' ? 0.3 : 0.6 }}>{m.unit}</Text>
+                  </View>
+                  <View style={{ width:80, alignItems:'center' }}>
+                    {showYdBar && (
+                      <View style={{ position:'absolute', right:2, top:'10%', width:3, height:'80%', backgroundColor: theme.textSecondary, borderRadius:2 }} />
+                    )}
+                    <Text style={{ fontSize:20, fontFamily:'BebasNeue_400Regular', letterSpacing:1, color: ydColor }}>
+                      {m.ydVal !== null ? m.format(m.ydVal) : '--'}
+                    </Text>
+                    <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:1, textTransform:'uppercase', color: ydColor, opacity: result === 'tie' ? 0.3 : 0.6 }}>{m.unit}</Text>
+                  </View>
+                </>
+              )}
             </View>
           );
         })}
 
-        {/* Score bar */}
-        <View style={{ marginTop:14, backgroundColor: theme.bgInset, borderRadius:10, overflow:'hidden' }}>
-          <View style={{ height:2, backgroundColor: accentRaw, opacity: 0.7 }} />
-          <View style={{ flexDirection:'row', alignItems:'center', padding:12, gap:8 }}>
-            <View style={{ alignItems:'center', minWidth:28 }}>
-              <Text style={{ fontSize:28, fontFamily:'BebasNeue_400Regular', letterSpacing:1, lineHeight:30, color: overallResult === 'win' ? accentRaw : theme.textDim }}>{wins}</Text>
-              <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase', color: overallResult === 'win' ? accentRaw : theme.textDim, opacity:0.7 }}>YOU</Text>
-            </View>
-            <Text style={{ fontSize:16, fontFamily:'BebasNeue_400Regular', color: theme.textDim, letterSpacing:1, paddingBottom:6 }}>·</Text>
-            <View style={{ alignItems:'center', minWidth:28 }}>
-              <Text style={{ fontSize:28, fontFamily:'BebasNeue_400Regular', letterSpacing:1, lineHeight:30, color: overallResult === 'lose' ? theme.textSecondary : theme.textDim }}>{losses}</Text>
-              <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase', color: overallResult === 'lose' ? theme.textSecondary : theme.textDim, opacity:0.7 }}>YESTERDAY</Text>
-            </View>
-            <Text style={{ fontSize:16, fontFamily:'BebasNeue_400Regular', color: theme.textDim, letterSpacing:1, paddingBottom:6 }}>·</Text>
-            <View style={{ alignItems:'center', minWidth:28 }}>
-              <Text style={{ fontSize:28, fontFamily:'BebasNeue_400Regular', letterSpacing:1, lineHeight:30, color: ties > 0 ? tieColor : theme.textDim }}>{ties}</Text>
-              <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase', color: ties > 0 ? tieColor : theme.textDim, opacity:0.7 }}>TIED</Text>
-            </View>
-            <View style={{ flex:1, paddingLeft:8, alignItems:'center', justifyContent:'center' }}>
-              <Text style={{ fontSize:16, fontFamily:'BebasNeue_400Regular', letterSpacing:1, color: overallResult === 'win' ? accentRaw : overallResult === 'lose' ? theme.textSecondary : tieColor, lineHeight:19, textAlign:'center', maxWidth:140 }}>{motLine}</Text>
+        {/* Score bar -- hidden in Mindful */}
+        {!isMindful && (
+          <View style={{ marginTop:14, backgroundColor: theme.bgInset, borderRadius:10, overflow:'hidden' }}>
+            <View style={{ height:2, backgroundColor: accentRaw, opacity: 0.7 }} />
+            <View style={{ flexDirection:'row', alignItems:'center', padding:12, gap:8 }}>
+              <View style={{ alignItems:'center', minWidth:28 }}>
+                <Text style={{ fontSize:28, fontFamily:'BebasNeue_400Regular', letterSpacing:1, lineHeight:30, color: overallResult === 'win' ? accentRaw : theme.textDim }}>{wins}</Text>
+                <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase', color: overallResult === 'win' ? accentRaw : theme.textDim, opacity:0.7 }}>YOU</Text>
+              </View>
+              <Text style={{ fontSize:16, fontFamily:'BebasNeue_400Regular', color: theme.textDim, letterSpacing:1, paddingBottom:6 }}>·</Text>
+              <View style={{ alignItems:'center', minWidth:28 }}>
+                <Text style={{ fontSize:28, fontFamily:'BebasNeue_400Regular', letterSpacing:1, lineHeight:30, color: overallResult === 'lose' ? theme.textSecondary : theme.textDim }}>{losses}</Text>
+                <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase', color: overallResult === 'lose' ? theme.textSecondary : theme.textDim, opacity:0.7 }}>YESTERDAY</Text>
+              </View>
+              <Text style={{ fontSize:16, fontFamily:'BebasNeue_400Regular', color: theme.textDim, letterSpacing:1, paddingBottom:6 }}>·</Text>
+              <View style={{ alignItems:'center', minWidth:28 }}>
+                <Text style={{ fontSize:28, fontFamily:'BebasNeue_400Regular', letterSpacing:1, lineHeight:30, color: ties > 0 ? tieColor : theme.textDim }}>{ties}</Text>
+                <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase', color: ties > 0 ? tieColor : theme.textDim, opacity:0.7 }}>TIED</Text>
+              </View>
+              <View style={{ flex:1, paddingLeft:8, alignItems:'center', justifyContent:'center' }}>
+                <Text style={{ fontSize:16, fontFamily:'BebasNeue_400Regular', letterSpacing:1, color: overallResult === 'win' ? accentRaw : overallResult === 'lose' ? theme.textSecondary : tieColor, lineHeight:19, textAlign:'center', maxWidth:140 }}>{motLine}</Text>
+              </View>
             </View>
           </View>
-        </View>
-        {/* Results countdown */}
-        {(() => {
+        )}
+
+        {/* Results countdown -- hidden in Mindful */}
+        {!isMindful && (() => {
           const now = new Date();
           const msLeft = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() - now.getTime();
           const h = Math.floor(msLeft / 3600000);
@@ -2150,6 +2232,7 @@ export default function HomeScreen() {
       case 'vs_yesterday': {
         const cardContent = renderVsYesterdayCard();
         if (!cardContent) return null;
+        if (styleMode === 'mindful') return cardContent;
         const today = new Date();
         const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
         const fmtD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;

@@ -20,6 +20,7 @@ export default function SettingsScreen() {
   const { theme, themeId, accentId, setTheme, setAccent } = useTheme();
   // showAchievementToast is now a direct import
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
+  const [styleMode, setStyleMode] = useState<'discipline' | 'balanced' | 'mindful'>('balanced');
   const [devCelebVisible,  setDevCelebVisible]  = useState(false);
   const [devCelebTier,     setDevCelebTier]     = useState<'small'|'medium'|'large'>('small');
   const [devCelebLabel,    setDevCelebLabel]    = useState<string|undefined>(undefined);
@@ -121,6 +122,7 @@ export default function SettingsScreen() {
         if (saved) {
           const data = JSON.parse(saved);
           if (data.hapticsEnabled !== undefined) setHapticsEnabled(data.hapticsEnabled);
+          if (data.styleMode) setStyleMode(data.styleMode);
         }
       } catch (e) {}
     };
@@ -238,6 +240,63 @@ export default function SettingsScreen() {
               })}
             </View>
           </View>
+        </View>
+
+        {/* ── Your Style ── */}
+        <View style={[styles.section, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
+          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>Your Style</Text>
+          {([
+            { key: 'discipline', label: 'Discipline', sub: 'Tight targets. Direct feedback. Commit fully.' },
+            { key: 'balanced',   label: 'Balanced',   sub: 'Encouraging. Forgiving. Steady progress.' },
+            { key: 'mindful',    label: 'Mindful',    sub: 'Observational. No judgment. Show up.' },
+          ] as const).map(({ key, label, sub }) => {
+            const isActive = styleMode === key;
+            return (
+              <TouchableOpacity
+                key={key}
+                style={[styles.row, { borderTopColor: theme.borderCard }]}
+                onPress={() => {
+                  if (isActive) return;
+                  if (key === 'discipline') {
+                    Alert.alert(
+                      'Switch to Discipline',
+                      'This mode is for people who mean it. Tight calorie targets, direct feedback, and full accountability. Ready to commit?',
+                      [
+                        { text: 'Not yet', style: 'cancel' },
+                        { text: "I'm in", onPress: async () => {
+                          setStyleMode('discipline');
+                          await saveSetting('styleMode', 'discipline');
+                        }},
+                      ]
+                    );
+                  } else {
+                    const descriptions: Record<string, string> = {
+                      balanced: 'Encouraging and forgiving. Wide calorie targets, positive language, steady progress.',
+                      mindful: 'No judgment, no color coding. Celebrate showing up. Numbers are just information.',
+                    };
+                    Alert.alert(
+                      `Switch to ${label}`,
+                      descriptions[key],
+                      [
+                        { text: 'Cancel', style: 'cancel' },
+                        { text: 'Switch', onPress: async () => {
+                          setStyleMode(key);
+                          await saveSetting('styleMode', key);
+                        }},
+                      ]
+                    );
+                  }
+                }}
+                activeOpacity={0.7}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.rowTitle, { color: isActive ? theme.accentBlue : theme.textPrimary }]}>{label}</Text>
+                  <Text style={[styles.rowSub, { color: theme.textMuted }]}>{sub}</Text>
+                </View>
+                {isActive && <Ionicons name="checkmark-circle" size={20} color={theme.accentBlue} />}
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
         {/* ── Feedback ── */}

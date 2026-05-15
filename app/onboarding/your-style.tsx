@@ -482,7 +482,12 @@ export default function YourStyleScreen() {
                   placeholder="177"
                   placeholderTextColor={theme.textPlaceholder}
                   value={currentWeight}
-                  onChangeText={setCurrentWeight}
+                  onChangeText={v => {
+                    const stripped = v.replace(/[^0-9.]/g, '');
+                    const dot = stripped.indexOf('.');
+                    if (dot === -1) { setCurrentWeight(stripped); }
+                    else { setCurrentWeight(stripped.slice(0, dot) + '.' + stripped.slice(dot + 1).replace(/\./g, '').slice(0, 1)); }
+                  }}
                   keyboardType="decimal-pad"
                 />
                 <View style={{ borderWidth: 0.5, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 14, backgroundColor: theme.bgCard, borderColor: theme.borderCard }}>
@@ -498,7 +503,12 @@ export default function YourStyleScreen() {
                   placeholder="165"
                   placeholderTextColor={theme.textPlaceholder}
                   value={goalWeight}
-                  onChangeText={setGoalWeight}
+                  onChangeText={v => {
+                    const stripped = v.replace(/[^0-9.]/g, '');
+                    const dot = stripped.indexOf('.');
+                    if (dot === -1) { setGoalWeight(stripped); }
+                    else { setGoalWeight(stripped.slice(0, dot) + '.' + stripped.slice(dot + 1).replace(/\./g, '').slice(0, 1)); }
+                  }}
                   keyboardType="decimal-pad"
                 />
                 <View style={{ borderWidth: 0.5, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 14, backgroundColor: theme.bgCard, borderColor: theme.borderCard }}>

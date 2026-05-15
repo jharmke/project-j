@@ -164,13 +164,13 @@ export default function ProfileSetupScreen() {
                 <TouchableOpacity
                   activeOpacity={1}
                   onPress={() => { setShowPicker(false); setTempBirthday(null); }}
-                  style={{ position: 'absolute', top: -1000, bottom: -200, left: -24, right: -24, zIndex: 0 }}
+                  style={{ position: 'absolute', top: -1000, bottom: 0, left: -24, right: -24, zIndex: 0 }}
                 />
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, paddingHorizontal: 4, zIndex: 1 }}>
-                  <TouchableOpacity onPress={() => { setShowPicker(false); setTempBirthday(null); }}>
+                  <TouchableOpacity onPress={() => { setShowPicker(false); setTempBirthday(null); }} style={{ paddingVertical: 12, paddingHorizontal: 16 }}>
                     <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium' }}>Cancel</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => { if (tempBirthday) setBirthday(tempBirthday); setShowPicker(false); }}>
+                  <TouchableOpacity onPress={() => { if (tempBirthday) setBirthday(tempBirthday); setShowPicker(false); }} style={{ paddingVertical: 12, paddingHorizontal: 16 }}>
                     <Text style={{ color: theme.accentBlueRaw, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Confirm</Text>
                   </TouchableOpacity>
                 </View>

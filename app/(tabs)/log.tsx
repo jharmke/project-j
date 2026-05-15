@@ -152,6 +152,7 @@ export default function LogScreen() {
   const [logRefreshKey, setLogRefreshKey] = useState(0);
   const { activeCalories } = useHealthKit();
   const [showCreateFood, setShowCreateFood] = useState(false);
+  const [styleMode, setStyleMode] = useState<'discipline' | 'balanced' | 'mindful'>('balanced');
 
   const goToPrevDay = () => {
     const d = new Date(activeDate + 'T12:00:00');
@@ -187,7 +188,16 @@ export default function LogScreen() {
   const totalSodium = getAdvancedNutrient('Sodium, Na');
   const totalCholesterol = getAdvancedNutrient('Cholesterol');
   const totalSatFat = getAdvancedNutrient('Fatty acids, total saturated');
-  const calColor = calPct > 114 ? '#ef4444' : calPct > 106 ? '#f59e0b' : calPct >= 80 ? '#10b981' : calPct >= 63 ? '#f59e0b' : '#ef4444';
+  const calDelta = Math.abs(totalCals - adjustedTarget);
+  const calColor = styleMode === 'mindful'
+    ? theme.textSecondary
+    : styleMode === 'discipline'
+      ? calDelta <= 50  ? theme.statusGood
+      : calDelta <= 149 ? theme.statusWarn
+      : theme.statusBad
+    : /* balanced */ calDelta <= 150 ? theme.statusGood
+      : calDelta <= 300 ? theme.statusWarn
+      : theme.statusBad;
   const waterPct = Math.min(100, (water / WATER_TARGET) * 100);
 
   const saveField = async (field: string, value: any) => {
@@ -265,6 +275,9 @@ export default function LogScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      AsyncStorage.getItem('pj_settings').then(s => {
+        if (s) { const d = JSON.parse(s); if (d.styleMode) setStyleMode(d.styleMode); }
+      });
       const reload = async () => {
         setEntries([]);
         setWater(0);

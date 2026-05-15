@@ -1109,7 +1109,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
           (!query.trim() || results.length > 0) ? (
             <TouchableOpacity
               onPress={() => Linking.openURL('https://platform.fatsecret.com')}
-              style={{ alignItems: 'center', paddingVertical: 20, paddingBottom: 32, opacity: 0.65 }}>
+              style={{ alignItems: 'center', paddingVertical: 20, paddingBottom: 32, opacity: 0.65, alignSelf: 'center' }}>
               <Image
                 source={{ uri: 'https://platform.fatsecret.com/api/static/images/powered_by_fatsecret_horizontal_brand.png' }}
                 style={{ width: 140, height: 34 }}

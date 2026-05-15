@@ -594,7 +594,16 @@ export default function ProfileScreen() {
               <TextInput
                 style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, flex: 1, marginBottom: 0 }]}
                 value={profile.goalWeight}
-                onChangeText={v => updateField('goalWeight', v)}
+                onChangeText={v => {
+                  const stripped = v.replace(/[^0-9.]/g, '');
+                  const dot = stripped.indexOf('.');
+                  if (dot === -1) { updateField('goalWeight', stripped); }
+                  else {
+                    const before = stripped.slice(0, dot);
+                    const after = stripped.slice(dot + 1).replace(/\./g, '').slice(0, 1);
+                    updateField('goalWeight', before + '.' + after);
+                  }
+                }}
                 keyboardType="decimal-pad"
                 placeholder="e.g. 185"
                 placeholderTextColor={theme.textPlaceholder}

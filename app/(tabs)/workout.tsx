@@ -26,6 +26,17 @@ function getTodayDay() {
 const today = new Date();
 const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
+const filterDecimal = (v: string, set: (s: string) => void) => {
+  const stripped = v.replace(/[^0-9.]/g, '');
+  const dot = stripped.indexOf('.');
+  if (dot === -1) { set(stripped); }
+  else {
+    const before = stripped.slice(0, dot);
+    const after = stripped.slice(dot + 1).replace(/\./g, '').slice(0, 1);
+    set(before + '.' + after);
+  }
+};
+
 export default function WorkoutScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
@@ -843,16 +854,16 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                           placeholderTextColor={theme.textPlaceholder}
                           keyboardType="decimal-pad"
                           value={form[field.key as keyof typeof form] as string || ''}
-                          onChangeText={v => setForm(p => ({ ...p, [field.key]: v }))}
+                          onChangeText={v => filterDecimal(v, s => setForm(p => ({ ...p, [field.key]: s })))}
                         />
                       </View>
                     ))}
                   </>
                 ) : (
                   <View style={styles.modalRow}>
-                    <TextInput style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, flex: 1 }]} placeholder="Sets" placeholderTextColor={theme.textPlaceholder} value={form.sets || ''} onChangeText={v => setForm(p => ({ ...p, sets: v }))} />
-                    <TextInput style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, flex: 1 }]} placeholder="Reps" placeholderTextColor={theme.textPlaceholder} value={form.reps || ''} onChangeText={v => setForm(p => ({ ...p, reps: v }))} />
-                    <TextInput style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, flex: 1 }]} placeholder="Rest" placeholderTextColor={theme.textPlaceholder} value={form.rest || ''} onChangeText={v => setForm(p => ({ ...p, rest: v }))} />
+                    <TextInput style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, flex: 1 }]} placeholder="Sets" placeholderTextColor={theme.textPlaceholder} keyboardType="number-pad" value={form.sets || ''} onChangeText={v => setForm(p => ({ ...p, sets: v.replace(/[^0-9]/g, '') }))} />
+                    <TextInput style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, flex: 1 }]} placeholder="Reps" placeholderTextColor={theme.textPlaceholder} keyboardType="number-pad" value={form.reps || ''} onChangeText={v => setForm(p => ({ ...p, reps: v.replace(/[^0-9]/g, '') }))} />
+                    <TextInput style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, flex: 1 }]} placeholder="Rest" placeholderTextColor={theme.textPlaceholder} keyboardType="number-pad" value={form.rest || ''} onChangeText={v => setForm(p => ({ ...p, rest: v.replace(/[^0-9]/g, '') }))} />
                   </View>
                 )}
                 <TextInput style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} placeholder="Note (optional)" placeholderTextColor={theme.textPlaceholder} value={form.note} onChangeText={v => setForm(p => ({ ...p, note: v }))} />

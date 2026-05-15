@@ -13,45 +13,54 @@ const theme = THEMES['light'];
 const QUESTIONS = [
   {
     id: 'q1',
-    text: "What's your biggest challenge?",
+    text: 'How do you want to feel at the end of a good day?',
     answers: [
-      { label: 'Stress eating',        points: 1 },
-      { label: 'Portion control',       points: 2 },
-      { label: 'Staying consistent',    points: 3 },
+      { label: 'Like I showed up for myself',  points: 1 },
+      { label: 'Like I stuck to my plan',      points: 2 },
+      { label: 'Like I hit my targets',        points: 3 },
     ],
   },
   {
     id: 'q2',
-    text: "What's your primary goal?",
+    text: 'How do you measure progress?',
     answers: [
-      { label: 'Feel better overall',       points: 1 },
-      { label: 'Build healthy habits',      points: 2 },
-      { label: 'Hit specific targets',      points: 3 },
+      { label: 'By how I feel day to day',              points: 1 },
+      { label: 'By whether I\'m showing up consistently', points: 2 },
+      { label: 'By the numbers moving in the right direction', points: 3 },
     ],
   },
   {
     id: 'q3',
     text: 'How do you handle setbacks?',
     answers: [
-      { label: 'I give myself grace',        points: 1 },
-      { label: 'Somewhere in between',       points: 2 },
-      { label: 'I analyze and recommit',     points: 3 },
+      { label: 'I give myself grace',                          points: 1 },
+      { label: 'I reset and keep going',                       points: 2 },
+      { label: 'I figure out what went wrong and attack it differently', points: 3 },
     ],
   },
   {
     id: 'q4',
     text: 'How important is tracking numbers?',
     answers: [
-      { label: 'Numbers stress me out',       points: 1 },
-      { label: 'General awareness is fine',   points: 2 },
-      { label: 'I want full visibility',       points: 3 },
+      { label: 'Numbers stress me out',      points: 1 },
+      { label: 'General awareness is fine',  points: 2 },
+      { label: 'I want full visibility',     points: 3 },
+    ],
+  },
+  {
+    id: 'q5',
+    text: 'When you miss a day, you usually...',
+    answers: [
+      { label: 'Don\'t stress, tomorrow is a fresh start',  points: 1 },
+      { label: 'Log it and adjust the rest of the week',    points: 2 },
+      { label: 'Push harder the next day to make up for it', points: 3 },
     ],
   },
 ];
 
 function scoreToMode(score: number): 'mindful' | 'balanced' | 'discipline' {
-  if (score <= 6)  return 'mindful';
-  if (score <= 9)  return 'balanced';
+  if (score <= 8)  return 'mindful';
+  if (score <= 12) return 'balanced';
   return 'discipline';
 }
 

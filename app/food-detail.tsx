@@ -426,24 +426,27 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
 
         {/* Nutrition */}
         <View style={styles.nutritionCard}>
-          <Text style={styles.nutritionTitle}>Nutrition for {amount}{unit}</Text>
+          <Text style={styles.nutritionTitle}>
+            {'Nutrition for '}
+            <Text style={{ textTransform: 'none' }}>{amount}{unit}</Text>
+          </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 16 }}>
             <MacroDonut protein={protein} carbs={carbs} fat={fat} calories={calories} theme={theme} />
             <View style={{ flex: 1, gap: 8 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: theme.macroProtein }} />
                 <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_400Regular', flex: 1 }}>Protein</Text>
-                <Text style={{ color: theme.macroProtein, fontSize: 15, fontFamily: 'BebasNeue_400Regular' }}>{protein}g</Text>
+                <Text style={{ color: theme.macroProtein, fontSize: 15, fontFamily: 'DMSans_600SemiBold' }}>{protein}g</Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: theme.macroCarbs }} />
                 <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_400Regular', flex: 1 }}>Carbs</Text>
-                <Text style={{ color: theme.macroCarbs, fontSize: 15, fontFamily: 'BebasNeue_400Regular' }}>{carbs}g</Text>
+                <Text style={{ color: theme.macroCarbs, fontSize: 15, fontFamily: 'DMSans_600SemiBold' }}>{carbs}g</Text>
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: theme.macroFat }} />
                 <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_400Regular', flex: 1 }}>Fat</Text>
-                <Text style={{ color: theme.macroFat, fontSize: 15, fontFamily: 'BebasNeue_400Regular' }}>{fat}g</Text>
+                <Text style={{ color: theme.macroFat, fontSize: 15, fontFamily: 'DMSans_600SemiBold' }}>{fat}g</Text>
               </View>
             </View>
           </View>

@@ -611,7 +611,10 @@ export default function LogScreen() {
       <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, shadowOpacity: 0, elevation: 0 }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
           <Ionicons name="water-outline" size={11} color={theme.textMuted} />
-          <Text style={[styles.cardLabel, { marginBottom: 0, color: theme.textMuted }]}>Water · {water}oz / {WATER_TARGET}oz</Text>
+          <Text style={[styles.cardLabel, { marginBottom: 0, color: theme.textMuted }]}>
+            {'Water · '}
+            <Text style={{ textTransform: 'none' }}>{water}oz / {WATER_TARGET}oz</Text>
+          </Text>
         </View>
         <WaterBar pct={waterPct} color={theme.accentBlue} trackColor={theme.bgProgressTrack} refreshKey={logRefreshKey} />
         <View style={styles.waterBtns}>

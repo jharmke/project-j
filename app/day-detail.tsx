@@ -183,15 +183,15 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
               <View style={{ height: 0.5, backgroundColor: theme.borderSubtle, marginBottom: 12 }} />
               <View style={{ flexDirection: 'row' }}>
                 <View style={styles.summaryStat}>
-                  <Text style={styles.summaryVal}>{totalProtein}<Text style={{ fontSize: 12, color: theme.textDim }}>g</Text></Text>
+                  <Text style={styles.summaryVal}>{totalProtein}<Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>g</Text></Text>
                   <Text style={styles.summaryLabel}>Protein</Text>
                 </View>
                 <View style={styles.summaryStat}>
-                  <Text style={styles.summaryVal}>{totalCarbs}<Text style={{ fontSize: 12, color: theme.textDim }}>g</Text></Text>
+                  <Text style={styles.summaryVal}>{totalCarbs}<Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>g</Text></Text>
                   <Text style={styles.summaryLabel}>Carbs</Text>
                 </View>
                 <View style={styles.summaryStat}>
-                  <Text style={styles.summaryVal}>{totalFat}<Text style={{ fontSize: 12, color: theme.textDim }}>g</Text></Text>
+                  <Text style={styles.summaryVal}>{totalFat}<Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>g</Text></Text>
                   <Text style={styles.summaryLabel}>Fat</Text>
                 </View>
               </View>

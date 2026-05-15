@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Reanimated, { Easing as ReEasing, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { Svg, Path, G } from 'react-native-svg';
 import { useToast } from '../components/Toast';
+import CustomFoodCreator from '../components/CustomFoodCreator';
 import { USDA_API_KEY } from '../config';
 import { db, getUserId, loadFromFirebase, saveToFirebase } from '../firebaseConfig';
 import { useTheme } from '../theme';
@@ -319,6 +320,7 @@ export default function AddFoodScreen() {
   const [showAddNew, setShowAddNew] = useState(false);
   const [newName, setNewName] = useState('');
   const [newCal, setNewCal] = useState('');
+  const [showCreateFood, setShowCreateFood] = useState(false);
   const [searching, setSearching] = useState(false);
   const [activeTab, setActiveTab] = useState<'recent' | 'myfoods' | 'favorites' | 'recipes'>('recent');
 const [recentFoods, setRecentFoods] = useState<SearchResult[]>([]);
@@ -846,8 +848,21 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
     <Text style={styles.backBtnText}>← Back</Text>
   </TouchableOpacity>
   <Text style={styles.headerTitle}>{meal === 'browse' ? 'Food Library' : `Add to ${meal}`}</Text>
-  <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-    
+  <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+    {meal === 'browse' && (
+      <>
+        <TouchableOpacity
+          style={{ height: 32, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6 }}
+          onPress={() => setShowCreateFood(true)}>
+          <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlue }}>+ Food</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={{ height: 32, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6 }}
+          onPress={() => router.push('/recipe-builder')}>
+          <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlue }}>+ Recipe</Text>
+        </TouchableOpacity>
+      </>
+    )}
     <TouchableOpacity
       onPress={startScan}
       style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, padding: 6, alignItems: 'center', justifyContent: 'center', width: 38, height: 38 }}>
@@ -902,38 +917,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         </View>
       )}
 
-      {/* Add New Food */}
-      {meal === 'browse' && (
-        <TouchableOpacity style={styles.addNewBtn} onPress={() => setShowAddNew(!showAddNew)}>
-          <Ionicons name="add-circle-outline" size={13} color={theme.accentBlue} />
-          <Text style={styles.addNewBtnText}>Save New Food to Library</Text>
-        </TouchableOpacity>
-      )}
-
-      {showAddNew && (
-        <View style={styles.addNewForm}>
-          <TextInput
-            style={styles.formInput}
-            placeholder="Food name..."
-            placeholderTextColor="#444444"
-            value={newName}
-            onChangeText={setNewName}
-          />
-          <View style={styles.formRow}>
-            <TextInput
-              style={[styles.formInput, { flex: 1 }]}
-              placeholder="Calories..."
-              placeholderTextColor="#444444"
-              keyboardType="number-pad"
-              value={newCal}
-              onChangeText={setNewCal}
-            />
-            <TouchableOpacity style={styles.saveBtn} onPress={saveNewFood}>
-              <Text style={styles.saveBtnText}>Save</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
+      
 
       {/* Loading indicator -- shows when searching and no results yet */}
       {searching && query.trim() && results.length === 0 && (
@@ -1066,11 +1050,10 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                     <TouchableOpacity
                       onPress={() => {
                         const idx = myFoods.findIndex(f => f.name === item.description);
-                        setEditingMyFood({ idx, name: myFoods[idx].name, cal: myFoods[idx].cal.toString() });
-                        setShowEditMyFood(true);
+                        router.push({ pathname: '/edit-food', params: { foodJson: JSON.stringify(myFoods[idx]) } });
                       }}
                       style={{ marginLeft: 8 }}>
-                      <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>Edit</Text>
+                      <Text style={{ fontSize: 12, color: theme.accentBlue, fontFamily: 'DMSans_500Medium' }}>Edit</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => deleteMyFood(myFoods.findIndex(f => f.name === item.description))} style={styles.deleteBtn}>
                       <Text style={styles.deleteBtnText}>×</Text>
@@ -1135,6 +1118,15 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
             </TouchableOpacity>
           ) : null
         )}
+      />
+
+     <CustomFoodCreator
+        visible={showCreateFood}
+        onClose={() => setShowCreateFood(false)}
+        onSaved={() => {
+          loadMyFoods();
+          setShowCreateFood(false);
+        }}
       />
 
      {/* Edit My Food Modal */}

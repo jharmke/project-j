@@ -717,9 +717,9 @@ BUILD STATUS
 [ ] Mode recommendation screen -- personalized one-liner, pre-selected card, override allowed
 [x] Weight projection graph -- Screen 4 onboarding. SVG bezier curve, animated draw-on, fill fades in after line. Pace pills (WEEKLY GOAL section) set calorie target and drive curve shape. Lifestyle/training compact 2-col grids. Curve steepness reflects pace magnitude. Midpoint date logic (skip if too close to end date). Incompatible pace pills dimmed based on losing/gaining direction. Same weight = only Maintain active. Selected pace name badge next to YOUR PROJECTION label.
 [ ] Weight projection graph -- profile page post-onboarding. Build when profile polish session comes.
-[ ] Verify currentWeight save on Screen 4 persists correctly to pj_YYYY-MM-DD -- test when full onboarding flow is complete (Screen 7 done).
+[x] Verify currentWeight save on Screen 4 persists correctly to pj_YYYY-MM-DD -- confirmed working. Weight entered in onboarding reflects correctly in profile and daily log.
 [x] Screen 2 (Profile Setup) fixes -- weight field removed (moves to Screen 4), KAV footer rides keyboard flush with no dead space, birthday picker tap-outside-to-dismiss, keyboardDismissMode removed so scroll doesn't kill keyboard.
-[ ] Style survey rebalance -- Mindful answers currently too hard to reach. "Stress eating" answer misfiled as Mindful (it's not). "Staying consistent" answer misfiled as Discipline (most users pick it regardless of style). Reword Mindful answers to be genuinely appealing not soft. Consider rebalancing point thresholds. Dedicated pass after Screen 7 ships.
+[x] Style survey rebalance -- 5 questions, new scoring thresholds (5-8 Mindful / 9-12 Balanced / 13-15 Discipline). All questions rewritten for clear mode separation. Q1: end of day feeling. Q2: how progress is measured. Q3: handling setbacks. Q4: tracking numbers (unchanged). Q5: missing a day behavior. scaleAnims auto-handles 5 questions via QUESTIONS.map().
 [ ] Macro presets -- onboarding + settings, Discipline/Balanced only, not shown to Mindful
 [ ] Progress bar chrome on onboarding screens 2-7
 [ ] Apple Health onboarding screen -- permissions prompt, skip option, home banner for skippers

@@ -9,6 +9,204 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { TextInput } from 'react-native';
 import { THEMES } from '../../theme';
+import Svg, { Path, Line, Circle, Text as SvgText, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
+
+const PACE_PILLS = [
+  { key: 'lose_2',   label: '−2 lbs/wk',   name: 'Aggressive' },
+  { key: 'lose_1_5', label: '−1.5 lbs/wk', name: 'Fast'       },
+  { key: 'lose_1',   label: '−1 lb/wk',    name: 'Steady'     },
+  { key: 'lose_0_5', label: '−0.5 lbs/wk', name: 'Gradual'    },
+  { key: 'maintain', label: 'Maintain',     name: 'Maintain'   },
+  { key: 'gain_0_5', label: '+0.5 lbs/wk', name: 'Slow Build' },
+  { key: 'gain_1',   label: '+1 lb/wk',    name: 'Build'      },
+];
+
+function buildPath(cw: number, gw: number, weeklyChange: number, W: number, H: number, padL: number, padR: number, padT: number, padB: number) {
+  const graphW = W - padL - padR;
+  const graphH = H - padT - padB;
+  const losing = cw > gw;
+
+  const startX = padL;
+  const startY = padT + (losing ? 0 : graphH);
+  const endX   = padL + graphW;
+  const endY   = padT + (losing ? graphH : 0);
+
+  // magnitude 0 (gentle 0.5/wk) to 1 (aggressive 2/wk)
+  const magnitude = Math.min(Math.abs(weeklyChange) / 2, 1);
+
+  // Aggressive: steep early plunge -- cp1 hugs start, cp2 slams to end early
+  // Gentle: nearly linear -- both control points near center
+  const cp1X = startX + graphW * (magnitude * 0.08 + (1 - magnitude) * 0.38);
+  const cp1Y = startY; // always starts flat
+  const cp2X = startX + graphW * (magnitude * 0.35 + (1 - magnitude) * 0.62);
+  const cp2Y = endY;   // always ends flat
+
+  const d     = `M ${startX} ${startY} C ${cp1X} ${cp1Y}, ${cp2X} ${cp2Y}, ${endX} ${endY}`;
+  const fillD = `${d} L ${endX} ${padT + graphH} L ${startX} ${padT + graphH} Z`;
+  return { d, fillD, startX, startY, endX, endY };
+}
+
+function getMidpointLabels(weeksNeeded: number, endLabel: string): string[] {
+  const today = new Date();
+  if (weeksNeeded < 8) return [];
+  if (weeksNeeded < 20) {
+    const mid = new Date();
+    mid.setDate(today.getDate() + Math.round(weeksNeeded * 7 * 0.5));
+    const label = mid.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    if (label === endLabel) return [];
+    return [label];
+  }
+  const m1 = new Date(); m1.setDate(today.getDate() + Math.round(weeksNeeded * 7 * 0.33));
+  const m2 = new Date(); m2.setDate(today.getDate() + Math.round(weeksNeeded * 7 * 0.66));
+  const l1 = m1.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  const l2 = m2.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  const results: string[] = [];
+  if (l1 !== endLabel) results.push(l1);
+  if (l2 !== endLabel && l2 !== l1) results.push(l2);
+  return results;
+}
+
+function ProjectionGraph({ currentWeight, goalWeight, weightGoal }: {
+  currentWeight: string;
+  goalWeight: string;
+  weightGoal: string;
+}) {
+  const cw = parseFloat(currentWeight);
+  const gw = parseFloat(goalWeight);
+  const dashAnim   = useRef(new Animated.Value(0)).current;
+  const fillAnim   = useRef(new Animated.Value(0)).current;
+  const [displayPath, setDisplayPath] = useState({ d: '', fillD: '', startX: 0, startY: 0, endX: 0, endY: 0 });
+  const [projLabel,   setProjLabel]   = useState('');
+  const [midLabels,   setMidLabels]   = useState<string[]>([]);
+  const [weeksTotal,  setWeeksTotal]  = useState(0);
+
+  const W = 320; const H = 190;
+  const padL = 48; const padR = 24; const padT = 20; const padB = 44;
+  const graphW = W - padL - padR;
+
+  // Estimated path length for dash animation -- close enough for visual purposes
+  const DASH_LENGTH = 320;
+
+  useEffect(() => {
+    if (!cw || !gw || cw === gw) return;
+    const weeklyChange = GOAL_DEFICITS[weightGoal] / 500;
+    if (weeklyChange === 0) return;
+    const weeksNeeded = Math.abs((gw - cw) / weeklyChange);
+    if (weeksNeeded <= 0 || weeksNeeded > 520) return;
+
+    setWeeksTotal(weeksNeeded);
+    const projected = new Date();
+    projected.setDate(projected.getDate() + Math.round(weeksNeeded * 7));
+    const endLabel = projected.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    setProjLabel(endLabel);
+    setMidLabels(getMidpointLabels(weeksNeeded, endLabel));
+
+    const paths = buildPath(cw, gw, weeklyChange, W, H, padL, padR, padT, padB);
+    setDisplayPath(paths);
+
+    // Reset and animate
+    dashAnim.setValue(0);
+    fillAnim.setValue(0);
+    Animated.sequence([
+      Animated.timing(dashAnim, { toValue: 1, duration: 700, useNativeDriver: false }),
+      Animated.timing(fillAnim, { toValue: 1, duration: 300, useNativeDriver: false }),
+    ]).start();
+  }, [cw, gw, weightGoal]);
+
+  if (!cw || !gw || cw === gw) return null;
+  const weeklyChange = GOAL_DEFICITS[weightGoal] / 500;
+  if (weeklyChange === 0 || !displayPath.d) return null;
+
+  const losing = cw > gw;
+  const { d, fillD, startX, startY, endX, endY } = displayPath;
+
+  const strokeDashoffset = dashAnim.interpolate({
+    inputRange:  [0, 1],
+    outputRange: [DASH_LENGTH, 0],
+  });
+  const fillOpacity = fillAnim.interpolate({
+    inputRange:  [0, 1],
+    outputRange: [0, 1],
+  });
+
+  // Midpoint x positions
+  const mid1X = padL + graphW * 0.33;
+  const mid2X = padL + graphW * 0.66;
+  const mid05X = padL + graphW * 0.5;
+
+  return (
+    <View style={{ marginTop: 16, borderWidth: 0.5, borderRadius: 14, overflow: 'hidden', backgroundColor: theme.bgCard, borderColor: theme.borderCard }}>
+      <Svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`}>
+        <Defs>
+          <SvgGradient id="graphFill" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={theme.accentBlueRaw} stopOpacity="0.22" />
+            <Stop offset="1" stopColor={theme.accentBlueRaw} stopOpacity="0.02" />
+          </SvgGradient>
+        </Defs>
+
+        {/* Animated fill -- fades in after line draws */}
+        <AnimatedPath d={fillD} fill="url(#graphFill)" fillOpacity={fillOpacity} />
+
+        {/* Animated curve -- draws itself left to right */}
+        <AnimatedPath
+          d={d}
+          stroke={theme.accentBlueRaw}
+          strokeWidth="2.5"
+          fill="none"
+          strokeLinecap="round"
+          strokeDasharray={`${DASH_LENGTH}`}
+          strokeDashoffset={strokeDashoffset}
+        />
+
+        {/* Dots */}
+        <Circle cx={startX} cy={startY} r="5" fill={theme.accentBlueRaw} />
+        <Circle cx={endX}   cy={endY}   r="5" fill={theme.accentBlueRaw} />
+
+        {/* Start weight -- right of dot, in open space */}
+        <SvgText x={startX + 14} y={startY - 8}
+          fontSize="11" fontFamily="DMSans_700Bold" fill={theme.textPrimary}>
+          {Math.round(cw)} lbs
+        </SvgText>
+
+        {/* Goal weight */}
+        <SvgText x={endX - 8} y={losing ? endY - 6 : endY + 14}
+          fontSize="11" fontFamily="DMSans_700Bold" fill={theme.accentBlueRaw} textAnchor="end">
+          {Math.round(gw)} lbs
+        </SvgText>
+
+        {/* Today label */}
+        <SvgText x={startX} y={H - 8} fontSize="10" fontFamily="DMSans_400Regular" fill={theme.textMuted}>
+          Today
+        </SvgText>
+
+        {/* Midpoint labels */}
+        {midLabels.length === 1 && (
+          <SvgText x={mid05X} y={H - 8} fontSize="10" fontFamily="DMSans_400Regular" fill={theme.textMuted} textAnchor="middle">
+            {midLabels[0]}
+          </SvgText>
+        )}
+        {midLabels.length === 2 && (
+          <>
+            <SvgText x={mid1X} y={H - 8} fontSize="10" fontFamily="DMSans_400Regular" fill={theme.textMuted} textAnchor="middle">
+              {midLabels[0]}
+            </SvgText>
+            <SvgText x={mid2X} y={H - 8} fontSize="10" fontFamily="DMSans_400Regular" fill={theme.textMuted} textAnchor="middle">
+              {midLabels[1]}
+            </SvgText>
+          </>
+        )}
+
+        {/* End date */}
+        <SvgText x={endX} y={H - 8} fontSize="10" fontFamily="DMSans_400Regular" fill={theme.textMuted} textAnchor="end">
+          {projLabel}
+        </SvgText>
+      </Svg>
+    </View>
+  );
+}
+
+// Animated SVG path wrapper
+const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 const theme = THEMES['light'];
 
@@ -100,6 +298,7 @@ export default function YourStyleScreen() {
   const [macroPreset,        setMacroPreset]        = useState(recommended === 'discipline' ? 'high_protein' : 'balanced');
   const [lifestyleActivity,  setLifestyleActivity]  = useState('sedentary');
   const [trainingFrequency,  setTrainingFrequency]  = useState('none');
+  const [currentWeight,      setCurrentWeight]      = useState('');
   const [goalWeight,         setGoalWeight]         = useState('');
   const [weightGoal,    setWeightGoal]    = useState('lose_1');
   const [suggestedCals, setSuggestedCals] = useState<number | null>(null);
@@ -124,7 +323,9 @@ export default function YourStyleScreen() {
       const dk = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
       const dayS = await AsyncStorage.getItem(`pj_${dk}`);
       const day = dayS ? JSON.parse(dayS) : {};
-      setProfileData({ ...parsed, weight: day.weight || 0 });
+      const savedWeight = day.weight || parsed.weight || 0;
+      if (savedWeight) setCurrentWeight(String(savedWeight));
+      setProfileData({ ...parsed, weight: savedWeight });
     };
     load();
   }, []);
@@ -132,7 +333,7 @@ export default function YourStyleScreen() {
   // Live calorie calc -- fires whenever any relevant field changes
   useEffect(() => {
     if (!profileData) return;
-    const w  = parseFloat(profileData.weight || '0') || 0;
+    const w  = parseFloat(currentWeight || '0') || 0;
     const h  = parseFloat(profileData.height || '0') || 0;
     const bd = profileData.birthday;
     const sx = profileData.sex || 'male';
@@ -148,7 +349,7 @@ export default function YourStyleScreen() {
     const tdee    = Math.round((bmr * lifestyleMultiplier) + trainingDailyBonus);
     const deficit = GOAL_DEFICITS[weightGoal] ?? -500;
     setSuggestedCals(Math.max(1200, Math.round(tdee + deficit)));
-  }, [profileData, lifestyleActivity, trainingFrequency, weightGoal]);
+  }, [profileData, currentWeight, lifestyleActivity, trainingFrequency, weightGoal]);
 
   // When user switches mode, update macro preset default
   const handleModeSelect = (mode: string) => {
@@ -168,6 +369,15 @@ export default function YourStyleScreen() {
         styleMode: selectedMode,
         macroPreset,
       }));
+
+      // Save current weight to today's daily key
+      if (currentWeight && parseFloat(currentWeight) > 0) {
+        const today = new Date();
+        const dk = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+        const dayExisting = await AsyncStorage.getItem(`pj_${dk}`);
+        const dayData = dayExisting ? JSON.parse(dayExisting) : {};
+        await AsyncStorage.setItem(`pj_${dk}`, JSON.stringify({ ...dayData, weight: parseFloat(currentWeight) }));
+      }
 
       // Save goal fields to profile
       const pd = await AsyncStorage.getItem('pj_profile');
@@ -262,89 +472,176 @@ export default function YourStyleScreen() {
             You can always change this in Settings.
           </Text>
 
-          {/* Lifestyle Activity */}
-          <Text style={[styles.sectionLabel, { color: theme.textMuted, marginTop: 28 }]}>LIFESTYLE ACTIVITY</Text>
-          <Text style={[styles.sectionSub, { color: theme.textDim, marginBottom: 8 }]}>Your day-to-day movement, not counting workouts.</Text>
-          <View style={{ gap: 8 }}>
-            {LIFESTYLE_OPTIONS.map(o => (
-              <TouchableOpacity
-                key={o.key}
-                onPress={() => setLifestyleActivity(o.key)}
-                style={[
-                  styles.presetBtn,
-                  { backgroundColor: theme.bgInput, borderColor: theme.borderInput },
-                  lifestyleActivity === o.key && { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder },
-                ]}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={[{ fontSize: 13, fontFamily: 'DMSans_500Medium', color: lifestyleActivity === o.key ? theme.accentBlue : theme.textPrimary }]}>
-                    {o.label}
-                  </Text>
-                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 1 }}>{o.sub}</Text>
+          {/* Current + Goal Weight side by side */}
+          <View style={{ flexDirection: 'row', gap: 12, marginTop: 28 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.sectionLabel, { color: theme.textMuted, marginBottom: 8 }]}>CURRENT WEIGHT</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <TextInput
+                  style={[{ flex: 1, borderWidth: 0.5, borderRadius: 10, padding: 14, fontSize: 16, fontFamily: 'DMSans_400Regular', backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
+                  placeholder="177"
+                  placeholderTextColor={theme.textPlaceholder}
+                  value={currentWeight}
+                  onChangeText={setCurrentWeight}
+                  keyboardType="decimal-pad"
+                />
+                <View style={{ borderWidth: 0.5, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 14, backgroundColor: theme.bgCard, borderColor: theme.borderCard }}>
+                  <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted }}>lbs</Text>
                 </View>
-                {lifestyleActivity === o.key && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: theme.accentBlueRaw }} />}
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Training Frequency */}
-          <Text style={[styles.sectionLabel, { color: theme.textMuted, marginTop: 20 }]}>TRAINING FREQUENCY</Text>
-          <Text style={[styles.sectionSub, { color: theme.textDim, marginBottom: 8 }]}>How often you do structured workouts.</Text>
-          <View style={{ gap: 8 }}>
-            {TRAINING_OPTIONS.map(o => (
-              <TouchableOpacity
-                key={o.key}
-                onPress={() => setTrainingFrequency(o.key)}
-                style={[
-                  styles.presetBtn,
-                  { backgroundColor: theme.bgInput, borderColor: theme.borderInput },
-                  trainingFrequency === o.key && { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder },
-                ]}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={[{ fontSize: 13, fontFamily: 'DMSans_500Medium', color: trainingFrequency === o.key ? theme.accentBlue : theme.textPrimary }]}>
-                    {o.label}
-                  </Text>
-                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 1 }}>{o.sub}</Text>
+              </View>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.sectionLabel, { color: theme.textMuted, marginBottom: 8 }]}>GOAL WEIGHT <Text style={{ color: theme.textDim, fontSize: 9 }}>(OPT)</Text></Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <TextInput
+                  style={[{ flex: 1, borderWidth: 0.5, borderRadius: 10, padding: 14, fontSize: 16, fontFamily: 'DMSans_400Regular', backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
+                  placeholder="165"
+                  placeholderTextColor={theme.textPlaceholder}
+                  value={goalWeight}
+                  onChangeText={setGoalWeight}
+                  keyboardType="decimal-pad"
+                />
+                <View style={{ borderWidth: 0.5, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 14, backgroundColor: theme.bgCard, borderColor: theme.borderCard }}>
+                  <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted }}>lbs</Text>
                 </View>
-                {trainingFrequency === o.key && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: theme.accentBlueRaw }} />}
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Goal Weight + Weekly Pace */}
-          <Text style={[styles.sectionLabel, { color: theme.textMuted, marginTop: 28 }]}>GOAL WEIGHT <Text style={{ color: theme.textDim, fontSize: 9 }}>(OPTIONAL)</Text></Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
-            <TextInput
-              style={[{ flex: 1, borderWidth: 0.5, borderRadius: 10, padding: 14, fontSize: 16, fontFamily: 'DMSans_400Regular', backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
-              placeholder="e.g. 185"
-              placeholderTextColor={theme.textPlaceholder}
-              value={goalWeight}
-              onChangeText={setGoalWeight}
-              keyboardType="decimal-pad"
-            />
-            <View style={{ borderWidth: 0.5, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 14, backgroundColor: theme.bgCard, borderColor: theme.borderCard }}>
-              <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted }}>lbs</Text>
+              </View>
             </View>
           </View>
 
-          <Text style={[styles.sectionLabel, { color: theme.textMuted, marginTop: 20 }]}>WEEKLY PACE</Text>
-          <View style={{ gap: 8, marginTop: 8 }}>
-            {Object.entries(GOAL_LABELS).map(([key, label]) => (
-              <TouchableOpacity
-                key={key}
-                onPress={() => setWeightGoal(key)}
-                style={[
-                  styles.presetBtn,
-                  { backgroundColor: theme.bgInput, borderColor: theme.borderInput },
-                  weightGoal === key && { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder },
-                ]}
-              >
-                <Text style={{ fontSize: 13, fontFamily: 'DMSans_500Medium', color: weightGoal === key ? theme.accentBlue : theme.textMuted }}>
-                  {label}
-                </Text>
-              </TouchableOpacity>
-            ))}
+          {/* Lifestyle Activity -- compact 2-col grid */}
+          <Text style={[styles.sectionLabel, { color: theme.textMuted, marginTop: 28 }]}>LIFESTYLE ACTIVITY</Text>
+          <Text style={[styles.sectionSub, { color: theme.textDim, marginBottom: 8 }]}>Your day-to-day movement, not counting workouts.</Text>
+          <View style={{ gap: 8 }}>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {LIFESTYLE_OPTIONS.slice(0, 2).map(o => {
+                const isSelected = lifestyleActivity === o.key;
+                return (
+                  <TouchableOpacity
+                    key={o.key}
+                    onPress={() => setLifestyleActivity(o.key)}
+                  style={{
+                    flex: 1,
+                    minHeight: 72,
+                    borderWidth: 0.5,
+                    borderRadius: 10,
+                    paddingHorizontal: 12,
+                    paddingVertical: 10,
+                    backgroundColor: isSelected ? theme.accentBlueBg : theme.bgInput,
+                    borderColor: isSelected ? theme.accentBlueBorder : theme.borderInput,
+                  }}
+                >
+                  <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: isSelected ? theme.accentBlue : theme.textPrimary, marginBottom: 2 }}>
+                    {o.label}
+                  </Text>
+                  <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: theme.textMuted, lineHeight: 13 }}>
+                    {o.sub}
+                  </Text>
+                </TouchableOpacity>
+                );
+              })}
+            </View>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {LIFESTYLE_OPTIONS.slice(2, 4).map(o => {
+                const isSelected = lifestyleActivity === o.key;
+                return (
+                  <TouchableOpacity
+                    key={o.key}
+                    onPress={() => setLifestyleActivity(o.key)}
+                    style={{
+                      flex: 1,
+                      minHeight: 72,
+                      borderWidth: 0.5,
+                      borderRadius: 10,
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                      backgroundColor: isSelected ? theme.accentBlueBg : theme.bgInput,
+                      borderColor: isSelected ? theme.accentBlueBorder : theme.borderInput,
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: isSelected ? theme.accentBlue : theme.textPrimary, marginBottom: 2 }}>{o.label}</Text>
+                    <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: theme.textMuted, lineHeight: 13 }}>{o.sub}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* Training Frequency -- compact 2-col grid */}
+          <Text style={[styles.sectionLabel, { color: theme.textMuted, marginTop: 20 }]}>TRAINING FREQUENCY</Text>
+          <Text style={[styles.sectionSub, { color: theme.textDim, marginBottom: 8 }]}>How often you do structured workouts.</Text>
+          <View style={{ gap: 8 }}>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {TRAINING_OPTIONS.slice(0, 2).map(o => {
+                const isSelected = trainingFrequency === o.key;
+                return (
+                  <TouchableOpacity
+                    key={o.key}
+                    onPress={() => setTrainingFrequency(o.key)}
+                    style={{
+                      flex: 1,
+                      minHeight: 72,
+                      borderWidth: 0.5,
+                      borderRadius: 10,
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                      backgroundColor: isSelected ? theme.accentBlueBg : theme.bgInput,
+                      borderColor: isSelected ? theme.accentBlueBorder : theme.borderInput,
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: isSelected ? theme.accentBlue : theme.textPrimary, marginBottom: 2 }}>{o.label}</Text>
+                    <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: theme.textMuted, lineHeight: 13 }}>{o.sub}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {TRAINING_OPTIONS.slice(2, 4).map(o => {
+                const isSelected = trainingFrequency === o.key;
+                return (
+                  <TouchableOpacity
+                    key={o.key}
+                    onPress={() => setTrainingFrequency(o.key)}
+                    style={{
+                      flex: 1,
+                      minHeight: 72,
+                      borderWidth: 0.5,
+                      borderRadius: 10,
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                      backgroundColor: isSelected ? theme.accentBlueBg : theme.bgInput,
+                      borderColor: isSelected ? theme.accentBlueBorder : theme.borderInput,
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: isSelected ? theme.accentBlue : theme.textPrimary, marginBottom: 2 }}>{o.label}</Text>
+                    <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: theme.textMuted, lineHeight: 13 }}>{o.sub}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
+              {TRAINING_OPTIONS.slice(4).map(o => {
+                const isSelected = trainingFrequency === o.key;
+                return (
+                  <TouchableOpacity
+                    key={o.key}
+                    onPress={() => setTrainingFrequency(o.key)}
+                    style={{
+                      width: '48.5%',
+                      minHeight: 72,
+                      borderWidth: 0.5,
+                      borderRadius: 10,
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                      backgroundColor: isSelected ? theme.accentBlueBg : theme.bgInput,
+                      borderColor: isSelected ? theme.accentBlueBorder : theme.borderInput,
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: isSelected ? theme.accentBlue : theme.textPrimary, marginBottom: 2 }}>{o.label}</Text>
+                    <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: theme.textMuted, lineHeight: 13 }}>{o.sub}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
 
           {/* Live calorie estimate */}
@@ -357,6 +654,96 @@ export default function YourStyleScreen() {
               <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginTop: 4, color: theme.textDim }}>
                 Based on your stats using Mifflin-St Jeor BMR.
               </Text>
+            </View>
+          )}
+
+          {/* Weekly Goal + Projection -- Discipline and Balanced only */}
+          {selectedMode !== 'mindful' && (
+            <View style={{ marginTop: 28 }}>
+              <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>WEEKLY GOAL</Text>
+              <Text style={[styles.sectionSub, { color: theme.textDim }]}>
+                This sets your daily calorie target. Choose your pace.
+              </Text>
+
+              {/* Pace pills -- rate only, name appears in projection header */}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ gap: 8, paddingVertical: 4 }}
+              >
+                {PACE_PILLS.map(pill => {
+                  const cwf = parseFloat(currentWeight);
+                  const gwf = parseFloat(goalWeight);
+                  const sameWeight = cwf > 0 && gwf > 0 && cwf === gwf;
+                  const hasWeights = cwf > 0 && gwf > 0 && cwf !== gwf;
+                  const isLosing   = hasWeights && cwf > gwf;
+                  const isGaining  = hasWeights && gwf > cwf;
+                  const isGainPill = pill.key === 'gain_0_5' || pill.key === 'gain_1';
+                  const isLosePill = pill.key.startsWith('lose');
+                  const isMaintain = pill.key === 'maintain';
+                  const isDimmed =
+                    (sameWeight && !isMaintain) ||
+                    (isLosing && isGainPill) ||
+                    (isGaining && isLosePill);
+                  const isSelected = weightGoal === pill.key;
+                  return (
+                    <TouchableOpacity
+                      key={pill.key}
+                      onPress={() => { if (!isDimmed) setWeightGoal(pill.key); }}
+                      activeOpacity={isDimmed ? 1 : 0.7}
+                      style={{
+                        borderWidth: 0.5,
+                        borderRadius: 20,
+                        paddingHorizontal: 14,
+                        paddingVertical: 8,
+                        backgroundColor: isSelected ? theme.accentBlueBg : theme.bgInput,
+                        borderColor: isSelected ? theme.accentBlueBorder : theme.borderInput,
+                        opacity: isDimmed ? 0.3 : 1,
+                      }}
+                    >
+                      <Text style={{
+                        fontSize: 12,
+                        fontFamily: 'DMSans_600SemiBold',
+                        color: isSelected ? theme.accentBlue : theme.textMuted,
+                      }}>
+                        {pill.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+
+              {/* Projection header with selected pace name */}
+              {currentWeight && goalWeight && (() => {
+                const selected = PACE_PILLS.find(p => p.key === weightGoal);
+                return (
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 24, marginBottom: 4 }}>
+                    <Text style={[styles.sectionLabel, { color: theme.textMuted, marginBottom: 0 }]}>YOUR PROJECTION</Text>
+                    {selected && (
+                      <View style={{ marginLeft: 8, backgroundColor: theme.accentBlueBg, borderWidth: 0.5, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 2 }}>
+                        <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 1 }}>
+                          {selected.name.toUpperCase()}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                );
+              })()}
+
+              {currentWeight && goalWeight ? (
+                <ProjectionGraph
+                  currentWeight={currentWeight}
+                  goalWeight={goalWeight}
+                  weightGoal={weightGoal}
+                />
+              ) : (
+                <Text style={[styles.sectionLabel, { color: theme.textMuted, marginTop: 24, marginBottom: 4 }]}>YOUR PROJECTION</Text>
+              )}
+              {(!currentWeight || !goalWeight) && (
+                <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginTop: 8 }}>
+                  Enter your current and goal weight above to see your projection.
+                </Text>
+              )}
             </View>
           )}
 

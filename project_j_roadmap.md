@@ -136,14 +136,14 @@ DONE -- SHIPPED
 [x] Macros Today (i) wired -- definitions: Protein/Carbs/Fat, Goals, Color Coding. No example block.
 [x] All home screen tooltips complete. Remaining cards (Water, Weight, Today's Training, Steps, Daily Note, Today's Message) confirmed self-explanatory, no (i) needed.
 [x] Activity level architecture overhaul -- DONE. All 5 files updated: profile.tsx, your-style.tsx, index.tsx, log.tsx, head-to-head.tsx. New formula: Math.round((bmr * lifestyleMultiplier) + trainingDailyBonus). Birthday parse fix in all calc blocks. Old activityLevel replaced by lifestyleActivity + trainingFrequency throughout.
+[x] Onboarding Screen 6 (Apple Health) -- DONE. Light theme, red beating heart (iOS Health red #FF3B30, double-beat pulse loop), 5 health data rows with staggered fade+slide entrance, static layout (no scroll), centered CONNECT APPLE HEALTH button, Maybe later skip, read-only line in footer. requestAuthorization call via require('@kingstinct/react-native-healthkit'). Saves healthKitConnected to pj_settings (merge-safe). Skip saves pj_healthkit_skip = 'true'. Routes to Screen 7. Home banner for skippers -- wired via pj_healthkit_skip flag, banner build pending (next session or Screen 7 thread).
 
 
 NOW -- active this session
 Auth and onboarding
 
 Firebase Auth -- Apple/Google login, both required (App Store rules mandate Apple login if any third party login offered). Firestore setup, data migration from AsyncStorage. Pre-TestFlight requirement.
-Onboarding flow -- in progress. Screens 1-4 built and working. Screens 5 (Faith Journey), 6 (Apple Health), 7 (All Set) remaining. Commitment screen (Discipline path) remaining.
-Apple Health onboarding screen -- "Project J works best with Apple Health", permissions prompt, Maybe Later option, one-time dismissable home banner for users who skip.
+Onboarding flow -- in progress. Screens 1-5 built and working. Screen 7 (All Set) remaining.
 
 Workout tab facelift
 
@@ -226,7 +226,7 @@ Active calorie accuracy:
 - Calorie discrepancy bug -- root cause was calorie TARGET mismatch between home (using live recommended) and log (using stale saved value). Fixed via useRecommendedCal toggle in profile -- toggle ON keeps calTarget live and in sync, toggle OFF lets user set custom static value. FIXED.
 - Sleep duration bug -- HealthKit bed/wake times correct but displayed hours off (11:08pm-5:12am showing 6h 0m). Diagnose in index.tsx. (NOW)
 - Active calorie overestimate disclaimer -- small disclaimer on any screen showing active or net calories. Apple Watch and most wearables overestimate active burn. "Active calorie estimates from Apple Health may vary. Use as a guide, not a guarantee." Exact wording TBD.
-- Burn accuracy adjustment setting -- optional user-controlled percentage modifier on active calories (e.g. apply 80% of reported burn). Fully explained with worked example. (i) tooltip on setting. Linked Tips & Guides help article. Surfaces in settings under Health. Differentiator -- no other app does this honestly.
+- Burn accuracy adjustment setting -- optional user-controlled percentage modifier on active calories (e.g. apply 80% of reported burn). Fully explained with worked example. (i) tooltip on setting. Linked Tips & Guides help article. Surfaces in settings under Health. Differentiator -- no other app does this honestly. NOW -- Justin flagged as high priority, do not lose. First-use tooltip on home screen when active calories first appear: "These numbers come from Apple Health -- tap to adjust if they seem off." Build after onboarding complete.
 
 Bugs -- fix these first
 
@@ -461,23 +461,31 @@ Screen 4: Your Style (Recommendation)
 Shows recommended mode based on survey score with personalized one-liner referencing their answers. Example: "You want results but you give yourself grace -- that's exactly what Balanced is built for."
 Three style cards shown, recommended card pre-selected with accent border. User can override recommendation.
 "You can always change this in Settings" as small muted text below cards.
-Macro presets shown for Discipline and Balanced only -- not shown to Mindful. Discipline defaults to High Protein pre-selected. Balanced defaults to Balanced pre-selected.
-Weight projection graph shown for Discipline and Balanced only -- SVG curve from current weight to goal weight with projected date. Not shown to Mindful.
+Current weight + goal weight: side by side inputs at top of data section. Current weight pre-populated from storage. Both feed the projection graph.
+Lifestyle activity + training frequency: compact 2-col grids below weight fields. 4 lifestyle options (2x2), 5 training options (2x2 + 1 centered). All boxes minHeight 72. Both update calorie target live.
+WEEKLY GOAL section: pace pills set the actual daily calorie target -- not a graph filter, a real commitment. Pills dim based on goal direction (losing dims gain pills, gaining dims lose pills, same weight dims all but Maintain). Selected pace name badge appears next to YOUR PROJECTION label.
+YOUR PROJECTION graph: SVG bezier curve, draw-on animation, fill fades in after line. Curve steepness reflects pace magnitude. Midpoint date labels (0, 1, or 2 depending on projection length). Discipline and Balanced only -- not shown to Mindful.
 Mindful gets warm encouragement language instead of graph and presets: "You've already taken the first step."
+Macro presets shown for Discipline and Balanced only -- not shown to Mindful. Discipline defaults to High Protein pre-selected. Balanced defaults to Balanced pre-selected.
 Discipline gets commitment screen before Continue fires.
 
 Screen 5: Faith Journey
 Title: "Your Faith Journey" in Bebas Neue warm amber color.
 Background vibe: warm embers. Animated amber/gold particles drift upward slowly like embers. Soft ambient glow. Warm, not intense -- hearth/candle energy, not fire.
 Three cards, same tappable pattern. Warm, inviting copy per option (see FAITH JOURNEY COPY below).
-Skip option: small dimmed text top right "Skip for now" -- applies 'rooted' default silently.
+No skip option -- "Not Right Now" card is the graceful exit. Continue button dims until a card is selected.
+Animated verse block below cards -- fades in on first selection, swaps gracefully on each tap. Verse and "You can change this anytime in Settings" ride together in the animation.
 
-Screen 6: Apple Health
-Title: "Project J works best with Apple Health" in Bebas Neue accent color.
-Clean explanation of what is read: steps, sleep, active calories, weight, heart rate.
-Single "Connect Apple Health" button fires native permissions prompt.
-"Maybe later" small muted text below -- skips without connecting.
-Users who skip get a one-time dismissable banner on home screen the first time a HealthKit card shows no data.
+Screen 6: Apple Health -- BUILT
+Title: "Better Data. Better Results." in Bebas Neue, textPrimary.
+Subtitle: "Connect Apple Health and Project J gets smarter. Every metric is more accurate, more personal, and more useful."
+Red beating heart icon box at top (#FF3B30, iOS Health red, double-beat pulse animation).
+5 health data rows in a card -- Steps, Sleep, Active Calories, Weight, Heart Rate. Each has blue Ionicon, bold label, muted one-liner description.
+No scroll -- static layout, everything fits on screen.
+Footer: CONNECT APPLE HEALTH button (full width, accent color, centered Bebas text), Maybe later muted text, read-only disclaimer line.
+Connect: calls requestAuthorization, saves healthKitConnected:true to pj_settings (merge), routes to Screen 7.
+Skip: saves pj_healthkit_skip:'true' (new key, no existing keys touched), routes to Screen 7.
+Home banner for skippers triggered by pj_healthkit_skip -- one-time dismissable, build pending.
 
 Screen 7: You're All Set
 Clean, celebratory, brief. Accent icon, short affirming line.
@@ -574,10 +582,12 @@ Not right now:
 - Faith features quietly hidden. No journal verse category surfaced. Bible tab still accessible via navigation.
 
 FAITH JOURNEY COPY (ONBOARDING SCREEN 5)
-Rooted: "Faith is central to how I live. I want it woven into everything."
-Exploring: "I'm curious. I want to engage with faith at my own pace."
-Not right now: "I'm here for the fitness. The door's always open."
+Rooted title: "Rooted" -- copy: "Faith woven into every day. Verses, reflection, prayer. All front and center."
+Exploring title: "Exploring" -- copy: "Come as you are. Faith at your own pace. There's no wrong way to start."
+Not Right Now title: "Not Right Now" -- copy: "We're glad you're here. These features are available whenever you need them, and this door never locks."
 Tone: warm, inviting, zero judgment. User never feels pressured or evaluated.
+Verse mapping (animates in on card selection): Rooted -- Colossians 2:7. Exploring -- Jeremiah 29:13. Not Right Now -- 2 Corinthians 5:17.
+Skip option removed -- "Not Right Now" card IS the graceful exit. No separate skip needed.
 
 POST-ONBOARDING MODE SWITCHING
 Accessing from: Settings (both style and faith journey changeable post-onboarding).
@@ -627,13 +637,18 @@ WHAT IS DEFERRED (build in future sessions)
 - Gratitude prompt card -- SOON
 
 BUILD STATUS
-[x] Onboarding flow -- in progress (screens 1-4 built, screens 5-7 remaining)
+[x] Onboarding flow -- in progress (screens 1-6 built, screen 7 remaining)
+[x] Onboarding Screen 6 (Apple Health) -- BUILT. See spec above.
 [x] pj_settings styleMode + faithJourney + fitnessGoal + macroPreset fields -- wired in Screen 4
 [x] App boot logic -- pj_onboarding_complete gate
 [x] Dev tools reset onboarding button
 [x] Style survey -- 4 questions, 1-2-3 scoring, buckets: 4-6 Mindful / 7-9 Balanced / 10-12 Discipline
 [ ] Mode recommendation screen -- personalized one-liner, pre-selected card, override allowed
-[ ] Weight projection graph -- profile + onboarding, Discipline/Balanced only
+[x] Weight projection graph -- Screen 4 onboarding. SVG bezier curve, animated draw-on, fill fades in after line. Pace pills (WEEKLY GOAL section) set calorie target and drive curve shape. Lifestyle/training compact 2-col grids. Curve steepness reflects pace magnitude. Midpoint date logic (skip if too close to end date). Incompatible pace pills dimmed based on losing/gaining direction. Same weight = only Maintain active. Selected pace name badge next to YOUR PROJECTION label.
+[ ] Weight projection graph -- profile page post-onboarding. Build when profile polish session comes.
+[ ] Verify currentWeight save on Screen 4 persists correctly to pj_YYYY-MM-DD -- test when full onboarding flow is complete (Screen 7 done).
+[x] Screen 2 (Profile Setup) fixes -- weight field removed (moves to Screen 4), KAV footer rides keyboard flush with no dead space, birthday picker tap-outside-to-dismiss, keyboardDismissMode removed so scroll doesn't kill keyboard.
+[ ] Style survey rebalance -- Mindful answers currently too hard to reach. "Stress eating" answer misfiled as Mindful (it's not). "Staying consistent" answer misfiled as Discipline (most users pick it regardless of style). Reword Mindful answers to be genuinely appealing not soft. Consider rebalancing point thresholds. Dedicated pass after Screen 7 ships.
 [ ] Macro presets -- onboarding + settings, Discipline/Balanced only, not shown to Mindful
 [ ] Progress bar chrome on onboarding screens 2-7
 [ ] Apple Health onboarding screen -- permissions prompt, skip option, home banner for skippers
@@ -641,6 +656,7 @@ BUILD STATUS
 [ ] Mindful You vs Yesterday reframe (no W/L/T, "YOUR DAY" label, score hidden)
 [ ] Mindful onboarding -- encouragement language, no projection graph, no macro presets
 [x] Discipline commitment screen -- tappable rows, spring checkmark animation, bg deepen, button unlocks when all three confirmed, Bebas throughout
+[x] Faith Journey onboarding screen -- dark charcoal/navy background, multi-color ember particles (26, warm palette), three tappable cards with breathing amber border, animated verse fade-swap per selection (Colossians 2:7 / Jeremiah 29:13 / 2 Corinthians 5:17), diamond icons, finalized copy, change note animates in with verse, routes to apple-health
 [ ] Default card orders per mode applied on first onboarding complete
 [ ] Post-onboarding mode switch Acknowledgement Modal
 [ ] Daily Intention card for Not right now users
@@ -687,6 +703,10 @@ Water goal hit -- bar fills to accent, pulse animation
 Step goal hit -- steps number flips green
 Calorie goal hit -- number color transition
 
+Onboarding:
+
+Weight projection graph (Screen 4) -- SVG curve draws itself left to right via strokeDasharray animation (700ms), fill gradient fades in after line completes (300ms). Fires on first render and on every pace pill change.
+
 Workout:
 
 Exercise checkmark -- spring scale on check
@@ -727,6 +747,14 @@ USDA dropped permanently -- garbage results for branded foods
 OFF stays as fallback only until FatSecret passes all three gate checks, then removed entirely
 Barcode override system: pj_barcode_overrides AsyncStorage key, local first, Firebase community database phase 2
 FatSecret attribution: "Powered by FatSecret" required on food search and food detail screens per API terms. Non-negotiable for App Store. Pull exact brand guidelines from FatSecret before building.
+Screen 4 (Your Style) decisions:
+Pace pills (WEEKLY GOAL section) set the actual calorie target -- not a graph filter. Framed as a commitment, not a hypothetical.
+Pill dimming logic: if goal < current weight, gain pills dimmed and unclickable. If goal > current weight, lose pills dimmed. If goal === current weight, all pills dimmed except Maintain. If no goal weight entered, all pills active.
+Selected pace name appears as accent badge next to YOUR PROJECTION label (e.g. "YOUR PROJECTION · STEADY").
+Lifestyle and training frequency rendered as compact 2-col grids. Training has 5 options -- last one (Daily) centered alone on bottom row at same width as others.
+All grid boxes use minHeight: 72 for consistent sizing across both sections.
+Current weight pre-populated from pj_YYYY-MM-DD or pj_profile on load. Saved back to pj_YYYY-MM-DD on continue (merge-safe).
+
 You vs Yesterday decisions:
 Water and steps: exact integer comparison only, no threshold or buffer
 Weight: 0.3 lb fuzzy threshold (floating point rounding)
@@ -774,10 +802,10 @@ Onboarding files built so far:
 - app/onboarding/profile-setup.tsx -- Screen 2, name/weight/height/birthday/sex only
 - app/onboarding/style-survey.tsx -- Screen 3, 4 questions, 1-2-3 scoring
 - app/onboarding/your-style.tsx -- Screen 4, recommendation, activity level, goal weight, pace, calorie target, macro presets
-- app/onboarding/faith-journey.tsx -- Screen 5, NOT YET BUILT
+- app/onboarding/faith-journey.tsx -- Screen 5, BUILT
 - app/onboarding/apple-health.tsx -- Screen 6, NOT YET BUILT
 - app/onboarding/all-set.tsx -- Screen 7, NOT YET BUILT
-- app/onboarding/commitment.tsx -- Discipline commitment screen, NOT YET BUILT
+- app/onboarding/commitment.tsx -- Discipline commitment screen, BUILT
 Boot gate lives in app/_layout.tsx -- checks pj_onboarding_complete on launch, redirects to welcome if missing.
 
 🚨 ONBOARDING DATA SAFETY -- NON-NEGOTIABLE 🚨
@@ -793,8 +821,8 @@ Rules that apply to every single onboarding screen without exception:
 - Dev "Reset Onboarding" button clears pj_onboarding_complete ONLY. Nothing else. This is already implemented correctly -- do not change it.
 Before writing any AsyncStorage save in any onboarding screen, Claude must explicitly verify the save is a merge, not a replace. If uncertain, read the key first, spread the result, then write.
 Onboarding screen layout decisions:
-- Screen 2 collects: name, current weight, height, birthday, sex ONLY
-- Screen 4 collects: activity level, goal weight, weekly pace, live calorie target, style selection, macro presets
+- Screen 2 collects: name, height, birthday, sex ONLY (current weight moved to Screen 4)
+- Screen 4 collects: current weight, activity level (lifestyle + training frequency, compact 2-col grids), goal weight, weekly pace (WEEKLY GOAL section -- sets calorie target, not just a graph filter), live calorie target, style selection, macro presets
 - Calorie estimate uses real Mifflin-St Jeor BMR, reads biometrics from pj_profile + today's weight from pj_YYYY-MM-DD
 - Activity level defaults: lifestyleActivity = 'sedentary', trainingFrequency = 'none' -- both conservative by design
 - Discipline color: #c2621a (amber/orange). Balanced: #2563eb (blue). Mindful: #059669 (green).

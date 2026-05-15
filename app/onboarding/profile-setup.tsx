@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  Animated, KeyboardAvoidingView, Platform, ScrollView,
+  Animated, Keyboard, KeyboardAvoidingView, Platform, ScrollView,
   StyleSheet, Text, TextInput, TouchableOpacity, View
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -26,8 +26,6 @@ export default function ProfileSetupScreen() {
   const insets = useSafeAreaInsets();
 
   const [name,          setName]          = useState('');
-  const [currentWeight, setCurrentWeight] = useState('');
-  
   const [heightFt,      setHeightFt]      = useState('');
   const [heightIn,      setHeightIn]      = useState('');
   const [birthday,      setBirthday]      = useState<Date | null>(null);
@@ -48,11 +46,18 @@ export default function ProfileSetupScreen() {
 
   
 
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
   const canContinue =
     name.trim().length > 0 &&
-    parseFloat(currentWeight) > 0 &&
     parseFloat(heightFt) > 0 &&
     birthday !== null;
+
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardWillShow', () => setKeyboardVisible(true));
+    const hide = Keyboard.addListener('keyboardWillHide', () => setKeyboardVisible(false));
+    return () => { show.remove(); hide.remove(); };
+  }, []);
 
   const handleContinue = async () => {
     if (!canContinue) return;
@@ -67,13 +72,6 @@ export default function ProfileSetupScreen() {
         birthday: birthday ? birthday.toISOString() : '',
         sex:      sex,
       }));
-
-      // Save today's weight
-      const today = new Date();
-      const dk = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-      const dayExisting = await AsyncStorage.getItem(`pj_${dk}`);
-      const dayData = dayExisting ? JSON.parse(dayExisting) : {};
-      await AsyncStorage.setItem(`pj_${dk}`, JSON.stringify({ ...dayData, weight: parseFloat(currentWeight) }));
 
       router.push('/onboarding/style-survey');
     } catch (e) {
@@ -94,7 +92,7 @@ export default function ProfileSetupScreen() {
 
         <ScrollView
           contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 100 }]}
-          keyboardDismissMode="on-drag"
+          
           showsVerticalScrollIndicator={false}
         >
           <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
@@ -116,21 +114,7 @@ export default function ProfileSetupScreen() {
               autoCapitalize="words"
             />
 
-            {/* Current Weight */}
-            <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>CURRENT WEIGHT</Text>
-            <View style={styles.inputRow}>
-              <TextInput
-                style={[styles.input, { flex: 1, backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
-                placeholder="e.g. 215"
-                placeholderTextColor={theme.textPlaceholder}
-                value={currentWeight}
-                onChangeText={setCurrentWeight}
-                keyboardType="decimal-pad"
-              />
-              <View style={[styles.unitTag, { backgroundColor: theme.bgCard, borderColor: theme.borderCard }]}>
-                <Text style={[styles.unitTagText, { color: theme.textMuted }]}>lbs</Text>
-              </View>
-            </View>
+            
 
             
 
@@ -177,7 +161,12 @@ export default function ProfileSetupScreen() {
             </TouchableOpacity>
             {showPicker && (
               <View>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, paddingHorizontal: 4 }}>
+                <TouchableOpacity
+                  activeOpacity={1}
+                  onPress={() => { setShowPicker(false); setTempBirthday(null); }}
+                  style={{ position: 'absolute', top: -1000, bottom: -200, left: -24, right: -24, zIndex: 0 }}
+                />
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, paddingHorizontal: 4, zIndex: 1 }}>
                   <TouchableOpacity onPress={() => { setShowPicker(false); setTempBirthday(null); }}>
                     <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium' }}>Cancel</Text>
                   </TouchableOpacity>
@@ -226,7 +215,7 @@ export default function ProfileSetupScreen() {
         </ScrollView>
 
         {/* Continue button */}
-        <View style={[styles.footer, { paddingBottom: insets.bottom + 16, borderTopColor: theme.borderCard, backgroundColor: theme.gradientEnd }]}>
+        <View style={[styles.footer, { paddingBottom: keyboardVisible ? 12 : insets.bottom + 16, borderTopColor: theme.borderCard, backgroundColor: theme.gradientEnd }]}>
           <TouchableOpacity
             style={[
               styles.continueBtn,

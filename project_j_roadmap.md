@@ -171,6 +171,7 @@ Recents math bug -- fsId not passed through from recent entries, caused per-100g
 [x] Recents math bug -- fsId now stored and passed through loadRecent in add-food.tsx, food-detail uses correct serving data instead of per-100g scaling. DONE.
 Macros not persisting to recents/favorites -- DONE. loadRecent now carries full macro payload, showMyFoods and My Foods FlatList tab map all nutrients, favorites tab already correct.
 Favorites bug -- identical food names share favorite state, both toggle together. (still open)
+Recents dedup bug -- same food logged with different gram amounts creates duplicate recent entries. Fix: on write to recents, check for existing entry with same fsId (or name fallback), replace instead of append. Most recent log wins.
 fsId saved on star from search results list in add-food.tsx -- favorites now open to label serving. DONE.
 Favorites fsId fix -- label serving saved on favorite, fetched on tap from favorites tab, on-demand fetch in food-detail when fsServings empty, non-100g sort fix. DONE.
 fsId saved on diary entries in saveEntry, passed through edit entry path in log.tsx. DONE.
@@ -343,7 +344,7 @@ Calorie breakdown by meal -- each slot gets a budget. Unclear if needed, revisit
 
 Workout
 
-Today's Training empty/rest day states -- encouragement on unassigned day, acknowledgment on rest day.
+Today's Training empty/rest day states -- two variants: unassigned day (icon + title + CTA to add exercises or load program), rest day (warm encouragement, no CTA, something like "Rest is part of the work"). Standard icon + title + subtitle + optional CTA pattern app-wide.
 You vs Yesterday streak (vsStreak) -- state declared and badge renders but never calculated or persisted. Always 0. Needs full implementation: calculate win/loss result at end of day, persist streak count to AsyncStorage, reset on loss.
 My Programs builder -- name it, assign focus/tags/color per day, save, load. (planned, not yet built)
 Workout tab nested scroll bug -- DraggableFlatList inside ScrollView warning. (HIGH)
@@ -391,6 +392,7 @@ Progress bar track color pass across all themes.
 Collapsible card tap targets app-wide -- DONE. 44pt minHeight + paddingVertical on header touchable in stats.tsx and profile.tsx.
 Stats page streaks card -- reopen-after-close bug fixed. Choppiness tracked in BACKLOG under collapsible card animation performance.
 Empty states -- designed placeholders for all lists and cards. (HIGH)
+Card background icon pattern -- large faded icon (80-100pt, 6-10% opacity, filled variant, accent or textMuted color, right-edge slightly clipped by card boundary) behind data in home screen cards. Start with Steps card to establish pattern, then roll to all cards with a clear primary icon. Clips at card edge for depth, never competes with data.
 
 Journal
 

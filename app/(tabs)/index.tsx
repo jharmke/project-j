@@ -1112,7 +1112,8 @@ export default function HomeScreen() {
   };
 
   const renderIFCard = () => (
-    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
+    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, overflow: 'hidden' }]}>
+      <Ionicons name="timer" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
       <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
         <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
           <Ionicons name="timer-outline" size={11} color={theme.textMuted} />
@@ -1149,7 +1150,7 @@ export default function HomeScreen() {
         </PressableButton>
       ) : ifEnd ? (
         <View>
-          <View style={{ backgroundColor:`${ifResultColor}11`, borderWidth:1, borderColor:`${ifResultColor}33`, borderRadius:8, padding:12, marginBottom:10 }}>
+          <View style={{ backgroundColor:'transparent', borderWidth:1, borderColor:`${ifResultColor}33`, borderRadius:8, padding:12, marginBottom:10 }}>
             <View style={{ flexDirection:'row', justifyContent:'space-between', marginBottom:6 }}>
               <Text style={{ fontSize:11, color: theme.textMuted, fontFamily:'DMSans_400Regular' }}>Target</Text>
               <Text style={{ fontSize:13, color:ifResultColor, fontFamily:'DMSans_600SemiBold' }}>{formatHrMin(ifTargetMs)}</Text>
@@ -1258,7 +1259,8 @@ export default function HomeScreen() {
     const nudgeText = MINDFUL_NUDGES[new Date().getDate() % MINDFUL_NUDGES.length];
 
     return (
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, overflow: 'hidden' }]}>
+        <Ionicons name="flame" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
         <View style={{ flexDirection:'row', alignItems:'flex-start', justifyContent:'space-between', marginBottom:4 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
             <Ionicons name="flame-outline" size={11} color={theme.textMuted} />
@@ -1320,7 +1322,8 @@ export default function HomeScreen() {
       { label: 'Fat',     val: totalFat,     goal: macroGoals.fat,     color: theme.macroFat },
     ];
     return (
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, overflow: 'hidden' }]}>
+        <Ionicons name="nutrition" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
             <Ionicons name="pie-chart-outline" size={11} color={theme.textMuted} />
@@ -1356,7 +1359,8 @@ export default function HomeScreen() {
   };
 
   const renderWaterCard = () => (
-    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
+    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, overflow: 'hidden' }]}>
+        <Ionicons name="water" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
       <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:10 }}>
         <Ionicons name="water-outline" size={11} color={theme.textMuted} />
         <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>
@@ -1395,7 +1399,8 @@ export default function HomeScreen() {
   );
 
   const renderWeightCard = () => (
-    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
+    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, overflow: 'hidden' }]}>
+        <Ionicons name="body" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
       <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:10 }}>
         <Ionicons name="trending-down-outline" size={11} color={theme.textMuted} />
         <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Weight</Text>
@@ -1497,7 +1502,8 @@ export default function HomeScreen() {
         onPressIn={onPressIn}
         onPressOut={onPressOut}
         onPress={() => router.push('/(tabs)/workout')}
-        style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, padding: 16 }]}>
+        style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, padding: 16, overflow: 'hidden' }]}>
+        <Ionicons name="barbell" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
         <View style={{ marginBottom: 12 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:8 }}>
             <Ionicons name="barbell-outline" size={11} color={theme.textMuted} />
@@ -1596,7 +1602,14 @@ export default function HomeScreen() {
     const pct = stepGoal > 0 ? steps / stepGoal : 0;
     const stepColor = pct >= 1 ? theme.statusGood : theme.accentBlue;
     return (
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, overflow: 'hidden' }]}>
+        {/* Background accent icon */}
+        <Ionicons
+          name="footsteps"
+          size={130}
+          color={theme.accentBlueRaw}
+          style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }}
+        />
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
             <Ionicons name="footsteps-outline" size={11} color={theme.textMuted} />
@@ -1641,7 +1654,8 @@ export default function HomeScreen() {
   const renderSleepCard = () => {
     const displaySleep = sleepOverride ?? sleepHours;
     return (
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, overflow: 'hidden' }]}>
+        <Ionicons name="moon" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
             <Ionicons name="moon-outline" size={11} color={theme.textMuted} />
@@ -1854,7 +1868,8 @@ export default function HomeScreen() {
   };
 
   const renderFitnessMetricsCard = () => (
-    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
+    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, overflow: 'hidden' }]}>
+      <Ionicons name="fitness" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
       <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:10 }}>
         <Ionicons name="heart-outline" size={11} color={theme.textMuted} />
         <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Fitness Metrics</Text>
@@ -1869,14 +1884,14 @@ export default function HomeScreen() {
       ) : (
         <View style={{ flexDirection:'row', gap:8 }}>
           {vo2Max !== null && (
-            <View style={{ flex:1, backgroundColor: theme.bgInset, borderRadius:8, padding:12, alignItems:'center' }}>
+            <View style={{ flex:1, backgroundColor: theme.bgInset + '80', borderWidth: 0.5, borderColor: theme.borderCard, borderRadius:8, padding:12, alignItems:'center' }}>
               <Text style={{ fontSize:28, color: theme.accentBlue, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>{vo2Max}</Text>
               <Text style={{ fontSize:10, color: theme.textMuted, fontFamily:'DMSans_500Medium', textTransform:'uppercase', letterSpacing:1, marginTop:2 }}>VO2 Max</Text>
               <Text style={{ fontSize:9, color: theme.textDim, fontFamily:'DMSans_400Regular', marginTop:2 }}>ml/kg/min</Text>
             </View>
           )}
           {cardioRecovery !== null && (
-            <View style={{ flex:1, backgroundColor: theme.bgInset, borderRadius:8, padding:12, alignItems:'center' }}>
+            <View style={{ flex:1, backgroundColor: theme.bgInset + '80', borderWidth: 0.5, borderColor: theme.borderCard, borderRadius:8, padding:12, alignItems:'center' }}>
               <Text style={{ fontSize:28, color: theme.accentGreen, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>{cardioRecovery}</Text>
               <Text style={{ fontSize:10, color: theme.textMuted, fontFamily:'DMSans_500Medium', textTransform:'uppercase', letterSpacing:1, marginTop:2 }}>Cardio Recovery</Text>
               <Text style={{ fontSize:9, color: theme.textDim, fontFamily:'DMSans_400Regular', marginTop:2 }}>bpm drop / 1min</Text>
@@ -1888,15 +1903,16 @@ export default function HomeScreen() {
   );
 
   const renderDailyNoteCard = () => (
-    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
+    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, overflow: 'hidden' }]}>
+      <Ionicons name="create" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
       <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:10 }}>
         <Ionicons name="journal-outline" size={11} color={theme.textMuted} />
         <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Daily Note</Text>
       </View>
-      <TextInput style={[styles.notesInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} placeholder="How did today go? Workout, diet, energy..." placeholderTextColor={theme.textPlaceholder}
+      <TextInput style={[styles.notesInput, { backgroundColor: theme.bgInset + '80', borderColor: theme.borderInput, color: theme.textPrimary }]} placeholder="How did today go? Workout, diet, energy..." placeholderTextColor={theme.textPlaceholder}
         multiline numberOfLines={4} value={dailyNote} onChangeText={setDailyNote}
         onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100)} />
-      <TouchableOpacity style={[styles.saveBtn, { backgroundColor: theme.bgInset, borderColor: theme.borderInset }]} onPress={() => {}}>
+      <TouchableOpacity style={[styles.saveBtn, { backgroundColor: theme.bgInset + '80', borderColor: theme.borderInset }]} onPress={() => {}}>
         <Text style={[styles.saveBtnText, { color: theme.textSecondary }]}>Save Note</Text>
       </TouchableOpacity>
     </View>
@@ -2093,7 +2109,8 @@ export default function HomeScreen() {
     const displayMetrics = isMindful ? mindfulSelected : selected;
 
     return (
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, overflow: 'hidden' }]}>
+        <Ionicons name="trophy" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
         {/* Header */}
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
@@ -2175,7 +2192,7 @@ export default function HomeScreen() {
 
         {/* Score bar -- hidden in Mindful */}
         {!isMindful && (
-          <View style={{ marginTop:14, backgroundColor: theme.bgInset, borderRadius:10, overflow:'hidden' }}>
+          <View style={{ marginTop:14, backgroundColor: theme.bgInset + '80', borderRadius:10, overflow:'hidden' }}>
             <View style={{ height:2, backgroundColor: accentRaw, opacity: 0.7 }} />
             <View style={{ flexDirection:'row', alignItems:'center', padding:12, gap:8 }}>
               <View style={{ alignItems:'center', minWidth:28 }}>

@@ -149,6 +149,12 @@ DONE -- SHIPPED
 
 
 NOW -- active this session
+[x] Home / log aesthetics polish pass -- light + slate border tokens bumped, light bgCard opacity 0.55→0.72, accent top border (accentBlueRaw, 1.5px) on all home cards, hairline divider above stat row in calories card, weight card divider bumped to borderCardTop. Big number text treatment attempted and reverted -- deferred to BACKLOG.
+[x] Big number text treatment -- shadow (shadowColor #000, offset 0/2, opacity 0.18, radius 0) + opacity 0.88 on all hero Bebas numbers app-wide. Applied to: calories (index.tsx + log.tsx), sleep duration, sleep score donut, steps. Treatment is for fontSize 36+ hero numbers only -- smaller numbers (28px weight stats, fitness metrics) left alone.
+[x] Sleep donut deep color fix -- light theme sleepDeep changed from #6366f1 (indigo, too close to blue core) to #a855f7 (violet). Pink core / violet deep / green REM now clearly distinct across all themes. Warm theme sleepDeep also corrected.
+[x] Accent top border -- all tab cards -- accentBlueRaw, 1.5px borderTopWidth added to every card in log.tsx, workout.tsx, stats.tsx, profile.tsx. Meal rows in log.tsx included. overflow:hidden must NOT be used on cards with shadowed children -- clips shadows. DraggableFlatList in workout.tsx gets contentContainerStyle paddingBottom:16 to fix exercise shadow clipping on last item. Tab bar does NOT get accent top border -- navigation element not a card, hairline separator stays as-is.
+[x] IF card State 2 polish -- solid green TAP WHEN YOU EAT button with breathing pulse animation (1.025 scale, 1400ms, 800ms pause). OPEN/CLOSED status as pill badge. Countdown hero left, STARTED/CLOSES labels matching ifLabel style top-right with 22px accent times. Divider borderCardTop 1px. Bottom row: Reset window (textSecondary pill) | LAST MEAL (solid red centered) | Cancel fast (textSecondary pill). State 3 (complete) polish pending.
+
 Auth and onboarding
 
 Firebase Auth -- Apple/Google login, both required (App Store rules mandate Apple login if any third party login offered). Firestore setup, data migration from AsyncStorage. Pre-TestFlight requirement.
@@ -171,7 +177,7 @@ Recents math bug -- fsId not passed through from recent entries, caused per-100g
 [x] Recents math bug -- fsId now stored and passed through loadRecent in add-food.tsx, food-detail uses correct serving data instead of per-100g scaling. DONE.
 Macros not persisting to recents/favorites -- DONE. loadRecent now carries full macro payload, showMyFoods and My Foods FlatList tab map all nutrients, favorites tab already correct.
 Favorites bug -- identical food names share favorite state, both toggle together. (still open)
-Recents dedup bug -- same food logged with different gram amounts creates duplicate recent entries. Fix: on write to recents, check for existing entry with same fsId (or name fallback), replace instead of append. Most recent log wins.
+Recents dedup bug -- same food logged with different gram amounts creates duplicate recent entries. Fix: on write to recents, check for existing entry with same fsId (or name fallback), replace instead of append. Most recent log wins. (NOW)
 fsId saved on star from search results list in add-food.tsx -- favorites now open to label serving. DONE.
 Favorites fsId fix -- label serving saved on favorite, fetched on tap from favorites tab, on-demand fetch in food-detail when fsServings empty, non-100g sort fix. DONE.
 fsId saved on diary entries in saveEntry, passed through edit entry path in log.tsx. DONE.
@@ -347,6 +353,7 @@ Workout
 Today's Training empty/rest day states -- two variants: unassigned day (icon + title + CTA to add exercises or load program), rest day (warm encouragement, no CTA, something like "Rest is part of the work"). Standard icon + title + subtitle + optional CTA pattern app-wide.
 You vs Yesterday streak (vsStreak) -- state declared and badge renders but never calculated or persisted. Always 0. Needs full implementation: calculate win/loss result at end of day, persist streak count to AsyncStorage, reset on loss.
 My Programs builder -- name it, assign focus/tags/color per day, save, load. (planned, not yet built)
+IF card polish -- green TAP WHEN YOU EAT button needs bgInset+'80' semi-transparent treatment to match other cards. Timer hero icon verify on device. (SOON)
 Workout tab nested scroll bug -- DraggableFlatList inside ScrollView warning. (HIGH)
 Workout drag handle -- hit target too small + dead zone before drag triggers. (HIGH)
 Edit exercise input validation -- decimal/integer restrictions on all numeric fields, same standard as weight input. (SOON)
@@ -385,6 +392,8 @@ TestFlight -- setup, App Store Connect, tester invite flow. Friends and family f
 
 Visual polish (do together)
 
+Warm theme heavy redo -- currently broken/washed out. Full color, gradient, card, and contrast overhaul. Must ship before TestFlight.
+Greeting area customization -- settings picker for top-left home header slot. Options not fully defined yet. Candidates: greeting text, streak badge, calorie summary line. App name + date always stay. Design options before building.
 Shadow pass -- increase shadow opacity and darkness on light themes (Slate, Light, Blush, Warm).
 Gradient pass -- more visible gradient range on all light themes.
 Full theme audit -- all 5 themes x all accents, every screen, before beta.
@@ -392,6 +401,7 @@ Progress bar track color pass across all themes.
 Collapsible card tap targets app-wide -- DONE. 44pt minHeight + paddingVertical on header touchable in stats.tsx and profile.tsx.
 Stats page streaks card -- reopen-after-close bug fixed. Choppiness tracked in BACKLOG under collapsible card animation performance.
 Empty states -- designed placeholders for all lists and cards. (HIGH)
+[x] Card background hero icons -- large faded icon (130pt, accentBlueRaw, right: -24, bottom: -28, opacity 0.10, overflow hidden) on all home cards. Assignments: Steps=footsteps, Water=water, Weight=body, Calories=flame, Macros=nutrition, IF=timer, Sleep=moon, Training=barbell, Fitness Metrics=fitness, You vs Yesterday=trophy, Daily Note=create. Verse card skipped. Fitness Metrics boxes, Daily Note input/button, You vs Yesterday score bar all use bgInset+'80' semi-transparent treatment so hero bleeds through.
 Card background icon pattern -- large faded icon (80-100pt, 6-10% opacity, filled variant, accent or textMuted color, right-edge slightly clipped by card boundary) behind data in home screen cards. Start with Steps card to establish pattern, then roll to all cards with a clear primary icon. Clips at card edge for depth, never competes with data.
 
 Journal

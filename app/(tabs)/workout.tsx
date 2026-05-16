@@ -641,7 +641,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
         </View>
 
         {isRest ? (
-          <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, alignItems: 'center', paddingVertical: 32 }]}>
+          <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, alignItems: 'center', paddingVertical: 32, overflow: 'hidden' }]}>
             <Text style={{ fontSize: 40 }}>😴</Text>
             <Text style={{ color: theme.textPrimary, fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginTop: 12 }}>REST DAY</Text>
             <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular', marginTop: 8, textAlign: 'center' }}>Recovery is part of the program. Rest well.</Text>
@@ -667,6 +667,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
             <DraggableFlatList
               data={exercises}
               keyExtractor={ex => ex.id}
+              contentContainerStyle={{ paddingBottom: 16 }}
               onDragEnd={({ data }) => {
                 const baseProgram = programs[activeDay] || weeklyTemplate[activeDayName];
                 const newPrograms = { ...programs, [activeDay]: { ...baseProgram, exercises: data } };
@@ -752,7 +753,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
         
 
         {/* Effort Score Card */}
-        <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, marginTop: 12 }]}>
+        <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, marginTop: 12 }]}>
           <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Effort Score</Text>
           <View style={{ flexDirection: 'column', gap: 6, marginTop: 10 }}>
             {[[1,2,3,4,5],[6,7,8,9,10]].map((row, ri) => (
@@ -783,7 +784,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
         </View>
 
         {/* Workout Notes Card */}
-        <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, marginTop: 12 }]}>
+        <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, marginTop: 12 }]}>
           <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Workout Notes</Text>
           <TextInput
             style={[styles.notesInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
@@ -1224,7 +1225,7 @@ const styles = StyleSheet.create({
   dayTab:               { width: 72, height: 74, paddingVertical: 8, borderRadius: 8, borderWidth: 0.5, marginRight: 8, alignItems: 'center', justifyContent: 'center' },
   dayTabText:           { fontSize: 13, fontWeight: '700', fontFamily: 'DMSans_700Bold' },
   dayTabSub:            { fontSize: 9, letterSpacing: 1, marginTop: 2, fontFamily: 'DMSans_700Bold' },
-  cardioCard:           { borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, padding: 28, alignItems: 'center' },
+  cardioCard:           { borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14, padding: 28, alignItems: 'center' },
   cardioIcon:           { fontSize: 40, marginBottom: 12 },
   cardioTitle:          { fontSize: 26, letterSpacing: 2, marginBottom: 8, fontFamily: 'BebasNeue_400Regular' },
   cardioDetail:         { fontSize: 10, textAlign: 'center', lineHeight: 20, fontFamily: 'DMSans_700Bold', marginBottom: 16, letterSpacing: 1.5, textTransform: 'uppercase' },
@@ -1256,7 +1257,7 @@ const styles = StyleSheet.create({
   addExBtnText:         { fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 2 },
   completeMsg:          { padding: 16, marginTop: 8, alignItems: 'center' },
   completeMsgText:      { fontSize: 32, letterSpacing: 4, fontFamily: 'BebasNeue_400Regular' },
-  card:                 { borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, padding: 16, shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
+  card:                 { borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14, padding: 16, shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
   cardLabel:            { fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold' },
   notesInput:           { borderWidth: 0.5, borderRadius: 8, padding: 10, fontSize: 13, minHeight: 80, textAlignVertical: 'top', marginTop: 10, fontFamily: 'DMSans_400Regular' },
   saveNoteBtn:          { marginTop: 8, padding: 10, borderWidth: 0.5, borderRadius: 6, alignItems: 'center' },

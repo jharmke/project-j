@@ -246,21 +246,21 @@ const light: Theme = {
   paid: false,
 
   bgPrimary:        '#f0f0f5',
-  bgCard:           'rgba(255,255,255,0.55)',
-  bgCardVerse:      'rgba(255,251,240,0.55)',
+  bgCard:           'rgba(255,255,255,0.72)',
+  bgCardVerse:      'rgba(255,251,240,0.72)',
   bgInput:          '#f5f5fa',
   bgProgressTrack:  '#e4e4ee',
   bgSheet:          '#ffffff',
   bgInset:          '#f5f5fa',
   bgEditCard:       '#ffffff',
 
-  borderCard:       'rgba(0,0,0,0.06)',
-  borderCardTop:    'rgba(0,0,0,0.10)',
+  borderCard:       'rgba(0,0,0,0.10)',
+  borderCardTop:    'rgba(0,0,0,0.16)',
   borderCardVerse:  'rgba(212,134,10,0.65)',
-  borderInput:      'rgba(0,0,0,0.10)',
-  borderSubtle:     'rgba(0,0,0,0.05)',
-  borderSheet:      'rgba(0,0,0,0.08)',
-  borderInset:      'rgba(0,0,0,0.06)',
+  borderInput:      'rgba(0,0,0,0.12)',
+  borderSubtle:     'rgba(0,0,0,0.07)',
+  borderSheet:      'rgba(0,0,0,0.10)',
+  borderInset:      'rgba(0,0,0,0.08)',
 
   textPrimary:      '#1a1a2e',
   textSecondary:    '#4a4a6a',
@@ -291,7 +291,7 @@ const light: Theme = {
   macroOver:        '#dc2626',
 
   sleepCore:        '#3b82f6',
-  sleepDeep:        '#6366f1',
+  sleepDeep:        '#a855f7',
   sleepRem:         '#10b981',
   sleepTrack:       '#e0e0ee',
 
@@ -328,13 +328,13 @@ const slate: Theme = {
   bgInset:          '#ccd2d8',
   bgEditCard:       '#d8dde4',
 
-  borderCard:       'rgba(74,127,165,0.10)',
-  borderCardTop:    'rgba(74,127,165,0.18)',
+  borderCard:       'rgba(74,127,165,0.16)',
+  borderCardTop:    'rgba(74,127,165,0.26)',
   borderCardVerse:  'rgba(212,134,10,0.65)',
-  borderInput:      'rgba(74,127,165,0.14)',
-  borderSubtle:     'rgba(74,127,165,0.08)',
-  borderSheet:      'rgba(74,127,165,0.12)',
-  borderInset:      'rgba(74,127,165,0.10)',
+  borderInput:      'rgba(74,127,165,0.18)',
+  borderSubtle:     'rgba(74,127,165,0.12)',
+  borderSheet:      'rgba(74,127,165,0.16)',
+  borderInset:      'rgba(74,127,165,0.14)',
 
   textPrimary:      '#1c2533',
   textSecondary:    '#3d5068',
@@ -513,7 +513,7 @@ const blush: Theme = {
   macroOver:        '#d44040',
 
   sleepCore:        '#d4607a',
-  sleepDeep:        '#b060a0',
+  sleepDeep:        '#5b7fe8',
   sleepRem:         '#5cb87a',
   sleepTrack:       '#f8d8e0',
 

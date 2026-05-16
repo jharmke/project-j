@@ -425,7 +425,7 @@ export default function LogScreen() {
       >
 
       {/* Totals Card - Scrollable */}
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
         <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Today's Total</Text>
         <ScrollView
           horizontal
@@ -439,7 +439,9 @@ export default function LogScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
               <View style={{ flex: 1 }}>
                 <View style={styles.calRow}>
-                  <Text style={[styles.calNumber, { color: calColor }]}>{totalCals}</Text>
+                  <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
+                    <Text style={[styles.calNumber, { color: calColor, opacity: 0.88 }]}>{totalCals}</Text>
+                  </View>
                   <Text style={[styles.calTarget, { color: theme.textMuted }]}>/ {adjustedTarget} kcal</Text>
                 </View>
                 <View style={[styles.progressBarBg, { backgroundColor: theme.bgProgressTrack }]}>
@@ -451,7 +453,7 @@ export default function LogScreen() {
               </View>
               <MacroDonut protein={totalProtein} carbs={totalCarbs} fat={totalFat} calories={totalCals} theme={theme} />
             </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: theme.borderSubtle }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 12, paddingTop: 10, borderTopWidth: 0.5, borderTopColor: theme.borderCardTop }}>
               <View style={{ alignItems: 'center' }}>
                 <Text style={{ color: theme.macroProtein, fontSize: 16, fontFamily: 'DMSans_600SemiBold' }}>{totalProtein}<Text style={{ fontSize: 11 }}>g</Text></Text>
                 <Text style={{ color: theme.textMuted, fontSize: 10, fontFamily: 'DMSans_400Regular' }}>Protein</Text>
@@ -503,7 +505,7 @@ export default function LogScreen() {
         const isExpanded = expandedMeals[meal];
 
         return (
-          <View key={meal} style={[styles.mealRow, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
+          <View key={meal} style={[styles.mealRow, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
             {/* + button on left */}
             <TouchableOpacity
               style={styles.mealAddBtn}
@@ -625,7 +627,7 @@ export default function LogScreen() {
       })}
 
       {/* Water Card */}
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, shadowOpacity: 0, elevation: 0 }]}>
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowOpacity: 0, elevation: 0, overflow: 'hidden' }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
           <Ionicons name="water-outline" size={11} color={theme.textMuted} />
           <Text style={[styles.cardLabel, { marginBottom: 0, color: theme.textMuted }]}>
@@ -712,7 +714,7 @@ const styles = StyleSheet.create({
   headerTitle:        { fontSize: 32, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
   libraryBtn:         { borderWidth: 1, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 },
   libraryBtnText:     { fontSize: 14, fontFamily: 'DMSans_700Bold' },
-  card:               { borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, padding: 16, marginBottom: 12, shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
+  card:               { borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14, padding: 16, marginBottom: 12, shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
   cardLabel:          { fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8, fontFamily: 'DMSans_700Bold' },
   calRow:             { flexDirection: 'row', alignItems: 'baseline', gap: 6, marginBottom: 10 },
   calNumber:          { fontSize: 52, lineHeight: 56, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
@@ -720,7 +722,7 @@ const styles = StyleSheet.create({
   progressBarBg:      { height: 6, borderRadius: 6, overflow: 'hidden', marginBottom: 12 },
   progressBarFill:    { height: '100%', borderRadius: 6 },
   calRemaining:       { fontSize: 10, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase' },
-  mealRow:            { borderWidth: 0.5, borderTopWidth: 0.5, borderRadius: 14, marginBottom: 8, overflow: 'hidden', shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
+  mealRow:            { borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14, marginBottom: 8, overflow: 'hidden', shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
   mealAddBtn:         { position: 'absolute', left: 14, top: 14, zIndex: 1, width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
   mealAddBtnText:     { fontSize: 22, fontFamily: 'DMSans_400Regular', lineHeight: 24 },
   mealInfo:           { paddingLeft: 50, paddingRight: 40, paddingVertical: 14 },

@@ -318,7 +318,9 @@ function SleepDonut({ coreFrac, deepFrac, remFrac, donutCirc, donutSize, donutSt
           animatedProps={remStyle} strokeDashoffset={-(coreFrac+deepFrac)} strokeLinecap="butt" rotation="-90" origin={`${donutSize/2},${donutSize/2}`} />
       </Svg>
       <View style={{ position:'absolute', top:0, left:0, width:donutSize, height:donutSize, alignItems:'center', justifyContent:'center' }}>
-        <Text style={{ fontSize: 36, fontFamily: 'BebasNeue_400Regular', color: scoreColor, letterSpacing: 1, lineHeight: 38 }}>{score}</Text>
+        <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
+          <Text style={{ fontSize: 36, fontFamily: 'BebasNeue_400Regular', color: scoreColor, letterSpacing: 1, lineHeight: 38, opacity: 0.88 }}>{score}</Text>
+        </View>
         <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: scoreColor, textTransform: 'uppercase', opacity: 0.7 }}>/100</Text>
       </View>
     </View>
@@ -378,6 +380,229 @@ function MacroBar({ val, goal, color, trackColor, refreshKey }: { val: number; g
   return (
     <View style={{ height:6, backgroundColor: trackColor ?? '#1e1e2e', borderRadius:6, overflow:'hidden' }}>
       <ReAnimated.View style={[{ height:'100%', borderRadius:6, backgroundColor: color }, animStyle]} />
+    </View>
+  );
+}
+
+function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen, remaining, windowEnd, ifResultLabel, ifResultColor, ifTargetMs, ifActualMs, showTimePicker, showEndTimePicker, pickerTime, todayKey, styles, formatTime, formatHrMin, setIfMethod, setIfCustomHours, setIfStart, setIfEnd, setShowTimePicker, setShowEndTimePicker, setPrickerTime, onStartFast, onLastMeal, onResetFast, onCancelFast, onResetComplete, onConfirmStart, onConfirmEnd }: any) {
+  const ifPulse = useRef(new Animated.Value(1)).current;
+  const ifContentAnim = useRef(new Animated.Value(0)).current;
+  const ifContentReady = useRef(false);
+
+  useEffect(() => {
+    if (!ifStart) {
+      const pulse = Animated.loop(
+        Animated.sequence([
+          Animated.timing(ifPulse, { toValue: 1.025, duration: 1400, useNativeDriver: true }),
+          Animated.timing(ifPulse, { toValue: 1.0, duration: 1400, useNativeDriver: true }),
+          Animated.delay(800),
+        ])
+      );
+      pulse.start();
+      return () => pulse.stop();
+    }
+  }, [ifStart]);
+
+  useEffect(() => {
+    if (ifStart && !ifContentReady.current) {
+      ifContentReady.current = true;
+      ifContentAnim.setValue(0);
+      Animated.timing(ifContentAnim, { toValue: 1, duration: 350, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+    }
+    if (!ifStart) {
+      ifContentReady.current = false;
+      ifContentAnim.setValue(0);
+    }
+  }, [ifStart]);
+
+  useEffect(() => {
+    if (ifEnd) {
+      ifContentAnim.setValue(0);
+      Animated.timing(ifContentAnim, { toValue: 1, duration: 350, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+    }
+  }, [ifEnd]);
+
+  const contentOpacity = ifContentAnim;
+  const contentTranslate = ifContentAnim.interpolate({ inputRange: [0, 1], outputRange: [12, 0] });
+
+  const IFPill = ({ label, color }: { label: string; color: string }) => (
+    <View style={{ alignSelf: 'flex-start', backgroundColor: color + '22', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
+      <Text style={{ fontSize: 10, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color }}>{label}</Text>
+    </View>
+  );
+
+  const IFLinkBtn = ({ label, color, onPress }: { label: string; color: string; onPress: () => void }) => (
+    <TouchableOpacity onPress={onPress}
+      style={{ backgroundColor: color + '18', borderWidth: 1, borderColor: color + '40', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 5 }}>
+      <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color, letterSpacing: 0.5 }}>{label}</Text>
+    </TouchableOpacity>
+  );
+
+  const IF_METHODS: Record<string, { fast: number; eat: number }> = {
+    '12:12': { fast: 12, eat: 12 },
+    '14:10': { fast: 14, eat: 10 },
+    '16:8':  { fast: 16, eat: 8  },
+    '18:6':  { fast: 18, eat: 6  },
+    '20:4':  { fast: 20, eat: 4  },
+    'Custom':{ fast: 16, eat: 8  },
+  };
+
+  return (
+    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
+      <Ionicons name="timer" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Ionicons name="timer-outline" size={11} color={theme.textMuted} />
+          <Text style={[styles.cardLabel, { marginBottom: 0, color: theme.textMuted }]}>Intermittent Fast · {ifMethod}</Text>
+          <TooltipIcon tooltipKey="if_countdown" />
+        </View>
+        {ifStart && (
+          <IFPill
+            label={ifEnd ? ifResultLabel : isOpen ? 'OPEN' : 'CLOSED'}
+            color={ifEnd ? ifResultColor : isOpen ? theme.accentGreen : theme.accentRed}
+          />
+        )}
+      </View>
+
+      <View style={{ flexDirection: 'row', gap: 5, marginBottom: 12, flexWrap: 'wrap' }}>
+        {Object.keys(IF_METHODS).map(m => (
+          <TouchableOpacity key={m} onPress={() => setIfMethod(m)}
+            style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, backgroundColor: ifMethod === m ? theme.accentBlueBg : theme.ifMethodBg, borderWidth: 1, borderColor: ifMethod === m ? theme.accentBlueBorder : theme.ifMethodBorder }}>
+            <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: ifMethod === m ? theme.accentBlue : theme.ifMethodText }}>{m}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      {ifMethod === 'Custom' && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Eating window:</Text>
+          <TextInput style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, color: theme.textPrimary, padding: 6, fontSize: 14, fontFamily: 'DMSans_600SemiBold', width: 50, textAlign: 'center' }}
+            value={ifCustomHours} onChangeText={setIfCustomHours} keyboardType="number-pad" maxLength={2} />
+          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>hrs</Text>
+        </View>
+      )}
+
+      {!ifStart && (
+        <Animated.View style={{ transform: [{ scale: ifPulse }] }}>
+          <PressableButton
+            style={{ backgroundColor: theme.accentGreen, borderRadius: 8, padding: 14, alignItems: 'center' }}
+            onPress={onStartFast}
+            flex={0}
+          >
+            <Text style={{ fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, fontSize: 16, color: '#ffffff' }}>TAP WHEN YOU EAT YOUR FIRST MEAL</Text>
+          </PressableButton>
+        </Animated.View>
+      )}
+
+      {ifStart && !ifEnd && (
+        <Animated.View style={{ opacity: contentOpacity, transform: [{ translateY: contentTranslate }] }}>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.ifLabel, { marginBottom: 4, color: theme.textMuted }]}>{isOpen ? 'Window closes in' : 'Window closed'}</Text>
+              <Text style={[styles.ifCountdown, { color: theme.accentBlueRaw }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
+                {remaining ? formatTime(remaining) : 'CLOSED'}
+              </Text>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 12, paddingTop: 2 }}>
+              <View style={{ alignItems: 'center' }}>
+                <Text style={[styles.ifLabel, { color: theme.textMuted, marginBottom: 2 }]}>Started</Text>
+                <Text style={{ fontSize: 22, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>
+                  {new Date(ifStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Text>
+              </View>
+              {windowEnd && (
+                <View style={{ alignItems: 'center' }}>
+                  <Text style={[styles.ifLabel, { color: theme.textMuted, marginBottom: 2 }]}>Closes</Text>
+                  <Text style={{ fontSize: 22, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>
+                    {new Date(windowEnd).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          <View style={{ borderTopWidth: 1, borderTopColor: theme.borderCardTop, marginBottom: 12 }} />
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <IFLinkBtn label="Reset window" color={theme.textSecondary} onPress={() => setShowTimePicker(true)} />
+            <TouchableOpacity
+              activeOpacity={0.75}
+              onPress={onLastMeal}
+              style={{ backgroundColor: theme.accentRed, borderRadius: 10, paddingHorizontal: 22, paddingVertical: 10 }}
+            >
+              <Text style={{ color: '#ffffff', fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 }}>LAST MEAL</Text>
+            </TouchableOpacity>
+            <IFLinkBtn label="Cancel fast" color={theme.textSecondary} onPress={onCancelFast} />
+          </View>
+
+          {showTimePicker && (
+            <View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
+                <TouchableOpacity onPress={() => setShowTimePicker(false)}><Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium' }}>Cancel</Text></TouchableOpacity>
+                <TouchableOpacity onPress={() => { setShowTimePicker(false); if (pickerTime) onConfirmStart(pickerTime); }}>
+                  <Text style={{ color: theme.accentGreen, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Confirm</Text>
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker mode="time" value={pickerTime || (ifStart ? new Date(ifStart) : new Date())} display="spinner" textColor={theme.textPrimary} onChange={(_, d) => { if (d) setPrickerTime(d); }} />
+            </View>
+          )}
+        </Animated.View>
+      )}
+
+      {ifStart && ifEnd && (
+        <Animated.View style={{ opacity: contentOpacity, transform: [{ translateY: contentTranslate }] }}>
+          <View style={{ borderTopWidth: 1, borderTopColor: theme.borderCardTop, paddingTop: 12, marginBottom: 14 }}>
+            <View style={{ flexDirection: 'row', gap: 28, marginBottom: 12 }}>
+              <View>
+                <Text style={[styles.ifLabel, { color: theme.textMuted, marginBottom: 2 }]}>Target</Text>
+                <Text style={{ fontSize: 22, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{formatHrMin(ifTargetMs)}</Text>
+              </View>
+              <View>
+                <Text style={[styles.ifLabel, { color: theme.textMuted, marginBottom: 2 }]}>Actual</Text>
+                <Text style={{ fontSize: 22, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{ifActualMs ? formatHrMin(ifActualMs) : '--'}</Text>
+              </View>
+              <View>
+                <Text style={[styles.ifLabel, { color: theme.textMuted, marginBottom: 2 }]}>Window</Text>
+                <Text style={{ fontSize: 22, color: theme.textSecondary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>
+                  {new Date(ifStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} → {new Date(ifEnd).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Text>
+              </View>
+            </View>
+
+            <View style={{ borderTopWidth: 1, borderTopColor: theme.borderCardTop, marginBottom: 12 }} />
+
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <IFLinkBtn label="Edit start" color={theme.textSecondary} onPress={() => setShowTimePicker(true)} />
+              <IFLinkBtn label="Edit end" color={theme.textSecondary} onPress={() => setShowEndTimePicker(true)} />
+              <IFLinkBtn label="Reset" color={theme.accentRed} onPress={onResetComplete} />
+            </View>
+          </View>
+
+          {showTimePicker && (
+            <View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
+                <TouchableOpacity onPress={() => setShowTimePicker(false)}><Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium' }}>Cancel</Text></TouchableOpacity>
+                <TouchableOpacity onPress={() => { setShowTimePicker(false); if (pickerTime) onConfirmStart(pickerTime); }}>
+                  <Text style={{ color: theme.accentGreen, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Confirm</Text>
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker mode="time" value={pickerTime || (ifStart ? new Date(ifStart) : new Date())} display="spinner" textColor={theme.textPrimary} onChange={(_, d) => { if (d) setPrickerTime(d); }} />
+            </View>
+          )}
+          {showEndTimePicker && (
+            <View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
+                <TouchableOpacity onPress={() => setShowEndTimePicker(false)}><Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium' }}>Cancel</Text></TouchableOpacity>
+                <TouchableOpacity onPress={() => { setShowEndTimePicker(false); if (pickerTime) onConfirmEnd(pickerTime); }}>
+                  <Text style={{ color: theme.accentGreen, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Confirm</Text>
+                </TouchableOpacity>
+              </View>
+              <DateTimePicker mode="time" value={pickerTime || (ifEnd ? new Date(ifEnd) : new Date())} display="spinner" textColor={theme.textPrimary} onChange={(_, d) => { if (d) setPrickerTime(d); }} />
+            </View>
+          )}
+        </Animated.View>
+      )}
     </View>
   );
 }
@@ -1112,131 +1337,41 @@ export default function HomeScreen() {
   };
 
   const renderIFCard = () => (
-    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, overflow: 'hidden' }]}>
-      <Ionicons name="timer" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
-      <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
-        <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
-          <Ionicons name="timer-outline" size={11} color={theme.textMuted} />
-          <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Intermittent Fast · {ifMethod}</Text>
-          <TooltipIcon tooltipKey="if_countdown" />
-        </View>
-        {ifStart && (
-          <View style={{ backgroundColor: ifEnd ? `${ifResultColor}22` : isOpen ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', borderWidth:1, borderColor: ifEnd ? `${ifResultColor}55` : isOpen ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)', borderRadius:5, paddingHorizontal:8, paddingVertical:3 }}>
-            <Text style={{ fontSize:10, fontFamily:'DMSans_700Bold', letterSpacing:2, color: ifEnd ? ifResultColor : isOpen ? theme.accentGreen : theme.accentRed }}>
-              {ifEnd ? ifResultLabel : isOpen ? 'OPEN' : 'CLOSED'}
-            </Text>
-          </View>
-        )}
-      </View>
-      <View style={{ flexDirection:'row', gap:5, marginBottom:12, flexWrap:'wrap' }}>
-        {Object.keys(IF_METHODS).map(m => (
-          <TouchableOpacity key={m} onPress={() => { setIfMethod(m); saveToFirebase(todayKey,'ifMethod',m); }}
-            style={{ paddingHorizontal:10, paddingVertical:5, borderRadius:6, backgroundColor: ifMethod===m ? theme.accentBlueBg : theme.ifMethodBg, borderWidth:1, borderColor: ifMethod===m ? theme.accentBlueBorder : theme.ifMethodBorder }}>
-            <Text style={{ fontSize:11, fontFamily:'DMSans_600SemiBold', color: ifMethod===m ? theme.accentBlue : theme.ifMethodText }}>{m}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-      {ifMethod === 'Custom' && (
-        <View style={{ flexDirection:'row', alignItems:'center', gap:8, marginBottom:12 }}>
-          <Text style={{ fontSize:12, color: theme.textMuted, fontFamily:'DMSans_400Regular' }}>Eating window:</Text>
-          <TextInput style={{ backgroundColor: theme.bgInput, borderWidth:1, borderColor: theme.borderInput, borderRadius:6, color: theme.textPrimary, padding:6, fontSize:14, fontFamily:'DMSans_600SemiBold', width:50, textAlign:'center' }}
-            value={ifCustomHours} onChangeText={v => setIfCustomHours(v)} keyboardType="number-pad" maxLength={2} />
-          <Text style={{ fontSize:12, color: theme.textMuted, fontFamily:'DMSans_400Regular' }}>hrs</Text>
-        </View>
-      )}
-      {!ifStart ? (
-        <PressableButton style={[styles.ifStartBtn, { backgroundColor: theme.accentGreenBg, borderColor: theme.accentGreenBorder }]} onPress={() => { setIfStart(Date.now()); setIfEnd(null); }} flex={0}>
-          <Text style={[styles.ifStartBtnText, { color: theme.accentGreen }]}>TAP WHEN YOU EAT YOUR FIRST MEAL</Text>
-        </PressableButton>
-      ) : ifEnd ? (
-        <View>
-          <View style={{ backgroundColor:'transparent', borderWidth:1, borderColor:`${ifResultColor}33`, borderRadius:8, padding:12, marginBottom:10 }}>
-            <View style={{ flexDirection:'row', justifyContent:'space-between', marginBottom:6 }}>
-              <Text style={{ fontSize:11, color: theme.textMuted, fontFamily:'DMSans_400Regular' }}>Target</Text>
-              <Text style={{ fontSize:13, color:ifResultColor, fontFamily:'DMSans_600SemiBold' }}>{formatHrMin(ifTargetMs)}</Text>
-            </View>
-            <View style={{ flexDirection:'row', justifyContent:'space-between', marginBottom:6 }}>
-              <Text style={{ fontSize:11, color: theme.textMuted, fontFamily:'DMSans_400Regular' }}>Actual</Text>
-              <Text style={{ fontSize:13, color: theme.textPrimary, fontFamily:'DMSans_600SemiBold' }}>{ifActualMs ? formatHrMin(ifActualMs) : '--'}</Text>
-            </View>
-            <View style={{ flexDirection:'row', justifyContent:'space-between' }}>
-              <Text style={{ fontSize:11, color: theme.textMuted, fontFamily:'DMSans_400Regular' }}>Window</Text>
-              <Text style={{ fontSize:11, color: theme.textMuted, fontFamily:'DMSans_400Regular' }}>
-                {new Date(ifStart).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} → {new Date(ifEnd).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
-              </Text>
-            </View>
-          </View>
-          <View style={{ flexDirection:'row', gap:16, marginTop:4 }}>
-            <TouchableOpacity onPress={() => setShowTimePicker(true)}><Text style={[styles.ifReset, { color: theme.textSecondary }]}>Edit start</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => setShowEndTimePicker(true)}><Text style={[styles.ifReset, { color: theme.textSecondary }]}>Edit end</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => { setIfStart(null); setIfEnd(null); saveToFirebase(todayKey,'ifStart',null); saveToFirebase(todayKey,'ifEnd',null); }}>
-              <Text style={[styles.ifReset, { color: theme.accentRed }]}>Reset</Text>
-            </TouchableOpacity>
-          </View>
-          {showEndTimePicker && (
-            <View>
-              <View style={{ flexDirection:'row', justifyContent:'space-between', marginTop:8 }}>
-                <TouchableOpacity onPress={() => setShowEndTimePicker(false)}><Text style={{ color:'#999999', fontSize:12, fontFamily:'DMSans_500Medium' }}>Cancel</Text></TouchableOpacity>
-                <TouchableOpacity onPress={() => { setShowEndTimePicker(false); if (pickerTime) { const now=new Date(); pickerTime.setFullYear(now.getFullYear(),now.getMonth(),now.getDate()); const ne=pickerTime.getTime(); setIfEnd(ne); saveToFirebase(todayKey,'ifEnd',ne); } }}>
-                  <Text style={{ color:'#10b981', fontSize:12, fontFamily:'DMSans_600SemiBold' }}>Confirm</Text>
-                </TouchableOpacity>
-              </View>
-              <DateTimePicker mode="time" value={pickerTime||(ifEnd ? new Date(ifEnd) : new Date())} display="spinner" textColor={theme.textPrimary} onChange={(_,d)=>{ if(d) setPrickerTime(d); }} />
-            </View>
-          )}
-        </View>
-      ) : (
-        <View>
-          <View style={styles.ifRow}>
-            <View style={{ flex:1 }}>
-              <Text style={[styles.ifLabel,{marginBottom:4, color: theme.textMuted}]}>{isOpen ? 'Window closes in' : 'Window closed'}</Text>
-              <Text style={[styles.ifCountdown, { color: theme.accentBlueRaw }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
-                {remaining ? formatTime(remaining) : 'CLOSED'}
-              </Text>
-            </View>
-            <View style={{ alignItems:'flex-end', justifyContent:'flex-end', paddingLeft:12 }}>
-              <View style={{ alignItems:'flex-end', gap:6 }}>
-                <View style={{ alignItems:'flex-end' }}>
-                  <Text style={{ fontSize:9, color:'#999999', fontFamily:'DMSans_500Medium', letterSpacing:1, textTransform:'uppercase' }}>Started</Text>
-                  <Text style={{ fontSize:16, color:'#a0a0b8', fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>
-                    {new Date(ifStart).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
-                  </Text>
-                </View>
-                {windowEnd && (
-                  <View style={{ alignItems:'flex-end' }}>
-                    <Text style={{ fontSize:9, color:'#999999', fontFamily:'DMSans_500Medium', letterSpacing:1, textTransform:'uppercase' }}>Closes</Text>
-                    <Text style={{ fontSize:16, color:'#a0a0b8', fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>
-                      {new Date(windowEnd).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}
-                    </Text>
-                  </View>
-                )}
-                <TouchableOpacity onPress={() => { const end=Date.now(); setIfEnd(end); saveToFirebase(todayKey,'ifEnd',end); }}
-                  style={{ backgroundColor:'rgba(239,68,68,0.15)', borderWidth:1, borderColor:'rgba(239,68,68,0.3)', borderRadius:6, paddingHorizontal:10, paddingVertical:5 }}>
-                  <Text style={{ color:'#ef4444', fontSize:12, fontFamily:'DMSans_600SemiBold' }}>Last Meal</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-          <View style={{ flexDirection:'row', gap:16, marginTop:8 }}>
-            <TouchableOpacity onPress={() => setShowTimePicker(true)}><Text style={[styles.ifReset, { color: theme.textSecondary }]}>Reset window</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => { setIfStart(null); setIfEnd(null); saveToFirebase(todayKey,'ifStart',null); }}>
-              <Text style={[styles.ifReset,{ color: theme.accentRed }]}>Cancel fast</Text>
-            </TouchableOpacity>
-          </View>
-          {showTimePicker && (
-            <View>
-              <View style={{ flexDirection:'row', justifyContent:'space-between', marginTop:8 }}>
-                <TouchableOpacity onPress={() => setShowTimePicker(false)}><Text style={{ color:'#999999', fontSize:12, fontFamily:'DMSans_500Medium' }}>Cancel</Text></TouchableOpacity>
-                <TouchableOpacity onPress={() => { setShowTimePicker(false); if(pickerTime){ const now=new Date(); pickerTime.setFullYear(now.getFullYear(),now.getMonth(),now.getDate()); setIfStart(pickerTime.getTime()); saveToFirebase(todayKey,'ifStart',pickerTime.getTime()); } }}>
-                  <Text style={{ color:'#10b981', fontSize:12, fontFamily:'DMSans_600SemiBold' }}>Confirm</Text>
-                </TouchableOpacity>
-              </View>
-              <DateTimePicker mode="time" value={pickerTime||(ifStart ? new Date(ifStart) : new Date())} display="spinner" textColor={theme.textPrimary} onChange={(_,d)=>{ if(d) setPrickerTime(d); }} />
-            </View>
-          )}
-        </View>
-      )}
-    </View>
+    <IFCard
+      theme={theme}
+      ifStart={ifStart}
+      ifEnd={ifEnd}
+      ifMethod={ifMethod}
+      ifCustomHours={ifCustomHours}
+      isOpen={isOpen}
+      remaining={remaining}
+      windowEnd={windowEnd}
+      ifResultLabel={ifResultLabel}
+      ifResultColor={ifResultColor}
+      ifTargetMs={ifTargetMs}
+      ifActualMs={ifActualMs}
+      showTimePicker={showTimePicker}
+      showEndTimePicker={showEndTimePicker}
+      pickerTime={pickerTime}
+      todayKey={todayKey}
+      styles={styles}
+      formatTime={formatTime}
+      formatHrMin={formatHrMin}
+      setIfMethod={(m: string) => { setIfMethod(m); saveToFirebase(todayKey, 'ifMethod', m); }}
+      setIfCustomHours={setIfCustomHours}
+      setIfStart={setIfStart}
+      setIfEnd={setIfEnd}
+      setShowTimePicker={setShowTimePicker}
+      setShowEndTimePicker={setShowEndTimePicker}
+      setPrickerTime={setPrickerTime}
+      onStartFast={() => { setIfStart(Date.now()); setIfEnd(null); }}
+      onLastMeal={() => { const end = Date.now(); setIfEnd(end); saveToFirebase(todayKey, 'ifEnd', end); }}
+      onResetFast={() => { setIfStart(null); setIfEnd(null); saveToFirebase(todayKey, 'ifStart', null); }}
+      onCancelFast={() => { setIfStart(null); setIfEnd(null); saveToFirebase(todayKey, 'ifStart', null); }}
+      onResetComplete={() => { setIfStart(null); setIfEnd(null); saveToFirebase(todayKey, 'ifStart', null); saveToFirebase(todayKey, 'ifEnd', null); }}
+      onConfirmStart={(t: Date) => { const now = new Date(); t.setFullYear(now.getFullYear(), now.getMonth(), now.getDate()); setIfStart(t.getTime()); saveToFirebase(todayKey, 'ifStart', t.getTime()); }}
+      onConfirmEnd={(t: Date) => { const now = new Date(); t.setFullYear(now.getFullYear(), now.getMonth(), now.getDate()); const ne = t.getTime(); setIfEnd(ne); saveToFirebase(todayKey, 'ifEnd', ne); }}
+    />
   );
 
   const renderCaloriesCard = () => {
@@ -1259,7 +1394,7 @@ export default function HomeScreen() {
     const nudgeText = MINDFUL_NUDGES[new Date().getDate() % MINDFUL_NUDGES.length];
 
     return (
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, overflow: 'hidden' }]}>
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, overflow: 'hidden' }]}>
         <Ionicons name="flame" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
         <View style={{ flexDirection:'row', alignItems:'flex-start', justifyContent:'space-between', marginBottom:4 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
@@ -1275,7 +1410,9 @@ export default function HomeScreen() {
 
         {/* Big number row */}
         <View style={styles.calRow}>
-          <Text style={[styles.calNumber, { color: styleMode === 'mindful' ? theme.textSecondary : calColor }]}>{totalCals}</Text>
+          <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
+            <Text style={[styles.calNumber, { color: styleMode === 'mindful' ? theme.textSecondary : calColor, opacity: 0.88 }]}>{totalCals}</Text>
+          </View>
           <Text style={[styles.calTarget, { color: theme.textSecondary }]}>/ {styleMode === 'mindful' ? calTarget : adjustedTarget} kcal</Text>
         </View>
 
@@ -1290,7 +1427,7 @@ export default function HomeScreen() {
 
         {/* Stat row -- hidden in Mindful */}
         {styleMode !== 'mindful' && (
-          <View style={{ flexDirection:'row', marginTop:10 }}>
+          <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCardTop, paddingTop:10, flexDirection:'row', marginTop:10 }}>
             {stats.map((s, i) => (
               <View key={i} style={{ flex:1, alignItems: i === 1 ? 'center' : i === 2 ? 'flex-end' : 'flex-start' }}>
                 <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase', marginBottom:2 }}>{s.label}</Text>
@@ -1322,7 +1459,7 @@ export default function HomeScreen() {
       { label: 'Fat',     val: totalFat,     goal: macroGoals.fat,     color: theme.macroFat },
     ];
     return (
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, overflow: 'hidden' }]}>
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
         <Ionicons name="nutrition" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
@@ -1359,7 +1496,7 @@ export default function HomeScreen() {
   };
 
   const renderWaterCard = () => (
-    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, overflow: 'hidden' }]}>
+    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
         <Ionicons name="water" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
       <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:10 }}>
         <Ionicons name="water-outline" size={11} color={theme.textMuted} />
@@ -1399,7 +1536,7 @@ export default function HomeScreen() {
   );
 
   const renderWeightCard = () => (
-    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, overflow: 'hidden' }]}>
+    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, overflow: 'hidden' }]}>
         <Ionicons name="body" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
       <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:10 }}>
         <Ionicons name="trending-down-outline" size={11} color={theme.textMuted} />
@@ -1443,7 +1580,7 @@ export default function HomeScreen() {
         }
         const lbsToGo = currentW ? Math.abs(currentW - goalWeight) : null;
         return (
-          <View style={[styles.weightRow, { paddingTop: 10, borderTopWidth: 0.5, borderTopColor: theme.borderCard }]}>
+          <View style={[styles.weightRow, { paddingTop: 10, borderTopWidth: 0.5, borderTopColor: theme.borderCardTop }]}>
             <View style={styles.weightStat}>
               <Text style={[styles.weightVal, { color: styleMode === 'mindful' ? theme.textSecondary : theme.accentBlue }]}>{goalWeight} lbs</Text>
               <Text style={[styles.weightLbl, { color: theme.textMuted }]}>Goal</Text>
@@ -1502,7 +1639,7 @@ export default function HomeScreen() {
         onPressIn={onPressIn}
         onPressOut={onPressOut}
         onPress={() => router.push('/(tabs)/workout')}
-        style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, padding: 16, overflow: 'hidden' }]}>
+        style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, padding: 16, overflow: 'hidden' }]}>
         <Ionicons name="barbell" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
         <View style={{ marginBottom: 12 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:8 }}>
@@ -1602,7 +1739,7 @@ export default function HomeScreen() {
     const pct = stepGoal > 0 ? steps / stepGoal : 0;
     const stepColor = pct >= 1 ? theme.statusGood : theme.accentBlue;
     return (
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, overflow: 'hidden' }]}>
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
         {/* Background accent icon */}
         <Ionicons
           name="footsteps"
@@ -1640,7 +1777,9 @@ export default function HomeScreen() {
           </View>
         )}
         <View style={{ flexDirection:'row', alignItems:'baseline', gap:6, marginBottom:6 }}>
-          <Text style={{ fontSize:36, color:stepColor, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>{steps.toLocaleString()}</Text>
+          <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
+            <Text style={{ fontSize:36, color:stepColor, fontFamily:'BebasNeue_400Regular', letterSpacing:1, opacity: 0.88 }}>{steps.toLocaleString()}</Text>
+          </View>
           <Text style={{ fontSize:13, color: theme.textMuted, fontFamily:'DMSans_400Regular' }}>/ {stepGoal.toLocaleString()} steps</Text>
         </View>
         <View style={{ marginBottom:8 }}>
@@ -1654,8 +1793,9 @@ export default function HomeScreen() {
   const renderSleepCard = () => {
     const displaySleep = sleepOverride ?? sleepHours;
     return (
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, overflow: 'hidden' }]}>
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, overflow: 'hidden' }]}>
         <Ionicons name="moon" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
+        
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
             <Ionicons name="moon-outline" size={11} color={theme.textMuted} />
@@ -1788,7 +1928,9 @@ export default function HomeScreen() {
             <View>
               <View style={{ flexDirection:'row', alignItems:'flex-start' }}>
                 <View style={{ width:160, paddingRight:12 }}>
-                  <Text style={{ fontSize:42, color: score !== null ? scoreColor : theme.textPrimary, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>{hrs}h {mins}m</Text>
+                  <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
+                    <Text style={{ fontSize:42, color: score !== null ? scoreColor : theme.textPrimary, fontFamily:'BebasNeue_400Regular', letterSpacing:1, opacity: 0.88 }}>{hrs}h {mins}m</Text>
+                  </View>
                   {scoreLabel ? (
                     <Text style={{ fontSize:9, color:scoreColor, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:10 }}>
                       {scoreLabel}{isManual ? ' · manual' : ''}
@@ -1868,7 +2010,7 @@ export default function HomeScreen() {
   };
 
   const renderFitnessMetricsCard = () => (
-    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, overflow: 'hidden' }]}>
+    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
       <Ionicons name="fitness" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
       <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:10 }}>
         <Ionicons name="heart-outline" size={11} color={theme.textMuted} />
@@ -1903,7 +2045,7 @@ export default function HomeScreen() {
   );
 
   const renderDailyNoteCard = () => (
-    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, overflow: 'hidden' }]}>
+    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
       <Ionicons name="create" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
       <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:10 }}>
         <Ionicons name="journal-outline" size={11} color={theme.textMuted} />
@@ -2109,7 +2251,7 @@ export default function HomeScreen() {
     const displayMetrics = isMindful ? mindfulSelected : selected;
 
     return (
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, overflow: 'hidden' }]}>
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
         <Ionicons name="trophy" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
         {/* Header */}
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
@@ -2517,7 +2659,7 @@ const styles = StyleSheet.create({
   headerLabel:      { fontSize:9, letterSpacing:2, textTransform:'uppercase', marginBottom:2, fontFamily:'DMSans_700Bold' },
   headerTitle:      { fontSize:32, fontWeight:'700', fontFamily:'BebasNeue_400Regular', letterSpacing:2 },
   headerBtn:        { borderWidth:1, borderRadius:6, paddingHorizontal:12, paddingVertical:6, height:32, alignItems:'center', justifyContent:'center' },
-  card:             { borderWidth:0.5, borderRadius:14, padding:16, marginBottom:12, borderTopWidth:0.5, shadowColor: '#000000', shadowOffset: { width:0, height:4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
+  card:             { borderWidth:0.5, borderRadius:14, padding:16, marginBottom:12, borderTopWidth:1.5, shadowColor: '#000000', shadowOffset: { width:0, height:4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
   cardLabel:        { fontSize:10, letterSpacing:3, textTransform:'uppercase', fontFamily:'DMSans_700Bold', marginBottom:10 },
   verseCard:        { borderWidth:2, borderRadius:14, padding:16, marginBottom:12, shadowColor: '#000000', shadowOffset: { width:0, height:4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
   verseLabel:       { fontSize:9, letterSpacing:3, textTransform:'uppercase', marginBottom:8, fontFamily:'DMSans_700Bold' },

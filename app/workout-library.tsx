@@ -60,7 +60,7 @@ export default function WorkoutLibraryScreen() {
   const [query, setQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingEx, setEditingEx] = useState<LibraryExercise | null>(null);
-  const [form, setForm] = useState<Partial<LibraryExercise>>({ type: 'lift', defaultSets: '3', defaultReps: '10–12', defaultRest: '60s' });
+  const [form, setForm] = useState<Partial<LibraryExercise>>({ type: 'lift', defaultSets: '', defaultReps: '', defaultRest: '' });
   const { selectMode, day } = useLocalSearchParams<{ selectMode: string; day: string }>();
 const isSelectMode = selectMode === 'true';
 const [selectedEx, setSelectedEx] = useState<LibraryExercise | null>(null);
@@ -154,7 +154,7 @@ else {
     addOverlayOpacity.setValue(0);
     addCardScale.setValue(0.95);
     if (ex) { setEditingEx(ex); setForm({ ...ex }); }
-    else { setEditingEx(null); setForm({ type: 'lift', name: '', defaultSets: '3', defaultReps: '10–12', defaultRest: '60s', note: '' }); }
+    else { setEditingEx(null); setForm({ type: 'lift', name: '', defaultSets: '', defaultReps: '', defaultRest: '', note: '' }); }
     setShowAddModal(true);
     setTimeout(() => {
       Animated.parallel([
@@ -386,13 +386,6 @@ else {
                       <Text style={[styles.typeBtnText, form.type === 'cardio' && { color: theme.accentAmber }]}>Cardio</Text>
                     </TouchableOpacity>
                   </View>
-                  {form.type === 'lift' && (
-                    <View style={styles.modalRow}>
-                      <TextInput style={[styles.modalInput, { flex: 1 }]} placeholder="Sets" placeholderTextColor={theme.textPlaceholder} value={form.defaultSets || ''} onChangeText={v => setForm(p => ({ ...p, defaultSets: v }))} keyboardType="number-pad" />
-                      <TextInput style={[styles.modalInput, { flex: 1 }]} placeholder="Reps" placeholderTextColor={theme.textPlaceholder} value={form.defaultReps || ''} onChangeText={v => setForm(p => ({ ...p, defaultReps: v }))} />
-                      <TextInput style={[styles.modalInput, { flex: 1 }]} placeholder="Rest" placeholderTextColor={theme.textPlaceholder} value={form.defaultRest || ''} onChangeText={v => setForm(p => ({ ...p, defaultRest: v }))} />
-                    </View>
-                  )}
                   <TextInput style={styles.modalInput} placeholder="Note (optional)" placeholderTextColor={theme.textPlaceholder} value={form.note || ''} onChangeText={v => setForm(p => ({ ...p, note: v }))} />
                   <View style={styles.modalBtns}>
                     <TouchableOpacity style={styles.modalCancelBtn} onPress={closeAddModal}>
@@ -452,5 +445,5 @@ const useStyles = (theme: any) => StyleSheet.create({
   modalCancelBtn: { flex: 1, padding: 12, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, alignItems: 'center' },
   modalCancelText: { color: theme.textMuted, fontFamily: 'DMSans_500Medium', fontSize: 14 },
   modalSaveBtn: { flex: 1, padding: 12, backgroundColor: theme.accentBlue, borderRadius: 6, alignItems: 'center' },
-  modalSaveText: { color: theme.textWhite, fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 1 },
+  modalSaveText: { color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 1 },
 });

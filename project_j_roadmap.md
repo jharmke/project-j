@@ -176,7 +176,8 @@ Workout tab facelift
 [x] Exercise library gradient removed -- flat bgPrimary, consistent with all other sub-screens. Decision locked: gradient is exclusive to the 5 main tabs only.
 [x] Add Exercise modal -- centered scale-pop animation (overlayOpacity + cardScale spring), dim/inactive ADD button when name empty, bgSheet opaque background, close animation. Keyboard offset via paddingBottom so buttons clear keyboard.
 [x] Workout tab FAB -- replaces inline Add Exercise button. Fixed bottom right, 16pt above tab bar, accent fill, scale press animation (0.85 on pressIn, spring back), hidden on rest days.
-Effort score redesign -- large satisfying tiles, proper selected state with accent fill, replaces flat grid survey feel.
+[x] Workout tab CPP pass -- progress bar animated (300ms both directions), Add Exercise blank fields with dimmed placeholders, edit modal Save dimmed until change made, library + button form is name/type/note only (no sets/reps/rest)
+  Effort score redesign -- large satisfying tiles, proper selected state with accent fill, replaces flat grid survey feel.
 Workout notes overhaul -- KAV fix, dim/inactive save button, toast on save, wire to journal as workout category entry.
 Edit/Remove button redesign -- style to match app design system, not plain unstyled web buttons.
 Progress/momentum element -- running tally of exercises completed visible during session.
@@ -191,6 +192,7 @@ Recents math bug -- fsId not passed through from recent entries, caused per-100g
 [x] Recents math bug -- fsId now stored and passed through loadRecent in add-food.tsx, food-detail uses correct serving data instead of per-100g scaling. DONE.
 Macros not persisting to recents/favorites -- DONE. loadRecent now carries full macro payload, showMyFoods and My Foods FlatList tab map all nutrients, favorites tab already correct.
 Favorites bug -- identical food names share favorite state, both toggle together. (still open)
+Food search calorie discrepancy -- search list shows different calories than food detail screen. Root cause: serving selection mismatch. FatSecret search response returns multiple servings; list displays index 0, detail may land on a different serving. Fix: use is_default:1 serving for list display, ensure detail pre-selects same serving. Needs add-food.tsx + food-detail.tsx. (open)
 Recents dedup bug -- same food logged with different gram amounts creates duplicate recent entries. Fix: on write to recents, check for existing entry with same fsId (or name fallback), replace instead of append. Most recent log wins. (NOW)
 fsId saved on star from search results list in add-food.tsx -- favorites now open to label serving. DONE.
 Favorites fsId fix -- label serving saved on favorite, fetched on tap from favorites tab, on-demand fetch in food-detail when fsServings empty, non-100g sort fix. DONE.
@@ -372,6 +374,7 @@ Workout tab nested scroll bug -- DraggableFlatList inside ScrollView warning. (H
 Workout drag handle -- hit target too small + dead zone before drag triggers. (HIGH)
 Edit exercise input validation -- decimal/integer restrictions on all numeric fields, same standard as weight input. (SOON)
 Apple Health avg HR per workout -- research whether kingstinct library exposes avg HR per workout sample; if yes, auto-populate on workout sync. (SOON)
+Sessions System -- save a day's exercise list as a named Session, Sessions tab in workout library alongside exercises, star/favorite system for most-used sessions, load a session onto any day in one tap. (SOON)
 
 Home and stats
 
@@ -391,11 +394,25 @@ Food group pattern detection -- if user logs zero whole foods (fruits, vegetable
 Faith and Bible
 
 Faith/Bible Settings panel -- Bible page gear icon opens Faith Settings sheet: font size for reading text, translation selector (future), faith-specific Help/definitions (streak, journal categories), reading plan settings placeholder. Faith category in tooltipRegistry.ts as placeholder. Main settings Help stays Nutrition/Fitness/Sleep & Recovery only. Dedicated session.
+Today's Message overhaul -- full spec below. Dedicated session.
+- Title: "TODAY'S MESSAGE" for ALL faith journey tiers, no exceptions
+- All users get a pool of messages that cycles. Pool = preset messages + user custom additions
+- User controls their pool -- can delete presets, add custom, reorder. Static vs cycle toggle (static = one message stays up, cycle = rotates)
+- Rooted/Exploring presets: KJV scripture verses (52 built-in). NRN presets: motivational/inspirational messages (10-15, mode-aware -- Mindful gets softer, Discipline/Balanced get stronger)
+- Custom entries: Rooted/Exploring can add custom verses (book/chapter picker + multi-verse selector up to 4 consecutive verses, auto-formats as "John 3:16-18") OR plain text messages. NRN can add plain text messages only, no verse reference field
+- Verses added from Bible screen auto-fill the reference
+- Pool management lives in Settings, not on the card face
+- Card gets (i) tooltip explaining pool, static vs cycle, custom additions, how to manage in settings
+- Card visual: Rooted/Exploring keep gold border + holy glow. NRN gets theme-aware accent/primary/secondary treatment, still distinct from standard cards, no gold
+- NRN tap behavior: opens main journal page (not a pre-populated entry)
+- Rooted/Exploring tap behavior: opens Bible screen as before
+- Custom scripture picker: book selector → chapter selector → verse multi-select (up to 4 from same chapter). Edge case of multi-chapter handled by adding multiple entries to pool
 Bible auto-scroll to verse -- auto-center highlighted verse when opening from Today's Message. (very soon)
 Achievement toast improvements -- tappable routes to achievements page, trigger context under name, wording update before App Store launch.
 
 Process and infrastructure
 
+Tooltip audit pass -- sweep all cards app-wide, flag every card that needs a (i) tooltip that doesn't have one yet. Build missing tooltips. Dedicated session. (SOON)
 Tooltip wording polish pass -- dedicated pass over all tooltip copy after all cards are wired. Known issues: Active (Apple Health fallback language for non-watch users), Remaining (confirm algorithm accuracy vs what's described), Net (explain running BMR before using the term), Color Coding ("big calorie number" needs rewrite). Do as one session with full context of every card.
 Settings > Help section -- two subsections: Definitions (auto-populates from tooltip registry, Show Again per entry) and Tips & Guides (shell built now, placeholder entry, mini help articles filled over time e.g. "How to improve your sleep score", "Understanding your active calorie estimate"). About row planned, not built yet.
 Coaching style deep-dive page -- dedicated screen explaining all three modes in depth. Who each mode is for, what changes per mode, why certain features are hidden in Mindful, language differences, worked examples. Written warmly, not like a help doc. Findable from settings and from onboarding. NOW -- high value, reduces churn from users who feel they picked wrong.
@@ -814,7 +831,7 @@ Weight projection graph (Screen 4) -- SVG curve draws itself left to right via s
 Workout:
 
 Exercise checkmark -- spring scale on check
-Progress bar fills smoothly as exercises checked
+[x] Progress bar fills smoothly as exercises checked
 Day scroller dots -- color transition on active day change
 
 

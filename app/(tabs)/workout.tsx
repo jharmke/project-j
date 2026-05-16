@@ -56,7 +56,7 @@ const [weeklyTemplate, setWeeklyTemplate] = useState<Record<string, DayProgram>>
   const dayScrollRef = useRef<any>(null);
   const hasScrolled = useRef(false);
 const [labelInput, setLabelInput] = useState('');
-  const [form, setForm] = useState({ name: '', sets: '3', reps: '10–12', rest: '60s', note: '', isCardio: false, duration: '', distance: '', speed: '', incline: '', resistance: '', hr: '', calories: ''});
+  const [form, setForm] = useState({ name: '', sets: '', reps: '', rest: '', note: '', isCardio: false, duration: '', distance: '', speed: '', incline: '', resistance: '', hr: '', calories: ''});
 const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
   const [calBurnedSaved, setCalBurnedSaved] = useState(false);
   const [tags, setTags] = useState<WorkoutTag[]>(DEFAULT_TAGS);
@@ -67,6 +67,8 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
   const [programTab, setProgramTab] = useState<'presets' | 'mine'>('presets');
   const [activeProgramName, setActiveProgramName] = useState<string | null>(null);
   const fabScale = useRef(new Animated.Value(0)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const originalForm = useRef<typeof form | null>(null);
 
   useEffect(() => {
     Animated.spring(fabScale, { toValue: 1, useNativeDriver: true, friction: 6, tension: 120, delay: 300 }).start();
@@ -91,7 +93,7 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
     setModalDay(day);
     setEditingExercise(exercise);
     if (exercise) {
-      setForm({
+      const editValues = {
         name: exercise.name,
         sets: exercise.sets,
         reps: exercise.reps,
@@ -105,9 +107,12 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
         resistance: exercise.resistance ?? '',
         hr: exercise.hr ?? '',
         calories: exercise.calories ?? '',
-      });
+      };
+      setForm(editValues);
+      originalForm.current = editValues;
     } else {
-      setForm({ name: '', sets: '3', reps: '10–12', rest: '60s', note: '', isCardio: false, duration: '', distance: '', speed: '', incline: '', resistance: '', hr: '', calories: '' });
+      setForm({ name: '', sets: '', reps: '', rest: '', note: '', isCardio: false, duration: '', distance: '', speed: '', incline: '', resistance: '', hr: '', calories: '' });
+      originalForm.current = null;
     }
     setShowAddModal(true);
   };
@@ -318,6 +323,14 @@ const exercises = program?.exercises || [];
 const dayChecks = checks[activeDay] || {};
 const doneCount = exercises.filter(ex => dayChecks[ex.id]).length;
 const color = theme.accentBlue;
+const modalCanSave = editingExercise
+  ? JSON.stringify(form) !== JSON.stringify(originalForm.current)
+  : !!form.name.trim();
+
+useEffect(() => {
+  const pct = exercises.length > 0 ? doneCount / exercises.length : 0;
+  Animated.timing(progressAnim, { toValue: pct, duration: 300, useNativeDriver: false }).start();
+}, [doneCount, exercises.length]);
 
 useEffect(() => {
   if (!loaded) return;
@@ -666,7 +679,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
               <Text style={[styles.progressCount, { color: doneCount === exercises.length && exercises.length > 0 ? theme.statusGood : color }]}>{doneCount}/{exercises.length}</Text>
             </View>
             <View style={[styles.progressBarBg, { backgroundColor: theme.bgProgressTrack }]}>
-              <View style={[styles.progressBarFill, { width: `${exercises.length > 0 ? (doneCount / exercises.length) * 100 : 0}%`, backgroundColor: theme.accentBlue }]} />
+              <Animated.View style={[styles.progressBarFill, { width: progressAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }), backgroundColor: theme.accentBlue }]} />
             </View>
 
             <DraggableFlatList
@@ -871,8 +884,8 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                   <TouchableOpacity style={[styles.modalCancelBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }]} onPress={closeAddExerciseModal}>
                     <Text style={[styles.modalCancelBtnText, { color: theme.textMuted }]}>Cancel</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[styles.modalSaveBtn, { backgroundColor: theme.accentBlue }]} onPress={saveExercise}>
-                    <Text style={[styles.modalSaveBtnText, { color: theme.bgPrimary }]}>{editingExercise ? 'Save' : 'Add'}</Text>
+                  <TouchableOpacity style={[styles.modalSaveBtn, { backgroundColor: theme.accentBlue, opacity: modalCanSave ? 1 : 0.35 }]} onPress={saveExercise} disabled={!modalCanSave}>
+                    <Text style={[styles.modalSaveBtnText, { color: '#ffffff' }]}>{editingExercise ? 'Save' : 'Add'}</Text>
                   </TouchableOpacity>
                 </View>
               </ScrollView>

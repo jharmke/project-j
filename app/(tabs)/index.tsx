@@ -2133,7 +2133,7 @@ export default function HomeScreen() {
         ydVal: ydSleepScore,
         format: v => Math.round(v).toString(),
         unit: '/100',
-        winCondition: (t, y) => Math.abs(t - y) < 3 ? 'tie' : t > y ? 'win' : 'lose',
+        winCondition: (t, y) => t === y ? 'tie' : t > y ? 'win' : 'lose',
       },
       {
         id: 'water',
@@ -2170,7 +2170,7 @@ export default function HomeScreen() {
         ydVal: ydActiveCalories,
         format: v => Math.round(v).toLocaleString(),
         unit: 'kcal',
-        winCondition: (t, y) => Math.abs(t - y) < 25 ? 'tie' : t > y ? 'win' : 'lose',
+        winCondition: (t, y) => t === y ? 'tie' : t > y ? 'win' : 'lose',
       },
       {
         id: 'sleepHours',

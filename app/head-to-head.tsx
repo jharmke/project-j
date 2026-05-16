@@ -406,7 +406,7 @@ export default function HeadToHeadScreen() {
       valB: snapB.sleepScore,
       format: v => Math.round(v).toString(),
       unit: '/100',
-      winCondition: (a, b) => Math.abs(a - b) < 3 ? 'tie' : a > b ? 'win' : 'lose',
+      winCondition: (a, b) => a === b ? 'tie' : a > b ? 'win' : 'lose',
     },
     {
       id: 'water',
@@ -428,7 +428,7 @@ export default function HeadToHeadScreen() {
       valB: snapB.activeCals,
       format: v => Math.round(v).toLocaleString(),
       unit: 'kcal',
-      winCondition: (a, b) => Math.abs(a - b) < 25 ? 'tie' : a > b ? 'win' : 'lose',
+      winCondition: (a, b) => a === b ? 'tie' : a > b ? 'win' : 'lose',
     },
     {
       id: 'weight',
@@ -642,6 +642,7 @@ export default function HeadToHeadScreen() {
         {/* Metric cards */}
         {!loading && metrics.map((m, i) => {
           const result = m.valA !== null && m.valB !== null ? m.winCondition(m.valA, m.valB) : null;
+          
           const hasData = m.valA !== null || m.valB !== null;
           const delta = getDelta(m);
 

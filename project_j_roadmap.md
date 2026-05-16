@@ -149,11 +149,20 @@ DONE -- SHIPPED
 
 
 NOW -- active this session
+[x] YvY sleep score tie threshold fixed -- removed < 3 pt band, now exact equality only (t === y), same logic as water/steps. Fixed in index.tsx.
+[x] YvY active cals tie threshold fixed -- removed < 25 kcal band, now exact equality only. Fixed in index.tsx.
+[x] Head to Head sleep score tie threshold fixed -- same fix as YvY, exact equality only. Fixed in head-to-head.tsx.
+[x] Head to Head active cals tie threshold fixed -- same fix as YvY, exact equality only. Fixed in head-to-head.tsx.
+[x] Head to Head sleep score winCondition missing -- accidentally stripped during debug cleanup, restored. head-to-head.tsx working correctly.
+[x] Win/loss/tie logic audit complete -- all 7 metrics verified consistent across index.tsx and head-to-head.tsx. Weight retains 0.3 lb fuzzy threshold (floating point). sleepHours retains 0.25hr (15 min) buffer. Net calories retains closest-to-target logic. All others: exact equality.
+
+NOW -- active this session
 [x] Home / log aesthetics polish pass -- light + slate border tokens bumped, light bgCard opacity 0.55→0.72, accent top border (accentBlueRaw, 1.5px) on all home cards, hairline divider above stat row in calories card, weight card divider bumped to borderCardTop. Big number text treatment attempted and reverted -- deferred to BACKLOG.
 [x] Big number text treatment -- shadow (shadowColor #000, offset 0/2, opacity 0.18, radius 0) + opacity 0.88 on all hero Bebas numbers app-wide. Applied to: calories (index.tsx + log.tsx), sleep duration, sleep score donut, steps. Treatment is for fontSize 36+ hero numbers only -- smaller numbers (28px weight stats, fitness metrics) left alone.
 [x] Sleep donut deep color fix -- light theme sleepDeep changed from #6366f1 (indigo, too close to blue core) to #a855f7 (violet). Pink core / violet deep / green REM now clearly distinct across all themes. Warm theme sleepDeep also corrected.
 [x] Accent top border -- all tab cards -- accentBlueRaw, 1.5px borderTopWidth added to every card in log.tsx, workout.tsx, stats.tsx, profile.tsx. Meal rows in log.tsx included. overflow:hidden must NOT be used on cards with shadowed children -- clips shadows. DraggableFlatList in workout.tsx gets contentContainerStyle paddingBottom:16 to fix exercise shadow clipping on last item. Tab bar does NOT get accent top border -- navigation element not a card, hairline separator stays as-is.
-[x] IF card State 2 polish -- solid green TAP WHEN YOU EAT button with breathing pulse animation (1.025 scale, 1400ms, 800ms pause). OPEN/CLOSED status as pill badge. Countdown hero left, STARTED/CLOSES labels matching ifLabel style top-right with 22px accent times. Divider borderCardTop 1px. Bottom row: Reset window (textSecondary pill) | LAST MEAL (solid red centered) | Cancel fast (textSecondary pill). State 3 (complete) polish pending.
+[x] IF card State 2 polish -- solid green TAP WHEN YOU EAT button with breathing pulse animation (1.025 scale, 1400ms, 800ms pause). OPEN/CLOSED status as pill badge. Countdown hero left, STARTED/CLOSES labels matching ifLabel style top-right with 22px accent times. Divider borderCardTop 1px. Bottom row: Reset window (textSecondary pill) | LAST MEAL (solid red centered) | Cancel fast (textSecondary pill).
+[x] IF card State 3 polish -- TARGET/ACTUAL/WINDOW label-over-value layout, all left-aligned. Target + Actual: accentBlueRaw 22px Bebas. Window times: textSecondary 22px Bebas. Divider below stats. Edit start / Edit end (textSecondary pills) / Reset (accentRed pill). Edit start picker bug fixed -- showTimePicker block added to State 3 animated view. IFCard extracted as proper React component above HomeScreen to fix hooks-in-render violation.
 
 Auth and onboarding
 

@@ -66,6 +66,11 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
   const [showProgramModal, setShowProgramModal] = useState(false);
   const [programTab, setProgramTab] = useState<'presets' | 'mine'>('presets');
   const [activeProgramName, setActiveProgramName] = useState<string | null>(null);
+  const fabScale = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.spring(fabScale, { toValue: 1, useNativeDriver: true, friction: 6, tension: 120, delay: 300 }).start();
+  }, []);
 
   const openProgramModal = () => setShowProgramModal(true);
   const closeProgramModal = () => { Keyboard.dismiss(); setShowProgramModal(false); };
@@ -658,7 +663,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                   <Text style={[styles.progressLabel, { fontSize: 18, color: programs[activeDay]?.customLabel ? theme.textSecondary : theme.textDim, fontFamily: 'DMSans_600SemiBold', flex: 1 }]} numberOfLines={1} ellipsizeMode="tail">{programs[activeDay]?.customLabel || 'Add label...'}</Text>
                 </View>
               </TouchableOpacity>
-              <Text style={[styles.progressCount, { color }]}>{doneCount}/{exercises.length}</Text>
+              <Text style={[styles.progressCount, { color: doneCount === exercises.length && exercises.length > 0 ? theme.statusGood : color }]}>{doneCount}/{exercises.length}</Text>
             </View>
             <View style={[styles.progressBarBg, { backgroundColor: theme.bgProgressTrack }]}>
               <View style={[styles.progressBarFill, { width: `${exercises.length > 0 ? (doneCount / exercises.length) * 100 : 0}%`, backgroundColor: theme.accentBlue }]} />
@@ -738,15 +743,9 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
               }}
             />
 
-            {doneCount === exercises.length && exercises.length > 0 && (
-              <View style={styles.completeMsg}>
-                <Text style={[styles.completeMsgText, { color: theme.accentBlue }]}>DONE. GO HOME.</Text>
-              </View>
-            )}
+            
 
-            <TouchableOpacity style={[styles.addExBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => router.push({ pathname: '/workout-library', params: { selectMode: 'true', day: activeDay } })}>
-              <Text style={[styles.addExBtnText, { color: theme.accentBlue }]}>+ ADD EXERCISE</Text>
-            </TouchableOpacity>
+            
           </View>
         )}
 
@@ -1208,6 +1207,18 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
         </View>
       </Modal>
 
+    {!isRest && (
+        <Animated.View style={{ position: 'absolute', bottom: 16, right: 20, transform: [{ scale: fabScale }] }}>
+          <TouchableOpacity
+            onPress={() => router.push({ pathname: '/workout-library', params: { selectMode: 'true', day: activeDay } })}
+            onPressIn={() => Animated.timing(fabScale, { toValue: 0.85, duration: 80, useNativeDriver: true }).start()}
+            onPressOut={() => Animated.timing(fabScale, { toValue: 1, duration: 80, useNativeDriver: true }).start()}
+            activeOpacity={1}
+            style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 }}>
+            <Ionicons name="add" size={28} color={theme.bgPrimary} />
+          </TouchableOpacity>
+        </Animated.View>
+      )}
     </LinearGradient>
     </KeyboardAvoidingView>
     </GestureHandlerRootView>

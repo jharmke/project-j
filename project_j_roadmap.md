@@ -171,13 +171,18 @@ Onboarding flow -- COMPLETE. All 7 screens built and working.
 
 Workout tab facelift
 
+[x] Done. Go Home. removed -- replaced with progress count (2/2) turning statusGood green when all exercises complete.
+[x] Exercise library aesthetic pass -- card rows with accent left stripe matching food library pattern, Ionicons star, accent title (accentAmber), back chevron Ionicons, search placeholder fixed, contentContainerStyle padding, bgSheet modal background.
+[x] Exercise library gradient removed -- flat bgPrimary, consistent with all other sub-screens. Decision locked: gradient is exclusive to the 5 main tabs only.
+[x] Add Exercise modal -- centered scale-pop animation (overlayOpacity + cardScale spring), dim/inactive ADD button when name empty, bgSheet opaque background, close animation. Keyboard offset via paddingBottom so buttons clear keyboard.
+[x] Workout tab FAB -- replaces inline Add Exercise button. Fixed bottom right, 16pt above tab bar, accent fill, scale press animation (0.85 on pressIn, spring back), hidden on rest days.
 Effort score redesign -- large satisfying tiles, proper selected state with accent fill, replaces flat grid survey feel.
 Workout notes overhaul -- KAV fix, dim/inactive save button, toast on save, wire to journal as workout category entry.
-Done. Go Home. -- remove entirely or replace with smarter completion state that surfaces effort + notes naturally when all exercises checked.
-Add Exercise button -- fix visibility on light themes, redesign so it reads as a clear primary action.
 Edit/Remove button redesign -- style to match app design system, not plain unstyled web buttons.
 Progress/momentum element -- running tally of exercises completed visible during session.
 Visual hierarchy pass -- exercise rows, Apple Health badge, stats line spacing and weight.
+Muscle group tags + filter on exercise library -- muscleGroup field on each exercise, filter chips (Chest/Back/Shoulders/Arms/Legs/Core/Cardio), default library pre-tagged, add modal gets picker. (SOON)
+KAV/keyboard behavior in Add Exercise modal and CustomFoodCreator -- keyboard covers buttons in both. Same root issue, parked for dedicated session. (SOON)
 
 Food and search polish
 

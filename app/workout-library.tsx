@@ -1,8 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Alert, FlatList, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Alert, Animated, FlatList, Keyboard, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { saveToFirebase } from '../firebaseConfig';
 import { useTheme } from '../theme';
 
@@ -99,17 +101,8 @@ else {
     await saveLibrary(updated);
   };
 
-  const openAdd = () => {
-    setEditingEx(null);
-    setForm({ type: 'lift', name: '', defaultSets: '3', defaultReps: '10–12', defaultRest: '60s', note: '' });
-    setShowAddModal(true);
-  };
-
-  const openEdit = (ex: LibraryExercise) => {
-    setEditingEx(ex);
-    setForm({ ...ex });
-    setShowAddModal(true);
-  };
+  const openAdd = () => openAddModal(null);
+  const openEdit = (ex: LibraryExercise) => openAddModal(ex);
 
   const saveExercise = async () => {
     if (!form.name?.trim()) return;
@@ -154,12 +147,44 @@ else {
   });
 };
 
+  const addOverlayOpacity = useRef(new Animated.Value(0)).current;
+  const addCardScale = useRef(new Animated.Value(0.95)).current;
+
+  const openAddModal = (ex: LibraryExercise | null = null) => {
+    addOverlayOpacity.setValue(0);
+    addCardScale.setValue(0.95);
+    if (ex) { setEditingEx(ex); setForm({ ...ex }); }
+    else { setEditingEx(null); setForm({ type: 'lift', name: '', defaultSets: '3', defaultReps: '10–12', defaultRest: '60s', note: '' }); }
+    setShowAddModal(true);
+    setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(addOverlayOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+        Animated.spring(addCardScale, { toValue: 1, useNativeDriver: true, friction: 8, tension: 100 }),
+      ]).start();
+    }, 16);
+  };
+
+  const closeAddModal = () => {
+    Animated.parallel([
+      Animated.timing(addOverlayOpacity, { toValue: 0, duration: 150, useNativeDriver: true }),
+      Animated.timing(addCardScale, { toValue: 0.95, duration: 150, useNativeDriver: true }),
+    ]).start(() => onClose());
+  };
+
+  const onClose = () => {
+    Keyboard.dismiss();
+    setShowAddModal(false);
+  };
+
   const styles = useStyles(theme);
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backBtnText}>← Back</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Ionicons name="chevron-back" size={18} color={theme.accentAmber} />
+            <Text style={styles.backBtnText}>Back</Text>
+          </View>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{isSelectMode ? `Add to ${day}` : 'Exercise Library'}</Text>
         <TouchableOpacity onPress={openAdd} style={styles.addBtn}>
@@ -171,7 +196,7 @@ else {
         <TextInput
           style={styles.searchInput}
           placeholder="Search exercises..."
-          placeholderTextColor="#444444"
+          placeholderTextColor={theme.textPlaceholder}
           value={query}
           onChangeText={setQuery}
         />
@@ -194,6 +219,7 @@ else {
         data={filteredList}
         keyExtractor={item => item.id}
         keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ paddingTop: 8, paddingBottom: 40 }}
         renderItem={({ item }) => (
   <TouchableOpacity style={styles.exItem} onPress={() => {
     if (isSelectMode) {
@@ -225,8 +251,8 @@ else {
           <Text style={{ color: theme.accentGreen, fontFamily: 'DMSans_600SemiBold', fontSize: 13 }}>+ Add</Text>
         </TouchableOpacity>
       ) : (
-        <TouchableOpacity onPress={() => toggleFavorite(item.id)}>
-          <Text style={{ fontSize: 18, color: item.favorite ? theme.accentAmber : theme.textDim }}>★</Text>
+        <TouchableOpacity onPress={() => toggleFavorite(item.id)} style={{ padding: 4 }}>
+          <Ionicons name={item.favorite ? 'star' : 'star-outline'} size={18} color={item.favorite ? theme.accentAmber : theme.textDim} />
         </TouchableOpacity>
       )}
     </View>
@@ -338,47 +364,48 @@ else {
   </Modal>
 )}
 
-      <Modal visible={showAddModal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modal}>
-            <Text style={styles.modalTitle}>{editingEx ? 'Edit Exercise' : 'Add Exercise'}</Text>
-
-            <TextInput style={styles.modalInput} placeholder="Exercise name" placeholderTextColor="#444" value={form.name || ''} onChangeText={v => setForm(p => ({ ...p, name: v }))} />
-
-            <Text style={styles.modalLabel}>Type</Text>
-            <View style={styles.typeRow}>
-              <TouchableOpacity
-                style={[styles.typeBtn, form.type === 'lift' && styles.typeBtnActive]}
-                onPress={() => setForm(p => ({ ...p, type: 'lift' }))}>
-                <Text style={[styles.typeBtnText, form.type === 'lift' && { color: '#3b82f6' }]}>Lift</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.typeBtn, form.type === 'cardio' && { borderColor: `${theme.accentAmber}66`, backgroundColor: `${theme.accentAmber}1a` }]}
-              onPress={() => setForm(p => ({ ...p, type: 'cardio' }))}>
-            <Text style={[styles.typeBtnText, form.type === 'cardio' && { color: theme.accentAmber }]}>Cardio</Text>
-              </TouchableOpacity>
-            </View>
-
-            {form.type === 'lift' && (
-              <View style={styles.modalRow}>
-                <TextInput style={[styles.modalInput, { flex: 1 }]} placeholder="Sets" placeholderTextColor="#444" value={form.defaultSets || ''} onChangeText={v => setForm(p => ({ ...p, defaultSets: v }))} />
-                <TextInput style={[styles.modalInput, { flex: 1 }]} placeholder="Reps" placeholderTextColor="#444" value={form.defaultReps || ''} onChangeText={v => setForm(p => ({ ...p, defaultReps: v }))} />
-                <TextInput style={[styles.modalInput, { flex: 1 }]} placeholder="Rest" placeholderTextColor="#444" value={form.defaultRest || ''} onChangeText={v => setForm(p => ({ ...p, defaultRest: v }))} />
+      <Modal visible={showAddModal} transparent animationType="none" onRequestClose={onClose}>
+        <Animated.View style={{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'flex-end', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 340, opacity: addOverlayOpacity }}>
+            <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={closeAddModal} />
+            <Animated.View style={{ backgroundColor: theme.bgSheet, borderRadius: 20, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, width: '100%', height: 420, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20, transform: [{ scale: addCardScale }] }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
+                <Text style={styles.modalTitle}>{editingEx ? 'EDIT EXERCISE' : 'ADD EXERCISE'}</Text>
+                <TouchableOpacity onPress={closeAddModal} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Ionicons name="close" size={20} color={theme.textMuted} />
+                </TouchableOpacity>
               </View>
-            )}
-
-            <TextInput style={styles.modalInput} placeholder="Note (optional)" placeholderTextColor="#444" value={form.note || ''} onChangeText={v => setForm(p => ({ ...p, note: v }))} />
-
-            <View style={styles.modalBtns}>
-              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowAddModal(false)}>
-                <Text style={styles.modalCancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.modalSaveBtn} onPress={saveExercise}>
-                <Text style={styles.modalSaveText}>{editingEx ? 'Save' : 'Add'}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
+              <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
+                <View style={{ padding: 20 }}>
+                  <TextInput style={styles.modalInput} placeholder="Exercise name" placeholderTextColor={theme.textPlaceholder} value={form.name || ''} onChangeText={v => setForm(p => ({ ...p, name: v }))} autoCapitalize="words" />
+                  <Text style={styles.modalLabel}>Type</Text>
+                  <View style={styles.typeRow}>
+                    <TouchableOpacity style={[styles.typeBtn, form.type === 'lift' && styles.typeBtnActive]} onPress={() => setForm(p => ({ ...p, type: 'lift' }))}>
+                      <Text style={[styles.typeBtnText, form.type === 'lift' && { color: theme.accentBlue }]}>Lift</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.typeBtn, form.type === 'cardio' && { borderColor: `${theme.accentAmber}66`, backgroundColor: `${theme.accentAmber}1a` }]} onPress={() => setForm(p => ({ ...p, type: 'cardio' }))}>
+                      <Text style={[styles.typeBtnText, form.type === 'cardio' && { color: theme.accentAmber }]}>Cardio</Text>
+                    </TouchableOpacity>
+                  </View>
+                  {form.type === 'lift' && (
+                    <View style={styles.modalRow}>
+                      <TextInput style={[styles.modalInput, { flex: 1 }]} placeholder="Sets" placeholderTextColor={theme.textPlaceholder} value={form.defaultSets || ''} onChangeText={v => setForm(p => ({ ...p, defaultSets: v }))} keyboardType="number-pad" />
+                      <TextInput style={[styles.modalInput, { flex: 1 }]} placeholder="Reps" placeholderTextColor={theme.textPlaceholder} value={form.defaultReps || ''} onChangeText={v => setForm(p => ({ ...p, defaultReps: v }))} />
+                      <TextInput style={[styles.modalInput, { flex: 1 }]} placeholder="Rest" placeholderTextColor={theme.textPlaceholder} value={form.defaultRest || ''} onChangeText={v => setForm(p => ({ ...p, defaultRest: v }))} />
+                    </View>
+                  )}
+                  <TextInput style={styles.modalInput} placeholder="Note (optional)" placeholderTextColor={theme.textPlaceholder} value={form.note || ''} onChangeText={v => setForm(p => ({ ...p, note: v }))} />
+                  <View style={styles.modalBtns}>
+                    <TouchableOpacity style={styles.modalCancelBtn} onPress={closeAddModal}>
+                      <Text style={styles.modalCancelText}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.modalSaveBtn, !form.name?.trim() && { opacity: 0.4 }]} onPress={saveExercise} disabled={!form.name?.trim()}>
+                      <Text style={styles.modalSaveText}>{editingEx ? 'SAVE' : 'ADD'}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </ScrollView>
+            </Animated.View>
+        </Animated.View>
       </Modal>
     </View>
   );
@@ -386,10 +413,10 @@ else {
 
 const useStyles = (theme: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.bgPrimary },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: theme.borderCard },
+  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard },
   backBtn: { width: 60 },
-  backBtnText: { color: theme.accentBlue, fontSize: 14, fontFamily: 'DMSans_500Medium' },
-  headerTitle: { fontSize: 20, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
+  backBtnText: { color: theme.accentAmber, fontSize: 14, fontFamily: 'DMSans_500Medium' },
+  headerTitle: { fontSize: 22, color: theme.accentAmber, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
   addBtn: { width: 60, alignItems: 'flex-end' },
   addBtnText: { color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
   searchRow: { padding: 12, paddingBottom: 8 },
@@ -399,7 +426,7 @@ const useStyles = (theme: any) => StyleSheet.create({
   tabActive: { backgroundColor: theme.bgCard },
   tabText: { fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_500Medium' },
   tabTextActive: { color: theme.textPrimary },
-  exItem: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', padding: 14, borderBottomWidth: 1, borderBottomColor: theme.borderSubtle },
+  exItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14, marginHorizontal: 12, marginVertical: 4, borderRadius: 10, borderWidth: 0.5, borderLeftWidth: 3, borderColor: theme.borderCard, borderTopColor: 'rgba(255,255,255,0.1)', borderLeftColor: theme.accentBlueRaw, backgroundColor: theme.bgCard, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 3 },
   exLeft: { flex: 1, marginRight: 12 },
   exTopRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   typeBadge: { backgroundColor: theme.accentBlueBg, borderRadius: 3, paddingHorizontal: 5, paddingVertical: 1 },
@@ -413,7 +440,7 @@ const useStyles = (theme: any) => StyleSheet.create({
   emptyText: { textAlign: 'center', color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontSize: 13, padding: 32, fontStyle: 'italic' },
   modalOverlay: { flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'flex-end' },
   modal: { backgroundColor: theme.bgCard, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24, borderWidth: 1, borderColor: theme.borderCard },
-  modalTitle: { fontSize: 22, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginBottom: 16 },
+  modalTitle: { fontSize: 22, color: theme.accentAmber, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginBottom: 16 },
   modalInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: 'DMSans_400Regular', marginBottom: 10 },
   modalLabel: { fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 },
   typeRow: { flexDirection: 'row', gap: 8, marginBottom: 10 },

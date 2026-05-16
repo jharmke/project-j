@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-    Animated, Easing, Keyboard,
+    Animated, Keyboard,
     KeyboardAvoidingView, Modal,
     PanResponder, Platform, ScrollView, StyleSheet,
     Text, TextInput, TouchableOpacity, View
@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '../components/Toast';
 import { useTheme } from '../theme';
 
-type Category = 'verse' | 'prayer' | 'study' | 'personal' | 'gratitude';
+type Category = 'verse' | 'prayer' | 'study' | 'personal' | 'gratitude' | 'fitness';
 
 interface JournalEntry {
   id: string;
@@ -34,6 +34,7 @@ const CATEGORY_META: Record<Category, { label: string; icon: string; color: stri
   study:     { label: 'Study',     icon: 'school-outline',     color: '#3b82f6' },
   personal:  { label: 'Personal',  icon: 'person-outline',     color: '#10b981' },
   gratitude: { label: 'Gratitude', icon: 'heart-outline',      color: '#ec4899' },
+  fitness:   { label: 'Fitness',   icon: 'barbell-outline',    color: '#06b6d4' },
 };
 
 const STORAGE_KEY = 'pj_bible_reflections';
@@ -60,6 +61,8 @@ interface SwipeableEntryProps {
   onToggle: () => void;
   editingId: string | null;
   setEditingId: (id: string | null) => void;
+  editTitle: string;
+  setEditTitle: (s: string) => void;
   editNotes: string;
   setEditNotes: (s: string) => void;
   editCategory: Category;
@@ -68,110 +71,37 @@ interface SwipeableEntryProps {
   onDelete: (id: string) => void;
   onResetOtherSwipes: (id: string) => void;
   registerSwipeReset: (id: string, fn: () => void) => void;
-  registerEntryMeasured: (id: string) => void;
   theme: any;
   formatDate: (s: string) => string;
 }
 
 function SwipeableEntry({
   entry, isExpanded, onToggle,
-  editingId, setEditingId, editNotes, setEditNotes,
+  editingId, setEditingId,
+  editTitle, setEditTitle,
+  editNotes, setEditNotes,
   editCategory, setEditCategory, onSaveEdit, onDelete,
-  onResetOtherSwipes, registerSwipeReset, registerEntryMeasured,
+  onResetOtherSwipes, registerSwipeReset,
   theme, formatDate,
 }: SwipeableEntryProps) {
   const meta = CATEGORY_META[entry.category];
   const isEditing = editingId === entry.id;
+  const notesInputRef = useRef<any>(null);
 
-  useEffect(() => {
-    if (isExpanded) {
-      measuredHeight.current = 0;
-      setMeasured(false);
-    }
-  }, [isEditing]);
-
-  const hasBeenExpanded = useRef(false);
-
-  useEffect(() => {
-    if (isExpanded) hasBeenExpanded.current = true;
-    if (!isExpanded && hasBeenExpanded.current) {
-      measuredHeight.current = 0;
-      setMeasured(false);
-    }
-  }, [isExpanded]);
-
-  // Expand animation -- measure real height, animate to exact pixel value
-  const animHeight = useRef(new Animated.Value(isExpanded ? -1 : 0)).current;
-  const contentAnim = useRef(new Animated.Value(isExpanded ? 1 : 0)).current;
-  const measuredHeight = useRef(0);
+  // Expand animation -- simple opacity fade, same pattern as stats/profile/log
+  const fadeAnim = useRef(new Animated.Value(isExpanded ? 1 : 0)).current;
   const [visible, setVisible] = useState(isExpanded);
-  const [measured, setMeasured] = useState(false);
-
-  const onContentLayout = useCallback((e: any) => {
-    const h = e.nativeEvent.layout.height;
-    if (h > 0) {
-      measuredHeight.current = h;
-      if (!measured) {
-        setMeasured(true);
-        registerEntryMeasured(entry.id);
-      }
-      if (isExpanded) {
-        animHeight.setValue(h);
-      }
-    }
-  }, [measured, isExpanded]);
 
   useEffect(() => {
-    if (isExpanded && !measured) {
-      // Not measured yet -- show content immediately so onLayout can fire
-      setVisible(true);
-      return;
-    }
     if (isExpanded) {
       setVisible(true);
-      Animated.parallel([
-        Animated.timing(animHeight, {
-          toValue: measuredHeight.current,
-          duration: 280,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: false,
-        }),
-        Animated.timing(contentAnim, {
-          toValue: 1,
-          duration: 280,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-      ]).start();
+      Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }).start();
     } else {
-      Animated.parallel([
-        Animated.timing(animHeight, {
-          toValue: 0,
-          duration: 260,
-          easing: Easing.in(Easing.cubic),
-          useNativeDriver: false,
-        }),
-        Animated.timing(contentAnim, {
-          toValue: 0,
-          duration: 220,
-          easing: Easing.in(Easing.cubic),
-          useNativeDriver: true,
-        }),
-      ]).start(({ finished }) => {
+      Animated.timing(fadeAnim, { toValue: 0, duration: 100, useNativeDriver: true }).start(({ finished }) => {
         if (finished) setVisible(false);
       });
     }
-  }, [isExpanded, measured]);
-
-  const containerStyle = {
-    height: animHeight,
-    overflow: 'hidden' as const,
-  };
-
-  const contentStyle = {
-    opacity: contentAnim,
-    transform: [{ translateY: contentAnim.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }) }],
-  };
+  }, [isExpanded]);
 
   // Swipe -- panResponder in useRef so it never recreates
   const swipeX = useRef(new Animated.Value(0)).current;
@@ -184,7 +114,6 @@ function SwipeableEntry({
     }).start();
   }, [swipeX]);
 
-  // Register this entry's reset fn with the parent so tapping elsewhere closes it
   useEffect(() => {
     registerSwipeReset(entry.id, resetSwipe);
   }, [entry.id, resetSwipe, registerSwipeReset]);
@@ -196,16 +125,13 @@ function SwipeableEntry({
         Math.abs(gs.dx) > 12 && Math.abs(gs.dx) > Math.abs(gs.dy) * 1.8,
       onPanResponderTerminationRequest: () => false,
       onPanResponderGrant: () => {
-        // Tell parent to close all other open swipes
         onResetOtherSwipes(entry.id);
       },
       onPanResponderMove: (_, gs) => {
         if (gs.dx < 0) {
-          // Allow left swipe up to -80, resist beyond
           const clamped = Math.max(gs.dx, -80);
           swipeX.setValue(clamped);
         } else if (swipeOpen.current) {
-          // Allow closing by swiping right
           const base = -80;
           swipeX.setValue(Math.min(base + gs.dx, 0));
         }
@@ -291,51 +217,8 @@ function SwipeableEntry({
             )}
           </TouchableOpacity>
 
-          {/* Measure content off-screen before animating */}
-          {!measured && (
-            <View
-              style={{ position: 'absolute', opacity: 0, pointerEvents: 'none' }}
-              onLayout={onContentLayout}
-            >
-              <View style={{ marginTop: 12, paddingBottom: 4 }}>
-                {entry.verseText ? (
-                  <View style={[styles.verseBox, { backgroundColor: theme.bgCardVerse, borderColor: theme.borderCardVerse }]}>
-                    <Text style={[styles.verseText, { color: theme.textSecondary }]}>"{entry.verseText}"</Text>
-                  </View>
-                ) : null}
-                <View style={{ marginTop: 12, marginBottom: 6, height: 20 }} />
-                {isEditing ? (
-                  <View>
-                    {entry.category !== 'verse' && (
-                      <View style={{ flexDirection: 'row', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
-                        {(Object.keys(CATEGORY_META) as Category[])
-                          .filter(c => c !== 'verse')
-                          .map(cat => (
-                            <View key={cat} style={[styles.categoryPill, { borderColor: theme.borderCard }]}>
-                              <Text style={[styles.categoryPillText, { color: theme.textMuted }]}>
-                                {CATEGORY_META[cat].label}
-                              </Text>
-                            </View>
-                          ))}
-                      </View>
-                    )}
-                    <View style={[styles.editInput, { minHeight: 80 }]} />
-                  </View>
-                ) : (
-                  entry.notes ? (
-                    <Text style={[styles.reflectionText, { color: theme.textPrimary }]}>{entry.notes}</Text>
-                  ) : (
-                    <Text style={[styles.noReflection, { color: theme.textDim }]}>Nothing written. Tap edit to add.</Text>
-                  )
-                )}
-              </View>
-            </View>
-          )}
-
-          {/* Animated expand body */}
-          <Animated.View style={containerStyle}>
-            {visible && (
-            <Animated.View style={contentStyle}>
+          {/* Expand body */}
+          <Animated.View style={{ opacity: fadeAnim, display: visible ? 'flex' : 'none' }}>
             <View style={{ marginTop: 12, paddingBottom: 4 }}>
               {entry.verseText ? (
                 <View style={[styles.verseBox, { backgroundColor: theme.bgCardVerse, borderColor: theme.borderCardVerse }]}>
@@ -354,6 +237,7 @@ function SwipeableEntry({
                   <TouchableOpacity
                     onPress={() => {
                       setEditingId(entry.id);
+                      setEditTitle(entry.title);
                       setEditNotes(entry.notes);
                       setEditCategory(entry.category);
                     }}
@@ -368,6 +252,20 @@ function SwipeableEntry({
 
               {isEditing ? (
                 <View>
+                  <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>TITLE</Text>
+                  <TextInput
+                    style={[styles.fieldInput, {
+                      backgroundColor: theme.bgInput,
+                      borderColor: theme.borderInput,
+                      color: theme.textPrimary,
+                      marginBottom: 10,
+                    }]}
+                    value={editTitle}
+                    onChangeText={setEditTitle}
+                    autoFocus
+                    placeholder="Entry title..."
+                    placeholderTextColor={theme.textPlaceholder}
+                  />
                   {/* Category picker -- only for non-verse entries */}
                   {entry.category !== 'verse' && (
                     <View style={{ flexDirection: 'row', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
@@ -395,6 +293,7 @@ function SwipeableEntry({
                     </View>
                   )}
                   <TextInput
+                    ref={notesInputRef}
                     style={[styles.editInput, {
                       backgroundColor: theme.bgInput,
                       borderColor: theme.borderInput,
@@ -404,11 +303,10 @@ function SwipeableEntry({
                     onChangeText={setEditNotes}
                     multiline
                     numberOfLines={4}
-                    autoFocus
                     placeholder="Write here..."
                     placeholderTextColor={theme.textPlaceholder}
+                    onBlur={() => notesInputRef.current?.setNativeProps({ selection: { start: 0, end: 0 } })}
                   />
-                  
                 </View>
               ) : (
                 entry.notes ? (
@@ -418,8 +316,6 @@ function SwipeableEntry({
                 )
               )}
             </View>
-          </Animated.View>
-            )}
           </Animated.View>
         </View>
       </Animated.View>
@@ -439,6 +335,7 @@ export default function JournalScreen() {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [filterCategory, setFilterCategory] = useState<Category | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState('');
   const [editNotes, setEditNotes] = useState('');
   const [editCategory, setEditCategory] = useState<Category>('personal');
 
@@ -473,7 +370,6 @@ export default function JournalScreen() {
     });
     return () => { showSub.remove(); hideSub.remove(); };
   }, [editingId]);
-  
 
   // Registry of swipe-reset functions keyed by entry id
   const swipeResetRegistry = useRef<Record<string, () => void>>({});
@@ -496,31 +392,17 @@ export default function JournalScreen() {
   useEffect(() => { loadEntries(); }, []);
 
   const autoExpandFired = useRef(false);
-  const entryMeasuredRegistry = useRef<Record<string, boolean>>({});
-
-  const registerEntryMeasured = useCallback((id: string) => {
-    entryMeasuredRegistry.current[id] = true;
-    const expandId = params.expandDate as string | undefined;
-    if (expandId && expandId === id && autoExpandFired.current === false) {
-      autoExpandFired.current = true;
-      setTimeout(() => {
-        setExpandedIds(prev => { const next = new Set(prev); next.add(id); return next; });
-      }, 800);
-    }
-  }, [params.expandDate]);
 
   useEffect(() => {
     const expandId = params.expandDate as string | undefined;
     if (expandId && entries.length > 0 && !autoExpandFired.current) {
       const found = entries.find(e => e.id === expandId);
       if (found) {
-        if (entryMeasuredRegistry.current[found.id]) {
-          autoExpandFired.current = true;
-          const t = setTimeout(() => {
-            setExpandedIds(prev => { const next = new Set(prev); next.add(found.id); return next; });
-          }, 800);
-          return () => clearTimeout(t);
-        }
+        autoExpandFired.current = true;
+        const t = setTimeout(() => {
+          setExpandedIds(prev => { const next = new Set(prev); next.add(found.id); return next; });
+        }, 300);
+        return () => clearTimeout(t);
       }
     }
   }, [params.expandDate, entries]);
@@ -562,8 +444,21 @@ export default function JournalScreen() {
   }, []);
 
   const deleteEntry = async (id: string) => {
+    const entry = entries.find(e => e.id === id);
     const updated = entries.filter(e => e.id !== id);
     await saveEntries(updated);
+    if (entry?.category === 'fitness') {
+      try {
+        const raw = await AsyncStorage.getItem('pj_workout_state');
+        if (raw) {
+          const data = JSON.parse(raw);
+          if (data.workoutNotes?.[entry.date] !== undefined) {
+            data.workoutNotes[entry.date] = '';
+            await AsyncStorage.setItem('pj_workout_state', JSON.stringify(data));
+          }
+        }
+      } catch {}
+    }
     setExpandedIds(prev => { const next = new Set(prev); next.delete(id); return next; });
     showToast('Entry deleted', undefined, 'info');
   };
@@ -571,11 +466,12 @@ export default function JournalScreen() {
   const saveEdit = async () => {
     if (!editingId) return;
     const updated = entries.map(e =>
-      e.id === editingId ? { ...e, notes: editNotes.trim(), category: editCategory } : e
+      e.id === editingId ? { ...e, title: editTitle.trim() || e.title, notes: editNotes.trim(), category: editCategory } : e
     );
     await saveEntries(updated);
     showToast('Entry updated', undefined, 'success');
     setEditingId(null);
+    setEditTitle('');
     setEditNotes('');
   };
 
@@ -728,6 +624,8 @@ export default function JournalScreen() {
               onToggle={() => toggleExpand(entry.id)}
               editingId={editingId}
               setEditingId={setEditingId}
+              editTitle={editTitle}
+              setEditTitle={setEditTitle}
               editNotes={editNotes}
               setEditNotes={setEditNotes}
               editCategory={editCategory}
@@ -736,7 +634,6 @@ export default function JournalScreen() {
               onDelete={deleteEntry}
               onResetOtherSwipes={resetOtherSwipes}
               registerSwipeReset={registerSwipeReset}
-              registerEntryMeasured={registerEntryMeasured}
               theme={theme}
               formatDate={formatDate}
             />
@@ -792,6 +689,7 @@ export default function JournalScreen() {
                         {cat === 'prayer'    ? 'A prayer or conversation with God' :
                          cat === 'study'     ? 'Bible study notes with scripture reference' :
                          cat === 'personal'  ? 'Personal thoughts and reflections' :
+                         cat === 'fitness'   ? 'Workout notes and fitness reflections' :
                                               'What are you grateful for today?'}
                       </Text>
                     </View>
@@ -812,7 +710,7 @@ export default function JournalScreen() {
           borderColor: theme.borderCard,
         }]}>
           <TouchableOpacity
-            onPress={() => { setEditingId(null); Keyboard.dismiss(); }}
+            onPress={() => { setEditingId(null); setEditTitle(''); setEditNotes(''); Keyboard.dismiss(); }}
             style={[styles.floatingEditBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }]}
           >
             <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold' }}>Cancel</Text>
@@ -855,7 +753,8 @@ export default function JournalScreen() {
                 placeholder={
                   createCategory === 'prayer'    ? 'Prayer for...' :
                   createCategory === 'study'     ? 'Study topic...' :
-                  createCategory === 'gratitude' ? 'Grateful for...' : 'Title...'
+                  createCategory === 'gratitude' ? 'Grateful for...' :
+                  createCategory === 'fitness'   ? 'Workout note...' : 'Title...'
                 }
                 placeholderTextColor={theme.textPlaceholder}
                 value={createTitle}

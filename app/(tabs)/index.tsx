@@ -683,6 +683,7 @@ export default function HomeScreen() {
   const [editingStepGoal,setEditingStepGoal]= useState(false);
   const prevStepGoal = useRef(10000);
   const scrollRef = useRef<any>(null);
+  const dailyNoteRef = useRef<any>(null);
   const editSheetHeight = useRef<number>(Dimensions.get('window').height);
   const waterLoaded = useRef(false);
   const [dailyVerse,     setDailyVerse]     = useState<{text:string;reference:string}|null>(null);
@@ -2051,9 +2052,10 @@ export default function HomeScreen() {
         <Ionicons name="journal-outline" size={11} color={theme.textMuted} />
         <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Daily Note</Text>
       </View>
-      <TextInput style={[styles.notesInput, { backgroundColor: theme.bgInset + '80', borderColor: theme.borderInput, color: theme.textPrimary }]} placeholder="How did today go? Workout, diet, energy..." placeholderTextColor={theme.textPlaceholder}
+      <TextInput ref={dailyNoteRef} style={[styles.notesInput, { backgroundColor: theme.bgInset + '80', borderColor: theme.borderInput, color: theme.textPrimary }]} placeholder="How did today go? Workout, diet, energy..." placeholderTextColor={theme.textPlaceholder}
         multiline numberOfLines={4} value={dailyNote} onChangeText={setDailyNote}
-        onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100)} />
+        onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100)}
+        onBlur={() => dailyNoteRef.current?.setNativeProps({ selection: { start: 0, end: 0 } })} />
       <TouchableOpacity style={[styles.saveBtn, { backgroundColor: theme.bgInset + '80', borderColor: theme.borderInset }]} onPress={() => {}}>
         <Text style={[styles.saveBtnText, { color: theme.textSecondary }]}>Save Note</Text>
       </TouchableOpacity>

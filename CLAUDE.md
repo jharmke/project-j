@@ -193,8 +193,11 @@ Any screen showing health data, metrics, scores, or recommendations needs:
 - Heavy: destructive actions like delete
 
 **Keyboard Avoiding**
-Every screen/modal/sheet with text input wraps in KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}.
-Exception: bottom sheets using Reanimated -- use Keyboard.addListener keyboardWillShow/Hide with keyboardOffset shared value instead.
+- Every screen/modal/sheet with text input wraps in KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}.
+- Exception: bottom sheets using Reanimated -- use Keyboard.addListener keyboardWillShow/Hide with keyboardOffset shared value instead.
+
+**Multiline TextInput -- iOS select-all bug**
+- Every multiline TextInput with a value prop must have a ref and onBlur={() => ref.current?.setNativeProps({ selection: { start: 0, end: 0 } })}. Without this, iOS triggers select-all on every other focus. No exceptions for multiline inputs.
 
 **Animation Standard**
 - Every bar and graph animates. No static bars ever

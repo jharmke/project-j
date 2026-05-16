@@ -63,11 +63,14 @@ const [weeklyTemplate, setWeeklyTemplate] = useState<Record<string, DayProgram>>
   const [showLabelModal, setShowLabelModal] = useState(false);
   const [dayLabel, setDayLabel] = useState('');
   const dayScrollRef = useRef<any>(null);
+  const mainScrollRef = useRef<any>(null);
+  const noteInputRef = useRef<any>(null);
   const hasScrolled = useRef(false);
 const [labelInput, setLabelInput] = useState('');
   const [form, setForm] = useState({ name: '', sets: '', reps: '', rest: '', note: '', isCardio: false, duration: '', distance: '', speed: '', incline: '', resistance: '', hr: '', calories: ''});
 const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
   const [calBurnedSaved, setCalBurnedSaved] = useState(false);
+  const [savedNoteText, setSavedNoteText] = useState<Record<string, string>>({});
   const [tags, setTags] = useState<WorkoutTag[]>(DEFAULT_TAGS);
   const [showTagModal, setShowTagModal] = useState(false);
   const [showManageTagsModal, setShowManageTagsModal] = useState(false);
@@ -339,6 +342,9 @@ const exercises = program?.exercises || [];
 const dayChecks = checks[activeDay] || {};
 const doneCount = exercises.filter(ex => dayChecks[ex.id]).length;
 const color = theme.accentBlue;
+const noteCurrentText = workoutNotes[activeDay]?.trim() || '';
+const noteLastSaved = savedNoteText[activeDay]?.trim() || '';
+const noteIsDirty = noteCurrentText !== noteLastSaved;
 const modalCanSave = editingExercise
   ? JSON.stringify(form) !== JSON.stringify(originalForm.current)
   : !!form.name.trim();
@@ -366,7 +372,7 @@ useEffect(() => {
           if (data.checks) setChecks(data.checks);
           if (data.cardioComplete) setCardioComplete(data.cardioComplete);
           if (data.programs) setPrograms(data.programs);
-          if (data.workoutNotes) setWorkoutNotes(data.workoutNotes);
+          if (data.workoutNotes) { setWorkoutNotes(data.workoutNotes); setSavedNoteText(data.workoutNotes); }
           if (data.cardioLogs) setCardioLogs(data.cardioLogs);
           if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
           if (data.activeProgramName) setActiveProgramName(data.activeProgramName);
@@ -410,7 +416,7 @@ useEffect(() => {
             if (data.checks) setChecks(data.checks);
 if (data.cardioComplete) setCardioComplete(data.cardioComplete);
 if (data.programs) setPrograms(data.programs);
-if (data.workoutNotes) setWorkoutNotes(data.workoutNotes);
+if (data.workoutNotes) { setWorkoutNotes(data.workoutNotes); setSavedNoteText(data.workoutNotes); }
 if (data.cardioLogs) setCardioLogs(data.cardioLogs);
 if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
           }
@@ -511,9 +517,29 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
   ]);
 };
 
-  const saveNote = () => {
-    saveState(checks, cardioComplete, programs, workoutNotes);
-    showToast('Note saved', undefined, 'success');
+  const saveNote = async () => {
+    const noteText = workoutNotes[activeDay]?.trim() || '';
+    const isClearing = !noteText;
+    const updatedNotes = { ...workoutNotes, [activeDay]: noteText };
+    setWorkoutNotes(updatedNotes);
+    saveState(checks, cardioComplete, programs, updatedNotes);
+    setSavedNoteText(prev => ({ ...prev, [activeDay]: noteText }));
+    try {
+      const raw = await AsyncStorage.getItem('pj_bible_reflections');
+      const entries: any[] = raw ? JSON.parse(raw) : [];
+      const existing = entries.findIndex(e => e.category === 'fitness' && e.date === activeDay);
+      if (isClearing) {
+        if (existing >= 0) entries.splice(existing, 1);
+      } else {
+        if (existing >= 0) {
+          entries[existing] = { ...entries[existing], notes: noteText };
+        } else {
+          entries.unshift({ id: makeId(), date: activeDay, category: 'fitness', title: 'Workout Note', notes: noteText });
+        }
+      }
+      await AsyncStorage.setItem('pj_bible_reflections', JSON.stringify(entries));
+    } catch {}
+    showToast(isClearing ? 'Note cleared' : 'Note saved to journal', undefined, 'success');
   };
 
   const saveTags = async (newTags: WorkoutTag[]) => {
@@ -572,7 +598,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
             </TouchableOpacity>
           </View>
         </View>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+      <ScrollView ref={mainScrollRef} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
 
         <ScrollView
           ref={dayScrollRef}
@@ -762,19 +788,25 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                           )}
                           {ex.note ? <Text style={[styles.exerciseNote, { color: theme.textDim }]}>{ex.note}</Text> : null}
                         </View>
-                        <TouchableOpacity
-                          style={[styles.checkCircle, { borderColor: theme.borderCard }, isDone && { backgroundColor: theme.accentBlue, borderColor: theme.accentBlue }]}
-                          onPress={() => toggleExercise(ex.id)}>
-                          {isDone && <Text style={[styles.checkMark, { color: theme.bgPrimary }]}>✓</Text>}
-                        </TouchableOpacity>
-                      </View>
-                      <View style={styles.exActions}>
-                        <TouchableOpacity style={[styles.exActionBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }]} onPress={() => openEditModal(activeDay, ex)}>
-                          <Text style={[styles.exActionBtnText, { color: theme.textMuted }]}>Edit</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={[styles.exActionBtn, { backgroundColor: theme.bgInput, borderColor: theme.accentRedBorder }]} onPress={() => removeExercise(activeDay, ex.id)}>
-                          <Text style={[styles.exActionBtnText, { color: theme.accentRed }]}>Remove</Text>
-                        </TouchableOpacity>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <TouchableOpacity
+                            style={{ padding: 10 }}
+                            onPress={() => openEditModal(activeDay, ex)}
+                            hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
+                            <Ionicons name="pencil" size={15} color={theme.textMuted} />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={{ padding: 10 }}
+                            onPress={() => removeExercise(activeDay, ex.id)}
+                            hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
+                            <Ionicons name="trash" size={15} color={theme.accentRed} />
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={[styles.checkCircle, { borderColor: theme.borderCard }, isDone && { backgroundColor: theme.accentBlue, borderColor: theme.accentBlue }]}
+                            onPress={() => toggleExercise(ex.id)}>
+                            {isDone && <Text style={[styles.checkMark, { color: theme.bgPrimary }]}>✓</Text>}
+                          </TouchableOpacity>
+                        </View>
                       </View>
                     </View>
                   </ScaleDecorator>
@@ -850,17 +882,35 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
 
         {/* Workout Notes Card */}
         <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, marginTop: 12 }]}>
-          <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Workout Notes</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Workout Notes</Text>
+            <TouchableOpacity onPress={() => router.push('/journal')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="book" size={16} color={theme.accentBlue} />
+            </TouchableOpacity>
+          </View>
           <TextInput
+            ref={noteInputRef}
             style={[styles.notesInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
-            placeholder="How'd it feel? Energy, what was heavy..."
+            placeholder="How'd it feel?"
             placeholderTextColor={theme.textPlaceholder}
             multiline
+            selectTextOnFocus={false}
             value={workoutNotes[activeDay] || ''}
             onChangeText={v => setWorkoutNotes(prev => ({ ...prev, [activeDay]: v }))}
+            onFocus={() => setTimeout(() => mainScrollRef.current?.scrollToEnd({ animated: true }), 350)}
+            onBlur={() => noteInputRef.current?.setNativeProps({ selection: { start: 0, end: 0 } })}
           />
-          <TouchableOpacity style={[styles.saveNoteBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }]} onPress={saveNote}>
-            <Text style={[styles.saveNoteBtnText, { color: theme.textMuted }]}>Save Note</Text>
+          <TouchableOpacity
+            style={[styles.saveNoteBtn, noteIsDirty && !noteCurrentText
+              ? { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder, opacity: 1 }
+              : { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder, opacity: noteIsDirty ? 1 : 0.4 }
+            ]}
+            onPress={saveNote}
+            disabled={!noteIsDirty}
+          >
+            <Text style={[styles.saveNoteBtnText, { color: noteIsDirty && !noteCurrentText ? theme.accentRed : theme.accentBlue }]}>
+              {!noteIsDirty && noteCurrentText ? 'Saved ✓' : noteIsDirty && !noteCurrentText ? 'Clear Note' : 'Save Note'}
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -1292,7 +1342,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
 
 const styles = StyleSheet.create({
   container:            { flex: 1 },
-  content:              { padding: 16, paddingBottom: 300 },
+  content:              { padding: 16, paddingBottom: 100 },
   header:               { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 0.5, marginBottom: 16 },
   headerLabel:          { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2, fontFamily: 'DMSans_700Bold' },
   headerTitle:          { fontSize: 32, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
@@ -1325,9 +1375,6 @@ const styles = StyleSheet.create({
   badgeText:            { fontSize: 9, fontWeight: '700', letterSpacing: 1, fontFamily: 'DMSans_700Bold' },
   checkCircle:          { width: 24, height: 24, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginLeft: 8 },
   checkMark:            { fontSize: 13, fontWeight: '700' },
-  exActions:            { flexDirection: 'row', gap: 8, marginTop: 10 },
-  exActionBtn:          { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 6, borderWidth: 0.5 },
-  exActionBtnText:      { fontSize: 11, fontFamily: 'DMSans_600SemiBold' },
   addExBtn:             { marginTop: 12, padding: 14, borderWidth: 0.5, borderRadius: 10, alignItems: 'center' },
   addExBtnText:         { fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 2 },
   completeMsg:          { padding: 16, marginTop: 8, alignItems: 'center' },

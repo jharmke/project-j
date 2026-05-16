@@ -182,11 +182,15 @@ Workout tab facelift
   [x] Exercise library detail modal -- bgSheet opaque background, accent top border, exercise name accent colored, Add to Day = full accent fill primary CTA, Edit = interactive blue pill, Remove = plain red text. Sets/reps/rest subtext gone.
   [x] Library modal animations -- detail modal close/open smooth (animationType none + manual Animated.Value, onShow callback). Edit modal fade-in fixed (onShow callback replaces unreliable setTimeout). All dismiss paths wired through closeDetailModal with callback chaining.
   [x] Effort score redesign -- large satisfying tiles (52px, Bebas 28px), full color fill selected state, spring tap animation, dynamic color-coded label (EASY/LIGHT/MODERATE/HARD/MAX EFFORT), green/gold/orange/red ramp.
-Workout notes overhaul -- KAV fix, dim/inactive save button, toast on save, wire to journal as workout category entry.
-Edit/Remove button redesign -- style to match app design system, not plain unstyled web buttons.
+[x] Workout notes overhaul -- KAV fixed (removed double-adjustment), placeholder "How'd it feel?", dim/inactive save button (opacity-based accent), toast "Note saved to journal", fitness category journal sync (read-then-merge, dedup by day). Saved ✓ / Save Note / Clear Note states. Clear Note wipes both workout state and journal entry. Journal delete syncs
+   back and clears workout note. Book icon in card header routes to journal.
+[x] Edit/Remove button redesign -- inline pencil + trash icons in exercise row, left of checkmark. Bottom button row removed. Pencil textMuted, trash accentRed, alert before delete.
 Progress/momentum element -- running tally of exercises completed visible during session.
 Visual hierarchy pass -- exercise rows, Apple Health badge, stats line spacing and weight.
 Muscle group tags + filter on exercise library -- muscleGroup field on each exercise, filter chips (Chest/Back/Shoulders/Arms/Legs/Core/Cardio), default library pre-tagged, add modal gets picker. (SOON)
+  Journal card animation overhaul -- expand/collapse uses wrong pattern (maxHeight/instant pop). Fix to onLayout-based dual animation per animation standard: container height JS thread, content opacity/translateY native thread. Easing.out cubic open, Easing.in cubic close. (SOON)
+  Editable journal entry titles -- all categories. Currently only notes/text is editable on edit. Title field needs to be editable too. Applies to all 6 categories including Fitness. (SOON)
+  Editable workout note name -- workout-tab-sourced journal entries default to "Workout Note." Should be editable before or after save. (SOON)
 KAV/keyboard behavior in Add Exercise modal and CustomFoodCreator -- keyboard covers buttons in both. Same root issue, parked for dedicated session. (SOON)
 
 Food and search polish
@@ -339,11 +343,11 @@ Sleep edit disclaimer -- when user opens manual sleep edit, show disclaimer that
 
 Workout
 
-Workout notes KAV -- keyboard covers notes input. Fix.
+[x] Workout notes KAV -- fixed. Removed conflicting automaticallyAdjustKeyboardInsets, rely on KAV behavior=padding + scrollToEnd at 350ms. paddingBottom reduced from 300 to 100.
 Add exercise numeric keypad -- reps, sets, and rest duration fields should use numeric keypad not full keyboard.
 Profile card collapse animation lag -- very laggy on expand/collapse. Likely JS thread issue. Diagnose and fix.
 Collapsible card animation fix (stats.tsx + profile.tsx) -- both use wrong pattern (spring on interpolated 0→1 value, JS thread only). Fix: onLayout-based real height measurement, dual animation (container height JS thread + content opacity/translateY native thread), Easing.out(Easing.cubic) open / Easing.in(Easing.cubic) close. Per animation standard in instructions. DONE -- animation lag remains, see BACKLOG.
-Workout notes auto-sync to journal -- new Fitness category added to journal categories. When workout notes saved in workout tab, silently create journal entry tagged Fitness with that day's date. Subtle toast: "Note saved to journal." User views it in journal tab. No navigation from workout card needed.
+[x] Workout notes auto-sync to journal -- DONE. See workout notes overhaul above.
 
 Faith and community
 

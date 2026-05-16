@@ -3,11 +3,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Dimensions, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import CustomFoodCreator from '../../components/CustomFoodCreator';
+import TooltipIcon from '../../components/TooltipIcon';
 import { useTheme } from '../../theme';
 import { useToast } from '../../components/Toast';
 import { useHealthKit } from '../../useHealthKit';
@@ -33,17 +34,10 @@ interface FoodEntry {
 }
 
 
-const SCREEN_WIDTH = Dimensions.get('window').width - 32 - 32; // full width minus padding minus card padding
-
 const AnimCircle = ReAnimated.createAnimatedComponent(Circle);
 
-function MacroDonut({ protein, carbs, fat, calories, theme }: { protein: number; carbs: number; fat: number; calories: number; theme: any }) {
-  const size = 100;
-  const strokeWidth = 12;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
+function MacroStackedBar({ protein, carbs, fat, theme }: { protein: number; carbs: number; fat: number; theme: any }) {
   const total = protein + carbs + fat;
-
   const proteinAnim = useSharedValue(0);
   const carbsAnim   = useSharedValue(0);
   const fatAnim     = useSharedValue(0);
@@ -53,54 +47,40 @@ function MacroDonut({ protein, carbs, fat, calories, theme }: { protein: number;
     carbsAnim.value   = 0;
     fatAnim.value     = 0;
     if (total === 0) return;
-    const proteinTarget = (protein / total) * circumference;
-    const carbsTarget   = (carbs   / total) * circumference;
-    const fatTarget     = (fat     / total) * circumference;
-    setTimeout(() => {
-      proteinAnim.value = withTiming(proteinTarget, { duration: 800 });
-    }, 200);
-    setTimeout(() => {
-      carbsAnim.value = withTiming(carbsTarget, { duration: 700 });
-    }, 900);
-    setTimeout(() => {
-      fatAnim.value = withTiming(fatTarget, { duration: 600 });
-    }, 1500);
+    const pPct = (protein / total) * 100;
+    const cPct = (carbs   / total) * 100;
+    const fPct = (fat     / total) * 100;
+    setTimeout(() => { proteinAnim.value = withTiming(pPct, { duration: 800 }); }, 200);
+    setTimeout(() => { carbsAnim.value   = withTiming(cPct, { duration: 700 }); }, 1150);
+    setTimeout(() => { fatAnim.value     = withTiming(fPct, { duration: 600 }); }, 2000);
   }, [protein, carbs, fat]);
 
-  const proteinProps = useAnimatedProps(() => ({ strokeDasharray: `${proteinAnim.value} ${circumference}` } as any));
-  const carbsProps   = useAnimatedProps(() => ({ strokeDasharray: `${carbsAnim.value} ${circumference}` } as any));
-  const fatProps     = useAnimatedProps(() => ({ strokeDasharray: `${fatAnim.value} ${circumference}` } as any));
-
-  const proteinPct = total > 0 ? protein / total : 0;
-  const carbsPct   = total > 0 ? carbs   / total : 0;
-
-  if (total === 0) {
-    return (
-      <View style={{ alignItems: 'center', justifyContent: 'center', width: size, height: size }}>
-        <Svg width={size} height={size}>
-          <Circle cx={size/2} cy={size/2} r={radius} stroke={theme.donutTrack} strokeWidth={strokeWidth} fill="none" />
-        </Svg>
-        <View style={{ position: 'absolute', alignItems: 'center' }}>
-          <Text style={{ color: theme.textDim, fontSize: 10, fontFamily: 'DMSans_400Regular' }}>no data</Text>
-        </View>
-      </View>
-    );
-  }
+  const proteinStyle = useAnimatedStyle(() => ({ width: `${proteinAnim.value}%` as any }));
+  const carbsStyle   = useAnimatedStyle(() => ({ width: `${carbsAnim.value}%` as any }));
+  const fatStyle     = useAnimatedStyle(() => ({ width: `${fatAnim.value}%` as any }));
 
   return (
-    <View style={{ alignItems: 'center', justifyContent: 'center', width: size, height: size }}>
-      <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
-        <Circle cx={size/2} cy={size/2} r={radius} stroke={theme.donutTrack} strokeWidth={strokeWidth} fill="none" />
-        <AnimCircle cx={size/2} cy={size/2} r={radius} stroke={theme.macroProtein} strokeWidth={strokeWidth} fill="none"
-          animatedProps={proteinProps} strokeDashoffset={0} strokeLinecap="butt" />
-        <AnimCircle cx={size/2} cy={size/2} r={radius} stroke={theme.macroCarbs} strokeWidth={strokeWidth} fill="none"
-          animatedProps={carbsProps} strokeDashoffset={-(proteinPct * circumference)} strokeLinecap="butt" />
-        <AnimCircle cx={size/2} cy={size/2} r={radius} stroke={theme.macroFat} strokeWidth={strokeWidth} fill="none"
-          animatedProps={fatProps} strokeDashoffset={-((proteinPct + carbsPct) * circumference)} strokeLinecap="butt" />
-      </Svg>
-      <View style={{ position: 'absolute', alignItems: 'center' }}>
-        <Text style={{ color: theme.textPrimary, fontSize: 14, fontFamily: 'BebasNeue_400Regular' }}>{calories}</Text>
-        <Text style={{ color: theme.textMuted, fontSize: 8, fontFamily: 'DMSans_400Regular' }}>kcal</Text>
+    <View style={{ width: 110, justifyContent: 'center', gap: 10 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <View style={{ flex: 1, height: 5, borderRadius: 3, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
+          <ReAnimated.View style={[{ height: '100%', borderRadius: 3, backgroundColor: theme.macroProtein }, proteinStyle]} />
+        </View>
+        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', width: 10 }}>P</Text>
+        <Text style={{ fontSize: 13, color: theme.macroProtein, fontFamily: 'DMSans_600SemiBold', width: 34, textAlign: 'right' }}>{protein}<Text style={{ fontSize: 9, color: theme.textMuted }}>g</Text></Text>
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <View style={{ flex: 1, height: 5, borderRadius: 3, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
+          <ReAnimated.View style={[{ height: '100%', borderRadius: 3, backgroundColor: theme.macroCarbs }, carbsStyle]} />
+        </View>
+        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', width: 10 }}>C</Text>
+        <Text style={{ fontSize: 13, color: theme.macroCarbs, fontFamily: 'DMSans_600SemiBold', width: 34, textAlign: 'right' }}>{carbs}<Text style={{ fontSize: 9, color: theme.textMuted }}>g</Text></Text>
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+        <View style={{ flex: 1, height: 5, borderRadius: 3, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
+          <ReAnimated.View style={[{ height: '100%', borderRadius: 3, backgroundColor: theme.macroFat }, fatStyle]} />
+        </View>
+        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', width: 10 }}>F</Text>
+        <Text style={{ fontSize: 13, color: theme.macroFat, fontFamily: 'DMSans_600SemiBold', width: 34, textAlign: 'right' }}>{fat}<Text style={{ fontSize: 9, color: theme.textMuted }}>g</Text></Text>
       </View>
     </View>
   );
@@ -130,7 +110,9 @@ export default function LogScreen() {
   const [totalProtein, setTotalProtein] = useState(0);
   const [totalCarbs, setTotalCarbs] = useState(0);
   const [totalFat, setTotalFat] = useState(0);
-  const [activePage, setActivePage] = useState(0);
+  const [advancedExpanded, setAdvancedExpanded] = useState(false);
+  const [advancedVisible, setAdvancedVisible] = useState(false);
+  const advancedAnim = useRef(new Animated.Value(0)).current;
   const [caloriesBurned, setCaloriesBurned] = useState(0);
   const today = new Date();
   const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -355,6 +337,17 @@ export default function LogScreen() {
     saveToFirebase(activeDate, 'entries', newEntries);
   };
 
+  const toggleAdvanced = () => {
+    if (!advancedExpanded) {
+      setAdvancedVisible(true);
+      setAdvancedExpanded(true);
+      Animated.timing(advancedAnim, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+    } else {
+      setAdvancedExpanded(false);
+      Animated.timing(advancedAnim, { toValue: 0, duration: 100, useNativeDriver: true }).start(() => setAdvancedVisible(false));
+    }
+  };
+
   const toggleMeal = (meal: string) => {
     const isCurrentlyOpen = expandedMeals[meal];
     const anim = getMealAnim(meal);
@@ -389,15 +382,15 @@ export default function LogScreen() {
         <View style={{ flex: 1 }}>
           <Text style={[styles.headerLabel, { color: theme.textMuted }]}>PROJECT J</Text>
           <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>Food Log</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 }}>
-            <TouchableOpacity onPress={goToPrevDay} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-              <Text style={{ color: theme.accentBlue, fontSize: 11, fontFamily: 'DMSans_700Bold', lineHeight: 12 }}>‹</Text>
-            </TouchableOpacity>
-            <Text style={{ fontSize: 9, color: isToday ? theme.textMuted : theme.accentAmber, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', lineHeight: 12 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
+            <Text style={{ fontSize: 9, color: isToday ? theme.textMuted : theme.accentAmber, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>
               {formatActiveDate()}
             </Text>
-            <TouchableOpacity onPress={goToNextDay} disabled={isToday} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-              <Text style={{ color: isToday ? theme.textDim : theme.accentBlue, fontSize: 11, fontFamily: 'DMSans_700Bold', lineHeight: 12 }}>›</Text>
+            <TouchableOpacity onPress={goToPrevDay} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}>
+              <Ionicons name="chevron-back" size={16} color={theme.accentBlue} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={goToNextDay} disabled={isToday} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}>
+              <Ionicons name="chevron-forward" size={16} color={isToday ? theme.textDim : theme.accentBlue} />
             </TouchableOpacity>
           </View>
         </View>
@@ -424,78 +417,68 @@ export default function LogScreen() {
         onScrollBeginDrag={() => {}}
       >
 
-      {/* Totals Card - Scrollable */}
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
+      {/* Today's Total Card */}
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
         <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Today's Total</Text>
-        <ScrollView
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={e => setActivePage(Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH))}
-          style={{ width: SCREEN_WIDTH }}>
-
-          {/* Page 1 - Calories + Macros */}
-          <View style={{ width: SCREEN_WIDTH }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-              <View style={{ flex: 1 }}>
-                <View style={styles.calRow}>
-                  <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
-                    <Text style={[styles.calNumber, { color: calColor, opacity: 0.88 }]}>{totalCals}</Text>
-                  </View>
-                  <Text style={[styles.calTarget, { color: theme.textMuted }]}>/ {adjustedTarget} kcal</Text>
-                </View>
-                <View style={[styles.progressBarBg, { backgroundColor: theme.bgProgressTrack }]}>
-                  <ReAnimated.View style={[styles.progressBarFill, useAnimatedStyle(() => ({ width: withTiming(`${Math.min(calPct, 100)}%` as any, { duration: 400 }) })), { backgroundColor: calColor }]} />
-                </View>
-                <Text style={[styles.calRemaining, { color: theme.textMuted }]}>
-                  {adjustedTarget > 0 ? (totalCals < adjustedTarget ? `${adjustedTarget - totalCals} kcal remaining (${activeCalories} burned)` : `${totalCals - adjustedTarget} kcal over target (${activeCalories} burned)`) : ''}
-                </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <View style={{ flex: 1 }}>
+            <View style={styles.calRow}>
+              <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
+                <Text style={[styles.calNumber, { color: calColor, opacity: 0.88 }]}>{totalCals}</Text>
               </View>
-              <MacroDonut protein={totalProtein} carbs={totalCarbs} fat={totalFat} calories={totalCals} theme={theme} />
+              <Text style={[styles.calTarget, { color: theme.textMuted }]}>/ {adjustedTarget} kcal</Text>
             </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 12, paddingTop: 10, borderTopWidth: 0.5, borderTopColor: theme.borderCardTop }}>
-              <View style={{ alignItems: 'center' }}>
-                <Text style={{ color: theme.macroProtein, fontSize: 16, fontFamily: 'DMSans_600SemiBold' }}>{totalProtein}<Text style={{ fontSize: 11 }}>g</Text></Text>
-                <Text style={{ color: theme.textMuted, fontSize: 10, fontFamily: 'DMSans_400Regular' }}>Protein</Text>
-              </View>
-              <View style={{ alignItems: 'center' }}>
-                <Text style={{ color: theme.macroCarbs, fontSize: 16, fontFamily: 'DMSans_600SemiBold' }}>{totalCarbs}<Text style={{ fontSize: 11 }}>g</Text></Text>
-                <Text style={{ color: theme.textMuted, fontSize: 10, fontFamily: 'DMSans_400Regular' }}>Carbs</Text>
-              </View>
-              <View style={{ alignItems: 'center' }}>
-                <Text style={{ color: theme.macroFat, fontSize: 16, fontFamily: 'DMSans_600SemiBold' }}>{totalFat}<Text style={{ fontSize: 11 }}>g</Text></Text>
-                <Text style={{ color: theme.textMuted, fontSize: 10, fontFamily: 'DMSans_400Regular' }}>Fat</Text>
-              </View>
+            <View style={[styles.progressBarBg, { backgroundColor: theme.bgProgressTrack }]}>
+              <ReAnimated.View style={[styles.progressBarFill, useAnimatedStyle(() => ({ width: withTiming(`${Math.min(calPct, 100)}%` as any, { duration: 400 }) })), { backgroundColor: calColor }]} />
             </View>
+            <Text style={[styles.calRemaining, { color: theme.textMuted }]}>
+              {adjustedTarget > 0 ? (totalCals < adjustedTarget ? `${adjustedTarget - totalCals} kcal remaining (${activeCalories} burned)` : `${totalCals - adjustedTarget} kcal over target (${activeCalories} burned)`) : ''}
+            </Text>
           </View>
+          <MacroStackedBar protein={totalProtein} carbs={totalCarbs} fat={totalFat} theme={theme} />
+        </View>
+      </View>
 
-          {/* Page 2 - Advanced Nutrition */}
-          <View style={{ width: SCREEN_WIDTH, paddingTop: 4 }}>
-            <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, textTransform: 'uppercase', fontFamily: 'DMSans_500Medium', marginBottom: 10 }}>Advanced Nutrition</Text>
+      {/* Advanced Nutrition Card */}
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
+        <TouchableOpacity
+          onPress={toggleAdvanced}
+          activeOpacity={0.7}
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={[styles.cardLabel, { color: theme.textMuted, marginBottom: 0 }]}>Advanced Nutrition</Text>
+            <TooltipIcon tooltipKey="advanced_nutrition" />
+          </View>
+          <View style={{ width: 28, height: 28, alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name={advancedExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={theme.textMuted} />
+          </View>
+        </TouchableOpacity>
+        {advancedVisible && (
+          <Animated.View style={{ opacity: advancedAnim }}>
             {[
-              { label: 'Fiber', value: totalFiber, unit: 'g', color: '#6366f1' },
-              { label: 'Sugar', value: totalSugar, unit: 'g', color: '#ec4899' },
-              { label: 'Sodium', value: totalSodium, unit: 'mg', color: '#8b5cf6' },
-              { label: 'Cholesterol', value: totalCholesterol, unit: 'mg', color: '#14b8a6' },
-              { label: 'Saturated Fat', value: totalSatFat, unit: 'g', color: '#f97316' },
+              { label: 'Fiber',         value: totalFiber,       unit: 'g',  dv: 28,   color: '#6366f1' },
+              { label: 'Sugar',         value: totalSugar,       unit: 'g',  dv: 50,   color: '#ec4899' },
+              { label: 'Sodium',        value: totalSodium,      unit: 'mg', dv: 2300, color: '#8b5cf6' },
+              { label: 'Cholesterol',   value: totalCholesterol, unit: 'mg', dv: 300,  color: '#14b8a6' },
+              { label: 'Saturated Fat', value: totalSatFat,      unit: 'g',  dv: 20,   color: '#f97316' },
             ].map(n => (
-              <View key={n.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: 1, borderBottomColor: theme.borderSubtle }}>
-                <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{n.label}</Text>
-                <Text style={{ fontSize: 12, color: n.value > 0 ? n.color : theme.textDim, fontFamily: 'DMSans_600SemiBold' }}>
-                  {n.value > 0 ? `${n.value}${n.unit}` : '--'}
-                </Text>
+              <View key={n.label} style={{ paddingVertical: 10, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>{n.label}</Text>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={{ fontSize: 13, color: n.value > 0 ? theme.textPrimary : theme.textDim, fontFamily: 'DMSans_600SemiBold' }}>
+                      {n.value > 0 ? `${n.value}${n.unit}` : '--'}
+                    </Text>
+                    <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>/ {n.dv}{n.unit} recommended</Text>
+                  </View>
+                </View>
+                <View style={{ height: 4, borderRadius: 2, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
+                  <View style={{ height: '100%', borderRadius: 2, backgroundColor: n.color, width: `${Math.min(100, n.value > 0 ? (n.value / n.dv) * 100 : 0)}%` }} />
+                </View>
               </View>
             ))}
-          </View>
-
-        </ScrollView>
-
-        {/* Page dots */}
-        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 12 }}>
-          {[0, 1].map(i => (
-            <View key={i} style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: activePage === i ? theme.accentBlue : theme.donutTrack }} />
-          ))}
-        </View>
+          </Animated.View>
+        )}
       </View>
 
       {/* Meal Sections */}

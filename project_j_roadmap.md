@@ -201,7 +201,8 @@ Recents math bug -- fsId not passed through from recent entries, caused per-100g
 Macros not persisting to recents/favorites -- DONE. loadRecent now carries full macro payload, showMyFoods and My Foods FlatList tab map all nutrients, favorites tab already correct.
 Favorites bug -- identical food names share favorite state, both toggle together. (still open)
 Food search calorie discrepancy -- search list shows different calories than food detail screen. Root cause: serving selection mismatch. FatSecret search response returns multiple servings; list displays index 0, detail may land on a different serving. Fix: use is_default:1 serving for list display, ensure detail pre-selects same serving. Needs add-food.tsx + food-detail.tsx. DONE. isDefault flag stored in fetchFatSecretServings; food detail pre-selects is_default:1 serving to match FatSecret search display. add-food.tsx + food-detail.tsx updated.
-Recents dedup bug -- same food logged with different gram amounts creates duplicate recent entries. Fix: on write to recents, check for existing entry with same fsId (or name fallback), replace instead of append. Most recent log wins. (NOW)
+Recents dedup bug -- same food logged with different gram amounts creates duplicate recent entries. DONE. Dedupes by fsId first, falls back to name-without-amount suffix. Most recent log wins.
+Recents label serving bug -- recents showed logged cal total (e.g. 900 for 3 servings) instead of the base serving (300). DONE. Diary entries now store labelCal/labelProtein/labelCarbs/labelFat from defaultFsServing at save time. loadRecent uses labelCal with calPer100g/cal as fallback for old entries.
 fsId saved on star from search results list in add-food.tsx -- favorites now open to label serving. DONE.
 Favorites fsId fix -- label serving saved on favorite, fetched on tap from favorites tab, on-demand fetch in food-detail when fsServings empty, non-100g sort fix. DONE.
 fsId saved on diary entries in saveEntry, passed through edit entry path in log.tsx. DONE.
@@ -209,6 +210,7 @@ Food Library title bug -- shows "Add to Morning" when navigating from library bu
 Edit entry scaling bug -- opening entry from log showed macros scaled to 100g instead of logged amount. DONE. amountChanged flag added to food-detail, useExisting gates on isEditing + unchanged amount.
 Edit entry 100g bug on amount change -- changing grams on edit entry fell through to per-100g fallback (wrong). DONE. editRates path derives per-gram rate from existingCal/existingAmount, used when isEditing + user changes gram amount.
 Recent tap 100g bug -- tapping recent food opened to 100g instead of logged amount. DONE. openFoodDetail extracts amount from description for isRecent items.
+Recipe builder 100g bug -- adding ingredient via food search in recipe mode fell through to 100g defaults. DONE. isRecipeMode path in openFoodDetail now calls fetchFatSecretServings and attaches fsServings before routing, same fix as the normal log path.
 Favorites serving size bug -- favorites opened to label serving. DONE.
 Favorites extended nutrition 0 -- DONE. toggleFav pulls from selectedServing when available, saves full flat macro shape.
 FatSecret badge showing mid-type with no results -- DONE. Badge hidden when query has no results.
@@ -249,16 +251,18 @@ Food detail polish pass:
 
 Food log screen polish pass:
 - X delete button on entry rows to muted red
-- Macro donut center calorie number -- remove, redundant with number displayed outside donut (NOW)
-- Macro donut sequential segment animation with pauses -- each macro fills then brief pause before next, same pattern as sleep donut (NOW)
+- Macro donut center calorie number -- DONE. Removed from log.tsx and food-detail.tsx.
+- Macro donut sequential segment animation -- DONE. Timing fixed to truly sequential: protein ends at ~1000ms, 150ms pause, carbs starts at 1150ms, 150ms pause, fat starts at 2000ms. Both log.tsx and food-detail.tsx updated.
+- MacroDonut replaced with MacroStackedBar in log.tsx Today's Total -- DONE. Three horizontal animated bars (protein/carbs/fat), proportional widths, gram counts + P/C/F labels to the right. Sequential animation matches donut timing. Redundant bottom P/C/F row removed.
 - Macro donut animation on food detail -- DONE. Animated version matching log.tsx MacroDonut.
 - Collapsed meal row polish -- DONE. Macro dots left (protein/carbs/fat colored dots + grams). Kcal number right side (Bebas 18px, textPrimary, stacked over muted kcal label). Consistent collapsed height via opacity:0 placeholder when empty.
 - Collapsed meal row item count -- show "X items · XXX kcal" on collapsed state
 - Food name / brand split on entry rows -- DONE. Brand removed from log entries by design. Amount inline after food name. Entry height fixed at 54px per entry, no clipping.
 - Meal header total more visually prominent than individual entry calories
 - Empty state big "0" to textMuted until food logged
-- Advanced nutrition page 2 visual polish -- card label style header, accent/textPrimary values when data exists, textMuted when empty
+- Advanced Nutrition split into own card -- DONE. Removed horizontal scroll from Today's Total. Advanced Nutrition is now a separate collapsible card below it, collapsed by default. CPP treatment: accent top border, card depth, per-nutrient colored bars (indigo/pink/purple/teal/orange), FDA recommended daily values as reference with "/ Xg recommended" sublabel, TooltipIcon wired with full definitions for all 5 nutrients. tooltipRegistry.ts updated.
 - Log page gap spacing -- DONE. All inter-card gaps unified at 12px (mealRow marginBottom 8→12). Today's Total, inter-meal, and Snacks→Water gaps now all consistent.
+- Log header date navigation -- DONE. Swapped unicode ‹ › characters for Ionicons chevron-back/forward. Reordered to date-first, chevrons-right so date aligns flush left under Food Log title. Color behavior unchanged (accent when clickable, textDim when disabled).
 - Food entry row visual separation -- DONE. accentBlueBg (rgba accent 0.15 opacity) background on each expanded entry row. borderRadius 8, paddingHorizontal 10, marginBottom 4. Replaces hairline-only dividers.
 - Update Entry dim state -- DONE. Button disabled + opacity 0.4 until hasChanges is true in edit mode. Changes tracked via meal picker, time picker, serving picker, and gram field interactions.
 - Entry row padding/breathing room
@@ -422,6 +426,7 @@ Today's Message overhaul -- full spec below. Dedicated session.
 - Rooted/Exploring tap behavior: opens Bible screen as before
 - Custom scripture picker: book selector → chapter selector → verse multi-select (up to 4 from same chapter). Edge case of multi-chapter handled by adding multiple entries to pool
 Bible auto-scroll to verse -- auto-center highlighted verse when opening from Today's Message. (very soon)
+Bible verse favorites -- star any highlighted verse in bible.tsx, saved to pj_bible_favorites. Favorites tab or section in Bible screen. (SOON)
 Achievement toast improvements -- tappable routes to achievements page, trigger context under name, wording update before App Store launch.
 
 Process and infrastructure

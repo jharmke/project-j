@@ -508,10 +508,18 @@ const openFoodDetail = async (food: SearchResult) => {
       return;
     }
     if (isRecipeMode) {
+      const fsId = (food as any).fsId;
+      let fsServings: any[] = [];
+      if (fsId && !(food as any).fromBarcode) {
+        fsServings = await fetchFatSecretServings(fsId);
+      }
       router.push({
         pathname: '/food-detail',
         params: {
-          foodJson: JSON.stringify(food),
+          foodJson: JSON.stringify({
+            ...food,
+            fsServings: fsServings.length > 0 ? fsServings : undefined,
+          }),
           meal: 'recipe',
           date: 'recipe',
           recipeMode: 'true',
@@ -716,9 +724,10 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
           const data = JSON.parse(saved);
           if (data.entries) {
             data.entries.reverse().forEach((e: any) => {
-              if (!seen.has(e.name)) {
-                seen.add(e.name);
-                recent.push({ name: e.name, cal: e.cal, protein: e.protein, carbs: e.carbs, fat: e.fat, calPer100g: e.calPer100g, proteinPer100g: e.proteinPer100g, carbsPer100g: e.carbsPer100g, fatPer100g: e.fatPer100g, foodNutrients: e.foodNutrients, fsId: e.fsId || null });
+              const dedupeKey = e.fsId || e.name.replace(/\s*\(.*?\)\s*$/, '');
+              if (!seen.has(dedupeKey)) {
+                seen.add(dedupeKey);
+                recent.push({ name: e.name, cal: e.labelCal || e.calPer100g || e.cal, protein: e.labelProtein ?? e.proteinPer100g ?? e.protein, carbs: e.labelCarbs ?? e.carbsPer100g ?? e.carbs, fat: e.labelFat ?? e.fatPer100g ?? e.fat, calPer100g: e.calPer100g, proteinPer100g: e.proteinPer100g, carbsPer100g: e.carbsPer100g, fatPer100g: e.fatPer100g, foodNutrients: e.foodNutrients, fsId: e.fsId || null });
               }
             });
           }

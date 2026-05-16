@@ -140,4 +140,17 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
       result: { desc: 'Net Calories', value: '570 kcal' },
     },
   },
+  {
+    key: 'advanced_nutrition',
+    category: 'Nutrition',
+    title: 'Advanced Nutrition',
+    body: 'These numbers show your daily totals for fiber, sugar, sodium, cholesterol, and saturated fat. The progress bars are based on FDA Recommended Daily Values for a 2,000 calorie diet.\n\nThese are general reference points -- not personalized targets. Your actual needs vary based on age, health conditions, and goals. Use this as a guide, not a rulebook.',
+    definitions: [
+      { term: 'Fiber', explanation: '28g DV. Supports digestion and keeps you full longer. Most people fall short.' },
+      { term: 'Sugar', explanation: '50g DV total sugars. Natural sugars (fruit, dairy) and added sugars are both counted here.' },
+      { term: 'Sodium', explanation: '2,300mg DV. High sodium is linked to blood pressure -- most people exceed this daily.' },
+      { term: 'Cholesterol', explanation: '300mg DV. Dietary cholesterol has less impact than once thought, but moderation is still advised.' },
+      { term: 'Saturated Fat', explanation: '20g DV. Linked to heart health when consistently high. Unsaturated fats are the better choice.' },
+    ],
+  },
 ];

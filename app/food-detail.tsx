@@ -35,8 +35,8 @@ function MacroDonut({ protein, carbs, fat, calories, theme }: { protein: number;
     const carbsTarget = (carbs / total) * circumference;
     const fatTarget = (fat / total) * circumference;
     setTimeout(() => { proteinAnim.value = withTiming(proteinTarget, { duration: 800 }); }, 200);
-    setTimeout(() => { carbsAnim.value = withTiming(carbsTarget, { duration: 700 }); }, 900);
-    setTimeout(() => { fatAnim.value = withTiming(fatTarget, { duration: 600 }); }, 1500);
+    setTimeout(() => { carbsAnim.value = withTiming(carbsTarget, { duration: 700 }); }, 1150);
+    setTimeout(() => { fatAnim.value = withTiming(fatTarget, { duration: 600 }); }, 2000);
   }, [protein, carbs, fat]);
 
   const proteinProps = useAnimatedProps(() => ({ strokeDasharray: `${proteinAnim.value} ${circumference}` } as any));
@@ -70,10 +70,6 @@ function MacroDonut({ protein, carbs, fat, calories, theme }: { protein: number;
         <AnimCircle cx={size/2} cy={size/2} r={radius} stroke={theme.macroFat} strokeWidth={strokeWidth} fill="none"
           animatedProps={fatProps} strokeDashoffset={-((proteinPct + carbsPct) * circumference)} strokeLinecap="butt" />
       </Svg>
-      <View style={{ position: 'absolute', alignItems: 'center' }}>
-        <Text style={{ color: theme.textPrimary, fontSize: 14, fontFamily: 'BebasNeue_400Regular' }}>{calories}</Text>
-        <Text style={{ color: theme.textMuted, fontSize: 8, fontFamily: 'DMSans_400Regular' }}>kcal</Text>
-      </View>
     </View>
   );
 }
@@ -372,6 +368,10 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
   proteinPer100g,
   carbsPer100g,
   fatPer100g,
+  labelCal: defaultFsServing?.calories || selectedServing?.calories || calPer100g,
+  labelProtein: defaultFsServing?.protein || selectedServing?.protein || proteinPer100g,
+  labelCarbs: defaultFsServing?.carbs || selectedServing?.carbs || carbsPer100g,
+  labelFat: defaultFsServing?.fat || selectedServing?.fat || fatPer100g,
   loggedAmount: amount,
   loggedUnit: unit,
   foodNutrients: food.foodNutrients || [],

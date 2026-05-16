@@ -146,6 +146,8 @@ DONE -- SHIPPED
 [x] You vs Yesterday card -- "You & Yesterday" label in Mindful only, "You vs Yesterday" stays for Balanced/Discipline. Mindful reframe -- no score bar, no countdown, no net calories, no tier2 fallback, not tappable, neutral columns, cycling 4th slot (Showing Up / Log a Meal / Worked Out), side bars removed. Balanced/Discipline fully unchanged.
 [x] Macro color coding -- macroOver red removed from ALL modes. Macros always show identity colors (protein green, carbs amber, fat red). "X g over" sublabel removed, shows "X g remaining" only.
 [x] Weight card Mindful neutralization -- current weight, vs yesterday, total lost, goal row all textSecondary in Mindful. No green/red color judgment on weight numbers.
+[x] Day detail overhaul -- full rebuild. Killed 3-page horizontal scroll summary. New cards: Day at a Glance (consumed/burned/net + macros + weight/water/steps), Sleep (score pill, duration/bedtime/wake/stages/feel), Workout (chevrons, no strikethrough, note removed), Meals (chevrons), Journal (compact tappable rows -- pill + title + chevron, routes to journal with entry auto-expanded and modal closes), Daily Note, Advanced Nutrition (collapsible), Exclude from Stats. All cards: 1.5px accent top border, hero icons, Ionicons chevrons. Header: DAY DETAIL title, Ionicons date nav. calcSleepScore matches index.tsx exactly.
+[x] Day detail journal integration -- loads pj_bible_reflections, filters by date, compact tappable rows route to journal with entry expanded.
 
 
 NOW -- active this session
@@ -400,7 +402,6 @@ Food log donut -- thicker ring, show macro targets inside when empty instead of 
 Weekly calorie bar chart -- 7 day bars macro color stacking, today highlighted, PocketScale style. (HIGH)
 Stats page revamp -- dedicated session, consolidation, pagination, sleep detail page, per-metric exclusion UI.
 Stats page depth/shadow pass -- same shadow treatment as settings cards (shadowOpacity 0.18). Do during stats overhaul session.
-Day detail dedicated polish session -- full feature audit, heavy polish pass, decision on what stays/goes. HIGH PRIORITY NOW.
 Streak card -- Bible, workout, calorie streaks. (HIGH)
 Morning briefing card -- first open of day, faith first, yesterday recap, today targets.
 
@@ -458,7 +459,6 @@ Journal
 
 Edit entry title -- currently only notes and category editable.
 Journal icon on Stats tab header -- routes to journal.tsx.
-Day detail integration -- show journal entries from that day at bottom of screen.
 Date on entries tappable -- routes to that day's day detail.
 
 

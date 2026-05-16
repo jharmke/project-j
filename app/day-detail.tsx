@@ -1,29 +1,76 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../theme';
 
 const MEALS = ['Morning', 'Lunch', 'Dinner', 'Snacks'];
-const WATER_TARGET = 128;
+
+type SleepStages = { core: number; deep: number; rem: number; totalMs: number };
+const FEEL_BONUS: Record<number, number> = { 1: 0, 2: 10, 3: 20, 4: 30, 5: 40 };
+
+function calcSleepScore(
+  sleepHours: number | null,
+  sleepStages: SleepStages | null,
+  sleepGoal: number,
+  feelRating?: number | null,
+  isManual?: boolean,
+): { score: number | null; hasStages: boolean } {
+  if (!sleepHours || sleepHours <= 0) return { score: null, hasStages: false };
+  if (sleepStages && sleepStages.totalMs > 0) {
+    const durationPts = Math.min(40, (sleepHours / sleepGoal) * 40);
+    const totalMs = sleepStages.totalMs;
+    const deepPts = Math.max(0, 30 - (Math.abs((sleepStages.deep / totalMs) - 0.20) / 0.20) * 30);
+    const remPts  = Math.max(0, 30 - (Math.abs((sleepStages.rem  / totalMs) - 0.22) / 0.22) * 30);
+    return { score: Math.round(durationPts + deepPts + remPts), hasStages: true };
+  }
+  if (!feelRating) return { score: null, hasStages: false };
+  const durationPts = Math.min(60, (sleepHours / sleepGoal) * 60);
+  return { score: Math.round(Math.min(100, durationPts + (FEEL_BONUS[feelRating] ?? 0))), hasStages: false };
+}
+
+function fmtTime(val: string | null | undefined): string {
+  if (!val) return '--';
+  const d = new Date(val);
+  if (isNaN(d.getTime())) return '--';
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function fmtMs(ms: number): string {
+  if (!ms) return '--';
+  const h = Math.floor(ms / 3600000);
+  const m = Math.round((ms % 3600000) / 60000);
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
+}
+
+type JournalCategory = 'verse' | 'prayer' | 'study' | 'personal' | 'gratitude' | 'fitness';
+interface JournalEntry { id: string; date: string; category: JournalCategory; title: string; notes: string; }
+const CAT_META: Record<JournalCategory, { label: string; icon: string; color: string }> = {
+  verse:     { label: 'Verse',     icon: 'book',       color: '#d4860a' },
+  prayer:    { label: 'Prayer',    icon: 'hand-left',  color: '#8b5cf6' },
+  study:     { label: 'Study',     icon: 'school',     color: '#3b82f6' },
+  personal:  { label: 'Personal',  icon: 'person',     color: '#10b981' },
+  gratitude: { label: 'Gratitude', icon: 'heart',      color: '#ec4899' },
+  fitness:   { label: 'Fitness',   icon: 'barbell',    color: '#06b6d4' },
+};
 
 export default function DayDetailScreen() { return null; }
 
 export function DayDetailContent({ date, onClose, todayBurned }: { date: string; onClose: () => void; todayBurned?: number }) {
-  const insets = useSafeAreaInsets();
   const { theme, themeId } = useTheme();
   const [data, setData] = useState<any>(null);
   const [loaded, setLoaded] = useState(false);
   const [excluded, setExcluded] = useState({ diet: false, water: false, exercise: false });
   const [workoutState, setWorkoutState] = useState<any>(null);
+  const [journalEntries, setJournalEntries] = useState<JournalEntry[]>([]);
   const [currentDate, setCurrentDate] = useState(date);
   const [mealsOpen, setMealsOpen] = useState(true);
   const [workoutOpen, setWorkoutOpen] = useState(true);
-  const [summaryPage, setSummaryPage] = useState(0);
+  const [sleepOpen, setSleepOpen] = useState(true);
+  const [advNutritionOpen, setAdvNutritionOpen] = useState(false);
   const [profileBmr, setProfileBmr] = useState(0);
-  const CARD_WIDTH = (Dimensions.get('window').width * 0.92) - 32 - 32;
+  const [sleepGoal, setSleepGoal] = useState(8);
 
   const today = new Date();
   const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -41,14 +88,25 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
         if (saved) {
           const parsed = JSON.parse(saved);
           setData(parsed);
-          if (parsed.excluded) setExcluded(parsed.excluded);
-        } else setData({});
+          setExcluded(parsed.excluded ?? { diet: false, water: false, exercise: false });
+        } else {
+          setData({});
+          setExcluded({ diet: false, water: false, exercise: false });
+        }
         const ws = await AsyncStorage.getItem('pj_workout_state');
         if (ws) setWorkoutState(JSON.parse(ws));
+        const jRaw = await AsyncStorage.getItem('pj_bible_reflections');
+        if (jRaw) {
+          const all: any[] = JSON.parse(jRaw);
+          setJournalEntries(all.filter(e => e.date === currentDate && e.category));
+        } else {
+          setJournalEntries([]);
+        }
         const profileRaw = await AsyncStorage.getItem('pj_profile');
         if (profileRaw) {
           const p = JSON.parse(profileRaw);
-          let w = null;
+          if (p.sleepGoal) setSleepGoal(parseFloat(p.sleepGoal));
+          let w: number | null = null;
           const dayRaw = await AsyncStorage.getItem(`pj_${currentDate}`);
           if (dayRaw) { const dp = JSON.parse(dayRaw); if (dp.weight) w = dp.weight; }
           if (!w) {
@@ -67,11 +125,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
             setProfileBmr(bmr);
           }
         }
-      } catch (e) {
-        setData({});
-      } finally {
-        setLoaded(true);
-      }
+      } catch { setData({}); } finally { setLoaded(true); }
     };
     load();
   }, [currentDate]);
@@ -83,7 +137,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
       const saved = await AsyncStorage.getItem(`pj_${currentDate}`);
       const current = saved ? JSON.parse(saved) : {};
       await AsyncStorage.setItem(`pj_${currentDate}`, JSON.stringify({ ...current, excluded: updated }));
-    } catch (e) {}
+    } catch {}
   };
 
   if (!loaded) return null;
@@ -94,218 +148,256 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
   const totalCarbs = Math.round(entries.reduce((s: number, e: any) => s + (e.carbs || 0), 0) * 10) / 10;
   const totalFat = Math.round(entries.reduce((s: number, e: any) => s + (e.fat || 0), 0) * 10) / 10;
   const water = data?.water || 0;
-  const weight = data?.weight || null;
+  const weight = data?.weight ?? null;
+  const steps = data?.steps || 0;
   const caloriesBurned = isToday && todayBurned != null ? todayBurned : (data?.activeCalories || data?.caloriesBurned || 0);
   const now = new Date();
   const minutesToday = now.getHours() * 60 + now.getMinutes();
   const runningBmr = isToday && profileBmr > 0 ? Math.round((profileBmr / 1440) * minutesToday) : profileBmr;
   const netcals = totalCals - caloriesBurned - runningBmr;
-  const totalfiber = Math.round(entries.reduce((s: number, e: any) => { const n = e.foodnutrients?.find((fn: any) => fn.nutrientname === 'fiber, total dietary'); return s + ((n?.value || 0) * (e.calper100g > 0 ? e.cal / e.calper100g : 0)); }, 0) * 10) / 10;
-  const totalsodium = Math.round(entries.reduce((s: number, e: any) => { const n = e.foodnutrients?.find((fn: any) => fn.nutrientname === 'sodium, na'); return s + ((n?.value || 0) * (e.calper100g > 0 ? e.cal / e.calper100g : 0)); }, 0));
-  const totalsugar = Math.round(entries.reduce((s: number, e: any) => { const n = e.foodnutrients?.find((fn: any) => fn.nutrientname === 'sugars, total including nlea'); return s + ((n?.value || 0) * (e.calper100g > 0 ? e.cal / e.calper100g : 0)); }, 0) * 10) / 10;
+
+  const totalFiber = Math.round(entries.reduce((s: number, e: any) => { const n = e.foodnutrients?.find((fn: any) => fn.nutrientname === 'fiber, total dietary'); return s + ((n?.value || 0) * (e.calper100g > 0 ? e.cal / e.calper100g : 0)); }, 0) * 10) / 10;
+  const totalSodium = Math.round(entries.reduce((s: number, e: any) => { const n = e.foodnutrients?.find((fn: any) => fn.nutrientname === 'sodium, na'); return s + ((n?.value || 0) * (e.calper100g > 0 ? e.cal / e.calper100g : 0)); }, 0));
+  const totalSugar = Math.round(entries.reduce((s: number, e: any) => { const n = e.foodnutrients?.find((fn: any) => fn.nutrientname === 'sugars, total including nlea'); return s + ((n?.value || 0) * (e.calper100g > 0 ? e.cal / e.calper100g : 0)); }, 0) * 10) / 10;
+
+  const sleepHours: number = data?.sleepOverride ?? data?.sleepHours ?? 0;
+  const sleepStages: SleepStages | null = data?.sleepStages ?? null;
+  const sleepFeelRating: number = data?.sleepFeelRating ?? 0;
+  const sleepBedTime: string | null = data?.sleepBedTime ?? null;
+  const sleepWakeTime: string | null = data?.sleepWakeTime ?? null;
+  const fmtSleep = (h: number) => { if (!h) return '--'; const hrs = Math.floor(h); const m = Math.round((h - hrs) * 60); return m > 0 ? `${hrs}h ${m}m` : `${hrs}h`; };
+  const { score: sleepScore, hasStages } = calcSleepScore(sleepHours || null, sleepStages, sleepGoal, sleepFeelRating || null);
+  const sleepLabel = sleepScore !== null ? (sleepScore >= 85 ? 'Well Rested' : sleepScore >= 70 ? 'Could Be Better' : 'Poor Sleep') : null;
+  const sleepScoreColor = sleepScore !== null ? (sleepScore >= 85 ? theme.accentGreen : sleepScore >= 70 ? '#d4860a' : theme.accentRed) : theme.textDim;
 
   const dayprogram = workoutState?.programs?.[currentDate];
   const daychecks = workoutState?.checks?.[currentDate] || {};
   const daycardiolog = workoutState?.cardiologs?.[currentDate] || {};
-  const dayWorkoutNote = workoutState?.workoutNotes?.[currentDate] || '';
   const exercises = dayprogram?.exercises || [];
   const donecount = exercises.filter((ex: any) => daychecks[ex.id]).length;
 
+  const navPrev = () => {
+    const d = new Date(currentDate + 'T12:00:00'); d.setDate(d.getDate() - 1);
+    setCurrentDate(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
+  };
+  const navNext = () => {
+    const d = new Date(currentDate + 'T12:00:00'); d.setDate(d.getDate() + 1);
+    const next = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    if (next <= todayKey) setCurrentDate(next);
+  };
+
   const styles = useStyles(theme, themeId);
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
-          <TouchableOpacity
-            onPress={() => {
-              const d = new Date(currentDate + 'T12:00:00');
-              d.setDate(d.getDate() - 1);
-              const prev = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-              setCurrentDate(prev);
-            }}
-            style={{ padding: 8 }}>
-            <Text style={{ color: theme.accentBlue, fontSize: 20 }}>‹</Text>
+        <Text style={styles.headerTitle}>DAY DETAIL</Text>
+        <View style={styles.dateNav}>
+          <TouchableOpacity onPress={navPrev} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="chevron-back" size={20} color={theme.accentBlueRaw} />
           </TouchableOpacity>
-          <View style={{ alignItems: 'center' }}>
-            <Text style={[styles.headerDate, { color: theme.accentBlueRaw }]}>
-              {formatDate(currentDate || todayKey)}
-            </Text>
-          </View>
-          <TouchableOpacity
-            disabled={isToday}
-            onPress={() => {
-              const d = new Date(currentDate + 'T12:00:00');
-              d.setDate(d.getDate() + 1);
-              const next = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-              if (next <= todayKey) setCurrentDate(next);
-            }}
-            style={{ padding: 8 }}>
-            <Text style={{ color: isToday ? theme.textDim : theme.accentBlue, fontSize: 20 }}>›</Text>
+          <Text style={styles.headerDate}>{formatDate(currentDate)}</Text>
+          <TouchableOpacity onPress={navNext} disabled={isToday} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="chevron-forward" size={20} color={isToday ? theme.textDim : theme.accentBlueRaw} />
           </TouchableOpacity>
         </View>
-        </View>
-      {!isToday && (
-        <View style={{ alignItems: 'center', paddingVertical: 5 }}>
+        {!isToday && (
           <View style={styles.historyBadge}>
             <Text style={styles.historyBadgeText}>HISTORY</Text>
           </View>
-        </View>
-      )}
+        )}
+      </View>
 
       <ScrollView contentContainerStyle={styles.content}>
 
-        {/* Summary Card -- scrollable pages */}
+        {/* Day at a Glance */}
         <View style={styles.card}>
-          <Text style={styles.cardLabel}>Summary</Text>
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onMomentumScrollEnd={e => setSummaryPage(Math.round(e.nativeEvent.contentOffset.x / CARD_WIDTH))}
-            style={{ width: CARD_WIDTH }}>
-
-            {/* Page 1 -- Calories & Macros */}
-            <View style={{ width: CARD_WIDTH, flexDirection: 'column' }}>
-              <View style={{ flexDirection: 'row', marginBottom: 12 }}>
-                <View style={styles.summaryStat}>
-                  <Text style={styles.summaryVal}>{totalCals}</Text>
-                  <Text style={styles.summaryLabel}>Cal Consumed</Text>
-                </View>
-                <View style={styles.summaryStat}>
-                  <Text style={styles.summaryVal}>{caloriesBurned || '--'}</Text>
-                  <Text style={styles.summaryLabel}>Cal Burned</Text>
-                </View>
-                <View style={styles.summaryStat}>
-                  <Text style={styles.summaryVal}>{netcals}</Text>
-                  <Text style={styles.summaryLabel}>Net Cal</Text>
-                </View>
-              </View>
-              <View style={{ height: 0.5, backgroundColor: theme.borderSubtle, marginBottom: 12 }} />
-              <View style={{ flexDirection: 'row' }}>
-                <View style={styles.summaryStat}>
-                  <Text style={styles.summaryVal}>{totalProtein}<Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>g</Text></Text>
-                  <Text style={styles.summaryLabel}>Protein</Text>
-                </View>
-                <View style={styles.summaryStat}>
-                  <Text style={styles.summaryVal}>{totalCarbs}<Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>g</Text></Text>
-                  <Text style={styles.summaryLabel}>Carbs</Text>
-                </View>
-                <View style={styles.summaryStat}>
-                  <Text style={styles.summaryVal}>{totalFat}<Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>g</Text></Text>
-                  <Text style={styles.summaryLabel}>Fat</Text>
-                </View>
-              </View>
+          <Ionicons name="flame" size={130} color={theme.accentBlueRaw} style={styles.heroIcon} />
+          <Text style={styles.cardLabel}>Day at a Glance</Text>
+          <View style={styles.statRow}>
+            <View style={styles.stat}>
+              <Text style={styles.statVal}>{totalCals || '--'}</Text>
+              <Text style={styles.statLabel}>Consumed</Text>
             </View>
-
-            {/* Page 2 -- Body & Wellness */}
-            <View style={{ width: CARD_WIDTH }}>
-              <View style={{ flexDirection: 'row', marginBottom: 12 }}>
-                <View style={styles.summaryStat}>
-                  <Text style={styles.summaryVal}>{weight ? `${weight}` : '--'}</Text>
-                  <Text style={styles.summaryLabel}>Weight (lbs)</Text>
-                </View>
-                <View style={styles.summaryStat}>
-                  <Text style={styles.summaryVal}>{water}</Text>
-                  <Text style={styles.summaryLabel}>Water (oz)</Text>
-                </View>
-                <View style={styles.summaryStat}>
-                  <Text style={styles.summaryVal}>{(() => { const s = data?.sleepOverride ?? data?.sleepHours; if (!s) return '--'; const h = Math.floor(s); const m = Math.round((s - h) * 60); return m > 0 ? `${h}h ${m}m` : `${h}h`; })()}</Text>
-                  <Text style={styles.summaryLabel}>Sleep</Text>
-                </View>
-              </View>
+            <View style={styles.stat}>
+              <Text style={styles.statVal}>{caloriesBurned || '--'}</Text>
+              <Text style={styles.statLabel}>Burned</Text>
             </View>
-
-            {/* Page 3 -- Advanced Nutrition */}
-            <View style={{ width: CARD_WIDTH }}>
-              <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>Advanced Nutrition</Text>
-              {[
-                { label: 'Fiber', value: totalfiber, unit: 'g', color: '#6366f1' },
-                { label: 'Sugar', value: totalsugar, unit: 'g', color: '#ec4899' },
-                { label: 'Sodium', value: totalsodium, unit: 'mg', color: '#8b5cf6' },
-              ].map(n => (
-                <View key={n.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle }}>
-                  <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' }}>{n.label}</Text>
-                  <Text style={{ fontSize: 12, color: n.value > 0 ? n.color : theme.textPlaceholder, fontFamily: 'DMSans_600SemiBold' }}>{n.value > 0 ? `${n.value}${n.unit}` : '--'}</Text>
-                </View>
-              ))}
+            <View style={styles.stat}>
+              <Text style={styles.statVal}>{totalCals > 0 ? netcals : '--'}</Text>
+              <Text style={styles.statLabel}>Net</Text>
             </View>
-
-          </ScrollView>
-          {/* Page dots */}
-          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 12 }}>
-            {[0, 1, 2].map(i => (
-              <View key={i} style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: summaryPage === i ? theme.accentBlue : theme.bgInset }} />
-            ))}
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.statRow}>
+            <View style={styles.stat}>
+              <Text style={[styles.statVal, { color: '#0d9268' }]}>{totalProtein}<Text style={styles.statUnit}>g</Text></Text>
+              <Text style={styles.statLabel}>Protein</Text>
+            </View>
+            <View style={styles.stat}>
+              <Text style={[styles.statVal, { color: '#c47d1a' }]}>{totalCarbs}<Text style={styles.statUnit}>g</Text></Text>
+              <Text style={styles.statLabel}>Carbs</Text>
+            </View>
+            <View style={styles.stat}>
+              <Text style={[styles.statVal, { color: '#a83232' }]}>{totalFat}<Text style={styles.statUnit}>g</Text></Text>
+              <Text style={styles.statLabel}>Fat</Text>
+            </View>
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.statRow}>
+            <View style={styles.stat}>
+              <Text style={styles.statVal}>{weight ?? '--'}</Text>
+              <Text style={styles.statLabel}>Weight</Text>
+            </View>
+            <View style={styles.stat}>
+              <Text style={styles.statVal}>{water || '--'}</Text>
+              <Text style={styles.statLabel}>Water (oz)</Text>
+            </View>
+            <View style={styles.stat}>
+              <Text style={styles.statVal}>{steps ? steps.toLocaleString() : '--'}</Text>
+              <Text style={styles.statLabel}>Steps</Text>
+            </View>
           </View>
         </View>
 
-        {/* Workout Card -- collapsible */}
+        {/* Sleep */}
+        {sleepHours > 0 && (
+          <View style={styles.card}>
+            <Ionicons name="moon" size={130} color={theme.accentBlueRaw} style={styles.heroIcon} />
+            <TouchableOpacity onPress={() => setSleepOpen(!sleepOpen)} style={styles.cardRow} activeOpacity={0.7}>
+              <Text style={[styles.cardLabel, { marginBottom: 0 }]}>Sleep</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                {sleepScore !== null && (
+                  <View style={[styles.scorePill, { backgroundColor: sleepScoreColor + '22', borderColor: sleepScoreColor + '66' }]}>
+                    <Text style={[styles.scorePillText, { color: sleepScoreColor }]}>{sleepScore} · {sleepLabel}</Text>
+                  </View>
+                )}
+                <Ionicons name={sleepOpen ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textDim} />
+              </View>
+            </TouchableOpacity>
+            {sleepOpen && (
+              <View style={{ marginTop: 12 }}>
+                {/* Row 1: Duration + Bedtime + Wake */}
+                <View style={styles.statRow}>
+                  <View style={styles.stat}>
+                    <Text style={styles.statVal}>{fmtSleep(sleepHours)}</Text>
+                    <Text style={styles.statLabel}>Duration</Text>
+                  </View>
+                  <View style={styles.stat}>
+                    <Text style={styles.statVal}>{fmtTime(sleepBedTime)}</Text>
+                    <Text style={styles.statLabel}>Bedtime</Text>
+                  </View>
+                  <View style={styles.stat}>
+                    <Text style={styles.statVal}>{fmtTime(sleepWakeTime)}</Text>
+                    <Text style={styles.statLabel}>Wake</Text>
+                  </View>
+                </View>
+                {/* Row 2: Stages (Apple Health) */}
+                {hasStages && sleepStages && (
+                  <>
+                    <View style={styles.divider} />
+                    <View style={styles.statRow}>
+                      <View style={styles.stat}>
+                        <Text style={styles.statVal}>{fmtMs(sleepStages.deep)}</Text>
+                        <Text style={styles.statLabel}>Deep</Text>
+                      </View>
+                      <View style={styles.stat}>
+                        <Text style={styles.statVal}>{fmtMs(sleepStages.rem)}</Text>
+                        <Text style={styles.statLabel}>REM</Text>
+                      </View>
+                      <View style={styles.stat}>
+                        <Text style={styles.statVal}>{fmtMs(sleepStages.core)}</Text>
+                        <Text style={styles.statLabel}>Core</Text>
+                      </View>
+                    </View>
+                  </>
+                )}
+                {/* Feel rating */}
+                {sleepFeelRating > 0 && (
+                  <>
+                    <View style={styles.divider} />
+                    <View style={styles.metaRow}>
+                      <Text style={styles.metaLabel}>How you felt</Text>
+                      <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' }}>
+                        {(['', 'Rough', 'Okay', 'Decent', 'Good', 'Great'] as string[])[sleepFeelRating]}
+                      </Text>
+                    </View>
+                  </>
+                )}
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Workout */}
         <View style={styles.card}>
-          <TouchableOpacity
-            onPress={() => setWorkoutOpen(!workoutOpen)}
-            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text style={styles.cardLabel}>{dayprogram ? `${dayprogram.focus || dayprogram.type} · ${donecount}/${exercises.length}` : 'Workout'}</Text>
-            <Text style={{ color: theme.textDim, fontSize: 16 }}>{workoutOpen ? '▲' : '▼'}</Text>
+          <Ionicons name="barbell" size={130} color={theme.accentBlueRaw} style={styles.heroIcon} />
+          <TouchableOpacity onPress={() => setWorkoutOpen(!workoutOpen)} style={styles.cardRow} activeOpacity={0.7}>
+            <Text style={[styles.cardLabel, { marginBottom: 0 }]}>
+              {dayprogram ? `${dayprogram.focus || dayprogram.type} · ${donecount}/${exercises.length}` : 'Workout'}
+            </Text>
+            <Ionicons name={workoutOpen ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textDim} />
           </TouchableOpacity>
           {workoutOpen && (
-            <View style={{ marginTop: 8 }}>
+            <View style={{ marginTop: 10 }}>
               {exercises.length === 0 ? (
                 <Text style={styles.emptyText}>No workout logged.</Text>
               ) : (
                 exercises.map((ex: any) => (
-                  <View key={ex.id} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 7, borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle }}>
-                    <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: daychecks[ex.id] ? theme.accentGreen : 'transparent', borderWidth: 1, borderColor: daychecks[ex.id] ? theme.accentGreen : theme.borderSubtle, alignItems: 'center', justifyContent: 'center', marginRight: 10 }}>
+                  <View key={ex.id} style={styles.exerciseRow}>
+                    <View style={[styles.check, { backgroundColor: daychecks[ex.id] ? theme.accentGreen : 'transparent', borderColor: daychecks[ex.id] ? theme.accentGreen : theme.borderSubtle }]}>
                       {daychecks[ex.id] && <Text style={{ color: theme.bgPrimary, fontSize: 10, fontWeight: '700' }}>✓</Text>}
                     </View>
-                    <Text style={{ flex: 1, fontSize: 13, color: daychecks[ex.id] ? theme.textDim : theme.textSecondary, fontFamily: 'DMSans_600SemiBold', textDecorationLine: daychecks[ex.id] ? 'line-through' : 'none' }}>{ex.name}</Text>
+                    <Text style={[styles.exerciseName, { color: daychecks[ex.id] ? theme.textDim : theme.textSecondary }]} numberOfLines={1}>
+                      {ex.name}
+                    </Text>
                     {ex.isCardio && (
-                      <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>
+                      <Text style={styles.cardioMeta}>
                         {[ex.duration ? `${ex.duration}m` : null, ex.distance ? `${ex.distance}mi` : null].filter(Boolean).join(' · ')}
                       </Text>
                     )}
                   </View>
                 ))
               )}
-              {daycardiolog.effortScore && (
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 10 }}>
-                  <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>Effort Score</Text>
-                  <Text style={{ fontSize: 16, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{daycardiolog.effortScore} / 10</Text>
+              {(daycardiolog.effortScore != null || daycardiolog.caloriesBurned) && exercises.length > 0 && (
+                <View style={styles.divider} />
+              )}
+              {daycardiolog.effortScore != null && (
+                <View style={styles.metaRow}>
+                  <Text style={styles.metaLabel}>Effort Score</Text>
+                  <Text style={styles.metaVal}>{daycardiolog.effortScore} / 10</Text>
                 </View>
               )}
-              {dayWorkoutNote ? (
-                <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 8, fontStyle: 'italic' }}>{dayWorkoutNote}</Text>
-              ) : null}
-              {daycardiolog.caloriesBurned ? (
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
-                  <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>Calories Burned</Text>
-                  <Text style={{ fontSize: 16, color: theme.accentRed, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{daycardiolog.caloriesBurned} kcal</Text>
+              {!!daycardiolog.caloriesBurned && (
+                <View style={styles.metaRow}>
+                  <Text style={styles.metaLabel}>Calories Burned</Text>
+                  <Text style={[styles.metaVal, { color: theme.accentRed }]}>{daycardiolog.caloriesBurned} kcal</Text>
                 </View>
-              ) : null}
+              )}
             </View>
           )}
         </View>
 
-        {/* Meals -- collapsible */}
+        {/* Meals */}
         <View style={styles.card}>
-          <TouchableOpacity
-            onPress={() => setMealsOpen(!mealsOpen)}
-            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text style={styles.cardLabel}>Meals · {totalCals} kcal</Text>
-            <Text style={{ color: theme.textDim, fontSize: 16 }}>{mealsOpen ? '▲' : '▼'}</Text>
+          <Ionicons name="restaurant" size={130} color={theme.accentBlueRaw} style={styles.heroIcon} />
+          <TouchableOpacity onPress={() => setMealsOpen(!mealsOpen)} style={styles.cardRow} activeOpacity={0.7}>
+            <Text style={[styles.cardLabel, { marginBottom: 0 }]}>Meals · {totalCals} kcal</Text>
+            <Ionicons name={mealsOpen ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textDim} />
           </TouchableOpacity>
           {mealsOpen && (
-            <View style={{ marginTop: 8 }}>
+            <View style={{ marginTop: 10 }}>
               {entries.length === 0 ? (
                 <Text style={styles.emptyText}>No food logged this day.</Text>
               ) : (
                 MEALS.map(meal => {
                   const mealEntries = entries.filter((e: any) => e.meal === meal);
-                  const mealTotal = mealEntries.reduce((s: number, e: any) => s + e.cal, 0);
                   if (mealEntries.length === 0) return null;
+                  const mealTotal = mealEntries.reduce((s: number, e: any) => s + e.cal, 0);
                   return (
                     <View key={meal} style={{ marginBottom: 12 }}>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-                        <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>{meal}</Text>
+                        <Text style={styles.sectionLabel}>{meal}</Text>
                         <Text style={{ fontSize: 12, color: theme.accentGreen, fontFamily: 'DMSans_600SemiBold' }}>{mealTotal} kcal</Text>
                       </View>
                       {mealEntries.map((entry: any, i: number) => (
@@ -322,34 +414,85 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
           )}
         </View>
 
-        {/* Daily note */}
-        {data?.dailyNote ? (
+        {/* Journal */}
+        {journalEntries.length > 0 && (
           <View style={styles.card}>
+            <Ionicons name="book" size={130} color={theme.accentBlueRaw} style={styles.heroIcon} />
+            <Text style={styles.cardLabel}>Journal</Text>
+            {journalEntries.map((entry, i) => {
+              const meta = CAT_META[entry.category] || CAT_META.personal;
+              return (
+                <TouchableOpacity
+                  key={entry.id}
+                  onPress={() => { onClose(); router.push(`/journal?expandDate=${entry.id}` as any); }}
+                  style={[styles.journalEntry, i < journalEntries.length - 1 && { borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle }]}
+                  activeOpacity={0.7}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <View style={[styles.catPill, { backgroundColor: meta.color + '22', borderColor: meta.color + '55' }]}>
+                      <Ionicons name={meta.icon as any} size={10} color={meta.color} />
+                      <Text style={[styles.catPillText, { color: meta.color }]}>{meta.label}</Text>
+                    </View>
+                    <Text style={{ flex: 1, fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' }} numberOfLines={1}>
+                      {entry.title}
+                    </Text>
+                    <Ionicons name="chevron-forward" size={14} color={theme.textDim} />
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+
+        {/* Daily Note */}
+        {!!data?.dailyNote && (
+          <View style={styles.card}>
+            <Ionicons name="create" size={130} color={theme.accentBlueRaw} style={styles.heroIcon} />
             <Text style={styles.cardLabel}>Daily Note</Text>
             <Text style={styles.noteText}>{data.dailyNote}</Text>
           </View>
-        ) : null}
+        )}
 
+        {/* Advanced Nutrition */}
+        {(totalFiber > 0 || totalSodium > 0 || totalSugar > 0) && (
+          <View style={styles.card}>
+            <Ionicons name="leaf" size={130} color={theme.accentBlueRaw} style={styles.heroIcon} />
+            <TouchableOpacity onPress={() => setAdvNutritionOpen(!advNutritionOpen)} style={styles.cardRow} activeOpacity={0.7}>
+              <Text style={[styles.cardLabel, { marginBottom: 0 }]}>Advanced Nutrition</Text>
+              <Ionicons name={advNutritionOpen ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textDim} />
+            </TouchableOpacity>
+            {advNutritionOpen && (
+              <View style={{ marginTop: 10 }}>
+                {[
+                  { label: 'Fiber',  value: totalFiber,  unit: 'g',  color: '#6366f1' },
+                  { label: 'Sugar',  value: totalSugar,  unit: 'g',  color: '#ec4899' },
+                  { label: 'Sodium', value: totalSodium, unit: 'mg', color: '#8b5cf6' },
+                ].map((n, i, arr) => (
+                  <View key={n.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: i < arr.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderSubtle }}>
+                    <Text style={styles.sectionLabel}>{n.label}</Text>
+                    <Text style={{ fontSize: 13, color: n.value > 0 ? n.color : theme.textPlaceholder, fontFamily: 'DMSans_600SemiBold' }}>
+                      {n.value > 0 ? `${n.value}${n.unit}` : '--'}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Exclude from Stats */}
         <View style={styles.card}>
           <Text style={styles.cardLabel}>Exclude from Stats</Text>
-          <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12 }}>
-            Excluded days skipped in averages
-          </Text>
+          <Text style={styles.excludeSubtitle}>Excluded days are skipped in averages</Text>
           <View style={{ flexDirection: 'row', gap: 8 }}>
             {(['diet', 'water', 'exercise'] as const).map(key => (
               <TouchableOpacity
                 key={key}
                 onPress={() => toggleExclude(key)}
-                style={{
-                  flex: 1, paddingVertical: 8, borderRadius: 6, alignItems: 'center',
+                style={[styles.excludeBtn, {
                   backgroundColor: excluded[key] ? theme.accentRedBg : theme.accentGreenBg,
-                  borderWidth: 0.5,
                   borderColor: excluded[key] ? theme.accentRedBorder : theme.accentGreenBorder,
-                }}>
-                <Text style={{
-                  fontSize: 10, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', letterSpacing: 1,
-                  color: excluded[key] ? theme.accentRed : theme.accentGreen,
-                }}>
+                }]}>
+                <Text style={[styles.excludeBtnText, { color: excluded[key] ? theme.accentRed : theme.accentGreen }]}>
                   {excluded[key] ? `✕ ${key}` : `✓ ${key}`}
                 </Text>
               </TouchableOpacity>
@@ -358,8 +501,8 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
         </View>
 
         {!isToday && (
-          <TouchableOpacity style={styles.backToTodayBtn} onPress={onClose}>
-            <Text style={styles.backToTodayText}>Back to Today</Text>
+          <TouchableOpacity style={styles.backBtn} onPress={onClose}>
+            <Text style={styles.backBtnText}>Back to Today</Text>
           </TouchableOpacity>
         )}
 
@@ -371,24 +514,61 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
 const useStyles = (theme: any, themeId: string) => {
   const shadowOpacity = ({ light: 0.35, dark: 0.14, slate: 0.28, warm: 0.30, blush: 0.30 } as Record<string, number>)[themeId] ?? 0.18;
   return StyleSheet.create({
-  container: { flex: 1, backgroundColor: theme.bgSheet },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, height: 48, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard },
-  
-  headerDate: { fontSize: 20, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1.5, textAlign: 'center' },
-  historyBadge: { marginTop: 4, backgroundColor: `${theme.accentBlueRaw}26`, borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2 },
-  historyBadgeText: { fontSize: 9, color: theme.accentBlueRaw, fontFamily: 'DMSans_700Bold', letterSpacing: 2 },
-  content: { padding: 16, paddingBottom: 80 },
-  card: { backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, borderTopWidth: 1, borderRadius: 14, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity, shadowRadius: 6, elevation: 3 },
-  cardLabel: { fontSize: 9, letterSpacing: 3, color: theme.textDim, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', marginBottom: 10 },
-  summaryStat: { alignItems: 'center', flex: 1 },
-  summaryVal: { fontSize: 22, color: theme.textSecondary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
-  summaryLabel: { fontSize: 8, color: theme.textDim, fontFamily: 'DMSans_700Bold', marginTop: 2, letterSpacing: 1, textTransform: 'uppercase', textAlign: 'center' },
-  foodRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle },
-  foodName: { fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', flex: 1, marginRight: 8 },
-  foodCal: { fontSize: 13, color: theme.textDim, fontFamily: 'DMSans_600SemiBold' },
-  emptyText: { fontSize: 13, color: theme.textPlaceholder, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' },
-  noteText: { fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular', lineHeight: 20 },
-  backToTodayBtn: { padding: 16, alignItems: 'center' },
-  backToTodayText: { color: theme.accentBlue, fontSize: 14, fontFamily: 'DMSans_600SemiBold' },
+    container:        { flex: 1, backgroundColor: theme.bgSheet },
+    header:           { alignItems: 'center', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 10, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard },
+    headerTitle:      { fontSize: 10, color: theme.accentBlueRaw, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 4 },
+    dateNav:          { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    headerDate:       { fontSize: 15, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, textAlign: 'center', flex: 1 },
+    historyBadge:     { marginTop: 6, backgroundColor: `${theme.accentBlueRaw}26`, borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2 },
+    historyBadgeText: { fontSize: 9, color: theme.accentBlueRaw, fontFamily: 'DMSans_700Bold', letterSpacing: 2 },
+    content:          { padding: 14, paddingBottom: 80 },
+    card: {
+      backgroundColor: theme.bgCard,
+      borderWidth: 0.5,
+      borderColor: theme.borderCard,
+      borderTopWidth: 1.5,
+      borderTopColor: theme.accentBlueRaw,
+      borderRadius: 14,
+      padding: 16,
+      marginBottom: 12,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity,
+      shadowRadius: 6,
+      elevation: 3,
+      overflow: 'hidden',
+    },
+    heroIcon:       { position: 'absolute', right: -24, bottom: -28, opacity: 0.10 },
+    cardLabel:      { fontSize: 9, letterSpacing: 3, color: theme.textDim, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', marginBottom: 10 },
+    cardRow:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    statRow:        { flexDirection: 'row' },
+    stat:           { flex: 1, alignItems: 'center', paddingVertical: 2 },
+    statVal:        { fontSize: 20, color: theme.textSecondary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
+    statUnit:       { fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular' },
+    statLabel:      { fontSize: 8, color: theme.textDim, fontFamily: 'DMSans_700Bold', marginTop: 2, letterSpacing: 1, textTransform: 'uppercase', textAlign: 'center' },
+    divider:        { height: 0.5, backgroundColor: theme.borderSubtle, marginVertical: 10 },
+    scorePill:      { borderRadius: 4, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 0.5 },
+    scorePillText:  { fontSize: 10, fontFamily: 'DMSans_700Bold', letterSpacing: 0.5 },
+    exerciseRow:    { flexDirection: 'row', alignItems: 'center', paddingVertical: 7, borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle },
+    check:          { width: 18, height: 18, borderRadius: 9, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
+    exerciseName:   { flex: 1, fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
+    cardioMeta:     { fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 1 },
+    metaRow:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 },
+    metaLabel:      { fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' },
+    metaVal:        { fontSize: 18, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
+    sectionLabel:   { fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' },
+    foodRow:        { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle },
+    foodName:       { fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', flex: 1, marginRight: 8 },
+    foodCal:        { fontSize: 13, color: theme.textDim, fontFamily: 'DMSans_600SemiBold' },
+    journalEntry:   { paddingVertical: 10 },
+    catPill:        { flexDirection: 'row', alignItems: 'center', gap: 4, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 0.5 },
+    catPillText:    { fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 0.5 },
+    emptyText:      { fontSize: 13, color: theme.textPlaceholder, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' },
+    noteText:       { fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular', lineHeight: 20 },
+    excludeSubtitle: { fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginBottom: 12 },
+    excludeBtn:     { flex: 1, paddingVertical: 8, borderRadius: 6, alignItems: 'center', borderWidth: 0.5 },
+    excludeBtnText: { fontSize: 10, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', letterSpacing: 1 },
+    backBtn:        { padding: 16, alignItems: 'center' },
+    backBtnText:    { color: theme.accentBlue, fontSize: 14, fontFamily: 'DMSans_600SemiBold' },
   });
 };

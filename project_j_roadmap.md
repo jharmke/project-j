@@ -177,7 +177,11 @@ Workout tab facelift
 [x] Add Exercise modal -- centered scale-pop animation (overlayOpacity + cardScale spring), dim/inactive ADD button when name empty, bgSheet opaque background, close animation. Keyboard offset via paddingBottom so buttons clear keyboard.
 [x] Workout tab FAB -- replaces inline Add Exercise button. Fixed bottom right, 16pt above tab bar, accent fill, scale press animation (0.85 on pressIn, spring back), hidden on rest days.
 [x] Workout tab CPP pass -- progress bar animated (300ms both directions), Add Exercise blank fields with dimmed placeholders, edit modal Save dimmed until change made, library + button form is name/type/note only (no sets/reps/rest)
-  Effort score redesign -- large satisfying tiles, proper selected state with accent fill, replaces flat grid survey feel.
+  [x] Rest day overhaul -- emoji removed (moon Ionicon), FAB always visible, adding exercise auto-converts rest day to unassigned and strips tag_rest, manually removing Rest tag syncs type bidirectionally. Hint text added.
+  [x] Library preset sets/reps/rest cleared -- always blank when added to workout. Subtext removed from library rows and detail modal.
+  [x] Exercise library detail modal -- bgSheet opaque background, accent top border, exercise name accent colored, Add to Day = full accent fill primary CTA, Edit = interactive blue pill, Remove = plain red text. Sets/reps/rest subtext gone.
+  [x] Library modal animations -- detail modal close/open smooth (animationType none + manual Animated.Value, onShow callback). Edit modal fade-in fixed (onShow callback replaces unreliable setTimeout). All dismiss paths wired through closeDetailModal with callback chaining.
+  [x] Effort score redesign -- large satisfying tiles (52px, Bebas 28px), full color fill selected state, spring tap animation, dynamic color-coded label (EASY/LIGHT/MODERATE/HARD/MAX EFFORT), green/gold/orange/red ramp.
 Workout notes overhaul -- KAV fix, dim/inactive save button, toast on save, wire to journal as workout category entry.
 Edit/Remove button redesign -- style to match app design system, not plain unstyled web buttons.
 Progress/momentum element -- running tally of exercises completed visible during session.
@@ -374,7 +378,8 @@ Workout tab nested scroll bug -- DraggableFlatList inside ScrollView warning. (H
 Workout drag handle -- hit target too small + dead zone before drag triggers. (HIGH)
 Edit exercise input validation -- decimal/integer restrictions on all numeric fields, same standard as weight input. (SOON)
 Apple Health avg HR per workout -- research whether kingstinct library exposes avg HR per workout sample; if yes, auto-populate on workout sync. (SOON)
-Sessions System -- save a day's exercise list as a named Session, Sessions tab in workout library alongside exercises, star/favorite system for most-used sessions, load a session onto any day in one tap. (SOON)
+Last-used dimmed prefill -- when adding an exercise, ghost in last logged sets/reps/weight as placeholder text. Storage lookup by exercise name on modal open. Always blank until user types -- never auto-fills. (workout tab pass item)
+  Sessions System -- save a day's exercise list as a named Session, Sessions tab in workout library alongside exercises, star/favorite system for most-used sessions, load a session onto any day in one tap. (SOON)
 
 Home and stats
 

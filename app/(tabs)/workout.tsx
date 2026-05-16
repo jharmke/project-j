@@ -26,6 +26,15 @@ function getTodayDay() {
 const today = new Date();
 const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
+const getEffortLabel = (score: number | null | undefined): string => {
+  if (!score) return '';
+  if (score <= 2) return 'EASY';
+  if (score <= 4) return 'LIGHT';
+  if (score <= 6) return 'MODERATE';
+  if (score <= 8) return 'HARD';
+  return 'MAX EFFORT';
+};
+
 const filterDecimal = (v: string, set: (s: string) => void) => {
   const stripped = v.replace(/[^0-9.]/g, '');
   const dot = stripped.indexOf('.');
@@ -69,6 +78,8 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
   const fabScale = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
   const originalForm = useRef<typeof form | null>(null);
+  const effortAnims = useRef(Array.from({ length: 10 }, () => new Animated.Value(1))).current;
+  const effortLabelAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.spring(fabScale, { toValue: 1, useNativeDriver: true, friction: 6, tension: 120, delay: 300 }).start();
@@ -157,6 +168,11 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
     });
     return () => { show.remove(); hide.remove(); };
   }, []);
+
+  useEffect(() => {
+    const score = cardioLogs[activeDay]?.effortScore;
+    effortLabelAnim.setValue(score ? 1 : 0);
+  }, [activeDay]);
 
   const manageTagsSheetStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: manageTagsAnim.value }],
@@ -453,16 +469,23 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
     };
   } else {
     const newEx: Exercise = { id: makeId(), ...form };
+    const wasRest = baseProgram.type === 'rest';
     newPrograms[modalDay] = {
       ...baseProgram,
+      ...(wasRest ? { type: 'unassigned', focus: '', tags: (baseProgram.tags || []).filter(t => t !== 'tag_rest') } : {}),
       exercises: [...(baseProgram.exercises || []), newEx],
     };
+    if (wasRest) {
+      showToast('Rest day removed', 'Go get it.', 'success');
+    } else {
+      showToast('Exercise added', form.name, 'success');
+    }
   }
   setPrograms(newPrograms);
   setDayLabel(newPrograms[activeDay]?.customLabel || '');
   saveState(checks, cardioComplete, newPrograms, workoutNotes, cardioLogs, weeklyTemplate);
   closeAddExerciseModal();
-  showToast(editingExercise ? 'Exercise updated' : 'Exercise added', form.name, 'success');
+  if (editingExercise) showToast('Exercise updated', form.name, 'success');
 };
 
   const removeExercise = (day: string, id: string) => {
@@ -509,12 +532,14 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
       showToast('Tag limit reached', 'Max 6 tags per day', 'info');
       return;
     }
-    const newTags = currentTags.includes(tagId)
-      ? currentTags.filter(t => t !== tagId)
-      : [...currentTags, tagId];
+    const removing = currentTags.includes(tagId);
+    const newTags = removing ? currentTags.filter(t => t !== tagId) : [...currentTags, tagId];
+    const typeOverride = tagId === 'tag_rest'
+      ? { type: removing ? 'unassigned' as const : 'rest' as const, focus: removing ? '' : 'Rest' }
+      : {};
     const newPrograms = {
       ...programs,
-      [activeDay]: { ...baseProgram, tags: newTags },
+      [activeDay]: { ...baseProgram, tags: newTags, ...typeOverride },
     };
     setPrograms(newPrograms);
     saveState(checks, cardioComplete, newPrograms, workoutNotes, cardioLogs, weeklyTemplate);
@@ -660,9 +685,10 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
 
         {isRest ? (
           <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, alignItems: 'center', paddingVertical: 32, overflow: 'hidden' }]}>
-            <Text style={{ fontSize: 40 }}>😴</Text>
+            <Ionicons name="moon" size={36} color={theme.textMuted} />
             <Text style={{ color: theme.textPrimary, fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginTop: 12 }}>REST DAY</Text>
             <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular', marginTop: 8, textAlign: 'center' }}>Recovery is part of the program. Rest well.</Text>
+            <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular', marginTop: 12 }}>Tap + to add an exercise anyway</Text>
           </View>
         ) : (
           <View>
@@ -767,32 +793,59 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
         {/* Effort Score Card */}
         <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, marginTop: 12 }]}>
           <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Effort Score</Text>
-          <View style={{ flexDirection: 'column', gap: 6, marginTop: 10 }}>
+          <View style={{ flexDirection: 'column', gap: 8, marginTop: 12 }}>
             {[[1,2,3,4,5],[6,7,8,9,10]].map((row, ri) => (
-              <View key={ri} style={{ flexDirection: 'row', gap: 6 }}>
+              <View key={ri} style={{ flexDirection: 'row', gap: 8 }}>
                 {row.map(n => {
                   const selected = cardioLogs[activeDay]?.effortScore === n;
-                  const effortColor = n <= 3 ? theme.statusGood : n <= 6 ? theme.statusWarn : n <= 8 ? '#f97316' : theme.statusBad;
+                  const effortColor = n <= 3 ? theme.statusGood : n <= 6 ? '#ca8a04' : n <= 8 ? '#f97316' : theme.statusBad;
+                  const anim = effortAnims[n - 1];
                   return (
-                    <TouchableOpacity
-                      key={n}
-                      onPress={() => {
-                        const current = cardioLogs[activeDay]?.effortScore;
-                        const newScore = current === n ? null : n;
-                        const newLogs = { ...cardioLogs, [activeDay]: { ...(cardioLogs[activeDay] || {}), effortScore: newScore } };
-                        setCardioLogs(newLogs);
-                        saveState(checks, cardioComplete, programs, workoutNotes, newLogs);
-                      }}
-                      style={{ flex: 1, height: 36, borderRadius: 8, alignItems: 'center', justifyContent: 'center',
-                        backgroundColor: selected ? effortColor + '33' : theme.bgInput,
-                        borderWidth: 0.5, borderColor: selected ? effortColor : theme.borderInput }}>
-                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: selected ? effortColor : theme.textMuted }}>{n}</Text>
-                    </TouchableOpacity>
+                    <Animated.View key={n} style={{ flex: 1, transform: [{ scale: anim }] }}>
+                      <TouchableOpacity
+                        onPress={() => {
+                          Animated.sequence([
+                            Animated.timing(anim, { toValue: 1.08, duration: 70, useNativeDriver: true }),
+                            Animated.spring(anim, { toValue: 1, useNativeDriver: true, friction: 5, tension: 150 }),
+                          ]).start();
+                          const current = cardioLogs[activeDay]?.effortScore;
+                          const newScore = current === n ? null : n;
+                          const newLogs = { ...cardioLogs, [activeDay]: { ...(cardioLogs[activeDay] || {}), effortScore: newScore } };
+                          setCardioLogs(newLogs);
+                          saveState(checks, cardioComplete, programs, workoutNotes, newLogs);
+                          Animated.timing(effortLabelAnim, { toValue: newScore ? 1 : 0, duration: 200, useNativeDriver: true }).start();
+                        }}
+                        style={{
+                          height: 52,
+                          borderRadius: 10,
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          backgroundColor: selected ? effortColor : effortColor + '14',
+                          borderWidth: 0.5,
+                          borderColor: selected ? effortColor : effortColor + '40',
+                        }}>
+                        <Text style={{
+                          fontSize: 28,
+                          fontFamily: 'BebasNeue_400Regular',
+                          color: selected ? '#ffffff' : effortColor,
+                          opacity: selected ? 1 : 0.55,
+                        }}>
+                          {n}
+                        </Text>
+                      </TouchableOpacity>
+                    </Animated.View>
                   );
                 })}
               </View>
             ))}
           </View>
+          <Animated.View style={{ alignItems: 'center', marginTop: 10, opacity: effortLabelAnim }}>
+            {(() => {
+              const s = cardioLogs[activeDay]?.effortScore;
+              const c = !s ? theme.textMuted : s <= 3 ? theme.statusGood : s <= 6 ? theme.statusWarn : s <= 8 ? '#f97316' : theme.statusBad;
+              return <Text style={{ fontSize: 10, letterSpacing: 3, color: c, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>{getEffortLabel(s)}</Text>;
+            })()}
+          </Animated.View>
         </View>
 
         {/* Workout Notes Card */}
@@ -1220,18 +1273,16 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
         </View>
       </Modal>
 
-    {!isRest && (
-        <Animated.View style={{ position: 'absolute', bottom: 16, right: 20, transform: [{ scale: fabScale }] }}>
-          <TouchableOpacity
-            onPress={() => router.push({ pathname: '/workout-library', params: { selectMode: 'true', day: activeDay } })}
-            onPressIn={() => Animated.timing(fabScale, { toValue: 0.85, duration: 80, useNativeDriver: true }).start()}
-            onPressOut={() => Animated.timing(fabScale, { toValue: 1, duration: 80, useNativeDriver: true }).start()}
-            activeOpacity={1}
-            style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 }}>
-            <Ionicons name="add" size={28} color={theme.bgPrimary} />
-          </TouchableOpacity>
-        </Animated.View>
-      )}
+    <Animated.View style={{ position: 'absolute', bottom: 16, right: 20, transform: [{ scale: fabScale }] }}>
+        <TouchableOpacity
+          onPress={() => router.push({ pathname: '/workout-library', params: { selectMode: 'true', day: activeDay } })}
+          onPressIn={() => Animated.timing(fabScale, { toValue: 0.85, duration: 80, useNativeDriver: true }).start()}
+          onPressOut={() => Animated.timing(fabScale, { toValue: 1, duration: 80, useNativeDriver: true }).start()}
+          activeOpacity={1}
+          style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 }}>
+          <Ionicons name="add" size={28} color={theme.bgPrimary} />
+        </TouchableOpacity>
+      </Animated.View>
     </LinearGradient>
     </KeyboardAvoidingView>
     </GestureHandlerRootView>

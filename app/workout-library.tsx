@@ -101,6 +101,14 @@ else {
     await saveLibrary(updated);
   };
 
+  const closeDetailModal = (onDone?: () => void) => {
+    Animated.timing(detailOverlayOpacity, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
+      setShowDetailModal(false);
+      setShowDayPicker(false);
+      onDone?.();
+    });
+  };
+
   const openAdd = () => openAddModal(null);
   const openEdit = (ex: LibraryExercise) => openAddModal(ex);
 
@@ -136,9 +144,9 @@ else {
       pendingExercise: JSON.stringify({
         id: Math.random().toString(36).substr(2, 9),
         name: ex.name,
-        sets: ex.defaultSets || '3',
-        reps: ex.defaultReps || '10–12',
-        rest: ex.defaultRest || '60s',
+        sets: '',
+        reps: '',
+        rest: '',
         note: ex.note || '',
         isCardio: ex.type === 'cardio',
       }),
@@ -149,6 +157,7 @@ else {
 
   const addOverlayOpacity = useRef(new Animated.Value(0)).current;
   const addCardScale = useRef(new Animated.Value(0.95)).current;
+  const detailOverlayOpacity = useRef(new Animated.Value(0)).current;
 
   const openAddModal = (ex: LibraryExercise | null = null) => {
     addOverlayOpacity.setValue(0);
@@ -156,12 +165,6 @@ else {
     if (ex) { setEditingEx(ex); setForm({ ...ex }); }
     else { setEditingEx(null); setForm({ type: 'lift', name: '', defaultSets: '', defaultReps: '', defaultRest: '', note: '' }); }
     setShowAddModal(true);
-    setTimeout(() => {
-      Animated.parallel([
-        Animated.timing(addOverlayOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
-        Animated.spring(addCardScale, { toValue: 1, useNativeDriver: true, friction: 8, tension: 100 }),
-      ]).start();
-    }, 16);
   };
 
   const closeAddModal = () => {
@@ -226,6 +229,7 @@ else {
       selectExercise(item);
     } else {
       setSelectedEx(item);
+      detailOverlayOpacity.setValue(0);
       setShowDetailModal(true);
     }
   }}>
@@ -238,9 +242,6 @@ else {
         </View>
         <Text style={styles.exName}>{item.name}</Text>
       </View>
-      {item.type === 'lift' && (
-        <Text style={styles.exMeta}>{item.defaultSets} sets · {item.defaultReps} reps · {item.defaultRest} rest</Text>
-      )}
       {item.note ? <Text style={styles.exNote}>{item.note}</Text> : null}
     </View>
     <View style={styles.exActions}>
@@ -267,23 +268,23 @@ else {
           </Text>
         }
       />
-{showDetailModal && selectedEx && (
-  <Modal transparent animationType="fade" onRequestClose={() => setShowDetailModal(false)}>
-    <TouchableOpacity style={{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center' }} onPress={() => setShowDetailModal(false)}>
-      <TouchableOpacity activeOpacity={1} style={{ backgroundColor: theme.bgCard, borderRadius: 12, padding: 20, width: '85%', borderWidth: 1, borderColor: theme.borderCard }}>
+<Modal visible={showDetailModal} transparent animationType="none" onRequestClose={() => closeDetailModal()} onShow={() => {
+  Animated.timing(detailOverlayOpacity, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+}}>
+  <Animated.View style={{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center', opacity: detailOverlayOpacity }}>
+    <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => closeDetailModal()} />
+    {selectedEx ? <>
+      <TouchableOpacity activeOpacity={1} style={{ backgroundColor: theme.bgSheet, borderRadius: 14, padding: 20, width: '85%', borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12 }}>
         <View style={[styles.typeBadge, selectedEx.type === 'cardio' && styles.typeBadgeCardio, { alignSelf: 'flex-start', marginBottom: 8 }]}>
           <Text style={[styles.typeBadgeText, selectedEx.type === 'cardio' && { color: theme.accentAmber }]}>{selectedEx.type.toUpperCase()}</Text>
         </View>
-        <Text style={{ color: theme.textPrimary, fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginBottom: 4 }}>{selectedEx.name}</Text>
-        {selectedEx.type === 'lift' && (
-          <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular', marginBottom: 16 }}>{selectedEx.defaultSets} sets · {selectedEx.defaultReps} reps · {selectedEx.defaultRest} rest</Text>
-        )}
-        {selectedEx.note ? <Text style={{ color: theme.textSecondary, fontSize: 12, fontFamily: 'DMSans_400Regular', marginBottom: 16 }}>{selectedEx.note}</Text> : null}
+        <Text style={{ color: selectedEx.type === 'cardio' ? theme.accentAmber : theme.accentBlue, fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginBottom: selectedEx.note ? 4 : 16 }}>{selectedEx.name}</Text>
+        {selectedEx.note ? <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_400Regular', marginBottom: 16 }}>{selectedEx.note}</Text> : null}
 
         <TouchableOpacity
-          style={{ backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder, borderRadius: 8, padding: 12, alignItems: 'center', marginBottom: 8 }}
+          style={{ backgroundColor: theme.accentBlue, borderRadius: 8, padding: 12, alignItems: 'center', marginBottom: 8 }}
           onPress={() => { setShowDayPicker(true); }}>
-          <Text style={{ color: theme.accentGreen, fontFamily: 'DMSans_600SemiBold', fontSize: 14 }}>+ Add to Day</Text>
+          <Text style={{ color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 1 }}>+ ADD TO DAY</Text>
         </TouchableOpacity>
 
         {showDayPicker && (
@@ -329,9 +330,7 @@ else {
                 key={ci}
                 style={{ flex: 1, alignItems: 'center', paddingVertical: 6, borderRadius: 4, backgroundColor: isToday ? theme.accentGreenBg : 'transparent' }}
                 onPress={() => {
-                  setShowDayPicker(false);
-                  setShowDetailModal(false);
-                  if (selectedEx) selectExercise(selectedEx, dateKey);
+                  if (selectedEx) closeDetailModal(() => selectExercise(selectedEx, dateKey));
                 }}>
                 <Text style={{ color: isToday ? theme.accentGreen : theme.textPrimary, fontSize: 13, fontFamily: 'DMSans_400Regular' }}>{d}</Text>
               </TouchableOpacity>
@@ -344,27 +343,32 @@ else {
 )}
 
         <TouchableOpacity
-          style={{ backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderInset, borderRadius: 8, padding: 12, alignItems: 'center', marginBottom: 8 }}
-          onPress={() => { setShowDetailModal(false); openEdit(selectedEx); }}>
-          <Text style={{ color: theme.textMuted, fontFamily: 'DMSans_600SemiBold', fontSize: 14 }}>Edit</Text>
+          style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8, padding: 12, alignItems: 'center', marginBottom: 8 }}
+          onPress={() => closeDetailModal(() => openEdit(selectedEx!))}>
+          <Text style={{ color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold', fontSize: 14 }}>Edit</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
-          style={{ backgroundColor: theme.accentRedBg, borderWidth: 1, borderColor: theme.accentRedBorder, borderRadius: 8, padding: 12, alignItems: 'center' }}
+          style={{ padding: 12, alignItems: 'center' }}
           onPress={() => {
             Alert.alert('Remove Exercise', `Remove "${selectedEx.name}" from library?`, [
               { text: 'Cancel', style: 'cancel' },
-              { text: 'Remove', style: 'destructive', onPress: () => { deleteExercise(selectedEx.id); setShowDetailModal(false); } }
+              { text: 'Remove', style: 'destructive', onPress: () => { deleteExercise(selectedEx!.id); closeDetailModal(); } }
             ]);
           }}>
-          <Text style={{ color: theme.accentRed, fontFamily: 'DMSans_600SemiBold', fontSize: 14 }}>Remove</Text>
+          <Text style={{ color: theme.accentRed, fontFamily: 'DMSans_600SemiBold', fontSize: 13 }}>Remove from Library</Text>
         </TouchableOpacity>
       </TouchableOpacity>
-    </TouchableOpacity>
-  </Modal>
-)}
+    </> : null}
+  </Animated.View>
+</Modal>
 
-      <Modal visible={showAddModal} transparent animationType="none" onRequestClose={onClose}>
+      <Modal visible={showAddModal} transparent animationType="none" onRequestClose={onClose} onShow={() => {
+        Animated.parallel([
+          Animated.timing(addOverlayOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+          Animated.spring(addCardScale, { toValue: 1, useNativeDriver: true, friction: 8, tension: 100 }),
+        ]).start();
+      }}>
         <Animated.View style={{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'flex-end', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 340, opacity: addOverlayOpacity }}>
             <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={closeAddModal} />
             <Animated.View style={{ backgroundColor: theme.bgSheet, borderRadius: 20, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, width: '100%', height: 420, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20, transform: [{ scale: addCardScale }] }}>

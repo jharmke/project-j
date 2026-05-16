@@ -502,6 +502,9 @@ export default function LogScreen() {
       {MEALS.map(meal => {
         const mealEntries = entries.filter(e => e.meal === meal);
         const mealTotal = mealEntries.reduce((s, e) => s + e.cal, 0);
+        const mealProtein = Math.round(mealEntries.reduce((s, e) => s + (e.protein || 0), 0));
+        const mealCarbs = Math.round(mealEntries.reduce((s, e) => s + (e.carbs || 0), 0));
+        const mealFat = Math.round(mealEntries.reduce((s, e) => s + (e.fat || 0), 0));
         const isExpanded = expandedMeals[meal];
 
         return (
@@ -514,9 +517,30 @@ export default function LogScreen() {
             </TouchableOpacity>
 
             {/* Meal info middle */}
-            <TouchableOpacity style={styles.mealInfo} onPress={() => toggleMeal(meal)}>
-              <Text style={[styles.mealName, { color: theme.textPrimary }]}>{meal}</Text>
-              {mealTotal > 0 && <Text style={[styles.mealCals, { color: theme.textMuted }]}>{mealTotal} kcal</Text>}
+            <TouchableOpacity style={[styles.mealInfo, { flexDirection: 'row', alignItems: 'center' }]} onPress={() => toggleMeal(meal)}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.mealName, { color: theme.textPrimary }]}>{meal}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2, opacity: mealTotal > 0 ? 1 : 0 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                    <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#0d9268' }} />
+                    <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{mealProtein}g</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                    <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#c47d1a' }} />
+                    <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{mealCarbs}g</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                    <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#a83232' }} />
+                    <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{mealFat}g</Text>
+                  </View>
+                </View>
+              </View>
+              {mealTotal > 0 && (
+                <View style={{ alignItems: 'flex-end', marginRight: 4 }}>
+                  <Text style={{ color: theme.textPrimary, fontSize: 18, fontFamily: 'BebasNeue_400Regular', lineHeight: 20 }}>{mealTotal}</Text>
+                  <Text style={{ color: theme.textDim, fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase' }}>kcal</Text>
+                </View>
+              )}
             </TouchableOpacity>
 
             {/* Chevron on right */}
@@ -537,7 +561,7 @@ export default function LogScreen() {
                   mealEntries.map((entry, i) => (
                     <TouchableOpacity
                       key={i}
-                      style={[styles.foodEntry, { borderBottomColor: theme.borderSubtle }]}
+                      style={[styles.foodEntry, { backgroundColor: theme.accentBlueBg }]}
                       onPress={() => router.push({
                         pathname: '/food-detail',
                         params: {
@@ -722,7 +746,7 @@ const styles = StyleSheet.create({
   progressBarBg:      { height: 6, borderRadius: 6, overflow: 'hidden', marginBottom: 12 },
   progressBarFill:    { height: '100%', borderRadius: 6 },
   calRemaining:       { fontSize: 10, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase' },
-  mealRow:            { borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14, marginBottom: 8, overflow: 'hidden', shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
+  mealRow:            { borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14, marginBottom: 12, overflow: 'hidden', shadowColor: '#000000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
   mealAddBtn:         { position: 'absolute', left: 14, top: 14, zIndex: 1, width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
   mealAddBtnText:     { fontSize: 22, fontFamily: 'DMSans_400Regular', lineHeight: 24 },
   mealInfo:           { paddingLeft: 50, paddingRight: 40, paddingVertical: 14 },
@@ -731,7 +755,7 @@ const styles = StyleSheet.create({
   mealChevron:        { position: 'absolute', right: 14, top: 14, width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
   mealChevronText:    { fontSize: 14, fontFamily: 'DMSans_400Regular' },
   mealExpanded:       { borderTopWidth: 0.5, paddingHorizontal: 16, paddingVertical: 8 },
-  foodEntry:          { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 0.5 },
+  foodEntry:          { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 10, borderRadius: 8, marginBottom: 4 },
   foodEntryLeft:      { flex: 1, marginRight: 8 },
   foodEntryName:      { fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
   foodEntryMacros:    { fontSize: 10, fontFamily: 'DMSans_700Bold', marginTop: 2, letterSpacing: 1, textTransform: 'uppercase' },

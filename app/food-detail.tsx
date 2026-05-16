@@ -128,6 +128,7 @@ async function fetchFatSecretServings(fsId: string): Promise<any[]> {
       cholesterol: parseFloat(s.cholesterol || '0'),
       saturatedFat: parseFloat(s.saturated_fat || '0'),
       grams: parseFloat(s.metric_serving_amount || '0'),
+      isDefault: s.is_default === '1',
     }));
   } catch (e) {
     return [];
@@ -147,11 +148,12 @@ export default function FoodDetailScreen() {
 const isRecipeMode = recipeMode === 'true';
   const food = foodJson ? JSON.parse(foodJson) : null;
   const fsServings: any[] = food?.fsServings || [];
+  const defaultFsServing = fsServings.length > 0 ? (fsServings.find((s: any) => s.isDefault) || fsServings[0]) : null;
   const { showToast } = useToast();
   const [isFav, setIsFav] = useState(false);
   const starScale = useRef(new Animated.Value(1)).current;
   const [showServingPicker, setShowServingPicker] = useState(false);
-  const [selectedServing, setSelectedServing] = useState<any>(fsServings.length > 0 ? fsServings[0] : null);
+  const [selectedServing, setSelectedServing] = useState<any>(defaultFsServing);
 
   // Per-gram rates derived from selected serving -- used for manual gram input scaling
   const servingRates = selectedServing && selectedServing.grams > 0 ? {
@@ -247,12 +249,14 @@ const isRecipeMode = recipeMode === 'true';
     const [entryTime, setEntryTime] = useState<Date>( food?.timestamp ? new Date(food.timestamp) : new Date());
 const [showTimePicker, setShowTimePicker] = useState(false);
   const isEditing = entryIndex !== undefined && entryIndex !== '';
-  const originalAmount = food?.existingAmount || 
-    (food?.fsServings?.length > 0 && food.fsServings[0].grams > 0 
-      ? food.fsServings[0].grams.toString() 
+  const originalAmount = food?.existingAmount ||
+    (defaultFsServing && defaultFsServing.grams > 0
+      ? defaultFsServing.grams.toString()
       : '100');
   const [amount, setAmount] = useState(originalAmount);
   const [amountChanged, setAmountChanged] = useState(false);
+  const [servingCount, setServingCount] = useState(1);
+  const [hasChanges, setHasChanges] = useState(false);
   const [unit, setUnit] = useState<'g' | 'oz' | 'serving'>(food?.existingUnit || 'g');
     const [showMealPicker, setShowMealPicker] = useState(false);
 const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Morning' : meal);
@@ -280,28 +284,54 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
 
   // In edit mode OR for custom foods, use stored absolute values until the user changes the amount
   const useExisting = (isEditing || food.isCustom) && !amountChanged && food.existingCal !== undefined;
+  // Primary path for FatSecret foods: multiply selected serving directly by servingCount
+  const useServingBased = !useExisting && selectedServing !== null && !amountChanged;
+  // Edit entry fallback: derive per-gram rate from original logged amount + values
+  const origGrams = parseFloat(food.existingAmount || '0');
+  const editRates = isEditing && origGrams > 0 ? {
+    calories: (food.existingCal || 0) / origGrams,
+    protein: (food.existingProtein || 0) / origGrams,
+    carbs: (food.existingCarbs || 0) / origGrams,
+    fat: (food.existingFat || 0) / origGrams,
+  } : null;
 
   const grams = parseFloat(amount) || 0;
   const calories = useExisting
     ? (food.existingCal || 0)
-    : servingRates
-      ? Math.round(servingRates.calories * grams)
-      : calPer100g > 0 ? Math.round(calPer100g * multiplier) : (food.existingCal || 0);
+    : useServingBased
+      ? Math.round(selectedServing.calories * servingCount)
+      : servingRates
+        ? Math.round(servingRates.calories * grams)
+        : editRates
+          ? Math.round(editRates.calories * grams)
+          : calPer100g > 0 ? Math.round(calPer100g * multiplier) : (food.existingCal || 0);
   const protein = useExisting
     ? (food.existingProtein || 0)
-    : servingRates
-      ? Math.round(servingRates.protein * grams * 10) / 10
-      : calPer100g > 0 ? Math.round(proteinPer100g * multiplier * 10) / 10 : (food.existingProtein || 0);
+    : useServingBased
+      ? Math.round(selectedServing.protein * servingCount * 10) / 10
+      : servingRates
+        ? Math.round(servingRates.protein * grams * 10) / 10
+        : editRates
+          ? Math.round(editRates.protein * grams * 10) / 10
+          : calPer100g > 0 ? Math.round(proteinPer100g * multiplier * 10) / 10 : (food.existingProtein || 0);
   const carbs = useExisting
     ? (food.existingCarbs || 0)
-    : servingRates
-      ? Math.round(servingRates.carbs * grams * 10) / 10
-      : calPer100g > 0 ? Math.round(carbsPer100g * multiplier * 10) / 10 : (food.existingCarbs || 0);
+    : useServingBased
+      ? Math.round(selectedServing.carbs * servingCount * 10) / 10
+      : servingRates
+        ? Math.round(servingRates.carbs * grams * 10) / 10
+        : editRates
+          ? Math.round(editRates.carbs * grams * 10) / 10
+          : calPer100g > 0 ? Math.round(carbsPer100g * multiplier * 10) / 10 : (food.existingCarbs || 0);
   const fat = useExisting
     ? (food.existingFat || 0)
-    : servingRates
-      ? Math.round(servingRates.fat * grams * 10) / 10
-      : calPer100g > 0 ? Math.round(fatPer100g * multiplier * 10) / 10 : (food.existingFat || 0);
+    : useServingBased
+      ? Math.round(selectedServing.fat * servingCount * 10) / 10
+      : servingRates
+        ? Math.round(servingRates.fat * grams * 10) / 10
+        : editRates
+          ? Math.round(editRates.fat * grams * 10) / 10
+          : calPer100g > 0 ? Math.round(fatPer100g * multiplier * 10) / 10 : (food.existingFat || 0);
 
   const saveEntry = async () => {
     if (!calories && calories !== 0) return;
@@ -399,8 +429,8 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
           <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium', marginTop: -14, marginBottom: 16 }}>{food.brand}</Text>
         )}
 
-        {/* Serving picker -- only shows when FatSecret servings available */}
-        {fsServings.length > 0 && (
+        {/* Serving picker -- only shows when multiple FatSecret servings available */}
+        {fsServings.length > 1 && (
           <TouchableOpacity
             style={styles.servingPickerBtn}
             onPress={() => setShowServingPicker(true)}>
@@ -410,6 +440,41 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
             </View>
             <Text style={styles.servingPickerCal}>{selectedServing?.calories || 0} kcal ▼</Text>
           </TouchableOpacity>
+        )}
+
+        {/* Servings stepper */}
+        {selectedServing && (
+          <View style={[styles.amountRow, { marginBottom: 12 }]}>
+            <View>
+              <Text style={styles.amountLabel}>Servings</Text>
+              {selectedServing.label ? <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>{selectedServing.label}</Text> : null}
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <TouchableOpacity
+                onPress={() => {
+                  const next = Math.max(1, servingCount - 1);
+                  setServingCount(next);
+                  setAmountChanged(false);
+                  setHasChanges(true);
+                  if (selectedServing.grams > 0) setAmount((selectedServing.grams * next).toString());
+                }}
+                style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8 }}>
+                <Text style={{ fontSize: 22, color: theme.textPrimary, fontFamily: 'DMSans_400Regular', lineHeight: 26 }}>−</Text>
+              </TouchableOpacity>
+              <Text style={{ width: 32, textAlign: 'center', fontSize: 22, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular' }}>{servingCount}</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  const next = servingCount + 1;
+                  setServingCount(next);
+                  setAmountChanged(false);
+                  setHasChanges(true);
+                  if (selectedServing.grams > 0) setAmount((selectedServing.grams * next).toString());
+                }}
+                style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8 }}>
+                <Text style={{ fontSize: 22, color: theme.textPrimary, fontFamily: 'DMSans_400Regular', lineHeight: 26 }}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         )}
 
         {/* Grams input */}
@@ -422,11 +487,11 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
               const stripped = v.replace(/[^0-9.]/g, '');
               const dot = stripped.indexOf('.');
               if (dot === -1) {
-                setAmount(stripped); setAmountChanged(true);
+                setAmount(stripped); setAmountChanged(true); setServingCount(1); setHasChanges(true);
               } else {
                 const before = stripped.slice(0, dot);
                 const after = stripped.slice(dot + 1).replace(/\./g, '').slice(0, 1);
-                setAmount(before + '.' + after); setAmountChanged(true);
+                setAmount(before + '.' + after); setAmountChanged(true); setServingCount(1); setHasChanges(true);
               }
             }}
             keyboardType="decimal-pad"
@@ -511,7 +576,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
               display="spinner"
               textColor={theme.textPrimary}
               onChange={(event, date) => {
-                if (date) setEntryTime(date);
+                if (date) { setEntryTime(date); setHasChanges(true); }
               }}
             />
           </View>
@@ -525,7 +590,10 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
   <Text style={styles.mealSelectorValue}>{currentMeal} ▼</Text>
 </TouchableOpacity>
 
-<TouchableOpacity style={styles.logBtn} onPress={saveEntry}>
+<TouchableOpacity
+  style={[styles.logBtn, isEditing && !hasChanges && { opacity: 0.4 }]}
+  onPress={saveEntry}
+  disabled={isEditing && !hasChanges}>
   <Text style={styles.logBtnText}>
     {isRecipeMode ? 'ADD TO RECIPE' : isEditing ? `UPDATE ENTRY` : `ADD TO DIARY`}
   </Text>
@@ -583,6 +651,8 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
                 onPress={() => {
                   setSelectedServing(s);
                   setAmount(s.grams > 0 ? s.grams.toString() : '100');
+                  setAmountChanged(false);
+                  setServingCount(1);
                   setShowServingPicker(false);
                 }}>
                 <Text style={[styles.mealOptionText, selectedServing?.label === s.label && { color: theme.accentGreen }]}>{s.label}</Text>
@@ -602,7 +672,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
               <TouchableOpacity
                 key={m}
                 style={[styles.mealOption, currentMeal === m && styles.mealOptionActive]}
-                onPress={() => { setCurrentMeal(m); setShowMealPicker(false); }}>
+                onPress={() => { setCurrentMeal(m); setHasChanges(true); setShowMealPicker(false); }}>
                 <Text style={[styles.mealOptionText, currentMeal === m && { color: theme.accentGreen }]}>{m}</Text>
               </TouchableOpacity>
             ))}

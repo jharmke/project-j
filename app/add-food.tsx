@@ -227,6 +227,7 @@ async function fetchFatSecretServings(fsId: string): Promise<any[]> {
       cholesterol: parseFloat(s.cholesterol || '0'),
       saturatedFat: parseFloat(s.saturated_fat || '0'),
       grams: parseFloat(s.metric_serving_amount || '0'),
+      isDefault: s.is_default === '1',
     }));
   } catch (e) {
     console.log('FatSecret servings error', e);

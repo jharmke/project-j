@@ -1582,7 +1582,6 @@ export default function StatsScreen() {
   const weightChange = trendData.weight.length >= 2
     ? Math.round((trendData.weight[trendData.weight.length - 1].value - trendData.weight[0].value) * 10) / 10 : null;
 
-  const sectionVisible = (id: string) => statsCards.find(c => c.id === id)?.visible ?? true;
 
   return (
     <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
@@ -1610,8 +1609,14 @@ export default function StatsScreen() {
 
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
 
-        {/* ── AT A GLANCE ── */}
-        {sectionVisible('sys_atAGlance') && <CollapsibleSection label="At a Glance" defaultOpen={true} theme={theme} first={true}>
+        {statsCards
+          .filter(c => c.type === 'system')
+          .sort((a, b) => a.order - b.order)
+          .filter(c => c.visible)
+          .map((section, idx) => {
+            const isFirst = idx === 0;
+            if (section.systemKey === 'atAGlance') return (
+              <CollapsibleSection key={section.id} label={section.label} defaultOpen={true} theme={theme} first={isFirst}>
           <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
             <View style={{ flexDirection: 'row', gap: 6, marginBottom: 14 }}>
               {(['7', '30', '90', '180', 'ytd'] as const).map(p => (
@@ -1704,10 +1709,10 @@ export default function StatsScreen() {
               </View>
             </View>
           </View>
-        </CollapsibleSection>}
-
-        {/* ── TRENDS ── */}
-        {sectionVisible('sys_trends') && <CollapsibleSection label="Trends" defaultOpen={true} theme={theme}>
+            </CollapsibleSection>
+            );
+            if (section.systemKey === 'trends') return (
+              <CollapsibleSection key={section.id} label={section.label} defaultOpen={true} theme={theme} first={isFirst}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <View style={{ flexDirection: 'row', gap: 6 }}>
               {(['7', '30', '90'] as const).map(p => (
@@ -1740,10 +1745,10 @@ export default function StatsScreen() {
                 onEditPress={openEditCard}
               />
             ))}
-        </CollapsibleSection>}
-
-        {/* ── RECORDS ── */}
-        {sectionVisible('sys_records') && <CollapsibleSection label="Records" defaultOpen={false} theme={theme}>
+            </CollapsibleSection>
+            );
+            if (section.systemKey === 'records') return (
+              <CollapsibleSection key={section.id} label={section.label} defaultOpen={false} theme={theme} first={isFirst}>
           <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
             <RecordTile icon="footsteps" label="Best Steps" value={records.steps} unit="steps"
               color={theme.accentBlue} date={records.stepsDate}
@@ -1760,10 +1765,10 @@ export default function StatsScreen() {
               color={theme.sleepRem} date={records.sleepHoursDate}
               fmt={(v) => `${Math.floor(v)}h ${Math.round((v % 1) * 60)}m`} />
           </View>
-        </CollapsibleSection>}
-
-        {/* ── STREAKS ── */}
-        {sectionVisible('sys_streaks') && <CollapsibleSection label="Streaks" defaultOpen={false} theme={theme}>
+            </CollapsibleSection>
+            );
+            if (section.systemKey === 'streaks') return (
+              <CollapsibleSection key={section.id} label={section.label} defaultOpen={false} theme={theme} first={isFirst}>
           <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               {[
@@ -1782,10 +1787,10 @@ export default function StatsScreen() {
               ))}
             </View>
           </View>
-        </CollapsibleSection>}
-
-        {/* ── CALENDAR ── */}
-        {sectionVisible('sys_calendar') && <CollapsibleSection label="Calendar" defaultOpen={false} theme={theme}>
+            </CollapsibleSection>
+            );
+            if (section.systemKey === 'calendar') return (
+              <CollapsibleSection key={section.id} label={section.label} defaultOpen={false} theme={theme} first={isFirst}>
           <CollapsibleCard label="Monthly View" defaultOpen={true} theme={theme}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
               <TouchableOpacity onPress={() => { if (calendarMonth === 0) { setCalendarMonth(11); setCalendarYear(y => y - 1); } else setCalendarMonth(m => m - 1); }} style={{ padding: 8 }}>
@@ -1850,7 +1855,10 @@ export default function StatsScreen() {
               ))}
             </View>
           </CollapsibleCard>
-        </CollapsibleSection>}
+              </CollapsibleSection>
+            );
+            return null;
+          })}
 
       </ScrollView>
 
@@ -1908,19 +1916,46 @@ export default function StatsScreen() {
                   <>
                     <View style={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle, marginTop: 8 }}>
                       <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>Sections</Text>
+                      <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>Long-press to reorder</Text>
                     </View>
-                    {editCards.filter(c => c.type === 'system').map(item => (
-                      <View key={item.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 13, borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle }}>
-                        <Ionicons name="reorder-three-outline" size={22} color={theme.borderSubtle} />
-                        <Text style={{ flex: 1, fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: item.visible ? theme.textPrimary : theme.textDim }}>{item.label}</Text>
-                        <View style={{ backgroundColor: 'rgba(102,102,128,0.12)', borderWidth: 1, borderColor: 'rgba(102,102,128,0.2)', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
-                          <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 1 }}>SECTION</Text>
-                        </View>
-                        <TouchableOpacity onPress={() => handleToggleCard(item.id)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                          <Ionicons name={item.visible ? 'eye' : 'eye-off-outline'} size={18} color={item.visible ? theme.accentBlue : theme.textDim} />
-                        </TouchableOpacity>
-                      </View>
-                    ))}
+                    <DraggableFlatList
+                      data={editCards.filter(c => c.type === 'system').sort((a, b) => a.order - b.order)}
+                      keyExtractor={item => item.id}
+                      scrollEnabled={false}
+                      onDragEnd={({ data }) => {
+                        const graphCards = editCards.filter(c => c.type === 'graph');
+                        const updatedSysCards = data.map((c, i) => ({ ...c, order: i }));
+                        const updated = [...updatedSysCards, ...graphCards];
+                        setEditCards(updated);
+                        setStatsCards(updated);
+                        saveStatsCards(updated);
+                      }}
+                      renderItem={({ item, drag, isActive }) => (
+                        <ScaleDecorator>
+                          <TouchableOpacity
+                            onLongPress={drag}
+                            disabled={isActive}
+                            activeOpacity={0.85}
+                            style={{
+                              flexDirection: 'row', alignItems: 'center', gap: 12,
+                              paddingHorizontal: 20, paddingVertical: 13,
+                              backgroundColor: isActive ? theme.bgCard : 'transparent',
+                              borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle,
+                            }}>
+                            <Ionicons name="reorder-three-outline" size={22} color={theme.textDim} />
+                            <Text style={{ flex: 1, fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: item.visible ? theme.textPrimary : item.visible === false ? theme.textDim : theme.textDim }}>
+                              {item.label}
+                            </Text>
+                            <View style={{ backgroundColor: 'rgba(102,102,128,0.12)', borderWidth: 1, borderColor: 'rgba(102,102,128,0.2)', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
+                              <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 1 }}>SECTION</Text>
+                            </View>
+                            <TouchableOpacity onPress={() => handleToggleCard(item.id)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                              <Ionicons name={item.visible ? 'eye' : 'eye-off-outline'} size={18} color={item.visible ? theme.accentBlue : theme.textDim} />
+                            </TouchableOpacity>
+                          </TouchableOpacity>
+                        </ScaleDecorator>
+                      )}
+                    />
                     <View style={{ height: insets.bottom + 20 }} />
                   </>
                 )}

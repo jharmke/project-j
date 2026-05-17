@@ -333,7 +333,7 @@ fsId saved on diary entries in saveEntry, passed through edit entry path in log.
 SOON -- confirmed next few sessions
 
 Stats Phase 3 remaining steps (do in order):
-- Step 6: Creator modal -- data type grid picker (icon grid, DATA_KEY_META) → chart type picker (skipped for macros, forced stackedBar) → live preview with real data → auto-generated label → "Add to Stats". New card appended to statsCards, default period 7d.
+- [x] SHIPPED Phase 3 Step 6 -- Creator modal. 3-step slide-up sheet: data type grid (7 options, DATA_KEY_META icons) → chart type picker (line/bar; macros forced stackedBar, skips to preview) → live StatsGraphCard preview with real 7d data. ADD TO STATS button appends new card (period: 7, auto-label from DATA_KEY_META) to pj_stats_cards. Step dots fixed at sheet bottom (active dot wider pill). Temp "+" header button wired; Step 7 FAB will be primary entry point.
 - Step 7: FAB -- expandable speed dial, "Add Graph" (active, full accent fill), "Add Report" (disabled, coming soon). Spring cascade open animation.
 - Step 8: Card edit modal (gear icon) -- standard modal. Editable label, chart type picker (macros locked to stackedBar), timeframe pills, delete option (accentRed + Alert confirm), floating save bar, toast on save.
 - Option B section reordering -- dynamic render of top-level sections from registry order. Sections get their own DraggableFlatList in edit sheet. Deferred from Phase 3 Step 5 session.

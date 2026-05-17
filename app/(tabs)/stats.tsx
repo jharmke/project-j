@@ -10,7 +10,8 @@ import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatli
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { DayDetailContent } from '../day-detail';
 import { useTheme } from '../../theme';
-import { CardPeriod, DATA_KEY_META, DEFAULT_STATS_CARDS, StatsCard, loadStatsCards, saveStatsCards } from '../../statsCardRegistry';
+import { CardPeriod, ChartType, DATA_KEY_META, DataKey, DEFAULT_STATS_CARDS, StatsCard, availableChartTypes, generateCardId, loadStatsCards, saveStatsCards } from '../../statsCardRegistry';
+import { ToastRenderer, useToast } from '../../components/Toast';
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const RECORD_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -928,6 +929,15 @@ export default function StatsScreen() {
   const [dayDetailDate, setDayDetailDate] = useState<string | null>(null);
   const dayDetailAnim = useRef(new Animated.Value(0)).current;
 
+  const [creatorVisible, setCreatorVisible] = useState(false);
+  const [creatorStep, setCreatorStep] = useState<1 | 2 | 3>(1);
+  const [creatorDataKey, setCreatorDataKey] = useState<DataKey | null>(null);
+  const [creatorChartType, setCreatorChartType] = useState<ChartType | null>(null);
+  const creatorSheetAnim = useRef(new Animated.Value(0)).current;
+  const creatorOverlayAnim = useRef(new Animated.Value(0)).current;
+
+  const { showToast } = useToast();
+
   const now = new Date();
   const [calendarYear, setCalendarYear] = useState(now.getFullYear());
   const [calendarMonth, setCalendarMonth] = useState(now.getMonth());
@@ -1254,6 +1264,71 @@ export default function StatsScreen() {
     );
   };
 
+  const openCreatorModal = async () => {
+    setCreatorStep(1);
+    setCreatorDataKey(null);
+    setCreatorChartType(null);
+    creatorSheetAnim.setValue(0);
+    creatorOverlayAnim.setValue(0);
+    setCreatorVisible(true);
+    if (!trendDataMap['7']) {
+      let workoutState: any = {};
+      try { const ws = await AsyncStorage.getItem('pj_workout_state'); if (ws) workoutState = JSON.parse(ws); } catch {}
+      const data = await fetchTrendData(7, workoutState);
+      setTrendDataMap(prev => ({ ...prev, '7': data }));
+    }
+  };
+
+  const closeCreatorModal = () => {
+    Animated.parallel([
+      Animated.timing(creatorSheetAnim, { toValue: 0, duration: 260, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(creatorOverlayAnim, { toValue: 0, duration: 220, useNativeDriver: true }),
+    ]).start(() => setCreatorVisible(false));
+  };
+
+  const handleCreatorSelectDataKey = (dk: DataKey) => {
+    setCreatorDataKey(dk);
+    if (dk === 'macros') {
+      setCreatorChartType('stackedBar');
+      setCreatorStep(3);
+    } else {
+      setCreatorChartType(null);
+      setCreatorStep(2);
+    }
+  };
+
+  const handleCreatorBack = () => {
+    if (creatorStep === 3 && creatorDataKey === 'macros') {
+      setCreatorDataKey(null);
+      setCreatorChartType(null);
+      setCreatorStep(1);
+    } else if (creatorStep === 3) {
+      setCreatorStep(2);
+    } else if (creatorStep === 2) {
+      setCreatorStep(1);
+    }
+  };
+
+  const handleAddCard = () => {
+    if (!creatorDataKey || !creatorChartType) return;
+    const newCard: StatsCard = {
+      id: generateCardId(creatorDataKey),
+      type: 'graph',
+      dataKey: creatorDataKey,
+      chartType: creatorChartType,
+      period: 7,
+      label: DATA_KEY_META[creatorDataKey].label,
+      visible: true,
+      order: statsCards.length,
+      placement: 'stats',
+    };
+    const updated = [...statsCards, newCard];
+    setStatsCards(updated);
+    saveStatsCards(updated);
+    closeCreatorModal();
+    setTimeout(() => showToast('Graph added', undefined, 'success'), 300);
+  };
+
   // Derived from trendDataMap -- used for At a Glance weight change display
   const trendData = trendDataMap[trendPeriod] ?? EMPTY_TREND_DATA;
 
@@ -1316,6 +1391,11 @@ export default function StatsScreen() {
             onPress={() => router.push('/journal')}
             style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="journal" size={14} color={theme.accentBlue} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={openCreatorModal}
+            style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="add" size={16} color={theme.accentBlue} />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={openEditSheet}
@@ -1671,6 +1751,125 @@ export default function StatsScreen() {
                 )}
               />
             </GestureHandlerRootView>
+          </Animated.View>
+        </View>
+      </Modal>
+
+      {/* ── CREATOR MODAL ── */}
+      <Modal transparent animationType="none" visible={creatorVisible} onRequestClose={closeCreatorModal} statusBarTranslucent hardwareAccelerated
+        onShow={() => {
+          Animated.parallel([
+            Animated.timing(creatorSheetAnim, { toValue: 1, duration: 320, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+            Animated.timing(creatorOverlayAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
+          ]).start();
+        }}>
+        <ToastRenderer />
+        <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+          <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={closeCreatorModal}>
+            <Animated.View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', opacity: creatorOverlayAnim }} />
+          </TouchableOpacity>
+
+          <Animated.View style={{
+            transform: [{ translateY: creatorSheetAnim.interpolate({ inputRange: [0, 1], outputRange: [700, 0] }) }],
+            backgroundColor: theme.bgSheet,
+            borderTopLeftRadius: 20, borderTopRightRadius: 20,
+            borderWidth: 0.5, borderBottomWidth: 0, borderColor: theme.borderSheet,
+            maxHeight: Dimensions.get('window').height * 0.85,
+          }}>
+            {/* Handle */}
+            <TouchableOpacity onPress={closeCreatorModal} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 4 }}>
+              <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
+            </TouchableOpacity>
+
+            <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 16 }} showsVerticalScrollIndicator={false}>
+              {/* Header row */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', paddingTop: 12, paddingBottom: 20 }}>
+                {creatorStep > 1 && (
+                  <TouchableOpacity onPress={handleCreatorBack} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={{ marginRight: 12 }}>
+                    <Ionicons name="chevron-back" size={20} color={theme.accentBlueRaw} />
+                  </TouchableOpacity>
+                )}
+                <Text style={{ fontFamily: 'BebasNeue_400Regular', fontSize: 22, letterSpacing: 3, color: theme.accentBlueRaw, flex: 1 }}>
+                  {creatorStep === 1 ? 'CHOOSE DATA TYPE' : creatorStep === 2 ? 'CHOOSE CHART TYPE' : 'PREVIEW'}
+                </Text>
+              </View>
+
+              {/* Step 1: Data type grid */}
+              {creatorStep === 1 && (
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                  {(Object.keys(DATA_KEY_META) as DataKey[]).map(dk => {
+                    const meta = DATA_KEY_META[dk];
+                    const sel = creatorDataKey === dk;
+                    return (
+                      <TouchableOpacity key={dk} onPress={() => handleCreatorSelectDataKey(dk)}
+                        style={{ width: '47%', backgroundColor: sel ? theme.accentBlueBg : theme.bgCard,
+                          borderWidth: 1, borderColor: sel ? theme.accentBlueRaw : theme.borderCard,
+                          borderRadius: 12, padding: 14, alignItems: 'center', gap: 6 }}>
+                        <Ionicons name={meta.icon as any} size={22} color={sel ? theme.accentBlue : theme.textMuted} />
+                        <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: sel ? theme.accentBlue : theme.textPrimary, textAlign: 'center' }}>
+                          {meta.label}
+                        </Text>
+                        <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: theme.textDim, textAlign: 'center', lineHeight: 13 }}>
+                          {meta.description}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+
+              {/* Step 2: Chart type picker */}
+              {creatorStep === 2 && creatorDataKey && (
+                <View style={{ flexDirection: 'row', gap: 12 }}>
+                  {availableChartTypes(creatorDataKey).map(ct => {
+                    const sel = creatorChartType === ct;
+                    return (
+                      <TouchableOpacity key={ct} onPress={() => { setCreatorChartType(ct); setCreatorStep(3); }}
+                        style={{ flex: 1, backgroundColor: sel ? theme.accentBlueBg : theme.bgCard,
+                          borderWidth: 1.5, borderColor: sel ? theme.accentBlueRaw : theme.borderCard,
+                          borderRadius: 14, padding: 24, alignItems: 'center', gap: 10 }}>
+                        <Ionicons name={ct === 'line' ? 'analytics-outline' : 'bar-chart-outline'} size={32}
+                          color={sel ? theme.accentBlue : theme.textMuted} />
+                        <Text style={{ fontSize: 16, fontFamily: 'DMSans_700Bold', color: sel ? theme.accentBlue : theme.textPrimary }}>
+                          {ct === 'line' ? 'Line' : 'Bar'}
+                        </Text>
+                        <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim, textAlign: 'center' }}>
+                          {ct === 'line' ? 'Trend line with area fill' : 'Daily bar chart'}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+
+              {/* Step 3: Preview */}
+              {creatorStep === 3 && creatorDataKey && creatorChartType && (
+                <>
+                  <StatsGraphCard
+                    card={{ id: 'creator_preview', type: 'graph', dataKey: creatorDataKey, chartType: creatorChartType, period: 7, label: DATA_KEY_META[creatorDataKey].label, visible: true, order: 0, placement: 'stats' }}
+                    cardTrendData={trendDataMap['7'] ?? EMPTY_TREND_DATA}
+                    theme={theme}
+                    calTarget={calTarget}
+                    stepGoal={stepGoal}
+                    sleepGoal={sleepGoal}
+                    onPeriodChange={() => {}}
+                    onEditPress={() => {}}
+                  />
+                  <TouchableOpacity onPress={handleAddCard}
+                    style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 4 }}>
+                    <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: '#fff', letterSpacing: 1.5 }}>ADD TO STATS</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </ScrollView>
+
+            {/* Step indicator -- fixed at sheet bottom */}
+            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 7, paddingTop: 10, paddingBottom: insets.bottom + 16 }}>
+              {[1, 2, 3].map(s => (
+                <View key={s} style={{ width: s === creatorStep ? 16 : 6, height: 6, borderRadius: 3,
+                  backgroundColor: s <= creatorStep ? theme.accentBlueRaw : theme.borderSubtle }} />
+              ))}
+            </View>
           </Animated.View>
         </View>
       </Modal>

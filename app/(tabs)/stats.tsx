@@ -5,7 +5,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Dimensions, Easing, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Line, Polyline, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Defs, Line, LinearGradient as SvgLinearGradient, Path, Polyline, Rect, Stop, Text as SvgText } from 'react-native-svg';
 import { DayDetailContent } from '../day-detail';
 import { useTheme } from '../../theme';
 
@@ -13,8 +13,11 @@ const MONTH_NAMES = ['January','February','March','April','May','June','July','A
 const RECORD_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CHART_WIDTH = SCREEN_WIDTH - 64;
-const CHART_HEIGHT = 130;
-const AnimatedRect = Animated.createAnimatedComponent(Rect);
+const CHART_HEIGHT = 150;
+const CHART_PAD_LEFT = 38;
+const CHART_PAD_RIGHT = 4;
+const CHART_PAD_TOP = 16;
+const CHART_PAD_BOTTOM = 20;
 
 type DayStatus = 'green' | 'yellow' | 'red' | 'future' | 'none';
 
@@ -24,23 +27,57 @@ const fmtRecordDate = (dk: string | null) => {
   return `${RECORD_MONTHS[parseInt(m) - 1]} ${parseInt(d)}, ${y}`;
 };
 
+const fmtDate = (dk: string) => { const [,m,d] = dk.split('-'); return `${parseInt(m)}/${parseInt(d)}`; };
+
+function niceYTicks(minVal: number, maxVal: number, targetCount = 4): number[] {
+  const range = (maxVal - minVal) || 1;
+  const roughStep = range / (targetCount - 1);
+  const pow = Math.pow(10, Math.floor(Math.log10(roughStep)));
+  const niceSteps = [1, 2, 2.5, 5, 10];
+  const niceStep = niceSteps.reduce((best, s) => {
+    const step = s * pow;
+    return Math.abs(step - roughStep) < Math.abs(best - roughStep) ? step : best;
+  }, Infinity);
+  const start = Math.floor(minVal / niceStep) * niceStep;
+  const ticks: number[] = [];
+  let t = start;
+  while (t <= maxVal + niceStep * 0.1 && ticks.length <= targetCount + 1) {
+    ticks.push(Math.round(t * 10000) / 10000);
+    t += niceStep;
+  }
+  return ticks;
+}
+
+// ── Shared chart fade-in animation ───────────────────────────────────────────
+
+function useChartAnim(hasData: boolean) {
+  const fadeAnim  = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(8)).current;
+  useEffect(() => {
+    fadeAnim.setValue(0);
+    slideAnim.setValue(8);
+    if (hasData) {
+      Animated.parallel([
+        Animated.timing(fadeAnim,  { toValue: 1, duration: 480, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.timing(slideAnim, { toValue: 0, duration: 480, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      ]).start();
+    }
+  }, [hasData]);
+  return { fadeAnim, slideAnim };
+}
+
 // ── Line chart ────────────────────────────────────────────────────────────────
 
-function LineChart({ data, color, unit, goalValue, theme }: {
+function LineChart({ data, color, unit, goalValue, theme, fmtY, gradientId }: {
   data: { date: string, value: number }[],
   color: string,
   unit: string,
   goalValue?: number,
   theme: any,
+  fmtY?: (v: number) => string,
+  gradientId: string,
 }) {
-  const opacity = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    opacity.setValue(0);
-    if (data.length >= 2) {
-      Animated.timing(opacity, { toValue: 1, duration: 700, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
-    }
-  }, [data]);
+  const { fadeAnim, slideAnim } = useChartAnim(data.length >= 2);
 
   if (data.length < 2) {
     return (
@@ -52,14 +89,23 @@ function LineChart({ data, color, unit, goalValue, theme }: {
   }
 
   const values = data.map(d => d.value);
-  const minVal = Math.min(...values);
-  const maxVal = Math.max(...values);
-  const range = maxVal - minVal || 1;
-  const padTop = 16, padBottom = 20;
-  const chartH = CHART_HEIGHT - padTop - padBottom;
+  const allVals = goalValue !== undefined ? [...values, goalValue] : values;
+  const dataMin = Math.min(...allVals);
+  const dataMax = Math.max(...allVals);
 
-  const toX = (i: number) => (i / (data.length - 1)) * CHART_WIDTH;
-  const toY = (v: number) => padTop + (1 - (v - minVal) / range) * chartH;
+  const ticks = niceYTicks(dataMin, dataMax, 4);
+  const tickMin = ticks[0];
+  const tickMax = ticks[ticks.length - 1];
+  const tickRange = tickMax - tickMin || 1;
+
+  const chartH = CHART_HEIGHT - CHART_PAD_TOP - CHART_PAD_BOTTOM;
+  const plotLeft = CHART_PAD_LEFT;
+  const plotRight = CHART_WIDTH - CHART_PAD_RIGHT;
+  const plotW = plotRight - plotLeft;
+  const chartBottom = CHART_PAD_TOP + chartH;
+
+  const toX = (i: number) => plotLeft + (i / (data.length - 1)) * plotW;
+  const toY = (v: number) => CHART_PAD_TOP + (1 - (v - tickMin) / tickRange) * chartH;
 
   const points = data.map((d, i) => `${toX(i)},${toY(d.value)}`).join(' ');
   const lastVal = data[data.length - 1].value;
@@ -67,33 +113,85 @@ function LineChart({ data, color, unit, goalValue, theme }: {
   const lastX = toX(data.length - 1);
   const midIdx = Math.floor(data.length / 2);
 
-  const fmtDate = (dk: string) => { const [,m,d] = dk.split('-'); return `${parseInt(m)}/${parseInt(d)}`; };
+  const areaPath =
+    `M ${toX(0)},${toY(data[0].value)} ` +
+    data.slice(1).map((d, i) => `L ${toX(i + 1)},${toY(d.value)}`).join(' ') +
+    ` L ${lastX},${chartBottom} L ${toX(0)},${chartBottom} Z`;
+
+  const defaultFmtY = (v: number) =>
+    v >= 10000 ? `${Math.round(v / 1000)}k` :
+    v >= 1000  ? `${(v / 1000).toFixed(1)}k` :
+    `${Math.round(v * 10) / 10}`;
+  const fmt = fmtY || defaultFmtY;
+
+  const labelY = lastY < CHART_PAD_TOP + 18 ? lastY + 14 : lastY - 8;
+  const labelAnchor: 'end' | 'middle' | 'start' =
+    lastX > plotRight - 24 ? 'end' :
+    lastX < plotLeft  + 24 ? 'start' : 'middle';
 
   return (
-    <Animated.View style={{ opacity }}>
+    <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
       <Svg width={CHART_WIDTH} height={CHART_HEIGHT}>
-        {goalValue !== undefined && goalValue > minVal && goalValue < maxVal + range * 0.15 && (
+        <Defs>
+          <SvgLinearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={color} stopOpacity={0.22} />
+            <Stop offset="1" stopColor={color} stopOpacity={0} />
+          </SvgLinearGradient>
+        </Defs>
+
+        {/* Grid lines */}
+        {ticks.map((tick, i) => (
+          <Line key={`g${i}`} x1={plotLeft} y1={toY(tick)} x2={plotRight} y2={toY(tick)}
+            stroke={theme.borderSubtle} strokeWidth={0.5} opacity={0.7} />
+        ))}
+
+        {/* Y-axis labels */}
+        {ticks.map((tick, i) => (
+          <SvgText key={`y${i}`} x={plotLeft - 4} y={toY(tick) + 3}
+            fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">
+            {fmt(tick)}
+          </SvgText>
+        ))}
+
+        {/* Goal line */}
+        {goalValue !== undefined && goalValue >= tickMin && goalValue <= tickMax * 1.05 && (
           <>
-            <Line x1={0} y1={toY(goalValue)} x2={CHART_WIDTH} y2={toY(goalValue)}
-              stroke={theme.borderSubtle} strokeWidth={1} strokeDasharray="4,4" />
-            <SvgText x={CHART_WIDTH - 2} y={toY(goalValue) - 4} fill={theme.textDim} fontSize={8}
-              fontFamily="DMSans_500Medium" textAnchor="end">Goal</SvgText>
+            <Line x1={plotLeft} y1={toY(goalValue)} x2={plotRight} y2={toY(goalValue)}
+              stroke={theme.accentBlueBorder} strokeWidth={1} strokeDasharray="4,3" />
+            <SvgText x={plotRight} y={toY(goalValue) - 3}
+              fill={theme.accentBlue} fontSize={8} fontFamily="DMSans_600SemiBold" textAnchor="end">
+              {fmt(goalValue)}
+            </SvgText>
           </>
         )}
+
+        {/* Area fill */}
+        <Path d={areaPath} fill={`url(#${gradientId})`} />
+
+        {/* Line */}
         <Polyline points={points} fill="none" stroke={color} strokeWidth={2.5}
           strokeLinejoin="round" strokeLinecap="round" />
+
+        {/* Latest point */}
         <Circle cx={lastX} cy={lastY} r={4} fill={color} />
-        <SvgText x={0} y={CHART_HEIGHT} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium">
+        <SvgText x={lastX} y={labelY} fill={color}
+          fontSize={9} fontFamily="DMSans_700Bold" textAnchor={labelAnchor}>
+          {fmt(lastVal)}
+        </SvgText>
+
+        {/* X-axis dates */}
+        <SvgText x={plotLeft} y={CHART_HEIGHT} fill={theme.textDim}
+          fontSize={8} fontFamily="DMSans_500Medium">
           {fmtDate(data[0].date)}
         </SvgText>
         {data.length > 10 && (
-          <SvgText x={toX(midIdx)} y={CHART_HEIGHT} fill={theme.textDim} fontSize={8}
-            fontFamily="DMSans_500Medium" textAnchor="middle">
+          <SvgText x={toX(midIdx)} y={CHART_HEIGHT} fill={theme.textDim}
+            fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">
             {fmtDate(data[midIdx].date)}
           </SvgText>
         )}
-        <SvgText x={CHART_WIDTH} y={CHART_HEIGHT} fill={theme.textDim} fontSize={8}
-          fontFamily="DMSans_500Medium" textAnchor="end">
+        <SvgText x={plotRight} y={CHART_HEIGHT} fill={theme.textDim}
+          fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">
           {fmtDate(data[data.length - 1].date)}
         </SvgText>
       </Svg>
@@ -108,14 +206,7 @@ function CalorieBarChart({ data, calTarget, theme }: {
   calTarget: number,
   theme: any,
 }) {
-  const animProgress = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    animProgress.setValue(0);
-    if (data.length > 0) {
-      Animated.timing(animProgress, { toValue: 1, duration: 900, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
-    }
-  }, [data]);
+  const { fadeAnim, slideAnim } = useChartAnim(data.length > 0);
 
   if (data.length === 0) {
     return (
@@ -127,43 +218,277 @@ function CalorieBarChart({ data, calTarget, theme }: {
   }
 
   const target = calTarget || 2000;
-  const maxCal = Math.max(...data.map(d => d.cal), target * 1.1);
-  const barWidth = Math.max(3, (CHART_WIDTH / data.length) - 2);
-  const padTop = 16, padBottom = 20;
-  const chartH = CHART_HEIGHT - padTop - padBottom;
-  const goalY = padTop + (1 - target / maxCal) * chartH;
-  const fmtDate = (dk: string) => { const [,m,d] = dk.split('-'); return `${parseInt(m)}/${parseInt(d)}`; };
+  const maxCal = Math.max(...data.map(d => d.cal), target * 1.05);
+  const ticks = niceYTicks(0, maxCal, 4);
+  const tickMax = ticks[ticks.length - 1];
+
+  const chartH = CHART_HEIGHT - CHART_PAD_TOP - CHART_PAD_BOTTOM;
+  const plotLeft = CHART_PAD_LEFT;
+  const plotRight = CHART_WIDTH - CHART_PAD_RIGHT;
+  const plotW = plotRight - plotLeft;
+  const chartBottom = CHART_PAD_TOP + chartH;
+
+  const toY = (v: number) => CHART_PAD_TOP + (1 - v / tickMax) * chartH;
+  const goalY = toY(target);
   const midIdx = Math.floor(data.length / 2);
 
+  const BAR_W = Math.min(16, plotW / data.length - 3);
+  const slot = plotW / data.length;
+  const fmtK = (v: number) => v >= 1000 ? `${Math.round(v / 100) / 10}k` : `${Math.round(v)}`;
+
   return (
-    <Svg width={CHART_WIDTH} height={CHART_HEIGHT}>
-      <Line x1={0} y1={goalY} x2={CHART_WIDTH} y2={goalY}
-        stroke={theme.borderSubtle} strokeWidth={1} strokeDasharray="4,4" />
-      <SvgText x={CHART_WIDTH - 2} y={goalY - 4} fill={theme.textDim} fontSize={8}
-        fontFamily="DMSans_500Medium" textAnchor="end">Goal</SvgText>
-      {data.map((d, i) => {
-        const pct = target > 0 ? (d.cal / target) * 100 : 0;
-        const barColor = pct >= 80 && pct <= 106 ? theme.statusGood : pct >= 63 && pct <= 114 ? theme.statusWarn : theme.statusBad;
-        const fullBarH = Math.max(2, (d.cal / maxCal) * chartH);
-        const x = i * (CHART_WIDTH / data.length);
-        const barH = animProgress.interpolate({ inputRange: [0, 1], outputRange: [0, fullBarH] });
-        const barY = animProgress.interpolate({ inputRange: [0, 1], outputRange: [padTop + chartH, padTop + chartH - fullBarH] });
-        return <AnimatedRect key={i} x={x + 1} y={barY} width={barWidth} height={barH} fill={barColor} opacity={0.85} rx={2} />;
-      })}
-      <SvgText x={0} y={CHART_HEIGHT} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium">
-        {fmtDate(data[0].date)}
-      </SvgText>
-      {data.length > 10 && (
-        <SvgText x={(midIdx / data.length) * CHART_WIDTH} y={CHART_HEIGHT} fill={theme.textDim} fontSize={8}
-          fontFamily="DMSans_500Medium" textAnchor="middle">
-          {fmtDate(data[midIdx].date)}
+    <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+      <Svg width={CHART_WIDTH} height={CHART_HEIGHT}>
+        {/* Grid lines */}
+        {ticks.map((tick, i) => (
+          <Line key={`g${i}`} x1={plotLeft} y1={toY(tick)} x2={plotRight} y2={toY(tick)}
+            stroke={theme.borderSubtle} strokeWidth={0.5} opacity={0.7} />
+        ))}
+
+        {/* Y-axis labels */}
+        {ticks.map((tick, i) => (
+          <SvgText key={`y${i}`} x={plotLeft - 4} y={toY(tick) + 3}
+            fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">
+            {fmtK(tick)}
+          </SvgText>
+        ))}
+
+        {/* Goal line */}
+        <Line x1={plotLeft} y1={goalY} x2={plotRight} y2={goalY}
+          stroke={theme.accentBlueBorder} strokeWidth={1} strokeDasharray="4,3" />
+        <SvgText x={plotRight} y={goalY - 3}
+          fill={theme.accentBlue} fontSize={8} fontFamily="DMSans_600SemiBold" textAnchor="end">
+          {fmtK(target)}
         </SvgText>
-      )}
-      <SvgText x={CHART_WIDTH} y={CHART_HEIGHT} fill={theme.textDim} fontSize={8}
-        fontFamily="DMSans_500Medium" textAnchor="end">
-        {fmtDate(data[data.length - 1].date)}
-      </SvgText>
-    </Svg>
+
+        {/* Bars */}
+        {data.map((d, i) => {
+          const pct = target > 0 ? (d.cal / target) * 100 : 0;
+          const barColor = pct >= 80 && pct <= 106 ? theme.statusGood : pct >= 63 && pct <= 114 ? theme.statusWarn : theme.statusBad;
+          const barH = Math.max(2, (d.cal / tickMax) * chartH);
+          const x = plotLeft + i * slot + (slot - BAR_W) / 2;
+          return <Rect key={i} x={x} y={chartBottom - barH} width={BAR_W} height={barH} fill={barColor} opacity={0.85} rx={2} />;
+        })}
+
+        {/* X-axis dates */}
+        <SvgText x={plotLeft} y={CHART_HEIGHT} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium">
+          {fmtDate(data[0].date)}
+        </SvgText>
+        {data.length > 10 && (
+          <SvgText x={plotLeft + (midIdx / data.length) * plotW + slot / 2} y={CHART_HEIGHT}
+            fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">
+            {fmtDate(data[midIdx].date)}
+          </SvgText>
+        )}
+        <SvgText x={plotRight} y={CHART_HEIGHT} fill={theme.textDim}
+          fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">
+          {fmtDate(data[data.length - 1].date)}
+        </SvgText>
+      </Svg>
+    </Animated.View>
+  );
+}
+
+// ── Macro stacked bar chart ───────────────────────────────────────────────────
+
+const MACRO_PROTEIN = '#0d9268';
+const MACRO_CARBS   = '#c47d1a';
+const MACRO_FAT     = '#a83232';
+
+function MacroBarChart({ data, theme }: {
+  data: { date: string, protein: number, carbs: number, fat: number }[],
+  theme: any,
+}) {
+  const { fadeAnim, slideAnim } = useChartAnim(data.length > 0);
+
+  if (data.length === 0) {
+    return (
+      <View style={{ height: CHART_HEIGHT, alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+        <Ionicons name="nutrition-outline" size={24} color={theme.iconMuted} />
+        <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>No macro data yet</Text>
+      </View>
+    );
+  }
+
+  const maxTotal = Math.max(...data.map(d => d.protein + d.carbs + d.fat), 1);
+  const ticks = niceYTicks(0, maxTotal, 4);
+  const tickMax = ticks[ticks.length - 1];
+
+  const chartH = CHART_HEIGHT - CHART_PAD_TOP - CHART_PAD_BOTTOM;
+  const plotLeft = CHART_PAD_LEFT;
+  const plotRight = CHART_WIDTH - CHART_PAD_RIGHT;
+  const plotW = plotRight - plotLeft;
+  const chartBottom = CHART_PAD_TOP + chartH;
+
+  const toH = (v: number) => Math.max(0, (v / tickMax) * chartH);
+  const toY  = (v: number) => CHART_PAD_TOP + (1 - v / tickMax) * chartH;
+  const midIdx = Math.floor(data.length / 2);
+
+  const BAR_W = Math.min(16, plotW / data.length - 3);
+  const slot = plotW / data.length;
+
+  return (
+    <>
+      <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+        <Svg width={CHART_WIDTH} height={CHART_HEIGHT}>
+          {/* Grid lines */}
+          {ticks.map((tick, i) => (
+            <Line key={`g${i}`} x1={plotLeft} y1={toY(tick)} x2={plotRight} y2={toY(tick)}
+              stroke={theme.borderSubtle} strokeWidth={0.5} opacity={0.7} />
+          ))}
+
+          {/* Y-axis labels */}
+          {ticks.map((tick, i) => (
+            <SvgText key={`y${i}`} x={plotLeft - 4} y={toY(tick) + 3}
+              fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">
+              {`${Math.round(tick)}g`}
+            </SvgText>
+          ))}
+
+          {/* Stacked bars */}
+          {data.map((d, i) => {
+            const x = plotLeft + i * slot + (slot - BAR_W) / 2;
+            const pH = toH(d.protein);
+            const cH = toH(d.carbs);
+            const fH = toH(d.fat);
+            return [
+              <Rect key={`p${i}`} x={x} y={chartBottom - pH}           width={BAR_W} height={pH} fill={MACRO_PROTEIN} opacity={0.9} />,
+              <Rect key={`c${i}`} x={x} y={chartBottom - pH - cH}      width={BAR_W} height={cH} fill={MACRO_CARBS}   opacity={0.9} />,
+              <Rect key={`f${i}`} x={x} y={chartBottom - pH - cH - fH} width={BAR_W} height={fH} fill={MACRO_FAT}     opacity={0.9} rx={2} />,
+            ];
+          })}
+
+          {/* X-axis dates */}
+          <SvgText x={plotLeft} y={CHART_HEIGHT} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium">
+            {fmtDate(data[0].date)}
+          </SvgText>
+          {data.length > 10 && (
+            <SvgText x={plotLeft + (midIdx / data.length) * plotW + slot / 2} y={CHART_HEIGHT}
+              fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">
+              {fmtDate(data[midIdx].date)}
+            </SvgText>
+          )}
+          <SvgText x={plotRight} y={CHART_HEIGHT} fill={theme.textDim}
+            fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">
+            {fmtDate(data[data.length - 1].date)}
+          </SvgText>
+        </Svg>
+      </Animated.View>
+      <View style={{ flexDirection: 'row', gap: 14, marginTop: 8 }}>
+        {[
+          { color: MACRO_PROTEIN, label: 'Protein' },
+          { color: MACRO_CARBS,   label: 'Carbs' },
+          { color: MACRO_FAT,     label: 'Fat' },
+        ].map(l => (
+          <View key={l.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+            <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: l.color }} />
+            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' }}>{l.label}</Text>
+          </View>
+        ))}
+      </View>
+    </>
+  );
+}
+
+// ── Workout frequency chart ───────────────────────────────────────────────────
+
+function WorkoutFrequencyChart({ data, theme }: {
+  data: { date: string, hadWorkout: boolean }[],
+  theme: any,
+}) {
+  const weeks: { label: string, count: number }[] = [];
+  for (let i = 0; i < data.length; i += 7) {
+    const chunk = data.slice(i, i + 7);
+    weeks.push({ label: fmtDate(chunk[0].date), count: chunk.filter(d => d.hadWorkout).length });
+  }
+
+  // Filter leading all-zero weeks (before app existed)
+  const firstNonZero = weeks.findIndex(w => w.count > 0);
+  const visibleWeeks = firstNonZero > 0 ? weeks.slice(firstNonZero) : weeks;
+
+  const { fadeAnim, slideAnim } = useChartAnim(visibleWeeks.length > 0);
+
+  if (visibleWeeks.length === 0) {
+    return (
+      <View style={{ height: CHART_HEIGHT, alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+        <Ionicons name="barbell-outline" size={24} color={theme.iconMuted} />
+        <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>No workout data yet</Text>
+      </View>
+    );
+  }
+
+  const chartH = CHART_HEIGHT - CHART_PAD_TOP - CHART_PAD_BOTTOM;
+  const plotLeft = CHART_PAD_LEFT;
+  const plotRight = CHART_WIDTH - CHART_PAD_RIGHT;
+  const plotW = plotRight - plotLeft;
+  const chartBottom = CHART_PAD_TOP + chartH;
+  const maxY = 7;
+
+  const toY = (v: number) => CHART_PAD_TOP + (1 - v / maxY) * chartH;
+  const fixedTicks = [0, 2, 4, 7];
+
+  const BAR_W = Math.min(28, plotW / visibleWeeks.length - 4);
+  const slot = plotW / visibleWeeks.length;
+
+  return (
+    <>
+      <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+        <Svg width={CHART_WIDTH} height={CHART_HEIGHT}>
+          {/* Grid lines */}
+          {fixedTicks.map((tick, i) => (
+            <Line key={`g${i}`} x1={plotLeft} y1={toY(tick)} x2={plotRight} y2={toY(tick)}
+              stroke={theme.borderSubtle} strokeWidth={0.5} opacity={0.7} />
+          ))}
+
+          {/* Y-axis labels */}
+          {fixedTicks.map((tick, i) => (
+            <SvgText key={`y${i}`} x={plotLeft - 4} y={toY(tick) + 3}
+              fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">
+              {tick}
+            </SvgText>
+          ))}
+
+          {/* Bars */}
+          {visibleWeeks.map((w, i) => {
+            const barH = Math.max(2, (w.count / maxY) * chartH);
+            const x = plotLeft + i * slot + (slot - BAR_W) / 2;
+            const barColor = w.count >= 5 ? theme.statusGood : w.count >= 3 ? theme.accentBlue : w.count > 0 ? theme.statusWarn : theme.borderSubtle;
+            return <Rect key={i} x={x} y={chartBottom - barH} width={BAR_W} height={barH} fill={barColor} opacity={0.85} rx={3} />;
+          })}
+
+          {/* X dates */}
+          {visibleWeeks.length <= 8 ? (
+            visibleWeeks.map((w, i) => (
+              <SvgText key={i} x={plotLeft + i * slot + slot / 2} y={CHART_HEIGHT}
+                fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">
+                {w.label}
+              </SvgText>
+            ))
+          ) : (
+            <>
+              <SvgText x={plotLeft} y={CHART_HEIGHT} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium">
+                {visibleWeeks[0].label}
+              </SvgText>
+              <SvgText x={plotRight} y={CHART_HEIGHT} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">
+                {visibleWeeks[visibleWeeks.length - 1].label}
+              </SvgText>
+            </>
+          )}
+        </Svg>
+      </Animated.View>
+      <View style={{ flexDirection: 'row', gap: 14, marginTop: 8 }}>
+        {[
+          { color: theme.statusGood, label: '5+ days' },
+          { color: theme.accentBlue, label: '3-4 days' },
+          { color: theme.statusWarn, label: '1-2 days' },
+        ].map(l => (
+          <View key={l.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+            <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: l.color }} />
+            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' }}>{l.label}</Text>
+          </View>
+        ))}
+      </View>
+    </>
   );
 }
 
@@ -280,6 +605,8 @@ export default function StatsScreen() {
   const [stepsHistory, setStepsHistory] = useState<{ date: string, value: number }[]>([]);
   const [activeCalHistory, setActiveCalHistory] = useState<{ date: string, value: number }[]>([]);
   const [sleepHistory, setSleepHistory] = useState<{ date: string, value: number }[]>([]);
+  const [macroHistory, setMacroHistory] = useState<{ date: string, protein: number, carbs: number, fat: number }[]>([]);
+  const [workoutDayHistory, setWorkoutDayHistory] = useState<{ date: string, hadWorkout: boolean }[]>([]);
 
   const [calTarget, setCalTarget] = useState(0);
   const [stepGoal, setStepGoal] = useState(10000);
@@ -292,6 +619,8 @@ export default function StatsScreen() {
     sleepHours: number | null, sleepHoursDate: string | null,
   }>({ steps: null, stepsDate: null, activeCals: null, activeCalsDate: null, water: null, waterDate: null, sleepHours: null, sleepHoursDate: null });
 
+  const [profileBmr, setProfileBmr] = useState(0);
+  const hasLoadedProfile = useRef(false);
   const [styleMode, setStyleMode] = useState<'Discipline' | 'Balanced' | 'Mindful'>('Balanced');
   const [periodData, setPeriodData] = useState({
     avgCal: 0, avgProtein: 0, avgCarbs: 0, avgFat: 0,
@@ -331,8 +660,12 @@ export default function StatsScreen() {
     const sh: { date: string, value: number }[] = [];
     const ah: { date: string, value: number }[] = [];
     const slh: { date: string, value: number }[] = [];
+    const mh: { date: string, protein: number, carbs: number, fat: number }[] = [];
+    const wdh: { date: string, hadWorkout: boolean }[] = [];
+
     for (let i = days - 1; i >= 0; i--) {
       const dateKey = getDateKey(i);
+      let hadWorkout = false;
       try {
         const saved = await AsyncStorage.getItem(`pj_${dateKey}`);
         if (saved) {
@@ -340,20 +673,30 @@ export default function StatsScreen() {
           if (data.weight) wh.push({ date: dateKey, value: data.weight });
           if (data.entries?.length > 0) {
             const total = data.entries.reduce((s: number, e: any) => s + e.cal, 0);
-            if (total > 0) ch.push({ date: dateKey, cal: total });
+            if (total > 0) {
+              ch.push({ date: dateKey, cal: total });
+              const p = data.entries.reduce((s: number, e: any) => s + (e.protein || 0), 0);
+              const c = data.entries.reduce((s: number, e: any) => s + (e.carbs || 0), 0);
+              const f = data.entries.reduce((s: number, e: any) => s + (e.fat || 0), 0);
+              if (p + c + f > 0) mh.push({ date: dateKey, protein: Math.round(p), carbs: Math.round(c), fat: Math.round(f) });
+            }
           }
           if (data.steps) sh.push({ date: dateKey, value: data.steps });
           if (data.activeCalories) ah.push({ date: dateKey, value: data.activeCalories });
           const sleepH = data.sleepOverride || data.sleepHours;
           if (sleepH) slh.push({ date: dateKey, value: sleepH });
+          hadWorkout = (data.caloriesBurned || 0) > 0;
         }
       } catch {}
+      wdh.push({ date: dateKey, hadWorkout });
     }
     setWeightHistory(wh);
     setCalHistory(ch);
     setStepsHistory(sh);
     setActiveCalHistory(ah);
     setSleepHistory(slh);
+    setMacroHistory(mh);
+    setWorkoutDayHistory(wdh);
   };
 
   const loadRecords = async () => {
@@ -519,6 +862,8 @@ export default function StatsScreen() {
         setCalTarget(target);
         setStepGoal(step);
         setSleepGoal(sleep);
+        setProfileBmr(bmr);
+        hasLoadedProfile.current = true;
 
         await Promise.all([
           loadTrendData(trendPeriod),
@@ -528,12 +873,18 @@ export default function StatsScreen() {
         ]);
       };
       loadAll();
-    }, [calendarMonth, calendarYear, activePeriod, trendPeriod])
+    }, [calendarMonth, calendarYear, trendPeriod])
   );
 
   useEffect(() => {
     loadTrendData(trendPeriod);
   }, [trendPeriod]);
+
+  useEffect(() => {
+    if (hasLoadedProfile.current) {
+      loadPeriodData(activePeriod, calTarget, sleepGoal, profileBmr);
+    }
+  }, [activePeriod]);
 
   const getDayStatus = (day: number): DayStatus => {
     const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -598,6 +949,10 @@ export default function StatsScreen() {
   const stepsAboveGoal = stepsHistory.filter(d => d.value >= stepGoal).length;
   const sleepAtGoal = sleepHistory.filter(d => d.value >= sleepGoal).length;
 
+  const totalWorkoutDays = workoutDayHistory.filter(d => d.hadWorkout).length;
+  const totalWeeks = Math.max(1, Math.ceil(workoutDayHistory.length / 7));
+  const avgWorkoutsPerWeek = Math.round(totalWorkoutDays / totalWeeks * 10) / 10;
+
   return (
     <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
       <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
@@ -639,7 +994,6 @@ export default function StatsScreen() {
             )}
             <View style={{ position: 'relative' }}>
               <View style={{ position: 'absolute', top: 0, bottom: 0, left: '50%', width: 0.5, backgroundColor: theme.borderSubtle }} />
-              {/* Nutrition grid -- non-Mindful */}
               {styleMode !== 'Mindful' && (
                 <>
                   <View style={[styles.glanceRow, { borderBottomColor: theme.borderSubtle }]}>
@@ -664,7 +1018,6 @@ export default function StatsScreen() {
                   </View>
                 </>
               )}
-              {/* Activity */}
               <View style={[styles.glanceRow, { borderBottomColor: theme.borderSubtle }]}>
                 <View style={styles.glanceCellL}>
                   <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>STEPS / DAY</Text>
@@ -687,7 +1040,6 @@ export default function StatsScreen() {
                   </View>
                 </View>
               )}
-              {/* Sleep */}
               {styleMode !== 'Mindful' && (
                 <View style={[styles.glanceRow, { borderBottomColor: theme.borderSubtle }]}>
                   <View style={styles.glanceCellL}>
@@ -700,7 +1052,6 @@ export default function StatsScreen() {
                   </View>
                 </View>
               )}
-              {/* Water + Weight */}
               <View style={[styles.glanceRow, { borderBottomColor: 'transparent' }]}>
                 <View style={styles.glanceCellL}>
                   <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>WATER / DAY</Text>
@@ -733,8 +1084,9 @@ export default function StatsScreen() {
           </View>
 
           <GraphCard icon="body-outline" label="Weight"
-            stat={avgWeight ? `Avg ${avgWeight} lbs this period${weightChange !== null ? ` · ${weightChange > 0 ? '+' : ''}${weightChange} lbs from start` : ''}` : undefined}>
-            <LineChart data={weightHistory} color={theme.textSecondary} unit=" lbs" theme={theme} />
+            stat={avgWeight ? `Avg ${avgWeight} lbs${weightChange !== null ? ` · ${weightChange > 0 ? '+' : ''}${weightChange} lbs from start` : ''}` : undefined}>
+            <LineChart data={weightHistory} color={theme.textSecondary} unit=" lbs"
+              fmtY={(v) => v % 1 === 0 ? `${v}` : `${v.toFixed(1)}`} gradientId="wt_grad" theme={theme} />
           </GraphCard>
 
           <GraphCard icon="flame-outline" label="Calories"
@@ -747,19 +1099,34 @@ export default function StatsScreen() {
             </View>
           </GraphCard>
 
+          <GraphCard icon="nutrition-outline" label="Macros"
+            stat={periodData.avgProtein > 0 ? `Avg P: ${periodData.avgProtein}g  C: ${periodData.avgCarbs}g  F: ${periodData.avgFat}g` : undefined}>
+            <MacroBarChart data={macroHistory} theme={theme} />
+          </GraphCard>
+
           <GraphCard icon="footsteps-outline" label="Steps"
             stat={avgSteps !== null ? `Avg ${avgSteps.toLocaleString()} steps/day · ${stepsAboveGoal} days above goal` : undefined}>
-            <LineChart data={stepsHistory} color={theme.accentBlue} unit="" goalValue={stepGoal} theme={theme} />
+            <LineChart data={stepsHistory} color={theme.accentBlue} unit=""
+              goalValue={stepGoal} fmtY={(v) => v >= 1000 ? `${Math.round(v/1000)}k` : `${Math.round(v)}`}
+              gradientId="st_grad" theme={theme} />
           </GraphCard>
 
           <GraphCard icon="heart-outline" label="Active Calories"
-            stat={avgActiveCals !== null ? `Avg ${avgActiveCals.toLocaleString()} kcal/day this period` : undefined}>
-            <LineChart data={activeCalHistory} color={theme.statusWarn} unit=" kcal" theme={theme} />
+            stat={avgActiveCals !== null ? `Avg ${avgActiveCals.toLocaleString()} kcal/day` : undefined}>
+            <LineChart data={activeCalHistory} color={theme.statusWarn} unit=" kcal"
+              fmtY={(v) => `${Math.round(v)}`} gradientId="ac_grad" theme={theme} />
           </GraphCard>
 
           <GraphCard icon="moon-outline" label="Sleep"
             stat={avgSleep !== null ? `Avg ${avgSleep}h/night · ${sleepAtGoal} nights at goal` : undefined}>
-            <LineChart data={sleepHistory} color={theme.sleepRem} unit="h" goalValue={sleepGoal} theme={theme} />
+            <LineChart data={sleepHistory} color={theme.sleepRem} unit="h"
+              goalValue={sleepGoal} fmtY={(v) => `${Math.round(v * 10) / 10}h`}
+              gradientId="sl_grad" theme={theme} />
+          </GraphCard>
+
+          <GraphCard icon="barbell-outline" label="Workout Frequency"
+            stat={workoutDayHistory.length > 0 ? `Avg ${avgWorkoutsPerWeek} workouts/week` : undefined}>
+            <WorkoutFrequencyChart data={workoutDayHistory} theme={theme} />
           </GraphCard>
         </CollapsibleSection>
 

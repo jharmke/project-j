@@ -389,6 +389,8 @@ Custom streaks system -- all three modes get full access to all streak options. 
 
 Visual polish
 
+Theme audit pass -- dedicated session required. Known issues found on quick pass: Dark theme bg and cards both so dark they are barely distinguishable; Slate bg/cards too similar; Blush same issue. Warm theme needs a TOTAL rework -- current state is visually broken. Light theme is primary testing theme but all 5 need to pass CPP. Do after stats page is complete. (SOON -- HIGH)
+
 Empty state illustrations -- replace icon + text empty states with tasteful SVG illustrations. Consistent style, theme-aware colors. Apply across all lists and cards that can be empty.
 
 Social
@@ -428,21 +430,25 @@ Stats page overhaul -- HIGH PRIORITY, dedicated session. Full spec:
 - BUG FIXED: calendar day tap was black screen (now opens same modal as home). Per-metric exclusion UI still open.
 - [x] SHIPPED THIS SESSION: Full rewrite of stats.tsx. CollapsibleSection component with label + chevron toggle. Sections: At a Glance (open), Trends (open), Records (closed), Streaks (closed), Calendar (closed). calTarget now loads from pj_settings -- was hardcoded 1750, critical bug fixed. Records section shows all-time bests with date achieved (getAllKeys + multiGet scan). AnimatedRect bars (useNativeDriver: false) and opacity LineChart (useNativeDriver: true). Active cals color fixed to statusWarn (amber). loadTrendData respects 7/30/90 period. Sparse data shows only available points, no phantom gaps.
 - [x] SHIPPED: At a Glance section locked. 2-column grid with absolute center divider (position absolute, left: 50%), width: 50% cells, symmetric 12px inner padding. Stats (row order): Calories/Day | Net Cals/Day, Active Cals/Day | Cal Goal/Day, Steps/Day | Workout Days, Sleep/Night | Sleep Score, Water/Day | Weight Change. Net cals uses Mifflin-St Jeor BMR (from profile height/weight/age/sex) + active cals subtracted from consumed. Macros removed from At a Glance. Mindful mode hides all nutrition rows. CollapsibleSection headers: accent color + chevron + center divider line. "Based on X days with food logged" scoping text shown under period selector.
-- All graphs are placeholder/ugly -- need a full consistent graph system: animated, themed, proper axis labels, consistent colors, CPP
-- Custom graph system -- dropdown to pick data type (weight, calories, macros, steps, sleep, active cals, workout freq), chart type, timeframe -- save as pinned card on stats or home
-- Default cards pre-loaded so page is never empty: weight, calories, steps
-- Add edit button to stats page like home screen (show/hide/reorder cards)
-- FAB for stats -- Add Graph and Add Report
-- Reports feature -- weekly/monthly summaries with context, shareable/exportable snapshots
-- Card visual differentiation -- graph cards, report cards, streak/info cards need distinct visual language (icons, colored borders, etc.)
-- Macro trend graphs -- big 3 grouped bar view + individual P/C/F in dropdown
-- PR/best day cards -- steps, active cals, water, sleep score, etc. Exclude incomplete log days from calorie-based PRs
+- [x] SHIPPED: Graph system Phase 1 -- all Trends charts rebuilt to CPP quality. LineChart: Y-axis with niceYTicks, horizontal grid lines, gradient area fill, latest-point dot + value badge, goal line shows actual value. CalorieBarChart: same Y-axis/grid treatment, fixed 16px bar width (no more giant slabs on sparse data). New MacroBarChart: stacked P/C/F bars per day, green/amber/red, grams Y-axis, legend row. New WorkoutFrequencyChart: weekly bars 0-7 scale, color-coded by consistency, leading zero-weeks filtered. All animations: shared useChartAnim hook -- opacity + translateY settle, 100% useNativeDriver: true, no more JS thread choppiness. At a Glance period change decoupled from trend chart reload (no more flickering when changing glance period). profileBmr extracted to state. Weight Y-axis: decimal labels (176.5 not 177). Value label anchor: dynamic end/middle/start to prevent right-edge clipping.
+- OPEN BUG: niceYTicks doesn't guarantee tickMax >= dataMax -- if data peak exceeds top tick, line gets clipped at top of SVG. Fix: ensure last tick always >= dataMax.
+- OPEN BUG: Line chart last-value label overlaps with descending line -- need small opaque background pill behind the value text.
+- OPEN BUG: Multiple setState calls in loadTrendData (7 calls) cause flicker on period switch -- fix: collapse into single trendData state object, one render.
+- OPEN: Trend chart bottom stat labels -- visual treatment too plain (just text), wording needs work. Consider hairline divider above, two lines with size hierarchy, wording reframe (lead with context not number). Justin wants to discuss wording before changes.
+- OPEN: Tap-to-show callout bubble on all charts -- tap bar or near line point, floating badge shows date + value. Dismiss on second tap. (Batch 2)
+- OPEN: Workout frequency data source -- currently uses caloriesBurned which counts passive activity. Fix: read pj_workout_state.programs[dateKey].exercises.length > 0 for actual logged workouts. Apple Health imported workouts write to programs[dateKey] via settings.tsx import flow. (Batch 2)
+- OPEN: Apple Health imported workouts should auto-mark workout day as completed -- currently user must manually check off imported sessions. Fix needed in import flow.
+- Custom graph system -- dropdown to pick data type (weight, calories, macros, steps, sleep, active cals, workout freq), chart type, timeframe -- save as pinned card on stats or home. Architecture: generic chart components already built data-driven, need creator modal + TREND_CARDS registry + show/hide/reorder edit button (same pattern as home screen). Phase 3.
+- Default cards pre-loaded so page is never empty: weight, calories, steps. (Phase 3)
+- Add edit button to stats page like home screen (show/hide/reorder cards). (Phase 3)
+- FAB for stats -- Add Graph and Add Report. (Phase 3)
+- Reports feature -- weekly/monthly summaries with context, shareable/exportable snapshots. (Phase 4)
+- Card visual differentiation -- graph cards, report cards, streak/info cards need distinct visual language. (Phase 3)
+- PR/best day cards -- steps, active cals, water, sleep score, etc. Exclude incomplete log days from calorie-based PRs.
 - Goal hit rate card (maybe -- revisit during session)
 - Body measurements as graph data option
-- Workout frequency chart
-- Summary card polish pass + full Reports feature (placement TBD)
 - Calendar needs work -- not terrible but needs attention alongside rest of overhaul
-- Layout decision: Option 1 as foundation (sectioned groups with labeled headers: At a Glance, Trends, Records, Reports), Option 2 mixed in within sections (horizontal scroll rows within sections), Option 3 sub-tabs deferred
+- Charts on stats page should be placeable on home tab too -- shared card pool, one unified edit sheet across both tabs. Architecture decision for Phase 3.
 Stats page depth/shadow pass -- same shadow treatment as settings cards (shadowOpacity 0.18). Do during stats overhaul session.
 Streak card -- home screen: Bible, workout, calorie streaks. Workout tab version: X workouts this week toward weekly goal, visible on workout tab itself. (HIGH)
 Morning briefing card -- first open of day, faith first, yesterday recap, today targets.

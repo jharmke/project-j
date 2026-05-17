@@ -228,9 +228,9 @@ Search results CPP pass -- DONE. Card-style rows, brand name separated, macro st
 Macros on search result rows -- DONE. Protein/carbs/fat strip under food name, macro colors match app system.
 food.get on search result tap -- DONE. Fetches real servings on text search tap via fetchFatSecretServings helper. Extended nutrition (fiber/sodium/etc) only available after food.get.v4 call -- not available on search list rows by design (20 simultaneous API calls per search not viable). Extended nutrition always present on food detail screen after tap.
 Serving size picker on food detail -- DONE. Serving picker modal, grams defaults to real serving grams, per-gram rates locked for accurate manual gram scaling. Picker hidden when fsServings.length <= 1 (no choice to show).
-Servings stepper on food detail -- DONE. Tap +/- to multiply serving macros by count. Resets to 1 when user overrides gram field. useServingBased path uses selectedServing.calories * servingCount for new entries, bypasses calPer100g fallback entirely.
+Servings stepper on food detail -- DONE. Tap +/- to multiply serving macros by count. Resets to 1 when user overrides gram field. useServingBased path uses selectedServing.calories * servingCount for new entries, bypasses calPer100g fallback entirely. Edit mode fix: on-demand fsServings fetch when not pre-loaded; servingCountTouched flag breaks useExisting so macros update live on stepper tap.
 SET banner tip -- plain icon + text in place but still needs CPP polish pass.
-UNSET feature -- SET button toggle on search results page, unset on food detail near star.
+[x] Set Foods tab -- DONE. 5th tab in add-food.tsx food library (Recent / My Foods / Favorites / Recipes / Set Foods). Shows all pj_barcode_overrides entries, each row has UNSET red pill button. Tapping UNSET removes pin from storage + toast. Tapping row opens food detail to log. Tab font 13→11px for 5-tab fit. Empty state: pin icon + "No pinned foods." UNSET on food detail near star still open -- requires barcode context in route params.
 Rename food on entry -- editable name field on food detail before logging, custom name stored with entry.
 Save New Food to Library -- full macro fields in proper modal, not just name + calories. SUPERSEDED by Custom Food Creator below.
 Custom Food Creator -- DONE. components/CustomFoodCreator.tsx, centered modal with scale-in animation, required name + calories with * markers, optional brand/macros/extended nutrition in collapsible section, serving size + serving label, saves to pj_my_foods with custom_XXXXX ID. Entry point: + Food button in log.tsx header. + Recipe also moved to log.tsx header. Custom foods open to correct serving with absolute macros (useExisting extended to isCustom flag). Extended nutrition saves as foodNutrients array. Brand shows under food name in food detail. Photo upload, vitamins/minerals deferred to SOON.
@@ -252,7 +252,7 @@ Food detail polish pass:
 - Section label "NUTRITION FOR XG" to card label style (9px, uppercase, 3 letter-spacing, textMuted)
 - Macro values lowercase g (6g not 6G)
 - Star/favorite -- spring animation on tap, haptic, toast on food-detail. Haptic + toast + confirm Alert on FlatList star rows in add-food. DONE.
-- Empty states on all 4 library tabs (Recent / My Foods / Favorites / Recipes) -- icon, title, subtitle per tab. DONE.
+- Empty states on all 5 library tabs (Recent / My Foods / Favorites / Recipes / Set Foods) -- icon, title, subtitle per tab. DONE.
 - Search no-results empty state -- DONE. Search icon, "No results for X", subtitle.
 - Favorites fsId save + fetch real label serving on tap -- DONE via food-detail path. add-food list path still open (see bug above).
 - "..." menu on food detail → Save as Copy, opens Custom Food Creator prefilled (NEXT BATCH)
@@ -260,7 +260,7 @@ Food detail polish pass:
 
 Food log screen polish pass:
 - X delete button on entry rows to muted red
-- Macro donut center calorie number -- DONE. Removed from log.tsx and food-detail.tsx.
+- Macro donut center calorie number -- DONE. Removed from log.tsx (uses MacroStackedBar). Restored to food-detail.tsx donut center -- calories + KCAL label in absolute-positioned View over SVG.
 - Macro donut sequential segment animation -- DONE. Timing fixed to truly sequential: protein ends at ~1000ms, 150ms pause, carbs starts at 1150ms, 150ms pause, fat starts at 2000ms. Both log.tsx and food-detail.tsx updated.
 - MacroDonut replaced with MacroStackedBar in log.tsx Today's Total -- DONE. Three horizontal animated bars (protein/carbs/fat), proportional widths, gram counts + P/C/F labels to the right. Sequential animation matches donut timing. Redundant bottom P/C/F row removed.
 - Macro donut animation on food detail -- DONE. Animated version matching log.tsx MacroDonut.

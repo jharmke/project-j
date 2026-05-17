@@ -70,6 +70,10 @@ function MacroDonut({ protein, carbs, fat, calories, theme }: { protein: number;
         <AnimCircle cx={size/2} cy={size/2} r={radius} stroke={theme.macroFat} strokeWidth={strokeWidth} fill="none"
           animatedProps={fatProps} strokeDashoffset={-((proteinPct + carbsPct) * circumference)} strokeLinecap="butt" />
       </Svg>
+      <View style={{ position: 'absolute', alignItems: 'center' }}>
+        <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'Bebas_400Regular' }}>{Math.round(calories)}</Text>
+        <Text style={{ color: theme.textDim, fontSize: 8, fontFamily: 'DMSans_400Regular', letterSpacing: 1 }}>KCAL</Text>
+      </View>
     </View>
   );
 }
@@ -165,6 +169,17 @@ const isRecipeMode = recipeMode === 'true';
   } : null;
 
   useEffect(() => {
+    if (isEditing && fsServings.length === 0 && food?.fsId) {
+      fetchFatSecretServings(food.fsId).then(servings => {
+        if (servings.length > 0) {
+          const def = servings.find((s: any) => s.isDefault) || servings[0];
+          setSelectedServing(def);
+        }
+      }).catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
     const loadFav = async () => {
       try {
         const saved = await AsyncStorage.getItem('pj_favorites');
@@ -251,6 +266,7 @@ const [showTimePicker, setShowTimePicker] = useState(false);
       : '100');
   const [amount, setAmount] = useState(originalAmount);
   const [amountChanged, setAmountChanged] = useState(false);
+  const [servingCountTouched, setServingCountTouched] = useState(false);
   const [servingCount, setServingCount] = useState(1);
   const [hasChanges, setHasChanges] = useState(false);
   const [unit, setUnit] = useState<'g' | 'oz' | 'serving'>(food?.existingUnit || 'g');
@@ -279,7 +295,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
   const multiplier = getMultiplier();
 
   // In edit mode OR for custom foods, use stored absolute values until the user changes the amount
-  const useExisting = (isEditing || food.isCustom) && !amountChanged && food.existingCal !== undefined;
+  const useExisting = (isEditing || food.isCustom) && !amountChanged && !servingCountTouched && food.existingCal !== undefined;
   // Primary path for FatSecret foods: multiply selected serving directly by servingCount
   const useServingBased = !useExisting && selectedServing !== null && !amountChanged;
   // Edit entry fallback: derive per-gram rate from original logged amount + values
@@ -454,6 +470,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
                 onPress={() => {
                   const next = Math.max(1, servingCount - 1);
                   setServingCount(next);
+                  setServingCountTouched(true);
                   setAmountChanged(false);
                   setHasChanges(true);
                   if (selectedServing.grams > 0) setAmount((selectedServing.grams * next).toString());
@@ -466,6 +483,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
                 onPress={() => {
                   const next = servingCount + 1;
                   setServingCount(next);
+                  setServingCountTouched(true);
                   setAmountChanged(false);
                   setHasChanges(true);
                   if (selectedServing.grams > 0) setAmount((selectedServing.grams * next).toString());

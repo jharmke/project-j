@@ -323,7 +323,7 @@ export default function AddFoodScreen() {
   const [newCal, setNewCal] = useState('');
   const [showCreateFood, setShowCreateFood] = useState(false);
   const [searching, setSearching] = useState(false);
-  const [activeTab, setActiveTab] = useState<'recent' | 'myfoods' | 'favorites' | 'recipes'>('recent');
+  const [activeTab, setActiveTab] = useState<'recent' | 'myfoods' | 'favorites' | 'recipes' | 'pinned'>('recent');
 const [recentFoods, setRecentFoods] = useState<SearchResult[]>([]);
 const [favorites, setFavorites] = useState<MyFood[]>([]);
 const [recipes, setRecipes] = useState<any[]>([]);
@@ -397,6 +397,16 @@ const saveEditMyFood = async () => {
     } catch (e) {
       console.log('Load barcode overrides error', e);
     }
+  };
+
+  const unsetOverride = async (barcode: string) => {
+    try {
+      const updated = { ...barcodeOverrides };
+      delete updated[barcode];
+      setBarcodeOverrides(updated);
+      await AsyncStorage.setItem('pj_barcode_overrides', JSON.stringify(updated));
+      showToast('Override removed', '', 'info');
+    } catch (e) {}
   };
 
   const saveOverride = async (item: any) => {
@@ -943,6 +953,11 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
   onPress={() => setActiveTab('recipes')}>
   <Text style={[styles.tabText, activeTab === 'recipes' && styles.tabTextActive]}>Recipes</Text>
 </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'pinned' && styles.tabActive]}
+            onPress={() => setActiveTab('pinned')}>
+            <Text style={[styles.tabText, activeTab === 'pinned' && styles.tabTextActive]}>Set Foods</Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -995,6 +1010,11 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
             isRecipe: true,
             recipeData: r,
             cal: Math.round(r.totalCal / r.servingCount),
+          })) :
+          activeTab === 'pinned' ? Object.entries(barcodeOverrides).map(([barcode, item]: [string, any]) => ({
+            ...item,
+            _pinnedBarcode: barcode,
+            isPinned: true,
           })) :
           myFoods.map(f => ({
             description: f.name,
@@ -1053,16 +1073,21 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
               </View>
               {/* Right side -- fixed layout so everything aligns */}
               <View style={styles.resultRight}>
-                {(item as any).isOverride && (
+                {activeTab === 'pinned' ? (
+                  <TouchableOpacity
+                    onPress={() => unsetOverride((item as any)._pinnedBarcode)}
+                    style={{ marginRight: 6, backgroundColor: 'rgba(204,51,51,0.12)', borderWidth: 1, borderColor: 'rgba(204,51,51,0.4)', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 3 }}>
+                    <Text style={{ fontSize: 10, color: '#cc3333', fontFamily: 'DMSans_600SemiBold' }}>UNSET</Text>
+                  </TouchableOpacity>
+                ) : (item as any).isOverride ? (
                   <Ionicons name="checkmark-circle" size={16} color={theme.accentGreen} style={{ marginRight: 6 }} />
-                )}
-                {lastScannedBarcode && !(item as any).isOverride && (
+                ) : lastScannedBarcode ? (
                   <TouchableOpacity
                     onPress={() => saveOverride(item)}
                     style={{ marginRight: 6, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 3 }}>
                     <Text style={{ fontSize: 10, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>SET</Text>
                   </TouchableOpacity>
-                )}
+                ) : null}
                 <TouchableOpacity onPress={() => toggleFavorite(item)} style={styles.starBtn}>
                   <Ionicons
                     name={favorites.some(f => (item as any).fsId && f.fsId ? f.fsId === (item as any).fsId : f.name === item.description) ? 'star' : 'star-outline'}
@@ -1116,6 +1141,11 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
               icon: 'restaurant-outline',
               title: 'No recipes yet',
               subtitle: 'Build a recipe to log multiple ingredients at once',
+            },
+            pinned: {
+              icon: 'pin-outline',
+              title: 'No pinned foods',
+              subtitle: 'Scan a barcode and tap SET to pin a food to that barcode',
             },
           };
           const config = configs[activeTab];
@@ -1378,7 +1408,7 @@ const useStyles = (theme: any, themeId: string) => {
   tabRow: { flexDirection: 'row', marginHorizontal: 16, marginBottom: 8, backgroundColor: theme.bgProgressTrack, borderRadius: 8, padding: 4 },
   tab: { flex: 1, padding: 8, alignItems: 'center', borderRadius: 6 },
   tabActive: { backgroundColor: theme.bgCard },
-  tabText: { fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_500Medium' },
+  tabText: { fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium' },
   tabTextActive: { color: theme.textPrimary },
   modalOverlay: { flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'flex-end' },
   modal: { backgroundColor: theme.bgCard, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24, borderWidth: 1, borderColor: theme.borderCard },

@@ -797,7 +797,10 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
   const toggleFavorite = async (food: SearchResult) => {
     const name = food.description;
     const cal = getCalories(food);
-    const isFav = favorites.some(f => f.name === name);
+    const foodFsId = (food as any).fsId || null;
+    const isFav = favorites.some(f =>
+      foodFsId && f.fsId ? f.fsId === foodFsId : f.name === name
+    );
     if (isFav) {
       Alert.alert(
         'Remove from Favorites',
@@ -809,7 +812,9 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
             const opacity = getFavOpacity(name);
             Animated.timing(opacity, { toValue: 0, duration: 250, useNativeDriver: true }).start(async () => {
               delete favoriteOpacities[name];
-              const updated = favorites.filter(f => f.name !== name);
+              const updated = favorites.filter(f =>
+                foodFsId && f.fsId ? f.fsId !== foodFsId : f.name !== name
+              );
               setFavorites(updated);
               await AsyncStorage.setItem('pj_favorites', JSON.stringify(updated));
               await saveToFirebase('my_foods', 'favorites', updated);
@@ -824,7 +829,9 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
     showToast('Added to favorites', name, 'success');
     let updated;
     if (isFav) {
-      updated = favorites.filter(f => f.name !== name);
+      updated = favorites.filter(f =>
+        foodFsId && f.fsId ? f.fsId !== foodFsId : f.name !== name
+      );
     } else {
       const getN = (nName: string, unit: string = 'G') => {
         const n = food.foodNutrients?.find((fn: any) => fn.nutrientName === nName && fn.unitName === unit);
@@ -1046,9 +1053,9 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                 )}
                 <TouchableOpacity onPress={() => toggleFavorite(item)} style={styles.starBtn}>
                   <Ionicons
-                    name={favorites.some(f => f.name === item.description) ? 'star' : 'star-outline'}
+                    name={favorites.some(f => (item as any).fsId && f.fsId ? f.fsId === (item as any).fsId : f.name === item.description) ? 'star' : 'star-outline'}
                     size={16}
-                    color={favorites.some(f => f.name === item.description) ? theme.accentAmber : theme.textDim}
+                    color={favorites.some(f => (item as any).fsId && f.fsId ? f.fsId === (item as any).fsId : f.name === item.description) ? theme.accentAmber : theme.textDim}
                   />
                 </TouchableOpacity>
                 <View style={styles.calBlock}>

@@ -17,6 +17,7 @@ export function useHealthKit() {
   const [sleepHours, setSleepHours] = useState<number | null>(null);
   const [sleepStages, setSleepStages] = useState<{ core: number, deep: number, rem: number, totalMs: number } | null>(null);
   const [sleepTimes, setSleepTimes] = useState<{ bed: string, wake: string } | null>(null);
+  const [sleepAwakeMs, setSleepAwakeMs] = useState<number>(0);
   const [vo2Max, setVo2Max] = useState<number | null>(null);
   const [cardioRecovery, setCardioRecovery] = useState<number | null>(null);
   const [appleWorkouts, setAppleWorkouts] = useState<readonly any[]>([]);
@@ -98,7 +99,7 @@ export function useHealthKit() {
       );
 
       // Sum up asleep stages separately
-      let coreMs = 0, deepMs = 0, remMs = 0;
+      let coreMs = 0, deepMs = 0, remMs = 0, awakeMs = 0;
       let earliestBed: number | null = null;
       let latestWake: number | null = null;
       for (const sample of sleepData) {
@@ -108,6 +109,7 @@ export function useHealthKit() {
         if (sample.value === 3) coreMs += dur;
         else if (sample.value === 4) deepMs += dur;
         else if (sample.value === 5) remMs += dur;
+        else if (sample.value === 2) awakeMs += dur;
         if ([3, 4, 5].includes(sample.value as number)) {
           if (earliestBed === null || start < earliestBed) earliestBed = start;
           if (latestWake === null || end > latestWake) latestWake = end;
@@ -116,6 +118,7 @@ export function useHealthKit() {
       const totalSleepMs = coreMs + deepMs + remMs;
       setSleepHours(totalSleepMs > 0 ? Math.round((totalSleepMs / 3600000) * 10) / 10 : null);
       setSleepStages(totalSleepMs > 0 ? { core: coreMs, deep: deepMs, rem: remMs, totalMs: totalSleepMs } : null);
+      setSleepAwakeMs(awakeMs);
       if (earliestBed && latestWake) {
         const bedStr = new Date(earliestBed).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const wakeStr = new Date(latestWake).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -207,5 +210,5 @@ export function useHealthKit() {
     }
   };
 
-  return { authorized, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, vo2Max, cardioRecovery, appleWorkouts, fetchTodayData, fetchHistoricalWorkouts };
+  return { authorized, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, vo2Max, cardioRecovery, appleWorkouts, fetchTodayData, fetchHistoricalWorkouts };
 }

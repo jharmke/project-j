@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
 
@@ -81,6 +81,9 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
   const [advNutritionOpen, setAdvNutritionOpen] = useState(false);
   const [profileBmr, setProfileBmr] = useState(0);
   const [sleepGoal, setSleepGoal] = useState(8);
+  const [calPickerVisible, setCalPickerVisible] = useState(false);
+  const [pickerYear, setPickerYear] = useState(0);
+  const [pickerMonth, setPickerMonth] = useState(0);
 
   const today = new Date();
   const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -196,12 +199,103 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
     if (next <= todayKey) setCurrentDate(next);
   };
 
+  const openCalPicker = () => {
+    const parts = currentDate.split('-');
+    setPickerYear(parseInt(parts[0]));
+    setPickerMonth(parseInt(parts[1]) - 1);
+    setCalPickerVisible(true);
+  };
+  const calPickerSelect = (dk: string) => {
+    if (dk <= todayKey) { setCurrentDate(dk); setCalPickerVisible(false); }
+  };
+  const calPickerPrev = () => {
+    if (pickerMonth === 0) { setPickerMonth(11); setPickerYear(y => y - 1); }
+    else setPickerMonth(m => m - 1);
+  };
+  const calPickerNext = () => {
+    const nm = pickerMonth === 11 ? 0 : pickerMonth + 1;
+    const ny = pickerMonth === 11 ? pickerYear + 1 : pickerYear;
+    if (`${ny}-${String(nm + 1).padStart(2, '0')}-01` <= todayKey) { setPickerMonth(nm); setPickerYear(ny); }
+  };
+  const calPickerCanGoNext = () => {
+    const nm = pickerMonth === 11 ? 0 : pickerMonth + 1;
+    const ny = pickerMonth === 11 ? pickerYear + 1 : pickerYear;
+    return `${ny}-${String(nm + 1).padStart(2, '0')}-01` <= todayKey;
+  };
+
+  const CAL_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const CAL_DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  const renderCalGrid = () => {
+    const firstDay = new Date(pickerYear, pickerMonth, 1).getDay();
+    const daysInMonth = new Date(pickerYear, pickerMonth + 1, 0).getDate();
+    const cells: (number | null)[] = [];
+    for (let i = 0; i < firstDay; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+    while (cells.length % 7 !== 0) cells.push(null);
+    const rows: (number | null)[][] = [];
+    for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
+    return (
+      <View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <TouchableOpacity onPress={calPickerPrev} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="chevron-back" size={20} color={theme.accentBlueRaw} />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 15, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>
+            {CAL_MONTHS[pickerMonth]} {pickerYear}
+          </Text>
+          <TouchableOpacity onPress={calPickerNext} disabled={!calPickerCanGoNext()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="chevron-forward" size={20} color={calPickerCanGoNext() ? theme.accentBlueRaw : theme.textDim} />
+          </TouchableOpacity>
+        </View>
+        <View style={{ flexDirection: 'row', marginBottom: 6 }}>
+          {CAL_DAYS.map(d => (
+            <View key={d} style={{ flex: 1, alignItems: 'center' }}>
+              <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>{d}</Text>
+            </View>
+          ))}
+        </View>
+        {rows.map((row, ri) => (
+          <View key={ri} style={{ flexDirection: 'row', marginBottom: 2 }}>
+            {row.map((day, ci) => {
+              if (!day) return <View key={ci} style={{ flex: 1 }} />;
+              const dk = `${pickerYear}-${String(pickerMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+              const isSel = dk === currentDate;
+              const isFut = dk > todayKey;
+              const isTod = dk === todayKey;
+              return (
+                <TouchableOpacity key={ci} style={{ flex: 1, alignItems: 'center', paddingVertical: 5 }} onPress={() => calPickerSelect(dk)} disabled={isFut} activeOpacity={0.7}>
+                  <View style={{
+                    width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center',
+                    backgroundColor: isSel ? theme.accentBlueRaw : isTod ? `${theme.accentBlueRaw}26` : 'transparent',
+                    borderWidth: isTod && !isSel ? 0.5 : 0, borderColor: theme.accentBlueRaw,
+                  }}>
+                    <Text style={{ fontSize: 13, fontFamily: isSel ? 'DMSans_700Bold' : 'DMSans_400Regular', color: isSel ? theme.bgPrimary : isFut ? theme.textDim : theme.textSecondary }}>
+                      {day}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        ))}
+      </View>
+    );
+  };
+
   const styles = useStyles(theme, themeId);
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>DAY DETAIL</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: 4 }}>
+          <View style={{ flex: 1 }} />
+          <Text style={styles.headerTitle}>DAY DETAIL</Text>
+          <View style={{ flex: 1, alignItems: 'flex-end' }}>
+            <TouchableOpacity onPress={openCalPicker} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <Ionicons name="calendar" size={20} color={theme.accentBlueRaw} />
+            </TouchableOpacity>
+          </View>
+        </View>
         <View style={styles.dateNav}>
           <TouchableOpacity onPress={navPrev} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Ionicons name="chevron-back" size={20} color={theme.accentBlueRaw} />
@@ -217,6 +311,21 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
           </View>
         )}
       </View>
+
+      <Modal visible={calPickerVisible} transparent animationType="fade" onRequestClose={() => setCalPickerVisible(false)}>
+        <View style={{ flex: 1 }}>
+          <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)' }} onPress={() => setCalPickerVisible(false)} activeOpacity={1} />
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} pointerEvents="box-none">
+            <View style={{ backgroundColor: theme.bgSheet, borderRadius: 16, padding: 20, width: 310, borderWidth: 0.5, borderColor: theme.borderCard, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8 }}>
+              <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', textAlign: 'center', marginBottom: 16 }}>Jump to Date</Text>
+              {calPickerVisible && renderCalGrid()}
+              <TouchableOpacity onPress={() => setCalPickerVisible(false)} style={{ marginTop: 16, alignItems: 'center', paddingVertical: 8 }}>
+                <Text style={{ fontSize: 13, color: theme.textDim, fontFamily: 'DMSans_600SemiBold' }}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <ScrollView contentContainerStyle={styles.content}>
 
@@ -520,7 +629,7 @@ const useStyles = (theme: any, themeId: string) => {
   return StyleSheet.create({
     container:        { flex: 1, backgroundColor: theme.bgSheet },
     header:           { alignItems: 'center', paddingHorizontal: 16, paddingTop: 8, paddingBottom: 10, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard },
-    headerTitle:      { fontSize: 10, color: theme.accentBlueRaw, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 4 },
+    headerTitle:      { fontSize: 10, color: theme.accentBlueRaw, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase' },
     dateNav:          { flexDirection: 'row', alignItems: 'center', gap: 10 },
     headerDate:       { fontSize: 15, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, textAlign: 'center', flex: 1 },
     historyBadge:     { marginTop: 6, backgroundColor: `${theme.accentBlueRaw}26`, borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2 },

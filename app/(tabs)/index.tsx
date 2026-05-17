@@ -761,7 +761,7 @@ export default function HomeScreen() {
     return store;
   };
 
-  const { activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, vo2Max, cardioRecovery, fetchTodayData } = useHealthKit();
+  const { activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, vo2Max, cardioRecovery, fetchTodayData } = useHealthKit();
 
   const getDateKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   const [todayKey, setTodayKey] = useState(() => getDateKey(new Date()));
@@ -1942,10 +1942,15 @@ export default function HomeScreen() {
                     </Text>
                   )}
                   {((sleepStoredBed&&sleepStoredWake)||sleepTimes) ? (
-                    <Text style={{ fontSize:12, color: theme.textMuted, fontFamily:'DMSans_500Medium', marginBottom:10 }}>
+                    <Text style={{ fontSize:12, color: theme.textMuted, fontFamily:'DMSans_500Medium', marginBottom: (!isManual && sleepAwakeMs > 0) ? 4 : 10 }}>
                       {sleepStoredBed||sleepTimes?.bed} → {sleepStoredWake||sleepTimes?.wake}
                     </Text>
                   ) : null}
+                  {!isManual && sleepAwakeMs > 0 && (
+                    <Text style={{ fontSize:11, color: theme.textDim, fontFamily:'DMSans_400Regular', marginBottom:10 }}>
+                      {fmtMs(sleepAwakeMs)} awake during night
+                    </Text>
+                  )}
                   {sleepStages && (
                     <View style={{ gap:6 }}>
                       {[{label:'Core',color:theme.sleepCore,val:coreMs},{label:'Deep',color:theme.sleepDeep,val:deepMs},{label:'REM',color:theme.sleepRem,val:remMs}].map(s => (

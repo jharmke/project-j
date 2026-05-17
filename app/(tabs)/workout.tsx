@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ToastRenderer, useToast } from '../../components/Toast';
 import { useTheme } from '../../theme';
 import { useHealthKit } from '../../useHealthKit';
-import { BLANK_DAY, DEFAULT_TAGS, DayProgram, Exercise, PRESET_PROGRAMS, PresetProgram, TAG_COLOR_PALETTE, WorkoutTag } from '../../workoutData';
+import { BLANK_DAY, DEFAULT_TAGS, DayProgram, Exercise, TAG_COLOR_PALETTE, WorkoutTag } from '../../workoutData';
 
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -75,8 +75,6 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
   const [showTagModal, setShowTagModal] = useState(false);
   const [showManageTagsModal, setShowManageTagsModal] = useState(false);
   const [tagModalInitialTags, setTagModalInitialTags] = useState<string[]>([]);
-  const [showProgramModal, setShowProgramModal] = useState(false);
-  const [programTab, setProgramTab] = useState<'presets' | 'mine'>('presets');
   const [activeProgramName, setActiveProgramName] = useState<string | null>(null);
   const fabScale = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
@@ -88,8 +86,6 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
     Animated.spring(fabScale, { toValue: 1, useNativeDriver: true, friction: 6, tension: 120, delay: 300 }).start();
   }, []);
 
-  const openProgramModal = () => setShowProgramModal(true);
-  const closeProgramModal = () => { Keyboard.dismiss(); setShowProgramModal(false); };
   const manageTagsAnim = useSharedValue(600);
   const manageTagsOverlayAnim = useRef(new Animated.Value(0)).current;
 
@@ -589,14 +585,9 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
               {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </Text>
           </View>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            <TouchableOpacity onPress={openProgramModal} style={[styles.libraryBtn, { height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
-              <Text style={[styles.libraryBtnText, { color: theme.accentBlue }]}>Programs</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => router.push('/workout-library')} style={[styles.libraryBtn, { height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
-              <Text style={[styles.libraryBtnText, { color: theme.accentBlue }]}>Library</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity onPress={() => router.push('/workout-library')} style={[styles.libraryBtn, { height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
+            <Text style={[styles.libraryBtnText, { color: theme.accentBlue }]}>Library</Text>
+          </TouchableOpacity>
         </View>
       <ScrollView ref={mainScrollRef} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
 
@@ -1210,118 +1201,6 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
             </Reanimated.View>
           </View>
         </Modal>
-
-    {/* Program Modal */}
-      <Modal visible={showProgramModal} transparent animationType="fade" onRequestClose={closeProgramModal} statusBarTranslucent>
-        <ToastRenderer />
-        <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: theme.overlayBg }} activeOpacity={1} onPress={closeProgramModal} />
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }} pointerEvents="box-none">
-          <View style={{ borderRadius: 20, overflow: 'hidden', maxHeight: '92%', width: '100%' }}>
-            <View style={{
-              backgroundColor: theme.bgSheet,
-              borderRadius: 20,
-              borderWidth: 0.5,
-              borderColor: theme.borderSheet,
-            }}>
-              <TouchableOpacity onPress={closeProgramModal} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 8 }}>
-                <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
-              </TouchableOpacity>
-            <View style={{ paddingHorizontal: 20 }}>
-              <Text style={{ color: theme.textPrimary, fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, marginBottom: activeProgramName ? 10 : 16 }}>PROGRAMS</Text>
-              {activeProgramName && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.bgInset, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, marginBottom: 16 }}>
-                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, color: theme.textMuted }}>ACTIVE: <Text style={{ color: theme.textSecondary }}>{activeProgramName.toUpperCase()}</Text></Text>
-                  <TouchableOpacity
-                    onPress={() => {
-                      Alert.alert(
-                        'Clear Program',
-                        "This will clear your weekly template. Days you've already logged won't be affected.",
-                        [
-                          { text: 'Cancel', style: 'cancel' },
-                          {
-                            text: 'Clear', style: 'destructive', onPress: () => {
-                              setWeeklyTemplate({});
-                              setActiveProgramName(null);
-                              saveState(checks, cardioComplete, programs, workoutNotes, cardioLogs, {}, null);
-                              closeProgramModal();
-                              showToast('Program cleared', undefined, 'success');
-                            }
-                          },
-                        ]
-                      );
-                    }}
-                    style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: theme.accentRedBorder, backgroundColor: theme.accentRedBg }}>
-                    <Text style={{ color: theme.accentRed, fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>CLEAR PROGRAM</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-              {/* Tabs */}
-              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 20 }}>
-                <TouchableOpacity
-                  onPress={() => setProgramTab('presets')}
-                  style={{ flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: programTab === 'presets' ? theme.accentBlueBorder : theme.borderInput, backgroundColor: programTab === 'presets' ? theme.accentBlueBg : theme.bgInput }}>
-                  <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: programTab === 'presets' ? theme.accentBlue : theme.textMuted }}>PRESETS</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => setProgramTab('mine')}
-                  style={{ flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: programTab === 'mine' ? theme.accentBlueBorder : theme.borderInput, backgroundColor: programTab === 'mine' ? theme.accentBlueBg : theme.bgInput }}>
-                  <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: programTab === 'mine' ? theme.accentBlue : theme.textMuted }}>MY PROGRAMS</Text>
-                </TouchableOpacity>
-              </View>
-              {programTab === 'presets' ? (
-                <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 600 }} keyboardShouldPersistTaps="handled" nestedScrollEnabled>
-                  {PRESET_PROGRAMS.map(preset => (
-                    <View key={preset.id} style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderRadius: 12, padding: 16, marginBottom: 12 }}>
-                      <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'DMSans_700Bold', marginBottom: 4 }}>{preset.name}</Text>
-                      <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_400Regular', marginBottom: 12, lineHeight: 18 }}>{preset.description}</Text>
-                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
-                        {(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const).map(day => {
-                          const d = preset.days[day];
-                          const col = d?.color || theme.borderSubtle;
-                          return (
-                            <View key={day} style={{ backgroundColor: col + '22', borderWidth: 1, borderColor: col + '55', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-                              <Text style={{ fontSize: 10, fontFamily: 'DMSans_700Bold', color: col }}>{day.toUpperCase()} · {d?.focus?.toUpperCase() || 'REST'}</Text>
-                            </View>
-                          );
-                        })}
-                      </View>
-                      <TouchableOpacity
-                        onPress={() => {
-                          Alert.alert(
-                            'Load Program',
-                            `This will replace your current weekly template with "${preset.name}". Days you've already logged won't be affected.`,
-                            [
-                              { text: 'Cancel', style: 'cancel' },
-                              {
-                                text: 'Load', onPress: () => {
-                                  setWeeklyTemplate(preset.days);
-                                  setActiveProgramName(preset.name);
-                                  saveState(checks, cardioComplete, programs, workoutNotes, cardioLogs, preset.days, preset.name);
-                                  closeProgramModal();
-                                  showToast('Program loaded', preset.name, 'success');
-                                }
-                              },
-                            ]
-                          );
-                        }}
-                        style={{ paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
-                        <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>LOAD PROGRAM</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                </ScrollView>
-              ) : (
-                <View style={{ alignItems: 'center', paddingVertical: 40 }}>
-                  <Text style={{ fontSize: 32 }}>🏗️</Text>
-                  <Text style={{ color: theme.textPrimary, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginTop: 12 }}>COMING SOON</Text>
-                  <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular', marginTop: 8, textAlign: 'center' }}>Build and save your own custom programs.</Text>
-                </View>
-              )}
-            </View>
-          </View>
-          </View>
-        </View>
-      </Modal>
 
     <Animated.View style={{ position: 'absolute', bottom: 16, right: 20, transform: [{ scale: fabScale }] }}>
         <TouchableOpacity

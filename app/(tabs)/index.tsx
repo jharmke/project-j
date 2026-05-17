@@ -2515,9 +2515,6 @@ export default function HomeScreen() {
               <TouchableOpacity onPress={closeDayDetail} style={{ alignSelf: 'center', paddingVertical: 6, paddingHorizontal: 40 }}>
                 <View style={[styles.editSheetHandle, { backgroundColor: theme.sheetHandle }]} />
               </TouchableOpacity>
-              <TouchableOpacity onPress={closeDayDetail} style={{ position: 'absolute', top: 20, left: 16, zIndex: 10, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4 }}>
-                <Text style={{ color: theme.accentBlueRaw, fontSize: 12, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5 }}>CLOSE</Text>
-              </TouchableOpacity>
               <DayDetailContent date={dayDetailDate} onClose={closeDayDetail} todayBurned={displayedBurned} />
             </Animated.View>
           </Animated.View>

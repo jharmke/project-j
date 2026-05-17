@@ -148,6 +148,11 @@ DONE -- SHIPPED
 [x] Weight card Mindful neutralization -- current weight, vs yesterday, total lost, goal row all textSecondary in Mindful. No green/red color judgment on weight numbers.
 [x] Day detail overhaul -- full rebuild. Killed 3-page horizontal scroll summary. New cards: Day at a Glance (consumed/burned/net + macros + weight/water/steps), Sleep (score pill, duration/bedtime/wake/stages/feel), Workout (chevrons, no strikethrough, note removed), Meals (chevrons), Journal (compact tappable rows -- pill + title + chevron, routes to journal with entry auto-expanded and modal closes), Daily Note, Advanced Nutrition (collapsible), Exclude from Stats. All cards: 1.5px accent top border, hero icons, Ionicons chevrons. Header: DAY DETAIL title, Ionicons date nav. calcSleepScore matches index.tsx exactly.
 [x] Day detail journal integration -- loads pj_bible_reflections, filters by date, compact tappable rows route to journal with entry expanded.
+[x] Stats calendar day-detail black screen -- router.push loaded a null default export. Fixed: stats.tsx now opens DayDetailContent as the same fade overlay modal as home tab (backdrop dismiss, drag handle, same animation). No separate screen.
+[x] Exercise library header + back colors -- accentAmber hardcoded on back chevron, back text, screen title, and ADD/EDIT EXERCISE modal title. All four swapped to accentBlueRaw. workout-library.tsx.
+[x] Exercise library "Add to 2026-05-17" -- raw date string in header when in select mode. Fixed: fmtLibraryDay helper shows "Today" or weekday name (e.g. "Add to Monday"). workout-library.tsx.
+[x] Day detail modal polish -- CLOSE button removed from both modal wrappers (home + stats). Handle tap + backdrop tap = dismiss. Decision: handle is cleaner on a floating centered card, backdrop tap is the safety net. DayDetailContent header restored to clean centered layout (DAY DETAIL label + date nav). "Back to Today" button removed from bottom. Stats handle spacing fixed to match home (marginTop/marginBottom: 12 on handle pill). Both modals now identical.
+[x] Workout library redesign -- Programs moved from workout.tsx header modal into library as its own tab (All | Favorites | Programs | Routines). Programs tab shows active program row + preset cards + My Programs coming soon. Routines tab is coming soon empty state. +Add button removed from library header. FAB added (expandable speed dial): Create Exercise (active, opens add modal), Create Program (disabled), Create Routine (disabled). workout.tsx Programs modal and Programs button both removed. Programs load/clear now writes to pj_workout_state via read-then-merge. workout tab picks up program changes via useFocusEffect.
 
 
 NOW -- active this session
@@ -329,6 +334,10 @@ Primary button audit -- sweep app-wide, upgrade all primary CTAs to full accent 
 
 Food and barcode
 
+Log tab FAB -- Add Entry FAB on main log screen (replaces nothing, just adds one). Food Library FAB = Create Food + Create Recipe (expandable or action sheet). Remove +Food and +Recipe from log header -- Library becomes the only header button. Big UX cleanup. (SOON)
+Log tab date navigation -- tapping the date label opens a calendar picker for easy multi-day jumping, not just arrow-by-arrow. (SOON)
+Log tab meal time labels -- Morning / Lunch / Dinner / Snacks label font to textSecondary (quick fix). (SOON)
+Exclude day feature -- current implementation needs a revamp and full passthrough audit. (SOON)
 Custom water amount modal -- drag interaction, .5oz increments, 48oz max, live oz display, tappable numpad with .5 key, KAV, fade in/out, centered. (top of SOON)
 Edit Food screen (edit-food.tsx) full CPP polish pass -- currently a raw unstyled form. Needs card styling, field grouping, accent title, floating save bar, depth. Dedicated polish session.
 Recipe builder screen polish -- needs accent title and floating save bar at minimum. Full CPP pass needed. (SOON)
@@ -342,6 +351,13 @@ Smart insights and trends layer -- auto-detect patterns automatically and surfac
 
 Home screen and cards
 
+Home screen cards polish -- subtle border pass, slightly darker card backgrounds, Daily Note card specific polish. (SOON)
+Head-to-head card -- hide Win/Loss/Tie label on YvY card until the competition window closes (don't show it live during the day while the result is still changing). (SOON)
+IF fasting button -- shrink height on the fasting state button, keep green. (SOON)
+Weight card -- current/1d/2d ago values to textSecondary instead of textPrimary. Softer treatment. (SOON, quick)
+Tooltip/toolkit pass -- update wording and info on existing tooltip cards, add tooltips to certain cards missing them. HOLD until stats and profile/settings pages are in fuller state. Then do as one dedicated session.
+Loading states audit -- sweep all screens, ensure nothing feels flashy or jumpy on load. (SOON)
+Error handling audit -- review what happens when things fail silently across the app. No user should ever be left on a broken state with no feedback. (SOON)
 Mindful mode content hiding -- weight graphs, body comp data, and performance-heavy cards should not show for Mindful users. Audit all cards and hide irrelevant content per mode.
 Tab bar scroll-to-top -- tapping the active tab icon when already on that tab should scroll the screen back to top.
 Big dimmed card icon watermark -- large version of each card's icon sitting behind card content at ~5% opacity. Subtle texture, gives cards more identity. Apply to all home screen cards.
@@ -385,9 +401,16 @@ Calorie breakdown by meal -- each slot gets a budget. Unclear if needed, revisit
 
 Workout
 
-Today's Training empty/rest day states -- two variants: unassigned day (icon + title + CTA to add exercises or load program), rest day (warm encouragement, no CTA, something like "Rest is part of the work"). Standard icon + title + subtitle + optional CTA pattern app-wide.
+Today's Training empty/rest day states -- two variants: unassigned day (icon + title + CTA to add exercises or load program), rest day (warm encouragement, no CTA, something like "Rest is part of the work"). Standard icon + title + subtitle + optional CTA pattern app-wide. Open questions: auto-clear rest day when exercise is added? Apple Watch sync behavior on rest day?
 You vs Yesterday streak (vsStreak) -- state declared and badge renders but never calculated or persisted. Always 0. Needs full implementation: calculate win/loss result at end of day, persist streak count to AsyncStorage, reset on loss.
 My Programs builder -- name it, assign focus/tags/color per day, save, load. (planned, not yet built)
+Programs button move to library -- DONE. See workout library redesign in DONE section.
+Workout tab visual pass -- assess whether exercises + effort score + notes is enough or if more sections needed. No specific ideas yet, likely resolves as SOON items ship (muscle group breakdown, previous session comparison, streak/consistency). Revisit after those are built.
+Workout tab FAB -- currently functional but visually plain. Needs a visual pass to feel more premium. (SOON)
+Workout tab Tags button -- redesign to match current button conventions. Away from standalone buttons not in cards or header corners. (SOON)
+Workout tab muscle group breakdown -- visual showing which muscle groups were trained in today's session. Related to muscle group tags + filter on exercise library. Build after tags are on exercises. (SOON)
+Workout tab previous session comparison -- show how today stacks up vs the last time this workout was done. Per exercise, not just overall. (SOON)
+Workout library FAB -- DONE. See workout library redesign in DONE section. Create Exercise active, Create Program + Create Routine disabled (coming soon).
 IF card polish -- green TAP WHEN YOU EAT button needs bgInset+'80' semi-transparent treatment to match other cards. Timer hero icon verify on device. (SOON)
 Workout tab nested scroll bug -- DraggableFlatList inside ScrollView warning. (HIGH)
 Workout drag handle -- hit target too small + dead zone before drag triggers. (HIGH)
@@ -400,9 +423,25 @@ Home and stats
 
 Food log donut -- thicker ring, show macro targets inside when empty instead of "no data".
 Weekly calorie bar chart -- 7 day bars macro color stacking, today highlighted, PocketScale style. (HIGH)
-Stats page revamp -- dedicated session, consolidation, pagination, sleep detail page, per-metric exclusion UI.
+Stats page overhaul -- HIGH PRIORITY, dedicated session. Full spec:
+- BUG FIXED: calendar day tap was black screen (now opens same modal as home). Per-metric exclusion UI still open.
+- All graphs are placeholder/ugly -- need a full consistent graph system: animated, themed, proper axis labels, consistent colors, CPP
+- Custom graph system -- dropdown to pick data type (weight, calories, macros, steps, sleep, active cals, workout freq), chart type, timeframe -- save as pinned card on stats or home
+- Default cards pre-loaded so page is never empty: weight, calories, steps
+- Add edit button to stats page like home screen (show/hide/reorder cards)
+- FAB for stats -- Add Graph and Add Report
+- Reports feature -- weekly/monthly summaries with context, shareable/exportable snapshots
+- Card visual differentiation -- graph cards, report cards, streak/info cards need distinct visual language (icons, colored borders, etc.)
+- Macro trend graphs -- big 3 grouped bar view + individual P/C/F in dropdown
+- PR/best day cards -- steps, active cals, water, sleep score, etc. Exclude incomplete log days from calorie-based PRs
+- Goal hit rate card (maybe -- revisit during session)
+- Body measurements as graph data option
+- Workout frequency chart
+- Summary card polish pass + full Reports feature (placement TBD)
+- Calendar needs work -- not terrible but needs attention alongside rest of overhaul
+- Layout decision: Option 1 as foundation (sectioned groups with labeled headers: At a Glance, Trends, Records, Reports), Option 2 mixed in within sections (horizontal scroll rows within sections), Option 3 sub-tabs deferred
 Stats page depth/shadow pass -- same shadow treatment as settings cards (shadowOpacity 0.18). Do during stats overhaul session.
-Streak card -- Bible, workout, calorie streaks. (HIGH)
+Streak card -- home screen: Bible, workout, calorie streaks. Workout tab version: X workouts this week toward weekly goal, visible on workout tab itself. (HIGH)
 Morning briefing card -- first open of day, faith first, yesterday recap, today targets.
 
 Health data

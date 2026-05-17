@@ -3,9 +3,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { Animated, Dimensions, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Dimensions, Easing, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Line, Polyline, Rect, Text as SvgText } from 'react-native-svg';
+import { DayDetailContent } from '../day-detail';
 import { useTheme } from '../../theme';
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -171,6 +172,11 @@ export default function StatsScreen() {
   const [stepsHistory, setStepsHistory] = useState<{date: string, value: number}[]>([]);
   const [activeCalHistory, setActiveCalHistory] = useState<{date: string, value: number}[]>([]);
   const [excludedDays, setExcludedDays] = useState<{date: string, diet: boolean, water: boolean, exercise: boolean}[]>([]);
+  const [dayDetailDate, setDayDetailDate] = useState<string | null>(null);
+  const dayDetailAnim = useRef(new Animated.Value(0)).current;
+  const closeDayDetail = () => {
+    Animated.timing(dayDetailAnim, { toValue: 0, duration: 180, useNativeDriver: true }).start(() => setDayDetailDate(null));
+  };
   const [periodData, setPeriodData] = useState({
     avgCal: 0, avgProtein: 0, avgCarbs: 0, avgFat: 0,
     avgWater: 0, workoutDays: 0, totalDays: 0, loggedDays: 0,
@@ -416,7 +422,7 @@ export default function StatsScreen() {
                   style={[styles.calDay, { backgroundColor: colors.bg }, isToday && [styles.calDayToday, { borderColor: theme.accentBlueBorder }]]}
                   onPress={() => {
                     const dk = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                    if (dk <= today) router.push({ pathname: '/day-detail', params: { date: dk } });
+                    if (dk <= today) setDayDetailDate(dk);
                   }}>
                   <Text style={[styles.calDayText, { color: colors.text }]}>{day}</Text>
                   {(() => {
@@ -579,6 +585,24 @@ export default function StatsScreen() {
         </CollapsibleCard>
 
       </ScrollView>
+
+      {dayDetailDate !== null && (
+        <Modal transparent animationType="none" visible={dayDetailDate !== null} onRequestClose={closeDayDetail} statusBarTranslucent hardwareAccelerated
+          onShow={() => {
+            dayDetailAnim.setValue(0);
+            Animated.timing(dayDetailAnim, { toValue: 1, duration: 220, easing: Easing.out(Easing.quad), useNativeDriver: true }).start();
+          }}>
+          <Animated.View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', opacity: dayDetailAnim, justifyContent: 'center', alignItems: 'center' }}>
+            <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={closeDayDetail} />
+            <Animated.View style={{ width: '92%', height: '75%', borderRadius: 20, backgroundColor: theme.bgSheet, borderWidth: 0.5, borderColor: theme.borderSheet, overflow: 'hidden', opacity: dayDetailAnim }}>
+              <TouchableOpacity onPress={closeDayDetail} style={{ alignSelf: 'center', paddingVertical: 6, paddingHorizontal: 40 }}>
+                <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle, marginTop: 12, marginBottom: 12 }} />
+              </TouchableOpacity>
+              <DayDetailContent date={dayDetailDate} onClose={closeDayDetail} />
+            </Animated.View>
+          </Animated.View>
+        </Modal>
+      )}
     </LinearGradient>
   );
 }

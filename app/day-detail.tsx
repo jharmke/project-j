@@ -1,8 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
 
 const MEALS = ['Morning', 'Lunch', 'Dinner', 'Snacks'];
@@ -55,7 +56,16 @@ const CAT_META: Record<JournalCategory, { label: string; icon: string; color: st
   fitness:   { label: 'Fitness',   icon: 'barbell',    color: '#06b6d4' },
 };
 
-export default function DayDetailScreen() { return null; }
+export default function DayDetailScreen() {
+  const { date } = useLocalSearchParams<{ date: string }>();
+  const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={{ flex: 1, backgroundColor: theme.bgSheet, paddingTop: insets.top }}>
+      <DayDetailContent date={date ?? ''} onClose={() => router.back()} />
+    </View>
+  );
+}
 
 export function DayDetailContent({ date, onClose, todayBurned }: { date: string; onClose: () => void; todayBurned?: number }) {
   const { theme, themeId } = useTheme();
@@ -499,12 +509,6 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
             ))}
           </View>
         </View>
-
-        {!isToday && (
-          <TouchableOpacity style={styles.backBtn} onPress={onClose}>
-            <Text style={styles.backBtnText}>Back to Today</Text>
-          </TouchableOpacity>
-        )}
 
       </ScrollView>
     </View>

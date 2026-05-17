@@ -1058,14 +1058,23 @@ export default function StatsScreen() {
 
   const shadowStyle = { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 12, elevation: 6 };
 
-  const GraphCard = ({ icon, label, children, stat }: { icon: string, label: string, children: React.ReactNode, stat?: string }) => (
+  const GraphCard = ({ icon, label, children, stats }: { icon: string, label: string, children: React.ReactNode, stats?: { label: string; value: string }[] }) => (
     <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
         <Ionicons name={icon as any} size={11} color={theme.textMuted} />
         <Text style={[styles.cardLabel, { color: theme.textMuted }]}>{label}</Text>
       </View>
       {children}
-      {stat ? <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium', marginTop: 8 }}>{stat}</Text> : null}
+      {stats && stats.length > 0 ? (
+        <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle, flexDirection: 'row' }}>
+          {stats.map((s, i) => (
+            <View key={i} style={{ flex: 1, alignItems: 'center' }}>
+              <Text style={{ fontSize: 9, letterSpacing: 1.5, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 3, textAlign: 'center' }}>{s.label}</Text>
+              <Text style={{ fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', textAlign: 'center' }}>{s.value}</Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 
@@ -1096,8 +1105,8 @@ export default function StatsScreen() {
     ? Math.round(trendData.activeCal.reduce((s, d) => s + d.value, 0) / trendData.activeCal.length) : null;
   const avgSleep = trendData.sleep.length > 0
     ? Math.round(trendData.sleep.reduce((s, d) => s + d.value, 0) / trendData.sleep.length * 10) / 10 : null;
-  const weightChange = periodData.startWeight && periodData.endWeight
-    ? Math.round((periodData.endWeight - periodData.startWeight) * 10) / 10 : null;
+  const weightChange = trendData.weight.length >= 2
+    ? Math.round((trendData.weight[trendData.weight.length - 1].value - trendData.weight[0].value) * 10) / 10 : null;
   const stepsAboveGoal = trendData.steps.filter(d => d.value >= stepGoal).length;
   const sleepAtGoal = trendData.sleep.filter(d => d.value >= sleepGoal).length;
 
@@ -1236,23 +1245,36 @@ export default function StatsScreen() {
           </View>
 
           <GraphCard icon="body-outline" label="Weight"
-            stat={avgWeight ? `Avg ${avgWeight} lbs${weightChange !== null ? ` · ${weightChange > 0 ? '+' : ''}${weightChange} lbs from start` : ''}` : undefined}>
+            stats={avgWeight ? [
+              { label: 'Avg Weight', value: `${avgWeight} lbs` },
+              ...(weightChange !== null ? [{ label: 'Change This Period', value: `${weightChange > 0 ? '+' : ''}${weightChange} lbs` }] : []),
+            ] : undefined}>
             <LineChart data={trendData.weight} color={theme.textSecondary} unit=" lbs"
               fmtY={(v) => v % 1 === 0 ? `${v}` : `${v.toFixed(1)}`} gradientId="wt_grad" theme={theme} />
           </GraphCard>
 
           <GraphCard icon="flame-outline" label="Calories"
-            stat={periodData.avgCal > 0 ? `Avg ${periodData.avgCal} kcal/day · ${periodData.loggedDays} days logged` : undefined}>
+            stats={periodData.avgCal > 0 ? [
+              { label: 'Avg / Day', value: `${periodData.avgCal.toLocaleString()} kcal` },
+              { label: 'Days Logged', value: `${periodData.loggedDays}` },
+            ] : undefined}>
             <CalorieBarChart data={trendData.cal} calTarget={calTarget} theme={theme} />
           </GraphCard>
 
           <GraphCard icon="nutrition-outline" label="Macros"
-            stat={periodData.avgProtein > 0 ? `Avg P: ${periodData.avgProtein}g  C: ${periodData.avgCarbs}g  F: ${periodData.avgFat}g` : undefined}>
+            stats={periodData.avgProtein > 0 ? [
+              { label: 'Avg Protein', value: `${periodData.avgProtein}g` },
+              { label: 'Avg Carbs', value: `${periodData.avgCarbs}g` },
+              { label: 'Avg Fat', value: `${periodData.avgFat}g` },
+            ] : undefined}>
             <MacroBarChart data={trendData.macro} theme={theme} />
           </GraphCard>
 
           <GraphCard icon="footsteps-outline" label="Steps"
-            stat={avgSteps !== null ? `Avg ${avgSteps.toLocaleString()} steps/day · ${stepsAboveGoal} days above goal` : undefined}>
+            stats={avgSteps !== null ? [
+              { label: 'Avg / Day', value: avgSteps.toLocaleString() },
+              { label: 'Days Above Goal', value: `${stepsAboveGoal}` },
+            ] : undefined}>
             <LineChart data={trendData.steps} color={theme.accentBlue} unit=""
               goalValue={stepGoal} fmtY={(v) => v >= 1000 ? `${Math.round(v/1000)}k` : `${Math.round(v)}`}
               fmtFull={(v) => Math.round(v).toLocaleString()}
@@ -1260,13 +1282,19 @@ export default function StatsScreen() {
           </GraphCard>
 
           <GraphCard icon="heart-outline" label="Active Calories"
-            stat={avgActiveCals !== null ? `Avg ${avgActiveCals.toLocaleString()} kcal/day` : undefined}>
+            stats={avgActiveCals !== null ? [
+              { label: 'Avg / Day', value: `${avgActiveCals.toLocaleString()} kcal` },
+              { label: 'Days Tracked', value: `${trendData.activeCal.length}` },
+            ] : undefined}>
             <LineChart data={trendData.activeCal} color={theme.statusWarn} unit=" kcal"
               fmtY={(v) => `${Math.round(v)}`} gradientId="ac_grad" theme={theme} />
           </GraphCard>
 
           <GraphCard icon="moon-outline" label="Sleep"
-            stat={avgSleep !== null ? `Avg ${avgSleep}h/night · ${sleepAtGoal} nights at goal` : undefined}>
+            stats={avgSleep !== null ? [
+              { label: 'Avg / Night', value: (() => { const h = Math.floor(avgSleep); const m = Math.round((avgSleep % 1) * 60); return m > 0 ? `${h}h ${m}m` : `${h}h`; })() },
+              { label: 'Nights at Goal', value: `${sleepAtGoal}` },
+            ] : undefined}>
             <LineChart data={trendData.sleep} color={theme.sleepRem} unit=""
               goalValue={sleepGoal} fmtY={(v) => `${Math.round(v * 10) / 10}h`}
               fmtFull={(v) => { const h = Math.floor(v); const m = Math.round((v % 1) * 60); return m > 0 ? `${h}h ${m}m` : `${h}h`; }}
@@ -1274,7 +1302,10 @@ export default function StatsScreen() {
           </GraphCard>
 
           <GraphCard icon="barbell-outline" label="Workout Frequency"
-            stat={trendData.workoutDay.length > 0 ? `Avg ${avgWorkoutsPerWeek} workouts/week` : undefined}>
+            stats={trendData.workoutDay.length > 0 ? [
+              { label: 'Avg / Week', value: `${avgWorkoutsPerWeek}` },
+              { label: 'Total Workout Days', value: `${totalWorkoutDays}` },
+            ] : undefined}>
             <WorkoutFrequencyChart data={trendData.workoutDay} theme={theme} />
           </GraphCard>
         </CollapsibleSection>

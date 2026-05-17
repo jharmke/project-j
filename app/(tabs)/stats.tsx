@@ -169,8 +169,8 @@ function CalorieBarChart({ data, calTarget, theme }: {
 
 // ── Collapsible section header ─────────────────────────────────────────────────
 
-function CollapsibleSection({ label, children, defaultOpen = true, theme }: {
-  label: string, children: React.ReactNode, defaultOpen?: boolean, theme: any
+function CollapsibleSection({ label, children, defaultOpen = true, theme, first = false }: {
+  label: string, children: React.ReactNode, defaultOpen?: boolean, theme: any, first?: boolean
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const [visible, setVisible] = useState(defaultOpen);
@@ -188,14 +188,14 @@ function CollapsibleSection({ label, children, defaultOpen = true, theme }: {
   };
 
   return (
-    <View style={{ marginTop: 20 }}>
+    <View style={{ marginTop: first ? 4 : 20 }}>
       <TouchableOpacity onPress={toggle} activeOpacity={0.7}
         style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6, marginBottom: 10 }}>
-        <Text style={{ fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted }}>
+        <Text style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.accentBlueRaw }}>
           {label}
         </Text>
-        <View style={{ flex: 1, height: 0.5, backgroundColor: theme.borderSubtle }} />
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={12} color={theme.textMuted} />
+        <View style={{ flex: 1, height: 1, backgroundColor: theme.accentBlueBorder }} />
+        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={14} color={theme.accentBlueRaw} />
       </TouchableOpacity>
       {visible && (
         <Animated.View style={{ opacity: fadeAnim }}>
@@ -241,6 +241,31 @@ function CollapsibleCard({ label, defaultOpen = false, children, theme }: {
   );
 }
 
+// ── Sleep score (mirrors index.tsx) ──────────────────────────────────────────
+
+const FEEL_BONUS: Record<number, number> = { 1: 0, 2: 10, 3: 20, 4: 30, 5: 40 };
+
+function calcSleepScore(
+  sleepHours: number | null,
+  sleepStages: { core: number; deep: number; rem: number; totalMs: number } | null,
+  sleepGoal: number,
+  feelRating?: number | null,
+  isManual?: boolean,
+): { score: number | null; path: 1 | 2 | 3 } {
+  if (!sleepHours || sleepHours <= 0) return { score: null, path: 3 };
+  if (sleepStages && sleepStages.totalMs > 0) {
+    const durationPts = Math.min(40, (sleepHours / sleepGoal) * 40);
+    const totalMs = sleepStages.totalMs;
+    const deepPts = Math.max(0, 30 - (Math.abs(sleepStages.deep / totalMs - 0.20) / 0.20) * 30);
+    const remPts  = Math.max(0, 30 - (Math.abs(sleepStages.rem  / totalMs - 0.22) / 0.22) * 30);
+    return { score: Math.round(durationPts + deepPts + remPts), path: 1 };
+  }
+  const path = isManual ? 3 : 2;
+  if (!feelRating) return { score: null, path };
+  const durationPts = Math.min(60, (sleepHours / sleepGoal) * 60);
+  return { score: Math.round(Math.min(100, durationPts + (FEEL_BONUS[feelRating] ?? 0))), path };
+}
+
 // ── Main screen ───────────────────────────────────────────────────────────────
 
 export default function StatsScreen() {
@@ -267,9 +292,12 @@ export default function StatsScreen() {
     sleepHours: number | null, sleepHoursDate: string | null,
   }>({ steps: null, stepsDate: null, activeCals: null, activeCalsDate: null, water: null, waterDate: null, sleepHours: null, sleepHoursDate: null });
 
+  const [styleMode, setStyleMode] = useState<'Discipline' | 'Balanced' | 'Mindful'>('Balanced');
   const [periodData, setPeriodData] = useState({
     avgCal: 0, avgProtein: 0, avgCarbs: 0, avgFat: 0,
-    avgWater: 0, workoutDays: 0, totalDays: 0, loggedDays: 0,
+    avgWater: 0, avgSteps: 0, avgActiveCals: 0, avgSleep: 0, avgNetCals: 0,
+    avgSleepScore: null as number | null, calGoalDays: 0,
+    workoutDays: 0, totalDays: 0, loggedDays: 0,
     startWeight: null as number | null, endWeight: null as number | null,
   });
   const [streaks, setStreaks] = useState({ gym: 0, calories: 0, water: 0, bible: 0 });
@@ -357,7 +385,7 @@ export default function StatsScreen() {
     } catch {}
   };
 
-  const loadPeriodData = async (period: '7' | '30' | '90' | '180' | 'ytd') => {
+  const loadPeriodData = async (period: '7' | '30' | '90' | '180' | 'ytd', calTgt: number, sleepGoalVal: number, bmr = 0) => {
     let dates: string[] = [];
     const nowD = new Date();
     if (period === 'ytd') {
@@ -368,7 +396,9 @@ export default function StatsScreen() {
       const days = parseInt(period);
       for (let i = days - 1; i >= 0; i--) dates.push(getDateKey(i));
     }
-    let totalCal = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0, totalWater = 0;
+    let totalCal = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0, totalWater = 0, totalNetCal = 0;
+    let totalSteps = 0, stepsDays = 0, totalActiveCals = 0, activeDays = 0, totalSleep = 0, sleepDays = 0;
+    let totalSleepScore = 0, sleepScoreDays = 0, calGoalDays = 0;
     let dietDays = 0, waterDays = 0, workoutDays = 0;
     let startWeight: number | null = null, endWeight: number | null = null;
     for (const dateKey of dates) {
@@ -378,15 +408,29 @@ export default function StatsScreen() {
           const data = JSON.parse(saved);
           const excl = data.excluded || {};
           if (!excl.diet && data.entries?.length > 0) {
-            totalCal += data.entries.reduce((s: number, e: any) => s + e.cal, 0);
+            const dayCal = data.entries.reduce((s: number, e: any) => s + e.cal, 0);
+            totalCal += dayCal;
+            totalNetCal += dayCal - (data.activeCalories || 0) - bmr;
             totalProtein += data.entries.reduce((s: number, e: any) => s + (e.protein || 0), 0);
             totalCarbs += data.entries.reduce((s: number, e: any) => s + (e.carbs || 0), 0);
             totalFat += data.entries.reduce((s: number, e: any) => s + (e.fat || 0), 0);
+            if (calTgt > 0) {
+              const pct = (dayCal / calTgt) * 100;
+              if (pct >= 80 && pct <= 106) calGoalDays++;
+            }
             dietDays++;
           }
           if (!excl.water && data.water) { totalWater += data.water; waterDays++; }
           if (data.weight) { if (startWeight === null) startWeight = data.weight; endWeight = data.weight; }
           if (!excl.exercise && (data.caloriesBurned || data.entries?.length > 0)) workoutDays++;
+          if (data.steps) { totalSteps += data.steps; stepsDays++; }
+          if (data.activeCalories) { totalActiveCals += data.activeCalories; activeDays++; }
+          const sleepH = data.sleepOverride || data.sleepHours;
+          if (sleepH) {
+            totalSleep += sleepH; sleepDays++;
+            const { score, path } = calcSleepScore(sleepH, data.sleepStages || null, sleepGoalVal, data.sleepFeelRating ?? null, !!data.sleepOverride);
+            if (score !== null && (path === 1 || data.sleepFeelRating)) { totalSleepScore += score; sleepScoreDays++; }
+          }
         }
       } catch {}
     }
@@ -395,7 +439,13 @@ export default function StatsScreen() {
       avgProtein: dietDays > 0 ? Math.round(totalProtein / dietDays * 10) / 10 : 0,
       avgCarbs: dietDays > 0 ? Math.round(totalCarbs / dietDays * 10) / 10 : 0,
       avgFat: dietDays > 0 ? Math.round(totalFat / dietDays * 10) / 10 : 0,
+      avgNetCals: dietDays > 0 ? Math.round(totalNetCal / dietDays) : 0,
       avgWater: waterDays > 0 ? Math.round(totalWater / waterDays) : 0,
+      avgSteps: stepsDays > 0 ? Math.round(totalSteps / stepsDays) : 0,
+      avgActiveCals: activeDays > 0 ? Math.round(totalActiveCals / activeDays) : 0,
+      avgSleep: sleepDays > 0 ? Math.round(totalSleep / sleepDays * 10) / 10 : 0,
+      avgSleepScore: sleepScoreDays > 0 ? Math.round(totalSleepScore / sleepScoreDays) : null,
+      calGoalDays,
       workoutDays, totalDays: dates.length, loggedDays: dietDays, startWeight, endWeight,
     });
   };
@@ -442,12 +492,29 @@ export default function StatsScreen() {
         }
         setExcludedDays(exDays);
 
-        let target = 0, step = 10000, sleep = 8;
+        let target = 0, step = 10000, sleep = 8, bmr = 0;
         try {
           const p = await AsyncStorage.getItem('pj_profile');
-          if (p) { const d = JSON.parse(p); if (d.stepGoal) step = parseInt(d.stepGoal); if (d.sleepGoal) sleep = parseFloat(d.sleepGoal); }
+          if (p) {
+            const d = JSON.parse(p);
+            if (d.stepGoal) step = parseInt(d.stepGoal);
+            if (d.sleepGoal) sleep = parseFloat(d.sleepGoal);
+            if (d.heightFt && d.heightIn !== undefined && d.sex && d.birthday) {
+              let w = 0;
+              for (let i = 0; i <= 30 && w === 0; i++) {
+                try { const dd = await AsyncStorage.getItem(`pj_${getDateKey(i)}`); if (dd) { const x = JSON.parse(dd); if (x.weight) w = x.weight; } } catch {}
+              }
+              if (w > 0) {
+                const wKg = w * 0.453592;
+                const hCm = (parseFloat(d.heightFt) * 30.48) + (parseFloat(d.heightIn) * 2.54);
+                const parts = d.birthday.split('-');
+                const age = Math.floor((Date.now() - new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2])).getTime()) / (365.25*24*3600*1000));
+                bmr = d.sex === 'male' ? Math.round((10*wKg)+(6.25*hCm)-(5*age)+5) : Math.round((10*wKg)+(6.25*hCm)-(5*age)-161);
+              }
+            }
+          }
           const s = await AsyncStorage.getItem('pj_settings');
-          if (s) { const d = JSON.parse(s); if (d.calTarget) target = parseInt(d.calTarget); }
+          if (s) { const d = JSON.parse(s); if (d.calTarget) target = parseInt(d.calTarget); if (d.styleMode) setStyleMode(d.styleMode); }
         } catch {}
         setCalTarget(target);
         setStepGoal(step);
@@ -456,7 +523,7 @@ export default function StatsScreen() {
         await Promise.all([
           loadTrendData(trendPeriod),
           loadRecords(),
-          loadPeriodData(activePeriod),
+          loadPeriodData(activePeriod, target, sleep, bmr),
           loadStreaks(target),
         ]);
       };
@@ -551,7 +618,7 @@ export default function StatsScreen() {
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
 
         {/* ── AT A GLANCE ── */}
-        <CollapsibleSection label="At a Glance" defaultOpen={true} theme={theme}>
+        <CollapsibleSection label="At a Glance" defaultOpen={true} theme={theme} first={true}>
           <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
             <View style={{ flexDirection: 'row', gap: 6, marginBottom: 14 }}>
               {(['7', '30', '90', '180', 'ytd'] as const).map(p => (
@@ -565,30 +632,88 @@ export default function StatsScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 10 }}>
-              {periodData.loggedDays} logged days · excludes flagged days
-            </Text>
-            {[
-              { label: 'Avg Calories / Day', value: periodData.avgCal > 0 ? `${periodData.avgCal} kcal` : '--', color: theme.textPrimary },
-              { label: 'Avg Protein / Day', value: periodData.avgProtein > 0 ? `${periodData.avgProtein}g` : '--', color: theme.macroProtein },
-              { label: 'Avg Carbs / Day', value: periodData.avgCarbs > 0 ? `${periodData.avgCarbs}g` : '--', color: theme.macroCarbs },
-              { label: 'Avg Fat / Day', value: periodData.avgFat > 0 ? `${periodData.avgFat}g` : '--', color: theme.macroFat },
-              { label: 'Avg Water / Day', value: periodData.avgWater > 0 ? `${periodData.avgWater} oz` : '--', color: theme.textPrimary },
-              { label: 'Workout Days', value: `${periodData.workoutDays} / ${periodData.totalDays}`, color: theme.textPrimary },
-            ].map((row, i, arr) => (
-              <View key={row.label} style={[styles.historyRow, { borderBottomColor: i < arr.length - 1 ? theme.borderSubtle : 'transparent' }]}>
-                <Text style={[styles.historyDate, { color: theme.textMuted }]}>{row.label}</Text>
-                <Text style={[styles.historyVal, { color: row.color }]}>{row.value}</Text>
-              </View>
-            ))}
-            {weightChange !== null && (
-              <View style={[styles.historyRow, { borderBottomColor: 'transparent' }]}>
-                <Text style={[styles.historyDate, { color: theme.textMuted }]}>Weight Change</Text>
-                <Text style={[styles.historyVal, { color: weightChange < 0 ? theme.statusGood : weightChange > 0 ? theme.statusBad : theme.textPrimary }]}>
-                  {weightChange > 0 ? '+' : ''}{weightChange} lbs
-                </Text>
-              </View>
+            {periodData.loggedDays > 0 && (
+              <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginBottom: 10 }}>
+                Based on {periodData.loggedDays} day{periodData.loggedDays !== 1 ? 's' : ''} with food logged
+              </Text>
             )}
+            <View style={{ position: 'relative' }}>
+              <View style={{ position: 'absolute', top: 0, bottom: 0, left: '50%', width: 0.5, backgroundColor: theme.borderSubtle }} />
+              {/* Nutrition grid -- non-Mindful */}
+              {styleMode !== 'Mindful' && (
+                <>
+                  <View style={[styles.glanceRow, { borderBottomColor: theme.borderSubtle }]}>
+                    <View style={styles.glanceCellL}>
+                      <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>CALORIES / DAY</Text>
+                      <Text style={[styles.glanceVal, { color: theme.textPrimary }]}>{periodData.avgCal > 0 ? `${periodData.avgCal} kcal` : '--'}</Text>
+                    </View>
+                    <View style={styles.glanceCellR}>
+                      <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>NET CALS / DAY</Text>
+                      <Text style={[styles.glanceVal, { color: theme.textPrimary }]}>{periodData.avgNetCals !== 0 ? `${periodData.avgNetCals} kcal` : '--'}</Text>
+                    </View>
+                  </View>
+                  <View style={[styles.glanceRow, { borderBottomColor: theme.borderSubtle }]}>
+                    <View style={styles.glanceCellL}>
+                      <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>ACTIVE CALS / DAY</Text>
+                      <Text style={[styles.glanceVal, { color: theme.textPrimary }]}>{periodData.avgActiveCals > 0 ? `${periodData.avgActiveCals} kcal` : '--'}</Text>
+                    </View>
+                    <View style={styles.glanceCellR}>
+                      <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>CAL GOAL / DAY</Text>
+                      <Text style={[styles.glanceVal, { color: theme.textPrimary }]}>{periodData.loggedDays > 0 ? `${periodData.calGoalDays} / ${periodData.loggedDays}` : '--'}</Text>
+                    </View>
+                  </View>
+                </>
+              )}
+              {/* Activity */}
+              <View style={[styles.glanceRow, { borderBottomColor: theme.borderSubtle }]}>
+                <View style={styles.glanceCellL}>
+                  <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>STEPS / DAY</Text>
+                  <Text style={[styles.glanceVal, { color: theme.textPrimary }]}>{periodData.avgSteps > 0 ? periodData.avgSteps.toLocaleString() : '--'}</Text>
+                </View>
+                <View style={styles.glanceCellR}>
+                  <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>WORKOUT DAYS</Text>
+                  <Text style={[styles.glanceVal, { color: theme.textPrimary }]}>{`${periodData.workoutDays} / ${periodData.totalDays}`}</Text>
+                </View>
+              </View>
+              {styleMode === 'Mindful' && (
+                <View style={[styles.glanceRow, { borderBottomColor: theme.borderSubtle }]}>
+                  <View style={styles.glanceCellL}>
+                    <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>WORKOUT DAYS</Text>
+                    <Text style={[styles.glanceVal, { color: theme.textPrimary }]}>{`${periodData.workoutDays} / ${periodData.totalDays}`}</Text>
+                  </View>
+                  <View style={styles.glanceCellR}>
+                    <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>SLEEP / NIGHT</Text>
+                    <Text style={[styles.glanceVal, { color: theme.textPrimary }]}>{periodData.avgSleep > 0 ? `${Math.floor(periodData.avgSleep)}h ${Math.round((periodData.avgSleep % 1) * 60)}m` : '--'}</Text>
+                  </View>
+                </View>
+              )}
+              {/* Sleep */}
+              {styleMode !== 'Mindful' && (
+                <View style={[styles.glanceRow, { borderBottomColor: theme.borderSubtle }]}>
+                  <View style={styles.glanceCellL}>
+                    <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>SLEEP / NIGHT</Text>
+                    <Text style={[styles.glanceVal, { color: theme.textPrimary }]}>{periodData.avgSleep > 0 ? `${Math.floor(periodData.avgSleep)}h ${Math.round((periodData.avgSleep % 1) * 60)}m` : '--'}</Text>
+                  </View>
+                  <View style={styles.glanceCellR}>
+                    <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>SLEEP SCORE</Text>
+                    <Text style={[styles.glanceVal, { color: theme.textPrimary }]}>{periodData.avgSleepScore !== null ? periodData.avgSleepScore.toString() : '--'}</Text>
+                  </View>
+                </View>
+              )}
+              {/* Water + Weight */}
+              <View style={[styles.glanceRow, { borderBottomColor: 'transparent' }]}>
+                <View style={styles.glanceCellL}>
+                  <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>WATER / DAY</Text>
+                  <Text style={[styles.glanceVal, { color: theme.textPrimary }]}>{periodData.avgWater > 0 ? `${periodData.avgWater} oz` : '--'}</Text>
+                </View>
+                <View style={styles.glanceCellR}>
+                  <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>WEIGHT CHANGE</Text>
+                  <Text style={[styles.glanceVal, { color: weightChange !== null ? (weightChange < 0 ? theme.statusGood : weightChange > 0 ? theme.statusBad : theme.textPrimary) : theme.textPrimary }]}>
+                    {weightChange !== null ? `${weightChange > 0 ? '+' : ''}${weightChange} lbs` : '--'}
+                  </Text>
+                </View>
+              </View>
+            </View>
           </View>
         </CollapsibleSection>
 
@@ -787,4 +912,9 @@ const styles = StyleSheet.create({
   historyRow:   { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 0.5 },
   historyDate:  { fontSize: 12, fontFamily: 'DMSans_400Regular' },
   historyVal:   { fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
+  glanceRow:    { flexDirection: 'row', borderBottomWidth: 0.5 },
+  glanceCellL:  { width: '50%', paddingVertical: 10, paddingRight: 12 },
+  glanceCellR:  { width: '50%', paddingVertical: 10, paddingLeft: 12 },
+  glanceLabel:  { fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 3 },
+  glanceVal:    { fontSize: 15, fontFamily: 'DMSans_700Bold' },
 });

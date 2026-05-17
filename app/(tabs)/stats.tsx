@@ -45,39 +45,39 @@ function niceYTicks(minVal: number, maxVal: number, targetCount = 4): number[] {
     ticks.push(Math.round(t * 10000) / 10000);
     t += niceStep;
   }
+  if (ticks.length > 0 && ticks[ticks.length - 1] < maxVal) {
+    ticks.push(Math.round((ticks[ticks.length - 1] + niceStep) * 10000) / 10000);
+  }
   return ticks;
 }
 
 // ── Shared chart fade-in animation ───────────────────────────────────────────
 
 function useChartAnim(hasData: boolean) {
-  const fadeAnim  = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(8)).current;
+  const hasPlayed = useRef(false);
   useEffect(() => {
-    fadeAnim.setValue(0);
-    slideAnim.setValue(8);
-    if (hasData) {
-      Animated.parallel([
-        Animated.timing(fadeAnim,  { toValue: 1, duration: 480, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-        Animated.timing(slideAnim, { toValue: 0, duration: 480, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-      ]).start();
-    }
+    if (!hasData || hasPlayed.current) return;
+    hasPlayed.current = true;
+    Animated.timing(slideAnim, { toValue: 0, duration: 480, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
   }, [hasData]);
-  return { fadeAnim, slideAnim };
+  return { slideAnim };
 }
 
 // ── Line chart ────────────────────────────────────────────────────────────────
 
-function LineChart({ data, color, unit, goalValue, theme, fmtY, gradientId }: {
+function LineChart({ data, color, unit, goalValue, theme, fmtY, fmtFull, gradientId }: {
   data: { date: string, value: number }[],
   color: string,
   unit: string,
   goalValue?: number,
   theme: any,
   fmtY?: (v: number) => string,
+  fmtFull?: (v: number) => string,
   gradientId: string,
 }) {
-  const { fadeAnim, slideAnim } = useChartAnim(data.length >= 2);
+  const [callout, setCallout] = useState<{ x: number; y: number; label1: string; label2: string } | null>(null);
+  const { slideAnim } = useChartAnim(data.length >= 2);
 
   if (data.length < 2) {
     return (
@@ -124,13 +124,15 @@ function LineChart({ data, color, unit, goalValue, theme, fmtY, gradientId }: {
     `${Math.round(v * 10) / 10}`;
   const fmt = fmtY || defaultFmtY;
 
-  const labelY = lastY < CHART_PAD_TOP + 18 ? lastY + 14 : lastY - 8;
-  const labelAnchor: 'end' | 'middle' | 'start' =
-    lastX > plotRight - 24 ? 'end' :
-    lastX < plotLeft  + 24 ? 'start' : 'middle';
+  const labelText = fmtFull ? fmtFull(lastVal) : fmt(lastVal);
+  const labelPillW = labelText.length * 5.5 + 10;
+  const labelPillH = 14;
+  const labelPillCX = Math.min(Math.max(lastX, plotLeft + labelPillW / 2), plotRight - labelPillW / 2);
+  const labelPillX = labelPillCX - labelPillW / 2;
+  const labelPillY = Math.max(CHART_PAD_TOP - 2, lastY - 4 - 4 - labelPillH);
 
   return (
-    <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+    <Animated.View style={{ transform: [{ translateY: slideAnim }] }}>
       <Svg width={CHART_WIDTH} height={CHART_HEIGHT}>
         <Defs>
           <SvgLinearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
@@ -139,10 +141,13 @@ function LineChart({ data, color, unit, goalValue, theme, fmtY, gradientId }: {
           </SvgLinearGradient>
         </Defs>
 
+        {/* Dismiss area -- behind all other elements */}
+        <Rect x={0} y={0} width={CHART_WIDTH} height={CHART_HEIGHT} fill="transparent" onPress={() => setCallout(null)} />
+
         {/* Grid lines */}
         {ticks.map((tick, i) => (
           <Line key={`g${i}`} x1={plotLeft} y1={toY(tick)} x2={plotRight} y2={toY(tick)}
-            stroke={theme.borderSubtle} strokeWidth={0.5} opacity={0.7} />
+            stroke={theme.borderSubtle} strokeWidth={1} opacity={1} />
         ))}
 
         {/* Y-axis labels */}
@@ -172,11 +177,17 @@ function LineChart({ data, color, unit, goalValue, theme, fmtY, gradientId }: {
         <Polyline points={points} fill="none" stroke={color} strokeWidth={2.5}
           strokeLinejoin="round" strokeLinecap="round" />
 
-        {/* Latest point */}
+        {/* Latest point dot */}
         <Circle cx={lastX} cy={lastY} r={4} fill={color} />
-        <SvgText x={lastX} y={labelY} fill={color}
-          fontSize={9} fontFamily="DMSans_700Bold" textAnchor={labelAnchor}>
-          {fmt(lastVal)}
+
+        {/* Latest value label -- floats above dot, accent pill */}
+        <Rect
+          x={labelPillX} y={labelPillY} width={labelPillW} height={labelPillH}
+          fill={theme.accentBlueRaw} opacity={0.65} rx={3}
+        />
+        <SvgText x={labelPillCX} y={labelPillY + labelPillH - 3}
+          fill="#ffffff" fontSize={9} fontFamily="DMSans_700Bold" textAnchor="middle">
+          {labelText}
         </SvgText>
 
         {/* X-axis dates */}
@@ -194,6 +205,38 @@ function LineChart({ data, color, unit, goalValue, theme, fmtY, gradientId }: {
           fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">
           {fmtDate(data[data.length - 1].date)}
         </SvgText>
+
+        {/* Invisible tap circles at each data point */}
+        {data.map((d, i) => (
+          <Circle key={`tap${i}`} cx={toX(i)} cy={toY(d.value)} r={18} fill="transparent"
+            onPress={() => setCallout(prev =>
+              prev?.label1 === fmtDate(d.date) ? null :
+              { x: toX(i), y: toY(d.value), label1: fmtDate(d.date), label2: fmtFull ? fmtFull(d.value) : `${fmt(d.value)}${unit}` }
+            )} />
+        ))}
+
+        {/* Callout bubble */}
+        {callout !== null && (() => {
+          const cPillW = Math.max(callout.label1.length, callout.label2.length) * 6 + 14;
+          const cPillH = 32;
+          const cPillX = Math.min(Math.max(callout.x - cPillW / 2, plotLeft), plotRight - cPillW);
+          const cPillY = Math.max(CHART_PAD_TOP - 2, callout.y - cPillH - 10);
+          return (
+            <>
+              <Rect x={cPillX} y={cPillY} width={cPillW} height={cPillH}
+                fill={theme.bgCard} stroke={theme.borderCard} strokeWidth={0.5} rx={6}
+                onPress={() => setCallout(null)} />
+              <SvgText x={cPillX + cPillW / 2} y={cPillY + 12} fill={theme.textDim}
+                fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">
+                {callout.label1}
+              </SvgText>
+              <SvgText x={cPillX + cPillW / 2} y={cPillY + 26} fill={theme.textPrimary}
+                fontSize={10} fontFamily="DMSans_700Bold" textAnchor="middle">
+                {callout.label2}
+              </SvgText>
+            </>
+          );
+        })()}
       </Svg>
     </Animated.View>
   );
@@ -206,7 +249,8 @@ function CalorieBarChart({ data, calTarget, theme }: {
   calTarget: number,
   theme: any,
 }) {
-  const { fadeAnim, slideAnim } = useChartAnim(data.length > 0);
+  const [callout, setCallout] = useState<{ x: number; y: number; label1: string; label2: string } | null>(null);
+  const { slideAnim } = useChartAnim(data.length > 0);
 
   if (data.length === 0) {
     return (
@@ -217,8 +261,7 @@ function CalorieBarChart({ data, calTarget, theme }: {
     );
   }
 
-  const target = calTarget || 2000;
-  const maxCal = Math.max(...data.map(d => d.cal), target * 1.05);
+  const maxCal = Math.max(...data.map(d => d.cal), 1);
   const ticks = niceYTicks(0, maxCal, 4);
   const tickMax = ticks[ticks.length - 1];
 
@@ -229,7 +272,6 @@ function CalorieBarChart({ data, calTarget, theme }: {
   const chartBottom = CHART_PAD_TOP + chartH;
 
   const toY = (v: number) => CHART_PAD_TOP + (1 - v / tickMax) * chartH;
-  const goalY = toY(target);
   const midIdx = Math.floor(data.length / 2);
 
   const BAR_W = Math.min(16, plotW / data.length - 3);
@@ -237,12 +279,15 @@ function CalorieBarChart({ data, calTarget, theme }: {
   const fmtK = (v: number) => v >= 1000 ? `${Math.round(v / 100) / 10}k` : `${Math.round(v)}`;
 
   return (
-    <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+    <Animated.View style={{ transform: [{ translateY: slideAnim }] }}>
       <Svg width={CHART_WIDTH} height={CHART_HEIGHT}>
+        {/* Dismiss area -- behind all other elements */}
+        <Rect x={0} y={0} width={CHART_WIDTH} height={CHART_HEIGHT} fill="transparent" onPress={() => setCallout(null)} />
+
         {/* Grid lines */}
         {ticks.map((tick, i) => (
           <Line key={`g${i}`} x1={plotLeft} y1={toY(tick)} x2={plotRight} y2={toY(tick)}
-            stroke={theme.borderSubtle} strokeWidth={0.5} opacity={0.7} />
+            stroke={theme.borderSubtle} strokeWidth={1} opacity={1} />
         ))}
 
         {/* Y-axis labels */}
@@ -253,21 +298,20 @@ function CalorieBarChart({ data, calTarget, theme }: {
           </SvgText>
         ))}
 
-        {/* Goal line */}
-        <Line x1={plotLeft} y1={goalY} x2={plotRight} y2={goalY}
-          stroke={theme.accentBlueBorder} strokeWidth={1} strokeDasharray="4,3" />
-        <SvgText x={plotRight} y={goalY - 3}
-          fill={theme.accentBlue} fontSize={8} fontFamily="DMSans_600SemiBold" textAnchor="end">
-          {fmtK(target)}
-        </SvgText>
-
-        {/* Bars */}
+        {/* Bars with tap targets */}
         {data.map((d, i) => {
-          const pct = target > 0 ? (d.cal / target) * 100 : 0;
-          const barColor = pct >= 80 && pct <= 106 ? theme.statusGood : pct >= 63 && pct <= 114 ? theme.statusWarn : theme.statusBad;
+          const barColor = '#e06840';
           const barH = Math.max(2, (d.cal / tickMax) * chartH);
           const x = plotLeft + i * slot + (slot - BAR_W) / 2;
-          return <Rect key={i} x={x} y={chartBottom - barH} width={BAR_W} height={barH} fill={barColor} opacity={0.85} rx={2} />;
+          const cx = x + BAR_W / 2;
+          return (
+            <Rect key={i} x={x} y={chartBottom - barH} width={BAR_W} height={barH}
+              fill={barColor} opacity={0.85} rx={2}
+              onPress={() => setCallout(prev =>
+                prev?.label1 === fmtDate(d.date) ? null :
+                { x: cx, y: chartBottom - barH, label1: fmtDate(d.date), label2: `${Math.round(d.cal).toLocaleString()} kcal` }
+              )} />
+          );
         })}
 
         {/* X-axis dates */}
@@ -284,6 +328,29 @@ function CalorieBarChart({ data, calTarget, theme }: {
           fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">
           {fmtDate(data[data.length - 1].date)}
         </SvgText>
+
+        {/* Callout bubble */}
+        {callout !== null && (() => {
+          const cPillW = Math.max(callout.label1.length, callout.label2.length) * 6 + 14;
+          const cPillH = 32;
+          const cPillX = Math.min(Math.max(callout.x - cPillW / 2, plotLeft), plotRight - cPillW);
+          const cPillY = Math.max(CHART_PAD_TOP - 2, callout.y - cPillH - 10);
+          return (
+            <>
+              <Rect x={cPillX} y={cPillY} width={cPillW} height={cPillH}
+                fill={theme.bgCard} stroke={theme.borderCard} strokeWidth={0.5} rx={6}
+                onPress={() => setCallout(null)} />
+              <SvgText x={cPillX + cPillW / 2} y={cPillY + 12} fill={theme.textDim}
+                fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">
+                {callout.label1}
+              </SvgText>
+              <SvgText x={cPillX + cPillW / 2} y={cPillY + 26} fill={theme.textPrimary}
+                fontSize={10} fontFamily="DMSans_700Bold" textAnchor="middle">
+                {callout.label2}
+              </SvgText>
+            </>
+          );
+        })()}
       </Svg>
     </Animated.View>
   );
@@ -296,10 +363,11 @@ const MACRO_CARBS   = '#c47d1a';
 const MACRO_FAT     = '#a83232';
 
 function MacroBarChart({ data, theme }: {
-  data: { date: string, protein: number, carbs: number, fat: number }[],
+  data: { date: string; protein: number; carbs: number; fat: number }[],
   theme: any,
 }) {
-  const { fadeAnim, slideAnim } = useChartAnim(data.length > 0);
+  const [callout, setCallout] = useState<{ x: number; y: number; date: string; protein: number; carbs: number; fat: number } | null>(null);
+  const { slideAnim } = useChartAnim(data.length > 0);
 
   if (data.length === 0) {
     return (
@@ -329,12 +397,15 @@ function MacroBarChart({ data, theme }: {
 
   return (
     <>
-      <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+      <Animated.View style={{ transform: [{ translateY: slideAnim }] }}>
         <Svg width={CHART_WIDTH} height={CHART_HEIGHT}>
+          {/* Dismiss area -- behind all other elements */}
+          <Rect x={0} y={0} width={CHART_WIDTH} height={CHART_HEIGHT} fill="transparent" onPress={() => setCallout(null)} />
+
           {/* Grid lines */}
           {ticks.map((tick, i) => (
             <Line key={`g${i}`} x1={plotLeft} y1={toY(tick)} x2={plotRight} y2={toY(tick)}
-              stroke={theme.borderSubtle} strokeWidth={0.5} opacity={0.7} />
+              stroke={theme.borderSubtle} strokeWidth={1} opacity={1} />
           ))}
 
           {/* Y-axis labels */}
@@ -345,16 +416,24 @@ function MacroBarChart({ data, theme }: {
             </SvgText>
           ))}
 
-          {/* Stacked bars */}
+          {/* Stacked bars + invisible overlay tap target */}
           {data.map((d, i) => {
             const x = plotLeft + i * slot + (slot - BAR_W) / 2;
+            const cx = x + BAR_W / 2;
             const pH = toH(d.protein);
             const cH = toH(d.carbs);
             const fH = toH(d.fat);
+            const totalH = pH + cH + fH;
             return [
               <Rect key={`p${i}`} x={x} y={chartBottom - pH}           width={BAR_W} height={pH} fill={MACRO_PROTEIN} opacity={0.9} />,
               <Rect key={`c${i}`} x={x} y={chartBottom - pH - cH}      width={BAR_W} height={cH} fill={MACRO_CARBS}   opacity={0.9} />,
               <Rect key={`f${i}`} x={x} y={chartBottom - pH - cH - fH} width={BAR_W} height={fH} fill={MACRO_FAT}     opacity={0.9} rx={2} />,
+              <Rect key={`t${i}`} x={x} y={chartBottom - totalH}       width={BAR_W} height={Math.max(totalH, 12)}
+                fill="transparent"
+                onPress={() => setCallout(prev =>
+                  prev?.date === fmtDate(d.date) ? null :
+                  { x: cx, y: chartBottom - totalH, date: fmtDate(d.date), protein: Math.round(d.protein), carbs: Math.round(d.carbs), fat: Math.round(d.fat) }
+                )} />,
             ];
           })}
 
@@ -372,6 +451,39 @@ function MacroBarChart({ data, theme }: {
             fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">
             {fmtDate(data[data.length - 1].date)}
           </SvgText>
+
+          {/* Callout bubble -- 4-row layout: date + P/C/F each on own line with macro color */}
+          {callout !== null && (() => {
+            const maxG = Math.max(callout.protein, callout.carbs, callout.fat);
+            const cPillW = Math.max(String(maxG).length * 7 + 52, 72);
+            const cPillH = 62;
+            const cPillX = Math.min(Math.max(callout.x - cPillW / 2, plotLeft), plotRight - cPillW);
+            const cPillY = Math.max(CHART_PAD_TOP - 2, callout.y - cPillH - 10);
+            const tx = cPillX + 10;
+            return (
+              <>
+                <Rect x={cPillX} y={cPillY} width={cPillW} height={cPillH}
+                  fill={theme.bgCard} stroke={theme.borderCard} strokeWidth={0.5} rx={6}
+                  onPress={() => setCallout(null)} />
+                <SvgText x={cPillX + cPillW / 2} y={cPillY + 13} fill={theme.textDim}
+                  fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">
+                  {callout.date}
+                </SvgText>
+                <SvgText x={tx} y={cPillY + 27} fill={MACRO_PROTEIN}
+                  fontSize={9} fontFamily="DMSans_700Bold">
+                  {`P  ${callout.protein}g`}
+                </SvgText>
+                <SvgText x={tx} y={cPillY + 41} fill={MACRO_CARBS}
+                  fontSize={9} fontFamily="DMSans_700Bold">
+                  {`C  ${callout.carbs}g`}
+                </SvgText>
+                <SvgText x={tx} y={cPillY + 55} fill={MACRO_FAT}
+                  fontSize={9} fontFamily="DMSans_700Bold">
+                  {`F  ${callout.fat}g`}
+                </SvgText>
+              </>
+            );
+          })()}
         </Svg>
       </Animated.View>
       <View style={{ flexDirection: 'row', gap: 14, marginTop: 8 }}>
@@ -406,7 +518,8 @@ function WorkoutFrequencyChart({ data, theme }: {
   const firstNonZero = weeks.findIndex(w => w.count > 0);
   const visibleWeeks = firstNonZero > 0 ? weeks.slice(firstNonZero) : weeks;
 
-  const { fadeAnim, slideAnim } = useChartAnim(visibleWeeks.length > 0);
+  const [callout, setCallout] = useState<{ x: number; y: number; label1: string; label2: string } | null>(null);
+  const { slideAnim } = useChartAnim(visibleWeeks.length > 0);
 
   if (visibleWeeks.length === 0) {
     return (
@@ -432,12 +545,15 @@ function WorkoutFrequencyChart({ data, theme }: {
 
   return (
     <>
-      <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+      <Animated.View style={{ transform: [{ translateY: slideAnim }] }}>
         <Svg width={CHART_WIDTH} height={CHART_HEIGHT}>
+          {/* Dismiss area -- behind all other elements */}
+          <Rect x={0} y={0} width={CHART_WIDTH} height={CHART_HEIGHT} fill="transparent" onPress={() => setCallout(null)} />
+
           {/* Grid lines */}
           {fixedTicks.map((tick, i) => (
             <Line key={`g${i}`} x1={plotLeft} y1={toY(tick)} x2={plotRight} y2={toY(tick)}
-              stroke={theme.borderSubtle} strokeWidth={0.5} opacity={0.7} />
+              stroke={theme.borderSubtle} strokeWidth={1} opacity={1} />
           ))}
 
           {/* Y-axis labels */}
@@ -448,12 +564,21 @@ function WorkoutFrequencyChart({ data, theme }: {
             </SvgText>
           ))}
 
-          {/* Bars */}
+          {/* Bars with tap targets */}
           {visibleWeeks.map((w, i) => {
             const barH = Math.max(2, (w.count / maxY) * chartH);
             const x = plotLeft + i * slot + (slot - BAR_W) / 2;
+            const cx = x + BAR_W / 2;
             const barColor = w.count >= 5 ? theme.statusGood : w.count >= 3 ? theme.accentBlue : w.count > 0 ? theme.statusWarn : theme.borderSubtle;
-            return <Rect key={i} x={x} y={chartBottom - barH} width={BAR_W} height={barH} fill={barColor} opacity={0.85} rx={3} />;
+            const dayLabel = w.count === 1 ? '1 day' : `${w.count} days`;
+            return (
+              <Rect key={i} x={x} y={chartBottom - barH} width={BAR_W} height={barH}
+                fill={barColor} opacity={0.85} rx={3}
+                onPress={() => setCallout(prev =>
+                  prev?.label1 === w.label ? null :
+                  { x: cx, y: chartBottom - barH, label1: w.label, label2: dayLabel }
+                )} />
+            );
           })}
 
           {/* X dates */}
@@ -474,6 +599,29 @@ function WorkoutFrequencyChart({ data, theme }: {
               </SvgText>
             </>
           )}
+
+          {/* Callout bubble */}
+          {callout !== null && (() => {
+            const cPillW = Math.max(callout.label1.length, callout.label2.length) * 6 + 14;
+            const cPillH = 32;
+            const cPillX = Math.min(Math.max(callout.x - cPillW / 2, plotLeft), plotRight - cPillW);
+            const cPillY = Math.max(CHART_PAD_TOP - 2, callout.y - cPillH - 10);
+            return (
+              <>
+                <Rect x={cPillX} y={cPillY} width={cPillW} height={cPillH}
+                  fill={theme.bgCard} stroke={theme.borderCard} strokeWidth={0.5} rx={6}
+                  onPress={() => setCallout(null)} />
+                <SvgText x={cPillX + cPillW / 2} y={cPillY + 12} fill={theme.textDim}
+                  fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">
+                  {callout.label1}
+                </SvgText>
+                <SvgText x={cPillX + cPillW / 2} y={cPillY + 26} fill={theme.textPrimary}
+                  fontSize={10} fontFamily="DMSans_700Bold" textAnchor="middle">
+                  {callout.label2}
+                </SvgText>
+              </>
+            );
+          })()}
         </Svg>
       </Animated.View>
       <View style={{ flexDirection: 'row', gap: 14, marginTop: 8 }}>
@@ -598,15 +746,19 @@ export default function StatsScreen() {
   const { theme } = useTheme();
 
   const [trendPeriod, setTrendPeriod] = useState<'7' | '30' | '90'>('30');
+  const trendPeriodRef = useRef<'7' | '30' | '90'>('30');
+  trendPeriodRef.current = trendPeriod;
   const [activePeriod, setActivePeriod] = useState<'7' | '30' | '90' | '180' | 'ytd'>('7');
 
-  const [weightHistory, setWeightHistory] = useState<{ date: string, value: number }[]>([]);
-  const [calHistory, setCalHistory] = useState<{ date: string, cal: number }[]>([]);
-  const [stepsHistory, setStepsHistory] = useState<{ date: string, value: number }[]>([]);
-  const [activeCalHistory, setActiveCalHistory] = useState<{ date: string, value: number }[]>([]);
-  const [sleepHistory, setSleepHistory] = useState<{ date: string, value: number }[]>([]);
-  const [macroHistory, setMacroHistory] = useState<{ date: string, protein: number, carbs: number, fat: number }[]>([]);
-  const [workoutDayHistory, setWorkoutDayHistory] = useState<{ date: string, hadWorkout: boolean }[]>([]);
+  const [trendData, setTrendData] = useState<{
+    weight: { date: string; value: number }[];
+    cal: { date: string; cal: number }[];
+    steps: { date: string; value: number }[];
+    activeCal: { date: string; value: number }[];
+    sleep: { date: string; value: number }[];
+    macro: { date: string; protein: number; carbs: number; fat: number }[];
+    workoutDay: { date: string; hadWorkout: boolean }[];
+  }>({ weight: [], cal: [], steps: [], activeCal: [], sleep: [], macro: [], workoutDay: [] });
 
   const [calTarget, setCalTarget] = useState(0);
   const [stepGoal, setStepGoal] = useState(10000);
@@ -655,13 +807,19 @@ export default function StatsScreen() {
 
   const loadTrendData = async (period: '7' | '30' | '90') => {
     const days = parseInt(period);
-    const wh: { date: string, value: number }[] = [];
-    const ch: { date: string, cal: number }[] = [];
-    const sh: { date: string, value: number }[] = [];
-    const ah: { date: string, value: number }[] = [];
-    const slh: { date: string, value: number }[] = [];
-    const mh: { date: string, protein: number, carbs: number, fat: number }[] = [];
-    const wdh: { date: string, hadWorkout: boolean }[] = [];
+    const wh: { date: string; value: number }[] = [];
+    const ch: { date: string; cal: number }[] = [];
+    const sh: { date: string; value: number }[] = [];
+    const ah: { date: string; value: number }[] = [];
+    const slh: { date: string; value: number }[] = [];
+    const mh: { date: string; protein: number; carbs: number; fat: number }[] = [];
+    const wdh: { date: string; hadWorkout: boolean }[] = [];
+
+    let workoutState: any = {};
+    try {
+      const ws = await AsyncStorage.getItem('pj_workout_state');
+      if (ws) workoutState = JSON.parse(ws);
+    } catch {}
 
     for (let i = days - 1; i >= 0; i--) {
       const dateKey = getDateKey(i);
@@ -685,18 +843,12 @@ export default function StatsScreen() {
           if (data.activeCalories) ah.push({ date: dateKey, value: data.activeCalories });
           const sleepH = data.sleepOverride || data.sleepHours;
           if (sleepH) slh.push({ date: dateKey, value: sleepH });
-          hadWorkout = (data.caloriesBurned || 0) > 0;
+          hadWorkout = (workoutState.programs?.[dateKey]?.exercises?.length ?? 0) > 0;
         }
       } catch {}
       wdh.push({ date: dateKey, hadWorkout });
     }
-    setWeightHistory(wh);
-    setCalHistory(ch);
-    setStepsHistory(sh);
-    setActiveCalHistory(ah);
-    setSleepHistory(slh);
-    setMacroHistory(mh);
-    setWorkoutDayHistory(wdh);
+    setTrendData({ weight: wh, cal: ch, steps: sh, activeCal: ah, sleep: slh, macro: mh, workoutDay: wdh });
   };
 
   const loadRecords = async () => {
@@ -866,14 +1018,14 @@ export default function StatsScreen() {
         hasLoadedProfile.current = true;
 
         await Promise.all([
-          loadTrendData(trendPeriod),
+          loadTrendData(trendPeriodRef.current),
           loadRecords(),
           loadPeriodData(activePeriod, target, sleep, bmr),
           loadStreaks(target),
         ]);
       };
       loadAll();
-    }, [calendarMonth, calendarYear, trendPeriod])
+    }, [calendarMonth, calendarYear])
   );
 
   useEffect(() => {
@@ -889,7 +1041,7 @@ export default function StatsScreen() {
   const getDayStatus = (day: number): DayStatus => {
     const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     if (dateKey > today) return 'future';
-    const calEntry = calHistory.find(c => c.date === dateKey);
+    const calEntry = trendData.cal.find(c => c.date === dateKey);
     if (!calEntry || !calTarget) return 'none';
     const pct = (calEntry.cal / calTarget) * 100;
     if (pct >= 80 && pct <= 106) return 'green';
@@ -936,21 +1088,21 @@ export default function StatsScreen() {
     </View>
   );
 
-  const avgWeight = weightHistory.length > 0
-    ? Math.round(weightHistory.reduce((s, d) => s + d.value, 0) / weightHistory.length * 10) / 10 : null;
-  const avgSteps = stepsHistory.length > 0
-    ? Math.round(stepsHistory.reduce((s, d) => s + d.value, 0) / stepsHistory.length) : null;
-  const avgActiveCals = activeCalHistory.length > 0
-    ? Math.round(activeCalHistory.reduce((s, d) => s + d.value, 0) / activeCalHistory.length) : null;
-  const avgSleep = sleepHistory.length > 0
-    ? Math.round(sleepHistory.reduce((s, d) => s + d.value, 0) / sleepHistory.length * 10) / 10 : null;
+  const avgWeight = trendData.weight.length > 0
+    ? Math.round(trendData.weight.reduce((s, d) => s + d.value, 0) / trendData.weight.length * 10) / 10 : null;
+  const avgSteps = trendData.steps.length > 0
+    ? Math.round(trendData.steps.reduce((s, d) => s + d.value, 0) / trendData.steps.length) : null;
+  const avgActiveCals = trendData.activeCal.length > 0
+    ? Math.round(trendData.activeCal.reduce((s, d) => s + d.value, 0) / trendData.activeCal.length) : null;
+  const avgSleep = trendData.sleep.length > 0
+    ? Math.round(trendData.sleep.reduce((s, d) => s + d.value, 0) / trendData.sleep.length * 10) / 10 : null;
   const weightChange = periodData.startWeight && periodData.endWeight
     ? Math.round((periodData.endWeight - periodData.startWeight) * 10) / 10 : null;
-  const stepsAboveGoal = stepsHistory.filter(d => d.value >= stepGoal).length;
-  const sleepAtGoal = sleepHistory.filter(d => d.value >= sleepGoal).length;
+  const stepsAboveGoal = trendData.steps.filter(d => d.value >= stepGoal).length;
+  const sleepAtGoal = trendData.sleep.filter(d => d.value >= sleepGoal).length;
 
-  const totalWorkoutDays = workoutDayHistory.filter(d => d.hadWorkout).length;
-  const totalWeeks = Math.max(1, Math.ceil(workoutDayHistory.length / 7));
+  const totalWorkoutDays = trendData.workoutDay.filter(d => d.hadWorkout).length;
+  const totalWeeks = Math.max(1, Math.ceil(trendData.workoutDay.length / 7));
   const avgWorkoutsPerWeek = Math.round(totalWorkoutDays / totalWeeks * 10) / 10;
 
   return (
@@ -1085,48 +1237,45 @@ export default function StatsScreen() {
 
           <GraphCard icon="body-outline" label="Weight"
             stat={avgWeight ? `Avg ${avgWeight} lbs${weightChange !== null ? ` · ${weightChange > 0 ? '+' : ''}${weightChange} lbs from start` : ''}` : undefined}>
-            <LineChart data={weightHistory} color={theme.textSecondary} unit=" lbs"
+            <LineChart data={trendData.weight} color={theme.textSecondary} unit=" lbs"
               fmtY={(v) => v % 1 === 0 ? `${v}` : `${v.toFixed(1)}`} gradientId="wt_grad" theme={theme} />
           </GraphCard>
 
           <GraphCard icon="flame-outline" label="Calories"
             stat={periodData.avgCal > 0 ? `Avg ${periodData.avgCal} kcal/day · ${periodData.loggedDays} days logged` : undefined}>
-            <CalorieBarChart data={calHistory} calTarget={calTarget} theme={theme} />
-            <View style={{ flexDirection: 'row', gap: 14, marginTop: 8 }}>
-              <Text style={{ fontSize: 9, color: theme.statusGood, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>{'● On target'}</Text>
-              <Text style={{ fontSize: 9, color: theme.statusWarn, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>{'● Close'}</Text>
-              <Text style={{ fontSize: 9, color: theme.statusBad, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>{'● Off'}</Text>
-            </View>
+            <CalorieBarChart data={trendData.cal} calTarget={calTarget} theme={theme} />
           </GraphCard>
 
           <GraphCard icon="nutrition-outline" label="Macros"
             stat={periodData.avgProtein > 0 ? `Avg P: ${periodData.avgProtein}g  C: ${periodData.avgCarbs}g  F: ${periodData.avgFat}g` : undefined}>
-            <MacroBarChart data={macroHistory} theme={theme} />
+            <MacroBarChart data={trendData.macro} theme={theme} />
           </GraphCard>
 
           <GraphCard icon="footsteps-outline" label="Steps"
             stat={avgSteps !== null ? `Avg ${avgSteps.toLocaleString()} steps/day · ${stepsAboveGoal} days above goal` : undefined}>
-            <LineChart data={stepsHistory} color={theme.accentBlue} unit=""
+            <LineChart data={trendData.steps} color={theme.accentBlue} unit=""
               goalValue={stepGoal} fmtY={(v) => v >= 1000 ? `${Math.round(v/1000)}k` : `${Math.round(v)}`}
+              fmtFull={(v) => Math.round(v).toLocaleString()}
               gradientId="st_grad" theme={theme} />
           </GraphCard>
 
           <GraphCard icon="heart-outline" label="Active Calories"
             stat={avgActiveCals !== null ? `Avg ${avgActiveCals.toLocaleString()} kcal/day` : undefined}>
-            <LineChart data={activeCalHistory} color={theme.statusWarn} unit=" kcal"
+            <LineChart data={trendData.activeCal} color={theme.statusWarn} unit=" kcal"
               fmtY={(v) => `${Math.round(v)}`} gradientId="ac_grad" theme={theme} />
           </GraphCard>
 
           <GraphCard icon="moon-outline" label="Sleep"
             stat={avgSleep !== null ? `Avg ${avgSleep}h/night · ${sleepAtGoal} nights at goal` : undefined}>
-            <LineChart data={sleepHistory} color={theme.sleepRem} unit="h"
+            <LineChart data={trendData.sleep} color={theme.sleepRem} unit=""
               goalValue={sleepGoal} fmtY={(v) => `${Math.round(v * 10) / 10}h`}
+              fmtFull={(v) => { const h = Math.floor(v); const m = Math.round((v % 1) * 60); return m > 0 ? `${h}h ${m}m` : `${h}h`; }}
               gradientId="sl_grad" theme={theme} />
           </GraphCard>
 
           <GraphCard icon="barbell-outline" label="Workout Frequency"
-            stat={workoutDayHistory.length > 0 ? `Avg ${avgWorkoutsPerWeek} workouts/week` : undefined}>
-            <WorkoutFrequencyChart data={workoutDayHistory} theme={theme} />
+            stat={trendData.workoutDay.length > 0 ? `Avg ${avgWorkoutsPerWeek} workouts/week` : undefined}>
+            <WorkoutFrequencyChart data={trendData.workoutDay} theme={theme} />
           </GraphCard>
         </CollapsibleSection>
 

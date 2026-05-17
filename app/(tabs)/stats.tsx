@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Dimensions, Easing, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, Dimensions, Easing, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, Line, LinearGradient as SvgLinearGradient, Path, Polyline, Rect, Stop, Text as SvgText } from 'react-native-svg';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
@@ -362,6 +362,110 @@ function CalorieBarChart({ data, calTarget, theme }: {
   );
 }
 
+// ── Generic bar chart (line-switchable data keys) ────────────────────────────
+
+function GenericBarChart({ data, color, unit, theme, fmtY, fmtFull, startFromZero = true }: {
+  data: { date: string, value: number }[],
+  color: string,
+  unit: string,
+  theme: any,
+  fmtY?: (v: number) => string,
+  fmtFull?: (v: number) => string,
+  startFromZero?: boolean,
+}) {
+  const [callout, setCallout] = useState<{ x: number; y: number; label1: string; label2: string } | null>(null);
+  const { slideAnim } = useChartAnim(data.length > 0);
+
+  if (data.length === 0) {
+    return (
+      <View style={{ height: CHART_HEIGHT, alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+        <Ionicons name="analytics-outline" size={24} color={theme.iconMuted} />
+        <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>Not enough data yet</Text>
+      </View>
+    );
+  }
+
+  const values = data.map(d => d.value);
+  const minVal = startFromZero ? 0 : Math.min(...values);
+  const maxVal = Math.max(...values);
+  const ticks = niceYTicks(minVal, maxVal, 4);
+  const tickMin = ticks[0];
+  const tickMax = ticks[ticks.length - 1] || 1;
+  const tickRange = tickMax - tickMin || 1;
+  const fmt = fmtY ?? ((v: number) => `${Math.round(v)}`);
+  const fmtFull_ = fmtFull ?? fmt;
+
+  const chartH = CHART_HEIGHT - CHART_PAD_TOP - CHART_PAD_BOTTOM;
+  const plotLeft = CHART_PAD_LEFT;
+  const plotRight = CHART_WIDTH - CHART_PAD_RIGHT;
+  const plotW = plotRight - plotLeft;
+  const chartBottom = CHART_PAD_TOP + chartH;
+  const toY = (v: number) => CHART_PAD_TOP + (1 - (v - tickMin) / tickRange) * chartH;
+  const midIdx = Math.floor(data.length / 2);
+  const BAR_W = Math.min(16, plotW / data.length - 3);
+  const slot = plotW / data.length;
+
+  return (
+    <Animated.View style={{ transform: [{ translateY: slideAnim }] }}>
+      <Svg width={CHART_WIDTH} height={CHART_HEIGHT}>
+        <Rect x={0} y={0} width={CHART_WIDTH} height={CHART_HEIGHT} fill="transparent" onPress={() => setCallout(null)} />
+        {ticks.map((tick, i) => (
+          <Line key={`g${i}`} x1={plotLeft} y1={toY(tick)} x2={plotRight} y2={toY(tick)}
+            stroke={theme.borderSubtle} strokeWidth={1} />
+        ))}
+        {ticks.map((tick, i) => (
+          <SvgText key={`y${i}`} x={plotLeft - 4} y={toY(tick) + 3}
+            fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">
+            {fmt(tick)}
+          </SvgText>
+        ))}
+        {data.map((d, i) => {
+          const barH = Math.max(2, ((d.value - tickMin) / tickRange) * chartH);
+          const x = plotLeft + i * slot + (slot - BAR_W) / 2;
+          const cx = x + BAR_W / 2;
+          return (
+            <Rect key={i} x={x} y={chartBottom - barH} width={BAR_W} height={barH}
+              fill={color} opacity={0.85} rx={2}
+              onPress={() => setCallout(prev =>
+                prev?.label1 === fmtDate(d.date) ? null :
+                { x: cx, y: chartBottom - barH, label1: fmtDate(d.date), label2: `${fmtFull_(d.value)}${unit}` }
+              )} />
+          );
+        })}
+        <SvgText x={plotLeft} y={CHART_HEIGHT} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium">
+          {fmtDate(data[0].date)}
+        </SvgText>
+        {data.length > 10 && (
+          <SvgText x={plotLeft + (midIdx / data.length) * plotW + slot / 2} y={CHART_HEIGHT}
+            fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">
+            {fmtDate(data[midIdx].date)}
+          </SvgText>
+        )}
+        <SvgText x={plotRight} y={CHART_HEIGHT} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">
+          {fmtDate(data[data.length - 1].date)}
+        </SvgText>
+        {callout !== null && (() => {
+          const cPillW = Math.max(callout.label1.length, callout.label2.length) * 6 + 14;
+          const cPillH = 32;
+          const cPillX = Math.min(Math.max(callout.x - cPillW / 2, plotLeft), plotRight - cPillW);
+          const cPillY = Math.max(CHART_PAD_TOP - 2, callout.y - cPillH - 10);
+          return (
+            <>
+              <Rect x={cPillX} y={cPillY} width={cPillW} height={cPillH}
+                fill={theme.bgCard} stroke={theme.borderCard} strokeWidth={0.5} rx={6}
+                onPress={() => setCallout(null)} />
+              <SvgText x={cPillX + cPillW / 2} y={cPillY + 12} fill={theme.textDim}
+                fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">{callout.label1}</SvgText>
+              <SvgText x={cPillX + cPillW / 2} y={cPillY + 26} fill={theme.textPrimary}
+                fontSize={10} fontFamily="DMSans_700Bold" textAnchor="middle">{callout.label2}</SvgText>
+            </>
+          );
+        })()}
+      </Svg>
+    </Animated.View>
+  );
+}
+
 // ── Macro stacked bar chart ───────────────────────────────────────────────────
 
 const MACRO_PROTEIN = '#0d9268';
@@ -667,26 +771,47 @@ function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal, sleep
   const shadow = { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 12, elevation: 6 };
 
   const getChart = () => {
+    const ct = card.chartType;
     switch (card.dataKey) {
       case 'weight':
-        return <LineChart data={cardTrendData.weight} color={theme.textSecondary} unit=" lbs"
-          fmtY={(v) => v % 1 === 0 ? `${v}` : `${v.toFixed(1)}`} gradientId={`wt_${card.id}`} theme={theme} />;
+        return ct === 'bar'
+          ? <GenericBarChart data={cardTrendData.weight} color={theme.textSecondary} unit=" lbs"
+              fmtY={(v) => v % 1 === 0 ? `${v}` : `${v.toFixed(1)}`}
+              fmtFull={(v) => v % 1 === 0 ? `${v}` : `${v.toFixed(1)}`} startFromZero={false} theme={theme} />
+          : <LineChart data={cardTrendData.weight} color={theme.textSecondary} unit=" lbs"
+              fmtY={(v) => v % 1 === 0 ? `${v}` : `${v.toFixed(1)}`} gradientId={`wt_${card.id}`} theme={theme} />;
       case 'calories':
-        return <CalorieBarChart data={cardTrendData.cal} calTarget={calTarget} theme={theme} />;
+        return ct === 'line'
+          ? <LineChart data={cardTrendData.cal.map(d => ({ date: d.date, value: d.cal }))} color={'#e06840'} unit=" kcal"
+              fmtY={(v) => v >= 1000 ? `${Math.round(v / 100) / 10}k` : `${Math.round(v)}`}
+              fmtFull={(v) => Math.round(v).toLocaleString()} gradientId={`cl_${card.id}`} theme={theme} />
+          : <CalorieBarChart data={cardTrendData.cal} calTarget={calTarget} theme={theme} />;
       case 'macros':
         return <MacroBarChart data={cardTrendData.macro} theme={theme} />;
       case 'steps':
-        return <LineChart data={cardTrendData.steps} color={theme.accentBlue} unit=""
-          goalValue={stepGoal} fmtY={(v) => v >= 1000 ? `${Math.round(v / 1000)}k` : `${Math.round(v)}`}
-          fmtFull={(v) => Math.round(v).toLocaleString()} gradientId={`st_${card.id}`} theme={theme} />;
+        return ct === 'bar'
+          ? <GenericBarChart data={cardTrendData.steps} color={theme.accentBlue} unit=""
+              fmtY={(v) => v >= 1000 ? `${Math.round(v / 1000)}k` : `${Math.round(v)}`}
+              fmtFull={(v) => Math.round(v).toLocaleString()} theme={theme} />
+          : <LineChart data={cardTrendData.steps} color={theme.accentBlue} unit=""
+              goalValue={stepGoal} fmtY={(v) => v >= 1000 ? `${Math.round(v / 1000)}k` : `${Math.round(v)}`}
+              fmtFull={(v) => Math.round(v).toLocaleString()} gradientId={`st_${card.id}`} theme={theme} />;
       case 'activeCals':
-        return <LineChart data={cardTrendData.activeCal} color={theme.statusWarn} unit=" kcal"
-          fmtY={(v) => `${Math.round(v)}`} gradientId={`ac_${card.id}`} theme={theme} />;
+        return ct === 'bar'
+          ? <GenericBarChart data={cardTrendData.activeCal} color={theme.statusWarn} unit=" kcal"
+              fmtY={(v) => `${Math.round(v)}`} theme={theme} />
+          : <LineChart data={cardTrendData.activeCal} color={theme.statusWarn} unit=" kcal"
+              fmtY={(v) => `${Math.round(v)}`} gradientId={`ac_${card.id}`} theme={theme} />;
       case 'sleep':
-        return <LineChart data={cardTrendData.sleep} color={theme.sleepRem} unit=""
-          goalValue={sleepGoal} fmtY={(v) => `${Math.round(v * 10) / 10}h`}
-          fmtFull={(v) => { const h = Math.floor(v); const m = Math.round((v % 1) * 60); return m > 0 ? `${h}h ${m}m` : `${h}h`; }}
-          gradientId={`sl_${card.id}`} theme={theme} />;
+        return ct === 'bar'
+          ? <GenericBarChart data={cardTrendData.sleep} color={theme.sleepRem} unit=""
+              fmtY={(v) => `${Math.round(v * 10) / 10}h`}
+              fmtFull={(v) => { const h = Math.floor(v); const m = Math.round((v % 1) * 60); return m > 0 ? `${h}h ${m}m` : `${h}h`; }}
+              startFromZero={false} theme={theme} />
+          : <LineChart data={cardTrendData.sleep} color={theme.sleepRem} unit=""
+              goalValue={sleepGoal} fmtY={(v) => `${Math.round(v * 10) / 10}h`}
+              fmtFull={(v) => { const h = Math.floor(v); const m = Math.round((v % 1) * 60); return m > 0 ? `${h}h ${m}m` : `${h}h`; }}
+              gradientId={`sl_${card.id}`} theme={theme} />;
       case 'workoutFreq':
         return <WorkoutFrequencyChart data={cardTrendData.workoutDay} theme={theme} />;
       default:
@@ -935,6 +1060,21 @@ export default function StatsScreen() {
   const [creatorChartType, setCreatorChartType] = useState<ChartType | null>(null);
   const creatorSheetAnim = useRef(new Animated.Value(0)).current;
   const creatorOverlayAnim = useRef(new Animated.Value(0)).current;
+
+  // FAB speed dial
+  const [showFabMenu, setShowFabMenu] = useState(false);
+  const fabScale = useRef(new Animated.Value(1)).current;
+  const fabItem1Anim = useRef(new Animated.Value(0)).current; // Add Report (top, last)
+  const fabItem2Anim = useRef(new Animated.Value(0)).current; // Add Graph (bottom, first)
+
+  // Card edit modal
+  const [editCardVisible, setEditCardVisible] = useState(false);
+  const [editCard, setEditCard] = useState<StatsCard | null>(null);
+  const [editLabel, setEditLabel] = useState('');
+  const [editChartType, setEditChartType] = useState<ChartType>('line');
+  const [editPeriod, setEditPeriod] = useState<CardPeriod>(7);
+  const editOverlayOpacity = useRef(new Animated.Value(0)).current;
+  const editCardScale = useRef(new Animated.Value(0.95)).current;
 
   const { showToast } = useToast();
 
@@ -1309,6 +1449,74 @@ export default function StatsScreen() {
     }
   };
 
+  // FAB speed dial
+  const openFabMenu = () => {
+    fabItem1Anim.setValue(0);
+    fabItem2Anim.setValue(0);
+    setShowFabMenu(true);
+    Animated.stagger(70, [
+      Animated.spring(fabItem2Anim, { toValue: 1, useNativeDriver: true, friction: 7, tension: 120 }),
+      Animated.spring(fabItem1Anim, { toValue: 1, useNativeDriver: true, friction: 7, tension: 120 }),
+    ]).start();
+  };
+
+  const closeFabMenu = () => {
+    Animated.parallel([
+      Animated.timing(fabItem1Anim, { toValue: 0, duration: 130, useNativeDriver: true }),
+      Animated.timing(fabItem2Anim, { toValue: 0, duration: 130, useNativeDriver: true }),
+    ]).start(() => setShowFabMenu(false));
+  };
+
+  const toggleFabMenu = () => {
+    if (showFabMenu) closeFabMenu();
+    else openFabMenu();
+  };
+
+  // Card edit modal
+  const openEditCard = (card: StatsCard) => {
+    setEditCard(card);
+    setEditLabel(card.label);
+    setEditChartType(card.chartType || 'line');
+    setEditPeriod(card.period);
+    editOverlayOpacity.setValue(0);
+    editCardScale.setValue(0.95);
+    setEditCardVisible(true);
+  };
+
+  const closeEditCard = () => {
+    Animated.parallel([
+      Animated.timing(editOverlayOpacity, { toValue: 0, duration: 150, useNativeDriver: true }),
+      Animated.timing(editCardScale, { toValue: 0.95, duration: 150, useNativeDriver: true }),
+    ]).start(() => setEditCardVisible(false));
+  };
+
+  const handleSaveEditCard = () => {
+    if (!editCard) return;
+    const updated = statsCards.map(c =>
+      c.id === editCard.id ? { ...c, label: editLabel.trim() || c.label, chartType: editChartType, period: editPeriod } : c
+    );
+    setStatsCards(updated);
+    saveStatsCards(updated);
+    closeEditCard();
+    setTimeout(() => showToast('Graph saved', undefined, 'success'), 300);
+  };
+
+  const handleDeleteEditCard = () => {
+    if (!editCard) return;
+    Alert.alert('Delete Graph', `Delete "${editCard.label}"? This can\'t be undone.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete', style: 'destructive', onPress: () => {
+          const updated = statsCards.filter(c => c.id !== editCard.id);
+          setStatsCards(updated);
+          saveStatsCards(updated);
+          closeEditCard();
+          setTimeout(() => showToast('Graph deleted', undefined, 'success'), 300);
+        },
+      },
+    ]);
+  };
+
   const handleAddCard = () => {
     if (!creatorDataKey || !creatorChartType) return;
     const newCard: StatsCard = {
@@ -1391,11 +1599,6 @@ export default function StatsScreen() {
             onPress={() => router.push('/journal')}
             style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="journal" size={14} color={theme.accentBlue} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={openCreatorModal}
-            style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="add" size={16} color={theme.accentBlue} />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={openEditSheet}
@@ -1534,7 +1737,7 @@ export default function StatsScreen() {
                 stepGoal={stepGoal}
                 sleepGoal={sleepGoal}
                 onPeriodChange={handleCardPeriodChange}
-                onEditPress={() => {}}
+                onEditPress={openEditCard}
               />
             ))}
         </CollapsibleSection>}
@@ -1873,6 +2076,148 @@ export default function StatsScreen() {
           </Animated.View>
         </View>
       </Modal>
+
+      {/* ── CARD EDIT MODAL (centered scale-pop) ── */}
+      <Modal transparent animationType="none" visible={editCardVisible} onRequestClose={closeEditCard} statusBarTranslucent hardwareAccelerated
+        onShow={() => {
+          Animated.parallel([
+            Animated.timing(editOverlayOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+            Animated.spring(editCardScale, { toValue: 1, useNativeDriver: true, friction: 8, tension: 100 }),
+          ]).start();
+        }}>
+        <ToastRenderer />
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <Animated.View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', opacity: editOverlayOpacity }}>
+            <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={closeEditCard} />
+            <Animated.View style={{ backgroundColor: editCard ? theme.bgSheet : 'transparent', borderRadius: 20, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, width: '88%', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20, transform: [{ scale: editCardScale }] }}>
+              {/* Header */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
+                <Text style={{ fontFamily: 'BebasNeue_400Regular', fontSize: 22, letterSpacing: 3, color: theme.accentBlueRaw }}>EDIT GRAPH</Text>
+                <TouchableOpacity onPress={closeEditCard} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Ionicons name="close" size={20} color={theme.textMuted} />
+                </TouchableOpacity>
+              </View>
+
+              <View style={{ padding: 20 }}>
+                {/* Label */}
+                <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 8 }}>Label</Text>
+                <TextInput
+                  style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 15, fontFamily: 'DMSans_400Regular', marginBottom: 20 }}
+                  value={editLabel}
+                  onChangeText={setEditLabel}
+                  placeholderTextColor={theme.textPlaceholder}
+                  placeholder="Graph label"
+                />
+
+                {/* Chart type -- hidden for macros */}
+                {editCard?.dataKey !== 'macros' && (
+                  <>
+                    <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 8 }}>Chart Type</Text>
+                    <View style={{ flexDirection: 'row', gap: 8, marginBottom: 20 }}>
+                      {(['line', 'bar'] as ChartType[]).map(ct => (
+                        <TouchableOpacity key={ct} onPress={() => setEditChartType(ct)}
+                          style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center',
+                            backgroundColor: editChartType === ct ? theme.accentBlueBg : theme.bgInput,
+                            borderWidth: 1, borderColor: editChartType === ct ? theme.accentBlueBorder : theme.borderInput }}>
+                          <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: editChartType === ct ? theme.accentBlue : theme.textMuted }}>
+                            {ct === 'line' ? 'Line' : 'Bar'}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </>
+                )}
+
+                {/* Timeframe */}
+                <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 8 }}>Timeframe</Text>
+                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 24 }}>
+                  {([7, 30, 90] as CardPeriod[]).map(p => (
+                    <TouchableOpacity key={p} onPress={() => setEditPeriod(p)}
+                      style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center',
+                        backgroundColor: editPeriod === p ? theme.accentBlueBg : theme.bgInput,
+                        borderWidth: 1, borderColor: editPeriod === p ? theme.accentBlueBorder : theme.borderInput }}>
+                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: editPeriod === p ? theme.accentBlue : theme.textMuted }}>
+                        {p}D
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {/* Delete */}
+                <TouchableOpacity onPress={handleDeleteEditCard} style={{ paddingVertical: 12, alignItems: 'center' }}>
+                  <Text style={{ color: theme.accentRed, fontFamily: 'DMSans_600SemiBold', fontSize: 14 }}>Delete Graph</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Save bar -- dim until changes */}
+              <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard, paddingHorizontal: 20, paddingVertical: 14 }}>
+                <TouchableOpacity
+                  onPress={handleSaveEditCard}
+                  disabled={!editCard || (editLabel === editCard.label && editChartType === editCard.chartType && editPeriod === editCard.period)}
+                  style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 10, paddingVertical: 14, alignItems: 'center',
+                    opacity: !editCard || (editLabel === editCard.label && editChartType === editCard.chartType && editPeriod === editCard.period) ? 0.4 : 1 }}>
+                  <Text style={{ color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 18, letterSpacing: 2 }}>SAVE</Text>
+                </TouchableOpacity>
+              </View>
+            </Animated.View>
+          </Animated.View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ── FAB backdrop ── */}
+      {showFabMenu && (
+        <TouchableOpacity
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+          activeOpacity={1}
+          onPress={closeFabMenu}
+        />
+      )}
+
+      {/* ── FAB speed dial items ── */}
+      {showFabMenu && (
+        <View style={{ position: 'absolute', bottom: 86, right: 20, alignItems: 'flex-end', gap: 12 }}>
+          {/* Add Report -- disabled, coming soon */}
+          <Animated.View style={{ opacity: fabItem1Anim, transform: [{ translateY: fabItem1Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <View style={{ backgroundColor: theme.bgCard, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 0.5, borderColor: theme.borderCard, opacity: 0.5 }}>
+                <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_500Medium' }}>Add Report</Text>
+                <Text style={{ color: theme.textDim, fontSize: 10, fontFamily: 'DMSans_400Regular' }}>Coming soon</Text>
+              </View>
+              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}>
+                <Ionicons name="bar-chart-outline" size={20} color={theme.textDim} />
+              </View>
+            </View>
+          </Animated.View>
+
+          {/* Add Graph -- active, accent fill */}
+          <Animated.View style={{ opacity: fabItem2Anim, transform: [{ translateY: fabItem2Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <TouchableOpacity
+                onPress={() => { closeFabMenu(); setTimeout(() => openCreatorModal(), 150); }}
+                style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, shadowColor: theme.accentBlueRaw, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Add Graph</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => { closeFabMenu(); setTimeout(() => openCreatorModal(), 150); }}
+                style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlueRaw, alignItems: 'center', justifyContent: 'center', shadowColor: theme.accentBlueRaw, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <Ionicons name="analytics-outline" size={20} color="#ffffff" />
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        </View>
+      )}
+
+      {/* ── Main FAB ── */}
+      <Animated.View style={{ position: 'absolute', bottom: 16, right: 20, transform: [{ scale: fabScale }] }}>
+        <TouchableOpacity
+          onPress={toggleFabMenu}
+          onPressIn={() => Animated.timing(fabScale, { toValue: 0.9, duration: 80, useNativeDriver: true }).start()}
+          onPressOut={() => Animated.timing(fabScale, { toValue: 1, duration: 80, useNativeDriver: true }).start()}
+          activeOpacity={1}
+          style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: theme.accentBlueRaw, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 }}>
+          <Ionicons name={showFabMenu ? 'close' : 'add'} size={28} color="#ffffff" />
+        </TouchableOpacity>
+      </Animated.View>
 
       {dayDetailDate !== null && (
         <Modal transparent animationType="none" visible={dayDetailDate !== null} onRequestClose={closeDayDetail} statusBarTranslucent hardwareAccelerated

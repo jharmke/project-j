@@ -334,8 +334,9 @@ SOON -- confirmed next few sessions
 
 Stats Phase 3 remaining steps (do in order):
 - [x] SHIPPED Phase 3 Step 6 -- Creator modal. 3-step slide-up sheet: data type grid (7 options, DATA_KEY_META icons) → chart type picker (line/bar; macros forced stackedBar, skips to preview) → live StatsGraphCard preview with real 7d data. ADD TO STATS button appends new card (period: 7, auto-label from DATA_KEY_META) to pj_stats_cards. Step dots fixed at sheet bottom (active dot wider pill). Temp "+" header button wired; Step 7 FAB will be primary entry point.
-- Step 7: FAB -- expandable speed dial, "Add Graph" (active, full accent fill), "Add Report" (disabled, coming soon). Spring cascade open animation.
-- Step 8: Card edit modal (gear icon) -- standard modal. Editable label, chart type picker (macros locked to stackedBar), timeframe pills, delete option (accentRed + Alert confirm), floating save bar, toast on save.
+- [x] SHIPPED Step 7 -- FAB. Expandable speed dial bottom-right. "Add Graph" (full accent fill + glow shadow, stagger-springs in first) calls creator modal. "Add Report" (disabled, coming soon) cascades above it. Backdrop tap closes. FAB icon swaps add/close. Temp "+" header button removed.
+- [x] SHIPPED Step 8 -- Card edit modal (gear icon). Centered scale-pop modal (not slide-up). Editable label field, chart type pills (hidden for macros), timeframe pills 7D/30D/90D, Delete Graph (accentRed + Alert confirm), SAVE button dim until changes made, toast on save and delete.
+- [x] SHIPPED Line/bar chart switching -- getChart() was ignoring card.chartType entirely, hardcoded per dataKey. Fixed. GenericBarChart component added. startFromZero=false for weight + sleep (Y axis spans data range so small changes are visible). startFromZero=true for steps + activeCals (0 is meaningful floor). Calories line mode uses LineChart with cal data mapped to value shape.
 - Option B section reordering -- dynamic render of top-level sections from registry order. Sections get their own DraggableFlatList in edit sheet. Deferred from Phase 3 Step 5 session.
 
 Primary button audit -- sweep app-wide, upgrade all primary CTAs to full accent fill, demote transparent bordered style to secondary actions only (Edit, Cancel, filter pills). Applies to every screen.

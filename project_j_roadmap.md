@@ -331,6 +331,13 @@ fsId saved on diary entries in saveEntry, passed through edit entry path in log.
 
 
 SOON -- confirmed next few sessions
+
+Stats Phase 3 remaining steps (do in order):
+- Step 6: Creator modal -- data type grid picker (icon grid, DATA_KEY_META) → chart type picker (skipped for macros, forced stackedBar) → live preview with real data → auto-generated label → "Add to Stats". New card appended to statsCards, default period 7d.
+- Step 7: FAB -- expandable speed dial, "Add Graph" (active, full accent fill), "Add Report" (disabled, coming soon). Spring cascade open animation.
+- Step 8: Card edit modal (gear icon) -- standard modal. Editable label, chart type picker (macros locked to stackedBar), timeframe pills, delete option (accentRed + Alert confirm), floating save bar, toast on save.
+- Option B section reordering -- dynamic render of top-level sections from registry order. Sections get their own DraggableFlatList in edit sheet. Deferred from Phase 3 Step 5 session.
+
 Primary button audit -- sweep app-wide, upgrade all primary CTAs to full accent fill, demote transparent bordered style to secondary actions only (Edit, Cancel, filter pills). Applies to every screen.
 
 Food and barcode
@@ -447,10 +454,16 @@ Stats page overhaul -- HIGH PRIORITY, dedicated session. Full spec:
 - [x] APPLIED: Calorie bars -- flat coral #e06840, all bars same color. Removed green/amber/red target-based color coding (target is fluid, coding was misleading). Removed "On target / Close / Off" legend. Awaiting Justin confirm.
 - [x] SHIPPED: Trend chart bottom stat labels -- redesigned to two-column grid (3-col for Macros) with hairline divider, uppercase 9px labels, 13px semibold values, centered. GraphCard stat prop replaced with stats array of {label, value} pairs. Weight change bug fixed -- was pulling from mismatched At a Glance period, now derives from first/last points in trendData.weight so it always matches the chart shown.
 - OPEN: Apple Health imported workouts should auto-mark workout day as completed -- currently user must manually check off imported sessions. Fix needed in import flow.
-- Custom graph system -- dropdown to pick data type (weight, calories, macros, steps, sleep, active cals, workout freq), chart type, timeframe -- save as pinned card on stats or home. Architecture: generic chart components already built data-driven, need creator modal + TREND_CARDS registry + show/hide/reorder edit button (same pattern as home screen). Phase 3.
-- Default cards pre-loaded so page is never empty: weight, calories, steps. (Phase 3)
-- Add edit button to stats page like home screen (show/hide/reorder cards). (Phase 3)
-- FAB for stats -- Add Graph and Add Report. (Phase 3)
+- Custom graph system -- Phase 3 IN PROGRESS. See Phase 3 items below.
+- [x] SHIPPED Phase 3 -- statsCardRegistry.ts: StatsCard type (system/graph), SystemCardKey (atAGlance/trends/records/streaks/calendar), DataKey, ChartType, CardPeriod, CardPlacement. DEFAULT_STATS_CARDS (11 cards, period: 30). loadStatsCards (read-then-merge, never removes user cards), saveStatsCards (normalizes order), generateCardId, DATA_KEY_META, availableChartTypes. Storage key: pj_stats_cards.
+- [x] SHIPPED Phase 3 -- Per-card period system. trendDataMap replaces single trendData state. Each graph card owns its period (7/30/90d). loadAllCardData loads all unique periods in parallel. Global period pills sync all cards. Per-card pills override individually. trendDataMap caches by period string key.
+- [x] SHIPPED Phase 3 -- StatsGraphCard component. Props: card, cardTrendData, theme, calTarget, stepGoal, sleepGoal, onPeriodChange, onEditPress. Per-card 7d/30d/90d pills in header. Gear icon (onEditPress -- wired to {} pending Step 8). Computes own stats from cardTrendData. Registry-driven: all graph cards in Trends section driven by statsCards state.
+- [x] SHIPPED Phase 3 Step 5 -- Edit stats sheet. Grid icon in header opens slide-up sheet. Two groups: GRAPH CARDS (DraggableFlatList -- long-press reorder, period badge, trash with Alert confirm, eye toggle) and SECTIONS (static rows -- eye toggle only, dimmed grip, SECTION badge). Changes auto-save to pj_stats_cards. Backdrop + handle dismiss.
+- [x] SHIPPED Phase 3 -- sys_trends added to registry. SystemCardKey extended to include 'trends'. All 5 CollapsibleSections (At a Glance, Trends, Records, Streaks, Calendar) now driven by sectionVisible() helper reading statsCards. Sections show/hide actually works now (was broken before -- visibility flag was stored but never read for rendering).
+- DEFERRED: Section reordering (Option B) -- make sections reorderable in edit sheet, drive rendering from registry order. Requires dynamic section render via switch on systemKey. Deferred until after creator modal (Step 6). Add to SOON.
+- Default cards pre-loaded so page is never empty -- DONE (11 DEFAULT_STATS_CARDS, all period: 30).
+- [x] Add edit button to stats page -- DONE. Grid icon in header.
+- FAB for stats -- Add Graph and Add Report. (Phase 3 Step 7 -- pending)
 - Reports feature -- weekly/monthly summaries with context, shareable/exportable snapshots. (Phase 4)
 - Card visual differentiation -- graph cards, report cards, streak/info cards need distinct visual language. (Phase 3)
 - PR/best day cards -- steps, active cals, water, sleep score, etc. Exclude incomplete log days from calorie-based PRs.

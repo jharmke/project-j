@@ -3,11 +3,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, Dimensions, Easing, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, Dimensions, Easing, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, Line, LinearGradient as SvgLinearGradient, Path, Polyline, Rect, Stop, Text as SvgText } from 'react-native-svg';
+import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { DayDetailContent } from '../day-detail';
 import { useTheme } from '../../theme';
+import { CardPeriod, DATA_KEY_META, DEFAULT_STATS_CARDS, StatsCard, loadStatsCards, saveStatsCards } from '../../statsCardRegistry';
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const RECORD_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -18,6 +21,8 @@ const CHART_PAD_LEFT = 38;
 const CHART_PAD_RIGHT = 4;
 const CHART_PAD_TOP = 16;
 const CHART_PAD_BOTTOM = 20;
+
+const EMPTY_TREND_DATA: { weight: { date: string; value: number }[]; cal: { date: string; cal: number }[]; steps: { date: string; value: number }[]; activeCal: { date: string; value: number }[]; sleep: { date: string; value: number }[]; macro: { date: string; protein: number; carbs: number; fat: number }[]; workoutDay: { date: string; hadWorkout: boolean }[]; } = { weight: [], cal: [], steps: [], activeCal: [], sleep: [], macro: [], workoutDay: [] };
 
 type DayStatus = 'green' | 'yellow' | 'red' | 'future' | 'none';
 
@@ -640,6 +645,146 @@ function WorkoutFrequencyChart({ data, theme }: {
   );
 }
 
+// ── Stats graph card (registry-driven) ───────────────────────────────────────
+
+type TrendData = {
+  weight: { date: string; value: number }[];
+  cal: { date: string; cal: number }[];
+  steps: { date: string; value: number }[];
+  activeCal: { date: string; value: number }[];
+  sleep: { date: string; value: number }[];
+  macro: { date: string; protein: number; carbs: number; fat: number }[];
+  workoutDay: { date: string; hadWorkout: boolean }[];
+};
+
+function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal, sleepGoal, onPeriodChange, onEditPress }: {
+  card: StatsCard; cardTrendData: typeof EMPTY_TREND_DATA; theme: any;
+  calTarget: number; stepGoal: number; sleepGoal: number;
+  onPeriodChange: (cardId: string, period: CardPeriod) => void;
+  onEditPress: (card: StatsCard) => void;
+}) {
+  const shadow = { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 12, elevation: 6 };
+
+  const getChart = () => {
+    switch (card.dataKey) {
+      case 'weight':
+        return <LineChart data={cardTrendData.weight} color={theme.textSecondary} unit=" lbs"
+          fmtY={(v) => v % 1 === 0 ? `${v}` : `${v.toFixed(1)}`} gradientId={`wt_${card.id}`} theme={theme} />;
+      case 'calories':
+        return <CalorieBarChart data={cardTrendData.cal} calTarget={calTarget} theme={theme} />;
+      case 'macros':
+        return <MacroBarChart data={cardTrendData.macro} theme={theme} />;
+      case 'steps':
+        return <LineChart data={cardTrendData.steps} color={theme.accentBlue} unit=""
+          goalValue={stepGoal} fmtY={(v) => v >= 1000 ? `${Math.round(v / 1000)}k` : `${Math.round(v)}`}
+          fmtFull={(v) => Math.round(v).toLocaleString()} gradientId={`st_${card.id}`} theme={theme} />;
+      case 'activeCals':
+        return <LineChart data={cardTrendData.activeCal} color={theme.statusWarn} unit=" kcal"
+          fmtY={(v) => `${Math.round(v)}`} gradientId={`ac_${card.id}`} theme={theme} />;
+      case 'sleep':
+        return <LineChart data={cardTrendData.sleep} color={theme.sleepRem} unit=""
+          goalValue={sleepGoal} fmtY={(v) => `${Math.round(v * 10) / 10}h`}
+          fmtFull={(v) => { const h = Math.floor(v); const m = Math.round((v % 1) * 60); return m > 0 ? `${h}h ${m}m` : `${h}h`; }}
+          gradientId={`sl_${card.id}`} theme={theme} />;
+      case 'workoutFreq':
+        return <WorkoutFrequencyChart data={cardTrendData.workoutDay} theme={theme} />;
+      default:
+        return null;
+    }
+  };
+
+  const getStats = (): { label: string; value: string }[] | undefined => {
+    const d = cardTrendData;
+    switch (card.dataKey) {
+      case 'weight': {
+        if (d.weight.length === 0) return undefined;
+        const avg = Math.round(d.weight.reduce((s, x) => s + x.value, 0) / d.weight.length * 10) / 10;
+        const change = d.weight.length >= 2 ? Math.round((d.weight[d.weight.length - 1].value - d.weight[0].value) * 10) / 10 : null;
+        return [
+          { label: 'Avg Weight', value: `${avg} lbs` },
+          ...(change !== null ? [{ label: 'Change This Period', value: `${change > 0 ? '+' : ''}${change} lbs` }] : []),
+        ];
+      }
+      case 'calories': {
+        if (d.cal.length === 0) return undefined;
+        const avg = Math.round(d.cal.reduce((s, x) => s + x.cal, 0) / d.cal.length);
+        return [{ label: 'Avg / Day', value: `${avg.toLocaleString()} kcal` }, { label: 'Days Logged', value: `${d.cal.length}` }];
+      }
+      case 'macros': {
+        if (d.macro.length === 0) return undefined;
+        const avgP = Math.round(d.macro.reduce((s, x) => s + x.protein, 0) / d.macro.length * 10) / 10;
+        const avgC = Math.round(d.macro.reduce((s, x) => s + x.carbs, 0) / d.macro.length * 10) / 10;
+        const avgF = Math.round(d.macro.reduce((s, x) => s + x.fat, 0) / d.macro.length * 10) / 10;
+        return [{ label: 'Avg Protein', value: `${avgP}g` }, { label: 'Avg Carbs', value: `${avgC}g` }, { label: 'Avg Fat', value: `${avgF}g` }];
+      }
+      case 'steps': {
+        if (d.steps.length === 0) return undefined;
+        const avg = Math.round(d.steps.reduce((s, x) => s + x.value, 0) / d.steps.length);
+        const above = d.steps.filter(x => x.value >= stepGoal).length;
+        return [{ label: 'Avg / Day', value: avg.toLocaleString() }, { label: 'Days Above Goal', value: `${above}` }];
+      }
+      case 'activeCals': {
+        if (d.activeCal.length === 0) return undefined;
+        const avg = Math.round(d.activeCal.reduce((s, x) => s + x.value, 0) / d.activeCal.length);
+        return [{ label: 'Avg / Day', value: `${avg.toLocaleString()} kcal` }, { label: 'Days Tracked', value: `${d.activeCal.length}` }];
+      }
+      case 'sleep': {
+        if (d.sleep.length === 0) return undefined;
+        const avg = Math.round(d.sleep.reduce((s, x) => s + x.value, 0) / d.sleep.length * 10) / 10;
+        const atGoal = d.sleep.filter(x => x.value >= sleepGoal).length;
+        const h = Math.floor(avg); const m = Math.round((avg % 1) * 60);
+        return [{ label: 'Avg / Night', value: m > 0 ? `${h}h ${m}m` : `${h}h` }, { label: 'Nights at Goal', value: `${atGoal}` }];
+      }
+      case 'workoutFreq': {
+        if (d.workoutDay.length === 0) return undefined;
+        const total = d.workoutDay.filter(x => x.hadWorkout).length;
+        const weeks = Math.max(1, Math.ceil(d.workoutDay.length / 7));
+        return [{ label: 'Avg / Week', value: `${Math.round(total / weeks * 10) / 10}` }, { label: 'Total Workout Days', value: `${total}` }];
+      }
+      default: return undefined;
+    }
+  };
+
+  const stats = getStats();
+  const iconName = card.dataKey ? DATA_KEY_META[card.dataKey].icon : 'analytics-outline';
+
+  return (
+    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadow }]}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+        <Ionicons name={iconName as any} size={11} color={theme.textMuted} />
+        <Text style={[styles.cardLabel, { color: theme.textMuted, flex: 1, marginLeft: 6 }]}>{card.label}</Text>
+        {/* Per-card period pills */}
+        <View style={{ flexDirection: 'row', gap: 4, marginRight: 8 }}>
+          {([7, 30, 90] as CardPeriod[]).map(p => (
+            <TouchableOpacity key={p} onPress={() => onPeriodChange(card.id, p)}
+              style={{ paddingHorizontal: 7, paddingVertical: 2, borderRadius: 5,
+                backgroundColor: card.period === p ? theme.accentBlueBg : 'transparent',
+                borderWidth: 1, borderColor: card.period === p ? theme.accentBlueBorder : theme.borderInput }}>
+              <Text style={{ fontSize: 9, fontFamily: 'DMSans_600SemiBold', color: card.period === p ? theme.accentBlue : theme.textMuted }}>
+                {p}d
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <TouchableOpacity onPress={() => onEditPress(card)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Ionicons name="settings-outline" size={13} color={theme.textMuted} />
+        </TouchableOpacity>
+      </View>
+      {getChart()}
+      {stats && stats.length > 0 && (
+        <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle, flexDirection: 'row' }}>
+          {stats.map((s, i) => (
+            <View key={i} style={{ flex: 1, alignItems: 'center' }}>
+              <Text style={{ fontSize: 9, letterSpacing: 1.5, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 3, textAlign: 'center' }}>{s.label}</Text>
+              <Text style={{ fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', textAlign: 'center' }}>{s.value}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
 // ── Collapsible section header ─────────────────────────────────────────────────
 
 function CollapsibleSection({ label, children, defaultOpen = true, theme, first = false }: {
@@ -746,19 +891,9 @@ export default function StatsScreen() {
   const { theme } = useTheme();
 
   const [trendPeriod, setTrendPeriod] = useState<'7' | '30' | '90'>('30');
-  const trendPeriodRef = useRef<'7' | '30' | '90'>('30');
-  trendPeriodRef.current = trendPeriod;
   const [activePeriod, setActivePeriod] = useState<'7' | '30' | '90' | '180' | 'ytd'>('7');
 
-  const [trendData, setTrendData] = useState<{
-    weight: { date: string; value: number }[];
-    cal: { date: string; cal: number }[];
-    steps: { date: string; value: number }[];
-    activeCal: { date: string; value: number }[];
-    sleep: { date: string; value: number }[];
-    macro: { date: string; protein: number; carbs: number; fat: number }[];
-    workoutDay: { date: string; hadWorkout: boolean }[];
-  }>({ weight: [], cal: [], steps: [], activeCal: [], sleep: [], macro: [], workoutDay: [] });
+  const [trendDataMap, setTrendDataMap] = useState<Record<string, typeof EMPTY_TREND_DATA>>({});
 
   const [calTarget, setCalTarget] = useState(0);
   const [stepGoal, setStepGoal] = useState(10000);
@@ -784,6 +919,12 @@ export default function StatsScreen() {
   const [streaks, setStreaks] = useState({ gym: 0, calories: 0, water: 0, bible: 0 });
   const [excludedDays, setExcludedDays] = useState<{ date: string, diet: boolean, water: boolean, exercise: boolean }[]>([]);
 
+  const [statsCards, setStatsCards] = useState<StatsCard[]>(DEFAULT_STATS_CARDS);
+  const [editSheetVisible, setEditSheetVisible] = useState(false);
+  const [editCards, setEditCards] = useState<StatsCard[]>([]);
+  const editSheetAnim = useRef(new Animated.Value(0)).current;
+  const editOverlayAnim = useRef(new Animated.Value(0)).current;
+
   const [dayDetailDate, setDayDetailDate] = useState<string | null>(null);
   const dayDetailAnim = useRef(new Animated.Value(0)).current;
 
@@ -805,8 +946,7 @@ export default function StatsScreen() {
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   };
 
-  const loadTrendData = async (period: '7' | '30' | '90') => {
-    const days = parseInt(period);
+  const fetchTrendData = async (days: number, workoutState: any): Promise<typeof EMPTY_TREND_DATA> => {
     const wh: { date: string; value: number }[] = [];
     const ch: { date: string; cal: number }[] = [];
     const sh: { date: string; value: number }[] = [];
@@ -814,12 +954,6 @@ export default function StatsScreen() {
     const slh: { date: string; value: number }[] = [];
     const mh: { date: string; protein: number; carbs: number; fat: number }[] = [];
     const wdh: { date: string; hadWorkout: boolean }[] = [];
-
-    let workoutState: any = {};
-    try {
-      const ws = await AsyncStorage.getItem('pj_workout_state');
-      if (ws) workoutState = JSON.parse(ws);
-    } catch {}
 
     for (let i = days - 1; i >= 0; i--) {
       const dateKey = getDateKey(i);
@@ -848,7 +982,25 @@ export default function StatsScreen() {
       } catch {}
       wdh.push({ date: dateKey, hadWorkout });
     }
-    setTrendData({ weight: wh, cal: ch, steps: sh, activeCal: ah, sleep: slh, macro: mh, workoutDay: wdh });
+    return { weight: wh, cal: ch, steps: sh, activeCal: ah, sleep: slh, macro: mh, workoutDay: wdh };
+  };
+
+  const loadAllCardData = async (cards: StatsCard[], globalPeriod: CardPeriod = 30) => {
+    let workoutState: any = {};
+    try {
+      const ws = await AsyncStorage.getItem('pj_workout_state');
+      if (ws) workoutState = JSON.parse(ws);
+    } catch {}
+
+    const uniquePeriods = [...new Set([
+      globalPeriod,
+      ...cards.filter(c => c.type === 'graph' && c.visible).map(c => c.period),
+    ])];
+
+    const results = await Promise.all(uniquePeriods.map(async p => [p, await fetchTrendData(p, workoutState)] as const));
+    const newMap: Record<string, typeof EMPTY_TREND_DATA> = {};
+    for (const [period, data] of results) newMap[period.toString()] = data;
+    setTrendDataMap(newMap);
   };
 
   const loadRecords = async () => {
@@ -1017,8 +1169,11 @@ export default function StatsScreen() {
         setProfileBmr(bmr);
         hasLoadedProfile.current = true;
 
+        const cards = await loadStatsCards();
+        setStatsCards(cards);
+
         await Promise.all([
-          loadTrendData(trendPeriodRef.current),
+          loadAllCardData(cards, 30),
           loadRecords(),
           loadPeriodData(activePeriod, target, sleep, bmr),
           loadStreaks(target),
@@ -1029,14 +1184,78 @@ export default function StatsScreen() {
   );
 
   useEffect(() => {
-    loadTrendData(trendPeriod);
-  }, [trendPeriod]);
-
-  useEffect(() => {
     if (hasLoadedProfile.current) {
       loadPeriodData(activePeriod, calTarget, sleepGoal, profileBmr);
     }
   }, [activePeriod]);
+
+  const handleGlobalPeriodSync = (p: '7' | '30' | '90') => {
+    const days = parseInt(p) as CardPeriod;
+    setTrendPeriod(p);
+    const updated = statsCards.map(c => c.type === 'graph' ? { ...c, period: days } : c);
+    setStatsCards(updated);
+    saveStatsCards(updated);
+    loadAllCardData(updated, days);
+  };
+
+  const handleCardPeriodChange = async (cardId: string, period: CardPeriod) => {
+    const updated = statsCards.map(c => c.id === cardId ? { ...c, period } : c);
+    setStatsCards(updated);
+    saveStatsCards(updated);
+    if (!trendDataMap[period.toString()]) {
+      let workoutState: any = {};
+      try { const ws = await AsyncStorage.getItem('pj_workout_state'); if (ws) workoutState = JSON.parse(ws); } catch {}
+      const data = await fetchTrendData(period, workoutState);
+      setTrendDataMap(prev => ({ ...prev, [period.toString()]: data }));
+    }
+  };
+
+  const openEditSheet = () => {
+    setEditCards([...statsCards]);
+    editSheetAnim.setValue(0);
+    editOverlayAnim.setValue(0);
+    setEditSheetVisible(true);
+  };
+
+  const closeEditSheet = () => {
+    Animated.parallel([
+      Animated.timing(editSheetAnim, { toValue: 0, duration: 260, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(editOverlayAnim, { toValue: 0, duration: 220, useNativeDriver: true }),
+    ]).start(() => setEditSheetVisible(false));
+  };
+
+  const handleToggleCard = (id: string) => {
+    setEditCards(prev => {
+      const updated = prev.map(c => c.id === id ? { ...c, visible: !c.visible } : c);
+      setStatsCards(updated);
+      saveStatsCards(updated);
+      return updated;
+    });
+  };
+
+  const handleDeleteCard = (id: string) => {
+    Alert.alert(
+      'Remove Card',
+      'Remove this graph card from your stats?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove', style: 'destructive',
+          onPress: () => {
+            setEditCards(prev => {
+              const updated = prev.filter(c => c.id !== id);
+              setStatsCards(updated);
+              saveStatsCards(updated);
+              return updated;
+            });
+          },
+        },
+      ]
+    );
+  };
+
+  // Derived from trendDataMap -- used for At a Glance weight change display
+  const trendData = trendDataMap[trendPeriod] ?? EMPTY_TREND_DATA;
 
   const getDayStatus = (day: number): DayStatus => {
     const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -1058,26 +1277,6 @@ export default function StatsScreen() {
 
   const shadowStyle = { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 12, elevation: 6 };
 
-  const GraphCard = ({ icon, label, children, stats }: { icon: string, label: string, children: React.ReactNode, stats?: { label: string; value: string }[] }) => (
-    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-        <Ionicons name={icon as any} size={11} color={theme.textMuted} />
-        <Text style={[styles.cardLabel, { color: theme.textMuted }]}>{label}</Text>
-      </View>
-      {children}
-      {stats && stats.length > 0 ? (
-        <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle, flexDirection: 'row' }}>
-          {stats.map((s, i) => (
-            <View key={i} style={{ flex: 1, alignItems: 'center' }}>
-              <Text style={{ fontSize: 9, letterSpacing: 1.5, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 3, textAlign: 'center' }}>{s.label}</Text>
-              <Text style={{ fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', textAlign: 'center' }}>{s.value}</Text>
-            </View>
-          ))}
-        </View>
-      ) : null}
-    </View>
-  );
-
   const RecordTile = ({ icon, label, value, unit, color, date, fmt }: {
     icon: string, label: string, value: number | null, unit: string,
     color: string, date: string | null, fmt: (v: number) => string,
@@ -1097,22 +1296,10 @@ export default function StatsScreen() {
     </View>
   );
 
-  const avgWeight = trendData.weight.length > 0
-    ? Math.round(trendData.weight.reduce((s, d) => s + d.value, 0) / trendData.weight.length * 10) / 10 : null;
-  const avgSteps = trendData.steps.length > 0
-    ? Math.round(trendData.steps.reduce((s, d) => s + d.value, 0) / trendData.steps.length) : null;
-  const avgActiveCals = trendData.activeCal.length > 0
-    ? Math.round(trendData.activeCal.reduce((s, d) => s + d.value, 0) / trendData.activeCal.length) : null;
-  const avgSleep = trendData.sleep.length > 0
-    ? Math.round(trendData.sleep.reduce((s, d) => s + d.value, 0) / trendData.sleep.length * 10) / 10 : null;
   const weightChange = trendData.weight.length >= 2
     ? Math.round((trendData.weight[trendData.weight.length - 1].value - trendData.weight[0].value) * 10) / 10 : null;
-  const stepsAboveGoal = trendData.steps.filter(d => d.value >= stepGoal).length;
-  const sleepAtGoal = trendData.sleep.filter(d => d.value >= sleepGoal).length;
 
-  const totalWorkoutDays = trendData.workoutDay.filter(d => d.hadWorkout).length;
-  const totalWeeks = Math.max(1, Math.ceil(trendData.workoutDay.length / 7));
-  const avgWorkoutsPerWeek = Math.round(totalWorkoutDays / totalWeeks * 10) / 10;
+  const sectionVisible = (id: string) => statsCards.find(c => c.id === id)?.visible ?? true;
 
   return (
     <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
@@ -1124,17 +1311,24 @@ export default function StatsScreen() {
             {now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </Text>
         </View>
-        <TouchableOpacity
-          onPress={() => router.push('/journal')}
-          style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}>
-          <Ionicons name="journal" size={14} color={theme.accentBlue} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <TouchableOpacity
+            onPress={() => router.push('/journal')}
+            style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="journal" size={14} color={theme.accentBlue} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={openEditSheet}
+            style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="grid" size={14} color={theme.accentBlue} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
 
         {/* ── AT A GLANCE ── */}
-        <CollapsibleSection label="At a Glance" defaultOpen={true} theme={theme} first={true}>
+        {sectionVisible('sys_atAGlance') && <CollapsibleSection label="At a Glance" defaultOpen={true} theme={theme} first={true}>
           <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
             <View style={{ flexDirection: 'row', gap: 6, marginBottom: 14 }}>
               {(['7', '30', '90', '180', 'ytd'] as const).map(p => (
@@ -1227,91 +1421,46 @@ export default function StatsScreen() {
               </View>
             </View>
           </View>
-        </CollapsibleSection>
+        </CollapsibleSection>}
 
         {/* ── TRENDS ── */}
-        <CollapsibleSection label="Trends" defaultOpen={true} theme={theme}>
-          <View style={{ flexDirection: 'row', gap: 6, marginBottom: 12 }}>
-            {(['7', '30', '90'] as const).map(p => (
-              <TouchableOpacity key={p} onPress={() => setTrendPeriod(p)}
-                style={{ paddingVertical: 7, paddingHorizontal: 18, borderRadius: 8,
-                  backgroundColor: trendPeriod === p ? theme.accentBlueBg : theme.bgInput,
-                  borderWidth: 1, borderColor: trendPeriod === p ? theme.accentBlueBorder : theme.borderInput }}>
-                <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: trendPeriod === p ? theme.accentBlue : theme.textMuted }}>
-                  {p}D
-                </Text>
-              </TouchableOpacity>
-            ))}
+        {sectionVisible('sys_trends') && <CollapsibleSection label="Trends" defaultOpen={true} theme={theme}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <View style={{ flexDirection: 'row', gap: 6 }}>
+              {(['7', '30', '90'] as const).map(p => (
+                <TouchableOpacity key={p} onPress={() => handleGlobalPeriodSync(p)}
+                  style={{ paddingVertical: 7, paddingHorizontal: 18, borderRadius: 8,
+                    backgroundColor: trendPeriod === p ? theme.accentBlueBg : theme.bgInput,
+                    borderWidth: 1, borderColor: trendPeriod === p ? theme.accentBlueBorder : theme.borderInput }}>
+                  <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: trendPeriod === p ? theme.accentBlue : theme.textMuted }}>
+                    {p}D
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>syncs all</Text>
           </View>
 
-          <GraphCard icon="body-outline" label="Weight"
-            stats={avgWeight ? [
-              { label: 'Avg Weight', value: `${avgWeight} lbs` },
-              ...(weightChange !== null ? [{ label: 'Change This Period', value: `${weightChange > 0 ? '+' : ''}${weightChange} lbs` }] : []),
-            ] : undefined}>
-            <LineChart data={trendData.weight} color={theme.textSecondary} unit=" lbs"
-              fmtY={(v) => v % 1 === 0 ? `${v}` : `${v.toFixed(1)}`} gradientId="wt_grad" theme={theme} />
-          </GraphCard>
-
-          <GraphCard icon="flame-outline" label="Calories"
-            stats={periodData.avgCal > 0 ? [
-              { label: 'Avg / Day', value: `${periodData.avgCal.toLocaleString()} kcal` },
-              { label: 'Days Logged', value: `${periodData.loggedDays}` },
-            ] : undefined}>
-            <CalorieBarChart data={trendData.cal} calTarget={calTarget} theme={theme} />
-          </GraphCard>
-
-          <GraphCard icon="nutrition-outline" label="Macros"
-            stats={periodData.avgProtein > 0 ? [
-              { label: 'Avg Protein', value: `${periodData.avgProtein}g` },
-              { label: 'Avg Carbs', value: `${periodData.avgCarbs}g` },
-              { label: 'Avg Fat', value: `${periodData.avgFat}g` },
-            ] : undefined}>
-            <MacroBarChart data={trendData.macro} theme={theme} />
-          </GraphCard>
-
-          <GraphCard icon="footsteps-outline" label="Steps"
-            stats={avgSteps !== null ? [
-              { label: 'Avg / Day', value: avgSteps.toLocaleString() },
-              { label: 'Days Above Goal', value: `${stepsAboveGoal}` },
-            ] : undefined}>
-            <LineChart data={trendData.steps} color={theme.accentBlue} unit=""
-              goalValue={stepGoal} fmtY={(v) => v >= 1000 ? `${Math.round(v/1000)}k` : `${Math.round(v)}`}
-              fmtFull={(v) => Math.round(v).toLocaleString()}
-              gradientId="st_grad" theme={theme} />
-          </GraphCard>
-
-          <GraphCard icon="heart-outline" label="Active Calories"
-            stats={avgActiveCals !== null ? [
-              { label: 'Avg / Day', value: `${avgActiveCals.toLocaleString()} kcal` },
-              { label: 'Days Tracked', value: `${trendData.activeCal.length}` },
-            ] : undefined}>
-            <LineChart data={trendData.activeCal} color={theme.statusWarn} unit=" kcal"
-              fmtY={(v) => `${Math.round(v)}`} gradientId="ac_grad" theme={theme} />
-          </GraphCard>
-
-          <GraphCard icon="moon-outline" label="Sleep"
-            stats={avgSleep !== null ? [
-              { label: 'Avg / Night', value: (() => { const h = Math.floor(avgSleep); const m = Math.round((avgSleep % 1) * 60); return m > 0 ? `${h}h ${m}m` : `${h}h`; })() },
-              { label: 'Nights at Goal', value: `${sleepAtGoal}` },
-            ] : undefined}>
-            <LineChart data={trendData.sleep} color={theme.sleepRem} unit=""
-              goalValue={sleepGoal} fmtY={(v) => `${Math.round(v * 10) / 10}h`}
-              fmtFull={(v) => { const h = Math.floor(v); const m = Math.round((v % 1) * 60); return m > 0 ? `${h}h ${m}m` : `${h}h`; }}
-              gradientId="sl_grad" theme={theme} />
-          </GraphCard>
-
-          <GraphCard icon="barbell-outline" label="Workout Frequency"
-            stats={trendData.workoutDay.length > 0 ? [
-              { label: 'Avg / Week', value: `${avgWorkoutsPerWeek}` },
-              { label: 'Total Workout Days', value: `${totalWorkoutDays}` },
-            ] : undefined}>
-            <WorkoutFrequencyChart data={trendData.workoutDay} theme={theme} />
-          </GraphCard>
-        </CollapsibleSection>
+          {statsCards
+            .filter(c => c.type === 'graph' && c.visible)
+            .sort((a, b) => a.order - b.order)
+            .map(card => (
+              <StatsGraphCard
+                key={card.id}
+                card={card}
+                cardTrendData={trendDataMap[card.period.toString()] ?? EMPTY_TREND_DATA}
+                theme={theme}
+                calTarget={calTarget}
+                stepGoal={stepGoal}
+                sleepGoal={sleepGoal}
+                onPeriodChange={handleCardPeriodChange}
+                onEditPress={() => {}}
+              />
+            ))}
+        </CollapsibleSection>}
 
         {/* ── RECORDS ── */}
-        <CollapsibleSection label="Records" defaultOpen={false} theme={theme}>
+        {sectionVisible('sys_records') && <CollapsibleSection label="Records" defaultOpen={false} theme={theme}>
           <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
             <RecordTile icon="footsteps" label="Best Steps" value={records.steps} unit="steps"
               color={theme.accentBlue} date={records.stepsDate}
@@ -1328,10 +1477,10 @@ export default function StatsScreen() {
               color={theme.sleepRem} date={records.sleepHoursDate}
               fmt={(v) => `${Math.floor(v)}h ${Math.round((v % 1) * 60)}m`} />
           </View>
-        </CollapsibleSection>
+        </CollapsibleSection>}
 
         {/* ── STREAKS ── */}
-        <CollapsibleSection label="Streaks" defaultOpen={false} theme={theme}>
+        {sectionVisible('sys_streaks') && <CollapsibleSection label="Streaks" defaultOpen={false} theme={theme}>
           <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               {[
@@ -1350,10 +1499,10 @@ export default function StatsScreen() {
               ))}
             </View>
           </View>
-        </CollapsibleSection>
+        </CollapsibleSection>}
 
         {/* ── CALENDAR ── */}
-        <CollapsibleSection label="Calendar" defaultOpen={false} theme={theme}>
+        {sectionVisible('sys_calendar') && <CollapsibleSection label="Calendar" defaultOpen={false} theme={theme}>
           <CollapsibleCard label="Monthly View" defaultOpen={true} theme={theme}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
               <TouchableOpacity onPress={() => { if (calendarMonth === 0) { setCalendarMonth(11); setCalendarYear(y => y - 1); } else setCalendarMonth(m => m - 1); }} style={{ padding: 8 }}>
@@ -1418,9 +1567,113 @@ export default function StatsScreen() {
               ))}
             </View>
           </CollapsibleCard>
-        </CollapsibleSection>
+        </CollapsibleSection>}
 
       </ScrollView>
+
+      {/* ── EDIT STATS SHEET ── */}
+      <Modal transparent animationType="none" visible={editSheetVisible} onRequestClose={closeEditSheet} statusBarTranslucent hardwareAccelerated
+        onShow={() => {
+          Animated.parallel([
+            Animated.timing(editSheetAnim, { toValue: 1, duration: 320, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+            Animated.timing(editOverlayAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
+          ]).start();
+        }}>
+        <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+          {/* Dimmed backdrop */}
+          <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={closeEditSheet}>
+            <Animated.View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', opacity: editOverlayAnim }} />
+          </TouchableOpacity>
+
+          {/* Slide-up sheet */}
+          <Animated.View style={{
+            transform: [{ translateY: editSheetAnim.interpolate({ inputRange: [0, 1], outputRange: [700, 0] }) }],
+            backgroundColor: theme.bgSheet,
+            borderTopLeftRadius: 20, borderTopRightRadius: 20,
+            borderWidth: 0.5, borderBottomWidth: 0, borderColor: theme.borderSheet,
+            maxHeight: Dimensions.get('window').height * 0.82,
+          }}>
+            {/* Handle */}
+            <TouchableOpacity onPress={closeEditSheet} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 4, paddingHorizontal: 40 }}>
+              <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
+            </TouchableOpacity>
+
+            {/* Title */}
+            <Text style={{ fontFamily: 'BebasNeue_400Regular', fontSize: 22, letterSpacing: 3, color: theme.accentBlueRaw, paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 }}>
+              EDIT STATS
+            </Text>
+
+            <GestureHandlerRootView style={{ flexShrink: 1 }}>
+              <DraggableFlatList
+                data={editCards.filter(c => c.type === 'graph')}
+                keyExtractor={item => item.id}
+                onDragEnd={({ data }) => {
+                  const sysCards = editCards.filter(c => c.type === 'system');
+                  const updatedGraphCards = data.map((c, i) => ({ ...c, order: i }));
+                  const updated = [...sysCards, ...updatedGraphCards];
+                  setEditCards(updated);
+                  setStatsCards(updated);
+                  saveStatsCards(updated);
+                }}
+                ListHeaderComponent={() => (
+                  <View style={{ paddingHorizontal: 20, paddingBottom: 8, borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle }}>
+                    <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>Graph Cards</Text>
+                    <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>Long-press to reorder</Text>
+                  </View>
+                )}
+                ListFooterComponent={() => (
+                  <>
+                    <View style={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle, marginTop: 8 }}>
+                      <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>Sections</Text>
+                    </View>
+                    {editCards.filter(c => c.type === 'system').map(item => (
+                      <View key={item.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 20, paddingVertical: 13, borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle }}>
+                        <Ionicons name="reorder-three-outline" size={22} color={theme.borderSubtle} />
+                        <Text style={{ flex: 1, fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: item.visible ? theme.textPrimary : theme.textDim }}>{item.label}</Text>
+                        <View style={{ backgroundColor: 'rgba(102,102,128,0.12)', borderWidth: 1, borderColor: 'rgba(102,102,128,0.2)', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
+                          <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 1 }}>SECTION</Text>
+                        </View>
+                        <TouchableOpacity onPress={() => handleToggleCard(item.id)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                          <Ionicons name={item.visible ? 'eye' : 'eye-off-outline'} size={18} color={item.visible ? theme.accentBlue : theme.textDim} />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                    <View style={{ height: insets.bottom + 20 }} />
+                  </>
+                )}
+                renderItem={({ item, drag, isActive }) => (
+                  <ScaleDecorator>
+                    <TouchableOpacity
+                      onLongPress={drag}
+                      disabled={isActive}
+                      activeOpacity={0.85}
+                      style={{
+                        flexDirection: 'row', alignItems: 'center', gap: 12,
+                        paddingHorizontal: 20, paddingVertical: 13,
+                        backgroundColor: isActive ? theme.bgCard : 'transparent',
+                        borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle,
+                      }}>
+                      <Ionicons name="reorder-three-outline" size={22} color={theme.textDim} />
+                      <Text style={{ flex: 1, fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: item.visible ? theme.textPrimary : theme.textDim }}>
+                        {item.label}
+                      </Text>
+                      <View style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
+                        <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 1 }}>{item.period}D</Text>
+                      </View>
+                      <TouchableOpacity onPress={() => handleDeleteCard(item.id)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                        <Ionicons name="trash-outline" size={17} color={theme.statusBad} />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => handleToggleCard(item.id)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                        <Ionicons name={item.visible ? 'eye' : 'eye-off-outline'} size={18} color={item.visible ? theme.accentBlue : theme.textDim} />
+                      </TouchableOpacity>
+                    </TouchableOpacity>
+                  </ScaleDecorator>
+                )}
+              />
+            </GestureHandlerRootView>
+          </Animated.View>
+        </View>
+      </Modal>
 
       {dayDetailDate !== null && (
         <Modal transparent animationType="none" visible={dayDetailDate !== null} onRequestClose={closeDayDetail} statusBarTranslucent hardwareAccelerated

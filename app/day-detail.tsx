@@ -1,8 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
 
@@ -84,6 +84,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
   const [calPickerVisible, setCalPickerVisible] = useState(false);
   const [pickerYear, setPickerYear] = useState(0);
   const [pickerMonth, setPickerMonth] = useState(0);
+  const calFadeAnim = useRef(new Animated.Value(0)).current;
 
   const today = new Date();
   const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -203,10 +204,15 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
     const parts = currentDate.split('-');
     setPickerYear(parseInt(parts[0]));
     setPickerMonth(parseInt(parts[1]) - 1);
+    calFadeAnim.setValue(0);
     setCalPickerVisible(true);
+    Animated.timing(calFadeAnim, { toValue: 1, duration: 180, useNativeDriver: true }).start();
+  };
+  const closeCalPicker = () => {
+    Animated.timing(calFadeAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => setCalPickerVisible(false));
   };
   const calPickerSelect = (dk: string) => {
-    if (dk <= todayKey) { setCurrentDate(dk); setCalPickerVisible(false); }
+    if (dk <= todayKey) { setCurrentDate(dk); closeCalPicker(); }
   };
   const calPickerPrev = () => {
     if (pickerMonth === 0) { setPickerMonth(11); setPickerYear(y => y - 1); }
@@ -312,19 +318,24 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
         )}
       </View>
 
-      <Modal visible={calPickerVisible} transparent animationType="fade" onRequestClose={() => setCalPickerVisible(false)}>
-        <View style={{ flex: 1 }}>
-          <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)' }} onPress={() => setCalPickerVisible(false)} activeOpacity={1} />
+      <Modal visible={calPickerVisible} transparent animationType="none" onRequestClose={closeCalPicker}>
+        <Animated.View style={{ flex: 1, opacity: calFadeAnim }}>
+          <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)' }} onPress={closeCalPicker} activeOpacity={1} />
           <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} pointerEvents="box-none">
-            <View style={{ backgroundColor: theme.bgSheet, borderRadius: 16, padding: 20, width: 310, borderWidth: 0.5, borderColor: theme.borderCard, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8 }}>
-              <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', textAlign: 'center', marginBottom: 16 }}>Jump to Date</Text>
+            <View style={{ backgroundColor: theme.bgSheet, borderRadius: 16, paddingHorizontal: 20, paddingBottom: 20, width: 310, borderWidth: 0.5, borderColor: theme.borderCard, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8 }}>
+              <TouchableOpacity onPress={closeCalPicker} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 16 }}>
+                <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
+              </TouchableOpacity>
+              <Text style={{ fontSize: 10, color: theme.accentBlueRaw, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', textAlign: 'center', marginBottom: 16 }}>Jump to Date</Text>
               {calPickerVisible && renderCalGrid()}
-              <TouchableOpacity onPress={() => setCalPickerVisible(false)} style={{ marginTop: 16, alignItems: 'center', paddingVertical: 8 }}>
-                <Text style={{ fontSize: 13, color: theme.textDim, fontFamily: 'DMSans_600SemiBold' }}>Cancel</Text>
+              <TouchableOpacity
+                onPress={closeCalPicker}
+                style={{ marginTop: 16, alignItems: 'center', paddingVertical: 8, paddingHorizontal: 16, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8 }}>
+                <Text style={{ fontSize: 14, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>Cancel</Text>
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </Animated.View>
       </Modal>
 
       <ScrollView contentContainerStyle={styles.content}>

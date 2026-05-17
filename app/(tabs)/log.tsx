@@ -3,11 +3,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Animated, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
-import CustomFoodCreator from '../../components/CustomFoodCreator';
 import TooltipIcon from '../../components/TooltipIcon';
 import { useTheme } from '../../theme';
 import { useToast } from '../../components/Toast';
@@ -133,8 +132,11 @@ export default function LogScreen() {
   const [waterCustomInput, setWaterCustomInput] = useState('');
   const [logRefreshKey, setLogRefreshKey] = useState(0);
   const { activeCalories } = useHealthKit();
-  const [showCreateFood, setShowCreateFood] = useState(false);
   const [styleMode, setStyleMode] = useState<'discipline' | 'balanced' | 'mindful'>('balanced');
+  const [calPickerVisible, setCalPickerVisible] = useState(false);
+  const [pickerYear, setPickerYear] = useState(0);
+  const [pickerMonth, setPickerMonth] = useState(0);
+  const calFadeAnim = useRef(new Animated.Value(0)).current;
 
   const goToPrevDay = () => {
     const d = new Date(activeDate + 'T12:00:00');
@@ -150,6 +152,93 @@ export default function LogScreen() {
   };
 
   const isToday = activeDate === todayKey;
+
+  const openCalPicker = () => {
+    const parts = activeDate.split('-');
+    setPickerYear(parseInt(parts[0]));
+    setPickerMonth(parseInt(parts[1]) - 1);
+    calFadeAnim.setValue(0);
+    setCalPickerVisible(true);
+    Animated.timing(calFadeAnim, { toValue: 1, duration: 180, useNativeDriver: true }).start();
+  };
+  const closeCalPicker = () => {
+    Animated.timing(calFadeAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => setCalPickerVisible(false));
+  };
+  const calPickerSelect = (dk: string) => {
+    if (dk <= todayKey) { setActiveDate(dk); closeCalPicker(); }
+  };
+  const calPickerPrev = () => {
+    if (pickerMonth === 0) { setPickerMonth(11); setPickerYear(y => y - 1); }
+    else setPickerMonth(m => m - 1);
+  };
+  const calPickerNext = () => {
+    const nm = pickerMonth === 11 ? 0 : pickerMonth + 1;
+    const ny = pickerMonth === 11 ? pickerYear + 1 : pickerYear;
+    if (`${ny}-${String(nm + 1).padStart(2, '0')}-01` <= todayKey) { setPickerMonth(nm); setPickerYear(ny); }
+  };
+  const calPickerCanGoNext = () => {
+    const nm = pickerMonth === 11 ? 0 : pickerMonth + 1;
+    const ny = pickerMonth === 11 ? pickerYear + 1 : pickerYear;
+    return `${ny}-${String(nm + 1).padStart(2, '0')}-01` <= todayKey;
+  };
+  const CAL_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const CAL_DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  const renderCalGrid = () => {
+    const firstDay = new Date(pickerYear, pickerMonth, 1).getDay();
+    const daysInMonth = new Date(pickerYear, pickerMonth + 1, 0).getDate();
+    const cells: (number | null)[] = [];
+    for (let i = 0; i < firstDay; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+    while (cells.length % 7 !== 0) cells.push(null);
+    const rows: (number | null)[][] = [];
+    for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
+    return (
+      <View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <TouchableOpacity onPress={calPickerPrev} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="chevron-back" size={20} color={theme.accentBlueRaw} />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 15, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>
+            {CAL_MONTHS[pickerMonth]} {pickerYear}
+          </Text>
+          <TouchableOpacity onPress={calPickerNext} disabled={!calPickerCanGoNext()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="chevron-forward" size={20} color={calPickerCanGoNext() ? theme.accentBlueRaw : theme.textDim} />
+          </TouchableOpacity>
+        </View>
+        <View style={{ flexDirection: 'row', marginBottom: 6 }}>
+          {CAL_DAYS.map(d => (
+            <View key={d} style={{ flex: 1, alignItems: 'center' }}>
+              <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>{d}</Text>
+            </View>
+          ))}
+        </View>
+        {rows.map((row, ri) => (
+          <View key={ri} style={{ flexDirection: 'row', marginBottom: 2 }}>
+            {row.map((day, ci) => {
+              if (!day) return <View key={ci} style={{ flex: 1 }} />;
+              const dk = `${pickerYear}-${String(pickerMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+              const isSel = dk === activeDate;
+              const isFut = dk > todayKey;
+              const isTod = dk === todayKey;
+              return (
+                <TouchableOpacity key={ci} style={{ flex: 1, alignItems: 'center', paddingVertical: 5 }} onPress={() => calPickerSelect(dk)} disabled={isFut} activeOpacity={0.7}>
+                  <View style={{
+                    width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center',
+                    backgroundColor: isSel ? theme.accentBlueRaw : isTod ? `${theme.accentBlueRaw}26` : 'transparent',
+                    borderWidth: isTod && !isSel ? 0.5 : 0, borderColor: theme.accentBlueRaw,
+                  }}>
+                    <Text style={{ fontSize: 13, fontFamily: isSel ? 'DMSans_700Bold' : 'DMSans_400Regular', color: isSel ? theme.bgPrimary : isFut ? theme.textDim : theme.textSecondary }}>
+                      {day}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        ))}
+      </View>
+    );
+  };
 
   const formatActiveDate = () => {
     const d = new Date(activeDate + 'T12:00:00');
@@ -383,9 +472,11 @@ export default function LogScreen() {
           <Text style={[styles.headerLabel, { color: theme.textMuted }]}>PROJECT J</Text>
           <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>Food Log</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
-            <Text style={{ fontSize: 9, color: isToday ? theme.textMuted : theme.accentAmber, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>
-              {formatActiveDate()}
-            </Text>
+            <TouchableOpacity onPress={openCalPicker} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
+              <Text style={{ fontSize: 9, color: isToday ? theme.textMuted : theme.accentAmber, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>
+                {formatActiveDate()}
+              </Text>
+            </TouchableOpacity>
             <TouchableOpacity onPress={goToPrevDay} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}>
               <Ionicons name="chevron-back" size={16} color={theme.accentBlue} />
             </TouchableOpacity>
@@ -394,23 +485,11 @@ export default function LogScreen() {
             </TouchableOpacity>
           </View>
         </View>
-        <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
-          <TouchableOpacity
+        <TouchableOpacity
             style={[styles.libraryBtn, { height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
             onPress={() => router.push({ pathname: '/add-food', params: { meal: 'browse', date: activeDate } })}>
             <Text style={[styles.libraryBtnText, { color: theme.accentBlue }]}>Library</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.libraryBtn, { height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
-            onPress={() => setShowCreateFood(true)}>
-            <Text style={[styles.libraryBtnText, { color: theme.accentBlue }]}>+ Food</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.libraryBtn, { height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
-            onPress={() => router.push('/recipe-builder')}>
-            <Text style={[styles.libraryBtnText, { color: theme.accentBlue }]}>+ Recipe</Text>
-          </TouchableOpacity>
-        </View>
       </View>
       <ScrollView
         contentContainerStyle={styles.content}
@@ -704,11 +783,26 @@ export default function LogScreen() {
       </View>
     )}
 
-    <CustomFoodCreator
-        visible={showCreateFood}
-        onClose={() => setShowCreateFood(false)}
-        onSaved={() => {}}
-      />
+      <Modal visible={calPickerVisible} transparent animationType="none" onRequestClose={closeCalPicker}>
+        <Animated.View style={{ flex: 1, opacity: calFadeAnim }}>
+          <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)' }} onPress={closeCalPicker} activeOpacity={1} />
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', pointerEvents: 'box-none' }}>
+            <View style={{ backgroundColor: theme.bgSheet, borderRadius: 16, paddingHorizontal: 20, paddingBottom: 20, width: 310, borderWidth: 0.5, borderColor: theme.borderCard, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.4, shadowRadius: 12, elevation: 8 }}>
+              <TouchableOpacity onPress={closeCalPicker} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 16 }}>
+                <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
+              </TouchableOpacity>
+              <Text style={{ fontSize: 10, color: theme.accentBlueRaw, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', textAlign: 'center', marginBottom: 16 }}>Jump to Date</Text>
+              {calPickerVisible && renderCalGrid()}
+              <TouchableOpacity
+                onPress={closeCalPicker}
+                style={{ marginTop: 16, alignItems: 'center', paddingVertical: 8, paddingHorizontal: 16, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8 }}>
+                <Text style={{ fontSize: 14, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Animated.View>
+      </Modal>
+
     </LinearGradient>
   );
 }

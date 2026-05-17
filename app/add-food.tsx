@@ -333,6 +333,10 @@ const [showEditMyFood, setShowEditMyFood] = useState(false);
 const [editingMyFood, setEditingMyFood] = useState<{idx: number, name: string, cal: string} | null>(null);
 const [lastScannedBarcode, setLastScannedBarcode] = useState<string | null>(null);
 const [barcodeOverrides, setBarcodeOverrides] = useState<Record<string, any>>({});
+const [showFabMenu, setShowFabMenu] = useState(false);
+const fabScale = useRef(new Animated.Value(1)).current;
+const fabItem1Anim = useRef(new Animated.Value(0)).current;
+const fabItem2Anim = useRef(new Animated.Value(0)).current;
 const favoriteOpacities = useRef<Record<string, Animated.Value>>({}).current;
 const getFavOpacity = (name: string) => {
   if (!favoriteOpacities[name]) favoriteOpacities[name] = new Animated.Value(1);
@@ -349,6 +353,28 @@ const saveEditMyFood = async () => {
     await saveToFirebase('my_foods', 'foods', updated);
     setShowEditMyFood(false);
     setEditingMyFood(null);
+  };
+
+  const openFabMenu = () => {
+    fabItem1Anim.setValue(0);
+    fabItem2Anim.setValue(0);
+    setShowFabMenu(true);
+    Animated.stagger(70, [
+      Animated.spring(fabItem1Anim, { toValue: 1, useNativeDriver: true, friction: 7, tension: 120 }),
+      Animated.spring(fabItem2Anim, { toValue: 1, useNativeDriver: true, friction: 7, tension: 120 }),
+    ]).start();
+  };
+
+  const closeFabMenu = () => {
+    Animated.parallel([
+      Animated.timing(fabItem1Anim, { toValue: 0, duration: 130, useNativeDriver: true }),
+      Animated.timing(fabItem2Anim, { toValue: 0, duration: 130, useNativeDriver: true }),
+    ]).start(() => setShowFabMenu(false));
+  };
+
+  const toggleFabMenu = () => {
+    if (showFabMenu) closeFabMenu();
+    else openFabMenu();
   };
 
   useEffect(() => {
@@ -866,20 +892,6 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
   </TouchableOpacity>
   <Text style={styles.headerTitle}>{meal === 'browse' ? 'Food Library' : `Add to ${meal}`}</Text>
   <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
-    {meal === 'browse' && (
-      <>
-        <TouchableOpacity
-          style={{ height: 32, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6 }}
-          onPress={() => setShowCreateFood(true)}>
-          <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlue }}>+ Food</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={{ height: 32, paddingHorizontal: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6 }}
-          onPress={() => router.push('/recipe-builder')}>
-          <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlue }}>+ Recipe</Text>
-        </TouchableOpacity>
-      </>
-    )}
     <TouchableOpacity
       onPress={startScan}
       style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, padding: 6, alignItems: 'center', justifyContent: 'center', width: 38, height: 38 }}>
@@ -1248,6 +1260,66 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
             </View>
           )}
         </Animated.View>
+      )}
+
+      {/* FAB -- only in browse/library mode */}
+      {meal === 'browse' && (
+        <>
+          {showFabMenu && (
+            <TouchableOpacity
+              style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+              activeOpacity={1}
+              onPress={closeFabMenu}
+            />
+          )}
+
+          {showFabMenu && (
+            <View style={{ position: 'absolute', bottom: 90 + insets.bottom, right: 20, alignItems: 'flex-end', gap: 12 }}>
+              {/* Create Recipe - top, animates second */}
+              <Animated.View style={{ opacity: fabItem2Anim, transform: [{ translateY: fabItem2Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <TouchableOpacity
+                    onPress={() => { closeFabMenu(); router.push('/recipe-builder'); }}
+                    style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                    <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Create Recipe</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => { closeFabMenu(); router.push('/recipe-builder'); }}
+                    style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                    <Ionicons name="book-outline" size={20} color="#ffffff" />
+                  </TouchableOpacity>
+                </View>
+              </Animated.View>
+
+              {/* Create Food - bottom, animates first */}
+              <Animated.View style={{ opacity: fabItem1Anim, transform: [{ translateY: fabItem1Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <TouchableOpacity
+                    onPress={() => { closeFabMenu(); setShowCreateFood(true); }}
+                    style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                    <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Create Food</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => { closeFabMenu(); setShowCreateFood(true); }}
+                    style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                    <Ionicons name="restaurant-outline" size={20} color="#ffffff" />
+                  </TouchableOpacity>
+                </View>
+              </Animated.View>
+            </View>
+          )}
+
+          <Animated.View style={{ position: 'absolute', bottom: 20 + insets.bottom, right: 20, transform: [{ scale: fabScale }] }}>
+            <TouchableOpacity
+              onPress={toggleFabMenu}
+              onPressIn={() => Animated.timing(fabScale, { toValue: 0.9, duration: 80, useNativeDriver: true }).start()}
+              onPressOut={() => Animated.timing(fabScale, { toValue: 1, duration: 80, useNativeDriver: true }).start()}
+              activeOpacity={1}
+              style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 }}>
+              <Ionicons name={showFabMenu ? 'close' : 'add'} size={28} color="#ffffff" />
+            </TouchableOpacity>
+          </Animated.View>
+        </>
       )}
     </View>
   );

@@ -416,6 +416,21 @@ function MacroBar({ val, goal, color, trackColor, refreshKey }: { val: number; g
   );
 }
 
+function PulseSegment({ value, style }: { value: string; style: any }) {
+  const anim = useRef(new Animated.Value(1)).current;
+  const prev = useRef(value);
+  useEffect(() => {
+    if (prev.current !== value) {
+      prev.current = value;
+      Animated.sequence([
+        Animated.timing(anim, { toValue: 1.18, duration: 80, useNativeDriver: true }),
+        Animated.timing(anim, { toValue: 1.0, duration: 150, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      ]).start();
+    }
+  }, [value]);
+  return <Animated.Text style={[style, { transform: [{ scale: anim }] }]}>{value}</Animated.Text>;
+}
+
 function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen, remaining, windowEnd, ifResultLabel, ifResultColor, ifTargetMs, ifActualMs, showTimePicker, showEndTimePicker, pickerTime, todayKey, styles, formatTime, formatHrMin, setIfMethod, setIfCustomHours, setIfStart, setIfEnd, setShowTimePicker, setShowEndTimePicker, setPrickerTime, onStartFast, onLastMeal, onResetFast, onCancelFast, onResetComplete, onConfirmStart, onConfirmEnd }: any) {
   const ifPulse = useRef(new Animated.Value(1)).current;
   const ifContentAnim = useRef(new Animated.Value(0)).current;
@@ -532,9 +547,21 @@ function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen, remain
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 }}>
             <View style={{ flex: 1 }}>
               <Text style={[styles.ifLabel, { marginBottom: 4, color: theme.textMuted }]}>{isOpen ? 'Window closes in' : 'Window closed'}</Text>
-              <Text style={[styles.ifCountdown, { color: theme.accentBlueRaw }]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
-                {remaining ? formatTime(remaining) : 'CLOSED'}
-              </Text>
+              {remaining ? (() => {
+                const [hh, mm, ss] = formatTime(remaining).split(':');
+                const seg = [styles.ifCountdown, { color: theme.accentBlueRaw }];
+                return (
+                  <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                    <PulseSegment value={hh} style={seg} />
+                    <Text style={seg}>:</Text>
+                    <PulseSegment value={mm} style={seg} />
+                    <Text style={seg}>:</Text>
+                    <PulseSegment value={ss} style={seg} />
+                  </View>
+                );
+              })() : (
+                <Text style={[styles.ifCountdown, { color: theme.accentBlueRaw }]}>CLOSED</Text>
+              )}
             </View>
             <View style={{ flexDirection: 'row', gap: 12, paddingTop: 2 }}>
               <View style={{ alignItems: 'center' }}>

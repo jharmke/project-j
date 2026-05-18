@@ -589,7 +589,11 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
             <Text style={[styles.libraryBtnText, { color: theme.accentBlue }]}>Library</Text>
           </TouchableOpacity>
         </View>
-      <ScrollView ref={mainScrollRef} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        ref={mainScrollRef}
+        style={{ flex: 1 }}
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled">
 
         <ScrollView
           ref={dayScrollRef}
@@ -598,17 +602,16 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
           style={styles.dayTabsContainer}
           onLayout={() => {}}>
           {DATES.map(({ key, dayName, label }) => {
-            const p = programs[key] || weeklyTemplate[dayName];
             const c = theme.accentBlue;
-            const isActive = key === activeDay;
+            const isActiveDayTab = key === activeDay;
             const isToday = key === todayKey;
             const isPast = key < todayKey;
             return (
               <TouchableOpacity
                 key={key}
                 style={[styles.dayTab, { backgroundColor: theme.bgCard, borderColor: theme.borderSubtle },
-                  isActive && { borderColor: c, backgroundColor: c + '18', borderWidth: 1.5 },
-                  isToday && !isActive && { borderColor: theme.textSecondary, borderWidth: 1.5 }]}
+                  isActiveDayTab && { borderColor: c, backgroundColor: c + '18', borderWidth: 1.5 },
+                  isToday && !isActiveDayTab && { borderColor: theme.textSecondary, borderWidth: 1.5 }]}
                 onPress={() => { setActiveDay(key); setCalBurnedSaved(!!cardioLogs[key]?.caloriesBurned); }}>
                 {(() => {
                   const dayTagObjs = getDayTagObjects(key);
@@ -619,7 +622,6 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                   const rightDots = dayTagObjs.slice(leftCount, leftCount + rightCount);
                   return (
                     <View style={{ width: '100%', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                      {/* Left dots */}
                       {leftDots.length > 0 && (
                         <View style={{ position: 'absolute', left: 4, top: 0, bottom: 0, justifyContent: 'center', gap: 3 }}>
                           {leftDots.map(t => (
@@ -627,15 +629,12 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                           ))}
                         </View>
                       )}
-                      {/* Center text */}
                       <Text style={[styles.dayTabText, { color: theme.textMuted },
-                        isActive && { color: c },
-                        !isActive && { color: isPast ? theme.textSecondary : theme.textMuted }]}>{dayName}</Text>
+                        isActiveDayTab && { color: c },
+                        !isActiveDayTab && { color: isPast ? theme.textSecondary : theme.textMuted }]}>{dayName}</Text>
                       <Text style={[styles.dayTabText, { color: theme.textMuted, fontSize: 11 },
-                        isActive && { color: c },
-                        !isActive && { color: isPast ? theme.textMuted : theme.textMuted }]}>{label}</Text>
-                      
-                      {/* Right dots */}
+                        isActiveDayTab && { color: c },
+                        !isActiveDayTab && { color: isPast ? theme.textMuted : theme.textMuted }]}>{label}</Text>
                       {rightDots.length > 0 && (
                         <View style={{ position: 'absolute', right: 4, top: 0, bottom: 0, justifyContent: 'center', gap: 3 }}>
                           {rightDots.map(t => (
@@ -708,8 +707,8 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
             <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular', marginTop: 12 }}>Tap + to add an exercise anyway</Text>
           </View>
         ) : (
-          <View>
-            <View style={styles.progressRow} key={programs[activeDay]?.customLabel || programs[activeDay]?.focus}>
+          <>
+            <View style={styles.progressRow}>
               <TouchableOpacity style={{ flex: 1 }} onPress={() => {
                 setLabelInput(program?.customLabel || '');
                 setShowLabelModal(true);
@@ -724,96 +723,88 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
             <View style={[styles.progressBarBg, { backgroundColor: theme.bgProgressTrack }]}>
               <Animated.View style={[styles.progressBarFill, { width: progressAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }), backgroundColor: theme.accentBlue }]} />
             </View>
-
-            <DraggableFlatList
-              data={exercises}
-              keyExtractor={ex => ex.id}
-              contentContainerStyle={{ paddingBottom: 16 }}
-              onDragEnd={({ data }) => {
-                const baseProgram = programs[activeDay] || weeklyTemplate[activeDayName];
-                const newPrograms = { ...programs, [activeDay]: { ...baseProgram, exercises: data } };
-                setPrograms(newPrograms);
-                saveState(checks, cardioComplete, newPrograms, workoutNotes, cardioLogs, weeklyTemplate);
-              }}
-              renderItem={({ item: ex, drag, isActive }: RenderItemParams<any>) => {
-                const isDone = dayChecks[ex.id];
-                return (
-                  <ScaleDecorator>
-                    <View style={[styles.exerciseItem, isDone && styles.exerciseDone, {
-                      backgroundColor: theme.bgCard,
-                      borderColor: theme.borderCard,
-                      borderLeftColor: isDone ? theme.accentBlue : theme.textDim,
-                      opacity: isActive ? 0.9 : 1
-                    }]}>
-                      <View style={styles.exerciseRow}>
-                        <TouchableOpacity onLongPress={drag} style={{ paddingRight: 10, justifyContent: 'center' }}>
-                          <Text style={{ color: theme.textDim, fontSize: 18, lineHeight: 14 }}>⠿</Text>
-                        </TouchableOpacity>
-                        <View style={styles.exerciseInfo}>
-                          <View style={styles.exerciseNameRow}>
-                            <Text style={[styles.exerciseName, { color: theme.textSecondary }, isDone && [styles.exerciseNameDone, { color: theme.textDim }]]}>{ex.name}</Text>
-                            {ex.fromAppleHealth && (
-                              <View style={[styles.badge, { backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder }]}>
-                                <Text style={[styles.badgeText, { color: theme.accentGreen }]}>APPLE HEALTH</Text>
-                              </View>
-                            )}
-                            {ex.dropset && (
-                              <View style={[styles.badge, { backgroundColor: color + '22' }]}>
-                                <Text style={[styles.badgeText, { color }]}>DROPSET</Text>
-                              </View>
-                            )}
-                          </View>
-                          {ex.isCardio ? (
-                            <Text style={[styles.exerciseMeta, { color: theme.textMuted }]}>
-                              {[
-                                ex.duration ? (ex.fromAppleHealth ? ex.duration : `${ex.duration} min`) : null,
-                                ex.distance ? `${ex.distance} mi` : null,
-                                ex.speed ? `${ex.speed} mph` : null,
-                                ex.incline ? `${ex.incline}% incline` : null,
-                                ex.hr ? `${ex.hr} bpm` : null,
-                                ex.calories ? `${ex.calories} cal` : null,
-                              ].filter(Boolean).join(' · ') || 'Cardio · tap edit to log stats'}
-                            </Text>
-                          ) : (
-                            <Text style={[styles.exerciseMeta, { color: theme.textMuted }]}>{ex.sets} sets · {ex.reps} reps · {ex.rest} rest</Text>
-                          )}
-                          {ex.note ? <Text style={[styles.exerciseNote, { color: theme.textDim }]}>{ex.note}</Text> : null}
-                        </View>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                          <TouchableOpacity
-                            style={{ padding: 10 }}
-                            onPress={() => openEditModal(activeDay, ex)}
-                            hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
-                            <Ionicons name="pencil" size={15} color={theme.textMuted} />
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={{ padding: 10 }}
-                            onPress={() => removeExercise(activeDay, ex.id)}
-                            hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
-                            <Ionicons name="trash" size={15} color={theme.accentRed} />
-                          </TouchableOpacity>
-                          <TouchableOpacity
-                            style={[styles.checkCircle, { borderColor: theme.borderCard }, isDone && { backgroundColor: theme.accentBlue, borderColor: theme.accentBlue }]}
-                            onPress={() => toggleExercise(ex.id)}>
-                            {isDone && <Text style={[styles.checkMark, { color: theme.bgPrimary }]}>✓</Text>}
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                    </View>
-                  </ScaleDecorator>
-                );
-              }}
-            />
-
-            
-
-            
-          </View>
+          </>
         )}
 
-        
+        <DraggableFlatList
+          data={isRest ? [] : exercises}
+          keyExtractor={(ex: any) => ex.id}
+          onDragEnd={({ data }) => {
+            const baseProgram = programs[activeDay] || weeklyTemplate[activeDayName];
+            const newPrograms = { ...programs, [activeDay]: { ...baseProgram, exercises: data } };
+            setPrograms(newPrograms);
+            saveState(checks, cardioComplete, newPrograms, workoutNotes, cardioLogs, weeklyTemplate);
+          }}
+          renderItem={({ item: ex, drag, isActive }: RenderItemParams<any>) => {
+            const isDone = dayChecks[ex.id];
+            return (
+              <ScaleDecorator>
+                <View style={[styles.exerciseItem, isDone && styles.exerciseDone, {
+                  backgroundColor: theme.bgCard,
+                  borderColor: theme.borderCard,
+                  borderLeftColor: isDone ? theme.accentBlue : theme.textDim,
+                  opacity: isActive ? 0.9 : 1
+                }]}>
+                  <View style={styles.exerciseRow}>
+                    <TouchableOpacity onLongPress={drag} style={{ paddingRight: 10, justifyContent: 'center' }}>
+                      <Text style={{ color: theme.textDim, fontSize: 18, lineHeight: 14 }}>⠿</Text>
+                    </TouchableOpacity>
+                    <View style={styles.exerciseInfo}>
+                      <View style={styles.exerciseNameRow}>
+                        <Text style={[styles.exerciseName, { color: theme.textSecondary }, isDone && [styles.exerciseNameDone, { color: theme.textDim }]]}>{ex.name}</Text>
+                        {ex.fromAppleHealth && (
+                          <View style={[styles.badge, { backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder }]}>
+                            <Text style={[styles.badgeText, { color: theme.accentGreen }]}>APPLE HEALTH</Text>
+                          </View>
+                        )}
+                        {ex.dropset && (
+                          <View style={[styles.badge, { backgroundColor: color + '22' }]}>
+                            <Text style={[styles.badgeText, { color }]}>DROPSET</Text>
+                          </View>
+                        )}
+                      </View>
+                      {ex.isCardio ? (
+                        <Text style={[styles.exerciseMeta, { color: theme.textMuted }]}>
+                          {[
+                            ex.duration ? (ex.fromAppleHealth ? ex.duration : `${ex.duration} min`) : null,
+                            ex.distance ? `${ex.distance} mi` : null,
+                            ex.speed ? `${ex.speed} mph` : null,
+                            ex.incline ? `${ex.incline}% incline` : null,
+                            ex.hr ? `${ex.hr} bpm` : null,
+                            ex.calories ? `${ex.calories} cal` : null,
+                          ].filter(Boolean).join(' · ') || 'Cardio · tap edit to log stats'}
+                        </Text>
+                      ) : (
+                        <Text style={[styles.exerciseMeta, { color: theme.textMuted }]}>{ex.sets} sets · {ex.reps} reps · {ex.rest} rest</Text>
+                      )}
+                      {ex.note ? <Text style={[styles.exerciseNote, { color: theme.textDim }]}>{ex.note}</Text> : null}
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <TouchableOpacity
+                        style={{ padding: 10 }}
+                        onPress={() => openEditModal(activeDay, ex)}
+                        hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
+                        <Ionicons name="pencil" size={15} color={theme.textMuted} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={{ padding: 10 }}
+                        onPress={() => removeExercise(activeDay, ex.id)}
+                        hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
+                        <Ionicons name="trash" size={15} color={theme.accentRed} />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.checkCircle, { borderColor: theme.borderCard }, isDone && { backgroundColor: theme.accentBlue, borderColor: theme.accentBlue }]}
+                        onPress={() => toggleExercise(ex.id)}>
+                        {isDone && <Text style={[styles.checkMark, { color: theme.bgPrimary }]}>✓</Text>}
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              </ScaleDecorator>
+            );
+          }}
+        />
 
-        {/* Effort Score Card */}
         <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, marginTop: 12 }]}>
           <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Effort Score</Text>
           <View style={{ flexDirection: 'column', gap: 8, marginTop: 12 }}>
@@ -839,22 +830,12 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                           Animated.timing(effortLabelAnim, { toValue: newScore ? 1 : 0, duration: 200, useNativeDriver: true }).start();
                         }}
                         style={{
-                          height: 52,
-                          borderRadius: 10,
-                          alignItems: 'center',
-                          justifyContent: 'center',
+                          height: 52, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
                           backgroundColor: selected ? effortColor : effortColor + '14',
                           borderWidth: 0.5,
                           borderColor: selected ? effortColor : effortColor + '40',
                         }}>
-                        <Text style={{
-                          fontSize: 28,
-                          fontFamily: 'BebasNeue_400Regular',
-                          color: selected ? '#ffffff' : effortColor,
-                          opacity: selected ? 1 : 0.55,
-                        }}>
-                          {n}
-                        </Text>
+                        <Text style={{ fontSize: 28, fontFamily: 'BebasNeue_400Regular', color: selected ? '#ffffff' : effortColor, opacity: selected ? 1 : 0.55 }}>{n}</Text>
                       </TouchableOpacity>
                     </Animated.View>
                   );
@@ -871,7 +852,6 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
           </Animated.View>
         </View>
 
-        {/* Workout Notes Card */}
         <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, marginTop: 12 }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Workout Notes</Text>

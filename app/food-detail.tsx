@@ -4,10 +4,11 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Image, Linking, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, Dimensions, Image, Linking, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import Reanimated, { useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
+import CustomFoodCreator from '../components/CustomFoodCreator';
 import { useToast } from '../components/Toast';
 import { saveToFirebase } from '../firebaseConfig';
 import { useTheme } from '../theme';
@@ -151,6 +152,11 @@ const isRecipeMode = recipeMode === 'true';
   const defaultFsServing = fsServings.length > 0 ? (fsServings.find((s: any) => s.isDefault) || fsServings[0]) : null;
   const { showToast } = useToast();
   const [isFav, setIsFav] = useState(false);
+  const [showSaveAsCopy, setShowSaveAsCopy] = useState(false);
+  const [showEllipsisMenu, setShowEllipsisMenu] = useState(false);
+  const [menuPos, setMenuPos] = useState({ top: 60, right: 16 });
+  const ellipsisRef = useRef<TouchableOpacity>(null);
+  const menuAnim = useRef(new Animated.Value(0)).current;
   const starScale = useRef(new Animated.Value(1)).current;
   const [showServingPicker, setShowServingPicker] = useState(false);
   const [selectedServing, setSelectedServing] = useState<any>(defaultFsServing);
@@ -169,7 +175,7 @@ const isRecipeMode = recipeMode === 'true';
   } : null;
 
   useEffect(() => {
-    if (isEditing && fsServings.length === 0 && food?.fsId) {
+    if (fsServings.length === 0 && food?.fsId) {
       fetchFatSecretServings(food.fsId).then(servings => {
         if (servings.length > 0) {
           const def = servings.find((s: any) => s.isDefault) || servings[0];
@@ -419,16 +425,31 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
         <Text style={styles.headerTitle} numberOfLines={1}>
           {isEditing ? 'Edit Entry' : 'Food Detail'}
         </Text>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, width: 60, justifyContent: 'flex-end' }}>
-          {food?.isMyFood && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, minWidth: 60, justifyContent: 'flex-end' }}>
+          {food?.isMyFood ? (
             <TouchableOpacity
               style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 }}
               onPress={() => router.push({ pathname: '/edit-food', params: { foodJson: JSON.stringify(food) } })}>
               <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Edit</Text>
             </TouchableOpacity>
-          )}
-          <TouchableOpacity onPress={toggleFav} style={{ padding: 4 }}>
-            <Animated.View style={{ transform: [{ scale: starScale }] }}>
+          ) : food?.fsId ? (
+            <TouchableOpacity
+              ref={ellipsisRef}
+              onPress={() => {
+                (ellipsisRef.current as any)?.measure((_x: number, _y: number, w: number, h: number, px: number, py: number) => {
+                  const screenWidth = Dimensions.get('window').width;
+                  setMenuPos({ top: py + h + 6, right: screenWidth - px - w });
+                  menuAnim.setValue(0);
+                  setShowEllipsisMenu(true);
+                  Animated.timing(menuAnim, { toValue: 1, duration: 180, useNativeDriver: true }).start();
+                });
+              }}
+              style={{ width: 30, height: 30, alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="ellipsis-horizontal" size={22} color={theme.textDim} />
+            </TouchableOpacity>
+          ) : null}
+          <TouchableOpacity onPress={toggleFav} style={{ width: 30, height: 30, alignItems: 'center', justifyContent: 'center' }}>
+            <Animated.View style={{ transform: [{ scale: starScale }], alignItems: 'center', justifyContent: 'center' }}>
               <Ionicons
                 name={isFav ? 'star' : 'star-outline'}
                 size={22}
@@ -475,8 +496,8 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
                   setHasChanges(true);
                   if (selectedServing.grams > 0) setAmount((selectedServing.grams * next).toString());
                 }}
-                style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8 }}>
-                <Text style={{ fontSize: 22, color: theme.textPrimary, fontFamily: 'DMSans_400Regular', lineHeight: 26 }}>−</Text>
+                style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8 }}>
+                <Text style={{ fontSize: 22, color: theme.accentBlue, fontFamily: 'DMSans_400Regular', lineHeight: 26 }}>−</Text>
               </TouchableOpacity>
               <Text style={{ width: 32, textAlign: 'center', fontSize: 22, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular' }}>{servingCount}</Text>
               <TouchableOpacity
@@ -488,8 +509,8 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
                   setHasChanges(true);
                   if (selectedServing.grams > 0) setAmount((selectedServing.grams * next).toString());
                 }}
-                style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8 }}>
-                <Text style={{ fontSize: 22, color: theme.textPrimary, fontFamily: 'DMSans_400Regular', lineHeight: 26 }}>+</Text>
+                style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8 }}>
+                <Text style={{ fontSize: 22, color: theme.accentBlue, fontFamily: 'DMSans_400Regular', lineHeight: 26 }}>+</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -546,16 +567,24 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
 
           {/* Extended nutrition */}
           {[
-            { label: 'Fiber', key: 'Fiber, total dietary', color: '#6366f1' },
-            { label: 'Sugar', key: 'Sugars, total including NLEA', color: '#ec4899' },
-            { label: 'Sodium', key: 'Sodium, Na', color: '#8b5cf6', unitName: 'MG' },
-            { label: 'Cholesterol', key: 'Cholesterol', color: '#14b8a6', unitName: 'MG' },
-            { label: 'Saturated Fat', key: 'Fatty acids, total saturated', color: '#f97316' },
+            { label: 'Fiber', key: 'Fiber, total dietary', color: '#6366f1', servingKey: 'fiber' },
+            { label: 'Sugar', key: 'Sugars, total including NLEA', color: '#ec4899', servingKey: 'sugar' },
+            { label: 'Sodium', key: 'Sodium, Na', color: '#8b5cf6', unitName: 'MG', servingKey: 'sodium' },
+            { label: 'Cholesterol', key: 'Cholesterol', color: '#14b8a6', unitName: 'MG', servingKey: 'cholesterol' },
+            { label: 'Saturated Fat', key: 'Fatty acids, total saturated', color: '#f97316', servingKey: 'saturatedFat' },
           ].map(nutrient => {
-            const n = food.foodNutrients?.find((fn: any) => 
-              fn.nutrientName === nutrient.key
-            );
-            const val = n ? Math.round((n.value || 0) * (useExisting ? 1 : multiplier) * 10) / 10 : null;
+            const n = food.foodNutrients?.find((fn: any) => fn.nutrientName === nutrient.key);
+            let val: number | null = null;
+            if (n) {
+              val = Math.round((n.value || 0) * (useExisting ? 1 : multiplier) * 10) / 10;
+            } else if (selectedServing && (selectedServing as any)[nutrient.servingKey] > 0) {
+              const raw = useServingBased
+                ? (selectedServing as any)[nutrient.servingKey] * servingCount
+                : servingRates
+                  ? (servingRates as any)[nutrient.servingKey] * grams
+                  : (selectedServing as any)[nutrient.servingKey];
+              val = Math.round(raw * 10) / 10;
+            }
             const unit2 = nutrient.unitName === 'MG' ? 'mg' : 'g';
             if (val === null) return null;
             return (
@@ -656,6 +685,60 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
           />
         </TouchableOpacity>
       </ScrollView>
+
+      {/* Ellipsis dropdown */}
+      <Modal visible={showEllipsisMenu} transparent animationType="none">
+        <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setShowEllipsisMenu(false)}>
+          <Animated.View style={{
+            position: 'absolute',
+            top: menuPos.top,
+            right: menuPos.right,
+            backgroundColor: theme.bgSheet,
+            borderRadius: 10,
+            borderWidth: 1,
+            borderColor: theme.borderCard,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.22,
+            shadowRadius: 10,
+            elevation: 8,
+            minWidth: 160,
+            overflow: 'hidden',
+            opacity: menuAnim,
+            transform: [{ translateY: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [-8, 0] }) }],
+          }}>
+            <TouchableOpacity
+              onPress={() => { setShowEllipsisMenu(false); setTimeout(() => setShowSaveAsCopy(true), 50); }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 14 }}>
+              <Ionicons name="copy-outline" size={17} color={theme.accentBlue} />
+              <Text style={{ fontSize: 15, color: theme.textPrimary, fontFamily: 'DMSans_500Medium' }}>Save as Copy</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Save as Copy */}
+      <CustomFoodCreator
+        visible={showSaveAsCopy}
+        onClose={() => setShowSaveAsCopy(false)}
+        onSaved={() => { setShowSaveAsCopy(false); showToast('Saved to My Foods', food.description, 'success'); }}
+        title="Clone Food"
+        prefill={{
+          name: food.brand ? food.description : (food.description?.split(' · ')[0] ?? food.description),
+          brand: food.brand || food.description?.split(' · ')[1] || '',
+          calories: selectedServing?.calories ?? defaultFsServing?.calories,
+          protein: selectedServing?.protein ?? defaultFsServing?.protein,
+          carbs: selectedServing?.carbs ?? defaultFsServing?.carbs,
+          fat: selectedServing?.fat ?? defaultFsServing?.fat,
+          fiber: selectedServing?.fiber ?? defaultFsServing?.fiber,
+          sugar: selectedServing?.sugar ?? defaultFsServing?.sugar,
+          sodium: selectedServing?.sodium ?? defaultFsServing?.sodium,
+          cholesterol: selectedServing?.cholesterol ?? defaultFsServing?.cholesterol,
+          saturatedFat: selectedServing?.saturatedFat ?? defaultFsServing?.saturatedFat,
+          servingGrams: selectedServing?.grams ?? defaultFsServing?.grams,
+          servingLabel: selectedServing?.label ?? defaultFsServing?.label,
+        }}
+      />
 
       {/* Serving Picker Modal */}
       <Modal visible={showServingPicker} transparent animationType="slide">

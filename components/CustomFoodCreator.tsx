@@ -22,6 +22,7 @@ interface CustomFoodCreatorProps {
   visible: boolean;
   onClose: () => void;
   onSaved?: (food: any) => void;
+  title?: string;
   prefill?: {
     name?: string;
     brand?: string;
@@ -39,7 +40,7 @@ interface CustomFoodCreatorProps {
   };
 }
 
-export default function CustomFoodCreator({ visible, onClose, onSaved, prefill }: CustomFoodCreatorProps) {
+export default function CustomFoodCreator({ visible, onClose, onSaved, title, prefill }: CustomFoodCreatorProps) {
   const { theme } = useTheme();
   const { showToast } = useToast();
   const overlayOpacity = useRef(new Animated.Value(0)).current;
@@ -61,6 +62,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, prefill }
   const [showOptional, setShowOptional] = useState(false);
   const optionalHeight = useRef(new Animated.Value(0)).current;
   const optionalMeasured = useRef(0);
+  const prefillExpanded = useRef(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -79,6 +81,12 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, prefill }
         setSaturatedFat(prefill.saturatedFat?.toString() || '');
         setServingGrams(prefill.servingGrams?.toString() || '');
         setServingLabel(prefill.servingLabel || '');
+        const hasOptional = !!(prefill.protein || prefill.carbs || prefill.fat || prefill.fiber || prefill.sugar || prefill.sodium || prefill.servingGrams);
+        if (hasOptional) {
+          setShowOptional(true);
+          optionalHeight.setValue(9999);
+          prefillExpanded.current = true;
+        }
       }
       Animated.parallel([
         Animated.timing(overlayOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
@@ -106,6 +114,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, prefill }
     setShowOptional(false);
     optionalHeight.setValue(0);
     optionalMeasured.current = 0;
+    prefillExpanded.current = false;
     cardScale.setValue(0.95);
   };
 
@@ -181,7 +190,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, prefill }
           <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={handleClose} />
           <Animated.View style={[s.card, { transform: [{ scale: cardScale }] }]}>
             <View style={s.header}>
-              <Text style={s.title}>CREATE FOOD</Text>
+              <Text style={s.title}>{title ? title.toUpperCase() : 'CREATE FOOD'}</Text>
               <TouchableOpacity onPress={handleClose} style={s.closeBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                 <Ionicons name="close" size={20} color={theme.textMuted} />
               </TouchableOpacity>
@@ -218,8 +227,12 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, prefill }
                 <View
                   onLayout={e => {
                     const h = e.nativeEvent.layout.height;
-                    if (h > 0 && optionalMeasured.current === 0) {
+                    if (h > 0) {
                       optionalMeasured.current = h;
+                      if (prefillExpanded.current) {
+                        optionalHeight.setValue(h);
+                        prefillExpanded.current = false;
+                      }
                     }
                   }}
                   style={{ position: showOptional ? 'relative' : 'absolute', opacity: showOptional ? 1 : 0 }}>

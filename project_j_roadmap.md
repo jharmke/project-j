@@ -166,6 +166,10 @@ NOW -- active this session
 [x] Win/loss/tie logic audit complete -- all 7 metrics verified consistent across index.tsx and head-to-head.tsx. Weight retains 0.3 lb fuzzy threshold (floating point). sleepHours retains 0.25hr (15 min) buffer. Net calories retains closest-to-target logic. All others: exact equality.
 
 NOW -- active this session
+[x] Extended nutrition FatSecret fix -- fall back to selectedServing data in food-detail extended nutrition render. Also trigger on-demand fetch for recents (non-edit path). food-detail.tsx.
+[x] Stepper buttons CPP -- interactive blue treatment on - / + buttons, accent symbols. food-detail.tsx.
+[x] Save as Copy -- ellipsis-horizontal icon in food detail header for FatSecret foods. ActionSheet replaced with measured-position dropdown callout (fades + slides 8px from button, 180ms native driver). Brand parsed from food.description " · " split when food.brand is empty. Clone Food modal title (not Create Food). Optional section auto-expands when prefilling. prefillExpanded ref fixes empty-space bug on first open. Ellipsis + star buttons normalized to 30x30 with explicit centering. food-detail.tsx + CustomFoodCreator.tsx.
+
 [x] Home / log aesthetics polish pass -- light + slate border tokens bumped, light bgCard opacity 0.55→0.72, accent top border (accentBlueRaw, 1.5px) on all home cards, hairline divider above stat row in calories card, weight card divider bumped to borderCardTop. Big number text treatment attempted and reverted -- deferred to BACKLOG.
 [x] Big number text treatment -- shadow (shadowColor #000, offset 0/2, opacity 0.18, radius 0) + opacity 0.88 on all hero Bebas numbers app-wide. Applied to: calories (index.tsx + log.tsx), sleep duration, sleep score donut, steps. Treatment is for fontSize 36+ hero numbers only -- smaller numbers (28px weight stats, fitness metrics) left alone.
 [x] Sleep donut deep color fix -- light theme sleepDeep changed from #6366f1 (indigo, too close to blue core) to #a855f7 (violet). Pink core / violet deep / green REM now clearly distinct across all themes. Warm theme sleepDeep also corrected.
@@ -246,16 +250,16 @@ FatSecret attribution -- "Powered by FatSecret" lockup required by API terms. Di
 Food detail polish pass:
 - Depth/shadow pass, general CPP treatment
 - Title "FOOD DETAIL" to accent color -- DONE (covers Edit Entry header too)
-- Back chevron to accent color
+- Back chevron to accent color -- DONE. backBtnText uses accentBlue.
 - Serving amount + unit row redesign -- quantity and serving unit visually linked on one row
 - Amount field color consistency fix
-- Section label "NUTRITION FOR XG" to card label style (9px, uppercase, 3 letter-spacing, textMuted)
-- Macro values lowercase g (6g not 6G)
+- Section label "NUTRITION FOR XG" to card label style -- DONE. 11px uppercase, letterSpacing 2, textMuted.
+- Macro values lowercase g (6g not 6G) -- DONE.
 - Star/favorite -- spring animation on tap, haptic, toast on food-detail. Haptic + toast + confirm Alert on FlatList star rows in add-food. DONE.
 - Empty states on all 5 library tabs (Recent / My Foods / Favorites / Recipes / Set Foods) -- icon, title, subtitle per tab. DONE.
 - Search no-results empty state -- DONE. Search icon, "No results for X", subtitle.
 - Favorites fsId save + fetch real label serving on tap -- DONE via food-detail path. add-food list path still open (see bug above).
-- "..." menu on food detail → Save as Copy, opens Custom Food Creator prefilled (NEXT BATCH)
+- "..." menu on food detail → Save as Copy -- DONE. Ellipsis icon in header for FatSecret foods. Opens Custom Food Creator prefilled. Rename via Save as Copy since FatSecret foods are read-only.
 - Search results brand contrast/separation improvement
 
 Food log screen polish pass:
@@ -291,7 +295,9 @@ Bugs and polish -- fix these first
 Birthday scroll confirm button -- fixed. Larger tap targets on Cancel/Confirm, overlay bottom tightened to stop intercept. DONE.
 Edit exercise input validation -- DONE. Cardio fields use filterDecimal (one decimal max). Sets/reps/rest fixed to number-pad with integer-only validation.
 FatSecret logo hit bar -- fixed. alignSelf: 'center' on TouchableOpacity in add-food.tsx and food-detail.tsx. DONE.
-"G" to "g" -- grams label showing as uppercase G throughout app. Audit all screens and fix to lowercase g everywhere.
+"G" to "g" -- grams label showing as uppercase G throughout app. Audit all screens and fix to lowercase g everywhere. DONE (food-detail confirmed, sweep remainder).
+Extended nutrition never shows for FatSecret foods -- food-detail reads food.foodNutrients (USDA format) but FatSecret stores fiber/sugar/sodium/cholesterol/saturatedFat on selectedServing directly. Fix: fall back to selectedServing / servingRates when foodNutrients doesn't have the nutrient. Recents also need on-demand fsId fetch (same as isEditing path) since diary entries don't store fsServings.
+Stepper buttons CPP pass -- - and + buttons are plain bgInput rectangles. Apply interactive blue treatment (accentBlueBg fill + accentBlueBorder) and accent-colored symbols. food-detail.tsx.
 Daily note card KAV -- fixed. onFocus scrollToEnd brings card into view above keyboard. DONE.
 Macros Today refresh animation -- fixed. refreshKey prop added to MacroBar, 800ms delay matches other bars. DONE.
 

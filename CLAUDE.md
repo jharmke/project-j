@@ -105,6 +105,7 @@ pj_bible_reflections -- all journal entries
 pj_verse_rotation -- shuffled verse rotation order and current index
 pj_bible_{BookName}_{chapterNum} -- cached KJV chapter verses
 pj_tooltip_{key} -- seen state per tooltip ('true' when dismissed). Reset via dev tools.
+pj_streaks -- universal streak data: { gratitude: { currentStreak, totalDays, lastLoggedDate }, savers: { count, earnBaselineStreak, earnBaselineIsActive } }
 
 ## Design System
 Background: #0d0d0f

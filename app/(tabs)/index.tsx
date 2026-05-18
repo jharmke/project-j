@@ -21,6 +21,7 @@ import { DayDetailContent } from '../day-detail';
 import TooltipModal from '../../components/TooltipModal';
 import TooltipIcon from '../../components/TooltipIcon';
 import { useTooltip } from '../../useTooltip';
+import GratitudeStreakCard from '../../components/GratitudeStreakCard';
 
 // ─── Card Registry ────────────────────────────────────────────────────────────
 export type CardId =
@@ -35,6 +36,7 @@ export type CardId =
   | 'sleep'
   | 'fitness_metrics'
   | 'daily_note'
+  | 'gratitude_streak'
   | 'vs_yesterday';
 
 interface CardMeta {
@@ -55,8 +57,9 @@ const CARD_REGISTRY: CardMeta[] = [
   { id: 'steps',          label: 'Steps',              description: 'Step count from Apple Health',           defaultVisible: true },
   { id: 'sleep',          label: 'Sleep',              description: 'Sleep duration & stages from Apple Health', defaultVisible: true },
   { id: 'fitness_metrics',label: 'Fitness Metrics',    description: 'VO2 Max & cardio recovery score',        defaultVisible: true },
-  { id: 'daily_note',     label: 'Daily Note',         description: 'Journal entry for the day',             defaultVisible: true },
-  { id: 'vs_yesterday',   label: 'You vs Yesterday',   description: 'Daily head-to-head across key metrics', defaultVisible: true },
+  { id: 'daily_note',       label: 'Daily Note',         description: 'Journal entry for the day',             defaultVisible: true },
+  { id: 'gratitude_streak', label: 'Gratitude Streak',  description: 'Daily gratitude habit tracker',          defaultVisible: true },
+  { id: 'vs_yesterday',     label: 'You vs Yesterday',   description: 'Daily head-to-head across key metrics', defaultVisible: true },
 ];
 
 const DEFAULT_ORDER: CardId[] = CARD_REGISTRY.map(c => c.id);
@@ -735,8 +738,9 @@ export default function HomeScreen() {
   const [sleepManualDeep,   setSleepManualDeep]     = useState<string>('');
   const [sleepManualRem,    setSleepManualRem]      = useState<string>('');
 
-  // Style mode
+  // Style mode + faith journey
   const [styleMode, setStyleMode] = useState<'discipline' | 'balanced' | 'mindful'>('balanced');
+  const [faithJourney, setFaithJourney] = useState<'rooted' | 'exploring' | 'notrightnow'>('rooted');
 
   // BMR state
   const [profileBmr,      setProfileBmr]      = useState(0);
@@ -1154,6 +1158,7 @@ export default function HomeScreen() {
           const sd = JSON.parse(settingsData);
           if (sd.workoutTags && Array.isArray(sd.workoutTags)) setWorkoutTags(sd.workoutTags);
           if (sd.styleMode) setStyleMode(sd.styleMode);
+          if (sd.faithJourney) setFaithJourney(sd.faithJourney);
         }
 
         // Onboarding -- open Edit Layout sheet if flagged from Screen 7
@@ -2426,6 +2431,9 @@ export default function HomeScreen() {
       case 'sleep':           return renderSleepCard();
       case 'fitness_metrics': return renderFitnessMetricsCard();
       case 'daily_note':      return renderDailyNoteCard();
+      case 'gratitude_streak':
+        if (faithJourney === 'notrightnow') return null;
+        return <GratitudeStreakCard styleMode={styleMode} todayKey={todayKey} scrollRef={scrollRef} theme={theme} />;
       case 'vs_yesterday': {
         const cardContent = renderVsYesterdayCard();
         if (!cardContent) return null;

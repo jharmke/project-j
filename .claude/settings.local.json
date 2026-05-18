@@ -9,7 +9,11 @@
       "PowerShell(git add *)",
       "PowerShell(git commit *)",
       "Bash(grep -n \"pj_\\\\${.*dateKey\\\\|pj_\\\\${todayKey\\\\|workoutCompleted\\\\|hasWorkout\\\\|checks\\\\b\" app/\\\\\\(tabs\\\\\\)/workout.tsx)",
-      "Bash(grep -n \"workout.*import\\\\|import.*workout\\\\|workoutSamples\\\\|caloriesBurned\\\\|pj_\\\\${\" app/settings.tsx)"
+      "Bash(grep -n \"workout.*import\\\\|import.*workout\\\\|workoutSamples\\\\|caloriesBurned\\\\|pj_\\\\${\" app/settings.tsx)",
+      "mcp__ide__getDiagnostics",
+      "PowerShell(git push *)",
+      "PowerShell(tabs *)",
+      "PowerShell(Get-ChildItem *)"
     ]
   }
 }

@@ -20,6 +20,11 @@ export function useHealthKit() {
   const [sleepAwakeMs, setSleepAwakeMs] = useState<number>(0);
   const [vo2Max, setVo2Max] = useState<number | null>(null);
   const [cardioRecovery, setCardioRecovery] = useState<number | null>(null);
+  const [restingHR, setRestingHR] = useState<number | null>(null);
+  const [respiratoryRate, setRespiratoryRate] = useState<number | null>(null);
+  const [bloodOxygen, setBloodOxygen] = useState<number | null>(null);
+  const [bodyFatPct, setBodyFatPct] = useState<number | null>(null);
+  const [exerciseMinutes, setExerciseMinutes] = useState<number | null>(null);
   const [appleWorkouts, setAppleWorkouts] = useState<readonly any[]>([]);
 
   useEffect(() => {
@@ -133,6 +138,30 @@ export function useHealthKit() {
       const recoveryData = await getMostRecentQuantitySample('HKQuantityTypeIdentifierHeartRateRecoveryOneMinute');
       if (recoveryData) setCardioRecovery(Math.round(recoveryData.quantity as number));
 
+      // Resting heart rate -- most recent
+      const restingHRData = await getMostRecentQuantitySample('HKQuantityTypeIdentifierRestingHeartRate');
+      if (restingHRData) setRestingHR(Math.round(restingHRData.quantity as number));
+
+      // Respiratory rate -- most recent
+      const respData = await getMostRecentQuantitySample('HKQuantityTypeIdentifierRespiratoryRate');
+      if (respData) setRespiratoryRate(Math.round((respData.quantity as number) * 10) / 10);
+
+      // Blood oxygen -- most recent
+      const spo2Data = await getMostRecentQuantitySample('HKQuantityTypeIdentifierOxygenSaturation');
+      if (spo2Data) setBloodOxygen(Math.round((spo2Data.quantity as number) * 1000) / 10);
+
+      // Body fat % -- most recent
+      const fatData = await getMostRecentQuantitySample('HKQuantityTypeIdentifierBodyFatPercentage');
+      if (fatData) setBodyFatPct(Math.round((fatData.quantity as number) * 1000) / 10);
+
+      // Exercise minutes -- daily sum
+      const exMinData = await queryStatisticsForQuantity(
+        'HKQuantityTypeIdentifierAppleExerciseTime',
+        ['cumulativeSum'],
+        { filter: { date: { startDate: startOfDay, endDate: now } } }
+      );
+      setExerciseMinutes(Math.round(exMinData?.sumQuantity?.quantity ?? 0));
+
       // Apple Workouts
       try {
         const workouts = await queryWorkoutSamples({
@@ -210,5 +239,5 @@ export function useHealthKit() {
     }
   };
 
-  return { authorized, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, vo2Max, cardioRecovery, appleWorkouts, fetchTodayData, fetchHistoricalWorkouts };
+  return { authorized, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, bodyFatPct, exerciseMinutes, appleWorkouts, fetchTodayData, fetchHistoricalWorkouts };
 }

@@ -32,6 +32,7 @@ interface Profile {
   macroFatG: string;
   sleepGoal: string;
   stepGoal: string;
+  waterGoal: string;
   useRecommendedCal: boolean;
 }
 
@@ -228,7 +229,7 @@ export default function ProfileScreen() {
     calTarget: '',
     weightGoal: 'lose_1',
     goalWeight: '',
-    waterPresets: [12, 16, 22],
+    waterPresets: [8, 12, 16],
     macroMode: 'ratio',
     macroProteinPct: '35',
     macroCarbsPct: '40',
@@ -238,6 +239,7 @@ export default function ProfileScreen() {
     macroFatG: '',
     sleepGoal: '7',
     stepGoal: '10000',
+    waterGoal: '128',
     useRecommendedCal: true,
   });
   const [currentWeight, setCurrentWeight] = useState<number | null>(null);
@@ -262,7 +264,7 @@ export default function ProfileScreen() {
       try {
         const data = await AsyncStorage.getItem('pj_profile');
         if (data) {
-          const parsed = { goalWeight: '', stepGoal: '10000', ...JSON.parse(data) };
+          const parsed = { goalWeight: '', stepGoal: '10000', waterGoal: '128', ...JSON.parse(data) };
           setProfile(parsed);
           setSavedProfile(parsed);
         }
@@ -305,7 +307,6 @@ export default function ProfileScreen() {
     // Safe date parse -- handles both ISO (1997-09-05) and M/D/YYYY (9/5/1997) formats
     const parts = profile.birthday.split(/[-\/T]/);
     const isISO = parts[0].length === 4;
-    console.log('BMR DEBUG:', { birthday: profile.birthday, parts, isISO, weightKg, heightCm });
     const birthDate = isISO
       ? new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]))
       : new Date(parseInt(parts[2]), parseInt(parts[0]) - 1, parseInt(parts[1]));
@@ -705,6 +706,18 @@ export default function ProfileScreen() {
             placeholderTextColor={theme.textPlaceholder}
           />
           <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginTop: 4 }}>Daily step target. Shows on your home screen progress bar.</Text>
+        </CollapsibleCard>
+
+        <CollapsibleCard label="Water Goal" theme={theme}>
+          <TextInput
+            style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
+            value={profile.waterGoal || '128'}
+            onChangeText={v => updateField('waterGoal', v.replace(/[^0-9]/g, ''))}
+            keyboardType="number-pad"
+            placeholder="e.g. 128"
+            placeholderTextColor={theme.textPlaceholder}
+          />
+          <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginTop: 4 }}>Daily hydration target in oz. Progress bar fills to this amount.</Text>
         </CollapsibleCard>
 
         <CollapsibleCard label="Daily Calorie Target" theme={theme}>

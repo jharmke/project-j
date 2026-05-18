@@ -749,8 +749,10 @@ export default function HomeScreen() {
   const [styleMode, setStyleMode] = useState<'discipline' | 'balanced' | 'mindful'>('balanced');
   const [faithJourney, setFaithJourney] = useState<'rooted' | 'exploring' | 'notrightnow'>('rooted');
 
-  // BMR state
+  // BMR + profile biometrics
   const [profileBmr,      setProfileBmr]      = useState(0);
+  const [profileSex,      setProfileSex]      = useState<'male' | 'female' | null>(null);
+  const [profileAge,      setProfileAge]      = useState<number | null>(null);
   const runningBmr = profileBmr > 0
     ? Math.round((profileBmr / 1440) * (() => {
         const now = new Date(currentTime);
@@ -1236,6 +1238,11 @@ export default function HomeScreen() {
                 const ld = await AsyncStorage.getItem(`pj_${dk}`);
                 if (ld) { const ldp = JSON.parse(ld); if (ldp.weight) { w = ldp.weight; break; } }
               }
+            }
+            if (p.sex) setProfileSex(p.sex === 'male' ? 'male' : 'female');
+            if (p.birthday) {
+              const parts = p.birthday.split('-');
+              setProfileAge(Math.floor((Date.now() - new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2])).getTime()) / (365.25*24*3600*1000)));
             }
             if (w && p.birthday && p.heightFt && p.heightIn) {
               const wKg  = w * 0.453592;
@@ -2069,40 +2076,140 @@ export default function HomeScreen() {
     );
   };
 
-  const renderFitnessMetricsCard = () => (
-    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
-      <Ionicons name="fitness" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
-      <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:10 }}>
-        <Ionicons name="heart-outline" size={11} color={theme.textMuted} />
-        <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Fitness Metrics</Text>
-        <TooltipIcon tooltipKey="fitness_metrics" />
+  const renderFitnessMetricsCard = () => {
+    const hasAny = vo2Max !== null || cardioRecovery !== null || restingHR !== null || respiratoryRate !== null || bloodOxygen !== null || bodyFatPct !== null;
+
+    const good = theme.statusGood;
+    const warn = theme.statusWarn;
+    const bad  = theme.statusBad;
+    const neutral = theme.textSecondary;
+
+    const fitnessColor = (metric: string, value: number): string => {
+      if (styleMode === 'mindful') return neutral;
+
+      switch (metric) {
+        case 'vo2max': {
+          if (profileAge === null || profileSex === null) return neutral;
+          const age = profileAge;
+          const male = profileSex === 'male';
+          // ACSM tables: [good_floor, amber_floor] -- above good = green, between = amber, below amber = red
+          const thresholds: [number, number] =
+            male
+              ? age < 30 ? [38, 35]
+              : age < 40 ? [35, 31]
+              : age < 50 ? [31, 27]
+              : age < 60 ? [27, 23]
+              :            [21, 18]
+              : age < 30 ? [29, 25]
+              : age < 40 ? [27, 24]
+              : age < 50 ? [25, 21]
+              : age < 60 ? [21, 19]
+              :            [17, 15];
+          return value >= thresholds[0] ? good : value >= thresholds[1] ? warn : bad;
+        }
+        case 'cardio': {
+          return value >= 20 ? good : value >= 12 ? warn : bad;
+        }
+        case 'restingHR': {
+          // AHA: <40 bradycardia risk; 40-75 healthy; 76-90 elevated; >90 high
+          if (value < 40) return warn;
+          if (value <= 75) return good;
+          if (value <= 90) return warn;
+          return bad;
+        }
+        case 'respRate': {
+          if (value >= 12 && value <= 20) return good;
+          if ((value >= 8 && value < 12) || (value > 20 && value <= 25)) return warn;
+          return bad;
+        }
+        case 'bloodO2': {
+          return value >= 95 ? good : value >= 90 ? warn : bad;
+        }
+        case 'bodyFat': {
+          if (profileSex === null) return neutral;
+          const male = profileSex === 'male';
+          // ACE categories: male fitness ≤17%, acceptable ≤24%, obese >24%
+          // female fitness ≤24%, acceptable ≤31%, obese >31%
+          if (male) return value <= 17 ? good : value <= 24 ? warn : bad;
+          return value <= 24 ? good : value <= 31 ? warn : bad;
+        }
+        default: return neutral;
+      }
+    };
+
+    const boxStyle = { width: '31%' as const, backgroundColor: theme.bgInset + '80', borderWidth: 0.5, borderColor: theme.borderCard, borderRadius: 8, padding: 10, alignItems: 'center' as const };
+    const valStyle = (color: string) => ({ fontSize: 22, color, fontFamily: 'BebasNeue_400Regular' as const, letterSpacing: 1 });
+    const labelStyle = { fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_500Medium' as const, textTransform: 'uppercase' as const, letterSpacing: 1, marginTop: 2, textAlign: 'center' as const };
+    const unitStyle = { fontSize: 8, color: theme.textDim, fontFamily: 'DMSans_400Regular' as const, marginTop: 1, textAlign: 'center' as const };
+
+    return (
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
+        <Ionicons name="fitness" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
+        <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:10 }}>
+          <Ionicons name="heart-outline" size={11} color={theme.textMuted} />
+          <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Fitness Metrics</Text>
+          <TooltipIcon tooltipKey="fitness_metrics" />
+        </View>
+        {!hasAny ? (
+          <View style={{ alignItems:'center', paddingVertical:16, gap:6 }}>
+            <Ionicons name="fitness-outline" size={28} color={theme.iconMuted} />
+            <Text style={{ fontSize:12, color: theme.textDim, fontFamily:'DMSans_400Regular', fontStyle:'italic' }}>No fitness data available</Text>
+            <Text style={{ fontSize:10, color: theme.textDim, fontFamily:'DMSans_400Regular', textAlign:'center' }}>Metrics sync automatically from Apple Health</Text>
+          </View>
+        ) : (
+          <>
+            <View style={{ flexDirection:'row', flexWrap:'wrap', gap:8 }}>
+              {vo2Max !== null && (
+                <View style={boxStyle}>
+                  <Text style={valStyle(fitnessColor('vo2max', vo2Max))}>{vo2Max}</Text>
+                  <Text style={labelStyle}>VO2 Max</Text>
+                  <Text style={unitStyle}>ml/kg/min</Text>
+                </View>
+              )}
+              {cardioRecovery !== null && (
+                <View style={boxStyle}>
+                  <Text style={valStyle(fitnessColor('cardio', cardioRecovery))}>{cardioRecovery}</Text>
+                  <Text style={labelStyle}>Cardio Recovery</Text>
+                  <Text style={unitStyle}>bpm / 1 min</Text>
+                </View>
+              )}
+              {restingHR !== null && (
+                <View style={boxStyle}>
+                  <Text style={valStyle(fitnessColor('restingHR', restingHR))}>{restingHR}</Text>
+                  <Text style={labelStyle}>Resting HR</Text>
+                  <Text style={unitStyle}>bpm</Text>
+                </View>
+              )}
+              {respiratoryRate !== null && (
+                <View style={boxStyle}>
+                  <Text style={valStyle(fitnessColor('respRate', respiratoryRate))}>{Math.round(respiratoryRate * 10) / 10}</Text>
+                  <Text style={labelStyle}>Resp. Rate</Text>
+                  <Text style={unitStyle}>br / min</Text>
+                </View>
+              )}
+              {bloodOxygen !== null && (
+                <View style={boxStyle}>
+                  <Text style={valStyle(fitnessColor('bloodO2', bloodOxygen))}>{Math.round(bloodOxygen * 10) / 10}%</Text>
+                  <Text style={labelStyle}>Blood O2</Text>
+                  <Text style={unitStyle}>% SpO2</Text>
+                </View>
+              )}
+              {bodyFatPct !== null && (
+                <View style={boxStyle}>
+                  <Text style={valStyle(fitnessColor('bodyFat', bodyFatPct))}>{Math.round(bodyFatPct * 10) / 10}%</Text>
+                  <Text style={labelStyle}>Body Fat</Text>
+                  <Text style={unitStyle}>% body fat</Text>
+                </View>
+              )}
+            </View>
+            <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 10, textAlign: 'center' }}>
+              For informational purposes only. Not medical advice.
+            </Text>
+          </>
+        )}
       </View>
-      {(vo2Max === null && cardioRecovery === null) ? (
-        <View style={{ alignItems:'center', paddingVertical:16, gap:6 }}>
-          <Ionicons name="fitness-outline" size={28} color={theme.iconMuted} />
-          <Text style={{ fontSize:12, color: theme.textDim, fontFamily:'DMSans_400Regular', fontStyle:'italic' }}>No fitness data available</Text>
-          <Text style={{ fontSize:10, color: theme.textDim, fontFamily:'DMSans_400Regular', textAlign:'center' }}>VO2 Max & Cardio Recovery sync from Apple Health</Text>
-        </View>
-      ) : (
-        <View style={{ flexDirection:'row', gap:8 }}>
-          {vo2Max !== null && (
-            <View style={{ flex:1, backgroundColor: theme.bgInset + '80', borderWidth: 0.5, borderColor: theme.borderCard, borderRadius:8, padding:12, alignItems:'center' }}>
-              <Text style={{ fontSize:28, color: theme.accentBlue, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>{vo2Max}</Text>
-              <Text style={{ fontSize:10, color: theme.textMuted, fontFamily:'DMSans_500Medium', textTransform:'uppercase', letterSpacing:1, marginTop:2 }}>VO2 Max</Text>
-              <Text style={{ fontSize:9, color: theme.textDim, fontFamily:'DMSans_400Regular', marginTop:2 }}>ml/kg/min</Text>
-            </View>
-          )}
-          {cardioRecovery !== null && (
-            <View style={{ flex:1, backgroundColor: theme.bgInset + '80', borderWidth: 0.5, borderColor: theme.borderCard, borderRadius:8, padding:12, alignItems:'center' }}>
-              <Text style={{ fontSize:28, color: theme.accentGreen, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>{cardioRecovery}</Text>
-              <Text style={{ fontSize:10, color: theme.textMuted, fontFamily:'DMSans_500Medium', textTransform:'uppercase', letterSpacing:1, marginTop:2 }}>Cardio Recovery</Text>
-              <Text style={{ fontSize:9, color: theme.textDim, fontFamily:'DMSans_400Regular', marginTop:2 }}>bpm drop / 1min</Text>
-            </View>
-          )}
-        </View>
-      )}
-    </View>
-  );
+    );
+  };
 
   const renderDailyNoteCard = () => {
     const noteCurrentText = dailyNote.trim();

@@ -1261,35 +1261,63 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
               <View style={{ marginHorizontal: 12, marginTop: 8, marginBottom: 4 }}>
                 <TouchableOpacity
                   onPress={() => setShowSavedFoodsSection(v => !v)}
-                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: 14, backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderRadius: 10, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw }}>
-                  <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase' }}>
-                    Use a Saved Food ({myFoods.length})
-                  </Text>
-                  <Ionicons name={showSavedFoodsSection ? 'chevron-up' : 'chevron-down'} size={14} color={theme.textMuted} />
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14, paddingHorizontal: 14, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 10, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Ionicons name="bookmark" size={14} color={theme.accentBlue} />
+                    <Text style={{ fontSize: 9, color: theme.accentBlue, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase' }}>
+                      Use a Saved Food ({myFoods.length})
+                    </Text>
+                  </View>
+                  <Ionicons name={showSavedFoodsSection ? 'chevron-up' : 'chevron-down'} size={14} color={theme.accentBlue} />
                 </TouchableOpacity>
                 {showSavedFoodsSection && myFoods.map((f, i) => (
-                  <View key={f.name + i} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2, backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10 }}>
-                    <View style={{ flex: 1, marginRight: 8 }}>
-                      <Text style={{ fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold' }} numberOfLines={1}>{f.name}</Text>
-                      <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{f.cal} kcal</Text>
+                  <View key={f.name + i} style={[styles.resultItem, { marginHorizontal: 0, marginTop: 2 }]}>
+                    <View style={styles.resultLeft}>
+                      <View style={styles.savedBadge}>
+                        <Text style={styles.savedBadgeText}>SAVED</Text>
+                      </View>
+                      <Text style={styles.resultName} numberOfLines={2}>{f.name}</Text>
+                      {f.brand ? <Text style={styles.resultBrand} numberOfLines={1}>{f.brand}</Text> : null}
+                      {(f.protein != null || f.carbs != null || f.fat != null) && (
+                        <View style={styles.macroStrip}>
+                          <View style={styles.macroDot}>
+                            <View style={[styles.dotCircle, { backgroundColor: '#0d9268' }]} />
+                            <Text style={styles.macroVal}>{Math.round(f.protein || 0)}g</Text>
+                          </View>
+                          <View style={styles.macroDot}>
+                            <View style={[styles.dotCircle, { backgroundColor: '#c47d1a' }]} />
+                            <Text style={styles.macroVal}>{Math.round(f.carbs || 0)}g</Text>
+                          </View>
+                          <View style={styles.macroDot}>
+                            <View style={[styles.dotCircle, { backgroundColor: '#a83232' }]} />
+                            <Text style={styles.macroVal}>{Math.round(f.fat || 0)}g</Text>
+                          </View>
+                        </View>
+                      )}
                     </View>
-                    <TouchableOpacity
-                      onPress={() => {
-                        saveOverride({
-                          description: f.name,
-                          foodNutrients: [
-                            { nutrientName: 'Energy', unitName: 'KCAL', value: f.cal },
-                            { nutrientName: 'Protein', unitName: 'G', value: f.protein || 0 },
-                            { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: f.carbs || 0 },
-                            { nutrientName: 'Total lipid (fat)', unitName: 'G', value: f.fat || 0 },
-                          ],
-                          isMyFood: true,
-                        });
-                        setShowSavedFoodsSection(false);
-                      }}
-                      style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 4, paddingHorizontal: 8, paddingVertical: 5 }}>
-                      <Text style={{ fontSize: 10, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>SET</Text>
-                    </TouchableOpacity>
+                    <View style={styles.resultRight}>
+                      <TouchableOpacity
+                        onPress={() => {
+                          saveOverride({
+                            description: f.name,
+                            foodNutrients: [
+                              { nutrientName: 'Energy', unitName: 'KCAL', value: f.cal },
+                              { nutrientName: 'Protein', unitName: 'G', value: f.protein || 0 },
+                              { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: f.carbs || 0 },
+                              { nutrientName: 'Total lipid (fat)', unitName: 'G', value: f.fat || 0 },
+                            ],
+                            isMyFood: true,
+                          });
+                          setShowSavedFoodsSection(false);
+                        }}
+                        style={{ marginRight: 6, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 3 }}>
+                        <Text style={{ fontSize: 10, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>SET</Text>
+                      </TouchableOpacity>
+                      <View style={styles.calBlock}>
+                        <Text style={styles.resultCal}>{f.cal}</Text>
+                        <Text style={styles.resultCalLabel}>kcal</Text>
+                      </View>
+                    </View>
                   </View>
                 ))}
               </View>

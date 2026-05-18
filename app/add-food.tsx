@@ -5,7 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { doc, getDoc } from 'firebase/firestore';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, FlatList, Image, KeyboardAvoidingView, Linking, Modal, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, FlatList, Image, KeyboardAvoidingView, Linking, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Reanimated, { Easing as ReEasing, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import { Svg, Path, G } from 'react-native-svg';
@@ -330,7 +330,9 @@ const [recipes, setRecipes] = useState<any[]>([]);
 const { meal, date, selectMode, day, recipeMode } = useLocalSearchParams<{ meal: string; date: string; selectMode: string; day: string; recipeMode: string }>();
 const isRecipeMode = recipeMode === 'true';
 const [showEditMyFood, setShowEditMyFood] = useState(false);
-const [editingMyFood, setEditingMyFood] = useState<{idx: number, name: string, cal: string} | null>(null);
+const [editFoodData, setEditFoodData] = useState<any>(null);
+const editOverlayAnim = useRef(new Animated.Value(0)).current;
+const editCardAnim = useRef(new Animated.Value(0)).current;
 const [lastScannedBarcode, setLastScannedBarcode] = useState<string | null>(null);
 const [barcodeOverrides, setBarcodeOverrides] = useState<Record<string, any>>({});
 const [showFabMenu, setShowFabMenu] = useState(false);
@@ -343,17 +345,82 @@ const getFavOpacity = (name: string) => {
   return favoriteOpacities[name];
 };
 
-const saveEditMyFood = async () => {
-    if (!editingMyFood || !editingMyFood.name || !editingMyFood.cal) return;
-    const updated = myFoods.map((f, i) => 
-      i === editingMyFood.idx ? { ...f, name: editingMyFood.name, cal: parseInt(editingMyFood.cal) } : f
+const filterDecimal = (v: string) => {
+  const stripped = v.replace(/[^0-9.]/g, '');
+  const dot = stripped.indexOf('.');
+  if (dot === -1) return stripped;
+  return stripped.slice(0, dot + 1) + stripped.slice(dot + 1).replace(/\./g, '').slice(0, 1);
+};
+
+const openEditModal = (food: any) => {
+  setEditFoodData({
+    _source: food,
+    name: food.name || food.description || '',
+    cal: food.cal?.toString() || '',
+    protein: food.protein?.toString() || '',
+    carbs: food.carbs?.toString() || '',
+    fat: food.fat?.toString() || '',
+    fiber: food.fiber?.toString() || '',
+    sugar: food.sugar?.toString() || '',
+    sodium: food.sodium?.toString() || '',
+    cholesterol: food.cholesterol?.toString() || '',
+    saturatedFat: food.saturatedFat?.toString() || '',
+  });
+  setShowEditMyFood(true);
+  editOverlayAnim.setValue(0);
+  editCardAnim.setValue(0);
+  Animated.parallel([
+    Animated.timing(editOverlayAnim, { toValue: 1, duration: 180, useNativeDriver: true }),
+    Animated.spring(editCardAnim, { toValue: 1, useNativeDriver: true, damping: 20, stiffness: 300 }),
+  ]).start();
+};
+
+const closeEditModal = () => {
+  Animated.parallel([
+    Animated.timing(editOverlayAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
+    Animated.timing(editCardAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
+  ]).start(() => {
+    setShowEditMyFood(false);
+    setEditFoodData(null);
+  });
+};
+
+const saveEditFood = async () => {
+  if (!editFoodData || !editFoodData.name.trim() || !editFoodData.cal) return;
+  try {
+    const saved = await AsyncStorage.getItem('pj_my_foods');
+    const foods = saved ? JSON.parse(saved) : [];
+    const src = editFoodData._source;
+    const calNum = parseInt(editFoodData.cal) || 0;
+    const servingGrams = src?.servingSize || 100;
+    const updated = foods.map((f: any) =>
+      (src?.id ? f.id === src.id : f.name === src.name) ? {
+        ...f,
+        name: editFoodData.name.trim(),
+        cal: calNum,
+        protein: parseFloat(editFoodData.protein) || 0,
+        carbs: parseFloat(editFoodData.carbs) || 0,
+        fat: parseFloat(editFoodData.fat) || 0,
+        fiber: parseFloat(editFoodData.fiber) || 0,
+        sugar: parseFloat(editFoodData.sugar) || 0,
+        sodium: parseFloat(editFoodData.sodium) || 0,
+        cholesterol: parseFloat(editFoodData.cholesterol) || 0,
+        saturatedFat: parseFloat(editFoodData.saturatedFat) || 0,
+        calPer100g: Math.round((calNum / servingGrams) * 100),
+        proteinPer100g: Math.round((parseFloat(editFoodData.protein) || 0) / servingGrams * 100 * 10) / 10,
+        carbsPer100g: Math.round((parseFloat(editFoodData.carbs) || 0) / servingGrams * 100 * 10) / 10,
+        fatPer100g: Math.round((parseFloat(editFoodData.fat) || 0) / servingGrams * 100 * 10) / 10,
+      } : f
     );
     setMyFoods(updated);
     await AsyncStorage.setItem('pj_my_foods', JSON.stringify(updated));
     await saveToFirebase('my_foods', 'foods', updated);
-    setShowEditMyFood(false);
-    setEditingMyFood(null);
-  };
+    showToast('Food saved', editFoodData.name.trim(), 'success');
+    closeEditModal();
+  } catch (e) {
+    console.log('Edit food error', e);
+  }
+};
 
   const openFabMenu = () => {
     fabItem1Anim.setValue(0);
@@ -597,6 +664,10 @@ const openFoodDetail = async (food: SearchResult) => {
             existingProtein: myFoodMatch.protein || 0,
             existingCarbs: myFoodMatch.carbs || 0,
             existingFat: myFoodMatch.fat || 0,
+            calPer100g: (myFoodMatch as any).calPer100g || 0,
+            proteinPer100g: (myFoodMatch as any).proteinPer100g || 0,
+            carbsPer100g: (myFoodMatch as any).carbsPer100g || 0,
+            fatPer100g: (myFoodMatch as any).fatPer100g || 0,
             foodNutrients: (myFoodMatch as any).foodNutrients || food.foodNutrients || [],
           } : {}),
         }),
@@ -1114,9 +1185,9 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                     <TouchableOpacity
                       onPress={() => {
                         const idx = myFoods.findIndex(f => f.name === item.description);
-                        router.push({ pathname: '/edit-food', params: { foodJson: JSON.stringify(myFoods[idx]) } });
+                        if (idx >= 0) openEditModal(myFoods[idx]);
                       }}
-                      style={{ marginLeft: 8 }}>
+                      style={{ marginLeft: 4, paddingHorizontal: 8, paddingVertical: 10 }}>
                       <Text style={{ fontSize: 12, color: theme.accentBlue, fontFamily: 'DMSans_500Medium' }}>Edit</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => deleteMyFood(myFoods.findIndex(f => f.name === item.description))} style={styles.deleteBtn}>
@@ -1198,36 +1269,63 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         }}
       />
 
-     {/* Edit My Food Modal */}
-      <Modal visible={showEditMyFood} transparent animationType="slide">
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'flex-end' }}>
-          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setShowEditMyFood(false)} />
-          <View style={styles.modal}>
-            <Text style={styles.modalTitle}>Edit Food</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Food name"
-              placeholderTextColor="#444"
-              value={editingMyFood?.name || ''}
-              onChangeText={v => setEditingMyFood(p => p ? { ...p, name: v } : null)}
-            />
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Calories"
-              placeholderTextColor="#444"
-              keyboardType="number-pad"
-              value={editingMyFood?.cal || ''}
-              onChangeText={v => setEditingMyFood(p => p ? { ...p, cal: v } : null)}
-            />
-            <View style={styles.modalBtns}>
-              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowEditMyFood(false)}>
-                <Text style={styles.modalCancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.modalSaveBtn} onPress={saveEditMyFood}>
-                <Text style={styles.modalSaveText}>Save</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+      {/* Edit My Food Modal */}
+      <Modal visible={showEditMyFood} transparent animationType="none">
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+          <Animated.View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', opacity: editOverlayAnim }}>
+            <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={closeEditModal} />
+            <Animated.View style={{
+              width: '92%',
+              backgroundColor: theme.bgSheet,
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: theme.borderCard,
+              borderTopWidth: 1.5,
+              borderTopColor: theme.accentBlueRaw,
+              shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 16,
+              transform: [{ scale: editCardAnim.interpolate({ inputRange: [0, 1], outputRange: [0.88, 1] }) }],
+            }}>
+              <View style={{ height: 4, width: 40, backgroundColor: theme.borderCard, borderRadius: 2, alignSelf: 'center', marginTop: 12 }} />
+              <Text style={{ fontSize: 16, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, textAlign: 'center', marginTop: 8, marginBottom: 4 }}>EDIT FOOD</Text>
+              <ScrollView style={{ maxHeight: 460 }} contentContainerStyle={{ padding: 16, paddingTop: 8 }} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled">
+                {([
+                  { label: 'Food Name', key: 'name', keyboard: 'default' as const },
+                  { label: 'Calories (kcal)', key: 'cal', keyboard: 'decimal-pad' as const },
+                  { label: 'Protein (g)', key: 'protein', keyboard: 'decimal-pad' as const },
+                  { label: 'Carbs (g)', key: 'carbs', keyboard: 'decimal-pad' as const },
+                  { label: 'Fat (g)', key: 'fat', keyboard: 'decimal-pad' as const },
+                  { label: 'Fiber (g)', key: 'fiber', keyboard: 'decimal-pad' as const },
+                  { label: 'Sugar (g)', key: 'sugar', keyboard: 'decimal-pad' as const },
+                  { label: 'Sodium (mg)', key: 'sodium', keyboard: 'decimal-pad' as const },
+                  { label: 'Cholesterol (mg)', key: 'cholesterol', keyboard: 'decimal-pad' as const },
+                  { label: 'Saturated Fat (g)', key: 'saturatedFat', keyboard: 'decimal-pad' as const },
+                ] as { label: string; key: string; keyboard: 'default' | 'decimal-pad' }[]).map((f, i) => (
+                  <View key={f.key} style={{ marginBottom: 10 }}>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 4 }}>{f.label}</Text>
+                    <TextInput
+                      style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 15, fontFamily: 'DMSans_400Regular' }}
+                      value={editFoodData?.[f.key] || ''}
+                      onChangeText={v => setEditFoodData((p: any) => p ? { ...p, [f.key]: f.keyboard === 'decimal-pad' ? filterDecimal(v) : v } : null)}
+                      keyboardType={f.keyboard}
+                      placeholderTextColor={theme.textDim}
+                      selectTextOnFocus
+                    />
+                  </View>
+                ))}
+              </ScrollView>
+              <View style={{ flexDirection: 'row', gap: 10, padding: 16, paddingTop: 12 }}>
+                <TouchableOpacity onPress={closeEditModal} style={{ flex: 1, padding: 12, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, alignItems: 'center' }}>
+                  <Text style={{ color: theme.textMuted, fontFamily: 'DMSans_500Medium', fontSize: 14 }}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={saveEditFood}
+                  disabled={!editFoodData?.name?.trim() || !editFoodData?.cal}
+                  style={{ flex: 2, padding: 12, backgroundColor: theme.accentBlue, borderRadius: 8, alignItems: 'center', opacity: editFoodData?.name?.trim() && editFoodData?.cal ? 1 : 0.4 }}>
+                  <Text style={{ color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 1 }}>SAVE</Text>
+                </TouchableOpacity>
+              </View>
+            </Animated.View>
+          </Animated.View>
         </KeyboardAvoidingView>
       </Modal>
 

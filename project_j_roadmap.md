@@ -257,6 +257,12 @@ loggedAmount / loggedUnit -- now stored as separate fields on each entry alongsi
 Loading spinner -- DONE. Instant on keypress, ActivityIndicator + Searching... text.
 Clear Food History dev tool -- DONE. Wipes entries only, water/steps/sleep/weight untouched.
 Recent description strips amount suffix -- DONE. Star matching now works correctly across all paths.
+My Foods calPer100g passthrough bug -- openFoodDetail in add-food.tsx wasn't passing calPer100g/proteinPer100g/carbsPer100g/fatPer100g from myFoodMatch for custom foods. Caused wrong calories when gram amount changed on food detail. FIXED.
+My Foods serving stepper missing -- stepper only rendered when selectedServing existed (FatSecret foods only). Custom foods have no fsServings so stepper never showed. FIXED. syntheticServing IIFE + effectiveServing = selectedServing ?? syntheticServing pattern. Stepper now shows for all foods.
+Edit food modal -- food-detail.tsx header Edit button routed to old edit-food.tsx full-screen push. Replaced with centered scale-pop modal matching app aesthetic. add-food.tsx library Edit button also upgraded to same modal. edit-food.tsx still exists but is no longer the primary edit path.
+Edit entry stepper base serving bug -- stepper on edit entry used logged gram amount as "1 serving" instead of the food's actual serving size. FIXED. resolvedServingGrams state + async My Foods lookup + ratio-based syntheticServing. log.tsx now passes servingGrams from diary entry.
+Extended nutrition scaling bug (custom foods, food-detail) -- foodNutrients for custom foods stores per-serving values but multiplier = grams/100 assumed per-100g. FIXED. !food?.fsId gate uses servingCount (stepper path) or grams/effectiveServing.grams (manual gram path) as scale factor.
+Daily nutrient totals bug (log.tsx) -- getAdvancedNutrient used same per-100g assumption for custom food foodNutrients. FIXED. fsId gate: FatSecret entries use cal/calPer100g scale, custom entries use cal/(calPer100g*servingGrams/100) = servingCount scale.
 Barcode-to-My-Food assignment -- link barcode permanently to manually built food.
 Meal slots fully customizable -- rename, reorder, add custom slots. (HIGH)
 FatSecret attribution -- "Powered by FatSecret" lockup required by API terms. Display on food search results screen and food detail screen. Pull exact logo/sizing requirements from FatSecret brand guidelines before building. Non-negotiable for App Store. DONE -- badge on both screens, opacity 0.65, tappable to fatsecret.com. App Store description phrase required at submission time.

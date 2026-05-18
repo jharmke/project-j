@@ -278,7 +278,16 @@ export default function LogScreen() {
   const getAdvancedNutrient = (name: string) => {
     return Math.round(entries.reduce((s, e) => {
       const n = e.foodNutrients?.find((fn: any) => fn.nutrientName === name);
-      return s + ((n?.value || 0) * ((e.calPer100g && e.calPer100g > 0) ? (e.cal / e.calPer100g) : 0));
+      if (!n) return s;
+      let scale: number;
+      if (e.fsId) {
+        scale = (e.calPer100g && e.calPer100g > 0) ? (e.cal / e.calPer100g) : 0;
+      } else {
+        const sg = (e as any).servingGrams;
+        const servingCal = sg && e.calPer100g > 0 ? e.calPer100g * sg / 100 : 0;
+        scale = servingCal > 0 ? e.cal / servingCal : 0;
+      }
+      return s + (n.value || 0) * scale;
     }, 0) * 10) / 10;
   };
   const totalFiber = getAdvancedNutrient('Fiber, total dietary');
@@ -708,6 +717,8 @@ export default function LogScreen() {
                             existingUnit: (entry as any).loggedUnit || (() => { const m = entry.name.match(/\((\d+\.?\d*)(g|oz|serving)\)/); return m ? m[2] : 'g'; })(),
                             timestamp: entry.timestamp || Date.now(),
                             fsId: (entry as any).fsId || null,
+                            servingGrams: (entry as any).servingGrams || undefined,
+                            servingUnit: (entry as any).loggedUnit || undefined,
                           }),
                           meal: entry.meal,
                           date: todayKey,

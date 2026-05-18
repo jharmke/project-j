@@ -205,6 +205,9 @@ const isRecipeMode = recipeMode === 'true';
         if (servings.length > 0) {
           const def = servings.find((s: any) => s.isDefault) || servings[0];
           setSelectedServing(def);
+          if (def.grams > 0 && !isEditing) {
+            setAmount(def.grams.toString());
+          }
         }
       }).catch(() => {});
     }
@@ -707,7 +710,18 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
           ].map(nutrient => {
             const n = food.foodNutrients?.find((fn: any) => fn.nutrientName === nutrient.key);
             let val: number | null = null;
-            if (n) {
+            const sk = effectiveServing ? (effectiveServing as any)[nutrient.servingKey] : null;
+            if (food?.fsId && effectiveServing && sk != null) {
+              // FatSecret food with a loaded serving -- use effectiveServing as source of truth.
+              // foodNutrients from barcode are per-serving (not per-100g), so we can't use multiplier.
+              if (useServingBased) {
+                val = Math.round(sk * servingCount * 10) / 10;
+              } else if (servingRates && (servingRates as any)[nutrient.servingKey] != null) {
+                val = Math.round((servingRates as any)[nutrient.servingKey] * grams * 10) / 10;
+              } else {
+                val = Math.round(sk * 10) / 10;
+              }
+            } else if (n) {
               let scale: number;
               if (useExisting) {
                 scale = 1;
@@ -717,12 +731,12 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
                 scale = multiplier;
               }
               val = Math.round((n.value || 0) * scale * 10) / 10;
-            } else if (effectiveServing && (effectiveServing as any)[nutrient.servingKey] > 0) {
+            } else if (effectiveServing && sk != null && sk > 0) {
               const raw = useServingBased
-                ? (effectiveServing as any)[nutrient.servingKey] * servingCount
+                ? sk * servingCount
                 : servingRates
                   ? (servingRates as any)[nutrient.servingKey] * grams
-                  : (effectiveServing as any)[nutrient.servingKey];
+                  : sk;
               val = Math.round(raw * 10) / 10;
             }
             const unit2 = nutrient.unitName === 'MG' ? 'mg' : 'g';

@@ -331,6 +331,7 @@ const [recipes, setRecipes] = useState<any[]>([]);
 const { meal, date, selectMode, day, recipeMode } = useLocalSearchParams<{ meal: string; date: string; selectMode: string; day: string; recipeMode: string }>();
 const isRecipeMode = recipeMode === 'true';
 const [showEditMyFood, setShowEditMyFood] = useState(false);
+const [showSavedFoodsSection, setShowSavedFoodsSection] = useState(false);
 const [editFoodData, setEditFoodData] = useState<any>(null);
 const editOverlayAnim = useRef(new Animated.Value(0)).current;
 const editCardAnim = useRef(new Animated.Value(0)).current;
@@ -762,16 +763,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
     ++searchIdRef.current;
     isBarcodeSearchRef.current = true;
 
-    const myFoodRows = myFoods.map(f => ({
-      description: f.name,
-      foodNutrients: [
-        { nutrientName: 'Energy', unitName: 'KCAL', value: f.cal },
-        { nutrientName: 'Protein', unitName: 'G', value: f.protein || 0 },
-        { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: f.carbs || 0 },
-        { nutrientName: 'Total lipid (fat)', unitName: 'G', value: f.fat || 0 },
-      ],
-      isMyFood: true,
-    }));
+    setShowSavedFoodsSection(false);
 
     // Check for saved SET override
     if (barcodeOverrides[data]) {
@@ -779,7 +771,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
       const overrideName = override.description;
       setLastScannedBarcode(null);
       setQuery(overrideName);
-      setResults([override, ...myFoodRows]);
+      setResults([override]);
       isBarcodeSearchRef.current = false;
 
       // Auto-load full results after delay
@@ -788,7 +780,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
           setSearching(true);
           const fsResults = await fetchFatSecretSearch(overrideName);
           const deduped = fsResults.filter(r => r.description !== overrideName);
-          setResults([override, ...myFoodRows, ...deduped]);
+          setResults([override, ...deduped]);
         } catch (e) {
           console.log('Override name search failed', e);
         } finally {
@@ -809,7 +801,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         setQuery(searchName);
         isBarcodeSearchRef.current = false;
         setLastScannedBarcode(data);
-        setResults([barcodeResult, ...myFoodRows]);
+        setResults([barcodeResult]);
         setSearching(false);
         startCooldown();
 
@@ -819,7 +811,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
             setSearching(true);
             const fsResults = await fetchFatSecretSearch(searchName);
             const deduped = fsResults.filter(r => r.description !== searchName);
-            setResults([barcodeResult, ...myFoodRows, ...deduped]);
+            setResults([barcodeResult, ...deduped]);
           } catch (e) {
             console.log('Name search failed', e);
           } finally {
@@ -1264,17 +1256,56 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         ListFooterComponent={() => (
-          (!query.trim() || results.length > 0) ? (
-            <TouchableOpacity
-              onPress={() => Linking.openURL('https://platform.fatsecret.com')}
-              style={{ alignItems: 'center', paddingVertical: 20, paddingBottom: 32, opacity: 0.65, alignSelf: 'center' }}>
-              <Image
-                source={{ uri: 'https://platform.fatsecret.com/api/static/images/powered_by_fatsecret_horizontal_brand.png' }}
-                style={{ width: 140, height: 34 }}
-                resizeMode="contain"
-              />
-            </TouchableOpacity>
-          ) : null
+          <View>
+            {lastScannedBarcode && myFoods.length > 0 && (
+              <View style={{ marginHorizontal: 12, marginTop: 8, marginBottom: 4 }}>
+                <TouchableOpacity
+                  onPress={() => setShowSavedFoodsSection(v => !v)}
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, paddingHorizontal: 14, backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderRadius: 10, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw }}>
+                  <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase' }}>
+                    Use a Saved Food ({myFoods.length})
+                  </Text>
+                  <Ionicons name={showSavedFoodsSection ? 'chevron-up' : 'chevron-down'} size={14} color={theme.textMuted} />
+                </TouchableOpacity>
+                {showSavedFoodsSection && myFoods.map((f, i) => (
+                  <View key={f.name + i} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2, backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10 }}>
+                    <View style={{ flex: 1, marginRight: 8 }}>
+                      <Text style={{ fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold' }} numberOfLines={1}>{f.name}</Text>
+                      <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{f.cal} kcal</Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => {
+                        saveOverride({
+                          description: f.name,
+                          foodNutrients: [
+                            { nutrientName: 'Energy', unitName: 'KCAL', value: f.cal },
+                            { nutrientName: 'Protein', unitName: 'G', value: f.protein || 0 },
+                            { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: f.carbs || 0 },
+                            { nutrientName: 'Total lipid (fat)', unitName: 'G', value: f.fat || 0 },
+                          ],
+                          isMyFood: true,
+                        });
+                        setShowSavedFoodsSection(false);
+                      }}
+                      style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 4, paddingHorizontal: 8, paddingVertical: 5 }}>
+                      <Text style={{ fontSize: 10, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>SET</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
+            {(!query.trim() || results.length > 0) ? (
+              <TouchableOpacity
+                onPress={() => Linking.openURL('https://platform.fatsecret.com')}
+                style={{ alignItems: 'center', paddingVertical: 20, paddingBottom: 32, opacity: 0.65, alignSelf: 'center' }}>
+                <Image
+                  source={{ uri: 'https://platform.fatsecret.com/api/static/images/powered_by_fatsecret_horizontal_brand.png' }}
+                  style={{ width: 140, height: 34 }}
+                  resizeMode="contain"
+                />
+              </TouchableOpacity>
+            ) : null}
+          </View>
         )}
       />
 

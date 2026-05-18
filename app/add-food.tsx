@@ -619,11 +619,21 @@ const openFoodDetail = async (food: SearchResult) => {
     setShowAddNew(false);
   };
 
-  const deleteMyFood = async (idx: number) => {
-    const updated = myFoods.filter((_, i) => i !== idx);
-    setMyFoods(updated);
-    await AsyncStorage.setItem('pj_my_foods', JSON.stringify(updated));
-    await saveToFirebase('my_foods', 'foods', updated);
+  const deleteMyFood = (idx: number) => {
+    const food = myFoods[idx];
+    Alert.alert(
+      'Delete Food',
+      `Remove "${food?.name}" from My Foods? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: async () => {
+          const updated = myFoods.filter((_, i) => i !== idx);
+          setMyFoods(updated);
+          await AsyncStorage.setItem('pj_my_foods', JSON.stringify(updated));
+          await saveToFirebase('my_foods', 'foods', updated);
+        }},
+      ]
+    );
   };
 
   const startScan = async () => {

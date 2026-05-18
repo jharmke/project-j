@@ -412,7 +412,7 @@ Social
 
 Social and accountability -- lightweight accountability partner feature, not a full social feed. One person you share your daily score with. Strava-inspired but scoped way down. (BACKLOG -- not urgent)
 Vitamins & minerals fields on Custom Food Creator -- Vitamin D, Calcium, Iron, Potassium. Power users track these, feeds future reporting. (SOON)
-My Foods delete warning -- confirm Alert before × delete on library list rows. (SOON)
+My Foods delete warning -- confirm Alert before × delete on library list rows. DONE. Shows food name, "cannot be undone." Destructive style. add-food.tsx.
 Custom Food Creator photo upload -- photo field on create/edit. (SOON)
 "Adding to" UX from library -- when food detail opened from library, meal selector should be more prominent since user must always pick. Currently defaults to Morning. (SOON)
 Calorie breakdown by meal -- each slot gets a budget. Unclear if needed, revisit later.

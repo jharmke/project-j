@@ -9,7 +9,7 @@ import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatli
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { DayDetailContent } from '../day-detail';
 import { useTheme } from '../../theme';
-import { CardPeriod, ChartType, DATA_KEY_META, DataKey, DEFAULT_STATS_CARDS, StatsCard, availableChartTypes, generateCardId, loadStatsCards, saveStatsCards } from '../../statsCardRegistry';
+import { CardPeriod, ChartType, DATA_KEY_CATEGORIES, DATA_KEY_META, DataKey, DEFAULT_STATS_CARDS, StatsCard, availableChartTypes, generateCardId, loadStatsCards, saveStatsCards } from '../../statsCardRegistry';
 import { ToastRenderer, useToast } from '../../components/Toast';
 import { EMPTY_TREND_DATA, TrendData, fetchTrendData as fetchTrendDataUtil, offsetToDateKey } from '../../utils/statsData';
 import { StatsGraphCard, GRAPH_SWATCHES, MACRO_PROTEIN, MACRO_CARBS, MACRO_FAT } from '../../components/StatsGraphCard';
@@ -217,7 +217,7 @@ export default function StatsScreen() {
       ...cards.filter(c => c.type === 'graph' && c.visible).map(c => c.period),
     ])];
 
-    const results = await Promise.all(uniquePeriods.map(async p => [p, await fetchTrendData(p, workoutState)] as const));
+    const results = await Promise.all(uniquePeriods.map(async p => [p, await fetchTrendData(p, workoutState, sleepGoal)] as const));
     const newMap: Record<string, TrendData> = {};
     for (const [period, data] of results) newMap[period.toString()] = data;
     setTrendDataMap(newMap);
@@ -425,7 +425,7 @@ export default function StatsScreen() {
     if (!trendDataMap[period.toString()]) {
       let workoutState: any = {};
       try { const ws = await AsyncStorage.getItem('pj_workout_state'); if (ws) workoutState = JSON.parse(ws); } catch {}
-      const data = await fetchTrendData(period, workoutState);
+      const data = await fetchTrendData(period, workoutState, sleepGoal);
       setTrendDataMap(prev => ({ ...prev, [period.toString()]: data }));
     }
   };
@@ -479,7 +479,7 @@ export default function StatsScreen() {
     if (!trendDataMap['7']) {
       let workoutState: any = {};
       try { const ws = await AsyncStorage.getItem('pj_workout_state'); if (ws) workoutState = JSON.parse(ws); } catch {}
-      const data = await fetchTrendData(7, workoutState);
+      const data = await fetchTrendData(7, workoutState, sleepGoal);
       setTrendDataMap(prev => ({ ...prev, '7': data }));
     }
   };
@@ -1081,25 +1081,37 @@ export default function StatsScreen() {
                 </Text>
               </View>
 
-              {/* Step 1: Data type grid */}
+              {/* Step 1: Data type grid -- grouped by category */}
               {creatorStep === 1 && (
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-                  {(Object.keys(DATA_KEY_META) as DataKey[]).map(dk => {
-                    const meta = DATA_KEY_META[dk];
-                    const sel = creatorDataKey === dk;
+                <View style={{ gap: 16 }}>
+                  {DATA_KEY_CATEGORIES.map(cat => {
+                    const keys = (Object.keys(DATA_KEY_META) as DataKey[]).filter(dk => DATA_KEY_META[dk].category === cat);
                     return (
-                      <TouchableOpacity key={dk} onPress={() => handleCreatorSelectDataKey(dk)}
-                        style={{ width: '47%', backgroundColor: sel ? theme.accentBlueBg : theme.bgCard,
-                          borderWidth: 1, borderColor: sel ? theme.accentBlueRaw : theme.borderCard,
-                          borderRadius: 12, padding: 14, alignItems: 'center', gap: 6 }}>
-                        <Ionicons name={meta.icon as any} size={22} color={sel ? theme.accentBlue : theme.textMuted} />
-                        <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: sel ? theme.accentBlue : theme.textPrimary, textAlign: 'center' }}>
-                          {meta.label}
+                      <View key={cat}>
+                        <Text style={{ fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted, marginBottom: 10 }}>
+                          {cat}
                         </Text>
-                        <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: theme.textDim, textAlign: 'center', lineHeight: 13 }}>
-                          {meta.description}
-                        </Text>
-                      </TouchableOpacity>
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                          {keys.map(dk => {
+                            const meta = DATA_KEY_META[dk];
+                            const sel = creatorDataKey === dk;
+                            return (
+                              <TouchableOpacity key={dk} onPress={() => handleCreatorSelectDataKey(dk)}
+                                style={{ width: '47%', backgroundColor: sel ? theme.accentBlueBg : theme.bgCard,
+                                  borderWidth: 1, borderColor: sel ? theme.accentBlueRaw : theme.borderCard,
+                                  borderRadius: 12, padding: 14, alignItems: 'center', gap: 6 }}>
+                                <Ionicons name={meta.icon as any} size={22} color={sel ? theme.accentBlue : theme.textMuted} />
+                                <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: sel ? theme.accentBlue : theme.textPrimary, textAlign: 'center' }}>
+                                  {meta.label}
+                                </Text>
+                                <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: theme.textDim, textAlign: 'center', lineHeight: 13 }}>
+                                  {meta.description}
+                                </Text>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                      </View>
                     );
                   })}
                 </View>

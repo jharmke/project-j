@@ -740,6 +740,54 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
               gradientId={`sl_${card.id}`} theme={theme} />;
       case 'workoutFreq':
         return <WorkoutFrequencyChart data={cardTrendData.workoutDay} theme={theme} />;
+      case 'water':
+        return ct === 'bar'
+          ? <GenericBarChart data={cardTrendData.water} color={gc ?? '#06b6d4'} unit=" oz" fmtY={v => `${Math.round(v)}`} theme={theme} />
+          : <LineChart data={cardTrendData.water} color={gc ?? '#06b6d4'} unit=" oz" fmtY={v => `${Math.round(v)}`} gradientId={`wtr_${card.id}`} theme={theme} />;
+      case 'netCalories':
+        return ct === 'bar'
+          ? <GenericBarChart data={cardTrendData.netCal} color={gc ?? '#e06840'} unit=" kcal" fmtY={v => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${Math.round(v)}`} theme={theme} />
+          : <LineChart data={cardTrendData.netCal} color={gc ?? '#e06840'} unit=" kcal" fmtY={v => Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${Math.round(v)}`} fmtFull={v => Math.round(v).toLocaleString()} gradientId={`ncl_${card.id}`} theme={theme} />;
+      case 'sleepScore':
+        return ct === 'bar'
+          ? <GenericBarChart data={cardTrendData.sleepScore} color={gc ?? '#8b5cf6'} unit="" fmtY={v => `${Math.round(v)}`} theme={theme} />
+          : <LineChart data={cardTrendData.sleepScore} color={gc ?? '#8b5cf6'} unit="" goalValue={85} fmtY={v => `${Math.round(v)}`} gradientId={`ss_${card.id}`} theme={theme} />;
+      case 'restingHR':
+        return ct === 'bar'
+          ? <GenericBarChart data={cardTrendData.restingHR} color={gc ?? '#ef4444'} unit=" bpm" fmtY={v => `${Math.round(v)}`} startFromZero={false} theme={theme} />
+          : <LineChart data={cardTrendData.restingHR} color={gc ?? '#ef4444'} unit=" bpm" fmtY={v => `${Math.round(v)}`} gradientId={`rhr_${card.id}`} theme={theme} />;
+      case 'respiratoryRate':
+        return ct === 'bar'
+          ? <GenericBarChart data={cardTrendData.respiratoryRate} color={gc ?? '#06b6d4'} unit=" br/min" fmtY={v => `${Math.round(v * 10) / 10}`} startFromZero={false} theme={theme} />
+          : <LineChart data={cardTrendData.respiratoryRate} color={gc ?? '#06b6d4'} unit=" br/min" fmtY={v => `${Math.round(v * 10) / 10}`} gradientId={`rr_${card.id}`} theme={theme} />;
+      case 'bloodOxygen':
+        return ct === 'bar'
+          ? <GenericBarChart data={cardTrendData.bloodOxygen} color={gc ?? '#ef4444'} unit="%" fmtY={v => `${Math.round(v * 10) / 10}%`} startFromZero={false} theme={theme} />
+          : <LineChart data={cardTrendData.bloodOxygen} color={gc ?? '#ef4444'} unit="%" fmtY={v => `${Math.round(v * 10) / 10}%`} gradientId={`bo_${card.id}`} theme={theme} />;
+      case 'bodyFatPct':
+        return ct === 'bar'
+          ? <GenericBarChart data={cardTrendData.bodyFatPct} color={gc ?? '#f97316'} unit="%" fmtY={v => `${Math.round(v * 10) / 10}%`} startFromZero={false} theme={theme} />
+          : <LineChart data={cardTrendData.bodyFatPct} color={gc ?? '#f97316'} unit="%" fmtY={v => `${Math.round(v * 10) / 10}%`} gradientId={`bf_${card.id}`} theme={theme} />;
+      case 'exerciseMinutes':
+        return ct === 'bar'
+          ? <GenericBarChart data={cardTrendData.exerciseMinutes} color={gc ?? '#10b981'} unit=" min" fmtY={v => `${Math.round(v)}`} theme={theme} />
+          : <LineChart data={cardTrendData.exerciseMinutes} color={gc ?? '#10b981'} unit=" min" fmtY={v => `${Math.round(v)}`} gradientId={`em_${card.id}`} theme={theme} />;
+      case 'fiber':
+        return ct === 'bar'
+          ? <GenericBarChart data={cardTrendData.fiber} color={gc ?? '#10b981'} unit="g" fmtY={v => `${Math.round(v)}`} theme={theme} />
+          : <LineChart data={cardTrendData.fiber} color={gc ?? '#10b981'} unit="g" fmtY={v => `${Math.round(v)}`} gradientId={`fb_${card.id}`} theme={theme} />;
+      case 'sodium':
+        return ct === 'bar'
+          ? <GenericBarChart data={cardTrendData.sodium} color={gc ?? '#8b5cf6'} unit=" mg" fmtY={v => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${Math.round(v)}`} theme={theme} />
+          : <LineChart data={cardTrendData.sodium} color={gc ?? '#8b5cf6'} unit=" mg" fmtY={v => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${Math.round(v)}`} fmtFull={v => `${Math.round(v).toLocaleString()} mg`} gradientId={`sod_${card.id}`} theme={theme} />;
+      case 'cholesterol':
+        return ct === 'bar'
+          ? <GenericBarChart data={cardTrendData.cholesterol} color={gc ?? '#14b8a6'} unit=" mg" fmtY={v => `${Math.round(v)}`} theme={theme} />
+          : <LineChart data={cardTrendData.cholesterol} color={gc ?? '#14b8a6'} unit=" mg" fmtY={v => `${Math.round(v)}`} gradientId={`cho_${card.id}`} theme={theme} />;
+      case 'saturatedFat':
+        return ct === 'bar'
+          ? <GenericBarChart data={cardTrendData.saturatedFat} color={gc ?? '#f97316'} unit="g" fmtY={v => `${Math.round(v)}`} theme={theme} />
+          : <LineChart data={cardTrendData.saturatedFat} color={gc ?? '#f97316'} unit="g" fmtY={v => `${Math.round(v)}`} gradientId={`sf_${card.id}`} theme={theme} />;
       default:
         return null;
     }
@@ -792,6 +840,76 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
         const total = d.workoutDay.filter(x => x.hadWorkout).length;
         const weeks = Math.max(1, Math.ceil(d.workoutDay.length / 7));
         return [{ label: 'Avg / Week', value: `${Math.round(total / weeks * 10) / 10}` }, { label: 'Total Workout Days', value: `${total}` }];
+      }
+      case 'water': {
+        if (d.water.length === 0) return undefined;
+        const avg = Math.round(d.water.reduce((s, x) => s + x.value, 0) / d.water.length);
+        return [{ label: 'Avg / Day', value: `${avg} oz` }, { label: 'Days Tracked', value: `${d.water.length}` }];
+      }
+      case 'netCalories': {
+        if (d.netCal.length === 0) return undefined;
+        const avg = Math.round(d.netCal.reduce((s, x) => s + x.value, 0) / d.netCal.length);
+        return [{ label: 'Avg / Day', value: `${avg.toLocaleString()} kcal` }, { label: 'Days Logged', value: `${d.netCal.length}` }];
+      }
+      case 'sleepScore': {
+        if (d.sleepScore.length === 0) return undefined;
+        const avg = Math.round(d.sleepScore.reduce((s, x) => s + x.value, 0) / d.sleepScore.length);
+        const wellRested = d.sleepScore.filter(x => x.value >= 85).length;
+        return [{ label: 'Avg Score', value: `${avg}` }, { label: 'Well Rested Nights', value: `${wellRested}` }];
+      }
+      case 'restingHR': {
+        if (d.restingHR.length === 0) return undefined;
+        const avg = Math.round(d.restingHR.reduce((s, x) => s + x.value, 0) / d.restingHR.length);
+        const min = Math.min(...d.restingHR.map(x => x.value));
+        return [{ label: 'Avg', value: `${avg} bpm` }, { label: 'Lowest', value: `${min} bpm` }];
+      }
+      case 'respiratoryRate': {
+        if (d.respiratoryRate.length === 0) return undefined;
+        const avg = Math.round(d.respiratoryRate.reduce((s, x) => s + x.value, 0) / d.respiratoryRate.length * 10) / 10;
+        return [{ label: 'Avg', value: `${avg} br/min` }, { label: 'Days Tracked', value: `${d.respiratoryRate.length}` }];
+      }
+      case 'bloodOxygen': {
+        if (d.bloodOxygen.length === 0) return undefined;
+        const avg = Math.round(d.bloodOxygen.reduce((s, x) => s + x.value, 0) / d.bloodOxygen.length * 10) / 10;
+        const min = Math.round(Math.min(...d.bloodOxygen.map(x => x.value)) * 10) / 10;
+        return [{ label: 'Avg', value: `${avg}%` }, { label: 'Lowest', value: `${min}%` }];
+      }
+      case 'bodyFatPct': {
+        if (d.bodyFatPct.length === 0) return undefined;
+        const latest = Math.round(d.bodyFatPct[d.bodyFatPct.length - 1].value * 10) / 10;
+        const change = d.bodyFatPct.length >= 2
+          ? Math.round((d.bodyFatPct[d.bodyFatPct.length - 1].value - d.bodyFatPct[0].value) * 10) / 10
+          : null;
+        return [
+          { label: 'Latest', value: `${latest}%` },
+          ...(change !== null ? [{ label: 'Change This Period', value: `${change > 0 ? '+' : ''}${change}%` }] : []),
+        ];
+      }
+      case 'exerciseMinutes': {
+        if (d.exerciseMinutes.length === 0) return undefined;
+        const avg = Math.round(d.exerciseMinutes.reduce((s, x) => s + x.value, 0) / d.exerciseMinutes.length);
+        const total = Math.round(d.exerciseMinutes.reduce((s, x) => s + x.value, 0));
+        return [{ label: 'Avg / Day', value: `${avg} min` }, { label: 'Total This Period', value: `${total} min` }];
+      }
+      case 'fiber': {
+        if (d.fiber.length === 0) return undefined;
+        const avg = Math.round(d.fiber.reduce((s, x) => s + x.value, 0) / d.fiber.length * 10) / 10;
+        return [{ label: 'Avg / Day', value: `${avg}g` }, { label: 'Days Tracked', value: `${d.fiber.length}` }];
+      }
+      case 'sodium': {
+        if (d.sodium.length === 0) return undefined;
+        const avg = Math.round(d.sodium.reduce((s, x) => s + x.value, 0) / d.sodium.length);
+        return [{ label: 'Avg / Day', value: `${avg.toLocaleString()} mg` }, { label: 'Days Tracked', value: `${d.sodium.length}` }];
+      }
+      case 'cholesterol': {
+        if (d.cholesterol.length === 0) return undefined;
+        const avg = Math.round(d.cholesterol.reduce((s, x) => s + x.value, 0) / d.cholesterol.length);
+        return [{ label: 'Avg / Day', value: `${avg} mg` }, { label: 'Days Tracked', value: `${d.cholesterol.length}` }];
+      }
+      case 'saturatedFat': {
+        if (d.saturatedFat.length === 0) return undefined;
+        const avg = Math.round(d.saturatedFat.reduce((s, x) => s + x.value, 0) / d.saturatedFat.length * 10) / 10;
+        return [{ label: 'Avg / Day', value: `${avg}g` }, { label: 'Days Tracked', value: `${d.saturatedFat.length}` }];
       }
       default: return undefined;
     }

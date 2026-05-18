@@ -2,7 +2,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type StatsCardType = 'system' | 'graph';
 export type SystemCardKey = 'atAGlance' | 'trends' | 'records' | 'streaks' | 'calendar';
-export type DataKey = 'weight' | 'calories' | 'steps' | 'sleep' | 'activeCals' | 'macros' | 'workoutFreq';
+export type DataKey =
+  // Nutrition
+  'calories' | 'macros' | 'netCalories' | 'water' | 'fiber' | 'sodium' | 'cholesterol' | 'saturatedFat' |
+  // Activity
+  'steps' | 'activeCals' | 'workoutFreq' | 'exerciseMinutes' |
+  // Body
+  'weight' | 'bodyFatPct' |
+  // Sleep & Recovery
+  'sleep' | 'sleepScore' | 'restingHR' | 'respiratoryRate' | 'bloodOxygen';
 export type ChartType = 'line' | 'bar' | 'stackedBar';
 export type CardPeriod = 7 | 30 | 90;
 export type CardPlacement = 'stats' | 'home' | 'both'; // 'home' / 'both' reserved for future shared card pool
@@ -82,15 +90,34 @@ export function defaultPeriodForDataKey(_dataKey: DataKey): CardPeriod {
   return 7;
 }
 
+export const DATA_KEY_CATEGORIES = ['Nutrition', 'Activity', 'Body', 'Sleep & Recovery'] as const;
+export type DataKeyCategory = typeof DATA_KEY_CATEGORIES[number];
+
 // Icon name for each data key -- used in creator grid and card headers
-export const DATA_KEY_META: Record<DataKey, { icon: string; label: string; description: string }> = {
-  weight:      { icon: 'body-outline',       label: 'Weight',           description: 'Daily logged weight' },
-  calories:    { icon: 'flame-outline',      label: 'Calories',         description: 'Daily calorie intake' },
-  steps:       { icon: 'footsteps-outline',  label: 'Steps',            description: 'Daily step count' },
-  sleep:       { icon: 'moon-outline',       label: 'Sleep',            description: 'Hours slept per night' },
-  activeCals:  { icon: 'heart-outline',      label: 'Active Calories',  description: 'Active calories burned' },
-  macros:      { icon: 'nutrition-outline',  label: 'Macros',           description: 'Protein, carbs, fat breakdown' },
-  workoutFreq: { icon: 'barbell-outline',    label: 'Workout Frequency',description: 'Days worked out per week' },
+export const DATA_KEY_META: Record<DataKey, { icon: string; label: string; description: string; category: DataKeyCategory }> = {
+  // Nutrition
+  calories:      { icon: 'flame-outline',          label: 'Calories',          description: 'Daily calorie intake',                  category: 'Nutrition' },
+  macros:        { icon: 'nutrition-outline',       label: 'Macros',            description: 'Protein, carbs, fat breakdown',         category: 'Nutrition' },
+  netCalories:   { icon: 'swap-vertical-outline',   label: 'Net Calories',      description: 'Consumed minus active calories',        category: 'Nutrition' },
+  water:         { icon: 'water-outline',           label: 'Water',             description: 'Daily water intake (oz)',               category: 'Nutrition' },
+  fiber:         { icon: 'leaf-outline',            label: 'Fiber',             description: 'Daily fiber intake (g)',                category: 'Nutrition' },
+  sodium:        { icon: 'flask-outline',           label: 'Sodium',            description: 'Daily sodium intake (mg)',              category: 'Nutrition' },
+  cholesterol:   { icon: 'analytics-outline',       label: 'Cholesterol',       description: 'Daily cholesterol intake (mg)',         category: 'Nutrition' },
+  saturatedFat:  { icon: 'restaurant-outline',      label: 'Saturated Fat',     description: 'Daily saturated fat intake (g)',        category: 'Nutrition' },
+  // Activity
+  steps:         { icon: 'footsteps-outline',       label: 'Steps',             description: 'Daily step count',                     category: 'Activity' },
+  activeCals:    { icon: 'heart-outline',           label: 'Active Calories',   description: 'Active calories burned',               category: 'Activity' },
+  workoutFreq:   { icon: 'barbell-outline',         label: 'Workout Frequency', description: 'Days worked out per week',             category: 'Activity' },
+  exerciseMinutes:{ icon: 'stopwatch-outline',      label: 'Exercise Minutes',  description: 'Minutes of exercise per day',          category: 'Activity' },
+  // Body
+  weight:        { icon: 'body-outline',            label: 'Weight',            description: 'Daily logged weight',                  category: 'Body' },
+  bodyFatPct:    { icon: 'pie-chart-outline',       label: 'Body Fat %',        description: 'Body fat % from Apple Health',         category: 'Body' },
+  // Sleep & Recovery
+  sleep:         { icon: 'moon-outline',            label: 'Sleep',             description: 'Hours slept per night',                category: 'Sleep & Recovery' },
+  sleepScore:    { icon: 'star-outline',            label: 'Sleep Score',       description: 'Nightly sleep quality score (0-100)',  category: 'Sleep & Recovery' },
+  restingHR:     { icon: 'heart-circle-outline',    label: 'Resting HR',        description: 'Resting heart rate (bpm)',             category: 'Sleep & Recovery' },
+  respiratoryRate:{ icon: 'pulse-outline',          label: 'Respiratory Rate',  description: 'Breaths per minute',                  category: 'Sleep & Recovery' },
+  bloodOxygen:   { icon: 'medical-outline',         label: 'Blood Oxygen',      description: 'Blood oxygen % from Apple Health',    category: 'Sleep & Recovery' },
 };
 
 // Chart types available per data key. Macros only supports stackedBar.

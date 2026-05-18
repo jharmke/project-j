@@ -382,17 +382,17 @@ Stats Phase 3 remaining steps (do in order):
 - [x] SHIPPED StatsCardEditModal extracted to components/StatsCardEditModal.tsx -- shared Edit Graph modal used by both stats.tsx and index.tsx. Gear icon on pinned home cards opens identical edit modal (label, chart type, timeframe, color picker, delete, save). onSave/onDelete callbacks update pj_stats_cards and reload pinned trend data from home.
 - [x] SHIPPED utils/statsData.ts -- extracted fetchTrendData, EMPTY_TREND_DATA, TrendData, offsetToDateKey, getPinnedCardSummary. stats.tsx now imports from shared util. index.tsx uses same util for pinned card trend data.
 - [x] SHIPPED HealthKit new metrics -- restingHR, respiratoryRate, bloodOxygen, bodyFatPct, exerciseMinutes added to useHealthKit.ts fetchTodayData and returned. All 5 were already in requestAuthorization (no new build needed).
-- OPEN: Expanded graph creator data types -- add water, net calories, sleep score, resting HR, respiratory rate, blood oxygen, body fat %, exercise minutes, fiber, sodium, cholesterol, saturated fat. Organized by category in creator grid. Multi-select extended facts (1-3 nutrients, same-unit constraint). Part 5 of the graph-cards-on-home feature set.
+- [x] SHIPPED: Expanded graph creator data types -- 19 total DataKeys (was 7). Added water, netCalories, sleepScore, restingHR, respiratoryRate, bloodOxygen, bodyFatPct, exerciseMinutes, fiber, sodium, cholesterol, saturatedFat. Creator Step 1 grid now has 4 category headers (Nutrition / Activity / Body / Sleep & Recovery). calcSleepScoreForTrend + getEntryNutrient helpers in statsData.ts. index.tsx persist useEffect now writes restingHR/respiratoryRate/bloodOxygen/bodyFatPct/exerciseMinutes to pj_YYYY-MM-DD daily. sleepGoal param added to fetchTrendData (default 8). HealthKit metrics sparse for historical dates (accumulate going forward). Multi-select extended nutrients deferred -- single select per card is the current pattern.
 
 Primary button audit -- sweep app-wide, upgrade all primary CTAs to full accent fill, demote transparent bordered style to secondary actions only (Edit, Cancel, filter pills). Applies to every screen.
 
 Food and barcode
 
-Log tab FAB -- Add Entry FAB on main log screen (replaces nothing, just adds one). Food Library FAB = Create Food + Create Recipe (expandable or action sheet). Remove +Food and +Recipe from log header -- Library becomes the only header button. Big UX cleanup. (SOON)
+Log tab FAB -- DONE. FAB lives on the food library screen (Create Food + Create Recipe expandable speed dial). No FAB needed on main log screen. +Food and +Recipe removed from log header. Library is the only header button. Confirmed closed this session.
 Log tab date navigation -- tapping the date label opens a calendar picker for easy multi-day jumping, not just arrow-by-arrow. (SOON)
 Log tab meal time labels -- Morning / Lunch / Dinner / Snacks label font to textSecondary (quick fix). (SOON)
 Exclude day feature -- current implementation needs a revamp and full passthrough audit. (SOON)
-Custom water amount modal -- drag interaction, .5oz increments, 48oz max, live oz display, tappable numpad with .5 key, KAV, fade in/out, centered. (top of SOON)
+Custom water amount modal -- DONE. bgSheet, Animated.Value fade, tap-outside dismiss, sign bug fixed. Confirmed closed this session.
 Edit Food screen (edit-food.tsx) full CPP polish pass -- currently a raw unstyled form. Needs card styling, field grouping, accent title, floating save bar, depth. Dedicated polish session.
 Recipe builder screen polish -- needs accent title and floating save bar at minimum. Full CPP pass needed. (SOON)
 App-wide OZ to oz audit -- index.tsx and log.tsx fixed this session. day-detail and any other screens not yet checked. Complete audit needed. (SOON)

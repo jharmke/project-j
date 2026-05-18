@@ -787,7 +787,7 @@ export default function HomeScreen() {
     return store;
   };
 
-  const { activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, vo2Max, cardioRecovery, fetchTodayData } = useHealthKit();
+  const { activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, bodyFatPct, exerciseMinutes, fetchTodayData } = useHealthKit();
 
   const getDateKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   const [todayKey, setTodayKey] = useState(() => getDateKey(new Date()));
@@ -886,7 +886,7 @@ export default function HomeScreen() {
 
   // ── Persist HealthKit to storage ────────────────────────────────────────────
   useEffect(() => {
-    if (activeCalories > 0 || steps > 0 || sleepHours !== null) {
+    if (activeCalories > 0 || steps > 0 || sleepHours !== null || restingHR !== null || respiratoryRate !== null || bloodOxygen !== null || bodyFatPct !== null || exerciseMinutes !== null) {
       AsyncStorage.getItem(`pj_${todayKey}`).then(saved => {
         const current = saved ? JSON.parse(saved) : {};
         AsyncStorage.setItem(`pj_${todayKey}`, JSON.stringify({
@@ -896,6 +896,11 @@ export default function HomeScreen() {
           ...(sleepHours !== null ? { sleepHours } : {}),
           ...(sleepStages !== null ? { sleepStages } : {}),
           ...(sleepTimes !== null ? { sleepBedTime: sleepTimes.bed, sleepWakeTime: sleepTimes.wake } : {}),
+          ...(restingHR !== null ? { restingHR } : {}),
+          ...(respiratoryRate !== null ? { respiratoryRate } : {}),
+          ...(bloodOxygen !== null ? { bloodOxygen } : {}),
+          ...(bodyFatPct !== null ? { bodyFatPct } : {}),
+          ...(exerciseMinutes !== null ? { exerciseMinutes } : {}),
         }));
       });
     }
@@ -910,7 +915,7 @@ export default function HomeScreen() {
         });
       }
     }
-  }, [activeCalories, steps, sleepHours, sleepStages]);
+  }, [activeCalories, steps, sleepHours, sleepStages, restingHR, respiratoryRate, bloodOxygen, bodyFatPct, exerciseMinutes]);
 
   // ── Load layout from settings ────────────────────────────────────────────────
   useEffect(() => {

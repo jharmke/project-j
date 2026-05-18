@@ -1491,9 +1491,9 @@ export default function HomeScreen() {
   const renderCaloriesCard = () => {
     const remaining = adjustedTarget - totalCals;
     const stats = [
-      { label: remaining >= 0 ? 'REMAINING' : 'OVER', value: Math.abs(remaining), color: remaining >= 0 ? theme.accentBlue : theme.statusBad },
-      { label: 'ACTIVE', value: displayedBurned, color: theme.accentBlue },
-      { label: 'NET', value: net, color: theme.accentBlue },
+      { label: remaining >= 0 ? 'REMAINING' : 'OVER', value: Math.abs(remaining), color: remaining >= 0 ? theme.textPrimary : theme.statusBad },
+      { label: 'ACTIVE', value: displayedBurned, color: theme.textPrimary },
+      { label: 'NET', value: net, color: theme.textPrimary },
     ];
 
     // Mindful: check if it's after 8pm for potential nudge
@@ -1696,15 +1696,15 @@ export default function HomeScreen() {
         return (
           <View style={[styles.weightRow, { paddingTop: 10, borderTopWidth: 0.5, borderTopColor: theme.borderCardTop }]}>
             <View style={styles.weightStat}>
-              <Text style={[styles.weightVal, { color: styleMode === 'mindful' ? theme.textSecondary : theme.accentBlue }]}>{goalWeight} lbs</Text>
+              <Text style={[styles.weightVal, { color: styleMode === 'mindful' ? theme.textSecondary : theme.textPrimary }]}>{goalWeight} lbs</Text>
               <Text style={[styles.weightLbl, { color: theme.textMuted }]}>Goal</Text>
             </View>
             <View style={styles.weightStat}>
-              <Text style={[styles.weightVal, { color: styleMode === 'mindful' ? theme.textSecondary : theme.accentBlue }]}>{lbsToGo !== null ? `${Math.round(lbsToGo * 10) / 10} lbs` : '--'}</Text>
+              <Text style={[styles.weightVal, { color: styleMode === 'mindful' ? theme.textSecondary : theme.textPrimary }]}>{lbsToGo !== null ? `${Math.round(lbsToGo * 10) / 10} lbs` : '--'}</Text>
               <Text style={[styles.weightLbl, { color: theme.textMuted }]}>To Go</Text>
             </View>
             <View style={styles.weightStat}>
-              <Text style={[styles.weightVal, { color: styleMode === 'mindful' ? theme.textSecondary : theme.accentBlue }]}>{projectedDate || '--'}</Text>
+              <Text style={[styles.weightVal, { color: styleMode === 'mindful' ? theme.textSecondary : theme.textPrimary }]}>{projectedDate || '--'}</Text>
               <Text style={[styles.weightLbl, { color: theme.textMuted }]}>Projected</Text>
             </View>
           </View>

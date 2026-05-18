@@ -179,6 +179,12 @@ NOW -- active this session
 [x] IF card State 2 polish -- solid green TAP WHEN YOU EAT button with breathing pulse animation (1.025 scale, 1400ms, 800ms pause). OPEN/CLOSED status as pill badge. Countdown hero left, STARTED/CLOSES labels matching ifLabel style top-right with 22px accent times. Divider borderCardTop 1px. Bottom row: Reset window (textSecondary pill) | LAST MEAL (solid red centered) | Cancel fast (textSecondary pill).
 [x] IF card State 3 polish -- TARGET/ACTUAL/WINDOW label-over-value layout, all left-aligned. Target + Actual: accentBlueRaw 22px Bebas. Window times: textSecondary 22px Bebas. Divider below stats. Edit start / Edit end (textSecondary pills) / Reset (accentRed pill). Edit start picker bug fixed -- showTimePicker block added to State 3 animated view. IFCard extracted as proper React component above HomeScreen to fix hooks-in-render violation.
 
+NOW -- active this session
+[ ] Water 128oz cap bug -- water cards on home and log tabs won't go above 128oz. Progress bar animation also doesn't play when hitting 128. Root cause unknown -- likely a cap in the add/remove logic or water preset values. Fix both: remove the 128 cap if artificial, and ensure animation fires correctly at the boundary.
+
+[x] Stats sections default open fix -- changed all 5 CollapsibleSection defaultOpen from hardcoded true/false to defaultOpen={isFirst}. Whichever system section has lowest order (top of sorted list) opens by default. All others start closed. stats.tsx.
+[x] Stats graph color picker -- color?: string + macroColors?: { protein, carbs, fat } added to StatsCard interface (statsCardRegistry.ts). GRAPH_SWATCHES (8 curated hex colors). Color picker in EDIT GRAPH modal (after Timeframe) and creator Step 3 (above preview). Tap swatch to select, tap again to deselect (reset to default). Weight/calories-line/steps/activeCals/sleep: single color row. Macros: 3 separate rows (protein/carbs/fat), blocked swatch when color used by another macro. workoutFreq and calories-bar skip picker (semantic coloring). MacroBarChart updated to accept proteinColor/carbsColor/fatColor props with system constant fallbacks. getChart() uses card.color ?? theme token. Creator color state resets on data type change and modal close. Edit modal scrollable (maxHeight 480) to handle macros 3-picker height.
+
 Auth and onboarding
 
 Firebase Auth -- Apple/Google login, both required (App Store rules mandate Apple login if any third party login offered). Firestore setup, data migration from AsyncStorage. Pre-TestFlight requirement.
@@ -543,6 +549,7 @@ Date on entries tappable -- routes to that day's day detail.
 
 
 BACKLOG -- parked, good ideas, not imminent
+App-wide color customization -- extend color picker beyond stats graphs to home screen bars (water, steps, calorie progress bar). Calorie bar skip (mode-aware semantic coloring). Steps/water bars follow accent color already -- decision to revisit. Macro identity colors (protein green, carbs amber, fat red) are visual language app-wide -- any change requires propagating through log, home, day detail, stats all at once. Build only after stats color picker ships and proves the pattern. Entry point: gear press on each card. Storage: pj_settings colorPrefs key.
 Collapsible card animation performance -- DONE. Replaced JS thread height animation with instant height snap + opacity fade (300ms open, 100ms close, useNativeDriver: true). Applied to stats.tsx (CollapsibleCard), profile.tsx (CollapsibleCard), and log.tsx (meal sections). All smooth, no lag.
 Social and accountability partner -- lightweight, one person you share daily score with. Not a full social feed. Strava-inspired but scoped. Build after core features stable and onboarding complete.
 App name and tagline finalization -- finalize from shortlist (Prevail, Steadfast, Worthy, Haven, Witness, Sown). Verify App Store + TikTok handle availability. Prevail is strongest. Current tagline "the app that actually cares" needs replacing -- doesn't land. Prevail direction has a tagline waiting in it.

@@ -250,10 +250,11 @@ function LineChart({ data, color, unit, goalValue, theme, fmtY, fmtFull, gradien
 
 // ── Calorie bar chart ─────────────────────────────────────────────────────────
 
-function CalorieBarChart({ data, calTarget, theme }: {
+function CalorieBarChart({ data, calTarget, theme, color }: {
   data: { date: string, cal: number }[],
   calTarget: number,
   theme: any,
+  color?: string,
 }) {
   const [callout, setCallout] = useState<{ x: number; y: number; label1: string; label2: string } | null>(null);
   const { slideAnim } = useChartAnim(data.length > 0);
@@ -306,7 +307,7 @@ function CalorieBarChart({ data, calTarget, theme }: {
 
         {/* Bars with tap targets */}
         {data.map((d, i) => {
-          const barColor = '#e06840';
+          const barColor = color ?? '#e06840';
           const barH = Math.max(2, (d.cal / tickMax) * chartH);
           const x = plotLeft + i * slot + (slot - BAR_W) / 2;
           const cx = x + BAR_W / 2;
@@ -472,10 +473,18 @@ const MACRO_PROTEIN = '#0d9268';
 const MACRO_CARBS   = '#c47d1a';
 const MACRO_FAT     = '#a83232';
 
-function MacroBarChart({ data, theme }: {
+const GRAPH_SWATCHES = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#f97316'];
+
+function MacroBarChart({ data, theme, proteinColor, carbsColor, fatColor }: {
   data: { date: string; protein: number; carbs: number; fat: number }[],
   theme: any,
+  proteinColor?: string,
+  carbsColor?: string,
+  fatColor?: string,
 }) {
+  const pColor = proteinColor ?? MACRO_PROTEIN;
+  const cColor = carbsColor ?? MACRO_CARBS;
+  const fColor = fatColor ?? MACRO_FAT;
   const [callout, setCallout] = useState<{ x: number; y: number; date: string; protein: number; carbs: number; fat: number } | null>(null);
   const { slideAnim } = useChartAnim(data.length > 0);
 
@@ -535,9 +544,9 @@ function MacroBarChart({ data, theme }: {
             const fH = toH(d.fat);
             const totalH = pH + cH + fH;
             return [
-              <Rect key={`p${i}`} x={x} y={chartBottom - pH}           width={BAR_W} height={pH} fill={MACRO_PROTEIN} opacity={0.9} />,
-              <Rect key={`c${i}`} x={x} y={chartBottom - pH - cH}      width={BAR_W} height={cH} fill={MACRO_CARBS}   opacity={0.9} />,
-              <Rect key={`f${i}`} x={x} y={chartBottom - pH - cH - fH} width={BAR_W} height={fH} fill={MACRO_FAT}     opacity={0.9} rx={2} />,
+              <Rect key={`p${i}`} x={x} y={chartBottom - pH}           width={BAR_W} height={pH} fill={pColor} opacity={0.9} />,
+              <Rect key={`c${i}`} x={x} y={chartBottom - pH - cH}      width={BAR_W} height={cH} fill={cColor} opacity={0.9} />,
+              <Rect key={`f${i}`} x={x} y={chartBottom - pH - cH - fH} width={BAR_W} height={fH} fill={fColor} opacity={0.9} rx={2} />,
               <Rect key={`t${i}`} x={x} y={chartBottom - totalH}       width={BAR_W} height={Math.max(totalH, 12)}
                 fill="transparent"
                 onPress={() => setCallout(prev =>
@@ -579,15 +588,15 @@ function MacroBarChart({ data, theme }: {
                   fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">
                   {callout.date}
                 </SvgText>
-                <SvgText x={tx} y={cPillY + 27} fill={MACRO_PROTEIN}
+                <SvgText x={tx} y={cPillY + 27} fill={pColor}
                   fontSize={9} fontFamily="DMSans_700Bold">
                   {`P  ${callout.protein}g`}
                 </SvgText>
-                <SvgText x={tx} y={cPillY + 41} fill={MACRO_CARBS}
+                <SvgText x={tx} y={cPillY + 41} fill={cColor}
                   fontSize={9} fontFamily="DMSans_700Bold">
                   {`C  ${callout.carbs}g`}
                 </SvgText>
-                <SvgText x={tx} y={cPillY + 55} fill={MACRO_FAT}
+                <SvgText x={tx} y={cPillY + 55} fill={fColor}
                   fontSize={9} fontFamily="DMSans_700Bold">
                   {`F  ${callout.fat}g`}
                 </SvgText>
@@ -598,9 +607,9 @@ function MacroBarChart({ data, theme }: {
       </Animated.View>
       <View style={{ flexDirection: 'row', gap: 14, marginTop: 8 }}>
         {[
-          { color: MACRO_PROTEIN, label: 'Protein' },
-          { color: MACRO_CARBS,   label: 'Carbs' },
-          { color: MACRO_FAT,     label: 'Fat' },
+          { color: pColor, label: 'Protein' },
+          { color: cColor, label: 'Carbs' },
+          { color: fColor, label: 'Fat' },
         ].map(l => (
           <View key={l.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
             <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: l.color }} />
@@ -772,43 +781,45 @@ function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal, sleep
 
   const getChart = () => {
     const ct = card.chartType;
+    const gc = card.color;
     switch (card.dataKey) {
       case 'weight':
         return ct === 'bar'
-          ? <GenericBarChart data={cardTrendData.weight} color={theme.textSecondary} unit=" lbs"
+          ? <GenericBarChart data={cardTrendData.weight} color={gc ?? theme.textSecondary} unit=" lbs"
               fmtY={(v) => v % 1 === 0 ? `${v}` : `${v.toFixed(1)}`}
               fmtFull={(v) => v % 1 === 0 ? `${v}` : `${v.toFixed(1)}`} startFromZero={false} theme={theme} />
-          : <LineChart data={cardTrendData.weight} color={theme.textSecondary} unit=" lbs"
+          : <LineChart data={cardTrendData.weight} color={gc ?? theme.textSecondary} unit=" lbs"
               fmtY={(v) => v % 1 === 0 ? `${v}` : `${v.toFixed(1)}`} gradientId={`wt_${card.id}`} theme={theme} />;
       case 'calories':
         return ct === 'line'
-          ? <LineChart data={cardTrendData.cal.map(d => ({ date: d.date, value: d.cal }))} color={'#e06840'} unit=" kcal"
+          ? <LineChart data={cardTrendData.cal.map(d => ({ date: d.date, value: d.cal }))} color={gc ?? '#e06840'} unit=" kcal"
               fmtY={(v) => v >= 1000 ? `${Math.round(v / 100) / 10}k` : `${Math.round(v)}`}
               fmtFull={(v) => Math.round(v).toLocaleString()} gradientId={`cl_${card.id}`} theme={theme} />
-          : <CalorieBarChart data={cardTrendData.cal} calTarget={calTarget} theme={theme} />;
+          : <CalorieBarChart data={cardTrendData.cal} calTarget={calTarget} theme={theme} color={gc} />;
       case 'macros':
-        return <MacroBarChart data={cardTrendData.macro} theme={theme} />;
+        return <MacroBarChart data={cardTrendData.macro} theme={theme}
+          proteinColor={card.macroColors?.protein} carbsColor={card.macroColors?.carbs} fatColor={card.macroColors?.fat} />;
       case 'steps':
         return ct === 'bar'
-          ? <GenericBarChart data={cardTrendData.steps} color={theme.accentBlue} unit=""
+          ? <GenericBarChart data={cardTrendData.steps} color={gc ?? theme.accentBlue} unit=""
               fmtY={(v) => v >= 1000 ? `${Math.round(v / 1000)}k` : `${Math.round(v)}`}
               fmtFull={(v) => Math.round(v).toLocaleString()} theme={theme} />
-          : <LineChart data={cardTrendData.steps} color={theme.accentBlue} unit=""
+          : <LineChart data={cardTrendData.steps} color={gc ?? theme.accentBlue} unit=""
               goalValue={stepGoal} fmtY={(v) => v >= 1000 ? `${Math.round(v / 1000)}k` : `${Math.round(v)}`}
               fmtFull={(v) => Math.round(v).toLocaleString()} gradientId={`st_${card.id}`} theme={theme} />;
       case 'activeCals':
         return ct === 'bar'
-          ? <GenericBarChart data={cardTrendData.activeCal} color={theme.statusWarn} unit=" kcal"
+          ? <GenericBarChart data={cardTrendData.activeCal} color={gc ?? theme.statusWarn} unit=" kcal"
               fmtY={(v) => `${Math.round(v)}`} theme={theme} />
-          : <LineChart data={cardTrendData.activeCal} color={theme.statusWarn} unit=" kcal"
+          : <LineChart data={cardTrendData.activeCal} color={gc ?? theme.statusWarn} unit=" kcal"
               fmtY={(v) => `${Math.round(v)}`} gradientId={`ac_${card.id}`} theme={theme} />;
       case 'sleep':
         return ct === 'bar'
-          ? <GenericBarChart data={cardTrendData.sleep} color={theme.sleepRem} unit=""
+          ? <GenericBarChart data={cardTrendData.sleep} color={gc ?? theme.sleepRem} unit=""
               fmtY={(v) => `${Math.round(v * 10) / 10}h`}
               fmtFull={(v) => { const h = Math.floor(v); const m = Math.round((v % 1) * 60); return m > 0 ? `${h}h ${m}m` : `${h}h`; }}
               startFromZero={false} theme={theme} />
-          : <LineChart data={cardTrendData.sleep} color={theme.sleepRem} unit=""
+          : <LineChart data={cardTrendData.sleep} color={gc ?? theme.sleepRem} unit=""
               goalValue={sleepGoal} fmtY={(v) => `${Math.round(v * 10) / 10}h`}
               fmtFull={(v) => { const h = Math.floor(v); const m = Math.round((v % 1) * 60); return m > 0 ? `${h}h ${m}m` : `${h}h`; }}
               gradientId={`sl_${card.id}`} theme={theme} />;
@@ -1073,6 +1084,10 @@ export default function StatsScreen() {
   const [editLabel, setEditLabel] = useState('');
   const [editChartType, setEditChartType] = useState<ChartType>('line');
   const [editPeriod, setEditPeriod] = useState<CardPeriod>(7);
+  const [editColor, setEditColor] = useState<string | undefined>(undefined);
+  const [editMacroColors, setEditMacroColors] = useState({ protein: MACRO_PROTEIN, carbs: MACRO_CARBS, fat: MACRO_FAT });
+  const [creatorColor, setCreatorColor] = useState<string | undefined>(undefined);
+  const [creatorMacroColors, setCreatorMacroColors] = useState({ protein: MACRO_PROTEIN, carbs: MACRO_CARBS, fat: MACRO_FAT });
   const editOverlayOpacity = useRef(new Animated.Value(0)).current;
   const editCardScale = useRef(new Animated.Value(0.95)).current;
 
@@ -1423,10 +1438,16 @@ export default function StatsScreen() {
     Animated.parallel([
       Animated.timing(creatorSheetAnim, { toValue: 0, duration: 260, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
       Animated.timing(creatorOverlayAnim, { toValue: 0, duration: 220, useNativeDriver: true }),
-    ]).start(() => setCreatorVisible(false));
+    ]).start(() => {
+      setCreatorVisible(false);
+      setCreatorColor(undefined);
+      setCreatorMacroColors({ protein: MACRO_PROTEIN, carbs: MACRO_CARBS, fat: MACRO_FAT });
+    });
   };
 
   const handleCreatorSelectDataKey = (dk: DataKey) => {
+    setCreatorColor(undefined);
+    setCreatorMacroColors({ protein: MACRO_PROTEIN, carbs: MACRO_CARBS, fat: MACRO_FAT });
     setCreatorDataKey(dk);
     if (dk === 'macros') {
       setCreatorChartType('stackedBar');
@@ -1442,10 +1463,13 @@ export default function StatsScreen() {
       setCreatorDataKey(null);
       setCreatorChartType(null);
       setCreatorStep(1);
+      setCreatorColor(undefined);
+      setCreatorMacroColors({ protein: MACRO_PROTEIN, carbs: MACRO_CARBS, fat: MACRO_FAT });
     } else if (creatorStep === 3) {
       setCreatorStep(2);
     } else if (creatorStep === 2) {
       setCreatorStep(1);
+      setCreatorColor(undefined);
     }
   };
 
@@ -1478,6 +1502,12 @@ export default function StatsScreen() {
     setEditLabel(card.label);
     setEditChartType(card.chartType || 'line');
     setEditPeriod(card.period);
+    setEditColor(card.color);
+    setEditMacroColors({
+      protein: card.macroColors?.protein ?? MACRO_PROTEIN,
+      carbs: card.macroColors?.carbs ?? MACRO_CARBS,
+      fat: card.macroColors?.fat ?? MACRO_FAT,
+    });
     editOverlayOpacity.setValue(0);
     editCardScale.setValue(0.95);
     setEditCardVisible(true);
@@ -1492,8 +1522,21 @@ export default function StatsScreen() {
 
   const handleSaveEditCard = () => {
     if (!editCard) return;
+    const isMacros = editCard.dataKey === 'macros';
+    const hasMacroCustom = isMacros && (
+      editMacroColors.protein !== MACRO_PROTEIN ||
+      editMacroColors.carbs !== MACRO_CARBS ||
+      editMacroColors.fat !== MACRO_FAT
+    );
     const updated = statsCards.map(c =>
-      c.id === editCard.id ? { ...c, label: editLabel.trim() || c.label, chartType: editChartType, period: editPeriod } : c
+      c.id === editCard.id ? {
+        ...c,
+        label: editLabel.trim() || c.label,
+        chartType: editChartType,
+        period: editPeriod,
+        color: isMacros ? c.color : editColor,
+        macroColors: isMacros ? (hasMacroCustom ? { ...editMacroColors } : undefined) : c.macroColors,
+      } : c
     );
     setStatsCards(updated);
     saveStatsCards(updated);
@@ -1519,6 +1562,12 @@ export default function StatsScreen() {
 
   const handleAddCard = () => {
     if (!creatorDataKey || !creatorChartType) return;
+    const isMacros = creatorDataKey === 'macros';
+    const hasMacroCustom = isMacros && (
+      creatorMacroColors.protein !== MACRO_PROTEIN ||
+      creatorMacroColors.carbs !== MACRO_CARBS ||
+      creatorMacroColors.fat !== MACRO_FAT
+    );
     const newCard: StatsCard = {
       id: generateCardId(creatorDataKey),
       type: 'graph',
@@ -1529,6 +1578,8 @@ export default function StatsScreen() {
       visible: true,
       order: statsCards.length,
       placement: 'stats',
+      color: isMacros ? undefined : creatorColor,
+      macroColors: isMacros && hasMacroCustom ? { ...creatorMacroColors } : undefined,
     };
     const updated = [...statsCards, newCard];
     setStatsCards(updated);
@@ -1616,7 +1667,7 @@ export default function StatsScreen() {
           .map((section, idx) => {
             const isFirst = idx === 0;
             if (section.systemKey === 'atAGlance') return (
-              <CollapsibleSection key={section.id} label={section.label} defaultOpen={true} theme={theme} first={isFirst}>
+              <CollapsibleSection key={section.id} label={section.label} defaultOpen={isFirst} theme={theme} first={isFirst}>
           <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
             <View style={{ flexDirection: 'row', gap: 6, marginBottom: 14 }}>
               {(['7', '30', '90', '180', 'ytd'] as const).map(p => (
@@ -1712,7 +1763,7 @@ export default function StatsScreen() {
             </CollapsibleSection>
             );
             if (section.systemKey === 'trends') return (
-              <CollapsibleSection key={section.id} label={section.label} defaultOpen={true} theme={theme} first={isFirst}>
+              <CollapsibleSection key={section.id} label={section.label} defaultOpen={isFirst} theme={theme} first={isFirst}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <View style={{ flexDirection: 'row', gap: 6 }}>
               {(['7', '30', '90'] as const).map(p => (
@@ -1748,7 +1799,7 @@ export default function StatsScreen() {
             </CollapsibleSection>
             );
             if (section.systemKey === 'records') return (
-              <CollapsibleSection key={section.id} label={section.label} defaultOpen={false} theme={theme} first={isFirst}>
+              <CollapsibleSection key={section.id} label={section.label} defaultOpen={isFirst} theme={theme} first={isFirst}>
           <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
             <RecordTile icon="footsteps" label="Best Steps" value={records.steps} unit="steps"
               color={theme.accentBlue} date={records.stepsDate}
@@ -1768,7 +1819,7 @@ export default function StatsScreen() {
             </CollapsibleSection>
             );
             if (section.systemKey === 'streaks') return (
-              <CollapsibleSection key={section.id} label={section.label} defaultOpen={false} theme={theme} first={isFirst}>
+              <CollapsibleSection key={section.id} label={section.label} defaultOpen={isFirst} theme={theme} first={isFirst}>
           <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               {[
@@ -1790,7 +1841,7 @@ export default function StatsScreen() {
             </CollapsibleSection>
             );
             if (section.systemKey === 'calendar') return (
-              <CollapsibleSection key={section.id} label={section.label} defaultOpen={false} theme={theme} first={isFirst}>
+              <CollapsibleSection key={section.id} label={section.label} defaultOpen={isFirst} theme={theme} first={isFirst}>
           <CollapsibleCard label="Monthly View" defaultOpen={true} theme={theme}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
               <TouchableOpacity onPress={() => { if (calendarMonth === 0) { setCalendarMonth(11); setCalendarYear(y => y - 1); } else setCalendarMonth(m => m - 1); }} style={{ padding: 8 }}>
@@ -2083,8 +2134,70 @@ export default function StatsScreen() {
               {/* Step 3: Preview */}
               {creatorStep === 3 && creatorDataKey && creatorChartType && (
                 <>
+                  {/* Color picker */}
+                  {creatorDataKey !== 'workoutFreq' && (
+                    <>
+                      <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 10 }}>
+                        {creatorDataKey === 'macros' ? 'Macro Colors' : 'Color'}
+                      </Text>
+                      {creatorDataKey === 'macros' ? (
+                        <>
+                          {([
+                            { key: 'protein' as const, label: 'Protein' },
+                            { key: 'carbs' as const, label: 'Carbs' },
+                            { key: 'fat' as const, label: 'Fat' },
+                          ]).map(({ key, label }) => {
+                            const usedColors = Object.entries(creatorMacroColors)
+                              .filter(([k]) => k !== key)
+                              .map(([, v]) => v);
+                            return (
+                              <View key={key} style={{ marginBottom: 10 }}>
+                                <Text style={{ fontSize: 9, fontFamily: 'DMSans_600SemiBold', letterSpacing: 1.5, textTransform: 'uppercase', color: theme.textDim, marginBottom: 6 }}>{label}</Text>
+                                <View style={{ flexDirection: 'row', gap: 8 }}>
+                                  {GRAPH_SWATCHES.map(sw => {
+                                    const selected = creatorMacroColors[key] === sw;
+                                    const blocked = usedColors.includes(sw);
+                                    return (
+                                      <TouchableOpacity key={sw} disabled={blocked}
+                                        onPress={() => setCreatorMacroColors(prev => ({ ...prev, [key]: sw }))}
+                                        style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: sw,
+                                          opacity: blocked ? 0.2 : 1,
+                                          borderWidth: selected ? 2 : 0, borderColor: '#ffffff',
+                                          alignItems: 'center', justifyContent: 'center' }}>
+                                        {selected && <Ionicons name="checkmark" size={13} color="#ffffff" />}
+                                      </TouchableOpacity>
+                                    );
+                                  })}
+                                </View>
+                              </View>
+                            );
+                          })}
+                          <View style={{ height: 4 }} />
+                        </>
+                      ) : (
+                        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+                          {GRAPH_SWATCHES.map(sw => {
+                            const selected = creatorColor === sw;
+                            return (
+                              <TouchableOpacity key={sw}
+                                onPress={() => setCreatorColor(selected ? undefined : sw)}
+                                style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: sw,
+                                  borderWidth: selected ? 2 : 0, borderColor: '#ffffff',
+                                  alignItems: 'center', justifyContent: 'center' }}>
+                                {selected && <Ionicons name="checkmark" size={13} color="#ffffff" />}
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                      )}
+                    </>
+                  )}
+
                   <StatsGraphCard
-                    card={{ id: 'creator_preview', type: 'graph', dataKey: creatorDataKey, chartType: creatorChartType, period: 7, label: DATA_KEY_META[creatorDataKey].label, visible: true, order: 0, placement: 'stats' }}
+                    card={{ id: 'creator_preview', type: 'graph', dataKey: creatorDataKey, chartType: creatorChartType, period: 7, label: DATA_KEY_META[creatorDataKey].label, visible: true, order: 0, placement: 'stats',
+                      color: creatorColor,
+                      macroColors: (creatorMacroColors.protein !== MACRO_PROTEIN || creatorMacroColors.carbs !== MACRO_CARBS || creatorMacroColors.fat !== MACRO_FAT) ? creatorMacroColors : undefined,
+                    }}
                     cardTrendData={trendDataMap['7'] ?? EMPTY_TREND_DATA}
                     theme={theme}
                     calTarget={calTarget}
@@ -2133,7 +2246,7 @@ export default function StatsScreen() {
                 </TouchableOpacity>
               </View>
 
-              <View style={{ padding: 20 }}>
+              <ScrollView style={{ maxHeight: 480 }} contentContainerStyle={{ padding: 20 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                 {/* Label */}
                 <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 8 }}>Label</Text>
                 <TextInput
@@ -2178,22 +2291,93 @@ export default function StatsScreen() {
                   ))}
                 </View>
 
+                {/* Color picker */}
+                {editCard?.dataKey !== 'workoutFreq' && (
+                  <>
+                    <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 10 }}>
+                      {editCard?.dataKey === 'macros' ? 'Macro Colors' : 'Color'}
+                    </Text>
+                    {editCard?.dataKey === 'macros' ? (
+                      <>
+                        {([
+                          { key: 'protein' as const, label: 'Protein' },
+                          { key: 'carbs' as const, label: 'Carbs' },
+                          { key: 'fat' as const, label: 'Fat' },
+                        ]).map(({ key, label }) => {
+                          const usedColors = Object.entries(editMacroColors)
+                            .filter(([k]) => k !== key)
+                            .map(([, v]) => v);
+                          return (
+                            <View key={key} style={{ marginBottom: 10 }}>
+                              <Text style={{ fontSize: 9, fontFamily: 'DMSans_600SemiBold', letterSpacing: 1.5, textTransform: 'uppercase', color: theme.textDim, marginBottom: 6 }}>{label}</Text>
+                              <View style={{ flexDirection: 'row', gap: 8 }}>
+                                {GRAPH_SWATCHES.map(sw => {
+                                  const selected = editMacroColors[key] === sw;
+                                  const blocked = usedColors.includes(sw);
+                                  return (
+                                    <TouchableOpacity key={sw} disabled={blocked}
+                                      onPress={() => setEditMacroColors(prev => ({ ...prev, [key]: sw }))}
+                                      style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: sw,
+                                        opacity: blocked ? 0.2 : 1,
+                                        borderWidth: selected ? 2 : 0, borderColor: '#ffffff',
+                                        alignItems: 'center', justifyContent: 'center' }}>
+                                      {selected && <Ionicons name="checkmark" size={13} color="#ffffff" />}
+                                    </TouchableOpacity>
+                                  );
+                                })}
+                              </View>
+                            </View>
+                          );
+                        })}
+                        <View style={{ height: 8 }} />
+                      </>
+                    ) : (
+                      <View style={{ flexDirection: 'row', gap: 8, marginBottom: 20 }}>
+                        {GRAPH_SWATCHES.map(sw => {
+                          const selected = editColor === sw;
+                          return (
+                            <TouchableOpacity key={sw}
+                              onPress={() => setEditColor(selected ? undefined : sw)}
+                              style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: sw,
+                                borderWidth: selected ? 2 : 0, borderColor: '#ffffff',
+                                alignItems: 'center', justifyContent: 'center' }}>
+                              {selected && <Ionicons name="checkmark" size={13} color="#ffffff" />}
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    )}
+                  </>
+                )}
+
                 {/* Delete */}
                 <TouchableOpacity onPress={handleDeleteEditCard} style={{ paddingVertical: 12, alignItems: 'center' }}>
                   <Text style={{ color: theme.accentRed, fontFamily: 'DMSans_600SemiBold', fontSize: 14 }}>Delete Graph</Text>
                 </TouchableOpacity>
-              </View>
+              </ScrollView>
 
               {/* Save bar -- dim until changes */}
-              <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard, paddingHorizontal: 20, paddingVertical: 14 }}>
-                <TouchableOpacity
-                  onPress={handleSaveEditCard}
-                  disabled={!editCard || (editLabel === editCard.label && editChartType === editCard.chartType && editPeriod === editCard.period)}
-                  style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 10, paddingVertical: 14, alignItems: 'center',
-                    opacity: !editCard || (editLabel === editCard.label && editChartType === editCard.chartType && editPeriod === editCard.period) ? 0.4 : 1 }}>
-                  <Text style={{ color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 18, letterSpacing: 2 }}>SAVE</Text>
-                </TouchableOpacity>
-              </View>
+              {(() => {
+                const colorChanged = editCard?.dataKey === 'macros'
+                  ? (editMacroColors.protein !== (editCard?.macroColors?.protein ?? MACRO_PROTEIN) ||
+                     editMacroColors.carbs !== (editCard?.macroColors?.carbs ?? MACRO_CARBS) ||
+                     editMacroColors.fat !== (editCard?.macroColors?.fat ?? MACRO_FAT))
+                  : editColor !== editCard?.color;
+                const noChange = !editCard || (
+                  editLabel === editCard.label &&
+                  editChartType === editCard.chartType &&
+                  editPeriod === editCard.period &&
+                  !colorChanged
+                );
+                return (
+                  <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard, paddingHorizontal: 20, paddingVertical: 14 }}>
+                    <TouchableOpacity onPress={handleSaveEditCard} disabled={noChange}
+                      style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 10, paddingVertical: 14, alignItems: 'center', opacity: noChange ? 0.4 : 1 }}>
+                      <Text style={{ color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 18, letterSpacing: 2 }}>SAVE</Text>
+                    </TouchableOpacity>
+                  </View>
+                );
+              })()}
             </Animated.View>
           </Animated.View>
         </KeyboardAvoidingView>

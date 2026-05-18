@@ -15,6 +15,8 @@ export interface StatsCard {
   // Graph cards only
   dataKey?: DataKey;
   chartType?: ChartType;
+  color?: string;
+  macroColors?: { protein: string; carbs: string; fat: string };
   // Shared
   period: CardPeriod;
   label: string;

@@ -1,10 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Camera, CameraView } from 'expo-camera';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Keyboard, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { USDA_API_KEY } from '../config';
+import CustomFoodCreator from '../components/CustomFoodCreator';
 import { saveToFirebase } from '../firebaseConfig';
 import { useTheme } from '../theme';
 
@@ -59,21 +58,10 @@ export default function RecipeBuilderScreen() {
   const [totalWeightUnit, setTotalWeightUnit] = useState('g');
   const [servingCount, setServingCount] = useState('1');
   const [servingName, setServingName] = useState('serving');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [searching, setSearching] = useState(false);
-  const [scanning, setScanning] = useState(false);
-  const [showAddIngredientModal, setShowAddIngredientModal] = useState(false);
   const [showCustomFoodModal, setShowCustomFoodModal] = useState(false);
   const [showWeightUnitPicker, setShowWeightUnitPicker] = useState(false);
-  const [selectedFood, setSelectedFood] = useState<any>(null);
-  const [ingredientAmount, setIngredientAmount] = useState('100');
-  const [ingredientUnit, setIngredientUnit] = useState('g');
-  const [customFood, setCustomFood] = useState({ name: '', cal: '', protein: '', carbs: '', fat: '', saveToLibrary: true });
-  const [myFoods, setMyFoods] = useState<any[]>([]);
 
   useEffect(() => {
-    loadMyFoods();
     if (recipeId) loadExistingRecipe();
   }, []);
 
@@ -93,13 +81,6 @@ export default function RecipeBuilderScreen() {
     }, [])
   );
 
-  const loadMyFoods = async () => {
-    try {
-      const saved = await AsyncStorage.getItem('pj_my_foods');
-      if (saved) setMyFoods(JSON.parse(saved));
-    } catch (e) {}
-  };
-
   const loadExistingRecipe = async () => {
     try {
       const saved = await AsyncStorage.getItem('pj_recipes');
@@ -118,88 +99,19 @@ export default function RecipeBuilderScreen() {
     } catch (e) {}
   };
 
-  const searchFood = async (query: string) => {
-    setSearchQuery(query);
-    if (!query.trim()) { setSearchResults([]); return; }
-    
-    const myFoodResults = myFoods
-      .filter(f => f.name.toLowerCase().includes(query.toLowerCase()))
-      .map(f => ({ description: f.name, cal: f.cal, isMyFood: true, foodNutrients: [] }));
 
-    setSearching(true);
-    try {
-      const response = await fetch(
-        `https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(query)}&pageSize=8&api_key=${USDA_API_KEY}`
-      );
-      const data = await response.json();
-      setSearchResults([...myFoodResults, ...(data.foods || [])]);
-    } catch (e) {
-      setSearchResults(myFoodResults);
-    } finally {
-      setSearching(false);
-    }
-  };
-
-  const getCaloriesFromFood = (food: any) => {
-    if (food.cal) return food.cal;
-    const e = food.foodNutrients?.find((n: any) => n.nutrientName === 'Energy' && n.unitName === 'KCAL');
-    return Math.round(e?.value || 0);
-  };
-
-  const getNutrient = (food: any, name: string) => {
-    const n = food.foodNutrients?.find((f: any) => f.nutrientName === name);
-    return Math.round((n?.value || 0) * 10) / 10;
-  };
-
-  const selectFood = (food: any) => {
-    setSelectedFood(food);
-    setIngredientAmount('100');
-    setIngredientUnit('g');
-    setSearchQuery('');
-    setSearchResults([]);
-    setShowAddIngredientModal(true);
-    Keyboard.dismiss();
-  };
-
-  const addIngredient = () => {
-    if (!selectedFood || !ingredientAmount) return;
-    const multiplier = parseFloat(ingredientAmount) / 100;
-    const calPer100g = getCaloriesFromFood(selectedFood);
+  const handleCustomFoodSaved = (food: any) => {
     const ingredient: Ingredient = {
       id: makeId(),
-      name: selectedFood.description || selectedFood.name,
-      cal: Math.round(calPer100g * multiplier),
-      protein: Math.round(getNutrient(selectedFood, 'Protein') * multiplier * 10) / 10,
-      carbs: Math.round(getNutrient(selectedFood, 'Carbohydrate, by difference') * multiplier * 10) / 10,
-      fat: Math.round(getNutrient(selectedFood, 'Total lipid (fat)') * multiplier * 10) / 10,
-      amount: parseFloat(ingredientAmount),
-      unit: ingredientUnit,
+      name: food.name,
+      cal: food.cal || 0,
+      protein: food.protein || 0,
+      carbs: food.carbs || 0,
+      fat: food.fat || 0,
+      amount: food.servingSize || 100,
+      unit: food.servingUnit || 'g',
     };
     setIngredients(prev => [...prev, ingredient]);
-    setShowAddIngredientModal(false);
-    setSelectedFood(null);
-  };
-
-  const addCustomFood = async () => {
-    if (!customFood.name || !customFood.cal) return;
-    const ingredient: Ingredient = {
-      id: makeId(),
-      name: customFood.name,
-      cal: parseInt(customFood.cal) || 0,
-      protein: parseFloat(customFood.protein) || 0,
-      carbs: parseFloat(customFood.carbs) || 0,
-      fat: parseFloat(customFood.fat) || 0,
-      amount: 100,
-      unit: 'g',
-    };
-    setIngredients(prev => [...prev, ingredient]);
-    if (customFood.saveToLibrary) {
-      const updated = [...myFoods, { name: customFood.name, cal: parseInt(customFood.cal) }];
-      setMyFoods(updated);
-      await AsyncStorage.setItem('pj_my_foods', JSON.stringify(updated));
-    }
-    setCustomFood({ name: '', cal: '', protein: '', carbs: '', fat: '', saveToLibrary: true });
-    setShowCustomFoodModal(false);
   };
 
   const removeIngredient = (id: string) => {
@@ -249,34 +161,6 @@ export default function RecipeBuilderScreen() {
     }
   };
 
-  const startScan = async () => {
-    const { status } = await Camera.requestCameraPermissionsAsync();
-    if (status === 'granted') setScanning(true);
-  };
-
-  const handleBarcodeScan = async ({ data }: { data: string }) => {
-    setScanning(false);
-    try {
-      const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${data}.json`);
-      const result = await response.json();
-      if (result.status === 1 && result.product) {
-        const product = result.product;
-        selectFood({
-          description: `${product.product_name}${product.brands ? ' · ' + product.brands : ''}`,
-          foodNutrients: [
-            { nutrientName: 'Energy', unitName: 'KCAL', value: product.nutriments?.['energy-kcal_100g'] || 0 },
-            { nutrientName: 'Protein', value: product.nutriments?.proteins_100g || 0 },
-            { nutrientName: 'Carbohydrate, by difference', value: product.nutriments?.carbohydrates_100g || 0 },
-            { nutrientName: 'Total lipid (fat)', value: product.nutriments?.fat_100g || 0 },
-          ],
-        });
-      } else {
-        Alert.alert('Not found', 'Product not found. Try searching manually.');
-      }
-    } catch (e) {
-      console.log('Barcode error', e);
-    }
-  };
 
   const styles = useStyles(theme);
   return (
@@ -424,76 +308,11 @@ export default function RecipeBuilderScreen() {
 
       </ScrollView>
 
-      {/* Add Ingredient Modal */}
-      <Modal visible={showAddIngredientModal} transparent animationType="slide">
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => Keyboard.dismiss()}>
-          <View style={styles.modal}>
-            <Text style={styles.modalTitle}>{selectedFood?.description}</Text>
-            <Text style={styles.modalSubtitle}>How much are you using?</Text>
-            <View style={styles.servingRow}>
-              <TextInput
-                style={[styles.searchInput, { width: 100 }]}
-                value={ingredientAmount}
-                onChangeText={v => filterDecimal(v, setIngredientAmount)}
-                keyboardType="decimal-pad"
-                selectTextOnFocus
-              />
-              <View style={styles.unitBtns}>
-                {['g', 'oz', 'serving'].map(u => (
-                  <TouchableOpacity
-                    key={u}
-                    style={[styles.unitBtn, ingredientUnit === u && styles.unitBtnActive]}
-                    onPress={() => setIngredientUnit(u)}>
-                    <Text style={[styles.unitBtnText, ingredientUnit === u && { color: theme.accentBlue }]}>{u}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-            <View style={styles.modalBtns}>
-              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowAddIngredientModal(false)}>
-                <Text style={styles.modalCancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.modalSaveBtn} onPress={addIngredient}>
-                <Text style={styles.modalSaveText}>Add</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* Custom Food Modal */}
-      <Modal visible={showCustomFoodModal} transparent animationType="slide">
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => Keyboard.dismiss()}>
-          <View style={styles.modal}>
-            <Text style={styles.modalTitle}>Add Custom Food</Text>
-            <TextInput style={styles.modalInput} placeholder="Food name" placeholderTextColor={theme.textPlaceholder} value={customFood.name} onChangeText={v => setCustomFood(p => ({ ...p, name: v }))} />
-            <View style={styles.servingRow}>
-              <TextInput style={[styles.modalInput, { flex: 1 }]} placeholder="Calories" placeholderTextColor={theme.textPlaceholder} keyboardType="decimal-pad" value={customFood.cal} onChangeText={v => filterDecimal(v, s => setCustomFood(p => ({ ...p, cal: s })))} />
-              <TextInput style={[styles.modalInput, { flex: 1 }]} placeholder="Protein g" placeholderTextColor={theme.textPlaceholder} keyboardType="decimal-pad" value={customFood.protein} onChangeText={v => filterDecimal(v, s => setCustomFood(p => ({ ...p, protein: s })))} />
-            </View>
-            <View style={styles.servingRow}>
-              <TextInput style={[styles.modalInput, { flex: 1 }]} placeholder="Carbs g" placeholderTextColor={theme.textPlaceholder} keyboardType="decimal-pad" value={customFood.carbs} onChangeText={v => filterDecimal(v, s => setCustomFood(p => ({ ...p, carbs: s })))} />
-              <TextInput style={[styles.modalInput, { flex: 1 }]} placeholder="Fat g" placeholderTextColor={theme.textPlaceholder} keyboardType="decimal-pad" value={customFood.fat} onChangeText={v => filterDecimal(v, s => setCustomFood(p => ({ ...p, fat: s })))} />
-            </View>
-            <TouchableOpacity
-              style={styles.saveToLibraryRow}
-              onPress={() => setCustomFood(p => ({ ...p, saveToLibrary: !p.saveToLibrary }))}>
-              <View style={[styles.checkbox, customFood.saveToLibrary && styles.checkboxChecked]}>
-                {customFood.saveToLibrary && <Text style={styles.checkboxCheck}>✓</Text>}
-              </View>
-              <Text style={styles.saveToLibraryText}>Save to My Foods library</Text>
-            </TouchableOpacity>
-            <View style={styles.modalBtns}>
-              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowCustomFoodModal(false)}>
-                <Text style={styles.modalCancelText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.modalSaveBtn} onPress={addCustomFood}>
-                <Text style={styles.modalSaveText}>Add</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </TouchableOpacity>
-      </Modal>
+      <CustomFoodCreator
+        visible={showCustomFoodModal}
+        onClose={() => setShowCustomFoodModal(false)}
+        onSaved={handleCustomFoodSaved}
+      />
 
       {/* Weight Unit Picker */}
       <Modal visible={showWeightUnitPicker} transparent animationType="slide">
@@ -512,19 +331,6 @@ export default function RecipeBuilderScreen() {
         </TouchableOpacity>
       </Modal>
 
-      {/* Camera */}
-      {scanning && (
-        <View style={styles.cameraOverlay}>
-          <CameraView
-            style={styles.camera}
-            onBarcodeScanned={handleBarcodeScan}
-            barcodeScannerSettings={{ barcodeTypes: ['upc_a', 'upc_e', 'ean13', 'ean8'] }}
-          />
-          <TouchableOpacity style={styles.cancelScan} onPress={() => setScanning(false)}>
-            <Text style={styles.cancelScanText}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
-      )}
     </View>
   );
 }
@@ -541,14 +347,8 @@ const useStyles = (theme: any) => StyleSheet.create({
   recipeNameInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 10, color: theme.textPrimary, padding: 14, fontSize: 18, fontFamily: 'DMSans_600SemiBold', marginBottom: 16 },
   searchRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   searchInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 14, fontFamily: 'DMSans_400Regular' },
-  scanBtn: { backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8, paddingHorizontal: 12, justifyContent: 'center' },
-  scanBtnText: { fontSize: 18 },
   customBtn: { backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder, borderRadius: 8, paddingHorizontal: 14, justifyContent: 'center' },
   customBtnText: { color: theme.accentGreen, fontSize: 22, fontFamily: 'DMSans_400Regular' },
-  searchResults: { backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 8, marginBottom: 16, overflow: 'hidden' },
-  searchResult: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 12, borderBottomWidth: 1, borderBottomColor: theme.borderSubtle },
-  searchResultName: { fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_400Regular', flex: 1, marginRight: 8 },
-  searchResultCal: { fontSize: 12, color: theme.accentGreen, fontFamily: 'DMSans_600SemiBold' },
   section: { marginBottom: 20 },
   sectionLabel: { fontSize: 9, letterSpacing: 3, color: theme.textMuted, textTransform: 'uppercase', fontFamily: 'DMSans_500Medium', marginBottom: 10 },
   emptyText: { fontSize: 13, color: theme.textDim, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' },
@@ -565,33 +365,13 @@ const useStyles = (theme: any) => StyleSheet.create({
   weightRow: { flexDirection: 'row', gap: 8 },
   unitPickerBtn: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingHorizontal: 16, justifyContent: 'center' },
   unitPickerBtnText: { color: theme.accentBlue, fontSize: 14, fontFamily: 'DMSans_600SemiBold' },
-  servingRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   perServingCard: { backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder, borderRadius: 10, padding: 14, marginTop: 8 },
   perServingTitle: { fontSize: 9, letterSpacing: 3, color: theme.accentGreen, textTransform: 'uppercase', fontFamily: 'DMSans_500Medium', marginBottom: 10 },
   modalOverlay: { flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'flex-end' },
   modal: { backgroundColor: theme.bgCard, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24, borderWidth: 1, borderColor: theme.borderCard },
   modalTitle: { fontSize: 18, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', marginBottom: 4 },
-  modalSubtitle: { fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 16 },
-  modalInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: 'DMSans_400Regular', marginBottom: 10 },
-  unitBtns: { flexDirection: 'row', gap: 6, flex: 1 },
-  unitBtn: { flex: 1, padding: 10, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, alignItems: 'center' },
-  unitBtnActive: { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder },
-  unitBtnText: { color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_500Medium' },
-  modalBtns: { flexDirection: 'row', gap: 8, marginTop: 8 },
-  modalCancelBtn: { flex: 1, padding: 12, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, alignItems: 'center' },
-  modalCancelText: { color: theme.textMuted, fontFamily: 'DMSans_500Medium', fontSize: 14 },
-  modalSaveBtn: { flex: 1, padding: 12, backgroundColor: theme.accentBlue, borderRadius: 6, alignItems: 'center' },
-  modalSaveText: { color: theme.textWhite, fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 1 },
-  saveToLibraryRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 12 },
-  checkbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 1, borderColor: theme.borderInput, alignItems: 'center', justifyContent: 'center' },
-  checkboxChecked: { backgroundColor: theme.accentGreen, borderColor: theme.accentGreen },
-  checkboxCheck: { color: theme.bgPrimary, fontSize: 12, fontWeight: '700' },
-  saveToLibraryText: { color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular' },
+  servingRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   unitPickerOption: { padding: 14, borderBottomWidth: 1, borderBottomColor: theme.borderSubtle },
   unitPickerOptionActive: { backgroundColor: theme.accentBlueBg },
   unitPickerOptionText: { fontSize: 16, color: theme.textMuted, fontFamily: 'DMSans_500Medium' },
-  cameraOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 100 },
-  camera: { flex: 1 },
-  cancelScan: { position: 'absolute', bottom: 40, alignSelf: 'center', backgroundColor: theme.overlayBg, padding: 16, borderRadius: 8 },
-  cancelScanText: { color: theme.textPrimary, fontSize: 16, fontFamily: 'DMSans_600SemiBold' },
 });

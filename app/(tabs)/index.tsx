@@ -669,6 +669,7 @@ export default function HomeScreen() {
   const [lastKnownWeight, setLastKnownWeight] = useState<{ val: number; daysAgo: number } | null>(null);
   const [weightInput,    setWeightInput]    = useState('');
   const [dailyNote,      setDailyNote]      = useState('');
+  const [savedDailyNoteText, setSavedDailyNoteText] = useState('');
   const [totalCals,      setTotalCals]      = useState(0);
   const [calTarget,      setCalTarget]      = useState(0);
   const [caloriesBurned, setCaloriesBurned] = useState(0);
@@ -680,8 +681,6 @@ export default function HomeScreen() {
   const [macroGoals,     setMacroGoals]     = useState({ protein: 0, carbs: 0, fat: 0 });
   const [goalWeight,     setGoalWeight]     = useState<number|null>(null);
   const [weightGoalPace, setWeightGoalPace] = useState<string>('lose_1');
-  const [editingStepGoal,setEditingStepGoal]= useState(false);
-  const prevStepGoal = useRef(10000);
   const scrollRef = useRef<any>(null);
   const dailyNoteRef = useRef<any>(null);
   const editSheetHeight = useRef<number>(Dimensions.get('window').height);
@@ -934,7 +933,7 @@ export default function HomeScreen() {
           if (data.weight)        setWeight(data.weight);
           if (data.ifMethod)      setIfMethod(data.ifMethod);
           if (data.ifCustomHours) setIfCustomHours(data.ifCustomHours);
-          if (data.dailyNote)     setDailyNote(data.dailyNote);
+          if ('dailyNote' in data) { setDailyNote(data.dailyNote ?? ''); setSavedDailyNoteText(data.dailyNote ?? ''); }
           // Only load IF start/end if they belong to today
           if (data.ifStart) {
             const startDate = new Date(data.ifStart);
@@ -966,7 +965,7 @@ export default function HomeScreen() {
             if (cloudData.water)    setWater(cloudData.water);
             if (cloudData.weight)   setWeight(cloudData.weight);
             if (cloudData.ifStart)  setIfStart(cloudData.ifStart);
-            if (cloudData.dailyNote)setDailyNote(cloudData.dailyNote);
+            if ('dailyNote' in cloudData) { setDailyNote(cloudData.dailyNote ?? ''); setSavedDailyNoteText(cloudData.dailyNote ?? ''); }
             await AsyncStorage.setItem(`pj_${todayKey}`, JSON.stringify(cloudData));
           }
         }
@@ -1053,6 +1052,7 @@ export default function HomeScreen() {
           if (data.sleepManualRem)  setSleepManualRem(String(data.sleepManualRem));
           if (typeof data.water === 'number') { setWater(data.water); waterLoaded.current = true; }
           if (data.weight) setWeight(data.weight);
+          if ('dailyNote' in data) { setDailyNote(data.dailyNote ?? ''); setSavedDailyNoteText(data.dailyNote ?? ''); }
         }
         // Weight comparison loading
         const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
@@ -1748,35 +1748,10 @@ export default function HomeScreen() {
           color={theme.accentBlueRaw}
           style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }}
         />
-        <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
-          <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
-            <Ionicons name="footsteps-outline" size={11} color={theme.textMuted} />
-            <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Steps Today</Text>
-          </View>
-          <TouchableOpacity onPress={() => { prevStepGoal.current = stepGoal; setEditingStepGoal(true); }}
-            style={{ backgroundColor: theme.accentBlueBg, borderWidth:1, borderColor: theme.accentBlueBorder, borderRadius:6, paddingHorizontal:10, paddingVertical:4 }}>
-            <Text style={{ color: theme.accentBlue, fontSize:12, fontFamily:'DMSans_600SemiBold' }}>Goal: {stepGoal.toLocaleString()}</Text>
-          </TouchableOpacity>
+        <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:8 }}>
+          <Ionicons name="footsteps-outline" size={11} color={theme.textMuted} />
+          <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Steps Today</Text>
         </View>
-        {editingStepGoal && (
-          <View style={{ flexDirection:'row', alignItems:'center', gap:8, marginBottom:10 }}>
-            <TextInput style={{ flex:1, backgroundColor: theme.bgInput, borderWidth:1, borderColor: theme.borderInput, borderRadius:6, color: theme.textPrimary, padding:8, fontSize:14, fontFamily:'DMSans_400Regular' }}
-              value={String(stepGoal)} onChangeText={v => setStepGoal(parseInt(v)||0)} keyboardType="number-pad" autoFocus />
-            <TouchableOpacity onPress={() => { setStepGoal(prevStepGoal.current); setEditingStepGoal(false); }}
-              style={{ backgroundColor: theme.accentRedBg, borderWidth:1, borderColor: theme.accentRedBorder, borderRadius:6, paddingHorizontal:12, paddingVertical:8 }}>
-              <Text style={{ color: theme.accentRed, fontSize:13, fontFamily:'DMSans_600SemiBold' }}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={async () => {
-              setEditingStepGoal(false);
-              const saved = await AsyncStorage.getItem('pj_profile');
-              const p = saved ? JSON.parse(saved) : {};
-              await AsyncStorage.setItem('pj_profile', JSON.stringify({...p, stepGoal: String(stepGoal)}));
-              await saveToFirebase('profile','data',{...p, stepGoal: String(stepGoal)});
-            }} style={{ backgroundColor: theme.accentGreen, borderRadius:6, paddingHorizontal:12, paddingVertical:8 }}>
-              <Text style={{ color: theme.bgPrimary, fontSize:13, fontFamily:'DMSans_600SemiBold' }}>Save</Text>
-            </TouchableOpacity>
-          </View>
-        )}
         <View style={{ flexDirection:'row', alignItems:'baseline', gap:6, marginBottom:6 }}>
           <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
             <Text style={{ fontSize:36, color:stepColor, fontFamily:'BebasNeue_400Regular', letterSpacing:1, opacity: 0.88 }}>{steps.toLocaleString()}</Text>
@@ -2050,22 +2025,58 @@ export default function HomeScreen() {
     </View>
   );
 
-  const renderDailyNoteCard = () => (
-    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
-      <Ionicons name="create" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
-      <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:10 }}>
-        <Ionicons name="journal-outline" size={11} color={theme.textMuted} />
-        <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Daily Note</Text>
+  const renderDailyNoteCard = () => {
+    const noteCurrentText = dailyNote.trim();
+    const noteLastSaved = savedDailyNoteText.trim();
+    const noteIsDirty = noteCurrentText !== noteLastSaved;
+    const isClearing = noteIsDirty && !noteCurrentText && !!noteLastSaved;
+    return (
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
+        <Ionicons name="create" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
+        <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+          <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
+            <Ionicons name="journal-outline" size={11} color={theme.textMuted} />
+            <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Today's Thoughts</Text>
+          </View>
+          <TouchableOpacity onPress={() => router.push('/journal')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="book" size={16} color={theme.accentBlue} />
+          </TouchableOpacity>
+        </View>
+        <TextInput ref={dailyNoteRef} style={[styles.notesInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} placeholder="How did today go? Energy, mood, wins..." placeholderTextColor={theme.textPlaceholder}
+          multiline numberOfLines={4} value={dailyNote} onChangeText={setDailyNote}
+          onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100)}
+          onBlur={() => dailyNoteRef.current?.setNativeProps({ selection: { start: 0, end: 0 } })} />
+        <TouchableOpacity
+          style={[styles.saveBtn, isClearing
+            ? { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder, opacity: 1 }
+            : { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder, opacity: noteIsDirty && noteCurrentText ? 1 : 0.4 }
+          ]}
+          disabled={!noteIsDirty}
+          onPress={async () => {
+            if (!noteIsDirty) return;
+            try {
+              const raw = await AsyncStorage.getItem('pj_bible_reflections');
+              const entries: any[] = raw ? JSON.parse(raw) : [];
+              const existing = entries.findIndex(e => e.category === 'personal' && e.date === todayKey);
+              if (isClearing) {
+                if (existing >= 0) entries.splice(existing, 1);
+              } else if (existing >= 0) {
+                entries[existing] = { ...entries[existing], notes: noteCurrentText };
+              } else {
+                entries.unshift({ id: `${todayKey}_${Date.now()}`, date: todayKey, category: 'personal', title: "Today's Thoughts", notes: noteCurrentText });
+              }
+              await AsyncStorage.setItem('pj_bible_reflections', JSON.stringify(entries));
+            } catch {}
+            setSavedDailyNoteText(noteCurrentText);
+            showToast(isClearing ? 'Note cleared' : 'Note saved to journal', undefined, 'success');
+          }}>
+          <Text style={[styles.saveBtnText, { color: isClearing ? theme.accentRed : theme.accentBlue }]}>
+            {!noteIsDirty && noteCurrentText ? 'Saved ✓' : isClearing ? 'Clear Note' : 'Save Note'}
+          </Text>
+        </TouchableOpacity>
       </View>
-      <TextInput ref={dailyNoteRef} style={[styles.notesInput, { backgroundColor: theme.bgInset + '80', borderColor: theme.borderInput, color: theme.textPrimary }]} placeholder="How did today go? Workout, diet, energy..." placeholderTextColor={theme.textPlaceholder}
-        multiline numberOfLines={4} value={dailyNote} onChangeText={setDailyNote}
-        onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100)}
-        onBlur={() => dailyNoteRef.current?.setNativeProps({ selection: { start: 0, end: 0 } })} />
-      <TouchableOpacity style={[styles.saveBtn, { backgroundColor: theme.bgInset + '80', borderColor: theme.borderInset }]} onPress={() => {}}>
-        <Text style={[styles.saveBtnText, { color: theme.textSecondary }]}>Save Note</Text>
-      </TouchableOpacity>
-    </View>
-  );
+    );
+  };
 
   const renderVsYesterdayCard = () => {
     // ── Today's values ──

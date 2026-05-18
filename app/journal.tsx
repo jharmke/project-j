@@ -459,6 +459,13 @@ export default function JournalScreen() {
         }
       } catch {}
     }
+    if (entry?.category === 'personal') {
+      try {
+        const raw = await AsyncStorage.getItem(`pj_${entry.date}`);
+        const data = raw ? JSON.parse(raw) : {};
+        await AsyncStorage.setItem(`pj_${entry.date}`, JSON.stringify({ ...data, dailyNote: '' }));
+      } catch {}
+    }
     setExpandedIds(prev => { const next = new Set(prev); next.delete(id); return next; });
     showToast('Entry deleted', undefined, 'info');
   };

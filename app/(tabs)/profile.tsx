@@ -31,6 +31,7 @@ interface Profile {
   macroCarbsG: string;
   macroFatG: string;
   sleepGoal: string;
+  stepGoal: string;
   useRecommendedCal: boolean;
 }
 
@@ -236,6 +237,7 @@ export default function ProfileScreen() {
     macroCarbsG: '',
     macroFatG: '',
     sleepGoal: '7',
+    stepGoal: '10000',
     useRecommendedCal: true,
   });
   const [currentWeight, setCurrentWeight] = useState<number | null>(null);
@@ -260,7 +262,7 @@ export default function ProfileScreen() {
       try {
         const data = await AsyncStorage.getItem('pj_profile');
         if (data) {
-          const parsed = { goalWeight: '', ...JSON.parse(data) };
+          const parsed = { goalWeight: '', stepGoal: '10000', ...JSON.parse(data) };
           setProfile(parsed);
           setSavedProfile(parsed);
         }
@@ -691,6 +693,18 @@ export default function ProfileScreen() {
             onChange={v => updateField('sleepGoal', v)}
             theme={theme}
           />
+        </CollapsibleCard>
+
+        <CollapsibleCard label="Step Goal" theme={theme}>
+          <TextInput
+            style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
+            value={profile.stepGoal || '10000'}
+            onChangeText={v => updateField('stepGoal', v.replace(/[^0-9]/g, ''))}
+            keyboardType="number-pad"
+            placeholder="e.g. 10000"
+            placeholderTextColor={theme.textPlaceholder}
+          />
+          <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginTop: 4 }}>Daily step target. Shows on your home screen progress bar.</Text>
         </CollapsibleCard>
 
         <CollapsibleCard label="Daily Calorie Target" theme={theme}>

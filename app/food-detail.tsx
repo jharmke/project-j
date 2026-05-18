@@ -938,17 +938,11 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
               <View style={{ height: 4, width: 40, backgroundColor: theme.borderCard, borderRadius: 2, alignSelf: 'center', marginTop: 12 }} />
               <Text style={{ fontSize: 16, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, textAlign: 'center', marginTop: 8, marginBottom: 4 }}>EDIT FOOD</Text>
               <ScrollView style={{ maxHeight: 460 }} contentContainerStyle={{ padding: 16, paddingTop: 8 }} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled">
+                {/* Basic Info */}
+                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Basic Info</Text>
                 {([
                   { label: 'Food Name', key: 'name', keyboard: 'default' as const },
                   { label: 'Calories (kcal)', key: 'cal', keyboard: 'decimal-pad' as const },
-                  { label: 'Protein (g)', key: 'protein', keyboard: 'decimal-pad' as const },
-                  { label: 'Carbs (g)', key: 'carbs', keyboard: 'decimal-pad' as const },
-                  { label: 'Fat (g)', key: 'fat', keyboard: 'decimal-pad' as const },
-                  { label: 'Fiber (g)', key: 'fiber', keyboard: 'decimal-pad' as const },
-                  { label: 'Sugar (g)', key: 'sugar', keyboard: 'decimal-pad' as const },
-                  { label: 'Sodium (mg)', key: 'sodium', keyboard: 'decimal-pad' as const },
-                  { label: 'Cholesterol (mg)', key: 'cholesterol', keyboard: 'decimal-pad' as const },
-                  { label: 'Saturated Fat (g)', key: 'saturatedFat', keyboard: 'decimal-pad' as const },
                 ] as { label: string; key: string; keyboard: 'default' | 'decimal-pad' }[]).map(f => (
                   <View key={f.key} style={{ marginBottom: 10 }}>
                     <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 4 }}>{f.label}</Text>
@@ -962,6 +956,65 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
                     />
                   </View>
                 ))}
+                {/* Macronutrients -- 3 column */}
+                <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
+                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Macronutrients</Text>
+                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
+                  {([
+                    { label: 'PROTEIN (g)', key: 'protein', dot: '#0d9268' },
+                    { label: 'CARBS (g)', key: 'carbs', dot: '#c47d1a' },
+                    { label: 'FAT (g)', key: 'fat', dot: '#a83232' },
+                  ] as { label: string; key: string; dot: string }[]).map(f => (
+                    <View key={f.key} style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: f.dot, marginRight: 4 }} />
+                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2 }}>{f.label}</Text>
+                      </View>
+                      <TextInput
+                        style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: 'DMSans_400Regular', textAlign: 'center' }}
+                        value={editFoodData?.[f.key] || ''}
+                        onChangeText={v => setEditFoodData((p: any) => p ? { ...p, [f.key]: filterDecimal(v) } : null)}
+                        keyboardType="decimal-pad"
+                        placeholderTextColor={theme.textDim}
+                        selectTextOnFocus
+                      />
+                    </View>
+                  ))}
+                </View>
+                {/* Extended Nutrition -- 2 column pairs */}
+                <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
+                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Extended Nutrition</Text>
+                {([
+                  [{ label: 'FIBER (g)', key: 'fiber' }, { label: 'SUGAR (g)', key: 'sugar' }],
+                  [{ label: 'SODIUM (mg)', key: 'sodium' }, { label: 'CHOLESTEROL (mg)', key: 'cholesterol' }],
+                ] as { label: string; key: string }[][]).map((row, ri) => (
+                  <View key={ri} style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
+                    {row.map(f => (
+                      <View key={f.key} style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, marginBottom: 4 }}>{f.label}</Text>
+                        <TextInput
+                          style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: 'DMSans_400Regular' }}
+                          value={editFoodData?.[f.key] || ''}
+                          onChangeText={v => setEditFoodData((p: any) => p ? { ...p, [f.key]: filterDecimal(v) } : null)}
+                          keyboardType="decimal-pad"
+                          placeholderTextColor={theme.textDim}
+                          selectTextOnFocus
+                        />
+                      </View>
+                    ))}
+                  </View>
+                ))}
+                <View style={{ marginBottom: 10 }}>
+                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, marginBottom: 4 }}>SATURATED FAT (g)</Text>
+                  <TextInput
+                    style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: 'DMSans_400Regular' }}
+                    value={editFoodData?.saturatedFat || ''}
+                    onChangeText={v => setEditFoodData((p: any) => p ? { ...p, saturatedFat: filterDecimal(v) } : null)}
+                    keyboardType="decimal-pad"
+                    placeholderTextColor={theme.textDim}
+                    selectTextOnFocus
+                  />
+                </View>
               </ScrollView>
               <View style={{ flexDirection: 'row', gap: 10, padding: 16, paddingTop: 12 }}>
                 <TouchableOpacity onPress={closeEditFoodModal} style={{ flex: 1, padding: 12, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, alignItems: 'center' }}>

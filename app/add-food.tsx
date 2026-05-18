@@ -468,10 +468,14 @@ const saveEditFood = async () => {
 
   const unsetOverride = async (barcode: string) => {
     try {
+      const removedItem = barcodeOverrides[barcode];
       const updated = { ...barcodeOverrides };
       delete updated[barcode];
       setBarcodeOverrides(updated);
       await AsyncStorage.setItem('pj_barcode_overrides', JSON.stringify(updated));
+      if (removedItem) {
+        setResults(prev => prev.map(r => r.description === removedItem.description ? { ...r, isOverride: false } : r));
+      }
       showToast('Override removed', '', 'info');
     } catch (e) {}
   };
@@ -755,13 +759,24 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
     ++searchIdRef.current;
     isBarcodeSearchRef.current = true;
 
+    const myFoodRows = myFoods.map(f => ({
+      description: f.name,
+      foodNutrients: [
+        { nutrientName: 'Energy', unitName: 'KCAL', value: f.cal },
+        { nutrientName: 'Protein', unitName: 'G', value: f.protein || 0 },
+        { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: f.carbs || 0 },
+        { nutrientName: 'Total lipid (fat)', unitName: 'G', value: f.fat || 0 },
+      ],
+      isMyFood: true,
+    }));
+
     // Check for saved SET override
     if (barcodeOverrides[data]) {
       const override = { ...barcodeOverrides[data], isOverride: true };
       const overrideName = override.description;
       setLastScannedBarcode(null);
       setQuery(overrideName);
-      setResults([override]);
+      setResults([override, ...myFoodRows]);
       isBarcodeSearchRef.current = false;
 
       // Auto-load full results after delay
@@ -770,7 +785,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
           setSearching(true);
           const fsResults = await fetchFatSecretSearch(overrideName);
           const deduped = fsResults.filter(r => r.description !== overrideName);
-          setResults([override, ...deduped]);
+          setResults([override, ...myFoodRows, ...deduped]);
         } catch (e) {
           console.log('Override name search failed', e);
         } finally {
@@ -791,7 +806,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         setQuery(searchName);
         isBarcodeSearchRef.current = false;
         setLastScannedBarcode(data);
-        setResults([barcodeResult]);
+        setResults([barcodeResult, ...myFoodRows]);
         setSearching(false);
         startCooldown();
 
@@ -801,7 +816,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
             setSearching(true);
             const fsResults = await fetchFatSecretSearch(searchName);
             const deduped = fsResults.filter(r => r.description !== searchName);
-            setResults([barcodeResult, ...deduped]);
+            setResults([barcodeResult, ...myFoodRows, ...deduped]);
           } catch (e) {
             console.log('Name search failed', e);
           } finally {
@@ -1288,18 +1303,12 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
               <View style={{ height: 4, width: 40, backgroundColor: theme.borderCard, borderRadius: 2, alignSelf: 'center', marginTop: 12 }} />
               <Text style={{ fontSize: 16, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, textAlign: 'center', marginTop: 8, marginBottom: 4 }}>EDIT FOOD</Text>
               <ScrollView style={{ maxHeight: 460 }} contentContainerStyle={{ padding: 16, paddingTop: 8 }} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled">
+                {/* Basic Info */}
+                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Basic Info</Text>
                 {([
                   { label: 'Food Name', key: 'name', keyboard: 'default' as const },
                   { label: 'Calories (kcal)', key: 'cal', keyboard: 'decimal-pad' as const },
-                  { label: 'Protein (g)', key: 'protein', keyboard: 'decimal-pad' as const },
-                  { label: 'Carbs (g)', key: 'carbs', keyboard: 'decimal-pad' as const },
-                  { label: 'Fat (g)', key: 'fat', keyboard: 'decimal-pad' as const },
-                  { label: 'Fiber (g)', key: 'fiber', keyboard: 'decimal-pad' as const },
-                  { label: 'Sugar (g)', key: 'sugar', keyboard: 'decimal-pad' as const },
-                  { label: 'Sodium (mg)', key: 'sodium', keyboard: 'decimal-pad' as const },
-                  { label: 'Cholesterol (mg)', key: 'cholesterol', keyboard: 'decimal-pad' as const },
-                  { label: 'Saturated Fat (g)', key: 'saturatedFat', keyboard: 'decimal-pad' as const },
-                ] as { label: string; key: string; keyboard: 'default' | 'decimal-pad' }[]).map((f, i) => (
+                ] as { label: string; key: string; keyboard: 'default' | 'decimal-pad' }[]).map(f => (
                   <View key={f.key} style={{ marginBottom: 10 }}>
                     <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 4 }}>{f.label}</Text>
                     <TextInput
@@ -1312,6 +1321,65 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                     />
                   </View>
                 ))}
+                {/* Macronutrients -- 3 column */}
+                <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
+                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Macronutrients</Text>
+                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
+                  {([
+                    { label: 'PROTEIN (g)', key: 'protein', dot: '#0d9268' },
+                    { label: 'CARBS (g)', key: 'carbs', dot: '#c47d1a' },
+                    { label: 'FAT (g)', key: 'fat', dot: '#a83232' },
+                  ] as { label: string; key: string; dot: string }[]).map(f => (
+                    <View key={f.key} style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: f.dot, marginRight: 4 }} />
+                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2 }}>{f.label}</Text>
+                      </View>
+                      <TextInput
+                        style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: 'DMSans_400Regular', textAlign: 'center' }}
+                        value={editFoodData?.[f.key] || ''}
+                        onChangeText={v => setEditFoodData((p: any) => p ? { ...p, [f.key]: filterDecimal(v) } : null)}
+                        keyboardType="decimal-pad"
+                        placeholderTextColor={theme.textDim}
+                        selectTextOnFocus
+                      />
+                    </View>
+                  ))}
+                </View>
+                {/* Extended Nutrition -- 2 column pairs */}
+                <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
+                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Extended Nutrition</Text>
+                {([
+                  [{ label: 'FIBER (g)', key: 'fiber' }, { label: 'SUGAR (g)', key: 'sugar' }],
+                  [{ label: 'SODIUM (mg)', key: 'sodium' }, { label: 'CHOLESTEROL (mg)', key: 'cholesterol' }],
+                ] as { label: string; key: string }[][]).map((row, ri) => (
+                  <View key={ri} style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
+                    {row.map(f => (
+                      <View key={f.key} style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, marginBottom: 4 }}>{f.label}</Text>
+                        <TextInput
+                          style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: 'DMSans_400Regular' }}
+                          value={editFoodData?.[f.key] || ''}
+                          onChangeText={v => setEditFoodData((p: any) => p ? { ...p, [f.key]: filterDecimal(v) } : null)}
+                          keyboardType="decimal-pad"
+                          placeholderTextColor={theme.textDim}
+                          selectTextOnFocus
+                        />
+                      </View>
+                    ))}
+                  </View>
+                ))}
+                <View style={{ marginBottom: 10 }}>
+                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, marginBottom: 4 }}>SATURATED FAT (g)</Text>
+                  <TextInput
+                    style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: 'DMSans_400Regular' }}
+                    value={editFoodData?.saturatedFat || ''}
+                    onChangeText={v => setEditFoodData((p: any) => p ? { ...p, saturatedFat: filterDecimal(v) } : null)}
+                    keyboardType="decimal-pad"
+                    placeholderTextColor={theme.textDim}
+                    selectTextOnFocus
+                  />
+                </View>
               </ScrollView>
               <View style={{ flexDirection: 'row', gap: 10, padding: 16, paddingTop: 12 }}>
                 <TouchableOpacity onPress={closeEditModal} style={{ flex: 1, padding: 12, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, alignItems: 'center' }}>

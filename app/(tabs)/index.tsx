@@ -6,12 +6,12 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, AppState, Dimensions, Easing, KeyboardAvoidingView, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
-import ReAnimated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import ReAnimated, { useAnimatedStyle, useSharedValue, withTiming, withRepeat, cancelAnimation, Easing as ReAnimEasing } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import PressableButton from '../../components/PressableButton';
 import { useToast } from '../../components/Toast';
-import CelebrationOverlay from '../../components/CelebrationOverlay';
+import { showCelebration } from '../../components/CelebrationOverlay';
 import { showAchievementToast } from '../../components/AchievementToast';
 import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, weightEntryIsPlausible, getWeightMilestonesCrossed, isGoalWeightHit } from '../../achievementData';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
@@ -327,9 +327,11 @@ function SleepDonut({ coreFrac, deepFrac, remFrac, donutCirc, donutSize, donutSt
   );
 }
 
-function AnimatedProgressBar({ pct, color, trackColor, refreshKey, ready }: { pct: number; color: string; trackColor?: string; refreshKey?: number; ready?: boolean }) {
+function AnimatedProgressBar({ pct, color, trackColor, refreshKey, ready, overGoal }: { pct: number; color: string; trackColor?: string; refreshKey?: number; ready?: boolean; overGoal?: boolean }) {
   const width = useSharedValue(0);
   const hasFired = useRef(false);
+  const shimmerX = useSharedValue(-80);
+
   useEffect(() => {
     hasFired.current = false;
     width.value = 0;
@@ -358,10 +360,32 @@ function AnimatedProgressBar({ pct, color, trackColor, refreshKey, ready }: { pc
       hasFired.current = true;
     }, 300);
   }, [pct, ready]);
+
+  useEffect(() => {
+    if (overGoal) {
+      shimmerX.value = -80;
+      shimmerX.value = withRepeat(withTiming(420, { duration: 1600, easing: ReAnimEasing.linear }), -1, false);
+    } else {
+      cancelAnimation(shimmerX);
+      shimmerX.value = -80;
+    }
+  }, [overGoal]);
+
   const animStyle = useAnimatedStyle(() => ({ width: `${width.value}%` as any }));
+  const shimmerStyle = useAnimatedStyle(() => ({ transform: [{ translateX: shimmerX.value }] }));
+
   return (
     <View style={[styles.progressBarBg, { backgroundColor: trackColor ?? '#1e1e2e' }]}>
       <ReAnimated.View style={[styles.progressBarFill, { backgroundColor: color }, animStyle]} />
+      {overGoal && (
+        <ReAnimated.View style={[{ position: 'absolute', top: 0, bottom: 0, left: 0, width: 80 }, shimmerStyle]}>
+          <LinearGradient
+            colors={['transparent', 'rgba(255,255,255,0.28)', 'transparent']}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+            style={{ flex: 1 }}
+          />
+        </ReAnimated.View>
+      )}
     </View>
   );
 }
@@ -647,7 +671,8 @@ export default function HomeScreen() {
   // App state
   const [loaded,          setLoaded]          = useState(false);
   const [refreshKey,      setRefreshKey]       = useState(0);
-  const [waterPresets,    setWaterPresets]     = useState<[number,number,number]>([12,16,22]);
+  const [waterPresets,    setWaterPresets]     = useState<[number,number,number]>([8,12,16]);
+  const [waterGoal,       setWaterGoal]        = useState(WATER_TARGET);
   const [showWaterCustomModal, setShowWaterCustomModal] = useState(false);
   const [waterCustomInput,     setWaterCustomInput]     = useState('');
   const [waterCustomSign,      setWaterCustomSign]      = useState<'add'|'subtract'>('add');
@@ -732,9 +757,6 @@ export default function HomeScreen() {
   const [vsStreak,        setVsStreak]        = useState(0);
 
   // Celebration state
-  const [celebVisible,    setCelebVisible]    = useState(false);
-  const [celebTier,       setCelebTier]       = useState<'small'|'medium'|'large'>('small');
-  const [celebLabel,      setCelebLabel]      = useState<string|undefined>(undefined);
   const [achievementStore,setAchievementStore]= useState<AchievementsStore>({});
 
   // Load achievements on mount
@@ -742,18 +764,12 @@ export default function HomeScreen() {
     loadAchievements().then(store => setAchievementStore(store));
   }, []);
 
-  const fireCelebration = (tier: 'small'|'medium'|'large', label?: string) => {
-    setCelebTier(tier);
-    setCelebLabel(label);
-    setCelebVisible(true);
-  };
-
   const handleAchievementUnlock = async (id: string, store: AchievementsStore) => {
     const { newlyUnlocked, updatedStore } = await checkAndUnlock(id, store);
     if (newlyUnlocked) {
       setAchievementStore(updatedStore);
       const def = ACHIEVEMENTS.find(a => a.id === id);
-      fireCelebration(def?.tier ?? 'small', def?.name);
+      showCelebration(def?.tier ?? 'small', def?.name);
       if (def) showAchievementToast(def);
       return updatedStore;
     }
@@ -929,7 +945,7 @@ export default function HomeScreen() {
         const saved = await AsyncStorage.getItem(`pj_${todayKey}`);
         if (saved) {
           const data = JSON.parse(saved);
-          if (data.water)         { setWater(data.water); waterLoaded.current = true; }
+          if (typeof data.water === 'number') { setWater(Math.max(0, data.water)); waterLoaded.current = true; }
           if (data.weight)        setWeight(data.weight);
           if (data.ifMethod)      setIfMethod(data.ifMethod);
           if (data.ifCustomHours) setIfCustomHours(data.ifCustomHours);
@@ -962,7 +978,7 @@ export default function HomeScreen() {
         } else {
           const cloudData = await loadFromFirebase(todayKey);
           if (cloudData) {
-            if (cloudData.water)    setWater(cloudData.water);
+            if (typeof cloudData.water === 'number') setWater(Math.max(0, cloudData.water));
             if (cloudData.weight)   setWeight(cloudData.weight);
             if (cloudData.ifStart)  setIfStart(cloudData.ifStart);
             if ('dailyNote' in cloudData) { setDailyNote(cloudData.dailyNote ?? ''); setSavedDailyNoteText(cloudData.dailyNote ?? ''); }
@@ -1033,7 +1049,7 @@ export default function HomeScreen() {
   useFocusEffect(useCallback(() => {
     const loadCals = async () => {
       try {
-        const saved = await AsyncStorage.getItem(`pj_${todayKey}`);
+        const saved = await AsyncStorage.getItem(`pj_${getDateKey(new Date())}`);
         if (saved) {
           const data = JSON.parse(saved);
           if (data.entries && Array.isArray(data.entries)) {
@@ -1050,7 +1066,7 @@ export default function HomeScreen() {
           if (data.sleepManualCore) setSleepManualCore(String(data.sleepManualCore));
           if (data.sleepManualDeep) setSleepManualDeep(String(data.sleepManualDeep));
           if (data.sleepManualRem)  setSleepManualRem(String(data.sleepManualRem));
-          if (typeof data.water === 'number') { setWater(data.water); waterLoaded.current = true; }
+          if (typeof data.water === 'number') { setWater(Math.max(0, data.water)); waterLoaded.current = true; }
           if (data.weight) setWeight(data.weight);
           if ('dailyNote' in data) { setDailyNote(data.dailyNote ?? ''); setSavedDailyNoteText(data.dailyNote ?? ''); }
         }
@@ -1152,6 +1168,7 @@ export default function HomeScreen() {
           if (p.waterPresets)                    setWaterPresets(p.waterPresets);
           if (p.stepGoal && parseInt(p.stepGoal) > 0) setStepGoal(parseInt(p.stepGoal));
           if (p.sleepGoal && parseFloat(p.sleepGoal) > 0) setSleepGoal(parseFloat(p.sleepGoal));
+          if (p.waterGoal && parseInt(p.waterGoal) > 0) setWaterGoal(parseInt(p.waterGoal));
           if (p.calTarget && parseInt(p.calTarget) > 0) {
             setCalTarget(parseInt(p.calTarget));
           }
@@ -1218,6 +1235,7 @@ export default function HomeScreen() {
       } catch (e) { console.log('Cal sync error', e); }
     };
     loadCals();
+    loadAchievements().then(store => setAchievementStore(store));
   }, []));
 
   // ── Weight log ───────────────────────────────────────────────────────────────
@@ -1249,7 +1267,7 @@ export default function HomeScreen() {
           store = updatedStore;
           setAchievementStore(store);
           const def = ACHIEVEMENTS.find(a => a.id === crossed[0]);
-          fireCelebration(def?.tier ?? 'medium', def?.name);
+          showCelebration(def?.tier ?? 'medium', def?.name);
         }
         // Silently unlock remaining
         for (let i = 1; i < crossed.length; i++) {
@@ -1266,7 +1284,7 @@ export default function HomeScreen() {
       if (newlyUnlocked) {
         store = updatedStore;
         setAchievementStore(store);
-        fireCelebration('large', 'GOAL WEIGHT');
+        showCelebration('large', 'GOAL WEIGHT');
       }
     }
   };
@@ -1503,13 +1521,13 @@ export default function HomeScreen() {
         <Ionicons name="water-outline" size={11} color={theme.textMuted} />
         <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>
           {'Water · '}
-          <Text style={{ textTransform: 'none' }}>{water}oz / {WATER_TARGET}oz</Text>
+          <Text style={{ textTransform: 'none' }}>{water}oz / {waterGoal}oz</Text>
         </Text>
       </View>
-      <AnimatedProgressBar pct={Math.min(100,(water/WATER_TARGET)*100)} color={theme.accentBlue} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} />
+      <AnimatedProgressBar pct={Math.min(100,(water/waterGoal)*100)} color={theme.accentBlue} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} overGoal={water > waterGoal} />
       <View style={styles.waterBtns}>
         {waterPresets.map((oz,i) => (
-          <PressableButton key={i} style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={async () => { const n=Math.min(WATER_TARGET,water+oz); setWater(n); saveToFirebase(todayKey,'water',n); showToast('Water logged', `+${oz} oz · ${n} oz total`, 'info'); if (n >= WATER_TARGET && water < WATER_TARGET) { let s = achievementStore; s = await handleAchievementUnlock('hydration_first', s); await handleAchievementUnlock('hydration_10', s); } }}>
+          <PressableButton key={i} style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={async () => { const n=Math.max(0,water+oz); setWater(n); saveToFirebase(todayKey,'water',n); showToast('Water logged', `+${oz} oz · ${n} oz total`, 'info'); if (n >= waterGoal && water < waterGoal) { let s = achievementStore; s = await handleAchievementUnlock('hydration_first', s); await handleAchievementUnlock('hydration_10', s); } }}>
             <Text style={[styles.waterBtnText, { color: theme.accentBlue }]}>+{oz} oz</Text>
           </PressableButton>
         ))}
@@ -2492,7 +2510,7 @@ export default function HomeScreen() {
               <TouchableOpacity style={{ flex:1, padding:12, borderRadius:8, backgroundColor: waterCustomSign==='add' ? theme.accentBlueBg : theme.accentRedBg, alignItems:'center' }}
                 onPress={async () => {
                   const amt=parseInt(waterCustomInput);
-                  if(amt>0){ const n=waterCustomSign==='add'?Math.min(WATER_TARGET,water+amt):Math.max(0,water-amt); setWater(n); saveToFirebase(todayKey,'water',n); showToast('Water logged', `${waterCustomSign==='add'?'+':'-'}${amt} oz · ${n} oz total`, 'info'); if (waterCustomSign==='add' && n >= WATER_TARGET && water < WATER_TARGET) { let s = achievementStore; s = await handleAchievementUnlock('hydration_first', s); await handleAchievementUnlock('hydration_10', s); } }
+                  if(amt>0){ const n=waterCustomSign==='add'?Math.max(0,water+amt):Math.max(0,water-amt); setWater(n); saveToFirebase(todayKey,'water',n); showToast('Water logged', `${waterCustomSign==='add'?'+':'-'}${amt} oz · ${n} oz total`, 'info'); if (waterCustomSign==='add' && n >= waterGoal && water < waterGoal) { let s = achievementStore; s = await handleAchievementUnlock('hydration_first', s); await handleAchievementUnlock('hydration_10', s); } }
                   closeWaterCustomModal();
                 }}>
                 <Text style={{ color: waterCustomSign==='add' ? theme.accentBlue : theme.accentRed, fontFamily:'DMSans_600SemiBold', fontSize:14 }}>
@@ -2654,14 +2672,6 @@ export default function HomeScreen() {
           )}
         </Modal>
       )}
-
-    <CelebrationOverlay
-        visible={celebVisible}
-        tier={celebTier}
-        accentColor={theme.accentBlueRaw}
-        label={celebLabel}
-        onDismiss={() => setCelebVisible(false)}
-      />
 
     </View>
   );

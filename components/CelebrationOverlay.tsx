@@ -1,5 +1,54 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useTheme } from '../theme';
+
+// ─── Global Emitter ───────────────────────────────────────────────────────────
+
+type CelebPayload = { tier: 'small' | 'medium' | 'large'; label?: string };
+type CelebListener = (payload: CelebPayload) => void;
+const celebListeners: Set<CelebListener> = new Set();
+
+export function showCelebration(tier: 'small' | 'medium' | 'large', label?: string) {
+  celebListeners.forEach(fn => fn({ tier, label }));
+}
+
+function subscribeCeleb(fn: CelebListener) {
+  celebListeners.add(fn);
+  return () => celebListeners.delete(fn);
+}
+
+// ─── Renderer (mount in _layout.tsx) ─────────────────────────────────────────
+
+interface CelebQueued { id: number; tier: 'small' | 'medium' | 'large'; label?: string; }
+let _celebCounter = 0;
+
+export function CelebrationRenderer() {
+  const { theme } = useTheme();
+  const [queue, setQueue] = useState<CelebQueued[]>([]);
+
+  useEffect(() => {
+    return subscribeCeleb(({ tier, label }) => {
+      const id = _celebCounter++;
+      setQueue(prev => [...prev, { id, tier, label }]);
+    });
+  }, []);
+
+  const active = queue[0] ?? null;
+  const dismiss = (id: number) => setQueue(prev => prev.filter(c => c.id !== id));
+
+  if (!active) return null;
+
+  return (
+    <CelebrationOverlay
+      key={active.id}
+      visible={true}
+      tier={active.tier}
+      accentColor={theme.accentBlueRaw}
+      label={active.label}
+      onDismiss={() => dismiss(active.id)}
+    />
+  );
+}
 
 const { width: SW, height: SH } = Dimensions.get('window');
 const GOLD = '#d4860a';

@@ -18,6 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 LogBox.ignoreLogs(['VirtualizedLists should never be nested']);
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AchievementToastProvider, AchievementToastRenderer } from '../components/AchievementToast';
+import { CelebrationRenderer } from '../components/CelebrationOverlay';
 import { ToastProvider } from '../components/Toast';
 import { ThemeProvider } from '../theme';
 
@@ -96,6 +97,7 @@ export default function RootLayout() {
       </Stack>
       <ThemedStatusBar />
       <AchievementToastRenderer />
+      <CelebrationRenderer />
     </NavThemeProvider>
     </AchievementToastProvider>
     </ToastProvider>

@@ -1,29 +1,23 @@
-import { Ionicons } from '@expo/vector-icons';
+﻿import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Dimensions, Easing, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, Dimensions, Easing, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Circle, Defs, Line, LinearGradient as SvgLinearGradient, Path, Polyline, Rect, Stop, Text as SvgText } from 'react-native-svg';
 import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { DayDetailContent } from '../day-detail';
 import { useTheme } from '../../theme';
 import { CardPeriod, ChartType, DATA_KEY_META, DataKey, DEFAULT_STATS_CARDS, StatsCard, availableChartTypes, generateCardId, loadStatsCards, saveStatsCards } from '../../statsCardRegistry';
 import { ToastRenderer, useToast } from '../../components/Toast';
+import { EMPTY_TREND_DATA, TrendData, fetchTrendData as fetchTrendDataUtil, offsetToDateKey } from '../../utils/statsData';
+import { StatsGraphCard, GRAPH_SWATCHES, MACRO_PROTEIN, MACRO_CARBS, MACRO_FAT } from '../../components/StatsGraphCard';
+import { StatsCardEditModal } from '../../components/StatsCardEditModal';
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const RECORD_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const CHART_WIDTH = SCREEN_WIDTH - 64;
-const CHART_HEIGHT = 150;
-const CHART_PAD_LEFT = 38;
-const CHART_PAD_RIGHT = 4;
-const CHART_PAD_TOP = 16;
-const CHART_PAD_BOTTOM = 20;
-
-const EMPTY_TREND_DATA: { weight: { date: string; value: number }[]; cal: { date: string; cal: number }[]; steps: { date: string; value: number }[]; activeCal: { date: string; value: number }[]; sleep: { date: string; value: number }[]; macro: { date: string; protein: number; carbs: number; fat: number }[]; workoutDay: { date: string; hadWorkout: boolean }[]; } = { weight: [], cal: [], steps: [], activeCal: [], sleep: [], macro: [], workoutDay: [] };
 
 type DayStatus = 'green' | 'yellow' | 'red' | 'future' | 'none';
 
@@ -33,894 +27,6 @@ const fmtRecordDate = (dk: string | null) => {
   return `${RECORD_MONTHS[parseInt(m) - 1]} ${parseInt(d)}, ${y}`;
 };
 
-const fmtDate = (dk: string) => { const [,m,d] = dk.split('-'); return `${parseInt(m)}/${parseInt(d)}`; };
-
-function niceYTicks(minVal: number, maxVal: number, targetCount = 4): number[] {
-  const range = (maxVal - minVal) || 1;
-  const roughStep = range / (targetCount - 1);
-  const pow = Math.pow(10, Math.floor(Math.log10(roughStep)));
-  const niceSteps = [1, 2, 2.5, 5, 10];
-  const niceStep = niceSteps.reduce((best, s) => {
-    const step = s * pow;
-    return Math.abs(step - roughStep) < Math.abs(best - roughStep) ? step : best;
-  }, Infinity);
-  const start = Math.floor(minVal / niceStep) * niceStep;
-  const ticks: number[] = [];
-  let t = start;
-  while (t <= maxVal + niceStep * 0.1 && ticks.length <= targetCount + 1) {
-    ticks.push(Math.round(t * 10000) / 10000);
-    t += niceStep;
-  }
-  if (ticks.length > 0 && ticks[ticks.length - 1] < maxVal) {
-    ticks.push(Math.round((ticks[ticks.length - 1] + niceStep) * 10000) / 10000);
-  }
-  return ticks;
-}
-
-// ── Shared chart fade-in animation ───────────────────────────────────────────
-
-function useChartAnim(hasData: boolean) {
-  const slideAnim = useRef(new Animated.Value(8)).current;
-  const hasPlayed = useRef(false);
-  useEffect(() => {
-    if (!hasData || hasPlayed.current) return;
-    hasPlayed.current = true;
-    Animated.timing(slideAnim, { toValue: 0, duration: 480, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
-  }, [hasData]);
-  return { slideAnim };
-}
-
-// ── Line chart ────────────────────────────────────────────────────────────────
-
-function LineChart({ data, color, unit, goalValue, theme, fmtY, fmtFull, gradientId }: {
-  data: { date: string, value: number }[],
-  color: string,
-  unit: string,
-  goalValue?: number,
-  theme: any,
-  fmtY?: (v: number) => string,
-  fmtFull?: (v: number) => string,
-  gradientId: string,
-}) {
-  const [callout, setCallout] = useState<{ x: number; y: number; label1: string; label2: string } | null>(null);
-  const { slideAnim } = useChartAnim(data.length >= 2);
-
-  if (data.length < 2) {
-    return (
-      <View style={{ height: CHART_HEIGHT, alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-        <Ionicons name="analytics-outline" size={24} color={theme.iconMuted} />
-        <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>Not enough data yet</Text>
-      </View>
-    );
-  }
-
-  const values = data.map(d => d.value);
-  const allVals = goalValue !== undefined ? [...values, goalValue] : values;
-  const dataMin = Math.min(...allVals);
-  const dataMax = Math.max(...allVals);
-
-  const ticks = niceYTicks(dataMin, dataMax, 4);
-  const tickMin = ticks[0];
-  const tickMax = ticks[ticks.length - 1];
-  const tickRange = tickMax - tickMin || 1;
-
-  const chartH = CHART_HEIGHT - CHART_PAD_TOP - CHART_PAD_BOTTOM;
-  const plotLeft = CHART_PAD_LEFT;
-  const plotRight = CHART_WIDTH - CHART_PAD_RIGHT;
-  const plotW = plotRight - plotLeft;
-  const chartBottom = CHART_PAD_TOP + chartH;
-
-  const toX = (i: number) => plotLeft + (i / (data.length - 1)) * plotW;
-  const toY = (v: number) => CHART_PAD_TOP + (1 - (v - tickMin) / tickRange) * chartH;
-
-  const points = data.map((d, i) => `${toX(i)},${toY(d.value)}`).join(' ');
-  const lastVal = data[data.length - 1].value;
-  const lastY = toY(lastVal);
-  const lastX = toX(data.length - 1);
-  const midIdx = Math.floor(data.length / 2);
-
-  const areaPath =
-    `M ${toX(0)},${toY(data[0].value)} ` +
-    data.slice(1).map((d, i) => `L ${toX(i + 1)},${toY(d.value)}`).join(' ') +
-    ` L ${lastX},${chartBottom} L ${toX(0)},${chartBottom} Z`;
-
-  const defaultFmtY = (v: number) =>
-    v >= 10000 ? `${Math.round(v / 1000)}k` :
-    v >= 1000  ? `${(v / 1000).toFixed(1)}k` :
-    `${Math.round(v * 10) / 10}`;
-  const fmt = fmtY || defaultFmtY;
-
-  const labelText = fmtFull ? fmtFull(lastVal) : fmt(lastVal);
-  const labelPillW = labelText.length * 5.5 + 10;
-  const labelPillH = 14;
-  const labelPillCX = Math.min(Math.max(lastX, plotLeft + labelPillW / 2), plotRight - labelPillW / 2);
-  const labelPillX = labelPillCX - labelPillW / 2;
-  const labelPillY = Math.max(CHART_PAD_TOP - 2, lastY - 4 - 4 - labelPillH);
-
-  return (
-    <Animated.View style={{ transform: [{ translateY: slideAnim }] }}>
-      <Svg width={CHART_WIDTH} height={CHART_HEIGHT}>
-        <Defs>
-          <SvgLinearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={color} stopOpacity={0.22} />
-            <Stop offset="1" stopColor={color} stopOpacity={0} />
-          </SvgLinearGradient>
-        </Defs>
-
-        {/* Dismiss area -- behind all other elements */}
-        <Rect x={0} y={0} width={CHART_WIDTH} height={CHART_HEIGHT} fill="transparent" onPress={() => setCallout(null)} />
-
-        {/* Grid lines */}
-        {ticks.map((tick, i) => (
-          <Line key={`g${i}`} x1={plotLeft} y1={toY(tick)} x2={plotRight} y2={toY(tick)}
-            stroke={theme.borderSubtle} strokeWidth={1} opacity={1} />
-        ))}
-
-        {/* Y-axis labels */}
-        {ticks.map((tick, i) => (
-          <SvgText key={`y${i}`} x={plotLeft - 4} y={toY(tick) + 3}
-            fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">
-            {fmt(tick)}
-          </SvgText>
-        ))}
-
-        {/* Goal line */}
-        {goalValue !== undefined && goalValue >= tickMin && goalValue <= tickMax * 1.05 && (
-          <>
-            <Line x1={plotLeft} y1={toY(goalValue)} x2={plotRight} y2={toY(goalValue)}
-              stroke={theme.accentBlueBorder} strokeWidth={1} strokeDasharray="4,3" />
-            <SvgText x={plotRight} y={toY(goalValue) - 3}
-              fill={theme.accentBlue} fontSize={8} fontFamily="DMSans_600SemiBold" textAnchor="end">
-              {fmt(goalValue)}
-            </SvgText>
-          </>
-        )}
-
-        {/* Area fill */}
-        <Path d={areaPath} fill={`url(#${gradientId})`} />
-
-        {/* Line */}
-        <Polyline points={points} fill="none" stroke={color} strokeWidth={2.5}
-          strokeLinejoin="round" strokeLinecap="round" />
-
-        {/* Latest point dot */}
-        <Circle cx={lastX} cy={lastY} r={4} fill={color} />
-
-        {/* Latest value label -- floats above dot, accent pill */}
-        <Rect
-          x={labelPillX} y={labelPillY} width={labelPillW} height={labelPillH}
-          fill={theme.accentBlueRaw} opacity={0.65} rx={3}
-        />
-        <SvgText x={labelPillCX} y={labelPillY + labelPillH - 3}
-          fill="#ffffff" fontSize={9} fontFamily="DMSans_700Bold" textAnchor="middle">
-          {labelText}
-        </SvgText>
-
-        {/* X-axis dates */}
-        <SvgText x={plotLeft} y={CHART_HEIGHT} fill={theme.textDim}
-          fontSize={8} fontFamily="DMSans_500Medium">
-          {fmtDate(data[0].date)}
-        </SvgText>
-        {data.length > 10 && (
-          <SvgText x={toX(midIdx)} y={CHART_HEIGHT} fill={theme.textDim}
-            fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">
-            {fmtDate(data[midIdx].date)}
-          </SvgText>
-        )}
-        <SvgText x={plotRight} y={CHART_HEIGHT} fill={theme.textDim}
-          fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">
-          {fmtDate(data[data.length - 1].date)}
-        </SvgText>
-
-        {/* Invisible tap circles at each data point */}
-        {data.map((d, i) => (
-          <Circle key={`tap${i}`} cx={toX(i)} cy={toY(d.value)} r={18} fill="transparent"
-            onPress={() => setCallout(prev =>
-              prev?.label1 === fmtDate(d.date) ? null :
-              { x: toX(i), y: toY(d.value), label1: fmtDate(d.date), label2: fmtFull ? fmtFull(d.value) : `${fmt(d.value)}${unit}` }
-            )} />
-        ))}
-
-        {/* Callout bubble */}
-        {callout !== null && (() => {
-          const cPillW = Math.max(callout.label1.length, callout.label2.length) * 6 + 14;
-          const cPillH = 32;
-          const cPillX = Math.min(Math.max(callout.x - cPillW / 2, plotLeft), plotRight - cPillW);
-          const cPillY = Math.max(CHART_PAD_TOP - 2, callout.y - cPillH - 10);
-          return (
-            <>
-              <Rect x={cPillX} y={cPillY} width={cPillW} height={cPillH}
-                fill={theme.bgCard} stroke={theme.borderCard} strokeWidth={0.5} rx={6}
-                onPress={() => setCallout(null)} />
-              <SvgText x={cPillX + cPillW / 2} y={cPillY + 12} fill={theme.textDim}
-                fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">
-                {callout.label1}
-              </SvgText>
-              <SvgText x={cPillX + cPillW / 2} y={cPillY + 26} fill={theme.textPrimary}
-                fontSize={10} fontFamily="DMSans_700Bold" textAnchor="middle">
-                {callout.label2}
-              </SvgText>
-            </>
-          );
-        })()}
-      </Svg>
-    </Animated.View>
-  );
-}
-
-// ── Calorie bar chart ─────────────────────────────────────────────────────────
-
-function CalorieBarChart({ data, calTarget, theme, color }: {
-  data: { date: string, cal: number }[],
-  calTarget: number,
-  theme: any,
-  color?: string,
-}) {
-  const [callout, setCallout] = useState<{ x: number; y: number; label1: string; label2: string } | null>(null);
-  const { slideAnim } = useChartAnim(data.length > 0);
-
-  if (data.length === 0) {
-    return (
-      <View style={{ height: CHART_HEIGHT, alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-        <Ionicons name="flame-outline" size={24} color={theme.iconMuted} />
-        <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>No calorie data yet</Text>
-      </View>
-    );
-  }
-
-  const maxCal = Math.max(...data.map(d => d.cal), 1);
-  const ticks = niceYTicks(0, maxCal, 4);
-  const tickMax = ticks[ticks.length - 1];
-
-  const chartH = CHART_HEIGHT - CHART_PAD_TOP - CHART_PAD_BOTTOM;
-  const plotLeft = CHART_PAD_LEFT;
-  const plotRight = CHART_WIDTH - CHART_PAD_RIGHT;
-  const plotW = plotRight - plotLeft;
-  const chartBottom = CHART_PAD_TOP + chartH;
-
-  const toY = (v: number) => CHART_PAD_TOP + (1 - v / tickMax) * chartH;
-  const midIdx = Math.floor(data.length / 2);
-
-  const BAR_W = Math.min(16, plotW / data.length - 3);
-  const slot = plotW / data.length;
-  const fmtK = (v: number) => v >= 1000 ? `${Math.round(v / 100) / 10}k` : `${Math.round(v)}`;
-
-  return (
-    <Animated.View style={{ transform: [{ translateY: slideAnim }] }}>
-      <Svg width={CHART_WIDTH} height={CHART_HEIGHT}>
-        {/* Dismiss area -- behind all other elements */}
-        <Rect x={0} y={0} width={CHART_WIDTH} height={CHART_HEIGHT} fill="transparent" onPress={() => setCallout(null)} />
-
-        {/* Grid lines */}
-        {ticks.map((tick, i) => (
-          <Line key={`g${i}`} x1={plotLeft} y1={toY(tick)} x2={plotRight} y2={toY(tick)}
-            stroke={theme.borderSubtle} strokeWidth={1} opacity={1} />
-        ))}
-
-        {/* Y-axis labels */}
-        {ticks.map((tick, i) => (
-          <SvgText key={`y${i}`} x={plotLeft - 4} y={toY(tick) + 3}
-            fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">
-            {fmtK(tick)}
-          </SvgText>
-        ))}
-
-        {/* Bars with tap targets */}
-        {data.map((d, i) => {
-          const barColor = color ?? '#e06840';
-          const barH = Math.max(2, (d.cal / tickMax) * chartH);
-          const x = plotLeft + i * slot + (slot - BAR_W) / 2;
-          const cx = x + BAR_W / 2;
-          return (
-            <Rect key={i} x={x} y={chartBottom - barH} width={BAR_W} height={barH}
-              fill={barColor} opacity={0.85} rx={2}
-              onPress={() => setCallout(prev =>
-                prev?.label1 === fmtDate(d.date) ? null :
-                { x: cx, y: chartBottom - barH, label1: fmtDate(d.date), label2: `${Math.round(d.cal).toLocaleString()} kcal` }
-              )} />
-          );
-        })}
-
-        {/* X-axis dates */}
-        <SvgText x={plotLeft} y={CHART_HEIGHT} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium">
-          {fmtDate(data[0].date)}
-        </SvgText>
-        {data.length > 10 && (
-          <SvgText x={plotLeft + (midIdx / data.length) * plotW + slot / 2} y={CHART_HEIGHT}
-            fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">
-            {fmtDate(data[midIdx].date)}
-          </SvgText>
-        )}
-        <SvgText x={plotRight} y={CHART_HEIGHT} fill={theme.textDim}
-          fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">
-          {fmtDate(data[data.length - 1].date)}
-        </SvgText>
-
-        {/* Callout bubble */}
-        {callout !== null && (() => {
-          const cPillW = Math.max(callout.label1.length, callout.label2.length) * 6 + 14;
-          const cPillH = 32;
-          const cPillX = Math.min(Math.max(callout.x - cPillW / 2, plotLeft), plotRight - cPillW);
-          const cPillY = Math.max(CHART_PAD_TOP - 2, callout.y - cPillH - 10);
-          return (
-            <>
-              <Rect x={cPillX} y={cPillY} width={cPillW} height={cPillH}
-                fill={theme.bgCard} stroke={theme.borderCard} strokeWidth={0.5} rx={6}
-                onPress={() => setCallout(null)} />
-              <SvgText x={cPillX + cPillW / 2} y={cPillY + 12} fill={theme.textDim}
-                fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">
-                {callout.label1}
-              </SvgText>
-              <SvgText x={cPillX + cPillW / 2} y={cPillY + 26} fill={theme.textPrimary}
-                fontSize={10} fontFamily="DMSans_700Bold" textAnchor="middle">
-                {callout.label2}
-              </SvgText>
-            </>
-          );
-        })()}
-      </Svg>
-    </Animated.View>
-  );
-}
-
-// ── Generic bar chart (line-switchable data keys) ────────────────────────────
-
-function GenericBarChart({ data, color, unit, theme, fmtY, fmtFull, startFromZero = true }: {
-  data: { date: string, value: number }[],
-  color: string,
-  unit: string,
-  theme: any,
-  fmtY?: (v: number) => string,
-  fmtFull?: (v: number) => string,
-  startFromZero?: boolean,
-}) {
-  const [callout, setCallout] = useState<{ x: number; y: number; label1: string; label2: string } | null>(null);
-  const { slideAnim } = useChartAnim(data.length > 0);
-
-  if (data.length === 0) {
-    return (
-      <View style={{ height: CHART_HEIGHT, alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-        <Ionicons name="analytics-outline" size={24} color={theme.iconMuted} />
-        <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>Not enough data yet</Text>
-      </View>
-    );
-  }
-
-  const values = data.map(d => d.value);
-  const minVal = startFromZero ? 0 : Math.min(...values);
-  const maxVal = Math.max(...values);
-  const ticks = niceYTicks(minVal, maxVal, 4);
-  const tickMin = ticks[0];
-  const tickMax = ticks[ticks.length - 1] || 1;
-  const tickRange = tickMax - tickMin || 1;
-  const fmt = fmtY ?? ((v: number) => `${Math.round(v)}`);
-  const fmtFull_ = fmtFull ?? fmt;
-
-  const chartH = CHART_HEIGHT - CHART_PAD_TOP - CHART_PAD_BOTTOM;
-  const plotLeft = CHART_PAD_LEFT;
-  const plotRight = CHART_WIDTH - CHART_PAD_RIGHT;
-  const plotW = plotRight - plotLeft;
-  const chartBottom = CHART_PAD_TOP + chartH;
-  const toY = (v: number) => CHART_PAD_TOP + (1 - (v - tickMin) / tickRange) * chartH;
-  const midIdx = Math.floor(data.length / 2);
-  const BAR_W = Math.min(16, plotW / data.length - 3);
-  const slot = plotW / data.length;
-
-  return (
-    <Animated.View style={{ transform: [{ translateY: slideAnim }] }}>
-      <Svg width={CHART_WIDTH} height={CHART_HEIGHT}>
-        <Rect x={0} y={0} width={CHART_WIDTH} height={CHART_HEIGHT} fill="transparent" onPress={() => setCallout(null)} />
-        {ticks.map((tick, i) => (
-          <Line key={`g${i}`} x1={plotLeft} y1={toY(tick)} x2={plotRight} y2={toY(tick)}
-            stroke={theme.borderSubtle} strokeWidth={1} />
-        ))}
-        {ticks.map((tick, i) => (
-          <SvgText key={`y${i}`} x={plotLeft - 4} y={toY(tick) + 3}
-            fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">
-            {fmt(tick)}
-          </SvgText>
-        ))}
-        {data.map((d, i) => {
-          const barH = Math.max(2, ((d.value - tickMin) / tickRange) * chartH);
-          const x = plotLeft + i * slot + (slot - BAR_W) / 2;
-          const cx = x + BAR_W / 2;
-          return (
-            <Rect key={i} x={x} y={chartBottom - barH} width={BAR_W} height={barH}
-              fill={color} opacity={0.85} rx={2}
-              onPress={() => setCallout(prev =>
-                prev?.label1 === fmtDate(d.date) ? null :
-                { x: cx, y: chartBottom - barH, label1: fmtDate(d.date), label2: `${fmtFull_(d.value)}${unit}` }
-              )} />
-          );
-        })}
-        <SvgText x={plotLeft} y={CHART_HEIGHT} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium">
-          {fmtDate(data[0].date)}
-        </SvgText>
-        {data.length > 10 && (
-          <SvgText x={plotLeft + (midIdx / data.length) * plotW + slot / 2} y={CHART_HEIGHT}
-            fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">
-            {fmtDate(data[midIdx].date)}
-          </SvgText>
-        )}
-        <SvgText x={plotRight} y={CHART_HEIGHT} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">
-          {fmtDate(data[data.length - 1].date)}
-        </SvgText>
-        {callout !== null && (() => {
-          const cPillW = Math.max(callout.label1.length, callout.label2.length) * 6 + 14;
-          const cPillH = 32;
-          const cPillX = Math.min(Math.max(callout.x - cPillW / 2, plotLeft), plotRight - cPillW);
-          const cPillY = Math.max(CHART_PAD_TOP - 2, callout.y - cPillH - 10);
-          return (
-            <>
-              <Rect x={cPillX} y={cPillY} width={cPillW} height={cPillH}
-                fill={theme.bgCard} stroke={theme.borderCard} strokeWidth={0.5} rx={6}
-                onPress={() => setCallout(null)} />
-              <SvgText x={cPillX + cPillW / 2} y={cPillY + 12} fill={theme.textDim}
-                fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">{callout.label1}</SvgText>
-              <SvgText x={cPillX + cPillW / 2} y={cPillY + 26} fill={theme.textPrimary}
-                fontSize={10} fontFamily="DMSans_700Bold" textAnchor="middle">{callout.label2}</SvgText>
-            </>
-          );
-        })()}
-      </Svg>
-    </Animated.View>
-  );
-}
-
-// ── Macro stacked bar chart ───────────────────────────────────────────────────
-
-const MACRO_PROTEIN = '#0d9268';
-const MACRO_CARBS   = '#c47d1a';
-const MACRO_FAT     = '#a83232';
-
-const GRAPH_SWATCHES = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#f97316'];
-
-function MacroBarChart({ data, theme, proteinColor, carbsColor, fatColor }: {
-  data: { date: string; protein: number; carbs: number; fat: number }[],
-  theme: any,
-  proteinColor?: string,
-  carbsColor?: string,
-  fatColor?: string,
-}) {
-  const pColor = proteinColor ?? MACRO_PROTEIN;
-  const cColor = carbsColor ?? MACRO_CARBS;
-  const fColor = fatColor ?? MACRO_FAT;
-  const [callout, setCallout] = useState<{ x: number; y: number; date: string; protein: number; carbs: number; fat: number } | null>(null);
-  const { slideAnim } = useChartAnim(data.length > 0);
-
-  if (data.length === 0) {
-    return (
-      <View style={{ height: CHART_HEIGHT, alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-        <Ionicons name="nutrition-outline" size={24} color={theme.iconMuted} />
-        <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>No macro data yet</Text>
-      </View>
-    );
-  }
-
-  const maxTotal = Math.max(...data.map(d => d.protein + d.carbs + d.fat), 1);
-  const ticks = niceYTicks(0, maxTotal, 4);
-  const tickMax = ticks[ticks.length - 1];
-
-  const chartH = CHART_HEIGHT - CHART_PAD_TOP - CHART_PAD_BOTTOM;
-  const plotLeft = CHART_PAD_LEFT;
-  const plotRight = CHART_WIDTH - CHART_PAD_RIGHT;
-  const plotW = plotRight - plotLeft;
-  const chartBottom = CHART_PAD_TOP + chartH;
-
-  const toH = (v: number) => Math.max(0, (v / tickMax) * chartH);
-  const toY  = (v: number) => CHART_PAD_TOP + (1 - v / tickMax) * chartH;
-  const midIdx = Math.floor(data.length / 2);
-
-  const BAR_W = Math.min(16, plotW / data.length - 3);
-  const slot = plotW / data.length;
-
-  return (
-    <>
-      <Animated.View style={{ transform: [{ translateY: slideAnim }] }}>
-        <Svg width={CHART_WIDTH} height={CHART_HEIGHT}>
-          {/* Dismiss area -- behind all other elements */}
-          <Rect x={0} y={0} width={CHART_WIDTH} height={CHART_HEIGHT} fill="transparent" onPress={() => setCallout(null)} />
-
-          {/* Grid lines */}
-          {ticks.map((tick, i) => (
-            <Line key={`g${i}`} x1={plotLeft} y1={toY(tick)} x2={plotRight} y2={toY(tick)}
-              stroke={theme.borderSubtle} strokeWidth={1} opacity={1} />
-          ))}
-
-          {/* Y-axis labels */}
-          {ticks.map((tick, i) => (
-            <SvgText key={`y${i}`} x={plotLeft - 4} y={toY(tick) + 3}
-              fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">
-              {`${Math.round(tick)}g`}
-            </SvgText>
-          ))}
-
-          {/* Stacked bars + invisible overlay tap target */}
-          {data.map((d, i) => {
-            const x = plotLeft + i * slot + (slot - BAR_W) / 2;
-            const cx = x + BAR_W / 2;
-            const pH = toH(d.protein);
-            const cH = toH(d.carbs);
-            const fH = toH(d.fat);
-            const totalH = pH + cH + fH;
-            return [
-              <Rect key={`p${i}`} x={x} y={chartBottom - pH}           width={BAR_W} height={pH} fill={pColor} opacity={0.9} />,
-              <Rect key={`c${i}`} x={x} y={chartBottom - pH - cH}      width={BAR_W} height={cH} fill={cColor} opacity={0.9} />,
-              <Rect key={`f${i}`} x={x} y={chartBottom - pH - cH - fH} width={BAR_W} height={fH} fill={fColor} opacity={0.9} rx={2} />,
-              <Rect key={`t${i}`} x={x} y={chartBottom - totalH}       width={BAR_W} height={Math.max(totalH, 12)}
-                fill="transparent"
-                onPress={() => setCallout(prev =>
-                  prev?.date === fmtDate(d.date) ? null :
-                  { x: cx, y: chartBottom - totalH, date: fmtDate(d.date), protein: Math.round(d.protein), carbs: Math.round(d.carbs), fat: Math.round(d.fat) }
-                )} />,
-            ];
-          })}
-
-          {/* X-axis dates */}
-          <SvgText x={plotLeft} y={CHART_HEIGHT} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium">
-            {fmtDate(data[0].date)}
-          </SvgText>
-          {data.length > 10 && (
-            <SvgText x={plotLeft + (midIdx / data.length) * plotW + slot / 2} y={CHART_HEIGHT}
-              fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">
-              {fmtDate(data[midIdx].date)}
-            </SvgText>
-          )}
-          <SvgText x={plotRight} y={CHART_HEIGHT} fill={theme.textDim}
-            fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">
-            {fmtDate(data[data.length - 1].date)}
-          </SvgText>
-
-          {/* Callout bubble -- 4-row layout: date + P/C/F each on own line with macro color */}
-          {callout !== null && (() => {
-            const maxG = Math.max(callout.protein, callout.carbs, callout.fat);
-            const cPillW = Math.max(String(maxG).length * 7 + 52, 72);
-            const cPillH = 62;
-            const cPillX = Math.min(Math.max(callout.x - cPillW / 2, plotLeft), plotRight - cPillW);
-            const cPillY = Math.max(CHART_PAD_TOP - 2, callout.y - cPillH - 10);
-            const tx = cPillX + 10;
-            return (
-              <>
-                <Rect x={cPillX} y={cPillY} width={cPillW} height={cPillH}
-                  fill={theme.bgCard} stroke={theme.borderCard} strokeWidth={0.5} rx={6}
-                  onPress={() => setCallout(null)} />
-                <SvgText x={cPillX + cPillW / 2} y={cPillY + 13} fill={theme.textDim}
-                  fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">
-                  {callout.date}
-                </SvgText>
-                <SvgText x={tx} y={cPillY + 27} fill={pColor}
-                  fontSize={9} fontFamily="DMSans_700Bold">
-                  {`P  ${callout.protein}g`}
-                </SvgText>
-                <SvgText x={tx} y={cPillY + 41} fill={cColor}
-                  fontSize={9} fontFamily="DMSans_700Bold">
-                  {`C  ${callout.carbs}g`}
-                </SvgText>
-                <SvgText x={tx} y={cPillY + 55} fill={fColor}
-                  fontSize={9} fontFamily="DMSans_700Bold">
-                  {`F  ${callout.fat}g`}
-                </SvgText>
-              </>
-            );
-          })()}
-        </Svg>
-      </Animated.View>
-      <View style={{ flexDirection: 'row', gap: 14, marginTop: 8 }}>
-        {[
-          { color: pColor, label: 'Protein' },
-          { color: cColor, label: 'Carbs' },
-          { color: fColor, label: 'Fat' },
-        ].map(l => (
-          <View key={l.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-            <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: l.color }} />
-            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' }}>{l.label}</Text>
-          </View>
-        ))}
-      </View>
-    </>
-  );
-}
-
-// ── Workout frequency chart ───────────────────────────────────────────────────
-
-function WorkoutFrequencyChart({ data, theme }: {
-  data: { date: string, hadWorkout: boolean }[],
-  theme: any,
-}) {
-  const weeks: { label: string, count: number }[] = [];
-  for (let i = 0; i < data.length; i += 7) {
-    const chunk = data.slice(i, i + 7);
-    weeks.push({ label: fmtDate(chunk[0].date), count: chunk.filter(d => d.hadWorkout).length });
-  }
-
-  // Filter leading all-zero weeks (before app existed)
-  const firstNonZero = weeks.findIndex(w => w.count > 0);
-  const visibleWeeks = firstNonZero > 0 ? weeks.slice(firstNonZero) : weeks;
-
-  const [callout, setCallout] = useState<{ x: number; y: number; label1: string; label2: string } | null>(null);
-  const { slideAnim } = useChartAnim(visibleWeeks.length > 0);
-
-  if (visibleWeeks.length === 0) {
-    return (
-      <View style={{ height: CHART_HEIGHT, alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-        <Ionicons name="barbell-outline" size={24} color={theme.iconMuted} />
-        <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>No workout data yet</Text>
-      </View>
-    );
-  }
-
-  const chartH = CHART_HEIGHT - CHART_PAD_TOP - CHART_PAD_BOTTOM;
-  const plotLeft = CHART_PAD_LEFT;
-  const plotRight = CHART_WIDTH - CHART_PAD_RIGHT;
-  const plotW = plotRight - plotLeft;
-  const chartBottom = CHART_PAD_TOP + chartH;
-  const maxY = 7;
-
-  const toY = (v: number) => CHART_PAD_TOP + (1 - v / maxY) * chartH;
-  const fixedTicks = [0, 2, 4, 7];
-
-  const BAR_W = Math.min(28, plotW / visibleWeeks.length - 4);
-  const slot = plotW / visibleWeeks.length;
-
-  return (
-    <>
-      <Animated.View style={{ transform: [{ translateY: slideAnim }] }}>
-        <Svg width={CHART_WIDTH} height={CHART_HEIGHT}>
-          {/* Dismiss area -- behind all other elements */}
-          <Rect x={0} y={0} width={CHART_WIDTH} height={CHART_HEIGHT} fill="transparent" onPress={() => setCallout(null)} />
-
-          {/* Grid lines */}
-          {fixedTicks.map((tick, i) => (
-            <Line key={`g${i}`} x1={plotLeft} y1={toY(tick)} x2={plotRight} y2={toY(tick)}
-              stroke={theme.borderSubtle} strokeWidth={1} opacity={1} />
-          ))}
-
-          {/* Y-axis labels */}
-          {fixedTicks.map((tick, i) => (
-            <SvgText key={`y${i}`} x={plotLeft - 4} y={toY(tick) + 3}
-              fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">
-              {tick}
-            </SvgText>
-          ))}
-
-          {/* Bars with tap targets */}
-          {visibleWeeks.map((w, i) => {
-            const barH = Math.max(2, (w.count / maxY) * chartH);
-            const x = plotLeft + i * slot + (slot - BAR_W) / 2;
-            const cx = x + BAR_W / 2;
-            const barColor = w.count >= 5 ? theme.statusGood : w.count >= 3 ? theme.accentBlue : w.count > 0 ? theme.statusWarn : theme.borderSubtle;
-            const dayLabel = w.count === 1 ? '1 day' : `${w.count} days`;
-            return (
-              <Rect key={i} x={x} y={chartBottom - barH} width={BAR_W} height={barH}
-                fill={barColor} opacity={0.85} rx={3}
-                onPress={() => setCallout(prev =>
-                  prev?.label1 === w.label ? null :
-                  { x: cx, y: chartBottom - barH, label1: w.label, label2: dayLabel }
-                )} />
-            );
-          })}
-
-          {/* X dates */}
-          {visibleWeeks.length <= 8 ? (
-            visibleWeeks.map((w, i) => (
-              <SvgText key={i} x={plotLeft + i * slot + slot / 2} y={CHART_HEIGHT}
-                fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">
-                {w.label}
-              </SvgText>
-            ))
-          ) : (
-            <>
-              <SvgText x={plotLeft} y={CHART_HEIGHT} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium">
-                {visibleWeeks[0].label}
-              </SvgText>
-              <SvgText x={plotRight} y={CHART_HEIGHT} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">
-                {visibleWeeks[visibleWeeks.length - 1].label}
-              </SvgText>
-            </>
-          )}
-
-          {/* Callout bubble */}
-          {callout !== null && (() => {
-            const cPillW = Math.max(callout.label1.length, callout.label2.length) * 6 + 14;
-            const cPillH = 32;
-            const cPillX = Math.min(Math.max(callout.x - cPillW / 2, plotLeft), plotRight - cPillW);
-            const cPillY = Math.max(CHART_PAD_TOP - 2, callout.y - cPillH - 10);
-            return (
-              <>
-                <Rect x={cPillX} y={cPillY} width={cPillW} height={cPillH}
-                  fill={theme.bgCard} stroke={theme.borderCard} strokeWidth={0.5} rx={6}
-                  onPress={() => setCallout(null)} />
-                <SvgText x={cPillX + cPillW / 2} y={cPillY + 12} fill={theme.textDim}
-                  fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">
-                  {callout.label1}
-                </SvgText>
-                <SvgText x={cPillX + cPillW / 2} y={cPillY + 26} fill={theme.textPrimary}
-                  fontSize={10} fontFamily="DMSans_700Bold" textAnchor="middle">
-                  {callout.label2}
-                </SvgText>
-              </>
-            );
-          })()}
-        </Svg>
-      </Animated.View>
-      <View style={{ flexDirection: 'row', gap: 14, marginTop: 8 }}>
-        {[
-          { color: theme.statusGood, label: '5+ days' },
-          { color: theme.accentBlue, label: '3-4 days' },
-          { color: theme.statusWarn, label: '1-2 days' },
-        ].map(l => (
-          <View key={l.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-            <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: l.color }} />
-            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' }}>{l.label}</Text>
-          </View>
-        ))}
-      </View>
-    </>
-  );
-}
-
-// ── Stats graph card (registry-driven) ───────────────────────────────────────
-
-type TrendData = {
-  weight: { date: string; value: number }[];
-  cal: { date: string; cal: number }[];
-  steps: { date: string; value: number }[];
-  activeCal: { date: string; value: number }[];
-  sleep: { date: string; value: number }[];
-  macro: { date: string; protein: number; carbs: number; fat: number }[];
-  workoutDay: { date: string; hadWorkout: boolean }[];
-};
-
-function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal, sleepGoal, onPeriodChange, onEditPress }: {
-  card: StatsCard; cardTrendData: typeof EMPTY_TREND_DATA; theme: any;
-  calTarget: number; stepGoal: number; sleepGoal: number;
-  onPeriodChange: (cardId: string, period: CardPeriod) => void;
-  onEditPress: (card: StatsCard) => void;
-}) {
-  const shadow = { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 12, elevation: 6 };
-
-  const getChart = () => {
-    const ct = card.chartType;
-    const gc = card.color;
-    switch (card.dataKey) {
-      case 'weight':
-        return ct === 'bar'
-          ? <GenericBarChart data={cardTrendData.weight} color={gc ?? theme.textSecondary} unit=" lbs"
-              fmtY={(v) => v % 1 === 0 ? `${v}` : `${v.toFixed(1)}`}
-              fmtFull={(v) => v % 1 === 0 ? `${v}` : `${v.toFixed(1)}`} startFromZero={false} theme={theme} />
-          : <LineChart data={cardTrendData.weight} color={gc ?? theme.textSecondary} unit=" lbs"
-              fmtY={(v) => v % 1 === 0 ? `${v}` : `${v.toFixed(1)}`} gradientId={`wt_${card.id}`} theme={theme} />;
-      case 'calories':
-        return ct === 'line'
-          ? <LineChart data={cardTrendData.cal.map(d => ({ date: d.date, value: d.cal }))} color={gc ?? '#e06840'} unit=" kcal"
-              fmtY={(v) => v >= 1000 ? `${Math.round(v / 100) / 10}k` : `${Math.round(v)}`}
-              fmtFull={(v) => Math.round(v).toLocaleString()} gradientId={`cl_${card.id}`} theme={theme} />
-          : <CalorieBarChart data={cardTrendData.cal} calTarget={calTarget} theme={theme} color={gc} />;
-      case 'macros':
-        return <MacroBarChart data={cardTrendData.macro} theme={theme}
-          proteinColor={card.macroColors?.protein} carbsColor={card.macroColors?.carbs} fatColor={card.macroColors?.fat} />;
-      case 'steps':
-        return ct === 'bar'
-          ? <GenericBarChart data={cardTrendData.steps} color={gc ?? theme.accentBlue} unit=""
-              fmtY={(v) => v >= 1000 ? `${Math.round(v / 1000)}k` : `${Math.round(v)}`}
-              fmtFull={(v) => Math.round(v).toLocaleString()} theme={theme} />
-          : <LineChart data={cardTrendData.steps} color={gc ?? theme.accentBlue} unit=""
-              goalValue={stepGoal} fmtY={(v) => v >= 1000 ? `${Math.round(v / 1000)}k` : `${Math.round(v)}`}
-              fmtFull={(v) => Math.round(v).toLocaleString()} gradientId={`st_${card.id}`} theme={theme} />;
-      case 'activeCals':
-        return ct === 'bar'
-          ? <GenericBarChart data={cardTrendData.activeCal} color={gc ?? theme.statusWarn} unit=" kcal"
-              fmtY={(v) => `${Math.round(v)}`} theme={theme} />
-          : <LineChart data={cardTrendData.activeCal} color={gc ?? theme.statusWarn} unit=" kcal"
-              fmtY={(v) => `${Math.round(v)}`} gradientId={`ac_${card.id}`} theme={theme} />;
-      case 'sleep':
-        return ct === 'bar'
-          ? <GenericBarChart data={cardTrendData.sleep} color={gc ?? theme.sleepRem} unit=""
-              fmtY={(v) => `${Math.round(v * 10) / 10}h`}
-              fmtFull={(v) => { const h = Math.floor(v); const m = Math.round((v % 1) * 60); return m > 0 ? `${h}h ${m}m` : `${h}h`; }}
-              startFromZero={false} theme={theme} />
-          : <LineChart data={cardTrendData.sleep} color={gc ?? theme.sleepRem} unit=""
-              goalValue={sleepGoal} fmtY={(v) => `${Math.round(v * 10) / 10}h`}
-              fmtFull={(v) => { const h = Math.floor(v); const m = Math.round((v % 1) * 60); return m > 0 ? `${h}h ${m}m` : `${h}h`; }}
-              gradientId={`sl_${card.id}`} theme={theme} />;
-      case 'workoutFreq':
-        return <WorkoutFrequencyChart data={cardTrendData.workoutDay} theme={theme} />;
-      default:
-        return null;
-    }
-  };
-
-  const getStats = (): { label: string; value: string }[] | undefined => {
-    const d = cardTrendData;
-    switch (card.dataKey) {
-      case 'weight': {
-        if (d.weight.length === 0) return undefined;
-        const avg = Math.round(d.weight.reduce((s, x) => s + x.value, 0) / d.weight.length * 10) / 10;
-        const change = d.weight.length >= 2 ? Math.round((d.weight[d.weight.length - 1].value - d.weight[0].value) * 10) / 10 : null;
-        return [
-          { label: 'Avg Weight', value: `${avg} lbs` },
-          ...(change !== null ? [{ label: 'Change This Period', value: `${change > 0 ? '+' : ''}${change} lbs` }] : []),
-        ];
-      }
-      case 'calories': {
-        if (d.cal.length === 0) return undefined;
-        const avg = Math.round(d.cal.reduce((s, x) => s + x.cal, 0) / d.cal.length);
-        return [{ label: 'Avg / Day', value: `${avg.toLocaleString()} kcal` }, { label: 'Days Logged', value: `${d.cal.length}` }];
-      }
-      case 'macros': {
-        if (d.macro.length === 0) return undefined;
-        const avgP = Math.round(d.macro.reduce((s, x) => s + x.protein, 0) / d.macro.length * 10) / 10;
-        const avgC = Math.round(d.macro.reduce((s, x) => s + x.carbs, 0) / d.macro.length * 10) / 10;
-        const avgF = Math.round(d.macro.reduce((s, x) => s + x.fat, 0) / d.macro.length * 10) / 10;
-        return [{ label: 'Avg Protein', value: `${avgP}g` }, { label: 'Avg Carbs', value: `${avgC}g` }, { label: 'Avg Fat', value: `${avgF}g` }];
-      }
-      case 'steps': {
-        if (d.steps.length === 0) return undefined;
-        const avg = Math.round(d.steps.reduce((s, x) => s + x.value, 0) / d.steps.length);
-        const above = d.steps.filter(x => x.value >= stepGoal).length;
-        return [{ label: 'Avg / Day', value: avg.toLocaleString() }, { label: 'Days Above Goal', value: `${above}` }];
-      }
-      case 'activeCals': {
-        if (d.activeCal.length === 0) return undefined;
-        const avg = Math.round(d.activeCal.reduce((s, x) => s + x.value, 0) / d.activeCal.length);
-        return [{ label: 'Avg / Day', value: `${avg.toLocaleString()} kcal` }, { label: 'Days Tracked', value: `${d.activeCal.length}` }];
-      }
-      case 'sleep': {
-        if (d.sleep.length === 0) return undefined;
-        const avg = Math.round(d.sleep.reduce((s, x) => s + x.value, 0) / d.sleep.length * 10) / 10;
-        const atGoal = d.sleep.filter(x => x.value >= sleepGoal).length;
-        const h = Math.floor(avg); const m = Math.round((avg % 1) * 60);
-        return [{ label: 'Avg / Night', value: m > 0 ? `${h}h ${m}m` : `${h}h` }, { label: 'Nights at Goal', value: `${atGoal}` }];
-      }
-      case 'workoutFreq': {
-        if (d.workoutDay.length === 0) return undefined;
-        const total = d.workoutDay.filter(x => x.hadWorkout).length;
-        const weeks = Math.max(1, Math.ceil(d.workoutDay.length / 7));
-        return [{ label: 'Avg / Week', value: `${Math.round(total / weeks * 10) / 10}` }, { label: 'Total Workout Days', value: `${total}` }];
-      }
-      default: return undefined;
-    }
-  };
-
-  const stats = getStats();
-  const iconName = card.dataKey ? DATA_KEY_META[card.dataKey].icon : 'analytics-outline';
-
-  return (
-    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadow }]}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-        <Ionicons name={iconName as any} size={11} color={theme.textMuted} />
-        <Text style={[styles.cardLabel, { color: theme.textMuted, flex: 1, marginLeft: 6 }]}>{card.label}</Text>
-        {/* Per-card period pills */}
-        <View style={{ flexDirection: 'row', gap: 4, marginRight: 8 }}>
-          {([7, 30, 90] as CardPeriod[]).map(p => (
-            <TouchableOpacity key={p} onPress={() => onPeriodChange(card.id, p)}
-              style={{ paddingHorizontal: 7, paddingVertical: 2, borderRadius: 5,
-                backgroundColor: card.period === p ? theme.accentBlueBg : 'transparent',
-                borderWidth: 1, borderColor: card.period === p ? theme.accentBlueBorder : theme.borderInput }}>
-              <Text style={{ fontSize: 9, fontFamily: 'DMSans_600SemiBold', color: card.period === p ? theme.accentBlue : theme.textMuted }}>
-                {p}d
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-        <TouchableOpacity onPress={() => onEditPress(card)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Ionicons name="settings-outline" size={13} color={theme.textMuted} />
-        </TouchableOpacity>
-      </View>
-      {getChart()}
-      {stats && stats.length > 0 && (
-        <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle, flexDirection: 'row' }}>
-          {stats.map((s, i) => (
-            <View key={i} style={{ flex: 1, alignItems: 'center' }}>
-              <Text style={{ fontSize: 9, letterSpacing: 1.5, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 3, textAlign: 'center' }}>{s.label}</Text>
-              <Text style={{ fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', textAlign: 'center' }}>{s.value}</Text>
-            </View>
-          ))}
-        </View>
-      )}
-    </View>
-  );
-}
 
 // ── Collapsible section header ─────────────────────────────────────────────────
 
@@ -1030,7 +136,7 @@ export default function StatsScreen() {
   const [trendPeriod, setTrendPeriod] = useState<'7' | '30' | '90'>('30');
   const [activePeriod, setActivePeriod] = useState<'7' | '30' | '90' | '180' | 'ytd'>('7');
 
-  const [trendDataMap, setTrendDataMap] = useState<Record<string, typeof EMPTY_TREND_DATA>>({});
+  const [trendDataMap, setTrendDataMap] = useState<Record<string, TrendData>>({});
 
   const [calTarget, setCalTarget] = useState(0);
   const [stepGoal, setStepGoal] = useState(10000);
@@ -1060,7 +166,6 @@ export default function StatsScreen() {
   const [editSheetVisible, setEditSheetVisible] = useState(false);
   const [editCards, setEditCards] = useState<StatsCard[]>([]);
   const editSheetAnim = useRef(new Animated.Value(0)).current;
-  const editOverlayAnim = useRef(new Animated.Value(0)).current;
 
   const [dayDetailDate, setDayDetailDate] = useState<string | null>(null);
   const dayDetailAnim = useRef(new Animated.Value(0)).current;
@@ -1079,17 +184,9 @@ export default function StatsScreen() {
   const fabItem2Anim = useRef(new Animated.Value(0)).current; // Add Graph (bottom, first)
 
   // Card edit modal
-  const [editCardVisible, setEditCardVisible] = useState(false);
   const [editCard, setEditCard] = useState<StatsCard | null>(null);
-  const [editLabel, setEditLabel] = useState('');
-  const [editChartType, setEditChartType] = useState<ChartType>('line');
-  const [editPeriod, setEditPeriod] = useState<CardPeriod>(7);
-  const [editColor, setEditColor] = useState<string | undefined>(undefined);
-  const [editMacroColors, setEditMacroColors] = useState({ protein: MACRO_PROTEIN, carbs: MACRO_CARBS, fat: MACRO_FAT });
   const [creatorColor, setCreatorColor] = useState<string | undefined>(undefined);
   const [creatorMacroColors, setCreatorMacroColors] = useState({ protein: MACRO_PROTEIN, carbs: MACRO_CARBS, fat: MACRO_FAT });
-  const editOverlayOpacity = useRef(new Animated.Value(0)).current;
-  const editCardScale = useRef(new Animated.Value(0.95)).current;
 
   const { showToast } = useToast();
 
@@ -1106,49 +203,7 @@ export default function StatsScreen() {
     Animated.timing(dayDetailAnim, { toValue: 0, duration: 180, useNativeDriver: true }).start(() => setDayDetailDate(null));
   };
 
-  const getDateKey = (offset: number) => {
-    const d = new Date(); d.setDate(d.getDate() - offset);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  };
-
-  const fetchTrendData = async (days: number, workoutState: any): Promise<typeof EMPTY_TREND_DATA> => {
-    const wh: { date: string; value: number }[] = [];
-    const ch: { date: string; cal: number }[] = [];
-    const sh: { date: string; value: number }[] = [];
-    const ah: { date: string; value: number }[] = [];
-    const slh: { date: string; value: number }[] = [];
-    const mh: { date: string; protein: number; carbs: number; fat: number }[] = [];
-    const wdh: { date: string; hadWorkout: boolean }[] = [];
-
-    for (let i = days - 1; i >= 0; i--) {
-      const dateKey = getDateKey(i);
-      let hadWorkout = false;
-      try {
-        const saved = await AsyncStorage.getItem(`pj_${dateKey}`);
-        if (saved) {
-          const data = JSON.parse(saved);
-          if (data.weight) wh.push({ date: dateKey, value: data.weight });
-          if (data.entries?.length > 0) {
-            const total = data.entries.reduce((s: number, e: any) => s + e.cal, 0);
-            if (total > 0) {
-              ch.push({ date: dateKey, cal: total });
-              const p = data.entries.reduce((s: number, e: any) => s + (e.protein || 0), 0);
-              const c = data.entries.reduce((s: number, e: any) => s + (e.carbs || 0), 0);
-              const f = data.entries.reduce((s: number, e: any) => s + (e.fat || 0), 0);
-              if (p + c + f > 0) mh.push({ date: dateKey, protein: Math.round(p), carbs: Math.round(c), fat: Math.round(f) });
-            }
-          }
-          if (data.steps) sh.push({ date: dateKey, value: data.steps });
-          if (data.activeCalories) ah.push({ date: dateKey, value: data.activeCalories });
-          const sleepH = data.sleepOverride || data.sleepHours;
-          if (sleepH) slh.push({ date: dateKey, value: sleepH });
-          hadWorkout = (workoutState.programs?.[dateKey]?.exercises?.length ?? 0) > 0;
-        }
-      } catch {}
-      wdh.push({ date: dateKey, hadWorkout });
-    }
-    return { weight: wh, cal: ch, steps: sh, activeCal: ah, sleep: slh, macro: mh, workoutDay: wdh };
-  };
+  const fetchTrendData = fetchTrendDataUtil;
 
   const loadAllCardData = async (cards: StatsCard[], globalPeriod: CardPeriod = 30) => {
     let workoutState: any = {};
@@ -1163,7 +218,7 @@ export default function StatsScreen() {
     ])];
 
     const results = await Promise.all(uniquePeriods.map(async p => [p, await fetchTrendData(p, workoutState)] as const));
-    const newMap: Record<string, typeof EMPTY_TREND_DATA> = {};
+    const newMap: Record<string, TrendData> = {};
     for (const [period, data] of results) newMap[period.toString()] = data;
     setTrendDataMap(newMap);
   };
@@ -1203,10 +258,10 @@ export default function StatsScreen() {
     if (period === 'ytd') {
       const start = new Date(nowD.getFullYear(), 0, 1);
       const diff = Math.floor((nowD.getTime() - start.getTime()) / 86400000);
-      for (let i = diff; i >= 0; i--) dates.push(getDateKey(i));
+      for (let i = diff; i >= 0; i--) dates.push(offsetToDateKey(i));
     } else {
       const days = parseInt(period);
-      for (let i = days - 1; i >= 0; i--) dates.push(getDateKey(i));
+      for (let i = days - 1; i >= 0; i--) dates.push(offsetToDateKey(i));
     }
     let totalCal = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0, totalWater = 0, totalNetCal = 0;
     let totalSteps = 0, stepsDays = 0, totalActiveCals = 0, activeDays = 0, totalSleep = 0, sleepDays = 0;
@@ -1266,7 +321,7 @@ export default function StatsScreen() {
     let gymStreak = 0, calStreak = 0, waterStreak = 0;
     let i = 0;
     while (true) {
-      const dateKey = getDateKey(i);
+      const dateKey = offsetToDateKey(i);
       try {
         const saved = await AsyncStorage.getItem(`pj_${dateKey}`);
         if (!saved) { if (i === 0) { i++; continue; } break; }
@@ -1314,7 +369,7 @@ export default function StatsScreen() {
             if (d.heightFt && d.heightIn !== undefined && d.sex && d.birthday) {
               let w = 0;
               for (let i = 0; i <= 30 && w === 0; i++) {
-                try { const dd = await AsyncStorage.getItem(`pj_${getDateKey(i)}`); if (dd) { const x = JSON.parse(dd); if (x.weight) w = x.weight; } } catch {}
+                try { const dd = await AsyncStorage.getItem(`pj_${offsetToDateKey(i)}`); if (dd) { const x = JSON.parse(dd); if (x.weight) w = x.weight; } } catch {}
               }
               if (w > 0) {
                 const wKg = w * 0.453592;
@@ -1377,16 +432,11 @@ export default function StatsScreen() {
 
   const openEditSheet = () => {
     setEditCards([...statsCards]);
-    editSheetAnim.setValue(0);
-    editOverlayAnim.setValue(0);
     setEditSheetVisible(true);
   };
 
   const closeEditSheet = () => {
-    Animated.parallel([
-      Animated.timing(editSheetAnim, { toValue: 0, duration: 260, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
-      Animated.timing(editOverlayAnim, { toValue: 0, duration: 220, useNativeDriver: true }),
-    ]).start(() => setEditSheetVisible(false));
+    Animated.timing(editSheetAnim, { toValue: 0, duration: 180, useNativeDriver: true }).start(() => setEditSheetVisible(false));
   };
 
   const handleToggleCard = (id: string) => {
@@ -1496,68 +546,16 @@ export default function StatsScreen() {
     else openFabMenu();
   };
 
-  // Card edit modal
-  const openEditCard = (card: StatsCard) => {
-    setEditCard(card);
-    setEditLabel(card.label);
-    setEditChartType(card.chartType || 'line');
-    setEditPeriod(card.period);
-    setEditColor(card.color);
-    setEditMacroColors({
-      protein: card.macroColors?.protein ?? MACRO_PROTEIN,
-      carbs: card.macroColors?.carbs ?? MACRO_CARBS,
-      fat: card.macroColors?.fat ?? MACRO_FAT,
-    });
-    editOverlayOpacity.setValue(0);
-    editCardScale.setValue(0.95);
-    setEditCardVisible(true);
+  const handleSaveEditCard = (updated: StatsCard) => {
+    const newCards = statsCards.map(c => c.id === updated.id ? updated : c);
+    setStatsCards(newCards);
+    saveStatsCards(newCards);
   };
 
-  const closeEditCard = () => {
-    Animated.parallel([
-      Animated.timing(editOverlayOpacity, { toValue: 0, duration: 150, useNativeDriver: true }),
-      Animated.timing(editCardScale, { toValue: 0.95, duration: 150, useNativeDriver: true }),
-    ]).start(() => setEditCardVisible(false));
-  };
-
-  const handleSaveEditCard = () => {
-    if (!editCard) return;
-    const isMacros = editCard.dataKey === 'macros';
-    const hasMacroCustom = isMacros && (
-      editMacroColors.protein !== MACRO_PROTEIN ||
-      editMacroColors.carbs !== MACRO_CARBS ||
-      editMacroColors.fat !== MACRO_FAT
-    );
-    const updated = statsCards.map(c =>
-      c.id === editCard.id ? {
-        ...c,
-        label: editLabel.trim() || c.label,
-        chartType: editChartType,
-        period: editPeriod,
-        color: isMacros ? c.color : editColor,
-        macroColors: isMacros ? (hasMacroCustom ? { ...editMacroColors } : undefined) : c.macroColors,
-      } : c
-    );
-    setStatsCards(updated);
-    saveStatsCards(updated);
-    closeEditCard();
-    setTimeout(() => showToast('Graph saved', undefined, 'success'), 300);
-  };
-
-  const handleDeleteEditCard = () => {
-    if (!editCard) return;
-    Alert.alert('Delete Graph', `Delete "${editCard.label}"? This can\'t be undone.`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete', style: 'destructive', onPress: () => {
-          const updated = statsCards.filter(c => c.id !== editCard.id);
-          setStatsCards(updated);
-          saveStatsCards(updated);
-          closeEditCard();
-          setTimeout(() => showToast('Graph deleted', undefined, 'success'), 300);
-        },
-      },
-    ]);
+  const handleDeleteEditCard = (cardId: string) => {
+    const newCards = statsCards.filter(c => c.id !== cardId);
+    setStatsCards(newCards);
+    saveStatsCards(newCards);
   };
 
   const handleAddCard = () => {
@@ -1793,7 +791,7 @@ export default function StatsScreen() {
                 stepGoal={stepGoal}
                 sleepGoal={sleepGoal}
                 onPeriodChange={handleCardPeriodChange}
-                onEditPress={openEditCard}
+                onEditPress={(card) => setEditCard(card)}
               />
             ))}
             </CollapsibleSection>
@@ -1916,24 +914,24 @@ export default function StatsScreen() {
       {/* ── EDIT STATS SHEET ── */}
       <Modal transparent animationType="none" visible={editSheetVisible} onRequestClose={closeEditSheet} statusBarTranslucent hardwareAccelerated
         onShow={() => {
-          Animated.parallel([
-            Animated.timing(editSheetAnim, { toValue: 1, duration: 320, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-            Animated.timing(editOverlayAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
-          ]).start();
+          editSheetAnim.setValue(0);
+          Animated.timing(editSheetAnim, { toValue: 1, duration: 220, useNativeDriver: true }).start();
         }}>
-        <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-          {/* Dimmed backdrop */}
-          <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={closeEditSheet}>
-            <Animated.View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.55)', opacity: editOverlayAnim }} />
-          </TouchableOpacity>
+        <Animated.View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', opacity: editSheetAnim, justifyContent: 'center', alignItems: 'center' }}>
+          <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={closeEditSheet} />
 
-          {/* Slide-up sheet */}
+          {/* Floating card */}
           <Animated.View style={{
-            transform: [{ translateY: editSheetAnim.interpolate({ inputRange: [0, 1], outputRange: [700, 0] }) }],
+            width: '92%',
+            maxHeight: Dimensions.get('window').height * 0.80,
             backgroundColor: theme.bgSheet,
-            borderTopLeftRadius: 20, borderTopRightRadius: 20,
-            borderWidth: 0.5, borderBottomWidth: 0, borderColor: theme.borderSheet,
-            maxHeight: Dimensions.get('window').height * 0.82,
+            borderRadius: 20,
+            borderTopWidth: 1.5,
+            borderTopColor: theme.accentBlueRaw,
+            borderWidth: 0.5,
+            borderColor: theme.borderSheet,
+            overflow: 'hidden',
+            flex: 1,
           }}>
             {/* Handle */}
             <TouchableOpacity onPress={closeEditSheet} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 4, paddingHorizontal: 40 }}>
@@ -2041,7 +1039,7 @@ export default function StatsScreen() {
               />
             </GestureHandlerRootView>
           </Animated.View>
-        </View>
+        </Animated.View>
       </Modal>
 
       {/* ── CREATOR MODAL ── */}
@@ -2225,163 +1223,14 @@ export default function StatsScreen() {
         </View>
       </Modal>
 
-      {/* ── CARD EDIT MODAL (centered scale-pop) ── */}
-      <Modal transparent animationType="none" visible={editCardVisible} onRequestClose={closeEditCard} statusBarTranslucent hardwareAccelerated
-        onShow={() => {
-          Animated.parallel([
-            Animated.timing(editOverlayOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
-            Animated.spring(editCardScale, { toValue: 1, useNativeDriver: true, friction: 8, tension: 100 }),
-          ]).start();
-        }}>
-        <ToastRenderer />
-        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <Animated.View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', opacity: editOverlayOpacity }}>
-            <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={closeEditCard} />
-            <Animated.View style={{ backgroundColor: editCard ? theme.bgSheet : 'transparent', borderRadius: 20, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, width: '88%', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20, transform: [{ scale: editCardScale }] }}>
-              {/* Header */}
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
-                <Text style={{ fontFamily: 'BebasNeue_400Regular', fontSize: 22, letterSpacing: 3, color: theme.accentBlueRaw }}>EDIT GRAPH</Text>
-                <TouchableOpacity onPress={closeEditCard} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <Ionicons name="close" size={20} color={theme.textMuted} />
-                </TouchableOpacity>
-              </View>
-
-              <ScrollView style={{ maxHeight: 480 }} contentContainerStyle={{ padding: 20 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-                {/* Label */}
-                <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 8 }}>Label</Text>
-                <TextInput
-                  style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 15, fontFamily: 'DMSans_400Regular', marginBottom: 20 }}
-                  value={editLabel}
-                  onChangeText={setEditLabel}
-                  placeholderTextColor={theme.textPlaceholder}
-                  placeholder="Graph label"
-                />
-
-                {/* Chart type -- hidden for macros */}
-                {editCard?.dataKey !== 'macros' && (
-                  <>
-                    <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 8 }}>Chart Type</Text>
-                    <View style={{ flexDirection: 'row', gap: 8, marginBottom: 20 }}>
-                      {(['line', 'bar'] as ChartType[]).map(ct => (
-                        <TouchableOpacity key={ct} onPress={() => setEditChartType(ct)}
-                          style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center',
-                            backgroundColor: editChartType === ct ? theme.accentBlueBg : theme.bgInput,
-                            borderWidth: 1, borderColor: editChartType === ct ? theme.accentBlueBorder : theme.borderInput }}>
-                          <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: editChartType === ct ? theme.accentBlue : theme.textMuted }}>
-                            {ct === 'line' ? 'Line' : 'Bar'}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </>
-                )}
-
-                {/* Timeframe */}
-                <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 8 }}>Timeframe</Text>
-                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 24 }}>
-                  {([7, 30, 90] as CardPeriod[]).map(p => (
-                    <TouchableOpacity key={p} onPress={() => setEditPeriod(p)}
-                      style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center',
-                        backgroundColor: editPeriod === p ? theme.accentBlueBg : theme.bgInput,
-                        borderWidth: 1, borderColor: editPeriod === p ? theme.accentBlueBorder : theme.borderInput }}>
-                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: editPeriod === p ? theme.accentBlue : theme.textMuted }}>
-                        {p}D
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-
-                {/* Color picker */}
-                {editCard?.dataKey !== 'workoutFreq' && (
-                  <>
-                    <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 10 }}>
-                      {editCard?.dataKey === 'macros' ? 'Macro Colors' : 'Color'}
-                    </Text>
-                    {editCard?.dataKey === 'macros' ? (
-                      <>
-                        {([
-                          { key: 'protein' as const, label: 'Protein' },
-                          { key: 'carbs' as const, label: 'Carbs' },
-                          { key: 'fat' as const, label: 'Fat' },
-                        ]).map(({ key, label }) => {
-                          const usedColors = Object.entries(editMacroColors)
-                            .filter(([k]) => k !== key)
-                            .map(([, v]) => v);
-                          return (
-                            <View key={key} style={{ marginBottom: 10 }}>
-                              <Text style={{ fontSize: 9, fontFamily: 'DMSans_600SemiBold', letterSpacing: 1.5, textTransform: 'uppercase', color: theme.textDim, marginBottom: 6 }}>{label}</Text>
-                              <View style={{ flexDirection: 'row', gap: 8 }}>
-                                {GRAPH_SWATCHES.map(sw => {
-                                  const selected = editMacroColors[key] === sw;
-                                  const blocked = usedColors.includes(sw);
-                                  return (
-                                    <TouchableOpacity key={sw} disabled={blocked}
-                                      onPress={() => setEditMacroColors(prev => ({ ...prev, [key]: sw }))}
-                                      style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: sw,
-                                        opacity: blocked ? 0.2 : 1,
-                                        borderWidth: selected ? 2 : 0, borderColor: '#ffffff',
-                                        alignItems: 'center', justifyContent: 'center' }}>
-                                      {selected && <Ionicons name="checkmark" size={13} color="#ffffff" />}
-                                    </TouchableOpacity>
-                                  );
-                                })}
-                              </View>
-                            </View>
-                          );
-                        })}
-                        <View style={{ height: 8 }} />
-                      </>
-                    ) : (
-                      <View style={{ flexDirection: 'row', gap: 8, marginBottom: 20 }}>
-                        {GRAPH_SWATCHES.map(sw => {
-                          const selected = editColor === sw;
-                          return (
-                            <TouchableOpacity key={sw}
-                              onPress={() => setEditColor(selected ? undefined : sw)}
-                              style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: sw,
-                                borderWidth: selected ? 2 : 0, borderColor: '#ffffff',
-                                alignItems: 'center', justifyContent: 'center' }}>
-                              {selected && <Ionicons name="checkmark" size={13} color="#ffffff" />}
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </View>
-                    )}
-                  </>
-                )}
-
-                {/* Delete */}
-                <TouchableOpacity onPress={handleDeleteEditCard} style={{ paddingVertical: 12, alignItems: 'center' }}>
-                  <Text style={{ color: theme.accentRed, fontFamily: 'DMSans_600SemiBold', fontSize: 14 }}>Delete Graph</Text>
-                </TouchableOpacity>
-              </ScrollView>
-
-              {/* Save bar -- dim until changes */}
-              {(() => {
-                const colorChanged = editCard?.dataKey === 'macros'
-                  ? (editMacroColors.protein !== (editCard?.macroColors?.protein ?? MACRO_PROTEIN) ||
-                     editMacroColors.carbs !== (editCard?.macroColors?.carbs ?? MACRO_CARBS) ||
-                     editMacroColors.fat !== (editCard?.macroColors?.fat ?? MACRO_FAT))
-                  : editColor !== editCard?.color;
-                const noChange = !editCard || (
-                  editLabel === editCard.label &&
-                  editChartType === editCard.chartType &&
-                  editPeriod === editCard.period &&
-                  !colorChanged
-                );
-                return (
-                  <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard, paddingHorizontal: 20, paddingVertical: 14 }}>
-                    <TouchableOpacity onPress={handleSaveEditCard} disabled={noChange}
-                      style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 10, paddingVertical: 14, alignItems: 'center', opacity: noChange ? 0.4 : 1 }}>
-                      <Text style={{ color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 18, letterSpacing: 2 }}>SAVE</Text>
-                    </TouchableOpacity>
-                  </View>
-                );
-              })()}
-            </Animated.View>
-          </Animated.View>
-        </KeyboardAvoidingView>
-      </Modal>
+      {/* ── CARD EDIT MODAL ── */}
+      <StatsCardEditModal
+        card={editCard}
+        onClose={() => setEditCard(null)}
+        onSave={handleSaveEditCard}
+        onDelete={handleDeleteEditCard}
+        theme={theme}
+      />
 
       {/* ── FAB backdrop ── */}
       {showFabMenu && (

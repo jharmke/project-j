@@ -22,6 +22,11 @@ import TooltipModal from '../../components/TooltipModal';
 import TooltipIcon from '../../components/TooltipIcon';
 import { useTooltip } from '../../useTooltip';
 import GratitudeStreakCard from '../../components/GratitudeStreakCard';
+import { StatsCard, CardPeriod, DATA_KEY_META, DEFAULT_STATS_CARDS } from '../../statsCardRegistry';
+import { TrendData, EMPTY_TREND_DATA, fetchTrendData } from '../../utils/statsData';
+import { StatsGraphCard } from '../../components/StatsGraphCard';
+import { StatsCardEditModal } from '../../components/StatsCardEditModal';
+import { saveStatsCards } from '../../statsCardRegistry';
 
 // ─── Card Registry ────────────────────────────────────────────────────────────
 export type CardId =
@@ -645,9 +650,11 @@ export default function HomeScreen() {
   const [cardVisible, setCardVisible] = useState<Record<CardId, boolean>>(DEFAULT_VISIBLE);
   const [editMode,    setEditMode]    = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
-  const [showCardSheet, setShowCardSheet] = useState(false);
+  const [editTab, setEditTab] = useState<'my' | 'add'>('my');
+  const [allStatsCards, setAllStatsCards] = useState<StatsCard[]>(DEFAULT_STATS_CARDS);
+  const [pinnedTrendData, setPinnedTrendData] = useState<Record<string, TrendData>>({});
+  const [homeEditCard, setHomeEditCard] = useState<StatsCard | null>(null);
   const [dayDetailDate, setDayDetailDate] = useState<string | null>(null);
-  const sheetAnim = useRef(new Animated.Value(0)).current;
   const editSheetAnim = useRef(new Animated.Value(0)).current;
   const dayDetailAnim = useRef(new Animated.Value(0)).current;
   const closeDayDetail = () => {
@@ -1241,6 +1248,11 @@ export default function HomeScreen() {
     };
     loadCals();
     loadAchievements().then(store => setAchievementStore(store));
+    AsyncStorage.getItem('pj_stats_cards').then(raw => {
+      const cards: StatsCard[] = raw ? JSON.parse(raw) : DEFAULT_STATS_CARDS;
+      setAllStatsCards(cards);
+      loadPinnedTrendData(cards);
+    }).catch(() => {});
   }, []));
 
   // ── Weight log ───────────────────────────────────────────────────────────────
@@ -1297,6 +1309,7 @@ export default function HomeScreen() {
   // ── Edit mode ────────────────────────────────────────────────────────────────
   const enterEditMode = () => {
     editSheetAnim.setValue(0);
+    setEditTab('my');
     setEditModalVisible(true);
     setEditMode(true);
   };
@@ -1309,20 +1322,58 @@ export default function HomeScreen() {
       useNativeDriver: true,
     }).start(() => {
       setEditMode(false);
-      setShowCardSheet(false);
       setTimeout(() => setEditModalVisible(false), 100);
     });
   };
 
-  const openCardSheet = () => {
-    setShowCardSheet(true);
-    Animated.spring(sheetAnim, { toValue: 1, useNativeDriver: true, tension: 65, friction: 11 }).start();
-  };
-  const closeCardSheet = () => {
-    Animated.timing(sheetAnim, { toValue: 0, duration: 250, useNativeDriver: true }).start(() => setShowCardSheet(false));
+  const pinGraphCard = async (card: StatsCard) => {
+    const updated = allStatsCards.map(c => c.id === card.id ? { ...c, placement: 'both' as const } : c);
+    setAllStatsCards(updated);
+    await AsyncStorage.setItem('pj_stats_cards', JSON.stringify(updated));
+    await loadPinnedTrendData(updated);
+    setEditTab('my');
   };
 
-  const sheetTranslate = sheetAnim.interpolate({ inputRange: [0,1], outputRange: [600, 0] });
+  const unpinGraphCard = async (cardId: string) => {
+    const updated = allStatsCards.map(c => c.id === cardId ? { ...c, placement: 'stats' as const } : c);
+    setAllStatsCards(updated);
+    await AsyncStorage.setItem('pj_stats_cards', JSON.stringify(updated));
+    setPinnedTrendData(prev => { const next = { ...prev }; delete next[cardId]; return next; });
+  };
+
+  const handlePinnedCardPeriodChange = async (cardId: string, period: CardPeriod) => {
+    const updated = allStatsCards.map(c => c.id === cardId ? { ...c, period } : c);
+    setAllStatsCards(updated);
+    await AsyncStorage.setItem('pj_stats_cards', JSON.stringify(updated));
+    await loadPinnedTrendData(updated);
+  };
+
+  const handleHomeCardSave = async (updated: StatsCard) => {
+    const newCards = allStatsCards.map(c => c.id === updated.id ? updated : c);
+    setAllStatsCards(newCards);
+    await saveStatsCards(newCards);
+    await loadPinnedTrendData(newCards);
+  };
+
+  const handleHomeCardDelete = async (cardId: string) => {
+    const newCards = allStatsCards.filter(c => c.id !== cardId);
+    setAllStatsCards(newCards);
+    await saveStatsCards(newCards);
+    setPinnedTrendData(prev => { const next = { ...prev }; delete next[cardId]; return next; });
+  };
+
+  const loadPinnedTrendData = async (cards: StatsCard[]) => {
+    const pinned = cards.filter(c => c.type === 'graph' && c.placement === 'both');
+    if (pinned.length === 0) { setPinnedTrendData({}); return; }
+    let workoutState: any = {};
+    try { const ws = await AsyncStorage.getItem('pj_workout_state'); if (ws) workoutState = JSON.parse(ws); } catch {}
+    const uniquePeriods = [...new Set(pinned.map(c => c.period))];
+    const byPeriod: Record<number, TrendData> = {};
+    await Promise.all(uniquePeriods.map(async p => { byPeriod[p] = await fetchTrendData(p, workoutState); }));
+    const map: Record<string, TrendData> = {};
+    for (const c of pinned) map[c.id] = byPeriod[c.period] ?? EMPTY_TREND_DATA;
+    setPinnedTrendData(map);
+  };
 
   // ─── Card Renderers ───────────────────────────────────────────────────────────
   const renderVerseCard = () => {
@@ -2581,6 +2632,24 @@ export default function HomeScreen() {
             {renderCardById(id)}
           </View>
         ))}
+
+        {/* Pinned graph cards */}
+        {allStatsCards
+          .filter(c => c.type === 'graph' && c.placement === 'both' && c.dataKey)
+          .sort((a, b) => a.order - b.order)
+          .map(card => (
+            <StatsGraphCard
+              key={card.id}
+              card={card}
+              cardTrendData={pinnedTrendData[card.id] ?? EMPTY_TREND_DATA}
+              theme={theme}
+              calTarget={calTarget}
+              stepGoal={stepGoal}
+              sleepGoal={sleepGoal}
+              onPeriodChange={handlePinnedCardPeriodChange}
+              onEditPress={(c) => setHomeEditCard(c)}
+            />
+          ))}
       </ScrollView>
 
       </LinearGradient>
@@ -2605,81 +2674,168 @@ export default function HomeScreen() {
             <TouchableOpacity onPress={exitEditMode} style={{ alignSelf:'center', paddingVertical:10, paddingHorizontal:40 }}>
               <View style={[styles.editSheetHandle, { backgroundColor: theme.sheetHandle }]} />
             </TouchableOpacity>
+            {/* Header row */}
             <View style={[styles.editSheetHeader, { borderBottomColor: theme.borderSubtle }]}>
-              <TouchableOpacity onPress={openCardSheet}
-                style={{ backgroundColor: theme.accentBlueBg, borderWidth:1, borderColor: theme.accentBlueBorder, borderRadius:6, paddingHorizontal:12, paddingVertical:6, height:32, alignItems:'center', justifyContent:'center', flexDirection:'row', gap:4 }}>
-                <Ionicons name="add" size={14} color={theme.accentBlue} />
-                <Text style={{ color: theme.accentBlue, fontSize:12, fontFamily:'DMSans_600SemiBold' }}>Add</Text>
-              </TouchableOpacity>
               <Text style={{ fontSize:13, color: theme.accentBlueRaw, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase' }}>Edit Layout</Text>
               <TouchableOpacity onPress={exitEditMode}
                 style={{ backgroundColor: theme.accentGreenBg, borderWidth:1, borderColor: theme.accentGreenBorder, borderRadius:6, paddingHorizontal:14, paddingVertical:6, height:32, alignItems:'center', justifyContent:'center' }}>
                 <Text style={{ color: theme.accentGreen, fontSize:12, fontFamily:'DMSans_700Bold', letterSpacing:1 }}>DONE</Text>
               </TouchableOpacity>
             </View>
-            <DraggableFlatList
-              data={cardOrder}
-              keyExtractor={(item) => item}
-              contentContainerStyle={{ paddingHorizontal:16, paddingBottom:80 }}
-              onDragEnd={({ data }) => {
-                setCardOrder(data);
-                saveLayout(data, cardVisible);
-              }}
-              renderItem={({ item: id, drag, isActive }: RenderItemParams<CardId>) => {
-                const meta = CARD_REGISTRY.find(c => c.id === id)!;
-                const visible = cardVisible[id];
-                return (
-                  <ScaleDecorator>
-                    <View style={[styles.editCardRow, isActive && { opacity: 0.85 }]}>
-                      <TouchableOpacity onPress={() => toggleCardVisible(id)}
-                        style={[styles.editBadge, { backgroundColor: visible ? theme.accentRedBg : theme.accentGreenBg, borderColor: visible ? theme.accentRedBorder : theme.accentGreenBorder }]}>
-                        <Ionicons name={visible ? 'remove' : 'add'} size={14} color={visible ? theme.accentRed : theme.accentGreen} />
-                      </TouchableOpacity>
-                      <View style={[styles.editCardPreview, { backgroundColor: theme.bgEditCard, borderColor: theme.borderCard }, !visible && { opacity:0.35 }]}>
-                        <Text style={[styles.editCardLabel, { color: theme.textPrimary }]}>{meta.label}</Text>
-                        <Text style={[styles.editCardDesc, { color: theme.textDim }]}>{meta.description}</Text>
+
+            {/* Segmented control tabs */}
+            <View style={{ flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 10 }}>
+              <View style={{ flex: 1, flexDirection: 'row', backgroundColor: theme.bgInput, borderRadius: 10, padding: 3 }}>
+                {(['my', 'add'] as const).map(tab => (
+                  <TouchableOpacity key={tab} onPress={() => setEditTab(tab)}
+                    style={{ flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center',
+                      backgroundColor: editTab === tab ? theme.accentBlueRaw : 'transparent',
+                    }}>
+                    <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase',
+                      color: editTab === tab ? '#ffffff' : theme.textMuted }}>
+                      {tab === 'my' ? 'My Cards' : 'Add Cards'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* MY CARDS tab */}
+            {editTab === 'my' && (
+              <View style={{ flex: 1 }}>
+              <DraggableFlatList
+                data={cardOrder}
+                keyExtractor={(item) => item}
+                contentContainerStyle={{ paddingHorizontal:16, paddingBottom: 20 }}
+                onDragEnd={({ data }) => {
+                  setCardOrder(data);
+                  saveLayout(data, cardVisible);
+                }}
+                renderItem={({ item: id, drag, isActive }: RenderItemParams<CardId>) => {
+                  const meta = CARD_REGISTRY.find(c => c.id === id)!;
+                  const visible = cardVisible[id];
+                  return (
+                    <ScaleDecorator>
+                      <View style={[styles.editCardRow, isActive && { opacity: 0.85 }]}>
+                        <TouchableOpacity onPress={() => toggleCardVisible(id)}
+                          style={[styles.editBadge, { backgroundColor: visible ? theme.accentRedBg : theme.accentGreenBg, borderColor: visible ? theme.accentRedBorder : theme.accentGreenBorder }]}>
+                          <Ionicons name={visible ? 'remove' : 'add'} size={14} color={visible ? theme.accentRed : theme.accentGreen} />
+                        </TouchableOpacity>
+                        <View style={[styles.editCardPreview, { backgroundColor: theme.bgEditCard, borderColor: theme.borderCard }, !visible && { opacity:0.35 }]}>
+                          <Text style={[styles.editCardLabel, { color: theme.textPrimary }]}>{meta.label}</Text>
+                          <Text style={[styles.editCardDesc, { color: theme.textDim }]}>{meta.description}</Text>
+                        </View>
+                        <TouchableOpacity onLongPress={drag} delayLongPress={0} style={styles.dragHandle}>
+                          <Ionicons name="menu-outline" size={20} color={theme.textDim} />
+                        </TouchableOpacity>
                       </View>
-                      <TouchableOpacity onLongPress={drag} delayLongPress={0} style={styles.dragHandle}>
-                        <Ionicons name="menu-outline" size={20} color={theme.textDim} />
+                    </ScaleDecorator>
+                  );
+                }}
+                ListFooterComponent={(() => {
+                  const pinned = allStatsCards.filter(c => c.type === 'graph' && c.placement === 'both');
+                  if (pinned.length === 0) return <View style={{ height: 20 }} />;
+                  return (
+                    <>
+                      <View style={{ paddingTop: 16, paddingBottom: 8, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle, marginTop: 8, paddingHorizontal: 0 }}>
+                        <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>Pinned Graphs</Text>
+                      </View>
+                      {pinned.map(card => {
+                        const graphMeta = card.dataKey ? DATA_KEY_META[card.dataKey as keyof typeof DATA_KEY_META] : null;
+                        return (
+                          <View key={card.id} style={styles.editCardRow}>
+                            <TouchableOpacity onPress={() => unpinGraphCard(card.id)}
+                              style={[styles.editBadge, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]}>
+                              <Ionicons name="remove" size={14} color={theme.accentRed} />
+                            </TouchableOpacity>
+                            <View style={[styles.editCardPreview, { backgroundColor: theme.bgEditCard, borderColor: theme.borderCard }]}>
+                              <Text style={[styles.editCardLabel, { color: theme.textPrimary }]}>{card.label}</Text>
+                              <Text style={[styles.editCardDesc, { color: theme.textDim }]}>{graphMeta?.description ?? 'Graph card'} · {card.period}D</Text>
+                            </View>
+                            <View style={[styles.dragHandle, { opacity: 0 }]}>
+                              <Ionicons name="menu-outline" size={20} color={theme.textDim} />
+                            </View>
+                          </View>
+                        );
+                      })}
+                      <View style={{ height: 20 }} />
+                    </>
+                  );
+                })()}
+              />
+              </View>
+            )}
+
+            {/* ADD CARDS tab */}
+            {editTab === 'add' && (
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 32 }}>
+                <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 8, marginTop: 4 }}>Home Cards</Text>
+                {CARD_REGISTRY.filter(meta => !cardVisible[meta.id]).length === 0 ? (
+                  <View style={{ paddingVertical: 16, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>All home cards are active</Text>
+                  </View>
+                ) : (
+                  CARD_REGISTRY.filter(meta => !cardVisible[meta.id]).map(meta => (
+                    <TouchableOpacity key={meta.id}
+                      onPress={() => { toggleCardVisible(meta.id); setEditTab('my'); }}
+                      style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle, gap: 12 }}>
+                      <View style={[styles.editBadge, { backgroundColor: theme.accentGreenBg, borderColor: theme.accentGreenBorder }]}>
+                        <Ionicons name="add" size={14} color={theme.accentGreen} />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary, marginBottom: 2 }}>{meta.label}</Text>
+                        <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim }}>{meta.description}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))
+                )}
+
+                <View style={{ marginTop: 20, marginBottom: 8, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle, paddingTop: 16 }}>
+                  <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 8 }}>Graphs</Text>
+                </View>
+                {allStatsCards.filter(c => c.type === 'graph' && c.placement !== 'both').length === 0 ? (
+                  <View style={{ paddingVertical: 16, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>All graphs are pinned to home</Text>
+                  </View>
+                ) : (
+                  allStatsCards.filter(c => c.type === 'graph' && c.placement !== 'both').map(card => {
+                    const graphMeta = card.dataKey ? DATA_KEY_META[card.dataKey as keyof typeof DATA_KEY_META] : null;
+                    return (
+                      <TouchableOpacity key={card.id}
+                        onPress={() => pinGraphCard(card)}
+                        style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle, gap: 12 }}>
+                        <View style={[styles.editBadge, { backgroundColor: theme.accentGreenBg, borderColor: theme.accentGreenBorder }]}>
+                          <Ionicons name="add" size={14} color={theme.accentGreen} />
+                        </View>
+                        {graphMeta && <Ionicons name={graphMeta.icon as any} size={18} color={theme.textMuted} />}
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary, marginBottom: 2 }}>{card.label}</Text>
+                          <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim }}>
+                            {graphMeta?.description ?? 'Graph'} · {card.period}D
+                          </Text>
+                        </View>
+                        <View style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
+                          <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 1 }}>{card.period}D</Text>
+                        </View>
                       </TouchableOpacity>
-                    </View>
-                  </ScaleDecorator>
-                );
-              }}
-            />
+                    );
+                  })
+                )}
+              </ScrollView>
+            )}
+
             </Animated.View>
           </Animated.View>
-        {/* ── Card library sheet -- inside edit Modal so touches work ── */}
-          {showCardSheet && (
-            <>
-              <TouchableOpacity style={[styles.sheetOverlay, { backgroundColor: theme.overlayBg }]} activeOpacity={1} onPress={closeCardSheet} />
-              <Animated.View style={[styles.sheet, { backgroundColor: theme.bgSheet, borderColor: theme.borderSheet, transform:[{ translateY: sheetTranslate }] }]}>
-                <View style={[styles.sheetHandle, { backgroundColor: theme.sheetHandle }]} />
-                <Text style={[styles.sheetTitle, { color: theme.textPrimary }]}>Add Cards</Text>
-                <Text style={[styles.sheetSubtitle, { color: theme.textDim }]}>Toggle cards to show or hide on your home screen</Text>
-            <ScrollView showsVerticalScrollIndicator={false} style={{ marginTop:8 }}>
-              {CARD_REGISTRY.map(meta => {
-                const visible = cardVisible[meta.id];
-                return (
-                  <TouchableOpacity key={meta.id} onPress={() => toggleCardVisible(meta.id)}
-                    style={[styles.sheetRow, { borderBottomColor: theme.borderSubtle }]}>
-                    <View style={{ flex:1 }}>
-                      <Text style={[styles.sheetRowLabel, { color: visible ? theme.textPrimary : theme.textMuted }]}>{meta.label}</Text>
-                      <Text style={[styles.sheetRowDesc, { color: theme.textDim }]}>{meta.description}</Text>
-                    </View>
-                    <View style={[styles.sheetToggle, { borderColor: theme.borderSubtle, backgroundColor: theme.bgCard }, visible && { borderColor: theme.accentGreenBorder, backgroundColor: theme.accentGreenBg }]}>
-                      {visible && <Ionicons name="checkmark" size={14} color={theme.accentGreen} />}
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-              <View style={{ height:32 }} />
-            </ScrollView>
-          </Animated.View>
-        </>
-          )}
         </Modal>
       )}
+
+      <StatsCardEditModal
+        card={homeEditCard}
+        onClose={() => setHomeEditCard(null)}
+        onSave={handleHomeCardSave}
+        onDelete={handleHomeCardDelete}
+        theme={theme}
+      />
 
     </View>
   );
@@ -2732,7 +2888,7 @@ const styles = StyleSheet.create({
   saveBtn:          { marginTop:8, padding:10, borderWidth:1, borderRadius:6, alignItems:'center' },
   saveBtnText:      { fontSize:12, fontFamily:'DMSans_500Medium' },
   // Edit sheet
-  editSheet:        { width:'92%', borderRadius:20, maxHeight:'72%', borderWidth:0.5, paddingBottom:20, overflow:'hidden', flex:1 },
+  editSheet:        { width:'92%', borderRadius:20, maxHeight:'72%', borderWidth:0.5, paddingBottom:20, flex:1 },
   editSheetHandle:  { width:36, height:4, borderRadius:2, alignSelf:'center', marginTop:12, marginBottom:12 },
   editSheetHeader:  { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:16, paddingBottom:16, borderBottomWidth:0.5, marginBottom:8 },
   // Edit mode
@@ -2742,16 +2898,4 @@ const styles = StyleSheet.create({
   editCardLabel:    { fontSize:13, fontFamily:'DMSans_600SemiBold', marginBottom:2 },
   editCardDesc:     { fontSize:11, fontFamily:'DMSans_400Regular' },
   dragHandle:       { padding:8 },
-  // Bottom sheet
-  sheetOverlay:     { position:'absolute', top:0, left:0, right:0, bottom:0 },
-  sheet:            { position:'absolute', bottom:0, left:0, right:0, borderTopLeftRadius:20, borderTopRightRadius:20, padding:20, paddingBottom:40, maxHeight:'75%', borderTopWidth:0.5 },
-  sheetHandle:      { width:36, height:4, borderRadius:2, alignSelf:'center', marginBottom:16 },
-  sheetTitle:       { fontSize:18, fontFamily:'BebasNeue_400Regular', letterSpacing:2, marginBottom:4 },
-  sheetSubtitle:    { fontSize:11, fontFamily:'DMSans_400Regular', marginBottom:8 },
-  sheetRow:         { flexDirection:'row', alignItems:'center', paddingVertical:12, borderBottomWidth:0.5, gap:12 },
-  sheetRowActive:   { },
-  sheetRowLabel:    { fontSize:14, fontFamily:'DMSans_600SemiBold', marginBottom:2 },
-  sheetRowDesc:     { fontSize:11, fontFamily:'DMSans_400Regular' },
-  sheetToggle:      { width:24, height:24, borderRadius:12, borderWidth:1, alignItems:'center', justifyContent:'center' },
-  sheetToggleOn:    { },
 });

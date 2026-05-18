@@ -314,6 +314,7 @@ Food log screen polish pass:
 - Bottom safe area padding on library screen
 - Tab bar (Recent/My Foods/Favorites/Recipes) polish pass -- selected state weight, container depth
 - Sources of recommendations -- wire as (i) tooltip on calorie target result screen
+- Log tab macro bars goal-based fill -- bars currently fill proportional to each other, not relative to set macro goals. Each bar should fill to % of that macro's goal (protein g / protein goal g, etc). Same pattern as calorie and water bars. (SOON)
 
 Active calorie accuracy:
 - Calorie discrepancy bug -- root cause was calorie TARGET mismatch between home (using live recommended) and log (using stale saved value). Fixed via useRecommendedCal toggle in profile -- toggle ON keeps calTarget live and in sync, toggle OFF lets user set custom static value. FIXED.
@@ -451,7 +452,7 @@ Custom streaks system -- all three modes get full access to all streak options. 
 
 Visual polish
 
-Theme audit pass -- dedicated session required. Known issues found on quick pass: Dark theme bg and cards both so dark they are barely distinguishable; Slate bg/cards too similar; Blush same issue. Warm theme needs a TOTAL rework -- current state is visually broken. Light theme is primary testing theme but all 5 need to pass CPP. Do after stats page is complete. (SOON -- HIGH)
+[x] Theme audit pass -- COMPLETE. All 5 themes reworked this session. Dark: bgPrimary #1a1a28, bgCard #262638 (visible navy, comfortable brightness). Slate: bgPrimary #bcc8d4, bgCard rgba(228,234,244,0.90) (tinted cards float on steel-blue). Warm: reworked to light warm parchment, all surfaces warm-tinted. Blush: bgPrimary #f5c8d8, bgCard rgba(255,248,252,0.95) (white cards on medium pink). Light: bgCard bumped to rgba(255,255,255,0.85). Shadow pass (component-level) and accent palette pass remain as separate sessions.
 
 Empty state illustrations -- replace icon + text empty states with tasteful SVG illustrations. Consistent style, theme-aware colors. Apply across all lists and cards that can be empty.
 
@@ -568,7 +569,8 @@ TestFlight -- setup, App Store Connect, tester invite flow. Friends and family f
 
 Visual polish (do together)
 
-Warm theme heavy redo -- currently broken/washed out. Full color, gradient, card, and contrast overhaul. Must ship before TestFlight.
+[x] Warm theme heavy redo -- reworked to light warm parchment (cream bg, warm-tinted cards/inputs/tracks/text throughout, amber borders, golden gradient). Accent palette darkened for light bg readability. Ships as light warm theme distinct from Light/Slate/Blush.
+[x] Accent palette full pass -- All 5 themes audited and rebuilt. Rainbow ordered warm→cool, neutrals last. Light: culled 4 near-duplicates, added Orange/Yellow/Cyan/Pink/Burgundy, Black replaces Silver as default, Amber/Forest/Blue locked (onboarding hardcoded). Dark: Red strengthened, Gold→Amber (#c2621a), added Orange/Yellow/Cyan. Slate: ditched Teal/Gold/White, added Burgundy/Amber/Orange/Navy. Warm: ditched Sage/Sienna, fixed Amber to #c2621a, added Navy/Black. Blush: added Navy/Green/Amber. Amber is #c2621a across all themes.
 Greeting area customization -- settings picker for top-left home header slot. Options not fully defined yet. Candidates: greeting text, streak badge, calorie summary line. App name + date always stay. Design options before building.
 Shadow pass -- increase shadow opacity and darkness on light themes (Slate, Light, Blush, Warm).
 Gradient pass -- more visible gradient range on all light themes.

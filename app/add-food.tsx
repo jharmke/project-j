@@ -33,6 +33,7 @@ interface MyFood {
   servingSize?: number;
   servingUnit?: string;
   fsId?: string | null;
+  brand?: string;
 }
 
 interface SearchResult {
@@ -356,6 +357,7 @@ const openEditModal = (food: any) => {
   setEditFoodData({
     _source: food,
     name: food.name || food.description || '',
+    brand: food.brand?.toString() || '',
     cal: food.cal?.toString() || '',
     protein: food.protein?.toString() || '',
     carbs: food.carbs?.toString() || '',
@@ -397,6 +399,7 @@ const saveEditFood = async () => {
       (src?.id ? f.id === src.id : f.name === src.name) ? {
         ...f,
         name: editFoodData.name.trim(),
+        brand: editFoodData.brand?.trim() || undefined,
         cal: calNum,
         protein: parseFloat(editFoodData.protein) || 0,
         carbs: parseFloat(editFoodData.carbs) || 0,
@@ -1307,6 +1310,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                 <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Basic Info</Text>
                 {([
                   { label: 'Food Name', key: 'name', keyboard: 'default' as const },
+                  { label: 'Brand (optional)', key: 'brand', keyboard: 'default' as const },
                   { label: 'Calories (kcal)', key: 'cal', keyboard: 'decimal-pad' as const },
                 ] as { label: string; key: string; keyboard: 'default' | 'decimal-pad' }[]).map(f => (
                   <View key={f.key} style={{ marginBottom: 10 }}>
@@ -1369,16 +1373,19 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                     ))}
                   </View>
                 ))}
-                <View style={{ marginBottom: 10 }}>
-                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, marginBottom: 4 }}>SATURATED FAT (g)</Text>
-                  <TextInput
-                    style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: 'DMSans_400Regular' }}
-                    value={editFoodData?.saturatedFat || ''}
-                    onChangeText={v => setEditFoodData((p: any) => p ? { ...p, saturatedFat: filterDecimal(v) } : null)}
-                    keyboardType="decimal-pad"
-                    placeholderTextColor={theme.textDim}
-                    selectTextOnFocus
-                  />
+                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, marginBottom: 4 }}>SATURATED FAT (g)</Text>
+                    <TextInput
+                      style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: 'DMSans_400Regular' }}
+                      value={editFoodData?.saturatedFat || ''}
+                      onChangeText={v => setEditFoodData((p: any) => p ? { ...p, saturatedFat: filterDecimal(v) } : null)}
+                      keyboardType="decimal-pad"
+                      placeholderTextColor={theme.textDim}
+                      selectTextOnFocus
+                    />
+                  </View>
+                  <View style={{ flex: 1 }} />
                 </View>
               </ScrollView>
               <View style={{ flexDirection: 'row', gap: 10, padding: 16, paddingTop: 12 }}>

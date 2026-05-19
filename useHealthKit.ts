@@ -50,6 +50,16 @@ export function useHealthKit() {
             'HKQuantityTypeIdentifierRespiratoryRate',
             'HKQuantityTypeIdentifierOxygenSaturation',
             'HKCategoryTypeIdentifierMindfulSession',
+            'HKQuantityTypeIdentifierHeartRateVariabilitySDNN',
+            'HKQuantityTypeIdentifierFlightsClimbed',
+            'HKQuantityTypeIdentifierBasalEnergyBurned',
+            'HKQuantityTypeIdentifierWaistCircumference',
+            'HKQuantityTypeIdentifierBasalBodyTemperature',
+            'HKCategoryTypeIdentifierAppleStandHour',
+            'HKCategoryTypeIdentifierMenstrualFlow',
+            'HKCategoryTypeIdentifierOvulationTestResult',
+            'HKCategoryTypeIdentifierCervicalMucusQuality',
+            'HKCategoryTypeIdentifierIntermenstrualBleeding',
           ],
         });
 

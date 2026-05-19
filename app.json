@@ -11,6 +11,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.jharmke.projectj",
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "entitlements": {
+        "com.apple.developer.applesignin": ["Default"]
+      },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -52,8 +56,15 @@
       [
         "@kingstinct/react-native-healthkit",
         {
-          "NSHealthShareUsageDescription": "Project J uses HealthKit to read your active calories, steps, and workouts to keep your fitness data accurate.",
+          "NSHealthShareUsageDescription": "Project J uses HealthKit to read your fitness and health data including activity, sleep, heart health, body measurements, and reproductive health metrics to provide personalized insights.",
           "NSHealthUpdateUsageDescription": "Project J uses HealthKit to save workout and health data."
+        }
+      ],
+      "expo-apple-authentication",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.841973180275-obscsfo4ad9ibir9dtpcago5fuptojlg"
         }
       ]
     ],

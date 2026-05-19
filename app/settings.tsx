@@ -6,6 +6,7 @@ import { ActivityIndicator, Alert, Animated, ScrollView, StyleSheet, Text, Touch
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ACCENT_PALETTES, THEME_ORDER, ThemeId, THEMES, useTheme } from '../theme';
 import { useHealthKit } from '../useHealthKit';
+import { useAuth } from '../AuthContext';
 import { BLANK_DAY, WorkoutTag } from '../workoutData';
 import CelebrationOverlay from '../components/CelebrationOverlay';
 import { showAchievementToast } from '../components/AchievementToast';
@@ -18,6 +19,7 @@ import ToggleSwitch from '../components/ToggleSwitch';
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { theme, themeId, accentId, setTheme, setAccent } = useTheme();
+  const { user, signOut } = useAuth();
   // showAchievementToast is now a direct import
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
   const [styleMode, setStyleMode] = useState<'discipline' | 'balanced' | 'mindful'>('balanced');
@@ -489,6 +491,34 @@ export default function SettingsScreen() {
             </TouchableOpacity>
           </View>
         )}
+
+      {/* ── Account ── */}
+        <View style={[styles.section, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
+          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>Account</Text>
+          {user?.email ? (
+            <View style={[styles.row, { borderTopColor: theme.borderCard }]}>
+              <Ionicons name="person-circle-outline" size={18} color={theme.textMuted} style={{ marginRight: 10 }} />
+              <Text style={[styles.rowTitle, { color: theme.textSecondary, flex: 1 }]} numberOfLines={1}>{user.email}</Text>
+            </View>
+          ) : null}
+          <View style={[styles.row, { borderTopColor: theme.borderCard }]}>
+            <TouchableOpacity
+              onPress={() =>
+                Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Sign Out',
+                    style: 'destructive',
+                    onPress: signOut,
+                  },
+                ])
+              }
+              style={{ flex: 1 }}
+            >
+              <Text style={[styles.rowTitle, { color: theme.statusBad }]}>Sign Out</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
       {/* ── Help ── */}
         <View style={[styles.section, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>

@@ -272,6 +272,7 @@ SET banner tip -- plain icon + text in place but still needs CPP polish pass.
 [x] Recipe builder My Foods 0 macros bug -- addCustomFood only saved { name, cal } to pj_my_foods, dropping protein/carbs/fat. Fixed to include all macros. Added missing saveToFirebase call. recipe-builder.tsx.
 [x] Recipe builder dead code removal -- USDA searchFood, OFF handleBarcodeScan, CameraView overlay, and related states (searchQuery, searchResults, scanning, showAddIngredientModal, selectedFood, ingredientAmount, ingredientUnit) removed. Add Ingredient modal and Camera JSX removed. Dead styles removed. FatSecret is now the only search path via add-food route. recipe-builder.tsx.
 [x] Recipe builder custom food button -- green "+" wired to shared CustomFoodCreator component (replaces dirty inline modal). onSaved auto-adds food as ingredient at its configured serving size. Food always saves to My Foods library. Dead inline state/modal/styles removed. recipe-builder.tsx.
+Non-gram serving size bug -- foods with ml/container/oz servings (e.g. protein shakes) show wrong "Amount (g)" value because our amount field assumes grams. Macros are accurate but amount field grabs a meaningless fallback value. Fix: detect non-gram serving unit from FatSecret data, relabel or hide the gram amount field for those foods, rely on servings stepper only. (SOON)
 Rename food on entry -- editable name field on food detail before logging, custom name stored with entry.
 Save New Food to Library -- full macro fields in proper modal, not just name + calories. SUPERSEDED by Custom Food Creator below.
 Custom Food Creator -- DONE. components/CustomFoodCreator.tsx, centered modal with scale-in animation, required name + calories with * markers, optional brand/macros/extended nutrition in collapsible section, serving size + serving label, saves to pj_my_foods with custom_XXXXX ID. Entry point: + Food button in log.tsx header. + Recipe also moved to log.tsx header. Custom foods open to correct serving with absolute macros (useExisting extended to isCustom flag). Extended nutrition saves as foodNutrients array. Brand shows under food name in food detail. Photo upload, vitamins/minerals deferred to SOON.
@@ -590,6 +591,7 @@ Today's Message overhaul -- full spec below. Dedicated session.
 [x] Verse unhighlight on tap -- tapping a highlighted verse clears it.
 [x] Today's Message card -- solid "book" journal icon added to top-right of card header, routes to journal.
 Achievement toast improvements -- tappable routes to achievements page, trigger context under name, wording update before App Store launch.
+Achievement page trophy hex cards -- inconsistent sizes across cards. All hex badges must be uniform size. CPP bug. (SOON)
 Cycling Bible verses -- fine-print / sub-label style text, centered at the bottom of applicable tabs (Food Log, Workout, Home). Unobtrusive ambient faith element, not a card. Different verse per tab, thematically relevant to that tab (food/workout/general). Home verse can rotate freely. Rooted users: always on. Exploring users: optional or off. Faith journey gated. (SOON)
 
 Process and infrastructure

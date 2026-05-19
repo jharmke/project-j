@@ -11,16 +11,16 @@ import { Stack, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { useTheme } from '../theme';
 import { LogBox } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-LogBox.ignoreLogs(['VirtualizedLists should never be nested']);
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AchievementToastProvider, AchievementToastRenderer } from '../components/AchievementToast';
 import { CelebrationRenderer } from '../components/CelebrationOverlay';
 import { ToastProvider } from '../components/Toast';
-import { ThemeProvider } from '../theme';
+import { ThemeProvider, useTheme } from '../theme';
+import { AuthProvider, useAuth } from '../AuthContext';
+
+LogBox.ignoreLogs(['VirtualizedLists should never be nested']);
 
 SplashScreen.preventAutoHideAsync();
 
@@ -29,49 +29,36 @@ function ThemedStatusBar() {
   return <StatusBar style={themeId === 'dark' ? 'light' : 'dark'} />;
 }
 
-export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
-    DMSans_400Regular,
-    DMSans_500Medium,
-    DMSans_600SemiBold,
-    DMSans_700Bold,
-    BebasNeue_400Regular,
-  });
+function RootLayoutNav() {
+  const { user, loading: authLoading } = useAuth();
   const [onboardingChecked, setOnboardingChecked] = useState(false);
   const [onboardingComplete, setOnboardingComplete] = useState(false);
 
   useEffect(() => {
-    const checkOnboarding = async () => {
-      try {
-        const val = await AsyncStorage.getItem('pj_onboarding_complete');
+    AsyncStorage.getItem('pj_onboarding_complete')
+      .then(val => {
         setOnboardingComplete(val === 'true');
-      } catch (e) {
-        setOnboardingComplete(false);
-      } finally {
         setOnboardingChecked(true);
-      }
-    };
-    checkOnboarding();
+      })
+      .catch(() => setOnboardingChecked(true));
   }, []);
 
   useEffect(() => {
-    if (fontsLoaded && onboardingChecked) {
-      SplashScreen.hideAsync();
-      if (!onboardingComplete) {
-        router.replace('/onboarding/welcome');
-      }
-    }
-  }, [fontsLoaded, onboardingChecked, onboardingComplete]);
+    if (!onboardingChecked || authLoading) return;
 
-  if (!fontsLoaded || !onboardingChecked) return null;
+    if (!user) {
+      router.replace('/sign-in');
+    } else if (!onboardingComplete) {
+      router.replace('/onboarding/welcome');
+    }
+
+    SplashScreen.hideAsync();
+  }, [onboardingChecked, authLoading, user, onboardingComplete]);
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-    <ThemeProvider>
-    <ToastProvider>
-    <AchievementToastProvider>
-    <NavThemeProvider value={DarkTheme}>
+    <>
       <Stack>
+        <Stack.Screen name="sign-in" options={{ headerShown: false, animation: 'fade' }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="onboarding/welcome" options={{ headerShown: false, animation: 'fade' }} />
         <Stack.Screen name="onboarding/profile-setup" options={{ headerShown: false, animation: 'fade' }} />
@@ -98,10 +85,34 @@ export default function RootLayout() {
       <ThemedStatusBar />
       <AchievementToastRenderer />
       <CelebrationRenderer />
+    </>
+  );
+}
+
+export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    DMSans_400Regular,
+    DMSans_500Medium,
+    DMSans_600SemiBold,
+    DMSans_700Bold,
+    BebasNeue_400Regular,
+  });
+
+  if (!fontsLoaded) return null;
+
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+    <AuthProvider>
+    <ThemeProvider>
+    <ToastProvider>
+    <AchievementToastProvider>
+    <NavThemeProvider value={DarkTheme}>
+      <RootLayoutNav />
     </NavThemeProvider>
     </AchievementToastProvider>
     </ToastProvider>
     </ThemeProvider>
+    </AuthProvider>
     </GestureHandlerRootView>
   );
 }

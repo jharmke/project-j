@@ -1,5 +1,8 @@
 import { initializeApp } from 'firebase/app';
+import { initializeAuth, getReactNativePersistence } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const firebaseConfig = {
   apiKey: "AIzaSyBCrbrtqp8deQ6h2exQB1iaDjO5E6yJofA",
@@ -11,23 +14,23 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
+
+export const auth = initializeAuth(app, {
+  persistence: getReactNativePersistence(AsyncStorage),
+});
+
 export const db = getFirestore(app);
 
-import * as Application from 'expo-application';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-
-export const getUserId = () => {
-  return Application.applicationId || 'default-user';
+export const getUserId = (): string => {
+  return auth.currentUser?.uid ?? 'anonymous';
 };
 
 export const saveToFirebase = async (dateKey: string, field: string, value: any) => {
   try {
-    console.log('Saving to Firebase:', dateKey, field, JSON.stringify(value));
     const userId = getUserId();
-    console.log('User ID:', userId);
+    if (userId === 'anonymous') return;
     const ref = doc(db, 'users', userId, 'days', dateKey);
     await setDoc(ref, { [field]: value }, { merge: true });
-    console.log('Firebase save successful');
   } catch (e) {
     console.log('Firebase save error', e);
   }
@@ -36,6 +39,7 @@ export const saveToFirebase = async (dateKey: string, field: string, value: any)
 export const loadFromFirebase = async (dateKey: string) => {
   try {
     const userId = getUserId();
+    if (userId === 'anonymous') return null;
     const ref = doc(db, 'users', userId, 'days', dateKey);
     const snap = await getDoc(ref);
     if (snap.exists()) return snap.data();

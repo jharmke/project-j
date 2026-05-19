@@ -97,6 +97,14 @@ export interface DiagnosticReport {
   minLoggedDays: number;
 }
 
+// ── Threshold ──────────────────────────────────────────────────────────────────
+
+export function minDaysForWindow(windowDays: ReportWindow): number {
+  if (windowDays === 14) return 7;
+  if (windowDays === 30) return 15;
+  return 30; // 90 days
+}
+
 // ── Storage ────────────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = 'pj_diagnostic_reports';
@@ -297,16 +305,17 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
     suspectDays, excludedDays: excludedCount, status: consistencyStatus,
   };
 
-  const insufficientData = loggedDays < 7;
+  const minDays = minDaysForWindow(windowDays);
+  const insufficientData = loggedDays < minDays;
 
   if (insufficientData) {
     return {
       id: Date.now().toString(),
       generatedAt: new Date().toISOString(),
       windowDays, dateRangeStart: rangeStart, dateRangeEnd: today, goalDirection,
-      summary: `Not enough logged data to generate a full analysis. You need at least 7 days with food logged in the selected window. You currently have ${loggedDays} logged day${loggedDays !== 1 ? 's' : ''}.`,
+      summary: `Not enough logged data to generate a full analysis. You need at least ${minDays} days with food logged in the ${windowDays}-day window. You currently have ${loggedDays} logged day${loggedDays !== 1 ? 's' : ''}.`,
       deficit: null, burnAccuracy: null, consistency, macros: null, sleep: null, correlations: null,
-      suggestions: [{ rank: 1, headline: 'Log your food consistently', detail: `Aim for at least 7 days of logging in a ${windowDays}-day window to unlock the full analysis. Even rough estimates count.` }],
+      suggestions: [{ rank: 1, headline: 'Log your food consistently', detail: `Aim for at least ${minDays} days of logging in a ${windowDays}-day window to unlock the full analysis. Even rough estimates count.` }],
       insufficientData: true, minLoggedDays: loggedDays,
     };
   }

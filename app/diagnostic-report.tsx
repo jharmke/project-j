@@ -19,6 +19,7 @@ import {
   deleteReport,
   generateDiagnosticReport,
   loadSavedReports,
+  minDaysForWindow,
   saveReport,
 } from '../utils/diagnosticReport';
 
@@ -48,6 +49,28 @@ function windowDateRange(windowDays: number): string {
   const startKey = `${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(start.getDate())}`;
   const endKey = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
   return `${fmtDate(startKey)} – ${fmtDate(endKey)}`;
+}
+
+async function countLoggedDaysInWindow(windowDays: number): Promise<number> {
+  let count = 0;
+  const today = new Date();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  for (let i = 0; i < windowDays; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = `pj_${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    try {
+      const raw = await AsyncStorage.getItem(key);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (!parsed.excluded?.diet && parsed.entries?.length > 0) {
+          const cals = parsed.entries.reduce((s: number, e: any) => s + (e.cal || 0), 0);
+          if (cals > 400) count++;
+        }
+      }
+    } catch {}
+  }
+  return count;
 }
 
 // ── Status pill ────────────────────────────────────────────────────────────────
@@ -259,13 +282,19 @@ export default function DiagnosticReportScreen() {
   const [generating, setGenerating] = useState(false);
   const [initialized, setInitialized] = useState(false);
   const [styleMode, setStyleMode] = useState<'Discipline' | 'Balanced' | 'Mindful'>('Balanced');
+  const [loggedDayCounts, setLoggedDayCounts] = useState<Record<number, number>>({});
 
   const isMindful = styleMode === 'Mindful';
   const shadowStyle = { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 3 };
 
   // Locked when the current report for THIS window came back insufficient.
   // Switching to a different window clears it.
-  const isBlocked = initialized && !!currentReport?.insufficientData && currentReport.windowDays === selectedWindow;
+  const preCheckCount = loggedDayCounts[selectedWindow] ?? null;
+  const isBlocked = initialized && (
+    (!!currentReport?.insufficientData && currentReport.windowDays === selectedWindow) ||
+    (preCheckCount !== null && preCheckCount < minDaysForWindow(selectedWindow))
+  );
+  const needsRegenerate = !!currentReport && currentReport.windowDays !== selectedWindow;
 
   useFocusEffect(
     useCallback(() => {
@@ -281,6 +310,12 @@ export default function DiagnosticReportScreen() {
           setCurrentReport(reports[0]);
           setSelectedWindow(reports[0].windowDays);
         }
+        const [c14, c30, c90] = await Promise.all([
+          countLoggedDaysInWindow(14),
+          countLoggedDaysInWindow(30),
+          countLoggedDaysInWindow(90),
+        ]);
+        setLoggedDayCounts({ 14: c14, 30: c30, 90: c90 });
         setInitialized(true);
       };
       load();
@@ -354,9 +389,13 @@ export default function DiagnosticReportScreen() {
             </TouchableOpacity>
           ))}
         </View>
-        <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: t.textMuted, textAlign: 'center', marginTop: 6, marginBottom: 12 }}>
-          {windowDateRange(selectedWindow)}
-        </Text>
+        <View style={{ alignItems: 'center', marginTop: 6, marginBottom: 12 }}>
+          <View style={{ backgroundColor: t.accentBlueBg, borderWidth: 1, borderColor: t.accentBlueBorder, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 5 }}>
+            <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: t.accentBlueRaw }}>
+              {windowDateRange(selectedWindow)}
+            </Text>
+          </View>
+        </View>
 
         {/* Generate button */}
         <TouchableOpacity
@@ -365,7 +404,7 @@ export default function DiagnosticReportScreen() {
           style={{
             backgroundColor: t.accentBlueRaw,
             borderRadius: 10, paddingVertical: 14, alignItems: 'center',
-            marginBottom: isBlocked ? 8 : 20,
+            marginBottom: 20,
             opacity: !initialized ? 0.4 : generating ? 0.7 : isBlocked ? 0.4 : 1,
           }}
         >
@@ -380,24 +419,32 @@ export default function DiagnosticReportScreen() {
             </Text>
           )}
         </TouchableOpacity>
-        {isBlocked && (
-          <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: t.textMuted, textAlign: 'center', marginBottom: 20, lineHeight: 16 }}>
-            Log food for 7+ days in this window, or try a longer window above.
-          </Text>
-        )}
 
         {/* Empty state */}
         {!currentReport && !generating && (
-          <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw, ...shadowStyle, alignItems: 'center', paddingVertical: 36 }]}>
-            <Ionicons name="analytics-outline" size={48} color={t.textMuted} style={{ marginBottom: 14 }} />
-            <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', color: t.textPrimary, letterSpacing: 1, marginBottom: 8 }}>No Analysis Yet</Text>
-            <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: t.textSecondary, textAlign: 'center', lineHeight: 20, paddingHorizontal: 8 }}>
-              Select a window above and tap Generate to see what your logged data says about your results.
-            </Text>
-            <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: t.textMuted, textAlign: 'center', lineHeight: 18, marginTop: 12, paddingHorizontal: 8 }}>
-              More data = more accurate findings. The report only works with what you've logged.
-            </Text>
-          </View>
+          isBlocked ? (
+            <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw, ...shadowStyle, alignItems: 'center', paddingVertical: 36 }]}>
+              <Ionicons name="calendar-outline" size={48} color={t.textMuted} style={{ marginBottom: 14 }} />
+              <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', color: t.textPrimary, letterSpacing: 1, marginBottom: 8 }}>Not Enough Data Yet</Text>
+              <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: t.textSecondary, textAlign: 'center', lineHeight: 20, paddingHorizontal: 8 }}>
+                {`You have ${preCheckCount ?? 0} of ${minDaysForWindow(selectedWindow)} days logged in the ${selectedWindow}-day window. Keep logging your meals — the report unlocks when you hit ${minDaysForWindow(selectedWindow)}.`}
+              </Text>
+              <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: t.textMuted, textAlign: 'center', lineHeight: 18, marginTop: 12, paddingHorizontal: 8 }}>
+                Try a shorter window above if you have enough data there.
+              </Text>
+            </View>
+          ) : (
+            <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw, ...shadowStyle, alignItems: 'center', paddingVertical: 36 }]}>
+              <Ionicons name="analytics-outline" size={48} color={t.textMuted} style={{ marginBottom: 14 }} />
+              <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', color: t.textPrimary, letterSpacing: 1, marginBottom: 8 }}>No Analysis Yet</Text>
+              <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: t.textSecondary, textAlign: 'center', lineHeight: 20, paddingHorizontal: 8 }}>
+                Select a window above and tap Generate to see what your logged data says about your results.
+              </Text>
+              <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: t.textMuted, textAlign: 'center', lineHeight: 18, marginTop: 12, paddingHorizontal: 8 }}>
+                More data = more accurate findings. The report only works with what you've logged.
+              </Text>
+            </View>
+          )
         )}
 
         {/* Report content */}
@@ -406,7 +453,12 @@ export default function DiagnosticReportScreen() {
             {/* Summary */}
             <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw, ...shadowStyle }]}>
               <Ionicons name="analytics" size={130} color={t.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.08 }} />
-              <Text style={[styles.cardLabel, { color: t.textMuted, marginBottom: 8 }]}>SUMMARY</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <Text style={[styles.cardLabel, { color: t.textMuted }]}>SUMMARY</Text>
+                <TouchableOpacity onPress={() => handleDeleteArchive(currentReport.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Ionicons name="trash-outline" size={16} color={t.statusBad} />
+                </TouchableOpacity>
+              </View>
               <Text style={{ fontSize: 14, fontFamily: 'DMSans_400Regular', color: t.textSecondary, lineHeight: 22 }}>
                 {currentReport.summary}
               </Text>

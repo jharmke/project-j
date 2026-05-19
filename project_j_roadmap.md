@@ -533,6 +533,7 @@ Stats page overhaul -- HIGH PRIORITY, dedicated session. Full spec:
 - Charts on stats page should be placeable on home tab too -- shared card pool, one unified edit sheet across both tabs. Architecture decision for Phase 3. CONFIRMED SOON -- Justin wants this after Gratitude Streak ships. Stats graph cards (user-created) pinnable to home screen alongside standard cards. pj_stats_cards drives both views. Single CARD_REGISTRY-compatible wrapper component for stats graphs on home.
 Stats page depth/shadow pass -- same shadow treatment as settings cards (shadowOpacity 0.18). Do during stats overhaul session.
 Streak card -- home screen: Bible, workout, calorie streaks. Workout tab version: X workouts this week toward weekly goal, visible on workout tab itself. (HIGH)
+Daily exercise minutes goal + active calorie goal -- industry standard (Apple Fitness rings model). User sets both targets in profile/settings. Progress tracked live against HealthKit exerciseMinutes and activeCalories. Celebration animation fires when either goal is hit. Both already pulled from HealthKit. Design question: home screen placement TBD -- options are (1) add progress rings/bars to existing Fitness Metrics card, (2) dedicated Activity Rings card, (3) inline under the Steps card. Mindful mode: show progress neutrally, no countdown language. (HIGH)
 Morning briefing card -- first open of day, faith first, yesterday recap, today targets.
 
 Health data
@@ -556,8 +557,13 @@ Today's Message overhaul -- full spec below. Dedicated session.
 - NRN tap behavior: opens main journal page (not a pre-populated entry)
 - Rooted/Exploring tap behavior: opens Bible screen as before
 - Custom scripture picker: book selector → chapter selector → verse multi-select (up to 4 from same chapter). Edge case of multi-chapter handled by adding multiple entries to pool
-Bible auto-scroll to verse -- auto-center highlighted verse when opening from Today's Message. (very soon)
-Bible verse favorites -- star any highlighted verse in bible.tsx, saved to pj_bible_favorites. Favorites tab or section in Bible screen. (SOON)
+[x] Bible auto-scroll to verse -- auto-center highlighted verse when opening from Today's Message. ScrollView ref + onLayout y-positions, scrolls 350ms after chapter loads.
+[x] Bible verse favorites -- star in reflect banner toggles pj_bible_favorites. Centered modal with Book Order / Recent sort (saved to pj_settings). Tap to navigate, trash to remove. Empty state included.
+[x] Bible reader settings modal -- gear icon in header, centered popup with live preview (John 3:16), text size (S/M/L/XL), font (DM Sans / Georgia / Palatino), auto-scroll speed (Slow/Med/Fast), Reading Plans coming soon placeholder. Saved to pj_settings.
+[x] Bible auto-scroll reader mode -- floating pill bottom-right, play/pause. Speed controlled in settings modal. Stops on chapter change.
+[x] Bible header updated -- 3 right-side pill buttons: star (favorites), book/journal, gear (settings). Journal icon fixed to solid "book" matching home/workout tabs.
+[x] Verse unhighlight on tap -- tapping a highlighted verse clears it.
+[x] Today's Message card -- solid "book" journal icon added to top-right of card header, routes to journal.
 Achievement toast improvements -- tappable routes to achievements page, trigger context under name, wording update before App Store launch.
 
 Process and infrastructure

@@ -1437,11 +1437,14 @@ export default function HomeScreen() {
           style={[styles.verseCard, { backgroundColor: theme.bgCardVerse, borderColor: theme.borderCardVerse,
             shadowColor: '#d4860a', shadowOffset: { width: 0, height: 0 }, shadowOpacity: .85, shadowRadius: 8, elevation: 8 }]}
         >
-          <View style={{ flexDirection:'row', alignItems:'center', marginBottom:8 }}>
-            <Ionicons name="book-outline" size={11} color={theme.textMuted} />
-            <View style={{ marginLeft:6 }}>
-              <Text style={[styles.verseLabel, { marginBottom:0, color: theme.textMuted }]}>TODAY'S MESSAGE</Text>
+          <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
+            <View style={{ flexDirection:'row', alignItems:'center' }}>
+              <Ionicons name="book-outline" size={11} color={theme.textMuted} />
+              <Text style={[styles.verseLabel, { marginLeft:6, marginBottom:0, color: theme.textMuted }]}>TODAY'S MESSAGE</Text>
             </View>
+            <TouchableOpacity onPress={() => router.push('/journal')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="book" size={16} color={theme.accentBlue} />
+            </TouchableOpacity>
           </View>
           <Text style={[styles.verseText, { color: theme.textSecondary }]}>"{dailyVerse?.text}"</Text>
           <Text style={[styles.verseRef, { color: theme.textMuted }]}>{dailyVerse?.reference}</Text>

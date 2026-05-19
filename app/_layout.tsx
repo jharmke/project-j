@@ -50,6 +50,8 @@ function RootLayoutNav() {
       router.replace('/sign-in');
     } else if (!onboardingComplete) {
       router.replace('/onboarding/welcome');
+    } else {
+      router.replace('/(tabs)');
     }
 
     SplashScreen.hideAsync();

@@ -204,7 +204,7 @@ NOW -- active this session
 
 Auth and onboarding
 
-Firebase Auth -- Apple/Google login, both required (App Store rules mandate Apple login if any third party login offered). Google Sign In also required (triggers the Apple mandate). Firestore setup, data migration from AsyncStorage. Pre-TestFlight requirement. Log out feature required. Manual email/password sign-up intentionally excluded -- unnecessary complexity for current user base. Auth state persistence + session handling needed.
+[x] Firebase Auth -- Apple + Google sign-in, session persistence, log out all confirmed working on device. Routing bug fixed: _layout.tsx was missing else { router.replace('/(tabs)') } branch for signed-in + onboarding-complete users.
 Onboarding flow -- COMPLETE. All 7 screens built and working.
 
 Workout tab facelift

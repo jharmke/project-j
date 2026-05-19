@@ -12,6 +12,10 @@ import {
   AchievementDisplayTier,
   AchievementsStore,
   loadAchievements,
+  DailyGoalCounts,
+  DailyGoalId,
+  DEFAULT_DAILY_GOAL_COUNTS,
+  loadGoalHitCounts,
 } from '../achievementData';
 import { useTheme } from '../theme';
 
@@ -401,6 +405,91 @@ function AchievementCard({ def, unlocked, progressValue = 0 }: AchievementCardPr
   );
 }
 
+// ─── Daily Goal Config ────────────────────────────────────────────────────────
+
+interface DailyGoalDef { id: DailyGoalId; name: string; icon: string; color: string; }
+
+const DAILY_GOALS: DailyGoalDef[] = [
+  { id: 'water',        name: 'Water Goal',    icon: 'water',       color: '#3b82f6' },
+  { id: 'steps',        name: 'Step Goal',     icon: 'footsteps',   color: '#10b981' },
+  { id: 'activeCals',   name: 'Active Cals',   icon: 'flame',       color: '#f97316' },
+  { id: 'exerciseMins', name: 'Exercise Goal', icon: 'bicycle',     color: '#8b5cf6' },
+];
+
+function DailyGoalHexBadge({ color, icon, size = 56 }: { color: string; icon: string; size?: number }) {
+  const gradId = `dg_ach_${icon}`;
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{
+        position: 'absolute', width: size * 0.85, height: size * 0.85, borderRadius: size,
+        shadowColor: color, shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.5, shadowRadius: 8,
+      }} pointerEvents="none" />
+      <Svg width={size} height={size}>
+        <Defs>
+          <SvgLinearGradient id={gradId} x1="0.5" y1="0" x2="0.5" y2="1">
+            <Stop offset="0" stopColor={color} stopOpacity="1" />
+            <Stop offset="1" stopColor={color} stopOpacity="0.5" />
+          </SvgLinearGradient>
+        </Defs>
+        <Path d={hexPath(size)} fill={`url(#${gradId})`} />
+        <Path d={hexPath(size)} fill="none" stroke={color + '88'} strokeWidth={1.5} />
+      </Svg>
+      <View style={{ position: 'absolute', alignItems: 'center', justifyContent: 'center', width: size, height: size }}>
+        <Ionicons name={icon as any} size={size * 0.38} color="#ffffff" />
+      </View>
+    </View>
+  );
+}
+
+function DailyGoalCard({ def, counts }: { def: DailyGoalDef; counts: DailyGoalCounts }) {
+  const { theme } = useTheme();
+  const entry      = counts[def.id];
+  const count      = entry?.count ?? 0;
+  const lastEarned = entry?.lastEarned ?? '';
+  const today      = new Date().toISOString().split('T')[0];
+  const yesterday  = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+
+  const lastLabel = !lastEarned
+    ? 'Not yet earned'
+    : lastEarned === today
+      ? 'Last: Today'
+      : lastEarned === yesterday
+        ? 'Last: Yesterday'
+        : `Last: ${new Date(lastEarned + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+
+  return (
+    <View style={[
+      styles.card,
+      {
+        backgroundColor: theme.bgCard,
+        borderColor: count > 0 ? def.color + '50' : theme.borderCard,
+        borderTopColor: def.color,
+        borderTopWidth: 1.5,
+        shadowColor: count > 0 ? def.color : '#000',
+        shadowOpacity: count > 0 ? 0.22 : 0.15,
+        shadowRadius: count > 0 ? 8 : 6,
+      }
+    ]}>
+      <View style={{ alignItems: 'center', marginBottom: 8 }}>
+        <DailyGoalHexBadge color={def.color} icon={def.icon} size={56} />
+      </View>
+      <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.textPrimary, textAlign: 'center', marginBottom: 6, letterSpacing: 0.3 }}>
+        {def.name}
+      </Text>
+      <Text style={{ fontSize: 30, fontFamily: 'BebasNeue_400Regular', color: count > 0 ? def.color : theme.textMuted, textAlign: 'center', letterSpacing: 1, lineHeight: 32 }}>
+        {count}×
+      </Text>
+      <Text style={{ fontSize: 8, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted, textAlign: 'center', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 6 }}>
+        achieved
+      </Text>
+      <Text style={{ fontSize: 9, fontFamily: 'DMSans_500Medium', color: lastEarned && lastEarned === today ? def.color : (lastEarned ? theme.textMuted : theme.textDim), textAlign: 'center', opacity: 0.85 }}>
+        {lastLabel}
+      </Text>
+    </View>
+  );
+}
+
 // ─── Category Config ──────────────────────────────────────────────────────────
 
 const CATEGORY_CONFIG: Record<string, { label: string; icon: string }> = {
@@ -513,22 +602,25 @@ export default function AchievementsScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
 
-  const [store,    setStore]    = useState<AchievementsStore>({});
-  const [progress, setProgress] = useState<Record<string, number>>({});
-  const [loading,  setLoading]  = useState(true);
+  const [store,      setStore]      = useState<AchievementsStore>({});
+  const [progress,   setProgress]   = useState<Record<string, number>>({});
+  const [goalCounts, setGoalCounts] = useState<DailyGoalCounts>(DEFAULT_DAILY_GOAL_COUNTS);
+  const [loading,    setLoading]    = useState(true);
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
       const load = async () => {
         setLoading(true);
-        const [s, p] = await Promise.all([
+        const [s, p, gc] = await Promise.all([
           loadAchievements(),
           loadProgressValues(),
+          loadGoalHitCounts(),
         ]);
         if (active) {
           setStore(s);
           setProgress(p);
+          setGoalCounts(gc);
           setLoading(false);
         }
       };
@@ -663,6 +755,23 @@ export default function AchievementsScreen() {
               </View>
             );
           })}
+
+          {/* Daily Goals */}
+          <View style={{ marginBottom: 28 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14, gap: 8 }}>
+              <Ionicons name="trophy" size={14} color={theme.textMuted} />
+              <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, flex: 1 }}>
+                Daily Goals
+              </Text>
+            </View>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+              {DAILY_GOALS.map(def => (
+                <View key={def.id} style={{ width: '47.5%' }}>
+                  <DailyGoalCard def={def} counts={goalCounts} />
+                </View>
+              ))}
+            </View>
+          </View>
 
           {/* Disclaimer */}
           <Text style={{

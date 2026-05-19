@@ -11,12 +11,20 @@ const OFFSCREEN = CARD_WIDTH + 60;
 
 // ─── Global Event Emitter ─────────────────────────────────────────────────────
 
-type Listener = (def: AchievementDef) => void;
+type ToastPayload =
+  | { kind: 'achievement'; def: AchievementDef }
+  | { kind: 'daily_goal'; name: string; count: number; icon: string; iconColor: string };
+
+type Listener = (payload: ToastPayload) => void;
 const listeners: Set<Listener> = new Set();
 
 export function showAchievementToast(def: AchievementDef) {
   console.log('showAchievementToast global called', def.name, 'listeners:', listeners.size);
-  listeners.forEach(fn => fn(def));
+  listeners.forEach(fn => fn({ kind: 'achievement', def }));
+}
+
+export function showDailyGoalToast(name: string, count: number, icon: string, iconColor: string) {
+  listeners.forEach(fn => fn({ kind: 'daily_goal', name, count, icon, iconColor }));
 }
 
 function subscribe(fn: Listener) {
@@ -265,19 +273,131 @@ function ToastCard({ def, onDone }: { def: AchievementDef; onDone: () => void })
   );
 }
 
+// ─── Daily Goal Hex Badge ─────────────────────────────────────────────────────
+
+function DailyGoalHexBadge({ icon, iconColor, size = 44 }: { icon: string; iconColor: string; size?: number }) {
+  const gradId = `dg_grad_${icon}_${size}`;
+  return (
+    <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{
+        position: 'absolute', width: size * 0.85, height: size * 0.85, borderRadius: size,
+        shadowColor: iconColor, shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.6, shadowRadius: 8,
+      }} pointerEvents="none" />
+      <Svg width={size} height={size}>
+        <Defs>
+          <SvgLinearGradient id={gradId} x1="0.5" y1="0" x2="0.5" y2="1">
+            <Stop offset="0" stopColor={iconColor} stopOpacity="1" />
+            <Stop offset="1" stopColor={iconColor} stopOpacity="0.55" />
+          </SvgLinearGradient>
+        </Defs>
+        <Path d={hexPath(size)} fill={`url(#${gradId})`} />
+        <Path d={hexPath(size)} fill="none" stroke={iconColor + '88'} strokeWidth={1.5} />
+      </Svg>
+      <View style={{ position: 'absolute', alignItems: 'center', justifyContent: 'center', width: size, height: size }}>
+        <Ionicons name={icon as any} size={size * 0.38} color="#ffffff" />
+      </View>
+    </View>
+  );
+}
+
+// ─── Daily Goal Toast Card ────────────────────────────────────────────────────
+
+function DailyGoalToastCard({ name, count, icon, iconColor, onDone }: {
+  name: string; count: number; icon: string; iconColor: string; onDone: () => void;
+}) {
+  const { theme } = useTheme();
+  const slideX         = useRef(new Animated.Value(OFFSCREEN)).current;
+  const cardOpacity    = useRef(new Animated.Value(0)).current;
+  const badgeScale     = useRef(new Animated.Value(0.5)).current;
+  const badgeOpacity   = useRef(new Animated.Value(0)).current;
+  const labelOpacity   = useRef(new Animated.Value(0)).current;
+  const nameTranslateY = useRef(new Animated.Value(8)).current;
+  const nameOpacity    = useRef(new Animated.Value(0)).current;
+  const [shimmerTrigger, setShimmerTrigger] = useState(false);
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(cardOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
+      Animated.spring(slideX, { toValue: 0, tension: 70, friction: 11, useNativeDriver: true }),
+    ]).start(() => {
+      Animated.parallel([
+        Animated.spring(badgeScale,   { toValue: 1, tension: 180, friction: 6, useNativeDriver: true }),
+        Animated.timing(badgeOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
+      ]).start(() => {
+        Animated.timing(labelOpacity, { toValue: 1, duration: 180, useNativeDriver: true }).start();
+        setTimeout(() => {
+          Animated.parallel([
+            Animated.timing(nameOpacity,    { toValue: 1, duration: 200, useNativeDriver: true }),
+            Animated.timing(nameTranslateY, { toValue: 0, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+          ]).start();
+        }, 80);
+        setTimeout(() => setShimmerTrigger(true), 380);
+      });
+    });
+    const timer = setTimeout(() => {
+      Animated.parallel([
+        Animated.timing(cardOpacity, { toValue: 0, duration: 280, useNativeDriver: true }),
+        Animated.timing(slideX, { toValue: OFFSCREEN, duration: 300, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
+      ]).start(() => onDone());
+    }, 4200);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <Animated.View style={{ transform: [{ translateX: slideX }], opacity: cardOpacity }} pointerEvents="none">
+      <View style={[styles.card, {
+        backgroundColor: 'rgba(15,15,20,0.96)',
+        borderColor: iconColor + '80',
+        shadowColor: iconColor,
+        shadowOpacity: 0.5,
+        shadowRadius: 14,
+      }]}>
+        <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, backgroundColor: iconColor, borderTopLeftRadius: 12, borderBottomLeftRadius: 12 }} />
+        <View style={[StyleSheet.absoluteFill, { overflow: 'hidden' }]} pointerEvents="none">
+          <ShimmerOverlay trigger={shimmerTrigger} />
+        </View>
+        <View style={styles.content}>
+          <Animated.View style={{ transform: [{ scale: badgeScale }], opacity: badgeOpacity, marginLeft: 14, marginRight: 12 }}>
+            <DailyGoalHexBadge icon={icon} iconColor={iconColor} size={44} />
+          </Animated.View>
+          <View style={{ flex: 1, justifyContent: 'center', paddingRight: 14 }}>
+            <Animated.Text style={[styles.label, { color: iconColor, opacity: labelOpacity }]}>
+              GOAL MET
+            </Animated.Text>
+            <Animated.Text style={[styles.name, { color: '#ffffff', opacity: nameOpacity, transform: [{ translateY: nameTranslateY }] }]}>
+              {name}
+            </Animated.Text>
+            <Animated.Text style={[styles.tier, { color: theme.textMuted, opacity: labelOpacity }]}>
+              {count}× achieved
+            </Animated.Text>
+          </View>
+        </View>
+      </View>
+    </Animated.View>
+  );
+}
+
 // ─── Renderer ─────────────────────────────────────────────────────────────────
 
-interface QueuedToast { id: number; def: AchievementDef; }
+type QueuedToast =
+  | { id: number; kind: 'achievement'; def: AchievementDef }
+  | { id: number; kind: 'daily_goal'; name: string; count: number; icon: string; iconColor: string };
+
 let _counter = 0;
 
 export function AchievementToastRenderer() {
   const [queue, setQueue] = useState<QueuedToast[]>([]);
 
   useEffect(() => {
-    const unsub = subscribe((def) => {
-      console.log('AchievementToastRenderer received', def.name);
+    const unsub = subscribe((payload) => {
       const id = _counter++;
-      setQueue(prev => [...prev, { id, def }]);
+      if (payload.kind === 'achievement') {
+        console.log('AchievementToastRenderer received', payload.def.name);
+        setQueue(prev => [...prev, { id, kind: 'achievement', def: payload.def }]);
+      } else {
+        setQueue(prev => [...prev, { id, kind: 'daily_goal', name: payload.name, count: payload.count, icon: payload.icon, iconColor: payload.iconColor }]);
+      }
     });
     return () => { unsub(); };
   }, []);
@@ -287,7 +407,19 @@ export function AchievementToastRenderer() {
 
   return (
     <View style={styles.renderer} pointerEvents="none">
-      {active && <ToastCard key={active.id} def={active.def} onDone={() => dismiss(active.id)} />}
+      {active && active.kind === 'achievement' && (
+        <ToastCard key={active.id} def={active.def} onDone={() => dismiss(active.id)} />
+      )}
+      {active && active.kind === 'daily_goal' && (
+        <DailyGoalToastCard
+          key={active.id}
+          name={active.name}
+          count={active.count}
+          icon={active.icon}
+          iconColor={active.iconColor}
+          onDone={() => dismiss(active.id)}
+        />
+      )}
     </View>
   );
 }

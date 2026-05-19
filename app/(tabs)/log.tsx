@@ -7,8 +7,8 @@ import { Alert, Animated, Modal, ScrollView, StyleSheet, Text, TextInput, Toucha
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
-import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements } from '../../achievementData';
-import { showAchievementToast } from '../../components/AchievementToast';
+import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, handleDailyGoalHit } from '../../achievementData';
+import { showAchievementToast, showDailyGoalToast } from '../../components/AchievementToast';
 import { showCelebration } from '../../components/CelebrationOverlay';
 import TooltipIcon from '../../components/TooltipIcon';
 import { useTheme } from '../../theme';
@@ -523,6 +523,8 @@ export default function LogScreen() {
       showToast('Water removed', `-${Math.abs(oz)} oz · ${newWater} oz total`, 'info');
     }
     if (oz > 0 && newWater >= waterGoal && prev < waterGoal && activeDate === todayKey) {
+      const { fired, count: hitCount } = await handleDailyGoalHit('water');
+      if (fired) { showCelebration('small', 'WATER GOAL'); showDailyGoalToast('Water Goal', hitCount, 'water', '#3b82f6'); }
       let s = achievementStore;
       const r1 = await checkAndUnlock('hydration_first', s);
       if (r1.newlyUnlocked) {

@@ -401,3 +401,74 @@ export function isGoalWeightHit(
   const daysSince = (Date.now() - new Date(existing.lastUnlockedAt).getTime()) / (1000 * 60 * 60 * 24);
   return daysSince >= 90;
 }
+
+// ─── Daily Goal Hit Counts ────────────────────────────────────────────────────
+
+export type DailyGoalId = 'water' | 'steps' | 'activeCals' | 'exerciseMins';
+
+export interface DailyGoalEntry {
+  count: number;
+  lastEarned: string; // YYYY-MM-DD
+}
+
+export type DailyGoalCounts = Record<DailyGoalId, DailyGoalEntry>;
+
+const GOAL_COUNTS_KEY = 'pj_goal_hit_counts';
+const GOAL_CELEB_KEY  = 'pj_daily_goal_celebrations';
+
+export const DEFAULT_DAILY_GOAL_COUNTS: DailyGoalCounts = {
+  water:        { count: 0, lastEarned: '' },
+  steps:        { count: 0, lastEarned: '' },
+  activeCals:   { count: 0, lastEarned: '' },
+  exerciseMins: { count: 0, lastEarned: '' },
+};
+
+export async function loadGoalHitCounts(): Promise<DailyGoalCounts> {
+  try {
+    const raw = await AsyncStorage.getItem(GOAL_COUNTS_KEY);
+    if (!raw) return { ...DEFAULT_DAILY_GOAL_COUNTS };
+    return { ...DEFAULT_DAILY_GOAL_COUNTS, ...JSON.parse(raw) };
+  } catch {
+    return { ...DEFAULT_DAILY_GOAL_COUNTS };
+  }
+}
+
+// Checks the once-per-day gate, increments count, fires both storage keys.
+// Returns { fired: false } if already celebrated today.
+export async function handleDailyGoalHit(
+  goalId: DailyGoalId
+): Promise<{ fired: boolean; count: number; lastEarned: string }> {
+  const today = new Date().toISOString().split('T')[0];
+
+  try {
+    const celebRaw = await AsyncStorage.getItem(GOAL_CELEB_KEY);
+    const celeb = celebRaw ? JSON.parse(celebRaw) : { date: '', goals: [] };
+    if (celeb.date === today && Array.isArray(celeb.goals) && celeb.goals.includes(goalId)) {
+      return { fired: false, count: 0, lastEarned: '' };
+    }
+  } catch {}
+
+  const counts = await loadGoalHitCounts();
+  const prev   = counts[goalId] ?? { count: 0, lastEarned: '' };
+  const newCount = prev.count + 1;
+  const updated: DailyGoalCounts = {
+    ...counts,
+    [goalId]: { count: newCount, lastEarned: today },
+  };
+
+  try { await AsyncStorage.setItem(GOAL_COUNTS_KEY, JSON.stringify(updated)); } catch {}
+
+  try {
+    const celebRaw = await AsyncStorage.getItem(GOAL_CELEB_KEY);
+    const celeb    = celebRaw ? JSON.parse(celebRaw) : { date: '', goals: [] };
+    const newCeleb = {
+      date:  today,
+      goals: celeb.date === today && Array.isArray(celeb.goals)
+        ? [...celeb.goals, goalId]
+        : [goalId],
+    };
+    await AsyncStorage.setItem(GOAL_CELEB_KEY, JSON.stringify(newCeleb));
+  } catch {}
+
+  return { fired: true, count: newCount, lastEarned: today };
+}

@@ -33,6 +33,8 @@ interface Profile {
   sleepGoal: string;
   stepGoal: string;
   waterGoal: string;
+  activeCalGoal: string;
+  exerciseMinsGoal: string;
   useRecommendedCal: boolean;
 }
 
@@ -240,6 +242,8 @@ export default function ProfileScreen() {
     sleepGoal: '7',
     stepGoal: '10000',
     waterGoal: '128',
+    activeCalGoal: '500',
+    exerciseMinsGoal: '30',
     useRecommendedCal: true,
   });
   const [currentWeight, setCurrentWeight] = useState<number | null>(null);
@@ -264,7 +268,7 @@ export default function ProfileScreen() {
       try {
         const data = await AsyncStorage.getItem('pj_profile');
         if (data) {
-          const parsed = { goalWeight: '', stepGoal: '10000', waterGoal: '128', ...JSON.parse(data) };
+          const parsed = { goalWeight: '', stepGoal: '10000', waterGoal: '128', activeCalGoal: '500', exerciseMinsGoal: '30', ...JSON.parse(data) };
           setProfile(parsed);
           setSavedProfile(parsed);
         }
@@ -699,7 +703,7 @@ export default function ProfileScreen() {
         <CollapsibleCard label="Step Goal" theme={theme}>
           <TextInput
             style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
-            value={profile.stepGoal || '10000'}
+            value={profile.stepGoal}
             onChangeText={v => updateField('stepGoal', v.replace(/[^0-9]/g, ''))}
             keyboardType="number-pad"
             placeholder="e.g. 10000"
@@ -711,13 +715,37 @@ export default function ProfileScreen() {
         <CollapsibleCard label="Water Goal" theme={theme}>
           <TextInput
             style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
-            value={profile.waterGoal || '128'}
+            value={profile.waterGoal}
             onChangeText={v => updateField('waterGoal', v.replace(/[^0-9]/g, ''))}
             keyboardType="number-pad"
             placeholder="e.g. 128"
             placeholderTextColor={theme.textPlaceholder}
           />
           <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginTop: 4 }}>Daily hydration target in oz. Progress bar fills to this amount.</Text>
+        </CollapsibleCard>
+
+        <CollapsibleCard label="Active Calorie Goal" theme={theme}>
+          <TextInput
+            style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
+            value={profile.activeCalGoal}
+            onChangeText={v => updateField('activeCalGoal', v.replace(/[^0-9]/g, ''))}
+            keyboardType="number-pad"
+            placeholder="e.g. 500"
+            placeholderTextColor={theme.textPlaceholder}
+          />
+          <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginTop: 4 }}>Daily active calorie target from Apple Health. Celebrates when you hit it.</Text>
+        </CollapsibleCard>
+
+        <CollapsibleCard label="Exercise Minutes Goal" theme={theme}>
+          <TextInput
+            style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
+            value={profile.exerciseMinsGoal}
+            onChangeText={v => updateField('exerciseMinsGoal', v.replace(/[^0-9]/g, ''))}
+            keyboardType="number-pad"
+            placeholder="e.g. 30"
+            placeholderTextColor={theme.textPlaceholder}
+          />
+          <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginTop: 4 }}>Daily exercise minutes target from Apple Health. Celebrates when you hit it.</Text>
         </CollapsibleCard>
 
         <CollapsibleCard label="Daily Calorie Target" theme={theme}>

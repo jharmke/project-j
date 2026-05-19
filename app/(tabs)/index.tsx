@@ -12,8 +12,8 @@ import Svg, { Circle } from 'react-native-svg';
 import PressableButton from '../../components/PressableButton';
 import { useToast } from '../../components/Toast';
 import { showCelebration } from '../../components/CelebrationOverlay';
-import { showAchievementToast } from '../../components/AchievementToast';
-import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, weightEntryIsPlausible, getWeightMilestonesCrossed, isGoalWeightHit } from '../../achievementData';
+import { showAchievementToast, showDailyGoalToast } from '../../components/AchievementToast';
+import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, weightEntryIsPlausible, getWeightMilestonesCrossed, isGoalWeightHit, handleDailyGoalHit } from '../../achievementData';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { useTheme } from '../../theme';
 import { useHealthKit } from '../../useHealthKit';
@@ -777,6 +777,11 @@ export default function HomeScreen() {
   const [totalFat,       setTotalFat]       = useState(0);
   const [stepGoal,       setStepGoal]       = useState(10000);
   const [sleepGoal,      setSleepGoal]      = useState(7);
+  const [activeCalGoal,  setActiveCalGoal]  = useState(500);
+  const [exerciseMinsGoal, setExerciseMinsGoal] = useState(30);
+  const prevStepsRef       = useRef(0);
+  const prevActiveCalRef   = useRef(0);
+  const prevExerciseMinsRef = useRef(0);
   const [macroGoals,     setMacroGoals]     = useState({ protein: 0, carbs: 0, fat: 0 });
   const [goalWeight,     setGoalWeight]     = useState<number|null>(null);
   const [weightGoalPace, setWeightGoalPace] = useState<string>('lose_1');
@@ -970,18 +975,31 @@ export default function HomeScreen() {
         }));
       });
     }
-    if (steps > 0 && steps >= stepGoal && stepGoal > 0) {
-      const prevSteps = steps - 1;
-      if (prevSteps < stepGoal) {
-        loadAchievements().then(async store => {
-          let s = store;
-          s = await handleAchievementUnlock('steps_first', s);
-          s = await handleAchievementUnlock('steps_10', s);
-          setAchievementStore(s);
-        });
-      }
+    if (loaded && steps > 0 && steps >= stepGoal && stepGoal > 0 && prevStepsRef.current < stepGoal) {
+      handleDailyGoalHit('steps').then(({ fired, count: hitCount }) => {
+        if (fired) { showCelebration('small', 'STEP GOAL'); showDailyGoalToast('Step Goal', hitCount, 'footsteps', '#10b981'); }
+      });
+      loadAchievements().then(async store => {
+        let s = store;
+        s = await handleAchievementUnlock('steps_first', s);
+        s = await handleAchievementUnlock('steps_10', s);
+        setAchievementStore(s);
+      });
     }
-  }, [activeCalories, steps, sleepHours, sleepStages, restingHR, respiratoryRate, bloodOxygen, bodyFatPct, exerciseMinutes]);
+    prevStepsRef.current = steps;
+    if (loaded && activeCalories > 0 && activeCalGoal > 0 && activeCalories >= activeCalGoal && prevActiveCalRef.current < activeCalGoal) {
+      handleDailyGoalHit('activeCals').then(({ fired, count: hitCount }) => {
+        if (fired) { showCelebration('small', 'ACTIVE CALS'); showDailyGoalToast('Active Cal Goal', hitCount, 'flame', '#f97316'); }
+      });
+    }
+    prevActiveCalRef.current = activeCalories;
+    if (loaded && exerciseMinutes !== null && exerciseMinsGoal > 0 && exerciseMinutes >= exerciseMinsGoal && prevExerciseMinsRef.current < exerciseMinsGoal) {
+      handleDailyGoalHit('exerciseMins').then(({ fired, count: hitCount }) => {
+        if (fired) { showCelebration('small', 'EXERCISE GOAL'); showDailyGoalToast('Exercise Goal', hitCount, 'bicycle', '#8b5cf6'); }
+      });
+    }
+    prevExerciseMinsRef.current = exerciseMinutes ?? 0;
+  }, [activeCalories, steps, sleepHours, sleepStages, restingHR, respiratoryRate, bloodOxygen, bodyFatPct, exerciseMinutes, loaded, stepGoal, activeCalGoal, exerciseMinsGoal]);
 
   // ── Load layout from settings ────────────────────────────────────────────────
   useEffect(() => {
@@ -1252,6 +1270,8 @@ export default function HomeScreen() {
           if (p.stepGoal && parseInt(p.stepGoal) > 0) setStepGoal(parseInt(p.stepGoal));
           if (p.sleepGoal && parseFloat(p.sleepGoal) > 0) setSleepGoal(parseFloat(p.sleepGoal));
           if (p.waterGoal && parseInt(p.waterGoal) > 0) setWaterGoal(parseInt(p.waterGoal));
+          if (p.activeCalGoal && parseInt(p.activeCalGoal) > 0) setActiveCalGoal(parseInt(p.activeCalGoal));
+          if (p.exerciseMinsGoal && parseInt(p.exerciseMinsGoal) > 0) setExerciseMinsGoal(parseInt(p.exerciseMinsGoal));
           if (p.calTarget && parseInt(p.calTarget) > 0) {
             setCalTarget(parseInt(p.calTarget));
           }
@@ -1662,7 +1682,7 @@ export default function HomeScreen() {
       <AnimatedProgressBar pct={Math.min(100,(water/waterGoal)*100)} color={theme.accentBlue} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} overGoal={water > waterGoal} />
       <View style={styles.waterBtns}>
         {waterPresets.map((oz,i) => (
-          <PressableButton key={i} style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={async () => { const n=Math.max(0,water+oz); setWater(n); saveToFirebase(todayKey,'water',n); showToast('Water logged', `+${oz} oz · ${n} oz total`, 'info'); if (n >= waterGoal && water < waterGoal) { let s = achievementStore; s = await handleAchievementUnlock('hydration_first', s); await handleAchievementUnlock('hydration_10', s); } }}>
+          <PressableButton key={i} style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={async () => { const n=Math.max(0,water+oz); setWater(n); saveToFirebase(todayKey,'water',n); showToast('Water logged', `+${oz} oz · ${n} oz total`, 'info'); if (n >= waterGoal && water < waterGoal) { const { fired, count: hitCount } = await handleDailyGoalHit('water'); if (fired) { showCelebration('small', 'WATER GOAL'); showDailyGoalToast('Water Goal', hitCount, 'water', '#3b82f6'); } let s = achievementStore; s = await handleAchievementUnlock('hydration_first', s); await handleAchievementUnlock('hydration_10', s); } }}>
             <Text style={[styles.waterBtnText, { color: theme.accentBlue }]}>+{oz} oz</Text>
           </PressableButton>
         ))}
@@ -2749,7 +2769,7 @@ export default function HomeScreen() {
               <TouchableOpacity style={{ flex:1, padding:12, borderRadius:8, backgroundColor: waterCustomSign==='add' ? theme.accentBlueBg : theme.accentRedBg, alignItems:'center' }}
                 onPress={async () => {
                   const amt=parseInt(waterCustomInput);
-                  if(amt>0){ const n=waterCustomSign==='add'?Math.max(0,water+amt):Math.max(0,water-amt); setWater(n); saveToFirebase(todayKey,'water',n); showToast('Water logged', `${waterCustomSign==='add'?'+':'-'}${amt} oz · ${n} oz total`, 'info'); if (waterCustomSign==='add' && n >= waterGoal && water < waterGoal) { let s = achievementStore; s = await handleAchievementUnlock('hydration_first', s); await handleAchievementUnlock('hydration_10', s); } }
+                  if(amt>0){ const n=waterCustomSign==='add'?Math.max(0,water+amt):Math.max(0,water-amt); setWater(n); saveToFirebase(todayKey,'water',n); showToast('Water logged', `${waterCustomSign==='add'?'+':'-'}${amt} oz · ${n} oz total`, 'info'); if (waterCustomSign==='add' && n >= waterGoal && water < waterGoal) { const { fired, count: hitCount } = await handleDailyGoalHit('water'); if (fired) { showCelebration('small', 'WATER GOAL'); showDailyGoalToast('Water Goal', hitCount, 'water', '#3b82f6'); } let s = achievementStore; s = await handleAchievementUnlock('hydration_first', s); await handleAchievementUnlock('hydration_10', s); } }
                   closeWaterCustomModal();
                 }}>
                 <Text style={{ color: waterCustomSign==='add' ? theme.accentBlue : theme.accentRed, fontFamily:'DMSans_600SemiBold', fontSize:14 }}>

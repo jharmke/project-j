@@ -445,7 +445,7 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      <ScrollView ref={scrollRef} style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView ref={scrollRef} style={styles.container} contentContainerStyle={styles.content} automaticallyAdjustKeyboardInsets={true}>
 
         <CollapsibleCard label="Basic Info" defaultOpen={true} theme={theme}>
           <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>Name</Text>

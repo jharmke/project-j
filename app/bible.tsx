@@ -617,7 +617,7 @@ export default function BibleScreen() {
                 <View style={[styles.sheetHandle, { backgroundColor: theme.sheetHandle }]} />
               </TouchableOpacity>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                <Text style={[styles.sheetTitle, { color: theme.textPrimary, marginBottom: 0 }]}>Saved Verses</Text>
+                <Text style={[styles.sheetTitle, { color: theme.accentBlue, marginBottom: 0 }]}>Saved Verses</Text>
                 <View style={{ flexDirection: 'row', backgroundColor: theme.bgInput, borderRadius: 8, borderWidth: 1, borderColor: theme.borderInput, overflow: 'hidden' }}>
                   {(['book', 'recent'] as const).map(s => (
                     <TouchableOpacity key={s} onPress={() => toggleFavoritesSort(s)} style={{ paddingHorizontal: 10, paddingVertical: 6, backgroundColor: favoritesSort === s ? theme.accentBlueBg : 'transparent' }}>
@@ -664,7 +664,7 @@ export default function BibleScreen() {
               <TouchableOpacity onPress={() => setShowSettingsModal(false)} style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 24, marginBottom: 4 }}>
                 <View style={[styles.sheetHandle, { backgroundColor: theme.sheetHandle }]} />
               </TouchableOpacity>
-              <Text style={[styles.sheetTitle, { color: theme.textPrimary }]}>Bible Settings</Text>
+              <Text style={[styles.sheetTitle, { color: theme.accentBlue }]}>Bible Settings</Text>
 
               <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                 {/* Live preview -- fixed height so modal doesn't resize */}

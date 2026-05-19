@@ -772,6 +772,10 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
         return ct === 'bar'
           ? <GenericBarChart data={cardTrendData.exerciseMinutes} color={gc ?? '#10b981'} unit=" min" fmtY={v => `${Math.round(v)}`} theme={theme} />
           : <LineChart data={cardTrendData.exerciseMinutes} color={gc ?? '#10b981'} unit=" min" fmtY={v => `${Math.round(v)}`} gradientId={`em_${card.id}`} theme={theme} />;
+      case 'effortScore':
+        return ct === 'bar'
+          ? <GenericBarChart data={cardTrendData.effortScore} color={gc ?? '#f97316'} unit="" fmtY={v => `${Math.round(v)}`} startFromZero={false} theme={theme} />
+          : <LineChart data={cardTrendData.effortScore} color={gc ?? '#f97316'} unit="" fmtY={v => `${Math.round(v)}`} gradientId={`ef_${card.id}`} theme={theme} />;
       case 'fiber':
         return ct === 'bar'
           ? <GenericBarChart data={cardTrendData.fiber} color={gc ?? '#10b981'} unit="g" fmtY={v => `${Math.round(v)}`} theme={theme} />
@@ -890,6 +894,12 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
         const avg = Math.round(d.exerciseMinutes.reduce((s, x) => s + x.value, 0) / d.exerciseMinutes.length);
         const total = Math.round(d.exerciseMinutes.reduce((s, x) => s + x.value, 0));
         return [{ label: 'Avg / Day', value: `${avg} min` }, { label: 'Total This Period', value: `${total} min` }];
+      }
+      case 'effortScore': {
+        if (d.effortScore.length === 0) return undefined;
+        const avg = Math.round(d.effortScore.reduce((s, x) => s + x.value, 0) / d.effortScore.length * 10) / 10;
+        const highEffort = d.effortScore.filter(x => x.value >= 7).length;
+        return [{ label: 'Avg Effort', value: `${avg} / 10` }, { label: 'High Effort Days', value: `${highEffort}` }];
       }
       case 'fiber': {
         if (d.fiber.length === 0) return undefined;

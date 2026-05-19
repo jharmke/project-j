@@ -6,7 +6,7 @@ export type DataKey =
   // Nutrition
   'calories' | 'macros' | 'netCalories' | 'water' | 'fiber' | 'sodium' | 'cholesterol' | 'saturatedFat' |
   // Activity
-  'steps' | 'activeCals' | 'workoutFreq' | 'exerciseMinutes' |
+  'steps' | 'activeCals' | 'workoutFreq' | 'exerciseMinutes' | 'effortScore' |
   // Body
   'weight' | 'bodyFatPct' |
   // Sleep & Recovery
@@ -109,6 +109,7 @@ export const DATA_KEY_META: Record<DataKey, { icon: string; label: string; descr
   activeCals:    { icon: 'heart-outline',           label: 'Active Calories',   description: 'Active calories burned',               category: 'Activity' },
   workoutFreq:   { icon: 'barbell-outline',         label: 'Workout Frequency', description: 'Days worked out per week',             category: 'Activity' },
   exerciseMinutes:{ icon: 'stopwatch-outline',      label: 'Exercise Minutes',  description: 'Minutes of exercise per day',          category: 'Activity' },
+  effortScore:   { icon: 'flame-outline',            label: 'Today\'s Effort',   description: 'Daily session effort rating (1-10)',    category: 'Activity' },
   // Body
   weight:        { icon: 'body-outline',            label: 'Weight',            description: 'Daily logged weight',                  category: 'Body' },
   bodyFatPct:    { icon: 'pie-chart-outline',       label: 'Body Fat %',        description: 'Body fat % from Apple Health',         category: 'Body' },

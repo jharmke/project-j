@@ -21,12 +21,14 @@ export type TrendData = {
   sodium: { date: string; value: number }[];
   cholesterol: { date: string; value: number }[];
   saturatedFat: { date: string; value: number }[];
+  effortScore: { date: string; value: number }[];
 };
 
 export const EMPTY_TREND_DATA: TrendData = {
   weight: [], cal: [], steps: [], activeCal: [], sleep: [], macro: [], workoutDay: [],
   water: [], netCal: [], sleepScore: [], restingHR: [], respiratoryRate: [], bloodOxygen: [],
   bodyFatPct: [], exerciseMinutes: [], fiber: [], sodium: [], cholesterol: [], saturatedFat: [],
+  effortScore: [],
 };
 
 export const offsetToDateKey = (offset: number): string => {
@@ -91,6 +93,7 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
   const sodH: TrendData['sodium'] = [];
   const choH: TrendData['cholesterol'] = [];
   const sfH: TrendData['saturatedFat'] = [];
+  const esH: TrendData['effortScore'] = [];
 
   for (let i = days - 1; i >= 0; i--) {
     const dateKey = offsetToDateKey(i);
@@ -141,6 +144,8 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
         if (data.bodyFatPct) bfH.push({ date: dateKey, value: data.bodyFatPct });
         if (data.exerciseMinutes) emH.push({ date: dateKey, value: data.exerciseMinutes });
         hadWorkout = (workoutState.programs?.[dateKey]?.exercises?.length ?? 0) > 0;
+        const es = workoutState.cardioLogs?.[dateKey]?.effortScore;
+        if (es != null) esH.push({ date: dateKey, value: es });
       }
     } catch {}
     wdh.push({ date: dateKey, hadWorkout });
@@ -148,7 +153,7 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
   return {
     weight: wh, cal: ch, steps: sh, activeCal: ah, sleep: slh, macro: mh, workoutDay: wdh,
     water: waterH, netCal: ncH, sleepScore: ssH, restingHR: rhrH, respiratoryRate: rrH,
-    bloodOxygen: boH, bodyFatPct: bfH, exerciseMinutes: emH,
+    bloodOxygen: boH, bodyFatPct: bfH, exerciseMinutes: emH, effortScore: esH,
     fiber: fbH, sodium: sodH, cholesterol: choH, saturatedFat: sfH,
   };
 };

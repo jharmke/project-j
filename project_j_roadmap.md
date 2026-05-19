@@ -483,6 +483,7 @@ You vs Yesterday streak (vsStreak) -- state declared and badge renders but never
 My Programs builder -- name it, assign focus/tags/color per day, save, load. (planned, not yet built)
 Programs button move to library -- DONE. See workout library redesign in DONE section.
 Workout tab visual pass -- assess whether exercises + effort score + notes is enough or if more sections needed. No specific ideas yet, likely resolves as SOON items ship (muscle group breakdown, previous session comparison, streak/consistency). Revisit after those are built.
+- [x] SHIPPED: Today's Effort card -- renamed from "Effort Score" to "Today's Effort" (session rating, not per-exercise RPE). Effort score piped into statsData.ts fetchTrendData via workoutState.cardioLogs[date].effortScore. Added effortScore DataKey to statsCardRegistry.ts (Activity category, flame icon, "Daily session effort rating (1-10)"). getChart() + getStats() cases added to StatsGraphCard (orange, startFromZero false, stats: Avg Effort + High Effort Days >=7). Now available in graph creator pool and downstream for Day Score.
 Workout tab FAB -- currently functional but visually plain. Needs a visual pass to feel more premium. (SOON)
 Workout tab Tags button -- redesign to match current button conventions. Away from standalone buttons not in cards or header corners. (SOON)
 Workout tab muscle group breakdown -- visual showing which muscle groups were trained in today's session. Related to muscle group tags + filter on exercise library. Build after tags are on exercises. (SOON)
@@ -575,6 +576,7 @@ Today's Message overhaul -- full spec below. Dedicated session.
 [x] Bible reader settings modal -- gear icon in header, centered popup with live preview (John 3:16), text size (S/M/L/XL), font (DM Sans / Georgia / Palatino), auto-scroll speed (Slow/Med/Fast), Reading Plans coming soon placeholder. Saved to pj_settings.
 [x] Bible auto-scroll reader mode -- floating pill bottom-right, play/pause. Speed controlled in settings modal. Stops on chapter change.
 [x] Bible header updated -- 3 right-side pill buttons: star (favorites), book/journal, gear (settings). Journal icon fixed to solid "book" matching home/workout tabs.
+[x] FIXED: Bible modal titles (Saved Verses, Bible Settings) were textPrimary -- changed to accentBlue to match app-wide modal header convention. bible.tsx.
 [x] Verse unhighlight on tap -- tapping a highlighted verse clears it.
 [x] Today's Message card -- solid "book" journal icon added to top-right of card header, routes to journal.
 Achievement toast improvements -- tappable routes to achievements page, trigger context under name, wording update before App Store launch.

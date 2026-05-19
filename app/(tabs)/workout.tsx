@@ -806,7 +806,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
         />
 
         <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, marginTop: 12 }]}>
-          <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Effort Score</Text>
+          <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Today's Effort</Text>
           <View style={{ flexDirection: 'column', gap: 8, marginTop: 12 }}>
             {[[1,2,3,4,5],[6,7,8,9,10]].map((row, ri) => (
               <View key={ri} style={{ flexDirection: 'row', gap: 8 }}>

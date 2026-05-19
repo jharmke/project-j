@@ -14,6 +14,7 @@ import { ToastRenderer, useToast } from '../../components/Toast';
 import { EMPTY_TREND_DATA, TrendData, fetchTrendData as fetchTrendDataUtil, offsetToDateKey } from '../../utils/statsData';
 import { StatsGraphCard, GRAPH_SWATCHES, MACRO_PROTEIN, MACRO_CARBS, MACRO_FAT } from '../../components/StatsGraphCard';
 import { StatsCardEditModal } from '../../components/StatsCardEditModal';
+import TooltipIcon from '../../components/TooltipIcon';
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const RECORD_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -904,6 +905,26 @@ export default function StatsScreen() {
               ))}
             </View>
           </CollapsibleCard>
+              </CollapsibleSection>
+            );
+            if (section.systemKey === 'reports') return (
+              <CollapsibleSection key={section.id} label={section.label} defaultOpen={isFirst} theme={theme} first={isFirst}>
+                <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, overflow: 'hidden' }]}>
+                  <Ionicons name="analytics" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <Text style={[styles.cardLabel, { color: theme.textMuted }]}>EFFORT VS RESULTS</Text>
+                    <TooltipIcon tooltipKey="effort_vs_results" />
+                  </View>
+                  <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 20, marginBottom: 14 }}>
+                    Compare your logged data against your actual results. See what's working, what's not, and get specific suggestions.
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => router.push('/diagnostic-report')}
+                    style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 8, paddingVertical: 12, alignItems: 'center' }}
+                  >
+                    <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: '#fff' }}>Open Analysis</Text>
+                  </TouchableOpacity>
+                </View>
               </CollapsibleSection>
             );
             return null;

@@ -1,6 +1,6 @@
 export interface TooltipDefinition {
   key: string;
-  category: 'Nutrition' | 'Fitness' | 'Sleep & Recovery' | 'Faith';
+  category: 'Nutrition' | 'Fitness' | 'Sleep & Recovery' | 'Faith' | 'Reports';
   title: string;
   body: string;
   definitions?: { term: string; explanation: string }[];
@@ -135,11 +135,15 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
       },
       {
         term: 'Active',
-        explanation: 'Calories burned through exercise and movement, pulled live from Apple Health.',
+        explanation: 'Calories burned through exercise and movement, pulled live from Apple Health. If these seem high, you can adjust accuracy in Settings → Health.',
       },
       {
         term: 'Net',
         explanation: 'The truest picture of your day: calories consumed minus active burn minus the calories your body has already burned at rest since midnight (running BMR). A lower net means more of a deficit.',
+      },
+      {
+        term: 'Running BMR',
+        explanation: 'Your body burns calories around the clock just to stay alive -- breathing, circulation, organ function. Running BMR is the portion of that already earned since midnight. It grows throughout the day so your net gets lower even if you don\'t eat or move.',
       },
       {
         term: 'Color Coding',
@@ -157,6 +161,30 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     },
   },
   {
+    key: 'burn_accuracy',
+    category: 'Fitness',
+    title: 'Burn Accuracy',
+    body: 'Apple Watch and most fitness trackers are known to overestimate active calorie burn -- often by 15-30%. This setting lets you apply a correction factor so your net calorie math reflects what you actually trust.',
+    definitions: [
+      {
+        term: '100% (Default)',
+        explanation: 'Uses Apple Health\'s number as-is. Good starting point if you\'re unsure how much your device overestimates.',
+      },
+      {
+        term: '90% / 80% / 70%',
+        explanation: 'Applies a reduction before your net calorie calculation. Affects your calorie target, net calories, and You vs Yesterday comparisons.',
+      },
+    ],
+    example: {
+      label: 'Example at 80%',
+      lines: [
+        { desc: 'Apple Health reported', value: '400 kcal' },
+        { desc: 'Your adjustment (80%)', value: '× 0.80' },
+      ],
+      result: { desc: 'Used in net calculation', value: '320 kcal' },
+    },
+  },
+  {
     key: 'advanced_nutrition',
     category: 'Nutrition',
     title: 'Advanced Nutrition',
@@ -167,6 +195,46 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
       { term: 'Sodium', explanation: '2,300mg DV. High sodium is linked to blood pressure -- most people exceed this daily.' },
       { term: 'Cholesterol', explanation: '300mg DV. Dietary cholesterol has less impact than once thought, but moderation is still advised.' },
       { term: 'Saturated Fat', explanation: '20g DV. Linked to heart health when consistently high. Unsaturated fats are the better choice.' },
+    ],
+  },
+  {
+    key: 'effort_vs_results',
+    category: 'Reports',
+    title: 'Effort & Results',
+    body: 'This report compares what your logged data predicts against what actually happened. It looks at five areas: calorie deficit vs actual weight change, burn accuracy, logging consistency, macro quality, and sleep. Each section only fires when there\'s enough data to say something real.\n\nThe report can\'t see what you didn\'t log. Inconsistent logging, untracked meals, or excluded days all affect what it can tell you.',
+    definitions: [
+      {
+        term: 'Data quality matters',
+        explanation: 'The report works with what you\'ve logged. If food wasn\'t tracked on certain days, weight wasn\'t recorded, or days were excluded, those gaps show up in the analysis. The more consistently you log, the more accurate the findings.',
+      },
+      {
+        term: 'More data = better insights',
+        explanation: 'A 30-day window gives the report more to work with than 14 days. Trends, correlations, and weight comparisons all become more reliable the longer your logging history.',
+      },
+      {
+        term: 'Not medical advice',
+        explanation: 'These findings are based on your self-logged data. They\'re informational starting points, not diagnoses. If something seems off, talk to a doctor or registered dietitian.',
+      },
+    ],
+  },
+  {
+    key: 'diagnostic_correlations',
+    category: 'Reports',
+    title: 'Patterns in Your Data',
+    body: 'Correlations show patterns between two different habits in your data -- and why that pattern matters for your results. Unlike averages, correlations reveal cause-and-effect relationships specific to you.\n\nNot every correlation fires every report. One only surfaces when the pattern is strong enough -- there\'s a minimum delta required for each type.',
+    definitions: [
+      {
+        term: 'For you specifically',
+        explanation: 'A generic tip says "poor sleep increases appetite." A correlation says "in your data, the days after poor sleep you ate 220 more calories." That\'s the difference. These are drawn from your logged data, not population averages.',
+      },
+      {
+        term: 'Strength threshold',
+        explanation: 'Each correlation has a minimum delta to surface. Sleep-to-calories only fires if the gap is 100+ cal. Sodium-to-scale only fires if the overnight bump is 0.5+ lbs. Below those thresholds the pattern isn\'t strong enough to act on.',
+      },
+      {
+        term: 'Data requirements',
+        explanation: 'Correlations need at least 3-7 days of overlapping data for both metrics. If you\'re missing sleep data or haven\'t logged consistently, some correlations won\'t have enough to work with.',
+      },
     ],
   },
 ];

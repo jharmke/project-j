@@ -7,9 +7,10 @@ import TooltipModal from './TooltipModal';
 
 interface Props {
   tooltipKey: string;
+  size?: number;
 }
 
-export default function TooltipIcon({ tooltipKey }: Props) {
+export default function TooltipIcon({ tooltipKey, size = 13 }: Props) {
   const { theme } = useTheme();
   const { seen, markSeen } = useTooltip(tooltipKey);
   const [modalVisible, setModalVisible] = useState(false);
@@ -48,7 +49,7 @@ export default function TooltipIcon({ tooltipKey }: Props) {
         activeOpacity={0.7}
       >
         <Animated.View style={{ transform: [{ scale }] }}>
-          <Ionicons name="information-circle" size={13} color={theme.textMuted} />
+          <Ionicons name="information-circle" size={size} color={theme.accentBlueRaw} />
         </Animated.View>
       </TouchableOpacity>
       <TooltipModal

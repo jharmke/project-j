@@ -74,15 +74,12 @@ export default function MissionScreen() {
           <View
             key={i}
             style={[
-              styles.card,
-              {
-                backgroundColor: t.bgCard,
-                borderColor: t.borderCard,
-                borderTopColor: t.accentBlueRaw,
-                shadowColor: '#000',
-              },
+              styles.cardShadow,
+              { shadowColor: '#000' },
             ]}
           >
+          <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw }]}>
+            <Ionicons name={card.icon as any} size={130} color={t.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
             <View style={styles.iconRow}>
               <View style={[styles.iconCircle, { backgroundColor: t.accentBlueBg, borderColor: t.accentBlueBorder }]}>
                 <Ionicons name={card.icon as any} size={18} color={t.accentBlueRaw} />
@@ -91,6 +88,7 @@ export default function MissionScreen() {
             </View>
             <Text style={[styles.cardHeadline, { color: t.accentBlueRaw }]}>{card.headline}</Text>
             <Text style={[styles.cardBody, { color: t.textSecondary }]}>{card.body}</Text>
+          </View>
           </View>
         ))}
       </ScrollView>
@@ -130,15 +128,19 @@ const styles = StyleSheet.create({
     letterSpacing: 3,
     lineHeight: 52,
   },
+  cardShadow: {
+    borderRadius: 14,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 3,
+  },
   card: {
     borderRadius: 14,
     borderWidth: 0.5,
     borderTopWidth: 1.5,
     padding: 16,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 3,
+    overflow: 'hidden',
   },
   iconRow: {
     flexDirection: 'row',

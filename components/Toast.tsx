@@ -7,11 +7,11 @@ interface Toast {
   id: number;
   message: string;
   submessage?: string;
-  type?: 'success' | 'info';
+  type?: 'success' | 'info' | 'error';
 }
 
 interface ToastContextType {
-  showToast: (message: string, submessage?: string, type?: 'success' | 'info') => void;
+  showToast: (message: string, submessage?: string, type?: 'success' | 'info' | 'error') => void;
 }
 
 const ToastContext = createContext<ToastContextType>({ showToast: () => {} });
@@ -68,7 +68,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
     return () => clearTimeout(timer);
   }, []);
 
-  const accentColor = toast.type === 'success' ? theme.accentGreen : theme.accentBlue;
+  const accentColor = toast.type === 'success' ? theme.accentGreen : toast.type === 'error' ? theme.statusBad : theme.accentBlue;
 
   return (
     <Animated.View
@@ -121,7 +121,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     return () => { show.remove(); hide.remove(); };
   }, []);
 
-  const showToast = useCallback((message: string, submessage?: string, type: 'success' | 'info' = 'success') => {
+  const showToast = useCallback((message: string, submessage?: string, type: 'success' | 'info' | 'error' = 'success') => {
     const id = counter.current++;
     setToasts(prev => [...prev, { id, message, submessage, type }]);
   }, []);

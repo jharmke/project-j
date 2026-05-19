@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type StatsCardType = 'system' | 'graph';
-export type SystemCardKey = 'atAGlance' | 'trends' | 'records' | 'streaks' | 'calendar';
+export type SystemCardKey = 'atAGlance' | 'trends' | 'records' | 'streaks' | 'calendar' | 'reports';
 export type DataKey =
   // Nutrition
   'calories' | 'macros' | 'netCalories' | 'water' | 'fiber' | 'sodium' | 'cholesterol' | 'saturatedFat' |
@@ -51,6 +51,7 @@ export const DEFAULT_STATS_CARDS: StatsCard[] = [
   { id: 'sys_records',  type: 'system', systemKey: 'records',  label: 'Records',  visible: true, order: 8,  period: 7, placement: 'stats' },
   { id: 'sys_streaks',  type: 'system', systemKey: 'streaks',  label: 'Streaks',  visible: true, order: 9,  period: 7, placement: 'stats' },
   { id: 'sys_calendar', type: 'system', systemKey: 'calendar', label: 'Calendar', visible: true, order: 10, period: 7, placement: 'stats' },
+  { id: 'sys_reports',  type: 'system', systemKey: 'reports',  label: 'Reports',  visible: true, order: 11, period: 30, placement: 'stats' },
 ];
 
 // Merges saved cards with defaults -- adds any new defaults missing from saved state.

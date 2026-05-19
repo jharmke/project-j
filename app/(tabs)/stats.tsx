@@ -205,7 +205,7 @@ export default function StatsScreen() {
 
   const fetchTrendData = fetchTrendDataUtil;
 
-  const loadAllCardData = async (cards: StatsCard[], globalPeriod: CardPeriod = 30) => {
+  const loadAllCardData = async (cards: StatsCard[], globalPeriod: CardPeriod = 30, sleepGoalVal?: number) => {
     let workoutState: any = {};
     try {
       const ws = await AsyncStorage.getItem('pj_workout_state');
@@ -217,7 +217,7 @@ export default function StatsScreen() {
       ...cards.filter(c => c.type === 'graph' && c.visible).map(c => c.period),
     ])];
 
-    const results = await Promise.all(uniquePeriods.map(async p => [p, await fetchTrendData(p, workoutState, sleepGoal)] as const));
+    const results = await Promise.all(uniquePeriods.map(async p => [p, await fetchTrendData(p, workoutState, sleepGoalVal ?? sleepGoal)] as const));
     const newMap: Record<string, TrendData> = {};
     for (const [period, data] of results) newMap[period.toString()] = data;
     setTrendDataMap(newMap);
@@ -393,7 +393,7 @@ export default function StatsScreen() {
         setStatsCards(cards);
 
         await Promise.all([
-          loadAllCardData(cards, 30),
+          loadAllCardData(cards, 30, sleep),
           loadRecords(),
           loadPeriodData(activePeriod, target, sleep, bmr),
           loadStreaks(target),

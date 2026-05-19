@@ -941,7 +941,7 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
           </TouchableOpacity>
         )}
       </View>
-      {getChart()}
+      <View key={card.period}>{getChart()}</View>
       {stats && stats.length > 0 && (
         <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle, flexDirection: 'row' }}>
           {stats.map((s, i) => (

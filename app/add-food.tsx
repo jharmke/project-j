@@ -458,6 +458,7 @@ const saveEditFood = async () => {
   useFocusEffect(
     useCallback(() => {
       loadFavorites();
+      loadMyFoods();
     }, [])
   );
 
@@ -819,13 +820,13 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
           }
         }, 1500);
       } else {
-        setLastScannedBarcode(null);
+        setLastScannedBarcode(data);
         setQuery('');
         setResults([]);
         setSearching(false);
         Alert.alert(
           'Product Not Found',
-          'This barcode wasn\'t found in the database. Search manually to find it and set it as the correct item.',
+          'This barcode isn\'t in the database yet. Search for it below and tap SET to link it permanently.',
           [{ text: 'OK' }]
         );
       }
@@ -1166,7 +1167,17 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
               <View style={styles.resultRight}>
                 {activeTab === 'pinned' ? (
                   <TouchableOpacity
-                    onPress={() => unsetOverride((item as any)._pinnedBarcode)}
+                    onPress={() => {
+                      const foodName = (item as any).description || 'this food';
+                      Alert.alert(
+                        'Remove Barcode Link?',
+                        `"${foodName}" will no longer be linked to this barcode. You can re-link it by scanning again.`,
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          { text: 'Remove', style: 'destructive', onPress: () => unsetOverride((item as any)._pinnedBarcode) },
+                        ]
+                      );
+                    }}
                     style={{ marginRight: 6, backgroundColor: 'rgba(204,51,51,0.12)', borderWidth: 1, borderColor: 'rgba(204,51,51,0.4)', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 3 }}>
                     <Text style={{ fontSize: 10, color: '#cc3333', fontFamily: 'DMSans_600SemiBold' }}>UNSET</Text>
                   </TouchableOpacity>

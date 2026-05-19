@@ -220,8 +220,7 @@ function calcSleepScore(
     const deepDiff = Math.abs(deepPct - deepIdeal);
     const deepPts = Math.max(0, 30 - (deepDiff / deepIdeal) * 30);
     const remIdeal = 0.22;
-    const remDiff = Math.abs(remPct - remIdeal);
-    const remPts = Math.max(0, 30 - (remDiff / remIdeal) * 30);
+    const remPts = Math.min(30, Math.max(0, (remPct / remIdeal) * 30));
     return { score: Math.round(durationPts + deepPts + remPts), hasStages: true, path: 1 };
   }
 
@@ -270,8 +269,8 @@ function getSleepTip(
 ): string | null {
   if (!sleepHours) return null;
   const daySeed = parseInt(dateKey.replace(/-/g, '')) % 3;
-  if (score >= 85) return SLEEP_TIPS.good[daySeed];
   if (!sleepStages) {
+    if (score >= 85) return SLEEP_TIPS.good[daySeed];
     if (sleepHours < sleepGoal * 0.85) return SLEEP_TIPS.low_duration[daySeed];
     return null;
   }
@@ -281,8 +280,8 @@ function getSleepTip(
   if (deepPct < 0.12) return SLEEP_TIPS.low_deep[daySeed];
   if (remPct < 0.15) return SLEEP_TIPS.low_rem[daySeed];
   if (sleepHours < sleepGoal * 0.85) return SLEEP_TIPS.low_duration[daySeed];
-  if (score < 85) return SLEEP_TIPS.catch_all[daySeed];
-  return null;
+  if (score >= 85) return SLEEP_TIPS.good[daySeed];
+  return SLEEP_TIPS.catch_all[daySeed];
 }
 
 function SleepDonut({ coreFrac, deepFrac, remFrac, donutCirc, donutSize, donutStroke, donutRadius, coreColor, deepColor, remColor, trackColor, gapFrac, refreshKey, score, scoreColor }: {

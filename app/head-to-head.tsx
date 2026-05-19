@@ -49,8 +49,7 @@ function calcSleepScore(
     const deepDiff = Math.abs(deepPct - deepIdeal);
     const deepPts = Math.max(0, 30 - (deepDiff / deepIdeal) * 30);
     const remIdeal = 0.22;
-    const remDiff = Math.abs(remPct - remIdeal);
-    const remPts = Math.max(0, 30 - (remDiff / remIdeal) * 30);
+    const remPts = Math.min(30, Math.max(0, (remPct / remIdeal) * 30));
     return { score: Math.round(durationPts + deepPts + remPts), hasStages: true, path: 1 };
   }
   const path = isManual ? 3 : 2;

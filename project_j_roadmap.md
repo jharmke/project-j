@@ -67,7 +67,7 @@ DONE -- SHIPPED
 [x] KJV verse rotation -- all 52 preset verses updated to KJV
 [x] Today's Message label -- renamed from Today's Verse throughout
 [x] Sleep score 0-100 in donut center -- score-driven color, labels Well Rested/Could Be Better/Poor Sleep
-[x] Sleep score algorithm -- Duration 40pts, Deep % 30pts, REM % 30pts
+[x] Sleep score algorithm -- Duration 40pts, Deep % 30pts, REM % 30pts. REM scoring one-sided (above 22% ideal = full pts, never penalized for excess). Sleep tips check stage flags before score threshold so low deep still surfaces even on high-score nights.
 [x] Sleep tips -- contextual daily-rotating tips, 4 categories, seeded by date
 [x] Sleep goal in profile -- scroll-driven wheel picker, auto-positions to current value
 [x] Floating save bar on profile -- animates up on change, away on save
@@ -195,7 +195,7 @@ NOW -- active this session
 
 Auth and onboarding
 
-Firebase Auth -- Apple/Google login, both required (App Store rules mandate Apple login if any third party login offered). Firestore setup, data migration from AsyncStorage. Pre-TestFlight requirement.
+Firebase Auth -- Apple/Google login, both required (App Store rules mandate Apple login if any third party login offered). Google Sign In also required (triggers the Apple mandate). Firestore setup, data migration from AsyncStorage. Pre-TestFlight requirement. Log out feature required. Manual email/password sign-up intentionally excluded -- unnecessary complexity for current user base. Auth state persistence + session handling needed.
 Onboarding flow -- COMPLETE. All 7 screens built and working.
 
 Workout tab facelift
@@ -211,12 +211,13 @@ Workout tab facelift
   [x] Exercise library detail modal -- bgSheet opaque background, accent top border, exercise name accent colored, Add to Day = full accent fill primary CTA, Edit = interactive blue pill, Remove = plain red text. Sets/reps/rest subtext gone.
   [x] Library modal animations -- detail modal close/open smooth (animationType none + manual Animated.Value, onShow callback). Edit modal fade-in fixed (onShow callback replaces unreliable setTimeout). All dismiss paths wired through closeDetailModal with callback chaining.
   [x] Effort score redesign -- large satisfying tiles (52px, Bebas 28px), full color fill selected state, spring tap animation, dynamic color-coded label (EASY/LIGHT/MODERATE/HARD/MAX EFFORT), green/gold/orange/red ramp.
+Effort score audit -- confirm score saves correctly to pj_workout_state and is not dropped on navigation or app kill. Decide if score should also be settable per individual exercise via the edit exercise flow. Long-term feeds into Day Score, day detail, and reporting/trends. No decisions until save behavior confirmed. (NOW)
 [x] Workout notes overhaul -- KAV fixed (removed double-adjustment), placeholder "How'd it feel?", dim/inactive save button (opacity-based accent), toast "Note saved to journal", fitness category journal sync (read-then-merge, dedup by day). Saved ✓ / Save Note / Clear Note states. Clear Note wipes both workout state and journal entry. Journal delete syncs
    back and clears workout note. Book icon in card header routes to journal.
 [x] Edit/Remove button redesign -- inline pencil + trash icons in exercise row, left of checkmark. Bottom button row removed. Pencil textMuted, trash accentRed, alert before delete.
 Progress/momentum element -- running tally of exercises completed visible during session.
 Visual hierarchy pass -- exercise rows, Apple Health badge, stats line spacing and weight.
-Muscle group tags + filter on exercise library -- muscleGroup field on each exercise, filter chips (Chest/Back/Shoulders/Arms/Legs/Core/Cardio), default library pre-tagged, add modal gets picker. (SOON)
+Workout library sort + filter -- filter button opens bottom sheet with all existing tag/muscle group chips as selectables. Tap chips filters list live, no confirm needed. Filter resets on library exit. Sort is separate from filter, both can be active simultaneously: A-Z, Z-A, Most Used, Recently Used, Favorites First. Most Used + Recently Used require per-exercise usage tracking data -- audit whether that data exists before building those options. Favorites First is immediately doable. muscleGroup field on exercises, filter chips (Chest/Back/Shoulders/Arms/Legs/Core/Cardio), default library pre-tagged, add modal gets picker. (SOON)
   [x] Journal card animation overhaul -- onLayout-based dual animation. Container height JS thread, content opacity/translateY native thread. Easing.out cubic open, Easing.in cubic close.
   [x] Editable journal entry titles -- all categories including Fitness. Title field editable on edit.
   Editable workout note name -- workout-tab-sourced journal entries default to "Workout Note." Should be editable before or after save. (SOON)
@@ -411,7 +412,7 @@ Women's health and HealthKit
 
 Women's health -- TOP OF SOON. Discuss exact feature needs with Megan before building. HealthKit exposes menstrual cycle data, ovulation test results, basal body temperature, cervical mucus quality, spotting, cycle start/end dates. Smart correlation with nutrition patterns (undereating flagged alongside irregular cycle) is the goal. Do not release without this -- huge differentiator for female users.
 HealthKit permissions audit -- review full list of available HealthKit data types against currently requested permissions in useHealthKit.ts. Add all women's health metrics. Also add any missing high-value metrics (HRV, resting HR, basal body temp, blood oxygen, flights climbed, basal calories) in next build so data is available before features need it. Do not waste a build later on permissions that should have been requested now.
-Smart insights and trends layer -- auto-detect patterns automatically and surface them gently. Undereating, irregular meal timing, sleep and nutrition correlation, habit gaps. Discipline: direct language. Mindful: warm and observational. Never judgmental.
+Smart insights and trends layer -- auto-detect patterns automatically and surface them gently. Undereating, irregular meal timing, sleep and nutrition correlation, habit gaps. Specific trigger examples: 4+ days over calories, consistently low protein, persistently high fat. Contextual tip copy must vary -- never repeat within a week. Faith tier: Rooted users get faith-flavored tip language, Exploring users get clean secular tips. Discipline: direct language. Mindful: warm and observational. Never judgmental.
 
 Home screen and cards
 
@@ -434,6 +435,7 @@ Goals consolidation -- move all daily goals (calories, water, steps, sleep, macr
 
 Sleep
 
+Sleep score reweight -- bump REM weight higher, soften deep sleep penalty. Current formula: Duration 40pts, Deep 30pts, REM 30pts. Targeted formula change only, low risk. (SOON)
 Sleep edit disclaimer -- when user opens manual sleep edit, show disclaimer that manual entry will overwrite Apple Health synced data.
 
 Workout
@@ -453,6 +455,11 @@ Streaks
 
 Streak grace day system -- mode-aware. Discipline: earn grace days by hitting milestones (streak length or cumulative days), cap 1 saved at a time. Balanced: same earn system, cap 3. Mindful: no punishment mechanic, streaks are informational only or default to gentle habit-forming ones.
 Custom streaks system -- all three modes get full access to all streak options. User can create custom streaks with name and emoji, check in manually. Defaults differ per mode: Discipline/Balanced default to performance metrics (calories, steps, workout). Mindful defaults to gentle habit-forming ones (gratitude entry, hydration, morning intention). Architecture is the same across all modes.
+Streak end warning visuals -- color shift to orange/red on streak card when within X hours of midnight and action not yet completed. Optional subtle pulse or warning icon on the card itself. In-app only, no push notification dependency. High motivation impact, low build effort. (SOON)
+
+Push Notifications
+
+Push notifications -- expo-notifications. Customizable toggles per notification type: streak ending, no workout logged on non-rest day, no food/water logged, no journal entry. User-set time and frequency per type. iOS permission is one-shot -- if denied cannot re-prompt, requires careful first-ask UX (ask at the right moment, not on launch). Workout reminder has a dependency on rest day awareness -- build that first. (SOON)
 
 Visual polish
 
@@ -529,12 +536,16 @@ Stats page overhaul -- HIGH PRIORITY, dedicated session. Full spec:
 - PR/best day cards -- steps, active cals, water, sleep score, etc. Exclude incomplete log days from calorie-based PRs.
 - Goal hit rate card (maybe -- revisit during session)
 - Body measurements as graph data option
-- Calendar needs work -- not terrible but needs attention alongside rest of overhaul
+- Calendar needs work -- On Target/Close/Off pill system removal planned (replaced by Day Score). Exclusions polish also planned. See Day Score and Exclusions polish entries below.
 - Charts on stats page should be placeable on home tab too -- shared card pool, one unified edit sheet across both tabs. Architecture decision for Phase 3. CONFIRMED SOON -- Justin wants this after Gratitude Streak ships. Stats graph cards (user-created) pinnable to home screen alongside standard cards. pj_stats_cards drives both views. Single CARD_REGISTRY-compatible wrapper component for stats graphs on home.
 Stats page depth/shadow pass -- same shadow treatment as settings cards (shadowOpacity 0.18). Do during stats overhaul session.
 Streak card -- home screen: Bible, workout, calorie streaks. Workout tab version: X workouts this week toward weekly goal, visible on workout tab itself. (HIGH)
 Daily exercise minutes goal + active calorie goal -- industry standard (Apple Fitness rings model). User sets both targets in profile/settings. Progress tracked live against HealthKit exerciseMinutes and activeCalories. Celebration animation fires when either goal is hit. Both already pulled from HealthKit. Design question: home screen placement TBD -- options are (1) add progress rings/bars to existing Fitness Metrics card, (2) dedicated Activity Rings card, (3) inline under the Steps card. Mindful mode: show progress neutrally, no countdown language. (HIGH)
 Morning briefing card -- first open of day, faith first, yesterday recap, today targets.
+Day Score -- score out of 100 generated from logged data for the day. Replaces On Target/Close/Off as the calendar day indicator (green = great, red = rough, earned not arbitrary). User selects a preset rather than cherry-picking individual data points to avoid decision fatigue. Starting presets: Essential (calories, water, steps, sleep), Performance (above + workout logged, protein, active calories), Full Picture (everything including macros, streak, sleep score). Additional presets TBD. Full opt-out available (nothing shows on calendar). Formula and weighting TBD in dedicated thread. (SOON)
+Stats calendar polish -- remove On Target/Close/Off pill/color grading system entirely. Replaced by Day Score. Depends on Day Score shipping first. Toolkit icon handles all context/explanation needs. (SOON)
+Day summary card -- appears on first app open the morning after. Shows Day Score at minimum. Additional content TBD -- needs dedicated planning. Should feel like a quick affirming or motivating recap, not a wall of data. Depends on Day Score. (SOON)
+Exclusions polish -- keep exclusion dots on calendar tiles. Add one-time tooltip/callout the first time a user sees a dot, explaining what it means. Toolkit icon always visible on calendar (not just when exclusions exist) -- tapping opens popup modal explaining exclusion dot logic, Day Score context, and calendar-related info. Replaces static legend at bottom. (SOON)
 
 Health data
 
@@ -565,6 +576,7 @@ Today's Message overhaul -- full spec below. Dedicated session.
 [x] Verse unhighlight on tap -- tapping a highlighted verse clears it.
 [x] Today's Message card -- solid "book" journal icon added to top-right of card header, routes to journal.
 Achievement toast improvements -- tappable routes to achievements page, trigger context under name, wording update before App Store launch.
+Cycling Bible verses -- fine-print / sub-label style text, centered at the bottom of applicable tabs (Food Log, Workout, Home). Unobtrusive ambient faith element, not a card. Different verse per tab, thematically relevant to that tab (food/workout/general). Home verse can rotate freely. Rooted users: always on. Exploring users: optional or off. Faith journey gated. (SOON)
 
 Process and infrastructure
 
@@ -572,7 +584,7 @@ Tooltip audit pass -- sweep all cards app-wide, flag every card that needs a (i)
 Tooltip wording polish pass -- dedicated pass over all tooltip copy after all cards are wired. Known issues: Active (Apple Health fallback language for non-watch users), Remaining (confirm algorithm accuracy vs what's described), Net (explain running BMR before using the term), Color Coding ("big calorie number" needs rewrite). Do as one session with full context of every card.
 Settings > Help section -- two subsections: Definitions (auto-populates from tooltip registry, Show Again per entry) and Tips & Guides (shell built now, placeholder entry, mini help articles filled over time e.g. "How to improve your sleep score", "Understanding your active calorie estimate"). About row planned, not built yet.
 Coaching style deep-dive page -- dedicated screen explaining all three modes in depth. Who each mode is for, what changes per mode, why certain features are hidden in Mindful, language differences, worked examples. Written warmly, not like a help doc. Findable from settings and from onboarding. NOW -- high value, reduces churn from users who feel they picked wrong.
-Settings page overhaul -- collapsible card sections, CPP. Planned sections: Account, Appearance, Health, Notifications, Faith, Help, About/Legal. Profile/settings boundary cleanup included. Dedicated future session.
+Settings page overhaul + profile/settings consolidation -- collapsible card sections, CPP. Planned sections: Account, Appearance, Health, Notifications, Faith, Help, About/Legal. Audit and consolidate scattered or redundant settings into logical groupings. Polish UI consistency, spacing, and labels. Profile/settings boundary cleanup included. Scope and specific changes TBD -- review both screens in a dedicated thread before building. Dedicated future session.
 
 App name -- finalize from shortlist (Prevail, Steadfast, Worthy, Haven, Witness, Sown), verify App Store + TikTok handle availability before committing. Prevail is strongest -- punchy, fitness-forward, faith-adjacent without screaming it.
 TestFlight -- setup, App Store Connect, tester invite flow. Friends and family first, not wide beta.
@@ -603,6 +615,7 @@ BACKLOG -- parked, good ideas, not imminent
 App-wide color customization -- extend color picker beyond stats graphs to home screen bars (water, steps, calorie progress bar). Calorie bar skip (mode-aware semantic coloring). Steps/water bars follow accent color already -- decision to revisit. Macro identity colors (protein green, carbs amber, fat red) are visual language app-wide -- any change requires propagating through log, home, day detail, stats all at once. Build only after stats color picker ships and proves the pattern. Entry point: gear press on each card. Storage: pj_settings colorPrefs key.
 Collapsible card animation performance -- DONE. Replaced JS thread height animation with instant height snap + opacity fade (300ms open, 100ms close, useNativeDriver: true). Applied to stats.tsx (CollapsibleCard), profile.tsx (CollapsibleCard), and log.tsx (meal sections). All smooth, no lag.
 Social and accountability partner -- lightweight, one person you share daily score with. Not a full social feed. Strava-inspired but scoped. Build after core features stable and onboarding complete.
+Tutorial / walkthrough system -- interactive overlay style (live UI underneath, highlighted circles, callout bubbles, tap-to-advance). Opt-in from settings and accessible via toolkit icons on screens with a built tutorial. For Mindful users, a meta-tutorial auto-plays on first launch: walks through how the tutorial system works, shows where to find tutorials in settings and toolkits, then releases them into the app. First real tutorial does not auto-play -- user chooses when to start. Immediate skip/close always available. Major UX differentiator especially for Mindful user type. Needs dedicated planning thread before building.
 App name and tagline finalization -- finalize from shortlist (Prevail, Steadfast, Worthy, Haven, Witness, Sown). Verify App Store + TikTok handle availability. Prevail is strongest. Current tagline "the app that actually cares" needs replacing -- doesn't land. Prevail direction has a tagline waiting in it.
 Onboarding illustrations -- tasteful SVG illustrations, one per screen, consistent style, theme-aware. High return on effort, do after onboarding flow is fully functional.
 Water log timestamps -- store timestamp with each water entry, enables habit reporting and distribution analysis.
@@ -627,6 +640,7 @@ Protein timing badge -- hit protein within 2 hours post workout, simple yes/no b
 
 Stats and insights -- dedicated session
 
+Reporting / Report Card -- select a time range (7/30/90d) and get a structured snapshot: avg calories/macros, steps, sleep score, weight change, workouts logged. Trend callouts in plain language (e.g. "sleep score up 8 pts this week"). Goal progress summaries (weight to goal, step goal hit rate, calorie consistency). Shareable via native share sheet as screenshot, not PDF. Vision only -- layout, scope, and feature set all subject to change. No code written, no roadmap slot yet.
 Time of day food heat map -- visualized as grid, high differentiation value
 Energy level tracking -- correlates with food choices, "you always crash at 3pm on high carb days"
 Sleep vs food correlation -- connect sleep data to prior day food choices, unique insight

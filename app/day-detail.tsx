@@ -23,7 +23,7 @@ function calcSleepScore(
     const durationPts = Math.min(40, (sleepHours / sleepGoal) * 40);
     const totalMs = sleepStages.totalMs;
     const deepPts = Math.max(0, 30 - (Math.abs((sleepStages.deep / totalMs) - 0.20) / 0.20) * 30);
-    const remPts  = Math.max(0, 30 - (Math.abs((sleepStages.rem  / totalMs) - 0.22) / 0.22) * 30);
+    const remPts  = Math.min(30, Math.max(0, (sleepStages.rem / totalMs / 0.22) * 30));
     return { score: Math.round(durationPts + deepPts + remPts), hasStages: true };
   }
   if (!feelRating) return { score: null, hasStages: false };

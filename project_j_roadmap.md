@@ -211,7 +211,7 @@ Workout tab facelift
   [x] Exercise library detail modal -- bgSheet opaque background, accent top border, exercise name accent colored, Add to Day = full accent fill primary CTA, Edit = interactive blue pill, Remove = plain red text. Sets/reps/rest subtext gone.
   [x] Library modal animations -- detail modal close/open smooth (animationType none + manual Animated.Value, onShow callback). Edit modal fade-in fixed (onShow callback replaces unreliable setTimeout). All dismiss paths wired through closeDetailModal with callback chaining.
   [x] Effort score redesign -- large satisfying tiles (52px, Bebas 28px), full color fill selected state, spring tap animation, dynamic color-coded label (EASY/LIGHT/MODERATE/HARD/MAX EFFORT), green/gold/orange/red ramp.
-Effort score audit -- confirm score saves correctly to pj_workout_state and is not dropped on navigation or app kill. Decide if score should also be settable per individual exercise via the edit exercise flow. Long-term feeds into Day Score, day detail, and reporting/trends. No decisions until save behavior confirmed. (NOW)
+[x] Effort score audit + pipeline -- confirmed saves correctly to pj_workout_state.cardioLogs[dateKey].effortScore. Renamed to "Today's Effort" throughout (workout.tsx card label). Piped into fetchTrendData (reads workoutState.cardioLogs param already available). Added effortScore DataKey to statsCardRegistry + DATA_KEY_META. Now fully graphable via graph creator. Decided: session-level rating only, not per-exercise. Long-term feeds Day Score and reporting.
 [x] Workout notes overhaul -- KAV fixed (removed double-adjustment), placeholder "How'd it feel?", dim/inactive save button (opacity-based accent), toast "Note saved to journal", fitness category journal sync (read-then-merge, dedup by day). Saved ✓ / Save Note / Clear Note states. Clear Note wipes both workout state and journal entry. Journal delete syncs
    back and clears workout note. Book icon in card header routes to journal.
 [x] Edit/Remove button redesign -- inline pencil + trash icons in exercise row, left of checkmark. Bottom button row removed. Pencil textMuted, trash accentRed, alert before delete.
@@ -430,7 +430,7 @@ Steps goal button -- remove goal button from steps card top right. Move step goa
 Weight projected graph in profile -- add alongside weight goal card in profile.
 exerciseMinutes on Today's Training card -- surface Apple Health exercise minutes alongside the workout summary. Pull from pj_YYYY-MM-DD exerciseMinutes field (persisted since this session). Show as a stat row or subtle secondary line. (SOON)
 Physical measurements in profile -- waist, neck, hip fields. Enables Navy method body fat estimate and other formulas that require body circumference. Feeds more accurate color coding on Fitness Metrics card. (SOON)
-Shimmer effect extension -- sleep score donut (score >= 85, Well Rested) and steps bar (at/over goal) get the same shimmer sweep as the water bar. Active cals skipped (no explicit user goal). Macro and calorie bars skipped intentionally (over is not inherently good). (SOON)
+[x] Shimmer effect extension -- steps bar at/over goal: white LinearGradient sweep (same pattern as water bar). Sleep score donut at >= 85: center score does a quick scale pop (1.08x, 200ms out cubic) + white circular flash overlay (opacity 0→0.18→0), repeating every ~3.3s. Ring arc shimmer scrapped (SVG compositing artifacts). Active cals, macros, calories bars intentionally skipped.
 Goals consolidation -- move all daily goals (calories, water, steps, sleep, macros, weight goal) into a dedicated Goals section in profile or settings. Two sub-sections: Fitness Goals (steps, sleep, active cals) and Nutrition Goals (calories, water, macros). Removes scatter of goals across home screen cards and profile. Dedicated session.
 
 Sleep
@@ -490,8 +490,8 @@ Workout tab muscle group breakdown -- visual showing which muscle groups were tr
 Workout tab previous session comparison -- show how today stacks up vs the last time this workout was done. Per exercise, not just overall. (SOON)
 Workout library FAB -- DONE. See workout library redesign in DONE section. Create Exercise active, Create Program + Create Routine disabled (coming soon).
 IF card polish -- green TAP WHEN YOU EAT button needs bgInset+'80' semi-transparent treatment to match other cards. Timer hero icon verify on device. (SOON)
-Workout tab nested scroll bug -- DraggableFlatList inside ScrollView warning. (HIGH)
-Workout drag handle -- hit target too small + dead zone before drag triggers. (HIGH)
+[x] Workout tab nested scroll bug -- DraggableFlatList inside ScrollView warning. Attempted fix broke entire workout tab; reverted. Determined acceptable as-is -- scroll architecture stable, warning does not affect functionality.
+[x] Workout drag handle -- hit target and dead zone resolved.
 Edit exercise input validation -- decimal/integer restrictions on all numeric fields, same standard as weight input. (SOON)
 Apple Health avg HR per workout -- research whether kingstinct library exposes avg HR per workout sample; if yes, auto-populate on workout sync. (SOON)
 Last-used dimmed prefill -- when adding an exercise, ghost in last logged sets/reps/weight as placeholder text. Storage lookup by exercise name on modal open. Always blank until user types -- never auto-fills. (workout tab pass item)

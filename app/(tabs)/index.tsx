@@ -6,7 +6,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, AppState, Dimensions, Easing, KeyboardAvoidingView, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
-import ReAnimated, { useAnimatedStyle, useSharedValue, withTiming, withRepeat, cancelAnimation, Easing as ReAnimEasing } from 'react-native-reanimated';
+import ReAnimated, { useAnimatedStyle, useAnimatedProps, useSharedValue, withTiming, withRepeat, withSequence, withDelay, cancelAnimation, Easing as ReAnimEasing } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import PressableButton from '../../components/PressableButton';
@@ -284,15 +284,17 @@ function getSleepTip(
   return SLEEP_TIPS.catch_all[daySeed];
 }
 
-function SleepDonut({ coreFrac, deepFrac, remFrac, donutCirc, donutSize, donutStroke, donutRadius, coreColor, deepColor, remColor, trackColor, gapFrac, refreshKey, score, scoreColor }: {
+function SleepDonut({ coreFrac, deepFrac, remFrac, donutCirc, donutSize, donutStroke, donutRadius, coreColor, deepColor, remColor, trackColor, gapFrac, refreshKey, score, scoreColor, shimmer }: {
   coreFrac: number; deepFrac: number; remFrac: number; donutCirc: number;
   donutSize: number; donutStroke: number; donutRadius: number;
   coreColor: string; deepColor: string; remColor: string; trackColor: string; gapFrac: number; refreshKey?: number;
-  score: number; scoreColor: string;
+  score: number; scoreColor: string; shimmer?: boolean;
 }) {
   const coreAnim = useSharedValue(0);
   const deepAnim = useSharedValue(0);
   const remAnim  = useSharedValue(0);
+  const shimmerScale = useSharedValue(1);
+  const shimmerFlash = useSharedValue(0);
 
   useEffect(() => {
     coreAnim.value = 0;
@@ -309,9 +311,39 @@ function SleepDonut({ coreFrac, deepFrac, remFrac, donutCirc, donutSize, donutSt
     }, 1500);
   }, [coreFrac, deepFrac, remFrac, refreshKey]);
 
+  useEffect(() => {
+    if (shimmer) {
+      shimmerScale.value = withRepeat(
+        withSequence(
+          withTiming(1.08, { duration: 200, easing: ReAnimEasing.out(ReAnimEasing.cubic) }),
+          withTiming(1.0,  { duration: 350, easing: ReAnimEasing.in(ReAnimEasing.cubic) }),
+          withDelay(2800, withTiming(1.0, { duration: 1 })),
+        ),
+        -1,
+        false,
+      );
+      shimmerFlash.value = withRepeat(
+        withSequence(
+          withTiming(0.18, { duration: 150 }),
+          withTiming(0.0,  { duration: 400 }),
+          withDelay(2800, withTiming(0.0, { duration: 1 })),
+        ),
+        -1,
+        false,
+      );
+    } else {
+      cancelAnimation(shimmerScale);
+      cancelAnimation(shimmerFlash);
+      shimmerScale.value = 1;
+      shimmerFlash.value = 0;
+    }
+  }, [shimmer]);
+
   const coreStyle = useAnimatedStyle(() => ({ strokeDasharray: `${coreAnim.value} ${donutCirc}` } as any));
   const deepStyle = useAnimatedStyle(() => ({ strokeDasharray: `${deepAnim.value} ${donutCirc}` } as any));
   const remStyle  = useAnimatedStyle(() => ({ strokeDasharray: `${remAnim.value} ${donutCirc}`  } as any));
+  const shimmerCenterStyle = useAnimatedStyle(() => ({ transform: [{ scale: shimmerScale.value }] }));
+  const shimmerFlashStyle  = useAnimatedStyle(() => ({ opacity: shimmerFlash.value }));
 
   return (
     <View>
@@ -325,10 +357,16 @@ function SleepDonut({ coreFrac, deepFrac, remFrac, donutCirc, donutSize, donutSt
           animatedProps={remStyle} strokeDashoffset={-(coreFrac+deepFrac)} strokeLinecap="butt" rotation="-90" origin={`${donutSize/2},${donutSize/2}`} />
       </Svg>
       <View style={{ position:'absolute', top:0, left:0, width:donutSize, height:donutSize, alignItems:'center', justifyContent:'center' }}>
-        <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
-          <Text style={{ fontSize: 36, fontFamily: 'BebasNeue_400Regular', color: scoreColor, letterSpacing: 1, lineHeight: 38, opacity: 0.88 }}>{score}</Text>
-        </View>
-        <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: scoreColor, textTransform: 'uppercase', opacity: 0.7 }}>/100</Text>
+        <ReAnimated.View style={[{ alignItems: 'center' }, shimmerCenterStyle]}>
+          <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
+            <Text style={{ fontSize: 36, fontFamily: 'BebasNeue_400Regular', color: scoreColor, letterSpacing: 1, lineHeight: 38, opacity: 0.88 }}>{score}</Text>
+          </View>
+          <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: scoreColor, textTransform: 'uppercase', opacity: 0.7 }}>/100</Text>
+        </ReAnimated.View>
+        <ReAnimated.View
+          pointerEvents="none"
+          style={[{ position: 'absolute', width: donutSize * 0.45, height: donutSize * 0.45, borderRadius: donutSize * 0.225, backgroundColor: 'white' }, shimmerFlashStyle]}
+        />
       </View>
     </View>
   );
@@ -1874,7 +1912,7 @@ export default function HomeScreen() {
           <Text style={{ fontSize:13, color: theme.textMuted, fontFamily:'DMSans_400Regular' }}>/ {stepGoal.toLocaleString()} steps</Text>
         </View>
         <View style={{ marginBottom:8 }}>
-          <AnimatedProgressBar pct={Math.min(pct*100,100)} color={stepColor} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} />
+          <AnimatedProgressBar pct={Math.min(pct*100,100)} color={stepColor} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} overGoal={pct >= 1} />
         </View>
         <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase' }}>{distance} mi walked today</Text>
       </View>
@@ -2060,6 +2098,7 @@ export default function HomeScreen() {
                     coreColor={theme.sleepCore} deepColor={theme.sleepDeep} remColor={theme.sleepRem}
                     trackColor={theme.sleepTrack} gapFrac={gapFrac} refreshKey={refreshKey}
                     score={score ?? 0} scoreColor={scoreColor}
+                    shimmer={score !== null && score >= 85}
                   />
                 )}
               </View>

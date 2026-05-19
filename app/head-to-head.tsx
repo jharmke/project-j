@@ -77,7 +77,7 @@ function displayDate(key: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-async function loadSnapshot(dateKey: string, sleepGoal: number, calTarget: number, weightGoalPace: string, profileBmr: number): Promise<DaySnapshot> {
+async function loadSnapshot(dateKey: string, sleepGoal: number, calTarget: number, weightGoalPace: string, profileBmr: number, burnAccuracyPct: number = 100): Promise<DaySnapshot> {
   const snap: DaySnapshot = { net: null, steps: null, sleepScore: null, sleepHours: null, water: null, activeCals: null, weight: null };
   try {
     const raw = await AsyncStorage.getItem(`pj_${dateKey}`);
@@ -87,7 +87,7 @@ async function loadSnapshot(dateKey: string, sleepGoal: number, calTarget: numbe
     // Net calories
     if (d.entries && Array.isArray(d.entries)) {
       const consumed = d.entries.reduce((s: number, e: any) => s + e.cal, 0);
-      const burned = d.activeCalories || d.caloriesBurned || 0;
+      const burned = Math.round((d.activeCalories || d.caloriesBurned || 0) * burnAccuracyPct / 100);
       if (consumed >= 400) snap.net = consumed - burned - (profileBmr ?? 0);
     }
 
@@ -98,8 +98,8 @@ async function loadSnapshot(dateKey: string, sleepGoal: number, calTarget: numbe
     if (typeof d.water === 'number') snap.water = d.water;
 
     // Active cals
-    if (d.activeCalories) snap.activeCals = d.activeCalories;
-    else if (d.caloriesBurned) snap.activeCals = d.caloriesBurned;
+    if (d.activeCalories) snap.activeCals = Math.round(d.activeCalories * burnAccuracyPct / 100);
+    else if (d.caloriesBurned) snap.activeCals = Math.round(d.caloriesBurned * burnAccuracyPct / 100);
 
     // Weight
     if (d.weight) snap.weight = d.weight;
@@ -270,6 +270,7 @@ export default function HeadToHeadScreen() {
   const [calTarget, setCalTarget] = useState(1800);
   const [weightGoalPace, setWeightGoalPace] = useState('lose_1');
   const [profileBmr, setProfileBmr] = useState(0);
+  const [burnAccuracyPct, setBurnAccuracyPct] = useState(100);
 
   // Load profile settings once
   useEffect(() => {
@@ -316,7 +317,17 @@ export default function HeadToHeadScreen() {
         setProfileLoaded(true);
       }
     };
+    const loadSettings = async () => {
+      try {
+        const s = await AsyncStorage.getItem('pj_settings');
+        if (s) {
+          const d = JSON.parse(s);
+          if (d.burnAccuracyPct !== undefined) setBurnAccuracyPct(d.burnAccuracyPct);
+        }
+      } catch (e) {}
+    };
     loadProfile();
+    loadSettings();
   }, []);
 
   const [profileLoaded, setProfileLoaded] = useState(false);
@@ -327,8 +338,8 @@ export default function HeadToHeadScreen() {
     const load = async () => {
       setLoading(true);
       const [a, b] = await Promise.all([
-        loadSnapshot(dateA, sleepGoal, calTarget, weightGoalPace, profileBmr),
-        loadSnapshot(dateB, sleepGoal, calTarget, weightGoalPace, profileBmr),
+        loadSnapshot(dateA, sleepGoal, calTarget, weightGoalPace, profileBmr, burnAccuracyPct),
+        loadSnapshot(dateB, sleepGoal, calTarget, weightGoalPace, profileBmr, burnAccuracyPct),
       ]);
       setSnapA(a);
       setSnapB(b);

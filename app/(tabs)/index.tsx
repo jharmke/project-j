@@ -817,6 +817,7 @@ export default function HomeScreen() {
   // Style mode + faith journey
   const [styleMode, setStyleMode] = useState<'discipline' | 'balanced' | 'mindful'>('balanced');
   const [faithJourney, setFaithJourney] = useState<'rooted' | 'exploring' | 'notrightnow'>('rooted');
+  const [burnAccuracyPct, setBurnAccuracyPct] = useState(100);
 
   // BMR + profile biometrics
   const [profileBmr,      setProfileBmr]      = useState(0);
@@ -863,7 +864,8 @@ export default function HomeScreen() {
   const getDateKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   const [todayKey, setTodayKey] = useState(() => getDateKey(new Date()));
   const [todayDay, setTodayDay] = useState(() => DAY_NAMES[new Date().getDay()]);
-  const hkCalories    = activeCalories > 0 ? activeCalories : caloriesBurned;
+  const rawHkCalories = activeCalories > 0 ? activeCalories : caloriesBurned;
+  const hkCalories    = Math.round(rawHkCalories * burnAccuracyPct / 100);
   const adjustedTarget= calTarget + hkCalories;
   const displayedBurned = hkCalories;
   const calPct   = adjustedTarget > 0 ? (totalCals / adjustedTarget) * 100 : 0;
@@ -987,18 +989,22 @@ export default function HomeScreen() {
       });
     }
     prevStepsRef.current = steps;
-    if (loaded && activeCalories > 0 && activeCalGoal > 0 && activeCalories >= activeCalGoal && prevActiveCalRef.current < activeCalGoal) {
-      handleDailyGoalHit('activeCals').then(({ fired, count: hitCount }) => {
-        if (fired) { showCelebration('small', 'ACTIVE CALS'); showDailyGoalToast('Active Cal Goal', hitCount, 'flame', '#f97316'); }
-      });
+    if (loaded) {
+      const adjustedActiveCals = Math.round(activeCalories * burnAccuracyPct / 100);
+      const prevAdjustedActiveCals = Math.round(prevActiveCalRef.current * burnAccuracyPct / 100);
+      if (adjustedActiveCals > 0 && activeCalGoal > 0 && adjustedActiveCals >= activeCalGoal && prevAdjustedActiveCals < activeCalGoal) {
+        handleDailyGoalHit('activeCals').then(({ fired, count: hitCount }) => {
+          if (fired) { showCelebration('small', 'ACTIVE CALS'); showDailyGoalToast('Active Cal Goal', hitCount, 'flame', '#f97316'); }
+        });
+      }
+      prevActiveCalRef.current = activeCalories;
+      if (exerciseMinutes !== null && exerciseMinsGoal > 0 && exerciseMinutes >= exerciseMinsGoal && prevExerciseMinsRef.current < exerciseMinsGoal) {
+        handleDailyGoalHit('exerciseMins').then(({ fired, count: hitCount }) => {
+          if (fired) { showCelebration('small', 'EXERCISE GOAL'); showDailyGoalToast('Exercise Goal', hitCount, 'bicycle', '#8b5cf6'); }
+        });
+      }
+      prevExerciseMinsRef.current = exerciseMinutes ?? 0;
     }
-    prevActiveCalRef.current = activeCalories;
-    if (loaded && exerciseMinutes !== null && exerciseMinsGoal > 0 && exerciseMinutes >= exerciseMinsGoal && prevExerciseMinsRef.current < exerciseMinsGoal) {
-      handleDailyGoalHit('exerciseMins').then(({ fired, count: hitCount }) => {
-        if (fired) { showCelebration('small', 'EXERCISE GOAL'); showDailyGoalToast('Exercise Goal', hitCount, 'bicycle', '#8b5cf6'); }
-      });
-    }
-    prevExerciseMinsRef.current = exerciseMinutes ?? 0;
   }, [activeCalories, steps, sleepHours, sleepStages, restingHR, respiratoryRate, bloodOxygen, bodyFatPct, exerciseMinutes, loaded, stepGoal, activeCalGoal, exerciseMinsGoal]);
 
   // ── Load layout from settings ────────────────────────────────────────────────
@@ -1194,7 +1200,7 @@ export default function HomeScreen() {
           // Yesterday calories
           if (yd2.entries && Array.isArray(yd2.entries)) {
             const ydConsumed = yd2.entries.reduce((s: number, e: any) => s + e.cal, 0);
-            const ydBurned = yd2.activeCalories || yd2.caloriesBurned || 0;
+            const ydBurned = Math.round((yd2.activeCalories || yd2.caloriesBurned || 0) * burnAccuracyPct / 100);
             const profileRaw2 = await AsyncStorage.getItem('pj_profile');
             let ydBmr = 0;
             if (profileRaw2) {
@@ -1221,7 +1227,7 @@ export default function HomeScreen() {
           // Yesterday water
           if (typeof yd2.water === 'number') setYdWater(yd2.water);
           // Yesterday active calories
-          if (yd2.activeCalories) setYdActiveCalories(yd2.activeCalories);
+          if (yd2.activeCalories) setYdActiveCalories(Math.round(yd2.activeCalories * burnAccuracyPct / 100));
           // Yesterday sleep score
           if (yd2.sleepOverride || yd2.sleepHours) {
             const ydHours = yd2.sleepOverride || yd2.sleepHours;
@@ -1255,6 +1261,7 @@ export default function HomeScreen() {
           if (sd.workoutTags && Array.isArray(sd.workoutTags)) setWorkoutTags(sd.workoutTags);
           if (sd.styleMode) setStyleMode(sd.styleMode);
           if (sd.faithJourney) setFaithJourney(sd.faithJourney);
+          if (sd.burnAccuracyPct !== undefined) setBurnAccuracyPct(sd.burnAccuracyPct);
         }
 
         // Onboarding -- open Edit Layout sheet if flagged from Screen 7

@@ -81,6 +81,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
   const [advNutritionOpen, setAdvNutritionOpen] = useState(false);
   const [profileBmr, setProfileBmr] = useState(0);
   const [sleepGoal, setSleepGoal] = useState(8);
+  const [burnAccuracyPct, setBurnAccuracyPct] = useState(100);
   const [calPickerVisible, setCalPickerVisible] = useState(false);
   const [pickerYear, setPickerYear] = useState(0);
   const [pickerMonth, setPickerMonth] = useState(0);
@@ -115,6 +116,11 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
           setJournalEntries(all.filter(e => e.date === currentDate && e.category));
         } else {
           setJournalEntries([]);
+        }
+        const settingsRaw = await AsyncStorage.getItem('pj_settings');
+        if (settingsRaw) {
+          const sd = JSON.parse(settingsRaw);
+          if (sd.burnAccuracyPct !== undefined) setBurnAccuracyPct(sd.burnAccuracyPct);
         }
         const profileRaw = await AsyncStorage.getItem('pj_profile');
         if (profileRaw) {
@@ -164,7 +170,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
   const water = data?.water || 0;
   const weight = data?.weight ?? null;
   const steps = data?.steps || 0;
-  const caloriesBurned = isToday && todayBurned != null ? todayBurned : (data?.activeCalories || data?.caloriesBurned || 0);
+  const caloriesBurned = isToday && todayBurned != null ? todayBurned : Math.round((data?.activeCalories || data?.caloriesBurned || 0) * burnAccuracyPct / 100);
   const now = new Date();
   const minutesToday = now.getHours() * 60 + now.getMinutes();
   const runningBmr = isToday && profileBmr > 0 ? Math.round((profileBmr / 1440) * minutesToday) : profileBmr;

@@ -158,6 +158,7 @@ export default function LogScreen() {
   const [logRefreshKey, setLogRefreshKey] = useState(0);
   const { activeCalories } = useHealthKit();
   const [styleMode, setStyleMode] = useState<'discipline' | 'balanced' | 'mindful'>('balanced');
+  const [burnAccuracyPct, setBurnAccuracyPct] = useState(100);
   const [macroGoals, setMacroGoals] = useState({ protein: 0, carbs: 0, fat: 0 });
   const [calPickerVisible, setCalPickerVisible] = useState(false);
   const [pickerYear, setPickerYear] = useState(0);
@@ -272,7 +273,7 @@ export default function LogScreen() {
   };
   
   const totalCals = entries.reduce((s, e) => s + e.cal, 0);
-  const adjustedTarget = calTarget + (activeCalories > 0 ? activeCalories : caloriesBurned);
+  const adjustedTarget = calTarget + Math.round((activeCalories > 0 ? activeCalories : caloriesBurned) * burnAccuracyPct / 100);
   const calPct = adjustedTarget > 0 ? (totalCals / adjustedTarget) * 100 : 0;
   const getAdvancedNutrient = (name: string) => {
     return Math.round(entries.reduce((s, e) => {
@@ -406,7 +407,11 @@ export default function LogScreen() {
   useFocusEffect(
     useCallback(() => {
       AsyncStorage.getItem('pj_settings').then(s => {
-        if (s) { const d = JSON.parse(s); if (d.styleMode) setStyleMode(d.styleMode); }
+        if (s) {
+          const d = JSON.parse(s);
+          if (d.styleMode) setStyleMode(d.styleMode);
+          if (d.burnAccuracyPct !== undefined) setBurnAccuracyPct(d.burnAccuracyPct);
+        }
       });
       loadAchievements().then(store => setAchievementStore(store));
       const reload = async () => {
@@ -608,7 +613,7 @@ export default function LogScreen() {
               <ReAnimated.View style={[styles.progressBarFill, useAnimatedStyle(() => ({ width: withTiming(`${Math.min(calPct, 100)}%` as any, { duration: 400 }) })), { backgroundColor: calColor }]} />
             </View>
             <Text style={[styles.calRemaining, { color: theme.textMuted }]}>
-              {adjustedTarget > 0 ? (totalCals < adjustedTarget ? `${adjustedTarget - totalCals} kcal remaining (${activeCalories} burned)` : `${totalCals - adjustedTarget} kcal over target (${activeCalories} burned)`) : ''}
+              {adjustedTarget > 0 ? (totalCals < adjustedTarget ? `${adjustedTarget - totalCals} kcal remaining (${Math.round(activeCalories * burnAccuracyPct / 100)} burned)` : `${totalCals - adjustedTarget} kcal over target (${Math.round(activeCalories * burnAccuracyPct / 100)} burned)`) : ''}
             </Text>
           </View>
           <MacroStackedBar protein={totalProtein} carbs={totalCarbs} fat={totalFat} proteinGoal={macroGoals.protein} carbsGoal={macroGoals.carbs} fatGoal={macroGoals.fat} theme={theme} />

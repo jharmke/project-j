@@ -38,8 +38,7 @@ interface FoodEntry {
 
 const AnimCircle = ReAnimated.createAnimatedComponent(Circle);
 
-function MacroStackedBar({ protein, carbs, fat, theme }: { protein: number; carbs: number; fat: number; theme: any }) {
-  const total = protein + carbs + fat;
+function MacroStackedBar({ protein, carbs, fat, proteinGoal, carbsGoal, fatGoal, theme }: { protein: number; carbs: number; fat: number; proteinGoal: number; carbsGoal: number; fatGoal: number; theme: any }) {
   const proteinAnim = useSharedValue(0);
   const carbsAnim   = useSharedValue(0);
   const fatAnim     = useSharedValue(0);
@@ -48,14 +47,13 @@ function MacroStackedBar({ protein, carbs, fat, theme }: { protein: number; carb
     proteinAnim.value = 0;
     carbsAnim.value   = 0;
     fatAnim.value     = 0;
-    if (total === 0) return;
-    const pPct = (protein / total) * 100;
-    const cPct = (carbs   / total) * 100;
-    const fPct = (fat     / total) * 100;
+    const pPct = proteinGoal > 0 ? Math.min((protein / proteinGoal) * 100, 100) : 0;
+    const cPct = carbsGoal   > 0 ? Math.min((carbs   / carbsGoal)   * 100, 100) : 0;
+    const fPct = fatGoal     > 0 ? Math.min((fat     / fatGoal)     * 100, 100) : 0;
     setTimeout(() => { proteinAnim.value = withTiming(pPct, { duration: 800 }); }, 200);
     setTimeout(() => { carbsAnim.value   = withTiming(cPct, { duration: 700 }); }, 1150);
     setTimeout(() => { fatAnim.value     = withTiming(fPct, { duration: 600 }); }, 2000);
-  }, [protein, carbs, fat]);
+  }, [protein, carbs, fat, proteinGoal, carbsGoal, fatGoal]);
 
   const proteinStyle = useAnimatedStyle(() => ({ width: `${proteinAnim.value}%` as any }));
   const carbsStyle   = useAnimatedStyle(() => ({ width: `${carbsAnim.value}%` as any }));
@@ -160,6 +158,7 @@ export default function LogScreen() {
   const [logRefreshKey, setLogRefreshKey] = useState(0);
   const { activeCalories } = useHealthKit();
   const [styleMode, setStyleMode] = useState<'discipline' | 'balanced' | 'mindful'>('balanced');
+  const [macroGoals, setMacroGoals] = useState({ protein: 0, carbs: 0, fat: 0 });
   const [calPickerVisible, setCalPickerVisible] = useState(false);
   const [pickerYear, setPickerYear] = useState(0);
   const [pickerMonth, setPickerMonth] = useState(0);
@@ -372,6 +371,27 @@ export default function LogScreen() {
               const deficit = GOAL_DEFICITS[p.weightGoal] ?? -500;
               setCalTarget(tdee + deficit);
             }
+          }
+          // Macro goals -- same logic as home tab
+          const kcalForMacros = parseInt(p.calTarget) || 0;
+          if (p.macroMode === 'fixed' && p.macroProteinG && p.macroCarbsG && p.macroFatG) {
+            setMacroGoals({
+              protein: parseFloat(p.macroProteinG) || 0,
+              carbs:   parseFloat(p.macroCarbsG)   || 0,
+              fat:     parseFloat(p.macroFatG)      || 0,
+            });
+          } else if (p.macroProteinPct && p.macroCarbsPct && p.macroFatPct && kcalForMacros > 0) {
+            setMacroGoals({
+              protein: Math.round(((parseFloat(p.macroProteinPct) || 35) / 100) * kcalForMacros / 4),
+              carbs:   Math.round(((parseFloat(p.macroCarbsPct)   || 40) / 100) * kcalForMacros / 4),
+              fat:     Math.round(((parseFloat(p.macroFatPct)     || 25) / 100) * kcalForMacros / 9),
+            });
+          } else if (kcalForMacros > 0) {
+            setMacroGoals({
+              protein: Math.round((0.35 * kcalForMacros) / 4),
+              carbs:   Math.round((0.40 * kcalForMacros) / 4),
+              fat:     Math.round((0.25 * kcalForMacros) / 9),
+            });
           }
         }
       } catch (e) {
@@ -591,7 +611,7 @@ export default function LogScreen() {
               {adjustedTarget > 0 ? (totalCals < adjustedTarget ? `${adjustedTarget - totalCals} kcal remaining (${activeCalories} burned)` : `${totalCals - adjustedTarget} kcal over target (${activeCalories} burned)`) : ''}
             </Text>
           </View>
-          <MacroStackedBar protein={totalProtein} carbs={totalCarbs} fat={totalFat} theme={theme} />
+          <MacroStackedBar protein={totalProtein} carbs={totalCarbs} fat={totalFat} proteinGoal={macroGoals.protein} carbsGoal={macroGoals.carbs} fatGoal={macroGoals.fat} theme={theme} />
         </View>
       </View>
 

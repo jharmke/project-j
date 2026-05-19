@@ -295,6 +295,7 @@ function AchievementCard({ def, unlocked, progressValue = 0 }: AchievementCardPr
     <View style={[
       styles.card,
       {
+        flex: 1,
         backgroundColor: isUnlocked
           ? (isPlat ? 'rgba(30,40,80,0.85)' : theme.bgCard)
           : theme.bgCard,
@@ -462,6 +463,7 @@ function DailyGoalCard({ def, counts }: { def: DailyGoalDef; counts: DailyGoalCo
     <View style={[
       styles.card,
       {
+        flex: 1,
         backgroundColor: theme.bgCard,
         borderColor: count > 0 ? def.color + '50' : theme.borderCard,
         borderTopColor: def.color,
@@ -736,21 +738,30 @@ export default function AchievementsScreen() {
                   </Text>
                 </View>
 
-                {/* 2-column grid */}
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-                  {defs.map(def => {
-                    const unlockedEntry = store[def.id] ?? null;
-                    const progressVal   = def.progressKey ? (progress[def.progressKey] ?? 0) : 0;
-                    return (
-                      <View key={def.id} style={{ width: '47.5%' }}>
-                        <AchievementCard
-                          def={def}
-                          unlocked={unlockedEntry ? { unlockedAt: unlockedEntry.unlockedAt, count: unlockedEntry.count } : null}
-                          progressValue={progressVal}
-                        />
-                      </View>
-                    );
-                  })}
+                {/* 2-column grid -- row-pairs for equal heights */}
+                <View style={{ gap: 10 }}>
+                  {defs.reduce<AchievementDef[][]>((rows, def, i) => {
+                    if (i % 2 === 0) rows.push([def]);
+                    else rows[rows.length - 1].push(def);
+                    return rows;
+                  }, []).map((pair, rowIdx) => (
+                    <View key={rowIdx} style={{ flexDirection: 'row', gap: 10 }}>
+                      {pair.map(def => {
+                        const unlockedEntry = store[def.id] ?? null;
+                        const progressVal   = def.progressKey ? (progress[def.progressKey] ?? 0) : 0;
+                        return (
+                          <View key={def.id} style={{ flex: 1 }}>
+                            <AchievementCard
+                              def={def}
+                              unlocked={unlockedEntry ? { unlockedAt: unlockedEntry.unlockedAt, count: unlockedEntry.count } : null}
+                              progressValue={progressVal}
+                            />
+                          </View>
+                        );
+                      })}
+                      {pair.length === 1 && <View style={{ flex: 1 }} />}
+                    </View>
+                  ))}
                 </View>
               </View>
             );
@@ -764,10 +775,19 @@ export default function AchievementsScreen() {
                 Daily Goals
               </Text>
             </View>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-              {DAILY_GOALS.map(def => (
-                <View key={def.id} style={{ width: '47.5%' }}>
-                  <DailyGoalCard def={def} counts={goalCounts} />
+            <View style={{ gap: 10 }}>
+              {DAILY_GOALS.reduce<DailyGoalDef[][]>((rows, def, i) => {
+                if (i % 2 === 0) rows.push([def]);
+                else rows[rows.length - 1].push(def);
+                return rows;
+              }, []).map((pair, rowIdx) => (
+                <View key={rowIdx} style={{ flexDirection: 'row', gap: 10 }}>
+                  {pair.map(def => (
+                    <View key={def.id} style={{ flex: 1 }}>
+                      <DailyGoalCard def={def} counts={goalCounts} />
+                    </View>
+                  ))}
+                  {pair.length === 1 && <View style={{ flex: 1 }} />}
                 </View>
               ))}
             </View>

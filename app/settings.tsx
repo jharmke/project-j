@@ -14,6 +14,7 @@ import { ACHIEVEMENTS } from '../achievementData';
 import { TOOLTIP_REGISTRY } from '../tooltipRegistry';
 import { useTooltip } from '../useTooltip';
 import TooltipModal from '../components/TooltipModal';
+import TooltipIcon from '../components/TooltipIcon';
 import ToggleSwitch from '../components/ToggleSwitch';
 
 export default function SettingsScreen() {
@@ -23,6 +24,7 @@ export default function SettingsScreen() {
   // showAchievementToast is now a direct import
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
   const [styleMode, setStyleMode] = useState<'discipline' | 'balanced' | 'mindful'>('balanced');
+  const [burnAccuracyPct, setBurnAccuracyPct] = useState(100);
   const [devCelebVisible,  setDevCelebVisible]  = useState(false);
   const [devCelebTier,     setDevCelebTier]     = useState<'small'|'medium'|'large'>('small');
   const [devCelebLabel,    setDevCelebLabel]    = useState<string|undefined>(undefined);
@@ -125,6 +127,7 @@ export default function SettingsScreen() {
           const data = JSON.parse(saved);
           if (data.hapticsEnabled !== undefined) setHapticsEnabled(data.hapticsEnabled);
           if (data.styleMode) setStyleMode(data.styleMode);
+          if (data.burnAccuracyPct !== undefined) setBurnAccuracyPct(data.burnAccuracyPct);
         }
       } catch (e) {}
     };
@@ -313,9 +316,50 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-      {/* ── Health Data ── */}
+      {/* ── Health ── */}
         <View style={[styles.section, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
-          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>Health Data</Text>
+          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>Health</Text>
+
+          {/* Burn Accuracy */}
+          <View style={{ paddingHorizontal: 16, paddingBottom: 16, gap: 10 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary, flex: 1 }}>
+                Active Calorie Accuracy
+              </Text>
+              <TooltipIcon tooltipKey="burn_accuracy" />
+            </View>
+            <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, lineHeight: 18 }}>
+              Apple Watch often overestimates burn. Apply a correction factor to keep your net calories honest.
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {([100, 90, 80, 70] as const).map(pct => (
+                <TouchableOpacity
+                  key={pct}
+                  onPress={async () => {
+                    setBurnAccuracyPct(pct);
+                    await saveSetting('burnAccuracyPct', pct);
+                  }}
+                  style={{
+                    flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center',
+                    borderWidth: 1,
+                    borderColor: burnAccuracyPct === pct ? theme.accentBlueBorder : theme.borderInput,
+                    backgroundColor: burnAccuracyPct === pct ? theme.accentBlueBg : theme.bgInput,
+                  }}>
+                  <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: burnAccuracyPct === pct ? theme.accentBlue : theme.textMuted }}>
+                    {pct}%
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            {burnAccuracyPct < 100 && (
+              <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textMuted, lineHeight: 16 }}>
+                e.g. Apple reports 400 kcal active → you use {Math.round(400 * burnAccuracyPct / 100)} kcal in your net
+              </Text>
+            )}
+          </View>
+
+          <View style={{ height: 1, backgroundColor: theme.borderCard, marginHorizontal: 16, marginBottom: 16 }} />
+          <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 3, textTransform: 'uppercase', paddingHorizontal: 16, marginBottom: 12 }}>Workout History Import</Text>
           <View style={{ paddingHorizontal: 16, paddingBottom: 16, gap: 12 }}>
             <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, lineHeight: 18 }}>
               Import your Apple Health workout history into Project J. Existing data and manual entries will not be affected.
@@ -572,12 +616,13 @@ export default function SettingsScreen() {
                 <Text style={{ fontSize: 9, letterSpacing: 3, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', color: theme.textMuted, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>
                   Tips {'&'} Guides
                 </Text>
-                <View style={[styles.row, { borderTopColor: theme.borderCard }]}>
+                <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => router.push('/mission')} activeOpacity={0.7}>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Coming Soon</Text>
-                    <Text style={[styles.rowSub, { color: theme.textMuted }]}>Guides and tips will appear here.</Text>
+                    <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Our Mission</Text>
+                    <Text style={[styles.rowSub, { color: theme.textMuted }]}>What makes this app different</Text>
                   </View>
-                </View>
+                  <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
+                </TouchableOpacity>
               </View>
             </View>
           )}
@@ -610,12 +655,13 @@ export default function SettingsScreen() {
               <Text style={{ fontSize: 9, letterSpacing: 3, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', color: theme.textMuted, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>
                 Tips {'&'} Guides
               </Text>
-              <View style={[styles.row, { borderTopColor: theme.borderCard }]}>
+              <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => router.push('/mission')} activeOpacity={0.7}>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Coming Soon</Text>
-                  <Text style={[styles.rowSub, { color: theme.textMuted }]}>Guides and tips will appear here.</Text>
+                  <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Our Mission</Text>
+                  <Text style={[styles.rowSub, { color: theme.textMuted }]}>What makes this app different</Text>
                 </View>
-              </View>
+                <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
+              </TouchableOpacity>
             </View>
           </Animated.View>
         </View>

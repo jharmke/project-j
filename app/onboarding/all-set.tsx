@@ -262,6 +262,9 @@ export default function AllSetScreen() {
         <Text style={[styles.footnote, { color: theme.textDim }]}>
           You can always change your layout from the home screen.
         </Text>
+        <TouchableOpacity onPress={() => router.push('/mission')} activeOpacity={0.7} style={{ marginTop: 6 }}>
+          <Text style={[styles.missionLink, { color: accentColor }]}>What makes this app different</Text>
+        </TouchableOpacity>
 
       </Animated.View>
 
@@ -302,4 +305,6 @@ const styles = StyleSheet.create({
 
   footnote:         { fontSize: 11, fontFamily: 'DMSans_400Regular', marginTop: 14,
                       textAlign: 'center' },
+  missionLink:      { fontSize: 12, fontFamily: 'DMSans_600SemiBold', textAlign: 'center',
+                      textDecorationLine: 'underline' },
 });

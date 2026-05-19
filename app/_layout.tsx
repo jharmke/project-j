@@ -83,6 +83,7 @@ function RootLayoutNav() {
         <Stack.Screen name="journal" options={{ headerShown: false }} />
         <Stack.Screen name="achievements" options={{ headerShown: false }} />
         <Stack.Screen name="head-to-head" options={{ headerShown: false, animation: 'fade' }} />
+        <Stack.Screen name="mission" options={{ headerShown: false }} />
       </Stack>
       <ThemedStatusBar />
       <AchievementToastRenderer />

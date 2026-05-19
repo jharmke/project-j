@@ -86,6 +86,7 @@ function SleepGoalPicker({ value, onChange, theme }: { value: string; onChange: 
 
   const hourScrollRef = useRef<ScrollView>(null);
   const minScrollRef = useRef<ScrollView>(null);
+  const isInitializing = useRef(true);
   const hourIndex = HOUR_OPTIONS.indexOf(currentHourStr);
   const minIndex = MINUTE_OPTIONS.indexOf(currentMinStr);
 
@@ -95,10 +96,12 @@ function SleepGoalPicker({ value, onChange, theme }: { value: string; onChange: 
     setTimeout(() => {
       hourScrollRef.current?.scrollTo({ y: validHourIndex * ITEM_HEIGHT, animated: false });
       minScrollRef.current?.scrollTo({ y: validMinIndex * ITEM_HEIGHT, animated: false });
+      isInitializing.current = false;
     }, 100);
   }, []);
 
   const handleHourScroll = (e: any) => {
+    if (isInitializing.current) return;
     const index = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
     const clamped = Math.max(0, Math.min(HOUR_OPTIONS.length - 1, index));
     const mins = currentMins / 60;
@@ -106,6 +109,7 @@ function SleepGoalPicker({ value, onChange, theme }: { value: string; onChange: 
   };
 
   const handleMinScroll = (e: any) => {
+    if (isInitializing.current) return;
     const index = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
     const clamped = Math.max(0, Math.min(MINUTE_OPTIONS.length - 1, index));
     const mins = parseInt(MINUTE_OPTIONS[clamped]) / 60;
@@ -209,8 +213,8 @@ function CollapsibleCard({ label, defaultOpen = false, children, theme }: { labe
         <Text style={[styles.cardLabel, { color: theme.textMuted }]}>{label}</Text>
         <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={14} color={theme.textMuted} />
       </TouchableOpacity>
-      <Animated.View style={{ marginTop: 12, opacity: fadeAnim, display: visible ? 'flex' : 'none' }}>
-        {children}
+      <Animated.View style={{ marginTop: visible ? 12 : 0, opacity: fadeAnim }}>
+        {visible && children}
       </Animated.View>
     </View>
   );
@@ -252,8 +256,10 @@ export default function ProfileScreen() {
   const [tempBirthday, setTempBirthday] = useState<Date | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [savedProfile, setSavedProfile] = useState<Profile | null>(null);
+  const SAVE_BAR_HEIGHT = 76;
   const floatAnim = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef<ScrollView>(null);
+  const scrollOffset = useRef(0);
   const goalWeightInputY = useRef(0);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
 
@@ -409,6 +415,9 @@ export default function ProfileScreen() {
       if (isDifferent && !hasChanges) {
         setHasChanges(true);
         Animated.spring(floatAnim, { toValue: 1, useNativeDriver: true, tension: 65, friction: 11 }).start();
+        if (keyboardHeight > 0) {
+          scrollRef.current?.scrollTo({ y: scrollOffset.current + SAVE_BAR_HEIGHT, animated: true });
+        }
       } else if (!isDifferent && hasChanges) {
         setHasChanges(false);
         Animated.timing(floatAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start();
@@ -445,7 +454,7 @@ export default function ProfileScreen() {
         </View>
       </View>
 
-      <ScrollView ref={scrollRef} style={styles.container} contentContainerStyle={styles.content} automaticallyAdjustKeyboardInsets={true}>
+      <ScrollView ref={scrollRef} style={styles.container} contentContainerStyle={styles.content} automaticallyAdjustKeyboardInsets={true} onScroll={e => { scrollOffset.current = e.nativeEvent.contentOffset.y; }} scrollEventThrottle={16}>
 
         <CollapsibleCard label="Basic Info" defaultOpen={true} theme={theme}>
           <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>Name</Text>

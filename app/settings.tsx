@@ -560,6 +560,42 @@ export default function SettingsScreen() {
               </View>
               <Ionicons name="information-circle-outline" size={18} color={theme.accentRed} />
             </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.row, { borderTopColor: theme.borderCard }]}
+              onPress={() => {
+                Alert.alert(
+                  'Force Restore from Firestore',
+                  'This wipes all local pj_* data and pulls everything from your cloud backup. Use only if your data is missing after signing in.',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Restore', style: 'destructive', onPress: async () => {
+                      const uid = auth.currentUser?.uid;
+                      if (!uid) { Alert.alert('Not signed in'); return; }
+                      try {
+                        const allKeys = await AsyncStorage.getAllKeys();
+                        const pjKeys = allKeys.filter(k => k.startsWith('pj_'));
+                        if (pjKeys.length > 0) await AsyncStorage.multiRemove(pjKeys);
+                        const snap = await getDocs(collection(db, 'users', uid, 'store'));
+                        const pairs: [string, string][] = [];
+                        snap.forEach(d => {
+                          const data = d.data();
+                          if (data.key && data.value) pairs.push([data.key, data.value]);
+                        });
+                        if (pairs.length > 0) await AsyncStorage.multiSet(pairs);
+                        Alert.alert('Done', `Restored ${pairs.length} keys from Firestore. Restart the app.`);
+                      } catch (e) {
+                        Alert.alert('Error', 'Restore failed: ' + e);
+                      }
+                    }},
+                  ]
+                );
+              }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentAmber }]}>Force Restore from Firestore</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Wipes local data and pulls everything from cloud. Dev use only.</Text>
+              </View>
+              <Ionicons name="cloud-download-outline" size={18} color={theme.accentAmber} />
+            </TouchableOpacity>
             {(['small', 'medium', 'large'] as const).map(tier => (
               <TouchableOpacity
                 key={tier}

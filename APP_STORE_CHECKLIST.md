@@ -120,6 +120,34 @@ Reason code CA92.1 = "Access info from the same app that previously wrote the in
 
 ---
 
+## NAME FINALIZATION SWEEP
+*Do this entire section the moment the app name is decided and before any App Store submission. Name change touches multiple layers.*
+
+### Bundle ID -- Highest Priority, Decide First
+The bundle ID `com.jharmke.projectj` is **permanent once the app is published**. It cannot be changed after the first App Store release. Decide before submitting whether to keep it or switch to something like `com.jharmke.prevail` (or whatever the final name is). Changing it requires a new EAS build and new provisioning profile -- totally doable pre-submission, impossible post-release.
+
+- [ ] Decide final bundle ID -- update in app.json and re-register in Apple Developer portal if changing
+- [ ] If bundle ID changes: new EAS production build required
+
+### In-App Text -- Find and Replace Pass
+- [ ] `app/sign-in.tsx` -- "PROJECT J" wordmark (line ~96) and tagline "Faith · Fitness · Forward" (line ~97)
+- [ ] `app.json` -- `"name"` and `"slug"` fields (currently "ProjectJ")
+- [ ] `public/privacy.html` -- "Project J" appears throughout (title, wordmark, headings, body copy)
+- [ ] `public/terms.html` -- "Project J" appears throughout (title, wordmark, headings, body copy)
+- [ ] `app/mission.tsx` -- audit for any hardcoded "Project J" references
+- [ ] Any other screen headers or settings rows that display the app name
+
+### Legal Docs URL Strategy
+The live privacy/ToS URLs are currently on `projectj-5d024.web.app` (Firebase Hosting). This domain is fine permanently -- the Firebase project ID does not need to match the app name. If a custom domain is desired (e.g. `prevailapp.com/privacy`), update the two URL constants in `sign-in.tsx` (PRIVACY_URL and TERMS_URL) and redeploy. Not required -- the Firebase URL works for App Store review.
+
+### After Name Sweep is Complete
+- Update App Store Connect record with final display name
+- Update copyright field with final name
+- Update GitHub repo description if desired (repo rename is optional -- URLs change)
+- Re-run EAS production build with updated app.json before final submission
+
+---
+
 ## APP STORE CONNECT SETUP
 *No code -- required before submission. Do these last, after all code fixes and name are locked.*
 

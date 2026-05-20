@@ -100,6 +100,9 @@ function normalizeFsSearchResult(food: any): SearchResult {
   const desc = food.food_description || '';
   const { cal, fat, carbs, protein } = parseFsDescription(desc);
   const brand = food.brand_name ? ` · ${food.brand_name}` : '';
+  // Extract gram weight from serving description e.g. "Per 2 patties (56g) - ..."
+  const gramsMatch = desc.match(/\((\d+(?:\.\d+)?)\s*g\)/i);
+  const fsServingGrams = gramsMatch ? parseFloat(gramsMatch[1]) : 0;
   return {
     description: `${food.food_name}${brand}`,
     foodNutrients: [
@@ -109,6 +112,7 @@ function normalizeFsSearchResult(food: any): SearchResult {
       { nutrientName: 'Total lipid (fat)', unitName: 'G', value: fat },
     ],
     fsId: food.food_id,
+    fsServingGrams,
   } as any;
 }
 
@@ -229,6 +233,7 @@ async function fetchFatSecretServings(fsId: string): Promise<any[]> {
       cholesterol: parseFloat(s.cholesterol || '0'),
       saturatedFat: parseFloat(s.saturated_fat || '0'),
       grams: parseFloat(s.metric_serving_amount || '0'),
+      unit: s.metric_serving_unit || 'g',
       isDefault: s.is_default === '1',
     }));
   } catch (e) {
@@ -355,6 +360,8 @@ const filterDecimal = (v: string) => {
   return stripped.slice(0, dot + 1) + stripped.slice(dot + 1).replace(/\./g, '').slice(0, 1);
 };
 
+const EDIT_SERVING_UNITS = ['g', 'ml', 'fl oz', 'oz', 'container', 'serving', 'tbsp', 'tsp', 'cup'];
+
 const openEditModal = (food: any) => {
   setEditFoodData({
     _source: food,
@@ -369,6 +376,9 @@ const openEditModal = (food: any) => {
     sodium: food.sodium?.toString() || '',
     cholesterol: food.cholesterol?.toString() || '',
     saturatedFat: food.saturatedFat?.toString() || '',
+    servingGrams: food.servingSize?.toString() || '100',
+    servingUnitType: food.servingUnitType || 'g',
+    servingLabel: food.servingUnit || '',
   });
   setShowEditMyFood(true);
   editOverlayAnim.setValue(0);
@@ -396,7 +406,9 @@ const saveEditFood = async () => {
     const foods = saved ? JSON.parse(saved) : [];
     const src = editFoodData._source;
     const calNum = parseInt(editFoodData.cal) || 0;
-    const servingGrams = src?.servingSize || 100;
+    const servingGrams = parseFloat(editFoodData.servingGrams) || src?.servingSize || 100;
+    const servingUnitType = editFoodData.servingUnitType || 'g';
+    const servingLabel = editFoodData.servingLabel?.trim() || `${servingGrams}${servingUnitType}`;
     const updated = foods.map((f: any) =>
       (src?.id ? f.id === src.id : f.name === src.name) ? {
         ...f,
@@ -411,6 +423,9 @@ const saveEditFood = async () => {
         sodium: parseFloat(editFoodData.sodium) || 0,
         cholesterol: parseFloat(editFoodData.cholesterol) || 0,
         saturatedFat: parseFloat(editFoodData.saturatedFat) || 0,
+        servingSize: servingGrams,
+        servingUnitType,
+        servingUnit: servingLabel,
         calPer100g: Math.round((calNum / servingGrams) * 100),
         proteinPer100g: Math.round((parseFloat(editFoodData.protein) || 0) / servingGrams * 100 * 10) / 10,
         carbsPer100g: Math.round((parseFloat(editFoodData.carbs) || 0) / servingGrams * 100 * 10) / 10,
@@ -679,6 +694,9 @@ const openFoodDetail = async (food: SearchResult) => {
             carbsPer100g: (myFoodMatch as any).carbsPer100g || 0,
             fatPer100g: (myFoodMatch as any).fatPer100g || 0,
             foodNutrients: (myFoodMatch as any).foodNutrients || food.foodNutrients || [],
+          servingUnitType: (myFoodMatch as any).servingUnitType || 'g',
+          servingUnit: (myFoodMatch as any).servingUnit || '',
+          existingAmount: existingAmount || ((myFoodMatch as any).servingSize || 100).toString(),
           } : {}),
         }),
         meal,
@@ -1458,6 +1476,47 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                   </View>
                   <View style={{ flex: 1 }} />
                 </View>
+                {/* Serving */}
+                <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
+                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Serving</Text>
+                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 4 }}>AMOUNT</Text>
+                    <TextInput
+                      style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: 'DMSans_400Regular' }}
+                      value={editFoodData?.servingGrams || ''}
+                      onChangeText={v => setEditFoodData((p: any) => p ? { ...p, servingGrams: filterDecimal(v) } : null)}
+                      keyboardType="decimal-pad"
+                      placeholderTextColor={theme.textDim}
+                      selectTextOnFocus
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 4 }}>LABEL (optional)</Text>
+                    <TextInput
+                      style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 10, fontSize: 14, fontFamily: 'DMSans_400Regular' }}
+                      value={editFoodData?.servingLabel || ''}
+                      onChangeText={v => setEditFoodData((p: any) => p ? { ...p, servingLabel: v } : null)}
+                      placeholderTextColor={theme.textDim}
+                      placeholder="e.g. 1 scoop"
+                    />
+                  </View>
+                </View>
+                <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 }}>UNIT</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingBottom: 12, paddingRight: 4 }}>
+                  {EDIT_SERVING_UNITS.map(u => (
+                    <TouchableOpacity
+                      key={u}
+                      onPress={() => setEditFoodData((p: any) => p ? { ...p, servingUnitType: u } : null)}
+                      style={{
+                        paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, borderWidth: 1,
+                        backgroundColor: editFoodData?.servingUnitType === u ? theme.accentBlueBg : 'transparent',
+                        borderColor: editFoodData?.servingUnitType === u ? theme.accentBlueBorder : theme.borderInput,
+                      }}>
+                      <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: editFoodData?.servingUnitType === u ? theme.accentBlue : theme.textMuted }}>{u}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
               </ScrollView>
               <View style={{ flexDirection: 'row', gap: 10, padding: 16, paddingTop: 12 }}>
                 <TouchableOpacity onPress={closeEditModal} style={{ flex: 1, padding: 12, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, alignItems: 'center' }}>

@@ -38,8 +38,11 @@ interface CustomFoodCreatorProps {
     saturatedFat?: number;
     servingGrams?: number;
     servingLabel?: string;
+    servingUnitType?: string;
   };
 }
+
+const SERVING_UNITS = ['g', 'ml', 'fl oz', 'oz', 'container', 'serving', 'tbsp', 'tsp', 'cup'];
 
 export default function CustomFoodCreator({ visible, onClose, onSaved, title, prefill }: CustomFoodCreatorProps) {
   const { theme } = useTheme();
@@ -60,6 +63,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, pr
   const [saturatedFat, setSaturatedFat] = useState('');
   const [servingGrams, setServingGrams] = useState('');
   const [servingLabel, setServingLabel] = useState('');
+  const [servingUnitType, setServingUnitType] = useState('g');
   const [showOptional, setShowOptional] = useState(false);
   const optionalHeight = useRef(new Animated.Value(0)).current;
   const optionalMeasured = useRef(0);
@@ -82,6 +86,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, pr
         setSaturatedFat(prefill.saturatedFat?.toString() || '');
         setServingGrams(prefill.servingGrams?.toString() || '');
         setServingLabel(prefill.servingLabel || '');
+        setServingUnitType(prefill.servingUnitType || 'g');
         const hasOptional = !!(prefill.protein || prefill.carbs || prefill.fat || prefill.fiber || prefill.sugar || prefill.sodium || prefill.servingGrams);
         if (hasOptional) {
           setShowOptional(true);
@@ -111,7 +116,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, pr
     setProtein(''); setCarbs(''); setFat('');
     setFiber(''); setSugar(''); setSodium('');
     setCholesterol(''); setSaturatedFat('');
-    setServingGrams(''); setServingLabel('');
+    setServingGrams(''); setServingLabel(''); setServingUnitType('g');
     setShowOptional(false);
     optionalHeight.setValue(0);
     optionalMeasured.current = 0;
@@ -150,7 +155,8 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, pr
         ...(cholesterol ? { cholesterol: parseFloat(cholesterol) } : {}),
         ...(saturatedFat ? { saturatedFat: parseFloat(saturatedFat) } : {}),
         servingSize: grams,
-        servingUnit: servingLabel.trim() || `${grams}g`,
+        servingUnitType: servingUnitType,
+        servingUnit: servingLabel.trim() || `${grams}${servingUnitType}`,
         calPer100g: Math.round((parseInt(calories) / grams) * 100),
         proteinPer100g: protein ? Math.round((parseFloat(protein) / grams) * 100 * 10) / 10 : 0,
         carbsPer100g: carbs ? Math.round((parseFloat(carbs) / grams) * 100 * 10) / 10 : 0,
@@ -212,13 +218,31 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, pr
                   <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={calories} onChangeText={setCalories} keyboardType="number-pad" />
                 </View>
                 <View style={[s.fieldRow, { flex: 1 }]}>
-                  <Text style={s.fieldLabel}>Serving <Text style={s.unitText}>g</Text></Text>
+                  <Text style={s.fieldLabel}>Serving <Text style={s.unitText}>{servingUnitType}</Text></Text>
                   <TextInput style={s.input} placeholder="100" placeholderTextColor={theme.textPlaceholder} value={servingGrams} onChangeText={setServingGrams} keyboardType="decimal-pad" />
                 </View>
               </View>
+              <View style={[s.fieldRow, { marginBottom: 14 }]}>
+                <Text style={[s.fieldLabel, { marginBottom: 8 }]}>Serving Unit</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingRight: 4 }}>
+                  {SERVING_UNITS.map(u => (
+                    <TouchableOpacity
+                      key={u}
+                      onPress={() => setServingUnitType(u)}
+                      style={{
+                        paddingHorizontal: 10, paddingVertical: 5,
+                        borderRadius: 6, borderWidth: 1,
+                        backgroundColor: servingUnitType === u ? theme.accentBlueBg : 'transparent',
+                        borderColor: servingUnitType === u ? theme.accentBlueBorder : theme.borderInput,
+                      }}>
+                      <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: servingUnitType === u ? theme.accentBlue : theme.textMuted }}>{u}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
               <View style={s.fieldRow}>
-                <Text style={s.fieldLabel}>Serving Label</Text>
-                <TextInput style={s.input} placeholder="e.g. 1 scoop, 1 cup" placeholderTextColor={theme.textPlaceholder} value={servingLabel} onChangeText={setServingLabel} />
+                <Text style={s.fieldLabel}>Serving Label <Text style={s.unitText}>(optional)</Text></Text>
+                <TextInput style={s.input} placeholder="e.g. 1 scoop, 1 container" placeholderTextColor={theme.textPlaceholder} value={servingLabel} onChangeText={setServingLabel} />
               </View>
               <TouchableOpacity style={s.optionalToggle} onPress={toggleOptional}>
                 <Text style={s.optionalToggleText}>Macros &amp; Extended Nutrition</Text>
@@ -298,7 +322,7 @@ const styles = (theme: any) => StyleSheet.create({
     borderColor: theme.borderCard,
     borderTopColor: theme.borderCardTop,
     width: '100%',
-    height: 560,
+    height: 600,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,

@@ -130,6 +130,7 @@ async function fetchFatSecretServings(fsId: string): Promise<any[]> {
       cholesterol: parseFloat(s.cholesterol || '0'),
       saturatedFat: parseFloat(s.saturated_fat || '0'),
       grams: parseFloat(s.metric_serving_amount || '0'),
+      unit: s.metric_serving_unit || 'g',
       isDefault: s.is_default === '1',
     }));
   } catch (e) {
@@ -150,7 +151,25 @@ export default function FoodDetailScreen() {
 const isRecipeMode = recipeMode === 'true';
   const food = foodJson ? JSON.parse(foodJson) : null;
   const fsServings: any[] = food?.fsServings || [];
-  const defaultFsServing = fsServings.length > 0 ? (fsServings.find((s: any) => s.isDefault) || fsServings[0]) : null;
+  const searchResultCal: number | null = food?.foodNutrients?.find((n: any) => n.nutrientName === 'Energy')?.value ?? null;
+  const defaultFsServing = fsServings.length > 0
+    ? ((searchResultCal !== null ? fsServings.find((s: any) => s.calories === searchResultCal) : null) || fsServings.find((s: any) => s.isDefault) || fsServings[0])
+    : null;
+  // When search result calories don't match any food.get.v4 serving (FatSecret data inconsistency),
+  // construct a virtual serving from the search result macros so detail matches the list.
+  const virtualDefaultServing = (
+    searchResultCal !== null &&
+    defaultFsServing !== null &&
+    defaultFsServing.calories !== searchResultCal &&
+    food?.fsId && !food?.isCustom && !food?.fromBarcode
+  ) ? {
+    ...defaultFsServing,
+    calories: searchResultCal,
+    protein: food?.foodNutrients?.find((n: any) => n.nutrientName === 'Protein')?.value ?? defaultFsServing.protein,
+    carbs: food?.foodNutrients?.find((n: any) => n.nutrientName === 'Carbohydrate, by difference')?.value ?? defaultFsServing.carbs,
+    fat: food?.foodNutrients?.find((n: any) => n.nutrientName === 'Total lipid (fat)')?.value ?? defaultFsServing.fat,
+    grams: food?.fsServingGrams || defaultFsServing.grams,
+  } : defaultFsServing;
   const { showToast } = useToast();
   const [isFav, setIsFav] = useState(false);
   const [showSaveAsCopy, setShowSaveAsCopy] = useState(false);
@@ -160,7 +179,7 @@ const isRecipeMode = recipeMode === 'true';
   const menuAnim = useRef(new Animated.Value(0)).current;
   const starScale = useRef(new Animated.Value(1)).current;
   const [showServingPicker, setShowServingPicker] = useState(false);
-  const [selectedServing, setSelectedServing] = useState<any>(defaultFsServing);
+  const [selectedServing, setSelectedServing] = useState<any>(virtualDefaultServing);
   // Resolved base serving size for edit mode -- starts from stored servingGrams, falls back to My Foods lookup
   const [resolvedServingGrams, setResolvedServingGrams] = useState<number>(
     food?.servingGrams > 0 ? food.servingGrams : 0
@@ -180,7 +199,8 @@ const isRecipeMode = recipeMode === 'true';
       carbs: Math.round((food.existingCarbs || 0) * ratio * 10) / 10,
       fat: Math.round((food.existingFat || 0) * ratio * 10) / 10,
       grams: baseGrams,
-      label: food.servingUnit || `${baseGrams}g`,
+      unit: food.servingUnitType || 'g',
+      label: food.servingUnit || `${baseGrams}${food.servingUnitType || 'g'}`,
       fiber: 0, sugar: 0, sodium: 0, cholesterol: 0, saturatedFat: 0,
       isDefault: true,
     };
@@ -204,7 +224,7 @@ const isRecipeMode = recipeMode === 'true';
     if (fsServings.length === 0 && food?.fsId) {
       fetchFatSecretServings(food.fsId).then(servings => {
         if (servings.length > 0) {
-          const def = servings.find((s: any) => s.isDefault) || servings[0];
+          const def = (searchResultCal !== null ? servings.find((s: any) => s.calories === searchResultCal) : null) || servings.find((s: any) => s.isDefault) || servings[0];
           setSelectedServing(def);
           if (def.grams > 0 && !isEditing) {
             setAmount(def.grams.toString());
@@ -318,6 +338,7 @@ const [showTimePicker, setShowTimePicker] = useState(false);
     ? Math.max(1, Math.round(parseFloat(food.existingAmount) / resolvedServingGrams))
     : 1;
   const [servingCount, setServingCount] = useState(initialServingCount);
+  const [servingCountStr, setServingCountStr] = useState(initialServingCount.toString());
   const [hasChanges, setHasChanges] = useState(false);
   const [unit, setUnit] = useState<'g' | 'oz' | 'serving'>(food?.existingUnit || 'g');
     const [showMealPicker, setShowMealPicker] = useState(false);
@@ -625,8 +646,9 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <TouchableOpacity
                 onPress={() => {
-                  const next = Math.max(1, servingCount - 1);
+                  const next = Math.max(0.5, Math.round((servingCount - 1) * 2) / 2);
                   setServingCount(next);
+                  setServingCountStr(next % 1 === 0 ? next.toString() : next.toFixed(1));
                   setServingCountTouched(true);
                   setAmountChanged(false);
                   setHasChanges(true);
@@ -635,11 +657,31 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
                 style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8 }}>
                 <Text style={{ fontSize: 22, color: theme.accentBlue, fontFamily: 'DMSans_400Regular', lineHeight: 26 }}>−</Text>
               </TouchableOpacity>
-              <Text style={{ width: 32, textAlign: 'center', fontSize: 22, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular' }}>{servingCount}</Text>
+              <TextInput
+                style={{ width: 54, textAlign: 'center', fontSize: 22, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, paddingVertical: 4 }}
+                value={servingCountStr}
+                onChangeText={v => {
+                  const stripped = v.replace(/[^0-9.]/g, '');
+                  const dots = stripped.split('.');
+                  const clean = dots.length > 2 ? dots[0] + '.' + dots.slice(1).join('') : stripped;
+                  setServingCountStr(clean);
+                  const parsed = parseFloat(clean);
+                  if (!isNaN(parsed) && parsed > 0) {
+                    setServingCount(parsed);
+                    setServingCountTouched(true);
+                    setAmountChanged(false);
+                    setHasChanges(true);
+                    if (effectiveServing?.grams > 0) setAmount((effectiveServing.grams * parsed).toString());
+                  }
+                }}
+                keyboardType="decimal-pad"
+                selectTextOnFocus
+              />
               <TouchableOpacity
                 onPress={() => {
-                  const next = servingCount + 1;
+                  const next = Math.ceil(servingCount) + (Number.isInteger(servingCount) ? 1 : 0);
                   setServingCount(next);
+                  setServingCountStr(next.toString());
                   setServingCountTouched(true);
                   setAmountChanged(false);
                   setHasChanges(true);
@@ -652,9 +694,9 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
           </View>
         )}
 
-        {/* Grams input */}
+        {/* Amount input -- label reflects actual serving unit */}
         <View style={styles.amountRow}>
-          <Text style={styles.amountLabel}>Amount (g)</Text>
+          <Text style={styles.amountLabel}>Amount ({effectiveServing?.unit || food?.servingUnitType || 'g'})</Text>
           <TextInput
             style={styles.amountInput}
             value={amount}
@@ -892,6 +934,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
           saturatedFat: selectedServing?.saturatedFat ?? defaultFsServing?.saturatedFat,
           servingGrams: selectedServing?.grams ?? defaultFsServing?.grams,
           servingLabel: selectedServing?.label ?? defaultFsServing?.label,
+          servingUnitType: selectedServing?.unit ?? defaultFsServing?.unit ?? 'g',
         }}
       />
 

@@ -571,7 +571,7 @@ function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen, remain
       {!ifStart && (
         <Animated.View style={{ transform: [{ scale: ifPulse }] }}>
           <PressableButton
-            style={{ backgroundColor: theme.accentGreen, borderRadius: 8, padding: 14, alignItems: 'center' }}
+            style={{ backgroundColor: theme.accentGreen, borderRadius: 8, paddingVertical: 9, paddingHorizontal: 14, alignItems: 'center' }}
             onPress={onStartFast}
             flex={0}
           >
@@ -2644,31 +2644,6 @@ export default function HomeScreen() {
           );
         })}
 
-        {/* Score bar -- hidden in Mindful */}
-        {!isMindful && (
-          <View style={{ marginTop:14, backgroundColor: theme.bgInset + '80', borderRadius:10, overflow:'hidden' }}>
-            <View style={{ height:2, backgroundColor: accentRaw, opacity: 0.7 }} />
-            <View style={{ flexDirection:'row', alignItems:'center', padding:12, gap:8 }}>
-              <View style={{ alignItems:'center', minWidth:28 }}>
-                <Text style={{ fontSize:28, fontFamily:'BebasNeue_400Regular', letterSpacing:1, lineHeight:30, color: overallResult === 'win' ? accentRaw : theme.textDim }}>{wins}</Text>
-                <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase', color: overallResult === 'win' ? accentRaw : theme.textDim, opacity:0.7 }}>YOU</Text>
-              </View>
-              <Text style={{ fontSize:16, fontFamily:'BebasNeue_400Regular', color: theme.textDim, letterSpacing:1, paddingBottom:6 }}>·</Text>
-              <View style={{ alignItems:'center', minWidth:28 }}>
-                <Text style={{ fontSize:28, fontFamily:'BebasNeue_400Regular', letterSpacing:1, lineHeight:30, color: overallResult === 'lose' ? theme.textSecondary : theme.textDim }}>{losses}</Text>
-                <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase', color: overallResult === 'lose' ? theme.textSecondary : theme.textDim, opacity:0.7 }}>YESTERDAY</Text>
-              </View>
-              <Text style={{ fontSize:16, fontFamily:'BebasNeue_400Regular', color: theme.textDim, letterSpacing:1, paddingBottom:6 }}>·</Text>
-              <View style={{ alignItems:'center', minWidth:28 }}>
-                <Text style={{ fontSize:28, fontFamily:'BebasNeue_400Regular', letterSpacing:1, lineHeight:30, color: ties > 0 ? tieColor : theme.textDim }}>{ties}</Text>
-                <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase', color: ties > 0 ? tieColor : theme.textDim, opacity:0.7 }}>TIED</Text>
-              </View>
-              <View style={{ flex:1, paddingLeft:8, alignItems:'center', justifyContent:'center' }}>
-                <Text style={{ fontSize:16, fontFamily:'BebasNeue_400Regular', letterSpacing:1, color: overallResult === 'win' ? accentRaw : overallResult === 'lose' ? theme.textSecondary : tieColor, lineHeight:19, textAlign:'center', maxWidth:140 }}>{motLine}</Text>
-              </View>
-            </View>
-          </View>
-        )}
 
         {/* Results countdown -- hidden in Mindful */}
         {!isMindful && (() => {

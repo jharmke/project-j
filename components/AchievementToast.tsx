@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Dimensions, Easing, StyleSheet, Text, View } from 'react-native';
+import { Animated, Dimensions, Easing, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Path, Stop } from 'react-native-svg';
 import { AchievementDef, AchievementDisplayTier } from '../achievementData';
 import { useTheme } from '../theme';
@@ -196,6 +197,7 @@ function ShimmerOverlay({ trigger }: { trigger: boolean }) {
 
 function ToastCard({ def, onDone }: { def: AchievementDef; onDone: () => void }) {
   const { theme } = useTheme();
+  const router = useRouter();
   const tier   = getDisplayTier(def);
   const config = TIER_CONFIG[tier];
   const isPlat = tier === 'platinum';
@@ -208,6 +210,15 @@ function ToastCard({ def, onDone }: { def: AchievementDef; onDone: () => void })
   const nameTranslateY = useRef(new Animated.Value(8)).current;
   const nameOpacity    = useRef(new Animated.Value(0)).current;
   const [shimmerTrigger, setShimmerTrigger] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const dismissAndNavigate = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    Animated.parallel([
+      Animated.timing(cardOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
+      Animated.timing(slideX, { toValue: OFFSCREEN, duration: 220, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
+    ]).start(() => { onDone(); router.push('/achievements'); });
+  };
 
   useEffect(() => {
     Animated.parallel([
@@ -229,46 +240,48 @@ function ToastCard({ def, onDone }: { def: AchievementDef; onDone: () => void })
       });
     });
 
-    const timer = setTimeout(() => {
+    timerRef.current = setTimeout(() => {
       Animated.parallel([
         Animated.timing(cardOpacity, { toValue: 0, duration: 280, useNativeDriver: true }),
         Animated.timing(slideX, { toValue: OFFSCREEN, duration: 300, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
       ]).start(() => onDone());
     }, 4200);
 
-    return () => clearTimeout(timer);
+    return () => clearTimeout(timerRef.current);
   }, []);
 
   return (
-    <Animated.View style={{ transform: [{ translateX: slideX }], opacity: cardOpacity }} pointerEvents="none">
-      <View style={[styles.card, {
-        backgroundColor: isPlat ? 'rgba(18,25,55,0.97)' : 'rgba(15,15,20,0.96)',
-        borderColor: config.borderColor,
-        shadowColor: config.glowColor,
-        shadowOpacity: isPlat ? 0.7 : 0.5,
-        shadowRadius: isPlat ? 20 : 14,
-      }]}>
-        <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, backgroundColor: config.leftBorderColor, borderTopLeftRadius: 12, borderBottomLeftRadius: 12 }} />
-        <View style={[StyleSheet.absoluteFill, { overflow: 'hidden' }]} pointerEvents="none">
-          <ShimmerOverlay trigger={shimmerTrigger} />
-        </View>
-        <View style={styles.content}>
-          <Animated.View style={{ transform: [{ scale: badgeScale }], opacity: badgeOpacity, marginLeft: 14, marginRight: 12 }}>
-            <MiniHexBadge def={def} size={44} />
-          </Animated.View>
-          <View style={{ flex: 1, justifyContent: 'center', paddingRight: 14 }}>
-            <Animated.Text style={[styles.label, { color: config.badgeColor, opacity: labelOpacity }]}>
-              ACHIEVEMENT UNLOCKED
-            </Animated.Text>
-            <Animated.Text style={[styles.name, { color: '#ffffff', opacity: nameOpacity, transform: [{ translateY: nameTranslateY }] }]}>
-              {def.name}
-            </Animated.Text>
-            <Animated.Text style={[styles.tier, { color: theme.textMuted, opacity: labelOpacity }]}>
-              {config.label}
-            </Animated.Text>
+    <Animated.View style={{ transform: [{ translateX: slideX }], opacity: cardOpacity }}>
+      <TouchableOpacity onPress={dismissAndNavigate} activeOpacity={0.85}>
+        <View style={[styles.card, {
+          backgroundColor: isPlat ? 'rgba(18,25,55,0.97)' : 'rgba(15,15,20,0.96)',
+          borderColor: config.borderColor,
+          shadowColor: config.glowColor,
+          shadowOpacity: isPlat ? 0.7 : 0.5,
+          shadowRadius: isPlat ? 20 : 14,
+        }]}>
+          <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, backgroundColor: config.leftBorderColor, borderTopLeftRadius: 12, borderBottomLeftRadius: 12 }} />
+          <View style={[StyleSheet.absoluteFill, { overflow: 'hidden' }]} pointerEvents="none">
+            <ShimmerOverlay trigger={shimmerTrigger} />
+          </View>
+          <View style={styles.content}>
+            <Animated.View style={{ transform: [{ scale: badgeScale }], opacity: badgeOpacity, marginLeft: 14, marginRight: 12 }}>
+              <MiniHexBadge def={def} size={44} />
+            </Animated.View>
+            <View style={{ flex: 1, justifyContent: 'center', paddingRight: 14 }}>
+              <Animated.Text style={[styles.label, { color: config.badgeColor, opacity: labelOpacity }]}>
+                ACHIEVEMENT UNLOCKED
+              </Animated.Text>
+              <Animated.Text style={[styles.name, { color: '#ffffff', opacity: nameOpacity, transform: [{ translateY: nameTranslateY }] }]}>
+                {def.name}
+              </Animated.Text>
+              <Animated.Text style={[styles.tier, { color: theme.textMuted, opacity: labelOpacity }]}>
+                {config.label}
+              </Animated.Text>
+            </View>
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     </Animated.View>
   );
 }
@@ -307,6 +320,7 @@ function DailyGoalToastCard({ name, count, icon, iconColor, onDone }: {
   name: string; count: number; icon: string; iconColor: string; onDone: () => void;
 }) {
   const { theme } = useTheme();
+  const router = useRouter();
   const slideX         = useRef(new Animated.Value(OFFSCREEN)).current;
   const cardOpacity    = useRef(new Animated.Value(0)).current;
   const badgeScale     = useRef(new Animated.Value(0.5)).current;
@@ -315,6 +329,15 @@ function DailyGoalToastCard({ name, count, icon, iconColor, onDone }: {
   const nameTranslateY = useRef(new Animated.Value(8)).current;
   const nameOpacity    = useRef(new Animated.Value(0)).current;
   const [shimmerTrigger, setShimmerTrigger] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const dismissAndNavigate = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    Animated.parallel([
+      Animated.timing(cardOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
+      Animated.timing(slideX, { toValue: OFFSCREEN, duration: 220, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
+    ]).start(() => { onDone(); router.push('/achievements'); });
+  };
 
   useEffect(() => {
     Animated.parallel([
@@ -335,45 +358,47 @@ function DailyGoalToastCard({ name, count, icon, iconColor, onDone }: {
         setTimeout(() => setShimmerTrigger(true), 380);
       });
     });
-    const timer = setTimeout(() => {
+    timerRef.current = setTimeout(() => {
       Animated.parallel([
         Animated.timing(cardOpacity, { toValue: 0, duration: 280, useNativeDriver: true }),
         Animated.timing(slideX, { toValue: OFFSCREEN, duration: 300, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
       ]).start(() => onDone());
     }, 4200);
-    return () => clearTimeout(timer);
+    return () => clearTimeout(timerRef.current);
   }, []);
 
   return (
-    <Animated.View style={{ transform: [{ translateX: slideX }], opacity: cardOpacity }} pointerEvents="none">
-      <View style={[styles.card, {
-        backgroundColor: 'rgba(15,15,20,0.96)',
-        borderColor: iconColor + '80',
-        shadowColor: iconColor,
-        shadowOpacity: 0.5,
-        shadowRadius: 14,
-      }]}>
-        <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, backgroundColor: iconColor, borderTopLeftRadius: 12, borderBottomLeftRadius: 12 }} />
-        <View style={[StyleSheet.absoluteFill, { overflow: 'hidden' }]} pointerEvents="none">
-          <ShimmerOverlay trigger={shimmerTrigger} />
-        </View>
-        <View style={styles.content}>
-          <Animated.View style={{ transform: [{ scale: badgeScale }], opacity: badgeOpacity, marginLeft: 14, marginRight: 12 }}>
-            <DailyGoalHexBadge icon={icon} iconColor={iconColor} size={44} />
-          </Animated.View>
-          <View style={{ flex: 1, justifyContent: 'center', paddingRight: 14 }}>
-            <Animated.Text style={[styles.label, { color: iconColor, opacity: labelOpacity }]}>
-              GOAL MET
-            </Animated.Text>
-            <Animated.Text style={[styles.name, { color: '#ffffff', opacity: nameOpacity, transform: [{ translateY: nameTranslateY }] }]}>
-              {name}
-            </Animated.Text>
-            <Animated.Text style={[styles.tier, { color: theme.textMuted, opacity: labelOpacity }]}>
-              {count}× achieved
-            </Animated.Text>
+    <Animated.View style={{ transform: [{ translateX: slideX }], opacity: cardOpacity }}>
+      <TouchableOpacity onPress={dismissAndNavigate} activeOpacity={0.85}>
+        <View style={[styles.card, {
+          backgroundColor: 'rgba(15,15,20,0.96)',
+          borderColor: iconColor + '80',
+          shadowColor: iconColor,
+          shadowOpacity: 0.5,
+          shadowRadius: 14,
+        }]}>
+          <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, backgroundColor: iconColor, borderTopLeftRadius: 12, borderBottomLeftRadius: 12 }} />
+          <View style={[StyleSheet.absoluteFill, { overflow: 'hidden' }]} pointerEvents="none">
+            <ShimmerOverlay trigger={shimmerTrigger} />
+          </View>
+          <View style={styles.content}>
+            <Animated.View style={{ transform: [{ scale: badgeScale }], opacity: badgeOpacity, marginLeft: 14, marginRight: 12 }}>
+              <DailyGoalHexBadge icon={icon} iconColor={iconColor} size={44} />
+            </Animated.View>
+            <View style={{ flex: 1, justifyContent: 'center', paddingRight: 14 }}>
+              <Animated.Text style={[styles.label, { color: iconColor, opacity: labelOpacity }]}>
+                GOAL MET
+              </Animated.Text>
+              <Animated.Text style={[styles.name, { color: '#ffffff', opacity: nameOpacity, transform: [{ translateY: nameTranslateY }] }]}>
+                {name}
+              </Animated.Text>
+              <Animated.Text style={[styles.tier, { color: theme.textMuted, opacity: labelOpacity }]}>
+                {count}× achieved
+              </Animated.Text>
+            </View>
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     </Animated.View>
   );
 }
@@ -406,7 +431,7 @@ export function AchievementToastRenderer() {
   const active  = queue[0] ?? null;
 
   return (
-    <View style={styles.renderer} pointerEvents="none">
+    <View style={styles.renderer} pointerEvents="box-none">
       {active && active.kind === 'achievement' && (
         <ToastCard key={active.id} def={active.def} onDone={() => dismiss(active.id)} />
       )}

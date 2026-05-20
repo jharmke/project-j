@@ -433,6 +433,8 @@ Smart insights and trends layer -- auto-detect patterns automatically and surfac
 
 Home screen and cards
 
+BUG: Home screen KAV regression -- Today's Thoughts and Gratitude Streak cards auto-scroll the screen to bottom when the text input is opened. Was previously fixed via scrollToEnd on focus. Regression -- root cause unknown, needs a dedicated look. (SOON)
+
 Home screen cards polish -- subtle border pass, slightly darker card backgrounds, Daily Note card specific polish. (SOON)
 Head-to-head card -- hide Win/Loss/Tie label on YvY card until the competition window closes (don't show it live during the day while the result is still changing). (SOON)
 IF fasting button -- shrink height on the fasting state button, keep green. (SOON)

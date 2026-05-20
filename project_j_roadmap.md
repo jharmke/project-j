@@ -398,6 +398,11 @@ Today's Total macro row lowercase g, DMSans font. DONE.
 fsId saved on diary entries in saveEntry, passed through edit entry path in log.tsx. DONE.
 
 
+NOW -- faith and support
+
+Prayer request feature -- dedicated session. Entry points: Today's Message card + profile/settings header (two minimum, do not bury). Decision needed before building: where do requests go? Options: (1) mailto: link as the simplest start, (2) email submission to admin, (3) future in-app prayer community. Requires knowing whether user email is available from profile or Firebase Auth. MOVED from SOON.
+Donate / Support button -- no paywall model. App stays fully free, add voluntary "Support this app" option. Decision needed: (1) Ko-fi or Buy Me a Coffee external link (no StoreKit, simplest, App Store rules allow external support links as long as no in-app purchase happens), (2) one-time StoreKit tip jar (compliant, Apple takes 30%). External link route is fastest path. Entry points: Settings > Account section + profile header. Monetization direction: NO paywalls, NO locked features, donation only.
+
 SOON -- confirmed next few sessions
 
 [x] Cloud data sync -- SHIPPED. services/syncService.ts: syncKey() fire-and-forget Firestore mirror, restoreIfFresh() fresh-device restore gate (only fires when zero local pj_* data -- cannot overwrite existing data), uploadAllLocal() one-time migration. utils/storage.ts: storageSet() wrapper (local write awaited first, Firestore silent mirror). All AsyncStorage.setItem calls across 22 files replaced with storageSet. Firestore path: users/{uid}/store/{key}. pj_bible_* cache keys excluded (re-fetchable, thousands of docs). _layout.tsx wired to call restoreIfFresh() before routing to tabs on login. Dev tools: Upload All Data to Firestore + Check Sync Status (local count vs Firestore doc count with in-sync indicator). Verified 38/38 keys in sync on device.
@@ -494,7 +499,7 @@ Collapsible card animation fix (stats.tsx + profile.tsx) -- both use wrong patte
 Faith and community
 
 Mission statement screen -- merged into Our Mission screen. See Process and infrastructure section.
-Prayer request feature -- user can submit a prayer request via email. Two entry points minimum: verse/Today's Message card and profile/settings. Do not bury. Requires email collection at signup or onboarding.
+Prayer request feature -- MOVED TO NOW section above.
 
 Streaks
 
@@ -638,7 +643,7 @@ Settings > Help section -- two subsections: Definitions (auto-populates from too
 [x] Effort vs Results -- SHIPPED. app/diagnostic-report.tsx + utils/diagnosticReport.ts. "Why am I not losing weight?" style analysis. Entry point: Stats > Reports section (sys_reports card). Windows: 14/30/90d default 30. Findings: logging consistency, calorie deficit vs actual weight change (3500 cal = 1 lb), burn accuracy flag (100% + avg > 450 active cal), macro quality (protein vs 0.7-1.0g/lb, fiber as food quality proxy), sleep quality + correlation to next-day intake. 9 correlations: sleep→next-day cals, high burn day→next-day cals, weekend vs weekday, water vs cals, sodium vs scale, steps vs sleep, workout vs rest day cals, sleep vs workout rate, surplus→next-day overage. Each correlation has minimum delta threshold to fire. Mindful mode: neutral language, no status pills, "THINGS TO EXPLORE" instead of suggestions. Archive: up to 10 saved reports, trash to delete. Insufficient data (<7 logged days): report saves, button disabled + note shown, user can try different window. tooltipRegistry: effort_vs_results, diagnostic_correlations. Pending: real data test, polish pass once user has enough data to generate full report.
 Coaching style deep-dive page -- dedicated screen explaining all three modes in depth. Who each mode is for, what changes per mode, why certain features are hidden in Mindful, language differences, worked examples. Written warmly, not like a help doc. Findable from settings and from onboarding. NOW -- high value, reduces churn from users who feel they picked wrong.
 Style/mode audit -- go through each style's unique features and defaults to see what stands out, what needs to be added or changed. Are there features that shouldn't show in Mindful that currently do? Features that should be Discipline-only but aren't? Defaults that feel wrong per mode? Full pass across all three modes, dedicated session. (SOON)
-Settings page overhaul + profile/settings consolidation -- collapsible card sections, CPP. Planned sections: Account, Appearance, Health, Notifications, Faith, Help, About/Legal. Audit and consolidate scattered or redundant settings into logical groupings. Polish UI consistency, spacing, and labels. Profile/settings boundary cleanup included. Scope and specific changes TBD -- review both screens in a dedicated thread before building. Dedicated future session.
+Settings page overhaul + profile/settings consolidation -- Pass 1 SHIPPED. CollapsibleSection component with subtitle preview when collapsed. Sections: Appearance (Theme/Accent/Haptics, default open) → Faith & Style (Coaching Mode/Faith Journey, default closed) → Health → Help → About → Account → Dev Tools (7-tap hidden). PRO badges removed from themes (no paywall, all themes fully selectable). Faith Journey selector added (rooted/exploring/notrightnow, saves to pj_settings). About section added (version, Privacy, Terms, FatSecret attribution). All Dev Tools consolidated to single 7-tap section. Accent grid fixed to 6-column fixed-width layout (consistent across all themes). Sub-labels Coaching Mode/Faith Journey: accentBlue, 11pt, letterSpacing 2 for clear hierarchy. Pass 2 pending: goals migration from profile to settings, profile cleanup to 4 cards.
 
 [x] App Store readiness scan -- COMPLETE 2026-05-19. Full audit done. See APP_STORE_CHECKLIST.md for all findings, status tracking, and attack order. Do not track individual fix items here -- that file is the source of truth.
 

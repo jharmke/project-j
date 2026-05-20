@@ -788,6 +788,7 @@ export default function HomeScreen() {
   const [weightGoalPace, setWeightGoalPace] = useState<string>('lose_1');
   const scrollRef = useRef<any>(null);
   const dailyNoteRef = useRef<any>(null);
+  const dailyNoteCardRef = useRef<any>(null);
   const editSheetHeight = useRef<number>(Dimensions.get('window').height);
   const waterLoaded = useRef(false);
   const [dailyVerse,     setDailyVerse]     = useState<{text:string;reference:string}|null>(null);
@@ -2316,7 +2317,7 @@ export default function HomeScreen() {
     const noteIsDirty = noteCurrentText !== noteLastSaved;
     const isClearing = noteIsDirty && !noteCurrentText && !!noteLastSaved;
     return (
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
+      <View ref={dailyNoteCardRef} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
         <Ionicons name="create" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
@@ -2329,7 +2330,15 @@ export default function HomeScreen() {
         </View>
         <TextInput ref={dailyNoteRef} style={[styles.notesInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} placeholder="How did today go? Energy, mood, wins..." placeholderTextColor={theme.textPlaceholder}
           multiline numberOfLines={4} value={dailyNote} onChangeText={setDailyNote}
-          onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100)}
+          onFocus={() => {
+            setTimeout(() => {
+              if (dailyNoteCardRef.current && scrollRef.current) {
+                dailyNoteCardRef.current.measureLayout(scrollRef.current, (_x: number, y: number) => {
+                  scrollRef.current?.scrollTo({ y: Math.max(0, y - 16), animated: true });
+                }, () => {});
+              }
+            }, 150);
+          }}
           onBlur={() => dailyNoteRef.current?.setNativeProps({ selection: { start: 0, end: 0 } })} />
         <TouchableOpacity
           style={[styles.saveBtn, isClearing

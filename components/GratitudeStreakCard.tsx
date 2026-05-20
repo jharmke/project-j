@@ -67,6 +67,7 @@ type CardState = 'empty' | 'logged' | 'editing';
 export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, theme: t }: Props) {
   const { showToast } = useToast();
   const inputRef = useRef<TextInput>(null);
+  const cardRef = useRef<View>(null);
 
   const [cardState, setCardState] = useState<CardState>('empty');
   const [inputText, setInputText] = useState('');
@@ -275,7 +276,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
   const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
   return (
-    <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw, overflow: 'hidden' }]}>
+    <View ref={cardRef} style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw, overflow: 'hidden' }]}>
       <Ionicons name="heart" size={130} color={t.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
 
       {/* Header */}
@@ -404,7 +405,15 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
             numberOfLines={3}
             value={inputText}
             onChangeText={setInputText}
-            onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100)}
+            onFocus={() => {
+              setTimeout(() => {
+                if (cardRef.current && scrollRef.current) {
+                  cardRef.current.measureLayout(scrollRef.current, (_x: number, y: number) => {
+                    scrollRef.current?.scrollTo({ y: Math.max(0, y - 16), animated: true });
+                  }, () => {});
+                }
+              }, 150);
+            }}
             onBlur={() => inputRef.current?.setNativeProps({ selection: { start: 0, end: 0 } })}
           />
           {cardState === 'editing' ? (

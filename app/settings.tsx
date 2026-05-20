@@ -11,9 +11,9 @@ import { BLANK_DAY, WorkoutTag } from '../workoutData';
 import CelebrationOverlay from '../components/CelebrationOverlay';
 import { showAchievementToast } from '../components/AchievementToast';
 import { ACHIEVEMENTS } from '../achievementData';
-import { collection, deleteDoc, getDocs } from 'firebase/firestore';
-import { deleteUser } from 'firebase/auth';
-import { auth, db } from '../firebaseConfig';
+import { collection, getDocs } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { app, auth, db } from '../firebaseConfig';
 import { uploadAllLocal } from '../services/syncService';
 import { storageSet } from '../utils/storage';
 import { TOOLTIP_REGISTRY } from '../tooltipRegistry';
@@ -126,44 +126,29 @@ export default function SettingsScreen() {
   };
 
   const confirmDeleteAccount = async () => {
-    const currentUser = auth.currentUser;
-    if (!currentUser) return;
-
-    const uid = currentUser.uid; // capture before deletion -- auth.currentUser goes null after deleteUser
+    if (!auth.currentUser) return;
 
     setDeletingAccount(true);
     try {
-      // Step 1: Delete Firebase Auth user FIRST.
-      // If this fails for any reason, we stop here -- Firestore and AsyncStorage are untouched.
-      await deleteUser(currentUser);
+      // Cloud Function handles server-side: Apple token revocation, Firestore wipe,
+      // Firebase Auth deletion via admin SDK (bypasses requires-recent-login entirely)
+      const fns = getFunctions(app);
+      const deleteAccountFn = httpsCallable(fns, 'deleteAccount');
+      await deleteAccountFn({});
 
-      // Step 2: Delete Firestore docs (best effort -- account is already gone from Auth)
-      try {
-        const snap = await getDocs(collection(db, 'users', uid, 'store'));
-        await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
-      } catch { /* non-fatal */ }
-
-      // Step 3: Wipe local AsyncStorage (best effort -- only runs after Auth deletion confirmed)
+      // Wipe local AsyncStorage after server confirms deletion
       try {
         const allKeys = await AsyncStorage.getAllKeys();
         const pjKeys = allKeys.filter(k => k.startsWith('pj_'));
         if (pjKeys.length > 0) await AsyncStorage.multiRemove(pjKeys);
       } catch { /* non-fatal */ }
 
-      // deleteUser triggers onAuthStateChanged → null → _layout.tsx routes to sign-in automatically
+      // onAuthStateChanged fires with null -> _layout.tsx routes to sign-in automatically
 
     } catch (e: any) {
       setDeletingAccount(false);
-      if (e?.code === 'auth/requires-recent-login') {
-        Alert.alert(
-          'Sign In Required',
-          'For security, please sign out and sign back in, then try deleting your account again.',
-          [{ text: 'OK' }]
-        );
-      } else {
-        Alert.alert('Error', 'Something went wrong. Please try again.');
-        console.log('Delete account error', e);
-      }
+      Alert.alert('Error', 'Something went wrong deleting your account. Please try again.');
+      console.log('Delete account error', e);
     }
   };
 

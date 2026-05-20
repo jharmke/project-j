@@ -3,10 +3,11 @@ import { AntDesign } from '@expo/vector-icons';
 import CryptoJS from 'crypto-js';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { GoogleAuthProvider, OAuthProvider, signInWithCredential } from 'firebase/auth';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { auth } from '../firebaseConfig';
+import { app, auth } from '../firebaseConfig';
 
 const IOS_CLIENT_ID = '841973180275-obscsfo4ad9ibir9dtpcago5fuptojlg.apps.googleusercontent.com';
 
@@ -50,6 +51,13 @@ export default function SignInScreen() {
       });
 
       await signInWithCredential(auth, credential);
+      // Exchange authorizationCode for refresh_token immediately -- it expires in 5 min.
+      // Fire-and-forget: failure here must never block sign-in.
+      if (appleCredential.authorizationCode) {
+        const fns = getFunctions(app);
+        const exchangeFn = httpsCallable(fns, 'exchangeAppleCode');
+        exchangeFn({ authorizationCode: appleCredential.authorizationCode }).catch(() => {});
+      }
       // AuthContext onAuthStateChanged fires -> _layout.tsx handles routing
     } catch (e: any) {
       if (e.code !== 'ERR_REQUEST_CANCELED') {

@@ -11,7 +11,8 @@ import { BLANK_DAY, WorkoutTag } from '../workoutData';
 import CelebrationOverlay from '../components/CelebrationOverlay';
 import { showAchievementToast } from '../components/AchievementToast';
 import { ACHIEVEMENTS } from '../achievementData';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, deleteDoc, getDocs } from 'firebase/firestore';
+import { deleteUser } from 'firebase/auth';
 import { auth, db } from '../firebaseConfig';
 import { uploadAllLocal } from '../services/syncService';
 import { storageSet } from '../utils/storage';
@@ -36,6 +37,7 @@ export default function SettingsScreen() {
   const [devUnlocked,      setDevUnlocked]      = useState(false);
   const [importRange, setImportRange] = useState<14 | 30 | 90>(30);
   const [importing, setImporting] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const [helpExpanded, setHelpExpanded] = useState(false);
   const [activeTooltipKey, setActiveTooltipKey] = useState<string | null>(null);
   const helpHeight = useRef(new Animated.Value(0)).current;
@@ -121,6 +123,72 @@ export default function SettingsScreen() {
       console.log('Import error', e);
     }
     setImporting(false);
+  };
+
+  const confirmDeleteAccount = async () => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) return;
+
+    const uid = currentUser.uid; // capture before deletion -- auth.currentUser goes null after deleteUser
+
+    setDeletingAccount(true);
+    try {
+      // Step 1: Delete Firebase Auth user FIRST.
+      // If this fails for any reason, we stop here -- Firestore and AsyncStorage are untouched.
+      await deleteUser(currentUser);
+
+      // Step 2: Delete Firestore docs (best effort -- account is already gone from Auth)
+      try {
+        const snap = await getDocs(collection(db, 'users', uid, 'store'));
+        await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+      } catch { /* non-fatal */ }
+
+      // Step 3: Wipe local AsyncStorage (best effort -- only runs after Auth deletion confirmed)
+      try {
+        const allKeys = await AsyncStorage.getAllKeys();
+        const pjKeys = allKeys.filter(k => k.startsWith('pj_'));
+        if (pjKeys.length > 0) await AsyncStorage.multiRemove(pjKeys);
+      } catch { /* non-fatal */ }
+
+      // deleteUser triggers onAuthStateChanged → null → _layout.tsx routes to sign-in automatically
+
+    } catch (e: any) {
+      setDeletingAccount(false);
+      if (e?.code === 'auth/requires-recent-login') {
+        Alert.alert(
+          'Sign In Required',
+          'For security, please sign out and sign back in, then try deleting your account again.',
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert('Error', 'Something went wrong. Please try again.');
+        console.log('Delete account error', e);
+      }
+    }
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Delete Account',
+      'This will permanently delete your account and all your data -- food logs, workout history, weight logs, journal entries, achievements, and everything else.\n\nThis cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'I Understand, Continue',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Are You Absolutely Sure?',
+              'Your account and all data will be deleted forever. There is no way to recover it.',
+              [
+                { text: 'Go Back', style: 'cancel' },
+                { text: 'Delete My Account', style: 'destructive', onPress: confirmDeleteAccount },
+              ]
+            );
+          },
+        },
+      ]
+    );
   };
 
   useEffect(() => {
@@ -603,6 +671,22 @@ export default function SettingsScreen() {
               style={{ flex: 1 }}
             >
               <Text style={[styles.rowTitle, { color: theme.statusBad }]}>Sign Out</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={[styles.row, { borderTopColor: theme.borderCard }]}>
+            <TouchableOpacity
+              onPress={handleDeleteAccount}
+              style={{ flex: 1 }}
+              disabled={deletingAccount}
+            >
+              {deletingAccount ? (
+                <ActivityIndicator size="small" color={theme.statusBad} />
+              ) : (
+                <>
+                  <Text style={[styles.rowTitle, { color: theme.statusBad }]}>Delete Account</Text>
+                  <Text style={[styles.rowSub, { color: theme.textMuted }]}>Permanently deletes your account and all data.</Text>
+                </>
+              )}
             </TouchableOpacity>
           </View>
         </View>

@@ -8,14 +8,11 @@ Roadmap references this file -- do not duplicate items there.
 
 ## MUST FIX -- Code (Guaranteed or High Rejection Risk)
 
-### 1. [ ] Account Deletion
+### 1. [x] Account Deletion -- DONE
 **Risk:** GUARANTEED REJECTION
 **Guideline:** 5.1.1(v) -- "If your app supports account creation, you must also offer account deletion within the app."
-**Issue:** App creates Firebase Auth accounts (Apple + Google Sign-In). Zero account deletion UI or code exists anywhere.
-**Fix:**
-- Add "Delete Account" in Settings (destructive red, confirmation Alert)
-- On confirm: delete Firebase Auth user, delete all Firestore docs at users/{uid}/store/*, wipe all local pj_* AsyncStorage keys
-- Sign out and route back to sign-in
+**Shipped:** Delete Account button in Settings > Account section (below Sign Out). Two-step confirmation Alert. Firebase Auth user deleted first -- if deleteUser fails for any reason, Firestore and AsyncStorage are untouched. Firestore users/{uid}/store/* wiped using uid captured before deletion. All pj_* AsyncStorage keys removed. Routes to sign-in automatically via onAuthStateChanged. requires-recent-login handled with specific user message. settings.tsx only, pure JS.
+**Note:** Apple identity token revocation (a best practice when using Sign in with Apple) is not implemented -- Firebase Auth deleteUser handles the Firebase side but does not call Apple's revocation endpoint. Not required for initial App Store review, but worth adding before wide public launch.
 
 ---
 

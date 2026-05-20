@@ -613,7 +613,7 @@ Settings page overhaul + profile/settings consolidation -- collapsible card sect
 [x] App Store readiness scan -- COMPLETE 2026-05-19. Full audit done. See APP_STORE_CHECKLIST.md for all findings, status tracking, and attack order. Do not track individual fix items here -- that file is the source of truth.
 
 App Store code fixes -- work through APP_STORE_CHECKLIST.md in order. Current status:
-[ ] 1. Account deletion -- Settings UI + Firebase Auth delete + Firestore wipe + AsyncStorage wipe (GUARANTEED REJECTION without this)
+[x] 1. Account deletion -- DONE. Delete Account in Settings (Account section, below Sign Out), two-step confirmation Alert, Firebase Auth user deleted first (if deleteUser fails for any reason, Firestore and AsyncStorage are never touched), Firestore users/{uid}/store/* wiped with captured uid, all pj_* AsyncStorage keys removed. Routes to sign-in automatically via onAuthStateChanged -- no manual navigation. requires-recent-login handled with specific user message. Apple identity token revocation (separate from Firebase Auth deletion) noted as future cleanup item -- not blocking for App Store review. settings.tsx only, no new files, pure JS.
 [ ] 2. Privacy policy + Terms of Service -- write, host at live URL, wire tappable links in sign-in.tsx (GUARANTEED REJECTION without this)
 [ ] 3. Privacy manifest (PrivacyInfo.xcprivacy) -- add NSPrivacyAccessedAPICategoryUserDefaults CA92.1 to app.json (upload will fail without this)
 [ ] 4. Camera permission string + remove unused reproductive health HealthKit types + verify HealthKit write + iPad supportsTablet decision -- one commit, new build

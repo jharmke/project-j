@@ -184,7 +184,9 @@ function SleepGoalPicker({ value, onChange, theme }: { value: string; onChange: 
   );
 }
 
-function CollapsibleCard({ label, defaultOpen = false, children, theme }: { label: string, defaultOpen?: boolean, children: React.ReactNode, theme: any }) {
+function ProfileSection({ label, subtitle, defaultOpen = false, children, theme, first = false }: {
+  label: string; subtitle?: string; defaultOpen?: boolean; children: React.ReactNode; theme: any; first?: boolean;
+}) {
   const [open, setOpen] = useState(defaultOpen);
   const [visible, setVisible] = useState(defaultOpen);
   const fadeAnim = useRef(new Animated.Value(defaultOpen ? 1 : 0)).current;
@@ -194,29 +196,33 @@ function CollapsibleCard({ label, defaultOpen = false, children, theme }: { labe
     setOpen(opening);
     if (opening) {
       setVisible(true);
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
+      Animated.timing(fadeAnim, { toValue: 1, duration: 280, useNativeDriver: true }).start();
     } else {
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 100,
-        useNativeDriver: true,
-      }).start(() => setVisible(false));
+      Animated.timing(fadeAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => setVisible(false));
     }
   };
 
   return (
-    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
-      <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 44, paddingVertical: 12, marginVertical: -12 }} onPress={toggle}>
-        <Text style={[styles.cardLabel, { color: theme.textMuted }]}>{label}</Text>
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={14} color={theme.textMuted} />
+    <View style={{ marginTop: first ? 4 : 20 }}>
+      <TouchableOpacity onPress={toggle} activeOpacity={0.7} style={{ paddingVertical: 6, minHeight: 44, justifyContent: 'center' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <Text style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.accentBlueRaw }}>
+            {label}
+          </Text>
+          <View style={{ flex: 1, height: 1, backgroundColor: theme.accentBlueBorder }} />
+          <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={14} color={theme.accentBlueRaw} />
+        </View>
+        {!open && subtitle && (
+          <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 4 }}>
+            {subtitle}
+          </Text>
+        )}
       </TouchableOpacity>
-      <Animated.View style={{ marginTop: visible ? 12 : 0, opacity: fadeAnim }}>
-        {visible && children}
-      </Animated.View>
+      {visible && (
+        <Animated.View style={{ opacity: fadeAnim, paddingBottom: 8 }}>
+          {children}
+        </Animated.View>
+      )}
     </View>
   );
 }
@@ -457,7 +463,7 @@ export default function ProfileScreen() {
 
       <ScrollView ref={scrollRef} style={styles.container} contentContainerStyle={styles.content} automaticallyAdjustKeyboardInsets={true} onScroll={e => { scrollOffset.current = e.nativeEvent.contentOffset.y; }} scrollEventThrottle={16}>
 
-        <CollapsibleCard label="Basic Info" defaultOpen={true} theme={theme}>
+        <ProfileSection label="Basic Info" subtitle="Name, height, birthday, sex" defaultOpen={true} theme={theme} first={true}>
           <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>Name</Text>
           <TextInput style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} value={profile.name} onChangeText={v => updateField('name', v)} placeholder="Your name" placeholderTextColor={theme.textPlaceholder} />
 
@@ -527,9 +533,9 @@ export default function ProfileScreen() {
               <Text style={[styles.toggleBtnText, { color: theme.textMuted }, profile.sex === 'female' && { color: theme.accentBlue }]}>Female</Text>
             </TouchableOpacity>
           </View>
-        </CollapsibleCard>
+        </ProfileSection>
 
-        <CollapsibleCard label="Activity Level" theme={theme}>
+        <ProfileSection label="Activity Level" subtitle="Lifestyle & training frequency" theme={theme}>
           <Text style={[styles.fieldLabel, { color: theme.textMuted, marginTop: 0 }]}>LIFESTYLE</Text>
           <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', color: theme.textMuted, marginBottom: 8 }}>Your day-to-day movement, not counting workouts.</Text>
           {LIFESTYLE_OPTIONS.map(o => (
@@ -567,10 +573,10 @@ export default function ProfileScreen() {
               </View>
             </TouchableOpacity>
           ))}
-        </CollapsibleCard>
+        </ProfileSection>
 
         {bmr > 0 && (
-          <CollapsibleCard label="Your Estimates" theme={theme}>
+          <ProfileSection label="Your Estimates" subtitle="BMR, TDEE, and calorie target" theme={theme}>
             <Text style={[styles.estimateNote, { color: theme.textMuted }]}>Based on Mifflin-St Jeor formula - estimates only, not exact values.</Text>
             <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginBottom: 10 }}>For informational purposes only. Not medical advice.</Text>
             <View style={styles.statsRow}>
@@ -590,10 +596,10 @@ export default function ProfileScreen() {
                 <Text style={[styles.statSub, { color: theme.textMuted }]}>{GOAL_LABELS[profile.weightGoal] || 'Goal based'}</Text>
               </View>
             </View>
-          </CollapsibleCard>
+          </ProfileSection>
         )}
 
-        <CollapsibleCard label="Weight Goal" theme={theme}>
+        <ProfileSection label="Weight Goal" subtitle="Goal weight & weekly pace" theme={theme}>
           {/* Goal weight input -- lives above pace so the story reads top to bottom */}
           <Text style={[styles.fieldLabel, { color: theme.textMuted, marginTop: 0 }]}>Goal Weight (optional)</Text>
           <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', color: theme.textMuted, marginBottom: 10 }}>
@@ -680,9 +686,9 @@ export default function ProfileScreen() {
             );
           })()}
 
-          </CollapsibleCard>
+          </ProfileSection>
 
-        <CollapsibleCard label="Water Presets" theme={theme}>
+        <ProfileSection label="Water Presets" subtitle="Quick-add water amounts" theme={theme}>
           <Text style={[styles.estimateNote, { color: theme.textMuted }]}>Customize your quick-add water amounts (oz).</Text>
           <View style={{ flexDirection: 'row', gap: 12 }}>
             {([0, 1, 2] as const).map(i => (
@@ -704,17 +710,17 @@ export default function ProfileScreen() {
               </View>
             ))}
           </View>
-        </CollapsibleCard>
+        </ProfileSection>
 
-        <CollapsibleCard label="Sleep Goal" theme={theme}>
+        <ProfileSection label="Sleep Goal" subtitle="Nightly sleep target" theme={theme}>
           <SleepGoalPicker
             value={profile.sleepGoal || '7'}
             onChange={v => updateField('sleepGoal', v)}
             theme={theme}
           />
-        </CollapsibleCard>
+        </ProfileSection>
 
-        <CollapsibleCard label="Step Goal" theme={theme}>
+        <ProfileSection label="Step Goal" subtitle="Daily step target" theme={theme}>
           <TextInput
             style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
             value={profile.stepGoal}
@@ -724,9 +730,9 @@ export default function ProfileScreen() {
             placeholderTextColor={theme.textPlaceholder}
           />
           <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginTop: 4 }}>Daily step target. Shows on your home screen progress bar.</Text>
-        </CollapsibleCard>
+        </ProfileSection>
 
-        <CollapsibleCard label="Water Goal" theme={theme}>
+        <ProfileSection label="Water Goal" subtitle="Daily hydration target" theme={theme}>
           <TextInput
             style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
             value={profile.waterGoal}
@@ -736,9 +742,9 @@ export default function ProfileScreen() {
             placeholderTextColor={theme.textPlaceholder}
           />
           <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginTop: 4 }}>Daily hydration target in oz. Progress bar fills to this amount.</Text>
-        </CollapsibleCard>
+        </ProfileSection>
 
-        <CollapsibleCard label="Active Calorie Goal" theme={theme}>
+        <ProfileSection label="Active Calorie Goal" subtitle="Daily burn target from Apple Health" theme={theme}>
           <TextInput
             style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
             value={profile.activeCalGoal}
@@ -748,9 +754,9 @@ export default function ProfileScreen() {
             placeholderTextColor={theme.textPlaceholder}
           />
           <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginTop: 4 }}>Daily active calorie target from Apple Health. Celebrates when you hit it.</Text>
-        </CollapsibleCard>
+        </ProfileSection>
 
-        <CollapsibleCard label="Exercise Minutes Goal" theme={theme}>
+        <ProfileSection label="Exercise Minutes Goal" subtitle="Daily movement target from Apple Health" theme={theme}>
           <TextInput
             style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
             value={profile.exerciseMinsGoal}
@@ -760,9 +766,9 @@ export default function ProfileScreen() {
             placeholderTextColor={theme.textPlaceholder}
           />
           <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginTop: 4 }}>Daily exercise minutes target from Apple Health. Celebrates when you hit it.</Text>
-        </CollapsibleCard>
+        </ProfileSection>
 
-        <CollapsibleCard label="Daily Calorie Target" theme={theme}>
+        <ProfileSection label="Daily Calorie Target" subtitle="Custom or recommended target" theme={theme}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
             <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Use recommended value</Text>
             <ToggleSwitch
@@ -783,9 +789,9 @@ export default function ProfileScreen() {
           {profile.useRecommendedCal === false && (
             <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginTop: 4 }}>Enter a custom calorie target.</Text>
           )}
-        </CollapsibleCard>
+        </ProfileSection>
 
-        <CollapsibleCard label="Macro Goals" theme={theme}>
+        <ProfileSection label="Macro Goals" subtitle="Protein, carbs & fat targets" theme={theme}>
           <Text style={[styles.estimateNote, { color: theme.textMuted }]}>
             {profile.macroMode === 'ratio'
               ? 'Set percentages - grams update automatically when your calorie target changes.'
@@ -913,7 +919,7 @@ export default function ProfileScreen() {
               })()}
             </View>
           )}
-        </CollapsibleCard>
+        </ProfileSection>
 
         <View style={{ height: 100 }} />
 

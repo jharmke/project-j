@@ -164,6 +164,10 @@ NOW -- active this session
 [x] Sleep score duration weighting -- linear formula underpenalized short sleep (5h18m scored 84 with decent stages). Fixed: non-linear power curve Math.pow(hours/goal, 3) * 40. 5h18m now scores 71. index.tsx + day-detail.tsx.
 
 NOW -- active this session
+[x] Profile format refactor -- CollapsibleCard (white boxes) replaced with ProfileSection (flat section headers, accent label + divider line, subtitle preview when collapsed). Matches stats page visual style. profile.tsx.
+[x] Stats section sublabels -- subtitle prop added to CollapsibleSection, six sections show preview text when collapsed. stats.tsx.
+[ ] STREAKS feature pass -- dedicated session, do not let this slip. Full spec in SOON > Streaks section. Grace day system, custom streaks, streak end warning visuals.
+[ ] Macro wrap bug -- log Today's Total card macro gram values (e.g. 305.3g) wrapping to two lines when numbers are large. Fix text size or layout in MacroStackedBar. log.tsx.
 [x] YvY sleep score tie threshold fixed -- removed < 3 pt band, now exact equality only (t === y), same logic as water/steps. Fixed in index.tsx.
 [x] YvY active cals tie threshold fixed -- removed < 25 kcal band, now exact equality only. Fixed in index.tsx.
 [x] Head to Head sleep score tie threshold fixed -- same fix as YvY, exact equality only. Fixed in head-to-head.tsx.

@@ -31,8 +31,8 @@ const fmtRecordDate = (dk: string | null) => {
 
 // ── Collapsible section header ─────────────────────────────────────────────────
 
-function CollapsibleSection({ label, children, defaultOpen = true, theme, first = false }: {
-  label: string, children: React.ReactNode, defaultOpen?: boolean, theme: any, first?: boolean
+function CollapsibleSection({ label, subtitle, children, defaultOpen = true, theme, first = false }: {
+  label: string, subtitle?: string, children: React.ReactNode, defaultOpen?: boolean, theme: any, first?: boolean
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const [visible, setVisible] = useState(defaultOpen);
@@ -52,12 +52,19 @@ function CollapsibleSection({ label, children, defaultOpen = true, theme, first 
   return (
     <View style={{ marginTop: first ? 4 : 20 }}>
       <TouchableOpacity onPress={toggle} activeOpacity={0.7}
-        style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6, marginBottom: 10 }}>
-        <Text style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.accentBlueRaw }}>
-          {label}
-        </Text>
-        <View style={{ flex: 1, height: 1, backgroundColor: theme.accentBlueBorder }} />
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={14} color={theme.accentBlueRaw} />
+        style={{ paddingVertical: 6, marginBottom: 10, minHeight: 44, justifyContent: 'center' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <Text style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.accentBlueRaw }}>
+            {label}
+          </Text>
+          <View style={{ flex: 1, height: 1, backgroundColor: theme.accentBlueBorder }} />
+          <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={14} color={theme.accentBlueRaw} />
+        </View>
+        {!open && subtitle && (
+          <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 4 }}>
+            {subtitle}
+          </Text>
+        )}
       </TouchableOpacity>
       {visible && (
         <Animated.View style={{ opacity: fadeAnim }}>
@@ -666,7 +673,7 @@ export default function StatsScreen() {
           .map((section, idx) => {
             const isFirst = idx === 0;
             if (section.systemKey === 'atAGlance') return (
-              <CollapsibleSection key={section.id} label={section.label} defaultOpen={isFirst} theme={theme} first={isFirst}>
+              <CollapsibleSection key={section.id} label={section.label} subtitle="Averages across your logged days" defaultOpen={isFirst} theme={theme} first={isFirst}>
           <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
             <View style={{ flexDirection: 'row', gap: 6, marginBottom: 14 }}>
               {(['7', '30', '90', '180', 'ytd'] as const).map(p => (
@@ -762,7 +769,7 @@ export default function StatsScreen() {
             </CollapsibleSection>
             );
             if (section.systemKey === 'trends') return (
-              <CollapsibleSection key={section.id} label={section.label} defaultOpen={isFirst} theme={theme} first={isFirst}>
+              <CollapsibleSection key={section.id} label={section.label} subtitle="Charts and graphs over time" defaultOpen={isFirst} theme={theme} first={isFirst}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <View style={{ flexDirection: 'row', gap: 6 }}>
               {(['7', '30', '90'] as const).map(p => (
@@ -798,7 +805,7 @@ export default function StatsScreen() {
             </CollapsibleSection>
             );
             if (section.systemKey === 'records') return (
-              <CollapsibleSection key={section.id} label={section.label} defaultOpen={isFirst} theme={theme} first={isFirst}>
+              <CollapsibleSection key={section.id} label={section.label} subtitle="All-time bests with dates" defaultOpen={isFirst} theme={theme} first={isFirst}>
           <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
             <RecordTile icon="footsteps" label="Best Steps" value={records.steps} unit="steps"
               color={theme.accentBlue} date={records.stepsDate}
@@ -818,7 +825,7 @@ export default function StatsScreen() {
             </CollapsibleSection>
             );
             if (section.systemKey === 'streaks') return (
-              <CollapsibleSection key={section.id} label={section.label} defaultOpen={isFirst} theme={theme} first={isFirst}>
+              <CollapsibleSection key={section.id} label={section.label} subtitle="Consistency tracking" defaultOpen={isFirst} theme={theme} first={isFirst}>
           <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               {[
@@ -840,7 +847,7 @@ export default function StatsScreen() {
             </CollapsibleSection>
             );
             if (section.systemKey === 'calendar') return (
-              <CollapsibleSection key={section.id} label={section.label} defaultOpen={isFirst} theme={theme} first={isFirst}>
+              <CollapsibleSection key={section.id} label={section.label} subtitle="Day-by-day history" defaultOpen={isFirst} theme={theme} first={isFirst}>
           <CollapsibleCard label="Monthly View" defaultOpen={true} theme={theme}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
               <TouchableOpacity onPress={() => { if (calendarMonth === 0) { setCalendarMonth(11); setCalendarYear(y => y - 1); } else setCalendarMonth(m => m - 1); }} style={{ padding: 8 }}>
@@ -908,7 +915,7 @@ export default function StatsScreen() {
               </CollapsibleSection>
             );
             if (section.systemKey === 'reports') return (
-              <CollapsibleSection key={section.id} label={section.label} defaultOpen={isFirst} theme={theme} first={isFirst}>
+              <CollapsibleSection key={section.id} label={section.label} subtitle="Effort vs. results analysis" defaultOpen={isFirst} theme={theme} first={isFirst}>
                 <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, overflow: 'hidden' }]}>
                   <Ionicons name="analytics" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>

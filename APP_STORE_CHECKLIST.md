@@ -16,23 +16,19 @@ Roadmap references this file -- do not duplicate items there.
 
 ---
 
-### 2. [ ] Privacy Policy -- Write It, Host It, Link It
+### 2. [x] Privacy Policy -- DONE
 **Risk:** GUARANTEED REJECTION
 **Guideline:** 5.1.1(i) -- "All apps must include a link to their privacy policy in the App Store Connect metadata field and within the app in an easily accessible manner."
-**Issue:** sign-in.tsx line 113 says "Terms of Service and Privacy Policy" as plain unlinked text. No URL exists.
-**Fix:**
-- Write the privacy policy. Must cover: data collected (name, weight, food logs, health metrics, workout data, journal entries, faith reflections), HealthKit used only for health management never advertising, Firebase as third-party processor, FatSecret as food data provider, Google Sign-In, how users request deletion, no data selling
-- Host at a live URL before submission
-- Enter URL in App Store Connect Privacy Policy metadata field
-- Make "Privacy Policy" in sign-in.tsx a tappable Linking.openURL() call
+**Shipped:** public/privacy.html written and committed. Firebase Hosting configured in firebase.json (public/ folder, cleanUrls: true). Live URL: https://projectj-5d024.web.app/privacy after deploy. sign-in.tsx updated -- "Privacy Policy" is a tappable Linking.openURL() link. Covers: all data types (food logs, workouts, sleep, journal, faith preferences, Bible reflections, gratitude), HealthKit-specific Apple-required language (never for advertising, never sold, never shared with incompatible third parties), Firebase/FatSecret/Google/Apple as processors, account deletion path, children 13+, GDPR/CCPA acknowledgment, contact info.
+**Remaining action:** Run `firebase deploy --only hosting` to push public/ to Firebase Hosting. Then enter https://projectj-5d024.web.app/privacy in App Store Connect Privacy Policy field.
 
 ---
 
-### 3. [ ] Terms of Service -- Write It, Host It, Link It
+### 3. [x] Terms of Service -- DONE
 **Risk:** GUARANTEED REJECTION
 **Guideline:** 5.1.1(i) -- same as Privacy Policy
-**Issue:** Same as #2 -- referenced as plain unlinked text.
-**Fix:** Write ToS, host at live URL, wire tappable link in sign-in.tsx. Do same session as #2.
+**Shipped:** public/terms.html written and committed. Live URL: https://projectj-5d024.web.app/terms after deploy. sign-in.tsx updated -- "Terms of Service" is a tappable Linking.openURL() link. Covers: eligibility (13+), health/medical disclaimer (not a medical device, estimates only), account terms, permitted/prohibited use, User Content ownership, HealthKit terms, third-party services, IP, disclaimers, limitation of liability, indemnification, termination, governing law, arbitration clause.
+**Remaining action:** Included in same `firebase deploy --only hosting` command as Privacy Policy. Enter https://projectj-5d024.web.app/terms in App Store Connect ToS field.
 
 ---
 

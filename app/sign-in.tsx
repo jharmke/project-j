@@ -5,11 +5,14 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { GoogleAuthProvider, OAuthProvider, signInWithCredential } from 'firebase/auth';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { app, auth } from '../firebaseConfig';
 
 const IOS_CLIENT_ID = '841973180275-obscsfo4ad9ibir9dtpcago5fuptojlg.apps.googleusercontent.com';
+
+const TERMS_URL = 'https://projectj-5d024.web.app/terms';
+const PRIVACY_URL = 'https://projectj-5d024.web.app/privacy';
 
 const generateNonce = (): string =>
   Array.from({ length: 32 }, () =>
@@ -118,7 +121,15 @@ export default function SignInScreen() {
         </TouchableOpacity>
 
         <Text style={styles.legal}>
-          By signing in you agree to our Terms of Service and Privacy Policy.
+          {'By signing in you agree to our '}
+          <Text style={styles.legalLink} onPress={() => Linking.openURL(TERMS_URL)}>
+            Terms of Service
+          </Text>
+          {' and '}
+          <Text style={styles.legalLink} onPress={() => Linking.openURL(PRIVACY_URL)}>
+            Privacy Policy
+          </Text>
+          {'.'}
         </Text>
       </View>
 
@@ -183,6 +194,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 16,
     marginTop: 4,
+  },
+  legalLink: {
+    color: '#7777bb',
+    textDecorationLine: 'underline',
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,

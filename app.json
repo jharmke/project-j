@@ -9,7 +9,7 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.jharmke.projectj",
       "googleServicesFile": "./GoogleService-Info.plist",
       "entitlements": {
@@ -17,6 +17,14 @@
       },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
+      },
+      "privacyManifests": {
+        "NSPrivacyAccessedAPITypes": [
+          {
+            "NSPrivacyAccessedAPIType": "NSPrivacyAccessedAPICategoryUserDefaults",
+            "NSPrivacyAccessedAPITypeReasons": ["CA92.1"]
+          }
+        ]
       }
     },
     "android": {
@@ -52,12 +60,11 @@
       ],
       "expo-font",
       "@react-native-community/datetimepicker",
-      "expo-camera",
+      ["expo-camera", { "cameraPermission": "Project J uses your camera to scan food barcodes for nutritional information." }],
       [
         "@kingstinct/react-native-healthkit",
         {
-          "NSHealthShareUsageDescription": "Project J uses HealthKit to read your fitness and health data including activity, sleep, heart health, body measurements, and reproductive health metrics to provide personalized insights.",
-          "NSHealthUpdateUsageDescription": "Project J uses HealthKit to save workout and health data."
+          "NSHealthShareUsageDescription": "Project J uses HealthKit to read your fitness and health data including activity, sleep, heart rate, body measurements, and other health metrics to provide personalized insights."
         }
       ],
       "expo-apple-authentication",

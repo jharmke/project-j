@@ -32,7 +32,7 @@ Roadmap references this file -- do not duplicate items there.
 
 ---
 
-### 4. [ ] Privacy Manifest (PrivacyInfo.xcprivacy) -- Required by Apple
+### 4. [x] Privacy Manifest (PrivacyInfo.xcprivacy) -- DONE
 **Risk:** GUARANTEED REJECTION on upload -- Apple blocks App Store Connect uploads missing required reason declarations
 **Issue:** App uses AsyncStorage which internally calls NSUserDefaults. Apple requires a privacy manifest declaring the reason for any "required reason API" usage. app.json has no privacyManifests entry. Without this, the EAS production build will fail App Store Connect upload validation.
 **Fix -- add to app.json under ios:**
@@ -51,7 +51,7 @@ Reason code CA92.1 = "Access info from the same app that previously wrote the in
 
 ---
 
-### 5. [ ] Camera Permission String -- Too Generic
+### 5. [x] Camera Permission String -- DONE
 **Risk:** HIGH -- reviewer flag
 **Guideline:** 5.1.1(ii) -- "purpose strings must clearly and completely describe your use of the data"
 **Issue:** expo-camera in app.json is a bare string with no config. Auto-injected NSCameraUsageDescription will be generic.
@@ -76,7 +76,7 @@ Reason code CA92.1 = "Access info from the same app that previously wrote the in
 
 ---
 
-### 8. [ ] iPad -- supportsTablet: true Requires Acceptable iPad Experience + Screenshots
+### 8. [x] iPad -- DONE. supportsTablet set to false. iPhone-only for v1.
 **Risk:** HIGH -- Apple requires screenshots for iPad if supportsTablet is true, and the app must be usable on iPad
 **Issue:** app.json has "supportsTablet": true. This means Apple will require iPad screenshots at submission AND reviewers may test on iPad. The app has not been designed or tested for iPad.
 **Two options -- pick one before submission:**

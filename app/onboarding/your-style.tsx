@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { storageSet } from '../../utils/storage';
 import { TextInput } from 'react-native';
 import { THEMES } from '../../theme';
 import Svg, { Path, Line, Circle, Text as SvgText, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
@@ -364,7 +365,7 @@ export default function YourStyleScreen() {
       const current  = existing ? JSON.parse(existing) : {};
       const preset   = MACRO_PRESETS[macroPreset as keyof typeof MACRO_PRESETS];
 
-      await AsyncStorage.setItem('pj_settings', JSON.stringify({
+      await storageSet('pj_settings', JSON.stringify({
         ...current,
         styleMode: selectedMode,
         macroPreset,
@@ -376,13 +377,13 @@ export default function YourStyleScreen() {
         const dk = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
         const dayExisting = await AsyncStorage.getItem(`pj_${dk}`);
         const dayData = dayExisting ? JSON.parse(dayExisting) : {};
-        await AsyncStorage.setItem(`pj_${dk}`, JSON.stringify({ ...dayData, weight: parseFloat(currentWeight) }));
+        await storageSet(`pj_${dk}`, JSON.stringify({ ...dayData, weight: parseFloat(currentWeight) }));
       }
 
       // Save goal fields to profile
       const pd = await AsyncStorage.getItem('pj_profile');
       const prof = pd ? JSON.parse(pd) : {};
-      await AsyncStorage.setItem('pj_profile', JSON.stringify({
+      await storageSet('pj_profile', JSON.stringify({
         ...prof,
         weightGoal,
         goalWeight:         goalWeight || '',
@@ -395,7 +396,7 @@ export default function YourStyleScreen() {
       if (selectedMode !== 'mindful' && preset) {
         const profileData = await AsyncStorage.getItem('pj_profile');
         const profile     = profileData ? JSON.parse(profileData) : {};
-        await AsyncStorage.setItem('pj_profile', JSON.stringify({
+        await storageSet('pj_profile', JSON.stringify({
           ...profile,
           macroMode:        'ratio',
           macroProteinPct:  String(preset.p),

@@ -15,6 +15,7 @@ import { showCelebration } from '../../components/CelebrationOverlay';
 import { showAchievementToast, showDailyGoalToast } from '../../components/AchievementToast';
 import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, weightEntryIsPlausible, getWeightMilestonesCrossed, isGoalWeightHit, handleDailyGoalHit } from '../../achievementData';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
+import { storageSet } from '../../utils/storage';
 import { useTheme } from '../../theme';
 import { useHealthKit } from '../../useHealthKit';
 import { DayDetailContent } from '../day-detail';
@@ -962,7 +963,7 @@ export default function HomeScreen() {
     if (activeCalories > 0 || steps > 0 || sleepHours !== null || restingHR !== null || respiratoryRate !== null || bloodOxygen !== null || bodyFatPct !== null || exerciseMinutes !== null) {
       AsyncStorage.getItem(`pj_${todayKey}`).then(saved => {
         const current = saved ? JSON.parse(saved) : {};
-        AsyncStorage.setItem(`pj_${todayKey}`, JSON.stringify({
+        storageSet(`pj_${todayKey}`, JSON.stringify({
           ...current,
           ...(activeCalories > 0 ? { activeCalories } : {}),
           ...(steps > 0 ? { steps } : {}),
@@ -1032,7 +1033,7 @@ export default function HomeScreen() {
     try {
       const s = await AsyncStorage.getItem('pj_settings');
       const current = s ? JSON.parse(s) : {};
-      await AsyncStorage.setItem('pj_settings', JSON.stringify({ ...current, cardOrder: order, cardVisible: visible }));
+      await storageSet('pj_settings', JSON.stringify({ ...current, cardOrder: order, cardVisible: visible }));
     } catch (e) {
       console.log('Layout save error', e);
     }
@@ -1088,7 +1089,7 @@ export default function HomeScreen() {
             if (cloudData.weight)   setWeight(cloudData.weight);
             if (cloudData.ifStart)  setIfStart(cloudData.ifStart);
             if ('dailyNote' in cloudData) { setDailyNote(cloudData.dailyNote ?? ''); setSavedDailyNoteText(cloudData.dailyNote ?? ''); }
-            await AsyncStorage.setItem(`pj_${todayKey}`, JSON.stringify(cloudData));
+            await storageSet(`pj_${todayKey}`, JSON.stringify(cloudData));
           }
         }
       } catch (e) {
@@ -1114,7 +1115,7 @@ export default function HomeScreen() {
         // If rotation is empty or exhausted, reshuffle
         if (!rotation.order.length || rotation.index >= rotation.order.length) {
           rotation = { order: shuffle(VERSES.map((_, i) => i)), index: 0, lastDate: todayStr };
-          await AsyncStorage.setItem('pj_verse_rotation', JSON.stringify(rotation));
+          await storageSet('pj_verse_rotation', JSON.stringify(rotation));
         }
 
         // If it's a new day, advance the index
@@ -1126,7 +1127,7 @@ export default function HomeScreen() {
           } else {
             rotation.lastDate = todayStr;
           }
-          await AsyncStorage.setItem('pj_verse_rotation', JSON.stringify(rotation));
+          await storageSet('pj_verse_rotation', JSON.stringify(rotation));
         }
 
         setDailyVerse(VERSES[rotation.order[rotation.index]]);
@@ -1143,7 +1144,7 @@ export default function HomeScreen() {
       try {
         const existing = await AsyncStorage.getItem(`pj_${todayKey}`);
         const current  = existing ? JSON.parse(existing) : {};
-        await AsyncStorage.setItem(`pj_${todayKey}`, JSON.stringify({
+        await storageSet(`pj_${todayKey}`, JSON.stringify({
           ...current, ifStart, ifMethod, ifEnd, ifCustomHours, dailyNote, weight, water,
         }));
       } catch (e) { console.log('Save error', e); }
@@ -1368,7 +1369,7 @@ export default function HomeScreen() {
     try {
       const existing = await AsyncStorage.getItem(`pj_${todayKey}`);
       const current = existing ? JSON.parse(existing) : {};
-      await AsyncStorage.setItem(`pj_${todayKey}`, JSON.stringify({ ...current, weight: val }));
+      await storageSet(`pj_${todayKey}`, JSON.stringify({ ...current, weight: val }));
     } catch (e) { console.log('Weight save error', e); }
 
     // Achievement checks
@@ -1432,7 +1433,7 @@ export default function HomeScreen() {
   const pinGraphCard = async (card: StatsCard) => {
     const updated = allStatsCards.map(c => c.id === card.id ? { ...c, placement: 'both' as const } : c);
     setAllStatsCards(updated);
-    await AsyncStorage.setItem('pj_stats_cards', JSON.stringify(updated));
+    await storageSet('pj_stats_cards', JSON.stringify(updated));
     await loadPinnedTrendData(updated);
     setEditTab('my');
   };
@@ -1440,14 +1441,14 @@ export default function HomeScreen() {
   const unpinGraphCard = async (cardId: string) => {
     const updated = allStatsCards.map(c => c.id === cardId ? { ...c, placement: 'stats' as const } : c);
     setAllStatsCards(updated);
-    await AsyncStorage.setItem('pj_stats_cards', JSON.stringify(updated));
+    await storageSet('pj_stats_cards', JSON.stringify(updated));
     setPinnedTrendData(prev => { const next = { ...prev }; delete next[cardId]; return next; });
   };
 
   const handlePinnedCardPeriodChange = async (cardId: string, period: CardPeriod) => {
     const updated = allStatsCards.map(c => c.id === cardId ? { ...c, period } : c);
     setAllStatsCards(updated);
-    await AsyncStorage.setItem('pj_stats_cards', JSON.stringify(updated));
+    await storageSet('pj_stats_cards', JSON.stringify(updated));
     await loadPinnedTrendData(updated);
   };
 
@@ -2019,7 +2020,7 @@ export default function HomeScreen() {
                 const current=saved?JSON.parse(saved):{};
                 const bedStr=sleepBedTime.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
                 const wakeStr=sleepWakeTime.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-                await AsyncStorage.setItem(`pj_${todayKey}`,JSON.stringify({...current,sleepOverride:val,sleepBedTime:bedStr,sleepWakeTime:wakeStr}));
+                await storageSet(`pj_${todayKey}`,JSON.stringify({...current,sleepOverride:val,sleepBedTime:bedStr,sleepWakeTime:wakeStr}));
                 await saveToFirebase(todayKey,'sleepOverride',val);
                 setSleepStoredBed(bedStr); setSleepStoredWake(wakeStr); setEditingSleep(false); setActiveSleepPicker(null);
               }} style={{ flex:1, backgroundColor: theme.accentGreen, borderRadius:6, padding:10, alignItems:'center' }}>
@@ -2033,7 +2034,7 @@ export default function HomeScreen() {
                   const current=saved?JSON.parse(saved):{};
                   delete current.sleepOverride;
                   delete current.sleepFeelRating;
-                  await AsyncStorage.setItem(`pj_${todayKey}`,JSON.stringify(current));
+                  await storageSet(`pj_${todayKey}`,JSON.stringify(current));
                   setEditingSleep(false); setActiveSleepPicker(null);
                 }} style={{ backgroundColor: theme.accentRedBg, borderWidth:1, borderColor: theme.accentRedBorder, borderRadius:6, paddingHorizontal:16, alignItems:'center' }}>
                   <Text style={{ color: theme.accentRed, fontSize:13, fontFamily:'DMSans_500Medium' }}>Clear</Text>
@@ -2077,7 +2078,7 @@ export default function HomeScreen() {
             setSleepFeelRating(rating);
             const saved = await AsyncStorage.getItem(`pj_${todayKey}`);
             const current = saved ? JSON.parse(saved) : {};
-            await AsyncStorage.setItem(`pj_${todayKey}`, JSON.stringify({ ...current, sleepFeelRating: rating }));
+            await storageSet(`pj_${todayKey}`, JSON.stringify({ ...current, sleepFeelRating: rating }));
           };
 
           return (
@@ -2346,7 +2347,7 @@ export default function HomeScreen() {
               } else {
                 entries.unshift({ id: `${todayKey}_${Date.now()}`, date: todayKey, category: 'personal', title: "Today's Thoughts", notes: noteCurrentText });
               }
-              await AsyncStorage.setItem('pj_bible_reflections', JSON.stringify(entries));
+              await storageSet('pj_bible_reflections', JSON.stringify(entries));
             } catch {}
             setSavedDailyNoteText(noteCurrentText);
             showToast(isClearing ? 'Note cleared' : 'Note saved to journal', undefined, 'success');

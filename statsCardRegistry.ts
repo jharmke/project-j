@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { storageSet } from './utils/storage';
 
 export type StatsCardType = 'system' | 'graph';
 export type SystemCardKey = 'atAGlance' | 'trends' | 'records' | 'streaks' | 'calendar' | 'reports';
@@ -77,7 +78,7 @@ export async function saveStatsCards(cards: StatsCard[]): Promise<void> {
   try {
     // Normalize order to sequential integers before saving
     const ordered = cards.map((c, i) => ({ ...c, order: i }));
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(ordered));
+    await storageSet(STORAGE_KEY, JSON.stringify(ordered));
   } catch {}
 }
 

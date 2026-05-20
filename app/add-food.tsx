@@ -13,6 +13,7 @@ import { useToast } from '../components/Toast';
 import CustomFoodCreator from '../components/CustomFoodCreator';
 import { USDA_API_KEY } from '../config';
 import { db, getUserId, loadFromFirebase, saveToFirebase } from '../firebaseConfig';
+import { storageSet } from '../utils/storage';
 import { useTheme } from '../theme';
 import CryptoJS from 'crypto-js';
 
@@ -417,7 +418,7 @@ const saveEditFood = async () => {
       } : f
     );
     setMyFoods(updated);
-    await AsyncStorage.setItem('pj_my_foods', JSON.stringify(updated));
+    await storageSet('pj_my_foods', JSON.stringify(updated));
     await saveToFirebase('my_foods', 'foods', updated);
     showToast('Food saved', editFoodData.name.trim(), 'success');
     closeEditModal();
@@ -477,7 +478,7 @@ const saveEditFood = async () => {
       const updated = { ...barcodeOverrides };
       delete updated[barcode];
       setBarcodeOverrides(updated);
-      await AsyncStorage.setItem('pj_barcode_overrides', JSON.stringify(updated));
+      await storageSet('pj_barcode_overrides', JSON.stringify(updated));
       if (removedItem) {
         setResults(prev => prev.map(r => r.description === removedItem.description ? { ...r, isOverride: false } : r));
       }
@@ -491,7 +492,7 @@ const saveEditFood = async () => {
       const confirmedItem = { ...item, isOverride: true };
       const updated = { ...barcodeOverrides, [lastScannedBarcode]: confirmedItem };
       setBarcodeOverrides(updated);
-      await AsyncStorage.setItem('pj_barcode_overrides', JSON.stringify(updated));
+      await storageSet('pj_barcode_overrides', JSON.stringify(updated));
       setResults(prev => prev.map(r => r.description === item.description ? { ...r, isOverride: true } : r));
       setLastScannedBarcode(null);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -692,7 +693,7 @@ const openFoodDetail = async (food: SearchResult) => {
     if (!name || !cal) return;
     const updated = [...myFoods, { name, cal }].sort((a, b) => a.name.localeCompare(b.name));
     setMyFoods(updated);
-    await AsyncStorage.setItem('pj_my_foods', JSON.stringify(updated));
+    await storageSet('pj_my_foods', JSON.stringify(updated));
     await saveToFirebase('my_foods', 'foods', updated);
     setNewName('');
     setNewCal('');
@@ -709,7 +710,7 @@ const openFoodDetail = async (food: SearchResult) => {
         { text: 'Delete', style: 'destructive', onPress: async () => {
           const updated = myFoods.filter((_, i) => i !== idx);
           setMyFoods(updated);
-          await AsyncStorage.setItem('pj_my_foods', JSON.stringify(updated));
+          await storageSet('pj_my_foods', JSON.stringify(updated));
           await saveToFirebase('my_foods', 'foods', updated);
         }},
       ]
@@ -895,7 +896,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
       if (snap.exists() && snap.data().favorites) {
         const data = snap.data().favorites;
         setFavorites(data);
-        await AsyncStorage.setItem('pj_favorites', JSON.stringify(data));
+        await storageSet('pj_favorites', JSON.stringify(data));
       }
     }
   } catch (e) {
@@ -914,7 +915,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
       if (snap.exists() && snap.data().recipes) {
         const data = snap.data().recipes;
         setRecipes(data);
-        await AsyncStorage.setItem('pj_recipes', JSON.stringify(data));
+        await storageSet('pj_recipes', JSON.stringify(data));
       }
     }
   } catch (e) {
@@ -944,7 +945,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                 foodFsId && f.fsId ? f.fsId !== foodFsId : f.name !== name
               );
               setFavorites(updated);
-              await AsyncStorage.setItem('pj_favorites', JSON.stringify(updated));
+              await storageSet('pj_favorites', JSON.stringify(updated));
               await saveToFirebase('my_foods', 'favorites', updated);
               showToast('Removed from favorites', name, 'info');
             });
@@ -980,7 +981,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
       }];
     }
     setFavorites(updated);
-    await AsyncStorage.setItem('pj_favorites', JSON.stringify(updated));
+    await storageSet('pj_favorites', JSON.stringify(updated));
     await saveToFirebase('my_foods', 'favorites', updated);
   };
 

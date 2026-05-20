@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { storageSet } from './utils/storage';
 
 export type AchievementCategory = 'hydration' | 'steps' | 'weight' | 'streak' | 'faith' | 'nutrition' | 'general';
 export type AchievementTier = 'small' | 'medium' | 'large';
@@ -302,7 +303,7 @@ export async function loadAchievements(): Promise<AchievementsStore> {
 
 export async function saveAchievements(store: AchievementsStore): Promise<void> {
   try {
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+    await storageSet(STORAGE_KEY, JSON.stringify(store));
   } catch (e) {
     console.log('Achievement save error', e);
   }
@@ -456,7 +457,7 @@ export async function handleDailyGoalHit(
     [goalId]: { count: newCount, lastEarned: today },
   };
 
-  try { await AsyncStorage.setItem(GOAL_COUNTS_KEY, JSON.stringify(updated)); } catch {}
+  try { await storageSet(GOAL_COUNTS_KEY, JSON.stringify(updated)); } catch {}
 
   try {
     const celebRaw = await AsyncStorage.getItem(GOAL_CELEB_KEY);
@@ -467,7 +468,7 @@ export async function handleDailyGoalHit(
         ? [...celeb.goals, goalId]
         : [goalId],
     };
-    await AsyncStorage.setItem(GOAL_CELEB_KEY, JSON.stringify(newCeleb));
+    await storageSet(GOAL_CELEB_KEY, JSON.stringify(newCeleb));
   } catch {}
 
   return { fired: true, count: newCount, lastEarned: today };

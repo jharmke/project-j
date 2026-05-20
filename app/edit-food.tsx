@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { saveToFirebase } from '../firebaseConfig';
+import { storageSet } from '../utils/storage';
 import { useTheme } from '../theme';
 
 export default function EditFoodScreen() {
@@ -48,7 +49,7 @@ console.log('food:', JSON.stringify(food));
           saturatedFat: parseFloat(saturatedFat) || 0,
         } : f
       );
-      await AsyncStorage.setItem('pj_my_foods', JSON.stringify(updated));
+      await storageSet('pj_my_foods', JSON.stringify(updated));
       await saveToFirebase('my_foods', 'foods', updated);
       router.back();
     } catch (e) {

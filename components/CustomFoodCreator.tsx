@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { storageSet } from '../utils/storage';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -168,7 +169,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, pr
         ],
       };
       const updated = [...existing, newFood].sort((a, b) => a.name.localeCompare(b.name));
-      await AsyncStorage.setItem('pj_my_foods', JSON.stringify(updated));
+      await storageSet('pj_my_foods', JSON.stringify(updated));
       await saveToFirebase('my_foods', 'foods', updated);
       showToast('Food saved', name.trim(), 'success');
       onSaved?.(newFood);

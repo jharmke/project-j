@@ -10,6 +10,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { useTheme, THEMES } from '../../theme';
+import { storageSet } from '../../utils/storage';
 
 const AH_RED = '#FF3B30';
 
@@ -101,12 +102,12 @@ export default function AppleHealthScreen() {
     try {
       const existing = await AsyncStorage.getItem('pj_settings');
       const current  = existing ? JSON.parse(existing) : {};
-      await AsyncStorage.setItem('pj_settings', JSON.stringify({
+      await storageSet('pj_settings', JSON.stringify({
         ...current,
         healthKitConnected: connected,
       }));
       if (!connected) {
-        await AsyncStorage.setItem('pj_healthkit_skip', 'true');
+        await storageSet('pj_healthkit_skip', 'true');
       }
     } catch (e) {
       console.log('Apple Health save error', e);

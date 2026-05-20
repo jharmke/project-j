@@ -14,6 +14,7 @@ import { useEffect, useState } from 'react';
 import { LogBox } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { restoreIfFresh } from '../services/syncService';
 import { AchievementToastProvider, AchievementToastRenderer } from '../components/AchievementToast';
 import { CelebrationRenderer } from '../components/CelebrationOverlay';
 import { ToastProvider } from '../components/Toast';
@@ -48,13 +49,18 @@ function RootLayoutNav() {
 
     if (!user) {
       router.replace('/sign-in');
+      SplashScreen.hideAsync();
     } else if (!onboardingComplete) {
       router.replace('/onboarding/welcome');
+      SplashScreen.hideAsync();
     } else {
-      router.replace('/(tabs)');
+      // On a fresh device, restore from Firestore before showing the app.
+      // On an existing device hasPjData is true so this returns instantly.
+      restoreIfFresh().finally(() => {
+        router.replace('/(tabs)');
+        SplashScreen.hideAsync();
+      });
     }
-
-    SplashScreen.hideAsync();
   }, [onboardingChecked, authLoading, user, onboardingComplete]);
 
   return (

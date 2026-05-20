@@ -5,6 +5,7 @@ import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CustomFoodCreator from '../components/CustomFoodCreator';
 import { saveToFirebase } from '../firebaseConfig';
+import { storageSet } from '../utils/storage';
 import { useTheme } from '../theme';
 
 interface Ingredient {
@@ -153,7 +154,7 @@ export default function RecipeBuilderScreen() {
       } else {
         recipes.push(recipe);
       }
-      await AsyncStorage.setItem('pj_recipes', JSON.stringify(recipes));
+      await storageSet('pj_recipes', JSON.stringify(recipes));
       await saveToFirebase('recipes', 'list', recipes);
       Alert.alert('Saved!', `${recipeName} saved to your recipe library.`, [{ text: 'OK', onPress: () => router.back() }]);
     } catch (e) {

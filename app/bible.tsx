@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ToastRenderer, useToast } from '../components/Toast';
+import { storageSet } from '../utils/storage';
 import { BIBLE_BOOKS, Book, Chapter, Verse, fetchChapter, parseReference } from '../data/bible-web';
 import { useTheme } from '../theme';
 
@@ -256,7 +257,7 @@ export default function BibleScreen() {
         all.push({ ref: highlightedVerseRef, text: highlightedVerseText, book: selectedBook.name, chapter: selectedChapter.chapter, verse: highlightedVerse, savedAt: Date.now() });
         showToast('Verse saved', undefined, 'success');
       }
-      await AsyncStorage.setItem('pj_bible_favorites', JSON.stringify(all));
+      await storageSet('pj_bible_favorites', JSON.stringify(all));
       setFavorites(all);
     } catch (e) {}
   };
@@ -266,7 +267,7 @@ export default function BibleScreen() {
       const raw = await AsyncStorage.getItem('pj_bible_favorites');
       const all: BibleFavorite[] = raw ? JSON.parse(raw) : [];
       const updated = all.filter(f => f.ref !== ref);
-      await AsyncStorage.setItem('pj_bible_favorites', JSON.stringify(updated));
+      await storageSet('pj_bible_favorites', JSON.stringify(updated));
       setFavorites(updated); showToast('Removed from favorites', undefined, 'success');
     } catch (e) {}
   };
@@ -282,7 +283,7 @@ export default function BibleScreen() {
     try {
       const raw = await AsyncStorage.getItem('pj_settings');
       const s = raw ? JSON.parse(raw) : {};
-      await AsyncStorage.setItem('pj_settings', JSON.stringify({ ...s, bibleFavoritesSort: sort }));
+      await storageSet('pj_settings', JSON.stringify({ ...s, bibleFavoritesSort: sort }));
     } catch (e) {}
   };
 
@@ -309,7 +310,7 @@ export default function BibleScreen() {
     try {
       const raw = await AsyncStorage.getItem('pj_settings');
       const s = raw ? JSON.parse(raw) : {};
-      await AsyncStorage.setItem('pj_settings', JSON.stringify({ ...s, bibleTextSize: draftTextSize, bibleFontFamily: draftFontFamily }));
+      await storageSet('pj_settings', JSON.stringify({ ...s, bibleTextSize: draftTextSize, bibleFontFamily: draftFontFamily }));
     } catch (e) {}
     setShowSettingsModal(false);
     showToast('Reading settings saved', undefined, 'success');
@@ -325,7 +326,7 @@ export default function BibleScreen() {
       const existingIndex = all.findIndex((r: any) => r.category === 'verse' && r.date === todayKey && r.verseRef === highlightedVerseRef);
       const entry = { id: entryId, date: todayKey, category: 'verse', title: highlightedVerseRef, notes: reflectionText.trim(), verseRef: highlightedVerseRef, verseText: highlightedVerseText || '', acknowledged: true };
       if (existingIndex >= 0) { all[existingIndex] = entry; } else { all.unshift(entry); }
-      await AsyncStorage.setItem('pj_bible_reflections', JSON.stringify(all));
+      await storageSet('pj_bible_reflections', JSON.stringify(all));
       setHighlightedVerseAcknowledged(true);
       setShowReflectionModal(false);
       showToast(reflectionText.trim() ? 'Reflection saved' : 'Verse marked as read', highlightedVerseRef, 'success');

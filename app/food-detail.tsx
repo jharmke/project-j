@@ -11,6 +11,7 @@ import Reanimated, { useAnimatedProps, useSharedValue, withTiming } from 'react-
 import CustomFoodCreator from '../components/CustomFoodCreator';
 import { useToast } from '../components/Toast';
 import { saveToFirebase } from '../firebaseConfig';
+import { storageSet } from '../utils/storage';
 import { useTheme } from '../theme';
 import CryptoJS from 'crypto-js';
 
@@ -298,7 +299,7 @@ const isRecipeMode = recipeMode === 'true';
         });
         showToast('Added to favorites', food.description, 'success');
       }
-      await AsyncStorage.setItem('pj_favorites', JSON.stringify(favs));
+      await storageSet('pj_favorites', JSON.stringify(favs));
       await saveToFirebase('my_foods', 'favorites', favs);
       setIsFav(!isFav);
     } catch (e) {}
@@ -425,7 +426,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
           carbsPer100g,
           fatPer100g,
         };
-        await AsyncStorage.setItem('pj_pending_ingredient', JSON.stringify(ingredient));
+        await storageSet('pj_pending_ingredient', JSON.stringify(ingredient));
         router.back();
         router.back();
         return;
@@ -461,7 +462,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
       } else {
         entries.push(newEntry);
       }
-      await AsyncStorage.setItem(`pj_${date}`, JSON.stringify({ ...current, entries }));
+      await storageSet(`pj_${date}`, JSON.stringify({ ...current, entries }));
       await saveToFirebase(date, 'entries', entries);
       showToast(isEditing ? 'Entry updated' : 'Entry logged', `${calories} kcal · ${currentMeal}`, 'success');
       router.back();
@@ -541,7 +542,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
           fatPer100g: Math.round((parseFloat(editFoodData.fat) || 0) / servingGrams * 100 * 10) / 10,
         } : f
       );
-      await AsyncStorage.setItem('pj_my_foods', JSON.stringify(updated));
+      await storageSet('pj_my_foods', JSON.stringify(updated));
       await saveToFirebase('my_foods', 'foods', updated);
       showToast('Food saved', editFoodData.name.trim(), 'success');
       closeEditFoodModal();
@@ -814,7 +815,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
                       const saved = await AsyncStorage.getItem(`pj_${date}`);
                       const current = saved ? JSON.parse(saved) : {};
                       const entries = (current.entries || []).filter((_: any, i: number) => i !== parseInt(entryIndex));
-                      await AsyncStorage.setItem(`pj_${date}`, JSON.stringify({ ...current, entries }));
+                      await storageSet(`pj_${date}`, JSON.stringify({ ...current, entries }));
                       await saveToFirebase(date, 'entries', entries);
                       showToast('Removed from log', undefined, 'success');
                       router.back();

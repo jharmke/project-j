@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { saveToFirebase } from '../firebaseConfig';
+import { storageSet } from '../utils/storage';
 import { useTheme } from '../theme';
 
 const MEALS = ['Morning', 'Lunch', 'Dinner', 'Snacks'];
@@ -56,7 +57,7 @@ export default function RecipeLogScreen() {
         timestamp: Date.now(),
       };
       entries.push(newEntry);
-      await AsyncStorage.setItem(`pj_${date}`, JSON.stringify({ ...current, entries }));
+      await storageSet(`pj_${date}`, JSON.stringify({ ...current, entries }));
       await saveToFirebase(date, 'entries', entries);
       router.back();
       router.back();

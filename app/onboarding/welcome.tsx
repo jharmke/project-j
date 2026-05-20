@@ -3,6 +3,7 @@ import { Animated, Dimensions, StyleSheet, Text, TouchableOpacity, View } from '
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useTheme, THEMES } from '../../theme';
+import { storageSet } from '../../utils/storage';
 
 const { width, height } = Dimensions.get('window');
 
@@ -74,8 +75,7 @@ export default function WelcomeScreen() {
           <TouchableOpacity
             style={{ marginTop: 16, padding: 8 }}
             onPress={async () => {
-              const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-              await AsyncStorage.setItem('pj_onboarding_complete', 'true');
+              await storageSet('pj_onboarding_complete', 'true');
               router.replace('/(tabs)');
             }}
           >

@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { storageSet } from './utils/storage';
 import { useCallback, useEffect, useState } from 'react';
 
 const PREFIX = 'pj_tooltip_';
@@ -13,7 +14,7 @@ export function useTooltip(key: string) {
   }, [key]);
 
   const markSeen = useCallback(async () => {
-    await AsyncStorage.setItem(PREFIX + key, 'true');
+    await storageSet(PREFIX + key, 'true');
     setSeen(true);
   }, [key]);
 

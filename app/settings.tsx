@@ -11,6 +11,10 @@ import { BLANK_DAY, WorkoutTag } from '../workoutData';
 import CelebrationOverlay from '../components/CelebrationOverlay';
 import { showAchievementToast } from '../components/AchievementToast';
 import { ACHIEVEMENTS } from '../achievementData';
+import { collection, getDocs } from 'firebase/firestore';
+import { auth, db } from '../firebaseConfig';
+import { uploadAllLocal } from '../services/syncService';
+import { storageSet } from '../utils/storage';
 import { TOOLTIP_REGISTRY } from '../tooltipRegistry';
 import { useTooltip } from '../useTooltip';
 import TooltipModal from '../components/TooltipModal';
@@ -68,7 +72,7 @@ export default function SettingsScreen() {
       // Fix tag_rest
       tags = tags.map(t => t.id === 'tag_rest' ? { ...t, label: 'Rest', locked: true, color: '#64748b' } : t);
 
-      await AsyncStorage.setItem('pj_settings', JSON.stringify({ ...current, workoutTags: tags }));
+      await storageSet('pj_settings', JSON.stringify({ ...current, workoutTags: tags }));
       Alert.alert('Done', 'Default tags fixed. Restart the app to see changes.');
     } catch (e) {
       Alert.alert('Error', 'Something went wrong.');
@@ -110,7 +114,7 @@ export default function SettingsScreen() {
         added++;
       }
 
-      await AsyncStorage.setItem('pj_workout_state', JSON.stringify({ ...current, programs }));
+      await storageSet('pj_workout_state', JSON.stringify({ ...current, programs }));
       Alert.alert('Import Complete', `Added ${added} workout${added !== 1 ? 's' : ''} from the last ${importRange} days.`);
     } catch (e) {
       Alert.alert('Import Failed', 'Something went wrong. Please try again.');
@@ -138,7 +142,7 @@ export default function SettingsScreen() {
     try {
       const saved = await AsyncStorage.getItem('pj_settings');
       const current = saved ? JSON.parse(saved) : {};
-      await AsyncStorage.setItem('pj_settings', JSON.stringify({ ...current, [key]: value }));
+      await storageSet('pj_settings', JSON.stringify({ ...current, [key]: value }));
     } catch (e) {}
   };
 
@@ -475,7 +479,7 @@ export default function SettingsScreen() {
                         const saved = await AsyncStorage.getItem(key);
                         if (saved) {
                           const data = JSON.parse(saved);
-                          await AsyncStorage.setItem(key, JSON.stringify({ ...data, entries: [] }));
+                          await storageSet(key, JSON.stringify({ ...data, entries: [] }));
                         }
                       }
                       Alert.alert('Done', 'Food history cleared.');
@@ -532,6 +536,45 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Tests the slide-in achievement notification.</Text>
               </View>
               <Ionicons name="trophy-outline" size={18} color={theme.accentBlue} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.row, { borderTopColor: theme.borderCard }]}
+              onPress={() => {
+                Alert.alert(
+                  'Upload All Data to Firestore',
+                  'This uploads all your local app data to the cloud right now. Safe to run any time -- it never deletes local data.',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Upload', onPress: async () => {
+                      const count = await uploadAllLocal();
+                      Alert.alert('Done', `${count} keys uploaded to Firestore.`);
+                    }},
+                  ]
+                );
+              }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentBlue }]}>Upload All Data to Firestore</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>One-time upload of all local data to cloud. Dev use only.</Text>
+              </View>
+              <Ionicons name="cloud-upload-outline" size={18} color={theme.accentBlue} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.row, { borderTopColor: theme.borderCard }]}
+              onPress={async () => {
+                const uid = auth.currentUser?.uid;
+                if (!uid) { Alert.alert('Not signed in'); return; }
+                const allKeys = await AsyncStorage.getAllKeys();
+                const localCount = allKeys.filter(k => k.startsWith('pj_') && !k.startsWith('pj_bible_')).length;
+                const snap = await getDocs(collection(db, 'users', uid, 'store'));
+                const fsCount = snap.size;
+                const status = localCount === fsCount ? '✓ In sync' : '⚠ Mismatch';
+                Alert.alert('Sync Check', `Local: ${localCount} keys\nFirestore: ${fsCount} docs\n\n${status}`);
+              }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentBlue }]}>Check Sync Status</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Compares local key count to Firestore doc count. Dev use only.</Text>
+              </View>
+              <Ionicons name="checkmark-circle-outline" size={18} color={theme.accentBlue} />
             </TouchableOpacity>
           </View>
         )}

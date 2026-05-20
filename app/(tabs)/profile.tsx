@@ -9,6 +9,7 @@ import ToggleSwitch from '../../components/ToggleSwitch';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '../../components/Toast';
 import { saveToFirebase } from '../../firebaseConfig';
+import { storageSet } from '../../utils/storage';
 import { useTheme } from '../../theme';
 
 interface Profile {
@@ -394,7 +395,7 @@ export default function ProfileScreen() {
       }
 
       setProfile(synced);
-      await AsyncStorage.setItem('pj_profile', JSON.stringify(synced));
+      await storageSet('pj_profile', JSON.stringify(synced));
       await saveToFirebase('profile', 'data', synced);
       setSaved(true);
       setHasChanges(false);

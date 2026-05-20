@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '../components/Toast';
+import { storageSet } from '../utils/storage';
 import { useTheme } from '../theme';
 
 type Category = 'verse' | 'prayer' | 'study' | 'personal' | 'gratitude' | 'fitness';
@@ -414,13 +415,13 @@ export default function JournalScreen() {
         const parsed = JSON.parse(raw);
         const migrated = parsed.map(migrateEntry);
         setEntries(migrated);
-        await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+        await storageSet(STORAGE_KEY, JSON.stringify(migrated));
       }
     } catch (e) { console.log('Journal load error', e); }
   };
 
   const saveEntries = async (updated: JournalEntry[]) => {
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    await storageSet(STORAGE_KEY, JSON.stringify(updated));
     setEntries(updated);
   };
 
@@ -454,7 +455,7 @@ export default function JournalScreen() {
           const data = JSON.parse(raw);
           if (data.workoutNotes?.[entry.date] !== undefined) {
             data.workoutNotes[entry.date] = '';
-            await AsyncStorage.setItem('pj_workout_state', JSON.stringify(data));
+            await storageSet('pj_workout_state', JSON.stringify(data));
           }
         }
       } catch {}
@@ -463,7 +464,7 @@ export default function JournalScreen() {
       try {
         const raw = await AsyncStorage.getItem(`pj_${entry.date}`);
         const data = raw ? JSON.parse(raw) : {};
-        await AsyncStorage.setItem(`pj_${entry.date}`, JSON.stringify({ ...data, dailyNote: '' }));
+        await storageSet(`pj_${entry.date}`, JSON.stringify({ ...data, dailyNote: '' }));
       } catch {}
     }
     setExpandedIds(prev => { const next = new Set(prev); next.delete(id); return next; });

@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { storageSet } from '../../utils/storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { THEMES } from '../../theme';
 
@@ -65,7 +66,7 @@ export default function ProfileSetupScreen() {
       const existing = await AsyncStorage.getItem('pj_profile');
       const current  = existing ? JSON.parse(existing) : {};
       const totalInches = (parseFloat(heightFt) * 12) + (parseFloat(heightIn) || 0);
-      await AsyncStorage.setItem('pj_profile', JSON.stringify({
+      await storageSet('pj_profile', JSON.stringify({
         ...current,
         name:     name.trim(),
         height:   String(totalInches),

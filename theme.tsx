@@ -553,6 +553,7 @@ export const THEME_ORDER: ThemeId[] = ['light', 'dark', 'slate', 'warm', 'blush'
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { storageSet } from './utils/storage';
 
 interface ThemeContextValue {
   theme: Theme;
@@ -594,7 +595,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }): Reac
     try {
       const s = await AsyncStorage.getItem('pj_settings');
       const current = s ? JSON.parse(s) : {};
-      await AsyncStorage.setItem('pj_settings', JSON.stringify({ ...current, theme: id, selectedAccent: 'default' }));
+      await storageSet('pj_settings', JSON.stringify({ ...current, theme: id, selectedAccent: 'default' }));
     } catch (e) {
       console.log('Theme save error', e);
     }
@@ -605,7 +606,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }): Reac
     try {
       const s = await AsyncStorage.getItem('pj_settings');
       const current = s ? JSON.parse(s) : {};
-      await AsyncStorage.setItem('pj_settings', JSON.stringify({ ...current, selectedAccent: id }));
+      await storageSet('pj_settings', JSON.stringify({ ...current, selectedAccent: id }));
     } catch (e) {
       console.log('Accent save error', e);
     }

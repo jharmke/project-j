@@ -7,6 +7,7 @@ import { Alert, Animated, Modal, ScrollView, StyleSheet, Text, TextInput, Toucha
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
+import { storageSet } from '../../utils/storage';
 import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, handleDailyGoalHit } from '../../achievementData';
 import { showAchievementToast, showDailyGoalToast } from '../../components/AchievementToast';
 import { showCelebration } from '../../components/CelebrationOverlay';
@@ -311,7 +312,7 @@ export default function LogScreen() {
     try {
       const existing = await AsyncStorage.getItem(`pj_${activeDate}`);
       const current = existing ? JSON.parse(existing) : {};
-      await AsyncStorage.setItem(`pj_${activeDate}`, JSON.stringify({ ...current, [field]: value }));
+      await storageSet(`pj_${activeDate}`, JSON.stringify({ ...current, [field]: value }));
     } catch (e) {
       console.log('Save error', e);
     }
@@ -337,7 +338,7 @@ export default function LogScreen() {
           if (cloudData) {
             if (cloudData.entries && Array.isArray(cloudData.entries)) setEntries(cloudData.entries);
             if (typeof cloudData.water === 'number') setWater(Math.max(0, cloudData.water));
-            await AsyncStorage.setItem(`pj_${activeDate}`, JSON.stringify(cloudData));
+            await storageSet(`pj_${activeDate}`, JSON.stringify(cloudData));
           }
         }
         const profileData = await AsyncStorage.getItem('pj_profile');

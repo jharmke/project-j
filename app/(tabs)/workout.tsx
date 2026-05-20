@@ -10,6 +10,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Reanimated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ToastRenderer, useToast } from '../../components/Toast';
+import { storageSet } from '../../utils/storage';
 import { useTheme } from '../../theme';
 import { useHealthKit } from '../../useHealthKit';
 import { BLANK_DAY, DEFAULT_TAGS, DayProgram, Exercise, TAG_COLOR_PALETTE, WorkoutTag } from '../../workoutData';
@@ -195,11 +196,11 @@ useEffect(() => {
       const updated = { ...prev, [todayKey]: { ...(prev[todayKey] || {}), caloriesBurned: String(activeCalories) } };
       AsyncStorage.getItem('pj_workout_state').then(saved => {
         const current = saved ? JSON.parse(saved) : {};
-        AsyncStorage.setItem('pj_workout_state', JSON.stringify({ ...current, cardioLogs: updated }));
+        storageSet('pj_workout_state', JSON.stringify({ ...current, cardioLogs: updated }));
       });
       AsyncStorage.getItem(`pj_${todayKey}`).then(saved => {
         const current = saved ? JSON.parse(saved) : {};
-        AsyncStorage.setItem(`pj_${todayKey}`, JSON.stringify({ ...current, caloriesBurned: activeCalories }));
+        storageSet(`pj_${todayKey}`, JSON.stringify({ ...current, caloriesBurned: activeCalories }));
       });
       return updated;
     });
@@ -280,7 +281,7 @@ useEffect(() => {
     };
     AsyncStorage.getItem('pj_workout_state').then(saved => {
       const current2 = saved ? JSON.parse(saved) : {};
-      AsyncStorage.setItem('pj_workout_state', JSON.stringify({ ...current2, programs: updated }));
+      storageSet('pj_workout_state', JSON.stringify({ ...current2, programs: updated }));
     });
     return updated;
   });
@@ -391,7 +392,7 @@ useEffect(() => {
         }
 
         // Save merged tags back so storage stays clean
-        await AsyncStorage.setItem('pj_settings', JSON.stringify({ ...s, workoutTags: mergedTags }));
+        await storageSet('pj_settings', JSON.stringify({ ...s, workoutTags: mergedTags }));
         setTags(mergedTags);
       } catch (e) {
         console.log('Load error', e);
@@ -426,7 +427,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
 
   const saveState = async (newChecks = checks, newCardio = cardioComplete, newPrograms = programs, newNotes = workoutNotes, newCardioLogs = cardioLogs, newTemplate = weeklyTemplate, newProgramName = activeProgramName) => {
   try {
-    await AsyncStorage.setItem('pj_workout_state', JSON.stringify({
+    await storageSet('pj_workout_state', JSON.stringify({
       checks: newChecks,
       cardioComplete: newCardio,
       programs: newPrograms,
@@ -533,7 +534,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
           entries.unshift({ id: makeId(), date: activeDay, category: 'fitness', title: 'Workout Note', notes: noteText });
         }
       }
-      await AsyncStorage.setItem('pj_bible_reflections', JSON.stringify(entries));
+      await storageSet('pj_bible_reflections', JSON.stringify(entries));
     } catch {}
     showToast(isClearing ? 'Note cleared' : 'Note saved to journal', undefined, 'success');
   };
@@ -543,7 +544,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
     try {
       const s = await AsyncStorage.getItem('pj_settings');
       const current = s ? JSON.parse(s) : {};
-      await AsyncStorage.setItem('pj_settings', JSON.stringify({ ...current, workoutTags: newTags }));
+      await storageSet('pj_settings', JSON.stringify({ ...current, workoutTags: newTags }));
     } catch (e) { console.log('Tag save error', e); }
   };
 

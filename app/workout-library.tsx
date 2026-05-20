@@ -5,6 +5,7 @@ import { Alert, Animated, FlatList, Keyboard, Modal, ScrollView, StyleSheet, Tex
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { saveToFirebase } from '../firebaseConfig';
+import { storageSet } from '../utils/storage';
 import { ToastRenderer, useToast } from '../components/Toast';
 import { PRESET_PROGRAMS, PresetProgram } from '../workoutData';
 import { useTheme } from '../theme';
@@ -98,7 +99,7 @@ export default function WorkoutLibraryScreen() {
         if (saved) setLibrary(JSON.parse(saved));
         else {
           setLibrary(DEFAULT_LIBRARY);
-          await AsyncStorage.setItem('pj_exercise_library', JSON.stringify(DEFAULT_LIBRARY));
+          await storageSet('pj_exercise_library', JSON.stringify(DEFAULT_LIBRARY));
         }
       } catch (e) {
         console.log('Load error', e);
@@ -122,7 +123,7 @@ export default function WorkoutLibraryScreen() {
 
   const saveLibrary = async (updated: LibraryExercise[]) => {
     setLibrary(updated);
-    await AsyncStorage.setItem('pj_exercise_library', JSON.stringify(updated));
+    await storageSet('pj_exercise_library', JSON.stringify(updated));
     await saveToFirebase('exercise_library', 'exercises', updated);
   };
 
@@ -148,7 +149,7 @@ export default function WorkoutLibraryScreen() {
               const raw = await AsyncStorage.getItem('pj_workout_state');
               const state = raw ? JSON.parse(raw) : {};
               const updated = { ...state, weeklyTemplate: preset.days, activeProgramName: preset.name };
-              await AsyncStorage.setItem('pj_workout_state', JSON.stringify(updated));
+              await storageSet('pj_workout_state', JSON.stringify(updated));
               setActiveProgramName(preset.name);
               showToast('Program loaded', preset.name, 'success');
             } catch (e) {}
@@ -170,7 +171,7 @@ export default function WorkoutLibraryScreen() {
               const raw = await AsyncStorage.getItem('pj_workout_state');
               const state = raw ? JSON.parse(raw) : {};
               const updated = { ...state, weeklyTemplate: {}, activeProgramName: null };
-              await AsyncStorage.setItem('pj_workout_state', JSON.stringify(updated));
+              await storageSet('pj_workout_state', JSON.stringify(updated));
               setActiveProgramName(null);
               showToast('Program cleared', undefined, 'success');
             } catch (e) {}

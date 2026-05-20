@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
+import { storageSet } from '../utils/storage';
 
 const MEALS = ['Morning', 'Lunch', 'Dinner', 'Snacks'];
 
@@ -156,7 +157,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
     try {
       const saved = await AsyncStorage.getItem(`pj_${currentDate}`);
       const current = saved ? JSON.parse(saved) : {};
-      await AsyncStorage.setItem(`pj_${currentDate}`, JSON.stringify({ ...current, excluded: updated }));
+      await storageSet(`pj_${currentDate}`, JSON.stringify({ ...current, excluded: updated }));
     } catch {}
   };
 

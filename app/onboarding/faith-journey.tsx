@@ -7,6 +7,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { storageSet } from '../../utils/storage';
 import * as Haptics from 'expo-haptics';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -299,7 +300,7 @@ export default function FaithJourneyScreen() {
       try {
         const existing = await AsyncStorage.getItem('pj_settings');
         const current  = existing ? JSON.parse(existing) : {};
-        await AsyncStorage.setItem('pj_settings', JSON.stringify({
+        await storageSet('pj_settings', JSON.stringify({
           ...current,
           faithJourney: selected,
         }));

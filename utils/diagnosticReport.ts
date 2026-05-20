@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { storageSet } from './storage';
 import { offsetToDateKey } from './statsData';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -124,7 +125,7 @@ export async function saveReport(report: DiagnosticReport): Promise<void> {
     const existing = await loadSavedReports();
     const filtered = existing.filter(r => r.id !== report.id);
     const updated = [report, ...filtered].slice(0, 10);
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    await storageSet(STORAGE_KEY, JSON.stringify(updated));
   } catch {}
 }
 
@@ -132,7 +133,7 @@ export async function deleteReport(id: string): Promise<void> {
   try {
     const existing = await loadSavedReports();
     const updated = existing.filter(r => r.id !== id);
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    await storageSet(STORAGE_KEY, JSON.stringify(updated));
   } catch {}
 }
 

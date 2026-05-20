@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { THEMES, useTheme } from '../../theme';
+import { storageSet } from '../../utils/storage';
 
 const theme = THEMES['light'];
 
@@ -130,7 +131,7 @@ export default function AllSetScreen() {
       setTheme('light');
       setAccent(accentId as any);
 
-      await AsyncStorage.setItem('pj_settings', JSON.stringify({
+      await storageSet('pj_settings', JSON.stringify({
         ...current,
         cardOrder:      order,
         cardVisible:    visible,
@@ -138,10 +139,10 @@ export default function AllSetScreen() {
         selectedAccent: accentId,
       }));
 
-      await AsyncStorage.setItem('pj_onboarding_complete', 'true');
+      await storageSet('pj_onboarding_complete', 'true');
 
       if (openEditLayout) {
-        await AsyncStorage.setItem('pj_open_edit_layout', 'true');
+        await storageSet('pj_open_edit_layout', 'true');
       }
     } catch (e) {
       console.log('AllSet save error', e);

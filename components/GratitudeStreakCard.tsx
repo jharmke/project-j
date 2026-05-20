@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { storageSet } from '../utils/storage';
 import * as Haptics from 'expo-haptics';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
@@ -120,7 +121,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
           totalDays: Math.max(0, gratitudeStreak.totalDays - 1),
           lastLoggedDate: gratitudeStreak.currentStreak <= 1 ? null : yk,
         };
-        await AsyncStorage.setItem('pj_streaks', JSON.stringify({ ...stored, gratitude: gratitudeStreak }));
+        await storageSet('pj_streaks', JSON.stringify({ ...stored, gratitude: gratitudeStreak }));
       }
 
       setStreak(gratitudeStreak);
@@ -214,7 +215,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
       };
       if (existingIdx >= 0) { entries[existingIdx] = entry; }
       else { entries.unshift(entry); }
-      await AsyncStorage.setItem('pj_bible_reflections', JSON.stringify(entries));
+      await storageSet('pj_bible_reflections', JSON.stringify(entries));
 
       let updatedStreak = streak;
       let updatedSavers = savers;
@@ -230,7 +231,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
 
         const streaksRaw = await AsyncStorage.getItem('pj_streaks');
         const existing: PJStreaks = streaksRaw ? JSON.parse(streaksRaw) : DEFAULT_STREAKS;
-        await AsyncStorage.setItem('pj_streaks', JSON.stringify({ ...existing, gratitude: updatedStreak, savers: updatedSavers }));
+        await storageSet('pj_streaks', JSON.stringify({ ...existing, gratitude: updatedStreak, savers: updatedSavers }));
         setStreak(updatedStreak);
         setSavers(updatedSavers);
       }

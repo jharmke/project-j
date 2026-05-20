@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useRef, useEffect, useState } from 'react';
-import { Alert, Animated, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Animated, Dimensions, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CustomFoodCreator from '../components/CustomFoodCreator';
 import { useToast } from '../components/Toast';
@@ -18,6 +18,11 @@ interface Ingredient {
   protein: number;
   carbs: number;
   fat: number;
+  fiber?: number;
+  sugar?: number;
+  sodium?: number;
+  cholesterol?: number;
+  saturatedFat?: number;
   amount: number;
   unit: string;
 }
@@ -34,11 +39,17 @@ interface Recipe {
   totalProtein: number;
   totalCarbs: number;
   totalFat: number;
+  totalFiber?: number;
+  totalSugar?: number;
+  totalSodium?: number;
+  totalCholesterol?: number;
+  totalSaturatedFat?: number;
   createdAt: number;
 }
 
 const makeId = () => Math.random().toString(36).substr(2, 9);
 const WEIGHT_UNITS = ['g', 'oz', 'lbs', 'ml', 'cups'];
+const SCREEN_W = Dimensions.get('window').width;
 
 const filterDecimal = (v: string, set: (s: string) => void) => {
   const stripped = v.replace(/[^0-9.]/g, '');
@@ -65,15 +76,23 @@ export default function RecipeBuilderScreen() {
   const [servingName, setServingName] = useState('serving');
   const [showCustomFoodModal, setShowCustomFoodModal] = useState(false);
   const [showWeightUnitDropdown, setShowWeightUnitDropdown] = useState(false);
+  const [unitBtnPos, setUnitBtnPos] = useState<{ top: number; right: number } | null>(null);
   const weightUnitAnim = useRef(new Animated.Value(0)).current;
+  const unitBtnRef = useRef<View>(null);
 
   const openWeightUnitDropdown = () => {
     weightUnitAnim.setValue(0);
-    setShowWeightUnitDropdown(true);
-    Animated.timing(weightUnitAnim, { toValue: 1, duration: 180, useNativeDriver: true }).start();
+    unitBtnRef.current?.measureInWindow((x, y, width, height) => {
+      setUnitBtnPos({ top: y + height + 4, right: SCREEN_W - x - width });
+      setShowWeightUnitDropdown(true);
+      Animated.timing(weightUnitAnim, { toValue: 1, duration: 180, useNativeDriver: true }).start();
+    });
   };
   const closeWeightUnitDropdown = () => {
-    Animated.timing(weightUnitAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => setShowWeightUnitDropdown(false));
+    Animated.timing(weightUnitAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => {
+      setShowWeightUnitDropdown(false);
+      setUnitBtnPos(null);
+    });
   };
 
   useEffect(() => {
@@ -122,6 +141,11 @@ export default function RecipeBuilderScreen() {
       protein: food.protein || 0,
       carbs: food.carbs || 0,
       fat: food.fat || 0,
+      fiber: food.fiber || 0,
+      sugar: food.sugar || 0,
+      sodium: food.sodium || 0,
+      cholesterol: food.cholesterol || 0,
+      saturatedFat: food.saturatedFat || 0,
       amount: food.servingSize || 100,
       unit: food.servingUnit || 'g',
     };
@@ -137,11 +161,23 @@ export default function RecipeBuilderScreen() {
   const totalProtein = Math.round(ingredients.reduce((s, i) => s + i.protein, 0) * 10) / 10;
   const totalCarbs = Math.round(ingredients.reduce((s, i) => s + i.carbs, 0) * 10) / 10;
   const totalFat = Math.round(ingredients.reduce((s, i) => s + i.fat, 0) * 10) / 10;
+  const totalFiber = Math.round(ingredients.reduce((s, i) => s + (i.fiber || 0), 0) * 10) / 10;
+  const totalSugar = Math.round(ingredients.reduce((s, i) => s + (i.sugar || 0), 0) * 10) / 10;
+  const totalSodium = Math.round(ingredients.reduce((s, i) => s + (i.sodium || 0), 0));
+  const totalCholesterol = Math.round(ingredients.reduce((s, i) => s + (i.cholesterol || 0), 0));
+  const totalSaturatedFat = Math.round(ingredients.reduce((s, i) => s + (i.saturatedFat || 0), 0) * 10) / 10;
+  const hasExtended = ingredients.some(i => (i.fiber || 0) + (i.sugar || 0) + (i.sodium || 0) + (i.cholesterol || 0) + (i.saturatedFat || 0) > 0);
+
   const servings = parseInt(servingCount) || 1;
   const calPerServing = Math.round(totalCal / servings);
   const proteinPerServing = Math.round(totalProtein / servings * 10) / 10;
   const carbsPerServing = Math.round(totalCarbs / servings * 10) / 10;
   const fatPerServing = Math.round(totalFat / servings * 10) / 10;
+  const fiberPerServing = Math.round(totalFiber / servings * 10) / 10;
+  const sugarPerServing = Math.round(totalSugar / servings * 10) / 10;
+  const sodiumPerServing = Math.round(totalSodium / servings);
+  const cholesterolPerServing = Math.round(totalCholesterol / servings);
+  const saturatedFatPerServing = Math.round(totalSaturatedFat / servings * 10) / 10;
 
   const canSave = recipeName.trim().length > 0 && ingredients.length > 0;
 
@@ -161,6 +197,11 @@ export default function RecipeBuilderScreen() {
         totalProtein,
         totalCarbs,
         totalFat,
+        totalFiber,
+        totalSugar,
+        totalSodium,
+        totalCholesterol,
+        totalSaturatedFat,
         createdAt: Date.now(),
       };
       const saved = await AsyncStorage.getItem('pj_recipes');
@@ -223,7 +264,8 @@ export default function RecipeBuilderScreen() {
             <Text style={styles.addIngredientText}>Search Food</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.addCustomBtn} onPress={() => setShowCustomFoodModal(true)}>
-            <Ionicons name="add" size={20} color={theme.accentGreen} />
+            <Ionicons name="add" size={16} color={theme.accentBlue} />
+            <Text style={styles.addCustomText}>Create</Text>
           </TouchableOpacity>
         </View>
 
@@ -242,13 +284,13 @@ export default function RecipeBuilderScreen() {
                 <View style={styles.ingredientLeft}>
                   <Text style={styles.ingredientName} numberOfLines={1}>{ing.name}</Text>
                   <View style={styles.ingredientMeta}>
-                    <Text style={styles.ingredientAmount}>{ing.amount}{ing.unit}</Text>
-                    <Text style={styles.ingredientDot}>·</Text>
-                    <Text style={styles.ingredientCal}>{ing.cal} kcal</Text>
-                    <Text style={styles.ingredientDot}>·</Text>
-                    <Text style={[styles.ingredientMacro, { color: theme.macroProtein }]}>P{ing.protein}g</Text>
-                    <Text style={[styles.ingredientMacro, { color: theme.macroCarbs }]}>C{ing.carbs}g</Text>
-                    <Text style={[styles.ingredientMacro, { color: theme.macroFat }]}>F{ing.fat}g</Text>
+                    <Text style={styles.ingAmount} numberOfLines={1}>{ing.amount}{ing.unit}</Text>
+                    <Text style={styles.ingDot}>·</Text>
+                    <Text style={styles.ingCal}>{ing.cal} kcal</Text>
+                    <Text style={styles.ingDot}>·</Text>
+                    <Text style={[styles.ingMacro, { color: theme.macroProtein }]}>P{ing.protein}g</Text>
+                    <Text style={[styles.ingMacro, { color: theme.macroCarbs }]}>C{ing.carbs}g</Text>
+                    <Text style={[styles.ingMacro, { color: theme.macroFat }]}>F{ing.fat}g</Text>
                   </View>
                 </View>
                 <TouchableOpacity onPress={() => removeIngredient(ing.id)} style={styles.removeBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -270,20 +312,44 @@ export default function RecipeBuilderScreen() {
               </View>
               <View style={styles.macroDivider} />
               <View style={styles.macroStat}>
-                <Text style={[styles.macroVal, { color: theme.macroProtein }]}>{totalProtein}g</Text>
+                <Text style={[styles.macroVal, { color: theme.macroProtein }]}>{totalProtein}<Text style={styles.macroUnit}>g</Text></Text>
                 <Text style={styles.macroLabel}>Protein</Text>
               </View>
               <View style={styles.macroDivider} />
               <View style={styles.macroStat}>
-                <Text style={[styles.macroVal, { color: theme.macroCarbs }]}>{totalCarbs}g</Text>
+                <Text style={[styles.macroVal, { color: theme.macroCarbs }]}>{totalCarbs}<Text style={styles.macroUnit}>g</Text></Text>
                 <Text style={styles.macroLabel}>Carbs</Text>
               </View>
               <View style={styles.macroDivider} />
               <View style={styles.macroStat}>
-                <Text style={[styles.macroVal, { color: theme.macroFat }]}>{totalFat}g</Text>
+                <Text style={[styles.macroVal, { color: theme.macroFat }]}>{totalFat}<Text style={styles.macroUnit}>g</Text></Text>
                 <Text style={styles.macroLabel}>Fat</Text>
               </View>
             </View>
+            {hasExtended && (
+              <View style={styles.extendedRow}>
+                <View style={styles.extStat}>
+                  <Text style={styles.extVal}>{totalFiber}g</Text>
+                  <Text style={styles.extLabel}>Fiber</Text>
+                </View>
+                <View style={styles.extStat}>
+                  <Text style={styles.extVal}>{totalSugar}g</Text>
+                  <Text style={styles.extLabel}>Sugar</Text>
+                </View>
+                <View style={styles.extStat}>
+                  <Text style={styles.extVal}>{totalSodium}mg</Text>
+                  <Text style={styles.extLabel}>Sodium</Text>
+                </View>
+                <View style={styles.extStat}>
+                  <Text style={styles.extVal}>{totalCholesterol}mg</Text>
+                  <Text style={styles.extLabel}>Chol.</Text>
+                </View>
+                <View style={styles.extStat}>
+                  <Text style={styles.extVal}>{totalSaturatedFat}g</Text>
+                  <Text style={styles.extLabel}>Sat. Fat</Text>
+                </View>
+              </View>
+            )}
           </View>
         )}
 
@@ -324,20 +390,44 @@ export default function RecipeBuilderScreen() {
                 </View>
                 <View style={styles.macroDivider} />
                 <View style={styles.macroStat}>
-                  <Text style={[styles.macroVal, { color: theme.macroProtein }]}>{proteinPerServing}g</Text>
+                  <Text style={[styles.macroVal, { color: theme.macroProtein }]}>{proteinPerServing}<Text style={styles.macroUnit}>g</Text></Text>
                   <Text style={styles.macroLabel}>Protein</Text>
                 </View>
                 <View style={styles.macroDivider} />
                 <View style={styles.macroStat}>
-                  <Text style={[styles.macroVal, { color: theme.macroCarbs }]}>{carbsPerServing}g</Text>
+                  <Text style={[styles.macroVal, { color: theme.macroCarbs }]}>{carbsPerServing}<Text style={styles.macroUnit}>g</Text></Text>
                   <Text style={styles.macroLabel}>Carbs</Text>
                 </View>
                 <View style={styles.macroDivider} />
                 <View style={styles.macroStat}>
-                  <Text style={[styles.macroVal, { color: theme.macroFat }]}>{fatPerServing}g</Text>
+                  <Text style={[styles.macroVal, { color: theme.macroFat }]}>{fatPerServing}<Text style={styles.macroUnit}>g</Text></Text>
                   <Text style={styles.macroLabel}>Fat</Text>
                 </View>
               </View>
+              {hasExtended && (
+                <View style={styles.extendedRow}>
+                  <View style={styles.extStat}>
+                    <Text style={styles.extVal}>{fiberPerServing}g</Text>
+                    <Text style={styles.extLabel}>Fiber</Text>
+                  </View>
+                  <View style={styles.extStat}>
+                    <Text style={styles.extVal}>{sugarPerServing}g</Text>
+                    <Text style={styles.extLabel}>Sugar</Text>
+                  </View>
+                  <View style={styles.extStat}>
+                    <Text style={styles.extVal}>{sodiumPerServing}mg</Text>
+                    <Text style={styles.extLabel}>Sodium</Text>
+                  </View>
+                  <View style={styles.extStat}>
+                    <Text style={styles.extVal}>{cholesterolPerServing}mg</Text>
+                    <Text style={styles.extLabel}>Chol.</Text>
+                  </View>
+                  <View style={styles.extStat}>
+                    <Text style={styles.extVal}>{saturatedFatPerServing}g</Text>
+                    <Text style={styles.extLabel}>Sat. Fat</Text>
+                  </View>
+                </View>
+              )}
             </View>
           )}
         </View>
@@ -354,35 +444,42 @@ export default function RecipeBuilderScreen() {
               value={totalWeight}
               onChangeText={v => filterDecimal(v, setTotalWeight)}
             />
-            {/* Attached unit dropdown */}
-            <View>
+            <View ref={unitBtnRef} collapsable={false}>
               <TouchableOpacity
                 style={styles.unitPickerBtn}
                 onPress={showWeightUnitDropdown ? closeWeightUnitDropdown : openWeightUnitDropdown}>
                 <Text style={styles.unitPickerBtnText}>{totalWeightUnit}</Text>
                 <Ionicons name={showWeightUnitDropdown ? 'chevron-up' : 'chevron-down'} size={12} color={theme.accentBlue} />
               </TouchableOpacity>
-              {showWeightUnitDropdown && (
-                <Animated.View style={[styles.unitDropdown, {
-                  opacity: weightUnitAnim,
-                  transform: [{ translateY: weightUnitAnim.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }) }],
-                }]}>
-                  {WEIGHT_UNITS.map((u, i) => (
-                    <TouchableOpacity
-                      key={u}
-                      style={[styles.unitDropdownItem, i < WEIGHT_UNITS.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.borderSubtle }]}
-                      onPress={() => { setTotalWeightUnit(u); closeWeightUnitDropdown(); }}>
-                      <Text style={[styles.unitDropdownText, totalWeightUnit === u && { color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }]}>{u}</Text>
-                      {totalWeightUnit === u && <Ionicons name="checkmark" size={12} color={theme.accentBlue} />}
-                    </TouchableOpacity>
-                  ))}
-                </Animated.View>
-              )}
             </View>
           </View>
         </View>
 
       </ScrollView>
+
+      {/* Weight unit dropdown -- Modal for reliable click-outside dismiss */}
+      {showWeightUnitDropdown && unitBtnPos && (
+        <Modal transparent animationType="none" onRequestClose={closeWeightUnitDropdown}>
+          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={closeWeightUnitDropdown} />
+          <Animated.View style={[styles.unitDropdown, {
+            position: 'absolute',
+            top: unitBtnPos.top,
+            right: unitBtnPos.right,
+            opacity: weightUnitAnim,
+            transform: [{ translateY: weightUnitAnim.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }) }],
+          }]}>
+            {WEIGHT_UNITS.map((u, i) => (
+              <TouchableOpacity
+                key={u}
+                style={[styles.unitDropdownItem, i < WEIGHT_UNITS.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.borderSubtle }]}
+                onPress={() => { setTotalWeightUnit(u); closeWeightUnitDropdown(); }}>
+                <Text style={[styles.unitDropdownText, totalWeightUnit === u && { color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }]}>{u}</Text>
+                {totalWeightUnit === u && <Ionicons name="checkmark" size={12} color={theme.accentBlue} />}
+              </TouchableOpacity>
+            ))}
+          </Animated.View>
+        </Modal>
+      )}
 
       <CustomFoodCreator
         visible={showCustomFoodModal}
@@ -437,9 +534,11 @@ const useStyles = (theme: any) => StyleSheet.create({
   },
   addIngredientText: { color: theme.accentBlue, fontSize: 14, fontFamily: 'DMSans_600SemiBold' },
   addCustomBtn: {
-    backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder,
-    borderRadius: 10, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4,
+    backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder,
+    borderRadius: 10, paddingHorizontal: 16, paddingVertical: 14,
   },
+  addCustomText: { color: theme.accentBlue, fontSize: 14, fontFamily: 'DMSans_600SemiBold' },
   emptyState: { alignItems: 'center', paddingVertical: 20, gap: 6 },
   emptyTitle: { fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' },
   emptySubtitle: { fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', textAlign: 'center' },
@@ -447,17 +546,25 @@ const useStyles = (theme: any) => StyleSheet.create({
   ingredientBorder: { borderBottomWidth: 1, borderBottomColor: theme.borderSubtle },
   ingredientLeft: { flex: 1, marginRight: 12 },
   ingredientName: { fontSize: 14, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', marginBottom: 4 },
-  ingredientMeta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 4 },
-  ingredientAmount: { fontSize: 11, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' },
-  ingredientDot: { fontSize: 11, color: theme.textDim },
-  ingredientCal: { fontSize: 11, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' },
-  ingredientMacro: { fontSize: 11, fontFamily: 'DMSans_500Medium' },
+  ingredientMeta: { flexDirection: 'row', alignItems: 'center' },
+  ingAmount: { width: 56, fontSize: 11, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' },
+  ingDot: { fontSize: 11, color: theme.textDim, marginHorizontal: 3 },
+  ingCal: { width: 60, fontSize: 11, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' },
+  ingMacro: { width: 38, fontSize: 11, fontFamily: 'DMSans_500Medium' },
   removeBtn: { padding: 4 },
   macroRow: { flexDirection: 'row', alignItems: 'center' },
   macroStat: { flex: 1, alignItems: 'center' },
   macroVal: { fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
+  macroUnit: { fontSize: 14, fontFamily: 'DMSans_400Regular', letterSpacing: 0 },
   macroLabel: { fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 1, letterSpacing: 1 },
   macroDivider: { width: 1, height: 32, backgroundColor: theme.borderSubtle },
+  extendedRow: {
+    flexDirection: 'row', marginTop: 12, paddingTop: 12,
+    borderTopWidth: 1, borderTopColor: theme.borderSubtle,
+  },
+  extStat: { flex: 1, alignItems: 'center' },
+  extVal: { fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' },
+  extLabel: { fontSize: 8, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 2, letterSpacing: 0.5, textTransform: 'uppercase' },
   perServingCard: {
     backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder,
     borderRadius: 10, padding: 14, marginTop: 14,
@@ -476,11 +583,11 @@ const useStyles = (theme: any) => StyleSheet.create({
   },
   unitPickerBtnText: { color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
   unitDropdown: {
-    position: 'absolute', top: '100%', right: 0, marginTop: 4,
     backgroundColor: theme.bgSheet, borderWidth: 1, borderColor: theme.borderCard,
     borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw,
-    borderRadius: 10, minWidth: 80, zIndex: 100,
+    borderRadius: 10, minWidth: 80,
     shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8,
+    elevation: 10,
   },
   unitDropdownItem: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',

@@ -379,6 +379,11 @@ const openEditModal = (food: any) => {
     servingGrams: food.servingSize?.toString() || '100',
     servingUnitType: food.servingUnitType || 'g',
     servingLabel: food.servingUnit || '',
+    additionalServings: (food.additionalServings || []).map((s: any, i: number) => ({
+      id: `as_${i}`,
+      label: s.label || '',
+      grams: s.grams?.toString() || '',
+    })),
   });
   setShowEditMyFood(true);
   editOverlayAnim.setValue(0);
@@ -430,6 +435,9 @@ const saveEditFood = async () => {
         proteinPer100g: Math.round((parseFloat(editFoodData.protein) || 0) / servingGrams * 100 * 10) / 10,
         carbsPer100g: Math.round((parseFloat(editFoodData.carbs) || 0) / servingGrams * 100 * 10) / 10,
         fatPer100g: Math.round((parseFloat(editFoodData.fat) || 0) / servingGrams * 100 * 10) / 10,
+        additionalServings: (editFoodData.additionalServings || [])
+          .filter((s: any) => s.label?.trim() && parseFloat(s.grams) > 0)
+          .map((s: any) => ({ label: s.label.trim(), grams: parseFloat(s.grams) })),
       } : f
     );
     setMyFoods(updated);
@@ -608,10 +616,19 @@ const saveEditFood = async () => {
 
   const getCalories = (food: SearchResult) => {
     const e = food.foodNutrients?.find((n: any) => n.nutrientName === 'Energy' && n.unitName === 'KCAL');
-    return Math.round(e?.value || 0);
+    return Math.round(e?.value || (food as any).cal || 0);
   };
 
   const getMacros = (food: SearchResult) => {
+    if ((food as any).isRecipe && (food as any).recipeData) {
+      const r = (food as any).recipeData;
+      const servings = r.servingCount || 1;
+      return {
+        protein: Math.round((r.totalProtein || 0) / servings),
+        carbs: Math.round((r.totalCarbs || 0) / servings),
+        fat: Math.round((r.totalFat || 0) / servings),
+      };
+    }
     const p = food.foodNutrients?.find((n: any) => n.nutrientName === 'Protein');
     const c = food.foodNutrients?.find((n: any) => n.nutrientName === 'Carbohydrate, by difference');
     const f = food.foodNutrients?.find((n: any) => n.nutrientName === 'Total lipid (fat)');
@@ -1517,6 +1534,55 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
+                {/* Additional Servings */}
+                <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                  <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase' }}>Additional Servings</Text>
+                  <TouchableOpacity
+                    onPress={() => setEditFoodData((p: any) => p ? { ...p, additionalServings: [...(p.additionalServings || []), { id: `as_${Date.now()}`, label: '', grams: '' }] } : null)}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}>
+                    <Ionicons name="add" size={12} color={theme.accentBlue} />
+                    <Text style={{ fontSize: 11, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>Add</Text>
+                  </TouchableOpacity>
+                </View>
+                {(editFoodData?.additionalServings || []).map((s: any, i: number) => (
+                  <View key={s.id} style={{ flexDirection: 'row', gap: 6, marginBottom: 8, alignItems: 'center' }}>
+                    <TextInput
+                      style={{ flex: 1.4, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 8, paddingHorizontal: 10, fontSize: 13, fontFamily: 'DMSans_400Regular' }}
+                      placeholder="Label (e.g. 1 link)"
+                      placeholderTextColor={theme.textDim}
+                      value={s.label}
+                      onChangeText={v => setEditFoodData((p: any) => {
+                        if (!p) return null;
+                        const updated = [...(p.additionalServings || [])];
+                        updated[i] = { ...updated[i], label: v };
+                        return { ...p, additionalServings: updated };
+                      })}
+                    />
+                    <TextInput
+                      style={{ flex: 0.8, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 8, paddingHorizontal: 10, fontSize: 13, fontFamily: 'DMSans_400Regular' }}
+                      placeholder="g"
+                      placeholderTextColor={theme.textDim}
+                      keyboardType="decimal-pad"
+                      value={s.grams}
+                      onChangeText={v => setEditFoodData((p: any) => {
+                        if (!p) return null;
+                        const updated = [...(p.additionalServings || [])];
+                        updated[i] = { ...updated[i], grams: filterDecimal(v) };
+                        return { ...p, additionalServings: updated };
+                      })}
+                    />
+                    <TouchableOpacity
+                      onPress={() => setEditFoodData((p: any) => p ? { ...p, additionalServings: (p.additionalServings || []).filter((_: any, j: number) => j !== i) } : null)}
+                      style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                      <Ionicons name="close-circle" size={18} color={theme.textDim} />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+                {(editFoodData?.additionalServings || []).length === 0 && (
+                  <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginBottom: 10 }}>Tap Add to define extra serving sizes (e.g. 1 link, 6 pieces)</Text>
+                )}
               </ScrollView>
               <View style={{ flexDirection: 'row', gap: 10, padding: 16, paddingTop: 12 }}>
                 <TouchableOpacity onPress={closeEditModal} style={{ flex: 1, padding: 12, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, alignItems: 'center' }}>

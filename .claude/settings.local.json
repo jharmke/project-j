@@ -14,7 +14,11 @@
       "PowerShell(git push *)",
       "PowerShell(tabs *)",
       "PowerShell(Get-ChildItem *)",
-      "PowerShell(git *)"
+      "PowerShell(git *)",
+      "WebSearch",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\jthar\\\\ProjectJ\" -Recurse -Name)",
+      "WebFetch(domain:docs.expo.dev)",
+      "Bash(npm install *)"
     ]
   }
 }

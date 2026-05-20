@@ -64,6 +64,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, pr
   const [servingGrams, setServingGrams] = useState('');
   const [servingLabel, setServingLabel] = useState('');
   const [servingUnitType, setServingUnitType] = useState('g');
+  const [additionalServings, setAdditionalServings] = useState<Array<{ id: string; label: string; grams: string }>>([]);
   const [showOptional, setShowOptional] = useState(false);
   const optionalHeight = useRef(new Animated.Value(0)).current;
   const optionalMeasured = useRef(0);
@@ -117,6 +118,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, pr
     setFiber(''); setSugar(''); setSodium('');
     setCholesterol(''); setSaturatedFat('');
     setServingGrams(''); setServingLabel(''); setServingUnitType('g');
+    setAdditionalServings([]);
     setShowOptional(false);
     optionalHeight.setValue(0);
     optionalMeasured.current = 0;
@@ -157,6 +159,9 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, pr
         servingSize: grams,
         servingUnitType: servingUnitType,
         servingUnit: servingLabel.trim() || `${grams}${servingUnitType}`,
+        additionalServings: additionalServings
+          .filter(s => s.label.trim() && parseFloat(s.grams) > 0)
+          .map(s => ({ label: s.label.trim(), grams: parseFloat(s.grams) })),
         calPer100g: Math.round((parseInt(calories) / grams) * 100),
         proteinPer100g: protein ? Math.round((parseFloat(protein) / grams) * 100 * 10) / 10 : 0,
         carbsPer100g: carbs ? Math.round((parseFloat(carbs) / grams) * 100 * 10) / 10 : 0,
@@ -244,6 +249,47 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, pr
                 <Text style={s.fieldLabel}>Serving Label <Text style={s.unitText}>(optional)</Text></Text>
                 <TextInput style={s.input} placeholder="e.g. 1 scoop, 1 container" placeholderTextColor={theme.textPlaceholder} value={servingLabel} onChangeText={setServingLabel} />
               </View>
+              {/* Additional Servings */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, marginTop: 4 }}>
+                <Text style={[s.sectionLabel, { marginTop: 0, marginBottom: 0 }]}>Additional Servings</Text>
+                <TouchableOpacity
+                  onPress={() => setAdditionalServings(prev => [...prev, { id: `as_${Date.now()}`, label: '', grams: '' }])}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}>
+                  <Ionicons name="add" size={12} color={theme.accentBlue} />
+                  <Text style={{ fontSize: 11, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>Add</Text>
+                </TouchableOpacity>
+              </View>
+              {additionalServings.length === 0 && (
+                <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginBottom: 12 }}>Optional. Add extra serving sizes like "1 link" or "6 pieces".</Text>
+              )}
+              {additionalServings.map((sv, i) => (
+                <View key={sv.id} style={{ flexDirection: 'row', gap: 6, marginBottom: 8, alignItems: 'center' }}>
+                  <TextInput
+                    style={[s.input, { flex: 1.4, paddingVertical: 8 }]}
+                    placeholder="Label (e.g. 1 link)"
+                    placeholderTextColor={theme.textPlaceholder}
+                    value={sv.label}
+                    onChangeText={v => setAdditionalServings(prev => prev.map((x, j) => j === i ? { ...x, label: v } : x))}
+                  />
+                  <TextInput
+                    style={[s.input, { flex: 0.8, paddingVertical: 8 }]}
+                    placeholder="g"
+                    placeholderTextColor={theme.textPlaceholder}
+                    keyboardType="decimal-pad"
+                    value={sv.grams}
+                    onChangeText={v => {
+                      const stripped = v.replace(/[^0-9.]/g, '');
+                      setAdditionalServings(prev => prev.map((x, j) => j === i ? { ...x, grams: stripped } : x));
+                    }}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setAdditionalServings(prev => prev.filter((_, j) => j !== i))}
+                    style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <Ionicons name="close-circle" size={18} color={theme.textDim} />
+                  </TouchableOpacity>
+                </View>
+              ))}
               <TouchableOpacity style={s.optionalToggle} onPress={toggleOptional}>
                 <Text style={s.optionalToggleText}>Macros &amp; Extended Nutrition</Text>
                 <Ionicons name={showOptional ? 'chevron-up' : 'chevron-down'} size={14} color={theme.accentBlue} />

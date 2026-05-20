@@ -439,6 +439,14 @@ Custom water amount modal -- DONE. bgSheet, Animated.Value fade, tap-outside dis
 [x] food-detail.tsx KAV -- automaticallyAdjustKeyboardInsets + keyboardDismissMode="on-drag" added to main ScrollView.
 [x] Recipe builder full CPP redo -- dark card-based design, accent-colored header title, dim Save button until name+ingredients valid, toast on save instead of Alert, unit picker as smooth attached dropdown (fade+slide, no Modal), ingredient rows with macro colors + trash icon, per-serving card uses accentBlueBg, all cards have 1.5px accent top border + shadow. recipe-builder.tsx.
 [x] add-food.tsx hardcoded #444444 placeholder fixed to theme.textDim.
+[x] Recipe builder + Create button -- changed from green + icon to accent-blue "Create" label + icon, matches Search Food button style. recipe-builder.tsx.
+[x] Recipe builder ingredient row alignment -- fixed-width columns for amount (56px), kcal (60px), macro labels (38px each). No more flex-wrap misalignment. recipe-builder.tsx.
+[x] Recipe builder unit dropdown click-outside dismiss -- converted inline Animated.View to Modal-based dropdown using measureInWindow for position. Tapping anywhere outside closes it smoothly. recipe-builder.tsx.
+[x] Recipe builder extended nutrition in totals -- Ingredient interface extended with fiber/sugar/sodium/cholesterol/saturatedFat. Total Nutrition and Per Serving cards now show extended row when any ingredient has extended data. recipe-builder.tsx.
+[x] Multiple serving sizes on custom My Foods -- additionalServings: [{label, grams}] saved on MyFood objects. CustomFoodCreator.tsx: Add Serving UI in create flow. Both Edit Food modals (add-food.tsx and food-detail.tsx): manage additional servings inline. food-detail.tsx: builds customServings array from additionalServings + per-gram rates, shows serving picker when >1 serving, bypasses syntheticServing path.
+[x] Recipe 0 kcal / no macros in Recipes tab -- getCalories fell through to 0 when foodNutrients was empty. Fixed: falls back to food.cal. getMacros had no recipe branch. Fixed: isRecipe path reads recipeData.totalProtein/Carbs/Fat divided by servingCount. add-food.tsx.
+[x] Recipe builder capital G fix -- Bebas Neue renders lowercase as uppercase. Wrapped "g" unit in nested DMSans Text (macroUnit style, fontSize 14) inside each macroVal. Total Nutrition and Per Serving cards fixed. recipe-builder.tsx.
+[x] GoogleService-Info.plist gitignored -- added to .gitignore. Run: git rm --cached GoogleService-Info.plist then commit. Rotate the Google API key in Google Cloud Console (was exposed in commit f6b94736 on public repo). Firebase API keys are lower-risk than typical secrets but rotation is still best practice.
 App-wide OZ to oz audit -- index.tsx and log.tsx fixed this session. day-detail and any other screens not yet checked. Complete audit needed. (SOON)
 
 Women's health and HealthKit

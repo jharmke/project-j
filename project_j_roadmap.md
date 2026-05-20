@@ -387,7 +387,7 @@ fsId saved on diary entries in saveEntry, passed through edit entry path in log.
 
 SOON -- confirmed next few sessions
 
-Cloud data sync (pre-App Store required) -- all pj_* AsyncStorage writes need mirrored Firestore writes per authenticated user. On first login, restore flow pulls Firestore data to local AsyncStorage if device is fresh. Currently data is 100% local -- auth is a gate only, not connected to storage. Each user's data must be isolated per Firebase UID. Dedicated session.
+[x] Cloud data sync -- SHIPPED. services/syncService.ts: syncKey() fire-and-forget Firestore mirror, restoreIfFresh() fresh-device restore gate (only fires when zero local pj_* data -- cannot overwrite existing data), uploadAllLocal() one-time migration. utils/storage.ts: storageSet() wrapper (local write awaited first, Firestore silent mirror). All AsyncStorage.setItem calls across 22 files replaced with storageSet. Firestore path: users/{uid}/store/{key}. pj_bible_* cache keys excluded (re-fetchable, thousands of docs). _layout.tsx wired to call restoreIfFresh() before routing to tabs on login. Dev tools: Upload All Data to Firestore + Check Sync Status (local count vs Firestore doc count with in-sync indicator). Verified 38/38 keys in sync on device.
 
 Stats Phase 3 remaining steps (do in order):
 - [x] SHIPPED Phase 3 Step 6 -- Creator modal. 3-step slide-up sheet: data type grid (7 options, DATA_KEY_META icons) → chart type picker (line/bar; macros forced stackedBar, skips to preview) → live StatsGraphCard preview with real 7d data. ADD TO STATS button appends new card (period: 7, auto-label from DATA_KEY_META) to pj_stats_cards. Step dots fixed at sheet bottom (active dot wider pill). Temp "+" header button wired; Step 7 FAB will be primary entry point.
@@ -610,8 +610,22 @@ Settings > Help section -- two subsections: Definitions (auto-populates from too
 Coaching style deep-dive page -- dedicated screen explaining all three modes in depth. Who each mode is for, what changes per mode, why certain features are hidden in Mindful, language differences, worked examples. Written warmly, not like a help doc. Findable from settings and from onboarding. NOW -- high value, reduces churn from users who feel they picked wrong.
 Settings page overhaul + profile/settings consolidation -- collapsible card sections, CPP. Planned sections: Account, Appearance, Health, Notifications, Faith, Help, About/Legal. Audit and consolidate scattered or redundant settings into logical groupings. Polish UI consistency, spacing, and labels. Profile/settings boundary cleanup included. Scope and specific changes TBD -- review both screens in a dedicated thread before building. Dedicated future session.
 
-App name -- finalize from shortlist (Prevail, Steadfast, Worthy, Haven, Witness, Sown), verify App Store + TikTok handle availability before committing. Prevail is strongest -- punchy, fitness-forward, faith-adjacent without screaming it.
-TestFlight -- setup, App Store Connect, tester invite flow. Friends and family first, not wide beta.
+[x] App Store readiness scan -- COMPLETE 2026-05-19. Full audit done. See APP_STORE_CHECKLIST.md for all findings, status tracking, and attack order. Do not track individual fix items here -- that file is the source of truth.
+
+App Store code fixes -- work through APP_STORE_CHECKLIST.md in order. Current status:
+[ ] 1. Account deletion -- Settings UI + Firebase Auth delete + Firestore wipe + AsyncStorage wipe (GUARANTEED REJECTION without this)
+[ ] 2. Privacy policy + Terms of Service -- write, host at live URL, wire tappable links in sign-in.tsx (GUARANTEED REJECTION without this)
+[ ] 3. Privacy manifest (PrivacyInfo.xcprivacy) -- add NSPrivacyAccessedAPICategoryUserDefaults CA92.1 to app.json (upload will fail without this)
+[ ] 4. Camera permission string + remove unused reproductive health HealthKit types + verify HealthKit write + iPad supportsTablet decision -- one commit, new build
+[ ] 5. Medical disclaimer pass -- sleep score, sleep tips, weight projection, BMR result (index.tsx + stats.tsx + profile.tsx)
+[ ] 6. Age gate -- under-13 block in onboarding/profile-setup.tsx
+[ ] 7. Dev tools audit -- confirm all destructive actions in 7-tap panel have confirmation Alerts
+[ ] 8. App Store Connect setup -- privacy label, age rating, URLs, description, screenshots, review notes (no code -- do after name is locked)
+[ ] 9. Verification scan -- production build, device install, all flows confirmed before submitting
+
+App name + logo -- finalize from shortlist (Prevail, Steadfast, Worthy, Haven, Witness, Sown), verify App Store + TikTok handle availability before committing. Prevail is strongest. Logo design session after name locked.
+TestFlight -- setup, App Store Connect, tester invite flow. Friends and family first, not wide beta. Do after App Store code fixes complete and name is locked.
+Firebase free tier notes -- Spark plan: 1GB storage, 50K reads/day, 20K writes/day, 1GB network/month. Current usage: 38 docs per user, tiny. Comfortably handles 500+ TestFlight users. Upgrade to Blaze (pay-as-you-go) only when approaching limits -- monitor in Firebase Console > Usage. Each user's data is isolated under users/{uid}/store -- fully visible per-user in Firebase Console. No privacy concern for admin view of own app data.
 
 Visual polish (do together)
 

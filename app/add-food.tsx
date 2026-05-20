@@ -1026,7 +1026,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         <TextInput
           style={styles.searchInput}
           placeholder="Search food..."
-          placeholderTextColor="#444444"
+          placeholderTextColor={theme.textDim}
           value={query}
           onChangeText={searchFood}
           

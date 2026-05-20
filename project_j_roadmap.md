@@ -432,8 +432,13 @@ Log tab date navigation -- tapping the date label opens a calendar picker for ea
 Log tab meal time labels -- Morning / Lunch / Dinner / Snacks label font to textSecondary (quick fix). (SOON)
 Exclude day feature -- current implementation needs a revamp and full passthrough audit. (SOON)
 Custom water amount modal -- DONE. bgSheet, Animated.Value fade, tap-outside dismiss, sign bug fixed. Confirmed closed this session.
-Edit Food screen (edit-food.tsx) full CPP polish pass -- currently a raw unstyled form. Needs card styling, field grouping, accent title, floating save bar, depth. Dedicated polish session.
-Recipe builder screen polish -- needs accent title and floating save bar at minimum. Full CPP pass needed. (SOON)
+[x] edit-food.tsx deleted -- screen was orphaned after modal system replaced it. Removed from _layout.tsx registration.
+[x] food-detail.tsx edit modal serving fields -- openEditFoodModal and saveEditFoodFromDetail now read/write servingGrams, servingUnitType, servingLabel. Serving section (amount, label, unit picker) added to Edit Food modal UI matching add-food.tsx pattern.
+[x] food-detail.tsx meal selector -- replaced animationType="slide" Modal with inline expanding dropdown. Fades + slides down from selector, checkmark on active meal, blue active state. No more shadow-riding-up artifact.
+[x] food-detail.tsx serving picker -- animationType="slide" replaced with animationType="none" + manual Animated.Value fade + translateY. Green active state fixed to blue.
+[x] food-detail.tsx KAV -- automaticallyAdjustKeyboardInsets + keyboardDismissMode="on-drag" added to main ScrollView.
+[x] Recipe builder full CPP redo -- dark card-based design, accent-colored header title, dim Save button until name+ingredients valid, toast on save instead of Alert, unit picker as smooth attached dropdown (fade+slide, no Modal), ingredient rows with macro colors + trash icon, per-serving card uses accentBlueBg, all cards have 1.5px accent top border + shadow. recipe-builder.tsx.
+[x] add-food.tsx hardcoded #444444 placeholder fixed to theme.textDim.
 App-wide OZ to oz audit -- index.tsx and log.tsx fixed this session. day-detail and any other screens not yet checked. Complete audit needed. (SOON)
 
 Women's health and HealthKit

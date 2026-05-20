@@ -80,7 +80,6 @@ function RootLayoutNav() {
         <Stack.Screen name="workout-library" options={{ headerShown: false }} />
         <Stack.Screen name="add-food" options={{ headerShown: false }} />
         <Stack.Screen name="food-detail" options={{ headerShown: false }} />
-        <Stack.Screen name="edit-food" options={{ headerShown: false }} />
         <Stack.Screen name="recipe-builder" options={{ headerShown: false }} />
         <Stack.Screen name="recipe-log" options={{ headerShown: false }} />
         <Stack.Screen name="day-detail" options={{ headerShown: false, animation: 'none' }} />

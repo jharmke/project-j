@@ -1,9 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { Alert, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { useCallback, useRef, useEffect, useState } from 'react';
+import { Alert, Animated, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CustomFoodCreator from '../components/CustomFoodCreator';
+import { useToast } from '../components/Toast';
 import { saveToFirebase } from '../firebaseConfig';
 import { storageSet } from '../utils/storage';
 import { useTheme } from '../theme';
@@ -51,6 +54,7 @@ const filterDecimal = (v: string, set: (s: string) => void) => {
 export default function RecipeBuilderScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
+  const { showToast } = useToast();
   const { recipeId } = useLocalSearchParams<{ recipeId: string }>();
 
   const [recipeName, setRecipeName] = useState('');
@@ -60,7 +64,17 @@ export default function RecipeBuilderScreen() {
   const [servingCount, setServingCount] = useState('1');
   const [servingName, setServingName] = useState('serving');
   const [showCustomFoodModal, setShowCustomFoodModal] = useState(false);
-  const [showWeightUnitPicker, setShowWeightUnitPicker] = useState(false);
+  const [showWeightUnitDropdown, setShowWeightUnitDropdown] = useState(false);
+  const weightUnitAnim = useRef(new Animated.Value(0)).current;
+
+  const openWeightUnitDropdown = () => {
+    weightUnitAnim.setValue(0);
+    setShowWeightUnitDropdown(true);
+    Animated.timing(weightUnitAnim, { toValue: 1, duration: 180, useNativeDriver: true }).start();
+  };
+  const closeWeightUnitDropdown = () => {
+    Animated.timing(weightUnitAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => setShowWeightUnitDropdown(false));
+  };
 
   useEffect(() => {
     if (recipeId) loadExistingRecipe();
@@ -100,7 +114,6 @@ export default function RecipeBuilderScreen() {
     } catch (e) {}
   };
 
-
   const handleCustomFoodSaved = (food: any) => {
     const ingredient: Ingredient = {
       id: makeId(),
@@ -116,6 +129,7 @@ export default function RecipeBuilderScreen() {
   };
 
   const removeIngredient = (id: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setIngredients(prev => prev.filter(i => i.id !== id));
   };
 
@@ -129,13 +143,15 @@ export default function RecipeBuilderScreen() {
   const carbsPerServing = Math.round(totalCarbs / servings * 10) / 10;
   const fatPerServing = Math.round(totalFat / servings * 10) / 10;
 
+  const canSave = recipeName.trim().length > 0 && ingredients.length > 0;
+
   const saveRecipe = async () => {
-    if (!recipeName.trim()) { Alert.alert('Name required', 'Please give your recipe a name.'); return; }
-    if (ingredients.length === 0) { Alert.alert('No ingredients', 'Add at least one ingredient.'); return; }
+    if (!canSave) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const recipe: Recipe = {
         id: recipeId || makeId(),
-        name: recipeName,
+        name: recipeName.trim(),
         ingredients,
         totalWeight: parseFloat(totalWeight) || 0,
         totalWeightUnit,
@@ -156,12 +172,12 @@ export default function RecipeBuilderScreen() {
       }
       await storageSet('pj_recipes', JSON.stringify(recipes));
       await saveToFirebase('recipes', 'list', recipes);
-      Alert.alert('Saved!', `${recipeName} saved to your recipe library.`, [{ text: 'OK', onPress: () => router.back() }]);
+      showToast(recipeId ? 'Recipe updated' : 'Recipe saved', recipeName.trim(), 'success');
+      router.back();
     } catch (e) {
       console.log('Save recipe error', e);
     }
   };
-
 
   const styles = useStyles(theme);
   return (
@@ -172,70 +188,97 @@ export default function RecipeBuilderScreen() {
           <Text style={styles.backBtnText}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{recipeId ? 'Edit Recipe' : 'New Recipe'}</Text>
-        <TouchableOpacity onPress={saveRecipe} style={styles.saveBtn}>
+        <TouchableOpacity
+          onPress={saveRecipe}
+          disabled={!canSave}
+          style={[styles.saveBtn, !canSave && { opacity: 0.35 }]}>
           <Text style={styles.saveBtnText}>Save</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets>
 
         {/* Recipe Name */}
-        <TextInput
-          style={styles.recipeNameInput}
-          placeholder="Recipe name..."
-          placeholderTextColor={theme.textPlaceholder}
-          value={recipeName}
-          onChangeText={setRecipeName}
-        />
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>Recipe Name</Text>
+          <TextInput
+            style={styles.recipeNameInput}
+            placeholder="e.g. Chicken Stir Fry"
+            placeholderTextColor={theme.textDim}
+            value={recipeName}
+            onChangeText={setRecipeName}
+          />
+        </View>
 
-        {/* Add Ingredient */}
-<View style={styles.searchRow}>
-  <TouchableOpacity
-    style={[styles.searchInput, { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }]}
-    onPress={() => router.push({ pathname: '/add-food', params: { meal: 'recipe', date: 'recipe', recipeMode: 'true' } })}>
-    <Text style={{ color: theme.accentBlue, fontSize: 16, fontFamily: 'DMSans_600SemiBold' }}>+ Add Ingredient</Text>
-  </TouchableOpacity>
-  <TouchableOpacity style={styles.customBtn} onPress={() => setShowCustomFoodModal(true)}>
-    <Text style={styles.customBtnText}>+</Text>
-  </TouchableOpacity>
-</View>
+        {/* Add Ingredient buttons */}
+        <View style={styles.addRow}>
+          <TouchableOpacity
+            style={styles.addIngredientBtn}
+            onPress={() => router.push({ pathname: '/add-food', params: { meal: 'recipe', date: 'recipe', recipeMode: 'true' } })}>
+            <Ionicons name="search" size={16} color={theme.accentBlue} />
+            <Text style={styles.addIngredientText}>Search Food</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.addCustomBtn} onPress={() => setShowCustomFoodModal(true)}>
+            <Ionicons name="add" size={20} color={theme.accentGreen} />
+          </TouchableOpacity>
+        </View>
 
-        {/* Ingredients List */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Ingredients ({ingredients.length})</Text>
-          {ingredients.length === 0 && (
-            <Text style={styles.emptyText}>No ingredients yet. Search or scan above.</Text>
-          )}
-          {ingredients.map(ing => (
-            <View key={ing.id} style={styles.ingredientRow}>
-              <View style={styles.ingredientLeft}>
-                <Text style={styles.ingredientName} numberOfLines={1}>{ing.name}</Text>
-                <Text style={styles.ingredientMeta}>{ing.amount}{ing.unit} · {ing.cal} kcal · P:{ing.protein}g C:{ing.carbs}g F:{ing.fat}g</Text>
-              </View>
-              <TouchableOpacity onPress={() => removeIngredient(ing.id)}>
-                <Text style={styles.removeBtn}>×</Text>
-              </TouchableOpacity>
+        {/* Ingredients */}
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>Ingredients ({ingredients.length})</Text>
+          {ingredients.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="restaurant-outline" size={28} color={theme.textDim} />
+              <Text style={styles.emptyTitle}>No ingredients yet</Text>
+              <Text style={styles.emptySubtitle}>Search for a food or create a custom one above</Text>
             </View>
-          ))}
+          ) : (
+            ingredients.map((ing, idx) => (
+              <View key={ing.id} style={[styles.ingredientRow, idx < ingredients.length - 1 && styles.ingredientBorder]}>
+                <View style={styles.ingredientLeft}>
+                  <Text style={styles.ingredientName} numberOfLines={1}>{ing.name}</Text>
+                  <View style={styles.ingredientMeta}>
+                    <Text style={styles.ingredientAmount}>{ing.amount}{ing.unit}</Text>
+                    <Text style={styles.ingredientDot}>·</Text>
+                    <Text style={styles.ingredientCal}>{ing.cal} kcal</Text>
+                    <Text style={styles.ingredientDot}>·</Text>
+                    <Text style={[styles.ingredientMacro, { color: theme.macroProtein }]}>P{ing.protein}g</Text>
+                    <Text style={[styles.ingredientMacro, { color: theme.macroCarbs }]}>C{ing.carbs}g</Text>
+                    <Text style={[styles.ingredientMacro, { color: theme.macroFat }]}>F{ing.fat}g</Text>
+                  </View>
+                </View>
+                <TouchableOpacity onPress={() => removeIngredient(ing.id)} style={styles.removeBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Ionicons name="trash-outline" size={16} color={theme.accentRed || '#cc3333'} />
+                </TouchableOpacity>
+              </View>
+            ))
+          )}
         </View>
 
         {/* Running Totals */}
         {ingredients.length > 0 && (
-          <View style={styles.totalsCard}>
-            <Text style={styles.sectionLabel}>Total Nutrition</Text>
+          <View style={styles.card}>
+            <Text style={styles.cardLabel}>Total Nutrition</Text>
             <View style={styles.macroRow}>
               <View style={styles.macroStat}>
-                <Text style={[styles.macroVal, { color: theme.accentGreen }]}>{totalCal}</Text>
-                <Text style={styles.macroLabel}>Cal</Text>
+                <Text style={[styles.macroVal, { color: theme.textPrimary }]}>{totalCal}</Text>
+                <Text style={styles.macroLabel}>kcal</Text>
               </View>
+              <View style={styles.macroDivider} />
               <View style={styles.macroStat}>
                 <Text style={[styles.macroVal, { color: theme.macroProtein }]}>{totalProtein}g</Text>
                 <Text style={styles.macroLabel}>Protein</Text>
               </View>
+              <View style={styles.macroDivider} />
               <View style={styles.macroStat}>
                 <Text style={[styles.macroVal, { color: theme.macroCarbs }]}>{totalCarbs}g</Text>
                 <Text style={styles.macroLabel}>Carbs</Text>
               </View>
+              <View style={styles.macroDivider} />
               <View style={styles.macroStat}>
                 <Text style={[styles.macroVal, { color: theme.macroFat }]}>{totalFat}g</Text>
                 <Text style={styles.macroLabel}>Fat</Text>
@@ -244,60 +287,52 @@ export default function RecipeBuilderScreen() {
           </View>
         )}
 
-        {/* Total Weight */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Total Finished Weight (optional)</Text>
-          <View style={styles.weightRow}>
-            <TextInput
-              style={[styles.searchInput, { flex: 1 }]}
-              placeholder="e.g. 2000"
-              placeholderTextColor={theme.textPlaceholder}
-              keyboardType="decimal-pad"
-              value={totalWeight}
-              onChangeText={v => filterDecimal(v, setTotalWeight)}
-            />
-            <TouchableOpacity style={styles.unitPickerBtn} onPress={() => setShowWeightUnitPicker(true)}>
-              <Text style={styles.unitPickerBtnText}>{totalWeightUnit} ▼</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Serving Size */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Servings</Text>
+        {/* Servings */}
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>Servings</Text>
           <View style={styles.servingRow}>
-            <TextInput
-              style={[styles.searchInput, { width: 80 }]}
-              placeholder="5"
-              placeholderTextColor={theme.textPlaceholder}
-              keyboardType="number-pad"
-              value={servingCount}
-              onChangeText={setServingCount}
-            />
-            <TextInput
-              style={[styles.searchInput, { flex: 1 }]}
-              placeholder="servings, slices, scoops..."
-              placeholderTextColor={theme.textPlaceholder}
-              value={servingName}
-              onChangeText={setServingName}
-            />
+            <View style={{ flex: 0.35 }}>
+              <Text style={styles.fieldLabel}>Count</Text>
+              <TextInput
+                style={styles.fieldInput}
+                placeholder="1"
+                placeholderTextColor={theme.textDim}
+                keyboardType="number-pad"
+                value={servingCount}
+                onChangeText={setServingCount}
+              />
+            </View>
+            <View style={{ flex: 0.65 }}>
+              <Text style={styles.fieldLabel}>Unit name</Text>
+              <TextInput
+                style={styles.fieldInput}
+                placeholder="serving, slice, scoop..."
+                placeholderTextColor={theme.textDim}
+                value={servingName}
+                onChangeText={setServingName}
+              />
+            </View>
           </View>
+
           {ingredients.length > 0 && servings > 0 && (
             <View style={styles.perServingCard}>
-              <Text style={styles.perServingTitle}>Per {servingName}</Text>
+              <Text style={[styles.cardLabel, { color: theme.accentBlue, marginBottom: 12 }]}>Per {servingName}</Text>
               <View style={styles.macroRow}>
                 <View style={styles.macroStat}>
-                  <Text style={[styles.macroVal, { color: theme.accentGreen }]}>{calPerServing}</Text>
-                  <Text style={styles.macroLabel}>Cal</Text>
+                  <Text style={[styles.macroVal, { color: theme.textPrimary }]}>{calPerServing}</Text>
+                  <Text style={styles.macroLabel}>kcal</Text>
                 </View>
+                <View style={styles.macroDivider} />
                 <View style={styles.macroStat}>
                   <Text style={[styles.macroVal, { color: theme.macroProtein }]}>{proteinPerServing}g</Text>
                   <Text style={styles.macroLabel}>Protein</Text>
                 </View>
+                <View style={styles.macroDivider} />
                 <View style={styles.macroStat}>
                   <Text style={[styles.macroVal, { color: theme.macroCarbs }]}>{carbsPerServing}g</Text>
                   <Text style={styles.macroLabel}>Carbs</Text>
                 </View>
+                <View style={styles.macroDivider} />
                 <View style={styles.macroStat}>
                   <Text style={[styles.macroVal, { color: theme.macroFat }]}>{fatPerServing}g</Text>
                   <Text style={styles.macroLabel}>Fat</Text>
@@ -305,6 +340,46 @@ export default function RecipeBuilderScreen() {
               </View>
             </View>
           )}
+        </View>
+
+        {/* Total Weight (optional) */}
+        <View style={styles.card}>
+          <Text style={styles.cardLabel}>Total Finished Weight <Text style={{ color: theme.textDim, textTransform: 'none', letterSpacing: 0, fontSize: 9 }}>(optional)</Text></Text>
+          <View style={styles.weightRow}>
+            <TextInput
+              style={[styles.fieldInput, { flex: 1 }]}
+              placeholder="e.g. 2000"
+              placeholderTextColor={theme.textDim}
+              keyboardType="decimal-pad"
+              value={totalWeight}
+              onChangeText={v => filterDecimal(v, setTotalWeight)}
+            />
+            {/* Attached unit dropdown */}
+            <View>
+              <TouchableOpacity
+                style={styles.unitPickerBtn}
+                onPress={showWeightUnitDropdown ? closeWeightUnitDropdown : openWeightUnitDropdown}>
+                <Text style={styles.unitPickerBtnText}>{totalWeightUnit}</Text>
+                <Ionicons name={showWeightUnitDropdown ? 'chevron-up' : 'chevron-down'} size={12} color={theme.accentBlue} />
+              </TouchableOpacity>
+              {showWeightUnitDropdown && (
+                <Animated.View style={[styles.unitDropdown, {
+                  opacity: weightUnitAnim,
+                  transform: [{ translateY: weightUnitAnim.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }) }],
+                }]}>
+                  {WEIGHT_UNITS.map((u, i) => (
+                    <TouchableOpacity
+                      key={u}
+                      style={[styles.unitDropdownItem, i < WEIGHT_UNITS.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.borderSubtle }]}
+                      onPress={() => { setTotalWeightUnit(u); closeWeightUnitDropdown(); }}>
+                      <Text style={[styles.unitDropdownText, totalWeightUnit === u && { color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }]}>{u}</Text>
+                      {totalWeightUnit === u && <Ionicons name="checkmark" size={12} color={theme.accentBlue} />}
+                    </TouchableOpacity>
+                  ))}
+                </Animated.View>
+              )}
+            </View>
+          </View>
         </View>
 
       </ScrollView>
@@ -315,64 +390,101 @@ export default function RecipeBuilderScreen() {
         onSaved={handleCustomFoodSaved}
       />
 
-      {/* Weight Unit Picker */}
-      <Modal visible={showWeightUnitPicker} transparent animationType="slide">
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowWeightUnitPicker(false)}>
-          <View style={styles.modal}>
-            <Text style={styles.modalTitle}>Select Unit</Text>
-            {WEIGHT_UNITS.map(u => (
-              <TouchableOpacity
-                key={u}
-                style={[styles.unitPickerOption, totalWeightUnit === u && styles.unitPickerOptionActive]}
-                onPress={() => { setTotalWeightUnit(u); setShowWeightUnitPicker(false); }}>
-                <Text style={[styles.unitPickerOptionText, totalWeightUnit === u && { color: theme.accentBlue }]}>{u}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
     </View>
   );
 }
 
 const useStyles = (theme: any) => StyleSheet.create({
   container: { flex: 1, backgroundColor: theme.bgPrimary },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: theme.borderCard },
-  backBtn: { width: 60 },
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: theme.borderCard,
+  },
+  backBtn: { width: 60, paddingVertical: 4 },
   backBtnText: { color: theme.accentBlue, fontSize: 14, fontFamily: 'DMSans_500Medium' },
-  headerTitle: { fontSize: 20, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
-  saveBtn: { backgroundColor: theme.accentGreen, borderRadius: 6, paddingHorizontal: 16, paddingVertical: 6 },
+  headerTitle: { fontSize: 20, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
+  saveBtn: { backgroundColor: theme.accentGreen, borderRadius: 8, paddingHorizontal: 18, paddingVertical: 8 },
   saveBtnText: { color: theme.bgPrimary, fontSize: 14, fontFamily: 'DMSans_700Bold' },
-  content: { padding: 16, paddingBottom: 80 },
-  recipeNameInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 10, color: theme.textPrimary, padding: 14, fontSize: 18, fontFamily: 'DMSans_600SemiBold', marginBottom: 16 },
-  searchRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  searchInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 14, fontFamily: 'DMSans_400Regular' },
-  customBtn: { backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder, borderRadius: 8, paddingHorizontal: 14, justifyContent: 'center' },
-  customBtnText: { color: theme.accentGreen, fontSize: 22, fontFamily: 'DMSans_400Regular' },
-  section: { marginBottom: 20 },
-  sectionLabel: { fontSize: 9, letterSpacing: 3, color: theme.textMuted, textTransform: 'uppercase', fontFamily: 'DMSans_500Medium', marginBottom: 10 },
-  emptyText: { fontSize: 13, color: theme.textDim, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' },
-  ingredientRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 8, padding: 12, marginBottom: 8 },
-  ingredientLeft: { flex: 1, marginRight: 8 },
-  ingredientName: { fontSize: 14, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', marginBottom: 2 },
-  ingredientMeta: { fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular' },
-  removeBtn: { fontSize: 20, color: theme.textDim, padding: 4 },
-  totalsCard: { backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, padding: 16, marginBottom: 20 },
-  macroRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  macroStat: { alignItems: 'center', flex: 1 },
+  content: { padding: 12, paddingBottom: 40, gap: 12 },
+  card: {
+    backgroundColor: theme.bgCard,
+    borderWidth: 0.5,
+    borderColor: theme.borderCard,
+    borderTopWidth: 1.5,
+    borderTopColor: theme.accentBlueRaw,
+    borderRadius: 14,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  cardLabel: {
+    fontSize: 9, letterSpacing: 3, color: theme.textMuted,
+    textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', marginBottom: 12,
+  },
+  recipeNameInput: {
+    color: theme.textPrimary, fontSize: 16, fontFamily: 'DMSans_600SemiBold',
+    backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput,
+    borderRadius: 8, padding: 12,
+  },
+  addRow: { flexDirection: 'row', gap: 8 },
+  addIngredientBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder,
+    borderRadius: 10, padding: 14,
+  },
+  addIngredientText: { color: theme.accentBlue, fontSize: 14, fontFamily: 'DMSans_600SemiBold' },
+  addCustomBtn: {
+    backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder,
+    borderRadius: 10, paddingHorizontal: 16, alignItems: 'center', justifyContent: 'center',
+  },
+  emptyState: { alignItems: 'center', paddingVertical: 20, gap: 6 },
+  emptyTitle: { fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' },
+  emptySubtitle: { fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', textAlign: 'center' },
+  ingredientRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
+  ingredientBorder: { borderBottomWidth: 1, borderBottomColor: theme.borderSubtle },
+  ingredientLeft: { flex: 1, marginRight: 12 },
+  ingredientName: { fontSize: 14, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', marginBottom: 4 },
+  ingredientMeta: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 4 },
+  ingredientAmount: { fontSize: 11, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' },
+  ingredientDot: { fontSize: 11, color: theme.textDim },
+  ingredientCal: { fontSize: 11, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' },
+  ingredientMacro: { fontSize: 11, fontFamily: 'DMSans_500Medium' },
+  removeBtn: { padding: 4 },
+  macroRow: { flexDirection: 'row', alignItems: 'center' },
+  macroStat: { flex: 1, alignItems: 'center' },
   macroVal: { fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
-  macroLabel: { fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 2 },
-  weightRow: { flexDirection: 'row', gap: 8 },
-  unitPickerBtn: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingHorizontal: 16, justifyContent: 'center' },
-  unitPickerBtnText: { color: theme.accentBlue, fontSize: 14, fontFamily: 'DMSans_600SemiBold' },
-  perServingCard: { backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder, borderRadius: 10, padding: 14, marginTop: 8 },
-  perServingTitle: { fontSize: 9, letterSpacing: 3, color: theme.accentGreen, textTransform: 'uppercase', fontFamily: 'DMSans_500Medium', marginBottom: 10 },
-  modalOverlay: { flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'flex-end' },
-  modal: { backgroundColor: theme.bgCard, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24, borderWidth: 1, borderColor: theme.borderCard },
-  modalTitle: { fontSize: 18, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', marginBottom: 4 },
-  servingRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  unitPickerOption: { padding: 14, borderBottomWidth: 1, borderBottomColor: theme.borderSubtle },
-  unitPickerOptionActive: { backgroundColor: theme.accentBlueBg },
-  unitPickerOptionText: { fontSize: 16, color: theme.textMuted, fontFamily: 'DMSans_500Medium' },
+  macroLabel: { fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 1, letterSpacing: 1 },
+  macroDivider: { width: 1, height: 32, backgroundColor: theme.borderSubtle },
+  perServingCard: {
+    backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder,
+    borderRadius: 10, padding: 14, marginTop: 14,
+  },
+  servingRow: { flexDirection: 'row', gap: 10 },
+  fieldLabel: { fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6 },
+  fieldInput: {
+    backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput,
+    borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 14, fontFamily: 'DMSans_400Regular',
+  },
+  weightRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-end' },
+  unitPickerBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder,
+    borderRadius: 8, paddingHorizontal: 12, paddingVertical: 13,
+  },
+  unitPickerBtnText: { color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
+  unitDropdown: {
+    position: 'absolute', top: '100%', right: 0, marginTop: 4,
+    backgroundColor: theme.bgSheet, borderWidth: 1, borderColor: theme.borderCard,
+    borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw,
+    borderRadius: 10, minWidth: 80, zIndex: 100,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8,
+  },
+  unitDropdownItem: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 14, paddingVertical: 12,
+  },
+  unitDropdownText: { fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' },
 });

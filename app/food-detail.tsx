@@ -347,6 +347,8 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
   const [editFoodData, setEditFoodData] = useState<any>(null);
   const editOverlayAnim = useRef(new Animated.Value(0)).current;
   const editCardAnim = useRef(new Animated.Value(0)).current;
+  const mealDropdownAnim = useRef(new Animated.Value(0)).current;
+  const servingPickerAnim = useRef(new Animated.Value(0)).current;
 
   // When async My Foods lookup resolves, update servingCount to match the real base serving
   useEffect(() => {
@@ -502,19 +504,23 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
 
   const openEditFoodModal = () => {
     const src = food;
+    const mf = src.myFoodData;
     setEditFoodData({
       _source: src,
       name: src.description || src.name || '',
-      brand: src.myFoodData?.brand?.toString() || '',
-      cal: src.myFoodData?.cal?.toString() || src.existingCal?.toString() || '',
-      protein: src.myFoodData?.protein?.toString() || src.existingProtein?.toString() || '',
-      carbs: src.myFoodData?.carbs?.toString() || src.existingCarbs?.toString() || '',
-      fat: src.myFoodData?.fat?.toString() || src.existingFat?.toString() || '',
-      fiber: src.myFoodData?.fiber?.toString() || '',
-      sugar: src.myFoodData?.sugar?.toString() || '',
-      sodium: src.myFoodData?.sodium?.toString() || '',
-      cholesterol: src.myFoodData?.cholesterol?.toString() || '',
-      saturatedFat: src.myFoodData?.saturatedFat?.toString() || '',
+      brand: mf?.brand?.toString() || '',
+      cal: mf?.cal?.toString() || src.existingCal?.toString() || '',
+      protein: mf?.protein?.toString() || src.existingProtein?.toString() || '',
+      carbs: mf?.carbs?.toString() || src.existingCarbs?.toString() || '',
+      fat: mf?.fat?.toString() || src.existingFat?.toString() || '',
+      fiber: mf?.fiber?.toString() || '',
+      sugar: mf?.sugar?.toString() || '',
+      sodium: mf?.sodium?.toString() || '',
+      cholesterol: mf?.cholesterol?.toString() || '',
+      saturatedFat: mf?.saturatedFat?.toString() || '',
+      servingGrams: (mf?.servingSize ?? src.servingSize)?.toString() || '100',
+      servingUnitType: mf?.servingUnitType || src.servingUnitType || 'g',
+      servingLabel: mf?.servingUnit || src.servingUnit || '',
     });
     setShowEditFoodModal(true);
     editOverlayAnim.setValue(0);
@@ -542,7 +548,9 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
       const foods = saved ? JSON.parse(saved) : [];
       const src = editFoodData._source?.myFoodData || editFoodData._source;
       const calNum = parseInt(editFoodData.cal) || 0;
-      const servingGrams = src?.servingSize || 100;
+      const servingGrams = parseFloat(editFoodData.servingGrams) || src?.servingSize || 100;
+      const servingUnitType = editFoodData.servingUnitType || 'g';
+      const servingLabel = editFoodData.servingLabel?.trim() || `${servingGrams}${servingUnitType}`;
       const updated = foods.map((f: any) =>
         (src?.id ? f.id === src.id : f.name === (src?.name || src?.description)) ? {
           ...f,
@@ -557,6 +565,9 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
           sodium: parseFloat(editFoodData.sodium) || 0,
           cholesterol: parseFloat(editFoodData.cholesterol) || 0,
           saturatedFat: parseFloat(editFoodData.saturatedFat) || 0,
+          servingSize: servingGrams,
+          servingUnitType,
+          servingUnit: servingLabel,
           calPer100g: Math.round((calNum / servingGrams) * 100),
           proteinPer100g: Math.round((parseFloat(editFoodData.protein) || 0) / servingGrams * 100 * 10) / 10,
           carbsPer100g: Math.round((parseFloat(editFoodData.carbs) || 0) / servingGrams * 100 * 10) / 10,
@@ -617,7 +628,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} automaticallyAdjustKeyboardInsets keyboardDismissMode="on-drag">
         <Text style={styles.foodName}>{food.description}</Text>
         {food.brand && (
           <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium', marginTop: -14, marginBottom: 16 }}>{food.brand}</Text>
@@ -826,13 +837,50 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
           </View>
         )}
 
-       {/* Meal selector */}
-<TouchableOpacity 
+       {/* Meal selector -- inline dropdown */}
+<TouchableOpacity
   style={styles.mealSelector}
-  onPress={() => setShowMealPicker(true)}>
+  onPress={() => {
+    if (showMealPicker) {
+      Animated.timing(mealDropdownAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => setShowMealPicker(false));
+    } else {
+      mealDropdownAnim.setValue(0);
+      setShowMealPicker(true);
+      Animated.timing(mealDropdownAnim, { toValue: 1, duration: 180, useNativeDriver: true }).start();
+    }
+  }}>
   <Text style={styles.mealSelectorLabel}>Adding to</Text>
-  <Text style={styles.mealSelectorValue}>{currentMeal} ▼</Text>
+  <Text style={styles.mealSelectorValue}>{currentMeal} {showMealPicker ? '▲' : '▼'}</Text>
 </TouchableOpacity>
+{showMealPicker && (
+  <Animated.View style={{
+    opacity: mealDropdownAnim,
+    transform: [{ translateY: mealDropdownAnim.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }) }],
+    backgroundColor: theme.bgSheet,
+    borderWidth: 1,
+    borderColor: theme.borderCard,
+    borderTopWidth: 1.5,
+    borderTopColor: theme.accentBlueRaw,
+    borderRadius: 10,
+    overflow: 'hidden',
+    marginBottom: 10,
+    marginTop: -6,
+  }}>
+    {['Morning', 'Lunch', 'Dinner', 'Snacks'].map((m, i) => (
+      <TouchableOpacity
+        key={m}
+        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: i < 3 ? 1 : 0, borderBottomColor: theme.borderSubtle }}
+        onPress={() => {
+          setCurrentMeal(m);
+          setHasChanges(true);
+          Animated.timing(mealDropdownAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => setShowMealPicker(false));
+        }}>
+        <Text style={{ fontSize: 15, color: currentMeal === m ? theme.accentBlue : theme.textSecondary, fontFamily: currentMeal === m ? 'DMSans_600SemiBold' : 'DMSans_400Regular' }}>{m}</Text>
+        {currentMeal === m && <Ionicons name="checkmark" size={16} color={theme.accentBlue} />}
+      </TouchableOpacity>
+    ))}
+  </Animated.View>
+)}
 
 <TouchableOpacity
   style={[styles.logBtn, isEditing && !hasChanges && { opacity: 0.4 }]}
@@ -938,10 +986,16 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
         }}
       />
 
-      {/* Serving Picker Modal */}
-      <Modal visible={showServingPicker} transparent animationType="slide">
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowServingPicker(false)}>
-          <View style={styles.modal}>
+      {/* Serving Picker Modal -- fade in/out, no slide */}
+      <Modal visible={showServingPicker} transparent animationType="none" onShow={() => {
+        servingPickerAnim.setValue(0);
+        Animated.timing(servingPickerAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+      }}>
+        <Animated.View style={[styles.modalOverlay, { opacity: servingPickerAnim }]}>
+          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => {
+            Animated.timing(servingPickerAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => setShowServingPicker(false));
+          }} />
+          <Animated.View style={[styles.modal, { transform: [{ translateY: servingPickerAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
             <Text style={styles.modalTitle}>Select Serving Size</Text>
             {fsServings.map((s: any, i: number) => (
               <TouchableOpacity
@@ -952,31 +1006,14 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
                   setAmount(s.grams > 0 ? s.grams.toString() : '100');
                   setAmountChanged(false);
                   setServingCount(1);
-                  setShowServingPicker(false);
+                  Animated.timing(servingPickerAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => setShowServingPicker(false));
                 }}>
-                <Text style={[styles.mealOptionText, selectedServing?.label === s.label && { color: theme.accentGreen }]}>{s.label}</Text>
+                <Text style={[styles.mealOptionText, selectedServing?.label === s.label && { color: theme.accentBlue }]}>{s.label}</Text>
                 <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{s.calories} kcal</Text>
               </TouchableOpacity>
             ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
-      {/* Meal Picker Modal */}
-      <Modal visible={showMealPicker} transparent animationType="slide">
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowMealPicker(false)}>
-          <View style={styles.modal}>
-            <Text style={styles.modalTitle}>Add to which meal?</Text>
-            {['Morning', 'Lunch', 'Dinner', 'Snacks'].map(m => (
-              <TouchableOpacity
-                key={m}
-                style={[styles.mealOption, currentMeal === m && styles.mealOptionActive]}
-                onPress={() => { setCurrentMeal(m); setHasChanges(true); setShowMealPicker(false); }}>
-                <Text style={[styles.mealOptionText, currentMeal === m && { color: theme.accentGreen }]}>{m}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </TouchableOpacity>
+          </Animated.View>
+        </Animated.View>
       </Modal>
 
       {/* Edit My Food Modal */}
@@ -1079,6 +1116,42 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
                   </View>
                   <View style={{ flex: 1 }} />
                 </View>
+                {/* Serving */}
+                <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
+                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Serving</Text>
+                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, marginBottom: 4 }}>AMOUNT ({editFoodData?.servingUnitType || 'g'})</Text>
+                    <TextInput
+                      style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: 'DMSans_400Regular' }}
+                      value={editFoodData?.servingGrams || ''}
+                      onChangeText={v => setEditFoodData((p: any) => p ? { ...p, servingGrams: filterDecimal(v) } : null)}
+                      keyboardType="decimal-pad"
+                      placeholderTextColor={theme.textDim}
+                      selectTextOnFocus
+                    />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, marginBottom: 4 }}>LABEL (OPTIONAL)</Text>
+                    <TextInput
+                      style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: 'DMSans_400Regular' }}
+                      value={editFoodData?.servingLabel || ''}
+                      onChangeText={v => setEditFoodData((p: any) => p ? { ...p, servingLabel: v } : null)}
+                      placeholderTextColor={theme.textDim}
+                    />
+                  </View>
+                </View>
+                <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, marginBottom: 8 }}>UNIT</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingRight: 4, marginBottom: 10 }}>
+                  {['g', 'ml', 'fl oz', 'oz', 'container', 'serving', 'tbsp', 'tsp', 'cup'].map(u => (
+                    <TouchableOpacity
+                      key={u}
+                      onPress={() => setEditFoodData((p: any) => p ? { ...p, servingUnitType: u } : null)}
+                      style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, borderWidth: 1, backgroundColor: editFoodData?.servingUnitType === u ? theme.accentBlueBg : 'transparent', borderColor: editFoodData?.servingUnitType === u ? theme.accentBlueBorder : theme.borderInput }}>
+                      <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: editFoodData?.servingUnitType === u ? theme.accentBlue : theme.textMuted }}>{u}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
               </ScrollView>
               <View style={{ flexDirection: 'row', gap: 10, padding: 16, paddingTop: 12 }}>
                 <TouchableOpacity onPress={closeEditFoodModal} style={{ flex: 1, padding: 12, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, alignItems: 'center' }}>

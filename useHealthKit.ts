@@ -56,10 +56,6 @@ export function useHealthKit() {
             'HKQuantityTypeIdentifierWaistCircumference',
             'HKQuantityTypeIdentifierBasalBodyTemperature',
             'HKCategoryTypeIdentifierAppleStandHour',
-            'HKCategoryTypeIdentifierMenstrualFlow',
-            'HKCategoryTypeIdentifierOvulationTestResult',
-            'HKCategoryTypeIdentifierCervicalMucusQuality',
-            'HKCategoryTypeIdentifierIntermenstrualBleeding',
           ],
         });
 

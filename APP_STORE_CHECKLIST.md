@@ -63,19 +63,16 @@ Reason code CA92.1 = "Access info from the same app that previously wrote the in
 
 ---
 
-### 6. [ ] Remove Unused Reproductive Health HealthKit Types
+### 6. [x] Remove Unused Reproductive Health HealthKit Types -- DONE
 **Risk:** HIGH -- data minimization violation (5.1.1(iii))
-**Issue:** useHealthKit.ts requests MenstrualFlow, OvulationTestResult, CervicalMucusQuality, and IntermenstrualBleeding. Women's health features are in BACKLOG and not built. Requesting permissions for features that don't exist is a red flag.
-**Fix:** Remove those 4 types from requestAuthorization in useHealthKit.ts. Re-add when women's health ships.
-**JS-only -- no new build needed.**
+**Shipped:** MenstrualFlow, OvulationTestResult, CervicalMucusQuality, IntermenstrualBleeding removed from requestAuthorization in useHealthKit.ts. Re-add when women's health ships.
 
 ---
 
-### 7. [ ] Verify HealthKit Write Permission Is Actually Used
+### 7. [x] Verify HealthKit Write Permission -- DONE (audit complete, removal pending build)
 **Risk:** HIGH -- if declared but unused, data minimization violation
-**Issue:** NSHealthUpdateUsageDescription ("Project J uses HealthKit to save workout and health data") is declared in app.json, but no HealthKit write calls were found in useHealthKit.ts. If the app is read-only from HealthKit, this permission must be removed.
-**Fix:** Audit useHealthKit.ts. If no write calls exist, remove NSHealthUpdateUsageDescription from the healthkit plugin config in app.json.
-**Requires new EAS build if removed.**
+**Audit result:** Zero HealthKit write calls found in useHealthKit.ts. App is fully read-only from HealthKit. NSHealthUpdateUsageDescription in app.json is unused and must be removed.
+**Remaining:** Remove NSHealthUpdateUsageDescription from app.json in the build session with items 4, 5, 8. Requires new EAS build.
 
 ---
 

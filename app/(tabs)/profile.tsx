@@ -572,6 +572,7 @@ export default function ProfileScreen() {
         {bmr > 0 && (
           <CollapsibleCard label="Your Estimates" theme={theme}>
             <Text style={[styles.estimateNote, { color: theme.textMuted }]}>Based on Mifflin-St Jeor formula - estimates only, not exact values.</Text>
+            <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginBottom: 10 }}>For informational purposes only. Not medical advice.</Text>
             <View style={styles.statsRow}>
               <View style={[styles.statBox, { backgroundColor: theme.bgInset }]}>
                 <Text style={[styles.statVal, { color: theme.textPrimary }]}>{bmr}</Text>
@@ -663,15 +664,18 @@ export default function ProfileScreen() {
             );
             const lbsToGo = Math.abs(currentWeight - gw);
             return (
-              <View style={{ marginTop: 14, padding: 12, backgroundColor: theme.bgInset, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                <View>
-                  <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 3 }}>Projected</Text>
-                  <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.accentBlue }}>{projected}</Text>
+              <View style={{ marginTop: 14 }}>
+                <View style={{ padding: 12, backgroundColor: theme.bgInset, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <View>
+                    <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 3 }}>Projected</Text>
+                    <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.accentBlue }}>{projected}</Text>
+                  </View>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 3 }}>To Go</Text>
+                    <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.textPrimary }}>{Math.round(lbsToGo * 10) / 10} lbs</Text>
+                  </View>
                 </View>
-                <View style={{ alignItems: 'flex-end' }}>
-                  <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 3 }}>To Go</Text>
-                  <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.textPrimary }}>{Math.round(lbsToGo * 10) / 10} lbs</Text>
-                </View>
+                <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', textAlign: 'center', marginTop: 6 }}>For informational purposes only. Not medical advice.</Text>
               </View>
             );
           })()}

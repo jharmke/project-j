@@ -507,9 +507,14 @@ export default function SettingsScreen() {
             <Text style={[styles.sectionLabel, { color: theme.accentRed }]}>Dev Tools</Text>
             <TouchableOpacity
               style={[styles.row, { borderTopColor: theme.borderCard }]}
-              onPress={async () => {
-                await AsyncStorage.removeItem('pj_achievements');
-                Alert.alert('Done', 'Achievements cleared.');
+              onPress={() => {
+                Alert.alert('Reset Achievements', 'Clear all unlocked achievements? This cannot be undone.', [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Reset', style: 'destructive', onPress: async () => {
+                    await AsyncStorage.removeItem('pj_achievements');
+                    Alert.alert('Done', 'Achievements cleared.');
+                  }},
+                ]);
               }}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Reset Achievements</Text>
@@ -548,11 +553,16 @@ export default function SettingsScreen() {
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.row, { borderTopColor: theme.borderCard }]}
-              onPress={async () => {
-                const keys = await AsyncStorage.getAllKeys();
-                const tooltipKeys = keys.filter(k => k.startsWith('pj_tooltip_'));
-                await AsyncStorage.multiRemove(tooltipKeys);
-                Alert.alert('Done', 'Tooltip seen states cleared. Restart the app to see pulses.');
+              onPress={() => {
+                Alert.alert('Reset Tooltip States', 'Re-enable all (i) pulse animations?', [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Reset', style: 'destructive', onPress: async () => {
+                    const keys = await AsyncStorage.getAllKeys();
+                    const tooltipKeys = keys.filter(k => k.startsWith('pj_tooltip_'));
+                    await AsyncStorage.multiRemove(tooltipKeys);
+                    Alert.alert('Done', 'Tooltip seen states cleared. Restart the app to see pulses.');
+                  }},
+                ]);
               }}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Reset Tooltip States</Text>

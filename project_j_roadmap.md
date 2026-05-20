@@ -624,9 +624,9 @@ App Store code fixes -- work through APP_STORE_CHECKLIST.md in order. Current st
 [x] 2. Privacy policy + Terms of Service -- DONE. public/privacy.html + public/terms.html written. Firebase Hosting wired in firebase.json. sign-in.tsx links both docs via Linking.openURL. Deploy: firebase deploy --only hosting. URLs: projectj-5d024.web.app/privacy + /terms. Enter both in App Store Connect metadata.
 [ ] 3. Privacy manifest (PrivacyInfo.xcprivacy) -- add NSPrivacyAccessedAPICategoryUserDefaults CA92.1 to app.json (upload will fail without this)
 [ ] 4. Camera permission string + remove unused reproductive health HealthKit types + verify HealthKit write + iPad supportsTablet decision -- one commit, new build
-[ ] 5. Medical disclaimer pass -- sleep score, sleep tips, weight projection, BMR result (index.tsx + stats.tsx + profile.tsx)
-[ ] 6. Age gate -- under-13 block in onboarding/profile-setup.tsx
-[ ] 7. Dev tools audit -- confirm all destructive actions in 7-tap panel have confirmation Alerts
+[x] 5. Medical disclaimer pass -- DONE. Sleep card (index.tsx): disclaimer below tip. BMR/TDEE estimates (profile.tsx): disclaimer below existing note. Weight projection (profile.tsx): disclaimer below projection box. All read "For informational purposes only. Not medical advice."
+[x] 6. Age gate -- DONE. profile-setup.tsx handleContinue: calculates age from birthday, blocks under-13 with Alert. Alert imported.
+[x] 7. Dev tools audit -- DONE. Reset Achievements + Reset Tooltip States both wrapped in confirm Alert with destructive style. Clear Food History, Reset Onboarding, Force Restore already had confirms -- untouched.
 [ ] 8. App Store Connect setup -- privacy label, age rating, URLs, description, screenshots, review notes (no code -- do after name is locked)
 [ ] 9. Verification scan -- production build, device install, all flows confirmed before submitting
 

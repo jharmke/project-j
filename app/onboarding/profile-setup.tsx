@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  Animated, Keyboard, KeyboardAvoidingView, Platform, ScrollView,
+  Alert, Animated, Keyboard, KeyboardAvoidingView, Platform, ScrollView,
   StyleSheet, Text, TextInput, TouchableOpacity, View
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -62,6 +62,11 @@ export default function ProfileSetupScreen() {
 
   const handleContinue = async () => {
     if (!canContinue) return;
+    const ageYears = (Date.now() - birthday!.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
+    if (ageYears < 13) {
+      Alert.alert('Age Requirement', 'Project J is designed for users 13 and older.');
+      return;
+    }
     try {
       const existing = await AsyncStorage.getItem('pj_profile');
       const current  = existing ? JSON.parse(existing) : {};

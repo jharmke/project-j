@@ -89,7 +89,7 @@ Reason code CA92.1 = "Access info from the same app that previously wrote the in
 
 ---
 
-### 9. [ ] Medical Disclaimer Pass -- Incomplete Coverage
+### 9. [x] Medical Disclaimer Pass -- DONE
 **Risk:** HIGH -- Guideline 1.4.1 -- "Apps should remind users to check with a doctor in addition to using the app and before making medical decisions."
 **Issue:** Disclaimer exists on Fitness Metrics card and Diagnostic Report. Missing on:
 - Sleep Score card (0-100 score with "Well Rested / Could Be Better / Poor Sleep" labels)
@@ -102,14 +102,14 @@ Reason code CA92.1 = "Access info from the same app that previously wrote the in
 
 ---
 
-### 10. [ ] Age Gate -- No Under-13 Protection
+### 10. [x] Age Gate -- DONE
 **Risk:** MEDIUM-HIGH -- COPPA (Guideline 5.1.4)
 **Issue:** App collects birthday and health data with no age verification. Under-13 users are not blocked.
 **Fix:** In onboarding/profile-setup.tsx, calculate age from birthday. If under 13, Alert: "Project J is designed for users 13 and older." Block Continue.
 
 ---
 
-### 11. [ ] Dev Tools -- Audit for Production Safety
+### 11. [x] Dev Tools -- DONE
 **Risk:** MEDIUM -- Apple reviewers can discover and probe hidden features
 **Issue:** Settings screen has a 7-tap Easter egg on the "Settings" title that unlocks a Dev Tools panel. The panel includes: fire celebrations, reset achievements, clear food history, reset onboarding, upload all data to Firestore, check sync status, reset tooltip states. The roadmap says "KEEP CODE TOGGLE FOR FUTURE USE."
 **The panel is acceptable in production IF:**

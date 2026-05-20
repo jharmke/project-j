@@ -2165,6 +2165,7 @@ export default function HomeScreen() {
                   </View>
                 </View>
               )}
+              <Text style={{ fontSize:10, color:theme.textDim, fontFamily:'DMSans_400Regular', textAlign:'center', marginTop:8, fontStyle:'italic' }}>For informational purposes only. Not medical advice.</Text>
             </View>
           );
         })()}

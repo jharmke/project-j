@@ -188,7 +188,7 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
   const [editingTag, setEditingTag] = useState<WorkoutTag | null>(null);
   const [tagLabelInput, setTagLabelInput] = useState('');
   const [tagColorInput, setTagColorInput] = useState(TAG_COLOR_PALETTE[0]);
-const { activeCalories, appleWorkouts } = useHealthKit();
+const { activeCalories, appleWorkouts, fetchTodayData } = useHealthKit();
 
 useEffect(() => {
   if (activeCalories > 0) {
@@ -279,9 +279,16 @@ useEffect(() => {
         exercises: [...current.exercises, ...newExercises],
       },
     };
+    const newCheckIds = newExercises.map((e: any) => e.id);
     AsyncStorage.getItem('pj_workout_state').then(saved => {
       const current2 = saved ? JSON.parse(saved) : {};
-      storageSet('pj_workout_state', JSON.stringify({ ...current2, programs: updated }));
+      const updatedChecks = { ...(current2.checks || {}), ...Object.fromEntries(newCheckIds.map((id: string) => [id, true])) };
+      storageSet('pj_workout_state', JSON.stringify({ ...current2, programs: updated, checks: updatedChecks }));
+      setChecks(prevChecks => {
+        const c = { ...prevChecks };
+        newCheckIds.forEach((id: string) => { c[id] = true; });
+        return c;
+      });
     });
     return updated;
   });
@@ -422,6 +429,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
         }
       };
       reload();
+      fetchTodayData();
     }, [])
   );
 

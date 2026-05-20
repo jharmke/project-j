@@ -1667,7 +1667,9 @@ export default function HomeScreen() {
                 </View>
                 <MacroBar val={m.val} goal={m.goal} color={over ? theme.macroOver : m.color} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} />
                 <Text style={{ fontSize:9, color: m.color, fontFamily:'DMSans_500Medium', letterSpacing:0.5, marginTop:3, opacity:0.7 }}>
-                  {`${Math.round(Math.max(0, m.goal - m.val))} g remaining`}
+                  {m.val > m.goal
+                    ? `${Math.round(m.val - m.goal)} g over`
+                    : `${Math.round(m.goal - m.val)} g remaining`}
                 </Text>
               </View>
             );

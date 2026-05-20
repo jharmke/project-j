@@ -213,7 +213,7 @@ function calcSleepScore(
 
   // Path 1 -- HealthKit hours + stages
   if (sleepStages && sleepStages.totalMs > 0) {
-    const durationPts = Math.min(40, (sleepHours / sleepGoal) * 40);
+    const durationPts = Math.min(40, Math.pow(sleepHours / sleepGoal, 3) * 40);
     const totalMs = sleepStages.totalMs;
     const deepPct = sleepStages.deep / totalMs;
     const remPct = sleepStages.rem / totalMs;

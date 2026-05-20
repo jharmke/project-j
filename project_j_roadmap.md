@@ -158,6 +158,11 @@ DONE -- SHIPPED
 
 
 NOW -- active this session
+[x] Day detail sleep bedtime/wake times showing '--' -- fmtTime was trying to parse already-formatted time strings via new Date(). Fixed: return val directly. day-detail.tsx.
+[x] Day detail sleepGoal default wrong -- was 8, home screen was 7. Fixed to 7. day-detail.tsx.
+[x] Sleep score duration weighting -- linear formula underpenalized short sleep (5h18m scored 84 with decent stages). Fixed: non-linear power curve Math.pow(hours/goal, 3) * 40. 5h18m now scores 71. index.tsx + day-detail.tsx.
+
+NOW -- active this session
 [x] YvY sleep score tie threshold fixed -- removed < 3 pt band, now exact equality only (t === y), same logic as water/steps. Fixed in index.tsx.
 [x] YvY active cals tie threshold fixed -- removed < 25 kcal band, now exact equality only. Fixed in index.tsx.
 [x] Head to Head sleep score tie threshold fixed -- same fix as YvY, exact equality only. Fixed in head-to-head.tsx.
@@ -454,7 +459,7 @@ Goals consolidation -- move all daily goals (calories, water, steps, sleep, macr
 
 Sleep
 
-Sleep score reweight -- bump REM weight higher, soften deep sleep penalty. Current formula: Duration 40pts, Deep 30pts, REM 30pts. Targeted formula change only, low risk. (SOON)
+Sleep score reweight -- bump REM weight higher, soften deep sleep penalty. Duration now uses non-linear power curve (N=3): Math.pow(hours/goal, 3) * 40. Deep 30pts, REM 30pts unchanged. Further stage weight tuning deferred. (SOON)
 Sleep edit disclaimer -- when user opens manual sleep edit, show disclaimer that manual entry will overwrite Apple Health synced data.
 
 Workout

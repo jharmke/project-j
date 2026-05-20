@@ -21,7 +21,7 @@ function calcSleepScore(
 ): { score: number | null; hasStages: boolean } {
   if (!sleepHours || sleepHours <= 0) return { score: null, hasStages: false };
   if (sleepStages && sleepStages.totalMs > 0) {
-    const durationPts = Math.min(40, (sleepHours / sleepGoal) * 40);
+    const durationPts = Math.min(40, Math.pow(sleepHours / sleepGoal, 3) * 40);
     const totalMs = sleepStages.totalMs;
     const deepPts = Math.max(0, 30 - (Math.abs((sleepStages.deep / totalMs) - 0.20) / 0.20) * 30);
     const remPts  = Math.min(30, Math.max(0, (sleepStages.rem / totalMs / 0.22) * 30));
@@ -34,9 +34,7 @@ function calcSleepScore(
 
 function fmtTime(val: string | null | undefined): string {
   if (!val) return '--';
-  const d = new Date(val);
-  if (isNaN(d.getTime())) return '--';
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return val;
 }
 
 function fmtMs(ms: number): string {
@@ -81,7 +79,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
   const [sleepOpen, setSleepOpen] = useState(true);
   const [advNutritionOpen, setAdvNutritionOpen] = useState(false);
   const [profileBmr, setProfileBmr] = useState(0);
-  const [sleepGoal, setSleepGoal] = useState(8);
+  const [sleepGoal, setSleepGoal] = useState(7);
   const [burnAccuracyPct, setBurnAccuracyPct] = useState(100);
   const [calPickerVisible, setCalPickerVisible] = useState(false);
   const [pickerYear, setPickerYear] = useState(0);

@@ -412,14 +412,17 @@ Faith and support
 
 Donate / Support button -- pinned for post-TestFlight. No paywall ever. If/when built: one-time StoreKit tip jar or external Ko-fi link. Entry points TBD. Not urgent.
 
+NOW -- next sessions
+
+My Programs builder -- custom program creation: name it, assign exercises/focus/tags/color per day, save to library, load onto any week. My Programs tab currently shows "Coming Soon" placeholder. Full dedicated session needed. See BACKLOG > Workout for original spec.
+Bible reading plans -- structured multi-day reading plans (e.g. 30-day plan, book-by-book). "Reading Plans" placeholder already in Bible settings modal (pj_settings). Full dedicated session needed: plan list, day-by-day progress, completion tracking, faith journey gating.
+
 SOON -- confirmed next few sessions
 
 NEAT definition -- add NEAT (Non-Exercise Activity Thermogenesis) to tooltipRegistry.ts under Nutrition or Fitness category. No UI changes needed, just a definition entry so it shows in Settings > Help. Context: everyday movement (walking, fidgeting, chores) that isn't structured exercise but contributes significantly to total daily burn. Relevant to understanding why two people with identical workouts can have very different TDEE.
 Settings Help section aesthetics -- definitions list in Settings > Help is visually rough. Needs a dedicated CPP pass: spacing, typography, section headers, overall polish to match the quality bar of the rest of the app.
 Day detail BMR row -- add estimated BMR to the calorie breakdown in day detail alongside Consumed / Burned / Running Net, so user has the full picture: what their body burns at rest + what they burned + what they ate = complete daily calorie story.
 Claude Projects GitHub sync -- CLAUDE.md and project_j_roadmap.md are already tracked in the repo. After pushing, add them via the GitHub integration dialog (search icon in the Add content from GitHub modal). Once wired up, every push auto-updates phone context. Blocked on: push current changes first, then select files in dialog.
-My Programs builder -- custom program creation: name it, assign exercises/focus/tags/color per day, save to library, load onto any week. My Programs tab currently shows "Coming Soon" placeholder. Full dedicated session needed. See BACKLOG > Workout for original spec.
-
 [x] Cloud data sync -- SHIPPED. services/syncService.ts: syncKey() fire-and-forget Firestore mirror, restoreIfFresh() fresh-device restore gate (only fires when zero local pj_* data -- cannot overwrite existing data), uploadAllLocal() one-time migration. utils/storage.ts: storageSet() wrapper (local write awaited first, Firestore silent mirror). All AsyncStorage.setItem calls across 22 files replaced with storageSet. Firestore path: users/{uid}/store/{key}. pj_bible_* cache keys excluded (re-fetchable, thousands of docs). _layout.tsx wired to call restoreIfFresh() before routing to tabs on login. Dev tools: Upload All Data to Firestore + Check Sync Status (local count vs Firestore doc count with in-sync indicator). Verified 38/38 keys in sync on device.
 
 Stats Phase 3 remaining steps (do in order):

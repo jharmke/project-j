@@ -21,6 +21,7 @@ import CryptoJS from 'crypto-js';
 
 
 interface MyFood {
+  id?: string;
   name: string;
   cal: number;
   protein?: number;
@@ -329,6 +330,7 @@ export default function AddFoodScreen() {
   const [newName, setNewName] = useState('');
   const [newCal, setNewCal] = useState('');
   const [showCreateFood, setShowCreateFood] = useState(false);
+  const [barcodeForCreate, setBarcodeForCreate] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
   const [activeTab, setActiveTab] = useState<'recent' | 'myfoods' | 'favorites' | 'recipes' | 'pinned'>('recent');
 const [recentFoods, setRecentFoods] = useState<SearchResult[]>([]);
@@ -495,6 +497,31 @@ const saveEditFood = async () => {
     }
   };
 
+  const resolveMyFoodOverride = (override: any): any => {
+    if (!override.isMyFood) return override;
+    const fresh = myFoods.find(f =>
+      (override.myFoodId && f.id === override.myFoodId) ||
+      f.name === (override.myFoodName || override.description)
+    );
+    if (!fresh) {
+      // Food was deleted -- fall back to whatever we have stored
+      return override.description
+        ? override
+        : { ...override, description: override.myFoodName || 'Unknown Food', foodNutrients: [] };
+    }
+    return {
+      description: fresh.name,
+      foodNutrients: [
+        { nutrientName: 'Energy', unitName: 'KCAL', value: fresh.cal },
+        { nutrientName: 'Protein', unitName: 'G', value: fresh.protein || 0 },
+        { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: fresh.carbs || 0 },
+        { nutrientName: 'Total lipid (fat)', unitName: 'G', value: fresh.fat || 0 },
+      ],
+      isMyFood: true,
+      isOverride: override.isOverride || false,
+    };
+  };
+
   const unsetOverride = async (barcode: string) => {
     try {
       const removedItem = barcodeOverrides[barcode];
@@ -503,19 +530,35 @@ const saveEditFood = async () => {
       setBarcodeOverrides(updated);
       await storageSet('pj_barcode_overrides', JSON.stringify(updated));
       if (removedItem) {
-        setResults(prev => prev.map(r => r.description === removedItem.description ? { ...r, isOverride: false } : r));
+        const removedName = removedItem.myFoodName || removedItem.description;
+        setResults(prev => prev.map(r => r.description === removedName ? { ...r, isOverride: false } : r));
       }
       showToast('Override removed', '', 'info');
     } catch (e) {}
   };
 
+  const pinFoodToBarcode = async (barcode: string, item: any) => {
+    let storedItem: any;
+    if (item.isMyFood || item.isCustom) {
+      const myFoodMatch = myFoods.find(f => f.name === (item.description || item.name));
+      storedItem = {
+        isMyFood: true,
+        myFoodName: item.description || item.name,
+        myFoodId: item.id || myFoodMatch?.id || null,
+        isOverride: true,
+      };
+    } else {
+      storedItem = { ...item, isOverride: true };
+    }
+    const updated = { ...barcodeOverrides, [barcode]: storedItem };
+    setBarcodeOverrides(updated);
+    await storageSet('pj_barcode_overrides', JSON.stringify(updated));
+  };
+
   const saveOverride = async (item: any) => {
     if (!lastScannedBarcode) return;
     try {
-      const confirmedItem = { ...item, isOverride: true };
-      const updated = { ...barcodeOverrides, [lastScannedBarcode]: confirmedItem };
-      setBarcodeOverrides(updated);
-      await storageSet('pj_barcode_overrides', JSON.stringify(updated));
+      await pinFoodToBarcode(lastScannedBarcode, item);
       setResults(prev => prev.map(r => r.description === item.description ? { ...r, isOverride: true } : r));
       setLastScannedBarcode(null);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -673,7 +716,9 @@ const openFoodDetail = async (food: SearchResult) => {
       return;
     }
 
-    const myFoodMatch = food.isMyFood ? myFoods.find(f => f.name === food.description) : null;
+    const myFoodMatch = food.isMyFood
+      ? (myFoods.find(f => f.name === food.description) || (food as any).myFoodData || null)
+      : null;
     const fsId = (food as any).fsId;
     const customServingSize = (food as any).servingSize;
     const isCustomFood = !!(food as any).isCustom || !!(myFoodMatch as any)?.isCustom;
@@ -798,26 +843,28 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
 
     // Check for saved SET override
     if (barcodeOverrides[data]) {
-      const override = { ...barcodeOverrides[data], isOverride: true };
+      const override = resolveMyFoodOverride({ ...barcodeOverrides[data], isOverride: true });
       const overrideName = override.description;
       setLastScannedBarcode(null);
       setQuery(overrideName);
       setResults([override]);
       isBarcodeSearchRef.current = false;
 
-      // Auto-load full results after delay
-      setTimeout(async () => {
-        try {
-          setSearching(true);
-          const fsResults = await fetchFatSecretSearch(overrideName);
-          const deduped = fsResults.filter(r => r.description !== overrideName);
-          setResults([override, ...deduped]);
-        } catch (e) {
-          console.log('Override name search failed', e);
-        } finally {
-          setSearching(false);
-        }
-      }, 1500);
+      // My Food overrides are custom -- no FatSecret search needed
+      if (!override.isMyFood) {
+        setTimeout(async () => {
+          try {
+            setSearching(true);
+            const fsResults = await fetchFatSecretSearch(overrideName);
+            const deduped = fsResults.filter(r => r.description !== overrideName);
+            setResults([override, ...deduped]);
+          } catch (e) {
+            console.log('Override name search failed', e);
+          } finally {
+            setSearching(false);
+          }
+        }, 1500);
+      }
       return;
     }
 
@@ -1046,9 +1093,17 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
 
 {/* Scan banner -- shows while lastScannedBarcode is set */}
       {lastScannedBarcode && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 8, paddingVertical: 2 }}>
-          <Ionicons name="information-circle-outline" size={13} color={theme.textMuted} style={{ marginRight: 5 }} />
-          <Text style={{ flex: 1, fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Tap SET on the correct item to confirm it for future scans</Text>
+        <View style={{ marginHorizontal: 16, marginBottom: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 2 }}>
+            <Ionicons name="information-circle-outline" size={13} color={theme.textMuted} style={{ marginRight: 5 }} />
+            <Text style={{ flex: 1, fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Tap SET on the correct item to confirm it for future scans</Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => { setBarcodeForCreate(lastScannedBarcode); setShowCreateFood(true); }}
+            style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 }}>
+            <Ionicons name="add-circle-outline" size={13} color={theme.accentBlueRaw} />
+            <Text style={{ fontSize: 11, color: theme.accentBlueRaw, fontFamily: 'DMSans_600SemiBold' }}>None match? Create & Set food</Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -1134,7 +1189,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
             cal: Math.round(r.totalCal / r.servingCount),
           })) :
           activeTab === 'pinned' ? Object.entries(barcodeOverrides).map(([barcode, item]: [string, any]) => ({
-            ...item,
+            ...resolveMyFoodOverride({ ...item, isOverride: true }),
             _pinnedBarcode: barcode,
             isPinned: true,
           })) :
@@ -1339,7 +1394,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                     <View style={styles.resultRight}>
                       <TouchableOpacity
                         onPress={() => {
-                          saveOverride({
+                          const foodItem = {
                             description: f.name,
                             foodNutrients: [
                               { nutrientName: 'Energy', unitName: 'KCAL', value: f.cal },
@@ -1348,8 +1403,9 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                               { nutrientName: 'Total lipid (fat)', unitName: 'G', value: f.fat || 0 },
                             ],
                             isMyFood: true,
-                          });
-                          setShowSavedFoodsSection(false);
+                          };
+                          saveOverride(foodItem);
+                          openFoodDetail(foodItem);
                         }}
                         style={{ marginRight: 6, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 3 }}>
                         <Text style={{ fontSize: 10, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>SET</Text>
@@ -1361,6 +1417,16 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                     </View>
                   </View>
                 ))}
+              </View>
+            )}
+            {lastScannedBarcode && !query.trim() && (
+              <View style={{ marginHorizontal: 12, marginTop: 8, marginBottom: 4 }}>
+                <TouchableOpacity
+                  onPress={() => { setBarcodeForCreate(lastScannedBarcode); setShowCreateFood(true); }}
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, paddingHorizontal: 14, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 10, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw }}>
+                  <Ionicons name="add-circle" size={16} color={theme.accentBlueRaw} />
+                  <Text style={{ fontSize: 13, color: theme.accentBlueRaw, fontFamily: 'DMSans_600SemiBold' }}>Create Food for this Barcode</Text>
+                </TouchableOpacity>
               </View>
             )}
             {(!query.trim() || results.length > 0) ? (
@@ -1380,10 +1446,22 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
 
      <CustomFoodCreator
         visible={showCreateFood}
-        onClose={() => setShowCreateFood(false)}
-        onSaved={() => {
+        title={barcodeForCreate ? 'Create & Set Food' : undefined}
+        onClose={() => { setShowCreateFood(false); setBarcodeForCreate(null); }}
+        onSaved={(newFood) => {
           loadMyFoods();
-          setShowCreateFood(false);
+          if (barcodeForCreate) {
+            pinFoodToBarcode(barcodeForCreate, newFood);
+            setBarcodeForCreate(null);
+            setLastScannedBarcode(null);
+            openFoodDetail({
+              description: newFood.name,
+              foodNutrients: newFood.foodNutrients,
+              isMyFood: true,
+              isCustom: true,
+              myFoodData: newFood,
+            } as any);
+          }
         }}
       />
 

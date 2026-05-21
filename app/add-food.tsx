@@ -681,14 +681,8 @@ const openFoodDetail = async (food: SearchResult) => {
     if (fsId && !(food as any).fromBarcode) {
       fsServings = await fetchFatSecretServings(fsId);
     }
-    // Extract logged amount from description for recent items e.g. "Peanut Butter Powder (16g)"
     let existingAmount: string | undefined;
     let existingUnit: string | undefined;
-    if ((food as any).isRecent) {
-      const sourceName = (food as any).fullName || food.description;
-      const m = sourceName.match(/\((\d+\.?\d*)(g|oz|serving)\)$/);
-      if (m) { existingAmount = m[1]; existingUnit = m[2]; }
-    }
     router.push({
       pathname: '/food-detail',
       params: {

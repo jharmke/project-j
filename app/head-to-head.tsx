@@ -382,12 +382,12 @@ export default function HeadToHeadScreen() {
   const metrics: MetricDef[] = snapA && snapB ? [
     {
       id: 'net',
-      label: 'Net Calories',
+      label: 'Running Net',
       sub: paceLabels[weightGoalPace] ?? 'Calorie target pace',
       icon: 'flame',
       valA: snapA.net,
       valB: snapB.net,
-      format: v => Math.abs(Math.round(v)).toLocaleString(),
+      format: v => `${v > 0 ? '+' : ''}${Math.round(v).toLocaleString()}`,
       unit: 'kcal',
       winCondition: (a, b) => {
         const aDiff = Math.abs(a - calTarget);

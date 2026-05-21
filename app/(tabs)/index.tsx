@@ -1562,7 +1562,7 @@ export default function HomeScreen() {
     const stats = [
       { label: remaining >= 0 ? 'REMAINING' : 'OVER', value: Math.abs(remaining), color: remaining >= 0 ? theme.textPrimary : theme.statusBad },
       { label: 'ACTIVE', value: displayedBurned, color: theme.textPrimary },
-      { label: 'NET', value: net, color: theme.textPrimary },
+      { label: 'RUNNING NET', value: `${net > 0 ? '+' : ''}${Math.round(net)}`, color: theme.textPrimary },
     ];
 
     // Mindful: check if it's after 8pm for potential nudge
@@ -2403,7 +2403,7 @@ export default function HomeScreen() {
     const allMetrics: Metric[] = [
       {
         id: 'net',
-        label: 'Net Calories',
+        label: 'Running Net',
         sub: (() => {
           const paceLabels: Record<string, string> = {
             lose_2:   'Lose 2 lbs / wk pace',
@@ -2418,7 +2418,7 @@ export default function HomeScreen() {
         })(),
         todayVal: totalCals > 0 || displayedBurned > 0 ? todayNet : null,
         ydVal: ydCals,
-        format: v => Math.abs(Math.round(v)).toLocaleString(),
+        format: v => `${v > 0 ? '+' : ''}${Math.round(v).toLocaleString()}`,
         unit: 'kcal',
         winCondition: (t, y) => {
           const tDiff = Math.abs(t - calTarget);

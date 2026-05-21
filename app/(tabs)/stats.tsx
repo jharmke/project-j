@@ -160,6 +160,7 @@ export default function StatsScreen() {
   const [profileBmr, setProfileBmr] = useState(0);
   const hasLoadedProfile = useRef(false);
   const [styleMode, setStyleMode] = useState<'Discipline' | 'Balanced' | 'Mindful'>('Balanced');
+  const [faithJourney, setFaithJourney] = useState<'rooted' | 'exploring' | 'notrightnow'>('rooted');
   const [periodData, setPeriodData] = useState({
     avgCal: 0, avgProtein: 0, avgCarbs: 0, avgFat: 0,
     avgWater: 0, avgSteps: 0, avgActiveCals: 0, avgSleep: 0, avgNetCals: 0,
@@ -325,28 +326,49 @@ export default function StatsScreen() {
     });
   };
 
-  const loadStreaks = async (target: number) => {
-    let gymStreak = 0, calStreak = 0, waterStreak = 0;
-    let i = 0;
+  const loadStreaks = async (target: number, streakBaseTarget: number, burnAccuracy: number) => {
+    const workoutRaw = await AsyncStorage.getItem('pj_workout_state');
+    const workoutState = workoutRaw ? JSON.parse(workoutRaw) : {};
+    const profileRaw = await AsyncStorage.getItem('pj_profile');
+    const profileData = profileRaw ? JSON.parse(profileRaw) : {};
+    const waterGoal = profileData.waterGoal || 128;
+    const reflRaw = await AsyncStorage.getItem('pj_bible_reflections');
+    const reflections: any[] = reflRaw ? JSON.parse(reflRaw) : [];
+    const bibleDates = new Set(
+      reflections
+        .filter((r: any) => r.category === 'verse')
+        .map((r: any) => (r.date || '').slice(0, 10))
+        .filter(Boolean)
+    );
+    const effectiveTarget = target > 0 ? target : streakBaseTarget;
+
+    const bibleToday = bibleDates.has(offsetToDateKey(0));
+    let gymStreak = 0, calStreak = 0, waterStreak = 0, bibleStreak = bibleToday ? 1 : 0;
+    let gymDone = false, calDone = false, waterDone = false, bibleDone = false;
+    let i = 1; // skip today for in-progress streaks; bible today already seeded above
     while (true) {
       const dateKey = offsetToDateKey(i);
       try {
         const saved = await AsyncStorage.getItem(`pj_${dateKey}`);
-        if (!saved) { if (i === 0) { i++; continue; } break; }
+        if (!saved) break;
         const data = JSON.parse(saved);
         const calTotal = data.entries?.reduce((s: number, e: any) => s + e.cal, 0) || 0;
-        const calPct = target > 0 ? (calTotal / target) * 100 : 0;
-        const hasCals = calPct >= 80 && calPct <= 106;
-        const hasWater = (data.water || 0) >= 128;
-        const hasWorkout = data.caloriesBurned > 0 || data.entries?.length > 0;
-        if (i === 0 || gymStreak > 0) { if (hasWorkout) gymStreak++; else if (i > 0) gymStreak = 0; }
-        if (i === 0 || calStreak > 0) { if (hasCals) calStreak++; else if (i > 0) calStreak = 0; }
-        if (i === 0 || waterStreak > 0) { if (hasWater) waterStreak++; else if (i > 0) waterStreak = 0; }
-        if (!hasWorkout && !hasCals && !hasWater) break;
+        const dayActive = Math.round((data.activeCalories || data.caloriesBurned || 0) * burnAccuracy / 100);
+        const adjustedTarget = effectiveTarget + dayActive;
+        const hasCals = adjustedTarget > 0 && calTotal >= adjustedTarget * 0.80 && calTotal <= adjustedTarget * 1.06;
+        const hasWater = (data.water || 0) >= waterGoal;
+        const exercises = workoutState?.programs?.[dateKey]?.exercises || [];
+        const hasWorkout = exercises.length > 0;
+        const hasBible = bibleDates.has(dateKey);
+        if (!gymDone) { if (hasWorkout) gymStreak++; else gymDone = true; }
+        if (!calDone) { if (hasCals) calStreak++; else calDone = true; }
+        if (!waterDone) { if (hasWater) waterStreak++; else waterDone = true; }
+        if (!bibleDone) { if (hasBible) bibleStreak++; else bibleDone = true; }
+        if (gymDone && calDone && waterDone && bibleDone) break;
         i++; if (i > 365) break;
       } catch { break; }
     }
-    setStreaks({ gym: gymStreak, calories: calStreak, water: waterStreak, bible: 0 });
+    setStreaks({ gym: gymStreak, calories: calStreak, water: waterStreak, bible: bibleStreak });
   };
 
   useFocusEffect(
@@ -367,7 +389,7 @@ export default function StatsScreen() {
         }
         setExcludedDays(exDays);
 
-        let target = 0, step = 10000, sleep = 8, bmr = 0;
+        let target = 0, step = 10000, sleep = 8, bmr = 0, streakBaseTarget = 0, burnAccuracy = 100;
         try {
           const p = await AsyncStorage.getItem('pj_profile');
           if (p) {
@@ -386,10 +408,17 @@ export default function StatsScreen() {
                 const age = Math.floor((Date.now() - new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2])).getTime()) / (365.25*24*3600*1000));
                 bmr = d.sex === 'male' ? Math.round((10*wKg)+(6.25*hCm)-(5*age)+5) : Math.round((10*wKg)+(6.25*hCm)-(5*age)-161);
               }
+              if (bmr > 0 && d.lifestyleActivity && d.trainingFrequency) {
+                const LM: Record<string,number> = { sedentary:1.2, light:1.3, active:1.45, very_active:1.6 };
+                const TB: Record<string,number> = { none:0, '1x':100, '3x':200, '5x':300, daily:400 };
+                const GD: Record<string,number> = { lose_2:-1000, lose_1_5:-750, lose_1:-500, lose_0_5:-250, maintain:0, gain_0_5:250, gain_1:500 };
+                const tdee = Math.round((bmr * (LM[d.lifestyleActivity] ?? 1.2)) + (TB[d.trainingFrequency] ?? 0));
+                streakBaseTarget = tdee + (GD[d.weightGoal] ?? -500);
+              }
             }
           }
           const s = await AsyncStorage.getItem('pj_settings');
-          if (s) { const d = JSON.parse(s); if (d.calTarget) target = parseInt(d.calTarget); if (d.styleMode) setStyleMode(d.styleMode); }
+          if (s) { const d = JSON.parse(s); if (d.calTarget) target = parseInt(d.calTarget); if (d.styleMode) setStyleMode(d.styleMode); if (d.faithJourney) setFaithJourney(d.faithJourney); if (d.burnAccuracyPct !== undefined) burnAccuracy = d.burnAccuracyPct; }
         } catch {}
         setCalTarget(target);
         setStepGoal(step);
@@ -404,7 +433,7 @@ export default function StatsScreen() {
           loadAllCardData(cards, 30, sleep),
           loadRecords(),
           loadPeriodData(activePeriod, target, sleep, bmr),
-          loadStreaks(target),
+          loadStreaks(target, streakBaseTarget, burnAccuracy),
         ]);
       };
       loadAll();
@@ -833,7 +862,7 @@ export default function StatsScreen() {
                 { label: 'Calories', value: streaks.calories, color: theme.accentBlue },
                 { label: 'Water', value: streaks.water, color: '#06b6d4' },
                 { label: 'Bible', value: streaks.bible, color: theme.accentAmber },
-              ].map(s => (
+              ].filter(s => s.label !== 'Bible' || faithJourney !== 'notrightnow').map(s => (
                 <View key={s.label} style={{ alignItems: 'center', flex: 1 }}>
                   <Text style={{ fontSize: 36, fontFamily: 'BebasNeue_400Regular', color: s.color, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0, opacity: 0.88 }}>
                     {s.value}

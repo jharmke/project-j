@@ -67,21 +67,21 @@ function MacroStackedBar({ protein, carbs, fat, proteinGoal, carbsGoal, fatGoal,
           <ReAnimated.View style={[{ height: '100%', borderRadius: 3, backgroundColor: theme.macroProtein }, proteinStyle]} />
         </View>
         <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', width: 10 }}>P</Text>
-        <Text style={{ fontSize: 13, color: theme.macroProtein, fontFamily: 'DMSans_600SemiBold', width: 34, textAlign: 'right' }}>{protein}<Text style={{ fontSize: 9, color: theme.textMuted }}>g</Text></Text>
+        <Text style={{ fontSize: 13, color: theme.macroProtein, fontFamily: 'DMSans_600SemiBold', width: 40, textAlign: 'right' }}>{Math.round(protein)}<Text style={{ fontSize: 9, color: theme.textMuted }}>g</Text></Text>
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
         <View style={{ flex: 1, height: 5, borderRadius: 3, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
           <ReAnimated.View style={[{ height: '100%', borderRadius: 3, backgroundColor: theme.macroCarbs }, carbsStyle]} />
         </View>
         <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', width: 10 }}>C</Text>
-        <Text style={{ fontSize: 13, color: theme.macroCarbs, fontFamily: 'DMSans_600SemiBold', width: 34, textAlign: 'right' }}>{carbs}<Text style={{ fontSize: 9, color: theme.textMuted }}>g</Text></Text>
+        <Text style={{ fontSize: 13, color: theme.macroCarbs, fontFamily: 'DMSans_600SemiBold', width: 40, textAlign: 'right' }}>{Math.round(carbs)}<Text style={{ fontSize: 9, color: theme.textMuted }}>g</Text></Text>
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
         <View style={{ flex: 1, height: 5, borderRadius: 3, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
           <ReAnimated.View style={[{ height: '100%', borderRadius: 3, backgroundColor: theme.macroFat }, fatStyle]} />
         </View>
         <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', width: 10 }}>F</Text>
-        <Text style={{ fontSize: 13, color: theme.macroFat, fontFamily: 'DMSans_600SemiBold', width: 34, textAlign: 'right' }}>{fat}<Text style={{ fontSize: 9, color: theme.textMuted }}>g</Text></Text>
+        <Text style={{ fontSize: 13, color: theme.macroFat, fontFamily: 'DMSans_600SemiBold', width: 40, textAlign: 'right' }}>{Math.round(fat)}<Text style={{ fontSize: 9, color: theme.textMuted }}>g</Text></Text>
       </View>
     </View>
   );

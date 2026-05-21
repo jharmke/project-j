@@ -33,6 +33,14 @@ export interface DayProgram {
   tags?: string[];
 }
 
+export interface Routine {
+  id: string;
+  name: string;
+  tags: string[];
+  exercises: Exercise[];
+  starred: boolean;
+}
+
 export const TAG_COLOR_PALETTE = [
   '#3b82f6', '#10b981', '#f59e0b', '#f97316',
   '#ef4444', '#8b5cf6', '#14b8a6', '#ec4899',

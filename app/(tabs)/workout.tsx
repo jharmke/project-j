@@ -13,7 +13,7 @@ import { ToastRenderer, useToast } from '../../components/Toast';
 import { storageSet } from '../../utils/storage';
 import { useTheme } from '../../theme';
 import { useHealthKit } from '../../useHealthKit';
-import { BLANK_DAY, DEFAULT_TAGS, DayProgram, Exercise, TAG_COLOR_PALETTE, WorkoutTag } from '../../workoutData';
+import { BLANK_DAY, DEFAULT_TAGS, DayProgram, Exercise, Routine, TAG_COLOR_PALETTE, WorkoutTag } from '../../workoutData';
 
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -77,6 +77,16 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
   const [showManageTagsModal, setShowManageTagsModal] = useState(false);
   const [tagModalInitialTags, setTagModalInitialTags] = useState<string[]>([]);
   const [activeProgramName, setActiveProgramName] = useState<string | null>(null);
+  const [showFabMenu, setShowFabMenu] = useState(false);
+  const fabItem1Anim = useRef(new Animated.Value(0)).current;
+  const fabItem2Anim = useRef(new Animated.Value(0)).current;
+  const [showLoadRoutineModal, setShowLoadRoutineModal] = useState(false);
+  const [routines, setRoutines] = useState<Routine[]>([]);
+  const [selectedRoutine, setSelectedRoutine] = useState<Routine | null>(null);
+  const [selectedLoadDays, setSelectedLoadDays] = useState<string[]>([]);
+  const [loadPickerWeekOffset, setLoadPickerWeekOffset] = useState(0);
+  const loadRoutineOverlayAnim = useRef(new Animated.Value(0)).current;
+  const loadRoutineCardScale = useRef(new Animated.Value(0.95)).current;
   const fabScale = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
   const originalForm = useRef<typeof form | null>(null);
@@ -580,6 +590,94 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
     const p = programs[dayKey] || weeklyTemplate[DATES.find(d => d.key === dayKey)?.dayName || 'Mon'];
     if (!p?.tags?.length) return [];
     return p.tags.map(id => tags.find(t => t.id === id)).filter(Boolean) as WorkoutTag[];
+  };
+
+  const openFabMenu = () => {
+    fabItem1Anim.setValue(0);
+    fabItem2Anim.setValue(0);
+    setShowFabMenu(true);
+    Animated.stagger(70, [
+      Animated.spring(fabItem1Anim, { toValue: 1, useNativeDriver: true, friction: 7, tension: 120 }),
+      Animated.spring(fabItem2Anim, { toValue: 1, useNativeDriver: true, friction: 7, tension: 120 }),
+    ]).start();
+  };
+
+  const closeFabMenu = () => {
+    Animated.parallel([
+      Animated.timing(fabItem1Anim, { toValue: 0, duration: 130, useNativeDriver: true }),
+      Animated.timing(fabItem2Anim, { toValue: 0, duration: 130, useNativeDriver: true }),
+    ]).start(() => setShowFabMenu(false));
+  };
+
+  const toggleFabMenu = () => { if (showFabMenu) closeFabMenu(); else openFabMenu(); };
+
+  const getWeekDaysForPicker = (weekOffset: number = 0) => {
+    const today = new Date();
+    const dow = today.getDay();
+    const monday = new Date(today);
+    monday.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1) + weekOffset * 7);
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const name = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i];
+      return { key, name, label: `${d.getMonth() + 1}/${d.getDate()}` };
+    });
+  };
+
+  const openLoadRoutineModal = async () => {
+    closeFabMenu();
+    try {
+      const raw = await AsyncStorage.getItem('pj_routines');
+      setRoutines(raw ? JSON.parse(raw) : []);
+    } catch {}
+    setSelectedRoutine(null);
+    setSelectedLoadDays([activeDay]);
+    setLoadPickerWeekOffset(0);
+    loadRoutineOverlayAnim.setValue(0);
+    loadRoutineCardScale.setValue(0.95);
+    setShowLoadRoutineModal(true);
+    Animated.parallel([
+      Animated.timing(loadRoutineOverlayAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
+      Animated.spring(loadRoutineCardScale, { toValue: 1, useNativeDriver: true, friction: 8, tension: 100 }),
+    ]).start();
+  };
+
+  const closeLoadRoutineModal = () => {
+    Animated.parallel([
+      Animated.timing(loadRoutineOverlayAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
+      Animated.timing(loadRoutineCardScale, { toValue: 0.95, duration: 150, useNativeDriver: true }),
+    ]).start(() => { setShowLoadRoutineModal(false); setSelectedRoutine(null); });
+  };
+
+  const handleLoadRoutine = async () => {
+    if (!selectedRoutine || selectedLoadDays.length === 0) return;
+    try {
+      const raw = await AsyncStorage.getItem('pj_workout_state');
+      const state = raw ? JSON.parse(raw) : {};
+      const newPrograms = { ...(state.programs || {}) };
+      const routine = selectedRoutine;
+      const hasCardioTag = routine.tags.includes('tag_cardio');
+      const hasLiftTag = routine.tags.some(id => id !== 'tag_cardio' && id !== 'tag_rest');
+      const type = hasLiftTag ? 'lift' : hasCardioTag ? 'cardio' : 'lift';
+      for (const dayKey of selectedLoadDays) {
+        newPrograms[dayKey] = {
+          ...(newPrograms[dayKey] || {}),
+          type,
+          focus: routine.name,
+          tags: routine.tags,
+          exercises: routine.exercises.map(ex => ({ ...ex, id: makeId() })),
+        };
+      }
+      await storageSet('pj_workout_state', JSON.stringify({ ...state, programs: newPrograms }));
+      setPrograms(newPrograms);
+      const dayNames = selectedLoadDays.map(dk => {
+        const found = DATES.find(d => d.key === dk);
+        return found ? found.dayName : dk;
+      }).join(', ');
+      showToast(`${routine.name} loaded`, dayNames, 'success');
+      closeLoadRoutineModal();
+    } catch (e) { console.log('Load routine error', e); }
   };
 
   return (
@@ -1194,16 +1292,157 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
           </View>
         </Modal>
 
-    <Animated.View style={{ position: 'absolute', bottom: 16, right: 20, transform: [{ scale: fabScale }] }}>
+      {/* FAB backdrop */}
+      {showFabMenu && (
+        <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={closeFabMenu} />
+      )}
+
+      {/* FAB speed dial items */}
+      {showFabMenu && (
+        <View style={{ position: 'absolute', bottom: 86, right: 20, alignItems: 'flex-end', gap: 12 }}>
+          {/* Load Routine - top */}
+          <Animated.View style={{ opacity: fabItem2Anim, transform: [{ translateY: fabItem2Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <TouchableOpacity
+                onPress={openLoadRoutineModal}
+                style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Load Routine</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={openLoadRoutineModal}
+                style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <Ionicons name="repeat" size={20} color="#ffffff" />
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+
+          {/* Add Exercise - bottom, first */}
+          <Animated.View style={{ opacity: fabItem1Anim, transform: [{ translateY: fabItem1Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <TouchableOpacity
+                onPress={() => { closeFabMenu(); router.push({ pathname: '/workout-library', params: { selectMode: 'true', day: activeDay } }); }}
+                style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Add Exercise</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => { closeFabMenu(); router.push({ pathname: '/workout-library', params: { selectMode: 'true', day: activeDay } }); }}
+                style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <Ionicons name="barbell-outline" size={20} color="#ffffff" />
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        </View>
+      )}
+
+      {/* Main FAB */}
+      <Animated.View style={{ position: 'absolute', bottom: 16, right: 20, transform: [{ scale: fabScale }] }}>
         <TouchableOpacity
-          onPress={() => router.push({ pathname: '/workout-library', params: { selectMode: 'true', day: activeDay } })}
+          onPress={toggleFabMenu}
           onPressIn={() => Animated.timing(fabScale, { toValue: 0.85, duration: 80, useNativeDriver: true }).start()}
           onPressOut={() => Animated.timing(fabScale, { toValue: 1, duration: 80, useNativeDriver: true }).start()}
           activeOpacity={1}
           style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 }}>
-          <Ionicons name="add" size={28} color={theme.bgPrimary} />
+          <Ionicons name={showFabMenu ? 'close' : 'add'} size={28} color={theme.bgPrimary} />
         </TouchableOpacity>
       </Animated.View>
+
+      {/* Load Routine Modal */}
+      {showLoadRoutineModal && (() => {
+        const weekDays = getWeekDaysForPicker(loadPickerWeekOffset);
+        const today = new Date();
+        const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        const weekLabel = loadPickerWeekOffset === 0 ? 'THIS WEEK' : loadPickerWeekOffset === 1 ? 'NEXT WEEK' : `WEEK OF ${weekDays[0].label}`;
+        return (
+          <Modal transparent animationType="none" visible onRequestClose={closeLoadRoutineModal}>
+            <ToastRenderer />
+            <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: theme.overlayBg, opacity: loadRoutineOverlayAnim }]} pointerEvents="none" />
+            <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeLoadRoutineModal} />
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }} pointerEvents="box-none">
+              <Animated.View pointerEvents="box-none" style={{ width: '100%', maxHeight: '90%', transform: [{ scale: loadRoutineCardScale }] }}>
+                <View pointerEvents="auto" style={{ backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
+                    <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw }}>LOAD ROUTINE</Text>
+                    <TouchableOpacity onPress={closeLoadRoutineModal} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                      <Ionicons name="close" size={20} color={theme.textMuted} />
+                    </TouchableOpacity>
+                  </View>
+
+                  <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 28 }}>
+                    {routines.length === 0 ? (
+                      <View style={{ alignItems: 'center', paddingVertical: 32 }}>
+                        <Ionicons name="repeat-outline" size={36} color={theme.textDim} />
+                        <Text style={{ color: theme.textPrimary, fontSize: 15, fontFamily: 'DMSans_600SemiBold', marginTop: 12 }}>No routines yet</Text>
+                        <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular', marginTop: 6, textAlign: 'center' }}>
+                          Create routines in the Library to load them here.
+                        </Text>
+                      </View>
+                    ) : (
+                      <>
+                        <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 10 }}>SELECT ROUTINE</Text>
+                        {routines.map(r => {
+                          const isSelected = selectedRoutine?.id === r.id;
+                          return (
+                            <TouchableOpacity key={r.id} onPress={() => setSelectedRoutine(r)}
+                              style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isSelected ? theme.accentBlueBg : theme.bgInset, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 8, borderWidth: 1, borderColor: isSelected ? theme.accentBlueBorder : theme.borderCard }}>
+                              <View style={{ flex: 1 }}>
+                                <Text style={{ color: isSelected ? theme.accentBlue : theme.textPrimary, fontSize: 14, fontFamily: 'DMSans_600SemiBold' }}>{r.name}</Text>
+                                <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>
+                                  {r.exercises.length} exercise{r.exercises.length !== 1 ? 's' : ''}
+                                  {r.tags.length > 0 ? ` · ${r.tags.map(tid => tags.find(t => t.id === tid)?.label).filter(Boolean).join(', ')}` : ''}
+                                </Text>
+                              </View>
+                              {isSelected && <Ionicons name="checkmark-circle" size={20} color={theme.accentBlue} />}
+                            </TouchableOpacity>
+                          );
+                        })}
+
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, marginTop: 8 }}>
+                          <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>{weekLabel}</Text>
+                          <View style={{ flexDirection: 'row', gap: 2 }}>
+                            <TouchableOpacity onPress={() => setLoadPickerWeekOffset(o => o - 1)} disabled={loadPickerWeekOffset <= 0} style={{ padding: 6, opacity: loadPickerWeekOffset <= 0 ? 0.25 : 1 }}>
+                              <Ionicons name="chevron-back" size={18} color={theme.textMuted} />
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => setLoadPickerWeekOffset(o => o + 1)} style={{ padding: 6 }}>
+                              <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                        <View style={{ flexDirection: 'row', gap: 6, marginBottom: 20 }}>
+                          {weekDays.map(d => {
+                            const isSel = selectedLoadDays.includes(d.key);
+                            const isToday = d.key === activeDay;
+                            const isPast = d.key < todayKey;
+                            return (
+                              <TouchableOpacity key={d.key}
+                                disabled={isPast}
+                                onPress={() => setSelectedLoadDays(prev =>
+                                  prev.includes(d.key) ? prev.filter(k => k !== d.key) : [...prev, d.key]
+                                )}
+                                style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: isSel ? theme.accentBlue : theme.bgInset, borderWidth: 1, borderColor: isSel ? theme.accentBlue : isToday ? theme.textSecondary : theme.borderCard, opacity: isPast ? 0.25 : 1 }}>
+                                <Text style={{ fontSize: 10, fontFamily: 'DMSans_700Bold', color: isSel ? '#ffffff' : theme.textMuted, letterSpacing: 0.5 }}>{d.name.toUpperCase()}</Text>
+                                <Text style={{ fontSize: 9, fontFamily: 'DMSans_400Regular', color: isSel ? 'rgba(255,255,255,0.7)' : theme.textDim, marginTop: 2 }}>{d.label}</Text>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+
+                        <TouchableOpacity onPress={handleLoadRoutine}
+                          disabled={!selectedRoutine || selectedLoadDays.length === 0}
+                          style={{ paddingVertical: 14, borderRadius: 10, alignItems: 'center', backgroundColor: theme.accentBlue, opacity: selectedRoutine && selectedLoadDays.length > 0 ? 1 : 0.4 }}>
+                          <Text style={{ color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 18, letterSpacing: 2 }}>
+                            LOAD TO {selectedLoadDays.length} {selectedLoadDays.length === 1 ? 'DAY' : 'DAYS'}
+                          </Text>
+                        </TouchableOpacity>
+                      </>
+                    )}
+                  </ScrollView>
+                </View>
+              </Animated.View>
+            </View>
+          </Modal>
+        );
+      })()}
+
     </LinearGradient>
     </KeyboardAvoidingView>
     </GestureHandlerRootView>

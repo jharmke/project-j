@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Animated, FlatList, Keyboard, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, FlatList, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
@@ -9,7 +9,7 @@ import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-
 import { saveToFirebase } from '../firebaseConfig';
 import { storageSet } from '../utils/storage';
 import { ToastRenderer, useToast } from '../components/Toast';
-import { PRESET_PROGRAMS, PresetProgram, DayProgram, TAG_COLOR_PALETTE, WorkoutTag, DEFAULT_TAGS } from '../workoutData';
+import { PRESET_PROGRAMS, PresetProgram, DayProgram, Exercise, Routine, TAG_COLOR_PALETTE, WorkoutTag, DEFAULT_TAGS } from '../workoutData';
 import { useTheme } from '../theme';
 
 interface LibraryExercise {
@@ -386,6 +386,366 @@ function ProgramBuilderModal({ onClose, onSave, editingProgram }: {
   );
 }
 
+function getWeekDays(weekOffset: number = 0) {
+  const today = new Date();
+  const dow = today.getDay();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1) + weekOffset * 7);
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const name = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][i];
+    return { key, name, label: `${d.getMonth() + 1}/${d.getDate()}` };
+  });
+}
+
+function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags }: {
+  onClose: () => void;
+  onSave: (r: Routine) => void;
+  editingRoutine: Routine | null;
+  library: LibraryExercise[];
+  allTags: WorkoutTag[];
+}) {
+  const { theme } = useTheme();
+  const overlayAnim = useRef(new Animated.Value(0)).current;
+  const cardScale = useRef(new Animated.Value(0.95)).current;
+
+  const [name, setName] = useState('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [exercises, setExercises] = useState<Exercise[]>([]);
+  const [exQuery, setExQuery] = useState('');
+  const [starred, setStarred] = useState(false);
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [quickName, setQuickName] = useState('');
+  const [quickIsCardio, setQuickIsCardio] = useState(false);
+  const [browseMode, setBrowseMode] = useState(false);
+
+  const updateExercise = (id: string, field: keyof Exercise, value: string) => {
+    setExercises(prev => prev.map(e => e.id === id ? { ...e, [field]: value } : e));
+  };
+
+  const filterDecimal = (v: string) => v.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1');
+
+  useEffect(() => {
+    if (editingRoutine) {
+      setName(editingRoutine.name);
+      setSelectedTags(editingRoutine.tags);
+      setExercises(editingRoutine.exercises);
+      setStarred(editingRoutine.starred);
+    }
+    Animated.parallel([
+      Animated.timing(overlayAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
+      Animated.spring(cardScale, { toValue: 1, useNativeDriver: true, friction: 8, tension: 100 }),
+    ]).start();
+  }, []);
+
+  const close = () => {
+    Keyboard.dismiss();
+    Animated.parallel([
+      Animated.timing(overlayAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
+      Animated.timing(cardScale, { toValue: 0.95, duration: 150, useNativeDriver: true }),
+    ]).start(() => onClose());
+  };
+
+  const filteredLibrary = exQuery.trim()
+    ? library.filter(ex => ex.name.toLowerCase().includes(exQuery.toLowerCase())).slice(0, 5)
+    : [];
+
+  const addFromLibrary = (ex: LibraryExercise) => {
+    if (exercises.find(e => e.name === ex.name)) return;
+    setExercises(prev => [...prev, {
+      id: makeId(),
+      name: ex.name,
+      sets: '',
+      reps: '',
+      rest: '',
+      note: ex.note || '',
+      isCardio: ex.type === 'cardio',
+    }]);
+    setExQuery('');
+    setBrowseMode(false);
+  };
+
+  const removeExercise = (id: string) => setExercises(prev => prev.filter(e => e.id !== id));
+
+  const toggleTag = (tagId: string) => {
+    setSelectedTags(prev => prev.includes(tagId) ? prev.filter(id => id !== tagId) : [...prev, tagId]);
+  };
+
+  const handleQuickAdd = () => {
+    if (!quickName.trim()) return;
+    setExercises(prev => [...prev, {
+      id: makeId(),
+      name: quickName.trim(),
+      sets: '',
+      reps: '',
+      rest: '',
+      note: '',
+      isCardio: quickIsCardio,
+    }]);
+    setQuickName('');
+    setQuickIsCardio(false);
+    setShowQuickAdd(false);
+  };
+
+  const handleSave = () => {
+    if (!name.trim() || exercises.length === 0) return;
+    onSave({ id: editingRoutine?.id || makeId(), name: name.trim(), tags: selectedTags, exercises, starred });
+    close();
+  };
+
+  const canSave = name.trim().length > 0 && exercises.length > 0;
+  const visibleTags = allTags.filter(t => t.id !== 'tag_rest');
+
+  return (
+    <Modal transparent animationType="none" visible onRequestClose={close} onShow={() => {
+      Animated.parallel([
+        Animated.timing(overlayAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
+        Animated.spring(cardScale, { toValue: 1, useNativeDriver: true, friction: 8, tension: 100 }),
+      ]).start();
+    }}>
+      <ToastRenderer />
+      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: theme.overlayBg, opacity: overlayAnim }]} pointerEvents="none" />
+      <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={close} />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="box-none">
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }} pointerEvents="box-none">
+          <Animated.View pointerEvents="box-none" style={{ width: '100%', maxHeight: '92%', transform: [{ scale: cardScale }] }}>
+            <View pointerEvents="auto" style={{ backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
+                <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw }}>
+                  {editingRoutine ? 'EDIT ROUTINE' : 'CREATE ROUTINE'}
+                </Text>
+                <TouchableOpacity onPress={close} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Ionicons name="close" size={20} color={theme.textMuted} />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 32 }}>
+                <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 6 }}>
+                  ROUTINE NAME <Text style={{ color: theme.accentRed }}>*</Text>
+                </Text>
+                <TextInput
+                  style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 15, fontFamily: 'DMSans_400Regular', marginBottom: 16 }}
+                  placeholder="e.g. Push Day, Leg Day"
+                  placeholderTextColor={theme.textPlaceholder}
+                  value={name}
+                  onChangeText={setName}
+                  autoCapitalize="words"
+                />
+
+                <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 8 }}>TAGS</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 20 }}>
+                  {visibleTags.map(t => {
+                    const sel = selectedTags.includes(t.id);
+                    return (
+                      <TouchableOpacity key={t.id} onPress={() => toggleTag(t.id)}
+                        style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, backgroundColor: sel ? t.color + '99' : t.color + '22', borderWidth: 1, borderColor: sel ? t.color : t.color + '55' }}>
+                        <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: sel ? '#ffffff' : t.color }}>{t.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
+                <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 8 }}>
+                  EXERCISES{exercises.length > 0 ? ` (${exercises.length})` : ''} <Text style={{ color: theme.accentRed }}>*</Text>
+                </Text>
+
+                <View style={{ flexDirection: 'row', gap: 8, marginBottom: (filteredLibrary.length > 0 || browseMode) ? 4 : 12 }}>
+                  <TextInput
+                    style={{ flex: 1, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 14, fontFamily: 'DMSans_400Regular' }}
+                    placeholder="Search exercise library..."
+                    placeholderTextColor={theme.textPlaceholder}
+                    value={exQuery}
+                    onChangeText={setExQuery}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setBrowseMode(b => !b)}
+                    style={{ width: 46, alignItems: 'center', justifyContent: 'center', backgroundColor: browseMode ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: browseMode ? theme.accentBlueBorder : theme.borderInput, borderRadius: 8 }}>
+                    <Ionicons name="list" size={20} color={browseMode ? theme.accentBlue : theme.textMuted} />
+                  </TouchableOpacity>
+                </View>
+
+                {browseMode ? (
+                  <View style={{ backgroundColor: theme.bgInset, borderRadius: 8, marginBottom: 12, borderWidth: 0.5, borderColor: theme.borderCard }}>
+                    {(exQuery.trim() ? library.filter(l => l.name.toLowerCase().includes(exQuery.toLowerCase())) : library).map((l, idx, arr) => {
+                      const alreadyAdded = !!exercises.find(e => e.name === l.name);
+                      return (
+                        <TouchableOpacity key={l.id} onPress={() => { if (!alreadyAdded) addFromLibrary(l); }}
+                          style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: idx < arr.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderCard, opacity: alreadyAdded ? 0.45 : 1 }}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ color: theme.textPrimary, fontSize: 13, fontFamily: 'DMSans_500Medium' }}>{l.name}</Text>
+                            <Text style={{ color: theme.textMuted, fontSize: 10, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', letterSpacing: 1 }}>{l.type}</Text>
+                          </View>
+                          {alreadyAdded
+                            ? <Ionicons name="checkmark-circle" size={20} color={theme.accentGreen} />
+                            : <View style={{ backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4 }}>
+                                <Text style={{ color: theme.accentGreen, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>+ Add</Text>
+                              </View>
+                          }
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                ) : filteredLibrary.length > 0 ? (
+                  <View style={{ backgroundColor: theme.bgInset, borderRadius: 8, marginBottom: 12, borderWidth: 0.5, borderColor: theme.borderCard }}>
+                    {filteredLibrary.map((l, idx) => (
+                      <TouchableOpacity key={l.id} onPress={() => addFromLibrary(l)}
+                        style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: idx < filteredLibrary.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderCard }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ color: theme.textPrimary, fontSize: 13, fontFamily: 'DMSans_500Medium' }}>{l.name}</Text>
+                          <Text style={{ color: theme.textMuted, fontSize: 10, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', letterSpacing: 1 }}>{l.type}</Text>
+                        </View>
+                        <View style={{ backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4 }}>
+                          <Text style={{ color: theme.accentGreen, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>+ Add</Text>
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                ) : null}
+
+                {exercises.length === 0 && !exQuery.trim() && !browseMode && (
+                  <Text style={{ color: theme.textDim, fontSize: 12, fontFamily: 'DMSans_400Regular', marginBottom: 12 }}>
+                    Search or browse your library above to add exercises.
+                  </Text>
+                )}
+
+                {exercises.map(ex => (
+                  <View key={ex.id} style={{ backgroundColor: theme.bgInset, borderRadius: 8, padding: 12, marginBottom: 8, borderWidth: 0.5, borderColor: theme.borderCard }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+                      <View style={{ backgroundColor: ex.isCardio ? 'rgba(249,115,22,0.15)' : theme.accentBlueBg, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, marginRight: 8 }}>
+                        <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 1, color: ex.isCardio ? '#f97316' : theme.accentBlue }}>
+                          {ex.isCardio ? 'CARDIO' : 'LIFT'}
+                        </Text>
+                      </View>
+                      <Text style={{ flex: 1, color: theme.textPrimary, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>{ex.name}</Text>
+                      <TouchableOpacity onPress={() => removeExercise(ex.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
+                        <Ionicons name="trash-outline" size={16} color={theme.accentRed} />
+                      </TouchableOpacity>
+                    </View>
+                    {!ex.isCardio ? (
+                      <View style={{ flexDirection: 'row', gap: 6 }}>
+                        {([
+                          { label: 'SETS', field: 'sets' as keyof Exercise, kb: 'numeric' as any },
+                          { label: 'REPS', field: 'reps' as keyof Exercise, kb: 'numeric' as any },
+                          { label: 'REST', field: 'rest' as keyof Exercise, kb: 'numeric' as any },
+                        ]).map(({ label, field, kb }) => (
+                          <View key={String(field)} style={{ flex: 1 }}>
+                            <Text style={{ fontSize: 8, letterSpacing: 2, color: theme.textDim, fontFamily: 'DMSans_700Bold', marginBottom: 3, textTransform: 'uppercase' }}>{label}</Text>
+                            <TextInput
+                              style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, color: theme.textPrimary, paddingHorizontal: 8, paddingVertical: 6, fontSize: 13, fontFamily: 'DMSans_400Regular', textAlign: 'center' }}
+                              placeholder="--"
+                              placeholderTextColor={theme.textPlaceholder}
+                              value={(ex[field] as string) || ''}
+                              onChangeText={v => updateExercise(ex.id, field, v)}
+                              keyboardType={kb}
+                            />
+                          </View>
+                        ))}
+                      </View>
+                    ) : (
+                      <>
+                        <View style={{ flexDirection: 'row', gap: 6, marginBottom: 6 }}>
+                          {([
+                            { label: 'DURATION', field: 'duration' as keyof Exercise, kb: 'default' as any, dec: false },
+                            { label: 'DISTANCE', field: 'distance' as keyof Exercise, kb: 'decimal-pad' as any, dec: true },
+                          ]).map(({ label, field, kb, dec }) => (
+                            <View key={String(field)} style={{ flex: 1 }}>
+                              <Text style={{ fontSize: 8, letterSpacing: 2, color: theme.textDim, fontFamily: 'DMSans_700Bold', marginBottom: 3, textTransform: 'uppercase' }}>{label}</Text>
+                              <TextInput
+                                style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, color: theme.textPrimary, paddingHorizontal: 8, paddingVertical: 6, fontSize: 13, fontFamily: 'DMSans_400Regular', textAlign: 'center' }}
+                                placeholder="--"
+                                placeholderTextColor={theme.textPlaceholder}
+                                value={(ex[field] as string) || ''}
+                                onChangeText={v => updateExercise(ex.id, field, dec ? filterDecimal(v) : v)}
+                                keyboardType={kb}
+                              />
+                            </View>
+                          ))}
+                        </View>
+                        <View style={{ flexDirection: 'row', gap: 6 }}>
+                          {([
+                            { label: 'SPEED', field: 'speed' as keyof Exercise, kb: 'decimal-pad' as any },
+                            { label: 'INCLINE', field: 'incline' as keyof Exercise, kb: 'decimal-pad' as any },
+                            { label: 'RESIST', field: 'resistance' as keyof Exercise, kb: 'decimal-pad' as any },
+                          ]).map(({ label, field, kb }) => (
+                            <View key={String(field)} style={{ flex: 1 }}>
+                              <Text style={{ fontSize: 8, letterSpacing: 2, color: theme.textDim, fontFamily: 'DMSans_700Bold', marginBottom: 3, textTransform: 'uppercase' }}>{label}</Text>
+                              <TextInput
+                                style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, color: theme.textPrimary, paddingHorizontal: 8, paddingVertical: 6, fontSize: 13, fontFamily: 'DMSans_400Regular', textAlign: 'center' }}
+                                placeholder="--"
+                                placeholderTextColor={theme.textPlaceholder}
+                                value={(ex[field] as string) || ''}
+                                onChangeText={v => updateExercise(ex.id, field, filterDecimal(v))}
+                                keyboardType={kb}
+                              />
+                            </View>
+                          ))}
+                        </View>
+                      </>
+                    )}
+                  </View>
+                ))}
+
+                {!showQuickAdd ? (
+                  <TouchableOpacity onPress={() => setShowQuickAdd(true)}
+                    style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 10, marginTop: 4 }}>
+                    <Ionicons name="add-circle-outline" size={16} color={theme.accentBlue} />
+                    <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_500Medium' }}>Create new exercise</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <View style={{ backgroundColor: theme.bgInset, borderRadius: 10, padding: 14, marginTop: 8, borderWidth: 0.5, borderColor: theme.borderCard }}>
+                    <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 10 }}>NEW EXERCISE</Text>
+                    <TextInput
+                      style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 14, fontFamily: 'DMSans_400Regular', marginBottom: 10 }}
+                      placeholder="Exercise name"
+                      placeholderTextColor={theme.textPlaceholder}
+                      value={quickName}
+                      onChangeText={setQuickName}
+                      autoCapitalize="words"
+                      autoFocus
+                    />
+                    <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+                      <TouchableOpacity onPress={() => setQuickIsCardio(false)}
+                        style={{ flex: 1, paddingVertical: 8, borderRadius: 6, alignItems: 'center', backgroundColor: !quickIsCardio ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: !quickIsCardio ? theme.accentBlueBorder : theme.borderInput }}>
+                        <Text style={{ color: !quickIsCardio ? theme.accentBlue : theme.textMuted, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Lift</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => setQuickIsCardio(true)}
+                        style={{ flex: 1, paddingVertical: 8, borderRadius: 6, alignItems: 'center', backgroundColor: quickIsCardio ? 'rgba(245,158,11,0.15)' : theme.bgInput, borderWidth: 1, borderColor: quickIsCardio ? 'rgba(245,158,11,0.3)' : theme.borderInput }}>
+                        <Text style={{ color: quickIsCardio ? theme.statusWarn : theme.textMuted, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Cardio</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <TouchableOpacity onPress={() => { setShowQuickAdd(false); setQuickName(''); setQuickIsCardio(false); }}
+                        style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput }}>
+                        <Text style={{ color: theme.textMuted, fontFamily: 'DMSans_500Medium', fontSize: 13 }}>Cancel</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={handleQuickAdd} disabled={!quickName.trim()}
+                        style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: theme.accentBlue, opacity: quickName.trim() ? 1 : 0.4 }}>
+                        <Text style={{ color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 1 }}>ADD</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+
+                <TouchableOpacity onPress={handleSave} disabled={!canSave}
+                  style={{ marginTop: 20, backgroundColor: theme.accentBlue, borderRadius: 10, paddingVertical: 14, alignItems: 'center', opacity: canSave ? 1 : 0.4 }}>
+                  <Text style={{ color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 18, letterSpacing: 2 }}>
+                    {editingRoutine ? 'SAVE ROUTINE' : 'CREATE ROUTINE'}
+                  </Text>
+                </TouchableOpacity>
+              </ScrollView>
+            </View>
+          </Animated.View>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
+
 export default function WorkoutLibraryScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
@@ -403,6 +763,15 @@ export default function WorkoutLibraryScreen() {
   const [showBuilder, setShowBuilder] = useState(false);
   const [editingProgram, setEditingProgram] = useState<CustomProgram | null>(null);
   const [libTags, setLibTags] = useState<WorkoutTag[]>([...DEFAULT_TAGS]);
+  const [myRoutines, setMyRoutines] = useState<Routine[]>([]);
+  const [showRoutineBuilder, setShowRoutineBuilder] = useState(false);
+  const [editingRoutine, setEditingRoutine] = useState<Routine | null>(null);
+  const [showLoadRoutinePicker, setShowLoadRoutinePicker] = useState(false);
+  const [loadRoutineTarget, setLoadRoutineTarget] = useState<Routine | null>(null);
+  const [loadRoutineSelectedDays, setLoadRoutineSelectedDays] = useState<string[]>([]);
+  const loadRoutineOverlayAnim = useRef(new Animated.Value(0)).current;
+  const loadRoutineCardScale = useRef(new Animated.Value(0.95)).current;
+  const [loadPickerWeekOffset, setLoadPickerWeekOffset] = useState(0);
 
   const { selectMode, day } = useLocalSearchParams<{ selectMode: string; day: string }>();
   const isSelectMode = selectMode === 'true';
@@ -473,8 +842,15 @@ export default function WorkoutLibraryScreen() {
         setLibTags(merged);
       } catch (e) {}
     };
+    const loadMyRoutines = async () => {
+      try {
+        const raw = await AsyncStorage.getItem('pj_routines');
+        setMyRoutines(raw ? JSON.parse(raw) : []);
+      } catch (e) {}
+    };
     loadProgramState();
     loadMyPrograms();
+    loadMyRoutines();
     loadTags();
   }, []));
 
@@ -584,6 +960,88 @@ export default function WorkoutLibraryScreen() {
         },
       ]
     );
+  };
+
+  const saveMyRoutines = async (routines: Routine[]) => {
+    setMyRoutines(routines);
+    await storageSet('pj_routines', JSON.stringify(routines));
+  };
+
+  const handleSaveRoutine = async (routine: Routine) => {
+    const idx = myRoutines.findIndex(r => r.id === routine.id);
+    const updated = idx >= 0
+      ? myRoutines.map(r => r.id === routine.id ? routine : r)
+      : [...myRoutines, routine];
+    await saveMyRoutines(updated);
+    showToast(editingRoutine ? 'Routine saved' : 'Routine created', routine.name, 'success');
+    setEditingRoutine(null);
+  };
+
+  const handleDeleteRoutine = (routine: Routine) => {
+    Alert.alert(
+      'Delete Routine',
+      `Delete "${routine.name}"? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete', style: 'destructive', onPress: async () => {
+            await saveMyRoutines(myRoutines.filter(r => r.id !== routine.id));
+            showToast('Routine deleted', undefined, 'success');
+          }
+        },
+      ]
+    );
+  };
+
+  const openLoadRoutinePicker = (routine: Routine) => {
+    const today = new Date();
+    const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    setLoadRoutineTarget(routine);
+    setLoadRoutineSelectedDays([todayKey]);
+    setLoadPickerWeekOffset(0);
+    loadRoutineOverlayAnim.setValue(0);
+    loadRoutineCardScale.setValue(0.95);
+    setShowLoadRoutinePicker(true);
+    Animated.parallel([
+      Animated.timing(loadRoutineOverlayAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
+      Animated.spring(loadRoutineCardScale, { toValue: 1, useNativeDriver: true, friction: 8, tension: 100 }),
+    ]).start();
+  };
+
+  const closeLoadRoutinePicker = () => {
+    Animated.parallel([
+      Animated.timing(loadRoutineOverlayAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
+      Animated.timing(loadRoutineCardScale, { toValue: 0.95, duration: 150, useNativeDriver: true }),
+    ]).start(() => { setShowLoadRoutinePicker(false); setLoadRoutineTarget(null); });
+  };
+
+  const handleLoadRoutineOntoDays = async () => {
+    if (!loadRoutineTarget || loadRoutineSelectedDays.length === 0) return;
+    try {
+      const raw = await AsyncStorage.getItem('pj_workout_state');
+      const state = raw ? JSON.parse(raw) : {};
+      const newPrograms = { ...(state.programs || {}) };
+      const routine = loadRoutineTarget;
+      const hasCardioTag = routine.tags.includes('tag_cardio');
+      const hasLiftTag = routine.tags.some(id => id !== 'tag_cardio' && id !== 'tag_rest');
+      const type = hasLiftTag ? 'lift' : hasCardioTag ? 'cardio' : 'lift';
+      for (const dayKey of loadRoutineSelectedDays) {
+        newPrograms[dayKey] = {
+          ...(newPrograms[dayKey] || {}),
+          type,
+          focus: routine.name,
+          tags: routine.tags,
+          exercises: routine.exercises.map(ex => ({ ...ex, id: makeId() })),
+        };
+      }
+      await storageSet('pj_workout_state', JSON.stringify({ ...state, programs: newPrograms }));
+      const dayNames = loadRoutineSelectedDays.map(dk => {
+        const d = new Date(dk + 'T12:00:00');
+        return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()];
+      }).join(', ');
+      showToast(`${routine.name} loaded`, dayNames, 'success');
+      closeLoadRoutinePicker();
+    } catch (e) {}
   };
 
   const closeDetailModal = (onDone?: () => void) => {
@@ -858,10 +1316,69 @@ export default function WorkoutLibraryScreen() {
         />
         </View>
       ) : (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 100 }}>
-          <Ionicons name="repeat-outline" size={48} color={theme.textDim} />
-          <Text style={{ color: theme.textPrimary, fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, marginTop: 16 }}>ROUTINES</Text>
-          <Text style={{ color: theme.textMuted, fontSize: 14, fontFamily: 'DMSans_400Regular', marginTop: 8, textAlign: 'center', paddingHorizontal: 48, lineHeight: 20 }}>Save and reuse your go-to workouts. Coming soon.</Text>
+        <View style={{ flex: 1 }}>
+          <DraggableFlatList
+            data={myRoutines.filter(r => !query.trim() || r.name.toLowerCase().includes(query.toLowerCase()))}
+            keyExtractor={r => r.id}
+            contentContainerStyle={{ paddingTop: 8, paddingBottom: 120 }}
+            onDragEnd={({ data }) => { if (!query.trim()) saveMyRoutines(data); }}
+            ListEmptyComponent={
+              <View style={{ alignItems: 'center', paddingVertical: 60, paddingHorizontal: 32 }}>
+                <Ionicons name="repeat-outline" size={40} color={theme.textDim} />
+                <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'DMSans_600SemiBold', marginTop: 12 }}>No routines yet</Text>
+                <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular', marginTop: 6, textAlign: 'center', lineHeight: 20 }}>
+                  Build your go-to workouts and load them onto any day in one tap.
+                </Text>
+              </View>
+            }
+            renderItem={({ item: routine, drag, isActive }: RenderItemParams<Routine>) => (
+              <ScaleDecorator>
+                <View style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderRadius: 12, padding: 16, marginHorizontal: 12, marginBottom: 12, opacity: isActive ? 0.95 : 1, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'DMSans_700Bold', flex: 1, marginRight: 8 }}>{routine.name}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <TouchableOpacity onPress={() => saveMyRoutines(myRoutines.map(r => r.id === routine.id ? { ...r, starred: !r.starred } : r))}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
+                        <Ionicons name={routine.starred ? 'star' : 'star-outline'} size={16} color={routine.starred ? theme.accentAmber : theme.textDim} />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => { setEditingRoutine(routine); setShowRoutineBuilder(true); }}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
+                        <Ionicons name="pencil" size={15} color={theme.textMuted} />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => handleDeleteRoutine(routine)}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
+                        <Ionicons name="trash-outline" size={15} color={theme.accentRed} />
+                      </TouchableOpacity>
+                      <TouchableOpacity onLongPress={drag} delayLongPress={150}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
+                        <Ionicons name="reorder-three" size={18} color={theme.textDim} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_400Regular', marginBottom: routine.tags.length > 0 ? 10 : 14 }}>
+                    {routine.exercises.length} exercise{routine.exercises.length !== 1 ? 's' : ''}
+                  </Text>
+                  {routine.tags.length > 0 && (
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+                      {routine.tags.map(tagId => {
+                        const tag = libTags.find(t => t.id === tagId);
+                        if (!tag) return null;
+                        return (
+                          <View key={tagId} style={{ backgroundColor: tag.color + '99', borderWidth: 1, borderColor: tag.color, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
+                            <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: '#ffffff' }}>{tag.label.toUpperCase()}</Text>
+                          </View>
+                        );
+                      })}
+                    </View>
+                  )}
+                  <TouchableOpacity onPress={() => openLoadRoutinePicker(routine)}
+                    style={{ paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
+                    <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>LOAD ROUTINE</Text>
+                  </TouchableOpacity>
+                </View>
+              </ScaleDecorator>
+            )}
+          />
         </View>
       )}
 
@@ -1016,15 +1533,19 @@ export default function WorkoutLibraryScreen() {
       {/* FAB speed dial menu - each item cascades in independently */}
       {showFabMenu && (
         <View style={{ position: 'absolute', bottom: 90 + insets.bottom, right: 20, alignItems: 'flex-end', gap: 12 }}>
-          {/* Create Routine - disabled, animates last */}
+          {/* Create Routine - active */}
           <Animated.View style={{ opacity: fabItem3Anim, transform: [{ translateY: fabItem3Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <View style={{ backgroundColor: theme.bgCard, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 0.5, borderColor: theme.borderCard, opacity: 0.5 }}>
-                <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_500Medium' }}>Create Routine</Text>
-              </View>
-              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}>
-                <Ionicons name="repeat-outline" size={20} color={theme.textDim} />
-              </View>
+              <TouchableOpacity
+                onPress={() => { closeFabMenu(); setEditingRoutine(null); setShowRoutineBuilder(true); }}
+                style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Create Routine</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => { closeFabMenu(); setEditingRoutine(null); setShowRoutineBuilder(true); }}
+                style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <Ionicons name="repeat" size={20} color="#ffffff" />
+              </TouchableOpacity>
             </View>
           </Animated.View>
 
@@ -1081,6 +1602,84 @@ export default function WorkoutLibraryScreen() {
           editingProgram={editingProgram}
         />
       )}
+
+      {showRoutineBuilder && (
+        <RoutineBuilderModal
+          onClose={() => { setShowRoutineBuilder(false); setEditingRoutine(null); }}
+          onSave={handleSaveRoutine}
+          editingRoutine={editingRoutine}
+          library={library}
+          allTags={libTags}
+        />
+      )}
+
+      {/* Load Routine Day Picker */}
+      {showLoadRoutinePicker && loadRoutineTarget && (() => {
+        const weekDays = getWeekDays(loadPickerWeekOffset);
+        const today = new Date();
+        const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        const weekLabel = loadPickerWeekOffset === 0 ? 'THIS WEEK' : loadPickerWeekOffset === 1 ? 'NEXT WEEK' : `WEEK OF ${weekDays[0].label}`;
+        return (
+          <Modal transparent animationType="none" visible onRequestClose={closeLoadRoutinePicker}>
+            <ToastRenderer />
+            <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: theme.overlayBg, opacity: loadRoutineOverlayAnim }]} pointerEvents="none" />
+            <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeLoadRoutinePicker} />
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }} pointerEvents="box-none">
+              <Animated.View pointerEvents="box-none" style={{ width: '100%', transform: [{ scale: loadRoutineCardScale }] }}>
+                <View pointerEvents="auto" style={{ backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, padding: 20 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw }}>LOAD ROUTINE</Text>
+                    <TouchableOpacity onPress={closeLoadRoutinePicker} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                      <Ionicons name="close" size={20} color={theme.textMuted} />
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular', marginBottom: 20 }}>{loadRoutineTarget.name}</Text>
+
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                    <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>{weekLabel}</Text>
+                    <View style={{ flexDirection: 'row', gap: 2 }}>
+                      <TouchableOpacity onPress={() => setLoadPickerWeekOffset(o => o - 1)} disabled={loadPickerWeekOffset <= 0} style={{ padding: 6, opacity: loadPickerWeekOffset <= 0 ? 0.25 : 1 }}>
+                        <Ionicons name="chevron-back" size={18} color={theme.textMuted} />
+                      </TouchableOpacity>
+                      <TouchableOpacity onPress={() => setLoadPickerWeekOffset(o => o + 1)} style={{ padding: 6 }}>
+                        <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                  <View style={{ flexDirection: 'row', gap: 6, marginBottom: 20 }}>
+                    {weekDays.map(d => {
+                      const isSelected = loadRoutineSelectedDays.includes(d.key);
+                      const isToday = d.key === todayKey;
+                      const isPast = d.key < todayKey;
+                      return (
+                        <TouchableOpacity
+                          key={d.key}
+                          disabled={isPast}
+                          onPress={() => setLoadRoutineSelectedDays(prev =>
+                            prev.includes(d.key) ? prev.filter(k => k !== d.key) : [...prev, d.key]
+                          )}
+                          style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: isSelected ? theme.accentBlue : theme.bgInset, borderWidth: 1, borderColor: isSelected ? theme.accentBlue : isToday ? theme.textSecondary : theme.borderCard, opacity: isPast ? 0.25 : 1 }}>
+                          <Text style={{ fontSize: 10, fontFamily: 'DMSans_700Bold', color: isSelected ? '#ffffff' : theme.textMuted, letterSpacing: 0.5 }}>{d.name.toUpperCase()}</Text>
+                          <Text style={{ fontSize: 9, fontFamily: 'DMSans_400Regular', color: isSelected ? 'rgba(255,255,255,0.7)' : theme.textDim, marginTop: 2 }}>{d.label}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+
+                  <TouchableOpacity
+                    onPress={handleLoadRoutineOntoDays}
+                    disabled={loadRoutineSelectedDays.length === 0}
+                    style={{ paddingVertical: 14, borderRadius: 10, alignItems: 'center', backgroundColor: theme.accentBlue, opacity: loadRoutineSelectedDays.length > 0 ? 1 : 0.4 }}>
+                    <Text style={{ color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 18, letterSpacing: 2 }}>
+                      LOAD TO {loadRoutineSelectedDays.length} {loadRoutineSelectedDays.length === 1 ? 'DAY' : 'DAYS'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </Animated.View>
+            </View>
+          </Modal>
+        );
+      })()}
     </View>
   );
 }

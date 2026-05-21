@@ -5,55 +5,801 @@ import { Alert, Animated, FlatList, Keyboard, KeyboardAvoidingView, Modal, Platf
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
-import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import Reanimated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, runOnJS } from 'react-native-reanimated';
 import { saveToFirebase } from '../firebaseConfig';
 import { storageSet } from '../utils/storage';
 import { ToastRenderer, useToast } from '../components/Toast';
-import { PRESET_PROGRAMS, PresetProgram, DayProgram, Exercise, Routine, TAG_COLOR_PALETTE, WorkoutTag, DEFAULT_TAGS } from '../workoutData';
+import { PRESET_PROGRAMS, PRESET_ROUTINES, PresetProgram, DayProgram, Exercise, Routine, TAG_COLOR_PALETTE, WorkoutTag, DEFAULT_TAGS } from '../workoutData';
 import { useTheme } from '../theme';
+import MuscleMap from '../components/MuscleMap';
 
 interface LibraryExercise {
   id: string;
   name: string;
   type: 'lift' | 'cardio';
+  tags?: string[];
   defaultSets?: string;
   defaultReps?: string;
   defaultRest?: string;
   note?: string;
   favorite?: boolean;
   recentlyUsed?: number;
+  instructions?: string[];
+  primaryMuscles?: string[];
+  secondaryMuscles?: string[];
 }
 
 const makeId = () => Math.random().toString(36).substr(2, 9);
 
 const DEFAULT_LIBRARY: LibraryExercise[] = [
-  { id: 'l1', name: 'Barbell Squat', type: 'lift', defaultSets: '4', defaultReps: '8–10', defaultRest: '90s' },
-  { id: 'l2', name: 'Bench Press', type: 'lift', defaultSets: '4', defaultReps: '8–10', defaultRest: '90s' },
-  { id: 'l3', name: 'Cable Curl', type: 'lift', defaultSets: '3', defaultReps: '12', defaultRest: '45s' },
-  { id: 'l4', name: 'Cable Face Pull', type: 'lift', defaultSets: '3', defaultReps: '15–20', defaultRest: '30s' },
-  { id: 'l5', name: 'Cable Fly (Low to High)', type: 'lift', defaultSets: '3', defaultReps: '12–15', defaultRest: '45s' },
-  { id: 'l6', name: 'Cable Lateral Raise', type: 'lift', defaultSets: '3', defaultReps: '15', defaultRest: '30s' },
-  { id: 'l7', name: 'Cable Crunch', type: 'lift', defaultSets: '3', defaultReps: '15', defaultRest: '30s' },
-  { id: 'l8', name: 'Dead Bug', type: 'lift', defaultSets: '3', defaultReps: '10 each side', defaultRest: '30s' },
-  { id: 'l9', name: 'Glute Kickback (Cable)', type: 'lift', defaultSets: '3', defaultReps: '15 each', defaultRest: '30s' },
-  { id: 'l10', name: 'Hammer Curl', type: 'lift', defaultSets: '3', defaultReps: '12', defaultRest: '45s' },
-  { id: 'l11', name: 'Hamstring Curl', type: 'lift', defaultSets: '3', defaultReps: '12', defaultRest: '45s' },
-  { id: 'l12', name: 'Lat Pulldown (Wide Grip)', type: 'lift', defaultSets: '4', defaultReps: '10–12', defaultRest: '60s' },
-  { id: 'l13', name: 'Leg Extension (Machine)', type: 'lift', defaultSets: '3', defaultReps: '12–15', defaultRest: '45s' },
-  { id: 'l14', name: 'Leg Press', type: 'lift', defaultSets: '4', defaultReps: '10–12', defaultRest: '90s' },
-  { id: 'l15', name: 'Machine Chest Press', type: 'lift', defaultSets: '4', defaultReps: '10–12', defaultRest: '60s' },
-  { id: 'l16', name: 'Machine Row', type: 'lift', defaultSets: '3', defaultReps: '12', defaultRest: '45s' },
-  { id: 'l17', name: 'Machine Shoulder Press', type: 'lift', defaultSets: '3', defaultReps: '10–12', defaultRest: '60s' },
-  { id: 'l18', name: 'Overhead Tricep Extension (Cable)', type: 'lift', defaultSets: '3', defaultReps: '12', defaultRest: '60s' },
-  { id: 'l19', name: 'Plank', type: 'lift', defaultSets: '3', defaultReps: '30–45s hold', defaultRest: '30s' },
-  { id: 'l20', name: 'Seated Cable Row', type: 'lift', defaultSets: '3', defaultReps: '10–12', defaultRest: '60s' },
-  { id: 'l21', name: 'Tricep Pushdown (Rope)', type: 'lift', defaultSets: '3', defaultReps: '12', defaultRest: '45s' },
-  { id: 'c1', name: 'Treadmill', type: 'cardio' },
-  { id: 'c2', name: 'Elliptical', type: 'cardio' },
-  { id: 'c3', name: 'Stationary Bike', type: 'cardio' },
-  { id: 'c4', name: 'Stairmaster', type: 'cardio' },
-  { id: 'c5', name: 'Running (Outdoor)', type: 'cardio' },
-  { id: 'c6', name: 'HIIT', type: 'cardio' },
+  // ── CHEST ──────────────────────────────────────────────────────────────────
+  {
+    id: 'l2', name: 'Bench Press', type: 'lift', tags: ['tag_push'],
+    defaultSets: '4', defaultReps: '8–10', defaultRest: '90s',
+    primaryMuscles: ['chest'], secondaryMuscles: ['front_delt', 'triceps'],
+    instructions: [
+      'Lie flat on bench, grip bar slightly wider than shoulder-width.',
+      'Unrack and lower the bar to mid-chest under control.',
+      'Press back up to full extension without locking elbows.',
+      'Keep shoulder blades pinched together throughout.',
+    ],
+  },
+  {
+    id: 'l15', name: 'Machine Chest Press', type: 'lift', tags: ['tag_push'],
+    defaultSets: '4', defaultReps: '10–12', defaultRest: '60s',
+    primaryMuscles: ['chest'], secondaryMuscles: ['front_delt', 'triceps'],
+    instructions: [
+      'Adjust seat so handles are at chest height.',
+      'Press handles forward to full extension without locking elbows.',
+      'Lower slowly, feeling chest stretch at the back of the movement.',
+      'Keep back flat against the pad throughout.',
+    ],
+  },
+  {
+    id: 'l5', name: 'Cable Fly (Low to High)', type: 'lift', tags: ['tag_push'],
+    defaultSets: '3', defaultReps: '12–15', defaultRest: '45s',
+    primaryMuscles: ['lower_chest', 'front_delt'], secondaryMuscles: ['abs'],
+    instructions: [
+      'Set cables at lowest position. Stand centered, one handle in each hand.',
+      'With slight elbow bend, sweep arms upward and together at chest height.',
+      'Squeeze chest at the top, pause briefly.',
+      'Lower with control back to start.',
+    ],
+  },
+  {
+    id: 'l22', name: 'Incline Bench Press (Barbell)', type: 'lift', tags: ['tag_push'],
+    defaultSets: '4', defaultReps: '8–10', defaultRest: '90s',
+    primaryMuscles: ['upper_chest'], secondaryMuscles: ['front_delt', 'triceps'],
+    instructions: [
+      'Set bench to 30–45 degrees. Grip bar slightly wider than shoulder-width.',
+      'Unrack and lower bar to upper chest under control.',
+      'Press up and slightly back toward the rack at the top.',
+      'Keep shoulder blades retracted throughout.',
+    ],
+  },
+  {
+    id: 'l23', name: 'Decline Bench Press', type: 'lift', tags: ['tag_push'],
+    defaultSets: '3', defaultReps: '8–10', defaultRest: '90s',
+    primaryMuscles: ['lower_chest'], secondaryMuscles: ['front_delt', 'triceps'],
+    instructions: [
+      'Secure feet under pads, lie back on decline bench.',
+      'Grip bar slightly wider than shoulder-width, unrack.',
+      'Lower bar to lower chest, keeping elbows at ~75 degrees.',
+      'Press back to full extension.',
+    ],
+  },
+  {
+    id: 'l24', name: 'Incline Dumbbell Press', type: 'lift', tags: ['tag_push'],
+    defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
+    primaryMuscles: ['upper_chest'], secondaryMuscles: ['front_delt', 'triceps'],
+    instructions: [
+      'Set bench to 30–45 degrees, hold dumbbells at shoulder height.',
+      'Press dumbbells up and slightly together at the top.',
+      'Lower slowly to chest level, elbows at ~75 degrees.',
+      'Control the descent, avoid letting shoulders roll forward.',
+    ],
+  },
+  {
+    id: 'l25', name: 'Dumbbell Bench Press', type: 'lift', tags: ['tag_push'],
+    defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
+    primaryMuscles: ['chest'], secondaryMuscles: ['front_delt', 'triceps'],
+    instructions: [
+      'Lie flat, hold dumbbells at chest level with palms facing forward.',
+      'Press straight up, bringing dumbbells slightly together at the top.',
+      'Lower under control to chest level.',
+      'Keep feet flat on the floor and core braced.',
+    ],
+  },
+  {
+    id: 'l26', name: 'Dips (Chest)', type: 'lift', tags: ['tag_push'],
+    defaultSets: '3', defaultReps: '8–12', defaultRest: '60s',
+    primaryMuscles: ['chest', 'lower_chest'], secondaryMuscles: ['triceps', 'front_delt'],
+    instructions: [
+      'Grip parallel bars, lean torso forward at ~30 degrees.',
+      'Lower until upper arms are parallel to the floor or below.',
+      'Press back up, focusing on squeezing the chest.',
+      'Keep elbows slightly flared outward throughout.',
+    ],
+  },
+  {
+    id: 'l27', name: 'Pec Deck Machine', type: 'lift', tags: ['tag_push'],
+    defaultSets: '3', defaultReps: '12–15', defaultRest: '45s',
+    primaryMuscles: ['chest'], secondaryMuscles: ['front_delt'],
+    instructions: [
+      'Adjust seat so handles are at chest height. Sit with back flat against pad.',
+      'Bring arms together in a smooth arc, squeezing chest at full contraction.',
+      'Hold 1 second at peak, then return slowly.',
+      'Avoid letting elbows drop below shoulder height.',
+    ],
+  },
+  {
+    id: 'l28', name: 'Cable Fly (High to Low)', type: 'lift', tags: ['tag_push'],
+    defaultSets: '3', defaultReps: '12–15', defaultRest: '45s',
+    primaryMuscles: ['chest', 'upper_chest'], secondaryMuscles: ['front_delt'],
+    instructions: [
+      'Set cables at highest position. Stand centered, slight forward lean.',
+      'Sweep arms downward and together in front of hips.',
+      'Squeeze chest at the bottom, pause briefly.',
+      'Return to start with control.',
+    ],
+  },
+  // ── SHOULDERS ──────────────────────────────────────────────────────────────
+  {
+    id: 'l17', name: 'Machine Shoulder Press', type: 'lift', tags: ['tag_push'],
+    defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
+    primaryMuscles: ['front_delt', 'side_delt'], secondaryMuscles: ['triceps'],
+    instructions: [
+      'Adjust seat so handles are at shoulder height.',
+      'Press upward to full extension without locking elbows.',
+      'Lower slowly to start position.',
+      'Keep core braced, avoid arching lower back.',
+    ],
+  },
+  {
+    id: 'l6', name: 'Cable Lateral Raise', type: 'lift', tags: ['tag_push'],
+    defaultSets: '3', defaultReps: '15', defaultRest: '30s',
+    primaryMuscles: ['side_delt'], secondaryMuscles: ['traps'],
+    instructions: [
+      'Stand beside cable set at lowest point. Grip handle with far hand.',
+      'With slight elbow bend, raise arm out to shoulder height.',
+      'Pause briefly at top, then lower slowly.',
+      'Avoid using momentum — keep movement strict.',
+    ],
+  },
+  {
+    id: 'l29', name: 'Barbell Overhead Press', type: 'lift', tags: ['tag_push'],
+    defaultSets: '4', defaultReps: '6–10', defaultRest: '90s',
+    primaryMuscles: ['front_delt', 'side_delt'], secondaryMuscles: ['triceps', 'traps'],
+    instructions: [
+      'Set bar at upper chest height. Grip just outside shoulder-width.',
+      'Unrack and press bar straight overhead to full arm extension.',
+      'Lower bar to clavicle level under control.',
+      'Keep core tight and glutes squeezed to protect lower back.',
+    ],
+  },
+  {
+    id: 'l30', name: 'Dumbbell Shoulder Press', type: 'lift', tags: ['tag_push'],
+    defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
+    primaryMuscles: ['front_delt', 'side_delt'], secondaryMuscles: ['triceps'],
+    instructions: [
+      'Sit or stand, hold dumbbells at shoulder height with palms forward.',
+      'Press dumbbells up and slightly together overhead.',
+      'Lower slowly to shoulder height.',
+      'Avoid shrugging — keep traps relaxed.',
+    ],
+  },
+  {
+    id: 'l31', name: 'Rear Delt Fly (Dumbbell)', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '3', defaultReps: '15', defaultRest: '30s',
+    primaryMuscles: ['rear_delt'], secondaryMuscles: ['rhomboids', 'traps'],
+    instructions: [
+      'Hinge at hips until torso is nearly parallel to floor.',
+      'Hold dumbbells hanging, palms facing each other.',
+      'Raise arms out to sides, leading with elbows.',
+      'Squeeze rear delts at the top, lower with control.',
+    ],
+  },
+  {
+    id: 'l32', name: 'Upright Row (Barbell)', type: 'lift', tags: ['tag_push'],
+    defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
+    primaryMuscles: ['side_delt', 'traps'], secondaryMuscles: ['biceps'],
+    instructions: [
+      'Grip barbell slightly inside shoulder-width, palms facing you.',
+      'Pull bar straight up, leading with elbows.',
+      'Bring bar to chin height, elbows above wrists.',
+      'Lower with control. Keep bar close to body throughout.',
+    ],
+  },
+  // ── TRICEPS ────────────────────────────────────────────────────────────────
+  {
+    id: 'l21', name: 'Tricep Pushdown (Rope)', type: 'lift', tags: ['tag_push'],
+    defaultSets: '3', defaultReps: '12', defaultRest: '45s',
+    primaryMuscles: ['triceps'], secondaryMuscles: [],
+    instructions: [
+      'Set cable to high position with rope attachment.',
+      'Grip rope ends, elbows pinned to sides at ~90 degrees.',
+      'Push rope down and out to full extension, flaring ends apart at bottom.',
+      'Slowly return to 90 degrees without letting elbows drift forward.',
+    ],
+  },
+  {
+    id: 'l18', name: 'Overhead Tricep Extension (Cable)', type: 'lift', tags: ['tag_push'],
+    defaultSets: '3', defaultReps: '12', defaultRest: '60s',
+    primaryMuscles: ['triceps'], secondaryMuscles: [],
+    instructions: [
+      'Set cable to high position. Face away, grip rope overhead.',
+      'Extend arms forward overhead until fully straight.',
+      'Bend elbows back slowly, keeping upper arms still.',
+      'Feel the stretch at full flex, then extend again.',
+    ],
+  },
+  {
+    id: 'l33', name: 'Skull Crushers (EZ Bar)', type: 'lift', tags: ['tag_push'],
+    defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
+    primaryMuscles: ['triceps'], secondaryMuscles: [],
+    instructions: [
+      'Lie on flat bench, hold EZ bar overhead with narrow grip.',
+      'Lower bar toward forehead by bending elbows only.',
+      'Keep upper arms vertical — only forearms move.',
+      'Extend back to start. A spotter is recommended.',
+    ],
+  },
+  {
+    id: 'l34', name: 'Close Grip Bench Press', type: 'lift', tags: ['tag_push'],
+    defaultSets: '3', defaultReps: '8–10', defaultRest: '90s',
+    primaryMuscles: ['triceps'], secondaryMuscles: ['chest', 'front_delt'],
+    instructions: [
+      'Lie flat, grip bar shoulder-width or slightly narrower.',
+      'Lower bar to chest with elbows tucked close to body.',
+      'Press back to full extension, focusing on tricep contraction.',
+      'Avoid an excessively narrow grip — wrist strain risk.',
+    ],
+  },
+  {
+    id: 'l35', name: 'Dips (Tricep)', type: 'lift', tags: ['tag_push'],
+    defaultSets: '3', defaultReps: '8–12', defaultRest: '60s',
+    primaryMuscles: ['triceps'], secondaryMuscles: ['chest', 'front_delt'],
+    instructions: [
+      'Grip parallel bars, keep torso upright (not leaning forward).',
+      'Lower until upper arms are parallel to floor, elbows tucked.',
+      'Press back to full extension, squeezing triceps at top.',
+      'Avoid shrugging at the top.',
+    ],
+  },
+  // ── BACK ───────────────────────────────────────────────────────────────────
+  {
+    id: 'l12', name: 'Lat Pulldown (Wide Grip)', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '4', defaultReps: '10–12', defaultRest: '60s',
+    primaryMuscles: ['lats'], secondaryMuscles: ['biceps', 'rear_delt'],
+    instructions: [
+      'Grip bar wide, slightly wider than shoulder-width. Lean back slightly.',
+      'Pull bar down to upper chest, leading with elbows.',
+      'Squeeze lats at the bottom, hold briefly.',
+      'Return bar slowly overhead, feeling the lat stretch.',
+    ],
+  },
+  {
+    id: 'l20', name: 'Seated Cable Row', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
+    primaryMuscles: ['lats', 'rhomboids'], secondaryMuscles: ['biceps', 'rear_delt'],
+    instructions: [
+      'Sit with feet on platform, grip handle with slight forward lean.',
+      'Pull handle to lower sternum, driving elbows back.',
+      'Squeeze shoulder blades together at the end of the pull.',
+      'Return with control to full arm extension.',
+    ],
+  },
+  {
+    id: 'l4', name: 'Cable Face Pull', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '3', defaultReps: '15–20', defaultRest: '30s',
+    primaryMuscles: ['rear_delt', 'rhomboids'], secondaryMuscles: ['traps', 'biceps'],
+    instructions: [
+      'Set cable at face height with rope attachment.',
+      'Grip rope, step back, arms extended at face level.',
+      'Pull rope toward face, spreading apart at the end — elbows high.',
+      'Squeeze rear delts and rhomboids at peak contraction.',
+    ],
+  },
+  {
+    id: 'l16', name: 'Machine Row', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '3', defaultReps: '12', defaultRest: '45s',
+    primaryMuscles: ['lats', 'rhomboids'], secondaryMuscles: ['biceps', 'rear_delt'],
+    instructions: [
+      'Adjust chest pad so arms can reach handles fully extended.',
+      'Pull handles toward torso, driving elbows back.',
+      'Squeeze shoulder blades together at the end.',
+      'Return slowly to full extension.',
+    ],
+  },
+  {
+    id: 'l36', name: 'Pull-Up', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '4', defaultReps: '6–10', defaultRest: '90s',
+    primaryMuscles: ['lats'], secondaryMuscles: ['biceps', 'rear_delt'],
+    instructions: [
+      'Hang from bar with overhand grip, slightly wider than shoulder-width.',
+      'Pull body up until chin clears the bar, leading with elbows.',
+      'Squeeze lats at the top, pause briefly.',
+      'Lower slowly to full hang. Avoid kipping unless training specifically for it.',
+    ],
+  },
+  {
+    id: 'l37', name: 'Chin-Up', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '3', defaultReps: '6–10', defaultRest: '90s',
+    primaryMuscles: ['lats', 'biceps'], secondaryMuscles: ['rear_delt'],
+    instructions: [
+      'Hang from bar with underhand grip, shoulder-width.',
+      'Pull body up until chin clears the bar.',
+      'Biceps and lats work together — squeeze at the top.',
+      'Lower slowly to full hang.',
+    ],
+  },
+  {
+    id: 'l38', name: 'Conventional Deadlift', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '4', defaultReps: '5', defaultRest: '2–3 min',
+    primaryMuscles: ['lower_back', 'glutes', 'hamstrings'], secondaryMuscles: ['lats', 'traps', 'quads'],
+    instructions: [
+      'Bar over mid-foot. Hip-width stance. Hinge to grip just outside legs.',
+      'Chest up, back flat, bar touching shins. Take a big breath and brace hard.',
+      'Push the floor away as you pull — legs and back work together.',
+      'Lock out hips at the top. Lower with control by hinging back first.',
+    ],
+  },
+  {
+    id: 'l40', name: 'Barbell Row (Bent Over)', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '4', defaultReps: '8–10', defaultRest: '90s',
+    primaryMuscles: ['lats', 'rhomboids'], secondaryMuscles: ['biceps', 'rear_delt'],
+    instructions: [
+      'Grip bar shoulder-width, hinge to ~45 degree torso angle.',
+      'Pull bar to lower chest/upper belly, leading with elbows.',
+      'Squeeze shoulder blades together at the top.',
+      'Lower under control. Keep lower back neutral throughout.',
+    ],
+  },
+  {
+    id: 'l41', name: 'Dumbbell Row (Single Arm)', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
+    primaryMuscles: ['lats', 'rhomboids'], secondaryMuscles: ['biceps'],
+    instructions: [
+      'Place hand and knee on bench for support. Hold dumbbell, arm hanging.',
+      'Pull dumbbell to hip, elbow brushing past torso.',
+      'Squeeze lat at the top, pause briefly.',
+      'Lower to full arm extension.',
+    ],
+  },
+  {
+    id: 'l42', name: 'T-Bar Row', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
+    primaryMuscles: ['lats', 'rhomboids'], secondaryMuscles: ['biceps', 'rear_delt'],
+    instructions: [
+      'Straddle bar, bend to ~45 degrees. Grip handles.',
+      'Pull toward chest, driving elbows back.',
+      'Squeeze shoulder blades at the top.',
+      'Lower with control.',
+    ],
+  },
+  // ── BICEPS ─────────────────────────────────────────────────────────────────
+  {
+    id: 'l3', name: 'Cable Curl', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '3', defaultReps: '12', defaultRest: '45s',
+    primaryMuscles: ['biceps'], secondaryMuscles: ['forearms'],
+    instructions: [
+      'Stand at cable with low attachment, underhand grip.',
+      'Curl handle to shoulder height, keeping elbows pinned at sides.',
+      'Squeeze bicep at the top, hold 1 second.',
+      'Lower slowly to full extension.',
+    ],
+  },
+  {
+    id: 'l10', name: 'Hammer Curl', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '3', defaultReps: '12', defaultRest: '45s',
+    primaryMuscles: ['biceps'], secondaryMuscles: ['forearms'],
+    instructions: [
+      'Hold dumbbells with neutral grip (palms facing each other).',
+      'Curl both dumbbells to shoulder height, keeping wrists neutral.',
+      'Squeeze at the top, lower slowly.',
+      'Neutral grip hits brachialis and brachioradialis harder than supinated curl.',
+    ],
+  },
+  {
+    id: 'l43', name: 'Dumbbell Curl', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '3', defaultReps: '12', defaultRest: '45s',
+    primaryMuscles: ['biceps'], secondaryMuscles: ['forearms'],
+    instructions: [
+      'Hold dumbbells at sides, palms facing forward.',
+      'Curl both dumbbells to shoulder height, keeping elbows stationary.',
+      'Supinate wrists at the top for full contraction.',
+      'Lower slowly with control.',
+    ],
+  },
+  {
+    id: 'l44', name: 'EZ Bar Curl', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
+    primaryMuscles: ['biceps'], secondaryMuscles: ['forearms'],
+    instructions: [
+      'Grip EZ bar at angled sections, slightly inside shoulder-width.',
+      'Curl bar to shoulder height, elbows pinned at sides.',
+      'Squeeze at the top, lower with control.',
+      'Easier on wrists than straight bar.',
+    ],
+  },
+  {
+    id: 'l45', name: 'Preacher Curl', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '3', defaultReps: '12', defaultRest: '45s',
+    primaryMuscles: ['biceps'], secondaryMuscles: [],
+    instructions: [
+      'Rest upper arms on preacher pad, grip EZ bar or dumbbells.',
+      'Curl weight up to shoulder height.',
+      'Lower fully to near full extension — do not bounce at the bottom.',
+      'Slow eccentric is key here.',
+    ],
+  },
+  {
+    id: 'l46', name: 'Concentration Curl', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '3', defaultReps: '12 each', defaultRest: '30s',
+    primaryMuscles: ['biceps'], secondaryMuscles: [],
+    instructions: [
+      'Sit on bench, elbow braced against inner thigh. Hold dumbbell.',
+      'Curl dumbbell to shoulder, keeping upper arm completely still.',
+      'Squeeze at the top, lower slowly.',
+      'Isolates bicep peak more than any other curl variation.',
+    ],
+  },
+  {
+    id: 'l47', name: 'Incline Dumbbell Curl', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '3', defaultReps: '12', defaultRest: '45s',
+    primaryMuscles: ['biceps'], secondaryMuscles: ['forearms'],
+    instructions: [
+      'Set bench to 45 degrees, sit back with dumbbells hanging.',
+      'Curl dumbbells from fully extended position, keeping back on bench.',
+      'The incline gives a longer stretch on the bicep at the bottom.',
+      'Lower fully between each rep.',
+    ],
+  },
+  // ── FOREARMS ───────────────────────────────────────────────────────────────
+  {
+    id: 'l48', name: 'Wrist Curl', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '3', defaultReps: '15–20', defaultRest: '30s',
+    primaryMuscles: ['forearms'], secondaryMuscles: [],
+    instructions: [
+      'Sit on bench, forearms resting on thighs. Hold barbell or dumbbells, underhand grip.',
+      'Let wrists drop toward floor, then curl upward as high as possible.',
+      'Pause at the top, lower slowly.',
+      'Keep forearms stationary throughout.',
+    ],
+  },
+  {
+    id: 'l49', name: 'Reverse Wrist Curl', type: 'lift', tags: ['tag_pull'],
+    defaultSets: '3', defaultReps: '15–20', defaultRest: '30s',
+    primaryMuscles: ['forearms'], secondaryMuscles: [],
+    instructions: [
+      'Sit on bench, forearms resting on thighs. Hold barbell or dumbbells, overhand grip.',
+      'Raise wrists upward against gravity, as high as possible.',
+      'Lower slowly with control.',
+      'Targets extensor muscles on top of forearm.',
+    ],
+  },
+  {
+    id: 'l50', name: "Farmer's Carry", type: 'lift', tags: ['tag_core'],
+    defaultSets: '3', defaultReps: '40 yards', defaultRest: '60s',
+    primaryMuscles: ['forearms', 'traps'], secondaryMuscles: ['abs', 'glutes', 'quads'],
+    instructions: [
+      'Pick up heavy dumbbells or kettlebells, one in each hand.',
+      'Stand tall — chest up, shoulders back, core braced.',
+      'Walk for the prescribed distance or time.',
+      'Grip strength, core stability, and trap endurance all trained simultaneously.',
+    ],
+  },
+  // ── LEGS ───────────────────────────────────────────────────────────────────
+  {
+    id: 'l1', name: 'Barbell Squat', type: 'lift', tags: ['tag_legs'],
+    defaultSets: '4', defaultReps: '8–10', defaultRest: '90s',
+    primaryMuscles: ['quads', 'glutes'], secondaryMuscles: ['hamstrings', 'lower_back', 'abs'],
+    instructions: [
+      'Bar on upper traps. Feet shoulder-width, toes slightly out.',
+      'Break at hips and knees simultaneously, sitting back and down.',
+      'Descend until thighs are parallel to floor or below.',
+      'Drive through heels to stand, keeping chest tall throughout.',
+    ],
+  },
+  {
+    id: 'l14', name: 'Leg Press', type: 'lift', tags: ['tag_legs'],
+    defaultSets: '4', defaultReps: '10–12', defaultRest: '90s',
+    primaryMuscles: ['quads', 'glutes'], secondaryMuscles: ['hamstrings', 'calves'],
+    instructions: [
+      'Sit in machine, feet shoulder-width on platform.',
+      'Lower platform by bending knees to 90 degrees or deeper.',
+      'Press through full foot to extend — do not lock knees at top.',
+      'Keep lower back pressed against pad throughout.',
+    ],
+  },
+  {
+    id: 'l11', name: 'Hamstring Curl', type: 'lift', tags: ['tag_legs'],
+    defaultSets: '3', defaultReps: '12', defaultRest: '45s',
+    primaryMuscles: ['hamstrings'], secondaryMuscles: ['glutes', 'calves'],
+    instructions: [
+      'Lie face-down on machine, pads behind ankles.',
+      'Curl legs toward glutes as far as range allows.',
+      'Squeeze hamstrings at peak contraction, hold briefly.',
+      'Lower slowly — the eccentric is the most important part.',
+    ],
+  },
+  {
+    id: 'l13', name: 'Leg Extension (Machine)', type: 'lift', tags: ['tag_legs'],
+    defaultSets: '3', defaultReps: '12–15', defaultRest: '45s',
+    primaryMuscles: ['quads'], secondaryMuscles: [],
+    instructions: [
+      'Sit upright, pad resting on shins just above ankles.',
+      'Extend legs to near full straightness, squeezing quads.',
+      'Hold at top briefly, lower with control.',
+      'Avoid swinging or using momentum.',
+    ],
+  },
+  {
+    id: 'l9', name: 'Glute Kickback (Cable)', type: 'lift', tags: ['tag_legs'],
+    defaultSets: '3', defaultReps: '15 each', defaultRest: '30s',
+    primaryMuscles: ['glutes'], secondaryMuscles: ['hamstrings'],
+    instructions: [
+      'Attach ankle strap to low cable. Face the machine.',
+      'Kick leg straight back and up, squeezing glute at the top.',
+      'Hold the peak contraction, lower slowly.',
+      'Keep torso upright — avoid leaning forward excessively.',
+    ],
+  },
+  {
+    id: 'l51', name: 'Romanian Deadlift (RDL)', type: 'lift', tags: ['tag_legs'],
+    defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
+    primaryMuscles: ['hamstrings', 'glutes'], secondaryMuscles: ['lower_back', 'calves'],
+    instructions: [
+      'Stand with barbell or dumbbells at hip height.',
+      'Hinge at hips, pushing them back as bar tracks down shins.',
+      'Lower until hamstrings are at full stretch (mid-shin to floor).',
+      'Drive hips forward to return upright. Keep back flat throughout.',
+    ],
+  },
+  {
+    id: 'l52', name: 'Hip Thrust (Barbell)', type: 'lift', tags: ['tag_legs'],
+    defaultSets: '4', defaultReps: '10–12', defaultRest: '60s',
+    primaryMuscles: ['glutes'], secondaryMuscles: ['hamstrings'],
+    instructions: [
+      'Shoulders on bench, bar across hips. Feet flat, knees bent.',
+      'Lower hips toward floor, then drive up explosively.',
+      'Squeeze glutes hard at the top — hips fully extended.',
+      'Keep chin tucked — avoid overextending the neck.',
+    ],
+  },
+  {
+    id: 'l53', name: 'Bulgarian Split Squat', type: 'lift', tags: ['tag_legs'],
+    defaultSets: '3', defaultReps: '10–12 each', defaultRest: '60s',
+    primaryMuscles: ['quads', 'glutes'], secondaryMuscles: ['hamstrings'],
+    instructions: [
+      'Rear foot elevated on bench, front foot 2–3 feet forward.',
+      'Lower rear knee toward floor, keeping front knee tracking over toes.',
+      'Descend until front thigh is parallel to floor.',
+      'Drive through front heel to return. Expect DOMS the next day.',
+    ],
+  },
+  {
+    id: 'l54', name: 'Walking Lunges', type: 'lift', tags: ['tag_legs'],
+    defaultSets: '3', defaultReps: '12 each', defaultRest: '45s',
+    primaryMuscles: ['quads', 'glutes'], secondaryMuscles: ['hamstrings'],
+    instructions: [
+      'Stand upright, dumbbells at sides or bar on back.',
+      'Step forward into a lunge, lowering rear knee toward floor.',
+      'Drive through front heel to bring rear foot forward into next step.',
+      'Alternate legs for the full set.',
+    ],
+  },
+  {
+    id: 'l55', name: 'Reverse Lunge', type: 'lift', tags: ['tag_legs'],
+    defaultSets: '3', defaultReps: '12 each', defaultRest: '45s',
+    primaryMuscles: ['quads', 'glutes'], secondaryMuscles: ['hamstrings'],
+    instructions: [
+      'Stand upright, step one foot back into a lunge.',
+      'Lower rear knee toward floor, keeping front shin vertical.',
+      'Drive through front heel to return to standing.',
+      'More knee-friendly than forward lunges for many people.',
+    ],
+  },
+  {
+    id: 'l56', name: 'Calf Raise (Standing)', type: 'lift', tags: ['tag_legs'],
+    defaultSets: '4', defaultReps: '15', defaultRest: '30s',
+    primaryMuscles: ['calves'], secondaryMuscles: [],
+    instructions: [
+      'Stand on edge of platform, heels hanging off.',
+      'Rise up onto balls of feet as high as possible.',
+      'Hold at the top 1–2 seconds.',
+      'Lower heels below platform level for full stretch. Slow and controlled.',
+    ],
+  },
+  {
+    id: 'l57', name: 'Calf Raise (Seated)', type: 'lift', tags: ['tag_legs'],
+    defaultSets: '3', defaultReps: '15–20', defaultRest: '30s',
+    primaryMuscles: ['calves'], secondaryMuscles: [],
+    instructions: [
+      'Sit in machine, pad resting on lower thighs. Balls of feet on platform.',
+      'Press up onto balls of feet, hold at top.',
+      'Lower slowly, getting a deep stretch at the bottom.',
+      'Seated targets the soleus more than the gastrocnemius.',
+    ],
+  },
+  {
+    id: 'l58', name: 'Hip Abduction Machine', type: 'lift', tags: ['tag_legs'],
+    defaultSets: '3', defaultReps: '15–20', defaultRest: '30s',
+    primaryMuscles: ['hip_abductors', 'glutes'], secondaryMuscles: [],
+    instructions: [
+      'Sit in machine, knees against outer pads.',
+      'Press legs outward against resistance as far as range allows.',
+      'Squeeze glutes and abductors at peak, hold briefly.',
+      'Return slowly with control.',
+    ],
+  },
+  {
+    id: 'l59', name: 'Hip Adduction Machine', type: 'lift', tags: ['tag_legs'],
+    defaultSets: '3', defaultReps: '15–20', defaultRest: '30s',
+    primaryMuscles: ['hip_adductors'], secondaryMuscles: [],
+    instructions: [
+      'Sit in machine, knees against inner pads spread wide.',
+      'Press legs inward together against resistance.',
+      'Squeeze inner thighs at peak, hold briefly.',
+      'Return slowly to start.',
+    ],
+  },
+  {
+    id: 'l60', name: 'Sumo Squat', type: 'lift', tags: ['tag_legs'],
+    defaultSets: '3', defaultReps: '10–12', defaultRest: '60s',
+    primaryMuscles: ['quads', 'glutes', 'hip_adductors'], secondaryMuscles: ['hamstrings'],
+    instructions: [
+      'Feet wide (1.5–2x shoulder-width), toes pointing significantly outward.',
+      'Sit straight down between your heels, keeping torso upright.',
+      'Drive through heels to stand, squeezing glutes and inner thighs.',
+      'Wider stance hits adductors and glutes more than conventional squat.',
+    ],
+  },
+  // ── CORE ───────────────────────────────────────────────────────────────────
+  {
+    id: 'l7', name: 'Cable Crunch', type: 'lift', tags: ['tag_core'],
+    defaultSets: '3', defaultReps: '15', defaultRest: '30s',
+    primaryMuscles: ['abs'], secondaryMuscles: ['obliques'],
+    instructions: [
+      'Kneel below cable with rope attachment at high position.',
+      'Hold rope at sides of face, flex spine downward — crunch toward floor.',
+      'Focus on spinal flexion, not pulling with arms.',
+      'Return to upright with control.',
+    ],
+  },
+  {
+    id: 'l8', name: 'Dead Bug', type: 'lift', tags: ['tag_core'],
+    defaultSets: '3', defaultReps: '10 each side', defaultRest: '30s',
+    primaryMuscles: ['abs'], secondaryMuscles: ['lower_back', 'hip_flexors'],
+    instructions: [
+      'Lie on back, arms straight up, hips and knees at 90 degrees.',
+      'Slowly lower opposite arm and leg toward floor — back stays flat.',
+      'Return to start, then alternate sides.',
+      'Lower back must remain in contact with floor throughout.',
+    ],
+  },
+  {
+    id: 'l19', name: 'Plank', type: 'lift', tags: ['tag_core'],
+    defaultSets: '3', defaultReps: '30–45s hold', defaultRest: '30s',
+    primaryMuscles: ['abs'], secondaryMuscles: ['lower_back', 'obliques', 'front_delt'],
+    instructions: [
+      'Forearms on floor, body in straight line from head to heels.',
+      'Brace core hard — no sagging hips or raised butt.',
+      'Hold for prescribed time, breathing controlled.',
+      'Squeeze glutes and quads to help maintain tension.',
+    ],
+  },
+  {
+    id: 'l61', name: 'Ab Wheel Rollout', type: 'lift', tags: ['tag_core'],
+    defaultSets: '3', defaultReps: '10–12', defaultRest: '45s',
+    primaryMuscles: ['abs'], secondaryMuscles: ['lower_back', 'front_delt'],
+    instructions: [
+      'Kneel on floor, grip ab wheel with both hands.',
+      'Roll wheel forward slowly, extending body toward floor.',
+      'Stop just before hips drop, hold briefly.',
+      'Roll back to kneeling. One of the hardest core exercises on this list.',
+    ],
+  },
+  {
+    id: 'l62', name: 'Hanging Leg Raise', type: 'lift', tags: ['tag_core'],
+    defaultSets: '3', defaultReps: '12–15', defaultRest: '45s',
+    primaryMuscles: ['abs'], secondaryMuscles: ['hip_flexors'],
+    instructions: [
+      'Hang from bar, arms fully extended.',
+      'Raise legs (bent or straight) up toward chest.',
+      'Control the descent — avoid swinging.',
+      'Posterior pelvic tilt at the top increases lower ab activation.',
+    ],
+  },
+  {
+    id: 'l63', name: 'Russian Twist', type: 'lift', tags: ['tag_core'],
+    defaultSets: '3', defaultReps: '20 total', defaultRest: '30s',
+    primaryMuscles: ['obliques'], secondaryMuscles: ['abs'],
+    instructions: [
+      'Sit with torso leaned back ~45 degrees, feet lifted or on floor.',
+      'Hold weight at chest, rotate torso side to side.',
+      'Touch weight to floor on each side for full range.',
+      'Keep lower back from rounding.',
+    ],
+  },
+  {
+    id: 'l64', name: 'V-Up', type: 'lift', tags: ['tag_core'],
+    defaultSets: '3', defaultReps: '10–15', defaultRest: '30s',
+    primaryMuscles: ['abs'], secondaryMuscles: ['hip_flexors'],
+    instructions: [
+      'Lie flat on back, arms overhead.',
+      'Simultaneously raise legs and torso, reaching hands toward feet.',
+      'Lower both back to start with control.',
+      'One of the hardest bodyweight core exercises.',
+    ],
+  },
+  {
+    id: 'l65', name: 'Side Plank', type: 'lift', tags: ['tag_core'],
+    defaultSets: '3', defaultReps: '30s each side', defaultRest: '30s',
+    primaryMuscles: ['obliques'], secondaryMuscles: ['abs'],
+    instructions: [
+      'On side, elbow under shoulder, feet stacked.',
+      'Raise hips until body forms a straight line.',
+      'Hold without letting hips sag.',
+      'Targets obliques more directly than standard plank.',
+    ],
+  },
+  {
+    id: 'l66', name: 'Bicycle Crunch', type: 'lift', tags: ['tag_core'],
+    defaultSets: '3', defaultReps: '20 total', defaultRest: '30s',
+    primaryMuscles: ['abs', 'obliques'], secondaryMuscles: ['hip_flexors'],
+    instructions: [
+      'Lie on back, hands behind head. Lift shoulder blades off floor.',
+      'Bring left elbow toward right knee as right leg extends.',
+      'Alternate sides in a pedaling motion.',
+      'Keep lower back pressed to floor throughout.',
+    ],
+  },
+  {
+    id: 'l67', name: 'Hollow Hold', type: 'lift', tags: ['tag_core'],
+    defaultSets: '3', defaultReps: '20–30s hold', defaultRest: '30s',
+    primaryMuscles: ['abs'], secondaryMuscles: ['hip_flexors'],
+    instructions: [
+      'Lie on back, arms overhead. Press lower back into floor.',
+      'Raise shoulders and legs off floor, forming a slight curve.',
+      'Hold position with core fully engaged. Lower back stays flat.',
+      'Beginner: bend knees. Advanced: keep legs straight and low.',
+    ],
+  },
+  {
+    id: 'l68', name: 'Scissors Kicks', type: 'lift', tags: ['tag_core'],
+    defaultSets: '3', defaultReps: '30s', defaultRest: '30s',
+    primaryMuscles: ['abs'], secondaryMuscles: ['hip_flexors'],
+    instructions: [
+      'Lie on back, hands under lower back for support. Lift legs 6 inches.',
+      'Alternate raising and lowering each leg in a scissor motion.',
+      'Keep lower back pressed to floor throughout.',
+      'The lower you keep the legs, the harder it gets.',
+    ],
+  },
+  {
+    id: 'l69', name: 'Butterfly Kicks', type: 'lift', tags: ['tag_core'],
+    defaultSets: '3', defaultReps: '30s', defaultRest: '30s',
+    primaryMuscles: ['abs'], secondaryMuscles: ['hip_flexors'],
+    instructions: [
+      'Lie on back, hands under glutes. Lift legs 6–12 inches off floor.',
+      'Make small rapid up-and-down flutter kicks.',
+      'Keep core engaged and lower back pressed down.',
+      'Extend duration to increase difficulty.',
+    ],
+  },
+  // ── CARDIO ─────────────────────────────────────────────────────────────────
+  { id: 'c1', name: 'Treadmill', type: 'cardio', tags: ['tag_cardio'] },
+  { id: 'c2', name: 'Elliptical', type: 'cardio', tags: ['tag_cardio'] },
+  { id: 'c3', name: 'Stationary Bike', type: 'cardio', tags: ['tag_cardio'] },
+  { id: 'c4', name: 'Stairmaster', type: 'cardio', tags: ['tag_cardio'] },
+  { id: 'c5', name: 'Running (Outdoor)', type: 'cardio', tags: ['tag_cardio'] },
+  { id: 'c6', name: 'HIIT', type: 'cardio', tags: ['tag_cardio'] },
+  { id: 'c7', name: 'Rowing Machine', type: 'cardio', tags: ['tag_cardio'] },
+  { id: 'c8', name: 'Jump Rope', type: 'cardio', tags: ['tag_cardio'] },
+  { id: 'c9', name: 'Assault Bike', type: 'cardio', tags: ['tag_cardio'] },
+  { id: 'c10', name: 'Swimming', type: 'cardio', tags: ['tag_cardio'] },
+  { id: 'c11', name: 'Walking', type: 'cardio', tags: ['tag_cardio'] },
 ];
 
 function fmtLibraryDay(dk: string | undefined): string {
@@ -408,8 +1154,10 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
   allTags: WorkoutTag[];
 }) {
   const { theme } = useTheme();
-  const overlayAnim = useRef(new Animated.Value(0)).current;
-  const cardScale = useRef(new Animated.Value(0.95)).current;
+  const overlayAnim = useSharedValue(0);
+  const cardScale = useSharedValue(0.92);
+  const overlayAnimStyle = useAnimatedStyle(() => ({ opacity: overlayAnim.value }));
+  const cardScaleStyle = useAnimatedStyle(() => ({ transform: [{ scale: cardScale.value }] }));
 
   const [name, setName] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -420,6 +1168,11 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
   const [quickName, setQuickName] = useState('');
   const [quickIsCardio, setQuickIsCardio] = useState(false);
   const [browseMode, setBrowseMode] = useState(false);
+  const [showFillPicker, setShowFillPicker] = useState(false);
+  const fillPickerAnim = useSharedValue(0);
+  const fillPickerScale = useSharedValue(0.92);
+  const fillPickerOverlayStyle = useAnimatedStyle(() => ({ opacity: fillPickerAnim.value }));
+  const fillPickerCardStyle = useAnimatedStyle(() => ({ transform: [{ scale: fillPickerScale.value }] }));
 
   const updateExercise = (id: string, field: keyof Exercise, value: string) => {
     setExercises(prev => prev.map(e => e.id === id ? { ...e, [field]: value } : e));
@@ -434,18 +1187,16 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
       setExercises(editingRoutine.exercises);
       setStarred(editingRoutine.starred);
     }
-    Animated.parallel([
-      Animated.timing(overlayAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
-      Animated.spring(cardScale, { toValue: 1, useNativeDriver: true, friction: 8, tension: 100 }),
-    ]).start();
+    overlayAnim.value = withTiming(1, { duration: 200 });
+    cardScale.value = withSpring(1, { damping: 24, stiffness: 320, overshootClamping: true });
   }, []);
 
   const close = () => {
     Keyboard.dismiss();
-    Animated.parallel([
-      Animated.timing(overlayAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
-      Animated.timing(cardScale, { toValue: 0.95, duration: 150, useNativeDriver: true }),
-    ]).start(() => onClose());
+    overlayAnim.value = withTiming(0, { duration: 150 });
+    cardScale.value = withTiming(0.92, { duration: 150 }, (finished) => {
+      if (finished) runOnJS(onClose)();
+    });
   };
 
   const filteredLibrary = exQuery.trim()
@@ -498,22 +1249,47 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
   const canSave = name.trim().length > 0 && exercises.length > 0;
   const visibleTags = allTags.filter(t => t.id !== 'tag_rest');
 
+  const matchingPresets = PRESET_ROUTINES.filter(p =>
+    selectedTags.length === 0 || p.tags.some(t => selectedTags.includes(t))
+  );
+  const fillPresets = matchingPresets.length > 0 ? matchingPresets : PRESET_ROUTINES;
+
+  const openFillPicker = () => {
+    fillPickerAnim.value = 0;
+    fillPickerScale.value = 0.92;
+    setShowFillPicker(true);
+    fillPickerAnim.value = withTiming(1, { duration: 180 });
+    fillPickerScale.value = withSpring(1, { damping: 24, stiffness: 320, overshootClamping: true });
+  };
+
+  const closeFillPicker = () => {
+    fillPickerAnim.value = withTiming(0, { duration: 140 });
+    fillPickerScale.value = withTiming(0.92, { duration: 140 }, (finished) => {
+      if (finished) runOnJS(setShowFillPicker)(false);
+    });
+  };
+
+  const applyPreset = (preset: Routine) => {
+    const newExercises: Exercise[] = preset.exercises.map(ex => ({
+      ...ex,
+      id: makeId(),
+    }));
+    setExercises(newExercises);
+    if (!name.trim()) setName(preset.name);
+    closeFillPicker();
+  };
+
   return (
-    <Modal transparent animationType="none" visible onRequestClose={close} onShow={() => {
-      Animated.parallel([
-        Animated.timing(overlayAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
-        Animated.spring(cardScale, { toValue: 1, useNativeDriver: true, friction: 8, tension: 100 }),
-      ]).start();
-    }}>
+    <Modal transparent animationType="none" visible onRequestClose={close}>
       <ToastRenderer />
-      <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: theme.overlayBg, opacity: overlayAnim }]} pointerEvents="none" />
+      <Reanimated.View style={[StyleSheet.absoluteFill, { backgroundColor: theme.overlayBg }, overlayAnimStyle]} pointerEvents="none" />
       <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={close} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={StyleSheet.absoluteFill}
         pointerEvents="box-none">
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }} pointerEvents="box-none">
-          <Animated.View pointerEvents="box-none" style={{ width: '100%', maxHeight: '92%', transform: [{ scale: cardScale }] }}>
+          <Reanimated.View pointerEvents="box-none" style={[{ width: '100%', maxHeight: '92%' }, cardScaleStyle]}>
             <View pointerEvents="auto" style={{ backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
                 <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw }}>
@@ -608,9 +1384,26 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
                 ) : null}
 
                 {exercises.length === 0 && !exQuery.trim() && !browseMode && (
-                  <Text style={{ color: theme.textDim, fontSize: 12, fontFamily: 'DMSans_400Regular', marginBottom: 12 }}>
-                    Search or browse your library above to add exercises.
-                  </Text>
+                  <View style={{ alignItems: 'center', paddingVertical: 20, marginBottom: 12, backgroundColor: theme.bgInset, borderRadius: 10, borderWidth: 0.5, borderColor: theme.borderCard }}>
+                    <Ionicons name="list-outline" size={28} color={theme.textDim} style={{ marginBottom: 8 }} />
+                    <Text style={{ color: theme.textDim, fontSize: 13, fontFamily: 'DMSans_500Medium', marginBottom: 4 }}>No exercises yet</Text>
+                    <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular', marginBottom: 14, textAlign: 'center', paddingHorizontal: 20 }}>
+                      Search or browse above, or fill from a preset
+                    </Text>
+                    <TouchableOpacity onPress={openFillPicker}
+                      style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 9 }}>
+                      <Ionicons name="flash-outline" size={15} color={theme.accentBlue} />
+                      <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Fill from Preset</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                {exercises.length > 0 && !exQuery.trim() && !browseMode && (
+                  <TouchableOpacity onPress={openFillPicker}
+                    style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4, marginBottom: 10 }}>
+                    <Ionicons name="flash-outline" size={13} color={theme.textMuted} />
+                    <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: 'DMSans_500Medium' }}>Replace with preset</Text>
+                  </TouchableOpacity>
                 )}
 
                 {exercises.map(ex => (
@@ -739,9 +1532,72 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
                 </TouchableOpacity>
               </ScrollView>
             </View>
-          </Animated.View>
+          </Reanimated.View>
         </View>
       </KeyboardAvoidingView>
+
+      {showFillPicker && (
+        <Modal transparent animationType="none" visible onRequestClose={closeFillPicker}>
+          <Reanimated.View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.55)' }, fillPickerOverlayStyle]} pointerEvents="none" />
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeFillPicker} />
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }} pointerEvents="box-none">
+            <Reanimated.View pointerEvents="box-none" style={[{ width: '100%', maxHeight: '80%' }, fillPickerCardStyle]}>
+              <View pointerEvents="auto" style={{ backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
+                  <View>
+                    <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw }}>FILL FROM PRESET</Text>
+                    {selectedTags.length > 0 && matchingPresets.length > 0 && (
+                      <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 2 }}>Showing presets matching your tags</Text>
+                    )}
+                    {selectedTags.length > 0 && matchingPresets.length === 0 && (
+                      <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 2 }}>No tag match -- showing all presets</Text>
+                    )}
+                  </View>
+                  <TouchableOpacity onPress={closeFillPicker} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <Ionicons name="close" size={20} color={theme.textMuted} />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 16 }}>
+                  {fillPresets.map((preset, idx) => {
+                    const preview = preset.exercises.slice(0, 3).map(e => e.name).join(', ');
+                    const more = preset.exercises.length > 3 ? ` +${preset.exercises.length - 3} more` : '';
+                    return (
+                      <TouchableOpacity key={preset.id} onPress={() => {
+                        if (exercises.length > 0) {
+                          Alert.alert(
+                            'Replace exercises?',
+                            `This will replace your ${exercises.length} exercise${exercises.length !== 1 ? 's' : ''} with the "${preset.name}" preset.`,
+                            [
+                              { text: 'Cancel', style: 'cancel' },
+                              { text: 'Replace', style: 'destructive', onPress: () => applyPreset(preset) },
+                            ]
+                          );
+                        } else {
+                          applyPreset(preset);
+                        }
+                      }}
+                        style={{ backgroundColor: theme.bgInset, borderRadius: 10, padding: 14, marginBottom: idx < fillPresets.length - 1 ? 10 : 0, borderWidth: 0.5, borderColor: theme.borderCard }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                          <Text style={{ color: theme.textPrimary, fontSize: 14, fontFamily: 'DMSans_600SemiBold', flex: 1 }}>{preset.name}</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: 'DMSans_500Medium' }}>
+                              {preset.exercises.length} exercise{preset.exercises.length !== 1 ? 's' : ''}
+                            </Text>
+                            <Ionicons name="chevron-forward" size={14} color={theme.textMuted} />
+                          </View>
+                        </View>
+                        <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular' }} numberOfLines={2}>
+                          {preview}{more}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            </Reanimated.View>
+          </View>
+        </Modal>
+      )}
     </Modal>
   );
 }
@@ -757,6 +1613,14 @@ export default function WorkoutLibraryScreen() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingEx, setEditingEx] = useState<LibraryExercise | null>(null);
   const [form, setForm] = useState<Partial<LibraryExercise>>({ type: 'lift', defaultSets: '', defaultReps: '', defaultRest: '' });
+  const [sortOption, setSortOption] = useState<'az' | 'za' | 'favorites' | 'recent'>('az');
+  const [filterTags, setFilterTags] = useState<string[]>([]);
+  const [filterType, setFilterType] = useState<'all' | 'lift' | 'cardio'>('all');
+  const [showFilterModal, setShowFilterModal] = useState(false);
+  const filterOverlay = useSharedValue(0);
+  const filterScale = useSharedValue(0.92);
+  const filterOverlayStyle = useAnimatedStyle(() => ({ opacity: filterOverlay.value }));
+  const filterCardStyle = useAnimatedStyle(() => ({ transform: [{ scale: filterScale.value }] }));
   const [activeProgramName, setActiveProgramName] = useState<string | null>(null);
   const [showFabMenu, setShowFabMenu] = useState(false);
   const [myPrograms, setMyPrograms] = useState<CustomProgram[]>([]);
@@ -769,8 +1633,10 @@ export default function WorkoutLibraryScreen() {
   const [showLoadRoutinePicker, setShowLoadRoutinePicker] = useState(false);
   const [loadRoutineTarget, setLoadRoutineTarget] = useState<Routine | null>(null);
   const [loadRoutineSelectedDays, setLoadRoutineSelectedDays] = useState<string[]>([]);
-  const loadRoutineOverlayAnim = useRef(new Animated.Value(0)).current;
-  const loadRoutineCardScale = useRef(new Animated.Value(0.95)).current;
+  const loadRoutineOverlay = useSharedValue(0);
+  const loadRoutineScale = useSharedValue(0.92);
+  const loadRoutineOverlayStyle = useAnimatedStyle(() => ({ opacity: loadRoutineOverlay.value }));
+  const loadRoutineCardStyle = useAnimatedStyle(() => ({ transform: [{ scale: loadRoutineScale.value }] }));
   const [loadPickerWeekOffset, setLoadPickerWeekOffset] = useState(0);
 
   const { selectMode, day } = useLocalSearchParams<{ selectMode: string; day: string }>();
@@ -781,9 +1647,15 @@ export default function WorkoutLibraryScreen() {
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
   const [calYear, setCalYear] = useState(new Date().getFullYear());
 
-  const addOverlayOpacity = useRef(new Animated.Value(0)).current;
-  const addCardScale = useRef(new Animated.Value(0.95)).current;
-  const detailOverlayOpacity = useRef(new Animated.Value(0)).current;
+  const addOverlay = useSharedValue(0);
+  const addScale = useSharedValue(0.92);
+  const addOverlayStyle = useAnimatedStyle(() => ({ opacity: addOverlay.value }));
+  const addCardAnimStyle = useAnimatedStyle(() => ({ transform: [{ scale: addScale.value }] }));
+  const detailOverlay = useSharedValue(0);
+  const detailCardOpacity = useSharedValue(1);
+  const detailCardScale = useSharedValue(0.92);
+  const detailOverlayStyle = useAnimatedStyle(() => ({ opacity: detailOverlay.value }));
+  const detailCardStyle = useAnimatedStyle(() => ({ transform: [{ scale: detailCardScale.value }], opacity: detailCardOpacity.value }));
   const fabScale = useRef(new Animated.Value(1)).current;
   const fabItem1Anim = useRef(new Animated.Value(0)).current; // Create Exercise - bottom, first
   const fabItem2Anim = useRef(new Animated.Value(0)).current; // Create Program - middle
@@ -793,8 +1665,23 @@ export default function WorkoutLibraryScreen() {
     const load = async () => {
       try {
         const saved = await AsyncStorage.getItem('pj_exercise_library');
-        if (saved) setLibrary(JSON.parse(saved));
-        else {
+        if (saved) {
+          const parsed: LibraryExercise[] = JSON.parse(saved);
+          const savedIds = new Set(parsed.map(e => e.id));
+          const newDefaults = DEFAULT_LIBRARY.filter(e => !savedIds.has(e.id));
+          // Enrich existing entries with new fields (instructions, muscles, tags) without overwriting user customizations
+          const enriched = parsed.map(e => {
+            const def = DEFAULT_LIBRARY.find(d => d.id === e.id);
+            if (!def) return e;
+            const needsPatch = (!e.instructions && def.instructions) || (!e.primaryMuscles && def.primaryMuscles) || (!e.tags && def.tags);
+            if (!needsPatch) return e;
+            return { ...e, instructions: e.instructions ?? def.instructions, primaryMuscles: e.primaryMuscles ?? def.primaryMuscles, secondaryMuscles: e.secondaryMuscles ?? def.secondaryMuscles, tags: e.tags ?? def.tags };
+          });
+          const merged = [...enriched, ...newDefaults];
+          setLibrary(merged);
+          const hasChanges = newDefaults.length > 0 || enriched.some((e, i) => e !== parsed[i]);
+          if (hasChanges) await storageSet('pj_exercise_library', JSON.stringify(merged));
+        } else {
           setLibrary(DEFAULT_LIBRARY);
           await storageSet('pj_exercise_library', JSON.stringify(DEFAULT_LIBRARY));
         }
@@ -852,6 +1739,11 @@ export default function WorkoutLibraryScreen() {
     loadMyPrograms();
     loadMyRoutines();
     loadTags();
+    return () => {
+      setSortOption('az');
+      setFilterTags([]);
+      setFilterType('all');
+    };
   }, []));
 
   const saveLibrary = async (updated: LibraryExercise[]) => {
@@ -999,20 +1891,18 @@ export default function WorkoutLibraryScreen() {
     setLoadRoutineTarget(routine);
     setLoadRoutineSelectedDays([todayKey]);
     setLoadPickerWeekOffset(0);
-    loadRoutineOverlayAnim.setValue(0);
-    loadRoutineCardScale.setValue(0.95);
+    loadRoutineOverlay.value = 0;
+    loadRoutineScale.value = 0.92;
     setShowLoadRoutinePicker(true);
-    Animated.parallel([
-      Animated.timing(loadRoutineOverlayAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
-      Animated.spring(loadRoutineCardScale, { toValue: 1, useNativeDriver: true, friction: 8, tension: 100 }),
-    ]).start();
+    loadRoutineOverlay.value = withTiming(1, { duration: 180 });
+    loadRoutineScale.value = withSpring(1, { damping: 24, stiffness: 320, overshootClamping: true });
   };
 
   const closeLoadRoutinePicker = () => {
-    Animated.parallel([
-      Animated.timing(loadRoutineOverlayAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
-      Animated.timing(loadRoutineCardScale, { toValue: 0.95, duration: 150, useNativeDriver: true }),
-    ]).start(() => { setShowLoadRoutinePicker(false); setLoadRoutineTarget(null); });
+    loadRoutineOverlay.value = withTiming(0, { duration: 140 });
+    loadRoutineScale.value = withTiming(0.92, { duration: 140 }, (finished) => {
+      if (finished) { runOnJS(setShowLoadRoutinePicker)(false); runOnJS(setLoadRoutineTarget)(null); }
+    });
   };
 
   const handleLoadRoutineOntoDays = async () => {
@@ -1045,10 +1935,14 @@ export default function WorkoutLibraryScreen() {
   };
 
   const closeDetailModal = (onDone?: () => void) => {
-    Animated.timing(detailOverlayOpacity, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
-      setShowDetailModal(false);
-      setShowDayPicker(false);
-      onDone?.();
+    detailOverlay.value = withTiming(0, { duration: 160 });
+    detailCardScale.value = withTiming(0.88, { duration: 160 });
+    detailCardOpacity.value = withTiming(0, { duration: 160 }, (finished) => {
+      if (finished) {
+        runOnJS(setShowDetailModal)(false);
+        runOnJS(setShowDayPicker)(false);
+        if (onDone) runOnJS(onDone)();
+      }
     });
   };
 
@@ -1070,10 +1964,35 @@ export default function WorkoutLibraryScreen() {
   };
 
   const getFilteredList = () => {
-    let list = library;
-    if (activeTab === 'favorites') list = library.filter(ex => ex.favorite);
+    let list = [...library];
+    if (activeTab === 'favorites') list = list.filter(ex => ex.favorite);
     if (query.trim()) list = list.filter(ex => ex.name.toLowerCase().includes(query.toLowerCase()));
+    if (filterType !== 'all') list = list.filter(ex => ex.type === filterType);
+    if (filterTags.length > 0) list = list.filter(ex => filterTags.some(t => ex.tags?.includes(t)));
+    switch (sortOption) {
+      case 'az': list.sort((a, b) => a.name.localeCompare(b.name)); break;
+      case 'za': list.sort((a, b) => b.name.localeCompare(a.name)); break;
+      case 'favorites': list.sort((a, b) => (b.favorite ? 1 : 0) - (a.favorite ? 1 : 0)); break;
+      case 'recent': list.sort((a, b) => (b.recentlyUsed || 0) - (a.recentlyUsed || 0)); break;
+    }
     return list;
+  };
+
+  const filterActiveCount = (sortOption !== 'az' ? 1 : 0) + (filterType !== 'all' ? 1 : 0) + filterTags.length;
+
+  const openFilterModal = () => {
+    filterOverlay.value = 0;
+    filterScale.value = 0.92;
+    setShowFilterModal(true);
+    filterOverlay.value = withTiming(1, { duration: 180 });
+    filterScale.value = withSpring(1, { damping: 24, stiffness: 320, overshootClamping: true });
+  };
+
+  const closeFilterModal = () => {
+    filterOverlay.value = withTiming(0, { duration: 140 });
+    filterScale.value = withTiming(0.92, { duration: 140 }, (finished) => {
+      if (finished) runOnJS(setShowFilterModal)(false);
+    });
   };
 
   const filteredList = getFilteredList();
@@ -1099,23 +2018,21 @@ export default function WorkoutLibraryScreen() {
   };
 
   const openAddModal = (ex: LibraryExercise | null = null) => {
-    addOverlayOpacity.setValue(0);
-    addCardScale.setValue(0.95);
+    addOverlay.value = 0;
+    addScale.value = 0.92;
     if (ex) { setEditingEx(ex); setForm({ ...ex }); }
     else { setEditingEx(null); setForm({ type: 'lift', name: '', defaultSets: '', defaultReps: '', defaultRest: '', note: '' }); }
     setShowAddModal(true);
+    addOverlay.value = withTiming(1, { duration: 180 });
+    addScale.value = withSpring(1, { damping: 24, stiffness: 320, overshootClamping: true });
   };
 
   const closeAddModal = () => {
-    Animated.parallel([
-      Animated.timing(addOverlayOpacity, { toValue: 0, duration: 150, useNativeDriver: true }),
-      Animated.timing(addCardScale, { toValue: 0.95, duration: 150, useNativeDriver: true }),
-    ]).start(() => onClose());
-  };
-
-  const onClose = () => {
     Keyboard.dismiss();
-    setShowAddModal(false);
+    addOverlay.value = withTiming(0, { duration: 140 });
+    addScale.value = withTiming(0.92, { duration: 140 }, (finished) => {
+      if (finished) runOnJS(setShowAddModal)(false);
+    });
   };
 
   const openFabMenu = () => {
@@ -1160,12 +2077,24 @@ export default function WorkoutLibraryScreen() {
 
       <View style={styles.searchRow}>
         <TextInput
-          style={styles.searchInput}
+          style={[styles.searchInput, (activeTab === 'all' || activeTab === 'favorites') && { flex: 1, marginRight: 8 }]}
           placeholder={activeTab === 'programs' ? 'Search programs...' : activeTab === 'routines' ? 'Search routines...' : 'Search exercises...'}
           placeholderTextColor={theme.textPlaceholder}
           value={query}
           onChangeText={setQuery}
         />
+        {(activeTab === 'all' || activeTab === 'favorites') && (
+          <TouchableOpacity
+            onPress={openFilterModal}
+            style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: filterActiveCount > 0 ? theme.accentBlueBg : theme.bgInset, borderWidth: 1, borderColor: filterActiveCount > 0 ? theme.accentBlueBorder : theme.borderCard, alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="options-outline" size={18} color={filterActiveCount > 0 ? theme.accentBlue : theme.textMuted} />
+            {filterActiveCount > 0 && (
+              <View style={{ position: 'absolute', top: -4, right: -4, width: 16, height: 16, borderRadius: 8, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ color: '#ffffff', fontSize: 9, fontFamily: 'DMSans_700Bold' }}>{filterActiveCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.tabRow}>
@@ -1193,8 +2122,12 @@ export default function WorkoutLibraryScreen() {
                 selectExercise(item);
               } else {
                 setSelectedEx(item);
-                detailOverlayOpacity.setValue(0);
+                detailOverlay.value = 0;
+                detailCardScale.value = 0.92;
+                detailCardOpacity.value = 1;
                 setShowDetailModal(true);
+                detailOverlay.value = withTiming(1, { duration: 180 });
+                detailCardScale.value = withSpring(1, { damping: 24, stiffness: 320, overshootClamping: true });
               }
             }}>
               <View style={styles.exLeft}>
@@ -1316,85 +2249,183 @@ export default function WorkoutLibraryScreen() {
         />
         </View>
       ) : (
-        <View style={{ flex: 1 }}>
-          <DraggableFlatList
-            data={myRoutines.filter(r => !query.trim() || r.name.toLowerCase().includes(query.toLowerCase()))}
-            keyExtractor={r => r.id}
-            contentContainerStyle={{ paddingTop: 8, paddingBottom: 120 }}
-            onDragEnd={({ data }) => { if (!query.trim()) saveMyRoutines(data); }}
-            ListEmptyComponent={
-              <View style={{ alignItems: 'center', paddingVertical: 60, paddingHorizontal: 32 }}>
-                <Ionicons name="repeat-outline" size={40} color={theme.textDim} />
-                <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'DMSans_600SemiBold', marginTop: 12 }}>No routines yet</Text>
-                <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular', marginTop: 6, textAlign: 'center', lineHeight: 20 }}>
-                  Build your go-to workouts and load them onto any day in one tap.
-                </Text>
-              </View>
-            }
-            renderItem={({ item: routine, drag, isActive }: RenderItemParams<Routine>) => (
-              <ScaleDecorator>
-                <View style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderRadius: 12, padding: 16, marginHorizontal: 12, marginBottom: 12, opacity: isActive ? 0.95 : 1, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'DMSans_700Bold', flex: 1, marginRight: 8 }}>{routine.name}</Text>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                      <TouchableOpacity onPress={() => saveMyRoutines(myRoutines.map(r => r.id === routine.id ? { ...r, starred: !r.starred } : r))}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
-                        <Ionicons name={routine.starred ? 'star' : 'star-outline'} size={16} color={routine.starred ? theme.accentAmber : theme.textDim} />
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: 8, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+          {/* Presets section */}
+          {(() => {
+            const filtered = PRESET_ROUTINES.filter(r => !query.trim() || r.name.toLowerCase().includes(query.toLowerCase()));
+            if (filtered.length === 0) return null;
+            return (
+              <View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 12, marginBottom: 10, marginTop: 4 }}>
+                  <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.accentBlue, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>PRESETS</Text>
+                  <View style={{ flex: 1, height: 0.5, backgroundColor: theme.accentBlue, opacity: 0.3, marginLeft: 10 }} />
+                </View>
+                {filtered.map(routine => (
+                  <View key={routine.id} style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderRadius: 12, padding: 16, marginHorizontal: 12, marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 5 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <Text style={{ color: theme.textPrimary, fontSize: 15, fontFamily: 'DMSans_700Bold', flex: 1, marginRight: 8 }}>{routine.name}</Text>
+                      <View style={{ backgroundColor: theme.bgInset, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold', letterSpacing: 1 }}>PRESET</Text>
+                      </View>
+                    </View>
+                    <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_400Regular', marginBottom: routine.tags.length > 0 ? 8 : 12 }}>
+                      {routine.exercises.length} exercise{routine.exercises.length !== 1 ? 's' : ''} · {routine.exercises.slice(0, 3).map(e => e.name).join(', ')}{routine.exercises.length > 3 ? '...' : ''}
+                    </Text>
+                    {routine.tags.length > 0 && (
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+                        {routine.tags.map(tagId => {
+                          const tag = libTags.find(t => t.id === tagId);
+                          if (!tag) return null;
+                          return (
+                            <View key={tagId} style={{ backgroundColor: tag.color + '99', borderWidth: 1, borderColor: tag.color, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
+                              <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: '#ffffff' }}>{tag.label.toUpperCase()}</Text>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    )}
+                    <View style={{ flexDirection: 'row', gap: 8 }}>
+                      <TouchableOpacity onPress={() => openLoadRoutinePicker(routine)}
+                        style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
+                        <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>USE</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity onPress={() => { setEditingRoutine(routine); setShowRoutineBuilder(true); }}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
-                        <Ionicons name="pencil" size={15} color={theme.textMuted} />
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => handleDeleteRoutine(routine)}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
-                        <Ionicons name="trash-outline" size={15} color={theme.accentRed} />
-                      </TouchableOpacity>
-                      <TouchableOpacity onLongPress={drag} delayLongPress={150}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
-                        <Ionicons name="reorder-three" size={18} color={theme.textDim} />
+                      <TouchableOpacity
+                        onPress={async () => {
+                          const copy: Routine = { ...routine, id: makeId(), name: routine.name, isPreset: false, exercises: routine.exercises.map(e => ({ ...e, id: makeId() })) };
+                          await saveMyRoutines([...myRoutines, copy]);
+                          showToast('Routine duplicated', copy.name, 'success');
+                        }}
+                        style={{ paddingVertical: 10, paddingHorizontal: 14, borderRadius: 8, alignItems: 'center', backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard }}>
+                        <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Duplicate</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
-                  <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_400Regular', marginBottom: routine.tags.length > 0 ? 10 : 14 }}>
-                    {routine.exercises.length} exercise{routine.exercises.length !== 1 ? 's' : ''}
-                  </Text>
-                  {routine.tags.length > 0 && (
-                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
-                      {routine.tags.map(tagId => {
-                        const tag = libTags.find(t => t.id === tagId);
-                        if (!tag) return null;
-                        return (
-                          <View key={tagId} style={{ backgroundColor: tag.color + '99', borderWidth: 1, borderColor: tag.color, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
-                            <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: '#ffffff' }}>{tag.label.toUpperCase()}</Text>
-                          </View>
-                        );
-                      })}
+                ))}
+              </View>
+            );
+          })()}
+
+          {/* My Routines section */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 12, marginBottom: 10, marginTop: 8 }}>
+            <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>MY ROUTINES</Text>
+            <View style={{ flex: 1, height: 0.5, backgroundColor: theme.borderCard, marginLeft: 10 }} />
+          </View>
+          {myRoutines.filter(r => !query.trim() || r.name.toLowerCase().includes(query.toLowerCase())).length === 0 ? (
+            <View style={{ alignItems: 'center', paddingVertical: 40, paddingHorizontal: 32 }}>
+              <Ionicons name="repeat-outline" size={36} color={theme.textDim} />
+              <Text style={{ color: theme.textPrimary, fontSize: 15, fontFamily: 'DMSans_600SemiBold', marginTop: 12 }}>No custom routines yet</Text>
+              <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular', marginTop: 6, textAlign: 'center', lineHeight: 20 }}>
+                Tap + to build your own, or duplicate a preset above.
+              </Text>
+            </View>
+          ) : (
+            <DraggableFlatList
+              data={myRoutines.filter(r => !query.trim() || r.name.toLowerCase().includes(query.toLowerCase()))}
+              keyExtractor={r => r.id}
+              scrollEnabled={false}
+              onDragEnd={({ data }) => { if (!query.trim()) saveMyRoutines(data); }}
+              renderItem={({ item: routine, drag, isActive }: RenderItemParams<Routine>) => (
+                <ScaleDecorator>
+                  <View style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderRadius: 12, padding: 16, marginHorizontal: 12, marginBottom: 12, opacity: isActive ? 0.95 : 1, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'DMSans_700Bold', flex: 1, marginRight: 8 }}>{routine.name}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <TouchableOpacity onPress={() => saveMyRoutines(myRoutines.map(r => r.id === routine.id ? { ...r, starred: !r.starred } : r))}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
+                          <Ionicons name={routine.starred ? 'star' : 'star-outline'} size={16} color={routine.starred ? theme.accentAmber : theme.textDim} />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => { setEditingRoutine(routine); setShowRoutineBuilder(true); }}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
+                          <Ionicons name="pencil" size={15} color={theme.textMuted} />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => handleDeleteRoutine(routine)}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
+                          <Ionicons name="trash-outline" size={15} color={theme.accentRed} />
+                        </TouchableOpacity>
+                        <TouchableOpacity onLongPress={drag} delayLongPress={150}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
+                          <Ionicons name="reorder-three" size={18} color={theme.textDim} />
+                        </TouchableOpacity>
+                      </View>
                     </View>
-                  )}
-                  <TouchableOpacity onPress={() => openLoadRoutinePicker(routine)}
-                    style={{ paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
-                    <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>LOAD ROUTINE</Text>
-                  </TouchableOpacity>
-                </View>
-              </ScaleDecorator>
-            )}
-          />
-        </View>
+                    <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_400Regular', marginBottom: routine.tags.length > 0 ? 10 : 14 }}>
+                      {routine.exercises.length} exercise{routine.exercises.length !== 1 ? 's' : ''}
+                    </Text>
+                    {routine.tags.length > 0 && (
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+                        {routine.tags.map(tagId => {
+                          const tag = libTags.find(t => t.id === tagId);
+                          if (!tag) return null;
+                          return (
+                            <View key={tagId} style={{ backgroundColor: tag.color + '99', borderWidth: 1, borderColor: tag.color, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
+                              <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: '#ffffff' }}>{tag.label.toUpperCase()}</Text>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    )}
+                    <TouchableOpacity onPress={() => openLoadRoutinePicker(routine)}
+                      style={{ paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
+                      <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>LOAD ROUTINE</Text>
+                    </TouchableOpacity>
+                  </View>
+                </ScaleDecorator>
+              )}
+            />
+          )}
+        </ScrollView>
       )}
 
-      <Modal visible={showDetailModal} transparent animationType="none" onRequestClose={() => closeDetailModal()} onShow={() => {
-        Animated.timing(detailOverlayOpacity, { toValue: 1, duration: 200, useNativeDriver: true }).start();
-      }}>
+      <Modal visible={showDetailModal} transparent animationType="none" onRequestClose={() => closeDetailModal()}>
         <ToastRenderer />
-        <Animated.View style={{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center', opacity: detailOverlayOpacity }}>
+        <Reanimated.View style={[{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center' }, detailOverlayStyle]}>
           <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => closeDetailModal()} />
           {selectedEx ? (
-            <TouchableOpacity activeOpacity={1} style={{ backgroundColor: theme.bgSheet, borderRadius: 14, padding: 20, width: '85%', borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12 }}>
+            <Reanimated.View style={[{ width: '90%', maxHeight: '88%' }, detailCardStyle]}>
+            <TouchableOpacity activeOpacity={1} style={{ backgroundColor: theme.bgSheet, borderRadius: 14, width: '100%', borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, overflow: 'hidden' }}>
+              <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20 }}>
               <View style={[styles.typeBadge, selectedEx.type === 'cardio' && styles.typeBadgeCardio, { alignSelf: 'flex-start', marginBottom: 8 }]}>
                 <Text style={[styles.typeBadgeText, selectedEx.type === 'cardio' && { color: theme.accentAmber }]}>{selectedEx.type.toUpperCase()}</Text>
               </View>
-              <Text style={{ color: selectedEx.type === 'cardio' ? theme.accentAmber : theme.accentBlue, fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginBottom: selectedEx.note ? 4 : 16 }}>{selectedEx.name}</Text>
-              {selectedEx.note ? <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_400Regular', marginBottom: 16 }}>{selectedEx.note}</Text> : null}
+              <Text style={{ color: selectedEx.type === 'cardio' ? theme.accentAmber : theme.accentBlue, fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginBottom: selectedEx.note ? 4 : 12 }}>{selectedEx.name}</Text>
+              {selectedEx.note ? <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_400Regular', marginBottom: 12 }}>{selectedEx.note}</Text> : null}
+
+              {(selectedEx.primaryMuscles?.length || selectedEx.secondaryMuscles?.length) ? (
+                <View style={{ marginBottom: 14 }}>
+                  <MuscleMap primaryMuscles={selectedEx.primaryMuscles} secondaryMuscles={selectedEx.secondaryMuscles} scale={0.62} />
+                  <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 8, marginTop: 12 }}>MUSCLES</Text>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                    {selectedEx.primaryMuscles?.map(m => (
+                      <View key={m} style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
+                        <Text style={{ color: theme.accentBlue, fontSize: 11, fontFamily: 'DMSans_600SemiBold' }}>
+                          {m.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                        </Text>
+                      </View>
+                    ))}
+                    {selectedEx.secondaryMuscles?.map(m => (
+                      <View key={m} style={{ backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
+                        <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: 'DMSans_500Medium' }}>
+                          {m.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              ) : null}
+
+              {selectedEx.instructions?.length ? (
+                <View style={{ marginBottom: 16 }}>
+                  <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 10 }}>HOW TO PERFORM</Text>
+                  {selectedEx.instructions.map((step, i) => (
+                    <View key={i} style={{ flexDirection: 'row', marginBottom: 10, gap: 10 }}>
+                      <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
+                        <Text style={{ color: theme.accentBlue, fontSize: 11, fontFamily: 'DMSans_700Bold' }}>{i + 1}</Text>
+                      </View>
+                      <Text style={{ flex: 1, color: theme.textSecondary, fontSize: 13, fontFamily: 'DMSans_400Regular', lineHeight: 19 }}>{step}</Text>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
 
               <TouchableOpacity
                 style={{ backgroundColor: theme.accentBlue, borderRadius: 8, padding: 12, alignItems: 'center', marginBottom: 8 }}
@@ -1473,21 +2504,18 @@ export default function WorkoutLibraryScreen() {
                 }}>
                 <Text style={{ color: theme.accentRed, fontFamily: 'DMSans_600SemiBold', fontSize: 13 }}>Remove from Library</Text>
               </TouchableOpacity>
+              </ScrollView>
             </TouchableOpacity>
+            </Reanimated.View>
           ) : null}
-        </Animated.View>
+        </Reanimated.View>
       </Modal>
 
-      <Modal visible={showAddModal} transparent animationType="none" onRequestClose={onClose} onShow={() => {
-        Animated.parallel([
-          Animated.timing(addOverlayOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
-          Animated.spring(addCardScale, { toValue: 1, useNativeDriver: true, friction: 8, tension: 100 }),
-        ]).start();
-      }}>
+      <Modal visible={showAddModal} transparent animationType="none" onRequestClose={closeAddModal}>
         <ToastRenderer />
-        <Animated.View style={{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'flex-end', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 340, opacity: addOverlayOpacity }}>
+        <Reanimated.View style={[{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'flex-end', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 340 }, addOverlayStyle]}>
           <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={closeAddModal} />
-          <Animated.View style={{ backgroundColor: theme.bgSheet, borderRadius: 20, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, width: '100%', height: 420, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20, transform: [{ scale: addCardScale }] }}>
+          <Reanimated.View style={[{ backgroundColor: theme.bgSheet, borderRadius: 20, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, width: '100%', height: 420, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20 }, addCardAnimStyle]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
               <Text style={styles.modalTitle}>{editingEx ? 'EDIT EXERCISE' : 'ADD EXERCISE'}</Text>
               <TouchableOpacity onPress={closeAddModal} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -1506,19 +2534,93 @@ export default function WorkoutLibraryScreen() {
                     <Text style={[styles.typeBtnText, form.type === 'cardio' && { color: theme.accentAmber }]}>Cardio</Text>
                   </TouchableOpacity>
                 </View>
+                <Text style={styles.modalLabel}>Tag <Text style={{ color: theme.accentRed }}>*</Text></Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+                  {libTags.filter(t => t.id !== 'tag_rest').map(tag => {
+                    const active = form.tags?.includes(tag.id);
+                    return (
+                      <TouchableOpacity
+                        key={tag.id}
+                        onPress={() => setForm(p => ({ ...p, tags: [tag.id] }))}
+                        style={{ backgroundColor: active ? tag.color + '99' : 'transparent', borderWidth: 1, borderColor: active ? tag.color : theme.borderCard, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 }}>
+                        <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: active ? '#ffffff' : theme.textMuted }}>{tag.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
                 <TextInput style={styles.modalInput} placeholder="Note (optional)" placeholderTextColor={theme.textPlaceholder} value={form.note || ''} onChangeText={v => setForm(p => ({ ...p, note: v }))} />
                 <View style={styles.modalBtns}>
                   <TouchableOpacity style={styles.modalCancelBtn} onPress={closeAddModal}>
                     <Text style={styles.modalCancelText}>Cancel</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[styles.modalSaveBtn, !form.name?.trim() && { opacity: 0.4 }]} onPress={saveExercise} disabled={!form.name?.trim()}>
+                  <TouchableOpacity style={[styles.modalSaveBtn, (!form.name?.trim() || !form.tags?.length) && { opacity: 0.4 }]} onPress={saveExercise} disabled={!form.name?.trim() || !form.tags?.length}>
                     <Text style={styles.modalSaveText}>{editingEx ? 'SAVE' : 'ADD'}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             </ScrollView>
-          </Animated.View>
-        </Animated.View>
+          </Reanimated.View>
+        </Reanimated.View>
+      </Modal>
+
+      {/* Sort + Filter modal */}
+      <Modal visible={showFilterModal} transparent animationType="none" onRequestClose={closeFilterModal}>
+        <Reanimated.View style={[{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }, filterOverlayStyle]}>
+          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={closeFilterModal} />
+          <Reanimated.View style={[{ backgroundColor: theme.bgSheet, borderRadius: 18, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, width: '100%', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20 }, filterCardStyle]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
+              <Text style={{ color: theme.accentBlue, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>SORT & FILTER</Text>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                {filterActiveCount > 0 && (
+                  <TouchableOpacity onPress={() => { setSortOption('az'); setFilterTags([]); setFilterType('all'); }} style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: theme.accentRedBorder, backgroundColor: theme.accentRedBg }}>
+                    <Text style={{ color: theme.accentRed, fontSize: 11, fontFamily: 'DMSans_700Bold' }}>CLEAR</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity onPress={closeFilterModal} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Ionicons name="close" size={20} color={theme.textMuted} />
+                </TouchableOpacity>
+              </View>
+            </View>
+            <View style={{ padding: 20 }}>
+              <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 12 }}>SORT</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+                {([['az', 'A–Z'], ['za', 'Z–A'], ['favorites', 'Favorites First'], ['recent', 'Recently Used']] as const).map(([val, label]) => (
+                  <TouchableOpacity
+                    key={val}
+                    onPress={() => setSortOption(val)}
+                    style={{ backgroundColor: sortOption === val ? theme.accentBlueBg : theme.bgInset, borderWidth: 1, borderColor: sortOption === val ? theme.accentBlueBorder : theme.borderCard, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 }}>
+                    <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: sortOption === val ? theme.accentBlue : theme.textMuted }}>{label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 12 }}>TYPE</Text>
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 20 }}>
+                {([['all', 'All'], ['lift', 'Lift'], ['cardio', 'Cardio']] as const).map(([val, label]) => (
+                  <TouchableOpacity
+                    key={val}
+                    onPress={() => setFilterType(val)}
+                    style={{ backgroundColor: filterType === val ? theme.accentBlueBg : theme.bgInset, borderWidth: 1, borderColor: filterType === val ? theme.accentBlueBorder : theme.borderCard, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 }}>
+                    <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: filterType === val ? theme.accentBlue : theme.textMuted }}>{label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 12 }}>TAG</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {libTags.filter(t => t.id !== 'tag_rest').map(tag => {
+                  const active = filterTags.includes(tag.id);
+                  return (
+                    <TouchableOpacity
+                      key={tag.id}
+                      onPress={() => setFilterTags(prev => active ? prev.filter(id => id !== tag.id) : [...prev, tag.id])}
+                      style={{ backgroundColor: active ? tag.color + '99' : 'transparent', borderWidth: 1, borderColor: active ? tag.color : theme.borderCard, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 }}>
+                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: active ? '#ffffff' : theme.textMuted }}>{tag.label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          </Reanimated.View>
+        </Reanimated.View>
       </Modal>
 
       {/* FAB backdrop */}
@@ -1622,10 +2724,10 @@ export default function WorkoutLibraryScreen() {
         return (
           <Modal transparent animationType="none" visible onRequestClose={closeLoadRoutinePicker}>
             <ToastRenderer />
-            <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: theme.overlayBg, opacity: loadRoutineOverlayAnim }]} pointerEvents="none" />
+            <Reanimated.View style={[StyleSheet.absoluteFill, { backgroundColor: theme.overlayBg }, loadRoutineOverlayStyle]} pointerEvents="none" />
             <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeLoadRoutinePicker} />
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }} pointerEvents="box-none">
-              <Animated.View pointerEvents="box-none" style={{ width: '100%', transform: [{ scale: loadRoutineCardScale }] }}>
+              <Reanimated.View pointerEvents="box-none" style={[{ width: '100%' }, loadRoutineCardStyle]}>
                 <View pointerEvents="auto" style={{ backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, padding: 20 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                     <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw }}>LOAD ROUTINE</Text>
@@ -1675,7 +2777,7 @@ export default function WorkoutLibraryScreen() {
                     </Text>
                   </TouchableOpacity>
                 </View>
-              </Animated.View>
+              </Reanimated.View>
             </View>
           </Modal>
         );
@@ -1690,7 +2792,7 @@ const useStyles = (theme: any) => StyleSheet.create({
   backBtn: { width: 60 },
   backBtnText: { color: theme.accentBlueRaw, fontSize: 14, fontFamily: 'DMSans_500Medium' },
   headerTitle: { fontSize: 22, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
-  searchRow: { padding: 12, paddingBottom: 8 },
+  searchRow: { padding: 12, paddingBottom: 8, flexDirection: 'row', alignItems: 'center' },
   searchInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 14, fontFamily: 'DMSans_400Regular' },
   tabRow: { flexDirection: 'row', marginHorizontal: 12, marginBottom: 8, backgroundColor: theme.bgProgressTrack, borderRadius: 8, padding: 4 },
   tab: { flex: 1, padding: 8, alignItems: 'center', borderRadius: 6 },

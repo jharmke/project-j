@@ -23,7 +23,13 @@
       "PowerShell(firebase deploy *)",
       "PowerShell(firebase functions:log *)",
       "PowerShell(gcloud run services add-iam-policy-binding *)",
-      "PowerShell(firebase functions:delete *)"
+      "PowerShell(firebase functions:delete *)",
+      "WebFetch(domain:vulovix.github.io)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:commons.wikimedia.org)",
+      "WebFetch(domain:www.npmjs.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(node -e \"const pkg = require\\('./node_modules/react-native-body-highlighter/dist/index.js'\\); console.log\\('loaded'\\);\")"
     ]
   }
 }

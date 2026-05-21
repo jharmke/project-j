@@ -454,12 +454,13 @@ function MacroBar({ val, goal, color, trackColor, refreshKey }: { val: number; g
   );
 }
 
-function PulseSegment({ value, style }: { value: string; style: any }) {
+function PulseSegment({ value, style, shouldPulse }: { value: string; style: any; shouldPulse: boolean }) {
   const anim = useRef(new Animated.Value(1)).current;
   const prev = useRef(value);
   useEffect(() => {
-    if (prev.current !== value) {
-      prev.current = value;
+    const changed = prev.current !== value;
+    prev.current = value;
+    if (shouldPulse && changed) {
       Animated.sequence([
         Animated.timing(anim, { toValue: 1.18, duration: 80, useNativeDriver: true }),
         Animated.timing(anim, { toValue: 1.0, duration: 150, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
@@ -588,13 +589,14 @@ function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen, remain
               {remaining ? (() => {
                 const [hh, mm, ss] = formatTime(remaining).split(':');
                 const seg = [styles.ifCountdown, { color: theme.accentBlueRaw }];
+                const shouldPulse = remaining <= 30 * 60 * 1000;
                 return (
                   <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                    <PulseSegment value={hh} style={seg} />
+                    <PulseSegment value={hh} style={seg} shouldPulse={shouldPulse} />
                     <Text style={seg}>:</Text>
-                    <PulseSegment value={mm} style={seg} />
+                    <PulseSegment value={mm} style={seg} shouldPulse={shouldPulse} />
                     <Text style={seg}>:</Text>
-                    <PulseSegment value={ss} style={seg} />
+                    <PulseSegment value={ss} style={seg} shouldPulse={shouldPulse} />
                   </View>
                 );
               })() : (
@@ -743,6 +745,69 @@ export default function HomeScreen() {
     Animated.timing(waterModalAnim, { toValue: 0, duration: 140, useNativeDriver: true }).start(() => setShowWaterCustomModal(false));
   };
 
+  const openWaterDetailModal = () => {
+    setWaterPresetInputs([String(waterPresets[0]), String(waterPresets[1]), String(waterPresets[2])]);
+    setShowWaterDetailModal(true);
+    waterDetailAnim.setValue(0);
+    Animated.timing(waterDetailAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+  };
+  const closeWaterDetailModal = () => {
+    Animated.timing(waterDetailAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => setShowWaterDetailModal(false));
+  };
+
+  const doWaterUpdate = async (deltaOz: number) => {
+    const prev = water;
+    const newWater = Math.max(0, water + deltaOz);
+    const sign: 'add' | 'remove' = deltaOz > 0 ? 'add' : 'remove';
+    const newEntry = { amount: Math.abs(deltaOz), timestamp: new Date().toISOString(), sign };
+    const newEntries = [...waterEntries, newEntry];
+    setWater(newWater);
+    setWaterEntries(newEntries);
+    const existing = await AsyncStorage.getItem(`pj_${todayKey}`);
+    const current = existing ? JSON.parse(existing) : {};
+    await storageSet(`pj_${todayKey}`, JSON.stringify({ ...current, water: newWater, waterEntries: newEntries }));
+    saveToFirebase(todayKey, 'water', newWater);
+    if (deltaOz > 0) {
+      showToast('Water logged', `+${Math.abs(deltaOz)} oz · ${newWater} oz total`, 'info');
+    } else if (deltaOz < 0) {
+      showToast('Water removed', `-${Math.abs(deltaOz)} oz · ${newWater} oz total`, 'info');
+    }
+    if (deltaOz > 0 && newWater >= waterGoal && prev < waterGoal) {
+      const { fired, count: hitCount } = await handleDailyGoalHit('water');
+      if (fired) { showCelebration('small', 'WATER GOAL'); showDailyGoalToast('Water Goal', hitCount, 'water', '#3b82f6'); }
+      let s = achievementStore;
+      s = await handleAchievementUnlock('hydration_first', s);
+      await handleAchievementUnlock('hydration_10', s);
+    }
+  };
+
+  const deleteWaterEntry = async (idx: number) => {
+    const entry = waterEntries[idx];
+    const deltaOz = entry.sign === 'add' ? -entry.amount : entry.amount;
+    const newWater = Math.max(0, water + deltaOz);
+    const newEntries = waterEntries.filter((_, i) => i !== idx);
+    setWater(newWater);
+    setWaterEntries(newEntries);
+    const existing = await AsyncStorage.getItem(`pj_${todayKey}`);
+    const current = existing ? JSON.parse(existing) : {};
+    await storageSet(`pj_${todayKey}`, JSON.stringify({ ...current, water: newWater, waterEntries: newEntries }));
+    saveToFirebase(todayKey, 'water', newWater);
+    showToast('Entry removed', `${newWater} oz total`, 'info');
+  };
+
+  const saveWaterPresets = async () => {
+    const p0 = parseInt(waterPresetInputs[0]);
+    const p1 = parseInt(waterPresetInputs[1]);
+    const p2 = parseInt(waterPresetInputs[2]);
+    if (!p0 || !p1 || !p2 || p0 <= 0 || p1 <= 0 || p2 <= 0) return;
+    const newPresets: [number,number,number] = [p0, p1, p2];
+    setWaterPresets(newPresets);
+    const existing = await AsyncStorage.getItem('pj_profile');
+    const current = existing ? JSON.parse(existing) : {};
+    await storageSet('pj_profile', JSON.stringify({ ...current, waterPresets: newPresets }));
+    showToast('Presets saved', undefined, 'success');
+  };
+
   // App state
   const [loaded,          setLoaded]          = useState(false);
   const [refreshKey,      setRefreshKey]       = useState(0);
@@ -753,6 +818,10 @@ export default function HomeScreen() {
   const [waterCustomSign,      setWaterCustomSign]      = useState<'add'|'subtract'>('add');
   const waterModalAnim = useRef(new Animated.Value(0)).current;
   const waterCustomInputRef = useRef<any>(null);
+  const [waterEntries, setWaterEntries] = useState<{amount:number;timestamp:string;sign:'add'|'remove'}[]>([]);
+  const [showWaterDetailModal, setShowWaterDetailModal] = useState(false);
+  const waterDetailAnim = useRef(new Animated.Value(0)).current;
+  const [waterPresetInputs, setWaterPresetInputs] = useState<[string,string,string]>(['','','']);
 
   // IF state
   const [ifStart,       setIfStart]       = useState<number|null>(null);
@@ -1054,6 +1123,7 @@ export default function HomeScreen() {
         if (saved) {
           const data = JSON.parse(saved);
           if (typeof data.water === 'number') { setWater(Math.max(0, data.water)); waterLoaded.current = true; }
+          if (Array.isArray(data.waterEntries)) setWaterEntries(data.waterEntries);
           if (data.weight)        setWeight(data.weight);
           if (data.ifMethod)      setIfMethod(data.ifMethod);
           if (data.ifCustomHours) setIfCustomHours(data.ifCustomHours);
@@ -1153,12 +1223,12 @@ export default function HomeScreen() {
         const existing = await AsyncStorage.getItem(`pj_${todayKey}`);
         const current  = existing ? JSON.parse(existing) : {};
         await storageSet(`pj_${todayKey}`, JSON.stringify({
-          ...current, ifStart, ifMethod, ifEnd, ifCustomHours, dailyNote, weight, water,
+          ...current, ifStart, ifMethod, ifEnd, ifCustomHours, dailyNote, weight, water, waterEntries,
         }));
       } catch (e) { console.log('Save error', e); }
     };
     save();
-  }, [water, weight, ifStart, ifEnd, dailyNote, loaded]);
+  }, [water, waterEntries, weight, ifStart, ifEnd, dailyNote, loaded]);
 
   // ── Focus sync ───────────────────────────────────────────────────────────────
   useFocusEffect(useCallback(() => {
@@ -1182,6 +1252,7 @@ export default function HomeScreen() {
           if (data.sleepManualDeep) setSleepManualDeep(String(data.sleepManualDeep));
           if (data.sleepManualRem)  setSleepManualRem(String(data.sleepManualRem));
           if (typeof data.water === 'number') { setWater(Math.max(0, data.water)); waterLoaded.current = true; }
+          if (Array.isArray(data.waterEntries)) setWaterEntries(data.waterEntries);
           if (data.weight) setWeight(data.weight);
           if ('dailyNote' in data) { setDailyNote(data.dailyNote ?? ''); setSavedDailyNoteText(data.dailyNote ?? ''); }
         }
@@ -1690,17 +1761,22 @@ export default function HomeScreen() {
   const renderWaterCard = () => (
     <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
         <Ionicons name="water" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
-      <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:10 }}>
-        <Ionicons name="water-outline" size={11} color={theme.textMuted} />
-        <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>
-          {'Water · '}
-          <Text style={{ textTransform: 'none' }}>{water}oz / {waterGoal}oz</Text>
-        </Text>
+      <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+        <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
+          <Ionicons name="water-outline" size={11} color={theme.textMuted} />
+          <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>
+            {'Water · '}
+            <Text style={{ textTransform: 'none' }}>{water}oz / {waterGoal}oz</Text>
+          </Text>
+        </View>
+        <TouchableOpacity onPress={openWaterDetailModal} hitSlop={{ top:8, bottom:8, left:8, right:8 }}>
+          <Ionicons name="settings-outline" size={16} color={theme.textMuted} />
+        </TouchableOpacity>
       </View>
       <AnimatedProgressBar pct={Math.min(100,(water/waterGoal)*100)} color={theme.accentBlue} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} overGoal={water > waterGoal} />
       <View style={styles.waterBtns}>
         {waterPresets.map((oz,i) => (
-          <PressableButton key={i} style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={async () => { const n=Math.max(0,water+oz); setWater(n); saveToFirebase(todayKey,'water',n); showToast('Water logged', `+${oz} oz · ${n} oz total`, 'info'); if (n >= waterGoal && water < waterGoal) { const { fired, count: hitCount } = await handleDailyGoalHit('water'); if (fired) { showCelebration('small', 'WATER GOAL'); showDailyGoalToast('Water Goal', hitCount, 'water', '#3b82f6'); } let s = achievementStore; s = await handleAchievementUnlock('hydration_first', s); await handleAchievementUnlock('hydration_10', s); } }}>
+          <PressableButton key={i} style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => doWaterUpdate(oz)}>
             <Text style={[styles.waterBtnText, { color: theme.accentBlue }]}>+{oz} oz</Text>
           </PressableButton>
         ))}
@@ -1713,7 +1789,7 @@ export default function HomeScreen() {
       </View>
       <View style={[styles.waterBtns, { marginTop:8 }]}>
         {waterPresets.map((oz,i) => (
-          <PressableButton key={i} style={[styles.waterBtnRed, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]} onPress={() => { const n=Math.max(0,water-oz); setWater(n); saveToFirebase(todayKey,'water',n); showToast('Water removed', `-${oz} oz · ${n} oz total`, 'info'); }}>
+          <PressableButton key={i} style={[styles.waterBtnRed, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]} onPress={() => doWaterUpdate(-oz)}>
             <Text style={[styles.waterBtnRedText, { color: theme.accentRed }]}>-{oz} oz</Text>
           </PressableButton>
         ))}
@@ -2770,8 +2846,8 @@ export default function HomeScreen() {
               </TouchableOpacity>
               <TouchableOpacity style={{ flex:1, padding:12, borderRadius:8, backgroundColor: waterCustomSign==='add' ? theme.accentBlueBg : theme.accentRedBg, alignItems:'center' }}
                 onPress={async () => {
-                  const amt=parseInt(waterCustomInput);
-                  if(amt>0){ const n=waterCustomSign==='add'?Math.max(0,water+amt):Math.max(0,water-amt); setWater(n); saveToFirebase(todayKey,'water',n); showToast('Water logged', `${waterCustomSign==='add'?'+':'-'}${amt} oz · ${n} oz total`, 'info'); if (waterCustomSign==='add' && n >= waterGoal && water < waterGoal) { const { fired, count: hitCount } = await handleDailyGoalHit('water'); if (fired) { showCelebration('small', 'WATER GOAL'); showDailyGoalToast('Water Goal', hitCount, 'water', '#3b82f6'); } let s = achievementStore; s = await handleAchievementUnlock('hydration_first', s); await handleAchievementUnlock('hydration_10', s); } }
+                  const amt = parseInt(waterCustomInput);
+                  if (amt > 0) { await doWaterUpdate(waterCustomSign === 'add' ? amt : -amt); }
                   closeWaterCustomModal();
                 }}>
                 <Text style={{ color: waterCustomSign==='add' ? theme.accentBlue : theme.accentRed, fontFamily:'DMSans_600SemiBold', fontSize:14 }}>
@@ -2782,6 +2858,150 @@ export default function HomeScreen() {
           </View>
         </Animated.View>
       )}
+
+      {/* ── Water Detail Modal ── */}
+      {showWaterDetailModal && (() => {
+        let wakeMs: number;
+        if (sleepWakeTime) {
+          wakeMs = sleepWakeTime.getTime();
+        } else if (sleepStoredWake) {
+          const match = sleepStoredWake.match(/(\d+):(\d+)\s*(AM|PM)/i);
+          if (match) {
+            let h = parseInt(match[1]);
+            const m = parseInt(match[2]);
+            const ampm = match[3].toUpperCase();
+            if (ampm === 'PM' && h !== 12) h += 12;
+            if (ampm === 'AM' && h === 12) h = 0;
+            const d = new Date(); d.setHours(h, m, 0, 0);
+            wakeMs = d.getTime();
+          } else {
+            const d = new Date(); d.setHours(6, 0, 0, 0); wakeMs = d.getTime();
+          }
+        } else {
+          const d = new Date(); d.setHours(6, 0, 0, 0); wakeMs = d.getTime();
+        }
+        const bedD = new Date(); bedD.setHours(22, 0, 0, 0);
+        const totalMinutes = Math.max(1, (bedD.getTime() - wakeMs) / 60000);
+        const elapsedMinutes = Math.min(totalMinutes, Math.max(0, (Date.now() - wakeMs) / 60000));
+        const expectedOz = Math.round((elapsedMinutes / totalMinutes) * waterGoal);
+        const goalMet = water >= waterGoal;
+        const pct = expectedOz > 0 ? Math.min(1, water / expectedOz) : 1;
+        const statusLabel = goalMet ? 'Goal Met!' : pct >= 0.9 ? 'On Track' : pct >= 0.7 ? 'Behind' : 'Falling Behind';
+        const statusColor = goalMet || pct >= 0.9 ? theme.statusGood : pct >= 0.7 ? theme.statusWarn : theme.statusBad;
+        const cardScale = waterDetailAnim.interpolate({ inputRange: [0, 1], outputRange: [0.93, 1] });
+        const presetsValid = waterPresetInputs.every(v => { const n = parseInt(v); return !isNaN(n) && n > 0; });
+        const wakeLabel = sleepWakeTime
+          ? sleepWakeTime.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })
+          : sleepStoredWake ?? '6:00 AM';
+        return (
+          <Animated.View style={{ position:'absolute', top:0, bottom:0, left:0, right:0, backgroundColor: theme.overlayBg, justifyContent:'center', alignItems:'center', zIndex:999, opacity: waterDetailAnim }}>
+            <TouchableOpacity style={StyleSheet.absoluteFill} onPress={closeWaterDetailModal} activeOpacity={1} />
+            <Animated.View style={{ width:'92%', maxHeight:'82%', backgroundColor: theme.bgSheet, borderRadius:16, borderWidth:0.5, borderColor: theme.borderCard, overflow:'hidden', transform:[{scale: cardScale}] }}>
+              {/* Header */}
+              <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:16, paddingTop:16, paddingBottom:12 }}>
+                <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:3, textTransform:'uppercase' }}>Water Log</Text>
+                <TouchableOpacity onPress={closeWaterDetailModal} hitSlop={{top:10,bottom:10,left:10,right:10}}>
+                  <Ionicons name="close" size={20} color={theme.textMuted} />
+                </TouchableOpacity>
+              </View>
+              <View style={{ height:0.5, backgroundColor: theme.borderCard, marginHorizontal:16 }} />
+              {/* Progress / On Track */}
+              <View style={{ paddingHorizontal:16, paddingTop:14, paddingBottom:14 }}>
+                <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+                  <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase' }}>Progress</Text>
+                  <View style={{ backgroundColor: statusColor+'22', borderRadius:12, paddingHorizontal:8, paddingVertical:3 }}>
+                    <Text style={{ fontSize:10, color: statusColor, fontFamily:'DMSans_700Bold', letterSpacing:1 }}>{statusLabel}</Text>
+                  </View>
+                </View>
+                <View style={{ flexDirection:'row', marginBottom:12 }}>
+                  <View style={{ flex:1 }}>
+                    <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:2 }}>Logged</Text>
+                    <Text style={{ fontSize:28, color: theme.accentBlueRaw, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>
+                      {water}<Text style={{ fontSize:14, color: theme.textMuted, fontFamily:'BebasNeue_400Regular' }}> oz</Text>
+                    </Text>
+                    <Text style={{ fontSize:10, color: theme.textDim, fontFamily:'DMSans_400Regular' }}>of {waterGoal} oz goal</Text>
+                  </View>
+                  {!goalMet ? (
+                    <View style={{ flex:1, borderLeftWidth:0.5, borderLeftColor: theme.borderCard, paddingLeft:14 }}>
+                      <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:2 }}>Expected Now</Text>
+                      <Text style={{ fontSize:28, color: statusColor, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>
+                        {expectedOz}<Text style={{ fontSize:14, color: theme.textMuted, fontFamily:'BebasNeue_400Regular' }}> oz</Text>
+                      </Text>
+                      <Text style={{ fontSize:10, color: theme.textDim, fontFamily:'DMSans_400Regular' }}>by this time of day</Text>
+                    </View>
+                  ) : (
+                    <View style={{ flex:1, borderLeftWidth:0.5, borderLeftColor: theme.borderCard, paddingLeft:14, justifyContent:'center' }}>
+                      <Text style={{ fontSize:28, color: theme.statusGood, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>Goal</Text>
+                      <Text style={{ fontSize:20, color: theme.statusGood, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>Complete</Text>
+                    </View>
+                  )}
+                </View>
+                <View style={{ height:8, backgroundColor: theme.bgProgressTrack, borderRadius:8, overflow:'hidden' }}>
+                  <View style={{ height:'100%', borderRadius:8, backgroundColor: theme.accentBlue, width:`${Math.min(100, (water / waterGoal) * 100)}%` }} />
+                </View>
+              </View>
+              <View style={{ height:0.5, backgroundColor: theme.borderCard, marginHorizontal:16 }} />
+              {/* Entry Log */}
+              <View style={{ paddingHorizontal:16, paddingTop:12, paddingBottom:4 }}>
+                <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase' }}>Entries</Text>
+              </View>
+              <ScrollView style={{ maxHeight:180 }} contentContainerStyle={{ paddingHorizontal:16, paddingBottom:8 }} showsVerticalScrollIndicator={false}>
+                {waterEntries.length === 0 ? (
+                  <Text style={{ fontSize:12, color: theme.textDim, fontFamily:'DMSans_400Regular', textAlign:'center', paddingVertical:14 }}>No entries yet today</Text>
+                ) : (
+                  [...waterEntries].reverse().map((entry, displayIdx) => {
+                    const realIdx = waterEntries.length - 1 - displayIdx;
+                    const entryTime = new Date(entry.timestamp).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+                    return (
+                      <View key={realIdx} style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingVertical:9, borderBottomWidth:0.5, borderBottomColor: theme.borderCard }}>
+                        <Text style={{ fontSize:12, color: theme.textMuted, fontFamily:'DMSans_500Medium', width:68 }}>{entryTime}</Text>
+                        <Text style={{ fontSize:14, color: entry.sign === 'add' ? theme.statusGood : theme.statusBad, fontFamily:'DMSans_600SemiBold', flex:1 }}>
+                          {entry.sign === 'add' ? '+' : '-'}{entry.amount} oz
+                        </Text>
+                        <TouchableOpacity onPress={() => deleteWaterEntry(realIdx)} hitSlop={{top:8,bottom:8,left:12,right:8}}>
+                          <Ionicons name="trash-outline" size={16} color={theme.accentRed} />
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  })
+                )}
+              </ScrollView>
+              <View style={{ height:0.5, backgroundColor: theme.borderCard, marginHorizontal:16 }} />
+              {/* Presets */}
+              <View style={{ paddingHorizontal:16, paddingTop:14, paddingBottom:16 }}>
+                <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:10 }}>Quick Add Presets</Text>
+                <View style={{ flexDirection:'row', gap:8, marginBottom:10 }}>
+                  {([0,1,2] as const).map(i => (
+                    <View key={i} style={{ flex:1, alignItems:'center' }}>
+                      <TextInput
+                        style={{ backgroundColor: theme.bgInput, borderWidth:0.5, borderColor: theme.borderInput, borderRadius:8, color: theme.textPrimary, padding:10, fontSize:18, fontFamily:'BebasNeue_400Regular', textAlign:'center', width:'100%' }}
+                        value={waterPresetInputs[i]}
+                        onChangeText={v => {
+                          const cleaned = v.replace(/[^0-9]/g,'');
+                          const next = [...waterPresetInputs] as [string,string,string];
+                          next[i] = cleaned;
+                          setWaterPresetInputs(next);
+                        }}
+                        keyboardType="number-pad"
+                        placeholder={String(waterPresets[i])}
+                        placeholderTextColor={theme.textPlaceholder}
+                      />
+                      <Text style={{ fontSize:9, color: theme.textDim, fontFamily:'DMSans_500Medium', marginTop:3 }}>oz</Text>
+                    </View>
+                  ))}
+                </View>
+                <TouchableOpacity
+                  style={{ backgroundColor: presetsValid ? theme.accentBlueBg : theme.bgInput, borderWidth:1, borderColor: presetsValid ? theme.accentBlueBorder : theme.borderInput, borderRadius:8, padding:12, alignItems:'center', opacity: presetsValid ? 1 : 0.5 }}
+                  onPress={saveWaterPresets}
+                  disabled={!presetsValid}
+                >
+                  <Text style={{ color: presetsValid ? theme.accentBlue : theme.textDim, fontFamily:'DMSans_600SemiBold', fontSize:14 }}>Save Presets</Text>
+                </TouchableOpacity>
+              </View>
+            </Animated.View>
+          </Animated.View>
+        );
+      })()}
 
       {/* ── Day Detail Modal ── */}
       {dayDetailDate !== null && (

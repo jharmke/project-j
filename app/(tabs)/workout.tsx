@@ -7,13 +7,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Animated, Keyboard, KeyboardAvoidingView, Modal, PanResponder, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import Reanimated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import Reanimated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, runOnJS } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ToastRenderer, useToast } from '../../components/Toast';
 import { storageSet } from '../../utils/storage';
 import { useTheme } from '../../theme';
 import { useHealthKit } from '../../useHealthKit';
-import { BLANK_DAY, DEFAULT_TAGS, DayProgram, Exercise, Routine, TAG_COLOR_PALETTE, WorkoutTag } from '../../workoutData';
+import { BLANK_DAY, DEFAULT_TAGS, DayProgram, Exercise, Routine, TAG_COLOR_PALETTE, WorkoutTag, PRESET_ROUTINES } from '../../workoutData';
+import MuscleMap from '../../components/MuscleMap';
 
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -85,8 +86,18 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
   const [selectedRoutine, setSelectedRoutine] = useState<Routine | null>(null);
   const [selectedLoadDays, setSelectedLoadDays] = useState<string[]>([]);
   const [loadPickerWeekOffset, setLoadPickerWeekOffset] = useState(0);
-  const loadRoutineOverlayAnim = useRef(new Animated.Value(0)).current;
-  const loadRoutineCardScale = useRef(new Animated.Value(0.95)).current;
+  const loadRoutineOverlay = useSharedValue(0);
+  const loadRoutineCardScale = useSharedValue(0.92);
+  const loadRoutineOverlayStyle = useAnimatedStyle(() => ({ opacity: loadRoutineOverlay.value }));
+  const loadRoutineCardStyle = useAnimatedStyle(() => ({ transform: [{ scale: loadRoutineCardScale.value }] }));
+  const [exerciseLibrary, setExerciseLibrary] = useState<any[]>([]);
+  const [showInfoModal, setShowInfoModal] = useState(false);
+  const [infoExercise, setInfoExercise] = useState<any | null>(null);
+  const infoOverlay = useSharedValue(0);
+  const infoCardScale = useSharedValue(0.92);
+  const infoCardOpacity = useSharedValue(1);
+  const infoOverlayStyle = useAnimatedStyle(() => ({ opacity: infoOverlay.value }));
+  const infoCardStyle = useAnimatedStyle(() => ({ transform: [{ scale: infoCardScale.value }], opacity: infoCardOpacity.value }));
   const fabScale = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
   const originalForm = useRef<typeof form | null>(null);
@@ -411,6 +422,9 @@ useEffect(() => {
         // Save merged tags back so storage stays clean
         await storageSet('pj_settings', JSON.stringify({ ...s, workoutTags: mergedTags }));
         setTags(mergedTags);
+
+        const libRaw = await AsyncStorage.getItem('pj_exercise_library');
+        if (libRaw) setExerciseLibrary(JSON.parse(libRaw));
       } catch (e) {
         console.log('Load error', e);
       } finally {
@@ -634,20 +648,40 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
     setSelectedRoutine(null);
     setSelectedLoadDays([activeDay]);
     setLoadPickerWeekOffset(0);
-    loadRoutineOverlayAnim.setValue(0);
-    loadRoutineCardScale.setValue(0.95);
+    loadRoutineOverlay.value = 0;
+    loadRoutineCardScale.value = 0.92;
     setShowLoadRoutineModal(true);
-    Animated.parallel([
-      Animated.timing(loadRoutineOverlayAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
-      Animated.spring(loadRoutineCardScale, { toValue: 1, useNativeDriver: true, friction: 8, tension: 100 }),
-    ]).start();
+    loadRoutineOverlay.value = withTiming(1, { duration: 180 });
+    loadRoutineCardScale.value = withSpring(1, { damping: 24, stiffness: 320, overshootClamping: true });
   };
 
   const closeLoadRoutineModal = () => {
-    Animated.parallel([
-      Animated.timing(loadRoutineOverlayAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
-      Animated.timing(loadRoutineCardScale, { toValue: 0.95, duration: 150, useNativeDriver: true }),
-    ]).start(() => { setShowLoadRoutineModal(false); setSelectedRoutine(null); });
+    const done = () => { setShowLoadRoutineModal(false); setSelectedRoutine(null); };
+    loadRoutineOverlay.value = withTiming(0, { duration: 140 });
+    loadRoutineCardScale.value = withTiming(0.92, { duration: 140 }, (finished) => {
+      if (finished) runOnJS(done)();
+    });
+  };
+
+  const openInfoModal = (exName: string) => {
+    const found = exerciseLibrary.find((e: any) => e.name === exName);
+    if (!found || (!found.instructions?.length && !found.primaryMuscles?.length)) return;
+    setInfoExercise(found);
+    infoOverlay.value = 0;
+    infoCardScale.value = 0.92;
+    infoCardOpacity.value = 1;
+    setShowInfoModal(true);
+    infoOverlay.value = withTiming(1, { duration: 180 });
+    infoCardScale.value = withSpring(1, { damping: 24, stiffness: 320, overshootClamping: true });
+  };
+
+  const closeInfoModal = () => {
+    const done = () => { setShowInfoModal(false); setInfoExercise(null); };
+    infoOverlay.value = withTiming(0, { duration: 160 });
+    infoCardScale.value = withTiming(0.88, { duration: 160 });
+    infoCardOpacity.value = withTiming(0, { duration: 160 }, (finished) => {
+      if (finished) runOnJS(done)();
+    });
   };
 
   const handleLoadRoutine = async () => {
@@ -857,8 +891,12 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                       <Text style={{ color: theme.textDim, fontSize: 18, lineHeight: 14 }}>⠿</Text>
                     </TouchableOpacity>
                     <View style={styles.exerciseInfo}>
-                      <View style={styles.exerciseNameRow}>
+                      <TouchableOpacity style={styles.exerciseNameRow} activeOpacity={0.7}
+                        onPress={() => openInfoModal(ex.name)}>
                         <Text style={[styles.exerciseName, { color: theme.textSecondary }, isDone && [styles.exerciseNameDone, { color: theme.textDim }]]}>{ex.name}</Text>
+                        {exerciseLibrary.find((e: any) => e.name === ex.name && (e.instructions?.length || e.primaryMuscles?.length)) ? (
+                          <Ionicons name="information-circle-outline" size={14} color={theme.textDim} style={{ marginLeft: 4, marginTop: 1 }} />
+                        ) : null}
                         {ex.fromAppleHealth && (
                           <View style={[styles.badge, { backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder }]}>
                             <Text style={[styles.badgeText, { color: theme.accentGreen }]}>APPLE HEALTH</Text>
@@ -869,7 +907,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                             <Text style={[styles.badgeText, { color }]}>DROPSET</Text>
                           </View>
                         )}
-                      </View>
+                      </TouchableOpacity>
                       {ex.isCardio ? (
                         <Text style={[styles.exerciseMeta, { color: theme.textMuted }]}>
                           {[
@@ -911,6 +949,28 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
             );
           }}
         />
+
+        {!isRest && exercises.length === 0 && (
+          <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, alignItems: 'center', paddingVertical: 28, marginBottom: 12 }]}>
+            <Ionicons name="barbell-outline" size={32} color={theme.textDim} />
+            <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'DMSans_600SemiBold', marginTop: 10 }}>No exercises yet</Text>
+            <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular', marginTop: 4, textAlign: 'center', paddingHorizontal: 24, marginBottom: 20 }}>
+              Load a routine to fill the day, or add exercises manually
+            </Text>
+            <View style={{ flexDirection: 'row', gap: 10, width: '100%', paddingHorizontal: 8 }}>
+              <TouchableOpacity onPress={openLoadRoutineModal}
+                style={{ flex: 1, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}>
+                <Ionicons name="repeat-outline" size={18} color={theme.accentBlue} style={{ marginBottom: 4 }} />
+                <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Load Routine</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => openAddExerciseModal(activeDay)}
+                style={{ flex: 1, backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}>
+                <Ionicons name="add-circle-outline" size={18} color={theme.textMuted} style={{ marginBottom: 4 }} />
+                <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Add Exercise</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, marginTop: 12 }]}>
           <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Today's Effort</Text>
@@ -1355,10 +1415,10 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
         return (
           <Modal transparent animationType="none" visible onRequestClose={closeLoadRoutineModal}>
             <ToastRenderer />
-            <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: theme.overlayBg, opacity: loadRoutineOverlayAnim }]} pointerEvents="none" />
+            <Reanimated.View style={[StyleSheet.absoluteFill, { backgroundColor: theme.overlayBg }, loadRoutineOverlayStyle]} pointerEvents="none" />
             <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeLoadRoutineModal} />
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }} pointerEvents="box-none">
-              <Animated.View pointerEvents="box-none" style={{ width: '100%', maxHeight: '90%', transform: [{ scale: loadRoutineCardScale }] }}>
+              <Reanimated.View pointerEvents="box-none" style={[{ width: '100%', maxHeight: '90%' }, loadRoutineCardStyle]}>
                 <View pointerEvents="auto" style={{ backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
                     <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw }}>LOAD ROUTINE</Text>
@@ -1368,80 +1428,139 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                   </View>
 
                   <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 28 }}>
-                    {routines.length === 0 ? (
-                      <View style={{ alignItems: 'center', paddingVertical: 32 }}>
-                        <Ionicons name="repeat-outline" size={36} color={theme.textDim} />
-                        <Text style={{ color: theme.textPrimary, fontSize: 15, fontFamily: 'DMSans_600SemiBold', marginTop: 12 }}>No routines yet</Text>
-                        <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular', marginTop: 6, textAlign: 'center' }}>
-                          Create routines in the Library to load them here.
-                        </Text>
-                      </View>
-                    ) : (
-                      <>
-                        <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 10 }}>SELECT ROUTINE</Text>
-                        {routines.map(r => {
-                          const isSelected = selectedRoutine?.id === r.id;
-                          return (
-                            <TouchableOpacity key={r.id} onPress={() => setSelectedRoutine(r)}
-                              style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isSelected ? theme.accentBlueBg : theme.bgInset, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 8, borderWidth: 1, borderColor: isSelected ? theme.accentBlueBorder : theme.borderCard }}>
-                              <View style={{ flex: 1 }}>
-                                <Text style={{ color: isSelected ? theme.accentBlue : theme.textPrimary, fontSize: 14, fontFamily: 'DMSans_600SemiBold' }}>{r.name}</Text>
-                                <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>
-                                  {r.exercises.length} exercise{r.exercises.length !== 1 ? 's' : ''}
-                                  {r.tags.length > 0 ? ` · ${r.tags.map(tid => tags.find(t => t.id === tid)?.label).filter(Boolean).join(', ')}` : ''}
-                                </Text>
-                              </View>
-                              {isSelected && <Ionicons name="checkmark-circle" size={20} color={theme.accentBlue} />}
-                            </TouchableOpacity>
-                          );
-                        })}
+                    {(() => {
+                      const renderRoutineRow = (r: Routine) => {
+                        const isSelected = selectedRoutine?.id === r.id;
+                        return (
+                          <TouchableOpacity key={r.id} onPress={() => setSelectedRoutine(r)}
+                            style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isSelected ? theme.accentBlueBg : theme.bgInset, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, marginBottom: 8, borderWidth: 1, borderColor: isSelected ? theme.accentBlueBorder : theme.borderCard }}>
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ color: isSelected ? theme.accentBlue : theme.textPrimary, fontSize: 14, fontFamily: 'DMSans_600SemiBold' }}>{r.name}</Text>
+                              <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>
+                                {r.exercises.length} exercise{r.exercises.length !== 1 ? 's' : ''}
+                                {r.tags.length > 0 ? ` · ${r.tags.map(tid => tags.find(t => t.id === tid)?.label).filter(Boolean).join(', ')}` : ''}
+                              </Text>
+                            </View>
+                            {isSelected && <Ionicons name="checkmark-circle" size={20} color={theme.accentBlue} />}
+                          </TouchableOpacity>
+                        );
+                      };
+                      return (
+                        <>
+                          <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 10 }}>PRESETS</Text>
+                          {PRESET_ROUTINES.map(renderRoutineRow)}
+                          {routines.length > 0 && (
+                            <>
+                              <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 10, marginTop: 8 }}>MY ROUTINES</Text>
+                              {routines.map(renderRoutineRow)}
+                            </>
+                          )}
 
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, marginTop: 8 }}>
-                          <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>{weekLabel}</Text>
-                          <View style={{ flexDirection: 'row', gap: 2 }}>
-                            <TouchableOpacity onPress={() => setLoadPickerWeekOffset(o => o - 1)} disabled={loadPickerWeekOffset <= 0} style={{ padding: 6, opacity: loadPickerWeekOffset <= 0 ? 0.25 : 1 }}>
-                              <Ionicons name="chevron-back" size={18} color={theme.textMuted} />
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => setLoadPickerWeekOffset(o => o + 1)} style={{ padding: 6 }}>
-                              <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
-                            </TouchableOpacity>
-                          </View>
-                        </View>
-                        <View style={{ flexDirection: 'row', gap: 6, marginBottom: 20 }}>
-                          {weekDays.map(d => {
-                            const isSel = selectedLoadDays.includes(d.key);
-                            const isToday = d.key === activeDay;
-                            const isPast = d.key < todayKey;
-                            return (
-                              <TouchableOpacity key={d.key}
-                                disabled={isPast}
-                                onPress={() => setSelectedLoadDays(prev =>
-                                  prev.includes(d.key) ? prev.filter(k => k !== d.key) : [...prev, d.key]
-                                )}
-                                style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: isSel ? theme.accentBlue : theme.bgInset, borderWidth: 1, borderColor: isSel ? theme.accentBlue : isToday ? theme.textSecondary : theme.borderCard, opacity: isPast ? 0.25 : 1 }}>
-                                <Text style={{ fontSize: 10, fontFamily: 'DMSans_700Bold', color: isSel ? '#ffffff' : theme.textMuted, letterSpacing: 0.5 }}>{d.name.toUpperCase()}</Text>
-                                <Text style={{ fontSize: 9, fontFamily: 'DMSans_400Regular', color: isSel ? 'rgba(255,255,255,0.7)' : theme.textDim, marginTop: 2 }}>{d.label}</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, marginTop: 8 }}>
+                            <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>{weekLabel}</Text>
+                            <View style={{ flexDirection: 'row', gap: 2 }}>
+                              <TouchableOpacity onPress={() => setLoadPickerWeekOffset(o => o - 1)} disabled={loadPickerWeekOffset <= 0} style={{ padding: 6, opacity: loadPickerWeekOffset <= 0 ? 0.25 : 1 }}>
+                                <Ionicons name="chevron-back" size={18} color={theme.textMuted} />
                               </TouchableOpacity>
-                            );
-                          })}
-                        </View>
+                              <TouchableOpacity onPress={() => setLoadPickerWeekOffset(o => o + 1)} style={{ padding: 6 }}>
+                                <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
+                              </TouchableOpacity>
+                            </View>
+                          </View>
+                          <View style={{ flexDirection: 'row', gap: 6, marginBottom: 20 }}>
+                            {weekDays.map(d => {
+                              const isSel = selectedLoadDays.includes(d.key);
+                              const isToday = d.key === activeDay;
+                              const isPast = d.key < todayKey;
+                              return (
+                                <TouchableOpacity key={d.key}
+                                  disabled={isPast}
+                                  onPress={() => setSelectedLoadDays(prev =>
+                                    prev.includes(d.key) ? prev.filter(k => k !== d.key) : [...prev, d.key]
+                                  )}
+                                  style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: isSel ? theme.accentBlue : theme.bgInset, borderWidth: 1, borderColor: isSel ? theme.accentBlue : isToday ? theme.textSecondary : theme.borderCard, opacity: isPast ? 0.25 : 1 }}>
+                                  <Text style={{ fontSize: 10, fontFamily: 'DMSans_700Bold', color: isSel ? '#ffffff' : theme.textMuted, letterSpacing: 0.5 }}>{d.name.toUpperCase()}</Text>
+                                  <Text style={{ fontSize: 9, fontFamily: 'DMSans_400Regular', color: isSel ? 'rgba(255,255,255,0.7)' : theme.textDim, marginTop: 2 }}>{d.label}</Text>
+                                </TouchableOpacity>
+                              );
+                            })}
+                          </View>
 
-                        <TouchableOpacity onPress={handleLoadRoutine}
-                          disabled={!selectedRoutine || selectedLoadDays.length === 0}
-                          style={{ paddingVertical: 14, borderRadius: 10, alignItems: 'center', backgroundColor: theme.accentBlue, opacity: selectedRoutine && selectedLoadDays.length > 0 ? 1 : 0.4 }}>
-                          <Text style={{ color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 18, letterSpacing: 2 }}>
-                            LOAD TO {selectedLoadDays.length} {selectedLoadDays.length === 1 ? 'DAY' : 'DAYS'}
-                          </Text>
-                        </TouchableOpacity>
-                      </>
-                    )}
+                          <TouchableOpacity onPress={handleLoadRoutine}
+                            disabled={!selectedRoutine || selectedLoadDays.length === 0}
+                            style={{ paddingVertical: 14, borderRadius: 10, alignItems: 'center', backgroundColor: theme.accentBlue, opacity: selectedRoutine && selectedLoadDays.length > 0 ? 1 : 0.4 }}>
+                            <Text style={{ color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 18, letterSpacing: 2 }}>
+                              LOAD TO {selectedLoadDays.length} {selectedLoadDays.length === 1 ? 'DAY' : 'DAYS'}
+                            </Text>
+                          </TouchableOpacity>
+                        </>
+                      );
+                    })()}
                   </ScrollView>
                 </View>
-              </Animated.View>
+              </Reanimated.View>
             </View>
           </Modal>
         );
       })()}
+
+      {showInfoModal && infoExercise && (
+        <Modal transparent animationType="none" visible onRequestClose={closeInfoModal}>
+          <Reanimated.View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.6)' }, infoOverlayStyle]} pointerEvents="none" />
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeInfoModal} />
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }} pointerEvents="box-none">
+            <Reanimated.View pointerEvents="box-none" style={[{ width: '100%', maxHeight: '80%' }, infoCardStyle]}>
+              <View pointerEvents="auto" style={{ backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, overflow: 'hidden' }}>
+                <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
+                    <Text style={{ flex: 1, fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1.5, color: theme.accentBlueRaw, paddingRight: 12 }}>{infoExercise.name}</Text>
+                    <TouchableOpacity onPress={closeInfoModal} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                      <Ionicons name="close" size={20} color={theme.textMuted} />
+                    </TouchableOpacity>
+                  </View>
+
+                  {(infoExercise.primaryMuscles?.length || infoExercise.secondaryMuscles?.length) ? (
+                    <View style={{ marginBottom: 16 }}>
+                      <MuscleMap primaryMuscles={infoExercise.primaryMuscles} secondaryMuscles={infoExercise.secondaryMuscles} scale={0.62} />
+                      <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 8, marginTop: 12 }}>MUSCLES</Text>
+                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                        {infoExercise.primaryMuscles?.map((m: string) => (
+                          <View key={m} style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
+                            <Text style={{ color: theme.accentBlue, fontSize: 11, fontFamily: 'DMSans_600SemiBold' }}>
+                              {m.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                            </Text>
+                          </View>
+                        ))}
+                        {infoExercise.secondaryMuscles?.map((m: string) => (
+                          <View key={m} style={{ backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
+                            <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: 'DMSans_500Medium' }}>
+                              {m.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+                  ) : null}
+
+                  {infoExercise.instructions?.length ? (
+                    <View>
+                      <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 10 }}>HOW TO PERFORM</Text>
+                      {infoExercise.instructions.map((step: string, i: number) => (
+                        <View key={i} style={{ flexDirection: 'row', marginBottom: 10, gap: 10 }}>
+                          <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
+                            <Text style={{ color: theme.accentBlue, fontSize: 11, fontFamily: 'DMSans_700Bold' }}>{i + 1}</Text>
+                          </View>
+                          <Text style={{ flex: 1, color: theme.textSecondary, fontSize: 13, fontFamily: 'DMSans_400Regular', lineHeight: 19 }}>{step}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : null}
+                </ScrollView>
+              </View>
+            </Reanimated.View>
+          </View>
+        </Modal>
+      )}
 
     </LinearGradient>
     </KeyboardAvoidingView>

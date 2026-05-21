@@ -127,6 +127,7 @@ export default function LogScreen() {
   const [loaded, setLoaded] = useState(false);
   const [entries, setEntries] = useState<FoodEntry[]>([]);
   const [water, setWater] = useState(0);
+  const [waterEntries, setWaterEntries] = useState<{amount:number;timestamp:string;sign:'add'|'remove'}[]>([]);
   const [calTarget, setCalTarget] = useState(0);
   const [totalProtein, setTotalProtein] = useState(0);
   const [totalCarbs, setTotalCarbs] = useState(0);
@@ -333,11 +334,13 @@ export default function LogScreen() {
   setTotalFat(Math.round(data.entries.reduce((s: number, e: any) => s + (e.fat || 0), 0) * 10) / 10);
 }
           if (typeof data.water === 'number') setWater(Math.max(0, data.water));
+          if (Array.isArray(data.waterEntries)) setWaterEntries(data.waterEntries);
         } else {
           const cloudData = await loadFromFirebase(todayKey);
           if (cloudData) {
             if (cloudData.entries && Array.isArray(cloudData.entries)) setEntries(cloudData.entries);
             if (typeof cloudData.water === 'number') setWater(Math.max(0, cloudData.water));
+            if (Array.isArray(cloudData.waterEntries)) setWaterEntries(cloudData.waterEntries);
             await storageSet(`pj_${activeDate}`, JSON.stringify(cloudData));
           }
         }
@@ -540,8 +543,14 @@ export default function LogScreen() {
   const updateWater = async (oz: number) => {
     const prev = water;
     const newWater = Math.max(0, water + oz);
+    const sign: 'add' | 'remove' = oz > 0 ? 'add' : 'remove';
+    const newEntry = { amount: Math.abs(oz), timestamp: new Date().toISOString(), sign };
+    const newEntries = [...waterEntries, newEntry];
     setWater(newWater);
-    saveField('water', newWater);
+    setWaterEntries(newEntries);
+    const existing = await AsyncStorage.getItem(`pj_${activeDate}`);
+    const current = existing ? JSON.parse(existing) : {};
+    await storageSet(`pj_${activeDate}`, JSON.stringify({ ...current, water: newWater, waterEntries: newEntries }));
     saveToFirebase(activeDate, 'water', newWater);
     if (oz > 0) {
       showToast('Water logged', `+${oz} oz · ${newWater} oz total`, 'info');

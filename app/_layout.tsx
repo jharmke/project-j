@@ -15,6 +15,8 @@ import { LogBox } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { restoreIfFresh } from '../services/syncService';
+import { setupNotificationHandler } from '../services/notifications';
+import { runDailyNotificationScheduler } from '../services/notificationScheduler';
 import { AchievementToastProvider, AchievementToastRenderer } from '../components/AchievementToast';
 import { CelebrationRenderer } from '../components/CelebrationOverlay';
 import { ToastProvider } from '../components/Toast';
@@ -24,6 +26,7 @@ import { AuthProvider, useAuth } from '../AuthContext';
 LogBox.ignoreLogs(['VirtualizedLists should never be nested']);
 
 SplashScreen.preventAutoHideAsync();
+setupNotificationHandler();
 
 function ThemedStatusBar() {
   const { themeId } = useTheme();
@@ -59,6 +62,8 @@ function RootLayoutNav() {
       restoreIfFresh().finally(() => {
         router.replace('/(tabs)');
         SplashScreen.hideAsync();
+        // Fire-and-forget: schedule today's notis after tabs load
+        runDailyNotificationScheduler().catch(() => {});
       });
     }
   }, [onboardingChecked, authLoading, user, onboardingComplete]);

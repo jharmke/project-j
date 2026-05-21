@@ -27,6 +27,13 @@ import { StatsCard, CardPeriod, DATA_KEY_META, DEFAULT_STATS_CARDS } from '../..
 import { TrendData, EMPTY_TREND_DATA, fetchTrendData } from '../../utils/statsData';
 import { StatsGraphCard } from '../../components/StatsGraphCard';
 import { StatsCardEditModal } from '../../components/StatsCardEditModal';
+import {
+  scheduleIFWindowNotifications,
+  cancelIFWindowNotifications,
+  loadNotificationSettings,
+  shouldAskPermission,
+  requestNotificationPermission,
+} from '../../services/notifications';
 import { saveStatsCards } from '../../statsCardRegistry';
 
 // ─── Card Registry ────────────────────────────────────────────────────────────
@@ -1625,8 +1632,26 @@ export default function HomeScreen() {
       setShowTimePicker={setShowTimePicker}
       setShowEndTimePicker={setShowEndTimePicker}
       setPrickerTime={setPrickerTime}
-      onStartFast={() => { setIfStart(Date.now()); setIfEnd(null); }}
-      onLastMeal={() => { const end = Date.now(); setIfEnd(end); saveToFirebase(todayKey, 'ifEnd', end); }}
+      onStartFast={async () => {
+        const now = Date.now();
+        setIfStart(now);
+        setIfEnd(null);
+        // Schedule IF window closing notifications
+        const wHours = ifMethod === 'Custom' ? (parseInt(ifCustomHours) || 16) : (IF_METHODS[ifMethod]?.eat || 8);
+        const wEnd = now + wHours * 3600000;
+        const notifSettings = await loadNotificationSettings();
+        const sm: any = styleMode;
+        scheduleIFWindowNotifications(wEnd, notifSettings, sm).catch(() => {});
+        // First IF start = high-intent moment to ask for notification permission
+        const ask = await shouldAskPermission();
+        if (ask) requestNotificationPermission().catch(() => {});
+      }}
+      onLastMeal={() => {
+        const end = Date.now();
+        setIfEnd(end);
+        saveToFirebase(todayKey, 'ifEnd', end);
+        cancelIFWindowNotifications().catch(() => {});
+      }}
       onResetFast={() => { setIfStart(null); setIfEnd(null); saveToFirebase(todayKey, 'ifStart', null); }}
       onCancelFast={() => { setIfStart(null); setIfEnd(null); saveToFirebase(todayKey, 'ifStart', null); }}
       onResetComplete={() => { setIfStart(null); setIfEnd(null); saveToFirebase(todayKey, 'ifStart', null); saveToFirebase(todayKey, 'ifEnd', null); }}

@@ -16,7 +16,8 @@
         "com.apple.developer.applesignin": ["Default"]
       },
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSUserNotificationUsageDescription": "Project J sends reminders for your fasting window, streaks, daily goals, and wellness check-ins."
       },
       "privacyManifests": {
         "NSPrivacyAccessedAPITypes": [
@@ -68,6 +69,12 @@
         }
       ],
       "expo-apple-authentication",
+      [
+        "expo-notifications",
+        {
+          "iosDisplayInForeground": true
+        }
+      ],
       [
         "@react-native-google-signin/google-signin",
         {

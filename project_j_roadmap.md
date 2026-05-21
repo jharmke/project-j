@@ -414,7 +414,7 @@ Donate / Support button -- pinned for post-TestFlight. No paywall ever. If/when 
 
 NOW -- next sessions
 
-My Programs builder -- custom program creation: name it, assign exercises/focus/tags/color per day, save to library, load onto any week. My Programs tab currently shows "Coming Soon" placeholder. Full dedicated session needed. See BACKLOG > Workout for original spec.
+[x] My Programs builder -- SHIPPED. pj_my_programs key stores unified CustomProgram array (seeded with presets on first load). ProgramBuilderModal slide-up sheet: name + description + 7 DayRow rows (LIFT/CARDIO/REST/OFF type pills + focus field + TAG_COLOR_PALETTE swatches). Programs tab is now a single DraggableFlatList: drag to reorder, pencil (edit), trash (delete with confirm alert), LOAD PROGRAM / ACTIVE button. FAB "Create Program" active. Edit flow re-uses same modal pre-populated. Active program sync on edit. workout-library.tsx.
 Bible reading plans -- structured multi-day reading plans (e.g. 30-day plan, book-by-book). "Reading Plans" placeholder already in Bible settings modal (pj_settings). Full dedicated session needed: plan list, day-by-day progress, completion tracking, faith journey gating.
 
 SOON -- confirmed next few sessions

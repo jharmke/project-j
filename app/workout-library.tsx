@@ -4,10 +4,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Animated, FlatList, Keyboard, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
+import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { saveToFirebase } from '../firebaseConfig';
 import { storageSet } from '../utils/storage';
 import { ToastRenderer, useToast } from '../components/Toast';
-import { PRESET_PROGRAMS, PresetProgram } from '../workoutData';
+import { PRESET_PROGRAMS, PresetProgram, DayProgram, TAG_COLOR_PALETTE } from '../workoutData';
 import { useTheme } from '../theme';
 
 interface LibraryExercise {
@@ -62,6 +64,227 @@ function fmtLibraryDay(dk: string | undefined): string {
   return new Date(dk + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long' });
 }
 
+const PROGRAM_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
+type ProgramDayKey = typeof PROGRAM_DAYS[number];
+
+interface BuilderDayState {
+  type: 'lift' | 'cardio' | 'rest' | 'unassigned';
+  focus: string;
+  color: string;
+}
+
+interface CustomProgram {
+  id: string;
+  name: string;
+  description: string;
+  days: Record<string, DayProgram>;
+  createdAt: number;
+}
+
+function defaultBuilderDays(): Record<ProgramDayKey, BuilderDayState> {
+  return {
+    Mon: { type: 'lift', focus: '', color: '#3b82f6' },
+    Tue: { type: 'lift', focus: '', color: '#10b981' },
+    Wed: { type: 'lift', focus: '', color: '#f59e0b' },
+    Thu: { type: 'lift', focus: '', color: '#3b82f6' },
+    Fri: { type: 'lift', focus: '', color: '#10b981' },
+    Sat: { type: 'rest', focus: 'Rest', color: '#64748b' },
+    Sun: { type: 'rest', focus: 'Rest', color: '#64748b' },
+  };
+}
+
+function DayRow({ day, state, onChange, theme }: {
+  day: ProgramDayKey;
+  state: BuilderDayState;
+  onChange: (s: BuilderDayState) => void;
+  theme: any;
+}) {
+  const showDetails = state.type === 'lift' || state.type === 'cardio';
+  const colForType = (t: BuilderDayState['type']) => {
+    if (t === 'cardio') return theme.accentAmber;
+    if (t === 'rest' || t === 'unassigned') return theme.textDim;
+    return theme.accentBlueRaw;
+  };
+  return (
+    <View style={{ marginBottom: 10, backgroundColor: theme.bgInset, borderRadius: 10, padding: 12, borderWidth: 0.5, borderColor: theme.borderCard }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: showDetails ? 10 : 0 }}>
+        <Text style={{ width: 30, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', fontSize: 11, letterSpacing: 0.5 }}>{day.toUpperCase()}</Text>
+        {(['lift', 'cardio', 'rest', 'unassigned'] as const).map(t => {
+          const isActive = state.type === t;
+          const col = colForType(t);
+          return (
+            <TouchableOpacity
+              key={t}
+              onPress={() => onChange({
+                ...state,
+                type: t,
+                focus: t === 'rest' ? 'Rest' : t === 'unassigned' ? '' : state.focus,
+                color: t === 'rest' || t === 'unassigned' ? '#64748b' : state.color,
+              })}
+              style={{ flex: 1, paddingVertical: 6, borderRadius: 6, alignItems: 'center', backgroundColor: isActive ? col + '22' : 'transparent', borderWidth: 1, borderColor: isActive ? col + '99' : theme.borderSubtle }}>
+              <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: isActive ? col : theme.textDim, letterSpacing: 0.3 }}>
+                {t === 'unassigned' ? 'OFF' : t.toUpperCase()}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+      {showDetails && (
+        <>
+          <TextInput
+            style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingHorizontal: 12, paddingVertical: 8, fontSize: 13, fontFamily: 'DMSans_400Regular', marginBottom: 10 }}
+            placeholder={state.type === 'cardio' ? 'Focus (e.g. HIIT, Run)' : 'Focus (e.g. Push, Legs)'}
+            placeholderTextColor={theme.textPlaceholder}
+            value={state.focus}
+            onChangeText={v => onChange({ ...state, focus: v })}
+            autoCapitalize="words"
+          />
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+            {TAG_COLOR_PALETTE.map(c => (
+              <TouchableOpacity
+                key={c}
+                onPress={() => onChange({ ...state, color: c })}
+                style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: c, borderWidth: state.color === c ? 2.5 : 0, borderColor: '#ffffff' }}
+              />
+            ))}
+          </View>
+        </>
+      )}
+    </View>
+  );
+}
+
+function ProgramBuilderModal({ onClose, onSave, editingProgram }: {
+  onClose: () => void;
+  onSave: (p: CustomProgram) => void;
+  editingProgram: CustomProgram | null;
+}) {
+  const { theme } = useTheme();
+  const sheetY = useSharedValue(900);
+  const [kbHeight, setKbHeight] = useState(0);
+  const [name, setName] = useState('');
+  const [desc, setDesc] = useState('');
+  const [days, setDays] = useState<Record<ProgramDayKey, BuilderDayState>>(defaultBuilderDays);
+  const descRef = useRef<any>(null);
+
+  useEffect(() => {
+    if (editingProgram) {
+      setName(editingProgram.name);
+      setDesc(editingProgram.description || '');
+      const converted = {} as Record<ProgramDayKey, BuilderDayState>;
+      for (const d of PROGRAM_DAYS) {
+        const dp = editingProgram.days[d];
+        converted[d] = dp
+          ? { type: dp.type, focus: dp.focus || '', color: dp.color || '#3b82f6' }
+          : { type: 'unassigned', focus: '', color: '#64748b' };
+      }
+      setDays(converted);
+    } else {
+      setName(''); setDesc(''); setDays(defaultBuilderDays());
+    }
+    sheetY.value = withSpring(0, { damping: 18, stiffness: 120 });
+    const show = Keyboard.addListener('keyboardWillShow', e => setKbHeight(e.endCoordinates.height));
+    const hide = Keyboard.addListener('keyboardWillHide', () => setKbHeight(0));
+    return () => { show.remove(); hide.remove(); };
+  }, []);
+
+  const close = () => {
+    Keyboard.dismiss();
+    sheetY.value = withSpring(900, { damping: 20, stiffness: 120 });
+    setTimeout(onClose, 280);
+  };
+
+  const animStyle = useAnimatedStyle(() => ({ transform: [{ translateY: sheetY.value }] }));
+  const canSave = name.trim().length > 0;
+
+  const handleSave = () => {
+    if (!canSave) return;
+    const programDays: Record<string, DayProgram> = {};
+    for (const d of PROGRAM_DAYS) {
+      const bd = days[d];
+      programDays[d] = {
+        type: bd.type,
+        focus: bd.type === 'rest' ? 'Rest' : bd.type === 'unassigned' ? '' : bd.focus,
+        color: bd.type === 'rest' ? '#64748b' : bd.type === 'unassigned' ? undefined : bd.color,
+        exercises: editingProgram?.days[d]?.exercises || [],
+        ...(bd.type === 'rest' ? { tags: ['tag_rest'] } : {}),
+      };
+    }
+    onSave({
+      id: editingProgram?.id || makeId(),
+      name: name.trim(),
+      description: desc.trim(),
+      days: programDays,
+      createdAt: editingProgram?.createdAt ?? Date.now(),
+    });
+    close();
+  };
+
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+      <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={close} />
+      <Reanimated.View style={[{
+        position: 'absolute', left: 0, right: 0, bottom: 0, height: '91%',
+        backgroundColor: theme.bgSheet, borderTopLeftRadius: 20, borderTopRightRadius: 20,
+        borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw,
+        shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.25, shadowRadius: 16,
+        paddingBottom: kbHeight,
+      }, animStyle]}>
+        <TouchableOpacity onPress={close} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 8 }}>
+          <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
+        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
+          <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw }}>
+            {editingProgram ? 'EDIT PROGRAM' : 'CREATE PROGRAM'}
+          </Text>
+          <TouchableOpacity onPress={close} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="close" size={20} color={theme.textMuted} />
+          </TouchableOpacity>
+        </View>
+        <ToastRenderer />
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 48 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 6 }}>
+            PROGRAM NAME <Text style={{ color: theme.accentRed }}>*</Text>
+          </Text>
+          <TextInput
+            style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 15, fontFamily: 'DMSans_400Regular', marginBottom: 16 }}
+            placeholder="e.g. My PPL Program"
+            placeholderTextColor={theme.textPlaceholder}
+            value={name}
+            onChangeText={setName}
+            autoCapitalize="words"
+          />
+          <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 6 }}>
+            DESCRIPTION <Text style={{ color: theme.textDim, fontSize: 9 }}>(optional)</Text>
+          </Text>
+          <TextInput
+            ref={descRef}
+            style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 13, fontFamily: 'DMSans_400Regular', marginBottom: 24, height: 64, textAlignVertical: 'top' }}
+            placeholder="Briefly describe this program..."
+            placeholderTextColor={theme.textPlaceholder}
+            value={desc}
+            onChangeText={setDesc}
+            multiline
+            onBlur={() => descRef.current?.setNativeProps({ selection: { start: 0, end: 0 } })}
+          />
+          <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 12 }}>WEEKLY SCHEDULE</Text>
+          {PROGRAM_DAYS.map(d => (
+            <DayRow key={d} day={d} state={days[d]} onChange={updated => setDays(prev => ({ ...prev, [d]: updated }))} theme={theme} />
+          ))}
+          <TouchableOpacity
+            onPress={handleSave}
+            disabled={!canSave}
+            style={{ marginTop: 8, backgroundColor: theme.accentBlue, borderRadius: 10, paddingVertical: 14, alignItems: 'center', opacity: canSave ? 1 : 0.4 }}>
+            <Text style={{ color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 18, letterSpacing: 2 }}>
+              {editingProgram ? 'SAVE PROGRAM' : 'CREATE PROGRAM'}
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </Reanimated.View>
+    </View>
+  );
+}
+
 export default function WorkoutLibraryScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
@@ -75,6 +298,9 @@ export default function WorkoutLibraryScreen() {
   const [form, setForm] = useState<Partial<LibraryExercise>>({ type: 'lift', defaultSets: '', defaultReps: '', defaultRest: '' });
   const [activeProgramName, setActiveProgramName] = useState<string | null>(null);
   const [showFabMenu, setShowFabMenu] = useState(false);
+  const [myPrograms, setMyPrograms] = useState<CustomProgram[]>([]);
+  const [showBuilder, setShowBuilder] = useState(false);
+  const [editingProgram, setEditingProgram] = useState<CustomProgram | null>(null);
 
   const { selectMode, day } = useLocalSearchParams<{ selectMode: string; day: string }>();
   const isSelectMode = selectMode === 'true';
@@ -118,7 +344,20 @@ export default function WorkoutLibraryScreen() {
         }
       } catch (e) {}
     };
+    const loadMyPrograms = async () => {
+      try {
+        const raw = await AsyncStorage.getItem('pj_my_programs');
+        if (raw) {
+          setMyPrograms(JSON.parse(raw));
+        } else {
+          const seeded: CustomProgram[] = PRESET_PROGRAMS.map(p => ({ ...p, createdAt: 0 }));
+          setMyPrograms(seeded);
+          await storageSet('pj_my_programs', JSON.stringify(seeded));
+        }
+      } catch (e) {}
+    };
     loadProgramState();
+    loadMyPrograms();
   }, []));
 
   const saveLibrary = async (updated: LibraryExercise[]) => {
@@ -137,10 +376,10 @@ export default function WorkoutLibraryScreen() {
     await saveLibrary(updated);
   };
 
-  const handleLoadProgram = (preset: PresetProgram) => {
+  const handleLoadProgram = (program: CustomProgram) => {
     Alert.alert(
       'Load Program',
-      `This will replace your current weekly template with "${preset.name}". Days you've already logged won't be affected.`,
+      `This will replace your current weekly template with "${program.name}". Days you've already logged won't be affected.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -148,10 +387,10 @@ export default function WorkoutLibraryScreen() {
             try {
               const raw = await AsyncStorage.getItem('pj_workout_state');
               const state = raw ? JSON.parse(raw) : {};
-              const updated = { ...state, weeklyTemplate: preset.days, activeProgramName: preset.name };
+              const updated = { ...state, weeklyTemplate: program.days, activeProgramName: program.name };
               await storageSet('pj_workout_state', JSON.stringify(updated));
-              setActiveProgramName(preset.name);
-              showToast('Program loaded', preset.name, 'success');
+              setActiveProgramName(program.name);
+              showToast('Program loaded', program.name, 'success');
             } catch (e) {}
           }
         },
@@ -175,6 +414,54 @@ export default function WorkoutLibraryScreen() {
               setActiveProgramName(null);
               showToast('Program cleared', undefined, 'success');
             } catch (e) {}
+          }
+        },
+      ]
+    );
+  };
+
+  const saveMyPrograms = async (programs: CustomProgram[]) => {
+    setMyPrograms(programs);
+    await storageSet('pj_my_programs', JSON.stringify(programs));
+  };
+
+  const handleSaveProgram = async (program: CustomProgram) => {
+    const idx = myPrograms.findIndex(p => p.id === program.id);
+    const updated = idx >= 0
+      ? myPrograms.map(p => p.id === program.id ? program : p)
+      : [...myPrograms, program];
+    await saveMyPrograms(updated);
+    if (activeProgramName === (editingProgram?.name || '')) {
+      try {
+        const raw = await AsyncStorage.getItem('pj_workout_state');
+        const state = raw ? JSON.parse(raw) : {};
+        await storageSet('pj_workout_state', JSON.stringify({ ...state, weeklyTemplate: program.days, activeProgramName: program.name }));
+        setActiveProgramName(program.name);
+      } catch (e) {}
+    }
+    showToast(editingProgram ? 'Program saved' : 'Program created', program.name, 'success');
+    setEditingProgram(null);
+  };
+
+  const handleDeleteProgram = (program: CustomProgram) => {
+    Alert.alert(
+      'Delete Program',
+      `Delete "${program.name}"? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete', style: 'destructive', onPress: async () => {
+            const updated = myPrograms.filter(p => p.id !== program.id);
+            await saveMyPrograms(updated);
+            if (activeProgramName === program.name) {
+              try {
+                const raw = await AsyncStorage.getItem('pj_workout_state');
+                const state = raw ? JSON.parse(raw) : {};
+                await storageSet('pj_workout_state', JSON.stringify({ ...state, weeklyTemplate: {}, activeProgramName: null }));
+              } catch (e) {}
+              setActiveProgramName(null);
+            }
+            showToast('Program deleted', undefined, 'success');
           }
         },
       ]
@@ -373,8 +660,14 @@ export default function WorkoutLibraryScreen() {
           }
         />
       ) : activeTab === 'programs' ? (
-        <ScrollView contentContainerStyle={{ paddingTop: 8, paddingBottom: 120 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-          {activeProgramName && (
+        <DraggableFlatList
+          data={myPrograms.filter(p => !query.trim() || p.name.toLowerCase().includes(query.toLowerCase()))}
+          keyExtractor={p => p.id}
+          contentContainerStyle={{ paddingTop: 8, paddingBottom: 120 }}
+          onDragEnd={({ data }) => {
+            if (!query.trim()) saveMyPrograms(data);
+          }}
+          ListHeaderComponent={activeProgramName ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.bgInset, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 12, marginHorizontal: 12, marginBottom: 16, borderWidth: 0.5, borderColor: theme.accentBlueBorder }}>
               <View>
                 <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 2 }}>ACTIVE PROGRAM</Text>
@@ -386,41 +679,63 @@ export default function WorkoutLibraryScreen() {
                 <Text style={{ color: theme.accentRed, fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 0.5 }}>CLEAR</Text>
               </TouchableOpacity>
             </View>
-          )}
-
-          <Text style={styles.sectionLabel}>PRESET PROGRAMS</Text>
-          {PRESET_PROGRAMS.filter(p => !query.trim() || p.name.toLowerCase().includes(query.toLowerCase())).map(preset => (
-            <View key={preset.id} style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderRadius: 12, padding: 16, marginHorizontal: 12, marginBottom: 12 }}>
-              <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'DMSans_700Bold', marginBottom: 4 }}>{preset.name}</Text>
-              <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_400Regular', marginBottom: 12, lineHeight: 18 }}>{preset.description}</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
-                {(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const).map(d => {
-                  const dp = preset.days[d];
-                  const col = dp?.color || theme.borderSubtle;
-                  return (
-                    <View key={d} style={{ backgroundColor: col + '22', borderWidth: 1, borderColor: col + '55', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-                      <Text style={{ fontSize: 10, fontFamily: 'DMSans_700Bold', color: col }}>{d.toUpperCase()} · {dp?.focus?.toUpperCase() || 'REST'}</Text>
-                    </View>
-                  );
-                })}
-              </View>
-              <TouchableOpacity
-                onPress={() => handleLoadProgram(preset)}
-                style={{ paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: activeProgramName === preset.name ? theme.accentGreenBg : theme.accentBlueBg, borderWidth: 1, borderColor: activeProgramName === preset.name ? theme.accentGreenBorder : theme.accentBlueBorder }}>
-                <Text style={{ color: activeProgramName === preset.name ? theme.accentGreen : theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>
-                  {activeProgramName === preset.name ? 'ACTIVE' : 'LOAD PROGRAM'}
-                </Text>
-              </TouchableOpacity>
+          ) : null}
+          ListEmptyComponent={
+            <View style={{ alignItems: 'center', paddingVertical: 60, paddingHorizontal: 32 }}>
+              <Ionicons name="barbell-outline" size={40} color={theme.textDim} />
+              <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'DMSans_600SemiBold', marginTop: 12 }}>No programs yet</Text>
+              <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular', marginTop: 6, textAlign: 'center' }}>Tap + to create your first program.</Text>
             </View>
-          ))}
-
-          <Text style={[styles.sectionLabel, { marginTop: 8 }]}>MY PROGRAMS</Text>
-          <View style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderRadius: 12, padding: 24, marginHorizontal: 12, alignItems: 'center' }}>
-            <Ionicons name="construct-outline" size={32} color={theme.textDim} />
-            <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'DMSans_600SemiBold', marginTop: 10 }}>Coming Soon</Text>
-            <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular', marginTop: 6, textAlign: 'center' }}>Build and save your own custom programs.</Text>
-          </View>
-        </ScrollView>
+          }
+          renderItem={({ item: program, drag, isActive }: RenderItemParams<CustomProgram>) => (
+            <ScaleDecorator>
+              <View style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderRadius: 12, padding: 16, marginHorizontal: 12, marginBottom: 12, opacity: isActive ? 0.95 : 1, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'DMSans_700Bold', flex: 1, marginRight: 8 }}>{program.name}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <TouchableOpacity
+                      onPress={() => { setEditingProgram(program); setShowBuilder(true); }}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      style={{ padding: 4 }}>
+                      <Ionicons name="pencil" size={15} color={theme.textMuted} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => handleDeleteProgram(program)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      style={{ padding: 4 }}>
+                      <Ionicons name="trash-outline" size={15} color={theme.accentRed} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onLongPress={drag} delayLongPress={150} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
+                      <Ionicons name="reorder-three" size={18} color={theme.textDim} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                {program.description ? (
+                  <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_400Regular', marginBottom: 12, lineHeight: 18 }}>{program.description}</Text>
+                ) : <View style={{ marginBottom: 8 }} />}
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+                  {PROGRAM_DAYS.map(d => {
+                    const dp = program.days[d];
+                    const col = dp?.color || theme.borderSubtle;
+                    const label = dp?.type === 'unassigned' ? 'OFF' : dp?.focus?.toUpperCase() || 'REST';
+                    return (
+                      <View key={d} style={{ backgroundColor: col + '22', borderWidth: 1, borderColor: col + '55', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                        <Text style={{ fontSize: 10, fontFamily: 'DMSans_700Bold', color: col }}>{d.toUpperCase()} · {label}</Text>
+                      </View>
+                    );
+                  })}
+                </View>
+                <TouchableOpacity
+                  onPress={() => handleLoadProgram(program)}
+                  style={{ paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: activeProgramName === program.name ? theme.accentGreenBg : theme.accentBlueBg, borderWidth: 1, borderColor: activeProgramName === program.name ? theme.accentGreenBorder : theme.accentBlueBorder }}>
+                  <Text style={{ color: activeProgramName === program.name ? theme.accentGreen : theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>
+                    {activeProgramName === program.name ? 'ACTIVE' : 'LOAD PROGRAM'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </ScaleDecorator>
+          )}
+        />
       ) : (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 100 }}>
           <Ionicons name="repeat-outline" size={48} color={theme.textDim} />
@@ -592,15 +907,19 @@ export default function WorkoutLibraryScreen() {
             </View>
           </Animated.View>
 
-          {/* Create Program - disabled */}
+          {/* Create Program - active */}
           <Animated.View style={{ opacity: fabItem2Anim, transform: [{ translateY: fabItem2Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <View style={{ backgroundColor: theme.bgCard, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 0.5, borderColor: theme.borderCard, opacity: 0.5 }}>
-                <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_500Medium' }}>Create Program</Text>
-              </View>
-              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}>
-                <Ionicons name="calendar-outline" size={20} color={theme.textDim} />
-              </View>
+              <TouchableOpacity
+                onPress={() => { closeFabMenu(); setEditingProgram(null); setShowBuilder(true); }}
+                style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Create Program</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => { closeFabMenu(); setEditingProgram(null); setShowBuilder(true); }}
+                style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <Ionicons name="calendar-outline" size={20} color="#ffffff" />
+              </TouchableOpacity>
             </View>
           </Animated.View>
 
@@ -633,6 +952,14 @@ export default function WorkoutLibraryScreen() {
           <Ionicons name={showFabMenu ? 'close' : 'add'} size={28} color="#ffffff" />
         </TouchableOpacity>
       </Animated.View>
+
+      {showBuilder && (
+        <ProgramBuilderModal
+          onClose={() => { setShowBuilder(false); setEditingProgram(null); }}
+          onSave={handleSaveProgram}
+          editingProgram={editingProgram}
+        />
+      )}
     </View>
   );
 }

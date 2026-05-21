@@ -963,10 +963,10 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                 <Ionicons name="repeat-outline" size={18} color={theme.accentBlue} style={{ marginBottom: 4 }} />
                 <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Load Routine</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => openAddExerciseModal(activeDay)}
+              <TouchableOpacity onPress={() => router.push({ pathname: '/workout-library', params: { selectMode: 'true', day: activeDay } })}
                 style={{ flex: 1, backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}>
-                <Ionicons name="add-circle-outline" size={18} color={theme.textMuted} style={{ marginBottom: 4 }} />
-                <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Add Exercise</Text>
+                <Ionicons name="library-outline" size={18} color={theme.textMuted} style={{ marginBottom: 4 }} />
+                <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Browse Library</Text>
               </TouchableOpacity>
             </View>
           </View>

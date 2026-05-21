@@ -162,6 +162,7 @@ NOW -- active this session
 [x] Day detail sleep bedtime/wake times showing '--' -- fmtTime was trying to parse already-formatted time strings via new Date(). Fixed: return val directly. day-detail.tsx.
 [x] Day detail sleepGoal default wrong -- was 8, home screen was 7. Fixed to 7. day-detail.tsx.
 [x] Sleep score duration weighting -- linear formula underpenalized short sleep (5h18m scored 84 with decent stages). Fixed: non-linear power curve Math.pow(hours/goal, 3) * 40. 5h18m now scores 71. index.tsx + day-detail.tsx.
+[x] Today's Message blank verse bug -- verse logic was unguarded in finally block. JSON.parse failure OR stale/out-of-bounds rotation indices left dailyVerse null. Fixed: wrapped in try-catch, added resolved verse validation, catch nukes pj_verse_rotation and falls back to random verse. index.tsx.
 
 NOW -- active this session
 [x] Profile format refactor -- CollapsibleCard (white boxes) replaced with ProfileSection (flat section headers, accent label + divider line, subtitle preview when collapsed). Matches stats page visual style. profile.tsx.
@@ -414,6 +415,9 @@ SOON -- confirmed next few sessions
 
 NEAT definition -- add NEAT (Non-Exercise Activity Thermogenesis) to tooltipRegistry.ts under Nutrition or Fitness category. No UI changes needed, just a definition entry so it shows in Settings > Help. Context: everyday movement (walking, fidgeting, chores) that isn't structured exercise but contributes significantly to total daily burn. Relevant to understanding why two people with identical workouts can have very different TDEE.
 Settings Help section aesthetics -- definitions list in Settings > Help is visually rough. Needs a dedicated CPP pass: spacing, typography, section headers, overall polish to match the quality bar of the rest of the app.
+Day detail BMR row -- add estimated BMR to the calorie breakdown in day detail alongside Consumed / Burned / Running Net, so user has the full picture: what their body burns at rest + what they burned + what they ate = complete daily calorie story.
+Claude Projects GitHub sync -- CLAUDE.md and project_j_roadmap.md are already tracked in the repo. After pushing, add them via the GitHub integration dialog (search icon in the Add content from GitHub modal). Once wired up, every push auto-updates phone context. Blocked on: push current changes first, then select files in dialog.
+My Programs builder -- custom program creation: name it, assign exercises/focus/tags/color per day, save to library, load onto any week. My Programs tab currently shows "Coming Soon" placeholder. Full dedicated session needed. See BACKLOG > Workout for original spec.
 
 [x] Cloud data sync -- SHIPPED. services/syncService.ts: syncKey() fire-and-forget Firestore mirror, restoreIfFresh() fresh-device restore gate (only fires when zero local pj_* data -- cannot overwrite existing data), uploadAllLocal() one-time migration. utils/storage.ts: storageSet() wrapper (local write awaited first, Firestore silent mirror). All AsyncStorage.setItem calls across 22 files replaced with storageSet. Firestore path: users/{uid}/store/{key}. pj_bible_* cache keys excluded (re-fetchable, thousands of docs). _layout.tsx wired to call restoreIfFresh() before routing to tabs on login. Dev tools: Upload All Data to Firestore + Check Sync Status (local count vs Firestore doc count with in-sync indicator). Verified 38/38 keys in sync on device.
 
@@ -517,9 +521,19 @@ Streak grace day system -- mode-aware. Discipline: earn grace days by hitting mi
 Custom streaks system -- all three modes get full access to all streak options. User can create custom streaks with name and emoji, check in manually. Defaults differ per mode: Discipline/Balanced default to performance metrics (calories, steps, workout). Mindful defaults to gentle habit-forming ones (gratitude entry, hydration, morning intention). Architecture is the same across all modes.
 Streak end warning visuals -- color shift to orange/red on streak card when within X hours of midnight and action not yet completed. Optional subtle pulse or warning icon on the card itself. In-app only, no push notification dependency. High motivation impact, low build effort. (SOON)
 
+New User Experience
+
+Onboarding to home transition plan -- guided first steps post-onboarding, no "good luck" drop-off. First-time users get contextual prompts easing them into core features rather than landing cold. Dedicated planning session before building. (SOON)
+In-app feedback mechanism -- bug reports and feature suggestions direct to Justin, frictionless. Simple mailto: entry point in Settings. Quick win, low effort, high value for early TestFlight users. (SOON)
+MFP switcher experience -- UX and positioning for power users arriving from MyFitnessPal. First-impression design that instantly communicates superiority: cleaner UI, smarter logging, real serving data. Makes switchers feel "why was I ever there?" without saying a word. (SOON)
+Challenge system -- opt-in time-boxed goals, smart triggers based on user patterns ("think you can do it X days?"), mode-aware duration (Mindful gets softer challenges), progression from short to long. Depends on streaks shipping first. Dedicated session needed. (SOON)
+Locked theme rewards -- themes unlocked by completing challenges, not purchased. Short durations first (1-3 days) so the first win comes early. Hooks new users, doubles as disguised onboarding. Applies to non-Light/Dark themes. (SOON)
+Custom challenges -- user sets duration and picks goal type from presets. Feels personal and owned. Sub-feature of challenge system, build after base challenges ship. (SOON)
+"You've grown" message -- app-generated coach message after key thresholds (weight milestones, streak lengths, logging consistency). Mode-aware tone: Mindful gets warm and celebratory, Discipline gets direct and affirming. Ties to faith journey upgrade prompts for Rooted/Exploring. Builds on existing achievement detection infrastructure. (SOON)
+
 Push Notifications
 
-Push notifications -- expo-notifications. Customizable toggles per notification type: streak ending, no workout logged on non-rest day, no food/water logged, no journal entry. User-set time and frequency per type. iOS permission is one-shot -- if denied cannot re-prompt, requires careful first-ask UX (ask at the right moment, not on launch). Workout reminder has a dependency on rest day awareness -- build that first. (SOON)
+Push notifications -- expo-notifications. Customizable toggles per notification type: streak ending, no workout logged on non-rest day, no food/water logged, no journal entry. User-set time and frequency per type. iOS permission is one-shot -- if denied cannot re-prompt, requires careful first-ask UX (ask at the right moment, not on launch). Workout reminder has a dependency on rest day awareness -- build that first. Retention strategy: re-engagement sequences for lapsed users, streak protection alerts, milestone celebration notis. Mode-aware copy on all notis. (SOON)
 
 Visual polish
 
@@ -540,7 +554,7 @@ Workout
 
 Today's Training empty/rest day states -- two variants: unassigned day (icon + title + CTA to add exercises or load program), rest day (warm encouragement, no CTA, something like "Rest is part of the work"). Standard icon + title + subtitle + optional CTA pattern app-wide. Open questions: auto-clear rest day when exercise is added? Apple Watch sync behavior on rest day?
 You vs Yesterday streak (vsStreak) -- state declared and badge renders but never calculated or persisted. Always 0. Needs full implementation: calculate win/loss result at end of day, persist streak count to AsyncStorage, reset on loss.
-My Programs builder -- name it, assign focus/tags/color per day, save, load. (planned, not yet built)
+My Programs builder -- name it, assign focus/tags/color per day, save, load. MOVED TO SOON.
 Programs button move to library -- DONE. See workout library redesign in DONE section.
 Workout tab visual pass -- assess whether exercises + effort score + notes is enough or if more sections needed. No specific ideas yet, likely resolves as SOON items ship (muscle group breakdown, previous session comparison, streak/consistency). Revisit after those are built.
 - [x] SHIPPED: Today's Effort card -- renamed from "Effort Score" to "Today's Effort" (session rating, not per-exercise RPE). Effort score piped into statsData.ts fetchTrendData via workoutState.cardioLogs[date].effortScore. Added effortScore DataKey to statsCardRegistry.ts (Activity category, flame icon, "Daily session effort rating (1-10)"). getChart() + getStats() cases added to StatsGraphCard (orange, startFromZero false, stats: Avg Effort + High Effort Days >=7). Now available in graph creator pool and downstream for Day Score.
@@ -698,7 +712,7 @@ BACKLOG -- parked, good ideas, not imminent
 App-wide color customization -- extend color picker beyond stats graphs to home screen bars (water, steps, calorie progress bar). Calorie bar skip (mode-aware semantic coloring). Steps/water bars follow accent color already -- decision to revisit. Macro identity colors (protein green, carbs amber, fat red) are visual language app-wide -- any change requires propagating through log, home, day detail, stats all at once. Build only after stats color picker ships and proves the pattern. Entry point: gear press on each card. Storage: pj_settings colorPrefs key.
 Collapsible card animation performance -- DONE. Replaced JS thread height animation with instant height snap + opacity fade (300ms open, 100ms close, useNativeDriver: true). Applied to stats.tsx (CollapsibleCard), profile.tsx (CollapsibleCard), and log.tsx (meal sections). All smooth, no lag.
 Social and accountability partner -- lightweight, one person you share daily score with. Not a full social feed. Strava-inspired but scoped. Build after core features stable and onboarding complete.
-Tutorial / walkthrough system -- interactive overlay style (live UI underneath, highlighted circles, callout bubbles, tap-to-advance). Opt-in from settings and accessible via toolkit icons on screens with a built tutorial. For Mindful users, a meta-tutorial auto-plays on first launch: walks through how the tutorial system works, shows where to find tutorials in settings and toolkits, then releases them into the app. First real tutorial does not auto-play -- user chooses when to start. Immediate skip/close always available. Major UX differentiator especially for Mindful user type. Needs dedicated planning thread before building.
+Tutorial / walkthrough system -- interactive overlay style (live UI underneath, highlighted circles, callout bubbles, tap-to-advance). Mode-aware: each mode gets its own tutorial voice and emphasis. Premium feel -- this should feel like a product moment, not a tooltip tour. In-depth but digestible: covers the why, not just the how. Opt-in from settings and accessible via toolkit icons on screens with a built tutorial. For Mindful users, a meta-tutorial auto-plays on first launch: walks through how the tutorial system works, shows where to find tutorials in settings and toolkits, then releases them into the app. First real tutorial does not auto-play -- user chooses when to start. Immediate skip/close always available. Major UX differentiator especially for Mindful user type. Needs dedicated planning thread before building.
 App name and tagline finalization -- finalize from shortlist (Prevail, Steadfast, Worthy, Haven, Witness, Sown). Verify App Store + TikTok handle availability. Prevail is strongest. Current tagline "the app that actually cares" needs replacing -- doesn't land. Prevail direction has a tagline waiting in it.
 Onboarding illustrations -- tasteful SVG illustrations, one per screen, consistent style, theme-aware. High return on effort, do after onboarding flow is fully functional.
 Water log timestamps -- store timestamp with each water entry, enables habit reporting and distribution analysis.
@@ -787,6 +801,10 @@ Marketing
 
 TikTok strategy -- anonymous account for now, rebrand to app name when locked, interactive series format, crowd-sourced decisions, meme formats
 App name content series -- "help me name my app" poll sticker, "help me design my app", etc
+Side-by-side screen recordings vs MFP -- same task, no commentary needed, let the product speak. UI, logging flow, serving data, speed. MFP's UI is stuck in 2015, the contrast sells itself.
+AI scanner bashing content -- memes, comparison posts, trending audio, confidently wrong format. Scanner apps guess and Project J tracks. High shareability, hits the right audience.
+Faith angle content -- verse + workout clip format, subtle and authentic to the product, underserved Christian fitness audience. Should be early content, not saved for later. Never forced.
+Micro influencer outreach -- Christian fitness and faith-based wellness creators. Back pocket until product is polished and TestFlight ready. High ROI when the product is tight.
 Photo logging anti-gimmick angle -- decided against photo logging because it's inaccurate (can't see oil, portion weight, prep method). "We don't guess, we track" is a potential marketing hook.
 Distribution path: 200-300 genuinely engaged users first, Christian community warmest early audience, ProductHunt, Reddit (r/Christianity, r/fitness, r/selfimprovement)
 

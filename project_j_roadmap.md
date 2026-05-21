@@ -156,6 +156,7 @@ DONE -- SHIPPED
 [x] Day detail modal polish -- CLOSE button removed from both modal wrappers (home + stats). Handle tap + backdrop tap = dismiss. Decision: handle is cleaner on a floating centered card, backdrop tap is the safety net. DayDetailContent header restored to clean centered layout (DAY DETAIL label + date nav). "Back to Today" button removed from bottom. Stats handle spacing fixed to match home (marginTop/marginBottom: 12 on handle pill). Both modals now identical.
 [x] Day detail date picker -- calendar icon in header (top-right, same row as DAY DETAIL label) opens month-grid modal. Pre-selects current date's month. Tap any non-future date to jump to it. Today outlined, selected date filled. Overlay dismiss + Cancel button. bgSheet background (fully opaque across all themes -- bgCard is semi-transparent on Slate/Warm/Light). day-detail.tsx.
 [x] Workout library redesign -- Programs moved from workout.tsx header modal into library as its own tab (All | Favorites | Programs | Routines). Programs tab shows active program row + preset cards + My Programs coming soon. Routines tab is coming soon empty state. +Add button removed from library header. FAB added (expandable speed dial): Create Exercise (active, solid accent fill + white text/icon + colored shadow), Create Program (disabled), Create Routine (disabled). FAB options cascade in with staggered spring animation (Create Exercise first at 0ms, Create Program 70ms, Create Routine 140ms), all close together on dismiss. Search bar always visible on all tabs, placeholder and filter behavior adapt per tab (filters preset program names on Programs tab). workout.tsx Programs modal and Programs button both removed. Programs load/clear now writes to pj_workout_state via read-then-merge. workout tab picks up program changes via useFocusEffect.
+[x] Prayer request feature -- SHIPPED. Internal modal (PrayerRequestModal.tsx), two entry points: Bible screen gear modal + Settings > Help section. User writes request, saved directly to Firestore under users/{uid}/prayer_requests/{docId}. Firestore onCreate trigger (onPrayerRequestCreated Cloud Function) sends email to jtharmke@gmail.com via Nodemailer/Gmail App Password (GMAIL_APP_PASSWORD Firebase secret). Privacy policy updated and redeployed. Settings > Help subtitle updated to "Definitions · Guides · Prayer". Verified working end-to-end on device. Modal subtitle updated to "Every request is read and prayed over."
 
 
 NOW -- active this session
@@ -407,10 +408,9 @@ Today's Total macro row lowercase g, DMSans font. DONE.
 fsId saved on diary entries in saveEntry, passed through edit entry path in log.tsx. DONE.
 
 
-NOW -- faith and support
+Faith and support
 
-Prayer request feature -- dedicated session. Entry points: Today's Message card + profile/settings header (two minimum, do not bury). Decision needed before building: where do requests go? Options: (1) mailto: link as the simplest start, (2) email submission to admin, (3) future in-app prayer community. Requires knowing whether user email is available from profile or Firebase Auth. MOVED from SOON.
-Donate / Support button -- no paywall model. App stays fully free, add voluntary "Support this app" option. Decision needed: (1) Ko-fi or Buy Me a Coffee external link (no StoreKit, simplest, App Store rules allow external support links as long as no in-app purchase happens), (2) one-time StoreKit tip jar (compliant, Apple takes 30%). External link route is fastest path. Entry points: Settings > Account section + profile header. Monetization direction: NO paywalls, NO locked features, donation only.
+Donate / Support button -- pinned for post-TestFlight. No paywall ever. If/when built: one-time StoreKit tip jar or external Ko-fi link. Entry points TBD. Not urgent.
 
 SOON -- confirmed next few sessions
 

@@ -98,7 +98,7 @@ export default function PrayerRequestModal({ visible, onClose }: Props) {
             </Text>
           </View>
           <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginBottom: 16, lineHeight: 20 }}>
-            Share what's on your heart. Justin reads every one.
+            Share what's on your heart. Every request is read and prayed over.
           </Text>
 
           <TextInput

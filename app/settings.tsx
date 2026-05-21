@@ -1,9 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
-import { router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, Dimensions, Linking, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Animated, Dimensions, Keyboard, KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ACCENT_PALETTES, THEME_ORDER, ThemeId, THEMES, useTheme } from '../theme';
 import { useHealthKit } from '../useHealthKit';
@@ -14,15 +14,154 @@ import { showAchievementToast } from '../components/AchievementToast';
 import { ACHIEVEMENTS } from '../achievementData';
 import { collection, getDocs } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { app, auth, db } from '../firebaseConfig';
+import { app, auth, db, saveToFirebase } from '../firebaseConfig';
 import { uploadAllLocal } from '../services/syncService';
 import { storageSet } from '../utils/storage';
 import { TOOLTIP_REGISTRY } from '../tooltipRegistry';
 import TooltipModal from '../components/TooltipModal';
 import TooltipIcon from '../components/TooltipIcon';
 import ToggleSwitch from '../components/ToggleSwitch';
+import { useToast } from '../components/Toast';
 
 type FaithJourney = 'rooted' | 'exploring' | 'notrightnow';
+
+// ── Goal calculation constants (mirrors profile.tsx) ──────────────────────────
+const GOAL_DEFICITS: Record<string, number> = {
+  lose_2: -1000, lose_1_5: -750, lose_1: -500, lose_0_5: -250, maintain: 0, gain_0_5: 250, gain_1: 500,
+};
+const LIFESTYLE_OPTIONS = [
+  { key: 'sedentary',   multiplier: 1.2  },
+  { key: 'light',       multiplier: 1.3  },
+  { key: 'active',      multiplier: 1.45 },
+  { key: 'very_active', multiplier: 1.6  },
+];
+const TRAINING_OPTIONS = [
+  { key: 'none',  dailyBonus: 0   },
+  { key: '1x',    dailyBonus: 100 },
+  { key: '3x',    dailyBonus: 200 },
+  { key: '5x',    dailyBonus: 300 },
+  { key: 'daily', dailyBonus: 400 },
+];
+const HOUR_OPTIONS   = ['5', '6', '7', '8', '9', '10'];
+const MINUTE_OPTIONS = ['00', '15', '30', '45'];
+const ITEM_HEIGHT    = 44;
+
+interface GoalProfile {
+  calTarget: string;
+  useRecommendedCal: boolean;
+  macroMode: 'ratio' | 'fixed';
+  macroProteinPct: string;
+  macroCarbsPct: string;
+  macroFatPct: string;
+  macroProteinG: string;
+  macroCarbsG: string;
+  macroFatG: string;
+  sleepGoal: string;
+  stepGoal: string;
+  waterGoal: string;
+  activeCalGoal: string;
+  exerciseMinsGoal: string;
+  // Calc-only fields loaded from profile but not editable here
+  heightFt: string;
+  heightIn: string;
+  birthday: string;
+  sex: 'male' | 'female';
+  lifestyleActivity: string;
+  trainingFrequency: string;
+  weightGoal: string;
+}
+
+const DEFAULT_GOAL_PROFILE: GoalProfile = {
+  calTarget: '', useRecommendedCal: true,
+  macroMode: 'ratio', macroProteinPct: '35', macroCarbsPct: '40', macroFatPct: '25',
+  macroProteinG: '', macroCarbsG: '', macroFatG: '',
+  sleepGoal: '7', stepGoal: '10000', waterGoal: '128', activeCalGoal: '500', exerciseMinsGoal: '30',
+  heightFt: '', heightIn: '', birthday: '', sex: 'male',
+  lifestyleActivity: 'sedentary', trainingFrequency: 'none', weightGoal: 'lose_1',
+};
+
+function SleepGoalPicker({ value, onChange, theme }: { value: string; onChange: (v: string) => void; theme: any }) {
+  const currentGoal = parseFloat(value || '7');
+  const currentHours = Math.floor(currentGoal);
+  const currentMins  = Math.round((currentGoal % 1) * 60);
+  const currentHourStr = String(currentHours);
+  const currentMinStr  = String(currentMins).padStart(2, '0');
+  const hourScrollRef  = useRef<ScrollView>(null);
+  const minScrollRef   = useRef<ScrollView>(null);
+  const isInitializing = useRef(true);
+  const hourIndex = HOUR_OPTIONS.indexOf(currentHourStr);
+  const minIndex  = MINUTE_OPTIONS.indexOf(currentMinStr);
+
+  useEffect(() => {
+    const validHourIndex = hourIndex >= 0 ? hourIndex : 2;
+    const validMinIndex  = minIndex  >= 0 ? minIndex  : 0;
+    setTimeout(() => {
+      hourScrollRef.current?.scrollTo({ y: validHourIndex * ITEM_HEIGHT, animated: false });
+      minScrollRef.current?.scrollTo({ y: validMinIndex  * ITEM_HEIGHT, animated: false });
+      isInitializing.current = false;
+    }, 100);
+  }, []);
+
+  const handleHourScroll = (e: any) => {
+    if (isInitializing.current) return;
+    const index   = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
+    const clamped = Math.max(0, Math.min(HOUR_OPTIONS.length - 1, index));
+    const mins    = currentMins / 60;
+    onChange(String(parseInt(HOUR_OPTIONS[clamped]) + mins));
+  };
+  const handleMinScroll = (e: any) => {
+    if (isInitializing.current) return;
+    const index   = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
+    const clamped = Math.max(0, Math.min(MINUTE_OPTIONS.length - 1, index));
+    const mins    = parseInt(MINUTE_OPTIONS[clamped]) / 60;
+    onChange(String(currentHours + mins));
+  };
+
+  const displayGoal = `${currentHours}h${currentMins > 0 ? ` ${currentMins}m` : ''}`;
+
+  return (
+    <View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+        <View style={{ alignItems: 'center' }}>
+          <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6 }}>Hours</Text>
+          <View style={{ height: ITEM_HEIGHT * 3, width: 80, overflow: 'hidden' }}>
+            <View style={{ position: 'absolute', top: ITEM_HEIGHT, left: 0, right: 0, height: ITEM_HEIGHT, borderTopWidth: 0.5, borderBottomWidth: 0.5, borderColor: theme.accentBlueBorder, zIndex: 1 }} pointerEvents="none" />
+            <ScrollView ref={hourScrollRef} style={{ flex: 1 }} showsVerticalScrollIndicator={false} snapToInterval={ITEM_HEIGHT} decelerationRate="fast" contentContainerStyle={{ paddingVertical: ITEM_HEIGHT }} onMomentumScrollEnd={handleHourScroll} onScrollEndDrag={handleHourScroll}>
+              {HOUR_OPTIONS.map(h => {
+                const isSelected = h === currentHourStr;
+                return (
+                  <View key={h} style={{ height: ITEM_HEIGHT, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ fontSize: isSelected ? 30 : 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: isSelected ? theme.accentBlue : theme.textMuted, opacity: isSelected ? 1 : 0.4 }}>{h}</Text>
+                  </View>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+        <Text style={{ fontSize: 30, color: theme.textMuted, fontFamily: 'BebasNeue_400Regular', marginTop: 20 }}>:</Text>
+        <View style={{ alignItems: 'center' }}>
+          <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6 }}>Minutes</Text>
+          <View style={{ height: ITEM_HEIGHT * 3, width: 80, overflow: 'hidden' }}>
+            <View style={{ position: 'absolute', top: ITEM_HEIGHT, left: 0, right: 0, height: ITEM_HEIGHT, borderTopWidth: 0.5, borderBottomWidth: 0.5, borderColor: theme.accentBlueBorder, zIndex: 1 }} pointerEvents="none" />
+            <ScrollView ref={minScrollRef} style={{ flex: 1 }} showsVerticalScrollIndicator={false} snapToInterval={ITEM_HEIGHT} decelerationRate="fast" contentContainerStyle={{ paddingVertical: ITEM_HEIGHT }} onMomentumScrollEnd={handleMinScroll} onScrollEndDrag={handleMinScroll}>
+              {MINUTE_OPTIONS.map(m => {
+                const isSelected = m === currentMinStr;
+                return (
+                  <View key={m} style={{ height: ITEM_HEIGHT, alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ fontSize: isSelected ? 30 : 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: isSelected ? theme.accentBlue : theme.textMuted, opacity: isSelected ? 1 : 0.4 }}>{m}</Text>
+                  </View>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </View>
+      <View style={{ alignItems: 'center', marginTop: 10 }}>
+        <Text style={{ fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold' }}>Goal: {displayGoal}</Text>
+      </View>
+    </View>
+  );
+}
 
 function CollapsibleSection({
   label,
@@ -80,6 +219,7 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { theme, themeId, accentId, setTheme, setAccent } = useTheme();
   const { user, signOut } = useAuth();
+  const { showToast } = useToast();
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
   const [styleMode, setStyleMode] = useState<'discipline' | 'balanced' | 'mindful'>('balanced');
   const [faithJourney, setFaithJourney] = useState<FaithJourney>('rooted');
@@ -95,6 +235,18 @@ export default function SettingsScreen() {
   const [activeTooltipKey, setActiveTooltipKey] = useState<string | null>(null);
   const scrollViewRef = useRef<any>(null);
   const { fetchHistoricalWorkouts, authorized } = useHealthKit();
+
+  // ── Goal profile state ────────────────────────────────────────────────────
+  const [goalProfile, setGoalProfile] = useState<GoalProfile>(DEFAULT_GOAL_PROFILE);
+  const [savedGoalProfile, setSavedGoalProfile] = useState<GoalProfile>(DEFAULT_GOAL_PROFILE);
+  const [goalCurrentWeight, setGoalCurrentWeight] = useState<number | null>(null);
+  const [hasGoalChanges, setHasGoalChanges] = useState(false);
+  const [goalSaved, setGoalSaved] = useState(false);
+  const goalFloatAnim = useRef(new Animated.Value(0)).current;
+  const [goalKeyboardHeight, setGoalKeyboardHeight] = useState(0);
+  const goalScrollOffset = useRef(0);
+  const GOAL_SAVE_BAR_HEIGHT = 76;
+  const hasGoalChangesRef = useRef(false);
 
   const fixDefaultTags = async () => {
     try {
@@ -208,6 +360,177 @@ export default function SettingsScreen() {
     load();
   }, []);
 
+  // Keyboard height tracking for goal save bar
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', e => setGoalKeyboardHeight(e.endCoordinates.height));
+    const hide  = Keyboard.addListener('keyboardDidHide', () => setGoalKeyboardHeight(0));
+    return () => { show.remove(); hide.remove(); };
+  }, []);
+
+  // Load goal profile fields from pj_profile on focus (skip if unsaved changes)
+  useFocusEffect(
+    useCallback(() => {
+      const loadGoals = async () => {
+        try {
+          // Load current weight (most recent 30 days)
+          for (let i = 0; i < 30; i++) {
+            const d = new Date(); d.setDate(d.getDate() - i);
+            const dk = d.toISOString().split('T')[0];
+            const s = await AsyncStorage.getItem(`pj_${dk}`);
+            if (s) { const data = JSON.parse(s); if (data.weight) { setGoalCurrentWeight(data.weight); break; } }
+          }
+          if (!hasGoalChangesRef.current) {
+            const data = await AsyncStorage.getItem('pj_profile');
+            if (data) {
+              const p = JSON.parse(data);
+              const loaded: GoalProfile = {
+                calTarget: p.calTarget ?? '',
+                useRecommendedCal: p.useRecommendedCal !== false,
+                macroMode: p.macroMode ?? 'ratio',
+                macroProteinPct: p.macroProteinPct ?? '35',
+                macroCarbsPct:   p.macroCarbsPct   ?? '40',
+                macroFatPct:     p.macroFatPct     ?? '25',
+                macroProteinG:   p.macroProteinG   ?? '',
+                macroCarbsG:     p.macroCarbsG     ?? '',
+                macroFatG:       p.macroFatG       ?? '',
+                sleepGoal:        p.sleepGoal        ?? '7',
+                stepGoal:         p.stepGoal         ?? '10000',
+                waterGoal:        p.waterGoal        ?? '128',
+                activeCalGoal:    p.activeCalGoal    ?? '500',
+                exerciseMinsGoal: p.exerciseMinsGoal ?? '30',
+                heightFt:         p.heightFt         ?? '',
+                heightIn:         p.heightIn         ?? '',
+                birthday:         p.birthday         ?? '',
+                sex:              p.sex              ?? 'male',
+                lifestyleActivity:  p.lifestyleActivity  ?? 'sedentary',
+                trainingFrequency:  p.trainingFrequency  ?? 'none',
+                weightGoal:         p.weightGoal         ?? 'lose_1',
+              };
+              setGoalProfile(loaded);
+              setSavedGoalProfile(loaded);
+            }
+          }
+        } catch (e) {}
+      };
+      loadGoals();
+    }, [])
+  );
+
+  // Calc functions for suggested calorie target (mirrors profile.tsx)
+  const calcGoalBMR = () => {
+    const weightKg = (goalCurrentWeight || 0) * 0.453592;
+    const heightCm = (parseFloat(goalProfile.heightFt) * 30.48) + (parseFloat(goalProfile.heightIn) * 2.54);
+    if (!goalProfile.birthday) return 0;
+    const parts = goalProfile.birthday.split(/[-\/T]/);
+    const isISO = parts[0].length === 4;
+    const birthDate = isISO
+      ? new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]))
+      : new Date(parseInt(parts[2]), parseInt(parts[0]) - 1, parseInt(parts[1]));
+    const age = Math.floor((Date.now() - birthDate.getTime()) / (365.25 * 24 * 3600 * 1000));
+    if (!weightKg || !heightCm || !age) return 0;
+    return goalProfile.sex === 'male'
+      ? Math.round((10 * weightKg) + (6.25 * heightCm) - (5 * age) + 5)
+      : Math.round((10 * weightKg) + (6.25 * heightCm) - (5 * age) - 161);
+  };
+
+  const calcGoalTDEE = () => {
+    const bmr = calcGoalBMR();
+    if (!bmr) return 0;
+    const lifestyleOpt = LIFESTYLE_OPTIONS.find(o => o.key === goalProfile.lifestyleActivity) || LIFESTYLE_OPTIONS[0];
+    const trainingOpt  = TRAINING_OPTIONS.find(o => o.key === goalProfile.trainingFrequency)  || TRAINING_OPTIONS[0];
+    return Math.round((bmr * lifestyleOpt.multiplier) + trainingOpt.dailyBonus);
+  };
+
+  const calcGoalSuggested = () => {
+    const tdee = calcGoalTDEE();
+    if (!tdee) return 0;
+    const deficit = GOAL_DEFICITS[goalProfile.weightGoal] ?? -500;
+    return tdee + deficit;
+  };
+
+  const goalSuggested = calcGoalSuggested();
+  const goalKcalTarget = goalProfile.useRecommendedCal !== false
+    ? (goalSuggested > 0 ? goalSuggested : parseFloat(goalProfile.calTarget) || 0)
+    : parseFloat(goalProfile.calTarget) || 0;
+
+  const isMacroValid = () => {
+    if (goalKcalTarget === 0) return true;
+    if (goalProfile.macroMode === 'ratio') {
+      const total = (parseFloat(goalProfile.macroProteinPct) || 0) + (parseFloat(goalProfile.macroCarbsPct) || 0) + (parseFloat(goalProfile.macroFatPct) || 0);
+      return total === 100;
+    } else {
+      const totalKcal = ((parseFloat(goalProfile.macroProteinG) || 0) * 4) + ((parseFloat(goalProfile.macroCarbsG) || 0) * 4) + ((parseFloat(goalProfile.macroFatG) || 0) * 9);
+      return Math.abs(totalKcal - goalKcalTarget) <= 50;
+    }
+  };
+
+  const updateGoalField = (field: keyof GoalProfile, value: any) => {
+    setGoalProfile(prev => {
+      const updated = { ...prev, [field]: value };
+      const isDifferent = JSON.stringify(updated) !== JSON.stringify(savedGoalProfile);
+      if (isDifferent && !hasGoalChangesRef.current) {
+        hasGoalChangesRef.current = true;
+        setHasGoalChanges(true);
+        Animated.spring(goalFloatAnim, { toValue: 1, useNativeDriver: true, tension: 65, friction: 11 }).start();
+        if (goalKeyboardHeight > 0) {
+          scrollViewRef.current?.scrollTo({ y: goalScrollOffset.current + GOAL_SAVE_BAR_HEIGHT, animated: true });
+        }
+      } else if (!isDifferent && hasGoalChangesRef.current) {
+        hasGoalChangesRef.current = false;
+        setHasGoalChanges(false);
+        Animated.timing(goalFloatAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start();
+      }
+      return updated;
+    });
+  };
+
+  const saveGoals = async () => {
+    try {
+      // Read full current profile so we never lose non-goal fields
+      const current = await AsyncStorage.getItem('pj_profile');
+      const base = current ? JSON.parse(current) : {};
+
+      // Sync calTarget to recommended value when toggle is on
+      let synced = { ...goalProfile };
+      if (goalProfile.useRecommendedCal !== false && goalSuggested > 0) {
+        synced.calTarget = goalSuggested.toString();
+      }
+
+      // Sync macro grams <-> percentages on save
+      if (goalProfile.macroMode === 'ratio' && goalKcalTarget > 0) {
+        synced.macroProteinG = String(Math.round(((parseFloat(goalProfile.macroProteinPct) || 0) / 100) * goalKcalTarget / 4));
+        synced.macroCarbsG   = String(Math.round(((parseFloat(goalProfile.macroCarbsPct)   || 0) / 100) * goalKcalTarget / 4));
+        synced.macroFatG     = String(Math.round(((parseFloat(goalProfile.macroFatPct)     || 0) / 100) * goalKcalTarget / 9));
+      } else if (goalProfile.macroMode === 'fixed' && goalKcalTarget > 0) {
+        const pKcal = (parseFloat(goalProfile.macroProteinG) || 0) * 4;
+        const cKcal = (parseFloat(goalProfile.macroCarbsG)   || 0) * 4;
+        const fKcal = (parseFloat(goalProfile.macroFatG)     || 0) * 9;
+        const totalKcal = pKcal + cKcal + fKcal;
+        if (totalKcal > 0) {
+          synced.macroProteinPct = String(Math.round((pKcal / totalKcal) * 100));
+          synced.macroCarbsPct   = String(Math.round((cKcal / totalKcal) * 100));
+          synced.macroFatPct     = String(Math.round((fKcal / totalKcal) * 100));
+        }
+      }
+
+      const merged = { ...base, ...synced };
+      await storageSet('pj_profile', JSON.stringify(merged));
+      await saveToFirebase('profile', 'data', merged);
+
+      setGoalProfile(synced);
+      setSavedGoalProfile(synced);
+      hasGoalChangesRef.current = false;
+      setHasGoalChanges(false);
+      setGoalSaved(true);
+      Animated.timing(goalFloatAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start();
+      setTimeout(() => setGoalSaved(false), 2000);
+      Keyboard.dismiss();
+      showToast('Goals saved', undefined, 'success');
+    } catch (e) {
+      console.log('Save goals error', e);
+    }
+  };
+
   const saveSetting = async (key: string, value: any) => {
     try {
       const saved = await AsyncStorage.getItem('pj_settings');
@@ -241,7 +564,7 @@ export default function SettingsScreen() {
         </View>
       </View>
 
-      <ScrollView ref={scrollViewRef} contentContainerStyle={styles.content}>
+      <ScrollView ref={scrollViewRef} contentContainerStyle={styles.content} automaticallyAdjustKeyboardInsets={true} onScroll={e => { goalScrollOffset.current = e.nativeEvent.contentOffset.y; }} scrollEventThrottle={16}>
 
         {/* ── Appearance ── */}
         <CollapsibleSection label="Appearance" subtitle="Theme · Accent · Haptics" defaultOpen={true} theme={theme}>
@@ -315,6 +638,226 @@ export default function SettingsScreen() {
             <ToggleSwitch value={hapticsEnabled} onValueChange={toggleHaptics} />
           </View>
           <View style={{ paddingBottom: 4 }} />
+        </CollapsibleSection>
+
+        {/* ── Goals ── */}
+        <CollapsibleSection label="Goals" subtitle="Fitness · Nutrition" defaultOpen={false} theme={theme}>
+          <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+
+            {/* FITNESS GOALS */}
+            <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 16, marginTop: 4 }}>Fitness Goals</Text>
+
+            {/* Sleep Goal */}
+            <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Sleep Goal</Text>
+            <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', color: theme.textMuted, marginBottom: 12 }}>How many hours of sleep are you aiming for each night?</Text>
+            <SleepGoalPicker value={goalProfile.sleepGoal || '7'} onChange={v => updateGoalField('sleepGoal', v)} theme={theme} />
+
+            <View style={{ height: 1, backgroundColor: theme.borderCard, marginVertical: 16 }} />
+
+            {/* Steps */}
+            <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Steps</Text>
+            <TextInput
+              style={[styles.goalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
+              value={goalProfile.stepGoal}
+              onChangeText={v => updateGoalField('stepGoal', v.replace(/[^0-9]/g, ''))}
+              keyboardType="number-pad"
+              placeholder="e.g. 10000"
+              placeholderTextColor={theme.textPlaceholder}
+            />
+            <Text style={[styles.goalHint, { color: theme.textMuted }]}>Daily step target. Shows on home screen progress bar.</Text>
+
+            <View style={{ height: 1, backgroundColor: theme.borderCard, marginVertical: 16 }} />
+
+            {/* Active Calories */}
+            <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Active Calories</Text>
+            <TextInput
+              style={[styles.goalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
+              value={goalProfile.activeCalGoal}
+              onChangeText={v => updateGoalField('activeCalGoal', v.replace(/[^0-9]/g, ''))}
+              keyboardType="number-pad"
+              placeholder="e.g. 500"
+              placeholderTextColor={theme.textPlaceholder}
+            />
+            <Text style={[styles.goalHint, { color: theme.textMuted }]}>Daily active calorie target from Apple Health. Celebrates when you hit it.</Text>
+
+            <View style={{ height: 1, backgroundColor: theme.borderCard, marginVertical: 16 }} />
+
+            {/* Exercise Minutes */}
+            <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Exercise Minutes</Text>
+            <TextInput
+              style={[styles.goalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
+              value={goalProfile.exerciseMinsGoal}
+              onChangeText={v => updateGoalField('exerciseMinsGoal', v.replace(/[^0-9]/g, ''))}
+              keyboardType="number-pad"
+              placeholder="e.g. 30"
+              placeholderTextColor={theme.textPlaceholder}
+            />
+            <Text style={[styles.goalHint, { color: theme.textMuted }]}>Daily exercise minutes from Apple Health. Celebrates when you hit it.</Text>
+
+            <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 20, marginBottom: 16 }} />
+
+            {/* NUTRITION GOALS */}
+            <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 16 }}>Nutrition Goals</Text>
+
+            {/* Calorie Target */}
+            <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Daily Calorie Target</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Use recommended value</Text>
+              <ToggleSwitch value={goalProfile.useRecommendedCal !== false} onValueChange={v => updateGoalField('useRecommendedCal', v)} />
+            </View>
+            <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginBottom: 10 }}>Based on your BMR, activity level, and weight goal set in Profile.</Text>
+            <TextInput
+              style={[styles.goalInput, { backgroundColor: goalProfile.useRecommendedCal !== false ? theme.bgProgressTrack : theme.bgInput, borderColor: theme.borderInput, color: goalProfile.useRecommendedCal !== false ? theme.textMuted : theme.textPrimary }]}
+              value={goalProfile.useRecommendedCal !== false ? (goalSuggested > 0 ? goalSuggested.toString() : 'Set stats in Profile') : goalProfile.calTarget}
+              onChangeText={v => updateGoalField('calTarget', v)}
+              keyboardType="number-pad"
+              placeholder="e.g. 1750"
+              placeholderTextColor={theme.textPlaceholder}
+              editable={goalProfile.useRecommendedCal === false}
+            />
+            {goalProfile.useRecommendedCal === false && (
+              <Text style={[styles.goalHint, { color: theme.textMuted }]}>Enter a custom calorie target.</Text>
+            )}
+
+            <View style={{ height: 1, backgroundColor: theme.borderCard, marginVertical: 16 }} />
+
+            {/* Macros */}
+            <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Macros</Text>
+            <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', color: theme.textMuted, marginBottom: 14 }}>
+              {goalProfile.macroMode === 'ratio'
+                ? 'Set percentages -- grams update automatically when your calorie target changes.'
+                : 'Set grams directly. Percentages and kcal update live.'}
+            </Text>
+
+            {/* Mode toggle */}
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+              {(['ratio', 'fixed'] as const).map(mode => (
+                <TouchableOpacity
+                  key={mode}
+                  style={[styles.modeBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput },
+                    goalProfile.macroMode === mode && { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+                  onPress={() => updateGoalField('macroMode', mode)}>
+                  <Text style={[{ fontSize: 14, fontFamily: 'DMSans_500Medium', color: theme.textMuted },
+                    goalProfile.macroMode === mode && { color: theme.accentBlue }]}>
+                    {mode === 'ratio' ? 'Ratio' : 'Fixed'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {goalProfile.macroMode === 'ratio' ? (
+              <View>
+                {[
+                  { label: 'Protein', pctKey: 'macroProteinPct' as keyof GoalProfile, color: theme.macroProtein },
+                  { label: 'Carbs',   pctKey: 'macroCarbsPct'   as keyof GoalProfile, color: theme.macroCarbs },
+                  { label: 'Fat',     pctKey: 'macroFatPct'     as keyof GoalProfile, color: theme.macroFat },
+                ].map(({ label, pctKey, color }) => {
+                  const pct = parseFloat(goalProfile[pctKey] as string) || 0;
+                  const calsPerGram = label === 'Fat' ? 9 : 4;
+                  const kcal  = Math.round((pct / 100) * goalKcalTarget);
+                  const grams = Math.round(kcal / calsPerGram);
+                  return (
+                    <View key={label} style={{ marginBottom: 12 }}>
+                      <Text style={[styles.goalLabel, { color: theme.textMuted }]}>{label}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                        <TextInput
+                          style={[styles.goalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color, flex: 1, marginBottom: 0, textAlign: 'center', fontSize: 20, fontFamily: 'BebasNeue_400Regular' }]}
+                          value={goalProfile[pctKey] as string}
+                          onChangeText={v => updateGoalField(pctKey, v)}
+                          keyboardType="number-pad"
+                          maxLength={3}
+                          placeholder="0"
+                          placeholderTextColor={theme.textPlaceholder}
+                        />
+                        <Text style={{ color: theme.textMuted, fontSize: 16, fontFamily: 'DMSans_400Regular' }}>%</Text>
+                        <View style={{ flex: 2, backgroundColor: theme.bgInset, borderRadius: 8, padding: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
+                          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
+                            <Text style={{ color, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{grams}</Text>
+                            <Text style={{ color, fontSize: 11, fontFamily: 'DMSans_500Medium' }}>g</Text>
+                          </View>
+                          <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: 'DMSans_400Regular', alignSelf: 'center' }}>{kcal} kcal</Text>
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })}
+                {(() => {
+                  const total = (parseFloat(goalProfile.macroProteinPct) || 0) + (parseFloat(goalProfile.macroCarbsPct) || 0) + (parseFloat(goalProfile.macroFatPct) || 0);
+                  const color = total === 100 ? theme.accentGreen : theme.accentRed;
+                  return (
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4, padding: 10, backgroundColor: theme.bgInset, borderRadius: 8 }}>
+                      <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Total</Text>
+                      <Text style={{ fontSize: 16, color, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>
+                        {total}% {total === 100 ? '✓' : '-- needs to equal 100%'}
+                      </Text>
+                    </View>
+                  );
+                })()}
+              </View>
+            ) : (
+              <View>
+                {[
+                  { label: 'Protein', gKey: 'macroProteinG' as keyof GoalProfile, color: theme.macroProtein, calsPerGram: 4 },
+                  { label: 'Carbs',   gKey: 'macroCarbsG'   as keyof GoalProfile, color: theme.macroCarbs,   calsPerGram: 4 },
+                  { label: 'Fat',     gKey: 'macroFatG'     as keyof GoalProfile, color: theme.macroFat,     calsPerGram: 9 },
+                ].map(({ label, gKey, color, calsPerGram }) => {
+                  const grams = parseFloat(goalProfile[gKey] as string) || 0;
+                  const kcal  = Math.round(grams * calsPerGram);
+                  const pct   = goalKcalTarget > 0 ? Math.round((kcal / goalKcalTarget) * 100) : 0;
+                  return (
+                    <View key={label} style={{ marginBottom: 12 }}>
+                      <Text style={[styles.goalLabel, { color: theme.textMuted }]}>{label}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                        <TextInput
+                          style={[styles.goalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color, flex: 1, marginBottom: 0, textAlign: 'center', fontSize: 20, fontFamily: 'BebasNeue_400Regular' }]}
+                          value={goalProfile[gKey] as string}
+                          onChangeText={v => updateGoalField(gKey, v)}
+                          keyboardType="number-pad"
+                          maxLength={4}
+                          placeholder="0"
+                          placeholderTextColor={theme.textPlaceholder}
+                        />
+                        <Text style={{ color: theme.textMuted, fontSize: 16, fontFamily: 'DMSans_400Regular' }}>g</Text>
+                        <View style={{ flex: 2, backgroundColor: theme.bgInset, borderRadius: 8, padding: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
+                          <Text style={{ color, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{kcal} kcal</Text>
+                          <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: 'DMSans_400Regular', alignSelf: 'center' }}>{pct}%</Text>
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })}
+                {(() => {
+                  const totalKcal = ((parseFloat(goalProfile.macroProteinG) || 0) * 4) + ((parseFloat(goalProfile.macroCarbsG) || 0) * 4) + ((parseFloat(goalProfile.macroFatG) || 0) * 9);
+                  const diff  = Math.round(totalKcal - goalKcalTarget);
+                  const color = Math.abs(diff) <= 50 ? theme.accentGreen : Math.abs(diff) <= 150 ? theme.accentAmber : theme.accentRed;
+                  return (
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4, padding: 10, backgroundColor: theme.bgInset, borderRadius: 8 }}>
+                      <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Total · {Math.round(totalKcal)} kcal</Text>
+                      <Text style={{ fontSize: 13, color, fontFamily: 'DMSans_600SemiBold' }}>
+                        {Math.abs(diff) <= 50 ? 'Matches target ✓' : diff > 0 ? `+${diff} kcal over · adjust to save` : `${Math.abs(diff)} kcal under · adjust to save`}
+                      </Text>
+                    </View>
+                  );
+                })()}
+              </View>
+            )}
+
+            <View style={{ height: 1, backgroundColor: theme.borderCard, marginVertical: 16 }} />
+
+            {/* Water Goal */}
+            <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Water Goal</Text>
+            <TextInput
+              style={[styles.goalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
+              value={goalProfile.waterGoal}
+              onChangeText={v => updateGoalField('waterGoal', v.replace(/[^0-9]/g, ''))}
+              keyboardType="number-pad"
+              placeholder="e.g. 128"
+              placeholderTextColor={theme.textPlaceholder}
+            />
+            <Text style={[styles.goalHint, { color: theme.textMuted }]}>Daily hydration target in oz. Progress bar fills to this amount.</Text>
+
+            <View style={{ height: 16 }} />
+          </View>
         </CollapsibleSection>
 
         {/* ── Faith & Style ── */}
@@ -728,6 +1271,37 @@ export default function SettingsScreen() {
 
       </ScrollView>
 
+      {/* Floating save bar for goals */}
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ position: 'absolute', bottom: 0, left: 0, right: 0, display: hasGoalChanges ? 'flex' : 'none' }}>
+        <Animated.View style={{
+          paddingHorizontal: 16, paddingTop: 12, paddingBottom: goalKeyboardHeight > 0 ? 12 : 16,
+          backgroundColor: theme.bgSheet, borderTopWidth: 0.5, borderTopColor: theme.borderCard,
+          transform: [{ translateY: goalFloatAnim.interpolate({ inputRange: [0, 1], outputRange: [200, 0] }) }],
+        }}>
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <TouchableOpacity
+              onPress={() => {
+                Keyboard.dismiss();
+                setGoalProfile(savedGoalProfile);
+                hasGoalChangesRef.current = false;
+                setHasGoalChanges(false);
+                Animated.timing(goalFloatAnim, { toValue: 0, duration: 300, useNativeDriver: true }).start();
+              }}
+              style={{ backgroundColor: theme.bgInput, borderWidth: 0.5, borderColor: theme.borderInput, borderRadius: 10, padding: 16, alignItems: 'center', width: 90 }}>
+              <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.textMuted }}>CANCEL</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={saveGoals}
+              disabled={!isMacroValid()}
+              style={{ flex: 1, backgroundColor: isMacroValid() ? theme.accentBlue : theme.bgInput, borderWidth: isMacroValid() ? 0 : 0.5, borderColor: theme.borderInput, borderRadius: 10, padding: 16, alignItems: 'center' }}>
+              <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: isMacroValid() ? theme.bgPrimary : theme.textMuted }}>
+                {goalSaved ? 'SAVED' : !isMacroValid() ? 'FIX MACROS TO SAVE' : 'SAVE GOALS'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      </KeyboardAvoidingView>
+
       {activeTooltipKey && (
         <TooltipModal
           tooltipKey={activeTooltipKey}
@@ -758,4 +1332,8 @@ const styles = StyleSheet.create({
   row:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: 0.5 },
   rowTitle:    { fontSize: 14, fontFamily: 'DMSans_500Medium', marginBottom: 2 },
   rowSub:      { fontSize: 11, fontFamily: 'DMSans_400Regular' },
+  goalLabel:   { fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6, marginTop: 2 },
+  goalHint:    { fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginTop: 4 },
+  goalInput:   { borderWidth: 0.5, borderRadius: 8, padding: 10, fontSize: 15, fontFamily: 'DMSans_400Regular', marginBottom: 4 },
+  modeBtn:     { flex: 1, padding: 10, borderWidth: 0.5, borderRadius: 8, alignItems: 'center' },
 });

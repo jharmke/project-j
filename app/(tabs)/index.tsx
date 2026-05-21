@@ -1097,42 +1097,49 @@ export default function HomeScreen() {
         console.log('Load error', e);
       } finally {
         setLoaded(true);
-        // Shuffled verse rotation -- no repeats until all verses used
-        const todayStr = todayKey;
-        const rotationRaw = await AsyncStorage.getItem('pj_verse_rotation');
-        let rotation: { order: number[]; index: number; lastDate: string } = rotationRaw
-          ? JSON.parse(rotationRaw)
-          : { order: [], index: 0, lastDate: '' };
+        try {
+          const todayStr = todayKey;
+          const rotationRaw = await AsyncStorage.getItem('pj_verse_rotation');
+          let rotation: { order: number[]; index: number; lastDate: string } = rotationRaw
+            ? JSON.parse(rotationRaw)
+            : { order: [], index: 0, lastDate: '' };
 
-        const shuffle = (arr: number[]) => {
-          const a = [...arr];
-          for (let i = a.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [a[i], a[j]] = [a[j], a[i]];
-          }
-          return a;
-        };
+          const shuffle = (arr: number[]) => {
+            const a = [...arr];
+            for (let i = a.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+          };
 
-        // If rotation is empty or exhausted, reshuffle
-        if (!rotation.order.length || rotation.index >= rotation.order.length) {
-          rotation = { order: shuffle(VERSES.map((_, i) => i)), index: 0, lastDate: todayStr };
-          await storageSet('pj_verse_rotation', JSON.stringify(rotation));
-        }
-
-        // If it's a new day, advance the index
-        if (rotation.lastDate !== todayStr) {
-          rotation.index = rotation.lastDate === '' ? 0 : rotation.index + 1;
-          // Check again after advancing in case we just exhausted the list
-          if (rotation.index >= rotation.order.length) {
+          // If rotation is empty or exhausted, reshuffle
+          if (!rotation.order.length || rotation.index >= rotation.order.length) {
             rotation = { order: shuffle(VERSES.map((_, i) => i)), index: 0, lastDate: todayStr };
-          } else {
-            rotation.lastDate = todayStr;
+            await storageSet('pj_verse_rotation', JSON.stringify(rotation));
           }
-          await storageSet('pj_verse_rotation', JSON.stringify(rotation));
-        }
 
-        setDailyVerse(VERSES[rotation.order[rotation.index]]);
-        setRefreshKey(k => k + 1);
+          // If it's a new day, advance the index
+          if (rotation.lastDate !== todayStr) {
+            rotation.index = rotation.lastDate === '' ? 0 : rotation.index + 1;
+            // Check again after advancing in case we just exhausted the list
+            if (rotation.index >= rotation.order.length) {
+              rotation = { order: shuffle(VERSES.map((_, i) => i)), index: 0, lastDate: todayStr };
+            } else {
+              rotation.lastDate = todayStr;
+            }
+            await storageSet('pj_verse_rotation', JSON.stringify(rotation));
+          }
+
+          const resolved = VERSES[rotation.order[rotation.index]];
+          if (!resolved) throw new Error('bad index');
+          setDailyVerse(resolved);
+          setRefreshKey(k => k + 1);
+        } catch {
+          // Corrupted or stale rotation data -- nuke and fall back to random
+          await AsyncStorage.removeItem('pj_verse_rotation');
+          setDailyVerse(VERSES[Math.floor(Math.random() * VERSES.length)]);
+        }
       }
     };
     loadData();

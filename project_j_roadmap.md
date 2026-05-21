@@ -423,6 +423,8 @@ NOW -- next sessions
 [x] Manage tags keyboard dismiss -- TouchableWithoutFeedback wraps sheet content. Tapping any empty space inside sheet dismisses keyboard without closing modal. workout.tsx.
 Edit food modal keyboard white box -- My Foods tab, tap Edit on a food, open keyboard: white box appears behind keyboard. KAV issue in the edit modal. add-food.tsx.
 My Foods library brand not showing -- brand names absent on food rows in the My Foods tab of the food library. add-food.tsx.
+Barcode My Foods SET row not tappable -- during active scan, after tapping SET on a My Foods row in the "USE A SAVED FOOD" section, the row shows green checkmark but is not tappable to open food detail and log. User is stuck. add-food.tsx.
+Barcode Create & Set -- when scan returns no good match (or all results are wrong), show a "Create Food for this Barcode" button. Opens CustomFoodCreator, on save auto-pins the new food to the scanned barcode (writes to pj_barcode_overrides). Also offer as secondary option in scan banner when results exist but none match. Eliminates the Save as Copy workaround. add-food.tsx + CustomFoodCreator.tsx.
 Bible reading plans -- structured multi-day reading plans (e.g. 30-day plan, book-by-book). "Reading Plans" placeholder already in Bible settings modal (pj_settings). Full dedicated session needed: plan list, day-by-day progress, completion tracking, faith journey gating.
 
 SOON -- confirmed next few sessions

@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { useRef, useState } from 'react';
 import { Animated, KeyboardAvoidingView, Modal, Platform, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { app, auth } from '../firebaseConfig';
+import { auth, db } from '../firebaseConfig';
 import { useTheme } from '../theme';
 import { ToastRenderer, useToast } from './Toast';
 
@@ -37,14 +37,14 @@ export default function PrayerRequestModal({ visible, onClose }: Props) {
   };
 
   const handleSend = async () => {
-    if (!message.trim() || sending) return;
+    if (!message.trim() || sending || !auth.currentUser) return;
     setSending(true);
     try {
-      const fns = getFunctions(app);
-      await httpsCallable(fns, 'sendPrayerRequest')({
+      await addDoc(collection(db, 'users', auth.currentUser.uid, 'prayer_requests'), {
         message: message.trim(),
-        userName: auth.currentUser?.displayName ?? '',
-        userEmail: auth.currentUser?.email ?? '',
+        userName: auth.currentUser.displayName ?? '',
+        userEmail: auth.currentUser.email ?? '',
+        timestamp: serverTimestamp(),
       });
       showToast('Prayer request sent', 'success');
       close();

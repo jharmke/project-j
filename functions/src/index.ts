@@ -1,4 +1,5 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { defineSecret } from 'firebase-functions/params';
 import * as admin from 'firebase-admin';
 import * as jwt from 'jsonwebtoken';
@@ -123,28 +124,20 @@ export const deleteAccount = onCall(
   }
 );
 
-// Saves prayer request to Firestore and emails the developer.
-// Email is best-effort -- request is always persisted even if email fails.
-export const sendPrayerRequest = onCall(
-  { secrets: [GMAIL_APP_PASSWORD] },
-  async (request) => {
-    if (!request.auth) throw new HttpsError('unauthenticated', 'Must be signed in');
+// Fires when a prayer request document is created under users/{uid}/prayer_requests/{docId}.
+// Client writes directly to Firestore -- this trigger handles the email notification.
+// Email is best-effort; the Firestore write always succeeds independently.
+export const onPrayerRequestCreated = onDocumentCreated(
+  { document: 'users/{uid}/prayer_requests/{docId}', secrets: [GMAIL_APP_PASSWORD] },
+  async (event) => {
+    const data = event.data?.data();
+    if (!data) return;
 
-    const { message, userName, userEmail } = request.data as {
+    const { message, userName, userEmail } = data as {
       message: string;
       userName: string;
       userEmail: string;
     };
-
-    if (!message?.trim()) throw new HttpsError('invalid-argument', 'Message required');
-
-    await admin.firestore().collection('prayer_requests').add({
-      uid: request.auth.uid,
-      userName: userName || '',
-      userEmail: userEmail || '',
-      message: message.trim(),
-      timestamp: admin.firestore.FieldValue.serverTimestamp(),
-    });
 
     try {
       const transporter = nodemailer.createTransport({
@@ -155,12 +148,10 @@ export const sendPrayerRequest = onCall(
         from: '"Project J" <jtharmke@gmail.com>',
         to: 'jtharmke@gmail.com',
         subject: `Prayer Request -- ${userName || 'App User'}`,
-        text: `From: ${userName || 'Anonymous'}${userEmail ? ` (${userEmail})` : ''}\n\n${message.trim()}`,
+        text: `From: ${userName || 'Anonymous'}${userEmail ? ` (${userEmail})` : ''}\n\n${message}`,
       });
     } catch (e) {
-      console.error('Email send failed (request still saved to Firestore):', e);
+      console.error('Email send failed (request still in Firestore):', e);
     }
-
-    return { success: true };
   }
 );

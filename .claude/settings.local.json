@@ -20,7 +20,10 @@
       "WebFetch(domain:docs.expo.dev)",
       "Bash(npm install *)",
       "PowerShell(Get-Content *)",
-      "PowerShell(firebase deploy *)"
+      "PowerShell(firebase deploy *)",
+      "PowerShell(firebase functions:log *)",
+      "PowerShell(gcloud run services add-iam-policy-binding *)",
+      "PowerShell(firebase functions:delete *)"
     ]
   }
 }

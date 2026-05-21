@@ -21,6 +21,7 @@ import { TOOLTIP_REGISTRY } from '../tooltipRegistry';
 import TooltipModal from '../components/TooltipModal';
 import TooltipIcon from '../components/TooltipIcon';
 import ToggleSwitch from '../components/ToggleSwitch';
+import PrayerRequestModal from '../components/PrayerRequestModal';
 import { useToast } from '../components/Toast';
 
 type FaithJourney = 'rooted' | 'exploring' | 'notrightnow';
@@ -233,6 +234,7 @@ export default function SettingsScreen() {
   const [importing, setImporting] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [activeTooltipKey, setActiveTooltipKey] = useState<string | null>(null);
+  const [showPrayerModal, setShowPrayerModal] = useState(false);
   const scrollViewRef = useRef<any>(null);
   const { fetchHistoricalWorkouts, authorized } = useHealthKit();
 
@@ -1006,7 +1008,7 @@ export default function SettingsScreen() {
         </CollapsibleSection>
 
         {/* ── Help ── */}
-        <CollapsibleSection label="Help" subtitle="Definitions · Guides" defaultOpen={false} theme={theme}>
+        <CollapsibleSection label="Help" subtitle="Definitions · Guides · Prayer" defaultOpen={false} theme={theme}>
           <View style={{ paddingBottom: 8 }}>
             <Text style={{ fontSize: 9, letterSpacing: 3, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', color: theme.textMuted, paddingHorizontal: 16, paddingBottom: 8 }}>
               Definitions
@@ -1033,6 +1035,13 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>What makes this app different</Text>
               </View>
               <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => setShowPrayerModal(true)} activeOpacity={0.7}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Send a Prayer Request</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Share what's on your heart</Text>
+              </View>
+              <Ionicons name="heart" size={15} color={theme.textMuted} />
             </TouchableOpacity>
           </View>
         </CollapsibleSection>
@@ -1301,6 +1310,8 @@ export default function SettingsScreen() {
           </View>
         </Animated.View>
       </KeyboardAvoidingView>
+
+      <PrayerRequestModal visible={showPrayerModal} onClose={() => setShowPrayerModal(false)} />
 
       {activeTooltipKey && (
         <TooltipModal

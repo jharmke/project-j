@@ -12,6 +12,7 @@ import { ToastRenderer, useToast } from '../components/Toast';
 import { storageSet } from '../utils/storage';
 import { BIBLE_BOOKS, Book, Chapter, Verse, fetchChapter, parseReference } from '../data/bible-web';
 import { useTheme } from '../theme';
+import PrayerRequestModal from '../components/PrayerRequestModal';
 
 interface BibleFavorite {
   ref: string;
@@ -78,6 +79,7 @@ export default function BibleScreen() {
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
   const [showSpeedPicker, setShowSpeedPicker] = useState(false);
   const [autoScrollSpeed, setAutoScrollSpeed] = useState<ScrollSpeed>('medium');
+  const [showPrayerModal, setShowPrayerModal] = useState(false);
 
   const scrollViewRef = useRef<ScrollView>(null);
   const verseYPositions = useRef<Record<number, number>>({});
@@ -712,6 +714,18 @@ export default function BibleScreen() {
                   </View>
                 </View>
 
+                {/* Prayer request */}
+                <TouchableOpacity
+                  onPress={() => { setShowSettingsModal(false); setTimeout(() => setShowPrayerModal(true), 300); }}
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle, marginBottom: 16 }}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Ionicons name="heart" size={15} color={theme.textSecondary} />
+                    <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary }}>Send a Prayer Request</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={15} color={theme.textMuted} />
+                </TouchableOpacity>
+
                 {/* Buttons */}
                 <View style={{ flexDirection: 'row', gap: 10 }}>
                   <TouchableOpacity onPress={() => setShowSettingsModal(false)} style={[styles.modalBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }]}>
@@ -727,6 +741,8 @@ export default function BibleScreen() {
           </View>
         </Modal>
       )}
+
+      <PrayerRequestModal visible={showPrayerModal} onClose={() => setShowPrayerModal(false)} />
 
     </LinearGradient>
   );

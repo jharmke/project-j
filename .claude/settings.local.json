@@ -19,7 +19,8 @@
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\jthar\\\\ProjectJ\" -Recurse -Name)",
       "WebFetch(domain:docs.expo.dev)",
       "Bash(npm install *)",
-      "PowerShell(Get-Content *)"
+      "PowerShell(Get-Content *)",
+      "PowerShell(firebase deploy *)"
     ]
   }
 }

@@ -9,7 +9,7 @@ import Reanimated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-
 import { saveToFirebase } from '../firebaseConfig';
 import { storageSet } from '../utils/storage';
 import { ToastRenderer, useToast } from '../components/Toast';
-import { PRESET_PROGRAMS, PresetProgram, DayProgram, TAG_COLOR_PALETTE } from '../workoutData';
+import { PRESET_PROGRAMS, PresetProgram, DayProgram, TAG_COLOR_PALETTE, WorkoutTag, DEFAULT_TAGS } from '../workoutData';
 import { useTheme } from '../theme';
 
 interface LibraryExercise {
@@ -71,6 +71,7 @@ interface BuilderDayState {
   type: 'lift' | 'cardio' | 'rest' | 'unassigned';
   focus: string;
   color: string;
+  tags: string[];
 }
 
 interface CustomProgram {
@@ -83,53 +84,64 @@ interface CustomProgram {
 
 function defaultBuilderDays(): Record<ProgramDayKey, BuilderDayState> {
   return {
-    Mon: { type: 'lift', focus: '', color: '#3b82f6' },
-    Tue: { type: 'lift', focus: '', color: '#10b981' },
-    Wed: { type: 'lift', focus: '', color: '#f59e0b' },
-    Thu: { type: 'lift', focus: '', color: '#3b82f6' },
-    Fri: { type: 'lift', focus: '', color: '#10b981' },
-    Sat: { type: 'rest', focus: 'Rest', color: '#64748b' },
-    Sun: { type: 'rest', focus: 'Rest', color: '#64748b' },
+    Mon: { type: 'lift', focus: '', color: '#3b82f6', tags: [] },
+    Tue: { type: 'lift', focus: '', color: '#10b981', tags: [] },
+    Wed: { type: 'lift', focus: '', color: '#f59e0b', tags: [] },
+    Thu: { type: 'lift', focus: '', color: '#3b82f6', tags: [] },
+    Fri: { type: 'lift', focus: '', color: '#10b981', tags: [] },
+    Sat: { type: 'rest', focus: 'Rest', color: '#64748b', tags: ['tag_rest'] },
+    Sun: { type: 'rest', focus: 'Rest', color: '#64748b', tags: ['tag_rest'] },
   };
 }
 
-function DayRow({ day, state, onChange, theme }: {
+function DayRow({ day, state, onChange, allTags, onAddTag, theme }: {
   day: ProgramDayKey;
   state: BuilderDayState;
   onChange: (s: BuilderDayState) => void;
+  allTags: WorkoutTag[];
+  onAddTag: (day: ProgramDayKey) => void;
   theme: any;
 }) {
-  const showDetails = state.type === 'lift' || state.type === 'cardio';
-  const colForType = (t: BuilderDayState['type']) => {
-    if (t === 'cardio') return theme.accentAmber;
-    if (t === 'rest' || t === 'unassigned') return theme.textDim;
-    return theme.accentBlueRaw;
+  const isActive = state.type === 'lift' || state.type === 'cardio';
+  const isRest = state.type === 'rest';
+  const isOff = state.type === 'unassigned';
+  const activeCol = state.type === 'cardio' ? '#f97316' : '#3b82f6';
+  const visibleTags = allTags.filter(t => t.id !== 'tag_rest');
+
+  const deriveType = (tags: string[]): BuilderDayState['type'] => {
+    const hasLiftTag = tags.some(id => id !== 'tag_cardio' && id !== 'tag_rest');
+    return hasLiftTag ? 'lift' : 'cardio';
   };
+
+  const toggleTag = (tagId: string) => {
+    const newTags = state.tags.includes(tagId)
+      ? state.tags.filter(id => id !== tagId)
+      : [...state.tags, tagId];
+    const newType = deriveType(newTags);
+    const firstTag = allTags.find(t => t.id === newTags[0]);
+    const newColor = firstTag?.color || '#3b82f6';
+    const newFocus = !state.focus.trim() && firstTag ? firstTag.label : state.focus;
+    onChange({ ...state, type: newType, tags: newTags, color: newColor, focus: newFocus });
+  };
+
+  const pill = (label: string, active: boolean, col: string, onPress: () => void) => (
+    <TouchableOpacity
+      key={label}
+      onPress={onPress}
+      style={{ flex: 1, paddingVertical: 6, borderRadius: 6, alignItems: 'center', backgroundColor: active ? col + '22' : 'transparent', borderWidth: 1, borderColor: active ? col + '99' : theme.borderSubtle }}>
+      <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 0.3, color: active ? col : theme.textDim }}>{label}</Text>
+    </TouchableOpacity>
+  );
+
   return (
     <View style={{ marginBottom: 10, backgroundColor: theme.bgInset, borderRadius: 10, padding: 12, borderWidth: 0.5, borderColor: theme.borderCard }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: showDetails ? 10 : 0 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: isActive ? 10 : 0 }}>
         <Text style={{ width: 30, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', fontSize: 11, letterSpacing: 0.5 }}>{day.toUpperCase()}</Text>
-        {(['lift', 'cardio', 'rest', 'unassigned'] as const).map(t => {
-          const isActive = state.type === t;
-          const col = colForType(t);
-          return (
-            <TouchableOpacity
-              key={t}
-              onPress={() => onChange({
-                ...state,
-                type: t,
-                focus: t === 'rest' ? 'Rest' : t === 'unassigned' ? '' : state.focus,
-                color: t === 'rest' || t === 'unassigned' ? '#64748b' : state.color,
-              })}
-              style={{ flex: 1, paddingVertical: 6, borderRadius: 6, alignItems: 'center', backgroundColor: isActive ? col + '22' : 'transparent', borderWidth: 1, borderColor: isActive ? col + '99' : theme.borderSubtle }}>
-              <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: isActive ? col : theme.textDim, letterSpacing: 0.3 }}>
-                {t === 'unassigned' ? 'OFF' : t.toUpperCase()}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+        {pill('ACTIVE', isActive, activeCol, () => onChange({ ...state, type: 'lift', focus: state.focus === 'Rest' ? '' : state.focus, color: state.color === '#64748b' ? '#3b82f6' : state.color, tags: state.tags.filter(id => id !== 'tag_rest') }))}
+        {pill('REST', isRest, '#64748b', () => onChange({ ...state, type: 'rest', focus: 'Rest', color: '#64748b', tags: ['tag_rest'] }))}
+        {pill('OFF', isOff, '#888899', () => onChange({ type: 'unassigned', focus: '', color: '#64748b', tags: [] }))}
       </View>
-      {showDetails && (
+      {isActive && (
         <>
           <TextInput
             style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingHorizontal: 12, paddingVertical: 8, fontSize: 13, fontFamily: 'DMSans_400Regular', marginBottom: 10 }}
@@ -139,14 +151,23 @@ function DayRow({ day, state, onChange, theme }: {
             onChangeText={v => onChange({ ...state, focus: v })}
             autoCapitalize="words"
           />
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-            {TAG_COLOR_PALETTE.map(c => (
-              <TouchableOpacity
-                key={c}
-                onPress={() => onChange({ ...state, color: c })}
-                style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: c, borderWidth: state.color === c ? 2.5 : 0, borderColor: '#ffffff' }}
-              />
-            ))}
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+            {visibleTags.map(t => {
+              const isSelected = state.tags.includes(t.id);
+              return (
+                <TouchableOpacity
+                  key={t.id}
+                  onPress={() => toggleTag(t.id)}
+                  style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, backgroundColor: isSelected ? t.color + '99' : t.color + '22', borderWidth: 1, borderColor: isSelected ? t.color : t.color + '55' }}>
+                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: isSelected ? '#ffffff' : t.color }}>{t.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
+            <TouchableOpacity
+              onPress={() => onAddTag(day)}
+              style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderSubtle }}>
+              <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: theme.textDim }}>+ Tag</Text>
+            </TouchableOpacity>
           </View>
         </>
       )}
@@ -165,9 +186,24 @@ function ProgramBuilderModal({ onClose, onSave, editingProgram }: {
   const [name, setName] = useState('');
   const [desc, setDesc] = useState('');
   const [days, setDays] = useState<Record<ProgramDayKey, BuilderDayState>>(defaultBuilderDays);
+  const [allTags, setAllTags] = useState<WorkoutTag[]>([...DEFAULT_TAGS]);
+  const [showTagCreator, setShowTagCreator] = useState(false);
+  const [tagCreatorDay, setTagCreatorDay] = useState<ProgramDayKey | null>(null);
+  const [newTagName, setNewTagName] = useState('');
+  const [newTagColor, setNewTagColor] = useState('#3b82f6');
   const descRef = useRef<any>(null);
 
   useEffect(() => {
+    const loadTags = async () => {
+      try {
+        const raw = await AsyncStorage.getItem('pj_settings');
+        const settings = raw ? JSON.parse(raw) : {};
+        const saved: WorkoutTag[] = settings.workoutTags || [];
+        const merged = [...DEFAULT_TAGS];
+        for (const t of saved) { if (!merged.find(m => m.id === t.id)) merged.push(t); }
+        setAllTags(merged);
+      } catch (e) {}
+    };
     if (editingProgram) {
       setName(editingProgram.name);
       setDesc(editingProgram.description || '');
@@ -175,14 +211,15 @@ function ProgramBuilderModal({ onClose, onSave, editingProgram }: {
       for (const d of PROGRAM_DAYS) {
         const dp = editingProgram.days[d];
         converted[d] = dp
-          ? { type: dp.type, focus: dp.focus || '', color: dp.color || '#3b82f6' }
-          : { type: 'unassigned', focus: '', color: '#64748b' };
+          ? { type: dp.type, focus: dp.focus || '', color: dp.color || '#3b82f6', tags: dp.tags || [] }
+          : { type: 'unassigned', focus: '', color: '#64748b', tags: [] };
       }
       setDays(converted);
     } else {
       setName(''); setDesc(''); setDays(defaultBuilderDays());
     }
-    sheetY.value = withSpring(0, { damping: 18, stiffness: 120 });
+    loadTags();
+    sheetY.value = withSpring(0, { damping: 26, stiffness: 180, overshootClamping: true });
     const show = Keyboard.addListener('keyboardWillShow', e => setKbHeight(e.endCoordinates.height));
     const hide = Keyboard.addListener('keyboardWillHide', () => setKbHeight(0));
     return () => { show.remove(); hide.remove(); };
@@ -190,12 +227,44 @@ function ProgramBuilderModal({ onClose, onSave, editingProgram }: {
 
   const close = () => {
     Keyboard.dismiss();
-    sheetY.value = withSpring(900, { damping: 20, stiffness: 120 });
+    sheetY.value = withSpring(900, { damping: 26, stiffness: 180, overshootClamping: true });
     setTimeout(onClose, 280);
   };
 
   const animStyle = useAnimatedStyle(() => ({ transform: [{ translateY: sheetY.value }] }));
   const canSave = name.trim().length > 0;
+
+  const openTagCreator = (day: ProgramDayKey) => {
+    setTagCreatorDay(day);
+    setNewTagName('');
+    setNewTagColor('#3b82f6');
+    setShowTagCreator(true);
+  };
+
+  const handleCreateTag = async () => {
+    if (!newTagName.trim()) return;
+    const newTag: WorkoutTag = { id: 'tag_' + makeId(), label: newTagName.trim(), color: newTagColor };
+    const updated = [...allTags, newTag];
+    setAllTags(updated);
+    try {
+      const raw = await AsyncStorage.getItem('pj_settings');
+      const settings = raw ? JSON.parse(raw) : {};
+      await storageSet('pj_settings', JSON.stringify({ ...settings, workoutTags: [...(settings.workoutTags || []), newTag] }));
+    } catch (e) {}
+    if (tagCreatorDay) {
+      const bd = days[tagCreatorDay];
+      const newTags = [...bd.tags, newTag.id];
+      const firstTag = updated.find(t => t.id === newTags[0]);
+      setDays(prev => ({ ...prev, [tagCreatorDay!]: {
+        ...bd,
+        tags: newTags,
+        color: firstTag?.color || newTagColor,
+        focus: !bd.focus.trim() ? newTag.label : bd.focus,
+      }}));
+    }
+    setShowTagCreator(false);
+    setTagCreatorDay(null);
+  };
 
   const handleSave = () => {
     if (!canSave) return;
@@ -207,7 +276,7 @@ function ProgramBuilderModal({ onClose, onSave, editingProgram }: {
         focus: bd.type === 'rest' ? 'Rest' : bd.type === 'unassigned' ? '' : bd.focus,
         color: bd.type === 'rest' ? '#64748b' : bd.type === 'unassigned' ? undefined : bd.color,
         exercises: editingProgram?.days[d]?.exercises || [],
-        ...(bd.type === 'rest' ? { tags: ['tag_rest'] } : {}),
+        tags: bd.tags.length > 0 ? bd.tags : bd.type === 'rest' ? ['tag_rest'] : undefined,
       };
     }
     onSave({
@@ -269,7 +338,7 @@ function ProgramBuilderModal({ onClose, onSave, editingProgram }: {
           />
           <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 12 }}>WEEKLY SCHEDULE</Text>
           {PROGRAM_DAYS.map(d => (
-            <DayRow key={d} day={d} state={days[d]} onChange={updated => setDays(prev => ({ ...prev, [d]: updated }))} theme={theme} />
+            <DayRow key={d} day={d} state={days[d]} allTags={allTags} onAddTag={openTagCreator} onChange={updated => setDays(prev => ({ ...prev, [d]: updated }))} theme={theme} />
           ))}
           <TouchableOpacity
             onPress={handleSave}
@@ -280,6 +349,38 @@ function ProgramBuilderModal({ onClose, onSave, editingProgram }: {
             </Text>
           </TouchableOpacity>
         </ScrollView>
+
+        {showTagCreator && (
+          <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+            <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setShowTagCreator(false)} />
+            <View style={{ position: 'absolute', top: '28%', left: 20, right: 20, backgroundColor: theme.bgSheet, borderRadius: 16, padding: 20, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 16 }}>
+              <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw, marginBottom: 14 }}>NEW TAG</Text>
+              <TextInput
+                style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 14, fontFamily: 'DMSans_400Regular', marginBottom: 14 }}
+                placeholder="Tag name"
+                placeholderTextColor={theme.textPlaceholder}
+                value={newTagName}
+                onChangeText={setNewTagName}
+                autoCapitalize="words"
+                autoFocus
+              />
+              <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 10 }}>COLOR</Text>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+                {TAG_COLOR_PALETTE.map(c => (
+                  <TouchableOpacity key={c} onPress={() => setNewTagColor(c)} style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: c, borderWidth: newTagColor === c ? 2.5 : 0, borderColor: '#ffffff' }} />
+                ))}
+              </View>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TouchableOpacity onPress={() => setShowTagCreator(false)} style={{ flex: 1, padding: 12, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, alignItems: 'center' }}>
+                  <Text style={{ color: theme.textMuted, fontFamily: 'DMSans_500Medium', fontSize: 14 }}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleCreateTag} disabled={!newTagName.trim()} style={{ flex: 1, padding: 12, backgroundColor: theme.accentBlue, borderRadius: 8, alignItems: 'center', opacity: newTagName.trim() ? 1 : 0.4 }}>
+                  <Text style={{ color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 1 }}>ADD TAG</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        )}
       </Reanimated.View>
     </View>
   );
@@ -301,6 +402,7 @@ export default function WorkoutLibraryScreen() {
   const [myPrograms, setMyPrograms] = useState<CustomProgram[]>([]);
   const [showBuilder, setShowBuilder] = useState(false);
   const [editingProgram, setEditingProgram] = useState<CustomProgram | null>(null);
+  const [libTags, setLibTags] = useState<WorkoutTag[]>([...DEFAULT_TAGS]);
 
   const { selectMode, day } = useLocalSearchParams<{ selectMode: string; day: string }>();
   const isSelectMode = selectMode === 'true';
@@ -348,16 +450,32 @@ export default function WorkoutLibraryScreen() {
       try {
         const raw = await AsyncStorage.getItem('pj_my_programs');
         if (raw) {
-          setMyPrograms(JSON.parse(raw));
+          const parsed = JSON.parse(raw);
+          setMyPrograms(Array.isArray(parsed) ? parsed : []);
         } else {
           const seeded: CustomProgram[] = PRESET_PROGRAMS.map(p => ({ ...p, createdAt: 0 }));
           setMyPrograms(seeded);
           await storageSet('pj_my_programs', JSON.stringify(seeded));
         }
+      } catch (e) {
+        const seeded: CustomProgram[] = PRESET_PROGRAMS.map(p => ({ ...p, createdAt: 0 }));
+        setMyPrograms(seeded);
+        try { await storageSet('pj_my_programs', JSON.stringify(seeded)); } catch {}
+      }
+    };
+    const loadTags = async () => {
+      try {
+        const raw = await AsyncStorage.getItem('pj_settings');
+        const settings = raw ? JSON.parse(raw) : {};
+        const saved: WorkoutTag[] = settings.workoutTags || [];
+        const merged = [...DEFAULT_TAGS];
+        for (const t of saved) { if (!merged.find(m => m.id === t.id)) merged.push(t); }
+        setLibTags(merged);
       } catch (e) {}
     };
     loadProgramState();
     loadMyPrograms();
+    loadTags();
   }, []));
 
   const saveLibrary = async (updated: LibraryExercise[]) => {
@@ -660,6 +778,7 @@ export default function WorkoutLibraryScreen() {
           }
         />
       ) : activeTab === 'programs' ? (
+        <View style={{ flex: 1 }}>
         <DraggableFlatList
           data={myPrograms.filter(p => !query.trim() || p.name.toLowerCase().includes(query.toLowerCase()))}
           keyExtractor={p => p.id}
@@ -716,7 +835,8 @@ export default function WorkoutLibraryScreen() {
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
                   {PROGRAM_DAYS.map(d => {
                     const dp = program.days[d];
-                    const col = dp?.color || theme.borderSubtle;
+                    const tagColor = dp?.tags?.[0] ? libTags.find(t => t.id === dp.tags![0])?.color : null;
+                    const col = tagColor || dp?.color || theme.borderSubtle;
                     const label = dp?.type === 'unassigned' ? 'OFF' : dp?.focus?.toUpperCase() || 'REST';
                     return (
                       <View key={d} style={{ backgroundColor: col + '22', borderWidth: 1, borderColor: col + '55', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
@@ -736,6 +856,7 @@ export default function WorkoutLibraryScreen() {
             </ScaleDecorator>
           )}
         />
+        </View>
       ) : (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 100 }}>
           <Ionicons name="repeat-outline" size={48} color={theme.textDim} />

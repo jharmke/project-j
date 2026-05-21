@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Keyboard, KeyboardAvoidingView, Modal, PanResponder, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, Keyboard, KeyboardAvoidingView, Modal, PanResponder, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Reanimated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
@@ -1086,6 +1086,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
               <TouchableOpacity onPress={closeManageTags} {...manageTagsPanResponder.panHandlers} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 8 }}>
                 <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
               </TouchableOpacity>
+              <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
               <View style={{ paddingHorizontal: 20 }}>
                 <Text style={{ color: theme.textPrimary, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, marginBottom: 16 }}>MANAGE TAGS</Text>
 
@@ -1095,6 +1096,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                     data={tags}
                     keyExtractor={t => t.id}
                     onDragEnd={({ data }) => saveTags(data)}
+                    showsVerticalScrollIndicator={false}
                     scrollEnabled
                     renderItem={({ item: t, drag, isActive }: RenderItemParams<WorkoutTag>) => {
                       const isBeingEdited = editingTag?.id === t.id;
@@ -1186,6 +1188,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                   </View>
                 </View>
               </View>
+              </TouchableWithoutFeedback>
               </View>
             </Reanimated.View>
           </View>

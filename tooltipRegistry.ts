@@ -1,6 +1,6 @@
 export interface TooltipDefinition {
   key: string;
-  category: 'Nutrition' | 'Fitness' | 'Sleep & Recovery' | 'Faith' | 'Reports';
+  category: 'Nutrition' | 'Fitness' | 'Sleep & Recovery' | 'Faith' | 'Reports' | 'Habits';
   title: string;
   body: string;
   definitions?: { term: string; explanation: string }[];
@@ -215,6 +215,29 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
         term: 'Not medical advice',
         explanation: 'These findings are based on your self-logged data. They\'re informational starting points, not diagnoses. If something seems off, talk to a doctor or registered dietitian.',
       },
+    ],
+  },
+  {
+    key: 'streaks_card',
+    category: 'Habits',
+    title: 'Streaks',
+    body: 'Streaks track how many consecutive days you hit a goal or complete a habit. Each streak counts backward from today -- a streak ends the moment you miss a day.\n\nTap the gear icon to add, remove, or create custom streaks. Your configuration is saved and never reset automatically.',
+    definitions: [
+      { term: 'Workout', explanation: 'Counts any day you log at least one exercise. Rest days do not break the streak.' },
+      { term: 'Calories', explanation: 'Counts days you land between 80% and 106% of your full daily calorie target, including active burn for that day.' },
+      { term: 'Protein', explanation: 'Counts days your total logged protein meets or exceeds your daily protein goal set in profile.' },
+      { term: 'Water', explanation: 'Counts days your total logged water meets or exceeds your water goal.' },
+      { term: 'Steps', explanation: 'Counts days your Apple Health step count meets or exceeds your step goal.' },
+      { term: 'Active Cals', explanation: 'Counts days your active calorie burn from Apple Health meets or exceeds your active calorie goal, adjusted for your burn accuracy setting.' },
+      { term: 'Exercise Mins', explanation: 'Counts days your Apple Health exercise minutes meet or exceed your exercise minutes goal.' },
+      { term: 'Sleep Duration', explanation: 'Counts days your total sleep time meets or exceeds your sleep goal.' },
+      { term: 'Sleep Quality', explanation: 'Counts days your calculated sleep score is 85 or higher -- the Well Rested threshold. Requires Apple Health stage data or a feel rating.' },
+      { term: 'Bible', explanation: 'Counts days you log a reflection on a Bible verse in the Bible reader. Logging today counts immediately -- Bible streaks do not wait for the day to end.' },
+      { term: 'Gratitude', explanation: 'Counts days you log a gratitude entry in the journal. Logging today counts immediately.' },
+      { term: 'Journaling', explanation: 'Counts days you save a Personal entry in the journal. Bible reflections, gratitude entries, workout notes, and prayer entries do not count toward this streak -- only entries filed under the Personal category.' },
+      { term: 'Morning Intention', explanation: 'A manual habit streak. Tap the tile each morning to check in. Tap again to undo if you tapped by mistake.' },
+      { term: 'Prayer', explanation: 'A manual habit streak. Tap the tile to check in for the day. Tap again to undo.' },
+      { term: 'Custom', explanation: 'Create your own streak with any name and emoji. Custom streaks are always manual -- tap the tile to check in each day.' },
     ],
   },
   {

@@ -3,9 +3,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Dimensions, Easing, Modal, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, Dimensions, Easing, Keyboard, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import DraggableFlatList, { ScaleDecorator } from 'react-native-draggable-flatlist';
+import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { DayDetailContent } from '../day-detail';
 import { useTheme } from '../../theme';
@@ -15,6 +15,67 @@ import { EMPTY_TREND_DATA, TrendData, fetchTrendData as fetchTrendDataUtil, offs
 import { StatsGraphCard, GRAPH_SWATCHES, MACRO_PROTEIN, MACRO_CARBS, MACRO_FAT } from '../../components/StatsGraphCard';
 import { StatsCardEditModal } from '../../components/StatsCardEditModal';
 import TooltipIcon from '../../components/TooltipIcon';
+import { storageSet } from '../../utils/storage';
+
+// ── Streak types and constants ────────────────────────────────────────────────
+
+type BuiltinStreakKey =
+  | 'workout' | 'calories' | 'protein' | 'water' | 'steps'
+  | 'activecals' | 'exercisemins' | 'sleepduration' | 'sleepquality'
+  | 'bible' | 'gratitude' | 'journaling' | 'morningintention' | 'prayer';
+
+interface StreakConfigItem {
+  id: string;
+  type: 'builtin' | 'custom';
+  key?: BuiltinStreakKey;
+  label: string;
+  emoji: string;
+}
+
+interface LiveStreakData extends StreakConfigItem {
+  value: number;
+  loggedToday: boolean;
+  isManual: boolean;
+}
+
+const BUILTIN_STREAK_META: Record<BuiltinStreakKey, { label: string; emoji: string; isManual: boolean; faithGated: boolean }> = {
+  workout:          { label: 'Workout',          emoji: '🏋️', isManual: false, faithGated: false },
+  calories:         { label: 'Calories',          emoji: '🔥', isManual: false, faithGated: false },
+  protein:          { label: 'Protein',           emoji: '💪', isManual: false, faithGated: false },
+  water:            { label: 'Water',             emoji: '💧', isManual: false, faithGated: false },
+  steps:            { label: 'Steps',             emoji: '👟', isManual: false, faithGated: false },
+  activecals:       { label: 'Active Cals',       emoji: '⚡', isManual: false, faithGated: false },
+  exercisemins:     { label: 'Exercise Mins',     emoji: '⏱️', isManual: false, faithGated: false },
+  sleepduration:    { label: 'Sleep Duration',    emoji: '😴', isManual: false, faithGated: false },
+  sleepquality:     { label: 'Sleep Quality',     emoji: '🌙', isManual: false, faithGated: false },
+  bible:            { label: 'Bible',             emoji: '📖', isManual: false, faithGated: true  },
+  gratitude:        { label: 'Gratitude',         emoji: '🙏', isManual: false, faithGated: true  },
+  journaling:       { label: 'Journaling',        emoji: '✍️', isManual: false, faithGated: false },
+  morningintention: { label: 'Morning Intention', emoji: '🌅', isManual: true,  faithGated: false },
+  prayer:           { label: 'Prayer',            emoji: '🕊️', isManual: true,  faithGated: true  },
+};
+
+function getDefaultStreakConfig(styleMode: string, faithJourney: string): StreakConfigItem[] {
+  const isNRN = faithJourney === 'notrightnow';
+  const isMindful = styleMode === 'Mindful';
+  let keys: BuiltinStreakKey[];
+  if (isMindful) {
+    keys = isNRN
+      ? ['water', 'sleepduration', 'journaling', 'morningintention', 'steps']
+      : ['gratitude', 'water', 'sleepduration', 'morningintention', 'bible'];
+  } else {
+    keys = isNRN
+      ? ['workout', 'calories', 'steps', 'water', 'exercisemins']
+      : ['workout', 'calories', 'steps', 'water', 'bible'];
+  }
+  return keys.map(key => ({
+    id: `builtin_${key}`,
+    type: 'builtin' as const,
+    key,
+    label: BUILTIN_STREAK_META[key].label,
+    emoji: BUILTIN_STREAK_META[key].emoji,
+  }));
+}
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 const RECORD_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -168,7 +229,25 @@ export default function StatsScreen() {
     workoutDays: 0, totalDays: 0, loggedDays: 0,
     startWeight: null as number | null, endWeight: null as number | null,
   });
-  const [streaks, setStreaks] = useState({ gym: 0, calories: 0, water: 0, bible: 0 });
+  const [liveStreaks, setLiveStreaks] = useState<LiveStreakData[]>([]);
+  const [streakConfig, setStreakConfig] = useState<StreakConfigItem[]>([]);
+  const [activeCalGoal, setActiveCalGoal] = useState(500);
+  const [exerciseMinsGoal, setExerciseMinsGoal] = useState(30);
+  const [waterGoal, setWaterGoal] = useState(128);
+  const [proteinGoal, setProteinGoal] = useState(0);
+  const [streakBaseTarget, setStreakBaseTarget] = useState(0);
+  const [burnAccuracy, setBurnAccuracy] = useState(100);
+
+  // Manage streaks modal
+  const [showManageStreaks, setShowManageStreaks] = useState(false);
+  const manageStreaksAnim = useRef(new Animated.Value(0)).current;
+  const [showCreateCustom, setShowCreateCustom] = useState(false);
+  const createCustomAnim = useRef(new Animated.Value(0)).current;
+  const [customName, setCustomName] = useState('');
+  const [customEmoji, setCustomEmoji] = useState('');
+  const [flashId, setFlashId] = useState<string | null>(null);
+  const flashOpacity = useRef(new Animated.Value(0)).current;
+  const modalKeyboardOffset = useRef(new Animated.Value(0)).current;
   const [excludedDays, setExcludedDays] = useState<{ date: string, diet: boolean, water: boolean, exercise: boolean }[]>([]);
 
   const [statsCards, setStatsCards] = useState<StatsCard[]>(DEFAULT_STATS_CARDS);
@@ -326,49 +405,223 @@ export default function StatsScreen() {
     });
   };
 
-  const loadStreaks = async (target: number, streakBaseTarget: number, burnAccuracy: number) => {
+  const loadStreaks = async (
+    config: StreakConfigItem[],
+    target: number, streakBaseTarget: number, burnAccuracy: number,
+    wGoal: number, aCalGoal: number, exMinsGoal: number, pGoal: number,
+    sGoal: number, currentFaithJourney: string,
+  ) => {
+    if (config.length === 0) return;
     const workoutRaw = await AsyncStorage.getItem('pj_workout_state');
     const workoutState = workoutRaw ? JSON.parse(workoutRaw) : {};
-    const profileRaw = await AsyncStorage.getItem('pj_profile');
-    const profileData = profileRaw ? JSON.parse(profileRaw) : {};
-    const waterGoal = profileData.waterGoal || 128;
     const reflRaw = await AsyncStorage.getItem('pj_bible_reflections');
     const reflections: any[] = reflRaw ? JSON.parse(reflRaw) : [];
-    const bibleDates = new Set(
-      reflections
-        .filter((r: any) => r.category === 'verse')
-        .map((r: any) => (r.date || '').slice(0, 10))
-        .filter(Boolean)
-    );
-    const effectiveTarget = target > 0 ? target : streakBaseTarget;
+    const pjStreaksRaw = await AsyncStorage.getItem('pj_streaks');
+    const pjStreaksData = pjStreaksRaw ? JSON.parse(pjStreaksRaw) : {};
+    const customDates: Record<string, string[]> = pjStreaksData.customDates || {};
 
-    const bibleToday = bibleDates.has(offsetToDateKey(0));
-    let gymStreak = 0, calStreak = 0, waterStreak = 0, bibleStreak = bibleToday ? 1 : 0;
-    let gymDone = false, calDone = false, waterDone = false, bibleDone = false;
-    let i = 1; // skip today for in-progress streaks; bible today already seeded above
+    const bibleDates = new Set(reflections.filter((r: any) => r.category === 'verse').map((r: any) => (r.date || '').slice(0, 10)).filter(Boolean));
+    const gratitudeDates = new Set(reflections.filter((r: any) => r.category === 'gratitude').map((r: any) => (r.date || '').slice(0, 10)).filter(Boolean));
+    const journalDates = new Set(reflections.filter((r: any) => r.category === 'personal').map((r: any) => (r.date || '').slice(0, 10)).filter(Boolean));
+    const effectiveTarget = target > 0 ? target : streakBaseTarget;
+    const todayKey = offsetToDateKey(0);
+
+    // For each active streak, compute its value
+    const streakCounters: Record<string, number> = {};
+    const streakDone: Record<string, boolean> = {};
+    const todayLogged: Record<string, boolean> = {};
+
+    // Seed today-is-logged for faith streaks (count immediately)
+    for (const item of config) {
+      if (item.type === 'builtin' && item.key === 'bible') {
+        todayLogged[item.id] = bibleDates.has(todayKey);
+        streakCounters[item.id] = todayLogged[item.id] ? 1 : 0;
+      } else if (item.type === 'builtin' && item.key === 'gratitude') {
+        todayLogged[item.id] = gratitudeDates.has(todayKey);
+        streakCounters[item.id] = todayLogged[item.id] ? 1 : 0;
+      } else if (item.type === 'builtin' && item.key === 'journaling') {
+        todayLogged[item.id] = journalDates.has(todayKey);
+        streakCounters[item.id] = todayLogged[item.id] ? 1 : 0;
+      } else if ((item.type === 'builtin' && (item.key === 'morningintention' || item.key === 'prayer')) || item.type === 'custom') {
+        const dates = customDates[item.id] || [];
+        todayLogged[item.id] = dates.includes(todayKey);
+        streakCounters[item.id] = todayLogged[item.id] ? 1 : 0;
+      } else {
+        todayLogged[item.id] = false;
+        streakCounters[item.id] = 0;
+      }
+      streakDone[item.id] = false;
+    }
+
+    // Walk back from yesterday
+    let i = 1;
     while (true) {
       const dateKey = offsetToDateKey(i);
+      const allDone = config.every(item => streakDone[item.id]);
+      if (allDone) break;
       try {
         const saved = await AsyncStorage.getItem(`pj_${dateKey}`);
-        if (!saved) break;
+        if (!saved) {
+          // If no daily data, all auto-tracked streaks that aren't done yet end here
+          for (const item of config) {
+            if (!streakDone[item.id]) {
+              const isManual = item.type === 'custom' || (item.type === 'builtin' && (item.key === 'morningintention' || item.key === 'prayer'));
+              const isFaithAuto = item.type === 'builtin' && (item.key === 'bible' || item.key === 'gratitude' || item.key === 'journaling');
+              if (!isManual && !isFaithAuto) streakDone[item.id] = true;
+            }
+          }
+          // Faith/manual streaks continue looking back -- but no daily data means we keep looking
+          // Actually if no pj_ data for this day, faith might still have entries. Keep going up to 365.
+          i++; if (i > 365) break;
+          continue;
+        }
         const data = JSON.parse(saved);
         const calTotal = data.entries?.reduce((s: number, e: any) => s + e.cal, 0) || 0;
         const dayActive = Math.round((data.activeCalories || data.caloriesBurned || 0) * burnAccuracy / 100);
         const adjustedTarget = effectiveTarget + dayActive;
-        const hasCals = adjustedTarget > 0 && calTotal >= adjustedTarget * 0.80 && calTotal <= adjustedTarget * 1.06;
-        const hasWater = (data.water || 0) >= waterGoal;
-        const exercises = workoutState?.programs?.[dateKey]?.exercises || [];
-        const hasWorkout = exercises.length > 0;
-        const hasBible = bibleDates.has(dateKey);
-        if (!gymDone) { if (hasWorkout) gymStreak++; else gymDone = true; }
-        if (!calDone) { if (hasCals) calStreak++; else calDone = true; }
-        if (!waterDone) { if (hasWater) waterStreak++; else waterDone = true; }
-        if (!bibleDone) { if (hasBible) bibleStreak++; else bibleDone = true; }
-        if (gymDone && calDone && waterDone && bibleDone) break;
+        const totalProtein = data.entries?.reduce((s: number, e: any) => s + (e.protein || 0), 0) || 0;
+        const { score: sleepScore } = calcSleepScore(data.sleepHours || null, data.sleepStages || null, sGoal, data.sleepFeelRating || null, !data.sleepStages);
+
+        for (const item of config) {
+          if (streakDone[item.id]) continue;
+          let hit = false;
+          if (item.type === 'builtin') {
+            switch (item.key) {
+              case 'workout':     hit = (workoutState?.programs?.[dateKey]?.exercises || []).length > 0; break;
+              case 'calories':    hit = adjustedTarget > 0 && calTotal >= adjustedTarget * 0.80 && calTotal <= adjustedTarget * 1.06; break;
+              case 'protein':     hit = pGoal > 0 && totalProtein >= pGoal; break;
+              case 'water':       hit = (data.water || 0) >= wGoal; break;
+              case 'steps':       hit = (data.steps || 0) >= stepGoal; break;
+              case 'activecals':  hit = aCalGoal > 0 && dayActive >= aCalGoal; break;
+              case 'exercisemins':hit = exMinsGoal > 0 && (data.exerciseMinutes || 0) >= exMinsGoal; break;
+              case 'sleepduration': hit = (data.sleepHours || 0) >= sGoal; break;
+              case 'sleepquality':  hit = sleepScore !== null && sleepScore >= 85; break;
+              case 'bible':       hit = bibleDates.has(dateKey); break;
+              case 'gratitude':   hit = gratitudeDates.has(dateKey); break;
+              case 'journaling':  hit = journalDates.has(dateKey); break;
+              case 'morningintention':
+              case 'prayer':      hit = (customDates[item.id] || []).includes(dateKey); break;
+            }
+          } else {
+            hit = (customDates[item.id] || []).includes(dateKey);
+          }
+          if (hit) { streakCounters[item.id]++; } else { streakDone[item.id] = true; }
+        }
         i++; if (i > 365) break;
-      } catch { break; }
+      } catch { i++; if (i > 365) break; }
     }
-    setStreaks({ gym: gymStreak, calories: calStreak, water: waterStreak, bible: bibleStreak });
+
+    const isNRN = currentFaithJourney === 'notrightnow';
+    const result: LiveStreakData[] = config
+      .filter(item => {
+        if (item.type !== 'builtin' || !item.key) return true;
+        return !BUILTIN_STREAK_META[item.key].faithGated || !isNRN;
+      })
+      .map(item => {
+        const meta = item.type === 'builtin' && item.key ? BUILTIN_STREAK_META[item.key] : null;
+        return {
+          ...item,
+          value: streakCounters[item.id] ?? 0,
+          loggedToday: todayLogged[item.id] ?? false,
+          isManual: item.type === 'custom' || (meta?.isManual ?? false),
+        };
+      });
+    setLiveStreaks(result);
+  };
+
+  const toggleManualCheckIn = async (item: LiveStreakData) => {
+    const todayKey = offsetToDateKey(0);
+    const pjStreaksRaw = await AsyncStorage.getItem('pj_streaks');
+    const pjStreaksData = pjStreaksRaw ? JSON.parse(pjStreaksRaw) : {};
+    const customDates: Record<string, string[]> = { ...(pjStreaksData.customDates || {}) };
+    const existing: string[] = customDates[item.id] ? [...customDates[item.id]] : [];
+    const checkingIn = !existing.includes(todayKey);
+    if (!checkingIn) {
+      customDates[item.id] = existing.filter(d => d !== todayKey);
+    } else {
+      customDates[item.id] = [...existing, todayKey];
+    }
+    await storageSet('pj_streaks', JSON.stringify({ ...pjStreaksData, customDates }));
+    setLiveStreaks(prev => prev.map(s =>
+      s.id === item.id
+        ? { ...s, loggedToday: checkingIn, value: checkingIn ? s.value + 1 : Math.max(0, s.value - 1) }
+        : s
+    ));
+    if (checkingIn) {
+      setFlashId(item.id);
+      flashOpacity.setValue(1);
+      Animated.timing(flashOpacity, { toValue: 0, duration: 400, delay: 1200, useNativeDriver: true }).start(() => setFlashId(null));
+    }
+  };
+
+  const openManageStreaks = () => {
+    setShowManageStreaks(true);
+    manageStreaksAnim.setValue(0);
+    Animated.spring(manageStreaksAnim, { toValue: 1, useNativeDriver: true, tension: 65, friction: 11 }).start();
+  };
+
+  const closeManageStreaks = () => {
+    Animated.timing(manageStreaksAnim, { toValue: 0, duration: 180, useNativeDriver: true }).start(() => setShowManageStreaks(false));
+  };
+
+  const openCreateCustom = () => {
+    setCustomName('');
+    setCustomEmoji('');
+    setShowCreateCustom(true);
+    createCustomAnim.setValue(0);
+    Animated.timing(createCustomAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+  };
+
+  const closeCreateCustom = () => {
+    Animated.timing(createCustomAnim, { toValue: 0, duration: 180, useNativeDriver: true }).start(() => setShowCreateCustom(false));
+  };
+
+  const saveCustomStreak = async () => {
+    if (!customName.trim() || !customEmoji.trim()) return;
+    const newItem: StreakConfigItem = {
+      id: `custom_${Date.now()}`,
+      type: 'custom',
+      label: customName.trim(),
+      emoji: customEmoji.trim(),
+    };
+    const newConfig = [...streakConfig, newItem];
+    const pjStreaksRaw = await AsyncStorage.getItem('pj_streaks');
+    const pjStreaksData = pjStreaksRaw ? JSON.parse(pjStreaksRaw) : {};
+    await storageSet('pj_streaks', JSON.stringify({ ...pjStreaksData, config: newConfig }));
+    setStreakConfig(newConfig);
+    // Custom streaks are always manual -- value 0 is correct, no history to calculate
+    setLiveStreaks(prev => [...prev, { ...newItem, value: 0, loggedToday: false, isManual: true }]);
+    closeCreateCustom();
+    showToast('Streak added', undefined, 'success');
+  };
+
+  const removeStreak = async (id: string) => {
+    const newConfig = streakConfig.filter(s => s.id !== id);
+    const pjStreaksRaw = await AsyncStorage.getItem('pj_streaks');
+    const pjStreaksData = pjStreaksRaw ? JSON.parse(pjStreaksRaw) : {};
+    await storageSet('pj_streaks', JSON.stringify({ ...pjStreaksData, config: newConfig }));
+    setStreakConfig(newConfig);
+    setLiveStreaks(prev => prev.filter(s => s.id !== id));
+  };
+
+  const reorderStreaks = async (newConfig: StreakConfigItem[]) => {
+    setStreakConfig(newConfig);
+    setLiveStreaks(prev => newConfig.map(cfg => prev.find(l => l.id === cfg.id)).filter(Boolean) as LiveStreakData[]);
+    const pjStreaksRaw = await AsyncStorage.getItem('pj_streaks');
+    const pjStreaksData = pjStreaksRaw ? JSON.parse(pjStreaksRaw) : {};
+    await storageSet('pj_streaks', JSON.stringify({ ...pjStreaksData, config: newConfig }));
+  };
+
+  const addBuiltinStreak = async (key: BuiltinStreakKey) => {
+    const meta = BUILTIN_STREAK_META[key];
+    const newItem: StreakConfigItem = { id: `builtin_${key}`, type: 'builtin', key, label: meta.label, emoji: meta.emoji };
+    const newConfig = [...streakConfig, newItem];
+    const pjStreaksRaw = await AsyncStorage.getItem('pj_streaks');
+    const pjStreaksData = pjStreaksRaw ? JSON.parse(pjStreaksRaw) : {};
+    await storageSet('pj_streaks', JSON.stringify({ ...pjStreaksData, config: newConfig }));
+    setStreakConfig(newConfig);
+    // Re-run full calculation so history is reflected immediately
+    await loadStreaks(newConfig, calTarget, streakBaseTarget, burnAccuracy, waterGoal, activeCalGoal, exerciseMinsGoal, proteinGoal, sleepGoal, faithJourney);
   };
 
   useFocusEffect(
@@ -390,12 +643,25 @@ export default function StatsScreen() {
         setExcludedDays(exDays);
 
         let target = 0, step = 10000, sleep = 8, bmr = 0, streakBaseTarget = 0, burnAccuracy = 100;
+        let wGoal = 128, aCalGoal = 500, exMinsGoal = 30, pGoal = 0;
+        let currentStyleMode = 'Balanced', currentFaithJourney = 'rooted';
         try {
           const p = await AsyncStorage.getItem('pj_profile');
           if (p) {
             const d = JSON.parse(p);
             if (d.stepGoal) step = parseInt(d.stepGoal);
             if (d.sleepGoal) sleep = parseFloat(d.sleepGoal);
+            if (d.waterGoal) wGoal = parseFloat(d.waterGoal);
+            if (d.activeCalGoal) aCalGoal = parseInt(d.activeCalGoal);
+            if (d.exerciseMinsGoal) exMinsGoal = parseInt(d.exerciseMinsGoal);
+            // Protein goal: fixed grams or ratio-based
+            if (d.macroMode === 'fixed' && d.macroProteinG) {
+              pGoal = parseInt(d.macroProteinG);
+            } else if (d.macroProteinPct) {
+              // Ratio mode: estimate from calorie target
+              const estCal = target > 0 ? target : streakBaseTarget;
+              if (estCal > 0) pGoal = Math.round((estCal * (parseFloat(d.macroProteinPct) / 100)) / 4);
+            }
             if (d.heightFt && d.heightIn !== undefined && d.sex && d.birthday) {
               let w = 0;
               for (let i = 0; i <= 30 && w === 0; i++) {
@@ -418,13 +684,38 @@ export default function StatsScreen() {
             }
           }
           const s = await AsyncStorage.getItem('pj_settings');
-          if (s) { const d = JSON.parse(s); if (d.calTarget) target = parseInt(d.calTarget); if (d.styleMode) setStyleMode(d.styleMode); if (d.faithJourney) setFaithJourney(d.faithJourney); if (d.burnAccuracyPct !== undefined) burnAccuracy = d.burnAccuracyPct; }
+          if (s) {
+            const d = JSON.parse(s);
+            if (d.calTarget) target = parseInt(d.calTarget);
+            if (d.styleMode) { setStyleMode(d.styleMode); currentStyleMode = d.styleMode; }
+            if (d.faithJourney) { setFaithJourney(d.faithJourney); currentFaithJourney = d.faithJourney; }
+            if (d.burnAccuracyPct !== undefined) burnAccuracy = d.burnAccuracyPct;
+          }
         } catch {}
         setCalTarget(target);
         setStepGoal(step);
         setSleepGoal(sleep);
         setProfileBmr(bmr);
+        setWaterGoal(wGoal);
+        setActiveCalGoal(aCalGoal);
+        setExerciseMinsGoal(exMinsGoal);
+        setProteinGoal(pGoal);
+        setStreakBaseTarget(streakBaseTarget);
+        setBurnAccuracy(burnAccuracy);
         hasLoadedProfile.current = true;
+
+        // Load streak config -- apply defaults on first load
+        let config: StreakConfigItem[] = [];
+        try {
+          const pjStreaksRaw = await AsyncStorage.getItem('pj_streaks');
+          const pjStreaksData = pjStreaksRaw ? JSON.parse(pjStreaksRaw) : {};
+          config = pjStreaksData.config || [];
+          if (config.length === 0) {
+            config = getDefaultStreakConfig(currentStyleMode, currentFaithJourney);
+            await storageSet('pj_streaks', JSON.stringify({ ...pjStreaksData, config }));
+          }
+        } catch {}
+        setStreakConfig(config);
 
         const cards = await loadStatsCards();
         setStatsCards(cards);
@@ -433,7 +724,7 @@ export default function StatsScreen() {
           loadAllCardData(cards, 30, sleep),
           loadRecords(),
           loadPeriodData(activePeriod, target, sleep, bmr),
-          loadStreaks(target, streakBaseTarget, burnAccuracy),
+          loadStreaks(config, target, streakBaseTarget, burnAccuracy, wGoal, aCalGoal, exMinsGoal, pGoal, sleep, currentFaithJourney),
         ]);
       };
       loadAll();
@@ -445,6 +736,28 @@ export default function StatsScreen() {
       loadPeriodData(activePeriod, calTarget, sleepGoal, profileBmr);
     }
   }, [activePeriod]);
+
+  useEffect(() => {
+    if (!showCreateCustom) {
+      modalKeyboardOffset.setValue(0);
+      return;
+    }
+    const showSub = Keyboard.addListener('keyboardWillShow', e => {
+      Animated.timing(modalKeyboardOffset, {
+        toValue: -(e.endCoordinates.height / 2),
+        duration: 200,
+        useNativeDriver: true,
+      }).start();
+    });
+    const hideSub = Keyboard.addListener('keyboardWillHide', () => {
+      Animated.timing(modalKeyboardOffset, {
+        toValue: 0,
+        duration: 180,
+        useNativeDriver: true,
+      }).start();
+    });
+    return () => { showSub.remove(); hideSub.remove(); };
+  }, [showCreateCustom]);
 
   const handleGlobalPeriodSync = (p: '7' | '30' | '90') => {
     const days = parseInt(p) as CardPeriod;
@@ -856,22 +1169,66 @@ export default function StatsScreen() {
             if (section.systemKey === 'streaks') return (
               <CollapsibleSection key={section.id} label={section.label} subtitle="Consistency tracking" defaultOpen={isFirst} theme={theme} first={isFirst}>
           <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              {[
-                { label: 'Workout', value: streaks.gym, color: theme.statusGood },
-                { label: 'Calories', value: streaks.calories, color: theme.accentBlue },
-                { label: 'Water', value: streaks.water, color: '#06b6d4' },
-                { label: 'Bible', value: streaks.bible, color: theme.accentAmber },
-              ].filter(s => s.label !== 'Bible' || faithJourney !== 'notrightnow').map(s => (
-                <View key={s.label} style={{ alignItems: 'center', flex: 1 }}>
-                  <Text style={{ fontSize: 36, fontFamily: 'BebasNeue_400Regular', color: s.color, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0, opacity: 0.88 }}>
-                    {s.value}
-                  </Text>
-                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>{s.label}</Text>
-                  <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>days</Text>
-                </View>
-              ))}
+            {/* Card header row -- (i) inline with label, gear on right */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: liveStreaks.length > 0 ? 16 : 0 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Text style={[styles.cardLabel, { color: theme.textMuted }]}>STREAKS</Text>
+                <TooltipIcon tooltipKey="streaks_card" />
+              </View>
+              <TouchableOpacity onPress={openManageStreaks} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name="settings" size={16} color={theme.textMuted} />
+              </TouchableOpacity>
             </View>
+            {liveStreaks.length === 0 ? (
+              <TouchableOpacity onPress={openManageStreaks} style={{ alignItems: 'center', paddingVertical: 20 }}>
+                <Ionicons name="flame-outline" size={32} color={theme.textDim} />
+                <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted, marginTop: 8 }}>No streaks added</Text>
+                <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginTop: 4 }}>Tap to set up your streaks</Text>
+              </TouchableOpacity>
+            ) : (
+              (() => {
+                const rows: LiveStreakData[][] = [];
+                for (let r = 0; r < liveStreaks.length; r += 3) {
+                  rows.push(liveStreaks.slice(r, r + 3));
+                }
+                const STREAK_COLORS = [theme.statusGood, theme.accentBlue, '#06b6d4', theme.accentAmber, '#a855f7', '#f97316'];
+                return rows.map((row, rowIdx) => {
+                  const isLastRow = rowIdx === rows.length - 1 && row.length < 3;
+                  return (
+                    <View key={rowIdx} style={{ flexDirection: 'row', justifyContent: isLastRow ? 'center' : 'space-between', marginBottom: rowIdx < rows.length - 1 ? 16 : 0 }}>
+                      {row.map((s, colIdx) => {
+                        const colorIdx = (rowIdx * 3 + colIdx) % STREAK_COLORS.length;
+                        const tileColor = STREAK_COLORS[colorIdx];
+                        const isTappable = s.isManual;
+                        return (
+                          <TouchableOpacity
+                            key={s.id}
+                            onPress={isTappable ? () => toggleManualCheckIn(s) : undefined}
+                            activeOpacity={isTappable ? 0.7 : 1}
+                            style={{ alignItems: 'center', width: '33%' }}>
+                            <Text style={{ fontSize: 28, marginBottom: 4 }}>{s.emoji}</Text>
+                            <Text style={{ fontSize: 32, fontFamily: 'BebasNeue_400Regular', color: tileColor, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0, opacity: 0.88, lineHeight: 34 }}>
+                              {s.value}
+                            </Text>
+                            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', textAlign: 'center' }} numberOfLines={1}>
+                              {s.label}
+                            </Text>
+                            <View style={{ height: 14, justifyContent: 'center', alignItems: 'center', marginTop: 1 }}>
+                              <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular', position: 'absolute' }}>days</Text>
+                              {flashId === s.id && (
+                                <Animated.Text style={{ fontSize: 9, color: tileColor, fontFamily: 'DMSans_600SemiBold', position: 'absolute', opacity: flashOpacity }}>
+                                  {'✓ LOGGED'}
+                                </Animated.Text>
+                              )}
+                            </View>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  );
+                });
+              })()
+            )}
           </View>
             </CollapsibleSection>
             );
@@ -1373,6 +1730,159 @@ export default function StatsScreen() {
           </Animated.View>
         </Modal>
       )}
+
+      {/* Manage Streaks Modal */}
+      <Modal transparent animationType="none" visible={showManageStreaks} onRequestClose={closeManageStreaks} statusBarTranslucent>
+        <Animated.View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', opacity: manageStreaksAnim }}>
+          <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={closeManageStreaks} />
+          <Animated.View style={{
+            width: '92%', maxHeight: '72%', borderRadius: 16, backgroundColor: theme.bgSheet,
+            borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderSheet, borderTopColor: theme.accentBlueRaw,
+            padding: 20,
+            transform: [{ scale: manageStreaksAnim.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) }],
+          }}>
+            <TouchableOpacity style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: theme.textMuted, opacity: 0.5, marginBottom: 16 }} activeOpacity={0.6} onPress={closeManageStreaks} />
+            <Text style={{ fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw, marginBottom: 16 }}>MANAGE STREAKS</Text>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {/* Active streaks -- drag to reorder */}
+              {streakConfig.length > 0 && (
+                <>
+                  <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 10 }}>ACTIVE</Text>
+                  <DraggableFlatList
+                    data={streakConfig}
+                    keyExtractor={item => item.id}
+                    scrollEnabled={false}
+                    onDragEnd={({ data }) => reorderStreaks(data)}
+                    renderItem={({ item, drag, isActive }: RenderItemParams<StreakConfigItem>) => {
+                      const live = liveStreaks.find(l => l.id === item.id);
+                      const meta = item.key ? BUILTIN_STREAK_META[item.key] : null;
+                      const isManual = meta ? meta.isManual : true;
+                      return (
+                        <ScaleDecorator>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard, backgroundColor: isActive ? theme.bgInput : 'transparent' }}>
+                            <TouchableOpacity onLongPress={drag} delayLongPress={100} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ paddingRight: 10 }}>
+                              <Ionicons name="reorder-three-outline" size={22} color={theme.textMuted} />
+                            </TouchableOpacity>
+                            <Text style={{ fontSize: 20, marginRight: 10 }}>{item.emoji}</Text>
+                            <View style={{ flex: 1 }}>
+                              <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary }}>{item.label}</Text>
+                              <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim }}>{live ? `${live.value} day streak · ` : ''}{isManual ? 'Manual check-in' : 'Auto-tracked'}</Text>
+                            </View>
+                            <TouchableOpacity
+                              onPress={() => Alert.alert('Remove Streak', `Remove "${item.label}" from your active streaks?`, [
+                                { text: 'Cancel', style: 'cancel' },
+                                { text: 'Remove', style: 'destructive', onPress: () => removeStreak(item.id) },
+                              ])}
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                              <Ionicons name="close-circle" size={20} color={theme.accentRed} />
+                            </TouchableOpacity>
+                          </View>
+                        </ScaleDecorator>
+                      );
+                    }}
+                  />
+                  <View style={{ height: 20 }} />
+                </>
+              )}
+
+              {/* Available presets */}
+              {(() => {
+                const activeIds = new Set(streakConfig.map(s => s.id));
+                const isNRN = faithJourney === 'notrightnow';
+                const available = (Object.keys(BUILTIN_STREAK_META) as BuiltinStreakKey[]).filter(key => {
+                  if (BUILTIN_STREAK_META[key].faithGated && isNRN) return false;
+                  return !activeIds.has(`builtin_${key}`);
+                });
+                if (available.length === 0) return null;
+                return (
+                  <>
+                    <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 10 }}>ADD PRESET</Text>
+                    {available.map(key => {
+                      const meta = BUILTIN_STREAK_META[key];
+                      return (
+                        <TouchableOpacity key={key} onPress={() => addBuiltinStreak(key)}
+                          style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
+                          <Text style={{ fontSize: 20, marginRight: 10 }}>{meta.emoji}</Text>
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary }}>{meta.label}</Text>
+                            <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim }}>{meta.isManual ? 'Manual check-in' : 'Auto-tracked'}</Text>
+                          </View>
+                          <Ionicons name="add-circle-outline" size={20} color={theme.accentBlue} />
+                        </TouchableOpacity>
+                      );
+                    })}
+                    <View style={{ height: 20 }} />
+                  </>
+                );
+              })()}
+
+              {/* Create custom */}
+              <TouchableOpacity onPress={() => { closeManageStreaks(); setTimeout(openCreateCustom, 220); }}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder,
+                  borderRadius: 10, paddingVertical: 12, marginTop: 4, marginBottom: 8 }}>
+                <Ionicons name="add" size={18} color={theme.accentBlue} />
+                <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlue }}>Create Custom Streak</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </Animated.View>
+        </Animated.View>
+      </Modal>
+
+      {/* Create Custom Streak Modal */}
+      <Modal transparent animationType="none" visible={showCreateCustom} onRequestClose={closeCreateCustom} statusBarTranslucent>
+        <Animated.View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', opacity: createCustomAnim }}>
+          <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={closeCreateCustom} />
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <Animated.View style={{
+              width: '88%', borderRadius: 16, backgroundColor: theme.bgSheet,
+              borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderSheet, borderTopColor: theme.accentBlueRaw,
+              padding: 20,
+              transform: [{ translateY: modalKeyboardOffset }],
+            }}>
+                <TouchableOpacity style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: theme.textMuted, opacity: 0.5, marginBottom: 16 }} activeOpacity={0.6} onPress={closeCreateCustom} />
+                <Text style={{ fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw, marginBottom: 4 }}>CREATE CUSTOM STREAK</Text>
+              <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginBottom: 20 }}>Manual check-in -- tap the tile each day to log it.</Text>
+
+              <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 6 }}>STREAK NAME</Text>
+              <TextInput
+                style={{ backgroundColor: theme.bgInput, borderWidth: 0.5, borderColor: theme.borderInput, borderRadius: 8, padding: 12, fontSize: 15, fontFamily: 'DMSans_400Regular', color: theme.textPrimary, marginBottom: 16 }}
+                value={customName}
+                onChangeText={setCustomName}
+                placeholder="e.g. Cold Shower, No Alcohol..."
+                placeholderTextColor={theme.textPlaceholder}
+                maxLength={30}
+              />
+
+              <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 6 }}>EMOJI</Text>
+              <TextInput
+                style={{ backgroundColor: theme.bgInput, borderWidth: 0.5, borderColor: theme.borderInput, borderRadius: 8, padding: 12, fontSize: 28, textAlign: 'center', color: theme.textPrimary, marginBottom: 24 }}
+                value={customEmoji}
+                onChangeText={v => setCustomEmoji([...v].slice(0, 1).join(''))}
+                placeholder="🎯"
+                placeholderTextColor={theme.textPlaceholder}
+                maxLength={2}
+              />
+
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <TouchableOpacity onPress={closeCreateCustom}
+                  style={{ backgroundColor: theme.bgInput, borderWidth: 0.5, borderColor: theme.borderInput, borderRadius: 10, padding: 14, width: 90, alignItems: 'center' }}>
+                  <Text style={{ fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.textMuted }}>CANCEL</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={saveCustomStreak}
+                  disabled={!customName.trim() || !customEmoji.trim()}
+                  style={{ flex: 1, backgroundColor: customName.trim() && customEmoji.trim() ? theme.accentBlue : theme.bgInput, borderRadius: 10, padding: 14, alignItems: 'center',
+                    borderWidth: customName.trim() && customEmoji.trim() ? 0 : 0.5, borderColor: theme.borderInput }}>
+                  <Text style={{ fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: customName.trim() && customEmoji.trim() ? theme.bgPrimary : theme.textDim }}>ADD STREAK</Text>
+                </TouchableOpacity>
+            </View>
+            </Animated.View>
+          </TouchableWithoutFeedback>
+        </Animated.View>
+      </Modal>
+
     </LinearGradient>
   );
 }

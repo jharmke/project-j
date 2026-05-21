@@ -2,10 +2,12 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';
 import * as admin from 'firebase-admin';
 import * as jwt from 'jsonwebtoken';
+import * as nodemailer from 'nodemailer';
 
 admin.initializeApp();
 
 const APPLE_PRIVATE_KEY = defineSecret('APPLE_PRIVATE_KEY');
+const GMAIL_APP_PASSWORD = defineSecret('GMAIL_APP_PASSWORD');
 
 const APPLE_TEAM_ID = '8A8F5933RX';
 const APPLE_KEY_ID = 'NCBCD37N9W';
@@ -116,6 +118,48 @@ export const deleteAccount = onCall(
 
     // Step 4: Delete Firebase Auth user -- admin SDK requires no recent login
     await admin.auth().deleteUser(uid);
+
+    return { success: true };
+  }
+);
+
+// Saves prayer request to Firestore and emails the developer.
+// Email is best-effort -- request is always persisted even if email fails.
+export const sendPrayerRequest = onCall(
+  { secrets: [GMAIL_APP_PASSWORD] },
+  async (request) => {
+    if (!request.auth) throw new HttpsError('unauthenticated', 'Must be signed in');
+
+    const { message, userName, userEmail } = request.data as {
+      message: string;
+      userName: string;
+      userEmail: string;
+    };
+
+    if (!message?.trim()) throw new HttpsError('invalid-argument', 'Message required');
+
+    await admin.firestore().collection('prayer_requests').add({
+      uid: request.auth.uid,
+      userName: userName || '',
+      userEmail: userEmail || '',
+      message: message.trim(),
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    try {
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: { user: 'jtharmke@gmail.com', pass: GMAIL_APP_PASSWORD.value() },
+      });
+      await transporter.sendMail({
+        from: '"Project J" <jtharmke@gmail.com>',
+        to: 'jtharmke@gmail.com',
+        subject: `Prayer Request -- ${userName || 'App User'}`,
+        text: `From: ${userName || 'Anonymous'}${userEmail ? ` (${userEmail})` : ''}\n\n${message.trim()}`,
+      });
+    } catch (e) {
+      console.error('Email send failed (request still saved to Firestore):', e);
+    }
 
     return { success: true };
   }

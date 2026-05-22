@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import * as Haptics from 'expo-haptics';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, Dimensions, Easing, Keyboard, KeyboardAvoidingView, Linking, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -266,7 +267,7 @@ function CollapsibleSection({
         </View>
       )}
       <TouchableOpacity
-        onPress={toggle}
+        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggle(); }}
         activeOpacity={0.7}
         style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 14, minHeight: 44 }}
       >
@@ -332,7 +333,7 @@ function NotifGroup({
   return (
     <View style={{ borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, marginBottom: 10, overflow: 'hidden' }}>
       <TouchableOpacity
-        onPress={toggle}
+        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggle(); }}
         activeOpacity={0.7}
         style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, backgroundColor: theme.bgInput, minHeight: 44 }}>
         <View style={{ flex: 1 }}>
@@ -764,7 +765,7 @@ export default function SettingsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary, paddingTop: insets.top }}>
       <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
-        <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 12 }}>
+        <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={{ marginRight: 12 }}>
           <Ionicons name="arrow-back" size={22} color={theme.accentBlue} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
@@ -793,7 +794,7 @@ export default function SettingsScreen() {
               return (
                 <TouchableOpacity
                   key={id}
-                  onPress={() => setTheme(id)}
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setTheme(id); }}
                   activeOpacity={0.7}
                   style={{
                     flexDirection: 'row', alignItems: 'center',
@@ -823,7 +824,7 @@ export default function SettingsScreen() {
                   {accents.map((accent) => {
                     const isActiveAccent = accentId === accent.id;
                     return (
-                      <TouchableOpacity key={accent.id} onPress={() => setAccent(accent.id)} style={{ width: itemW, alignItems: 'center', gap: 4, marginBottom: 10 }}>
+                      <TouchableOpacity key={accent.id} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setAccent(accent.id); }} style={{ width: itemW, alignItems: 'center', gap: 4, marginBottom: 10 }}>
                         <View style={{
                           width: 36, height: 36, borderRadius: 18,
                           backgroundColor: accent.color,
@@ -1101,6 +1102,7 @@ export default function SettingsScreen() {
                 style={[styles.row, { borderTopColor: theme.borderCard }]}
                 onPress={() => {
                   if (isActive) return;
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   if (key === 'discipline') {
                     Alert.alert(
                       'Switch to Discipline',
@@ -1150,6 +1152,7 @@ export default function SettingsScreen() {
                 style={[styles.row, { borderTopColor: theme.borderCard }]}
                 onPress={async () => {
                   if (isActive) return;
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   setFaithJourney(key);
                   await saveSetting('faithJourney', key);
                 }}
@@ -1180,7 +1183,7 @@ export default function SettingsScreen() {
               {([100, 90, 80, 70] as const).map(pct => (
                 <TouchableOpacity
                   key={pct}
-                  onPress={async () => { setBurnAccuracyPct(pct); await saveSetting('burnAccuracyPct', pct); }}
+                  onPress={async () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setBurnAccuracyPct(pct); await saveSetting('burnAccuracyPct', pct); }}
                   style={{
                     flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', borderWidth: 1,
                     borderColor: burnAccuracyPct === pct ? theme.accentBlueBorder : theme.borderInput,
@@ -1209,7 +1212,7 @@ export default function SettingsScreen() {
               {([14, 30, 90] as const).map(d => (
                 <TouchableOpacity
                   key={d}
-                  onPress={() => setImportRange(d)}
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setImportRange(d); }}
                   style={{ flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: importRange === d ? theme.accentBlueBorder : theme.borderInput, backgroundColor: importRange === d ? theme.accentBlueBg : theme.bgInput }}>
                   <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: importRange === d ? theme.accentBlue : theme.textMuted }}>
                     {d === 14 ? '2 WEEKS' : d === 30 ? '1 MONTH' : '3 MONTHS'}
@@ -1218,7 +1221,7 @@ export default function SettingsScreen() {
               ))}
             </View>
             <TouchableOpacity
-              onPress={importWorkoutHistory}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); importWorkoutHistory(); }}
               disabled={importing}
               style={{ paddingVertical: 12, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: theme.accentBlueBorder, backgroundColor: theme.accentBlueBg, opacity: importing ? 0.6 : 1, flexDirection: 'row', justifyContent: 'center', gap: 8 }}>
               {importing
@@ -1271,7 +1274,7 @@ export default function SettingsScreen() {
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold', marginBottom: 6 }}>From</Text>
                     <TouchableOpacity
-                      onPress={() => openTimePicker('quietStart.time', notifSettings.quietStart)}
+                      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openTimePicker('quietStart.time', notifSettings.quietStart); }}
                       style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 10, alignItems: 'center' }}>
                       <Text style={{ color: theme.textPrimary, fontSize: 15, fontFamily: 'DMSans_600SemiBold' }}>{formatNotifTime(notifSettings.quietStart)}</Text>
                     </TouchableOpacity>
@@ -1279,7 +1282,7 @@ export default function SettingsScreen() {
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold', marginBottom: 6 }}>Until</Text>
                     <TouchableOpacity
-                      onPress={() => openTimePicker('quietEnd.time', notifSettings.quietEnd)}
+                      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openTimePicker('quietEnd.time', notifSettings.quietEnd); }}
                       style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 10, alignItems: 'center' }}>
                       <Text style={{ color: theme.textPrimary, fontSize: 15, fontFamily: 'DMSans_600SemiBold' }}>{formatNotifTime(notifSettings.quietEnd)}</Text>
                     </TouchableOpacity>
@@ -1294,7 +1297,7 @@ export default function SettingsScreen() {
                   {[30, 60, 90].map(mins => (
                     <TouchableOpacity
                       key={mins}
-                      onPress={() => updateNotifSettings({ ...notifSettings, minSpacingMins: mins })}
+                      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); updateNotifSettings({ ...notifSettings, minSpacingMins: mins }); }}
                       style={{ flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center', backgroundColor: notifSettings.minSpacingMins === mins ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: notifSettings.minSpacingMins === mins ? theme.accentBlueBorder : theme.borderInput }}>
                       <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: notifSettings.minSpacingMins === mins ? theme.accentBlue : theme.textMuted }}>{mins}m</Text>
                     </TouchableOpacity>
@@ -1422,14 +1425,14 @@ export default function SettingsScreen() {
                           />
                           <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular' }}>min before close</Text>
                           {notifSettings.ifWindow.reminders.length > 1 && (
-                            <TouchableOpacity onPress={() => { const updated = notifSettings.ifWindow.reminders.filter((_, idx) => idx !== i); updateNotifSettings({ ...notifSettings, ifWindow: { ...notifSettings.ifWindow, reminders: updated } }); }}>
+                            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); const updated = notifSettings.ifWindow.reminders.filter((_, idx) => idx !== i); updateNotifSettings({ ...notifSettings, ifWindow: { ...notifSettings.ifWindow, reminders: updated } }); }}>
                               <Ionicons name="close-circle" size={20} color={theme.accentRed} />
                             </TouchableOpacity>
                           )}
                         </View>
                       ))}
                       {notifSettings.ifWindow.reminders.length < 3 && (
-                        <TouchableOpacity onPress={() => updateNotifSettings({ ...notifSettings, ifWindow: { ...notifSettings.ifWindow, reminders: [...notifSettings.ifWindow.reminders, ''] } })} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                        <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); updateNotifSettings({ ...notifSettings, ifWindow: { ...notifSettings.ifWindow, reminders: [...notifSettings.ifWindow.reminders, ''] } }); }} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 }}>
                           <Ionicons name="add-circle-outline" size={16} color={theme.accentBlue} />
                           <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Add another reminder</Text>
                         </TouchableOpacity>
@@ -1447,7 +1450,7 @@ export default function SettingsScreen() {
                   {notifSettings.ifCheckin.enabled && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                       <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular' }}>Time</Text>
-                      <TouchableOpacity onPress={() => openTimePicker('ifCheckin.time', notifSettings.ifCheckin.time)} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 14 }}>
+                      <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openTimePicker('ifCheckin.time', notifSettings.ifCheckin.time); }} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 14 }}>
                         <Text style={{ color: theme.textPrimary, fontSize: 14, fontFamily: 'DMSans_600SemiBold' }}>{formatNotifTime(notifSettings.ifCheckin.time)}</Text>
                       </TouchableOpacity>
                     </View>
@@ -1466,7 +1469,7 @@ export default function SettingsScreen() {
                     {notifSettings.morningIntention.enabled && (
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                         <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular' }}>Time</Text>
-                        <TouchableOpacity onPress={() => openTimePicker('morningIntention.time', notifSettings.morningIntention.time)} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 14 }}>
+                        <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openTimePicker('morningIntention.time', notifSettings.morningIntention.time); }} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 14 }}>
                           <Text style={{ color: theme.textPrimary, fontSize: 14, fontFamily: 'DMSans_600SemiBold' }}>{formatNotifTime(notifSettings.morningIntention.time)}</Text>
                         </TouchableOpacity>
                       </View>
@@ -1482,7 +1485,7 @@ export default function SettingsScreen() {
                     {notifSettings.eveningGratitude.enabled && (
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                         <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular' }}>Time</Text>
-                        <TouchableOpacity onPress={() => openTimePicker('eveningGratitude.time', notifSettings.eveningGratitude.time)} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 14 }}>
+                        <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openTimePicker('eveningGratitude.time', notifSettings.eveningGratitude.time); }} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 14 }}>
                           <Text style={{ color: theme.textPrimary, fontSize: 14, fontFamily: 'DMSans_600SemiBold' }}>{formatNotifTime(notifSettings.eveningGratitude.time)}</Text>
                         </TouchableOpacity>
                       </View>
@@ -1500,7 +1503,7 @@ export default function SettingsScreen() {
                         {notifSettings.prayerCheckin.enabled && (
                           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                             <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular' }}>Time</Text>
-                            <TouchableOpacity onPress={() => openTimePicker('prayerCheckin.time', notifSettings.prayerCheckin.time)} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 14 }}>
+                            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openTimePicker('prayerCheckin.time', notifSettings.prayerCheckin.time); }} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 14 }}>
                               <Text style={{ color: theme.textPrimary, fontSize: 14, fontFamily: 'DMSans_600SemiBold' }}>{formatNotifTime(notifSettings.prayerCheckin.time)}</Text>
                             </TouchableOpacity>
                           </View>
@@ -1521,7 +1524,7 @@ export default function SettingsScreen() {
             <Text style={{ fontSize: 9, letterSpacing: 3, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', color: theme.textMuted, paddingHorizontal: 16, paddingBottom: 8 }}>
               Definitions
             </Text>
-            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => router.push('/definitions')} activeOpacity={0.7}>
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/definitions'); }} activeOpacity={0.7}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>View Definitions</Text>
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>All metric and feature explanations</Text>
@@ -1531,7 +1534,7 @@ export default function SettingsScreen() {
             <Text style={{ fontSize: 9, letterSpacing: 3, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', color: theme.textMuted, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>
               Tips {'&'} Guides
             </Text>
-            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => router.push('/mission')} activeOpacity={0.7}>
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/mission'); }} activeOpacity={0.7}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Our Mission</Text>
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>What makes this app different</Text>
@@ -1541,7 +1544,7 @@ export default function SettingsScreen() {
             <Text style={{ fontSize: 9, letterSpacing: 3, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', color: theme.textMuted, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>
               Prayer
             </Text>
-            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => setShowPrayerModal(true)} activeOpacity={0.7}>
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowPrayerModal(true); }} activeOpacity={0.7}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Send a Prayer Request</Text>
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Share what's on your heart</Text>
@@ -1557,15 +1560,15 @@ export default function SettingsScreen() {
             <Text style={[styles.rowTitle, { color: theme.textPrimary, flex: 1 }]}>Version</Text>
             <Text style={[styles.rowSub, { color: theme.textMuted }]}>{appVersion}</Text>
           </View>
-          <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => Linking.openURL('https://projectj-5d024.web.app/privacy')} activeOpacity={0.7}>
+          <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); Linking.openURL('https://projectj-5d024.web.app/privacy'); }} activeOpacity={0.7}>
             <Text style={[styles.rowTitle, { color: theme.textPrimary, flex: 1 }]}>Privacy Policy</Text>
             <Ionicons name="open-outline" size={14} color={theme.textMuted} />
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => Linking.openURL('https://projectj-5d024.web.app/terms')} activeOpacity={0.7}>
+          <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); Linking.openURL('https://projectj-5d024.web.app/terms'); }} activeOpacity={0.7}>
             <Text style={[styles.rowTitle, { color: theme.textPrimary, flex: 1 }]}>Terms of Service</Text>
             <Ionicons name="open-outline" size={14} color={theme.textMuted} />
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => Linking.openURL('https://www.fatsecret.com')} activeOpacity={0.7}>
+          <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); Linking.openURL('https://www.fatsecret.com'); }} activeOpacity={0.7}>
             <View style={{ flex: 1 }}>
               <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Food Data</Text>
               <Text style={[styles.rowSub, { color: theme.textMuted }]}>Powered by FatSecret</Text>
@@ -1585,17 +1588,17 @@ export default function SettingsScreen() {
           ) : null}
           <View style={[styles.row, { borderTopColor: theme.borderCard }]}>
             <TouchableOpacity
-              onPress={() => Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
                 { text: 'Cancel', style: 'cancel' },
-                { text: 'Sign Out', style: 'destructive', onPress: signOut },
-              ])}
+                { text: 'Sign Out', style: 'destructive', onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); signOut(); } },
+              ]); }}
               style={{ flex: 1 }}
             >
               <Text style={[styles.rowTitle, { color: theme.statusBad }]}>Sign Out</Text>
             </TouchableOpacity>
           </View>
           <View style={[styles.row, { borderTopColor: theme.borderCard }]}>
-            <TouchableOpacity onPress={handleDeleteAccount} style={{ flex: 1 }} disabled={deletingAccount}>
+            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleDeleteAccount(); }} style={{ flex: 1 }} disabled={deletingAccount}>
               {deletingAccount ? (
                 <ActivityIndicator size="small" color={theme.statusBad} />
               ) : (
@@ -1615,9 +1618,10 @@ export default function SettingsScreen() {
             <Text style={[styles.sectionLabel, { color: theme.accentRed, paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8 }]}>Dev Tools</Text>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               Alert.alert('Reset Onboarding', 'This will send you back to the welcome screen on next app launch.', [
                 { text: 'Cancel', style: 'cancel' },
-                { text: 'Reset', style: 'destructive', onPress: async () => { await AsyncStorage.removeItem('pj_onboarding_complete'); Alert.alert('Done', 'Onboarding reset. Restart the app.'); } },
+                { text: 'Reset', style: 'destructive', onPress: async () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); await AsyncStorage.removeItem('pj_onboarding_complete'); Alert.alert('Done', 'Onboarding reset. Restart the app.'); } },
               ]);
             }}>
               <View style={{ flex: 1 }}>
@@ -1627,7 +1631,7 @@ export default function SettingsScreen() {
               <Ionicons name="refresh-outline" size={18} color={theme.accentBlue} />
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={fixDefaultTags}>
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); fixDefaultTags(); }}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowTitle, { color: theme.accentAmber }]}>Fix Default Tags</Text>
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Resets default tag names/colors.</Text>
@@ -1636,9 +1640,10 @@ export default function SettingsScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               Alert.alert('Reset Workout State', 'This will clear all workout data including exercises, notes, cardio logs, and weekly template. Your food, profile, and settings data will not be affected.\n\nThis cannot be undone.', [
                 { text: 'Cancel', style: 'cancel' },
-                { text: 'Reset', style: 'destructive', onPress: async () => { await AsyncStorage.removeItem('pj_workout_state'); Alert.alert('Done', 'Workout state cleared. Restart the app.'); } },
+                { text: 'Reset', style: 'destructive', onPress: async () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); await AsyncStorage.removeItem('pj_workout_state'); Alert.alert('Done', 'Workout state cleared. Restart the app.'); } },
               ]);
             }}>
               <View style={{ flex: 1 }}>
@@ -1649,9 +1654,10 @@ export default function SettingsScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               Alert.alert('Reset Achievements', 'Clear all unlocked achievements? This cannot be undone.', [
                 { text: 'Cancel', style: 'cancel' },
-                { text: 'Reset', style: 'destructive', onPress: async () => { await AsyncStorage.removeItem('pj_achievements'); Alert.alert('Done', 'Achievements cleared.'); } },
+                { text: 'Reset', style: 'destructive', onPress: async () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); await AsyncStorage.removeItem('pj_achievements'); Alert.alert('Done', 'Achievements cleared.'); } },
               ]);
             }}>
               <View style={{ flex: 1 }}>
@@ -1662,9 +1668,11 @@ export default function SettingsScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               Alert.alert('Clear Food History', 'This will remove all logged food entries from the last 90 days. Water, steps, sleep, and weight data will not be affected.', [
                 { text: 'Cancel', style: 'cancel' },
                 { text: 'Clear', style: 'destructive', onPress: async () => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                   const keys = await AsyncStorage.getAllKeys();
                   const dayKeys = keys.filter(k => k.match(/^pj_\d{4}-\d{2}-\d{2}$/));
                   for (const key of dayKeys) {
@@ -1683,9 +1691,11 @@ export default function SettingsScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               Alert.alert('Reset Tooltip States', 'Re-enable all (i) pulse animations?', [
                 { text: 'Cancel', style: 'cancel' },
                 { text: 'Reset', style: 'destructive', onPress: async () => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                   const keys = await AsyncStorage.getAllKeys();
                   const tooltipKeys = keys.filter(k => k.startsWith('pj_tooltip_'));
                   await AsyncStorage.multiRemove(tooltipKeys);
@@ -1701,9 +1711,11 @@ export default function SettingsScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               Alert.alert('Force Restore from Firestore', 'This wipes all local pj_* data and pulls everything from your cloud backup. Use only if your data is missing after signing in.', [
                 { text: 'Cancel', style: 'cancel' },
                 { text: 'Restore', style: 'destructive', onPress: async () => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                   const uid = auth.currentUser?.uid;
                   if (!uid) { Alert.alert('Not signed in'); return; }
                   try {
@@ -1728,6 +1740,7 @@ export default function SettingsScreen() {
 
             {(['small', 'medium', 'large'] as const).map(tier => (
               <TouchableOpacity key={tier} style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 setDevCelebTier(tier);
                 setDevCelebLabel(tier === 'small' ? 'NICE WORK' : tier === 'medium' ? 'MILESTONE' : 'GOAL WEIGHT');
                 setDevCelebVisible(true);
@@ -1741,6 +1754,7 @@ export default function SettingsScreen() {
             ))}
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               const testDef = ACHIEVEMENTS.find(a => a.id === 'weight_goal');
               if (testDef) showAchievementToast(testDef);
             }}>
@@ -1752,6 +1766,7 @@ export default function SettingsScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               Alert.alert('Upload All Data to Firestore', 'This uploads all your local app data to the cloud right now. Safe to run any time -- it never deletes local data.', [
                 { text: 'Cancel', style: 'cancel' },
                 { text: 'Upload', onPress: async () => { const count = await uploadAllLocal(); Alert.alert('Done', `${count} keys uploaded to Firestore.`); } },
@@ -1765,6 +1780,7 @@ export default function SettingsScreen() {
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               const uid = auth.currentUser?.uid;
               if (!uid) { Alert.alert('Not signed in'); return; }
               const allKeys = await AsyncStorage.getAllKeys();
@@ -1795,6 +1811,7 @@ export default function SettingsScreen() {
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <TouchableOpacity
               onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 Keyboard.dismiss();
                 setGoalProfile(savedGoalProfile);
                 hasGoalChangesRef.current = false;
@@ -1805,7 +1822,7 @@ export default function SettingsScreen() {
               <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.textMuted }}>CANCEL</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={saveGoals}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); saveGoals(); }}
               disabled={!isMacroValid()}
               style={{ flex: 1, backgroundColor: isMacroValid() ? theme.accentBlue : theme.bgInput, borderWidth: isMacroValid() ? 0 : 0.5, borderColor: theme.borderInput, borderRadius: 10, padding: 16, alignItems: 'center' }}>
               <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: isMacroValid() ? theme.bgPrimary : theme.textMuted }}>
@@ -1836,11 +1853,11 @@ export default function SettingsScreen() {
           <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={closeTimePicker} />
           <Animated.View style={{ backgroundColor: theme.bgSheet, borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingBottom: insets.bottom + 8, transform: [{ translateY: sheetAnim }] }}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 14, paddingBottom: 6 }}>
-              <TouchableOpacity onPress={closeTimePicker} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeTimePicker(); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                 <Text style={{ fontSize: 14, fontFamily: 'DMSans_400Regular', color: theme.textMuted }}>Cancel</Text>
               </TouchableOpacity>
               <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.accentBlueRaw, textTransform: 'uppercase' }}>Set Time</Text>
-              <TouchableOpacity onPress={confirmTimePicker} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); confirmTimePicker(); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                 <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlueRaw }}>Done</Text>
               </TouchableOpacity>
             </View>

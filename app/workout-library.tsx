@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Haptics from 'expo-haptics';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Animated, FlatList, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -873,7 +874,7 @@ function DayRow({ day, state, onChange, allTags, onAddTag, theme }: {
   const pill = (label: string, active: boolean, col: string, onPress: () => void) => (
     <TouchableOpacity
       key={label}
-      onPress={onPress}
+      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPress(); }}
       style={{ flex: 1, paddingVertical: 6, borderRadius: 6, alignItems: 'center', backgroundColor: active ? col + '22' : 'transparent', borderWidth: 1, borderColor: active ? col + '99' : theme.borderSubtle }}>
       <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 0.3, color: active ? col : theme.textDim }}>{label}</Text>
     </TouchableOpacity>
@@ -903,14 +904,14 @@ function DayRow({ day, state, onChange, allTags, onAddTag, theme }: {
               return (
                 <TouchableOpacity
                   key={t.id}
-                  onPress={() => toggleTag(t.id)}
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleTag(t.id); }}
                   style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, backgroundColor: isSelected ? t.color + '99' : t.color + '22', borderWidth: 1, borderColor: isSelected ? t.color : t.color + '55' }}>
                   <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: isSelected ? '#ffffff' : t.color }}>{t.label}</Text>
                 </TouchableOpacity>
               );
             })}
             <TouchableOpacity
-              onPress={() => onAddTag(day)}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onAddTag(day); }}
               style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderSubtle }}>
               <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: theme.textDim }}>+ Tag</Text>
             </TouchableOpacity>
@@ -1045,14 +1046,14 @@ function ProgramBuilderModal({ onClose, onSave, editingProgram }: {
         shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.25, shadowRadius: 16,
         paddingBottom: kbHeight,
       }, animStyle]}>
-        <TouchableOpacity onPress={close} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 8 }}>
+        <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); close(); }} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 8 }}>
           <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
         </TouchableOpacity>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
           <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw }}>
             {editingProgram ? 'EDIT PROGRAM' : 'CREATE PROGRAM'}
           </Text>
-          <TouchableOpacity onPress={close} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); close(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <Ionicons name="close" size={20} color={theme.textMuted} />
           </TouchableOpacity>
         </View>
@@ -1087,7 +1088,7 @@ function ProgramBuilderModal({ onClose, onSave, editingProgram }: {
             <DayRow key={d} day={d} state={days[d]} allTags={allTags} onAddTag={openTagCreator} onChange={updated => setDays(prev => ({ ...prev, [d]: updated }))} theme={theme} />
           ))}
           <TouchableOpacity
-            onPress={handleSave}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); handleSave(); }}
             disabled={!canSave}
             style={{ marginTop: 8, backgroundColor: theme.accentBlue, borderRadius: 10, paddingVertical: 14, alignItems: 'center', opacity: canSave ? 1 : 0.4 }}>
             <Text style={{ color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 18, letterSpacing: 2 }}>
@@ -1113,14 +1114,14 @@ function ProgramBuilderModal({ onClose, onSave, editingProgram }: {
               <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 10 }}>COLOR</Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
                 {TAG_COLOR_PALETTE.map(c => (
-                  <TouchableOpacity key={c} onPress={() => setNewTagColor(c)} style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: c, borderWidth: newTagColor === c ? 2.5 : 0, borderColor: '#ffffff' }} />
+                  <TouchableOpacity key={c} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setNewTagColor(c); }} style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: c, borderWidth: newTagColor === c ? 2.5 : 0, borderColor: '#ffffff' }} />
                 ))}
               </View>
               <View style={{ flexDirection: 'row', gap: 8 }}>
-                <TouchableOpacity onPress={() => setShowTagCreator(false)} style={{ flex: 1, padding: 12, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, alignItems: 'center' }}>
+                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowTagCreator(false); }} style={{ flex: 1, padding: 12, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, alignItems: 'center' }}>
                   <Text style={{ color: theme.textMuted, fontFamily: 'DMSans_500Medium', fontSize: 14 }}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={handleCreateTag} disabled={!newTagName.trim()} style={{ flex: 1, padding: 12, backgroundColor: theme.accentBlue, borderRadius: 8, alignItems: 'center', opacity: newTagName.trim() ? 1 : 0.4 }}>
+                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); handleCreateTag(); }} disabled={!newTagName.trim()} style={{ flex: 1, padding: 12, backgroundColor: theme.accentBlue, borderRadius: 8, alignItems: 'center', opacity: newTagName.trim() ? 1 : 0.4 }}>
                   <Text style={{ color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 1 }}>ADD TAG</Text>
                 </TouchableOpacity>
               </View>
@@ -1295,7 +1296,7 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
                 <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw }}>
                   {editingRoutine ? 'EDIT ROUTINE' : 'CREATE ROUTINE'}
                 </Text>
-                <TouchableOpacity onPress={close} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); close(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                   <Ionicons name="close" size={20} color={theme.textMuted} />
                 </TouchableOpacity>
               </View>
@@ -1318,7 +1319,7 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
                   {visibleTags.map(t => {
                     const sel = selectedTags.includes(t.id);
                     return (
-                      <TouchableOpacity key={t.id} onPress={() => toggleTag(t.id)}
+                      <TouchableOpacity key={t.id} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleTag(t.id); }}
                         style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, backgroundColor: sel ? t.color + '99' : t.color + '22', borderWidth: 1, borderColor: sel ? t.color : t.color + '55' }}>
                         <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: sel ? '#ffffff' : t.color }}>{t.label}</Text>
                       </TouchableOpacity>
@@ -1339,7 +1340,7 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
                     onChangeText={setExQuery}
                   />
                   <TouchableOpacity
-                    onPress={() => setBrowseMode(b => !b)}
+                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setBrowseMode(b => !b); }}
                     style={{ width: 46, alignItems: 'center', justifyContent: 'center', backgroundColor: browseMode ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: browseMode ? theme.accentBlueBorder : theme.borderInput, borderRadius: 8 }}>
                     <Ionicons name="list" size={20} color={browseMode ? theme.accentBlue : theme.textMuted} />
                   </TouchableOpacity>
@@ -1350,7 +1351,7 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
                     {(exQuery.trim() ? library.filter(l => l.name.toLowerCase().includes(exQuery.toLowerCase())) : library).map((l, idx, arr) => {
                       const alreadyAdded = !!exercises.find(e => e.name === l.name);
                       return (
-                        <TouchableOpacity key={l.id} onPress={() => { if (!alreadyAdded) addFromLibrary(l); }}
+                        <TouchableOpacity key={l.id} onPress={() => { if (!alreadyAdded) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); addFromLibrary(l); } }}
                           style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: idx < arr.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderCard, opacity: alreadyAdded ? 0.45 : 1 }}>
                           <View style={{ flex: 1 }}>
                             <Text style={{ color: theme.textPrimary, fontSize: 13, fontFamily: 'DMSans_500Medium' }}>{l.name}</Text>
@@ -1369,7 +1370,7 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
                 ) : filteredLibrary.length > 0 ? (
                   <View style={{ backgroundColor: theme.bgInset, borderRadius: 8, marginBottom: 12, borderWidth: 0.5, borderColor: theme.borderCard }}>
                     {filteredLibrary.map((l, idx) => (
-                      <TouchableOpacity key={l.id} onPress={() => addFromLibrary(l)}
+                      <TouchableOpacity key={l.id} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); addFromLibrary(l); }}
                         style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: idx < filteredLibrary.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderCard }}>
                         <View style={{ flex: 1 }}>
                           <Text style={{ color: theme.textPrimary, fontSize: 13, fontFamily: 'DMSans_500Medium' }}>{l.name}</Text>
@@ -1390,7 +1391,7 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
                     <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular', marginBottom: 14, textAlign: 'center', paddingHorizontal: 20 }}>
                       Search or browse above, or fill from a preset
                     </Text>
-                    <TouchableOpacity onPress={openFillPicker}
+                    <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openFillPicker(); }}
                       style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 9 }}>
                       <Ionicons name="flash-outline" size={15} color={theme.accentBlue} />
                       <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Fill from Preset</Text>
@@ -1399,7 +1400,7 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
                 )}
 
                 {exercises.length > 0 && !exQuery.trim() && !browseMode && (
-                  <TouchableOpacity onPress={openFillPicker}
+                  <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openFillPicker(); }}
                     style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4, marginBottom: 10 }}>
                     <Ionicons name="flash-outline" size={13} color={theme.textMuted} />
                     <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: 'DMSans_500Medium' }}>Replace with preset</Text>
@@ -1415,7 +1416,7 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
                         </Text>
                       </View>
                       <Text style={{ flex: 1, color: theme.textPrimary, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>{ex.name}</Text>
-                      <TouchableOpacity onPress={() => removeExercise(ex.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
+                      <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); removeExercise(ex.id); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
                         <Ionicons name="trash-outline" size={16} color={theme.accentRed} />
                       </TouchableOpacity>
                     </View>
@@ -1484,7 +1485,7 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
                 ))}
 
                 {!showQuickAdd ? (
-                  <TouchableOpacity onPress={() => setShowQuickAdd(true)}
+                  <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowQuickAdd(true); }}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 10, marginTop: 4 }}>
                     <Ionicons name="add-circle-outline" size={16} color={theme.accentBlue} />
                     <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_500Medium' }}>Create new exercise</Text>
@@ -1502,21 +1503,21 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
                       autoFocus
                     />
                     <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
-                      <TouchableOpacity onPress={() => setQuickIsCardio(false)}
+                      <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setQuickIsCardio(false); }}
                         style={{ flex: 1, paddingVertical: 8, borderRadius: 6, alignItems: 'center', backgroundColor: !quickIsCardio ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: !quickIsCardio ? theme.accentBlueBorder : theme.borderInput }}>
                         <Text style={{ color: !quickIsCardio ? theme.accentBlue : theme.textMuted, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Lift</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity onPress={() => setQuickIsCardio(true)}
+                      <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setQuickIsCardio(true); }}
                         style={{ flex: 1, paddingVertical: 8, borderRadius: 6, alignItems: 'center', backgroundColor: quickIsCardio ? 'rgba(245,158,11,0.15)' : theme.bgInput, borderWidth: 1, borderColor: quickIsCardio ? 'rgba(245,158,11,0.3)' : theme.borderInput }}>
                         <Text style={{ color: quickIsCardio ? theme.statusWarn : theme.textMuted, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Cardio</Text>
                       </TouchableOpacity>
                     </View>
                     <View style={{ flexDirection: 'row', gap: 8 }}>
-                      <TouchableOpacity onPress={() => { setShowQuickAdd(false); setQuickName(''); setQuickIsCardio(false); }}
+                      <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowQuickAdd(false); setQuickName(''); setQuickIsCardio(false); }}
                         style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput }}>
                         <Text style={{ color: theme.textMuted, fontFamily: 'DMSans_500Medium', fontSize: 13 }}>Cancel</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity onPress={handleQuickAdd} disabled={!quickName.trim()}
+                      <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); handleQuickAdd(); }} disabled={!quickName.trim()}
                         style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: theme.accentBlue, opacity: quickName.trim() ? 1 : 0.4 }}>
                         <Text style={{ color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 1 }}>ADD</Text>
                       </TouchableOpacity>
@@ -1524,7 +1525,7 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
                   </View>
                 )}
 
-                <TouchableOpacity onPress={handleSave} disabled={!canSave}
+                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); handleSave(); }} disabled={!canSave}
                   style={{ marginTop: 20, backgroundColor: theme.accentBlue, borderRadius: 10, paddingVertical: 14, alignItems: 'center', opacity: canSave ? 1 : 0.4 }}>
                   <Text style={{ color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 18, letterSpacing: 2 }}>
                     {editingRoutine ? 'SAVE ROUTINE' : 'CREATE ROUTINE'}
@@ -1553,7 +1554,7 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
                       <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 2 }}>No tag match -- showing all presets</Text>
                     )}
                   </View>
-                  <TouchableOpacity onPress={closeFillPicker} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeFillPicker(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                     <Ionicons name="close" size={20} color={theme.textMuted} />
                   </TouchableOpacity>
                 </View>
@@ -1563,13 +1564,14 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
                     const more = preset.exercises.length > 3 ? ` +${preset.exercises.length - 3} more` : '';
                     return (
                       <TouchableOpacity key={preset.id} onPress={() => {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         if (exercises.length > 0) {
                           Alert.alert(
                             'Replace exercises?',
                             `This will replace your ${exercises.length} exercise${exercises.length !== 1 ? 's' : ''} with the "${preset.name}" preset.`,
                             [
                               { text: 'Cancel', style: 'cancel' },
-                              { text: 'Replace', style: 'destructive', onPress: () => applyPreset(preset) },
+                              { text: 'Replace', style: 'destructive', onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); applyPreset(preset); } },
                             ]
                           );
                         } else {
@@ -1770,6 +1772,7 @@ export default function WorkoutLibraryScreen() {
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Load', onPress: async () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             try {
               const raw = await AsyncStorage.getItem('pj_workout_state');
               const state = raw ? JSON.parse(raw) : {};
@@ -1792,6 +1795,7 @@ export default function WorkoutLibraryScreen() {
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Clear', style: 'destructive', onPress: async () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             try {
               const raw = await AsyncStorage.getItem('pj_workout_state');
               const state = raw ? JSON.parse(raw) : {};
@@ -1837,6 +1841,7 @@ export default function WorkoutLibraryScreen() {
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete', style: 'destructive', onPress: async () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             const updated = myPrograms.filter(p => p.id !== program.id);
             await saveMyPrograms(updated);
             if (activeProgramName === program.name) {
@@ -1877,6 +1882,7 @@ export default function WorkoutLibraryScreen() {
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete', style: 'destructive', onPress: async () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
             await saveMyRoutines(myRoutines.filter(r => r.id !== routine.id));
             showToast('Routine deleted', undefined, 'success');
           }
@@ -2065,7 +2071,7 @@ export default function WorkoutLibraryScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={styles.backBtn}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
             <Ionicons name="chevron-back" size={18} color={theme.accentBlueRaw} />
             <Text style={styles.backBtnText}>Back</Text>
@@ -2085,7 +2091,7 @@ export default function WorkoutLibraryScreen() {
         />
         {(activeTab === 'all' || activeTab === 'favorites') && (
           <TouchableOpacity
-            onPress={openFilterModal}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openFilterModal(); }}
             style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: filterActiveCount > 0 ? theme.accentBlueBg : theme.bgInset, borderWidth: 1, borderColor: filterActiveCount > 0 ? theme.accentBlueBorder : theme.borderCard, alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="options-outline" size={18} color={filterActiveCount > 0 ? theme.accentBlue : theme.textMuted} />
             {filterActiveCount > 0 && (
@@ -2102,7 +2108,7 @@ export default function WorkoutLibraryScreen() {
           <TouchableOpacity
             key={tab}
             style={[styles.tab, activeTab === tab && styles.tabActive]}
-            onPress={() => setActiveTab(tab)}>
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setActiveTab(tab); }}>
             <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
             </Text>
@@ -2118,6 +2124,7 @@ export default function WorkoutLibraryScreen() {
           contentContainerStyle={{ paddingTop: 8, paddingBottom: 120 }}
           renderItem={({ item }) => (
             <TouchableOpacity style={styles.exItem} onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               if (isSelectMode) {
                 selectExercise(item);
               } else {
@@ -2145,11 +2152,11 @@ export default function WorkoutLibraryScreen() {
                 {isSelectMode ? (
                   <TouchableOpacity
                     style={{ backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 }}
-                    onPress={() => selectExercise(item)}>
+                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); selectExercise(item); }}>
                     <Text style={{ color: theme.accentGreen, fontFamily: 'DMSans_600SemiBold', fontSize: 13 }}>+ Add</Text>
                   </TouchableOpacity>
                 ) : (
-                  <TouchableOpacity onPress={() => toggleFavorite(item.id)} style={{ padding: 4 }}>
+                  <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleFavorite(item.id); }} style={{ padding: 4 }}>
                     <Ionicons name={item.favorite ? 'star' : 'star-outline'} size={18} color={item.favorite ? theme.accentAmber : theme.textDim} />
                   </TouchableOpacity>
                 )}
@@ -2184,7 +2191,7 @@ export default function WorkoutLibraryScreen() {
                 <Text style={{ fontSize: 15, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold' }}>{activeProgramName}</Text>
               </View>
               <TouchableOpacity
-                onPress={handleClearProgram}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleClearProgram(); }}
                 style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: theme.accentRedBorder, backgroundColor: theme.accentRedBg }}>
                 <Text style={{ color: theme.accentRed, fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 0.5 }}>CLEAR</Text>
               </TouchableOpacity>
@@ -2204,13 +2211,13 @@ export default function WorkoutLibraryScreen() {
                   <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'DMSans_700Bold', flex: 1, marginRight: 8 }}>{program.name}</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                     <TouchableOpacity
-                      onPress={() => { setEditingProgram(program); setShowBuilder(true); }}
+                      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setEditingProgram(program); setShowBuilder(true); }}
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       style={{ padding: 4 }}>
                       <Ionicons name="pencil" size={15} color={theme.textMuted} />
                     </TouchableOpacity>
                     <TouchableOpacity
-                      onPress={() => handleDeleteProgram(program)}
+                      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleDeleteProgram(program); }}
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       style={{ padding: 4 }}>
                       <Ionicons name="trash-outline" size={15} color={theme.accentRed} />
@@ -2237,7 +2244,7 @@ export default function WorkoutLibraryScreen() {
                   })}
                 </View>
                 <TouchableOpacity
-                  onPress={() => handleLoadProgram(program)}
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleLoadProgram(program); }}
                   style={{ paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: activeProgramName === program.name ? theme.accentGreenBg : theme.accentBlueBg, borderWidth: 1, borderColor: activeProgramName === program.name ? theme.accentGreenBorder : theme.accentBlueBorder }}>
                   <Text style={{ color: activeProgramName === program.name ? theme.accentGreen : theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>
                     {activeProgramName === program.name ? 'ACTIVE' : 'LOAD PROGRAM'}
@@ -2285,12 +2292,13 @@ export default function WorkoutLibraryScreen() {
                       </View>
                     )}
                     <View style={{ flexDirection: 'row', gap: 8 }}>
-                      <TouchableOpacity onPress={() => openLoadRoutinePicker(routine)}
+                      <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openLoadRoutinePicker(routine); }}
                         style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
                         <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>USE</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         onPress={async () => {
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                           const copy: Routine = { ...routine, id: makeId(), name: routine.name, isPreset: false, exercises: routine.exercises.map(e => ({ ...e, id: makeId() })) };
                           await saveMyRoutines([...myRoutines, copy]);
                           showToast('Routine duplicated', copy.name, 'success');
@@ -2330,15 +2338,15 @@ export default function WorkoutLibraryScreen() {
                     <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
                       <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'DMSans_700Bold', flex: 1, marginRight: 8 }}>{routine.name}</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <TouchableOpacity onPress={() => saveMyRoutines(myRoutines.map(r => r.id === routine.id ? { ...r, starred: !r.starred } : r))}
+                        <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); saveMyRoutines(myRoutines.map(r => r.id === routine.id ? { ...r, starred: !r.starred } : r)); }}
                           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
                           <Ionicons name={routine.starred ? 'star' : 'star-outline'} size={16} color={routine.starred ? theme.accentAmber : theme.textDim} />
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => { setEditingRoutine(routine); setShowRoutineBuilder(true); }}
+                        <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setEditingRoutine(routine); setShowRoutineBuilder(true); }}
                           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
                           <Ionicons name="pencil" size={15} color={theme.textMuted} />
                         </TouchableOpacity>
-                        <TouchableOpacity onPress={() => handleDeleteRoutine(routine)}
+                        <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleDeleteRoutine(routine); }}
                           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
                           <Ionicons name="trash-outline" size={15} color={theme.accentRed} />
                         </TouchableOpacity>
@@ -2364,7 +2372,7 @@ export default function WorkoutLibraryScreen() {
                         })}
                       </View>
                     )}
-                    <TouchableOpacity onPress={() => openLoadRoutinePicker(routine)}
+                    <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openLoadRoutinePicker(routine); }}
                       style={{ paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
                       <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>LOAD ROUTINE</Text>
                     </TouchableOpacity>
@@ -2429,7 +2437,7 @@ export default function WorkoutLibraryScreen() {
 
               <TouchableOpacity
                 style={{ backgroundColor: theme.accentBlue, borderRadius: 8, padding: 12, alignItems: 'center', marginBottom: 8 }}
-                onPress={() => { setShowDayPicker(true); }}>
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setShowDayPicker(true); }}>
                 <Text style={{ color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 1 }}>+ ADD TO DAY</Text>
               </TouchableOpacity>
 
@@ -2437,6 +2445,7 @@ export default function WorkoutLibraryScreen() {
                 <View style={{ marginBottom: 8, backgroundColor: theme.bgInset, borderRadius: 8, padding: 12 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                     <TouchableOpacity onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1); }
                       else setCalMonth(m => m - 1);
                     }}>
@@ -2446,6 +2455,7 @@ export default function WorkoutLibraryScreen() {
                       {['January','February','March','April','May','June','July','August','September','October','November','December'][calMonth]} {calYear}
                     </Text>
                     <TouchableOpacity onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                       if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1); }
                       else setCalMonth(m => m + 1);
                     }}>
@@ -2476,6 +2486,7 @@ export default function WorkoutLibraryScreen() {
                               key={ci}
                               style={{ flex: 1, alignItems: 'center', paddingVertical: 6, borderRadius: 4, backgroundColor: isToday ? theme.accentGreenBg : 'transparent' }}
                               onPress={() => {
+                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                                 if (selectedEx) closeDetailModal(() => selectExercise(selectedEx, dateKey));
                               }}>
                               <Text style={{ color: isToday ? theme.accentGreen : theme.textPrimary, fontSize: 13, fontFamily: 'DMSans_400Regular' }}>{d}</Text>
@@ -2490,16 +2501,17 @@ export default function WorkoutLibraryScreen() {
 
               <TouchableOpacity
                 style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8, padding: 12, alignItems: 'center', marginBottom: 8 }}
-                onPress={() => closeDetailModal(() => openEdit(selectedEx!))}>
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeDetailModal(() => openEdit(selectedEx!)); }}>
                 <Text style={{ color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold', fontSize: 14 }}>Edit</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={{ padding: 12, alignItems: 'center' }}
                 onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   Alert.alert('Remove Exercise', `Remove "${selectedEx.name}" from library?`, [
                     { text: 'Cancel', style: 'cancel' },
-                    { text: 'Remove', style: 'destructive', onPress: () => { deleteExercise(selectedEx!.id); closeDetailModal(); } }
+                    { text: 'Remove', style: 'destructive', onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); deleteExercise(selectedEx!.id); closeDetailModal(); } }
                   ]);
                 }}>
                 <Text style={{ color: theme.accentRed, fontFamily: 'DMSans_600SemiBold', fontSize: 13 }}>Remove from Library</Text>
@@ -2518,7 +2530,7 @@ export default function WorkoutLibraryScreen() {
           <Reanimated.View style={[{ backgroundColor: theme.bgSheet, borderRadius: 20, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, width: '100%', height: 420, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20 }, addCardAnimStyle]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
               <Text style={styles.modalTitle}>{editingEx ? 'EDIT EXERCISE' : 'ADD EXERCISE'}</Text>
-              <TouchableOpacity onPress={closeAddModal} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeAddModal(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                 <Ionicons name="close" size={20} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
@@ -2527,10 +2539,10 @@ export default function WorkoutLibraryScreen() {
                 <TextInput style={styles.modalInput} placeholder="Exercise name" placeholderTextColor={theme.textPlaceholder} value={form.name || ''} onChangeText={v => setForm(p => ({ ...p, name: v }))} autoCapitalize="words" />
                 <Text style={styles.modalLabel}>Type</Text>
                 <View style={styles.typeRow}>
-                  <TouchableOpacity style={[styles.typeBtn, form.type === 'lift' && styles.typeBtnActive]} onPress={() => setForm(p => ({ ...p, type: 'lift' }))}>
+                  <TouchableOpacity style={[styles.typeBtn, form.type === 'lift' && styles.typeBtnActive]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setForm(p => ({ ...p, type: 'lift' })); }}>
                     <Text style={[styles.typeBtnText, form.type === 'lift' && { color: theme.accentBlue }]}>Lift</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[styles.typeBtn, form.type === 'cardio' && { borderColor: `${theme.accentAmber}66`, backgroundColor: `${theme.accentAmber}1a` }]} onPress={() => setForm(p => ({ ...p, type: 'cardio' }))}>
+                  <TouchableOpacity style={[styles.typeBtn, form.type === 'cardio' && { borderColor: `${theme.accentAmber}66`, backgroundColor: `${theme.accentAmber}1a` }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setForm(p => ({ ...p, type: 'cardio' })); }}>
                     <Text style={[styles.typeBtnText, form.type === 'cardio' && { color: theme.accentAmber }]}>Cardio</Text>
                   </TouchableOpacity>
                 </View>
@@ -2541,7 +2553,7 @@ export default function WorkoutLibraryScreen() {
                     return (
                       <TouchableOpacity
                         key={tag.id}
-                        onPress={() => setForm(p => ({ ...p, tags: [tag.id] }))}
+                        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setForm(p => ({ ...p, tags: [tag.id] })); }}
                         style={{ backgroundColor: active ? tag.color + '99' : 'transparent', borderWidth: 1, borderColor: active ? tag.color : theme.borderCard, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 }}>
                         <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: active ? '#ffffff' : theme.textMuted }}>{tag.label}</Text>
                       </TouchableOpacity>
@@ -2550,10 +2562,10 @@ export default function WorkoutLibraryScreen() {
                 </View>
                 <TextInput style={styles.modalInput} placeholder="Note (optional)" placeholderTextColor={theme.textPlaceholder} value={form.note || ''} onChangeText={v => setForm(p => ({ ...p, note: v }))} />
                 <View style={styles.modalBtns}>
-                  <TouchableOpacity style={styles.modalCancelBtn} onPress={closeAddModal}>
+                  <TouchableOpacity style={styles.modalCancelBtn} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeAddModal(); }}>
                     <Text style={styles.modalCancelText}>Cancel</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[styles.modalSaveBtn, (!form.name?.trim() || !form.tags?.length) && { opacity: 0.4 }]} onPress={saveExercise} disabled={!form.name?.trim() || !form.tags?.length}>
+                  <TouchableOpacity style={[styles.modalSaveBtn, (!form.name?.trim() || !form.tags?.length) && { opacity: 0.4 }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); saveExercise(); }} disabled={!form.name?.trim() || !form.tags?.length}>
                     <Text style={styles.modalSaveText}>{editingEx ? 'SAVE' : 'ADD'}</Text>
                   </TouchableOpacity>
                 </View>
@@ -2572,11 +2584,11 @@ export default function WorkoutLibraryScreen() {
               <Text style={{ color: theme.accentBlue, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>SORT & FILTER</Text>
               <View style={{ flexDirection: 'row', gap: 10 }}>
                 {filterActiveCount > 0 && (
-                  <TouchableOpacity onPress={() => { setSortOption('az'); setFilterTags([]); setFilterType('all'); }} style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: theme.accentRedBorder, backgroundColor: theme.accentRedBg }}>
+                  <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setSortOption('az'); setFilterTags([]); setFilterType('all'); }} style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: theme.accentRedBorder, backgroundColor: theme.accentRedBg }}>
                     <Text style={{ color: theme.accentRed, fontSize: 11, fontFamily: 'DMSans_700Bold' }}>CLEAR</Text>
                   </TouchableOpacity>
                 )}
-                <TouchableOpacity onPress={closeFilterModal} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeFilterModal(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                   <Ionicons name="close" size={20} color={theme.textMuted} />
                 </TouchableOpacity>
               </View>
@@ -2587,7 +2599,7 @@ export default function WorkoutLibraryScreen() {
                 {([['az', 'A–Z'], ['za', 'Z–A'], ['favorites', 'Favorites First'], ['recent', 'Recently Used']] as const).map(([val, label]) => (
                   <TouchableOpacity
                     key={val}
-                    onPress={() => setSortOption(val)}
+                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setSortOption(val); }}
                     style={{ backgroundColor: sortOption === val ? theme.accentBlueBg : theme.bgInset, borderWidth: 1, borderColor: sortOption === val ? theme.accentBlueBorder : theme.borderCard, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 }}>
                     <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: sortOption === val ? theme.accentBlue : theme.textMuted }}>{label}</Text>
                   </TouchableOpacity>
@@ -2598,7 +2610,7 @@ export default function WorkoutLibraryScreen() {
                 {([['all', 'All'], ['lift', 'Lift'], ['cardio', 'Cardio']] as const).map(([val, label]) => (
                   <TouchableOpacity
                     key={val}
-                    onPress={() => setFilterType(val)}
+                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setFilterType(val); }}
                     style={{ backgroundColor: filterType === val ? theme.accentBlueBg : theme.bgInset, borderWidth: 1, borderColor: filterType === val ? theme.accentBlueBorder : theme.borderCard, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 }}>
                     <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: filterType === val ? theme.accentBlue : theme.textMuted }}>{label}</Text>
                   </TouchableOpacity>
@@ -2611,7 +2623,7 @@ export default function WorkoutLibraryScreen() {
                   return (
                     <TouchableOpacity
                       key={tag.id}
-                      onPress={() => setFilterTags(prev => active ? prev.filter(id => id !== tag.id) : [...prev, tag.id])}
+                      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setFilterTags(prev => active ? prev.filter(id => id !== tag.id) : [...prev, tag.id]); }}
                       style={{ backgroundColor: active ? tag.color + '99' : 'transparent', borderWidth: 1, borderColor: active ? tag.color : theme.borderCard, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 }}>
                       <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: active ? '#ffffff' : theme.textMuted }}>{tag.label}</Text>
                     </TouchableOpacity>
@@ -2639,12 +2651,12 @@ export default function WorkoutLibraryScreen() {
           <Animated.View style={{ opacity: fabItem3Anim, transform: [{ translateY: fabItem3Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <TouchableOpacity
-                onPress={() => { closeFabMenu(); setEditingRoutine(null); setShowRoutineBuilder(true); }}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); setEditingRoutine(null); setShowRoutineBuilder(true); }}
                 style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
                 <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Create Routine</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => { closeFabMenu(); setEditingRoutine(null); setShowRoutineBuilder(true); }}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); setEditingRoutine(null); setShowRoutineBuilder(true); }}
                 style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
                 <Ionicons name="repeat" size={20} color="#ffffff" />
               </TouchableOpacity>
@@ -2655,12 +2667,12 @@ export default function WorkoutLibraryScreen() {
           <Animated.View style={{ opacity: fabItem2Anim, transform: [{ translateY: fabItem2Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <TouchableOpacity
-                onPress={() => { closeFabMenu(); setEditingProgram(null); setShowBuilder(true); }}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); setEditingProgram(null); setShowBuilder(true); }}
                 style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
                 <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Create Program</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => { closeFabMenu(); setEditingProgram(null); setShowBuilder(true); }}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); setEditingProgram(null); setShowBuilder(true); }}
                 style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
                 <Ionicons name="calendar-outline" size={20} color="#ffffff" />
               </TouchableOpacity>
@@ -2671,12 +2683,12 @@ export default function WorkoutLibraryScreen() {
           <Animated.View style={{ opacity: fabItem1Anim, transform: [{ translateY: fabItem1Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <TouchableOpacity
-                onPress={() => { closeFabMenu(); openAdd(); }}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); openAdd(); }}
                 style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
                 <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Create Exercise</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => { closeFabMenu(); openAdd(); }}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); openAdd(); }}
                 style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
                 <Ionicons name="barbell-outline" size={20} color="#ffffff" />
               </TouchableOpacity>
@@ -2688,7 +2700,7 @@ export default function WorkoutLibraryScreen() {
       {/* Main FAB */}
       <Animated.View style={{ position: 'absolute', bottom: 20 + insets.bottom, right: 20, transform: [{ scale: fabScale }] }}>
         <TouchableOpacity
-          onPress={toggleFabMenu}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); toggleFabMenu(); }}
           onPressIn={() => Animated.timing(fabScale, { toValue: 0.9, duration: 80, useNativeDriver: true }).start()}
           onPressOut={() => Animated.timing(fabScale, { toValue: 1, duration: 80, useNativeDriver: true }).start()}
           activeOpacity={1}
@@ -2731,7 +2743,7 @@ export default function WorkoutLibraryScreen() {
                 <View pointerEvents="auto" style={{ backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, padding: 20 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                     <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw }}>LOAD ROUTINE</Text>
-                    <TouchableOpacity onPress={closeLoadRoutinePicker} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeLoadRoutinePicker(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                       <Ionicons name="close" size={20} color={theme.textMuted} />
                     </TouchableOpacity>
                   </View>
@@ -2740,10 +2752,10 @@ export default function WorkoutLibraryScreen() {
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                     <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>{weekLabel}</Text>
                     <View style={{ flexDirection: 'row', gap: 2 }}>
-                      <TouchableOpacity onPress={() => setLoadPickerWeekOffset(o => o - 1)} disabled={loadPickerWeekOffset <= 0} style={{ padding: 6, opacity: loadPickerWeekOffset <= 0 ? 0.25 : 1 }}>
+                      <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setLoadPickerWeekOffset(o => o - 1); }} disabled={loadPickerWeekOffset <= 0} style={{ padding: 6, opacity: loadPickerWeekOffset <= 0 ? 0.25 : 1 }}>
                         <Ionicons name="chevron-back" size={18} color={theme.textMuted} />
                       </TouchableOpacity>
-                      <TouchableOpacity onPress={() => setLoadPickerWeekOffset(o => o + 1)} style={{ padding: 6 }}>
+                      <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setLoadPickerWeekOffset(o => o + 1); }} style={{ padding: 6 }}>
                         <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
                       </TouchableOpacity>
                     </View>
@@ -2757,9 +2769,7 @@ export default function WorkoutLibraryScreen() {
                         <TouchableOpacity
                           key={d.key}
                           disabled={isPast}
-                          onPress={() => setLoadRoutineSelectedDays(prev =>
-                            prev.includes(d.key) ? prev.filter(k => k !== d.key) : [...prev, d.key]
-                          )}
+                          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setLoadRoutineSelectedDays(prev => prev.includes(d.key) ? prev.filter(k => k !== d.key) : [...prev, d.key]); }}
                           style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: isSelected ? theme.accentBlue : theme.bgInset, borderWidth: 1, borderColor: isSelected ? theme.accentBlue : isToday ? theme.textSecondary : theme.borderCard, opacity: isPast ? 0.25 : 1 }}>
                           <Text style={{ fontSize: 10, fontFamily: 'DMSans_700Bold', color: isSelected ? '#ffffff' : theme.textMuted, letterSpacing: 0.5 }}>{d.name.toUpperCase()}</Text>
                           <Text style={{ fontSize: 9, fontFamily: 'DMSans_400Regular', color: isSelected ? 'rgba(255,255,255,0.7)' : theme.textDim, marginTop: 2 }}>{d.label}</Text>
@@ -2769,7 +2779,7 @@ export default function WorkoutLibraryScreen() {
                   </View>
 
                   <TouchableOpacity
-                    onPress={handleLoadRoutineOntoDays}
+                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); handleLoadRoutineOntoDays(); }}
                     disabled={loadRoutineSelectedDays.length === 0}
                     style={{ paddingVertical: 14, borderRadius: 10, alignItems: 'center', backgroundColor: theme.accentBlue, opacity: loadRoutineSelectedDays.length > 0 ? 1 : 0.4 }}>
                     <Text style={{ color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 18, letterSpacing: 2 }}>

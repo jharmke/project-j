@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, Dimensions, Keyboard, KeyboardAvoidingView, Linking, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, Dimensions, Easing, Keyboard, KeyboardAvoidingView, Linking, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ACCENT_PALETTES, THEME_ORDER, ThemeId, THEMES, useTheme } from '../theme';
 import { useHealthKit } from '../useHealthKit';
@@ -112,7 +112,7 @@ function SleepGoalPicker({ value, onChange, theme }: { value: string; onChange: 
       hourScrollRef.current?.scrollTo({ y: validHourIndex * ITEM_HEIGHT, animated: false });
       minScrollRef.current?.scrollTo({ y: validMinIndex  * ITEM_HEIGHT, animated: false });
       isInitializing.current = false;
-    }, 100);
+    }, 400);
   }, []);
 
   const handleHourScroll = (e: any) => {
@@ -191,39 +191,107 @@ function CollapsibleSection({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const [visible, setVisible] = useState(defaultOpen);
-  const fadeAnim = useRef(new Animated.Value(defaultOpen ? 1 : 0)).current;
+  const [measuring, setMeasuring] = useState(false);
+  const [heightReady, setHeightReady] = useState(false);
+  const heightAnim = useRef(new Animated.Value(0)).current;
+  const opacityAnim = useRef(new Animated.Value(defaultOpen ? 1 : 0)).current;
+  const translateAnim = useRef(new Animated.Value(defaultOpen ? 0 : -8)).current;
+  const contentHeightRef = useRef(0);
+  const openRef = useRef(defaultOpen);
+  openRef.current = open;
+
+  // For defaultOpen sections: measure natural height on first unconstrained render
+  const onUnconstrained = (e: any) => {
+    const h = e.nativeEvent.layout.height;
+    if (h <= 0 || heightReady) return;
+    contentHeightRef.current = h;
+    heightAnim.setValue(h);
+    setHeightReady(true);
+  };
+
+  // Ghost view fires for first-open measurement of closed sections
+  const onGhostLayout = (h: number) => {
+    if (h <= 0) return;
+    contentHeightRef.current = h;
+    setMeasuring(false);
+    if (!openRef.current) return;
+    setHeightReady(true);
+    setVisible(true);
+    Animated.timing(heightAnim, { toValue: h, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
+    Animated.parallel([
+      Animated.timing(opacityAnim, { toValue: 1, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(translateAnim, { toValue: 0, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+    ]).start();
+  };
 
   const toggle = () => {
     const opening = !open;
     setOpen(opening);
+    openRef.current = opening;
     if (opening) {
-      setVisible(true);
-      Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }).start();
+      opacityAnim.setValue(0);
+      translateAnim.setValue(-8);
+      if (contentHeightRef.current > 0) {
+        setVisible(true);
+        Animated.timing(heightAnim, { toValue: contentHeightRef.current, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
+        Animated.parallel([
+          Animated.timing(opacityAnim, { toValue: 1, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+          Animated.timing(translateAnim, { toValue: 0, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        ]).start();
+      } else {
+        setMeasuring(true);
+      }
     } else {
-      Animated.timing(fadeAnim, { toValue: 0, duration: 100, useNativeDriver: true }).start(() => setVisible(false));
+      Animated.timing(heightAnim, { toValue: 0, duration: 220, easing: Easing.in(Easing.cubic), useNativeDriver: false }).start(() => setVisible(false));
+      Animated.parallel([
+        Animated.timing(opacityAnim, { toValue: 0, duration: 180, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
+        Animated.timing(translateAnim, { toValue: -8, duration: 220, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
+      ]).start();
     }
   };
 
   return (
     <View style={[styles.section, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
+      {/* Ghost: renders children off-screen to measure natural height for first open */}
+      {measuring && (
+        <View
+          style={{ position: 'absolute', opacity: 0, left: 0, right: 0, top: 9999 }}
+          pointerEvents="none"
+          onLayout={e => onGhostLayout(e.nativeEvent.layout.height)}
+        >
+          {children}
+        </View>
+      )}
       <TouchableOpacity
         onPress={toggle}
         activeOpacity={0.7}
         style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 14, minHeight: 44 }}
       >
         <View style={{ flex: 1 }}>
-          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>{label}</Text>
+          <Text style={[styles.sectionLabel, { color: theme.accentBlue }]}>{label}</Text>
           {subtitle && !open && (
             <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 3 }}>
               {subtitle}
             </Text>
           )}
         </View>
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={14} color={theme.textMuted} />
+        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={14} color={theme.accentBlue} />
       </TouchableOpacity>
-      <Animated.View style={{ opacity: fadeAnim }}>
-        {visible && children}
-      </Animated.View>
+      {heightReady ? (
+        <Animated.View style={{ height: heightAnim, overflow: 'hidden' }}>
+          <Animated.View style={{ opacity: opacityAnim, transform: [{ translateY: translateAnim }] }}>
+            {visible && children}
+          </Animated.View>
+        </Animated.View>
+      ) : (
+        // Before first measurement: render without height constraint so onLayout gets real height
+        <Animated.View
+          onLayout={onUnconstrained}
+          style={{ opacity: opacityAnim }}
+        >
+          {visible && children}
+        </Animated.View>
+      )}
     </View>
   );
 }
@@ -777,19 +845,13 @@ export default function SettingsScreen() {
             {/* FITNESS GOALS */}
             <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 16, marginTop: 4 }}>Fitness Goals</Text>
 
-            {/* Sleep Goal */}
-            <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Sleep Goal</Text>
-            <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', color: theme.textMuted, marginBottom: 12 }}>How many hours of sleep are you aiming for each night?</Text>
-            <SleepGoalPicker value={goalProfile.sleepGoal || '7'} onChange={v => updateGoalField('sleepGoal', v)} theme={theme} />
-
-            <View style={{ height: 1, backgroundColor: theme.borderCard, marginVertical: 16 }} />
-
             {/* Steps */}
             <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Steps</Text>
             <TextInput
               style={[styles.goalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
               value={goalProfile.stepGoal}
               onChangeText={v => updateGoalField('stepGoal', v.replace(/[^0-9]/g, ''))}
+              onBlur={() => { const v = parseInt(goalProfile.stepGoal) || 10000; updateGoalField('stepGoal', String(Math.min(100000, Math.max(1000, v)))); }}
               keyboardType="number-pad"
               placeholder="e.g. 10000"
               placeholderTextColor={theme.textPlaceholder}
@@ -804,6 +866,7 @@ export default function SettingsScreen() {
               style={[styles.goalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
               value={goalProfile.activeCalGoal}
               onChangeText={v => updateGoalField('activeCalGoal', v.replace(/[^0-9]/g, ''))}
+              onBlur={() => { const v = parseInt(goalProfile.activeCalGoal) || 500; updateGoalField('activeCalGoal', String(Math.min(5000, Math.max(100, v)))); }}
               keyboardType="number-pad"
               placeholder="e.g. 500"
               placeholderTextColor={theme.textPlaceholder}
@@ -818,11 +881,19 @@ export default function SettingsScreen() {
               style={[styles.goalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
               value={goalProfile.exerciseMinsGoal}
               onChangeText={v => updateGoalField('exerciseMinsGoal', v.replace(/[^0-9]/g, ''))}
+              onBlur={() => { const v = parseInt(goalProfile.exerciseMinsGoal) || 30; updateGoalField('exerciseMinsGoal', String(Math.min(300, Math.max(1, v)))); }}
               keyboardType="number-pad"
               placeholder="e.g. 30"
               placeholderTextColor={theme.textPlaceholder}
             />
             <Text style={[styles.goalHint, { color: theme.textMuted }]}>Daily exercise minutes from Apple Health. Celebrates when you hit it.</Text>
+
+            <View style={{ height: 1, backgroundColor: theme.borderCard, marginVertical: 16 }} />
+
+            {/* Sleep Goal */}
+            <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Sleep Goal</Text>
+            <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', color: theme.textMuted, marginBottom: 12 }}>How many hours of sleep are you aiming for each night?</Text>
+            <SleepGoalPicker value={goalProfile.sleepGoal || '7'} onChange={v => updateGoalField('sleepGoal', v)} theme={theme} />
 
             <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 20, marginBottom: 16 }} />
 
@@ -840,6 +911,7 @@ export default function SettingsScreen() {
               style={[styles.goalInput, { backgroundColor: goalProfile.useRecommendedCal !== false ? theme.bgProgressTrack : theme.bgInput, borderColor: theme.borderInput, color: goalProfile.useRecommendedCal !== false ? theme.textMuted : theme.textPrimary }]}
               value={goalProfile.useRecommendedCal !== false ? (goalSuggested > 0 ? goalSuggested.toString() : 'Set stats in Profile') : goalProfile.calTarget}
               onChangeText={v => updateGoalField('calTarget', v)}
+              onBlur={() => { if (goalProfile.useRecommendedCal !== false) return; const v = parseInt(goalProfile.calTarget) || 1750; updateGoalField('calTarget', String(Math.min(10000, Math.max(500, v)))); }}
               keyboardType="number-pad"
               placeholder="e.g. 1750"
               placeholderTextColor={theme.textPlaceholder}
@@ -976,14 +1048,17 @@ export default function SettingsScreen() {
 
             {/* Water Goal */}
             <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Water Goal</Text>
-            <TextInput
-              style={[styles.goalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
-              value={goalProfile.waterGoal}
-              onChangeText={v => updateGoalField('waterGoal', v.replace(/[^0-9]/g, ''))}
-              keyboardType="number-pad"
-              placeholder="e.g. 128"
-              placeholderTextColor={theme.textPlaceholder}
-            />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <TextInput
+                style={[styles.goalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, flex: 1, marginBottom: 0 }]}
+                value={goalProfile.waterGoal}
+                onChangeText={v => updateGoalField('waterGoal', v.replace(/[^0-9]/g, ''))}
+                keyboardType="number-pad"
+                placeholder="e.g. 128"
+                placeholderTextColor={theme.textPlaceholder}
+              />
+              <Text style={{ color: theme.textMuted, fontSize: 16, fontFamily: 'DMSans_400Regular' }}>oz</Text>
+            </View>
             <Text style={[styles.goalHint, { color: theme.textMuted }]}>Daily hydration target in oz. Progress bar fills to this amount.</Text>
 
             <View style={{ height: 16 }} />
@@ -1425,19 +1500,13 @@ export default function SettingsScreen() {
             <Text style={{ fontSize: 9, letterSpacing: 3, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', color: theme.textMuted, paddingHorizontal: 16, paddingBottom: 8 }}>
               Definitions
             </Text>
-            {TOOLTIP_REGISTRY.map((def) => (
-              <View key={def.key} style={[styles.row, { borderTopColor: theme.borderCard, justifyContent: 'space-between' }]}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>{def.title}</Text>
-                </View>
-                <TouchableOpacity
-                  onPress={() => setActiveTooltipKey(def.key)}
-                  style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4 }}
-                >
-                  <Text style={{ color: theme.accentBlue, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Show Again</Text>
-                </TouchableOpacity>
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => router.push('/definitions')} activeOpacity={0.7}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>View Definitions</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>All metric and feature explanations</Text>
               </View>
-            ))}
+              <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
+            </TouchableOpacity>
             <Text style={{ fontSize: 9, letterSpacing: 3, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', color: theme.textMuted, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>
               Tips {'&'} Guides
             </Text>
@@ -1448,6 +1517,9 @@ export default function SettingsScreen() {
               </View>
               <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
             </TouchableOpacity>
+            <Text style={{ fontSize: 9, letterSpacing: 3, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', color: theme.textMuted, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>
+              Prayer
+            </Text>
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => setShowPrayerModal(true)} activeOpacity={0.7}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Send a Prayer Request</Text>

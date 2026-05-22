@@ -166,6 +166,8 @@ export default function LogScreen() {
   const [pickerYear, setPickerYear] = useState(0);
   const [pickerMonth, setPickerMonth] = useState(0);
   const calFadeAnim = useRef(new Animated.Value(0)).current;
+  const skipDateEffect = useRef(false);
+  const dateEffectMounted = useRef(false);
 
   const goToPrevDay = () => {
     const d = new Date(activeDate + 'T12:00:00');
@@ -412,6 +414,10 @@ export default function LogScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      const t = new Date();
+      const focusDateKey = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+      skipDateEffect.current = true;
+      setActiveDate(focusDateKey);
       AsyncStorage.getItem('pj_settings').then(s => {
         if (s) {
           const d = JSON.parse(s);
@@ -420,14 +426,14 @@ export default function LogScreen() {
         }
       });
       loadAchievements().then(store => setAchievementStore(store));
-      const reload = async () => {
+      const reload = async (dateKey: string) => {
         setEntries([]);
         setWater(0);
         setTotalProtein(0);
         setTotalCarbs(0);
         setTotalFat(0);
         try {
-          const saved = await AsyncStorage.getItem(`pj_${activeDate}`);
+          const saved = await AsyncStorage.getItem(`pj_${dateKey}`);
           if (saved) {
             const data = JSON.parse(saved);
             if (data.entries && Array.isArray(data.entries)) {
@@ -436,7 +442,7 @@ export default function LogScreen() {
   setTotalProtein(Math.round(clean.reduce((s: number, e: any) => s + (e.protein || 0), 0) * 10) / 10);
   setTotalCarbs(Math.round(clean.reduce((s: number, e: any) => s + (e.carbs || 0), 0) * 10) / 10);
   setTotalFat(Math.round(clean.reduce((s: number, e: any) => s + (e.fat || 0), 0) * 10) / 10);
-  if (clean.length !== data.entries.length) storageSet(`pj_${activeDate}`, JSON.stringify({ ...data, entries: clean }));
+  if (clean.length !== data.entries.length) storageSet(`pj_${dateKey}`, JSON.stringify({ ...data, entries: clean }));
 }
             if (typeof data.water === 'number') setWater(Math.max(0, data.water));
             if (data.caloriesBurned) setCaloriesBurned(parseInt(data.caloriesBurned) || 0);
@@ -465,7 +471,7 @@ export default function LogScreen() {
             const TRAINING_BONUSES: Record<string, number> = {
               none: 0, '1x': 100, '3x': 200, '5x': 300, daily: 400,
             };
-            const dayData = await AsyncStorage.getItem(`pj_${activeDate}`);
+            const dayData = await AsyncStorage.getItem(`pj_${dateKey}`);
             const weight = dayData ? JSON.parse(dayData)?.weight : null;
             if (weight && p.birthday && p.heightFt && p.heightIn) {
               const weightKg = weight * 0.453592;
@@ -486,9 +492,40 @@ export default function LogScreen() {
           console.log('Reload error', e);
         }
       };
-      reload();
-    }, [activeDate])
+      reload(focusDateKey);
+    }, [])
   );
+
+  useEffect(() => {
+    if (!dateEffectMounted.current) { dateEffectMounted.current = true; return; }
+    if (skipDateEffect.current) { skipDateEffect.current = false; return; }
+    const loadDay = async () => {
+      setEntries([]);
+      setWater(0);
+      setTotalProtein(0);
+      setTotalCarbs(0);
+      setTotalFat(0);
+      try {
+        const saved = await AsyncStorage.getItem(`pj_${activeDate}`);
+        if (saved) {
+          const data = JSON.parse(saved);
+          if (data.entries && Array.isArray(data.entries)) {
+            const clean = data.entries.filter((e: any) => e != null);
+            setEntries(clean);
+            setTotalProtein(Math.round(clean.reduce((s: number, e: any) => s + (e.protein || 0), 0) * 10) / 10);
+            setTotalCarbs(Math.round(clean.reduce((s: number, e: any) => s + (e.carbs || 0), 0) * 10) / 10);
+            setTotalFat(Math.round(clean.reduce((s: number, e: any) => s + (e.fat || 0), 0) * 10) / 10);
+          }
+          if (typeof data.water === 'number') setWater(Math.max(0, data.water));
+          if (data.caloriesBurned) setCaloriesBurned(parseInt(data.caloriesBurned) || 0);
+        }
+        setLogRefreshKey(k => k + 1);
+      } catch (e) {
+        console.log('Date nav load error', e);
+      }
+    };
+    loadDay();
+  }, [activeDate]);
 
   const deleteEntry = (idx: number) => {
     const newEntries = entries.filter((_, i) => i !== idx);

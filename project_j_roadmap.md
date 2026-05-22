@@ -443,6 +443,28 @@ NOW -- next sessions
 [x] Bible reading plans -- SHIPPED + expanded. data/readingPlans.ts: ReadingPlan types, 9 built-in plans (Gospels 28d / Psalms & Proverbs 30d / NT 90d / Epistles 21d / Genesis 25d / John 21d / Acts 28d / Proverbs 31d / Bible in a Year ~396d), helpers (formatDayReading, getTodayReading, getPlanCompletion, buildDays generator). Storage: pj_reading_plans keyed by planId { startDate, completedDays[], enrolledAt }. Max 3 simultaneous active plans. bible.tsx: TODAY'S READING strip below chapter picker -- per-plan row, passage tap navigates to that book/chapter, Mark Read / Undo toggle (green Read button tappable to unmark, light haptic + toast), complete state; plan browser modal from settings gear (enroll/drop with confirm Alert, progress bar, active count). Home card: ReadingPlansCard in CARD_REGISTRY, faith-gated Rooted/Exploring, empty state with Browse Plans, per-plan passage + progress bar + full-width MARK AS READ button (unread state) or compact read confirmation (read state, no undo on home card). Tapping plan row navigates to that plan's specific book/chapter. Mark Read: haptic success + toast. Missed days: no penalty, calendar-based catch-up always accessible.
 HR Zone Training -- dedicated session. 5-zone system (Zone 1 recovery through Zone 5 max effort) based on max HR (220-age default; user can set custom max HR in profile; optional resting HR for Karvonen formula). HealthKit already reads per-workout avg/peak HR and resting HR. Features: Stats page time-in-zone breakdown (stacked bar per workout session), zone target field on cardio exercises in routines, zone badge on workout tab after session. Profile: max HR field + optional resting HR. Mode-aware: Discipline shows all zone data with target ranges, Mindful neutral framing. Design questions before building: where does zone data live in stats (workout sub-section vs own card?), does today's training card surface zone info?
 
+TESTFLIGHT AUDIT -- 2026-05-22
+Live release build testing. Log all bugs here in real-time. Status: open / fixed.
+
+[ ] Home ScrollView dead zone -- missing bottom padding below last card, infinite scroll into empty space below tab bar
+[ ] Bible auto-scroll pause on touch -- finger held on screen should pause scrolling, lift should resume
+[ ] Bible auto-scroll choppiness -- random lag on release build, needs investigation
+[ ] App-wide haptics audit -- FABs, header icon buttons, and all missing touch feedback (Light: icons/selections, Medium: FABs/saves, Heavy: destructive)
+[ ] Water custom amount modal -- tapping inside modal (non-input area) should dismiss keyboard, currently only closes on full modal dismiss
+[ ] Water gear settings presets -- tapping outside TextInput fields should dismiss keyboard
+[ ] Water gear modal header -- "WATER LOG" label should be accent color matching modal header convention; replace X button with handle pill + accent top border to match all other modals app-wide
+[ ] Water gear save presets button -- starts active when it should be dim until a change is made; on save should dismiss keyboard + fire toast but keep modal open (currently only fires toast, keyboard stays)
+[ ] Weight card -- no toast on save, violates toast-on-save build standard
+[ ] Sleep card -- "Edit" button top-right should be gear icon to match Water/Training card convention
+[ ] IF card State 2 -- "Reset window" button label is confusing (implies restart/clear). Rename to "Edit Start" to match State 3 convention and clarify it opens the start time picker
+[ ] Today's Training card -- add exercise minutes from HealthKit (pj_YYYY-MM-DD exerciseMinutes field already persisted), card feels empty without it
+[ ] Apple Health synced workouts not auto-checking on workout tab -- was marked fixed in DONE but confirmed still broken on release build. Needs re-investigation.
+[ ] Onboarding birthday scroller KAV -- scroller opens half off screen when triggered near bottom of page, no auto-scroll to bring it into view
+[ ] Onboarding default weight values -- current weight defaults to 177, goal weight to 165. Should be empty with placeholder text only so new users don't see someone else's numbers
+[ ] Default home card order -- Reading Plans and Gratitude Streak sitting at bottom, added after default order was set. Need to reconsider placement for Rooted/Exploring default layout
+[ ] Default water presets showing 12/16/22 on fresh install -- roadmap says this was changed to 8/12/16 but not reflected on iPad fresh install. Code needs audit.
+[ ] Reading Plans home card -- "Browse Plans" button navigates to Bible screen instead of opening the plan browser modal. Should open the plans settings/browser directly.
+
 SOON -- confirmed next few sessions
 
 Running Plans -- dedicated planning session before building. Structured multi-week training plans for common race distances (5K, 10K, half marathon, full marathon). User inputs current mile/5K/10K PR times + fitness level → app generates personalized day-by-day plan. PR tracking section for all race distances. Daily workout prescriptions integrate with workout tab (just like loading a routine). Diet tips per training phase (carb loading, recovery nutrition, race week). Garmin-inspired intelligent plan generation. Depends on HR Zone Training shipping first (zone targets are core to plan prescriptions). Dedicated running section separate from general workout tab -- may warrant its own tab or sub-screen.

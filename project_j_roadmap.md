@@ -446,6 +446,11 @@ HR Zone Training -- dedicated session. 5-zone system (Zone 1 recovery through Zo
 TESTFLIGHT AUDIT -- 2026-05-22
 Live release build testing. Log all bugs here in real-time. Status: open / fixed.
 
+[x] Log tab crash (CRITICAL) -- editing a past-date food entry passed date: todayKey instead of activeDate to food-detail. Saved entry to wrong date key, created sparse null entries in today's storage, crashed render on entry.name access. Fixed: date bug corrected in log.tsx, null filter + auto-cleanup on load in both log.tsx (initial useEffect + useFocusEffect) and index.tsx. FIXED 2026-05-22.
+[x] Home 0/calTarget display bug -- same null entries in today's storage caused entries.reduce to throw before calTarget loaded from profile. calTarget stayed 0, adjustedTarget = 0 + activeCalories only. Fixed by null filter + storage cleanup in index.tsx loadCals (home tab loads first, cleans storage before any other screen reads it). FIXED 2026-05-22.
+[x] Day detail crash -- same root cause as log tab crash. Fixed as side effect of index.tsx storage cleanup -- home tab sanitizes data on focus, day-detail reads clean storage. FIXED 2026-05-22.
+[x] Add food button passing todayKey instead of activeDate -- same date bug as the edit path. Tapping + on a past-date log view navigated to add-food with date: todayKey, saving new entries to today instead of the viewed date. Fixed: date: activeDate in log.tsx line 693. FIXED 2026-05-22.
+[ ] Onboarding height not saving to profile -- height entered during onboarding does not appear in Basic Info on profile tab after setup completes. BMR/TDEE/calorie target all depend on height so this causes incorrect calorie targets for new users. Needs investigation.
 [ ] Home ScrollView dead zone -- missing bottom padding below last card, infinite scroll into empty space below tab bar
 [ ] Bible auto-scroll pause on touch -- finger held on screen should pause scrolling, lift should resume
 [ ] Bible auto-scroll choppiness -- random lag on release build, needs investigation
@@ -461,7 +466,8 @@ Live release build testing. Log all bugs here in real-time. Status: open / fixed
 [ ] Apple Health synced workouts not auto-checking on workout tab -- was marked fixed in DONE but confirmed still broken on release build. Needs re-investigation.
 [ ] Onboarding birthday scroller KAV -- scroller opens half off screen when triggered near bottom of page, no auto-scroll to bring it into view
 [ ] Onboarding default weight values -- current weight defaults to 177, goal weight to 165. Should be empty with placeholder text only so new users don't see someone else's numbers
-[ ] Default home card order -- Reading Plans and Gratitude Streak sitting at bottom, added after default order was set. Need to reconsider placement for Rooted/Exploring default layout
+[x] Default home card order -- DEFAULT_ORDER hardcoded as explicit array: verse → calories → macros → water → weight → workout → steps → sleep → gratitude_streak → reading_plans → fitness_metrics → daily_note → if → vs_yesterday. IF moved from position 2 to near bottom (opt-in feature). Existing users with custom order unaffected. FIXED 2026-05-22.
+[ ] Home card order audit -- verify correct default card set and order across all 9 combos (3 coaching modes x 3 faith journey tiers). Rooted/notrightnow should differ on gratitude_streak and reading_plans visibility. Mindful mode should not show IF prominently. Fresh install test required on each combination.
 [ ] Default water presets showing 12/16/22 on fresh install -- roadmap says this was changed to 8/12/16 but not reflected on iPad fresh install. Code needs audit.
 [ ] Reading Plans home card -- "Browse Plans" button navigates to Bible screen instead of opening the plan browser modal. Should open the plans settings/browser directly.
 
@@ -523,6 +529,8 @@ Custom water amount modal -- DONE. bgSheet, Animated.Value fade, tap-outside dis
 [x] Recipe 0 kcal / no macros in Recipes tab -- getCalories fell through to 0 when foodNutrients was empty. Fixed: falls back to food.cal. getMacros had no recipe branch. Fixed: isRecipe path reads recipeData.totalProtein/Carbs/Fat divided by servingCount. add-food.tsx.
 [x] Recipe builder capital G fix -- Bebas Neue renders lowercase as uppercase. Wrapped "g" unit in nested DMSans Text (macroUnit style, fontSize 14) inside each macroVal. Total Nutrition and Per Serving cards fixed. recipe-builder.tsx.
 [x] GoogleService-Info.plist gitignored -- added to .gitignore. Run: git rm --cached GoogleService-Info.plist then commit. Rotate the Google API key in Google Cloud Console (was exposed in commit f6b94736 on public repo). Firebase API keys are lower-risk than typical secrets but rotation is still best practice.
+[x] eas-build-pre-install.sh not executable -- script existed and was committed but git on Windows does not preserve the executable bit (100644 not 100755). EAS silently skipped the hook. Fix: git update-index --chmod=+x. FIXED 2026-05-22.
+[x] GoogleService-Info.plist EAS build failure (root fix) -- EAS pre-flight scanner reads app.json statically, sees googleServicesFile path not in git, hard fails before any hook runs. Hook approach never worked. Fix: created app.config.js that wraps app.json and overrides googleServicesFile with process.env.GOOGLE_SERVICE_INFO_PLIST ?? './GoogleService-Info.plist'. Dynamic evaluation bypasses static pre-flight check. EAS sets env var to decoded secret file path at build time. app.json untouched. FIXED 2026-05-22.
 App-wide OZ to oz audit -- index.tsx and log.tsx fixed this session. day-detail and any other screens not yet checked. Complete audit needed. (SOON)
 
 Women's health and HealthKit

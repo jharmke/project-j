@@ -591,6 +591,7 @@ const saveEditFood = async () => {
       .filter(f => !q || f.name.toLowerCase().includes(q.toLowerCase()))
       .map(f => ({
         description: f.name,
+        brand: f.brand || null,
         foodNutrients: [
           { nutrientName: 'Energy', unitName: 'KCAL', value: f.cal },
           { nutrientName: 'Protein', unitName: 'G', value: f.protein || 0 },
@@ -624,6 +625,7 @@ const saveEditFood = async () => {
       .filter(f => f.name.toLowerCase().includes(query.toLowerCase()))
       .map(f => ({
         description: f.name,
+        brand: f.brand || null,
         foodNutrients: [
           { nutrientName: 'Energy', unitName: 'KCAL', value: f.cal },
           { nutrientName: 'Protein', unitName: 'G', value: f.protein || 0 },
@@ -1195,6 +1197,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
           })) :
           myFoods.map(f => ({
             description: f.name,
+            brand: f.brand || null,
             foodNutrients: [
               { nutrientName: 'Energy', unitName: 'KCAL', value: f.cal },
               { nutrientName: 'Protein', unitName: 'G', value: f.protein || 0 },
@@ -1212,7 +1215,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
           const macros = getMacros(item);
           const nameParts = item.description.split(' · ');
           const foodName = nameParts[0];
-          const brandName = nameParts.length > 1 ? nameParts.slice(1).join(' · ') : null;
+          const brandName = (item as any).brand || (nameParts.length > 1 ? nameParts.slice(1).join(' · ') : null);
           return (
             <Animated.View style={{ opacity: activeTab === 'favorites' && !query.trim() ? getFavOpacity(item.description) : 1 }}>
             <TouchableOpacity style={[styles.resultItem, (item as any).isOverride && styles.resultItemSet]} onPress={() => openFoodDetail(item)}>
@@ -1467,9 +1470,9 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
 
       {/* Edit My Food Modal */}
       <Modal visible={showEditMyFood} transparent animationType="none">
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-          <Animated.View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', opacity: editOverlayAnim }}>
-            <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={closeEditModal} />
+        <Animated.View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', opacity: editOverlayAnim }} />
+        <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={closeEditModal} />
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
             <Animated.View style={{
               width: '92%',
               backgroundColor: theme.bgSheet,
@@ -1483,7 +1486,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
             }}>
               <View style={{ height: 4, width: 40, backgroundColor: theme.borderCard, borderRadius: 2, alignSelf: 'center', marginTop: 12 }} />
               <Text style={{ fontSize: 16, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, textAlign: 'center', marginTop: 8, marginBottom: 4 }}>EDIT FOOD</Text>
-              <ScrollView style={{ maxHeight: 460 }} contentContainerStyle={{ padding: 16, paddingTop: 8 }} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled">
+              <ScrollView style={{ maxHeight: 460 }} contentContainerStyle={{ padding: 16, paddingTop: 8 }} keyboardShouldPersistTaps="handled">
                 {/* Basic Info */}
                 <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Basic Info</Text>
                 {([
@@ -1668,7 +1671,6 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                 </TouchableOpacity>
               </View>
             </Animated.View>
-          </Animated.View>
         </KeyboardAvoidingView>
       </Modal>
 

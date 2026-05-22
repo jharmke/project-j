@@ -96,7 +96,6 @@ export default function SignInScreen() {
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom + 16 }]}>
       <View style={styles.hero}>
         <Text style={styles.wordmark}>PROJECT J</Text>
-        <Text style={styles.tagline}>Faith · Fitness · Forward</Text>
       </View>
 
       <View style={styles.buttons}>
@@ -159,13 +158,7 @@ const styles = StyleSheet.create({
     color: '#e8e8f0',
     letterSpacing: 4,
   },
-  tagline: {
-    fontFamily: 'DMSans_400Regular',
-    fontSize: 15,
-    color: '#666680',
-    marginTop: 8,
-    letterSpacing: 1,
-  },
+
   buttons: {
     gap: 12,
     paddingBottom: 8,

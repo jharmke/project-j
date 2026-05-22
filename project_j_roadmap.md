@@ -721,8 +721,11 @@ App Store code fixes -- work through APP_STORE_CHECKLIST.md in order. Current st
 [ ] 8. App Store Connect setup -- privacy label, age rating, URLs, description, screenshots, review notes (no code -- do after name is locked)
 [ ] 9. Verification scan -- production build, device install, all flows confirmed before submitting
 
-App name + logo -- finalize from shortlist (Prevail, Steadfast, Worthy, Haven, Witness, Sown), verify App Store + TikTok handle availability before committing. Prevail is strongest. Logo design session after name locked.
-TestFlight -- setup, App Store Connect, tester invite flow. Friends and family first, not wide beta. Do after App Store code fixes complete and name is locked.
+[x] Welcome screen overhaul -- dark bg (#0d0d0f), logo PNG full-width with gradient blend top/bottom (no transparent PNG needed), tagline "The app that actually cares about you" killed, PROJECT J wordmark below crystal, fade-in stagger animation. welcome.tsx.
+[x] App icon + native splash -- icon.png replaced with logo PNG (2048x2048). Splash updated to logo.png, imageWidth 280, backgroundColor #0d0d0f both light/dark. app.json.
+[x] Sign-in tagline removed -- "Faith · Fitness · Forward" ditched. Wordmark only. sign-in.tsx.
+App name + logo -- placeholder logo (chrome crystal, dark bg) in place for TestFlight. Final name TBD from shortlist (Prevail, Steadfast, Worthy, Haven, Witness, Sown). Verify App Store + TikTok handle availability before committing. Prevail is strongest. Bundle ID decision required before App Store submission (com.jharmke.projectj permanent after first release).
+TestFlight -- IN PROGRESS. Friends and family only. All code gates passed. Next: firebase deploy --only hosting (confirm privacy/terms live), App Store Connect record, EAS production build, upload + invite testers.
 Firebase free tier notes -- Spark plan: 1GB storage, 50K reads/day, 20K writes/day, 1GB network/month. Current usage: 38 docs per user, tiny. Comfortably handles 500+ TestFlight users. Upgrade to Blaze (pay-as-you-go) only when approaching limits -- monitor in Firebase Console > Usage. Each user's data is isolated under users/{uid}/store -- fully visible per-user in Firebase Console. No privacy concern for admin view of own app data.
 
 Visual polish (do together)

@@ -23,6 +23,7 @@ import TooltipModal from '../../components/TooltipModal';
 import TooltipIcon from '../../components/TooltipIcon';
 import { useTooltip } from '../../useTooltip';
 import GratitudeStreakCard from '../../components/GratitudeStreakCard';
+import ReadingPlansCard from '../../components/ReadingPlansCard';
 import { StatsCard, CardPeriod, DATA_KEY_META, DEFAULT_STATS_CARDS } from '../../statsCardRegistry';
 import { TrendData, EMPTY_TREND_DATA, fetchTrendData } from '../../utils/statsData';
 import { StatsGraphCard } from '../../components/StatsGraphCard';
@@ -50,6 +51,7 @@ export type CardId =
   | 'fitness_metrics'
   | 'daily_note'
   | 'gratitude_streak'
+  | 'reading_plans'
   | 'vs_yesterday';
 
 interface CardMeta {
@@ -72,6 +74,7 @@ const CARD_REGISTRY: CardMeta[] = [
   { id: 'fitness_metrics',label: 'Fitness Metrics',    description: 'VO2 Max & cardio recovery score',        defaultVisible: true },
   { id: 'daily_note',       label: 'Daily Note',         description: 'Journal entry for the day',             defaultVisible: true },
   { id: 'gratitude_streak', label: 'Gratitude Streak',  description: 'Daily gratitude habit tracker',          defaultVisible: true },
+  { id: 'reading_plans',    label: 'Reading Plans',      description: 'Daily Bible reading plan tracker',       defaultVisible: true },
   { id: 'vs_yesterday',     label: 'You vs Yesterday',   description: 'Daily head-to-head across key metrics', defaultVisible: true },
 ];
 
@@ -2788,6 +2791,9 @@ export default function HomeScreen() {
       case 'gratitude_streak':
         if (faithJourney === 'notrightnow') return null;
         return <GratitudeStreakCard styleMode={styleMode} todayKey={todayKey} scrollRef={scrollRef} theme={theme} />;
+      case 'reading_plans':
+        if (faithJourney === 'notrightnow') return null;
+        return <ReadingPlansCard theme={theme} />;
       case 'vs_yesterday': {
         const cardContent = renderVsYesterdayCard();
         if (!cardContent) return null;

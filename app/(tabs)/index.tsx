@@ -78,7 +78,11 @@ const CARD_REGISTRY: CardMeta[] = [
   { id: 'vs_yesterday',     label: 'You vs Yesterday',   description: 'Daily head-to-head across key metrics', defaultVisible: true },
 ];
 
-const DEFAULT_ORDER: CardId[] = CARD_REGISTRY.map(c => c.id);
+const DEFAULT_ORDER: CardId[] = [
+  'verse', 'calories', 'macros', 'water', 'weight', 'workout',
+  'steps', 'sleep', 'gratitude_streak', 'reading_plans',
+  'fitness_metrics', 'daily_note', 'if', 'vs_yesterday',
+];
 const DEFAULT_VISIBLE: Record<CardId, boolean> = Object.fromEntries(
   CARD_REGISTRY.map(c => [c.id, c.defaultVisible])
 ) as Record<CardId, boolean>;
@@ -1248,10 +1252,14 @@ export default function HomeScreen() {
         if (saved) {
           const data = JSON.parse(saved);
           if (data.entries && Array.isArray(data.entries)) {
-            setTotalCals(data.entries.reduce((s: number, e: any) => s + e.cal, 0));
-            setTotalProtein(Math.round(data.entries.reduce((s: number, e: any) => s + (e.protein||0), 0) * 10) / 10);
-            setTotalCarbs(  Math.round(data.entries.reduce((s: number, e: any) => s + (e.carbs  ||0), 0) * 10) / 10);
-            setTotalFat(    Math.round(data.entries.reduce((s: number, e: any) => s + (e.fat    ||0), 0) * 10) / 10);
+            const clean = data.entries.filter((e: any) => e != null);
+            if (clean.length !== data.entries.length) {
+              storageSet(`pj_${getDateKey(new Date())}`, JSON.stringify({ ...data, entries: clean }));
+            }
+            setTotalCals(clean.reduce((s: number, e: any) => s + (e.cal || 0), 0));
+            setTotalProtein(Math.round(clean.reduce((s: number, e: any) => s + (e.protein||0), 0) * 10) / 10);
+            setTotalCarbs(  Math.round(clean.reduce((s: number, e: any) => s + (e.carbs  ||0), 0) * 10) / 10);
+            setTotalFat(    Math.round(clean.reduce((s: number, e: any) => s + (e.fat    ||0), 0) * 10) / 10);
           }
           setCaloriesBurned(parseInt(data.caloriesBurned)||0);
           if (data.sleepOverride) setSleepOverride(data.sleepOverride);

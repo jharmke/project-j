@@ -5,8 +5,13 @@ import { auth, db } from '../firebaseConfig';
 // pj_bible_* keys are cached GitHub content -- re-fetchable and potentially thousands of docs
 const EXCLUDE_PREFIXES = ['pj_bible_'];
 
+// Local-only gate -- never synced to Firestore, never restored. Marks that this
+// install has already run restoreIfFresh so we don't repeat it on every cold launch.
+const RESTORE_GATE_KEY = 'pj_fresh_restore_done';
+
 function shouldSync(key: string): boolean {
   if (!key.startsWith('pj_')) return false;
+  if (key === RESTORE_GATE_KEY) return false;
   return !EXCLUDE_PREFIXES.some(p => key.startsWith(p));
 }
 
@@ -27,18 +32,21 @@ export async function syncKey(key: string, value: string): Promise<void> {
   }
 }
 
-// Called on login. Only restores if local storage has no pj_* data (fresh device).
+// Called on login. Restores from Firestore on first run after a fresh install or reinstall.
+// Gate key (local-only, never synced) prevents repeat runs on subsequent cold launches.
 // Returns true if data was restored.
 export async function restoreIfFresh(): Promise<boolean> {
   const uid = auth.currentUser?.uid;
   if (!uid) return false;
   try {
     const allKeys = await AsyncStorage.getAllKeys();
-    const hasPjData = allKeys.some(k => shouldSync(k));
-    if (hasPjData) return false;
+    if (allKeys.includes(RESTORE_GATE_KEY)) return false;
 
     const snap = await getDocs(collection(db, 'users', uid, 'store'));
-    if (snap.empty) return false;
+    if (snap.empty) {
+      await AsyncStorage.setItem(RESTORE_GATE_KEY, 'true');
+      return false;
+    }
 
     const pairs: [string, string][] = [];
     snap.forEach(d => {
@@ -47,6 +55,7 @@ export async function restoreIfFresh(): Promise<boolean> {
     });
 
     if (pairs.length > 0) await AsyncStorage.multiSet(pairs);
+    await AsyncStorage.setItem(RESTORE_GATE_KEY, 'true');
     return pairs.length > 0;
   } catch {
     return false;

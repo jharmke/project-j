@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { ReactNode, useCallback, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ToastRenderer, useToast } from '../components/Toast';
@@ -112,7 +112,7 @@ function FindingCard({
   chipLabel, headline, status, showStatus, theme, shadowStyle, children,
 }: {
   chipLabel: string;
-  headline: string;
+  headline: ReactNode;
   status: FindingStatus;
   showStatus: boolean;
   theme: any;
@@ -222,10 +222,10 @@ function BurnAccuracyCard({ f, isMindful, theme, shadowStyle }: { f: BurnAccurac
 // ── Macro card ─────────────────────────────────────────────────────────────────
 
 function MacroCard({ f, isMindful, theme, shadowStyle }: { f: MacroFinding; isMindful: boolean; theme: any; shadowStyle: any }) {
-  const headline = f.macroStatus === 'good' && f.fiberStatus === 'good'
+  const headline: ReactNode = f.macroStatus === 'good' && f.fiberStatus === 'good'
     ? 'Macros and food quality look balanced'
     : f.macroStatus !== 'good'
-    ? `Protein averaging ${f.avgProtein}g -- below target`
+    ? <>Protein averaging {f.avgProtein}<Text style={{ fontFamily: 'DMSans_600SemiBold', fontSize: 18 }}>g</Text> -- below target</>
     : 'Food quality has room to improve';
   const proteinColor = !isMindful && f.macroStatus !== 'good' ? theme.statusWarn : theme.textPrimary;
   const fiberColor = !isMindful && f.fiberStatus !== 'good' ? theme.statusWarn : theme.textPrimary;
@@ -283,6 +283,7 @@ export default function DiagnosticReportScreen() {
   const [initialized, setInitialized] = useState(false);
   const [styleMode, setStyleMode] = useState<'Discipline' | 'Balanced' | 'Mindful'>('Balanced');
   const [loggedDayCounts, setLoggedDayCounts] = useState<Record<number, number>>({});
+  const [showAllSuggestions, setShowAllSuggestions] = useState(false);
 
   const isMindful = styleMode === 'Mindful';
   const shadowStyle = { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 3 };
@@ -324,6 +325,7 @@ export default function DiagnosticReportScreen() {
 
   const handleGenerate = async () => {
     setGenerating(true);
+    setShowAllSuggestions(false);
     try {
       const report = await generateDiagnosticReport(selectedWindow);
       await saveReport(report);
@@ -508,7 +510,7 @@ export default function DiagnosticReportScreen() {
                     <Text style={[styles.sectionLabel, { color: t.textMuted }]}>
                       {isMindful ? 'THINGS TO EXPLORE' : 'YOUR TOP SUGGESTIONS'}
                     </Text>
-                    {currentReport.suggestions.map(s => (
+                    {(showAllSuggestions ? currentReport.suggestions : currentReport.suggestions.slice(0, 3)).map(s => (
                       <View key={s.rank} style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw, borderLeftWidth: 3, borderLeftColor: t.accentBlueRaw, ...shadowStyle, flexDirection: 'row', gap: 12 }]}>
                         <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: t.accentBlueBg, borderWidth: 1, borderColor: t.accentBlueBorder, alignItems: 'center', justifyContent: 'center', marginTop: 1, flexShrink: 0 }}>
                           <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: t.accentBlueRaw }}>{s.rank}</Text>
@@ -519,6 +521,16 @@ export default function DiagnosticReportScreen() {
                         </View>
                       </View>
                     ))}
+                    {currentReport.suggestions.length > 3 && (
+                      <TouchableOpacity
+                        onPress={() => setShowAllSuggestions(v => !v)}
+                        style={{ alignItems: 'center', paddingVertical: 10 }}
+                      >
+                        <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: t.accentBlueRaw }}>
+                          {showAllSuggestions ? 'Show less' : `Show ${currentReport.suggestions.length - 3} more`}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 )}
 

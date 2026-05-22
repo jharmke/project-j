@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, Dimensions, Keyboard, KeyboardAvoidingView, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, Dimensions, Keyboard, KeyboardAvoidingView, Linking, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ACCENT_PALETTES, THEME_ORDER, ThemeId, THEMES, useTheme } from '../theme';
 import { useHealthKit } from '../useHealthKit';
@@ -228,6 +228,57 @@ function CollapsibleSection({
   );
 }
 
+function NotifGroup({
+  label,
+  summary,
+  children,
+  theme,
+}: {
+  label: string;
+  summary: string;
+  children: React.ReactNode;
+  theme: any;
+}) {
+  const [open, setOpen] = useState(false);
+  const [visible, setVisible] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+
+  const toggle = () => {
+    const opening = !open;
+    setOpen(opening);
+    Animated.timing(rotateAnim, { toValue: opening ? 1 : 0, duration: 200, useNativeDriver: true }).start();
+    if (opening) {
+      setVisible(true);
+      Animated.timing(fadeAnim, { toValue: 1, duration: 250, useNativeDriver: true }).start();
+    } else {
+      Animated.timing(fadeAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => setVisible(false));
+    }
+  };
+
+  const chevronRotate = rotateAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '180deg'] });
+
+  return (
+    <View style={{ borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, marginBottom: 10, overflow: 'hidden' }}>
+      <TouchableOpacity
+        onPress={toggle}
+        activeOpacity={0.7}
+        style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, backgroundColor: theme.bgInput, minHeight: 44 }}>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.textPrimary }}>{label}</Text>
+          <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 2 }}>{summary}</Text>
+        </View>
+        <Animated.View style={{ transform: [{ rotate: chevronRotate }] }}>
+          <Ionicons name="chevron-down" size={14} color={theme.textMuted} />
+        </Animated.View>
+      </TouchableOpacity>
+      <Animated.View style={{ opacity: fadeAnim }}>
+        {visible && <View style={{ paddingHorizontal: 14, paddingTop: 10, paddingBottom: 14 }}>{children}</View>}
+      </Animated.View>
+    </View>
+  );
+}
+
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { theme, themeId, accentId, setTheme, setAccent } = useTheme();
@@ -257,6 +308,8 @@ export default function SettingsScreen() {
   // Time picker state
   const [activeTimePicker, setActiveTimePicker] = useState<string | null>(null);
   const [timePickerValue, setTimePickerValue] = useState(new Date());
+  const sheetAnim = useRef(new Animated.Value(300)).current;
+  const overlayAnim = useRef(new Animated.Value(0)).current;
 
   // ── Goal profile state ────────────────────────────────────────────────────
   const [goalProfile, setGoalProfile] = useState<GoalProfile>(DEFAULT_GOAL_PROFILE);
@@ -581,18 +634,35 @@ export default function SettingsScreen() {
     setActiveTimePicker(key);
   };
 
-  const handleTimePickerChange = (_: any, date?: Date) => {
-    if (!date) { setActiveTimePicker(null); return; }
-    const hh = date.getHours().toString().padStart(2, '0');
-    const mm = date.getMinutes().toString().padStart(2, '0');
+  const closeTimePicker = () => {
+    Animated.parallel([
+      Animated.timing(sheetAnim, { toValue: 300, duration: 220, useNativeDriver: true }),
+      Animated.timing(overlayAnim, { toValue: 0, duration: 180, useNativeDriver: true }),
+    ]).start(() => setActiveTimePicker(null));
+  };
+
+  const confirmTimePicker = () => {
+    if (!activeTimePicker) return;
+    const hh = timePickerValue.getHours().toString().padStart(2, '0');
+    const mm = timePickerValue.getMinutes().toString().padStart(2, '0');
     const timeStr = `${hh}:${mm}`;
-    const key = activeTimePicker!;
-    setActiveTimePicker(null);
-    const updated = { ...notifSettings } as any;
-    // Key format: "section.time" e.g. "ifCheckin.time"
-    const [section, field] = key.split('.');
-    updated[section] = { ...updated[section], [field]: timeStr };
-    updateNotifSettings(updated as NotificationSettings);
+    const key = activeTimePicker;
+    Animated.parallel([
+      Animated.timing(sheetAnim, { toValue: 300, duration: 220, useNativeDriver: true }),
+      Animated.timing(overlayAnim, { toValue: 0, duration: 180, useNativeDriver: true }),
+    ]).start(() => {
+      setActiveTimePicker(null);
+      const updated: any = { ...notifSettings };
+      const [section] = key.split('.');
+      if (section === 'quietStart') {
+        updateNotifSettings({ ...notifSettings, quietStart: timeStr });
+      } else if (section === 'quietEnd') {
+        updateNotifSettings({ ...notifSettings, quietEnd: timeStr });
+      } else {
+        updated[section] = { ...updated[section], time: timeStr };
+        updateNotifSettings(updated as NotificationSettings);
+      }
+    });
   };
 
   const toggleHaptics = (val: boolean) => {
@@ -601,6 +671,10 @@ export default function SettingsScreen() {
   };
 
   const appVersion = Constants.expoConfig?.version ?? '1.0';
+
+  const healthActiveCount = [notifSettings.foodLog.enabled, notifSettings.waterPace.enabled, notifSettings.activity.enabled, notifSettings.streakProtection.enabled, notifSettings.weeklyRecap.enabled, notifSettings.reengagement.enabled].filter(Boolean).length;
+  const fastingActiveCount = [notifSettings.ifWindow.enabled, notifSettings.ifCheckin.enabled].filter(Boolean).length;
+  const faithActiveCount = [notifSettings.morningIntention.enabled, notifSettings.eveningGratitude.enabled, notifSettings.prayerCheckin.enabled].filter(Boolean).length;
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary, paddingTop: insets.top }}>
@@ -1082,6 +1156,7 @@ export default function SettingsScreen() {
               <ToggleSwitch
                 value={notifSettings.masterEnabled}
                 onValueChange={v => {
+                  if (!v) closeTimePicker();
                   if (v && notifPermission === 'undetermined') {
                     requestNotificationPermission().then(granted => {
                       setNotifPermission(granted ? 'granted' : 'denied');
@@ -1116,9 +1191,10 @@ export default function SettingsScreen() {
                 </View>
 
                 {/* ── Min spacing ── */}
-                <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginTop: 16, marginBottom: 10 }}>Minimum Spacing</Text>
+                <View style={{ height: 1, backgroundColor: theme.borderInput, marginTop: 16, marginBottom: 16 }} />
+                <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6 }}>Minimum Spacing</Text>
                 <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 10 }}>Minimum time between auto-scheduled reminders</Text>
-                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 4 }}>
+                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
                   {[30, 60, 90].map(mins => (
                     <TouchableOpacity
                       key={mins}
@@ -1129,248 +1205,219 @@ export default function SettingsScreen() {
                   ))}
                 </View>
 
-                {/* ── IF WINDOW ── */}
-                <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginTop: 20, marginBottom: 2 }}>IF Window Closing</Text>
-                <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 10 }}>Remind me when X minutes remain in my eating window</Text>
-                <View style={[styles.row, { borderTopColor: 'transparent', paddingHorizontal: 0, paddingTop: 0, marginBottom: 8 }]}>
-                  <Text style={[styles.rowTitle, { color: theme.textPrimary, flex: 1 }]}>Enable</Text>
-                  <ToggleSwitch value={notifSettings.ifWindow.enabled} onValueChange={v => updateNotifSettings({ ...notifSettings, ifWindow: { ...notifSettings.ifWindow, enabled: v } })} />
-                </View>
-                {notifSettings.ifWindow.enabled && (
-                  <>
-                    {notifSettings.ifWindow.reminders.map((r, i) => (
-                      <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                {/* ── Health & Habits accordion ── */}
+                <NotifGroup label="Health & Habits" summary={healthActiveCount > 0 ? `${healthActiveCount} of 6 active` : 'All off'} theme={theme}>
+                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>Food Log Reminder</Text>
+                  <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 8 }}>Fires if nothing has been logged by your chosen time</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Enable</Text>
+                    <ToggleSwitch value={notifSettings.foodLog.enabled} onValueChange={v => updateNotifSettings({ ...notifSettings, foodLog: { ...notifSettings.foodLog, enabled: v } })} />
+                  </View>
+                  {notifSettings.foodLog.enabled && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular' }}>Time</Text>
+                      <TouchableOpacity onPress={() => openTimePicker('foodLog.time', notifSettings.foodLog.time)} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 14 }}>
+                        <Text style={{ color: theme.textPrimary, fontSize: 14, fontFamily: 'DMSans_600SemiBold' }}>{formatNotifTime(notifSettings.foodLog.time)}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  <View style={{ height: 1, backgroundColor: theme.borderInput, marginVertical: 12 }} />
+
+                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>Water Pace</Text>
+                  <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 8 }}>Midday check -- fires if you're 30%+ behind your daily water goal</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Enable</Text>
+                    <ToggleSwitch value={notifSettings.waterPace.enabled} onValueChange={v => updateNotifSettings({ ...notifSettings, waterPace: { ...notifSettings.waterPace, enabled: v } })} />
+                  </View>
+                  <View style={{ height: 1, backgroundColor: theme.borderInput, marginVertical: 12 }} />
+
+                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>Activity Reminder</Text>
+                  <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 8 }}>Fires if no workout logged and steps are below 80% of your goal</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Enable</Text>
+                    <ToggleSwitch value={notifSettings.activity.enabled} onValueChange={v => updateNotifSettings({ ...notifSettings, activity: { ...notifSettings.activity, enabled: v } })} />
+                  </View>
+                  {notifSettings.activity.enabled && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular' }}>Time</Text>
+                      <TouchableOpacity onPress={() => openTimePicker('activity.time', notifSettings.activity.time)} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 14 }}>
+                        <Text style={{ color: theme.textPrimary, fontSize: 14, fontFamily: 'DMSans_600SemiBold' }}>{formatNotifTime(notifSettings.activity.time)}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  <View style={{ height: 1, backgroundColor: theme.borderInput, marginVertical: 12 }} />
+
+                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>Streak Protection</Text>
+                  <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 8 }}>Always fires when a streak is at risk -- not subject to spacing limits</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Enable</Text>
+                    <ToggleSwitch value={notifSettings.streakProtection.enabled} onValueChange={v => updateNotifSettings({ ...notifSettings, streakProtection: { ...notifSettings.streakProtection, enabled: v } })} />
+                  </View>
+                  {notifSettings.streakProtection.enabled && (
+                    <View style={{ marginBottom: 8 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                         <TextInput
-                          style={{ flex: 1, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 9, paddingHorizontal: 12, fontSize: 15, fontFamily: 'DMSans_600SemiBold' }}
-                          value={r}
-                          onChangeText={v => {
-                            const filtered = v.replace(/[^0-9]/g, '');
-                            const updated = [...notifSettings.ifWindow.reminders];
-                            updated[i] = filtered;
-                            updateNotifSettings({ ...notifSettings, ifWindow: { ...notifSettings.ifWindow, reminders: updated } });
-                          }}
+                          style={{ width: 64, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 9, paddingHorizontal: 12, fontSize: 15, fontFamily: 'DMSans_600SemiBold', textAlign: 'center' }}
+                          value={notifSettings.streakProtection.minutesBefore}
+                          onChangeText={v => { const filtered = v.replace(/[^0-9]/g, ''); updateNotifSettings({ ...notifSettings, streakProtection: { ...notifSettings.streakProtection, minutesBefore: filtered } }); }}
                           keyboardType="number-pad"
-                          placeholder="60"
+                          placeholder="45"
                           placeholderTextColor={theme.textDim}
                           maxLength={3}
                         />
-                        <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular' }}>min before close</Text>
-                        {notifSettings.ifWindow.reminders.length > 1 && (
-                          <TouchableOpacity onPress={() => {
-                            const updated = notifSettings.ifWindow.reminders.filter((_, idx) => idx !== i);
-                            updateNotifSettings({ ...notifSettings, ifWindow: { ...notifSettings.ifWindow, reminders: updated } });
-                          }}>
-                            <Ionicons name="close-circle" size={20} color={theme.accentRed} />
-                          </TouchableOpacity>
-                        )}
+                        <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular', flex: 1 }}>minutes before your typical bedtime</Text>
                       </View>
-                    ))}
-                    {notifSettings.ifWindow.reminders.length < 3 && (
-                      <TouchableOpacity
-                        onPress={() => updateNotifSettings({ ...notifSettings, ifWindow: { ...notifSettings.ifWindow, reminders: [...notifSettings.ifWindow.reminders, ''] } })}
-                        style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-                        <Ionicons name="add-circle-outline" size={16} color={theme.accentBlue} />
-                        <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Add another reminder</Text>
-                      </TouchableOpacity>
-                    )}
-                  </>
-                )}
-
-                {/* ── IF Check-In ── */}
-                <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginTop: 20, marginBottom: 2 }}>IF Check-In</Text>
-                <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 10 }}>Reminds you to start your IF window if food was logged but timer hasn't started</Text>
-                <View style={[styles.row, { borderTopColor: 'transparent', paddingHorizontal: 0, paddingTop: 0 }]}>
-                  <Text style={[styles.rowTitle, { color: theme.textPrimary, flex: 1 }]}>Enable</Text>
-                  <ToggleSwitch value={notifSettings.ifCheckin.enabled} onValueChange={v => updateNotifSettings({ ...notifSettings, ifCheckin: { ...notifSettings.ifCheckin, enabled: v } })} />
-                </View>
-                {notifSettings.ifCheckin.enabled && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
-                    <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular' }}>Time</Text>
-                    <TouchableOpacity onPress={() => openTimePicker('ifCheckin.time', notifSettings.ifCheckin.time)} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 14 }}>
-                      <Text style={{ color: theme.textPrimary, fontSize: 14, fontFamily: 'DMSans_600SemiBold' }}>{formatNotifTime(notifSettings.ifCheckin.time)}</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-
-                {/* ── Food Log ── */}
-                <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginTop: 20, marginBottom: 2 }}>Food Log Reminder</Text>
-                <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 10 }}>Fires if nothing has been logged by your chosen time</Text>
-                <View style={[styles.row, { borderTopColor: 'transparent', paddingHorizontal: 0, paddingTop: 0 }]}>
-                  <Text style={[styles.rowTitle, { color: theme.textPrimary, flex: 1 }]}>Enable</Text>
-                  <ToggleSwitch value={notifSettings.foodLog.enabled} onValueChange={v => updateNotifSettings({ ...notifSettings, foodLog: { ...notifSettings.foodLog, enabled: v } })} />
-                </View>
-                {notifSettings.foodLog.enabled && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
-                    <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular' }}>Time</Text>
-                    <TouchableOpacity onPress={() => openTimePicker('foodLog.time', notifSettings.foodLog.time)} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 14 }}>
-                      <Text style={{ color: theme.textPrimary, fontSize: 14, fontFamily: 'DMSans_600SemiBold' }}>{formatNotifTime(notifSettings.foodLog.time)}</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-
-                {/* ── Water Pace ── */}
-                <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginTop: 20, marginBottom: 2 }}>Water Pace</Text>
-                <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 10 }}>Midday check -- fires if you're 30%+ behind your daily water goal</Text>
-                <View style={[styles.row, { borderTopColor: 'transparent', paddingHorizontal: 0, paddingTop: 0 }]}>
-                  <Text style={[styles.rowTitle, { color: theme.textPrimary, flex: 1 }]}>Enable</Text>
-                  <ToggleSwitch value={notifSettings.waterPace.enabled} onValueChange={v => updateNotifSettings({ ...notifSettings, waterPace: { ...notifSettings.waterPace, enabled: v } })} />
-                </View>
-
-                {/* ── Streak Protection ── */}
-                <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginTop: 20, marginBottom: 2 }}>Streak Protection</Text>
-                <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 10 }}>Always fires when a streak is at risk -- not subject to spacing limits</Text>
-                <View style={[styles.row, { borderTopColor: 'transparent', paddingHorizontal: 0, paddingTop: 0 }]}>
-                  <Text style={[styles.rowTitle, { color: theme.textPrimary, flex: 1 }]}>Enable</Text>
-                  <ToggleSwitch value={notifSettings.streakProtection.enabled} onValueChange={v => updateNotifSettings({ ...notifSettings, streakProtection: { ...notifSettings.streakProtection, enabled: v } })} />
-                </View>
-                {notifSettings.streakProtection.enabled && (
-                  <View style={{ marginTop: 10 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <TextInput
-                        style={{ width: 64, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 9, paddingHorizontal: 12, fontSize: 15, fontFamily: 'DMSans_600SemiBold', textAlign: 'center' }}
-                        value={notifSettings.streakProtection.minutesBefore}
-                        onChangeText={v => {
-                          const filtered = v.replace(/[^0-9]/g, '');
-                          updateNotifSettings({ ...notifSettings, streakProtection: { ...notifSettings.streakProtection, minutesBefore: filtered } });
-                        }}
-                        keyboardType="number-pad"
-                        placeholder="45"
-                        placeholderTextColor={theme.textDim}
-                        maxLength={3}
-                      />
-                      <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular', flex: 1 }}>minutes before your typical bedtime</Text>
+                      <Text style={{ fontSize: 12, color: avgBedtime ? theme.accentBlue : theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 8 }}>
+                        {avgBedtime ? `Your average bedtime: ${avgBedtime}` : 'Not enough sleep data yet (needs 3+ nights)'}
+                      </Text>
                     </View>
-                    <Text style={{ fontSize: 12, color: avgBedtime ? theme.accentBlue : theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 8 }}>
-                      {avgBedtime ? `Your average bedtime: ${avgBedtime}` : 'Not enough sleep data yet (needs 3+ nights)'}
-                    </Text>
+                  )}
+                  <View style={{ height: 1, backgroundColor: theme.borderInput, marginVertical: 12 }} />
+
+                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>Weekly Recap</Text>
+                  <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 8 }}>Sunday evening summary of your week</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Enable</Text>
+                    <ToggleSwitch value={notifSettings.weeklyRecap.enabled} onValueChange={v => updateNotifSettings({ ...notifSettings, weeklyRecap: { ...notifSettings.weeklyRecap, enabled: v } })} />
                   </View>
-                )}
+                  {notifSettings.weeklyRecap.enabled && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular' }}>Time (Sundays)</Text>
+                      <TouchableOpacity onPress={() => openTimePicker('weeklyRecap.time', notifSettings.weeklyRecap.time)} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 14 }}>
+                        <Text style={{ color: theme.textPrimary, fontSize: 14, fontFamily: 'DMSans_600SemiBold' }}>{formatNotifTime(notifSettings.weeklyRecap.time)}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  <View style={{ height: 1, backgroundColor: theme.borderInput, marginVertical: 12 }} />
 
-                {/* ── Activity ── */}
-                <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginTop: 20, marginBottom: 2 }}>Activity Reminder</Text>
-                <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 10 }}>Fires if no workout logged and steps are below 80% of your goal</Text>
-                <View style={[styles.row, { borderTopColor: 'transparent', paddingHorizontal: 0, paddingTop: 0 }]}>
-                  <Text style={[styles.rowTitle, { color: theme.textPrimary, flex: 1 }]}>Enable</Text>
-                  <ToggleSwitch value={notifSettings.activity.enabled} onValueChange={v => updateNotifSettings({ ...notifSettings, activity: { ...notifSettings.activity, enabled: v } })} />
-                </View>
-                {notifSettings.activity.enabled && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
-                    <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular' }}>Time</Text>
-                    <TouchableOpacity onPress={() => openTimePicker('activity.time', notifSettings.activity.time)} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 14 }}>
-                      <Text style={{ color: theme.textPrimary, fontSize: 14, fontFamily: 'DMSans_600SemiBold' }}>{formatNotifTime(notifSettings.activity.time)}</Text>
-                    </TouchableOpacity>
+                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>Re-Engagement</Text>
+                  <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 8 }}>Fires if the app hasn't been opened in 2 days</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Enable</Text>
+                    <ToggleSwitch value={notifSettings.reengagement.enabled} onValueChange={v => updateNotifSettings({ ...notifSettings, reengagement: { ...notifSettings.reengagement, enabled: v } })} />
                   </View>
-                )}
+                </NotifGroup>
 
-                {/* ── Weekly Recap ── */}
-                <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginTop: 20, marginBottom: 2 }}>Weekly Recap</Text>
-                <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 10 }}>Sunday evening summary of your week</Text>
-                <View style={[styles.row, { borderTopColor: 'transparent', paddingHorizontal: 0, paddingTop: 0 }]}>
-                  <Text style={[styles.rowTitle, { color: theme.textPrimary, flex: 1 }]}>Enable</Text>
-                  <ToggleSwitch value={notifSettings.weeklyRecap.enabled} onValueChange={v => updateNotifSettings({ ...notifSettings, weeklyRecap: { ...notifSettings.weeklyRecap, enabled: v } })} />
-                </View>
-                {notifSettings.weeklyRecap.enabled && (
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
-                    <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular' }}>Time (Sundays)</Text>
-                    <TouchableOpacity onPress={() => openTimePicker('weeklyRecap.time', notifSettings.weeklyRecap.time)} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 14 }}>
-                      <Text style={{ color: theme.textPrimary, fontSize: 14, fontFamily: 'DMSans_600SemiBold' }}>{formatNotifTime(notifSettings.weeklyRecap.time)}</Text>
-                    </TouchableOpacity>
+                {/* ── Fasting accordion ── */}
+                <NotifGroup label="Fasting" summary={fastingActiveCount > 0 ? `${fastingActiveCount} of 2 active` : 'All off'} theme={theme}>
+                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>IF Window Closing</Text>
+                  <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 8 }}>Remind me when X minutes remain in my eating window</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Enable</Text>
+                    <ToggleSwitch value={notifSettings.ifWindow.enabled} onValueChange={v => updateNotifSettings({ ...notifSettings, ifWindow: { ...notifSettings.ifWindow, enabled: v } })} />
                   </View>
-                )}
+                  {notifSettings.ifWindow.enabled && (
+                    <>
+                      {notifSettings.ifWindow.reminders.map((r, i) => (
+                        <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                          <TextInput
+                            style={{ flex: 1, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 9, paddingHorizontal: 12, fontSize: 15, fontFamily: 'DMSans_600SemiBold' }}
+                            value={r}
+                            onChangeText={v => {
+                              const filtered = v.replace(/[^0-9]/g, '');
+                              const updated = [...notifSettings.ifWindow.reminders];
+                              updated[i] = filtered;
+                              updateNotifSettings({ ...notifSettings, ifWindow: { ...notifSettings.ifWindow, reminders: updated } });
+                            }}
+                            keyboardType="number-pad"
+                            placeholder="60"
+                            placeholderTextColor={theme.textDim}
+                            maxLength={3}
+                          />
+                          <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular' }}>min before close</Text>
+                          {notifSettings.ifWindow.reminders.length > 1 && (
+                            <TouchableOpacity onPress={() => { const updated = notifSettings.ifWindow.reminders.filter((_, idx) => idx !== i); updateNotifSettings({ ...notifSettings, ifWindow: { ...notifSettings.ifWindow, reminders: updated } }); }}>
+                              <Ionicons name="close-circle" size={20} color={theme.accentRed} />
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      ))}
+                      {notifSettings.ifWindow.reminders.length < 3 && (
+                        <TouchableOpacity onPress={() => updateNotifSettings({ ...notifSettings, ifWindow: { ...notifSettings.ifWindow, reminders: [...notifSettings.ifWindow.reminders, ''] } })} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                          <Ionicons name="add-circle-outline" size={16} color={theme.accentBlue} />
+                          <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Add another reminder</Text>
+                        </TouchableOpacity>
+                      )}
+                    </>
+                  )}
+                  <View style={{ height: 1, backgroundColor: theme.borderInput, marginVertical: 12 }} />
 
-                {/* ── Re-engagement ── */}
-                <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginTop: 20, marginBottom: 2 }}>Re-Engagement</Text>
-                <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 10 }}>Fires if the app hasn't been opened in 2 days</Text>
-                <View style={[styles.row, { borderTopColor: 'transparent', paddingHorizontal: 0, paddingTop: 0 }]}>
-                  <Text style={[styles.rowTitle, { color: theme.textPrimary, flex: 1 }]}>Enable</Text>
-                  <ToggleSwitch value={notifSettings.reengagement.enabled} onValueChange={v => updateNotifSettings({ ...notifSettings, reengagement: { ...notifSettings.reengagement, enabled: v } })} />
-                </View>
+                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>IF Check-In</Text>
+                  <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 8 }}>Reminds you to start your IF window if food was logged but timer hasn't started</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Enable</Text>
+                    <ToggleSwitch value={notifSettings.ifCheckin.enabled} onValueChange={v => updateNotifSettings({ ...notifSettings, ifCheckin: { ...notifSettings.ifCheckin, enabled: v } })} />
+                  </View>
+                  {notifSettings.ifCheckin.enabled && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular' }}>Time</Text>
+                      <TouchableOpacity onPress={() => openTimePicker('ifCheckin.time', notifSettings.ifCheckin.time)} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 14 }}>
+                        <Text style={{ color: theme.textPrimary, fontSize: 14, fontFamily: 'DMSans_600SemiBold' }}>{formatNotifTime(notifSettings.ifCheckin.time)}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </NotifGroup>
 
-                {/* ── Faith section (gated) ── */}
+                {/* ── Faith accordion (gated) ── */}
                 {faithJourney !== 'notrightnow' && (
-                  <>
-                    <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginTop: 24, marginBottom: 2 }}>Morning Intention</Text>
-                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 10 }}>Opens today's verse to start your day with purpose</Text>
-                    <View style={[styles.row, { borderTopColor: 'transparent', paddingHorizontal: 0, paddingTop: 0 }]}>
-                      <Text style={[styles.rowTitle, { color: theme.textPrimary, flex: 1 }]}>Enable</Text>
+                  <NotifGroup label="Faith" summary={faithActiveCount > 0 ? `${faithActiveCount} of ${faithJourney === 'rooted' ? 3 : 2} active` : 'All off'} theme={theme}>
+                    <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>Morning Intention</Text>
+                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 8 }}>Opens today's verse to start your day with purpose</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Enable</Text>
                       <ToggleSwitch value={notifSettings.morningIntention.enabled} onValueChange={v => updateNotifSettings({ ...notifSettings, morningIntention: { ...notifSettings.morningIntention, enabled: v } })} />
                     </View>
                     {notifSettings.morningIntention.enabled && (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                         <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular' }}>Time</Text>
                         <TouchableOpacity onPress={() => openTimePicker('morningIntention.time', notifSettings.morningIntention.time)} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 14 }}>
                           <Text style={{ color: theme.textPrimary, fontSize: 14, fontFamily: 'DMSans_600SemiBold' }}>{formatNotifTime(notifSettings.morningIntention.time)}</Text>
                         </TouchableOpacity>
                       </View>
                     )}
+                    <View style={{ height: 1, backgroundColor: theme.borderInput, marginVertical: 12 }} />
 
-                    <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginTop: 20, marginBottom: 2 }}>Evening Gratitude</Text>
-                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 10 }}>Prompt to log your daily gratitude entry</Text>
-                    <View style={[styles.row, { borderTopColor: 'transparent', paddingHorizontal: 0, paddingTop: 0 }]}>
-                      <Text style={[styles.rowTitle, { color: theme.textPrimary, flex: 1 }]}>Enable</Text>
+                    <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>Evening Gratitude</Text>
+                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 8 }}>Prompt to log your daily gratitude entry</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Enable</Text>
                       <ToggleSwitch value={notifSettings.eveningGratitude.enabled} onValueChange={v => updateNotifSettings({ ...notifSettings, eveningGratitude: { ...notifSettings.eveningGratitude, enabled: v } })} />
                     </View>
                     {notifSettings.eveningGratitude.enabled && (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                         <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular' }}>Time</Text>
                         <TouchableOpacity onPress={() => openTimePicker('eveningGratitude.time', notifSettings.eveningGratitude.time)} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 14 }}>
                           <Text style={{ color: theme.textPrimary, fontSize: 14, fontFamily: 'DMSans_600SemiBold' }}>{formatNotifTime(notifSettings.eveningGratitude.time)}</Text>
                         </TouchableOpacity>
                       </View>
                     )}
-                  </>
-                )}
 
-                {faithJourney === 'rooted' && (
-                  <>
-                    <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginTop: 20, marginBottom: 2 }}>Prayer Check-In</Text>
-                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 10 }}>Evening prompt for your prayer streak</Text>
-                    <View style={[styles.row, { borderTopColor: 'transparent', paddingHorizontal: 0, paddingTop: 0 }]}>
-                      <Text style={[styles.rowTitle, { color: theme.textPrimary, flex: 1 }]}>Enable</Text>
-                      <ToggleSwitch value={notifSettings.prayerCheckin.enabled} onValueChange={v => updateNotifSettings({ ...notifSettings, prayerCheckin: { ...notifSettings.prayerCheckin, enabled: v } })} />
-                    </View>
-                    {notifSettings.prayerCheckin.enabled && (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
-                        <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular' }}>Time</Text>
-                        <TouchableOpacity onPress={() => openTimePicker('prayerCheckin.time', notifSettings.prayerCheckin.time)} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 14 }}>
-                          <Text style={{ color: theme.textPrimary, fontSize: 14, fontFamily: 'DMSans_600SemiBold' }}>{formatNotifTime(notifSettings.prayerCheckin.time)}</Text>
-                        </TouchableOpacity>
-                      </View>
+                    {faithJourney === 'rooted' && (
+                      <>
+                        <View style={{ height: 1, backgroundColor: theme.borderInput, marginVertical: 12 }} />
+                        <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>Prayer Check-In</Text>
+                        <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 8 }}>Evening prompt for your prayer streak</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                          <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Enable</Text>
+                          <ToggleSwitch value={notifSettings.prayerCheckin.enabled} onValueChange={v => updateNotifSettings({ ...notifSettings, prayerCheckin: { ...notifSettings.prayerCheckin, enabled: v } })} />
+                        </View>
+                        {notifSettings.prayerCheckin.enabled && (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular' }}>Time</Text>
+                            <TouchableOpacity onPress={() => openTimePicker('prayerCheckin.time', notifSettings.prayerCheckin.time)} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 14 }}>
+                              <Text style={{ color: theme.textPrimary, fontSize: 14, fontFamily: 'DMSans_600SemiBold' }}>{formatNotifTime(notifSettings.prayerCheckin.time)}</Text>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                      </>
                     )}
-                  </>
+                  </NotifGroup>
                 )}
               </>
             )}
           </View>
         </CollapsibleSection>
 
-        {/* DateTimePicker for notification times */}
-        {activeTimePicker && (
-          <DateTimePicker
-            value={timePickerValue}
-            mode="time"
-            display="spinner"
-            onChange={(e, date) => {
-              if (!date) { setActiveTimePicker(null); return; }
-              const hh = date.getHours().toString().padStart(2, '0');
-              const mm = date.getMinutes().toString().padStart(2, '0');
-              const timeStr = `${hh}:${mm}`;
-              const key = activeTimePicker!;
-              setActiveTimePicker(null);
-              const updated: any = { ...notifSettings };
-              // Key format: "section.field" e.g. "ifCheckin.time" or "quietStart.time"
-              const [section, field] = key.split('.');
-              if (section === 'quietStart') {
-                updateNotifSettings({ ...notifSettings, quietStart: timeStr });
-              } else if (section === 'quietEnd') {
-                updateNotifSettings({ ...notifSettings, quietEnd: timeStr });
-              } else {
-                updated[section] = { ...updated[section], [field]: timeStr };
-                updateNotifSettings(updated as NotificationSettings);
-              }
-            }}
-          />
-        )}
 
         {/* ── Help ── */}
         <CollapsibleSection label="Help" subtitle="Definitions · Guides · Prayer" defaultOpen={false} theme={theme}>
@@ -1675,6 +1722,48 @@ export default function SettingsScreen() {
           </View>
         </Animated.View>
       </KeyboardAvoidingView>
+
+      {/* Time picker modal for notification settings */}
+      <Modal
+        visible={!!activeTimePicker}
+        transparent
+        animationType="none"
+        onRequestClose={closeTimePicker}
+        onShow={() => {
+          sheetAnim.setValue(300);
+          overlayAnim.setValue(0);
+          Animated.parallel([
+            Animated.timing(sheetAnim, { toValue: 0, duration: 300, useNativeDriver: true }),
+            Animated.timing(overlayAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
+          ]).start();
+        }}
+      >
+        <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+          <Animated.View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', opacity: overlayAnim }} pointerEvents="none" />
+          <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={closeTimePicker} />
+          <Animated.View style={{ backgroundColor: theme.bgSheet, borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingBottom: insets.bottom + 8, transform: [{ translateY: sheetAnim }] }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingTop: 14, paddingBottom: 6 }}>
+              <TouchableOpacity onPress={closeTimePicker} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Text style={{ fontSize: 14, fontFamily: 'DMSans_400Regular', color: theme.textMuted }}>Cancel</Text>
+              </TouchableOpacity>
+              <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.accentBlueRaw, textTransform: 'uppercase' }}>Set Time</Text>
+              <TouchableOpacity onPress={confirmTimePicker} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlueRaw }}>Done</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={{ width: Dimensions.get('window').width }}>
+              <DateTimePicker
+                value={timePickerValue}
+                mode="time"
+                display="spinner"
+                textColor={theme.textPrimary}
+                onChange={(_, date) => { if (date) setTimePickerValue(date); }}
+                style={{ height: 200 }}
+              />
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
 
       <PrayerRequestModal visible={showPrayerModal} onClose={() => setShowPrayerModal(false)} />
 

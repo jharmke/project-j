@@ -296,10 +296,13 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
   const suspectDays = days.filter(d => !d.excluded && d.calories > 0 && d.calories <= 400).length;
   const excludedCount = days.filter(d => d.excluded).length;
   const consistencyRate = windowDays > 0 ? loggedDays / windowDays : 0;
+  const firstLoggedDayIdx = days.findIndex(d => !d.excluded && d.calories > 400);
+  const effectiveWindowDays = firstLoggedDayIdx >= 0 ? windowDays - firstLoggedDayIdx : windowDays;
+  const adjustedConsistencyRate = effectiveWindowDays > 0 ? loggedDays / effectiveWindowDays : 0;
 
   let consistencyStatus: FindingStatus = 'good';
-  if (consistencyRate < 0.70) consistencyStatus = 'factor';
-  else if (consistencyRate < 0.85) consistencyStatus = 'attention';
+  if (adjustedConsistencyRate < 0.70) consistencyStatus = 'factor';
+  else if (adjustedConsistencyRate < 0.85) consistencyStatus = 'attention';
 
   const consistency: ConsistencyFinding = {
     type: 'consistency', loggedDays, totalDays: windowDays, rate: consistencyRate,
@@ -629,16 +632,16 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
   if (consistency.status === 'factor') {
     suggestions.push({ rank: 1, headline: 'Log more consistently', detail: `You logged ${loggedDays} out of ${windowDays} days. Even rough estimates on hard days are better than gaps -- aim for something every day.` });
   }
-  if (burnAccuracyFinding.isFlagged && suggestions.length < 3) {
+  if (burnAccuracyFinding.isFlagged) {
     suggestions.push({ rank: suggestions.length + 1, headline: 'Adjust your burn accuracy setting', detail: `You're using 100% of Apple Health's active calorie estimate. Most wearables overstate by 10-30%. Go to Settings → Health and try 80-90%.` });
   }
-  if (deficitFinding && !deficitFinding.hasWeightData && suggestions.length < 3) {
+  if (deficitFinding && !deficitFinding.hasWeightData) {
     suggestions.push({ rank: suggestions.length + 1, headline: 'Log your weight more regularly', detail: `The most powerful comparison -- expected vs actual results -- needs at least 2 weight entries in the window. Log a few times a week.` });
   }
-  if (macroFinding && macroFinding.macroStatus !== 'good' && suggestions.length < 3) {
+  if (macroFinding && macroFinding.macroStatus !== 'good') {
     suggestions.push({ rank: suggestions.length + 1, headline: 'Increase your protein intake', detail: `Your average was ${macroFinding.avgProtein}g/day. For your size, ${macroFinding.proteinGoalMin}-${macroFinding.proteinGoalMax}g is the target. Protein preserves muscle during a deficit and keeps you fuller longer.` });
   }
-  if (sleepFinding && sleepFinding.status !== 'good' && suggestions.length < 3) {
+  if (sleepFinding && sleepFinding.status !== 'good') {
     suggestions.push({
       rank: suggestions.length + 1, headline: 'Prioritize sleep',
       detail: sleepFinding.avgSleepScore !== null
@@ -646,11 +649,11 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
         : `You're averaging ${sleepFinding.avgSleepHours}h of sleep. Poor sleep increases hunger hormones and reduces workout motivation -- both work against your goals.`,
     });
   }
-  if (macroFinding && macroFinding.lowFiberNote && suggestions.length < 3) {
+  if (macroFinding && macroFinding.lowFiberNote) {
     suggestions.push({ rank: suggestions.length + 1, headline: 'Improve food quality', detail: `Your average fiber was ${macroFinding.avgFiber}g/day vs the recommended 25-38g. Low fiber signals a diet heavy in processed foods. More whole foods improves satiety and long-term results.` });
   }
-  if (consistency.status === 'attention' && suggestions.length < 3) {
-    suggestions.push({ rank: suggestions.length + 1, headline: 'Close the logging gaps', detail: `You logged ${Math.round(consistencyRate * 100)}% of days. Unlisted days create gaps in the deficit calculation that the report can\'t account for.` });
+  if (consistency.status === 'attention') {
+    suggestions.push({ rank: suggestions.length + 1, headline: 'Close the logging gaps', detail: `You logged ${Math.round(consistencyRate * 100)}% of days. Unlisted days create gaps in the deficit calculation that the report can't account for.` });
   }
   if (suggestions.length === 0) {
     suggestions.push({ rank: 1, headline: 'Your data looks solid', detail: `Consistency, macros, and sleep all look good over this window. Keep the habits going -- this is what sustained progress looks like.` });
@@ -678,7 +681,7 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
     deficit: deficitFinding, burnAccuracy: burnAccuracyFinding, consistency,
     macros: macroFinding, sleep: sleepFinding,
     correlations: correlations.length > 0 ? { type: 'correlations', correlations } : null,
-    suggestions: suggestions.slice(0, 3),
+    suggestions,
     insufficientData: false, minLoggedDays: loggedDays,
   };
 }

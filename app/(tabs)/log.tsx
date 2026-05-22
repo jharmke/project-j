@@ -328,10 +328,12 @@ export default function LogScreen() {
         if (saved) {
           const data = JSON.parse(saved);
           if (data.entries && Array.isArray(data.entries)) {
-  setEntries(data.entries);
-  setTotalProtein(Math.round(data.entries.reduce((s: number, e: any) => s + (e.protein || 0), 0) * 10) / 10);
-  setTotalCarbs(Math.round(data.entries.reduce((s: number, e: any) => s + (e.carbs || 0), 0) * 10) / 10);
-  setTotalFat(Math.round(data.entries.reduce((s: number, e: any) => s + (e.fat || 0), 0) * 10) / 10);
+  const clean = data.entries.filter((e: any) => e != null);
+  setEntries(clean);
+  setTotalProtein(Math.round(clean.reduce((s: number, e: any) => s + (e.protein || 0), 0) * 10) / 10);
+  setTotalCarbs(Math.round(clean.reduce((s: number, e: any) => s + (e.carbs || 0), 0) * 10) / 10);
+  setTotalFat(Math.round(clean.reduce((s: number, e: any) => s + (e.fat || 0), 0) * 10) / 10);
+  if (clean.length !== data.entries.length) storageSet(`pj_${activeDate}`, JSON.stringify({ ...data, entries: clean }));
 }
           if (typeof data.water === 'number') setWater(Math.max(0, data.water));
           if (Array.isArray(data.waterEntries)) setWaterEntries(data.waterEntries);
@@ -429,10 +431,12 @@ export default function LogScreen() {
           if (saved) {
             const data = JSON.parse(saved);
             if (data.entries && Array.isArray(data.entries)) {
-  setEntries(data.entries);
-  setTotalProtein(Math.round(data.entries.reduce((s: number, e: any) => s + (e.protein || 0), 0) * 10) / 10);
-  setTotalCarbs(Math.round(data.entries.reduce((s: number, e: any) => s + (e.carbs || 0), 0) * 10) / 10);
-  setTotalFat(Math.round(data.entries.reduce((s: number, e: any) => s + (e.fat || 0), 0) * 10) / 10);
+  const clean = data.entries.filter((e: any) => e != null);
+  setEntries(clean);
+  setTotalProtein(Math.round(clean.reduce((s: number, e: any) => s + (e.protein || 0), 0) * 10) / 10);
+  setTotalCarbs(Math.round(clean.reduce((s: number, e: any) => s + (e.carbs || 0), 0) * 10) / 10);
+  setTotalFat(Math.round(clean.reduce((s: number, e: any) => s + (e.fat || 0), 0) * 10) / 10);
+  if (clean.length !== data.entries.length) storageSet(`pj_${activeDate}`, JSON.stringify({ ...data, entries: clean }));
 }
             if (typeof data.water === 'number') setWater(Math.max(0, data.water));
             if (data.caloriesBurned) setCaloriesBurned(parseInt(data.caloriesBurned) || 0);
@@ -686,7 +690,7 @@ export default function LogScreen() {
             {/* + button on left */}
             <TouchableOpacity
               style={styles.mealAddBtn}
-              onPress={() => router.push({ pathname: '/add-food', params: { meal, date: todayKey } })}>
+              onPress={() => router.push({ pathname: '/add-food', params: { meal, date: activeDate } })}>
               <Text style={[styles.mealAddBtnText, { color: theme.accentBlue }]}>+</Text>
             </TouchableOpacity>
 
@@ -758,7 +762,7 @@ export default function LogScreen() {
                             servingUnit: (entry as any).loggedUnit || undefined,
                           }),
                           meal: entry.meal,
-                          date: todayKey,
+                          date: activeDate,
                           entryIndex: String(entries.indexOf(entry)),
                         }
                       })}>

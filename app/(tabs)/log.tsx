@@ -34,6 +34,7 @@ interface FoodEntry {
   carbsPer100g?: number;
   fatPer100g?: number;
   foodNutrients?: any[];
+  fsId?: string;
 }
 
 
@@ -288,7 +289,7 @@ export default function LogScreen() {
         scale = (e.calPer100g && e.calPer100g > 0) ? (e.cal / e.calPer100g) : 0;
       } else {
         const sg = (e as any).servingGrams;
-        const servingCal = sg && e.calPer100g > 0 ? e.calPer100g * sg / 100 : 0;
+        const servingCal = sg && (e.calPer100g ?? 0) > 0 ? (e.calPer100g ?? 0) * sg / 100 : 0;
         scale = servingCal > 0 ? e.cal / servingCal : 0;
       }
       return s + (n.value || 0) * scale;

@@ -491,6 +491,11 @@ Live release build testing. Log all bugs here in real-time. Status: open / fixed
 [ ] Prayer request wrong placement -- "Send a Prayer Request" sits inside Tips & Guides sub-section. Move to its own "Prayer" sub-section header between Definitions and Tips & Guides. settings.tsx.
 [ ] Stats graph callout numbers shortened -- net calories callout shows "2.1k kcal" instead of "2,100 kcal". All graph callout values must show full number with commas, no k/M shortening. Same standard already applied to steps. Affects all chart types. diagnostic-report.tsx / StatsGraphCard.tsx.
 [ ] Effort vs Results (i) icon misplaced -- TooltipIcon is anchored in the fixed nav header (top right) but the page title is in scroll content below. Disconnected visually. Move (i) inline with the "EFFORT VS RESULTS" title row in scroll content, matching card header convention throughout app. diagnostic-report.tsx.
+[ ] Settings Fitness Goals -- sleep scroller opens first, making it the first thing seen when Goals expands. Reorder to: Steps, Active Calories, Exercise Minutes, Sleep Goal. Sleep at bottom since it's the most complex input. settings.tsx.
+[ ] Settings goal field validation -- Steps, Active Calories, Exercise Minutes, Calorie Target text inputs have no max thresholds. Can enter arbitrarily large numbers that could break BMR calculations or trigger bad behavior. Add reasonable clamps: Steps 1,000-100,000 / Active Cals 100-5,000 / Exercise Mins 1-300 / Calorie Target 500-10,000. settings.tsx.
+[ ] Settings water goal oz label -- no unit label on water goal TextInput. Should show "oz" suffix inline next to the entered value, same as other unit fields throughout the app. settings.tsx.
+[ ] Notifications sleep goal scroller not centered on open -- confirmed still broken on release build. settings.tsx.
+[ ] Account section Apple vs Google indicator -- show which sign-in method the user used next to their email (Apple or Google). Small but useful clarity for users who forget how they signed in. settings.tsx.
 [ ] External TestFlight review not yet submitted -- build 7 shows "Ready to Submit" in App Store Connect but no external testing group has been assigned. Need to create external testing group, add testers, and submit build 7 for Apple external review before friends/family can install.
 
 SOON -- confirmed next few sessions

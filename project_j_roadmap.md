@@ -456,10 +456,10 @@ Live release build testing. Log all bugs here in real-time. Status: open / fixed
 [ ] Bible auto-scroll pause on touch -- finger held on screen should pause scrolling, lift should resume
 [ ] Bible auto-scroll choppiness -- random lag on release build, needs investigation
 [ ] App-wide haptics audit -- FABs, header icon buttons, and all missing touch feedback (Light: icons/selections, Medium: FABs/saves, Heavy: destructive)
-[ ] Water custom amount modal -- tapping inside modal (non-input area) should dismiss keyboard, currently only closes on full modal dismiss
+[x] Water custom amount modal -- TouchableWithoutFeedback wrapper on inner card dismisses keyboard on non-input taps. index.tsx.
+[x] Water gear modal header -- "WATER LOG" accent color (accentBlueRaw); X button replaced with tappable handle pill; 1.5px accentBlueRaw top border added. index.tsx.
+[x] Water gear save presets button -- dim until a preset value differs from saved value (presetsChanged check); save now calls Keyboard.dismiss() before toast; modal stays open. index.tsx.
 [ ] Water gear settings presets -- tapping outside TextInput fields should dismiss keyboard
-[ ] Water gear modal header -- "WATER LOG" label should be accent color matching modal header convention; replace X button with handle pill + accent top border to match all other modals app-wide
-[ ] Water gear save presets button -- starts active when it should be dim until a change is made; on save should dismiss keyboard + fire toast but keep modal open (currently only fires toast, keyboard stays)
 [x] Weight card -- toast on save. showToast('Weight saved', undefined, 'success') added to logWeight() after storage write. index.tsx.
 [x] Sleep card -- "Edit" text button replaced with bare settings-outline gear icon (size 16, textMuted, hitSlop), matching Water/Training card convention exactly. index.tsx.
 [x] IF card State 2 -- "Reset window" renamed to "Edit Start". index.tsx.
@@ -474,7 +474,7 @@ Live release build testing. Log all bugs here in real-time. Status: open / fixed
 [x] Fresh install restore bug -- FIXED 2026-05-22. Replaced hasPjData check with local-only gate key (pj_fresh_restore_done, excluded from shouldSync so it never reaches Firestore). restoreIfFresh() now always runs on first cold launch after a fresh install or reinstall, regardless of how many onboarding/config keys exist locally. Gate is set after restore completes (or Firestore confirmed empty). Wiped by account deletion and Force Restore, triggering a fresh restore attempt on next launch. services/syncService.ts.
 [x] Edit entry page missing date -- timestamp row now shows "May 21 · 8:32 AM" when editing a past-date entry. Date prefix only appears when entry date differs from today. food-detail.tsx.
 [x] Day detail header calendar icon spacing -- marginBottom on title row bumped 4→10, pushes calendar icon away from forward chevron below it. day-detail.tsx.
-[ ] You vs Yesterday card invisible when data insufficient -- renderVsYesterdayCard() returns null when fewer than 2 metrics have both today + yesterday values, causing the card to disappear entirely from the home screen. Fix: replace null return with an empty state ("Keep tracking to unlock your comparison" or similar) so the card always renders. Root cause in this session: yesterday's Firestore data (restored via Force Restore from dev build) likely missing steps/calories/sleep data needed to qualify 2 metrics. index.tsx line 2643.
+[x] You vs Yesterday card invisible when data insufficient -- empty state now renders as plain styles.card (outside TouchableOpacity) with bar-chart icon + "Keep tracking to compare" message. Card always present on home screen. index.tsx.
 [x] My Foods and Set Foods lost in Force Restore -- pj_my_foods and pj_barcode_overrides were not in Firestore at restore time. Root cause: those foods were created before the sync system shipped (old AsyncStorage.setItem, no Firestore mirror). Current code confirmed correct -- all pj_my_foods and pj_barcode_overrides writes use storageSet() and will sync going forward. Data unrecoverable but no code fix needed. Historical loss only.
 [x] Bible screen audit -- PASSED 2026-05-22. Two open bugs already logged (auto-scroll pause on touch, choppiness on release build).
 [x] Journal screen audit -- PASSED 2026-05-22. Create / edit / delete / swipe / categories all working.

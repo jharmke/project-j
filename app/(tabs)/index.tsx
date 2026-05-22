@@ -4,7 +4,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, AppState, Dimensions, Easing, KeyboardAvoidingView, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Animated, AppState, Dimensions, Easing, Keyboard, KeyboardAvoidingView, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import ReAnimated, { useAnimatedStyle, useAnimatedProps, useSharedValue, withTiming, withRepeat, withSequence, withDelay, cancelAnimation, Easing as ReAnimEasing } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -816,6 +816,7 @@ export default function HomeScreen() {
     if (!p0 || !p1 || !p2 || p0 <= 0 || p1 <= 0 || p2 <= 0) return;
     const newPresets: [number,number,number] = [p0, p1, p2];
     setWaterPresets(newPresets);
+    Keyboard.dismiss();
     const existing = await AsyncStorage.getItem('pj_profile');
     const current = existing ? JSON.parse(existing) : {};
     await storageSet('pj_profile', JSON.stringify({ ...current, waterPresets: newPresets }));
@@ -2805,7 +2806,19 @@ export default function HomeScreen() {
         return <ReadingPlansCard theme={theme} />;
       case 'vs_yesterday': {
         const cardContent = renderVsYesterdayCard();
-        if (!cardContent) return null;
+        if (!cardContent) return (
+          <View style={[styles.card, { borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 }}>
+              <Ionicons name="git-compare-outline" size={11} color={theme.textMuted} />
+              <Text style={[styles.cardLabel, { marginBottom: 0, color: theme.textMuted }]}>You vs Yesterday</Text>
+            </View>
+            <View style={{ alignItems: 'center', paddingVertical: 16, gap: 8 }}>
+              <Ionicons name="bar-chart-outline" size={32} color={theme.textDim} />
+              <Text style={{ color: theme.textPrimary, fontSize: 15, fontFamily: 'DMSans_600SemiBold' }}>Keep tracking to compare</Text>
+              <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_400Regular', textAlign: 'center', lineHeight: 18 }}>Log food, water, or steps today and yesterday to unlock your daily comparison.</Text>
+            </View>
+          </View>
+        );
         if (styleMode === 'mindful') return cardContent;
         const today = new Date();
         const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
@@ -2873,6 +2886,7 @@ export default function HomeScreen() {
       {showWaterCustomModal && (
         <Animated.View style={{ position:'absolute', top:0, bottom:0, left:0, right:0, backgroundColor: theme.overlayBg, justifyContent:'center', alignItems:'center', zIndex:999, opacity: waterModalAnim }}>
           <TouchableOpacity style={StyleSheet.absoluteFill} onPress={closeWaterCustomModal} activeOpacity={1} />
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={{ backgroundColor: theme.bgSheet, borderRadius:14, padding:24, width:'80%', borderWidth:0.5, borderColor: theme.borderCard }}>
             <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:12 }}>
               {waterCustomSign==='add' ? 'Add Custom Amount' : 'Remove Custom Amount'}
@@ -2896,6 +2910,7 @@ export default function HomeScreen() {
               </TouchableOpacity>
             </View>
           </View>
+          </TouchableWithoutFeedback>
         </Animated.View>
       )}
 
@@ -2930,19 +2945,22 @@ export default function HomeScreen() {
         const statusColor = goalMet || pct >= 0.9 ? theme.statusGood : pct >= 0.7 ? theme.statusWarn : theme.statusBad;
         const cardScale = waterDetailAnim.interpolate({ inputRange: [0, 1], outputRange: [0.93, 1] });
         const presetsValid = waterPresetInputs.every(v => { const n = parseInt(v); return !isNaN(n) && n > 0; });
+        const presetsChanged = waterPresetInputs.some((v, i) => { const n = parseInt(v); return !isNaN(n) && n > 0 && n !== waterPresets[i]; });
+        const presetsSaveable = presetsValid && presetsChanged;
         const wakeLabel = sleepWakeTime
           ? sleepWakeTime.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })
           : sleepStoredWake ?? '6:00 AM';
         return (
           <Animated.View style={{ position:'absolute', top:0, bottom:0, left:0, right:0, backgroundColor: theme.overlayBg, justifyContent:'center', alignItems:'center', zIndex:999, opacity: waterDetailAnim }}>
             <TouchableOpacity style={StyleSheet.absoluteFill} onPress={closeWaterDetailModal} activeOpacity={1} />
-            <Animated.View style={{ width:'92%', maxHeight:'82%', backgroundColor: theme.bgSheet, borderRadius:16, borderWidth:0.5, borderColor: theme.borderCard, overflow:'hidden', transform:[{scale: cardScale}] }}>
+            <Animated.View style={{ width:'92%', maxHeight:'82%', backgroundColor: theme.bgSheet, borderRadius:16, borderWidth:0.5, borderColor: theme.borderCard, borderTopWidth:1.5, borderTopColor: theme.accentBlueRaw, overflow:'hidden', transform:[{scale: cardScale}] }}>
+              {/* Handle pill */}
+              <TouchableOpacity onPress={closeWaterDetailModal} style={{ alignItems:'center', paddingTop:12, paddingBottom:8 }}>
+                <View style={{ width:36, height:4, borderRadius:2, backgroundColor: theme.sheetHandle }} />
+              </TouchableOpacity>
               {/* Header */}
-              <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:16, paddingTop:16, paddingBottom:12 }}>
-                <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:3, textTransform:'uppercase' }}>Water Log</Text>
-                <TouchableOpacity onPress={closeWaterDetailModal} hitSlop={{top:10,bottom:10,left:10,right:10}}>
-                  <Ionicons name="close" size={20} color={theme.textMuted} />
-                </TouchableOpacity>
+              <View style={{ paddingHorizontal:16, paddingBottom:12 }}>
+                <Text style={{ fontSize:9, color: theme.accentBlueRaw, fontFamily:'DMSans_700Bold', letterSpacing:3, textTransform:'uppercase' }}>Water Log</Text>
               </View>
               <View style={{ height:0.5, backgroundColor: theme.borderCard, marginHorizontal:16 }} />
               {/* Progress / On Track */}
@@ -3031,11 +3049,11 @@ export default function HomeScreen() {
                   ))}
                 </View>
                 <TouchableOpacity
-                  style={{ backgroundColor: presetsValid ? theme.accentBlueBg : theme.bgInput, borderWidth:1, borderColor: presetsValid ? theme.accentBlueBorder : theme.borderInput, borderRadius:8, padding:12, alignItems:'center', opacity: presetsValid ? 1 : 0.5 }}
+                  style={{ backgroundColor: presetsSaveable ? theme.accentBlueBg : theme.bgInput, borderWidth:1, borderColor: presetsSaveable ? theme.accentBlueBorder : theme.borderInput, borderRadius:8, padding:12, alignItems:'center', opacity: presetsSaveable ? 1 : 0.5 }}
                   onPress={saveWaterPresets}
-                  disabled={!presetsValid}
+                  disabled={!presetsSaveable}
                 >
-                  <Text style={{ color: presetsValid ? theme.accentBlue : theme.textDim, fontFamily:'DMSans_600SemiBold', fontSize:14 }}>Save Presets</Text>
+                  <Text style={{ color: presetsSaveable ? theme.accentBlue : theme.textDim, fontFamily:'DMSans_600SemiBold', fontSize:14 }}>Save Presets</Text>
                 </TouchableOpacity>
               </View>
             </Animated.View>

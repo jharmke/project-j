@@ -370,11 +370,11 @@ export default function ProfileScreen() {
           <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>Height</Text>
           <View style={styles.heightRow}>
             <View style={styles.heightField}>
-              <TextInput style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} value={profile.heightFt} onChangeText={v => updateField('heightFt', v)} keyboardType="number-pad" placeholder="5" placeholderTextColor={theme.textPlaceholder} />
+              <TextInput style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} value={profile.heightFt} onChangeText={v => { const n = parseInt(v.replace(/[^0-9]/g, ''), 10); updateField('heightFt', isNaN(n) ? '' : String(Math.min(8, Math.max(1, n)))); }} keyboardType="number-pad" placeholder="5" placeholderTextColor={theme.textPlaceholder} maxLength={1} />
               <Text style={[styles.heightUnit, { color: theme.textMuted }]}>ft</Text>
             </View>
             <View style={styles.heightField}>
-              <TextInput style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} value={profile.heightIn} onChangeText={v => updateField('heightIn', v)} keyboardType="number-pad" placeholder="9" placeholderTextColor={theme.textPlaceholder} />
+              <TextInput style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} value={profile.heightIn} onChangeText={v => { const n = parseInt(v.replace(/[^0-9]/g, ''), 10); updateField('heightIn', isNaN(n) ? '' : String(Math.min(11, Math.max(0, n)))); }} keyboardType="number-pad" placeholder="9" placeholderTextColor={theme.textPlaceholder} maxLength={2} />
               <Text style={[styles.heightUnit, { color: theme.textMuted }]}>in</Text>
             </View>
           </View>

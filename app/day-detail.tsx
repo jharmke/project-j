@@ -298,7 +298,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: 4 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%', marginBottom: 10 }}>
           <View style={{ flex: 1 }} />
           <Text style={styles.headerTitle}>DAY DETAIL</Text>
           <View style={{ flex: 1, alignItems: 'flex-end' }}>

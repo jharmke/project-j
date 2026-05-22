@@ -848,7 +848,16 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
         <TouchableOpacity style={styles.mealSelector} onPress={() => setShowTimePicker(true)}>
           <Text style={styles.mealSelectorLabel}>Time logged</Text>
           <Text style={styles.mealSelectorValue}>
-            {entryTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ▼
+            {isEditing && date && (() => {
+              const today = new Date();
+              const todayKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+              if (date !== todayKey) {
+                const d = new Date(date + 'T12:00:00');
+                const datePart = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                return `${datePart} · `;
+              }
+              return '';
+            })()}{entryTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} ▼
           </Text>
         </TouchableOpacity>
 

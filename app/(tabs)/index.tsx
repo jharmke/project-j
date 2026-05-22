@@ -638,7 +638,7 @@ function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen, remain
           <View style={{ borderTopWidth: 1, borderTopColor: theme.borderCardTop, marginBottom: 12 }} />
 
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-            <IFLinkBtn label="Reset window" color={theme.textSecondary} onPress={() => setShowTimePicker(true)} />
+            <IFLinkBtn label="Edit Start" color={theme.textSecondary} onPress={() => setShowTimePicker(true)} />
             <TouchableOpacity
               activeOpacity={0.75}
               onPress={onLastMeal}
@@ -1469,6 +1469,8 @@ export default function HomeScreen() {
       await storageSet(`pj_${todayKey}`, JSON.stringify({ ...current, weight: val }));
     } catch (e) { console.log('Weight save error', e); }
 
+    showToast('Weight saved', undefined, 'success');
+
     // Achievement checks
     const lastKnown = lastKnownWeight?.val ?? null;
     if (!weightEntryIsPlausible(val, lastKnown)) return;
@@ -2081,9 +2083,8 @@ export default function HomeScreen() {
             <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Sleep Last Night</Text>
             <TooltipIcon tooltipKey="sleep_score" />
           </View>
-          <TouchableOpacity onPress={() => setEditingSleep(!editingSleep)}
-            style={{ backgroundColor: theme.accentBlueBg, borderWidth:1, borderColor: theme.accentBlueBorder, borderRadius:6, paddingHorizontal:10, paddingVertical:4 }}>
-            <Text style={{ color: theme.accentBlue, fontSize:12, fontFamily:'DMSans_600SemiBold' }}>{sleepOverride ? 'Manual' : 'Edit'}</Text>
+          <TouchableOpacity onPress={() => setEditingSleep(!editingSleep)} hitSlop={{ top:8, bottom:8, left:8, right:8 }}>
+            <Ionicons name="settings-outline" size={16} color={theme.textMuted} />
           </TouchableOpacity>
         </View>
         

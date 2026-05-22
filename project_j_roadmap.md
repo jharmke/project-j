@@ -460,9 +460,9 @@ Live release build testing. Log all bugs here in real-time. Status: open / fixed
 [ ] Water gear settings presets -- tapping outside TextInput fields should dismiss keyboard
 [ ] Water gear modal header -- "WATER LOG" label should be accent color matching modal header convention; replace X button with handle pill + accent top border to match all other modals app-wide
 [ ] Water gear save presets button -- starts active when it should be dim until a change is made; on save should dismiss keyboard + fire toast but keep modal open (currently only fires toast, keyboard stays)
-[ ] Weight card -- no toast on save, violates toast-on-save build standard
-[ ] Sleep card -- "Edit" button top-right should be gear icon to match Water/Training card convention
-[ ] IF card State 2 -- "Reset window" button label is confusing (implies restart/clear). Rename to "Edit Start" to match State 3 convention and clarify it opens the start time picker
+[x] Weight card -- toast on save. showToast('Weight saved', undefined, 'success') added to logWeight() after storage write. index.tsx.
+[x] Sleep card -- "Edit" text button replaced with bare settings-outline gear icon (size 16, textMuted, hitSlop), matching Water/Training card convention exactly. index.tsx.
+[x] IF card State 2 -- "Reset window" renamed to "Edit Start". index.tsx.
 [ ] Today's Training card -- add exercise minutes from HealthKit (pj_YYYY-MM-DD exerciseMinutes field already persisted), card feels empty without it
 [ ] Apple Health synced workouts not auto-checking on workout tab -- was marked fixed in DONE but confirmed still broken on release build 2026-05-22. Syncs in but exercises remain unchecked. Needs re-investigation.
 [x] Onboarding birthday scroller KAV -- added scrollViewRef to ScrollView, onPress now calls scrollToEnd 100ms after showPicker=true so picker is always in view. profile-setup.tsx.
@@ -472,8 +472,8 @@ Live release build testing. Log all bugs here in real-time. Status: open / fixed
 [ ] Default water presets showing 12/16/22 on fresh install -- roadmap says this was changed to 8/12/16 but not reflected on iPad fresh install. Code needs audit.
 [ ] Reading Plans home card -- "Browse Plans" button navigates to Bible screen instead of opening the plan browser modal. Should open the plans settings/browser directly.
 [x] Fresh install restore bug -- FIXED 2026-05-22. Replaced hasPjData check with local-only gate key (pj_fresh_restore_done, excluded from shouldSync so it never reaches Firestore). restoreIfFresh() now always runs on first cold launch after a fresh install or reinstall, regardless of how many onboarding/config keys exist locally. Gate is set after restore completes (or Firestore confirmed empty). Wiped by account deletion and Force Restore, triggering a fresh restore attempt on next launch. services/syncService.ts.
-[ ] Edit entry page missing date -- time picker shows logged time but no date. When editing a past-date entry the date is ambiguous. Should show "May 21 · 8:32 AM" or equivalent so user knows which day they're editing. food-detail.tsx.
-[ ] Day detail header calendar icon too close to right arrow -- calendar icon and the right-arrow date nav button are too tight together, easy to mis-tap. Needs more gap or padding between them. day-detail.tsx.
+[x] Edit entry page missing date -- timestamp row now shows "May 21 · 8:32 AM" when editing a past-date entry. Date prefix only appears when entry date differs from today. food-detail.tsx.
+[x] Day detail header calendar icon spacing -- marginBottom on title row bumped 4→10, pushes calendar icon away from forward chevron below it. day-detail.tsx.
 [ ] You vs Yesterday card invisible when data insufficient -- renderVsYesterdayCard() returns null when fewer than 2 metrics have both today + yesterday values, causing the card to disappear entirely from the home screen. Fix: replace null return with an empty state ("Keep tracking to unlock your comparison" or similar) so the card always renders. Root cause in this session: yesterday's Firestore data (restored via Force Restore from dev build) likely missing steps/calories/sleep data needed to qualify 2 metrics. index.tsx line 2643.
 [x] My Foods and Set Foods lost in Force Restore -- pj_my_foods and pj_barcode_overrides were not in Firestore at restore time. Root cause: those foods were created before the sync system shipped (old AsyncStorage.setItem, no Firestore mirror). Current code confirmed correct -- all pj_my_foods and pj_barcode_overrides writes use storageSet() and will sync going forward. Data unrecoverable but no code fix needed. Historical loss only.
 [x] Bible screen audit -- PASSED 2026-05-22. Two open bugs already logged (auto-scroll pause on touch, choppiness on release build).

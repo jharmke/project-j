@@ -10,6 +10,9 @@ import Svg, { Circle } from 'react-native-svg';
 import Reanimated, { useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
 import CustomFoodCreator from '../components/CustomFoodCreator';
 import { useToast } from '../components/Toast';
+import { ACHIEVEMENTS, checkAndUnlock, loadAchievements } from '../achievementData';
+import { showAchievementToast } from '../components/AchievementToast';
+import { showCelebration } from '../components/CelebrationOverlay';
 import { saveToFirebase } from '../firebaseConfig';
 import { storageSet } from '../utils/storage';
 import { useTheme } from '../theme';
@@ -517,6 +520,14 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
       await storageSet(`pj_${date}`, JSON.stringify({ ...current, entries }));
       await saveToFirebase(date, 'entries', entries);
       showToast(isEditing ? 'Entry updated' : 'Entry logged', `${calories} kcal · ${currentMeal}`, 'success');
+      if (!isEditing) {
+        const store = await loadAchievements();
+        const result = await checkAndUnlock('general_first_log', store);
+        if (result.newlyUnlocked) {
+          const def = ACHIEVEMENTS.find(a => a.id === 'general_first_log');
+          if (def) { showAchievementToast(def); showCelebration(def.tier, def.name); }
+        }
+      }
       router.back();
       if (!isEditing) router.back();
     } catch (e) {

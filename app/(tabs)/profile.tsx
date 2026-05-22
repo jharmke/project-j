@@ -563,10 +563,10 @@ export default function ProfileScreen() {
                 <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>Preset {i + 1}</Text>
                 <TextInput
                   style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
-                  value={String((profile.waterPresets || [12, 16, 22])[i])}
+                  value={String((profile.waterPresets || [8, 12, 16])[i])}
                   onChangeText={v => {
                     const val = parseInt(v) || 0;
-                    const updated: [number, number, number] = [...(profile.waterPresets || [12, 16, 22])] as [number, number, number];
+                    const updated: [number, number, number] = [...(profile.waterPresets || [8, 12, 16])] as [number, number, number];
                     updated[i] = val;
                     updateField('waterPresets', updated as any);
                   }}

@@ -193,6 +193,7 @@ function CollapsibleSection({
   const [visible, setVisible] = useState(defaultOpen);
   const [measuring, setMeasuring] = useState(false);
   const [heightReady, setHeightReady] = useState(false);
+  const [isFullyOpen, setIsFullyOpen] = useState(false);
   const heightAnim = useRef(new Animated.Value(0)).current;
   const opacityAnim = useRef(new Animated.Value(defaultOpen ? 1 : 0)).current;
   const translateAnim = useRef(new Animated.Value(defaultOpen ? 0 : -8)).current;
@@ -207,6 +208,7 @@ function CollapsibleSection({
     contentHeightRef.current = h;
     heightAnim.setValue(h);
     setHeightReady(true);
+    setIsFullyOpen(true);
   };
 
   // Ghost view fires for first-open measurement of closed sections
@@ -217,7 +219,7 @@ function CollapsibleSection({
     if (!openRef.current) return;
     setHeightReady(true);
     setVisible(true);
-    Animated.timing(heightAnim, { toValue: h, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
+    Animated.timing(heightAnim, { toValue: h, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start(() => setIsFullyOpen(true));
     Animated.parallel([
       Animated.timing(opacityAnim, { toValue: 1, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
       Animated.timing(translateAnim, { toValue: 0, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
@@ -233,7 +235,7 @@ function CollapsibleSection({
       translateAnim.setValue(-8);
       if (contentHeightRef.current > 0) {
         setVisible(true);
-        Animated.timing(heightAnim, { toValue: contentHeightRef.current, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
+        Animated.timing(heightAnim, { toValue: contentHeightRef.current, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start(() => setIsFullyOpen(true));
         Animated.parallel([
           Animated.timing(opacityAnim, { toValue: 1, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
           Animated.timing(translateAnim, { toValue: 0, duration: 280, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
@@ -242,6 +244,7 @@ function CollapsibleSection({
         setMeasuring(true);
       }
     } else {
+      setIsFullyOpen(false);
       Animated.timing(heightAnim, { toValue: 0, duration: 220, easing: Easing.in(Easing.cubic), useNativeDriver: false }).start(() => setVisible(false));
       Animated.parallel([
         Animated.timing(opacityAnim, { toValue: 0, duration: 180, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
@@ -278,7 +281,7 @@ function CollapsibleSection({
         <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={14} color={theme.accentBlue} />
       </TouchableOpacity>
       {heightReady ? (
-        <Animated.View style={{ height: heightAnim, overflow: 'hidden' }}>
+        <Animated.View style={isFullyOpen ? { overflow: 'visible' } : { height: heightAnim, overflow: 'hidden' }}>
           <Animated.View style={{ opacity: opacityAnim, transform: [{ translateY: translateAnim }] }}>
             {visible && children}
           </Animated.View>
@@ -367,6 +370,7 @@ export default function SettingsScreen() {
   const [activeTooltipKey, setActiveTooltipKey] = useState<string | null>(null);
   const [showPrayerModal, setShowPrayerModal] = useState(false);
   const scrollViewRef = useRef<any>(null);
+  const quietHoursRowRef = useRef<any>(null);
   const { fetchHistoricalWorkouts, authorized } = useHealthKit();
 
   // ── Notification settings state ───────────────────────────────────────────
@@ -700,6 +704,19 @@ export default function SettingsScreen() {
     d.setHours(hour, minute, 0, 0);
     setTimePickerValue(d);
     setActiveTimePicker(key);
+    if (key.startsWith('quiet')) {
+      setTimeout(() => {
+        quietHoursRowRef.current?.measure((_x: number, _y: number, _w: number, h: number, _pageX: number, pageY: number) => {
+          const pickerSheetHeight = 290;
+          const screenH = Dimensions.get('window').height;
+          const bottomOfRow = pageY + h;
+          if (bottomOfRow > screenH - pickerSheetHeight) {
+            const overflow = bottomOfRow - (screenH - pickerSheetHeight) + 16;
+            scrollViewRef.current?.scrollTo({ y: goalScrollOffset.current + overflow, animated: true });
+          }
+        });
+      }, 0);
+    }
   };
 
   const closeTimePicker = () => {
@@ -1250,7 +1267,7 @@ export default function SettingsScreen() {
               <>
                 {/* ── Quiet Hours ── */}
                 <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginTop: 16, marginBottom: 10 }}>Quiet Hours</Text>
-                <View style={{ flexDirection: 'row', gap: 12, marginBottom: 4 }}>
+                <View ref={quietHoursRowRef} style={{ flexDirection: 'row', gap: 12, marginBottom: 4 }}>
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold', marginBottom: 6 }}>From</Text>
                     <TouchableOpacity
@@ -1827,15 +1844,17 @@ export default function SettingsScreen() {
                 <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlueRaw }}>Done</Text>
               </TouchableOpacity>
             </View>
-            <View style={{ width: Dimensions.get('window').width }}>
-              <DateTimePicker
-                value={timePickerValue}
-                mode="time"
-                display="spinner"
-                textColor={theme.textPrimary}
-                onChange={(_, date) => { if (date) setTimePickerValue(date); }}
-                style={{ height: 200 }}
-              />
+            <View style={{ width: Dimensions.get('window').width, alignItems: 'center' }}>
+              {!!activeTimePicker && (
+                <DateTimePicker
+                  value={timePickerValue}
+                  mode="time"
+                  display="spinner"
+                  textColor={theme.textPrimary}
+                  onChange={(_, date) => { if (date) setTimePickerValue(date); }}
+                  style={{ height: 200, width: Dimensions.get('window').width }}
+                />
+              )}
             </View>
           </Animated.View>
         </View>

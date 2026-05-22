@@ -215,6 +215,7 @@ export default function BibleScreen() {
     const text = params.verseText as string | undefined;
     const planBook = params.planNavBook as string | undefined;
     const planChapter = params.planNavChapter as string | undefined;
+    const openPlanBrowser = params.openPlanBrowser as string | undefined;
     if (ref) {
       setDailyVerseRef(ref);
       shouldScrollOnLoad.current = true;
@@ -226,6 +227,8 @@ export default function BibleScreen() {
         const ch = bk.chapters[chNum - 1];
         if (ch) { setSelectedBook(bk); setSelectedChapter(ch); }
       }
+    } else if (openPlanBrowser === '1') {
+      setTimeout(() => setShowPlanBrowserModal(true), 350);
     }
   }, []);
 

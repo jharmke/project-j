@@ -115,7 +115,7 @@ export default function ReadingPlansCard({ theme: t }: Props) {
             Start a reading plan from the Bible screen
           </Text>
           <TouchableOpacity
-            onPress={() => router.push('/bible')}
+            onPress={() => router.push({ pathname: '/bible', params: { openPlanBrowser: '1' } })}
             style={[styles.browseBtn, { backgroundColor: t.accentBlueBg, borderColor: t.accentBlueBorder }]}
           >
             <Text style={[styles.browseBtnText, { color: t.accentBlue }]}>Browse Plans</Text>

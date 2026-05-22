@@ -1298,7 +1298,8 @@ export default function HomeScreen() {
           const yd2 = JSON.parse(ydRaw);
           // Yesterday calories
           if (yd2.entries && Array.isArray(yd2.entries)) {
-            const ydConsumed = yd2.entries.reduce((s: number, e: any) => s + e.cal, 0);
+            const ydClean = yd2.entries.filter((e: any) => e != null);
+            const ydConsumed = ydClean.reduce((s: number, e: any) => s + (e.cal || 0), 0);
             const ydBurned = Math.round((yd2.activeCalories || yd2.caloriesBurned || 0) * burnAccuracyPct / 100);
             const profileRaw2 = await AsyncStorage.getItem('pj_profile');
             let ydBmr = 0;
@@ -1318,7 +1319,7 @@ export default function HomeScreen() {
                 ydBmr = p2.sex === 'male' ? Math.round((10*wKg)+(6.25*hCm)-(5*age)+5) : Math.round((10*wKg)+(6.25*hCm)-(5*age)-161);
               }
             }
-            if (ydConsumed >= 400) setYdCals(ydConsumed - ydBurned - ydBmr);
+            if (ydConsumed > 0) setYdCals(ydConsumed - ydBurned - ydBmr);
             else setYdCals(null);
           }
           // Yesterday steps
@@ -2807,7 +2808,7 @@ export default function HomeScreen() {
       case 'vs_yesterday': {
         const cardContent = renderVsYesterdayCard();
         if (!cardContent) return (
-          <View style={[styles.card, { borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw }]}>
+          <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 }}>
               <Ionicons name="git-compare-outline" size={11} color={theme.textMuted} />
               <Text style={[styles.cardLabel, { marginBottom: 0, color: theme.textMuted }]}>You vs Yesterday</Text>

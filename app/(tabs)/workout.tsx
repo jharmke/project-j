@@ -303,11 +303,11 @@ useEffect(() => {
     const newCheckIds = newExercises.map((e: any) => e.id);
     AsyncStorage.getItem('pj_workout_state').then(saved => {
       const current2 = saved ? JSON.parse(saved) : {};
-      const updatedChecks = { ...(current2.checks || {}), ...Object.fromEntries(newCheckIds.map((id: string) => [id, true])) };
+      const updatedChecks = { ...(current2.checks || {}), [todayKey]: { ...(current2.checks?.[todayKey] || {}), ...Object.fromEntries(newCheckIds.map((id: string) => [id, true])) } };
       storageSet('pj_workout_state', JSON.stringify({ ...current2, programs: updated, checks: updatedChecks }));
       setChecks(prevChecks => {
         const c = { ...prevChecks };
-        newCheckIds.forEach((id: string) => { c[id] = true; });
+        c[todayKey] = { ...(c[todayKey] || {}), ...Object.fromEntries(newCheckIds.map((id: string) => [id, true])) };
         return c;
       });
     });

@@ -96,20 +96,25 @@ export default function DefinitionsScreen() {
   );
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.bgBase }}>
+    <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
       {/* Header */}
-      <View style={{ paddingTop: insets.top, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: theme.bgBase }}>
+      <View style={{ paddingTop: insets.top, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: theme.bgPrimary }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, marginTop: 8 }}>
           <TouchableOpacity
             onPress={() => router.back()}
-            style={{ marginRight: 12, padding: 4, minWidth: 44, minHeight: 44, justifyContent: 'center' }}
+            style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: 4 }}
             activeOpacity={0.7}
           >
-            <Ionicons name="chevron-back" size={22} color={theme.textPrimary} />
+            <Ionicons name="chevron-back" size={22} color={theme.accentBlue} />
           </TouchableOpacity>
-          <Text style={{ fontSize: 20, fontFamily: 'DMSans_700Bold', color: theme.textPrimary, flex: 1 }}>
-            Definitions
-          </Text>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 9, letterSpacing: 3, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', color: theme.textMuted, marginBottom: 2 }}>
+              PROJECT J
+            </Text>
+            <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', color: theme.accentBlueRaw, letterSpacing: 1 }}>
+              Definitions
+            </Text>
+          </View>
         </View>
 
         {/* Category filter */}

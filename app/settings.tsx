@@ -853,6 +853,7 @@ export default function SettingsScreen() {
               onChangeText={v => updateGoalField('stepGoal', v.replace(/[^0-9]/g, ''))}
               onBlur={() => { const v = parseInt(goalProfile.stepGoal) || 10000; updateGoalField('stepGoal', String(Math.min(100000, Math.max(1000, v)))); }}
               keyboardType="number-pad"
+              maxLength={6}
               placeholder="e.g. 10000"
               placeholderTextColor={theme.textPlaceholder}
             />
@@ -868,6 +869,7 @@ export default function SettingsScreen() {
               onChangeText={v => updateGoalField('activeCalGoal', v.replace(/[^0-9]/g, ''))}
               onBlur={() => { const v = parseInt(goalProfile.activeCalGoal) || 500; updateGoalField('activeCalGoal', String(Math.min(5000, Math.max(100, v)))); }}
               keyboardType="number-pad"
+              maxLength={4}
               placeholder="e.g. 500"
               placeholderTextColor={theme.textPlaceholder}
             />
@@ -883,6 +885,7 @@ export default function SettingsScreen() {
               onChangeText={v => updateGoalField('exerciseMinsGoal', v.replace(/[^0-9]/g, ''))}
               onBlur={() => { const v = parseInt(goalProfile.exerciseMinsGoal) || 30; updateGoalField('exerciseMinsGoal', String(Math.min(300, Math.max(1, v)))); }}
               keyboardType="number-pad"
+              maxLength={3}
               placeholder="e.g. 30"
               placeholderTextColor={theme.textPlaceholder}
             />
@@ -913,6 +916,7 @@ export default function SettingsScreen() {
               onChangeText={v => updateGoalField('calTarget', v)}
               onBlur={() => { if (goalProfile.useRecommendedCal !== false) return; const v = parseInt(goalProfile.calTarget) || 1750; updateGoalField('calTarget', String(Math.min(10000, Math.max(500, v)))); }}
               keyboardType="number-pad"
+              maxLength={5}
               placeholder="e.g. 1750"
               placeholderTextColor={theme.textPlaceholder}
               editable={goalProfile.useRecommendedCal === false}

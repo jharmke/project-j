@@ -1062,19 +1062,19 @@ export default function HomeScreen() {
         }));
       });
     }
-    if (loaded && steps > 0 && steps >= stepGoal && stepGoal > 0 && prevStepsRef.current < stepGoal) {
-      handleDailyGoalHit('steps').then(({ fired, count: hitCount }) => {
-        if (fired) { showCelebration('small', 'STEP GOAL'); showDailyGoalToast('Step Goal', hitCount, 'footsteps', '#10b981'); }
-      });
-      loadAchievements().then(async store => {
-        let s = store;
-        s = await handleAchievementUnlock('steps_first', s);
-        s = await handleAchievementUnlock('steps_10', s);
-        setAchievementStore(s);
-      });
-    }
-    prevStepsRef.current = steps;
     if (loaded) {
+      if (steps > 0 && steps >= stepGoal && stepGoal > 0 && prevStepsRef.current < stepGoal) {
+        handleDailyGoalHit('steps').then(({ fired, count: hitCount }) => {
+          if (fired) { showCelebration('small', 'STEP GOAL'); showDailyGoalToast('Step Goal', hitCount, 'footsteps', '#10b981'); }
+        });
+        loadAchievements().then(async store => {
+          let s = store;
+          s = await handleAchievementUnlock('steps_first', s);
+          s = await handleAchievementUnlock('steps_10', s);
+          setAchievementStore(s);
+        });
+      }
+      prevStepsRef.current = steps;
       const adjustedActiveCals = Math.round(activeCalories * burnAccuracyPct / 100);
       const prevAdjustedActiveCals = Math.round(prevActiveCalRef.current * burnAccuracyPct / 100);
       if (adjustedActiveCals > 0 && activeCalGoal > 0 && adjustedActiveCals >= activeCalGoal && prevAdjustedActiveCals < activeCalGoal) {

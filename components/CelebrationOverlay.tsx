@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../theme';
 
@@ -93,38 +93,31 @@ interface Particle {
 }
 
 export default function CelebrationOverlay({ visible, tier, accentColor, label, onDismiss }: Props) {
-  const particleCount = tier === 'small' ? 60 : tier === 'medium' ? 80 : 120;
   const duration = tier === 'small' ? 2200 : tier === 'medium' ? 2800 : 3500;
-  const colors = getParticleColors(accentColor);
   const pillOpacity = useRef(new Animated.Value(0)).current;
   const textScale = useRef(new Animated.Value(0)).current;
   const textOpacity = useRef(new Animated.Value(0)).current;
 
-  // Reset animated values synchronously on every render when not visible
-  if (!visible) {
-    pillOpacity.setValue(0);
-    textScale.setValue(0);
-    textOpacity.setValue(0);
-  }
-
-  const particlesRef = useRef<Particle[]>([]);
-
-  useEffect(() => {
-    if (!visible) return;
-
-    // Recreate particles fresh every time overlay becomes visible
+  // Create particles synchronously so they exist on first render
+  const particles = useMemo(() => {
     const count = tier === 'small' ? 60 : tier === 'medium' ? 80 : 120;
     const freshColors = getParticleColors(accentColor);
-    particlesRef.current = Array.from({ length: count }, (_, i) => ({
+    return Array.from({ length: count }, (_, i) => ({
       x: new Animated.Value(0),
       y: new Animated.Value(0),
       opacity: new Animated.Value(0),
       scale: new Animated.Value(0),
       color: freshColors[i % freshColors.length],
       size: tier === 'small' ? Math.random() * 5 + 3 : tier === 'medium' ? Math.random() * 6 + 3 : Math.random() * 8 + 4,
-      shape: Math.random() > 0.5 ? 'circle' : 'rect',
+      shape: (Math.random() > 0.5 ? 'circle' : 'rect') as 'circle' | 'rect',
     }));
-    const particles = particlesRef.current;
+  }, [tier, accentColor]);
+
+  useEffect(() => {
+    if (!visible) return;
+
+    // Reset all particle values before animating
+    particles.forEach(p => { p.x.setValue(0); p.y.setValue(0); p.opacity.setValue(0); p.scale.setValue(0); });
 
     textScale.setValue(0);
     textOpacity.setValue(0);
@@ -236,7 +229,7 @@ export default function CelebrationOverlay({ visible, tier, accentColor, label, 
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
       {/* Particle layer -- non-interactive */}
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
-        {particlesRef.current.map((p, i) => (
+        {particles.map((p, i) => (
           <Animated.View
             key={i}
             style={{

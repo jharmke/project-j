@@ -452,7 +452,7 @@ Live release build testing. Log all bugs here in real-time. Status: open / fixed
 [x] Add food button passing todayKey instead of activeDate -- same date bug as the edit path. Tapping + on a past-date log view navigated to add-food with date: todayKey, saving new entries to today instead of the viewed date. Fixed: date: activeDate in log.tsx line 693. FIXED 2026-05-22.
 [ ] Onboarding height not saving to profile -- height entered during onboarding does not appear in Basic Info on profile tab after setup completes. BMR/TDEE/calorie target all depend on height so this causes incorrect calorie targets for new users. Needs investigation.
 [x] Home ScrollView dead zone -- could not reproduce on release build 2026-05-22. Likely resolved as side effect of layout/padding change. Closing.
-[ ] Log tab date does not reset on tab return -- if user navigates to a past date on the log tab, leaves the tab, and comes back, the past date stays active instead of snapping back to today. Should reset activeDate to today on every useFocusEffect. log.tsx.
+[x] Log tab date does not reset on tab return -- useFocusEffect now computes today's key inline, sets skipDateEffect ref, resets activeDate, and loads today's data directly (not from stale closure). Separate useEffect([activeDate]) with mounted+skip refs handles manual date navigation without double-loading. log.tsx.
 [ ] Bible auto-scroll pause on touch -- finger held on screen should pause scrolling, lift should resume
 [ ] Bible auto-scroll choppiness -- random lag on release build, needs investigation
 [ ] App-wide haptics audit -- FABs, header icon buttons, and all missing touch feedback (Light: icons/selections, Medium: FABs/saves, Heavy: destructive)

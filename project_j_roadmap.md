@@ -464,7 +464,7 @@ Live release build testing. Log all bugs here in real-time. Status: open / fixed
 [ ] Sleep card -- "Edit" button top-right should be gear icon to match Water/Training card convention
 [ ] IF card State 2 -- "Reset window" button label is confusing (implies restart/clear). Rename to "Edit Start" to match State 3 convention and clarify it opens the start time picker
 [ ] Today's Training card -- add exercise minutes from HealthKit (pj_YYYY-MM-DD exerciseMinutes field already persisted), card feels empty without it
-[ ] Apple Health synced workouts not auto-checking on workout tab -- was marked fixed in DONE but confirmed still broken on release build. Needs re-investigation.
+[x] Apple Health synced workouts not auto-checking on workout tab -- CONFIRMED WORKING on release build 2026-05-22.
 [ ] Onboarding birthday scroller KAV -- scroller opens half off screen when triggered near bottom of page, no auto-scroll to bring it into view
 [ ] Onboarding default weight values -- current weight defaults to 177, goal weight to 165. Should be empty with placeholder text only so new users don't see someone else's numbers
 [x] Default home card order -- DEFAULT_ORDER hardcoded as explicit array: verse → calories → macros → water → weight → workout → steps → sleep → gratitude_streak → reading_plans → fitness_metrics → daily_note → if → vs_yesterday. IF moved from position 2 to near bottom (opt-in feature). Existing users with custom order unaffected. FIXED 2026-05-22.
@@ -476,6 +476,7 @@ Live release build testing. Log all bugs here in real-time. Status: open / fixed
 [ ] Day detail header calendar icon too close to right arrow -- calendar icon and the right-arrow date nav button are too tight together, easy to mis-tap. Needs more gap or padding between them. day-detail.tsx.
 [ ] You vs Yesterday card invisible when data insufficient -- renderVsYesterdayCard() returns null when fewer than 2 metrics have both today + yesterday values, causing the card to disappear entirely from the home screen. Fix: replace null return with an empty state ("Keep tracking to unlock your comparison" or similar) so the card always renders. Root cause in this session: yesterday's Firestore data (restored via Force Restore from dev build) likely missing steps/calories/sleep data needed to qualify 2 metrics. index.tsx line 2643.
 [x] My Foods and Set Foods lost in Force Restore -- pj_my_foods and pj_barcode_overrides were not in Firestore at restore time. Root cause: those foods were created before the sync system shipped (old AsyncStorage.setItem, no Firestore mirror). Current code confirmed correct -- all pj_my_foods and pj_barcode_overrides writes use storageSet() and will sync going forward. Data unrecoverable but no code fix needed. Historical loss only.
+[x] Workout tab audit -- PASSED 2026-05-22. Day scroller / add exercise / progress count / info modal / load routine / workout notes / journal sync / FAB / effort score / rest day / drag reorder / tag creator -- all confirmed working on release build.
 [ ] External TestFlight review not yet submitted -- build 7 shows "Ready to Submit" in App Store Connect but no external testing group has been assigned. Need to create external testing group, add testers, and submit build 7 for Apple external review before friends/family can install.
 
 SOON -- confirmed next few sessions

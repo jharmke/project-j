@@ -453,8 +453,8 @@ Live release build testing. Log all bugs here in real-time. Status: open / fixed
 [x] Onboarding height not saving to profile -- root cause: profile-setup.tsx saved height as single `height` (total inches) but profile.tsx reads `heightFt` + `heightIn` separately. Fixed: handleContinue now saves all three (height, heightFt, heightIn). profile-setup.tsx.
 [x] Home ScrollView dead zone -- could not reproduce on release build 2026-05-22. Likely resolved as side effect of layout/padding change. Closing.
 [x] Log tab date does not reset on tab return -- useFocusEffect now computes today's key inline, sets skipDateEffect ref, resets activeDate, and loads today's data directly (not from stale closure). Separate useEffect([activeDate]) with mounted+skip refs handles manual date navigation without double-loading. log.tsx.
-[ ] Bible auto-scroll pause on touch -- finger held on screen should pause scrolling, lift should resume
-[ ] Bible auto-scroll choppiness -- random lag on release build, needs investigation
+[x] Bible auto-scroll pause on touch -- onScrollBeginDrag cancels Reanimated animation so scroll view is completely free during drag; onScrollEndDrag syncs position from event and restarts withTiming from wherever user landed. bible.tsx. FIXED 2026-05-22.
+[x] Bible auto-scroll choppiness -- replaced JS-thread requestAnimationFrame loop with Reanimated withTiming (linear) + useAnimatedReaction scrollTo worklet. Animation now runs entirely on UI thread, zero bridge calls per frame, immune to JS thread pressure. bible.tsx. FIXED 2026-05-22.
 [ ] App-wide haptics audit -- FABs, header icon buttons, and all missing touch feedback (Light: icons/selections, Medium: FABs/saves, Heavy: destructive)
 [x] Water custom amount modal -- TouchableWithoutFeedback wrapper on inner card dismisses keyboard on non-input taps. index.tsx.
 [x] Water gear modal header -- "WATER LOG" accent color (accentBlueRaw); X button replaced with tappable handle pill; 1.5px accentBlueRaw top border added. index.tsx.

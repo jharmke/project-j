@@ -8,6 +8,10 @@ import {
     Alert, Animated, FlatList, KeyboardAvoidingView, Modal, Platform,
     ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View
 } from 'react-native';
+import Reanimated, {
+  useAnimatedRef, useSharedValue, useAnimatedReaction, withTiming,
+  cancelAnimation, scrollTo as reanimatedScrollTo, Easing as ReanimatedEasing,
+} from 'react-native-reanimated';
 import {
   READING_PLANS, ReadingPlansStorage, formatDayReading,
   getPlanCompletion, getTodayReading, MAX_ACTIVE_PLANS,
@@ -89,11 +93,13 @@ export default function BibleScreen() {
   const [planProgress, setPlanProgress] = useState<ReadingPlansStorage>({});
   const [showPlanBrowserModal, setShowPlanBrowserModal] = useState(false);
 
-  const scrollViewRef = useRef<ScrollView>(null);
+  const animScrollRef = useAnimatedRef<ScrollView>();
   const verseYPositions = useRef<Record<number, number>>({});
   const shouldScrollOnLoad = useRef(false);
   const currentScrollYRef = useRef(0);
-  const rafRef = useRef<number | null>(null);
+  const scrollYShared = useSharedValue(0);
+  const contentHeightRef = useRef(0);
+  const isPausedByTouchRef = useRef(false);
   const bookSheetAnim = useRef(new Animated.Value(0)).current;
   const fabScale = useRef(new Animated.Value(1)).current;
   const fabItem1Anim = useRef(new Animated.Value(0)).current; // Slow -- animates first
@@ -108,11 +114,9 @@ export default function BibleScreen() {
 
   const stopAutoScroll = useCallback(() => {
     setIsAutoScrolling(false);
-    if (rafRef.current !== null) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    }
-  }, []);
+    cancelAnimation(scrollYShared);
+    isPausedByTouchRef.current = false;
+  }, [scrollYShared]);
 
   const openSpeedPicker = () => {
     fabItem1Anim.setValue(0); fabItem2Anim.setValue(0); fabItem3Anim.setValue(0);
@@ -136,17 +140,15 @@ export default function BibleScreen() {
     setAutoScrollSpeed(speed);
     setIsAutoScrolling(true);
     closeSpeedPicker();
+    const currentY = currentScrollYRef.current;
     const pxPerMs = SPEED_PX_PER_MS[speed];
-    let lastTs: number | null = null;
-    const tick = (ts: number) => {
-      if (lastTs !== null) {
-        currentScrollYRef.current += pxPerMs * (ts - lastTs);
-        scrollViewRef.current?.scrollTo({ y: currentScrollYRef.current, animated: false });
-      }
-      lastTs = ts;
-      rafRef.current = requestAnimationFrame(tick);
-    };
-    rafRef.current = requestAnimationFrame(tick);
+    const remaining = contentHeightRef.current - currentY;
+    if (remaining <= 0) return;
+    scrollYShared.value = currentY;
+    scrollYShared.value = withTiming(contentHeightRef.current, {
+      duration: remaining / pxPerMs,
+      easing: ReanimatedEasing.linear,
+    });
   };
 
   // Load settings + favorites on mount
@@ -181,7 +183,7 @@ export default function BibleScreen() {
     if (!shouldScrollOnLoad.current || !highlightedVerse || chapterVerses.length === 0) return;
     const t = setTimeout(() => {
       const y = verseYPositions.current[highlightedVerse];
-      if (y !== undefined) scrollViewRef.current?.scrollTo({ y: Math.max(0, y - 120), animated: true });
+      if (y !== undefined) animScrollRef.current?.scrollTo({ y: Math.max(0, y - 120), animated: true });
       shouldScrollOnLoad.current = false;
     }, 350);
     return () => clearTimeout(t);
@@ -191,9 +193,16 @@ export default function BibleScreen() {
   useEffect(() => {
     stopAutoScroll();
     currentScrollYRef.current = 0;
-  }, [selectedBook.name, selectedChapter.chapter, stopAutoScroll]);
+    scrollYShared.value = 0;
+  }, [selectedBook.name, selectedChapter.chapter, stopAutoScroll, scrollYShared]);
 
   useEffect(() => () => { stopAutoScroll(); }, [stopAutoScroll]);
+
+  // Drive scroll on UI thread -- zero bridge overhead per frame
+  useAnimatedReaction(
+    () => scrollYShared.value,
+    (y) => { reanimatedScrollTo(animScrollRef, 0, y, false); }
+  );
 
 
   useFocusEffect(
@@ -375,7 +384,7 @@ export default function BibleScreen() {
     setHighlightedVerseRef(null);
     setHighlightedVerseText(null);
     setHighlightedVerseAcknowledged(false);
-    scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+    animScrollRef.current?.scrollTo({ y: 0, animated: false });
   };
 
   const markPlanRead = async (planId: string, dayIndex: number) => {
@@ -623,12 +632,37 @@ export default function BibleScreen() {
       )}
 
       {/* Verses */}
-      <ScrollView
-        ref={scrollViewRef}
+      <Reanimated.ScrollView
+        ref={animScrollRef}
         contentContainerStyle={{ padding: 20, paddingBottom: 120 }}
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={16}
         onScroll={e => { currentScrollYRef.current = e.nativeEvent.contentOffset.y; }}
+        onContentSizeChange={(_, h) => { contentHeightRef.current = h; }}
+        onScrollBeginDrag={() => {
+          if (isAutoScrolling) {
+            isPausedByTouchRef.current = true;
+            cancelAnimation(scrollYShared);
+          }
+        }}
+        onScrollEndDrag={e => {
+          if (isPausedByTouchRef.current) {
+            isPausedByTouchRef.current = false;
+            const y = e.nativeEvent.contentOffset.y;
+            currentScrollYRef.current = y;
+            scrollYShared.value = y;
+            const pxPerMs = SPEED_PX_PER_MS[autoScrollSpeed];
+            const remaining = contentHeightRef.current - y;
+            if (remaining > 0) {
+              scrollYShared.value = withTiming(contentHeightRef.current, {
+                duration: remaining / pxPerMs,
+                easing: ReanimatedEasing.linear,
+              });
+            } else {
+              stopAutoScroll();
+            }
+          }
+        }}
       >
         <Text style={[styles.chapterHeader, { color: theme.textMuted }]}>{selectedBook.name} {selectedChapter.chapter}</Text>
         {chapterLoading && <View style={{ paddingTop: 60, alignItems: 'center' }}><Text style={[styles.partialNote, { color: theme.textMuted }]}>Loading...</Text></View>}
@@ -648,7 +682,7 @@ export default function BibleScreen() {
           );
         })}
         <Text style={[styles.partialNote, { color: theme.textDim }]}>King James Version (KJV)</Text>
-      </ScrollView>
+      </Reanimated.ScrollView>
 
       {/* FAB backdrop */}
       {showSpeedPicker && (

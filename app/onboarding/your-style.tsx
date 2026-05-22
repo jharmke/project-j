@@ -315,18 +315,12 @@ export default function YourStyleScreen() {
     ]).start();
   }, []);
 
-  // Load profile biometrics + today's weight
+  // Load profile biometrics for calorie calc -- never pre-fill weight fields
   useEffect(() => {
     const load = async () => {
       const s = await AsyncStorage.getItem('pj_profile');
       const parsed = s ? JSON.parse(s) : {};
-      const today = new Date();
-      const dk = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-      const dayS = await AsyncStorage.getItem(`pj_${dk}`);
-      const day = dayS ? JSON.parse(dayS) : {};
-      const savedWeight = day.weight || parsed.weight || 0;
-      if (savedWeight) setCurrentWeight(String(savedWeight));
-      setProfileData({ ...parsed, weight: savedWeight });
+      setProfileData(parsed);
     };
     load();
   }, []);

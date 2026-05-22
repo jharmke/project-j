@@ -35,6 +35,7 @@ export default function ProfileSetupScreen() {
   const [sex,           setSex]           = useState('male');
   
 
+  const scrollViewRef = useRef<ScrollView>(null);
   const fadeAnim  = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
 
@@ -75,6 +76,8 @@ export default function ProfileSetupScreen() {
         ...current,
         name:     name.trim(),
         height:   String(totalInches),
+        heightFt: heightFt,
+        heightIn: heightIn || '0',
         birthday: birthday ? birthday.toISOString() : '',
         sex:      sex,
       }));
@@ -97,8 +100,8 @@ export default function ProfileSetupScreen() {
         </View>
 
         <ScrollView
+          ref={scrollViewRef}
           contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 100 }]}
-          
           showsVerticalScrollIndicator={false}
         >
           <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
@@ -159,7 +162,11 @@ export default function ProfileSetupScreen() {
             <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>DATE OF BIRTH</Text>
             <TouchableOpacity
               style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, justifyContent: 'center' }]}
-              onPress={() => { setTempBirthday(birthday || new Date(1990, 0, 1)); setShowPicker(true); }}
+              onPress={() => {
+                setTempBirthday(birthday || new Date(1990, 0, 1));
+                setShowPicker(true);
+                setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
+              }}
             >
               <Text style={{ color: birthday ? theme.textPrimary : theme.textPlaceholder, fontFamily: 'DMSans_400Regular', fontSize: 16 }}>
                 {birthday ? birthday.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : 'Select your birthday'}

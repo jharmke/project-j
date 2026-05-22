@@ -725,9 +725,9 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
       case 'activeCals':
         return ct === 'bar'
           ? <GenericBarChart data={cardTrendData.activeCal} color={gc ?? theme.statusWarn} unit=" kcal"
-              fmtY={(v) => `${Math.round(v)}`} theme={theme} />
+              fmtY={(v) => `${Math.round(v)}`} fmtFull={(v) => Math.round(v).toLocaleString()} theme={theme} />
           : <LineChart data={cardTrendData.activeCal} color={gc ?? theme.statusWarn} unit=" kcal"
-              fmtY={(v) => `${Math.round(v)}`} gradientId={`ac_${card.id}`} theme={theme} />;
+              fmtY={(v) => `${Math.round(v)}`} fmtFull={(v) => Math.round(v).toLocaleString()} gradientId={`ac_${card.id}`} theme={theme} />;
       case 'sleep':
         return ct === 'bar'
           ? <GenericBarChart data={cardTrendData.sleep} color={gc ?? theme.sleepRem} unit=""
@@ -746,7 +746,7 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
           : <LineChart data={cardTrendData.water} color={gc ?? '#06b6d4'} unit=" oz" fmtY={v => `${Math.round(v)}`} gradientId={`wtr_${card.id}`} theme={theme} />;
       case 'netCalories':
         return ct === 'bar'
-          ? <GenericBarChart data={cardTrendData.netCal} color={gc ?? '#e06840'} unit=" kcal" fmtY={v => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${Math.round(v)}`} theme={theme} />
+          ? <GenericBarChart data={cardTrendData.netCal} color={gc ?? '#e06840'} unit=" kcal" fmtY={v => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${Math.round(v)}`} fmtFull={v => Math.round(v).toLocaleString()} theme={theme} />
           : <LineChart data={cardTrendData.netCal} color={gc ?? '#e06840'} unit=" kcal" fmtY={v => Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${Math.round(v)}`} fmtFull={v => Math.round(v).toLocaleString()} gradientId={`ncl_${card.id}`} theme={theme} />;
       case 'sleepScore':
         return ct === 'bar'
@@ -782,7 +782,7 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
           : <LineChart data={cardTrendData.fiber} color={gc ?? '#10b981'} unit="g" fmtY={v => `${Math.round(v)}`} gradientId={`fb_${card.id}`} theme={theme} />;
       case 'sodium':
         return ct === 'bar'
-          ? <GenericBarChart data={cardTrendData.sodium} color={gc ?? '#8b5cf6'} unit=" mg" fmtY={v => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${Math.round(v)}`} theme={theme} />
+          ? <GenericBarChart data={cardTrendData.sodium} color={gc ?? '#8b5cf6'} unit=" mg" fmtY={v => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${Math.round(v)}`} fmtFull={v => Math.round(v).toLocaleString()} theme={theme} />
           : <LineChart data={cardTrendData.sodium} color={gc ?? '#8b5cf6'} unit=" mg" fmtY={v => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${Math.round(v)}`} fmtFull={v => `${Math.round(v).toLocaleString()} mg`} gradientId={`sod_${card.id}`} theme={theme} />;
       case 'cholesterol':
         return ct === 'bar'

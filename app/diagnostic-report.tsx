@@ -363,14 +363,14 @@ export default function DiagnosticReportScreen() {
           <Ionicons name="chevron-back" size={22} color={t.accentBlueRaw} />
           <Text style={[styles.backText, { color: t.accentBlueRaw }]}>Stats</Text>
         </TouchableOpacity>
-        <TooltipIcon tooltipKey="effort_vs_results" size={22} />
       </View>
 
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]} showsVerticalScrollIndicator={false}>
 
         {/* Title */}
-        <View style={{ paddingHorizontal: 4, marginBottom: 16 }}>
+        <View style={{ paddingHorizontal: 4, marginBottom: 16, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <Text style={[styles.heroTitle, { color: t.accentBlueRaw }]}>{'EFFORT VS\nRESULTS'}</Text>
+          <TooltipIcon tooltipKey="effort_vs_results" size={18} />
         </View>
 
         {/* Window picker */}

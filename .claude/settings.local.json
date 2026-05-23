@@ -29,7 +29,10 @@
       "WebFetch(domain:commons.wikimedia.org)",
       "WebFetch(domain:www.npmjs.com)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "Bash(node -e \"const pkg = require\\('./node_modules/react-native-body-highlighter/dist/index.js'\\); console.log\\('loaded'\\);\")"
+      "Bash(node -e \"const pkg = require\\('./node_modules/react-native-body-highlighter/dist/index.js'\\); console.log\\('loaded'\\);\")",
+      "Bash(Copy-Item *)",
+      "Bash(Remove-Item *)",
+      "PowerShell(Remove-Item *)"
     ]
   }
 }

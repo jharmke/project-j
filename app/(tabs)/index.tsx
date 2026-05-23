@@ -789,16 +789,18 @@ export default function HomeScreen() {
     }
     if (deltaOz > 0 && newWater >= waterGoal && prev < waterGoal) {
       const { fired, count: hitCount } = await handleDailyGoalHit('water');
-      if (fired) { showCelebration('small', 'WATER GOAL'); showDailyGoalToast('Water Goal', hitCount, 'water', '#3b82f6'); }
-      let s = achievementStore;
-      s = await handleAchievementUnlock('hydration_first', s);
-      s = await handleAchievementUnlock('hydration_10', s);
-      s = await handleAchievementUnlock('hydration_30', s);
-      s = await handleAchievementUnlock('hydration_50', s);
-      s = await handleAchievementUnlock('hydration_75', s);
-      s = await handleAchievementUnlock('hydration_100', s);
-      s = await handleAchievementUnlock('hydration_200', s);
-      await handleAchievementUnlock('hydration_365', s);
+      if (fired) {
+        showCelebration('small', 'WATER GOAL'); showDailyGoalToast('Water Goal', hitCount, 'water', '#3b82f6');
+        let s = achievementStore;
+        if (hitCount === 1)   s = await handleAchievementUnlock('hydration_first', s);
+        if (hitCount === 10)  s = await handleAchievementUnlock('hydration_10', s);
+        if (hitCount === 30)  s = await handleAchievementUnlock('hydration_30', s);
+        if (hitCount === 50)  s = await handleAchievementUnlock('hydration_50', s);
+        if (hitCount === 75)  s = await handleAchievementUnlock('hydration_75', s);
+        if (hitCount === 100) s = await handleAchievementUnlock('hydration_100', s);
+        if (hitCount === 200) s = await handleAchievementUnlock('hydration_200', s);
+        if (hitCount === 365) await handleAchievementUnlock('hydration_365', s);
+      }
     }
   };
 
@@ -1074,19 +1076,21 @@ export default function HomeScreen() {
     if (loaded) {
       if (steps > 0 && steps >= stepGoal && stepGoal > 0 && prevStepsRef.current < stepGoal) {
         handleDailyGoalHit('steps').then(({ fired, count: hitCount }) => {
-          if (fired) { showCelebration('small', 'STEP GOAL'); showDailyGoalToast('Step Goal', hitCount, 'footsteps', '#10b981'); }
-        });
-        loadAchievements().then(async store => {
-          let s = store;
-          s = await handleAchievementUnlock('steps_first', s);
-          s = await handleAchievementUnlock('steps_10', s);
-          s = await handleAchievementUnlock('steps_30', s);
-          s = await handleAchievementUnlock('steps_50', s);
-          s = await handleAchievementUnlock('steps_75', s);
-          s = await handleAchievementUnlock('steps_100', s);
-          s = await handleAchievementUnlock('steps_200', s);
-          s = await handleAchievementUnlock('steps_365', s);
-          setAchievementStore(s);
+          if (fired) {
+            showCelebration('small', 'STEP GOAL'); showDailyGoalToast('Step Goal', hitCount, 'footsteps', '#10b981');
+            loadAchievements().then(async store => {
+              let s = store;
+              if (hitCount === 1)   s = await handleAchievementUnlock('steps_first', s);
+              if (hitCount === 10)  s = await handleAchievementUnlock('steps_10', s);
+              if (hitCount === 30)  s = await handleAchievementUnlock('steps_30', s);
+              if (hitCount === 50)  s = await handleAchievementUnlock('steps_50', s);
+              if (hitCount === 75)  s = await handleAchievementUnlock('steps_75', s);
+              if (hitCount === 100) s = await handleAchievementUnlock('steps_100', s);
+              if (hitCount === 200) s = await handleAchievementUnlock('steps_200', s);
+              if (hitCount === 365) s = await handleAchievementUnlock('steps_365', s);
+              setAchievementStore(s);
+            });
+          }
         });
       }
       prevStepsRef.current = steps;

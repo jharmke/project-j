@@ -602,19 +602,29 @@ export default function LogScreen() {
     }
     if (oz > 0 && newWater >= waterGoal && prev < waterGoal && activeDate === todayKey) {
       const { fired, count: hitCount } = await handleDailyGoalHit('water');
-      if (fired) { showCelebration('small', 'WATER GOAL'); showDailyGoalToast('Water Goal', hitCount, 'water', '#3b82f6'); }
-      let s = achievementStore;
-      const hydrationIds = [
-        'hydration_first', 'hydration_10', 'hydration_30', 'hydration_50',
-        'hydration_75', 'hydration_100', 'hydration_200', 'hydration_365',
-      ];
-      for (const id of hydrationIds) {
-        const r = await checkAndUnlock(id, s);
-        if (r.newlyUnlocked) {
-          setAchievementStore(r.updatedStore);
-          const def = ACHIEVEMENTS.find(a => a.id === id);
-          if (def) { showAchievementToast(def); showCelebration(def.tier, def.name); }
-          s = r.updatedStore;
+      if (fired) {
+        showCelebration('small', 'WATER GOAL'); showDailyGoalToast('Water Goal', hitCount, 'water', '#3b82f6');
+        let s = achievementStore;
+        const hydrationMilestones: { id: string; threshold: number }[] = [
+          { id: 'hydration_first', threshold: 1   },
+          { id: 'hydration_10',   threshold: 10  },
+          { id: 'hydration_30',   threshold: 30  },
+          { id: 'hydration_50',   threshold: 50  },
+          { id: 'hydration_75',   threshold: 75  },
+          { id: 'hydration_100',  threshold: 100 },
+          { id: 'hydration_200',  threshold: 200 },
+          { id: 'hydration_365',  threshold: 365 },
+        ];
+        for (const m of hydrationMilestones) {
+          if (hitCount === m.threshold) {
+            const r = await checkAndUnlock(m.id, s);
+            if (r.newlyUnlocked) {
+              setAchievementStore(r.updatedStore);
+              const def = ACHIEVEMENTS.find(a => a.id === m.id);
+              if (def) { showAchievementToast(def); showCelebration(def.tier, def.name); }
+              s = r.updatedStore;
+            }
+          }
         }
       }
     }

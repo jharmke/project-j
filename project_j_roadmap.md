@@ -379,6 +379,7 @@ Active calorie accuracy:
 - [x] Active cal goal trigger timing bug -- pre-existing bug fixed. prevActiveCalRef.current was being updated even when loaded=false, causing the crossing check to fail when HealthKit delivered data before AsyncStorage loaded. Fixed by gating both prevActiveCalRef and prevExerciseMinsRef updates inside the if (loaded) block. Same fix applied to exerciseMins trigger. index.tsx.
 
 Bugs and polish -- fix these first
+Water detail modal shows multi-day entries -- gear icon on home water card shows entries from previous days alongside today's. Fix: filter entry log to today's dateKey only, OR add a date picker inside the modal to browse/edit any day. Decision needed. index.tsx WaterDetailModal.
 
 Birthday scroll confirm button -- fixed. Larger tap targets on Cancel/Confirm, overlay bottom tightened to stop intercept. DONE.
 Edit exercise input validation -- DONE. Cardio fields use filterDecimal (one decimal max). Sets/reps/rest fixed to number-pad with integer-only validation.
@@ -483,11 +484,32 @@ Live release build testing. Log all bugs here in real-time. Status: open / fixed
 [x] Journal screen audit -- PASSED 2026-05-22. Create / edit / delete / swipe / categories all working.
 [x] Achievements screen audit -- PASSED 2026-05-22. Grid layout / locked states / unlocked glow / tier colors / platinum animation / Daily Goals section / progress bars all confirmed correct. Two issues logged below.
 [x] Day One achievement never triggers -- trigger wired in food-detail.tsx save path (non-edit path only). loadAchievements + checkAndUnlock('general_first_log') + showAchievementToast + showCelebration fires on first successful food entry save. FIXED 2026-05-22.
-[ ] Achievements audit -- IN PROGRESS. Hydration category complete (8 achievements, 1-10-30-50-75-100-200-365 days). Steps category complete (8 achievements: First Step/Getting Moving/Heating Up/Well Worn/No Quit/Triple Digits/Road Warrior/Full Circle, 1-10-30-50-75-100-200-365 days -- 4 new achievements added, all descriptions overhauled, all 8 wired in index.tsx steps goal trigger). Weight, streak, faith, general, and new categories (workout, sleep, nutrition) still needed.
+[ ] Achievements audit -- IN PROGRESS. Hydration category complete (8 achievements, 1-10-30-50-75-100-200-365 days). Steps category complete (8 achievements: First Step/Getting Moving/Heating Up/Well Worn/No Quit/Triple Digits/Road Warrior/Full Circle, 1-10-30-50-75-100-200-365 days -- 4 new achievements added, all descriptions overhauled, all 8 wired in index.tsx steps goal trigger). Weight category design locked (see below), names/descriptions pending. Streak, faith, general, and new categories (workout, sleep, nutrition) still needed.
   Diamond tier: rename "platinum x2" tier to Diamond. Reserved exclusively for the biggest milestones (365-day streaks, long-term cumulative achievements, goal weight, etc.). Never used casually. Animation spec: screen dims entirely, full-screen trophy pop, completely distinct from Small/Medium/Large -- not a bigger version, a totally different experience.
   Animation hierarchy locked: Small / Medium / Large / Diamond. Audit every existing trigger against this map before adding anything new. Goal: user feels the difference between tiers without thinking about it. Current celebrations feel scattered -- intentional hierarchy needed.
-  Overlap check: goal weight already has a big celebration moment -- decide during audit whether that becomes Diamond or stays Large. No two "biggest" animations should fire on the same event.
+  Goal weight = Diamond on first earn (count === 1), Large on re-earn (count > 1). Caller checks count before choosing celebration tier. 90-day cooldown stays on weight_goal.
   New/creative categories: no locked ideas yet -- brainstorm live during audit as opportunities surface. Candidate categories to evaluate: Explorer (first time using key features -- first barcode scan, first routine loaded, first reading plan enrolled), Comeback (returning after a gap, Mindful-friendly framing), Balance/Combo (hitting multiple goals same day), Dedication (long-term app usage milestones -- 30/90/180/365 days in app).
+  WEIGHT CATEGORY -- DESIGN LOCKED, names/descriptions + code still needed:
+    IDs weight_loss_* and weight_gain_* (direction explicit in ID). Old weight_5/weight_10/weight_15/weight_20/weight_25 IDs being replaced.
+    Direction gating: goalWeight vs startWeight at trigger time. Loss goal (goalWeight < startWeight) = only loss milestones track. Gain goal (goalWeight > startWeight) = only gain milestones track. No goal set (goalWeight == startWeight) = all weight milestones disabled. Wrong-direction achievements show as locked on achievements page but progress bar stays 0 and never pops.
+    Frozen-earned: achievements already unlocked before a direction change stay unlocked forever. New direction starts fresh.
+    Milestone sanity gate (WEIGHT_SANITY_MAX_DELTA = 20 lbs) stays as-is. Sound.
+    isGoalWeightHit needs gain direction fix: loss = currentWeight <= goalWeight, gain = currentWeight >= goalWeight.
+    Full achievement set (names/descriptions TBD next session):
+      weight_first    | First weigh-in  | Small
+      weight_loss_5   | Down 5 lbs      | Small
+      weight_loss_10  | Down 10 lbs     | Medium
+      weight_loss_25  | Down 25 lbs     | Medium
+      weight_loss_50  | Down 50 lbs     | Large
+      weight_loss_75  | Down 75 lbs     | Large
+      weight_loss_100 | Down 100 lbs    | Large/Platinum
+      weight_goal     | Hit goal weight | Diamond first earn / Large re-earn
+      weight_gain_5   | Up 5 lbs        | Small
+      weight_gain_10  | Up 10 lbs       | Medium
+      weight_gain_25  | Up 25 lbs       | Medium
+      weight_gain_50  | Up 50 lbs       | Large
+      weight_gain_75  | Up 75 lbs       | Large
+      weight_gain_100 | Up 100 lbs      | Large/Platinum
 [x] Workout tab audit -- PASSED 2026-05-22. Day scroller / add exercise / progress count / info modal / load routine / workout notes / journal sync / FAB / effort score / rest day / drag reorder / tag creator -- all confirmed working on release build.
 [x] Profile tab audit -- PASSED 2026-05-22. Changes save smoothly, estimates update correctly, water presets good, floating save bar and toasts work. One bug found and fixed: height field validation.
 [x] log.tsx TS errors fixed -- fsId added to FoodEntry interface (was accessed at runtime but missing from type). calPer100g nullability guard added on line 291 (was already guarded on 288, missed on second usage). No logic change, types now match runtime reality. log.tsx.

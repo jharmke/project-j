@@ -14,7 +14,7 @@ import PressableButton from '../../components/PressableButton';
 import { useToast } from '../../components/Toast';
 import { showCelebration } from '../../components/CelebrationOverlay';
 import { showAchievementToast, showDailyGoalToast } from '../../components/AchievementToast';
-import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, weightEntryIsPlausible, getWeightMilestonesCrossed, isGoalWeightHit, handleDailyGoalHit, checkMomentumAchievements } from '../../achievementData';
+import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, weightEntryIsPlausible, getWeightMilestonesCrossed, isGoalWeightHit, handleDailyGoalHit, checkMomentumAchievements, checkSleepAchievements } from '../../achievementData';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { storageSet } from '../../utils/storage';
 import { useTheme } from '../../theme';
@@ -871,9 +871,10 @@ export default function HomeScreen() {
   const [sleepGoal,      setSleepGoal]      = useState(7);
   const [activeCalGoal,  setActiveCalGoal]  = useState(500);
   const [exerciseMinsGoal, setExerciseMinsGoal] = useState(30);
-  const prevStepsRef       = useRef(0);
-  const prevActiveCalRef   = useRef(0);
+  const prevStepsRef        = useRef(0);
+  const prevActiveCalRef    = useRef(0);
   const prevExerciseMinsRef = useRef(0);
+  const prevSleepHoursRef   = useRef<number | null>(null);
   const [macroGoals,     setMacroGoals]     = useState({ protein: 0, carbs: 0, fat: 0 });
   const [goalWeight,     setGoalWeight]     = useState<number|null>(null);
   const [weightGoalPace, setWeightGoalPace] = useState<string>('lose_1');
@@ -1103,6 +1104,15 @@ export default function HomeScreen() {
         });
       }
       prevExerciseMinsRef.current = exerciseMinutes ?? 0;
+      if (sleepHours !== null && prevSleepHoursRef.current === null) {
+        checkSleepAchievements().then(unlocked => {
+          unlocked.forEach(def => {
+            showCelebration(def.tier, def.name);
+            showAchievementToast(def);
+          });
+        });
+      }
+      prevSleepHoursRef.current = sleepHours;
     }
   }, [activeCalories, steps, sleepHours, sleepStages, restingHR, respiratoryRate, bloodOxygen, bodyFatPct, exerciseMinutes, loaded, stepGoal, activeCalGoal, exerciseMinsGoal]);
 
@@ -2187,6 +2197,12 @@ export default function HomeScreen() {
                 const wakeStr=sleepWakeTime.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
                 await storageSet(`pj_${todayKey}`,JSON.stringify({...current,sleepOverride:val,sleepBedTime:bedStr,sleepWakeTime:wakeStr}));
                 await saveToFirebase(todayKey,'sleepOverride',val);
+                checkSleepAchievements().then(unlocked => {
+                  unlocked.forEach(def => {
+                    showCelebration(def.tier, def.name);
+                    showAchievementToast(def);
+                  });
+                });
                 setSleepStoredBed(bedStr); setSleepStoredWake(wakeStr); setEditingSleep(false); setActiveSleepPicker(null);
               }} style={{ flex:1, backgroundColor: theme.accentGreen, borderRadius:6, padding:10, alignItems:'center' }}>
                 <Text style={{ color: theme.bgPrimary, fontSize:13, fontFamily:'DMSans_600SemiBold' }}>Save</Text>

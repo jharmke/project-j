@@ -521,12 +521,13 @@ const CATEGORY_CONFIG: Record<string, { label: string; icon: string }> = {
   weight:    { label: 'Weight',     icon: 'trending-down-outline'},
   momentum:  { label: 'Momentum',   icon: 'flame-outline'       },
   workout:   { label: 'Workout',    icon: 'barbell-outline'     },
+  sleep:     { label: 'Sleep',      icon: 'moon-outline'        },
   faith:     { label: 'Faith',      icon: 'book-outline'        },
   nutrition: { label: 'Nutrition',  icon: 'nutrition-outline'   },
   journal:   { label: 'Journal',    icon: 'create-outline'      },
 };
 
-const CATEGORY_ORDER = ['hydration', 'steps', 'weight', 'momentum', 'workout', 'faith', 'nutrition', 'journal'];
+const CATEGORY_ORDER = ['hydration', 'steps', 'weight', 'momentum', 'workout', 'sleep', 'faith', 'nutrition', 'journal'];
 
 // ─── Progress Value Loader ────────────────────────────────────────────────────
 // Reads AsyncStorage to figure out current progress toward each progressKey
@@ -541,9 +542,13 @@ async function loadProgressValues(): Promise<Record<string, number>> {
     const parsed  = profile ? JSON.parse(profile) : {};
     const waterTarget = 128; // default, could read from profile
 
-    let waterDays = 0;
-    let stepDays  = 0;
-    const stepGoal = parsed.stepGoal ? parseInt(parsed.stepGoal) : 10000;
+    let waterDays      = 0;
+    let stepDays       = 0;
+    let sleepAnyDays   = 0;
+    let greenSleepDays = 0;
+    const stepGoal     = parsed.stepGoal  ? parseInt(parsed.stepGoal)   : 10000;
+    const sleepGoalNum = parsed.sleepGoal ? parseFloat(parsed.sleepGoal) : 7;
+    const FEEL_BONUS: Record<number, number> = { 1: 0, 2: 10, 3: 20, 4: 30, 5: 40 };
 
     const today = new Date();
     for (let i = 0; i < 365; i++) {
@@ -556,12 +561,31 @@ async function loadProgressValues(): Promise<Record<string, number>> {
           const day = JSON.parse(raw);
           if ((day.water ?? 0) >= waterTarget) waterDays++;
           if ((day.steps ?? 0) >= stepGoal)    stepDays++;
+          const sleepHrs = day.sleepOverride ?? day.sleepHours ?? null;
+          if (sleepHrs && sleepHrs > 0) {
+            sleepAnyDays++;
+            const stages = day.sleepStages ?? null;
+            const feel   = day.sleepFeelRating ?? null;
+            let score: number | null = null;
+            if (stages && stages.totalMs > 0) {
+              const durPts  = Math.min(40, Math.pow(sleepHrs / sleepGoalNum, 3) * 40);
+              const deepPts = Math.min(30, ((stages.deep / stages.totalMs) / 0.20) * 30);
+              const remPts  = Math.min(30, ((stages.rem  / stages.totalMs) / 0.22) * 30);
+              score = Math.round(Math.min(100, durPts + deepPts + remPts));
+            } else if (feel) {
+              const durPts = Math.min(60, (sleepHrs / sleepGoalNum) * 60);
+              score = Math.round(Math.min(100, durPts + (FEEL_BONUS[feel] ?? 0)));
+            }
+            if (score !== null && score >= 85) greenSleepDays++;
+          }
         }
       } catch { /* skip */ }
     }
 
-    values['waterGoalDays'] = waterDays;
-    values['stepGoalDays']  = stepDays;
+    values['waterGoalDays']  = waterDays;
+    values['stepGoalDays']   = stepDays;
+    values['sleepAnyDays']   = sleepAnyDays;
+    values['greenSleepDays'] = greenSleepDays;
 
     // totalLost -- earliest vs most recent weight
     let earliestWeight: number | null = null;
@@ -850,7 +874,7 @@ export default function AchievementsScreen() {
                 icon={catConfig.icon}
                 catUnlocked={catUnlocked}
                 total={defs.length}
-                defaultOpen={cat === 'hydration'}
+                defaultOpen={false}
               >
                 {grid}
               </CollapsibleCategory>

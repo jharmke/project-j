@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageSet } from './utils/storage';
 
-export type AchievementCategory = 'hydration' | 'steps' | 'weight' | 'momentum' | 'faith' | 'nutrition' | 'journal' | 'workout';
+export type AchievementCategory = 'hydration' | 'steps' | 'weight' | 'momentum' | 'faith' | 'nutrition' | 'journal' | 'workout' | 'sleep';
 export type AchievementTier = 'small' | 'medium' | 'large' | 'diamond';
 export type AchievementDisplayTier = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
 
@@ -1130,6 +1130,113 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     bgColor: 'rgba(239,68,68,0.12)',
   },
 
+  // SLEEP
+  {
+    id: 'sleep_first',
+    name: 'Lights Out',
+    criteria: 'Log sleep for the first time.',
+    description: 'The journey to better sleep starts here.',
+    category: 'sleep',
+    tier: 'small',
+    icon: 'moon-outline',
+    iconColor: '#6366f1',
+    bgColor: 'rgba(99,102,241,0.15)',
+    progressKey: 'sleepAnyDays',
+    progressTarget: 1,
+  },
+  {
+    id: 'sleep_green_1',
+    name: 'Green Light',
+    criteria: 'Earn your first green sleep score (85+).',
+    description: 'One night of real rest. The bar is set.',
+    category: 'sleep',
+    tier: 'small',
+    icon: 'moon',
+    iconColor: '#6366f1',
+    bgColor: 'rgba(99,102,241,0.15)',
+    progressKey: 'greenSleepDays',
+    progressTarget: 1,
+  },
+  {
+    id: 'sleep_green_10',
+    name: 'Night School',
+    criteria: 'Earn 10 green sleep scores.',
+    description: 'Ten nights of real rest. Your body noticed.',
+    category: 'sleep',
+    tier: 'small',
+    icon: 'moon',
+    iconColor: '#818cf8',
+    bgColor: 'rgba(99,102,241,0.18)',
+    progressKey: 'greenSleepDays',
+    progressTarget: 10,
+  },
+  {
+    id: 'sleep_green_30',
+    name: 'Deep Sleeper',
+    criteria: 'Earn 30 green sleep scores.',
+    description: 'A month of quality sleep. You\'ve figured something out here.',
+    category: 'sleep',
+    tier: 'medium',
+    icon: 'moon',
+    iconColor: '#a5b4fc',
+    bgColor: 'rgba(99,102,241,0.20)',
+    progressKey: 'greenSleepDays',
+    progressTarget: 30,
+  },
+  {
+    id: 'sleep_green_50',
+    name: 'Sweet Dreams',
+    criteria: 'Earn 50 green sleep scores.',
+    description: 'Fifty green. At this point, bad sleep would feel weird.',
+    category: 'sleep',
+    tier: 'medium',
+    icon: 'moon',
+    iconColor: '#c4b5fd',
+    bgColor: 'rgba(139,92,246,0.20)',
+    progressKey: 'greenSleepDays',
+    progressTarget: 50,
+  },
+  {
+    id: 'sleep_green_100',
+    name: 'Sleep Architect',
+    criteria: 'Earn 100 green sleep scores.',
+    description: '100 nights. The blueprint is set and the results speak for themselves.',
+    category: 'sleep',
+    tier: 'large',
+    icon: 'moon',
+    iconColor: '#ddd6fe',
+    bgColor: 'rgba(139,92,246,0.22)',
+    progressKey: 'greenSleepDays',
+    progressTarget: 100,
+  },
+  {
+    id: 'sleep_green_200',
+    name: 'Sleep Surgeon',
+    criteria: 'Earn 200 green sleep scores.',
+    description: 'You must have a reallllly nice pillow.',
+    category: 'sleep',
+    tier: 'large',
+    displayTier: 'platinum',
+    icon: 'moon',
+    iconColor: '#ede9fe',
+    bgColor: 'rgba(139,92,246,0.25)',
+    progressKey: 'greenSleepDays',
+    progressTarget: 200,
+  },
+  {
+    id: 'sleep_green_365',
+    name: 'Sleep Legend',
+    criteria: 'Earn 365 green sleep scores.',
+    description: 'A year of real rest. Most people dream about this (get it?).',
+    category: 'sleep',
+    tier: 'diamond',
+    icon: 'moon',
+    iconColor: '#f5f3ff',
+    bgColor: 'rgba(139,92,246,0.30)',
+    progressKey: 'greenSleepDays',
+    progressTarget: 365,
+  },
+
 ];
 
 // ─── Storage Helpers ──────────────────────────────────────────────────────────
@@ -1523,6 +1630,84 @@ export async function checkWorkoutAchievements(): Promise<AchievementDef[]> {
     if (Array.isArray(routines) && routines.length > 0) {
       await unlock('workout_first_routine');
     }
+  } catch {}
+
+  return unlockedDefs;
+}
+
+// ─── Sleep Score Helper (internal) ───────────────────────────────────────────
+
+function computeSleepScore(
+  hours: number,
+  stages: { core: number; deep: number; rem: number; totalMs: number } | null,
+  goal: number,
+  feel: number | null,
+): number | null {
+  if (!hours || hours <= 0) return null;
+  const FEEL_BONUS: Record<number, number> = { 1: 0, 2: 10, 3: 20, 4: 30, 5: 40 };
+  if (stages && stages.totalMs > 0) {
+    const durPts  = Math.min(40, Math.pow(hours / goal, 3) * 40);
+    const deepPct = stages.deep / stages.totalMs;
+    const remPct  = stages.rem  / stages.totalMs;
+    const deepPts = Math.min(30, (deepPct / 0.20) * 30);
+    const remPts  = Math.min(30, (remPct  / 0.22) * 30);
+    return Math.round(Math.min(100, durPts + deepPts + remPts));
+  }
+  if (!feel) return null;
+  const durPts = Math.min(60, (hours / goal) * 60);
+  return Math.round(Math.min(100, durPts + (FEEL_BONUS[feel] ?? 0)));
+}
+
+// ─── Sleep Achievement Check ──────────────────────────────────────────────────
+// Call after any sleep data is saved (manual or HealthKit).
+// Loads its own store, writes to AsyncStorage, returns newly unlocked defs.
+
+export async function checkSleepAchievements(): Promise<AchievementDef[]> {
+  const store = await loadAchievements();
+  let updatedStore = store;
+  const unlockedDefs: AchievementDef[] = [];
+
+  const unlock = async (id: string) => {
+    const { newlyUnlocked: did, updatedStore: s } = await checkAndUnlock(id, updatedStore);
+    updatedStore = s;
+    if (did) {
+      const def = ACHIEVEMENTS.find(a => a.id === id);
+      if (def) unlockedDefs.push(def);
+    }
+  };
+
+  try {
+    const profileRaw = await AsyncStorage.getItem('pj_profile');
+    const profile    = profileRaw ? JSON.parse(profileRaw) : {};
+    const sleepGoal  = profile.sleepGoal ?? 7;
+
+    const allKeys  = await AsyncStorage.getAllKeys();
+    const dailyKeys = (allKeys as string[]).filter(k => /^pj_\d{4}-\d{2}-\d{2}$/.test(k));
+
+    let daysWithSleep  = 0;
+    let greenSleepDays = 0;
+
+    for (const key of dailyKeys) {
+      try {
+        const raw = await AsyncStorage.getItem(key);
+        if (!raw) continue;
+        const data  = JSON.parse(raw);
+        const hours = data.sleepOverride ?? data.sleepHours ?? null;
+        if (!hours || hours <= 0) continue;
+        daysWithSleep++;
+        const score = computeSleepScore(hours, data.sleepStages ?? null, sleepGoal, data.sleepFeelRating ?? null);
+        if (score !== null && score >= 85) greenSleepDays++;
+      } catch { /* skip corrupted day */ }
+    }
+
+    if (daysWithSleep >= 1)   await unlock('sleep_first');
+    if (greenSleepDays >= 1)   await unlock('sleep_green_1');
+    if (greenSleepDays >= 10)  await unlock('sleep_green_10');
+    if (greenSleepDays >= 30)  await unlock('sleep_green_30');
+    if (greenSleepDays >= 50)  await unlock('sleep_green_50');
+    if (greenSleepDays >= 100) await unlock('sleep_green_100');
+    if (greenSleepDays >= 200) await unlock('sleep_green_200');
+    if (greenSleepDays >= 365) await unlock('sleep_green_365');
   } catch {}
 
   return unlockedDefs;

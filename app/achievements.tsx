@@ -642,10 +642,10 @@ async function loadProgressValues(): Promise<Record<string, number>> {
 }
 
 // ─── Collapsible Category Section ────────────────────────────────────────────
-// Mirrors settings.tsx CollapsibleSection pattern:
-//   defaultOpen  → unconstrained render for measurement, then animated container
-//   closed       → visible=false (no children rendered), ghost fires only on first open
-//   ghost at top:9999 (positive/below content) so ScrollView clips it correctly
+// defaultOpen  → unconstrained render measures height, then locked animated container
+// closed       → visible=false until opened, ghost fires lazily on first open
+// No translateY -- fights with height clip on large card grids, creates smoosh effect
+// No overflow:visible switch -- stays hidden throughout to prevent pop at end
 
 function CollapsibleCategory({
   label, icon, catUnlocked, total, defaultOpen, children,
@@ -655,27 +655,22 @@ function CollapsibleCategory({
 }) {
   const { theme } = useTheme();
   const [open,        setOpen]        = useState(defaultOpen);
-  const [visible,     setVisible]     = useState(defaultOpen); // controls content rendering
-  const [measuring,   setMeasuring]   = useState(false);       // ghost for first-open measure
-  const [heightReady, setHeightReady] = useState(false);       // switches to animated container
-  const [isFullyOpen, setIsFullyOpen] = useState(false);       // overflow:visible when done
-  const heightAnim    = useRef(new Animated.Value(0)).current;
-  const opacityAnim   = useRef(new Animated.Value(defaultOpen ? 1 : 0)).current;
-  const translateAnim = useRef(new Animated.Value(defaultOpen ? 0 : -8)).current;
-  const contentH = useRef(0);
-  const openRef  = useRef(defaultOpen);
-  openRef.current = open;
+  const [visible,     setVisible]     = useState(defaultOpen);
+  const [measuring,   setMeasuring]   = useState(false);
+  const [heightReady, setHeightReady] = useState(false);
+  const heightAnim  = useRef(new Animated.Value(0)).current;
+  const opacityAnim = useRef(new Animated.Value(defaultOpen ? 1 : 0)).current;
+  const contentH    = useRef(0);
+  const openRef     = useRef(defaultOpen);
+  openRef.current   = open;
 
-  // defaultOpen: measures from the unconstrained Animated.View render
   const onUnconstrained = (h: number) => {
     if (h <= 0 || heightReady) return;
     contentH.current = h;
     heightAnim.setValue(h);
     setHeightReady(true);
-    setIsFullyOpen(true);
   };
 
-  // Non-defaultOpen: ghost fires on first open, then triggers open animation
   const onGhostLayout = (h: number) => {
     if (h <= 0) return;
     contentH.current = h;
@@ -683,11 +678,10 @@ function CollapsibleCategory({
     if (!openRef.current) return;
     setHeightReady(true);
     setVisible(true);
-    Animated.timing(heightAnim, { toValue: h, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: false })
-      .start(() => setIsFullyOpen(true));
+    opacityAnim.setValue(0);
     Animated.parallel([
-      Animated.timing(opacityAnim,   { toValue: 1, duration: 200, delay: 60, useNativeDriver: true }),
-      Animated.timing(translateAnim, { toValue: 0, duration: 200, delay: 60, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(heightAnim,  { toValue: h, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
+      Animated.timing(opacityAnim, { toValue: 1, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
     ]).start();
   };
 
@@ -696,36 +690,28 @@ function CollapsibleCategory({
     setOpen(opening);
     openRef.current = opening;
     if (opening) {
-      opacityAnim.setValue(0);
-      translateAnim.setValue(-8);
       if (contentH.current > 0) {
         setVisible(true);
-        Animated.timing(heightAnim, { toValue: contentH.current, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: false })
-          .start(() => setIsFullyOpen(true));
+        opacityAnim.setValue(0);
         Animated.parallel([
-          Animated.timing(opacityAnim,   { toValue: 1, duration: 200, delay: 60, useNativeDriver: true }),
-          Animated.timing(translateAnim, { toValue: 0, duration: 200, delay: 60, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+          Animated.timing(heightAnim,  { toValue: contentH.current, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
+          Animated.timing(opacityAnim, { toValue: 1, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
         ]).start();
       } else {
-        // First time opening -- trigger ghost measurement
         setMeasuring(true);
       }
     } else {
-      setIsFullyOpen(false);
-      Animated.timing(heightAnim, { toValue: 0, duration: 220, easing: Easing.in(Easing.cubic), useNativeDriver: false })
-        .start(() => setVisible(false));
       Animated.parallel([
-        Animated.timing(opacityAnim,   { toValue: 0, duration: 160, useNativeDriver: true }),
-        Animated.timing(translateAnim, { toValue: -8, duration: 160, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
-      ]).start();
+        Animated.timing(heightAnim,  { toValue: 0, duration: 220, easing: Easing.in(Easing.cubic), useNativeDriver: false }),
+        Animated.timing(opacityAnim, { toValue: 0, duration: 180, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
+      ]).start(() => setVisible(false));
     }
   };
 
   return (
     <View style={{ marginBottom: 28 }}>
-      {/* Ghost -- only active during first-open measurement. top:9999 keeps it
-          below scroll content so ScrollView clips it (positive direction works,
-          negative can bypass SVG clipping on iOS). */}
+      {/* Ghost -- lazy, only on first open of non-defaultOpen sections.
+          top:9999 pushes below scroll content; ScrollView clips it correctly. */}
       {measuring && (
         <View
           style={{ position: 'absolute', opacity: 0, left: 0, right: 0, top: 9999 }}
@@ -753,9 +739,8 @@ function CollapsibleCategory({
       </TouchableOpacity>
 
       {heightReady ? (
-        // Animated container -- overflow:visible when fully open so glow/shadows show
-        <Animated.View style={isFullyOpen ? { overflow: 'visible' } : { height: heightAnim, overflow: 'hidden' }}>
-          <Animated.View style={{ opacity: opacityAnim, transform: [{ translateY: translateAnim }] }}>
+        <Animated.View style={{ height: heightAnim, overflow: 'hidden' }}>
+          <Animated.View style={{ opacity: opacityAnim }}>
             {visible && children}
           </Animated.View>
         </Animated.View>

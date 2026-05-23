@@ -516,16 +516,16 @@ function DailyGoalCard({ def, counts }: { def: DailyGoalDef; counts: DailyGoalCo
 // ─── Category Config ──────────────────────────────────────────────────────────
 
 const CATEGORY_CONFIG: Record<string, { label: string; icon: string }> = {
-  hydration: { label: 'Hydration',  icon: 'water-outline'      },
+  hydration: { label: 'Hydration',  icon: 'water-outline'       },
   steps:     { label: 'Steps',      icon: 'footsteps-outline'   },
   weight:    { label: 'Weight',     icon: 'trending-down-outline'},
   momentum:  { label: 'Momentum',   icon: 'flame-outline'       },
   faith:     { label: 'Faith',      icon: 'book-outline'        },
   nutrition: { label: 'Nutrition',  icon: 'nutrition-outline'   },
-  general:   { label: 'General',    icon: 'star-outline'        },
+  journal:   { label: 'Journal',    icon: 'create-outline'      },
 };
 
-const CATEGORY_ORDER = ['general', 'hydration', 'steps', 'weight', 'momentum', 'faith', 'nutrition'];
+const CATEGORY_ORDER = ['hydration', 'steps', 'weight', 'momentum', 'faith', 'nutrition', 'journal'];
 
 // ─── Progress Value Loader ────────────────────────────────────────────────────
 // Reads AsyncStorage to figure out current progress toward each progressKey
@@ -841,7 +841,7 @@ export default function AchievementsScreen() {
                 icon={catConfig.icon}
                 catUnlocked={catUnlocked}
                 total={defs.length}
-                defaultOpen={cat === 'general'}
+                defaultOpen={cat === 'hydration'}
               >
                 {grid}
               </CollapsibleCategory>

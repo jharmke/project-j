@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageSet } from './utils/storage';
 
-export type AchievementCategory = 'hydration' | 'steps' | 'weight' | 'momentum' | 'faith' | 'nutrition' | 'general';
+export type AchievementCategory = 'hydration' | 'steps' | 'weight' | 'momentum' | 'faith' | 'nutrition' | 'journal';
 export type AchievementTier = 'small' | 'medium' | 'large' | 'diamond';
 export type AchievementDisplayTier = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
 
@@ -443,7 +443,18 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     cooldownDays: 90,
   },
 
-  // MOMENTUM (consecutive logging streak)
+  // MOMENTUM
+  {
+    id: 'general_first_log',
+    name: 'Day One',
+    criteria: 'Log your first day in the app.',
+    description: 'Logged your first day in the app.',
+    category: 'momentum',
+    tier: 'small',
+    icon: 'star-outline',
+    iconColor: '#e8e8f0',
+    bgColor: 'rgba(232,232,240,0.10)',
+  },
   {
     id: 'streak_3',
     name: 'On a Roll',
@@ -894,24 +905,13 @@ export const ACHIEVEMENTS: AchievementDef[] = [
 
   // GENERAL -- journal milestones (personal/fitness/workout entries only)
 
-  // GENERAL
-  {
-    id: 'general_first_log',
-    name: 'Day One',
-    criteria: 'Log your first day in the app.',
-    description: 'Logged your first day in the app.',
-    category: 'general',
-    tier: 'small',
-    icon: 'star-outline',
-    iconColor: '#e8e8f0',
-    bgColor: 'rgba(232,232,240,0.10)',
-  },
+  // JOURNAL
   {
     id: 'faith_first_journal',
     name: 'First Word',
     criteria: 'Write your first journal entry.',
     description: 'Wrote your first journal entry.',
-    category: 'general',
+    category: 'journal',
     tier: 'small',
     icon: 'book-outline',
     iconColor: '#a78bfa',
@@ -924,7 +924,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     name: 'Consistent Voice',
     criteria: 'Write 10 journal entries.',
     description: 'Wrote 10 journal entries.',
-    category: 'general',
+    category: 'journal',
     tier: 'medium',
     icon: 'book',
     iconColor: '#a78bfa',
@@ -932,6 +932,74 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     progressKey: 'generalJournalEntries',
     progressTarget: 10,
   },
+  {
+    id: 'journal_25',
+    name: 'Paper Trail',
+    criteria: 'Write 25 journal entries.',
+    description: "There's no denying it now -- you're a journal person.",
+    category: 'journal',
+    tier: 'medium',
+    icon: 'book',
+    iconColor: '#a78bfa',
+    bgColor: 'rgba(167,139,250,0.20)',
+    progressKey: 'generalJournalEntries',
+    progressTarget: 25,
+  },
+  {
+    id: 'journal_50',
+    name: 'The Plot Thickens',
+    criteria: 'Write 50 journal entries.',
+    description: "Fifty down. You said you'd try it. Look at you now.",
+    category: 'journal',
+    tier: 'medium',
+    icon: 'book',
+    iconColor: '#b99ffa',
+    bgColor: 'rgba(167,139,250,0.22)',
+    progressKey: 'generalJournalEntries',
+    progressTarget: 50,
+  },
+  {
+    id: 'journal_100',
+    name: 'Well Documented',
+    criteria: 'Write 100 journal entries.',
+    description: "A hundred down. Somewhere out there a blank journal is relieved it's not yours.",
+    category: 'journal',
+    tier: 'large',
+    icon: 'book',
+    iconColor: '#c4b5fd',
+    bgColor: 'rgba(167,139,250,0.24)',
+    progressKey: 'generalJournalEntries',
+    progressTarget: 100,
+  },
+  {
+    id: 'journal_200',
+    name: 'Chronicled',
+    criteria: 'Write 200 journal entries.',
+    description: 'Two hundred entries. Most people live it. You wrote it down.',
+    category: 'journal',
+    tier: 'large',
+    displayTier: 'platinum',
+    icon: 'book',
+    iconColor: '#d8b4fe',
+    bgColor: 'rgba(167,139,250,0.27)',
+    progressKey: 'generalJournalEntries',
+    progressTarget: 200,
+  },
+  {
+    id: 'journal_365',
+    name: 'The Book',
+    criteria: 'Write 365 journal entries.',
+    description: "A full year of entries. That's a book.",
+    category: 'journal',
+    tier: 'large',
+    displayTier: 'diamond',
+    icon: 'book',
+    iconColor: '#ede9fe',
+    bgColor: 'rgba(167,139,250,0.30)',
+    progressKey: 'generalJournalEntries',
+    progressTarget: 365,
+  },
+
 ];
 
 // ─── Storage Helpers ──────────────────────────────────────────────────────────

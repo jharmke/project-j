@@ -508,8 +508,13 @@ export default function JournalScreen() {
       const store = await loadAchievements();
       let s = store;
       const journalMilestones = [
-        { id: 'faith_first_journal', threshold: 1  },
-        { id: 'faith_10_journal',    threshold: 10 },
+        { id: 'faith_first_journal', threshold: 1   },
+        { id: 'faith_10_journal',    threshold: 10  },
+        { id: 'journal_25',          threshold: 25  },
+        { id: 'journal_50',          threshold: 50  },
+        { id: 'journal_100',         threshold: 100 },
+        { id: 'journal_200',         threshold: 200 },
+        { id: 'journal_365',         threshold: 365 },
       ];
       for (const m of journalMilestones) {
         if (generalCount >= m.threshold) {

@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react'; // useRef used in PlatinumAnimatedBorder and PlatinumGlow
-import { Animated, Easing, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Easing, LayoutAnimation, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, UIManager, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Path, Stop } from 'react-native-svg';
 import {
@@ -642,10 +642,9 @@ async function loadProgressValues(): Promise<Record<string, number>> {
 }
 
 // ─── Collapsible Category Section ────────────────────────────────────────────
-// defaultOpen  → unconstrained render measures height, then locked animated container
-// closed       → visible=false until opened, ghost fires lazily on first open
-// No translateY -- fights with height clip on large card grids, creates smoosh effect
-// No overflow:visible switch -- stays hidden throughout to prevent pop at end
+if (Platform.OS === 'android') {
+  UIManager.setLayoutAnimationEnabledExperimental?.(true);
+}
 
 function CollapsibleCategory({
   label, icon, catUnlocked, total, defaultOpen, children,
@@ -654,75 +653,32 @@ function CollapsibleCategory({
   defaultOpen: boolean; children: React.ReactNode;
 }) {
   const { theme } = useTheme();
-  const [open,        setOpen]        = useState(defaultOpen);
-  const [visible,     setVisible]     = useState(defaultOpen);
-  const [measuring,   setMeasuring]   = useState(false);
-  const [heightReady, setHeightReady] = useState(false);
-  const heightAnim  = useRef(new Animated.Value(0)).current;
+  const [open, setOpen] = useState(defaultOpen);
   const opacityAnim = useRef(new Animated.Value(defaultOpen ? 1 : 0)).current;
-  const contentH    = useRef(0);
-  const openRef     = useRef(defaultOpen);
-  openRef.current   = open;
+  const isFirstRender = useRef(true);
 
-  const onUnconstrained = (h: number) => {
-    if (h <= 0 || heightReady) return;
-    contentH.current = h;
-    heightAnim.setValue(h);
-    setHeightReady(true);
-  };
-
-  const onGhostLayout = (h: number) => {
-    if (h <= 0) return;
-    contentH.current = h;
-    setMeasuring(false);
-    if (!openRef.current) return;
-    setHeightReady(true);
-    setVisible(true);
-    opacityAnim.setValue(0);
-    Animated.parallel([
-      Animated.timing(heightAnim,  { toValue: h, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
-      Animated.timing(opacityAnim, { toValue: 1, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-    ]).start();
-  };
+  // Fire fade-in AFTER children mount so they are guaranteed to start at opacity 0.
+  useEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return; }
+    if (open) {
+      Animated.timing(opacityAnim, { toValue: 1, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+    }
+  }, [open]);
 
   const toggle = () => {
-    const opening = !open;
-    setOpen(opening);
-    openRef.current = opening;
-    if (opening) {
-      if (contentH.current > 0) {
-        setVisible(true);
-        opacityAnim.setValue(0);
-        Animated.parallel([
-          Animated.timing(heightAnim,  { toValue: contentH.current, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
-          Animated.timing(opacityAnim, { toValue: 1, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-        ]).start();
-      } else {
-        setMeasuring(true);
-      }
+    if (open) {
+      Animated.timing(opacityAnim, { toValue: 0, duration: 160, easing: Easing.in(Easing.cubic), useNativeDriver: true }).start(() => {
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setOpen(false);
+      });
     } else {
-      Animated.parallel([
-        Animated.timing(heightAnim,  { toValue: 0, duration: 220, easing: Easing.in(Easing.cubic), useNativeDriver: false }),
-        Animated.timing(opacityAnim, { toValue: 0, duration: 180, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
-      ]).start(() => setVisible(false));
+      opacityAnim.setValue(0);
+      setOpen(true);
     }
   };
 
   return (
     <View style={{ marginBottom: 28 }}>
-      {/* Ghost -- lazy, only on first open of non-defaultOpen sections.
-          top:9999 pushes below scroll content; ScrollView clips it correctly. */}
-      {measuring && (
-        <View
-          style={{ position: 'absolute', opacity: 0, left: 0, right: 0, top: 9999 }}
-          pointerEvents="none"
-          onLayout={e => onGhostLayout(e.nativeEvent.layout.height)}
-        >
-          {children}
-        </View>
-      )}
-
-      {/* Header */}
       <TouchableOpacity
         activeOpacity={0.7}
         onPress={toggle}
@@ -738,19 +694,9 @@ function CollapsibleCategory({
         <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={12} color={theme.textMuted} />
       </TouchableOpacity>
 
-      {heightReady ? (
-        <Animated.View style={{ height: heightAnim, overflow: 'hidden' }}>
-          <Animated.View style={{ opacity: opacityAnim }}>
-            {visible && children}
-          </Animated.View>
-        </Animated.View>
-      ) : (
-        // Pre-measurement: unconstrained render (defaultOpen only, visible=true)
-        <Animated.View
-          onLayout={e => onUnconstrained(e.nativeEvent.layout.height)}
-          style={{ opacity: opacityAnim }}
-        >
-          {visible && children}
+      {open && (
+        <Animated.View style={{ opacity: opacityAnim }}>
+          {children}
         </Animated.View>
       )}
     </View>

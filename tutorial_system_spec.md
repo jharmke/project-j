@@ -277,9 +277,48 @@ Understanding Your Style (1 -- first article for Tips & Guides section)
 
 ---
 
+## ARCHITECTURE
+
+### New files
+- `components/TutorialOverlay.tsx` -- overlay, spotlight/cutout, callout bubble, animations
+- `context/TutorialContext.tsx` -- `startTutorial(id)`, `advanceStep()`, `skipTutorial()`, ref registration
+- `data/tutorials.ts` -- all tutorial content (all 18 tutorials, mode-aware copy per step)
+- `hooks/useTutorialTarget.ts` -- hook components use to register themselves as highlightable (`const ref = useTutorialTarget('key')`)
+
+### Files modified
+- `app/_layout.tsx` -- mount `<TutorialOverlay />` globally (same pattern as CelebrationRenderer)
+- `components/TooltipModal.tsx` -- add "Take a Tour" button when tutorial exists for that card
+- `app/(tabs)/_layout.tsx` -- add `?` toolkit icon to each tab header (far left)
+- `app/settings.tsx` -- add Tutorials section under Help
+- Two new AsyncStorage keys: `pj_tutorials` + `pj_tutorial_meta`
+
+### Step data structure
+```ts
+interface TutorialStep {
+  targetKey: string          // matches registered ref key
+  title: string              // Bebas heading
+  body: { discipline: string; balanced: string; mindful: string }
+  highlightPadding?: number  // default 8
+}
+
+interface Tutorial {
+  id: string
+  steps: TutorialStep[]
+}
+```
+
+### Target measurement
+`ref.current?.measureInWindow()` -- returns screen-absolute coordinates. Cutout drawn at `{ x - padding, y - padding, width + padding*2, height + padding*2 }`.
+
+### Storage
+- `pj_tutorials`: `{ [tutorialId]: { seen: boolean, completedAt?: string } }`
+- `pj_tutorial_meta`: `{ seen: boolean }`
+
+---
+
 ## BUILD ORDER
 
-1. **Architecture** -- TutorialOverlay component, TutorialContext, storage keys (pj_tutorials, pj_tutorial_meta), target ref registration system. Full architecture session before any code written.
+1. **Architecture + Design** -- COMPLETE 2026-05-23. All decisions locked (see LOCKED DECISIONS). TutorialContext + TutorialOverlay engine first, tested with dummy 2-step tutorial on calories card before any real content added.
 2. **Tab-level toolkit icons** -- add to all 5 tab headers (far left), build Toolkit sheet component (reusable), wire up for each tab
 3. **Take a Tour button** -- add to all (i) modals that will have tutorials (breathing pulse animation), Settings > Help > Tutorials section stub
 4. **Settings > Help > Tutorials section** -- list all tutorials with title + description + Start Tutorial button
@@ -324,6 +363,16 @@ Understanding Your Style (1 -- first article for Tips & Guides section)
 **Tab toolkit icon pulse**: YES -- same exact behavior as existing (i) card icons. 3 pulses, 1500ms delay on mount, fires once per cold launch until seen, permanently stops after first tap. Same infrastructure, same pattern.
 
 **Take a Tour button pulse**: Same breathing pulse as described (slow 1.0 → 1.04 scale). Stops after first tap, same seen-state pattern as (i) icons.
+
+**Navigation model**: NEXT button only to advance. No tap-dark-area shortcut. Final step shows DONE (full accent fill) instead of NEXT. X/SKIP always visible in callout bubble header row on every single step, no exceptions.
+
+**Progress indicators**: Dots (●●○○○) for tutorials with 6 or fewer steps. "X of Y" text for tutorials with 7 or more steps. Auto-driven at render time based on step count.
+
+**Overlay visual**: Scrim `rgba(2,6,20,0.88)`. Spotlight cutout has 1.5px accentBlueRaw ring at 60% opacity around the edge. Callout bubble: bgCard `#1a1a24`, 1.5px accent top border, 14px borderRadius, SVG arrow pointer toward spotlight element.
+
+**Bubble auto-positioning**: Space above vs below spotlight determines placement. Bubble goes below if >= 160px available, above otherwise. Minimum 16pt margin from screen edges. Tab bar (64pt) treated as off-limits -- never render bubble over it.
+
+**Transitions**: Entry: scrim fades in 250ms, bubble slides up + fades in 300ms spring (100ms delay). Between steps: bubble fades out 150ms, cutout animates to new position via Reanimated withSpring, bubble fades in 150ms after cutout settles. Exit: bubble fades + scales to 0.88 (180ms), scrim fades out (200ms). All on UI thread via Reanimated.
 
 ---
 

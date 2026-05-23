@@ -14,7 +14,7 @@ import PressableButton from '../../components/PressableButton';
 import { useToast } from '../../components/Toast';
 import { showCelebration } from '../../components/CelebrationOverlay';
 import { showAchievementToast, showDailyGoalToast } from '../../components/AchievementToast';
-import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, weightEntryIsPlausible, getWeightMilestonesCrossed, isGoalWeightHit, handleDailyGoalHit } from '../../achievementData';
+import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, weightEntryIsPlausible, getWeightMilestonesCrossed, isGoalWeightHit, handleDailyGoalHit, checkMomentumAchievements } from '../../achievementData';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { storageSet } from '../../utils/storage';
 import { useTheme } from '../../theme';
@@ -1460,6 +1460,12 @@ export default function HomeScreen() {
             }
           }
         }
+        // Momentum achievement check -- consecutive logging days
+        const momentumUnlocked = await checkMomentumAchievements();
+        momentumUnlocked.forEach(def => {
+          showCelebration(def.tier, def.name);
+          showAchievementToast(def);
+        });
       } catch (e) { console.log('Cal sync error', e); }
     };
     loadCals();

@@ -519,13 +519,13 @@ const CATEGORY_CONFIG: Record<string, { label: string; icon: string }> = {
   hydration: { label: 'Hydration',  icon: 'water-outline'      },
   steps:     { label: 'Steps',      icon: 'footsteps-outline'   },
   weight:    { label: 'Weight',     icon: 'trending-down-outline'},
-  streak:    { label: 'Streaks',    icon: 'flame-outline'       },
+  momentum:  { label: 'Momentum',   icon: 'flame-outline'       },
   faith:     { label: 'Faith',      icon: 'book-outline'        },
   nutrition: { label: 'Nutrition',  icon: 'nutrition-outline'   },
   general:   { label: 'General',    icon: 'star-outline'        },
 };
 
-const CATEGORY_ORDER = ['general', 'hydration', 'steps', 'weight', 'streak', 'faith', 'nutrition'];
+const CATEGORY_ORDER = ['general', 'hydration', 'steps', 'weight', 'momentum', 'faith', 'nutrition'];
 
 // ─── Progress Value Loader ────────────────────────────────────────────────────
 // Reads AsyncStorage to figure out current progress toward each progressKey
@@ -607,13 +607,16 @@ async function loadProgressValues(): Promise<Record<string, number>> {
     }
     values['logStreak'] = streak;
 
-    // journalEntries -- count entries in pj_bible_reflections
+    // generalJournalEntries -- personal/fitness/gratitude/workout entries only (not verse/prayer/study)
+    const GENERAL_JOURNAL_CATS = ['personal', 'fitness', 'gratitude', 'workout'];
     const journalRaw = await AsyncStorage.getItem('pj_bible_reflections');
     if (journalRaw) {
       const entries = JSON.parse(journalRaw);
-      values['journalEntries'] = Array.isArray(entries) ? entries.length : 0;
+      values['generalJournalEntries'] = Array.isArray(entries)
+        ? entries.filter((e: any) => GENERAL_JOURNAL_CATS.includes(e.category)).length
+        : 0;
     } else {
-      values['journalEntries'] = 0;
+      values['generalJournalEntries'] = 0;
     }
 
   } catch (e) {

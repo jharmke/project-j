@@ -82,6 +82,15 @@ const TIER_CONFIG: Record<AchievementDisplayTier, TierConfig> = {
     iconColor:       '#ffffff',
     leftBorderColor: '#93c5fd',
   },
+  diamond: {
+    label:           'Diamond',
+    badgeColor:      '#e0f2fe',
+    badgeColorDark:  '#38bdf8',
+    borderColor:     'rgba(224,242,254,0.85)',
+    glowColor:       'rgba(224,242,254,0.7)',
+    iconColor:       '#ffffff',
+    leftBorderColor: '#7dd3fc',
+  },
 };
 
 function getDisplayTier(def: AchievementDef): AchievementDisplayTier {
@@ -110,7 +119,7 @@ function hexPath(size: number): string {
 function MiniHexBadge({ def, size = 44 }: { def: AchievementDef; size?: number }) {
   const tier   = getDisplayTier(def);
   const config = TIER_CONFIG[tier];
-  const isPlat = tier === 'platinum';
+  const isPlat = tier === 'platinum' || tier === 'diamond';
   const gradId = `toast_grad_${def.id}`;
 
   const rotateAnim = useRef(new Animated.Value(0)).current;
@@ -200,7 +209,7 @@ function ToastCard({ def, onDone }: { def: AchievementDef; onDone: () => void })
   const router = useRouter();
   const tier   = getDisplayTier(def);
   const config = TIER_CONFIG[tier];
-  const isPlat = tier === 'platinum';
+  const isPlat = tier === 'platinum' || tier === 'diamond';
 
   const slideX         = useRef(new Animated.Value(OFFSCREEN)).current;
   const cardOpacity    = useRef(new Animated.Value(0)).current;

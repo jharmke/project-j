@@ -14,6 +14,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '../components/Toast';
 import { storageSet } from '../utils/storage';
 import { useTheme } from '../theme';
+import { ACHIEVEMENTS, checkAndUnlock, loadAchievements, checkMomentumAchievements } from '../achievementData';
+import { showAchievementToast } from '../components/AchievementToast';
+import { showCelebration } from '../components/CelebrationOverlay';
 
 type Category = 'verse' | 'prayer' | 'study' | 'personal' | 'gratitude' | 'fitness';
 
@@ -497,6 +500,36 @@ export default function JournalScreen() {
     const updated = [entry, ...entries];
     await saveEntries(updated);
     showToast('Entry saved', undefined, 'success');
+
+    // Journal achievement check (personal/fitness/gratitude/workout only)
+    const GENERAL_JOURNAL_CATS: Category[] = ['personal', 'fitness', 'gratitude', 'workout'];
+    if (GENERAL_JOURNAL_CATS.includes(entry.category)) {
+      const generalCount = updated.filter(e => GENERAL_JOURNAL_CATS.includes(e.category)).length;
+      const store = await loadAchievements();
+      let s = store;
+      const journalMilestones = [
+        { id: 'faith_first_journal', threshold: 1  },
+        { id: 'faith_10_journal',    threshold: 10 },
+      ];
+      for (const m of journalMilestones) {
+        if (generalCount >= m.threshold) {
+          const { newlyUnlocked, updatedStore } = await checkAndUnlock(m.id, s);
+          s = updatedStore;
+          if (newlyUnlocked) {
+            const def = ACHIEVEMENTS.find(a => a.id === m.id);
+            if (def) { showAchievementToast(def); showCelebration(def.tier, def.name); }
+          }
+        }
+      }
+    }
+
+    // Momentum check -- fires from anywhere, once-per-day gate handles dedup
+    const momentumUnlocked = await checkMomentumAchievements();
+    momentumUnlocked.forEach(def => {
+      showCelebration(def.tier, def.name);
+      showAchievementToast(def);
+    });
+
     setShowCreateModal(false);
     setCreateTitle('');
     setCreateNotes('');

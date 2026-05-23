@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageSet } from './utils/storage';
 
-export type AchievementCategory = 'hydration' | 'steps' | 'weight' | 'streak' | 'faith' | 'nutrition' | 'general';
+export type AchievementCategory = 'hydration' | 'steps' | 'weight' | 'momentum' | 'faith' | 'nutrition' | 'general';
 export type AchievementTier = 'small' | 'medium' | 'large' | 'diamond';
 export type AchievementDisplayTier = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
 
@@ -443,13 +443,13 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     cooldownDays: 90,
   },
 
-  // STREAKS
+  // MOMENTUM (consecutive logging streak)
   {
     id: 'streak_3',
     name: 'On a Roll',
     criteria: 'Log 3 days in a row.',
-    description: 'Logged 3 days in a row.',
-    category: 'streak',
+    description: 'Three days in. The streak is alive.',
+    category: 'momentum',
     tier: 'small',
     icon: 'flame-outline',
     iconColor: '#f97316',
@@ -461,57 +461,100 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     id: 'streak_7',
     name: 'Week Warrior',
     criteria: 'Log 7 days in a row.',
-    description: 'Logged 7 days in a row.',
-    category: 'streak',
-    tier: 'medium',
+    description: "Seven days in a row. Something big's brewing...",
+    category: 'momentum',
+    tier: 'small',
     icon: 'flame',
     iconColor: '#f97316',
-    bgColor: 'rgba(249,115,22,0.18)',
+    bgColor: 'rgba(249,115,22,0.15)',
     progressKey: 'logStreak',
     progressTarget: 7,
+  },
+  {
+    id: 'streak_14',
+    name: 'Not a Fluke',
+    criteria: 'Log 14 days in a row.',
+    description: 'Two weeks in. This is not a coincidence.',
+    category: 'momentum',
+    tier: 'medium',
+    icon: 'flame',
+    iconColor: '#fb923c',
+    bgColor: 'rgba(249,115,22,0.18)',
+    progressKey: 'logStreak',
+    progressTarget: 14,
   },
   {
     id: 'streak_30',
     name: 'Unstoppable',
     criteria: 'Log 30 days in a row.',
-    description: 'Logged 30 days in a row. Habit locked in.',
-    category: 'streak',
-    tier: 'large',
-    displayTier: 'platinum',
+    description: "Thirty consecutive days. You've officially outrun your excuses.",
+    category: 'momentum',
+    tier: 'medium',
     icon: 'flame',
     iconColor: '#fb923c',
-    bgColor: 'rgba(249,115,22,0.22)',
+    bgColor: 'rgba(249,115,22,0.20)',
     progressKey: 'logStreak',
     progressTarget: 30,
   },
+  {
+    id: 'streak_60',
+    name: 'Sixty Strong',
+    criteria: 'Log 60 days in a row.',
+    description: "Two months in. At this point it'd feel weird to stop.",
+    category: 'momentum',
+    tier: 'large',
+    icon: 'flame',
+    iconColor: '#fdba74',
+    bgColor: 'rgba(249,115,22,0.22)',
+    progressKey: 'logStreak',
+    progressTarget: 60,
+  },
+  {
+    id: 'streak_90',
+    name: 'All In',
+    criteria: 'Log 90 days in a row.',
+    description: "Three months straight. You've committed to something bigger than a streak.",
+    category: 'momentum',
+    tier: 'large',
+    icon: 'flame',
+    iconColor: '#fdba74',
+    bgColor: 'rgba(249,115,22,0.23)',
+    progressKey: 'logStreak',
+    progressTarget: 90,
+  },
+  {
+    id: 'streak_180',
+    name: 'Six Months Strong',
+    criteria: 'Log 180 days in a row.',
+    description: 'Six months in. The streak has become the standard.',
+    category: 'momentum',
+    tier: 'large',
+    displayTier: 'platinum',
+    icon: 'flame',
+    iconColor: '#fed7aa',
+    bgColor: 'rgba(249,115,22,0.25)',
+    progressKey: 'logStreak',
+    progressTarget: 180,
+  },
+  {
+    id: 'streak_365',
+    name: 'Unbroken',
+    criteria: 'Log 365 days in a row.',
+    description: "A year straight. Some things you can't explain. This is one of them.",
+    category: 'momentum',
+    tier: 'large',
+    displayTier: 'diamond',
+    icon: 'flame',
+    iconColor: '#ffedd5',
+    bgColor: 'rgba(249,115,22,0.30)',
+    progressKey: 'logStreak',
+    progressTarget: 365,
+  },
 
-  // FAITH
-  {
-    id: 'faith_first_journal',
-    name: 'First Word',
-    criteria: 'Write your first journal entry.',
-    description: 'Wrote your first journal entry.',
-    category: 'faith',
-    tier: 'small',
-    icon: 'book-outline',
-    iconColor: '#a78bfa',
-    bgColor: 'rgba(167,139,250,0.15)',
-    progressKey: 'journalEntries',
-    progressTarget: 1,
-  },
-  {
-    id: 'faith_10_journal',
-    name: 'Consistent Voice',
-    criteria: 'Write 10 journal entries.',
-    description: 'Wrote 10 journal entries.',
-    category: 'faith',
-    tier: 'medium',
-    icon: 'book',
-    iconColor: '#a78bfa',
-    bgColor: 'rgba(167,139,250,0.18)',
-    progressKey: 'journalEntries',
-    progressTarget: 10,
-  },
+  // FAITH -- placeholder for faith-specific journal achievements (verse/prayer)
+  // See general category for all-journal achievements
+
+  // GENERAL -- journal milestones (personal/fitness/gratitude/workout entries only)
 
   // GENERAL
   {
@@ -524,6 +567,32 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     icon: 'star-outline',
     iconColor: '#e8e8f0',
     bgColor: 'rgba(232,232,240,0.10)',
+  },
+  {
+    id: 'faith_first_journal',
+    name: 'First Word',
+    criteria: 'Write your first journal entry.',
+    description: 'Wrote your first journal entry.',
+    category: 'general',
+    tier: 'small',
+    icon: 'book-outline',
+    iconColor: '#a78bfa',
+    bgColor: 'rgba(167,139,250,0.15)',
+    progressKey: 'generalJournalEntries',
+    progressTarget: 1,
+  },
+  {
+    id: 'faith_10_journal',
+    name: 'Consistent Voice',
+    criteria: 'Write 10 journal entries.',
+    description: 'Wrote 10 journal entries.',
+    category: 'general',
+    tier: 'medium',
+    icon: 'book',
+    iconColor: '#a78bfa',
+    bgColor: 'rgba(167,139,250,0.18)',
+    progressKey: 'generalJournalEntries',
+    progressTarget: 10,
   },
 ];
 
@@ -737,4 +806,62 @@ export async function handleDailyGoalHit(
   } catch {}
 
   return { fired: true, count: newCount, lastEarned: today };
+}
+
+// ─── Momentum Achievement Check ───────────────────────────────────────────────
+// Self-contained -- loads its own store, writes to AsyncStorage, returns newly
+// unlocked defs so the caller can fire showCelebration + showAchievementToast.
+// Once-per-day gate fires only after today has logged data (streak > 0).
+
+export async function checkMomentumAchievements(): Promise<AchievementDef[]> {
+  // Compute consecutive logging day streak first
+  let streak = 0;
+  const today = new Date();
+  for (let i = 0; i < 400; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const dk = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    try {
+      const raw = await AsyncStorage.getItem(`pj_${dk}`);
+      if (raw) streak++;
+      else break;
+    } catch { break; }
+  }
+  if (streak === 0) return [];
+
+  // Once-per-day gate (only after streak > 0 so journaling before logging doesn't swallow the gate)
+  const todayKey = today.toISOString().split('T')[0];
+  try {
+    const gateRaw = await AsyncStorage.getItem('pj_momentum_checked');
+    if (gateRaw === todayKey) return [];
+  } catch {}
+  try { await storageSet('pj_momentum_checked', todayKey); } catch {}
+
+  const milestones = [
+    { id: 'streak_3',   threshold: 3   },
+    { id: 'streak_7',   threshold: 7   },
+    { id: 'streak_14',  threshold: 14  },
+    { id: 'streak_30',  threshold: 30  },
+    { id: 'streak_60',  threshold: 60  },
+    { id: 'streak_90',  threshold: 90  },
+    { id: 'streak_180', threshold: 180 },
+    { id: 'streak_365', threshold: 365 },
+  ];
+
+  const store = await loadAchievements();
+  let updatedStore = store;
+  const unlockedDefs: AchievementDef[] = [];
+
+  for (const m of milestones) {
+    if (streak >= m.threshold) {
+      const { newlyUnlocked: didUnlock, updatedStore: s } = await checkAndUnlock(m.id, updatedStore);
+      updatedStore = s;
+      if (didUnlock) {
+        const def = ACHIEVEMENTS.find(a => a.id === m.id);
+        if (def) unlockedDefs.push(def);
+      }
+    }
+  }
+
+  return unlockedDefs;
 }

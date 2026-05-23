@@ -1079,6 +1079,12 @@ export default function HomeScreen() {
           let s = store;
           s = await handleAchievementUnlock('steps_first', s);
           s = await handleAchievementUnlock('steps_10', s);
+          s = await handleAchievementUnlock('steps_30', s);
+          s = await handleAchievementUnlock('steps_50', s);
+          s = await handleAchievementUnlock('steps_75', s);
+          s = await handleAchievementUnlock('steps_100', s);
+          s = await handleAchievementUnlock('steps_200', s);
+          s = await handleAchievementUnlock('steps_365', s);
           setAchievementStore(s);
         });
       }

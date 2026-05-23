@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -93,7 +94,7 @@ function ProfileSection({ label, subtitle, defaultOpen = false, children, theme,
 
   return (
     <View style={{ marginTop: first ? 4 : 20 }}>
-      <TouchableOpacity onPress={toggle} activeOpacity={0.7} style={{ paddingVertical: 6, minHeight: 44, justifyContent: 'center' }}>
+      <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggle(); }} activeOpacity={0.7} style={{ paddingVertical: 6, minHeight: 44, justifyContent: 'center' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <Text style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.accentBlueRaw }}>
             {label}
@@ -316,12 +317,12 @@ export default function ProfileScreen() {
         </View>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           <TouchableOpacity
-            onPress={() => router.push('/achievements' as any)}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/achievements' as any); }}
             style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="trophy" size={14} color={theme.accentBlue} />
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => router.push('/settings')}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/settings'); }}
             style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="settings" size={14} color={theme.accentBlue} />
           </TouchableOpacity>
@@ -335,7 +336,7 @@ export default function ProfileScreen() {
           <TextInput style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} value={profile.name} onChangeText={v => updateField('name', v)} placeholder="Your name" placeholderTextColor={theme.textPlaceholder} />
 
           <Text style={[styles.fieldLabel, { color: theme.textMuted }]}>Birthday</Text>
-          <TouchableOpacity style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }]} onPress={() => setShowDatePicker(true)}>
+          <TouchableOpacity style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowDatePicker(true); }}>
             <Text style={{ color: profile.birthday ? theme.textPrimary : theme.textPlaceholder, fontFamily: 'DMSans_400Regular', fontSize: 15 }}>
               {profile.birthday ? new Date(profile.birthday).toLocaleDateString() : 'Select birthday...'}
             </Text>
@@ -343,10 +344,11 @@ export default function ProfileScreen() {
           {showDatePicker && (
             <View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, paddingHorizontal: 4 }}>
-                <TouchableOpacity onPress={() => { setShowDatePicker(false); setTempBirthday(null); }}>
+                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowDatePicker(false); setTempBirthday(null); }}>
                   <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium' }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   setShowDatePicker(false);
                   if (tempBirthday) updateField('birthday', tempBirthday.toISOString());
                   setTempBirthday(null);
@@ -390,13 +392,13 @@ export default function ProfileScreen() {
             <TouchableOpacity
               style={[styles.toggleBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput },
                 profile.sex === 'male' && { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
-              onPress={() => updateField('sex', 'male')}>
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); updateField('sex', 'male'); }}>
               <Text style={[styles.toggleBtnText, { color: theme.textMuted }, profile.sex === 'male' && { color: theme.accentBlue }]}>Male</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.toggleBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput },
                 profile.sex === 'female' && { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
-              onPress={() => updateField('sex', 'female')}>
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); updateField('sex', 'female'); }}>
               <Text style={[styles.toggleBtnText, { color: theme.textMuted }, profile.sex === 'female' && { color: theme.accentBlue }]}>Female</Text>
             </TouchableOpacity>
           </View>
@@ -410,7 +412,7 @@ export default function ProfileScreen() {
               key={o.key}
               style={[styles.activityBtn, { borderWidth: 0.5, borderColor: theme.borderInput, backgroundColor: theme.bgInput },
                 profile.lifestyleActivity === o.key && { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
-              onPress={() => updateField('lifestyleActivity', o.key)}>
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); updateField('lifestyleActivity', o.key); }}>
               <View style={[styles.activityDot, { backgroundColor: theme.textDim },
                 profile.lifestyleActivity === o.key && { backgroundColor: theme.accentBlue }]} />
               <View style={{ flex: 1 }}>
@@ -430,7 +432,7 @@ export default function ProfileScreen() {
               key={o.key}
               style={[styles.activityBtn, { borderWidth: 0.5, borderColor: theme.borderInput, backgroundColor: theme.bgInput },
                 profile.trainingFrequency === o.key && { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
-              onPress={() => updateField('trainingFrequency', o.key)}>
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); updateField('trainingFrequency', o.key); }}>
               <View style={[styles.activityDot, { backgroundColor: theme.textDim },
                 profile.trainingFrequency === o.key && { backgroundColor: theme.accentBlue }]} />
               <View style={{ flex: 1 }}>
@@ -510,7 +512,7 @@ export default function ProfileScreen() {
             <TouchableOpacity
               key={key}
               style={[styles.activityBtn, profile.weightGoal === key && { backgroundColor: theme.accentBlueBg }]}
-              onPress={() => updateField('weightGoal', key)}>
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); updateField('weightGoal', key); }}>
               <View style={[styles.activityDot, { backgroundColor: theme.textDim }, profile.weightGoal === key && { backgroundColor: theme.accentBlue }]} />
               <Text style={[styles.activityLabel, { color: theme.textMuted }, profile.weightGoal === key && { color: theme.textPrimary }]}>{label}</Text>
             </TouchableOpacity>
@@ -600,6 +602,7 @@ export default function ProfileScreen() {
         <View style={{ flexDirection: 'row', gap: 10 }}>
           <TouchableOpacity
             onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               Keyboard.dismiss();
               if (savedProfile) setProfile(savedProfile);
               hasChangesRef.current = false;
@@ -620,7 +623,7 @@ export default function ProfileScreen() {
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={saveProfile}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); saveProfile(); }}
             style={{ flex: 1, backgroundColor: theme.accentBlue, borderRadius: 10, padding: 16, alignItems: 'center' }}>
             <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.bgPrimary }}>
               {saved ? 'SAVED' : 'SAVE PROFILE'}

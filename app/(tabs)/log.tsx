@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -227,13 +228,13 @@ export default function LogScreen() {
     return (
       <View>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-          <TouchableOpacity onPress={calPickerPrev} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); calPickerPrev(); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Ionicons name="chevron-back" size={20} color={theme.accentBlueRaw} />
           </TouchableOpacity>
           <Text style={{ fontSize: 15, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>
             {CAL_MONTHS[pickerMonth]} {pickerYear}
           </Text>
-          <TouchableOpacity onPress={calPickerNext} disabled={!calPickerCanGoNext()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); calPickerNext(); }} disabled={!calPickerCanGoNext()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Ionicons name="chevron-forward" size={20} color={calPickerCanGoNext() ? theme.accentBlueRaw : theme.textDim} />
           </TouchableOpacity>
         </View>
@@ -253,7 +254,7 @@ export default function LogScreen() {
               const isFut = dk > todayKey;
               const isTod = dk === todayKey;
               return (
-                <TouchableOpacity key={ci} style={{ flex: 1, alignItems: 'center', paddingVertical: 5 }} onPress={() => calPickerSelect(dk)} disabled={isFut} activeOpacity={0.7}>
+                <TouchableOpacity key={ci} style={{ flex: 1, alignItems: 'center', paddingVertical: 5 }} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); calPickerSelect(dk); }} disabled={isFut} activeOpacity={0.7}>
                   <View style={{
                     width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center',
                     backgroundColor: isSel ? theme.accentBlueRaw : isTod ? `${theme.accentBlueRaw}26` : 'transparent',
@@ -626,22 +627,22 @@ export default function LogScreen() {
           <Text style={[styles.headerLabel, { color: theme.textMuted }]}>PROJECT J</Text>
           <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>Food Log</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
-            <TouchableOpacity onPress={openCalPicker} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
+            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openCalPicker(); }} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
               <Text style={{ fontSize: 9, color: isToday ? theme.textMuted : theme.accentAmber, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>
                 {formatActiveDate()}
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={goToPrevDay} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}>
+            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); goToPrevDay(); }} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}>
               <Ionicons name="chevron-back" size={16} color={theme.accentBlue} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={goToNextDay} disabled={isToday} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}>
+            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); goToNextDay(); }} disabled={isToday} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}>
               <Ionicons name="chevron-forward" size={16} color={isToday ? theme.textDim : theme.accentBlue} />
             </TouchableOpacity>
           </View>
         </View>
         <TouchableOpacity
             style={[styles.libraryBtn, { height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
-            onPress={() => router.push({ pathname: '/add-food', params: { meal: 'browse', date: activeDate } })}>
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push({ pathname: '/add-food', params: { meal: 'browse', date: activeDate } }); }}>
             <Text style={[styles.libraryBtnText, { color: theme.accentBlue }]}>Library</Text>
           </TouchableOpacity>
       </View>
@@ -675,7 +676,7 @@ export default function LogScreen() {
       {/* Advanced Nutrition Card */}
       <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
         <TouchableOpacity
-          onPress={toggleAdvanced}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleAdvanced(); }}
           activeOpacity={0.7}
           style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -728,12 +729,12 @@ export default function LogScreen() {
             {/* + button on left */}
             <TouchableOpacity
               style={styles.mealAddBtn}
-              onPress={() => router.push({ pathname: '/add-food', params: { meal, date: activeDate } })}>
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push({ pathname: '/add-food', params: { meal, date: activeDate } }); }}>
               <Text style={[styles.mealAddBtnText, { color: theme.accentBlue }]}>+</Text>
             </TouchableOpacity>
 
             {/* Meal info middle */}
-            <TouchableOpacity style={[styles.mealInfo, { flexDirection: 'row', alignItems: 'center' }]} onPress={() => toggleMeal(meal)}>
+            <TouchableOpacity style={[styles.mealInfo, { flexDirection: 'row', alignItems: 'center' }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleMeal(meal); }}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.mealName, { color: theme.textPrimary }]}>{meal}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2, opacity: mealTotal > 0 ? 1 : 0 }}>
@@ -760,7 +761,7 @@ export default function LogScreen() {
             </TouchableOpacity>
 
             {/* Chevron on right */}
-            <TouchableOpacity style={styles.mealChevron} onPress={() => toggleMeal(meal)}>
+            <TouchableOpacity style={styles.mealChevron} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleMeal(meal); }}>
               <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={theme.textMuted} />
             </TouchableOpacity>
 
@@ -848,6 +849,7 @@ export default function LogScreen() {
                               [
                                 { text: 'Cancel', style: 'cancel' },
                                 { text: 'Remove', style: 'destructive', onPress: () => {
+                                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                                   deleteEntry(entries.indexOf(entry));
                                   showToast('Entry removed', `${entry.cal} kcal · ${entry.meal}`, 'success');
                                 }},
@@ -880,11 +882,11 @@ export default function LogScreen() {
         <WaterBar pct={waterPct} color={theme.accentBlue} trackColor={theme.bgProgressTrack} refreshKey={logRefreshKey} overGoal={water > waterGoal} />
         <View style={styles.waterBtns}>
           {waterPresets.map((oz, i) => (
-            <TouchableOpacity key={i} style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => updateWater(oz)}>
+            <TouchableOpacity key={i} style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); updateWater(oz); }}>
               <Text style={[styles.waterBtnText, { color: theme.accentBlue }]}>+{oz} oz</Text>
             </TouchableOpacity>
           ))}
-          <TouchableOpacity style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => openWaterCustomModal('add')}>
+          <TouchableOpacity style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); openWaterCustomModal('add'); }}>
             <View style={{ alignItems: 'center', justifyContent: 'center', width: 20, height: 20 }}>
               <Ionicons name="water-outline" size={18} color={theme.accentBlue} />
               <Text style={{ color: theme.accentBlue, fontSize: 9, fontFamily: 'DMSans_700Bold', position: 'absolute', bottom: -2, right: -4 }}>+</Text>
@@ -893,11 +895,11 @@ export default function LogScreen() {
         </View>
         <View style={[styles.waterBtns, { marginTop: 8 }]}>
           {waterPresets.map((oz, i) => (
-            <TouchableOpacity key={i} style={[styles.waterBtnRed, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]} onPress={() => updateWater(-oz)}>
+            <TouchableOpacity key={i} style={[styles.waterBtnRed, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); updateWater(-oz); }}>
               <Text style={[styles.waterBtnRedText, { color: theme.accentRed }]}>-{oz} oz</Text>
             </TouchableOpacity>
           ))}
-          <TouchableOpacity style={[styles.waterBtnRed, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]} onPress={() => openWaterCustomModal('subtract')}>
+          <TouchableOpacity style={[styles.waterBtnRed, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); openWaterCustomModal('subtract'); }}>
             <View style={{ alignItems: 'center', justifyContent: 'center', width: 20, height: 20 }}>
               <Ionicons name="water-outline" size={18} color={theme.accentRed} />
               <Text style={{ color: theme.accentRed, fontSize: 9, fontFamily: 'DMSans_700Bold', position: 'absolute', bottom: -2, right: -4 }}>-</Text>
@@ -921,12 +923,13 @@ export default function LogScreen() {
             value={waterCustomInput} onChangeText={setWaterCustomInput} keyboardType="number-pad" placeholder="0" placeholderTextColor={theme.textPlaceholder} autoFocus />
           <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase', textAlign: 'center', marginBottom: 16 }}>oz</Text>
           <View style={{ flexDirection: 'row', gap: 10 }}>
-            <TouchableOpacity style={{ flex: 1, padding: 12, borderRadius: 8, backgroundColor: theme.bgInput, alignItems: 'center' }} onPress={closeWaterCustomModal}>
+            <TouchableOpacity style={{ flex: 1, padding: 12, borderRadius: 8, backgroundColor: theme.bgInput, alignItems: 'center' }} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeWaterCustomModal(); }}>
               <Text style={{ color: theme.textMuted, fontFamily: 'DMSans_600SemiBold', fontSize: 14 }}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={{ flex: 1, padding: 12, borderRadius: 8, backgroundColor: waterCustomSign === 'add' ? theme.accentBlueBg : theme.accentRedBg, alignItems: 'center' }}
               onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 const amt = parseInt(waterCustomInput);
                 if (amt > 0) { updateWater(waterCustomSign === 'add' ? amt : -amt); }
                 closeWaterCustomModal();

@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -531,8 +532,8 @@ function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen, remain
     </View>
   );
 
-  const IFLinkBtn = ({ label, color, onPress }: { label: string; color: string; onPress: () => void }) => (
-    <TouchableOpacity onPress={onPress}
+  const IFLinkBtn = ({ label, color, onPress, hapticLevel = 'light' }: { label: string; color: string; onPress: () => void; hapticLevel?: 'light' | 'heavy' }) => (
+    <TouchableOpacity onPress={() => { Haptics.impactAsync(hapticLevel === 'heavy' ? Haptics.ImpactFeedbackStyle.Heavy : Haptics.ImpactFeedbackStyle.Light); onPress(); }}
       style={{ backgroundColor: color + '18', borderWidth: 1, borderColor: color + '40', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 5 }}>
       <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color, letterSpacing: 0.5 }}>{label}</Text>
     </TouchableOpacity>
@@ -567,7 +568,7 @@ function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen, remain
 
       <View style={{ flexDirection: 'row', gap: 5, marginBottom: 12, flexWrap: 'wrap' }}>
         {Object.keys(IF_METHODS).map(m => (
-          <TouchableOpacity key={m} onPress={() => setIfMethod(m)}
+          <TouchableOpacity key={m} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setIfMethod(m); }}
             style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, backgroundColor: ifMethod === m ? theme.accentBlueBg : theme.ifMethodBg, borderWidth: 1, borderColor: ifMethod === m ? theme.accentBlueBorder : theme.ifMethodBorder }}>
             <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: ifMethod === m ? theme.accentBlue : theme.ifMethodText }}>{m}</Text>
           </TouchableOpacity>
@@ -641,7 +642,7 @@ function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen, remain
             <IFLinkBtn label="Edit Start" color={theme.textSecondary} onPress={() => setShowTimePicker(true)} />
             <TouchableOpacity
               activeOpacity={0.75}
-              onPress={onLastMeal}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onLastMeal(); }}
               style={{ backgroundColor: theme.accentRed, borderRadius: 10, paddingHorizontal: 22, paddingVertical: 10 }}
             >
               <Text style={{ color: '#ffffff', fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 }}>LAST MEAL</Text>
@@ -652,8 +653,8 @@ function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen, remain
           {showTimePicker && (
             <View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
-                <TouchableOpacity onPress={() => setShowTimePicker(false)}><Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium' }}>Cancel</Text></TouchableOpacity>
-                <TouchableOpacity onPress={() => { setShowTimePicker(false); if (pickerTime) onConfirmStart(pickerTime); }}>
+                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowTimePicker(false); }}><Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium' }}>Cancel</Text></TouchableOpacity>
+                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowTimePicker(false); if (pickerTime) onConfirmStart(pickerTime); }}>
                   <Text style={{ color: theme.accentGreen, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Confirm</Text>
                 </TouchableOpacity>
               </View>
@@ -688,15 +689,15 @@ function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen, remain
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <IFLinkBtn label="Edit start" color={theme.textSecondary} onPress={() => setShowTimePicker(true)} />
               <IFLinkBtn label="Edit end" color={theme.textSecondary} onPress={() => setShowEndTimePicker(true)} />
-              <IFLinkBtn label="Reset" color={theme.accentRed} onPress={onResetComplete} />
+              <IFLinkBtn label="Reset" color={theme.accentRed} onPress={onResetComplete} hapticLevel="heavy" />
             </View>
           </View>
 
           {showTimePicker && (
             <View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
-                <TouchableOpacity onPress={() => setShowTimePicker(false)}><Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium' }}>Cancel</Text></TouchableOpacity>
-                <TouchableOpacity onPress={() => { setShowTimePicker(false); if (pickerTime) onConfirmStart(pickerTime); }}>
+                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowTimePicker(false); }}><Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium' }}>Cancel</Text></TouchableOpacity>
+                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowTimePicker(false); if (pickerTime) onConfirmStart(pickerTime); }}>
                   <Text style={{ color: theme.accentGreen, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Confirm</Text>
                 </TouchableOpacity>
               </View>
@@ -706,8 +707,8 @@ function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen, remain
           {showEndTimePicker && (
             <View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
-                <TouchableOpacity onPress={() => setShowEndTimePicker(false)}><Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium' }}>Cancel</Text></TouchableOpacity>
-                <TouchableOpacity onPress={() => { setShowEndTimePicker(false); if (pickerTime) onConfirmEnd(pickerTime); }}>
+                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowEndTimePicker(false); }}><Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium' }}>Cancel</Text></TouchableOpacity>
+                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowEndTimePicker(false); if (pickerTime) onConfirmEnd(pickerTime); }}>
                   <Text style={{ color: theme.accentGreen, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Confirm</Text>
                 </TouchableOpacity>
               </View>
@@ -1703,7 +1704,7 @@ export default function HomeScreen() {
             <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Calories Today</Text>
             {styleMode !== 'mindful' && <TooltipIcon tooltipKey="calories_today" />}
           </View>
-          <TouchableOpacity onPress={() => router.push('/(tabs)/log')} activeOpacity={0.6}
+          <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/(tabs)/log'); }} activeOpacity={0.6}
             style={{ backgroundColor: theme.accentBlueBg, borderWidth:1, borderColor: theme.accentBlueBorder, borderRadius:6, paddingHorizontal:10, paddingVertical:4 }}>
             <Text style={{ color: theme.accentBlue, fontSize:12, fontFamily:'DMSans_600SemiBold' }}>+ Log</Text>
           </TouchableOpacity>
@@ -1946,7 +1947,7 @@ export default function HomeScreen() {
         delayPressIn={0}
         onPressIn={onPressIn}
         onPressOut={onPressOut}
-        onPress={() => router.push('/(tabs)/workout')}
+        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/(tabs)/workout'); }}
         style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, padding: 16, overflow: 'hidden' }]}>
         <Ionicons name="barbell" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
         <View style={{ marginBottom: 12 }}>
@@ -2037,7 +2038,15 @@ export default function HomeScreen() {
           </View>
         )}
 
-        
+        {exerciseMinutes !== null && exerciseMinutes > 0 && (
+          <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginTop:6 }}>
+            {exerciseMinutes < 60
+              ? `${exerciseMinutes} min active today`
+              : exerciseMinutes % 60 > 0
+                ? `${Math.floor(exerciseMinutes / 60)}h ${exerciseMinutes % 60}m active today`
+                : `${Math.floor(exerciseMinutes / 60)}h active today`}
+          </Text>
+        )}
       </TouchableOpacity>
       </Animated.View>
     );
@@ -2085,7 +2094,7 @@ export default function HomeScreen() {
             <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Sleep Last Night</Text>
             <TooltipIcon tooltipKey="sleep_score" />
           </View>
-          <TouchableOpacity onPress={() => setEditingSleep(!editingSleep)} hitSlop={{ top:8, bottom:8, left:8, right:8 }}>
+          <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setEditingSleep(!editingSleep); }} hitSlop={{ top:8, bottom:8, left:8, right:8 }}>
             <Ionicons name="settings-outline" size={16} color={theme.textMuted} />
           </TouchableOpacity>
         </View>
@@ -2094,7 +2103,7 @@ export default function HomeScreen() {
           <View style={{ marginBottom:10 }}>
             <View style={{ flexDirection:'row', gap:8, marginBottom:8 }}>
               <TouchableOpacity
-                onPress={() => setActiveSleepPicker(activeSleepPicker === 'bed' ? null : 'bed')}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setActiveSleepPicker(activeSleepPicker === 'bed' ? null : 'bed'); }}
                 style={{ flex:1, backgroundColor: activeSleepPicker === 'bed' ? theme.accentBlueBg : theme.bgInput, borderWidth:1, borderColor: activeSleepPicker === 'bed' ? theme.accentBlueBorder : theme.borderInput, borderRadius:6, padding:10, alignItems:'center' }}>
                 <Text style={{ fontSize:10, color: theme.textMuted, fontFamily:'DMSans_400Regular', marginBottom:2 }}>Bed Time</Text>
                 <Text style={{ fontSize:16, color: sleepBedTime ? theme.textPrimary : theme.textPlaceholder, fontFamily:'DMSans_600SemiBold' }}>
@@ -2102,7 +2111,7 @@ export default function HomeScreen() {
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => setActiveSleepPicker(activeSleepPicker === 'wake' ? null : 'wake')}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setActiveSleepPicker(activeSleepPicker === 'wake' ? null : 'wake'); }}
                 style={{ flex:1, backgroundColor: activeSleepPicker === 'wake' ? theme.accentBlueBg : theme.bgInput, borderWidth:1, borderColor: activeSleepPicker === 'wake' ? theme.accentBlueBorder : theme.borderInput, borderRadius:6, padding:10, alignItems:'center' }}>
                 <Text style={{ fontSize:10, color: theme.textMuted, fontFamily:'DMSans_400Regular', marginBottom:2 }}>Wake Time</Text>
                 <Text style={{ fontSize:16, color: sleepWakeTime ? theme.textPrimary : theme.textPlaceholder, fontFamily:'DMSans_600SemiBold' }}>
@@ -2131,11 +2140,12 @@ export default function HomeScreen() {
               </View>
             )}
             <View style={{ flexDirection:'row', gap:8 }}>
-              <TouchableOpacity onPress={() => { setEditingSleep(false); setActiveSleepPicker(null); }}
+              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setEditingSleep(false); setActiveSleepPicker(null); }}
                 style={{ flex:1, backgroundColor: theme.bgInput, borderWidth:1, borderColor: theme.borderInput, borderRadius:6, padding:10, alignItems:'center' }}>
                 <Text style={{ color: theme.textMuted, fontSize:13, fontFamily:'DMSans_600SemiBold' }}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={async () => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                 if(!sleepBedTime||!sleepWakeTime) return;
                 let diff=sleepWakeTime.getTime()-sleepBedTime.getTime();
                 if(diff<0) diff+=24*3600000;
@@ -2153,6 +2163,7 @@ export default function HomeScreen() {
               </TouchableOpacity>
               {sleepOverride && (
                 <TouchableOpacity onPress={async () => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                   setSleepOverride(null);
                   setSleepFeelRating(null);
                   const saved=await AsyncStorage.getItem(`pj_${todayKey}`);
@@ -2264,7 +2275,7 @@ export default function HomeScreen() {
                   </Text>
                   <View style={{ flexDirection:'row', gap:6 }}>
                     {[1,2,3,4,5].map(r => (
-                      <TouchableOpacity key={r} onPress={() => saveFeel(r)} style={{
+                      <TouchableOpacity key={r} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); saveFeel(r); }} style={{
                         flex:1, paddingVertical:8, borderRadius:8, alignItems:'center',
                         backgroundColor: sleepFeelRating === r ? theme.accentBlueBg : theme.bgInput,
                         borderWidth:1,
@@ -2834,7 +2845,7 @@ export default function HomeScreen() {
               delayPressIn={0}
               onPressIn={onPressIn}
               onPressOut={onPressOut}
-              onPress={() => router.push({ pathname: '/head-to-head', params: { dateA: fmtD(today), dateB: fmtD(yesterday) } })}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/head-to-head', params: { dateA: fmtD(today), dateB: fmtD(yesterday) } }); }}
             >
               {cardContent}
             </TouchableOpacity>
@@ -2869,15 +2880,15 @@ export default function HomeScreen() {
         </View>
 
         <View style={{ flexDirection:'row', gap:8 }}>
-            <TouchableOpacity onPress={() => { fetchTodayData(); setRefreshKey(k=>k+1); showToast('Health data refreshed', undefined, 'info'); }}
+            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); fetchTodayData(); setRefreshKey(k=>k+1); showToast('Health data refreshed', undefined, 'info'); }}
               style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
               <Ionicons name="refresh" size={14} color={theme.accentBlue} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => { dayDetailAnim.setValue(0); setDayDetailDate(todayKey); }}
+            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); dayDetailAnim.setValue(0); setDayDetailDate(todayKey); }}
               style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
               <Ionicons name="calendar" size={14} color={theme.accentBlue} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={enterEditMode} style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
+            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); enterEditMode(); }} style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
               <Ionicons name="grid" size={14} color={theme.accentBlue} />
             </TouchableOpacity>
           </View>
@@ -2954,6 +2965,7 @@ export default function HomeScreen() {
         return (
           <Animated.View style={{ position:'absolute', top:0, bottom:0, left:0, right:0, backgroundColor: theme.overlayBg, justifyContent:'center', alignItems:'center', zIndex:999, opacity: waterDetailAnim }}>
             <TouchableOpacity style={StyleSheet.absoluteFill} onPress={closeWaterDetailModal} activeOpacity={1} />
+            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <Animated.View style={{ width:'92%', maxHeight:'82%', backgroundColor: theme.bgSheet, borderRadius:16, borderWidth:0.5, borderColor: theme.borderCard, borderTopWidth:1.5, borderTopColor: theme.accentBlueRaw, overflow:'hidden', transform:[{scale: cardScale}] }}>
               {/* Handle pill */}
               <TouchableOpacity onPress={closeWaterDetailModal} style={{ alignItems:'center', paddingTop:12, paddingBottom:8 }}>
@@ -3004,7 +3016,7 @@ export default function HomeScreen() {
               <View style={{ paddingHorizontal:16, paddingTop:12, paddingBottom:4 }}>
                 <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase' }}>Entries</Text>
               </View>
-              <ScrollView style={{ maxHeight:180 }} contentContainerStyle={{ paddingHorizontal:16, paddingBottom:8 }} showsVerticalScrollIndicator={false}>
+              <ScrollView style={{ maxHeight:180 }} contentContainerStyle={{ paddingHorizontal:16, paddingBottom:8 }} showsVerticalScrollIndicator={false} keyboardDismissMode="on-drag">
                 {waterEntries.length === 0 ? (
                   <Text style={{ fontSize:12, color: theme.textDim, fontFamily:'DMSans_400Regular', textAlign:'center', paddingVertical:14 }}>No entries yet today</Text>
                 ) : (
@@ -3051,13 +3063,14 @@ export default function HomeScreen() {
                 </View>
                 <TouchableOpacity
                   style={{ backgroundColor: presetsSaveable ? theme.accentBlueBg : theme.bgInput, borderWidth:1, borderColor: presetsSaveable ? theme.accentBlueBorder : theme.borderInput, borderRadius:8, padding:12, alignItems:'center', opacity: presetsSaveable ? 1 : 0.5 }}
-                  onPress={saveWaterPresets}
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); saveWaterPresets(); }}
                   disabled={!presetsSaveable}
                 >
                   <Text style={{ color: presetsSaveable ? theme.accentBlue : theme.textDim, fontFamily:'DMSans_600SemiBold', fontSize:14 }}>Save Presets</Text>
                 </TouchableOpacity>
               </View>
             </Animated.View>
+            </TouchableWithoutFeedback>
           </Animated.View>
         );
       })()}
@@ -3152,13 +3165,13 @@ export default function HomeScreen() {
               borderColor: theme.borderSheet,
               opacity: editSheetAnim,
             }]}>
-            <TouchableOpacity onPress={exitEditMode} style={{ alignSelf:'center', paddingVertical:10, paddingHorizontal:40 }}>
+            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); exitEditMode(); }} style={{ alignSelf:'center', paddingVertical:10, paddingHorizontal:40 }}>
               <View style={[styles.editSheetHandle, { backgroundColor: theme.sheetHandle }]} />
             </TouchableOpacity>
             {/* Header row */}
             <View style={[styles.editSheetHeader, { borderBottomColor: theme.borderSubtle }]}>
               <Text style={{ fontSize:13, color: theme.accentBlueRaw, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase' }}>Edit Layout</Text>
-              <TouchableOpacity onPress={exitEditMode}
+              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); exitEditMode(); }}
                 style={{ backgroundColor: theme.accentGreenBg, borderWidth:1, borderColor: theme.accentGreenBorder, borderRadius:6, paddingHorizontal:14, paddingVertical:6, height:32, alignItems:'center', justifyContent:'center' }}>
                 <Text style={{ color: theme.accentGreen, fontSize:12, fontFamily:'DMSans_700Bold', letterSpacing:1 }}>DONE</Text>
               </TouchableOpacity>
@@ -3168,7 +3181,7 @@ export default function HomeScreen() {
             <View style={{ flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 10 }}>
               <View style={{ flex: 1, flexDirection: 'row', backgroundColor: theme.bgInput, borderRadius: 10, padding: 3 }}>
                 {(['my', 'add'] as const).map(tab => (
-                  <TouchableOpacity key={tab} onPress={() => setEditTab(tab)}
+                  <TouchableOpacity key={tab} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setEditTab(tab); }}
                     style={{ flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center',
                       backgroundColor: editTab === tab ? theme.accentBlueRaw : 'transparent',
                     }}>
@@ -3198,7 +3211,7 @@ export default function HomeScreen() {
                   return (
                     <ScaleDecorator>
                       <View style={[styles.editCardRow, isActive && { opacity: 0.85 }]}>
-                        <TouchableOpacity onPress={() => toggleCardVisible(id)}
+                        <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleCardVisible(id); }}
                           style={[styles.editBadge, { backgroundColor: visible ? theme.accentRedBg : theme.accentGreenBg, borderColor: visible ? theme.accentRedBorder : theme.accentGreenBorder }]}>
                           <Ionicons name={visible ? 'remove' : 'add'} size={14} color={visible ? theme.accentRed : theme.accentGreen} />
                         </TouchableOpacity>
@@ -3225,7 +3238,7 @@ export default function HomeScreen() {
                         const graphMeta = card.dataKey ? DATA_KEY_META[card.dataKey as keyof typeof DATA_KEY_META] : null;
                         return (
                           <View key={card.id} style={styles.editCardRow}>
-                            <TouchableOpacity onPress={() => unpinGraphCard(card.id)}
+                            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); unpinGraphCard(card.id); }}
                               style={[styles.editBadge, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]}>
                               <Ionicons name="remove" size={14} color={theme.accentRed} />
                             </TouchableOpacity>
@@ -3258,7 +3271,7 @@ export default function HomeScreen() {
                 ) : (
                   CARD_REGISTRY.filter(meta => !cardVisible[meta.id]).map(meta => (
                     <TouchableOpacity key={meta.id}
-                      onPress={() => { toggleCardVisible(meta.id); setEditTab('my'); }}
+                      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleCardVisible(meta.id); setEditTab('my'); }}
                       style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle, gap: 12 }}>
                       <View style={[styles.editBadge, { backgroundColor: theme.accentGreenBg, borderColor: theme.accentGreenBorder }]}>
                         <Ionicons name="add" size={14} color={theme.accentGreen} />
@@ -3283,7 +3296,7 @@ export default function HomeScreen() {
                     const graphMeta = card.dataKey ? DATA_KEY_META[card.dataKey as keyof typeof DATA_KEY_META] : null;
                     return (
                       <TouchableOpacity key={card.id}
-                        onPress={() => pinGraphCard(card)}
+                        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); pinGraphCard(card); }}
                         style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle, gap: 12 }}>
                         <View style={[styles.editBadge, { backgroundColor: theme.accentGreenBg, borderColor: theme.accentGreenBorder }]}>
                           <Ionicons name="add" size={14} color={theme.accentGreen} />

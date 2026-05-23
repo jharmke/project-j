@@ -1584,6 +1584,16 @@ export default function SettingsScreen() {
             <View style={[styles.row, { borderTopColor: theme.borderCard }]}>
               <Ionicons name="person-circle-outline" size={18} color={theme.textMuted} style={{ marginRight: 10 }} />
               <Text style={[styles.rowTitle, { color: theme.textSecondary, flex: 1 }]} numberOfLines={1}>{user.email}</Text>
+              {(() => {
+                const providerId = user.providerData?.[0]?.providerId;
+                const label = providerId === 'apple.com' ? 'Apple' : providerId === 'google.com' ? 'Google' : null;
+                if (!label) return null;
+                return (
+                  <View style={{ backgroundColor: theme.bgInput, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, marginLeft: 8 }}>
+                    <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold' }}>{label}</Text>
+                  </View>
+                );
+              })()}
             </View>
           ) : null}
           <View style={[styles.row, { borderTopColor: theme.borderCard }]}>

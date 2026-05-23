@@ -19,7 +19,7 @@ export function showCelebration(tier: CelebTier, label?: string, def?: Achieveme
 
 function subscribeCeleb(fn: CelebListener) {
   celebListeners.add(fn);
-  return () => celebListeners.delete(fn);
+  return () => { celebListeners.delete(fn); };
 }
 
 // ─── Renderer (mount in _layout.tsx) ─────────────────────────────────────────
@@ -165,8 +165,6 @@ function DiamondCelebration({ def, label, onDismiss }: {
     }, 820);
 
     // 6. Particles burst from badge center in all 360 degrees -- 3 waves
-    const originX = SW / 2;
-    const originY = SH * 0.42;
     const WAVE    = 40;
     const fireWave = (waveParts: typeof particles, waveDelay: number) => {
       setTimeout(() => {
@@ -415,8 +413,8 @@ export default function CelebrationOverlay({ visible, tier, accentColor, label, 
       setTimeout(() => {
         const anims = waveParticles.map((p) => {
           const angle = (Math.random() * 180) * (Math.PI / 180);
-          const distance = Math.random() * SH * ((tier === 'large' || tier === 'diamond') ? 1.1 : tier === 'medium' ? 0.85 : 0.65) + SH * 0.2;
-          const targetX = Math.cos(angle) * (Math.random() * SW * ((tier === 'large' || tier === 'diamond') ? 1.8 : tier === 'medium' ? 1.5 : 0.8));
+          const distance = Math.random() * SH * (tier === 'large' ? 1.1 : tier === 'medium' ? 0.85 : 0.65) + SH * 0.2;
+          const targetX = Math.cos(angle) * (Math.random() * SW * (tier === 'large' ? 1.8 : tier === 'medium' ? 1.5 : 0.8));
           const targetY = Math.sin(angle) * distance * -1;
           const delay = Math.random() * 250;
           const waveDuration = duration - waveDelay;
@@ -442,7 +440,7 @@ export default function CelebrationOverlay({ visible, tier, accentColor, label, 
       }, waveDelay);
     };
 
-    if (tier === 'large' || tier === 'diamond') {
+    if (tier === 'large') {
       const third = Math.floor(particles.length / 3);
       fireWave(particles.slice(0, third), 0);
       fireWave(particles.slice(third, third * 2), 500);
@@ -476,7 +474,7 @@ export default function CelebrationOverlay({ visible, tier, accentColor, label, 
     }
 
     // Slam text for medium and large
-    if (tier === 'medium' || tier === 'large' || tier === 'diamond') {
+    if (tier === 'medium' || tier === 'large') {
       setTimeout(() => {
         Animated.parallel([
           Animated.spring(textScale, { toValue: 1, friction: 4, tension: 180, useNativeDriver: true }),
@@ -568,7 +566,7 @@ export default function CelebrationOverlay({ visible, tier, accentColor, label, 
       </View>
 
       {/* Dismiss pill -- tappable, appears at 1.2s, fades in cleanly */}
-      {tier !== 'large' && tier !== 'diamond' && (
+      {tier !== 'large' && (
         <Animated.View
           pointerEvents="box-none"
           style={{

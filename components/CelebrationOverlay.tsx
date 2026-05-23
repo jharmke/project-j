@@ -4,11 +4,12 @@ import { useTheme } from '../theme';
 
 // ─── Global Emitter ───────────────────────────────────────────────────────────
 
-type CelebPayload = { tier: 'small' | 'medium' | 'large'; label?: string };
+type CelebTier = 'small' | 'medium' | 'large' | 'diamond';
+type CelebPayload = { tier: CelebTier; label?: string };
 type CelebListener = (payload: CelebPayload) => void;
 const celebListeners: Set<CelebListener> = new Set();
 
-export function showCelebration(tier: 'small' | 'medium' | 'large', label?: string) {
+export function showCelebration(tier: CelebTier, label?: string) {
   celebListeners.forEach(fn => fn({ tier, label }));
 }
 
@@ -19,7 +20,7 @@ function subscribeCeleb(fn: CelebListener) {
 
 // ─── Renderer (mount in _layout.tsx) ─────────────────────────────────────────
 
-interface CelebQueued { id: number; tier: 'small' | 'medium' | 'large'; label?: string; }
+interface CelebQueued { id: number; tier: CelebTier; label?: string; }
 let _celebCounter = 0;
 
 export function CelebrationRenderer() {
@@ -76,7 +77,7 @@ function getParticleColors(accent: string): string[] {
 
 interface Props {
   visible: boolean;
-  tier: 'small' | 'medium' | 'large';
+  tier: CelebTier;
   accentColor: string;
   label?: string;
   onDismiss?: () => void;
@@ -93,14 +94,14 @@ interface Particle {
 }
 
 export default function CelebrationOverlay({ visible, tier, accentColor, label, onDismiss }: Props) {
-  const duration = tier === 'small' ? 2200 : tier === 'medium' ? 2800 : 3500;
+  const duration = tier === 'small' ? 2200 : tier === 'medium' ? 2800 : 3500; // diamond falls through to large (4000ms planned)
   const pillOpacity = useRef(new Animated.Value(0)).current;
   const textScale = useRef(new Animated.Value(0)).current;
   const textOpacity = useRef(new Animated.Value(0)).current;
 
   // Create particles synchronously so they exist on first render
   const particles = useMemo(() => {
-    const count = tier === 'small' ? 60 : tier === 'medium' ? 80 : 120;
+    const count = tier === 'small' ? 60 : tier === 'medium' ? 80 : 120; // diamond falls through to large
     const freshColors = getParticleColors(accentColor);
     return Array.from({ length: count }, (_, i) => ({
       x: new Animated.Value(0),
@@ -128,8 +129,8 @@ export default function CelebrationOverlay({ visible, tier, accentColor, label, 
       setTimeout(() => {
         const anims = waveParticles.map((p) => {
           const angle = (Math.random() * 180) * (Math.PI / 180);
-          const distance = Math.random() * SH * (tier === 'large' ? 1.1 : tier === 'medium' ? 0.85 : 0.65) + SH * 0.2;
-          const targetX = Math.cos(angle) * (Math.random() * SW * (tier === 'large' ? 1.8 : tier === 'medium' ? 1.5 : 0.8));
+          const distance = Math.random() * SH * ((tier === 'large' || tier === 'diamond') ? 1.1 : tier === 'medium' ? 0.85 : 0.65) + SH * 0.2;
+          const targetX = Math.cos(angle) * (Math.random() * SW * ((tier === 'large' || tier === 'diamond') ? 1.8 : tier === 'medium' ? 1.5 : 0.8));
           const targetY = Math.sin(angle) * distance * -1;
           const delay = Math.random() * 250;
           const waveDuration = duration - waveDelay;
@@ -155,7 +156,7 @@ export default function CelebrationOverlay({ visible, tier, accentColor, label, 
       }, waveDelay);
     };
 
-    if (tier === 'large') {
+    if (tier === 'large' || tier === 'diamond') {
       const third = Math.floor(particles.length / 3);
       fireWave(particles.slice(0, third), 0);
       fireWave(particles.slice(third, third * 2), 500);
@@ -189,7 +190,7 @@ export default function CelebrationOverlay({ visible, tier, accentColor, label, 
     }
 
     // Slam text for medium and large
-    if (tier === 'medium' || tier === 'large') {
+    if (tier === 'medium' || tier === 'large' || tier === 'diamond') {
       setTimeout(() => {
         Animated.parallel([
           Animated.spring(textScale, { toValue: 1, friction: 4, tension: 180, useNativeDriver: true }),
@@ -269,14 +270,14 @@ export default function CelebrationOverlay({ visible, tier, accentColor, label, 
               textShadowOffset: { width: 0, height: 0 },
               textShadowRadius: 20,
             }}>
-              {label ?? (tier === 'large' ? 'MILESTONE' : 'NICE WORK')}
+              {label ?? (tier === 'diamond' ? 'GOAL WEIGHT' : tier === 'large' ? 'MILESTONE' : 'NICE WORK')}
             </Text>
           </Animated.View>
         )}
       </View>
 
       {/* Dismiss pill -- tappable, appears at 1.2s, fades in cleanly */}
-      {tier !== 'large' && (
+      {tier !== 'large' && tier !== 'diamond' && (
         <Animated.View
           pointerEvents="box-none"
           style={{

@@ -1492,9 +1492,20 @@ export default function HomeScreen() {
 
     let store = achievementStore;
 
+    // First weigh-in ever
+    if (!store['weight_first']) {
+      const { newlyUnlocked, updatedStore } = await checkAndUnlock('weight_first', store);
+      if (newlyUnlocked) {
+        store = updatedStore;
+        setAchievementStore(store);
+        const firstDef = ACHIEVEMENTS.find(a => a.id === 'weight_first');
+        if (firstDef) showAchievementToast(firstDef);
+      }
+    }
+
     // 5lb increment milestones
     if (earliestWeight) {
-      const crossed = getWeightMilestonesCrossed(earliestWeight, val, store);
+      const crossed = getWeightMilestonesCrossed(earliestWeight, val, goalWeight ?? 0, store);
       if (crossed.length > 0) {
         // Celebrate highest only, silently unlock the rest
         const { newlyUnlocked, updatedStore } = await checkAndUnlock(crossed[0], store);
@@ -1514,12 +1525,13 @@ export default function HomeScreen() {
     }
 
     // Goal weight hit
-    if (goalWeight && isGoalWeightHit(val, goalWeight, store)) {
+    if (goalWeight && isGoalWeightHit(val, goalWeight, earliestWeight ?? 0, store)) {
       const { newlyUnlocked, updatedStore } = await checkAndUnlock('weight_goal', store);
       if (newlyUnlocked) {
         store = updatedStore;
         setAchievementStore(store);
-        showCelebration('large', 'GOAL WEIGHT');
+        const isFirstEarn = updatedStore['weight_goal'].count === 1;
+        showCelebration(isFirstEarn ? 'diamond' : 'large', 'GOAL WEIGHT');
       }
     }
   };

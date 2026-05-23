@@ -63,13 +63,22 @@ const TIER_CONFIG: Record<AchievementDisplayTier, TierConfig> = {
     glowColor:      'rgba(191,219,254,0.45)',
     iconColor:      '#ffffff',
   },
+  diamond: {
+    label: 'Diamond',
+    badgeColor:     '#e0f2fe',
+    badgeColorDark: '#38bdf8',
+    borderColor:    'rgba(224,242,254,0.85)',
+    glowColor:      'rgba(224,242,254,0.55)',
+    iconColor:      '#ffffff',
+  },
 };
 
 // Derive display tier from def
 function getDisplayTier(def: AchievementDef): AchievementDisplayTier {
   if (def.displayTier) return def.displayTier;
-  if (def.tier === 'small')  return 'bronze';
-  if (def.tier === 'medium') return 'silver';
+  if (def.tier === 'small')   return 'bronze';
+  if (def.tier === 'medium')  return 'silver';
+  if (def.tier === 'diamond') return 'diamond';
   return 'gold';
 }
 
@@ -190,7 +199,7 @@ interface HexBadgeProps {
 function HexBadge({ def, unlocked, size = 64 }: HexBadgeProps) {
   const tier    = getDisplayTier(def);
   const config  = TIER_CONFIG[tier];
-  const isPlat  = tier === 'platinum';
+  const isPlat  = tier === 'platinum' || tier === 'diamond';
   const gradId  = `grad_${def.id}`;
   const lockId  = `lock_${def.id}`;
 
@@ -572,10 +581,14 @@ async function loadProgressValues(): Promise<Record<string, number>> {
       } catch { /* skip */ }
     }
     if (earliestWeight && mostRecentWeight) {
-      values['totalLost'] = Math.max(0, earliestWeight - mostRecentWeight);
+      values['totalLost']   = Math.max(0, earliestWeight - mostRecentWeight);
+      values['totalGained'] = Math.max(0, mostRecentWeight - earliestWeight);
     } else {
-      values['totalLost'] = 0;
+      values['totalLost']   = 0;
+      values['totalGained'] = 0;
     }
+    values['_startWeight'] = earliestWeight ?? 0;
+    if (parsed.goalWeight) values['_goalWeight'] = parseFloat(parsed.goalWeight);
 
     // logStreak -- count consecutive days from today going back that have any data
     let streak = 0;
@@ -619,6 +632,7 @@ export default function AchievementsScreen() {
   const [store,      setStore]      = useState<AchievementsStore>({});
   const [progress,   setProgress]   = useState<Record<string, number>>({});
   const [goalCounts, setGoalCounts] = useState<DailyGoalCounts>(DEFAULT_DAILY_GOAL_COUNTS);
+  const [weightDir,  setWeightDir]  = useState<'loss' | 'gain' | 'none'>('none');
   const [loading,    setLoading]    = useState(true);
 
   useFocusEffect(
@@ -635,6 +649,12 @@ export default function AchievementsScreen() {
           setStore(s);
           setProgress(p);
           setGoalCounts(gc);
+          const gw = p['_goalWeight'] ?? 0;
+          const sw = p['_startWeight'] ?? 0;
+          setWeightDir(gw > 0 && sw > 0 && gw !== sw
+            ? gw < sw ? 'loss' : 'gain'
+            : 'none'
+          );
           setLoading(false);
         }
       };
@@ -645,14 +665,25 @@ export default function AchievementsScreen() {
 
   // Group achievements by category
   const grouped = CATEGORY_ORDER.reduce<Record<string, AchievementDef[]>>((acc, cat) => {
-    const defs = ACHIEVEMENTS.filter(a => a.category === cat);
+    let defs = ACHIEVEMENTS.filter(a => a.category === cat);
+    if (cat === 'weight') {
+      defs = defs.filter(d => {
+        if (d.id === 'weight_first' || d.id === 'weight_goal') return true;
+        const isLoss = d.id.startsWith('weight_loss_');
+        const isGain = d.id.startsWith('weight_gain_');
+        const earned = !!store[d.id];
+        if (weightDir === 'loss' && isGain) return earned;
+        if (weightDir === 'gain' && isLoss) return earned;
+        if (weightDir === 'none' && (isLoss || isGain)) return earned;
+        return true;
+      });
+    }
     if (defs.length > 0) acc[cat] = defs;
     return acc;
   }, {});
 
   // Count unlocked
   const totalUnlocked = ACHIEVEMENTS.filter(a => !!store[a.id]).length;
-  const totalCount    = ACHIEVEMENTS.length;
 
   return (
     <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
@@ -678,7 +709,7 @@ export default function AchievementsScreen() {
           alignItems: 'center',
         }}>
           <Text style={{ fontSize: 16, fontFamily: 'BebasNeue_400Regular', color: theme.accentBlue, letterSpacing: 1 }}>
-            {totalUnlocked}/{totalCount}
+            {totalUnlocked}
           </Text>
           <Text style={{ fontSize: 7, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', color: theme.textMuted }}>
             Earned
@@ -692,33 +723,6 @@ export default function AchievementsScreen() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
-
-          {/* Overall progress bar */}
-          <View style={{ marginBottom: 24 }}>
-            <View style={{
-              height: 4,
-              backgroundColor: theme.bgProgressTrack,
-              borderRadius: 2,
-              overflow: 'hidden',
-            }}>
-              <View style={{
-                width: `${(totalUnlocked / totalCount) * 100}%`,
-                height: '100%',
-                backgroundColor: theme.accentBlueRaw,
-                borderRadius: 2,
-              }} />
-            </View>
-            <Text style={{
-              fontSize: 9,
-              fontFamily: 'DMSans_500Medium',
-              color: theme.textMuted,
-              marginTop: 6,
-              letterSpacing: 1,
-              textTransform: 'uppercase',
-            }}>
-              {Math.round((totalUnlocked / totalCount) * 100)}% Complete
-            </Text>
-          </View>
 
           {/* Categories */}
           {Object.entries(grouped).map(([cat, defs]) => {

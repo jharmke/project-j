@@ -2,8 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageSet } from './utils/storage';
 
 export type AchievementCategory = 'hydration' | 'steps' | 'weight' | 'streak' | 'faith' | 'nutrition' | 'general';
-export type AchievementTier = 'small' | 'medium' | 'large';
-export type AchievementDisplayTier = 'bronze' | 'silver' | 'gold' | 'platinum';
+export type AchievementTier = 'small' | 'medium' | 'large' | 'diamond';
+export type AchievementDisplayTier = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
 
 export interface AchievementDef {
   id: string;
@@ -253,14 +253,27 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     progressTarget: 365,
   },
 
-  // WEIGHT
+  // WEIGHT -- DIRECTION-AGNOSTIC
   {
-    id: 'weight_5',
-    name: 'Down 5',
-    criteria: 'Lost 5 lbs from your starting weight.',
-    description: 'Lost 5 lbs from your starting weight.',
+    id: 'weight_first',
+    name: 'Showed Up',
+    criteria: 'Log your first weigh-in.',
+    description: 'The scale has been waiting.',
     category: 'weight',
-    tier: 'medium',
+    tier: 'small',
+    icon: 'body-outline',
+    iconColor: '#d4860a',
+    bgColor: 'rgba(212,134,10,0.12)',
+  },
+
+  // WEIGHT -- LOSS
+  {
+    id: 'weight_loss_5',
+    name: 'Just a Little Off the Top',
+    criteria: 'Lose 5 lbs from your starting weight.',
+    description: 'Down five. More where that came from.',
+    category: 'weight',
+    tier: 'small',
     icon: 'trending-down-outline',
     iconColor: '#d4860a',
     bgColor: 'rgba(212,134,10,0.15)',
@@ -268,10 +281,10 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     progressTarget: 5,
   },
   {
-    id: 'weight_10',
-    name: 'Down 10',
-    criteria: 'Lost 10 lbs from your starting weight.',
-    description: "Lost 10 lbs. That's a real number.",
+    id: 'weight_loss_10',
+    name: 'Picking Up Speed',
+    criteria: 'Lose 10 lbs from your starting weight.',
+    description: 'Ten pounds. Your old jeans called. They miss you.',
     category: 'weight',
     tier: 'medium',
     icon: 'trending-down',
@@ -281,52 +294,149 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     progressTarget: 10,
   },
   {
-    id: 'weight_15',
-    name: 'Down 15',
-    criteria: 'Lost 15 lbs from your starting weight.',
-    description: 'Lost 15 lbs. Keep going.',
+    id: 'weight_loss_25',
+    name: 'Not a Fluke',
+    criteria: 'Lose 25 lbs from your starting weight.',
+    description: 'Twenty-five down. This is no longer a phase.',
     category: 'weight',
     tier: 'medium',
     icon: 'trending-down',
     iconColor: '#f59e0b',
     bgColor: 'rgba(245,158,11,0.18)',
     progressKey: 'totalLost',
-    progressTarget: 15,
+    progressTarget: 25,
   },
   {
-    id: 'weight_20',
-    name: 'Down 20',
-    criteria: 'Lost 20 lbs from your starting weight.',
-    description: 'Lost 20 lbs. People are noticing.',
+    id: 'weight_loss_50',
+    name: 'The Big Five-Oh',
+    criteria: 'Lose 50 lbs from your starting weight.',
+    description: 'Somewhere out there, someone is asking what your secret is.',
     category: 'weight',
     tier: 'large',
     icon: 'trending-down',
     iconColor: '#f59e0b',
     bgColor: 'rgba(245,158,11,0.22)',
     progressKey: 'totalLost',
-    progressTarget: 20,
+    progressTarget: 50,
   },
   {
-    id: 'weight_25',
-    name: 'Down 25',
-    criteria: 'Lost 25 lbs from your starting weight.',
-    description: 'Lost 25 lbs. A quarter century of pounds gone.',
+    id: 'weight_loss_75',
+    name: "Can't Stop Won't Stop",
+    criteria: 'Lose 75 lbs from your starting weight.',
+    description: "Seventy-five pounds down. At this point you're just showing off.",
     category: 'weight',
     tier: 'large',
-    icon: 'trophy-outline',
+    icon: 'trending-down',
     iconColor: '#fbbf24',
-    bgColor: 'rgba(251,191,36,0.20)',
+    bgColor: 'rgba(251,191,36,0.22)',
     progressKey: 'totalLost',
-    progressTarget: 25,
+    progressTarget: 75,
   },
   {
-    id: 'weight_goal',
-    name: 'Goal Weight',
-    criteria: 'Reach your goal weight.',
-    description: "Hit your goal weight. This is what it's all for.",
+    id: 'weight_loss_100',
+    name: 'The Century Mark',
+    criteria: 'Lose 100 lbs from your starting weight.',
+    description: 'Down 100. We ran out of words somewhere around fifty.',
     category: 'weight',
     tier: 'large',
     displayTier: 'platinum',
+    icon: 'trending-down',
+    iconColor: '#fcd34d',
+    bgColor: 'rgba(251,191,36,0.25)',
+    progressKey: 'totalLost',
+    progressTarget: 100,
+  },
+
+  // WEIGHT -- GAIN
+  {
+    id: 'weight_gain_5',
+    name: 'Loading',
+    criteria: 'Gain 5 lbs from your starting weight.',
+    description: 'Five pounds. Just getting started.',
+    category: 'weight',
+    tier: 'small',
+    icon: 'trending-up-outline',
+    iconColor: '#10b981',
+    bgColor: 'rgba(16,185,129,0.15)',
+    progressKey: 'totalGained',
+    progressTarget: 5,
+  },
+  {
+    id: 'weight_gain_10',
+    name: 'Heavy Hitter',
+    criteria: 'Gain 10 lbs from your starting weight.',
+    description: 'Ten pounds. Your shirts are getting the message.',
+    category: 'weight',
+    tier: 'medium',
+    icon: 'trending-up',
+    iconColor: '#10b981',
+    bgColor: 'rgba(16,185,129,0.18)',
+    progressKey: 'totalGained',
+    progressTarget: 10,
+  },
+  {
+    id: 'weight_gain_25',
+    name: 'Bulk Season',
+    criteria: 'Gain 25 lbs from your starting weight.',
+    description: 'Twenty-five pounds. We see you.',
+    category: 'weight',
+    tier: 'medium',
+    icon: 'trending-up',
+    iconColor: '#34d399',
+    bgColor: 'rgba(16,185,129,0.20)',
+    progressKey: 'totalGained',
+    progressTarget: 25,
+  },
+  {
+    id: 'weight_gain_50',
+    name: 'Built Different',
+    criteria: 'Gain 50 lbs from your starting weight.',
+    description: 'Fifty up. Point proven.',
+    category: 'weight',
+    tier: 'large',
+    icon: 'trending-up',
+    iconColor: '#34d399',
+    bgColor: 'rgba(16,185,129,0.22)',
+    progressKey: 'totalGained',
+    progressTarget: 50,
+  },
+  {
+    id: 'weight_gain_75',
+    name: 'Iron Will',
+    criteria: 'Gain 75 lbs from your starting weight.',
+    description: 'Seventy-five pounds. Message received.',
+    category: 'weight',
+    tier: 'large',
+    icon: 'trending-up',
+    iconColor: '#6ee7b7',
+    bgColor: 'rgba(16,185,129,0.23)',
+    progressKey: 'totalGained',
+    progressTarget: 75,
+  },
+  {
+    id: 'weight_gain_100',
+    name: 'The Gain Train',
+    criteria: 'Gain 100 lbs from your starting weight.',
+    description: "A hundred pounds up. We don't know what to say. Actually we do. Respect.",
+    category: 'weight',
+    tier: 'large',
+    displayTier: 'platinum',
+    icon: 'trending-up',
+    iconColor: '#a7f3d0',
+    bgColor: 'rgba(16,185,129,0.25)',
+    progressKey: 'totalGained',
+    progressTarget: 100,
+  },
+
+  // WEIGHT -- GOAL
+  {
+    id: 'weight_goal',
+    name: 'There It Is',
+    criteria: 'Reach your goal weight.',
+    description: 'Hit your goal weight. This is what all of it was for.',
+    category: 'weight',
+    tier: 'large',
+    displayTier: 'diamond',
     icon: 'trophy',
     iconColor: '#fbbf24',
     bgColor: 'rgba(251,191,36,0.25)',
@@ -498,34 +608,60 @@ export function weightEntryIsPlausible(newWeight: number, lastKnownWeight: numbe
 
 // Returns IDs of milestones newly crossed, highest first.
 // Caller fires celebration for [0] and silently unlocks the rest.
+// goalWeight required to determine direction -- pass 0 or equal to startWeight to disable all milestones.
 export function getWeightMilestonesCrossed(
   startWeight: number,
   newWeight: number,
+  goalWeight: number,
   store: AchievementsStore
 ): string[] {
-  const totalLost = startWeight - newWeight;
+  if (goalWeight === startWeight) return [];
+
+  if (goalWeight < startWeight) {
+    const totalLost = startWeight - newWeight;
+    if (totalLost <= 0) return [];
+    const milestones = [
+      { id: 'weight_loss_5',   threshold: 5   },
+      { id: 'weight_loss_10',  threshold: 10  },
+      { id: 'weight_loss_25',  threshold: 25  },
+      { id: 'weight_loss_50',  threshold: 50  },
+      { id: 'weight_loss_75',  threshold: 75  },
+      { id: 'weight_loss_100', threshold: 100 },
+    ];
+    return milestones
+      .filter(m => totalLost >= m.threshold && !store[m.id])
+      .map(m => m.id)
+      .reverse();
+  }
+
+  // Gain goal
+  const totalGained = newWeight - startWeight;
+  if (totalGained <= 0) return [];
   const milestones = [
-    { id: 'weight_5',  threshold: 5  },
-    { id: 'weight_10', threshold: 10 },
-    { id: 'weight_15', threshold: 15 },
-    { id: 'weight_20', threshold: 20 },
-    { id: 'weight_25', threshold: 25 },
+    { id: 'weight_gain_5',   threshold: 5   },
+    { id: 'weight_gain_10',  threshold: 10  },
+    { id: 'weight_gain_25',  threshold: 25  },
+    { id: 'weight_gain_50',  threshold: 50  },
+    { id: 'weight_gain_75',  threshold: 75  },
+    { id: 'weight_gain_100', threshold: 100 },
   ];
-
-  const crossed = milestones
-    .filter(m => totalLost >= m.threshold && !store[m.id])
+  return milestones
+    .filter(m => totalGained >= m.threshold && !store[m.id])
     .map(m => m.id)
-    .reverse(); // highest first
-
-  return crossed;
+    .reverse();
 }
 
 export function isGoalWeightHit(
   currentWeight: number,
   goalWeight: number,
+  startWeight: number,
   store: AchievementsStore
 ): boolean {
-  if (currentWeight > goalWeight) return false;
+  if (goalWeight === startWeight) return false;
+  const hit = goalWeight < startWeight
+    ? currentWeight <= goalWeight   // loss goal
+    : currentWeight >= goalWeight;  // gain goal
+  if (!hit) return false;
   const existing = store['weight_goal'];
   if (!existing) return true;
   const daysSince = (Date.now() - new Date(existing.lastUnlockedAt).getTime()) / (1000 * 60 * 60 * 24);

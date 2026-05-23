@@ -10,7 +10,7 @@ import Svg, { Circle } from 'react-native-svg';
 import Reanimated, { useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
 import CustomFoodCreator from '../components/CustomFoodCreator';
 import { useToast } from '../components/Toast';
-import { ACHIEVEMENTS, checkAndUnlock, loadAchievements, checkMomentumAchievements, checkNutritionAchievements } from '../achievementData';
+import { ACHIEVEMENTS, checkAndUnlock, loadAchievements, checkMomentumAchievements, checkNutritionAchievements, getCelebTier } from '../achievementData';
 import { showAchievementToast } from '../components/AchievementToast';
 import { showCelebration } from '../components/CelebrationOverlay';
 import { saveToFirebase } from '../firebaseConfig';
@@ -525,16 +525,16 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
         const result = await checkAndUnlock('general_first_log', store);
         if (result.newlyUnlocked) {
           const def = ACHIEVEMENTS.find(a => a.id === 'general_first_log');
-          if (def) { showAchievementToast(def); showCelebration(def.tier, def.name); }
+          if (def) { showAchievementToast(def); showCelebration(getCelebTier(def), def.name, def); }
         }
         const momentumUnlocked = await checkMomentumAchievements();
         momentumUnlocked.forEach(def => {
-          showCelebration(def.tier, def.name);
+          showCelebration(getCelebTier(def), def.name, def);
           showAchievementToast(def);
         });
         const nutritionUnlocked = await checkNutritionAchievements();
         nutritionUnlocked.forEach(def => {
-          showCelebration(def.tier, def.name);
+          showCelebration(getCelebTier(def), def.name, def);
           showAchievementToast(def);
         });
       }

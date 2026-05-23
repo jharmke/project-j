@@ -32,6 +32,15 @@ export interface UnlockedAchievement {
 
 export type AchievementsStore = Record<string, UnlockedAchievement>;
 
+// ─── Celebration Tier Helper ──────────────────────────────────────────────────
+// Use this instead of def.tier when calling showCelebration -- ensures diamond-
+// display achievements (displayTier:'diamond') fire the diamond celebration even
+// when their underlying tier is 'large'.
+export function getCelebTier(def: AchievementDef): AchievementTier {
+  if (def.displayTier === 'diamond' || def.tier === 'diamond') return 'diamond';
+  return def.tier;
+}
+
 // ─── Achievement Definitions ─────────────────────────────────────────────────
 
 export const ACHIEVEMENTS: AchievementDef[] = [

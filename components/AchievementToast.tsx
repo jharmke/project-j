@@ -226,7 +226,7 @@ function ToastCard({ def, onDone }: { def: AchievementDef; onDone: () => void })
     Animated.parallel([
       Animated.timing(cardOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
       Animated.timing(slideX, { toValue: OFFSCREEN, duration: 220, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
-    ]).start(() => { onDone(); router.push('/achievements'); });
+    ]).start(() => { onDone(); router.push({ pathname: '/achievements', params: { highlightId: def.id } }); });
   };
 
   useEffect(() => {

@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '../components/Toast';
 import { storageSet } from '../utils/storage';
 import { useTheme } from '../theme';
-import { ACHIEVEMENTS, checkAndUnlock, loadAchievements, checkMomentumAchievements, checkFaithAchievements } from '../achievementData';
+import { ACHIEVEMENTS, checkAndUnlock, loadAchievements, checkMomentumAchievements, checkFaithAchievements, getCelebTier } from '../achievementData';
 import { showAchievementToast } from '../components/AchievementToast';
 import { showCelebration } from '../components/CelebrationOverlay';
 
@@ -522,7 +522,7 @@ export default function JournalScreen() {
           s = updatedStore;
           if (newlyUnlocked) {
             const def = ACHIEVEMENTS.find(a => a.id === m.id);
-            if (def) { showAchievementToast(def); showCelebration(def.tier, def.name); }
+            if (def) { showAchievementToast(def); showCelebration(getCelebTier(def), def.name, def); }
           }
         }
       }
@@ -532,7 +532,7 @@ export default function JournalScreen() {
     if (entry.category === 'prayer' || entry.category === 'gratitude') {
       const faithUnlocked = await checkFaithAchievements(entry.category as 'prayer' | 'gratitude');
       faithUnlocked.forEach(def => {
-        showCelebration(def.tier, def.name);
+        showCelebration(getCelebTier(def), def.name, def);
         showAchievementToast(def);
       });
     }
@@ -540,7 +540,7 @@ export default function JournalScreen() {
     // Momentum check -- fires from anywhere, once-per-day gate handles dedup
     const momentumUnlocked = await checkMomentumAchievements();
     momentumUnlocked.forEach(def => {
-      showCelebration(def.tier, def.name);
+      showCelebration(getCelebTier(def), def.name, def);
       showAchievementToast(def);
     });
 

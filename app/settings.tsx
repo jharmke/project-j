@@ -361,7 +361,7 @@ export default function SettingsScreen() {
   const [faithJourney, setFaithJourney] = useState<FaithJourney>('rooted');
   const [burnAccuracyPct, setBurnAccuracyPct] = useState(100);
   const [devCelebVisible, setDevCelebVisible] = useState(false);
-  const [devCelebTier, setDevCelebTier] = useState<'small' | 'medium' | 'large'>('small');
+  const [devCelebTier, setDevCelebTier] = useState<'small' | 'medium' | 'large' | 'diamond'>('small');
   const [devCelebLabel, setDevCelebLabel] = useState<string | undefined>(undefined);
   const [devTapCount, setDevTapCount] = useState(0);
   const [devUnlocked, setDevUnlocked] = useState(false);
@@ -1748,18 +1748,18 @@ export default function SettingsScreen() {
               <Ionicons name="cloud-download-outline" size={18} color={theme.accentAmber} />
             </TouchableOpacity>
 
-            {(['small', 'medium', 'large'] as const).map(tier => (
+            {(['small', 'medium', 'large', 'diamond'] as const).map(tier => (
               <TouchableOpacity key={tier} style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 setDevCelebTier(tier);
-                setDevCelebLabel(tier === 'small' ? 'NICE WORK' : tier === 'medium' ? 'MILESTONE' : 'GOAL WEIGHT');
+                setDevCelebLabel(tier === 'small' ? 'NICE WORK' : tier === 'medium' ? 'MILESTONE' : tier === 'diamond' ? undefined : 'GOAL WEIGHT');
                 setDevCelebVisible(true);
               }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Fire {tier.charAt(0).toUpperCase() + tier.slice(1)} Celebration</Text>
-                  <Text style={[styles.rowSub, { color: theme.textMuted }]}>{tier === 'small' ? 'Steps / water goal' : tier === 'medium' ? '5lb milestone' : 'Goal weight hit'}</Text>
+                  <Text style={[styles.rowTitle, { color: tier === 'diamond' ? '#7dd3fc' : theme.textPrimary }]}>Fire {tier.charAt(0).toUpperCase() + tier.slice(1)} Celebration</Text>
+                  <Text style={[styles.rowSub, { color: theme.textMuted }]}>{tier === 'small' ? 'Steps / water goal' : tier === 'medium' ? '5lb milestone' : tier === 'diamond' ? 'Diamond achievement overlay' : 'Goal weight hit'}</Text>
                 </View>
-                <Ionicons name="sparkles-outline" size={18} color={theme.accentBlue} />
+                <Ionicons name="sparkles-outline" size={18} color={tier === 'diamond' ? '#7dd3fc' : theme.accentBlue} />
               </TouchableOpacity>
             ))}
 
@@ -1902,6 +1902,7 @@ export default function SettingsScreen() {
         tier={devCelebTier}
         accentColor={theme.accentBlueRaw}
         label={devCelebLabel}
+        def={devCelebTier === 'diamond' ? ACHIEVEMENTS.find(a => a.id === 'weight_goal') : undefined}
         onDismiss={() => setDevCelebVisible(false)}
       />
 

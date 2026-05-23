@@ -14,7 +14,7 @@ import PressableButton from '../../components/PressableButton';
 import { useToast } from '../../components/Toast';
 import { showCelebration } from '../../components/CelebrationOverlay';
 import { showAchievementToast, showDailyGoalToast } from '../../components/AchievementToast';
-import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, weightEntryIsPlausible, getWeightMilestonesCrossed, isGoalWeightHit, handleDailyGoalHit, checkMomentumAchievements, checkSleepAchievements } from '../../achievementData';
+import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, weightEntryIsPlausible, getWeightMilestonesCrossed, isGoalWeightHit, handleDailyGoalHit, checkMomentumAchievements, checkSleepAchievements, getCelebTier } from '../../achievementData';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { storageSet } from '../../utils/storage';
 import { useTheme } from '../../theme';
@@ -948,7 +948,7 @@ export default function HomeScreen() {
     if (newlyUnlocked) {
       setAchievementStore(updatedStore);
       const def = ACHIEVEMENTS.find(a => a.id === id);
-      showCelebration(def?.tier ?? 'small', def?.name);
+      showCelebration(def ? getCelebTier(def) : 'small', def?.name, def ?? undefined);
       if (def) showAchievementToast(def);
       return updatedStore;
     }
@@ -1111,7 +1111,7 @@ export default function HomeScreen() {
       if (sleepHours !== null && prevSleepHoursRef.current === null) {
         checkSleepAchievements().then(unlocked => {
           unlocked.forEach(def => {
-            showCelebration(def.tier, def.name);
+            showCelebration(getCelebTier(def), def.name, def);
             showAchievementToast(def);
           });
         });
@@ -1477,7 +1477,7 @@ export default function HomeScreen() {
         // Momentum achievement check -- consecutive logging days
         const momentumUnlocked = await checkMomentumAchievements();
         momentumUnlocked.forEach(def => {
-          showCelebration(def.tier, def.name);
+          showCelebration(getCelebTier(def), def.name, def);
           showAchievementToast(def);
         });
       } catch (e) { console.log('Cal sync error', e); }
@@ -1533,7 +1533,7 @@ export default function HomeScreen() {
           store = updatedStore;
           setAchievementStore(store);
           const def = ACHIEVEMENTS.find(a => a.id === crossed[0]);
-          showCelebration(def?.tier ?? 'medium', def?.name);
+          showCelebration(def ? getCelebTier(def) : 'medium', def?.name, def ?? undefined);
         }
         // Silently unlock remaining
         for (let i = 1; i < crossed.length; i++) {
@@ -1551,7 +1551,8 @@ export default function HomeScreen() {
         store = updatedStore;
         setAchievementStore(store);
         const isFirstEarn = updatedStore['weight_goal'].count === 1;
-        showCelebration(isFirstEarn ? 'diamond' : 'large', 'GOAL WEIGHT');
+        const weightGoalDef = ACHIEVEMENTS.find(a => a.id === 'weight_goal');
+        showCelebration(isFirstEarn ? 'diamond' : 'large', weightGoalDef?.name ?? 'GOAL WEIGHT', isFirstEarn ? weightGoalDef : undefined);
       }
     }
   };
@@ -2203,7 +2204,7 @@ export default function HomeScreen() {
                 await saveToFirebase(todayKey,'sleepOverride',val);
                 checkSleepAchievements().then(unlocked => {
                   unlocked.forEach(def => {
-                    showCelebration(def.tier, def.name);
+                    showCelebration(getCelebTier(def), def.name, def);
                     showAchievementToast(def);
                   });
                 });

@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react'; // useRef used in PlatinumAnimatedBorder and PlatinumGlow
 import { Animated, Easing, LayoutAnimation, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, UIManager, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -277,6 +277,7 @@ interface AchievementCardProps {
   def: AchievementDef;
   unlocked: UnlockedInfo | null;
   progressValue?: number; // current value toward progressTarget
+  highlight?: boolean;
 }
 
 interface UnlockedInfo {
@@ -284,7 +285,7 @@ interface UnlockedInfo {
   count: number;
 }
 
-function AchievementCard({ def, unlocked, progressValue = 0 }: AchievementCardProps) {
+function AchievementCard({ def, unlocked, progressValue = 0, highlight = false }: AchievementCardProps) {
   const { theme } = useTheme();
   const tier      = getDisplayTier(def);
   const config    = TIER_CONFIG[tier];
@@ -300,7 +301,20 @@ function AchievementCard({ def, unlocked, progressValue = 0 }: AchievementCardPr
     ? new Date(unlocked.unlockedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     : null;
 
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (!highlight) return;
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1.06, duration: 375, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        Animated.timing(pulseAnim, { toValue: 1.0,  duration: 375, easing: Easing.in(Easing.cubic),  useNativeDriver: true }),
+      ]),
+      { iterations: 2 }
+    ).start();
+  }, [highlight]);
+
   return (
+    <Animated.View style={{ flex: 1, transform: [{ scale: pulseAnim }] }}>
     <View style={[
       styles.card,
       {
@@ -424,6 +438,7 @@ function AchievementCard({ def, unlocked, progressValue = 0 }: AchievementCardPr
         </View>
       )}
     </View>
+    </Animated.View>
   );
 }
 
@@ -712,10 +727,11 @@ if (Platform.OS === 'android') {
 }
 
 function CollapsibleCategory({
-  label, icon, catUnlocked, total, defaultOpen, children,
+  label, icon, catUnlocked, total, defaultOpen, children, forceOpen, onCategoryLayout,
 }: {
   label: string; icon: string; catUnlocked: number; total: number;
   defaultOpen: boolean; children: React.ReactNode;
+  forceOpen?: boolean; onCategoryLayout?: (y: number) => void;
 }) {
   const { theme } = useTheme();
   const [open, setOpen] = useState(defaultOpen);
@@ -730,6 +746,15 @@ function CollapsibleCategory({
     }
   }, [open]);
 
+  // Force-open from parent (e.g. highlight scroll navigation)
+  useEffect(() => {
+    if (!forceOpen) return;
+    if (!open) {
+      opacityAnim.setValue(0);
+      setOpen(true);
+    }
+  }, [forceOpen]);
+
   const toggle = () => {
     if (open) {
       Animated.timing(opacityAnim, { toValue: 0, duration: 160, easing: Easing.in(Easing.cubic), useNativeDriver: true }).start(() => {
@@ -743,7 +768,7 @@ function CollapsibleCategory({
   };
 
   return (
-    <View style={{ marginBottom: 28 }}>
+    <View style={{ marginBottom: 28 }} onLayout={(e) => onCategoryLayout?.(e.nativeEvent.layout.y)}>
       <TouchableOpacity
         activeOpacity={0.7}
         onPress={toggle}
@@ -779,6 +804,13 @@ export default function AchievementsScreen() {
   const [goalCounts, setGoalCounts] = useState<DailyGoalCounts>(DEFAULT_DAILY_GOAL_COUNTS);
   const [weightDir,  setWeightDir]  = useState<'loss' | 'gain' | 'none'>('none');
   const [loading,    setLoading]    = useState(true);
+  const [forceOpenCat, setForceOpenCat] = useState<string | null>(null);
+
+  const scrollRef    = useRef<ScrollView>(null);
+  const categoryYMap = useRef<Record<string, number>>({});
+
+  const rawHighlightParam = useLocalSearchParams().highlightId;
+  const highlightId = Array.isArray(rawHighlightParam) ? rawHighlightParam[0] : (rawHighlightParam ?? undefined);
 
   useFocusEffect(
     useCallback(() => {
@@ -807,6 +839,19 @@ export default function AchievementsScreen() {
       return () => { active = false; };
     }, [])
   );
+
+  // Scroll to + open category when arriving via toast tap
+  useEffect(() => {
+    if (!highlightId || loading) return;
+    const cat = CATEGORY_ORDER.find(c => ACHIEVEMENTS.some(a => a.id === highlightId && a.category === c));
+    if (!cat) return;
+    setForceOpenCat(cat);
+    const t = setTimeout(() => {
+      const y = categoryYMap.current[cat];
+      if (y !== undefined) scrollRef.current?.scrollTo({ y: Math.max(0, y - 8), animated: true });
+    }, 450);
+    return () => clearTimeout(t);
+  }, [highlightId, loading]);
 
   // Group achievements by category
   const grouped = CATEGORY_ORDER.reduce<Record<string, AchievementDef[]>>((acc, cat) => {
@@ -867,7 +912,7 @@ export default function AchievementsScreen() {
           <Text style={{ color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontSize: 13 }}>Loading...</Text>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
+        <ScrollView ref={scrollRef} contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
 
           {/* Categories -- collapsible sections */}
           {Object.entries(grouped).map(([cat, defs]) => {
@@ -890,6 +935,7 @@ export default function AchievementsScreen() {
                             def={def}
                             unlocked={unlockedEntry ? { unlockedAt: unlockedEntry.unlockedAt, count: unlockedEntry.count } : null}
                             progressValue={progressVal}
+                            highlight={typeof highlightId === 'string' && def.id === highlightId}
                           />
                         </View>
                       );
@@ -907,6 +953,8 @@ export default function AchievementsScreen() {
                 catUnlocked={catUnlocked}
                 total={defs.length}
                 defaultOpen={false}
+                forceOpen={forceOpenCat === cat}
+                onCategoryLayout={(y) => { categoryYMap.current[cat] = y; }}
               >
                 {grid}
               </CollapsibleCategory>

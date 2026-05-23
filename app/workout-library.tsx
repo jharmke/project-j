@@ -12,7 +12,7 @@ import { storageSet } from '../utils/storage';
 import { ToastRenderer, useToast } from '../components/Toast';
 import { showAchievementToast } from '../components/AchievementToast';
 import { showCelebration } from '../components/CelebrationOverlay';
-import { checkWorkoutAchievements } from '../achievementData';
+import { checkWorkoutAchievements, getCelebTier } from '../achievementData';
 import { PRESET_PROGRAMS, PRESET_ROUTINES, PresetProgram, DayProgram, Exercise, Routine, TAG_COLOR_PALETTE, WorkoutTag, DEFAULT_TAGS } from '../workoutData';
 import { useTheme } from '../theme';
 import MuscleMap from '../components/MuscleMap';
@@ -1785,7 +1785,7 @@ export default function WorkoutLibraryScreen() {
               showToast('Program loaded', program.name, 'success');
               checkWorkoutAchievements().then(unlocked => {
                 for (const def of unlocked) {
-                  showCelebration(def.tier);
+                  showCelebration(getCelebTier(def), def.name, def);
                   showAchievementToast(def);
                 }
               });
@@ -1883,7 +1883,7 @@ export default function WorkoutLibraryScreen() {
     setEditingRoutine(null);
     checkWorkoutAchievements().then(unlocked => {
       for (const def of unlocked) {
-        showCelebration(def.tier);
+        showCelebration(getCelebTier(def), def.name, def);
         showAchievementToast(def);
       }
     });

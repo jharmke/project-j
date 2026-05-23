@@ -22,7 +22,7 @@ import { storageSet } from '../utils/storage';
 import { BIBLE_BOOKS, Book, Chapter, Verse, fetchChapter, parseReference } from '../data/bible-web';
 import { useTheme } from '../theme';
 import PrayerRequestModal from '../components/PrayerRequestModal';
-import { checkFaithAchievements } from '../achievementData';
+import { checkFaithAchievements, getCelebTier } from '../achievementData';
 import { showAchievementToast } from '../components/AchievementToast';
 import { showCelebration } from '../components/CelebrationOverlay';
 
@@ -374,7 +374,7 @@ export default function BibleScreen() {
       showToast(reflectionText.trim() ? 'Reflection saved' : 'Verse marked as read', highlightedVerseRef, 'success');
       // Faith achievement check for verse reflections
       checkFaithAchievements('verse').then(unlocked => {
-        unlocked.forEach(def => { showCelebration(def.tier, def.name); showAchievementToast(def); });
+        unlocked.forEach(def => { showCelebration(getCelebTier(def), def.name, def); showAchievementToast(def); });
       }).catch(() => {});
       router.push({ pathname: '/journal', params: { expandDate: entry.id } });
     } catch (e) {}
@@ -408,7 +408,7 @@ export default function BibleScreen() {
       showToast(`Day ${dayIndex + 1} marked complete`, plan?.shortName, 'success');
       // Faith achievement check for bible reading days
       checkFaithAchievements('bible').then(unlocked => {
-        unlocked.forEach(def => { showCelebration(def.tier, def.name); showAchievementToast(def); });
+        unlocked.forEach(def => { showCelebration(getCelebTier(def), def.name, def); showAchievementToast(def); });
       }).catch(() => {});
     } catch (e) {}
   };

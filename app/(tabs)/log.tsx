@@ -9,7 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { storageSet } from '../../utils/storage';
-import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, handleDailyGoalHit } from '../../achievementData';
+import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, handleDailyGoalHit, getCelebTier } from '../../achievementData';
 import { showAchievementToast, showDailyGoalToast } from '../../components/AchievementToast';
 import { showCelebration } from '../../components/CelebrationOverlay';
 import TooltipIcon from '../../components/TooltipIcon';
@@ -621,7 +621,7 @@ export default function LogScreen() {
             if (r.newlyUnlocked) {
               setAchievementStore(r.updatedStore);
               const def = ACHIEVEMENTS.find(a => a.id === m.id);
-              if (def) { showAchievementToast(def); showCelebration(def.tier, def.name); }
+              if (def) { showAchievementToast(def); showCelebration(getCelebTier(def), def.name, def); }
               s = r.updatedStore;
             }
           }

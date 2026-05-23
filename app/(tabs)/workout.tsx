@@ -13,7 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ToastRenderer, useToast } from '../../components/Toast';
 import { showAchievementToast } from '../../components/AchievementToast';
 import { showCelebration } from '../../components/CelebrationOverlay';
-import { checkWorkoutAchievements } from '../../achievementData';
+import { checkWorkoutAchievements, getCelebTier } from '../../achievementData';
 import { storageSet } from '../../utils/storage';
 import { useTheme } from '../../theme';
 import { useHealthKit } from '../../useHealthKit';
@@ -529,7 +529,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
   if (editingExercise) showToast('Exercise updated', form.name, 'success');
   checkWorkoutAchievements().then(unlocked => {
     for (const def of unlocked) {
-      showCelebration(def.tier);
+      showCelebration(getCelebTier(def), def.name, def);
       showAchievementToast(def);
     }
   });

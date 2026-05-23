@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react'; // useRef used in PlatinumAnimatedBorder and PlatinumGlow
+import React, { useCallback, useEffect, useRef, useState } from 'react'; // useRef used in PlatinumAnimatedBorder and PlatinumGlow
 import { Animated, Easing, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Path, Stop } from 'react-native-svg';
@@ -607,23 +607,117 @@ async function loadProgressValues(): Promise<Record<string, number>> {
     }
     values['logStreak'] = streak;
 
-    // generalJournalEntries -- personal/fitness/gratitude/workout entries only (not verse/prayer/study)
-    const GENERAL_JOURNAL_CATS = ['personal', 'fitness', 'gratitude', 'workout'];
+    // generalJournalEntries -- personal/fitness/workout entries only (gratitude is in faith)
+    const GENERAL_JOURNAL_CATS = ['personal', 'fitness', 'workout'];
     const journalRaw = await AsyncStorage.getItem('pj_bible_reflections');
-    if (journalRaw) {
-      const entries = JSON.parse(journalRaw);
-      values['generalJournalEntries'] = Array.isArray(entries)
-        ? entries.filter((e: any) => GENERAL_JOURNAL_CATS.includes(e.category)).length
-        : 0;
+    const journalEntries: Array<{ category?: string }> = journalRaw ? JSON.parse(journalRaw) : [];
+    values['generalJournalEntries'] = Array.isArray(journalEntries)
+      ? journalEntries.filter(e => GENERAL_JOURNAL_CATS.includes(e.category ?? '')).length
+      : 0;
+
+    // Faith journal counts -- verse, prayer, gratitude from pj_bible_reflections
+    if (Array.isArray(journalEntries)) {
+      values['verseReflections']  = journalEntries.filter(e => e.category === 'verse').length;
+      values['prayerEntries']     = journalEntries.filter(e => e.category === 'prayer').length;
+      values['gratitudeEntries']  = journalEntries.filter(e => e.category === 'gratitude').length;
     } else {
-      values['generalJournalEntries'] = 0;
+      values['verseReflections']  = 0;
+      values['prayerEntries']     = 0;
+      values['gratitudeEntries']  = 0;
     }
+
+    // bibleReadingDays -- cumulative completed days across all reading plans
+    const plansRaw = await AsyncStorage.getItem('pj_reading_plans');
+    const plans: Record<string, { completedDays?: number[] }> = plansRaw ? JSON.parse(plansRaw) : {};
+    values['bibleReadingDays'] = Object.values(plans).reduce(
+      (acc, prog) => acc + new Set(prog.completedDays ?? []).size,
+      0
+    );
 
   } catch (e) {
     console.log('Progress load error', e);
   }
 
   return values;
+}
+
+// ─── Collapsible Category Section ────────────────────────────────────────────
+
+function CollapsibleCategory({
+  label, icon, catUnlocked, total, defaultOpen, children,
+}: {
+  label: string; icon: string; catUnlocked: number; total: number;
+  defaultOpen: boolean; children: React.ReactNode;
+}) {
+  const { theme } = useTheme();
+  const [isOpen,        setIsOpen]        = useState(defaultOpen);
+  const [measuredHeight, setMeasuredHeight] = useState<number | null>(null);
+  const heightAnim    = useRef(new Animated.Value(defaultOpen ? 1 : 0)).current;
+  const opacityAnim   = useRef(new Animated.Value(defaultOpen ? 1 : 0)).current;
+  const translateAnim = useRef(new Animated.Value(defaultOpen ? 0 : -8)).current;
+
+  const toggle = () => {
+    const opening = !isOpen;
+    setIsOpen(opening);
+    if (opening) {
+      Animated.parallel([
+        Animated.timing(heightAnim,    { toValue: 1, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
+        Animated.timing(opacityAnim,   { toValue: 1, duration: 200, delay: 60, useNativeDriver: true }),
+        Animated.timing(translateAnim, { toValue: 0, duration: 200, delay: 60, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      ]).start();
+    } else {
+      Animated.parallel([
+        Animated.timing(heightAnim,    { toValue: 0, duration: 220, easing: Easing.in(Easing.cubic), useNativeDriver: false }),
+        Animated.timing(opacityAnim,   { toValue: 0, duration: 160, useNativeDriver: true }),
+        Animated.timing(translateAnim, { toValue: -8, duration: 160, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
+      ]).start();
+    }
+  };
+
+  const animatedHeight = measuredHeight !== null
+    ? heightAnim.interpolate({ inputRange: [0, 1], outputRange: [0, measuredHeight] })
+    : undefined;
+
+  return (
+    <View style={{ marginBottom: 28 }}>
+      {/* Ghost -- measure content height offscreen */}
+      <View
+        pointerEvents="none"
+        style={{ position: 'absolute', top: -9999, left: 0, right: 0, opacity: 0 }}
+        onLayout={e => {
+          const h = e.nativeEvent.layout.height;
+          if (measuredHeight === null && h > 0) setMeasuredHeight(h);
+        }}
+      >
+        {children}
+      </View>
+
+      {/* Header row -- tappable */}
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={toggle}
+        style={{ flexDirection: 'row', alignItems: 'center', marginBottom: isOpen && measuredHeight !== null ? 14 : 0, gap: 8, paddingVertical: 4 }}
+      >
+        <Ionicons name={icon as any} size={14} color={theme.textMuted} />
+        <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, flex: 1 }}>
+          {label}
+        </Text>
+        <Text style={{ fontSize: 9, fontFamily: 'DMSans_600SemiBold', color: catUnlocked === total ? theme.accentGreen : theme.textMuted, letterSpacing: 1, marginRight: 6 }}>
+          {catUnlocked}/{total}
+        </Text>
+        <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={12} color={theme.textMuted} />
+      </TouchableOpacity>
+
+      {/* Animated content */}
+      {animatedHeight !== undefined && (
+        <Animated.View style={{ height: animatedHeight, overflow: 'hidden' }}>
+          <Animated.View style={{ opacity: opacityAnim, transform: [{ translateY: translateAnim }] }}>
+            {children}
+          </Animated.View>
+        </Animated.View>
+      )}
+    </View>
+  );
 }
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
@@ -727,62 +821,47 @@ export default function AchievementsScreen() {
       ) : (
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }}>
 
-          {/* Categories */}
+          {/* Categories -- collapsible sections */}
           {Object.entries(grouped).map(([cat, defs]) => {
-            const catConfig  = CATEGORY_CONFIG[cat];
+            const catConfig   = CATEGORY_CONFIG[cat];
             const catUnlocked = defs.filter(d => !!store[d.id]).length;
-
-            return (
-              <View key={cat} style={{ marginBottom: 28 }}>
-                {/* Category header */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14, gap: 8 }}>
-                  <Ionicons name={catConfig.icon as any} size={14} color={theme.textMuted} />
-                  <Text style={{
-                    fontSize: 9,
-                    fontFamily: 'DMSans_700Bold',
-                    letterSpacing: 3,
-                    textTransform: 'uppercase',
-                    color: theme.textMuted,
-                    flex: 1,
-                  }}>
-                    {catConfig.label}
-                  </Text>
-                  <Text style={{
-                    fontSize: 9,
-                    fontFamily: 'DMSans_600SemiBold',
-                    color: catUnlocked === defs.length ? theme.accentGreen : theme.textMuted,
-                    letterSpacing: 1,
-                  }}>
-                    {catUnlocked}/{defs.length}
-                  </Text>
-                </View>
-
-                {/* 2-column grid -- row-pairs for equal heights */}
-                <View style={{ gap: 10 }}>
-                  {defs.reduce<AchievementDef[][]>((rows, def, i) => {
-                    if (i % 2 === 0) rows.push([def]);
-                    else rows[rows.length - 1].push(def);
-                    return rows;
-                  }, []).map((pair, rowIdx) => (
-                    <View key={rowIdx} style={{ flexDirection: 'row', gap: 10 }}>
-                      {pair.map(def => {
-                        const unlockedEntry = store[def.id] ?? null;
-                        const progressVal   = def.progressKey ? (progress[def.progressKey] ?? 0) : 0;
-                        return (
-                          <View key={def.id} style={{ flex: 1 }}>
-                            <AchievementCard
-                              def={def}
-                              unlocked={unlockedEntry ? { unlockedAt: unlockedEntry.unlockedAt, count: unlockedEntry.count } : null}
-                              progressValue={progressVal}
-                            />
-                          </View>
-                        );
-                      })}
-                      {pair.length === 1 && <View style={{ flex: 1 }} />}
-                    </View>
-                  ))}
-                </View>
+            const grid = (
+              <View style={{ gap: 10 }}>
+                {defs.reduce<AchievementDef[][]>((rows, def, i) => {
+                  if (i % 2 === 0) rows.push([def]);
+                  else rows[rows.length - 1].push(def);
+                  return rows;
+                }, []).map((pair, rowIdx) => (
+                  <View key={rowIdx} style={{ flexDirection: 'row', gap: 10 }}>
+                    {pair.map(def => {
+                      const unlockedEntry = store[def.id] ?? null;
+                      const progressVal   = def.progressKey ? (progress[def.progressKey] ?? 0) : 0;
+                      return (
+                        <View key={def.id} style={{ flex: 1 }}>
+                          <AchievementCard
+                            def={def}
+                            unlocked={unlockedEntry ? { unlockedAt: unlockedEntry.unlockedAt, count: unlockedEntry.count } : null}
+                            progressValue={progressVal}
+                          />
+                        </View>
+                      );
+                    })}
+                    {pair.length === 1 && <View style={{ flex: 1 }} />}
+                  </View>
+                ))}
               </View>
+            );
+            return (
+              <CollapsibleCategory
+                key={cat}
+                label={catConfig.label}
+                icon={catConfig.icon}
+                catUnlocked={catUnlocked}
+                total={defs.length}
+                defaultOpen={cat === 'general'}
+              >
+                {grid}
+              </CollapsibleCategory>
             );
           })}
 

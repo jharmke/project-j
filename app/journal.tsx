@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '../components/Toast';
 import { storageSet } from '../utils/storage';
 import { useTheme } from '../theme';
-import { ACHIEVEMENTS, checkAndUnlock, loadAchievements, checkMomentumAchievements } from '../achievementData';
+import { ACHIEVEMENTS, checkAndUnlock, loadAchievements, checkMomentumAchievements, checkFaithAchievements } from '../achievementData';
 import { showAchievementToast } from '../components/AchievementToast';
 import { showCelebration } from '../components/CelebrationOverlay';
 
@@ -501,8 +501,8 @@ export default function JournalScreen() {
     await saveEntries(updated);
     showToast('Entry saved', undefined, 'success');
 
-    // Journal achievement check (personal/fitness/gratitude/workout only)
-    const GENERAL_JOURNAL_CATS: Category[] = ['personal', 'fitness', 'gratitude', 'workout'];
+    // Journal achievement check (personal/fitness only -- gratitude is in faith)
+    const GENERAL_JOURNAL_CATS: Category[] = ['personal', 'fitness'];
     if (GENERAL_JOURNAL_CATS.includes(entry.category)) {
       const generalCount = updated.filter(e => GENERAL_JOURNAL_CATS.includes(e.category)).length;
       const store = await loadAchievements();
@@ -521,6 +521,15 @@ export default function JournalScreen() {
           }
         }
       }
+    }
+
+    // Faith achievement check for prayer and gratitude categories
+    if (entry.category === 'prayer' || entry.category === 'gratitude') {
+      const faithUnlocked = await checkFaithAchievements(entry.category as 'prayer' | 'gratitude');
+      faithUnlocked.forEach(def => {
+        showCelebration(def.tier, def.name);
+        showAchievementToast(def);
+      });
     }
 
     // Momentum check -- fires from anywhere, once-per-day gate handles dedup

@@ -10,6 +10,9 @@ import Reanimated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, r
 import { saveToFirebase } from '../firebaseConfig';
 import { storageSet } from '../utils/storage';
 import { ToastRenderer, useToast } from '../components/Toast';
+import { showAchievementToast } from '../components/AchievementToast';
+import { showCelebration } from '../components/CelebrationOverlay';
+import { checkWorkoutAchievements } from '../achievementData';
 import { PRESET_PROGRAMS, PRESET_ROUTINES, PresetProgram, DayProgram, Exercise, Routine, TAG_COLOR_PALETTE, WorkoutTag, DEFAULT_TAGS } from '../workoutData';
 import { useTheme } from '../theme';
 import MuscleMap from '../components/MuscleMap';
@@ -1780,6 +1783,12 @@ export default function WorkoutLibraryScreen() {
               await storageSet('pj_workout_state', JSON.stringify(updated));
               setActiveProgramName(program.name);
               showToast('Program loaded', program.name, 'success');
+              checkWorkoutAchievements().then(unlocked => {
+                for (const def of unlocked) {
+                  showCelebration(def.tier);
+                  showAchievementToast(def);
+                }
+              });
             } catch (e) {}
           }
         },
@@ -1872,6 +1881,12 @@ export default function WorkoutLibraryScreen() {
     await saveMyRoutines(updated);
     showToast(editingRoutine ? 'Routine saved' : 'Routine created', routine.name, 'success');
     setEditingRoutine(null);
+    checkWorkoutAchievements().then(unlocked => {
+      for (const def of unlocked) {
+        showCelebration(def.tier);
+        showAchievementToast(def);
+      }
+    });
   };
 
   const handleDeleteRoutine = (routine: Routine) => {

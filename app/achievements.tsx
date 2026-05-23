@@ -520,12 +520,13 @@ const CATEGORY_CONFIG: Record<string, { label: string; icon: string }> = {
   steps:     { label: 'Steps',      icon: 'footsteps-outline'   },
   weight:    { label: 'Weight',     icon: 'trending-down-outline'},
   momentum:  { label: 'Momentum',   icon: 'flame-outline'       },
+  workout:   { label: 'Workout',    icon: 'barbell-outline'     },
   faith:     { label: 'Faith',      icon: 'book-outline'        },
   nutrition: { label: 'Nutrition',  icon: 'nutrition-outline'   },
   journal:   { label: 'Journal',    icon: 'create-outline'      },
 };
 
-const CATEGORY_ORDER = ['hydration', 'steps', 'weight', 'momentum', 'faith', 'nutrition', 'journal'];
+const CATEGORY_ORDER = ['hydration', 'steps', 'weight', 'momentum', 'workout', 'faith', 'nutrition', 'journal'];
 
 // ─── Progress Value Loader ────────────────────────────────────────────────────
 // Reads AsyncStorage to figure out current progress toward each progressKey
@@ -633,6 +634,14 @@ async function loadProgressValues(): Promise<Record<string, number>> {
       (acc, prog) => acc + new Set(prog.completedDays ?? []).size,
       0
     );
+
+    // workoutDays -- days with at least one exercise logged
+    const workoutRaw = await AsyncStorage.getItem('pj_workout_state');
+    const workoutState = workoutRaw ? JSON.parse(workoutRaw) : {};
+    const workoutPrograms: Record<string, { exercises?: unknown[] }> = workoutState.programs ?? {};
+    values['workoutDays'] = Object.keys(workoutPrograms).filter(
+      key => Array.isArray(workoutPrograms[key]?.exercises) && (workoutPrograms[key].exercises?.length ?? 0) > 0
+    ).length;
 
   } catch (e) {
     console.log('Progress load error', e);

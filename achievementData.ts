@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageSet } from './utils/storage';
 
-export type AchievementCategory = 'hydration' | 'steps' | 'weight' | 'momentum' | 'faith' | 'nutrition' | 'journal';
+export type AchievementCategory = 'hydration' | 'steps' | 'weight' | 'momentum' | 'faith' | 'nutrition' | 'journal' | 'workout';
 export type AchievementTier = 'small' | 'medium' | 'large' | 'diamond';
 export type AchievementDisplayTier = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond';
 
@@ -1000,6 +1000,136 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     progressTarget: 365,
   },
 
+  // WORKOUT
+  {
+    id: 'workout_first',
+    name: 'First Rep',
+    criteria: 'Work out your first day.',
+    description: 'Every legend started somewhere.',
+    category: 'workout',
+    tier: 'small',
+    icon: 'barbell-outline',
+    iconColor: '#ef4444',
+    bgColor: 'rgba(239,68,68,0.12)',
+    progressKey: 'workoutDays',
+    progressTarget: 1,
+  },
+  {
+    id: 'workout_10',
+    name: 'Getting After It',
+    criteria: 'Work out 10 days.',
+    description: "Ten down. You're past the hardest part.",
+    category: 'workout',
+    tier: 'small',
+    icon: 'barbell',
+    iconColor: '#ef4444',
+    bgColor: 'rgba(239,68,68,0.15)',
+    progressKey: 'workoutDays',
+    progressTarget: 10,
+  },
+  {
+    id: 'workout_30',
+    name: 'Not a Phase',
+    criteria: 'Work out 30 days.',
+    description: 'Thirty workouts. The excuses had to find someone else.',
+    category: 'workout',
+    tier: 'medium',
+    icon: 'barbell',
+    iconColor: '#f87171',
+    bgColor: 'rgba(239,68,68,0.18)',
+    progressKey: 'workoutDays',
+    progressTarget: 30,
+  },
+  {
+    id: 'workout_50',
+    name: 'Committed',
+    criteria: 'Work out 50 days.',
+    description: "Fifty workouts. You're not experimenting anymore.",
+    category: 'workout',
+    tier: 'medium',
+    icon: 'barbell',
+    iconColor: '#f87171',
+    bgColor: 'rgba(239,68,68,0.20)',
+    progressKey: 'workoutDays',
+    progressTarget: 50,
+  },
+  {
+    id: 'workout_75',
+    name: 'Built for This',
+    criteria: 'Work out 75 days.',
+    description: "Seventy-five workouts. You've stopped counting and started doing. We're counting, though...",
+    category: 'workout',
+    tier: 'large',
+    icon: 'barbell',
+    iconColor: '#fca5a5',
+    bgColor: 'rgba(239,68,68,0.22)',
+    progressKey: 'workoutDays',
+    progressTarget: 75,
+  },
+  {
+    id: 'workout_100',
+    name: 'Triple Digits',
+    criteria: 'Work out 100 days.',
+    description: "A hundred workouts. We're running out of ways to say we're impressed.",
+    category: 'workout',
+    tier: 'large',
+    icon: 'barbell',
+    iconColor: '#fca5a5',
+    bgColor: 'rgba(239,68,68,0.23)',
+    progressKey: 'workoutDays',
+    progressTarget: 100,
+  },
+  {
+    id: 'workout_200',
+    name: 'Still Standing',
+    criteria: 'Work out 200 days.',
+    description: 'Two hundred down. You stopped asking if you felt like it a long time ago.',
+    category: 'workout',
+    tier: 'large',
+    displayTier: 'platinum',
+    icon: 'barbell',
+    iconColor: '#fecaca',
+    bgColor: 'rgba(239,68,68,0.25)',
+    progressKey: 'workoutDays',
+    progressTarget: 200,
+  },
+  {
+    id: 'workout_365',
+    name: '365',
+    criteria: 'Work out 365 days.',
+    description: '365 workouts. Iron sharpens iron.',
+    category: 'workout',
+    tier: 'large',
+    displayTier: 'diamond',
+    icon: 'barbell',
+    iconColor: '#fff1f2',
+    bgColor: 'rgba(239,68,68,0.30)',
+    progressKey: 'workoutDays',
+    progressTarget: 365,
+  },
+  {
+    id: 'workout_first_program',
+    name: 'Following the Plan',
+    criteria: 'Load your first training program.',
+    description: 'Random workouts had a good run.',
+    category: 'workout',
+    tier: 'small',
+    icon: 'calendar-outline',
+    iconColor: '#ef4444',
+    bgColor: 'rgba(239,68,68,0.12)',
+  },
+  {
+    id: 'workout_first_routine',
+    name: 'The Blueprint',
+    criteria: 'Save your first workout routine.',
+    description: 'You built something. Now go do it.',
+    category: 'workout',
+    tier: 'small',
+    icon: 'document-text-outline',
+    iconColor: '#ef4444',
+    bgColor: 'rgba(239,68,68,0.12)',
+  },
+
 ];
 
 // ─── Storage Helpers ──────────────────────────────────────────────────────────
@@ -1342,6 +1472,58 @@ export async function checkFaithAchievements(
     if (totalDays >= 200) await unlock('bible_200');
     if (totalDays >= 365) await unlock('bible_365');
   }
+
+  return unlockedDefs;
+}
+
+// ─── Workout Achievement Check ────────────────────────────────────────────────
+// Call after any exercise is logged, program is loaded, or routine is saved.
+// Loads its own store, writes to AsyncStorage, returns newly unlocked defs.
+
+export async function checkWorkoutAchievements(): Promise<AchievementDef[]> {
+  const store = await loadAchievements();
+  let updatedStore = store;
+  const unlockedDefs: AchievementDef[] = [];
+
+  const unlock = async (id: string) => {
+    const { newlyUnlocked: did, updatedStore: s } = await checkAndUnlock(id, updatedStore);
+    updatedStore = s;
+    if (did) {
+      const def = ACHIEVEMENTS.find(a => a.id === id);
+      if (def) unlockedDefs.push(def);
+    }
+  };
+
+  try {
+    const raw = await AsyncStorage.getItem('pj_workout_state');
+    const state = raw ? JSON.parse(raw) : {};
+    const programs: Record<string, { exercises?: unknown[] }> = state.programs ?? {};
+
+    const workoutDays = Object.keys(programs).filter(
+      key => Array.isArray(programs[key]?.exercises) && (programs[key].exercises?.length ?? 0) > 0
+    ).length;
+
+    if (workoutDays >= 1)   await unlock('workout_first');
+    if (workoutDays >= 10)  await unlock('workout_10');
+    if (workoutDays >= 30)  await unlock('workout_30');
+    if (workoutDays >= 50)  await unlock('workout_50');
+    if (workoutDays >= 75)  await unlock('workout_75');
+    if (workoutDays >= 100) await unlock('workout_100');
+    if (workoutDays >= 200) await unlock('workout_200');
+    if (workoutDays >= 365) await unlock('workout_365');
+
+    if (state.activeProgramName) {
+      await unlock('workout_first_program');
+    }
+  } catch {}
+
+  try {
+    const routinesRaw = await AsyncStorage.getItem('pj_routines');
+    const routines = routinesRaw ? JSON.parse(routinesRaw) : [];
+    if (Array.isArray(routines) && routines.length > 0) {
+      await unlock('workout_first_routine');
+    }
+  } catch {}
 
   return unlockedDefs;
 }

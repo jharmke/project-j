@@ -11,6 +11,9 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Reanimated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, runOnJS } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ToastRenderer, useToast } from '../../components/Toast';
+import { showAchievementToast } from '../../components/AchievementToast';
+import { showCelebration } from '../../components/CelebrationOverlay';
+import { checkWorkoutAchievements } from '../../achievementData';
 import { storageSet } from '../../utils/storage';
 import { useTheme } from '../../theme';
 import { useHealthKit } from '../../useHealthKit';
@@ -524,6 +527,12 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
   saveState(checks, cardioComplete, newPrograms, workoutNotes, cardioLogs, weeklyTemplate);
   closeAddExerciseModal();
   if (editingExercise) showToast('Exercise updated', form.name, 'success');
+  checkWorkoutAchievements().then(unlocked => {
+    for (const def of unlocked) {
+      showCelebration(def.tier);
+      showAchievementToast(def);
+    }
+  });
 };
 
   const removeExercise = (day: string, id: string) => {

@@ -8,7 +8,8 @@ export type AchievementDisplayTier = 'bronze' | 'silver' | 'gold' | 'platinum';
 export interface AchievementDef {
   id: string;
   name: string;
-  description: string;
+  criteria: string;       // plain factual requirement shown on card always
+  description: string;    // fun flavor text shown on card always
   category: AchievementCategory;
   tier: AchievementTier;
   icon: string;           // Ionicons name
@@ -38,6 +39,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'hydration_first',
     name: 'First Sip',
+    criteria: 'Hit your water goal for the first time.',
     description: 'The first one always hits different.',
     category: 'hydration',
     tier: 'small',
@@ -50,6 +52,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'hydration_10',
     name: 'Hydrated',
+    criteria: 'Hit your water goal 10 times.',
     description: 'Ten days. Consider us impressed.',
     category: 'hydration',
     tier: 'small',
@@ -62,6 +65,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'hydration_30',
     name: 'Bathtub',
+    criteria: 'Hit your water goal 30 times.',
     description: 'Consistency looks good on you.',
     category: 'hydration',
     tier: 'medium',
@@ -74,6 +78,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'hydration_50',
     name: 'Half Century',
+    criteria: 'Hit your water goal 50 times.',
     description: 'Fifty days. Somewhere between a habit and a superpower.',
     category: 'hydration',
     tier: 'large',
@@ -86,6 +91,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'hydration_75',
     name: 'Relentless',
+    criteria: 'Hit your water goal 75 times.',
     description: 'Your kidneys approve.',
     category: 'hydration',
     tier: 'large',
@@ -98,6 +104,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'hydration_100',
     name: 'Swimming Pool',
+    criteria: 'Hit your water goal 100 times.',
     description: '100 water goal days. We stopped being surprised by you.',
     category: 'hydration',
     tier: 'large',
@@ -111,6 +118,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'hydration_200',
     name: 'High Tide',
+    criteria: 'Hit your water goal 200 times.',
     description: "200 days. You've forgotten what it's like to not do this.",
     category: 'hydration',
     tier: 'large',
@@ -124,6 +132,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'hydration_365',
     name: "Ol' Reliable",
+    criteria: 'Hit your water goal 365 times.',
     description: "One year of hitting your water goal. Even we're speechless...",
     category: 'hydration',
     tier: 'large',
@@ -139,6 +148,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'steps_first',
     name: 'First Step',
+    criteria: 'Hit your step goal for the first time.',
     description: 'Hit your daily step goal for the first time.',
     category: 'steps',
     tier: 'small',
@@ -151,6 +161,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'steps_10',
     name: 'Getting Moving',
+    criteria: 'Hit your step goal 10 times.',
     description: 'Hit your step goal 10 times.',
     category: 'steps',
     tier: 'small',
@@ -163,6 +174,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'steps_30',
     name: 'Walk the Block',
+    criteria: 'Hit your step goal 30 times.',
     description: 'Hit your step goal 30 times.',
     category: 'steps',
     tier: 'medium',
@@ -175,6 +187,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'steps_100',
     name: 'Walked to Texas',
+    criteria: 'Hit your step goal 100 times.',
     description: 'Hit your step goal 100 times. You could walk across the state.',
     category: 'steps',
     tier: 'large',
@@ -190,6 +203,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'weight_5',
     name: 'Down 5',
+    criteria: 'Lost 5 lbs from your starting weight.',
     description: 'Lost 5 lbs from your starting weight.',
     category: 'weight',
     tier: 'medium',
@@ -202,7 +216,8 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'weight_10',
     name: 'Down 10',
-    description: 'Lost 10 lbs. That\'s a real number.',
+    criteria: 'Lost 10 lbs from your starting weight.',
+    description: "Lost 10 lbs. That's a real number.",
     category: 'weight',
     tier: 'medium',
     icon: 'trending-down',
@@ -214,6 +229,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'weight_15',
     name: 'Down 15',
+    criteria: 'Lost 15 lbs from your starting weight.',
     description: 'Lost 15 lbs. Keep going.',
     category: 'weight',
     tier: 'medium',
@@ -226,6 +242,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'weight_20',
     name: 'Down 20',
+    criteria: 'Lost 20 lbs from your starting weight.',
     description: 'Lost 20 lbs. People are noticing.',
     category: 'weight',
     tier: 'large',
@@ -238,6 +255,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'weight_25',
     name: 'Down 25',
+    criteria: 'Lost 25 lbs from your starting weight.',
     description: 'Lost 25 lbs. A quarter century of pounds gone.',
     category: 'weight',
     tier: 'large',
@@ -250,7 +268,8 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'weight_goal',
     name: 'Goal Weight',
-    description: 'Hit your goal weight. This is what it\'s all for.',
+    criteria: 'Reach your goal weight.',
+    description: "Hit your goal weight. This is what it's all for.",
     category: 'weight',
     tier: 'large',
     displayTier: 'platinum',
@@ -264,6 +283,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'streak_3',
     name: 'On a Roll',
+    criteria: 'Log 3 days in a row.',
     description: 'Logged 3 days in a row.',
     category: 'streak',
     tier: 'small',
@@ -276,6 +296,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'streak_7',
     name: 'Week Warrior',
+    criteria: 'Log 7 days in a row.',
     description: 'Logged 7 days in a row.',
     category: 'streak',
     tier: 'medium',
@@ -288,6 +309,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'streak_30',
     name: 'Unstoppable',
+    criteria: 'Log 30 days in a row.',
     description: 'Logged 30 days in a row. Habit locked in.',
     category: 'streak',
     tier: 'large',
@@ -303,6 +325,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'faith_first_journal',
     name: 'First Word',
+    criteria: 'Write your first journal entry.',
     description: 'Wrote your first journal entry.',
     category: 'faith',
     tier: 'small',
@@ -315,6 +338,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'faith_10_journal',
     name: 'Consistent Voice',
+    criteria: 'Write 10 journal entries.',
     description: 'Wrote 10 journal entries.',
     category: 'faith',
     tier: 'medium',
@@ -329,6 +353,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
   {
     id: 'general_first_log',
     name: 'Day One',
+    criteria: 'Log your first day in the app.',
     description: 'Logged your first day in the app.',
     category: 'general',
     tier: 'small',

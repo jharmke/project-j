@@ -343,10 +343,22 @@ function AchievementCard({ def, unlocked, progressValue = 0 }: AchievementCardPr
         fontFamily: 'DMSans_700Bold',
         color: isUnlocked ? theme.textPrimary : theme.textMuted,
         textAlign: 'center',
-        marginBottom: 4,
+        marginBottom: 3,
         letterSpacing: 0.3,
       }}>
         {def.name}
+      </Text>
+
+      {/* Criteria */}
+      <Text style={{
+        fontSize: 9,
+        fontFamily: 'DMSans_500Medium',
+        color: theme.textDim,
+        textAlign: 'center',
+        lineHeight: 13,
+        marginBottom: 6,
+      }}>
+        {def.criteria}
       </Text>
 
       {/* Description */}

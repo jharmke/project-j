@@ -667,6 +667,38 @@ async function loadProgressValues(): Promise<Record<string, number>> {
       key => Array.isArray(workoutPrograms[key]?.exercises) && (workoutPrograms[key].exercises?.length ?? 0) > 0
     ).length;
 
+    // nutritionGoalDays -- days where consumed is within -300/+150 of calTarget + activeCalories
+    // and at least 1 food entry was logged. Excludes today (in-progress).
+    let nutritionCalTarget = 0;
+    try {
+      const settingsRaw2 = await AsyncStorage.getItem('pj_settings');
+      const settings2    = settingsRaw2 ? JSON.parse(settingsRaw2) : {};
+      nutritionCalTarget = parseFloat(settings2.calTarget) || parseFloat(parsed.calTarget) || 0;
+    } catch {}
+    let nutritionGoalDays = 0;
+    if (nutritionCalTarget > 0) {
+      for (let i = 1; i < 365; i++) { // start at 1 to skip today
+        const d  = new Date(today);
+        d.setDate(d.getDate() - i);
+        const dk = d.toISOString().split('T')[0];
+        try {
+          const raw = await AsyncStorage.getItem(`pj_${dk}`);
+          if (raw) {
+            const day     = JSON.parse(raw);
+            const entries = Array.isArray(day.entries) ? day.entries.filter(Boolean) : [];
+            if (entries.length >= 1) {
+              const consumed       = entries.reduce((s: number, e: any) => s + (e.cal || 0), 0);
+              const adjustedTarget = nutritionCalTarget + (day.activeCalories ?? 0);
+              if (adjustedTarget > 0 && consumed >= adjustedTarget - 300 && consumed <= adjustedTarget + 150) {
+                nutritionGoalDays++;
+              }
+            }
+          }
+        } catch { /* skip */ }
+      }
+    }
+    values['nutritionGoalDays'] = nutritionGoalDays;
+
   } catch (e) {
     console.log('Progress load error', e);
   }

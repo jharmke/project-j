@@ -1667,7 +1667,7 @@ export default function SettingsScreen() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               Alert.alert('Reset Achievements', 'Clear all unlocked achievements? This cannot be undone.', [
                 { text: 'Cancel', style: 'cancel' },
-                { text: 'Reset', style: 'destructive', onPress: async () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); await AsyncStorage.removeItem('pj_achievements'); await AsyncStorage.removeItem('pj_goal_hit_counts'); await AsyncStorage.removeItem('pj_daily_goal_celebrations'); await AsyncStorage.removeItem('pj_momentum_checked'); Alert.alert('Done', 'Achievements and goal counts cleared.'); } },
+                { text: 'Reset', style: 'destructive', onPress: async () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); await AsyncStorage.removeItem('pj_achievements'); await AsyncStorage.removeItem('pj_goal_hit_counts'); await AsyncStorage.removeItem('pj_daily_goal_celebrations'); await AsyncStorage.removeItem('pj_momentum_checked'); await AsyncStorage.removeItem('pj_nutrition_ach_checked'); Alert.alert('Done', 'Achievements and goal counts cleared.'); } },
               ]);
             }}>
               <View style={{ flex: 1 }}>

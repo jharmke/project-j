@@ -10,7 +10,7 @@ import Svg, { Circle } from 'react-native-svg';
 import Reanimated, { useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
 import CustomFoodCreator from '../components/CustomFoodCreator';
 import { useToast } from '../components/Toast';
-import { ACHIEVEMENTS, checkAndUnlock, loadAchievements, checkMomentumAchievements } from '../achievementData';
+import { ACHIEVEMENTS, checkAndUnlock, loadAchievements, checkMomentumAchievements, checkNutritionAchievements } from '../achievementData';
 import { showAchievementToast } from '../components/AchievementToast';
 import { showCelebration } from '../components/CelebrationOverlay';
 import { saveToFirebase } from '../firebaseConfig';
@@ -529,6 +529,11 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
         }
         const momentumUnlocked = await checkMomentumAchievements();
         momentumUnlocked.forEach(def => {
+          showCelebration(def.tier, def.name);
+          showAchievementToast(def);
+        });
+        const nutritionUnlocked = await checkNutritionAchievements();
+        nutritionUnlocked.forEach(def => {
           showCelebration(def.tier, def.name);
           showAchievementToast(def);
         });

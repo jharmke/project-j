@@ -1130,6 +1130,114 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     bgColor: 'rgba(239,68,68,0.12)',
   },
 
+  // NUTRITION
+  {
+    id: 'nutrition_1',
+    name: 'On Point',
+    criteria: 'Hit your calorie goal for the first time.',
+    description: 'Day one of hitting your goal. The meal plan era has officially begun.',
+    category: 'nutrition',
+    tier: 'small',
+    icon: 'nutrition-outline',
+    iconColor: '#0d9268',
+    bgColor: 'rgba(13,146,104,0.15)',
+    progressKey: 'nutritionGoalDays',
+    progressTarget: 1,
+  },
+  {
+    id: 'nutrition_10',
+    name: 'Calibrated',
+    criteria: 'Hit your calorie goal 10 times.',
+    description: "Ten goal days. The 'I'll start Monday' era is officially over.",
+    category: 'nutrition',
+    tier: 'small',
+    icon: 'nutrition',
+    iconColor: '#0f9d76',
+    bgColor: 'rgba(13,146,104,0.15)',
+    progressKey: 'nutritionGoalDays',
+    progressTarget: 10,
+  },
+  {
+    id: 'nutrition_30',
+    name: 'By the Numbers',
+    criteria: 'Hit your calorie goal 30 times.',
+    description: "Thirty goal days. You're that person now. It's a compliment.",
+    category: 'nutrition',
+    tier: 'medium',
+    icon: 'nutrition',
+    iconColor: '#12a882',
+    bgColor: 'rgba(13,146,104,0.18)',
+    progressKey: 'nutritionGoalDays',
+    progressTarget: 30,
+  },
+  {
+    id: 'nutrition_50',
+    name: 'On the Dot',
+    criteria: 'Hit your calorie goal 50 times.',
+    description: "Fifty goal days. You've memorized the nutrition info for your 5 go-to foods. Don't pretend you haven't.",
+    category: 'nutrition',
+    tier: 'medium',
+    icon: 'nutrition',
+    iconColor: '#15b390',
+    bgColor: 'rgba(13,146,104,0.20)',
+    progressKey: 'nutritionGoalDays',
+    progressTarget: 50,
+  },
+  {
+    id: 'nutrition_75',
+    name: 'The Standard',
+    criteria: 'Hit your calorie goal 75 times.',
+    description: 'Seventy-five days of eating with intention. Your grocery trips are embarrassingly efficient.',
+    category: 'nutrition',
+    tier: 'large',
+    icon: 'nutrition',
+    iconColor: '#34c9a8',
+    bgColor: 'rgba(13,146,104,0.22)',
+    progressKey: 'nutritionGoalDays',
+    progressTarget: 75,
+  },
+  {
+    id: 'nutrition_100',
+    name: 'Optimized',
+    criteria: 'Hit your calorie goal 100 times.',
+    description: "100 days of hitting your window. At this point it's not a goal. It's just Tuesday.",
+    category: 'nutrition',
+    tier: 'large',
+    icon: 'nutrition',
+    iconColor: '#4ecdb2',
+    bgColor: 'rgba(13,146,104,0.22)',
+    progressKey: 'nutritionGoalDays',
+    progressTarget: 100,
+  },
+  {
+    id: 'nutrition_200',
+    name: 'Unrelenting',
+    criteria: 'Hit your calorie goal 200 times.',
+    description: "Two hundred goal days. People who say tracking doesn't work haven't met you.",
+    category: 'nutrition',
+    tier: 'large',
+    displayTier: 'platinum',
+    icon: 'nutrition',
+    iconColor: '#7dd9c5',
+    bgColor: 'rgba(13,146,104,0.25)',
+    progressKey: 'nutritionGoalDays',
+    progressTarget: 200,
+  },
+  {
+    id: 'nutrition_365',
+    name: 'No Cheat Days',
+    criteria: 'Hit your calorie goal 365 times.',
+    description: 'The app was built for people like you. We need more people like you...',
+    category: 'nutrition',
+    tier: 'large',
+    displayTier: 'diamond',
+    icon: 'nutrition',
+    iconColor: '#a8ead8',
+    bgColor: 'rgba(13,146,104,0.30)',
+    progressKey: 'nutritionGoalDays',
+    progressTarget: 365,
+  },
+
   // SLEEP
   {
     id: 'sleep_first',
@@ -1711,4 +1819,82 @@ export async function checkSleepAchievements(): Promise<AchievementDef[]> {
   } catch {}
 
   return unlockedDefs;
+}
+
+// ─── Nutrition Achievement Check ─────────────────────────────────────────────
+// Call after any food entry is saved (non-edit path only).
+// Evaluates COMPLETED days only (never today -- today's logging is in progress).
+// Uses === exact match on count so each achievement fires on exactly one qualifying day.
+// Once-per-day gate via pj_nutrition_ach_checked.
+
+export async function checkNutritionAchievements(): Promise<AchievementDef[]> {
+  // Once-per-day gate
+  const today = new Date().toISOString().split('T')[0];
+  try {
+    const gateRaw = await AsyncStorage.getItem('pj_nutrition_ach_checked');
+    if (gateRaw === today) return [];
+  } catch {}
+  try { await storageSet('pj_nutrition_ach_checked', today); } catch {}
+
+  // Load calorie target from pj_settings (with pj_profile fallback)
+  let calTarget = 0;
+  try {
+    const settingsRaw = await AsyncStorage.getItem('pj_settings');
+    const settings    = settingsRaw ? JSON.parse(settingsRaw) : {};
+    calTarget = parseFloat(settings.calTarget) || 0;
+    if (!calTarget) {
+      const profileRaw = await AsyncStorage.getItem('pj_profile');
+      const profile    = profileRaw ? JSON.parse(profileRaw) : {};
+      calTarget = parseFloat(profile.calTarget) || 0;
+    }
+  } catch {}
+  if (calTarget <= 0) return []; // no valid target, can't evaluate
+
+  // Scan all completed daily keys (exclude today -- still in progress)
+  let nutritionGoalDays = 0;
+  try {
+    const allKeys   = await AsyncStorage.getAllKeys();
+    const dailyKeys = (allKeys as string[]).filter(
+      k => /^pj_\d{4}-\d{2}-\d{2}$/.test(k) && k !== `pj_${today}`
+    );
+
+    for (const key of dailyKeys) {
+      try {
+        const raw = await AsyncStorage.getItem(key);
+        if (!raw) continue;
+        const data    = JSON.parse(raw);
+        const entries = Array.isArray(data.entries) ? data.entries.filter(Boolean) : [];
+        if (entries.length < 1) continue;
+        const consumed       = entries.reduce((sum: number, e: any) => sum + (e.cal || 0), 0);
+        const adjustedTarget = calTarget + (data.activeCalories ?? 0);
+        if (adjustedTarget <= 0) continue;
+        if (consumed >= adjustedTarget - 300 && consumed <= adjustedTarget + 150) {
+          nutritionGoalDays++;
+        }
+      } catch { /* skip corrupted day */ }
+    }
+  } catch {}
+
+  if (nutritionGoalDays === 0) return [];
+
+  // Exact match -- only the achievement whose threshold equals the current count fires
+  const milestones = [
+    { id: 'nutrition_1',   threshold: 1   },
+    { id: 'nutrition_10',  threshold: 10  },
+    { id: 'nutrition_30',  threshold: 30  },
+    { id: 'nutrition_50',  threshold: 50  },
+    { id: 'nutrition_75',  threshold: 75  },
+    { id: 'nutrition_100', threshold: 100 },
+    { id: 'nutrition_200', threshold: 200 },
+    { id: 'nutrition_365', threshold: 365 },
+  ];
+
+  const target = milestones.find(m => m.threshold === nutritionGoalDays);
+  if (!target) return [];
+
+  const store = await loadAchievements();
+  const { newlyUnlocked, updatedStore: _u } = await checkAndUnlock(target.id, store);
+  if (!newlyUnlocked) return [];
+  const def = ACHIEVEMENTS.find(a => a.id === target.id);
+  return def ? [def] : [];
 }

@@ -642,8 +642,10 @@ async function loadProgressValues(): Promise<Record<string, number>> {
 }
 
 // ─── Collapsible Category Section ────────────────────────────────────────────
-// Two-phase approach: measure in place at natural height, then switch to
-// animated container. Avoids ghost view which causes SVG badge bleed-through.
+// Mirrors settings.tsx CollapsibleSection pattern:
+//   defaultOpen  → unconstrained render for measurement, then animated container
+//   closed       → visible=false (no children rendered), ghost fires only on first open
+//   ghost at top:9999 (positive/below content) so ScrollView clips it correctly
 
 function CollapsibleCategory({
   label, icon, catUnlocked, total, defaultOpen, children,
@@ -652,34 +654,67 @@ function CollapsibleCategory({
   defaultOpen: boolean; children: React.ReactNode;
 }) {
   const { theme } = useTheme();
-  const [isOpen,  setIsOpen]  = useState(defaultOpen);
-  const [ready,   setReady]   = useState(false);
-  const hasMeasured = useRef(false);
-  const measuredH   = useRef(0);
+  const [open,        setOpen]        = useState(defaultOpen);
+  const [visible,     setVisible]     = useState(defaultOpen); // controls content rendering
+  const [measuring,   setMeasuring]   = useState(false);       // ghost for first-open measure
+  const [heightReady, setHeightReady] = useState(false);       // switches to animated container
+  const [isFullyOpen, setIsFullyOpen] = useState(false);       // overflow:visible when done
   const heightAnim    = useRef(new Animated.Value(0)).current;
   const opacityAnim   = useRef(new Animated.Value(defaultOpen ? 1 : 0)).current;
   const translateAnim = useRef(new Animated.Value(defaultOpen ? 0 : -8)).current;
+  const contentH = useRef(0);
+  const openRef  = useRef(defaultOpen);
+  openRef.current = open;
 
-  const handleLayout = (h: number) => {
-    if (hasMeasured.current || h <= 0) return;
-    hasMeasured.current = true;
-    measuredH.current = h;
-    heightAnim.setValue(defaultOpen ? h : 0);
-    setReady(true);
+  // defaultOpen: measures from the unconstrained Animated.View render
+  const onUnconstrained = (h: number) => {
+    if (h <= 0 || heightReady) return;
+    contentH.current = h;
+    heightAnim.setValue(h);
+    setHeightReady(true);
+    setIsFullyOpen(true);
+  };
+
+  // Non-defaultOpen: ghost fires on first open, then triggers open animation
+  const onGhostLayout = (h: number) => {
+    if (h <= 0) return;
+    contentH.current = h;
+    setMeasuring(false);
+    if (!openRef.current) return;
+    setHeightReady(true);
+    setVisible(true);
+    Animated.timing(heightAnim, { toValue: h, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: false })
+      .start(() => setIsFullyOpen(true));
+    Animated.parallel([
+      Animated.timing(opacityAnim,   { toValue: 1, duration: 200, delay: 60, useNativeDriver: true }),
+      Animated.timing(translateAnim, { toValue: 0, duration: 200, delay: 60, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+    ]).start();
   };
 
   const toggle = () => {
-    const opening = !isOpen;
-    setIsOpen(opening);
+    const opening = !open;
+    setOpen(opening);
+    openRef.current = opening;
     if (opening) {
-      Animated.parallel([
-        Animated.timing(heightAnim,    { toValue: measuredH.current, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
-        Animated.timing(opacityAnim,   { toValue: 1, duration: 200, delay: 60, useNativeDriver: true }),
-        Animated.timing(translateAnim, { toValue: 0, duration: 200, delay: 60, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-      ]).start();
+      opacityAnim.setValue(0);
+      translateAnim.setValue(-8);
+      if (contentH.current > 0) {
+        setVisible(true);
+        Animated.timing(heightAnim, { toValue: contentH.current, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: false })
+          .start(() => setIsFullyOpen(true));
+        Animated.parallel([
+          Animated.timing(opacityAnim,   { toValue: 1, duration: 200, delay: 60, useNativeDriver: true }),
+          Animated.timing(translateAnim, { toValue: 0, duration: 200, delay: 60, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        ]).start();
+      } else {
+        // First time opening -- trigger ghost measurement
+        setMeasuring(true);
+      }
     } else {
+      setIsFullyOpen(false);
+      Animated.timing(heightAnim, { toValue: 0, duration: 220, easing: Easing.in(Easing.cubic), useNativeDriver: false })
+        .start(() => setVisible(false));
       Animated.parallel([
-        Animated.timing(heightAnim,    { toValue: 0, duration: 220, easing: Easing.in(Easing.cubic), useNativeDriver: false }),
         Animated.timing(opacityAnim,   { toValue: 0, duration: 160, useNativeDriver: true }),
         Animated.timing(translateAnim, { toValue: -8, duration: 160, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
       ]).start();
@@ -688,11 +723,24 @@ function CollapsibleCategory({
 
   return (
     <View style={{ marginBottom: 28 }}>
-      {/* Header row */}
+      {/* Ghost -- only active during first-open measurement. top:9999 keeps it
+          below scroll content so ScrollView clips it (positive direction works,
+          negative can bypass SVG clipping on iOS). */}
+      {measuring && (
+        <View
+          style={{ position: 'absolute', opacity: 0, left: 0, right: 0, top: 9999 }}
+          pointerEvents="none"
+          onLayout={e => onGhostLayout(e.nativeEvent.layout.height)}
+        >
+          {children}
+        </View>
+      )}
+
+      {/* Header */}
       <TouchableOpacity
         activeOpacity={0.7}
         onPress={toggle}
-        style={{ flexDirection: 'row', alignItems: 'center', marginBottom: isOpen ? 14 : 0, gap: 8, paddingVertical: 4 }}
+        style={{ flexDirection: 'row', alignItems: 'center', marginBottom: open ? 14 : 0, gap: 8, paddingVertical: 4 }}
       >
         <Ionicons name={icon as any} size={14} color={theme.textMuted} />
         <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, flex: 1 }}>
@@ -701,29 +749,23 @@ function CollapsibleCategory({
         <Text style={{ fontSize: 9, fontFamily: 'DMSans_600SemiBold', color: catUnlocked === total ? theme.accentGreen : theme.textMuted, letterSpacing: 1, marginRight: 6 }}>
           {catUnlocked}/{total}
         </Text>
-        <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={12} color={theme.textMuted} />
+        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={12} color={theme.textMuted} />
       </TouchableOpacity>
 
-      {!ready ? (
-        // Measuring phase: render at natural height (defaultOpen) or clipped (closed).
-        // onLayout on inner View gives natural height regardless of outer clip.
-        defaultOpen ? (
-          <View onLayout={e => handleLayout(e.nativeEvent.layout.height)}>
-            {children}
-          </View>
-        ) : (
-          <View style={{ height: 0, overflow: 'hidden' }}>
-            <View onLayout={e => handleLayout(e.nativeEvent.layout.height)}>
-              {children}
-            </View>
-          </View>
-        )
-      ) : (
-        // Ready: animated height + fade/slide
-        <Animated.View style={{ height: heightAnim, overflow: 'hidden' }}>
+      {heightReady ? (
+        // Animated container -- overflow:visible when fully open so glow/shadows show
+        <Animated.View style={isFullyOpen ? { overflow: 'visible' } : { height: heightAnim, overflow: 'hidden' }}>
           <Animated.View style={{ opacity: opacityAnim, transform: [{ translateY: translateAnim }] }}>
-            {children}
+            {visible && children}
           </Animated.View>
+        </Animated.View>
+      ) : (
+        // Pre-measurement: unconstrained render (defaultOpen only, visible=true)
+        <Animated.View
+          onLayout={e => onUnconstrained(e.nativeEvent.layout.height)}
+          style={{ opacity: opacityAnim }}
+        >
+          {visible && children}
         </Animated.View>
       )}
     </View>

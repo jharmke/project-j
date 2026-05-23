@@ -642,6 +642,8 @@ async function loadProgressValues(): Promise<Record<string, number>> {
 }
 
 // ─── Collapsible Category Section ────────────────────────────────────────────
+// Two-phase approach: measure in place at natural height, then switch to
+// animated container. Avoids ghost view which causes SVG badge bleed-through.
 
 function CollapsibleCategory({
   label, icon, catUnlocked, total, defaultOpen, children,
@@ -650,18 +652,28 @@ function CollapsibleCategory({
   defaultOpen: boolean; children: React.ReactNode;
 }) {
   const { theme } = useTheme();
-  const [isOpen,        setIsOpen]        = useState(defaultOpen);
-  const [measuredHeight, setMeasuredHeight] = useState<number | null>(null);
-  const heightAnim    = useRef(new Animated.Value(defaultOpen ? 1 : 0)).current;
+  const [isOpen,  setIsOpen]  = useState(defaultOpen);
+  const [ready,   setReady]   = useState(false);
+  const hasMeasured = useRef(false);
+  const measuredH   = useRef(0);
+  const heightAnim    = useRef(new Animated.Value(0)).current;
   const opacityAnim   = useRef(new Animated.Value(defaultOpen ? 1 : 0)).current;
   const translateAnim = useRef(new Animated.Value(defaultOpen ? 0 : -8)).current;
+
+  const handleLayout = (h: number) => {
+    if (hasMeasured.current || h <= 0) return;
+    hasMeasured.current = true;
+    measuredH.current = h;
+    heightAnim.setValue(defaultOpen ? h : 0);
+    setReady(true);
+  };
 
   const toggle = () => {
     const opening = !isOpen;
     setIsOpen(opening);
     if (opening) {
       Animated.parallel([
-        Animated.timing(heightAnim,    { toValue: 1, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
+        Animated.timing(heightAnim,    { toValue: measuredH.current, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
         Animated.timing(opacityAnim,   { toValue: 1, duration: 200, delay: 60, useNativeDriver: true }),
         Animated.timing(translateAnim, { toValue: 0, duration: 200, delay: 60, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
       ]).start();
@@ -674,29 +686,13 @@ function CollapsibleCategory({
     }
   };
 
-  const animatedHeight = measuredHeight !== null
-    ? heightAnim.interpolate({ inputRange: [0, 1], outputRange: [0, measuredHeight] })
-    : undefined;
-
   return (
     <View style={{ marginBottom: 28 }}>
-      {/* Ghost -- measure content height offscreen */}
-      <View
-        pointerEvents="none"
-        style={{ position: 'absolute', top: -9999, left: 0, right: 0, opacity: 0 }}
-        onLayout={e => {
-          const h = e.nativeEvent.layout.height;
-          if (measuredHeight === null && h > 0) setMeasuredHeight(h);
-        }}
-      >
-        {children}
-      </View>
-
-      {/* Header row -- tappable */}
+      {/* Header row */}
       <TouchableOpacity
         activeOpacity={0.7}
         onPress={toggle}
-        style={{ flexDirection: 'row', alignItems: 'center', marginBottom: isOpen && measuredHeight !== null ? 14 : 0, gap: 8, paddingVertical: 4 }}
+        style={{ flexDirection: 'row', alignItems: 'center', marginBottom: isOpen ? 14 : 0, gap: 8, paddingVertical: 4 }}
       >
         <Ionicons name={icon as any} size={14} color={theme.textMuted} />
         <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, flex: 1 }}>
@@ -708,9 +704,23 @@ function CollapsibleCategory({
         <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={12} color={theme.textMuted} />
       </TouchableOpacity>
 
-      {/* Animated content */}
-      {animatedHeight !== undefined && (
-        <Animated.View style={{ height: animatedHeight, overflow: 'hidden' }}>
+      {!ready ? (
+        // Measuring phase: render at natural height (defaultOpen) or clipped (closed).
+        // onLayout on inner View gives natural height regardless of outer clip.
+        defaultOpen ? (
+          <View onLayout={e => handleLayout(e.nativeEvent.layout.height)}>
+            {children}
+          </View>
+        ) : (
+          <View style={{ height: 0, overflow: 'hidden' }}>
+            <View onLayout={e => handleLayout(e.nativeEvent.layout.height)}>
+              {children}
+            </View>
+          </View>
+        )
+      ) : (
+        // Ready: animated height + fade/slide
+        <Animated.View style={{ height: heightAnim, overflow: 'hidden' }}>
           <Animated.View style={{ opacity: opacityAnim, transform: [{ translateY: translateAnim }] }}>
             {children}
           </Animated.View>

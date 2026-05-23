@@ -792,7 +792,13 @@ export default function HomeScreen() {
       if (fired) { showCelebration('small', 'WATER GOAL'); showDailyGoalToast('Water Goal', hitCount, 'water', '#3b82f6'); }
       let s = achievementStore;
       s = await handleAchievementUnlock('hydration_first', s);
-      await handleAchievementUnlock('hydration_10', s);
+      s = await handleAchievementUnlock('hydration_10', s);
+      s = await handleAchievementUnlock('hydration_30', s);
+      s = await handleAchievementUnlock('hydration_50', s);
+      s = await handleAchievementUnlock('hydration_75', s);
+      s = await handleAchievementUnlock('hydration_100', s);
+      s = await handleAchievementUnlock('hydration_200', s);
+      await handleAchievementUnlock('hydration_365', s);
     }
   };
 

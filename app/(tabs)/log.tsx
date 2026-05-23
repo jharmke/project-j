@@ -604,18 +604,18 @@ export default function LogScreen() {
       const { fired, count: hitCount } = await handleDailyGoalHit('water');
       if (fired) { showCelebration('small', 'WATER GOAL'); showDailyGoalToast('Water Goal', hitCount, 'water', '#3b82f6'); }
       let s = achievementStore;
-      const r1 = await checkAndUnlock('hydration_first', s);
-      if (r1.newlyUnlocked) {
-        setAchievementStore(r1.updatedStore);
-        const d1 = ACHIEVEMENTS.find(a => a.id === 'hydration_first');
-        if (d1) { showAchievementToast(d1); showCelebration(d1.tier, d1.name); }
-        s = r1.updatedStore;
-      }
-      const r2 = await checkAndUnlock('hydration_10', s);
-      if (r2.newlyUnlocked) {
-        setAchievementStore(r2.updatedStore);
-        const d2 = ACHIEVEMENTS.find(a => a.id === 'hydration_10');
-        if (d2) { showAchievementToast(d2); showCelebration(d2.tier, d2.name); }
+      const hydrationIds = [
+        'hydration_first', 'hydration_10', 'hydration_30', 'hydration_50',
+        'hydration_75', 'hydration_100', 'hydration_200', 'hydration_365',
+      ];
+      for (const id of hydrationIds) {
+        const r = await checkAndUnlock(id, s);
+        if (r.newlyUnlocked) {
+          setAchievementStore(r.updatedStore);
+          const def = ACHIEVEMENTS.find(a => a.id === id);
+          if (def) { showAchievementToast(def); showCelebration(def.tier, def.name); }
+          s = r.updatedStore;
+        }
       }
     }
   };

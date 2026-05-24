@@ -176,8 +176,8 @@ No other toolkits needed on log tab.
 
 | Tutorial ID | Name | Covers |
 |-------------|------|--------|
-| `log_food` | Logging Food | Opening the food library (tapping + on a meal slot), the 6 tabs (Search / Recents / My Foods / Favorites / Recipes / Set Foods), searching by name, reading search results (macros strip, brand, calories), tapping a result to food detail, serving picker, gram input, stepper (1 / 1.5 / 2 servings), meal selector, logging the entry, entry appears in meal section. Favorites: how to star a food, how to use favorites tab for quick-log. Edit entry covered at end: "Tap any logged entry to edit serving, grams, or meal." |
-| `manage_log` | Managing Your Log | Editing a logged entry (changing grams, serving, meal slot), removing/deleting an entry, date navigation (logging for past/future dates), understanding meal slot totals, Today's Total updates |
+| `log_food` | Logging Food | **INTERACTIVE TUTORIAL -- navigates across 3 screens with real spotlights on every step.** Uses tutorialFood (hardcoded Grilled Chicken Breast) so tutorial food is always available and consistent. Step flow: (1) log.tsx spotlight on + button, (2) navigate to add-food, spotlight search bar, (3) spotlight tutorial food result row, (4) navigate to food-detail, spotlight amount field, (5) spotlight stepper, (6) spotlight serving picker (4 options), (7) spotlight meal selector, (8) spotlight LOG IT button + tutorialAction fires saveTutorialEntry (writes with tutorialEntry:true, skips all achievements/Firestore), (9) navigate back to log.tsx, spotlight logged entry row, (10) spotlight X delete button, (11) tutorialAction fires deleteTutorialEntry, final tips copy. Total: 11 steps. Food is actually saved and actually deleted -- zero data footprint. |
+| `manage_log` | Managing Your Log | Covers: editing a logged entry (tap to reopen), removing an entry, date navigation, meal slot totals, Today's Total. If log is empty when tutorial starts, auto-logs tutorial chicken breast first (same tutorialMode/tutorialEntry isolation), runs tutorial, auto-deletes at end. No skipping steps due to empty state. |
 | `barcode` | Barcode Scanner | Opening the scanner, what happens on a match, what happens on no match, the SET system (what it is and why), pinning a food to a barcode, unset a food, Create & Set for new foods, saved overrides persist |
 | `create_food` | Creating Your Own Food | Opening CustomFoodCreator, required fields (name + calories), optional fields (brand, macros, extended nutrition), serving size + unit, saving to My Foods library, how to edit a saved food later, Save as Copy for FatSecret foods |
 | `recipes` | Recipes | Opening recipe builder, adding ingredients via food search, ingredient rows (amount, unit, macros), total weight field, serving count, per-serving nutrition calculated automatically, saving the recipe, finding it in Recipes tab, logging a portion of a recipe |
@@ -323,6 +323,11 @@ interface TutorialStep {
   title: string              // Bebas heading
   body: { discipline: string; balanced: string; mindful: string }
   highlightPadding?: number  // default 8
+  skipIfTargetMissing?: boolean  // skip step silently if ref not mounted -- use sparingly, only for genuinely optional UI (e.g. HealthKit sleep donut that can't exist without data)
+  skipForModes?: string[]    // skip step for specific coaching modes
+  navigateTo?: string        // router path to navigate BEFORE this step renders (interactive tutorial system)
+  navigateDelay?: number     // ms to wait after navigation for refs to register (default 600ms)
+  tutorialAction?: string    // named action to fire when NEXT is tapped on this step, before advancing
 }
 
 interface Tutorial {
@@ -333,6 +338,53 @@ interface Tutorial {
 
 ### Target measurement
 `ref.current?.measureInWindow()` -- returns screen-absolute coordinates. Cutout drawn at `{ x - padding, y - padding, width + padding*2, height + padding*2 }`.
+
+---
+
+## INTERACTIVE TUTORIAL PATTERN
+
+For tutorials that cross screens (log_food is the first example), the engine supports full navigation with real spotlights on every step. No powerpoints. No text-only steps. Every step spotlights a real live UI element.
+
+### navigateTo
+When a TutorialStep has `navigateTo`, TutorialOverlay fires `router.push(navigateTo)` before rendering the step. Then it retries `measureTarget` up to 5 times with 150ms between attempts, waiting for the destination screen's ref to register. Once found, spotlights normally. If ref never appears within ~750ms total, falls back to full-screen dim (should not happen for properly wired refs).
+
+### tutorialAction
+When a TutorialStep has `tutorialAction`, tapping NEXT fires that named action BEFORE advancing to the next step. Target screens register their action callbacks via `registerTutorialAction(key, callback)` and clean up via `unregisterTutorialAction(key)` on unmount. Engine awaits the callback, then advances.
+
+Defined actions:
+- `saveTutorialEntry` -- registered by food-detail.tsx. Programmatically saves the tutorial food entry with full data isolation (see below). Fires when NEXT is tapped on the log_save_btn step.
+- `deleteTutorialEntry` -- registered by log.tsx. Finds and removes any entry with `tutorialEntry: true` from today's log, recalculates totals. Fires on the final cleanup step.
+
+### Policy: skipIfTargetMissing is NOT the answer to missing refs
+`skipIfTargetMissing` is reserved for elements that are genuinely optional and cannot exist regardless of tutorial design -- for example, the HealthKit sleep donut that simply cannot be mounted if Apple Health has no sleep data. It is NOT an acceptable workaround for "the screen isn't open yet." If a step needs a ref that isn't mounted, use `navigateTo` to get to the right screen first.
+
+---
+
+## TUTORIAL DATA ISOLATION
+
+Any data written during a tutorial must leave zero permanent footprint. The contract: tutorial data never reaches Firestore, never fires achievements, never affects streaks, never appears in stats, graphs, or any reporting. Not ever.
+
+### Implementation
+1. **Save path flag:** `tutorialMode: true` passed through saveEntry in food-detail.tsx. Bypasses: `checkAndUnlock`, `checkMomentumAchievements`, `checkNutritionAchievements`, `handleDailyGoalHit`, `showAchievementToast`, `showCelebration`, and `storageSet` Firestore mirror. Uses direct `AsyncStorage.setItem` instead to stay local only.
+2. **Entry marker:** `tutorialEntry: true` on the diary entry object itself. Permanent identifier even if the app crashes.
+3. **Programmatic cleanup:** `deleteTutorialEntry` tutorialAction at tutorial end. Removes entry from AsyncStorage, recalculates log totals.
+4. **Crash recovery:** On app launch (after auth resolves), scan `pj_YYYY-MM-DD` for today, filter out any entries with `tutorialEntry: true`, write back silently if any found. Runs before any stats, calorie card, or log tab loads. Guards against app being killed mid-tutorial leaving orphaned data.
+
+### Why crash recovery matters
+If the app is force-killed while a tutorial is running, the tutorial entry sits in AsyncStorage with no one to clean it up. Without the launch-time scan, that ghost entry could affect the calorie card, stats, or streak counts the next time the user opens the app. The scan is cheap (reads one key, writes back only if dirty) and completely silent.
+
+---
+
+## TUTORIAL FOOD: data/tutorialFood.ts
+
+Static hardcoded food. No API calls, no network dependency, always available. Used when food-detail.tsx receives `tutorialFood=chicken_breast` route param.
+
+**Grilled Chicken Breast (Generic):**
+- Per 100g (default): 165 kcal, 31g protein, 0g carbs, 3.6g fat
+- Extended nutrition: 74mg sodium, 85mg cholesterol, 1g saturated fat, 0g fiber, 0g sugar
+- Serving options: 1 oz (28g, 46 kcal) / 3 oz serving (85g, 140 kcal) / 100g default (165 kcal) / 1 breast half (172g, 284 kcal)
+
+Values are standard USDA figures for grilled chicken breast, no skin. Justin verified accurate.
 
 ### Storage
 - `pj_tutorials`: `{ [tutorialId]: { seen: boolean, completedAt?: string } }`
@@ -347,7 +399,7 @@ interface Tutorial {
 3. **Tab-level toolkit icons + ToolkitSheet modal** -- DONE 2026-05-23. ? icon far right all 5 headers. Centered fade modal (not slide-up). Per-tab tutorial lists. "All Tutorials" routes to /tutorials screen.
 4. **Take a Tour button + /tutorials screen** -- DONE 2026-05-23. 7 TooltipModals wired with breathing pulse. Dedicated app/tutorials.tsx with filter pills. Settings > Help has single row routing to it.
 5. **Meta-tutorial** -- DONE 2026-05-23. Auto-fires 1500ms after first home load, once ever.
-6. **Spotlight target wiring** -- TODO. Wire useTutorialTarget to actual card Views in all 5 tabs. Home first (cal_card_main, macros_card_main, sleep_card_main, if_card_main, yvy_card_main), then log, workout, stats, profile. Currently degrades gracefully to full-screen dim.
+6. **Spotlight target wiring + Interactive Tutorial Engine** -- IN PROGRESS. Home tab DONE (2026-05-23/24). Log tab is the active work. Log tab requires the interactive tutorial engine (navigateTo, tutorialAction, tutorial data isolation) to be built alongside the ref wiring -- the two are inseparable for log_food. Build order within log tab: (a) engine upgrades to TutorialContext + TutorialOverlay, (b) data/tutorialFood.ts, (c) add-food.tsx tutorialMode support, (d) food-detail.tsx tutorialMode + tutorialAction, (e) log.tsx refs + deleteTutorialEntry callback, (f) _layout.tsx crash cleanup, (g) tutorials.ts log_food rewrite. Workout/stats/profile wiring follows -- those tabs are single-screen so no interactive engine needed, just ref wiring.
 7. **Individual tutorials -- priority order:**
    - Logging Food (most critical -- food logging is the core habit and biggest drop-off risk)
    - Managing Your Log

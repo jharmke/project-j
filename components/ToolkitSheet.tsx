@@ -139,7 +139,7 @@ function ToolkitSheetInner({ tab, onClose }: { tab: string; onClose: () => void 
             </TouchableOpacity>
           </View>
 
-          <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Guided Tours</Text>
+          <Text style={[styles.sectionTitle, { color: theme.accentBlueRaw }]}>Guided Tours</Text>
           <Text style={[styles.sectionSub, { color: theme.textSecondary }]}>
             Walk through each feature step by step.
           </Text>

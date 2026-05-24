@@ -232,6 +232,7 @@ export default function TooltipModal({ tooltipKey, visible, onClose }: Props) {
                       borderColor: theme.accentBlueRaw,
                       flexDirection: 'row',
                       gap: 8,
+                      justifyContent: 'center',
                     }]}
                     activeOpacity={0.8}
                   >

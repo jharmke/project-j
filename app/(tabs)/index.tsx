@@ -528,6 +528,9 @@ function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen, remain
 
   const contentOpacity = ifContentAnim;
   const contentTranslate = ifContentAnim.interpolate({ inputRange: [0, 1], outputRange: [12, 0] });
+  const ifCardRef = useTutorialTarget('if_card_main');
+  const ifActiveRef = useTutorialTarget('if_card_active');
+  const ifEatingRef = useTutorialTarget('if_card_eating');
 
   const IFPill = ({ label, color }: { label: string; color: string }) => (
     <View style={{ alignSelf: 'flex-start', backgroundColor: color + '22', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
@@ -552,7 +555,7 @@ function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen, remain
   };
 
   return (
-    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
+    <View ref={ifCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
       <Ionicons name="timer" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
 
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -600,6 +603,7 @@ function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen, remain
       )}
 
       {ifStart && !ifEnd && (
+        <View ref={ifActiveRef} collapsable={false}>
         <Animated.View style={{ opacity: contentOpacity, transform: [{ translateY: contentTranslate }] }}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 }}>
             <View style={{ flex: 1 }}>
@@ -665,9 +669,11 @@ function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen, remain
             </View>
           )}
         </Animated.View>
+        </View>
       )}
 
       {ifStart && ifEnd && (
+        <View ref={ifEatingRef} collapsable={false}>
         <Animated.View style={{ opacity: contentOpacity, transform: [{ translateY: contentTranslate }] }}>
           <View style={{ borderTopWidth: 1, borderTopColor: theme.borderCardTop, paddingTop: 12, marginBottom: 14 }}>
             <View style={{ flexDirection: 'row', gap: 28, marginBottom: 12 }}>
@@ -719,6 +725,7 @@ function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen, remain
             </View>
           )}
         </Animated.View>
+        </View>
       )}
     </View>
   );
@@ -730,6 +737,21 @@ export default function HomeScreen() {
   const { showToast } = useToast();
   const { startTutorial } = useTutorial();
   const toolkitRef = useTutorialTarget('meta_toolkit_icon');
+  // ── Tutorial spotlight targets ────────────────────────────────────────────────
+  const calCardRef       = useTutorialTarget('cal_card_main');
+  const calRemainingRef  = useTutorialTarget('cal_card_remaining');
+  const calActiveRef     = useTutorialTarget('cal_card_active');
+  const calNetRef        = useTutorialTarget('cal_card_net');
+  const macrosCardRef    = useTutorialTarget('macros_card_main');
+  const macrosProteinRef = useTutorialTarget('macros_protein');
+  const macroCarbsRef    = useTutorialTarget('macros_carbs');
+  const macroFatRef      = useTutorialTarget('macros_fat');
+  const sleepCardRef     = useTutorialTarget('sleep_card_main');
+  const sleepDonutRef    = useTutorialTarget('sleep_donut');
+  const sleepStagesRef   = useTutorialTarget('sleep_stages');
+  const sleepFeelRef     = useTutorialTarget('sleep_feel');
+  const yvyCardRef       = useTutorialTarget('yvy_card_main');
+  const yvyMetricsRef    = useTutorialTarget('yvy_metrics');
   // showAchievementToast is now a direct import
 
   // Layout state
@@ -1753,7 +1775,7 @@ export default function HomeScreen() {
     const nudgeText = MINDFUL_NUDGES[new Date().getDate() % MINDFUL_NUDGES.length];
 
     return (
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, overflow: 'hidden' }]}>
+      <View ref={calCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, overflow: 'hidden' }]}>
         <Ionicons name="flame" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
         <View style={{ flexDirection:'row', alignItems:'flex-start', justifyContent:'space-between', marginBottom:4 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
@@ -1787,15 +1809,18 @@ export default function HomeScreen() {
         {/* Stat row -- hidden in Mindful */}
         {styleMode !== 'mindful' && (
           <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCardTop, paddingTop:10, flexDirection:'row', marginTop:10 }}>
-            {stats.map((s, i) => (
-              <View key={i} style={{ flex:1, alignItems: i === 1 ? 'center' : i === 2 ? 'flex-end' : 'flex-start' }}>
-                <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase', marginBottom:2 }}>{s.label}</Text>
-                <View style={{ flexDirection:'row', alignItems:'baseline', gap:2 }}>
-                  <Text style={{ fontSize:18, color: s.color, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>{s.value}</Text>
-                  <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:1 }}>kcal</Text>
+            {stats.map((s, i) => {
+              const statRef = [calRemainingRef, calActiveRef, calNetRef][i];
+              return (
+                <View key={i} ref={statRef} collapsable={false} style={{ flex:1, alignItems: i === 1 ? 'center' : i === 2 ? 'flex-end' : 'flex-start' }}>
+                  <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase', marginBottom:2 }}>{s.label}</Text>
+                  <View style={{ flexDirection:'row', alignItems:'baseline', gap:2 }}>
+                    <Text style={{ fontSize:18, color: s.color, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>{s.value}</Text>
+                    <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:1 }}>kcal</Text>
+                  </View>
                 </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
         )}
 
@@ -1818,7 +1843,7 @@ export default function HomeScreen() {
       { label: 'Fat',     val: totalFat,     goal: macroGoals.fat,     color: theme.macroFat },
     ];
     return (
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
+      <View ref={macrosCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
         <Ionicons name="nutrition" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
@@ -1829,11 +1854,12 @@ export default function HomeScreen() {
           <Text style={{ fontSize:9, color: theme.textDim, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase' }}>vs goal</Text>
         </View>
         <View style={{ gap:7 }}>
-          {macros.map(m => {
+          {macros.map((m, i) => {
             const pct = m.goal > 0 ? Math.min((m.val / m.goal) * 100, 100) : 0;
             const over = false; // macro over-threshold color removed -- always use identity colors
+            const macroRef = [macrosProteinRef, macroCarbsRef, macroFatRef][i];
             return (
-              <View key={m.label}>
+              <View key={m.label} ref={macroRef} collapsable={false}>
                 <View style={{ flexDirection:'row', alignItems:'baseline', justifyContent:'space-between', marginBottom:4 }}>
                   <Text style={{ fontSize:11, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', flex:1 }}>{m.label}</Text>
                   <View style={{ flexDirection:'row', alignItems:'baseline', gap:4, width:120, justifyContent:'flex-end' }}>
@@ -2142,7 +2168,7 @@ export default function HomeScreen() {
   const renderSleepCard = () => {
     const displaySleep = sleepOverride ?? sleepHours;
     return (
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, overflow: 'hidden' }]}>
+      <View ref={sleepCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, overflow: 'hidden' }]}>
         <Ionicons name="moon" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
         
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
@@ -2307,7 +2333,7 @@ export default function HomeScreen() {
                     </Text>
                   )}
                   {sleepStages && (
-                    <View style={{ gap:6 }}>
+                    <View ref={sleepStagesRef} collapsable={false} style={{ gap:6 }}>
                       {[{label:'Core',color:theme.sleepCore,val:coreMs},{label:'Deep',color:theme.sleepDeep,val:deepMs},{label:'REM',color:theme.sleepRem,val:remMs}].map(s => (
                         <View key={s.label} style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
                           <View style={{ width:8, height:8, borderRadius:4, backgroundColor:s.color }} />
@@ -2319,6 +2345,7 @@ export default function HomeScreen() {
                   )}
                 </View>
                 {sleepStages && (
+                  <View ref={sleepDonutRef} collapsable={false}>
                   <SleepDonut
                     coreFrac={coreFrac} deepFrac={deepFrac} remFrac={remFrac}
                     donutCirc={donutCirc} donutSize={donutSize} donutStroke={donutStroke} donutRadius={donutRadius}
@@ -2327,12 +2354,13 @@ export default function HomeScreen() {
                     score={score ?? 0} scoreColor={scoreColor}
                     shimmer={score !== null && score >= 85}
                   />
+                  </View>
                 )}
               </View>
 
               {/* Feel rating prompt -- Path 2/3 only */}
               {path !== 1 && (
-                <View style={{ marginTop:12, paddingTop:12, borderTopWidth:0.5, borderTopColor:theme.borderSubtle }}>
+                <View ref={sleepFeelRef} collapsable={false} style={{ marginTop:12, paddingTop:12, borderTopWidth:0.5, borderTopColor:theme.borderSubtle }}>
                   <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:10 }}>
                     {sleepFeelRating ? 'HOW DID YOU SLEEP?' : 'HOW DID YOU SLEEP? · REQUIRED FOR SCORE'}
                   </Text>
@@ -2759,7 +2787,7 @@ export default function HomeScreen() {
     const displayMetrics = isMindful ? mindfulSelected : selected;
 
     return (
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
+      <View ref={yvyCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
         <Ionicons name="trophy" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
         {/* Header */}
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
@@ -2791,6 +2819,7 @@ export default function HomeScreen() {
         </View>
 
         {/* Metric rows */}
+        <View ref={yvyMetricsRef} collapsable={false}>
         {displayMetrics.map((m: any, i: number) => {
           const result = isMindful ? 'tie' : results[i];
           const isSlot4 = isMindful && m.id && !['steps','sleepScore','water','net'].includes(m.id);
@@ -2839,7 +2868,7 @@ export default function HomeScreen() {
             </View>
           );
         })}
-
+        </View>
 
         {/* Results countdown -- hidden in Mindful */}
         {!isMindful && (() => {

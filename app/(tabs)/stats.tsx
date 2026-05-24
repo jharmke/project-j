@@ -17,6 +17,7 @@ import { StatsGraphCard, GRAPH_SWATCHES, MACRO_PROTEIN, MACRO_CARBS, MACRO_FAT }
 import { StatsCardEditModal } from '../../components/StatsCardEditModal';
 import TooltipIcon from '../../components/TooltipIcon';
 import { storageSet } from '../../utils/storage';
+import { showToolkit } from '../../components/ToolkitSheet';
 
 // ── Streak types and constants ────────────────────────────────────────────────
 
@@ -986,6 +987,11 @@ export default function StatsScreen() {
   return (
     <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
       <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
+        <TouchableOpacity
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); showToolkit('stats'); }}
+          style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center', marginRight: 8 }}>
+          <Ionicons name="help-circle" size={14} color={theme.accentBlue} />
+        </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={[styles.headerLabel, { color: theme.textMuted }]}>PROJECT J</Text>
           <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>Stats</Text>

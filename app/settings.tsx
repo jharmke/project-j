@@ -36,6 +36,8 @@ import {
   getPermissionStatus,
   requestNotificationPermission,
 } from '../services/notifications';
+import { TUTORIALS } from '../data/tutorials';
+import { useTutorial } from '../context/TutorialContext';
 
 type FaithJourney = 'rooted' | 'exploring' | 'notrightnow';
 
@@ -356,6 +358,7 @@ export default function SettingsScreen() {
   const { theme, themeId, accentId, setTheme, setAccent } = useTheme();
   const { user, signOut } = useAuth();
   const { showToast } = useToast();
+  const { startTutorial } = useTutorial();
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
   const [styleMode, setStyleMode] = useState<'discipline' | 'balanced' | 'mindful'>('balanced');
   const [faithJourney, setFaithJourney] = useState<FaithJourney>('rooted');
@@ -1541,6 +1544,23 @@ export default function SettingsScreen() {
               </View>
               <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
             </TouchableOpacity>
+            <Text style={{ fontSize: 9, letterSpacing: 3, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', color: theme.textMuted, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>
+              Tutorials
+            </Text>
+            {TUTORIALS.filter(t => t.id !== 'meta').map((t, i, arr) => (
+              <TouchableOpacity
+                key={t.id}
+                style={[styles.row, { borderTopColor: theme.borderCard }]}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); startTutorial(t.id); }}
+                activeOpacity={0.7}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>{t.name}</Text>
+                  <Text style={[styles.rowSub, { color: theme.textMuted }]}>{t.description}</Text>
+                </View>
+                <Ionicons name="play-circle" size={16} color={theme.accentBlue} />
+              </TouchableOpacity>
+            ))}
             <Text style={{ fontSize: 9, letterSpacing: 3, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', color: theme.textMuted, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>
               Prayer
             </Text>

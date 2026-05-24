@@ -20,6 +20,9 @@ import { runDailyNotificationScheduler } from '../services/notificationScheduler
 import { AchievementToastProvider, AchievementToastRenderer } from '../components/AchievementToast';
 import { CelebrationRenderer } from '../components/CelebrationOverlay';
 import { ToastProvider } from '../components/Toast';
+import TutorialOverlay from '../components/TutorialOverlay';
+import { ToolkitRenderer } from '../components/ToolkitSheet';
+import { TutorialProvider } from '../context/TutorialContext';
 import { ThemeProvider, useTheme } from '../theme';
 import { AuthProvider, useAuth } from '../AuthContext';
 
@@ -100,6 +103,8 @@ function RootLayoutNav() {
       <ThemedStatusBar />
       <AchievementToastRenderer />
       <CelebrationRenderer />
+      <TutorialOverlay />
+      <ToolkitRenderer />
     </>
   );
 }
@@ -121,9 +126,11 @@ export default function RootLayout() {
     <ThemeProvider>
     <ToastProvider>
     <AchievementToastProvider>
+    <TutorialProvider>
     <NavThemeProvider value={DarkTheme}>
       <RootLayoutNav />
     </NavThemeProvider>
+    </TutorialProvider>
     </AchievementToastProvider>
     </ToastProvider>
     </ThemeProvider>

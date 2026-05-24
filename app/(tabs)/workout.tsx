@@ -19,6 +19,7 @@ import { useTheme } from '../../theme';
 import { useHealthKit } from '../../useHealthKit';
 import { BLANK_DAY, DEFAULT_TAGS, DayProgram, Exercise, Routine, TAG_COLOR_PALETTE, WorkoutTag, PRESET_ROUTINES } from '../../workoutData';
 import MuscleMap from '../../components/MuscleMap';
+import { showToolkit } from '../../components/ToolkitSheet';
 
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -736,6 +737,11 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={[styles.container, { paddingTop: insets.top }]}>
         <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
+          <TouchableOpacity
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); showToolkit('workout'); }}
+            style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center', marginRight: 8 }}>
+            <Ionicons name="help-circle" size={14} color={theme.accentBlue} />
+          </TouchableOpacity>
           <View style={{ flex: 1 }}>
             <Text style={[styles.headerLabel, { color: theme.textMuted }]}>PROJECT J</Text>
             <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>Workout</Text>

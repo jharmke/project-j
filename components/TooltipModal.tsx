@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { TOOLTIP_REGISTRY, TooltipDefinition } from '../tooltipRegistry';
 import { useTheme } from '../theme';
+import { useTutorial } from '../context/TutorialContext';
 
 interface Props {
   tooltipKey: string;
@@ -12,6 +13,7 @@ interface Props {
 
 export default function TooltipModal({ tooltipKey, visible, onClose }: Props) {
   const { theme } = useTheme();
+  const { startTutorial } = useTutorial();
 
   const overlayOpacity  = useRef(new Animated.Value(0)).current;
   const cardOpacity     = useRef(new Animated.Value(0)).current;
@@ -19,6 +21,7 @@ export default function TooltipModal({ tooltipKey, visible, onClose }: Props) {
   const contentOpacity  = useRef(new Animated.Value(0)).current;
   const contentTranslateY = useRef(new Animated.Value(10)).current;
   const buttonOpacity   = useRef(new Animated.Value(0)).current;
+  const tourPulse       = useRef(new Animated.Value(0.6)).current;
 
   const def: TooltipDefinition | undefined = TOOLTIP_REGISTRY.find(t => t.key === tooltipKey);
 
@@ -50,6 +53,16 @@ export default function TooltipModal({ tooltipKey, visible, onClose }: Props) {
           // Got it button last
           Animated.timing(buttonOpacity, { toValue: 1, duration: 160, useNativeDriver: true }),
         ]).start();
+
+        // Breathing pulse on tour button
+        if (def?.tutorialId) {
+          Animated.loop(
+            Animated.sequence([
+              Animated.timing(tourPulse, { toValue: 1,   duration: 900, useNativeDriver: true }),
+              Animated.timing(tourPulse, { toValue: 0.6, duration: 900, useNativeDriver: true }),
+            ])
+          ).start();
+        }
       }, 50);
     }
   }, [visible]);
@@ -205,8 +218,32 @@ export default function TooltipModal({ tooltipKey, visible, onClose }: Props) {
               </Animated.View>
             )}
 
+            {/* Take a Tour button -- shown when a tutorial is linked to this tooltip */}
+            {def.tutorialId && (
+              <Animated.View style={{ opacity: buttonOpacity, marginTop: 20, alignSelf: 'stretch' }}>
+                <Animated.View style={{ opacity: tourPulse }}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      handleClose();
+                      setTimeout(() => startTutorial(def.tutorialId!), 350);
+                    }}
+                    style={[styles.button, {
+                      backgroundColor: theme.accentBlueRaw + '18',
+                      borderColor: theme.accentBlueRaw,
+                      flexDirection: 'row',
+                      gap: 8,
+                    }]}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="play-circle" size={16} color={theme.accentBlue} />
+                    <Text style={[styles.buttonText, { color: theme.accentBlue }]}>Take a Tour</Text>
+                  </TouchableOpacity>
+                </Animated.View>
+              </Animated.View>
+            )}
+
             {/* Got it button */}
-            <Animated.View style={{ opacity: buttonOpacity, marginTop: 20, alignSelf: 'stretch' }}>
+            <Animated.View style={{ opacity: buttonOpacity, marginTop: def.tutorialId ? 10 : 20, alignSelf: 'stretch' }}>
               <TouchableOpacity
                 onPress={handleClose}
                 style={[styles.button, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}

@@ -37,6 +37,9 @@ import {
   requestNotificationPermission,
 } from '../../services/notifications';
 import { saveStatsCards } from '../../statsCardRegistry';
+import { useTutorial, isTutorialSeen } from '../../context/TutorialContext';
+import { useTutorialTarget } from '../../hooks/useTutorialTarget';
+import { showToolkit } from '../../components/ToolkitSheet';
 
 // ─── Card Registry ────────────────────────────────────────────────────────────
 export type CardId =
@@ -725,6 +728,8 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const { showToast } = useToast();
+  const { startTutorial } = useTutorial();
+  const toolkitRef = useTutorialTarget('meta_toolkit_icon');
   // showAchievementToast is now a direct import
 
   // Layout state
@@ -1255,6 +1260,13 @@ export default function HomeScreen() {
       }
     };
     loadData();
+  }, []);
+
+  // ── Meta-tutorial: fires once on first home load ─────────────────────────────
+  useEffect(() => {
+    isTutorialSeen('meta').then(seen => {
+      if (!seen) setTimeout(() => startTutorial('meta'), 1500);
+    });
   }, []);
 
   // ── Auto-save daily ──────────────────────────────────────────────────────────
@@ -2920,6 +2932,13 @@ export default function HomeScreen() {
 
       {/* ── Header ── */}
       <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
+        <View ref={toolkitRef} collapsable={false} style={{ marginRight: 8 }}>
+          <TouchableOpacity
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); showToolkit('home'); }}
+            style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
+            <Ionicons name="help-circle" size={14} color={theme.accentBlue} />
+          </TouchableOpacity>
+        </View>
         <View style={{ flex:1 }}>
           <Text style={[styles.headerLabel, { color: theme.textMuted }]}>PROJECT J</Text>
           <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>

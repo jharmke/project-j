@@ -3,6 +3,7 @@ export interface TooltipDefinition {
   category: 'Nutrition' | 'Fitness' | 'Sleep & Recovery' | 'Faith' | 'Reports' | 'Habits';
   title: string;
   body: string;
+  tutorialId?: string;
   definitions?: { term: string; explanation: string }[];
   example?: {
     label: string;
@@ -14,6 +15,7 @@ export interface TooltipDefinition {
 export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
   {
     key: 'sleep_score',
+    tutorialId: 'sleep_card',
     category: 'Sleep & Recovery',
     title: 'Sleep Score',
     body: 'Your sleep score is a 0–100 rating calculated from three factors: how long you slept, how much Deep sleep you got, and how much REM sleep you got.\n\nDuration accounts for 40 points — scored against your sleep goal. Deep sleep accounts for 30 points, scoring highest around 20% of total sleep. REM accounts for 30 points — full credit at 22% or above, with a proportional score below that. More REM is never penalized.\n\nIf Apple Health can\'t provide stage data, your score is calculated using your feel rating (1–5) instead of stages.',
@@ -29,6 +31,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
   },
   {
     key: 'macros_today',
+    tutorialId: 'macros_card',
     category: 'Nutrition',
     title: 'Macros Today',
     body: 'Track your three core macronutrients -- protein, carbs, and fat -- against your daily goals.',
@@ -81,6 +84,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
   },
   {
     key: 'vs_yesterday',
+    tutorialId: 'yvy_card',
     category: 'Fitness',
     title: 'You vs Yesterday',
     body: 'A daily head-to-head between today you and yesterday you -- across the metrics that matter most.',
@@ -101,6 +105,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
   },
   {
     key: 'if_countdown',
+    tutorialId: 'if_card',
     category: 'Nutrition',
     title: 'Intermittent Fast',
     body: 'Track your daily fasting window from first meal to last -- and see how you did against your target.',
@@ -125,6 +130,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
   },
   {
     key: 'calories_today',
+    tutorialId: 'cal_card',
     category: 'Nutrition',
     title: 'Calories Today',
     body: 'Everything you need to know about how your calories are tracked and what each number means.',
@@ -199,6 +205,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
   },
   {
     key: 'effort_vs_results',
+    tutorialId: 'effort_vs_results',
     category: 'Reports',
     title: 'Effort & Results',
     body: 'This report compares what your logged data predicts against what actually happened. It looks at five areas: calorie deficit vs actual weight change, burn accuracy, logging consistency, macro quality, and sleep. Each section only fires when there\'s enough data to say something real.\n\nThe report can\'t see what you didn\'t log. Inconsistent logging, untracked meals, or excluded days all affect what it can tell you.',
@@ -219,6 +226,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
   },
   {
     key: 'streaks_card',
+    tutorialId: 'streaks',
     category: 'Habits',
     title: 'Streaks',
     body: 'Streaks track how many consecutive days you hit a goal or complete a habit. Each streak counts backward from today -- a streak ends the moment you miss a day.\n\nTap the gear icon to add, remove, or create custom streaks. Your configuration is saved and never reset automatically.',

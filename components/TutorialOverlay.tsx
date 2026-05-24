@@ -1,0 +1,376 @@
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Animated,
+  Dimensions,
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import type { ActiveTutorialState } from '../context/TutorialContext';
+import { useTutorial } from '../context/TutorialContext';
+import { useTheme } from '../theme';
+
+const { width: SW, height: SH } = Dimensions.get('window');
+const PAD        = 8;
+const RADIUS     = 14;
+const TAB_H      = 64;
+const BUBBLE_GAP = 12;
+const H_MARGIN   = 16;
+const SCRIM      = 'rgba(0,0,0,0.82)';
+
+type TargetRect = { x: number; y: number; w: number; h: number };
+type BubblePos  = { above: boolean; value: number };
+
+export default function TutorialOverlay() {
+  const { activeState, advanceStep, skipTutorial, getTarget } = useTutorial();
+  const { theme } = useTheme();
+
+  const [visible,     setVisible]     = useState(false);
+  const [renderState, setRenderState] = useState<ActiveTutorialState | null>(null);
+  const [bubblePos,   setBubblePos]   = useState<BubblePos>({ above: false, value: SH * 0.3 });
+
+  // Spotlight animated values -- layout props require useNativeDriver: false
+  const spotX = useRef(new Animated.Value(SW * 0.5)).current;
+  const spotY = useRef(new Animated.Value(SH * 0.5)).current;
+  const spotW = useRef(new Animated.Value(0)).current;
+  const spotH = useRef(new Animated.Value(0)).current;
+
+  // Derived animated values for bottom panel top edge and right panel left edge
+  const bottomTop = useMemo(() => Animated.add(spotY, spotH), []);
+  const rightLeft = useMemo(() => Animated.add(spotX, spotW), []);
+
+  // Overlay and bubble -- opacity/transform use useNativeDriver: true
+  const overlayOpacity = useRef(new Animated.Value(0)).current;
+  const bubbleOpacity  = useRef(new Animated.Value(0)).current;
+  const bubbleTransY   = useRef(new Animated.Value(16)).current;
+
+  const prevTutorialId = useRef<string | null>(null);
+  const prevStepIndex  = useRef<number>(-1);
+  const isExiting      = useRef(false);
+
+  // ── Measure a registered target view ──────────────────────────────────────
+  const measureTarget = useCallback((key: string): Promise<TargetRect | null> => {
+    return new Promise(resolve => {
+      if (key === 'none') { resolve(null); return; }
+      const ref = getTarget(key);
+      if (!ref?.current) { resolve(null); return; }
+      // Small delay lets layout settle after navigation or re-render
+      setTimeout(() => {
+        ref.current!.measureInWindow((x, y, w, h) => {
+          resolve(w > 0 && h > 0 ? { x, y, w, h } : null);
+        });
+      }, 60);
+    });
+  }, [getTarget]);
+
+  // ── Compute bubble position (above or below spotlight) ───────────────────
+  const computeBubblePos = useCallback((layout: TargetRect | null): BubblePos => {
+    if (!layout) return { above: false, value: SH * 0.28 };
+    const spotTop    = layout.y - PAD;
+    const spotBottom = layout.y + layout.h + PAD;
+    const spaceAbove = spotTop;
+    const spaceBelow = SH - spotBottom - TAB_H;
+    if (spaceAbove >= spaceBelow) {
+      // Bubble bottom edge = spotTop - BUBBLE_GAP
+      // In absolute coords: bottom = SH - (spotTop - BUBBLE_GAP)
+      return { above: true, value: SH - (spotTop - BUBBLE_GAP) };
+    }
+    return { above: false, value: spotBottom + BUBBLE_GAP };
+  }, []);
+
+  // ── Animate spotlight panels to a rect ───────────────────────────────────
+  const animateSpot = useCallback((layout: TargetRect | null, instant: boolean): Promise<void> => {
+    const tx = layout ? layout.x - PAD     : SW * 0.5;
+    const ty = layout ? layout.y - PAD     : SH * 0.5;
+    const tw = layout ? layout.w + PAD * 2 : 0;
+    const th = layout ? layout.h + PAD * 2 : 0;
+
+    if (instant) {
+      spotX.setValue(tx); spotY.setValue(ty);
+      spotW.setValue(tw); spotH.setValue(th);
+      return Promise.resolve();
+    }
+    return new Promise(resolve => {
+      Animated.parallel([
+        Animated.spring(spotX, { toValue: tx, tension: 120, friction: 14, useNativeDriver: false }),
+        Animated.spring(spotY, { toValue: ty, tension: 120, friction: 14, useNativeDriver: false }),
+        Animated.spring(spotW, { toValue: tw, tension: 120, friction: 14, useNativeDriver: false }),
+        Animated.spring(spotH, { toValue: th, tension: 120, friction: 14, useNativeDriver: false }),
+      ]).start(() => resolve());
+    });
+  }, [spotX, spotY, spotW, spotH]);
+
+  // ── Tutorial entry: measure → snap spotlight → fade in ───────────────────
+  const doEntry = useCallback(async (state: ActiveTutorialState) => {
+    isExiting.current = false;
+    overlayOpacity.setValue(0);
+    bubbleOpacity.setValue(0);
+    bubbleTransY.setValue(16);
+
+    const firstStep = state.tutorial.steps[state.stepIndex];
+    const layout    = await measureTarget(firstStep.targetKey);
+    const pos       = computeBubblePos(layout);
+
+    await animateSpot(layout, true);
+    setBubblePos(pos);
+    setRenderState(state);
+    setVisible(true);
+
+    // One frame delay ensures React commits the render before animation starts
+    setTimeout(() => {
+      Animated.timing(overlayOpacity, { toValue: 1, duration: 250, useNativeDriver: true }).start(() => {
+        Animated.parallel([
+          Animated.timing(bubbleOpacity, { toValue: 1, duration: 280, useNativeDriver: true }),
+          Animated.spring(bubbleTransY, { toValue: 0, tension: 160, friction: 12, useNativeDriver: true }),
+        ]).start();
+      });
+    }, 16);
+  }, [measureTarget, computeBubblePos, animateSpot]);
+
+  // ── Step transition: bubble out → move spotlight → bubble in ─────────────
+  const doStepTransition = useCallback(async (state: ActiveTutorialState) => {
+    const step = state.tutorial.steps[state.stepIndex];
+
+    await new Promise<void>(resolve => {
+      Animated.timing(bubbleOpacity, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => resolve());
+    });
+
+    const layout = await measureTarget(step.targetKey);
+    const pos    = computeBubblePos(layout);
+    setBubblePos(pos);
+    setRenderState(state);
+    await animateSpot(layout, false);
+
+    bubbleTransY.setValue(8);
+    Animated.parallel([
+      Animated.timing(bubbleOpacity, { toValue: 1, duration: 150, useNativeDriver: true }),
+      Animated.spring(bubbleTransY, { toValue: 0, tension: 200, friction: 14, useNativeDriver: true }),
+    ]).start();
+  }, [measureTarget, computeBubblePos, animateSpot]);
+
+  // ── Tutorial exit: bubble out → overlay out → unmount ────────────────────
+  const doExit = useCallback(() => {
+    isExiting.current = true;
+    Animated.timing(bubbleOpacity, { toValue: 0, duration: 180, useNativeDriver: true }).start(() => {
+      Animated.timing(overlayOpacity, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
+        setVisible(false);
+        setRenderState(null);
+        isExiting.current = false;
+      });
+    });
+  }, []);
+
+  // ── Main effect: respond to activeState changes ───────────────────────────
+  useEffect(() => {
+    if (!activeState) {
+      if (visible && !isExiting.current) doExit();
+      return;
+    }
+
+    const isNewTutorial = activeState.tutorial.id !== prevTutorialId.current;
+    const isNewStep     = activeState.stepIndex  !== prevStepIndex.current;
+
+    prevTutorialId.current = activeState.tutorial.id;
+    prevStepIndex.current  = activeState.stepIndex;
+
+    if (isNewTutorial) {
+      doEntry(activeState);
+    } else if (isNewStep) {
+      doStepTransition(activeState);
+    }
+  }, [activeState]);
+
+  if (!visible || !renderState) return null;
+
+  const step = renderState.tutorial.steps[renderState.stepIndex];
+  if (!step) return null;
+
+  const totalSteps = renderState.tutorial.steps.length;
+  const stepIdx    = renderState.stepIndex;
+  const isLastStep = stepIdx === totalSteps - 1;
+  const useDots    = totalSteps <= 6;
+  const bodyText   =
+    step.body[renderState.styleMode as 'discipline' | 'balanced' | 'mindful'] ??
+    step.body.balanced;
+
+  return (
+    <Animated.View
+      style={[StyleSheet.absoluteFill, { opacity: overlayOpacity }]}
+      pointerEvents="box-none"
+    >
+      {/* Full-screen touch absorber -- sits below bubble in z-order, blocks all background touches */}
+      <Pressable style={StyleSheet.absoluteFill} onPress={() => {}} />
+
+      {/* 4-panel scrim -- visual only, pointerEvents none (Pressable above handles touch blocking) */}
+      <Animated.View
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: spotY, backgroundColor: SCRIM }}
+        pointerEvents="none"
+      />
+      <Animated.View
+        style={{ position: 'absolute', top: bottomTop, left: 0, right: 0, bottom: 0, backgroundColor: SCRIM }}
+        pointerEvents="none"
+      />
+      <Animated.View
+        style={{ position: 'absolute', top: spotY, height: spotH, left: 0, width: spotX, backgroundColor: SCRIM }}
+        pointerEvents="none"
+      />
+      <Animated.View
+        style={{ position: 'absolute', top: spotY, height: spotH, left: rightLeft, right: 0, backgroundColor: SCRIM }}
+        pointerEvents="none"
+      />
+
+      {/* Accent ring overlaid on spotlight cutout */}
+      <Animated.View
+        style={{
+          position: 'absolute',
+          left: spotX,
+          top: spotY,
+          width: spotW,
+          height: spotH,
+          borderRadius: RADIUS,
+          borderWidth: 1.5,
+          borderColor: theme.accentBlueRaw + '99',
+        }}
+        pointerEvents="none"
+      />
+
+      {/* Callout bubble */}
+      <Animated.View
+        style={[
+          styles.bubbleWrapper,
+          bubblePos.above ? { bottom: bubblePos.value } : { top: bubblePos.value },
+          { opacity: bubbleOpacity, transform: [{ translateY: bubbleTransY }] },
+        ]}
+        pointerEvents="box-none"
+      >
+        <View
+          style={[
+            styles.bubble,
+            { backgroundColor: theme.bgSheet, borderColor: 'rgba(255,255,255,0.1)' },
+          ]}
+        >
+          {/* Header: progress indicator + skip */}
+          <View style={styles.bubbleHeader}>
+            {useDots ? (
+              <View style={styles.dotsRow}>
+                {Array.from({ length: totalSteps }).map((_, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.dot,
+                      {
+                        width: i === stepIdx ? 16 : 6,
+                        backgroundColor:
+                          i === stepIdx ? theme.accentBlueRaw : 'rgba(255,255,255,0.2)',
+                      },
+                    ]}
+                  />
+                ))}
+              </View>
+            ) : (
+              <Text style={[styles.stepText, { color: theme.textSecondary }]}>
+                {stepIdx + 1} of {totalSteps}
+              </Text>
+            )}
+            <TouchableOpacity
+              onPress={skipTutorial}
+              hitSlop={{ top: 12, right: 12, bottom: 12, left: 12 }}
+            >
+              <Text style={[styles.skipText, { color: theme.textSecondary }]}>Skip</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Title */}
+          <Text style={[styles.title, { color: theme.textPrimary }]}>{step.title}</Text>
+
+          {/* Body */}
+          <Text style={[styles.body, { color: theme.textSecondary }]}>{bodyText}</Text>
+
+          {/* Next / Done */}
+          <TouchableOpacity
+            onPress={advanceStep}
+            style={[
+              styles.nextBtn,
+              {
+                backgroundColor: theme.accentBlueBg,
+                borderColor: theme.accentBlueRaw + '4d',
+              },
+            ]}
+            activeOpacity={0.75}
+          >
+            <Text style={[styles.nextBtnText, { color: theme.accentBlueRaw }]}>
+              {isLastStep ? 'DONE' : 'NEXT'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
+    </Animated.View>
+  );
+}
+
+const styles = StyleSheet.create({
+  bubbleWrapper: {
+    position: 'absolute',
+    left: H_MARGIN,
+    right: H_MARGIN,
+  },
+  bubble: {
+    borderRadius: 14,
+    borderWidth: 0.5,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  bubbleHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  dotsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  dot: {
+    height: 6,
+    borderRadius: 3,
+  },
+  stepText: {
+    fontSize: 11,
+    fontFamily: 'DMSans_500Medium',
+    letterSpacing: 1,
+  },
+  skipText: {
+    fontSize: 12,
+    fontFamily: 'DMSans_500Medium',
+  },
+  title: {
+    fontSize: 22,
+    fontFamily: 'BebasNeue_400Regular',
+    letterSpacing: 1,
+    marginBottom: 6,
+  },
+  body: {
+    fontSize: 13,
+    fontFamily: 'DMSans_400Regular',
+    lineHeight: 20,
+    marginBottom: 14,
+  },
+  nextBtn: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  nextBtnText: {
+    fontSize: 12,
+    fontFamily: 'DMSans_700Bold',
+    letterSpacing: 1.5,
+  },
+});

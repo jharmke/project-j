@@ -8,6 +8,9 @@ export interface TutorialStep {
   navigateTo?: string;
   navigateDelay?: number;
   tutorialAction?: string;
+  // Card-specific visual override: forces a card to render a particular demo state
+  // without touching any real data. Clear on tutorial end/skip to restore real state.
+  ifCardState?: 'idle' | 'active' | 'eating';
 }
 
 export interface Tutorial {
@@ -16,6 +19,8 @@ export interface Tutorial {
   description: string;
   tab: 'home' | 'log' | 'workout' | 'stats' | 'profile';
   steps: TutorialStep[];
+  // Optional action key fired before step 0 opens (inject demo data before overlay appears)
+  preAction?: string;
 }
 
 export const TUTORIALS: Tutorial[] = [
@@ -235,49 +240,52 @@ export const TUTORIALS: Tutorial[] = [
     steps: [
       {
         targetKey: 'if_card_main',
+        ifCardState: 'idle',
         title: 'INTERMITTENT FASTING',
         body: {
-          discipline: 'IF is a time-restricted eating protocol. You eat within a defined window and fast outside it. 16:8 is the standard: 16 hours fasting, 8-hour window.',
-          balanced: 'Intermittent fasting means eating within a set window each day and not eating outside it. This card helps you track your window.',
-          mindful: 'This card is for tracking when you eat, not how much. It\'s a tool -- only use it if it feels right for you.',
+          discipline: 'IF is a time-restricted eating protocol. You eat within a defined window each day and fast outside it. 16:8 is the standard: 16 hours fasting, 8-hour eating window.',
+          balanced: 'Intermittent fasting means eating within a set window each day and fasting outside it. This card tracks your window so you do not have to think about it.',
+          mindful: 'This card tracks when you eat, not how much. It is a simple tool for creating a gentle rhythm around meals. Use it only if it feels right for you.',
         },
       },
       {
         targetKey: 'if_card_main',
+        ifCardState: 'idle',
         title: 'THE CYCLE',
         body: {
-          discipline: 'Three stages, three buttons. START FAST begins the countdown. TAP WHEN YOU EAT the moment you break your fast -- this opens your eating window. LAST MEAL closes it when you\'re done for the day. That\'s the whole loop.',
-          balanced: 'The card walks you through three stages. START FAST begins your fast. When you eat your first meal, tap TAP WHEN YOU EAT to open your window. When you\'re done eating for the day, tap LAST MEAL to close it.',
-          mindful: 'Three gentle transitions: start your fast, mark when you first eat, and note your last meal. The card guides you through each one. Tap when it feels right -- no pressure to be exact.',
+          discipline: 'Two taps, one daily cycle. The green button marks when you ate your first meal and opens your eating window. LAST MEAL closes it when you are done for the day. Everything in between is your window.',
+          balanced: 'The cycle is two taps. Tap the green button when you eat your first meal to open your eating window. Tap LAST MEAL when you are done eating for the day to close it.',
+          mindful: 'The card tracks two moments each day -- when your eating window opens and when it closes. Tap the green button at your first meal. Tap LAST MEAL when you are done.',
         },
       },
       {
         targetKey: 'if_card_active',
-        title: 'DURING YOUR FAST',
-        skipIfTargetMissing: true,
+        ifCardState: 'active',
+        title: 'YOUR EATING WINDOW',
         body: {
-          discipline: 'The countdown shows time remaining. TAP WHEN YOU EAT closes your fast and starts your eating window. Do it exactly when you eat your first bite.',
-          balanced: 'While fasting, the countdown shows how much time remains. When you eat your first meal, tap TAP WHEN YOU EAT to open your window.',
-          mindful: 'The green button appears when you\'re ready to eat. Tap it when you eat your first meal. No need to wait for the perfect moment.',
+          discipline: 'Once you tap the green button, your eating window opens and the countdown starts. Eat your meals. The window closes when the timer hits zero or when you tap LAST MEAL -- whichever comes first.',
+          balanced: 'Once your eating window is open, the countdown shows how much time remains. Eat normally during this window. Tap LAST MEAL when you are done eating for the day.',
+          mindful: 'Once your window opens, eat at your own pace. The countdown shows time remaining. Tap LAST MEAL when you are done -- no pressure to finish before the timer.',
         },
       },
       {
-        targetKey: 'if_card_eating',
-        title: 'YOUR EATING WINDOW',
-        skipIfTargetMissing: true,
+        targetKey: 'if_card_active',
+        ifCardState: 'active',
+        title: 'LAST MEAL',
         body: {
-          discipline: 'Your eating window is open. Eat your meals. When you\'re done for the day, tap LAST MEAL to log it and close the window. Start your next fast.',
-          balanced: 'During your eating window, eat normally. When you\'re done with your last meal, tap LAST MEAL to log when you finished eating.',
-          mindful: 'Eat when you\'re hungry during your window. Tap LAST MEAL when you\'re done for the day -- this logs your window and prepares the next cycle.',
+          discipline: 'When you are done eating for the day, tap LAST MEAL. It logs the exact time your window closed and starts your next fast. Tap it at the right moment -- your window analytics depend on accuracy.',
+          balanced: 'When you are done with your last meal, tap LAST MEAL to close your eating window. The card records your window duration and resets for tomorrow.',
+          mindful: 'Tap LAST MEAL when eating feels complete for the day. There is no wrong answer -- you know your body. The card simply records when you said you were done.',
         },
       },
       {
         targetKey: 'if_card_main',
+        ifCardState: 'eating',
         title: 'EDITING TIMES',
         body: {
-          discipline: 'Once a fast or eating window is active, Edit Start and Edit End let you correct your times. Accuracy matters -- your window analytics depend on it.',
-          balanced: 'Once your fast is running, you can tap Edit Start or Edit End to fix your times if you forgot to tap at the right moment.',
-          mindful: 'While a fast is active, Edit Start and Edit End let you adjust your times anytime. No judgment on what you choose.',
+          discipline: 'Forgot to tap at the exact moment? Edit Start and Edit End let you correct your times after the fact. Accuracy here matters -- your window analytics depend on it.',
+          balanced: 'If you forgot to tap at the right moment, use Edit Start or Edit End to correct your times. The card updates your window duration automatically.',
+          mindful: 'Tapped at the wrong time? Edit Start and Edit End let you adjust anytime. No judgment -- just update it when you get a chance.',
         },
       },
     ],
@@ -671,14 +679,24 @@ export const TUTORIALS: Tutorial[] = [
     name: 'Workout Basics',
     description: 'Check off exercises, log sets and reps, and rate your session.',
     tab: 'workout',
+    preAction: 'addTutorialExercise',
     steps: [
       {
         targetKey: 'workout_day_scroller',
         title: 'DAY SCROLLER',
         body: {
-          discipline: 'Dots across the top represent your week. Filled dot = exercises assigned. Active day is accented. Navigate your training week here.',
-          balanced: 'The dots at the top show each day of the week. The colored dot is today. Tap any day to switch to it.',
-          mindful: 'The dots show the days of your week. The highlighted one is today. Tap any dot to see a different day.',
+          discipline: 'Dots across the top represent your week. Active day is accented. We added demo exercises -- Bench Press and Treadmill -- at the top of today\'s list to walk through the full screen.',
+          balanced: 'The dots show each day of your week. The highlighted dot is today. We added a Bench Press and Treadmill demo below to walk you through the workout screen.',
+          mindful: 'The dots show the days of your week. The highlighted one is today. We added two demo exercises below so we can explore the screen together.',
+        },
+      },
+      {
+        targetKey: 'workout_fab',
+        title: 'ADDING EXERCISES',
+        body: {
+          discipline: 'Tap this + FAB to add exercises. Choose Add Exercise to search or browse the full library. Choose Load Routine to load a saved workout block. Programs (Library → Programs) fill your whole week automatically.',
+          balanced: 'Tap + to add exercises. Add Exercise opens the library where you can search by name or browse by muscle group. Load Routine fills the day from a saved workout.',
+          mindful: 'Tap + whenever you want to add an exercise. Search or browse the library and tap any exercise to add it. You can also load a saved routine if you have one.',
         },
       },
       {
@@ -703,9 +721,18 @@ export const TUTORIALS: Tutorial[] = [
         targetKey: 'workout_cardio_fields',
         title: 'CARDIO EXERCISES',
         body: {
-          discipline: 'Cardio exercises show duration, distance, speed, incline, resistance, HR, and calories. Log what you actually tracked. Data quality matters.',
-          balanced: 'Cardio exercises have fields for duration, distance, speed, and other metrics. Fill in what you tracked.',
-          mindful: 'Cardio fields let you log how your session went. Fill in whatever you tracked -- there\'s no minimum.',
+          discipline: 'Cardio exercises log duration, distance, speed, incline, HR, and calories. This Treadmill demo shows what a filled-in cardio row looks like. Tap the pencil to edit any cardio exercise and fill in what you tracked.',
+          balanced: 'Cardio exercises have their own set of fields -- duration, distance, speed, and more. This demo Treadmill shows what a logged cardio exercise looks like. Tap the pencil to edit.',
+          mindful: 'This demo Treadmill shows what a cardio exercise looks like when logged. Tap the pencil on any cardio exercise to fill in whatever you tracked -- no minimum required.',
+        },
+      },
+      {
+        targetKey: 'workout_exercise_row',
+        title: 'EDITING AND REMOVING',
+        body: {
+          discipline: 'Pencil icon edits the exercise -- update sets, reps, rest, or name. Trash icon removes it permanently. Long-press the left grip to drag and reorder the list. All changes save automatically.',
+          balanced: 'Tap the pencil to edit an exercise, the trash to remove it, or long-press the left handle to drag it to a different position. Everything saves instantly.',
+          mindful: 'Tap the pencil to adjust any exercise. Tap the trash to remove one that doesn\'t fit your session. Long-press the left grip to rearrange the order.',
         },
       },
       {
@@ -719,11 +746,12 @@ export const TUTORIALS: Tutorial[] = [
       },
       {
         targetKey: 'workout_effort',
+        tutorialAction: 'deleteTutorialExercise',
         title: 'TODAY\'S EFFORT',
         body: {
-          discipline: 'Rate your session 1-10 at the end. This feeds your Effort vs Results analysis in Stats. Honest ratings only -- the analytics depend on it.',
-          balanced: 'After your workout, rate how hard you pushed on a scale of 1-10. This data feeds your performance analysis in Stats.',
-          mindful: 'At the end of your session, rate how it felt on a scale of 1-10. There\'s no right answer -- just your honest read.',
+          discipline: 'Rate your session 1-10 at the end. This feeds your Effort vs Results analysis in Stats. Honest ratings only -- the analytics depend on it. Tap DONE and the two demo exercises will be removed.',
+          balanced: 'After your workout, rate how hard you pushed on a scale of 1-10. This data feeds your performance analysis in Stats. Tap DONE and we will clean up the demo exercises.',
+          mindful: 'At the end of your session, rate how it felt on a scale of 1-10. There\'s no right answer -- just your honest read. Tap DONE and we will remove the demo exercises.',
         },
       },
     ],

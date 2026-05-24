@@ -28,13 +28,18 @@ type BubblePos  = { above: boolean; value: number };
 // Returns true when a measured rect is outside the visible viewport.
 // Off-screen targets fall back to full-screen dim + centered bubble so
 // the user can always reach Skip -- preventing input-absorber freeze.
+// Also returns true when the bottom of the target clips under the tab bar
+// (top visible but bottom obscured) -- triggers scroll to bring it clear.
 function isOffScreen(l: TargetRect | null): boolean {
   if (!l) return false;
-  return l.y + l.h < 0 || l.y > SH - TAB_H - 50;
+  if (l.y + l.h < 0) return true;                  // off top
+  if (l.y > SH - TAB_H - 50) return true;          // off bottom
+  if (l.y + l.h > SH - TAB_H - 24) return true;    // bottom clips into tab bar
+  return false;
 }
 
 export default function TutorialOverlay() {
-  const { activeState, advanceStep, skipTutorial, getTarget } = useTutorial();
+  const { activeState, advanceStep, skipTutorial, getTarget, getScrollViews } = useTutorial();
   const { theme } = useTheme();
 
   const [visible,     setVisible]     = useState(false);
@@ -92,6 +97,37 @@ export default function TutorialOverlay() {
     return null;
   }, [measureTarget]);
 
+  // ── Scroll a registered ScrollView to bring an off-screen target into view ─
+  // Uses measureLayout so we get the target's Y within the scroll content,
+  // not the viewport -- then calls scrollTo with 80px top padding.
+  const scrollToTarget = useCallback(async (key: string): Promise<void> => {
+    if (key === 'none') return;
+    const targetRef = getTarget(key);
+    if (!targetRef?.current) return;
+    const svMap = getScrollViews();
+    const svRefs = Object.values(svMap);
+    for (const svRef of svRefs) {
+      if (!svRef?.current) continue;
+      let didScroll = false;
+      await new Promise<void>(resolve => {
+        (targetRef.current as any).measureLayout(
+          svRef.current,
+          (_x: number, y: number) => {
+            (svRef.current as any).scrollTo({ y: Math.max(0, y - 160), animated: true });
+            didScroll = true;
+            resolve();
+          },
+          () => resolve(), // layout failed -- try next scroll view
+        );
+      });
+      if (didScroll) {
+        // Let the scroll animation settle before re-measuring
+        await new Promise<void>(r => setTimeout(r, 450));
+        break; // only one active ScrollView at a time per tab
+      }
+    }
+  }, [getTarget, getScrollViews]);
+
   // ── Compute bubble position (above or below spotlight) ───────────────────
   const computeBubblePos = useCallback((layout: TargetRect | null): BubblePos => {
     if (!layout) return { above: false, value: SH * 0.28 };
@@ -129,7 +165,7 @@ export default function TutorialOverlay() {
     });
   }, [spotX, spotY, spotW, spotH]);
 
-  // ── Tutorial entry: measure → snap spotlight → fade in ───────────────────
+  // ── Tutorial entry: measure → (scroll if needed) → snap spotlight → fade in ─
   const doEntry = useCallback(async (state: ActiveTutorialState) => {
     isExiting.current = false;
     overlayOpacity.setValue(0);
@@ -138,7 +174,12 @@ export default function TutorialOverlay() {
 
     const firstStep = state.tutorial.steps[state.stepIndex];
     const rawLayout = await measureTarget(firstStep.targetKey);
-    const layout    = isOffScreen(rawLayout) ? null : rawLayout;
+    let layout = isOffScreen(rawLayout) ? null : rawLayout;
+    if (isOffScreen(rawLayout)) {
+      await scrollToTarget(firstStep.targetKey);
+      const remeasured = await measureTargetWithRetry(firstStep.targetKey);
+      layout = isOffScreen(remeasured) ? null : remeasured;
+    }
     const pos       = computeBubblePos(layout);
 
     await animateSpot(layout, true);
@@ -156,7 +197,7 @@ export default function TutorialOverlay() {
         ]).start();
       });
     }, 16);
-  }, [measureTarget, computeBubblePos, animateSpot]);
+  }, [measureTarget, measureTargetWithRetry, scrollToTarget, computeBubblePos, animateSpot]);
 
   // ── Step transition: bubble out → (navigate?) → move spotlight → bubble in ─
   const doStepTransition = useCallback(async (state: ActiveTutorialState) => {
@@ -189,7 +230,12 @@ export default function TutorialOverlay() {
       rawLayout = await measureTarget(step.targetKey);
     }
 
-    const layout = isOffScreen(rawLayout) ? null : rawLayout;
+    let layout = isOffScreen(rawLayout) ? null : rawLayout;
+    if (isOffScreen(rawLayout)) {
+      await scrollToTarget(step.targetKey);
+      const remeasured = await measureTargetWithRetry(step.targetKey);
+      layout = isOffScreen(remeasured) ? null : remeasured;
+    }
     const pos    = computeBubblePos(layout);
     setBubblePos(pos);
     setRenderState(state);
@@ -201,7 +247,7 @@ export default function TutorialOverlay() {
       Animated.timing(bubbleOpacity, { toValue: 1, duration: 150, useNativeDriver: true }),
       Animated.spring(bubbleTransY, { toValue: 0, tension: 200, friction: 14, useNativeDriver: true }),
     ]).start();
-  }, [measureTarget, measureTargetWithRetry, computeBubblePos, animateSpot]);
+  }, [measureTarget, measureTargetWithRetry, scrollToTarget, computeBubblePos, animateSpot]);
 
   // ── Tutorial exit: bubble out → overlay out → unmount ────────────────────
   const doExit = useCallback(() => {

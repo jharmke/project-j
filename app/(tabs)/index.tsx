@@ -488,13 +488,41 @@ function PulseSegment({ value, style, shouldPulse }: { value: string; style: any
   return <Animated.Text style={[style, { transform: [{ scale: anim }] }]}>{value}</Animated.Text>;
 }
 
-function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen, remaining, windowEnd, ifResultLabel, ifResultColor, ifTargetMs, ifActualMs, showTimePicker, showEndTimePicker, pickerTime, todayKey, styles, formatTime, formatHrMin, setIfMethod, setIfCustomHours, setIfStart, setIfEnd, setShowTimePicker, setShowEndTimePicker, setPrickerTime, onStartFast, onLastMeal, onResetFast, onCancelFast, onResetComplete, onConfirmStart, onConfirmEnd }: any) {
+function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen, remaining, windowEnd, ifResultLabel, ifResultColor, ifTargetMs, ifActualMs, showTimePicker, showEndTimePicker, pickerTime, todayKey, styles, formatTime, formatHrMin, setIfMethod, setIfCustomHours, setIfStart, setIfEnd, setShowTimePicker, setShowEndTimePicker, setPrickerTime, onStartFast, onLastMeal, onResetFast, onCancelFast, onResetComplete, onConfirmStart, onConfirmEnd, tutorialOverrideState }: any) {
   const ifPulse = useRef(new Animated.Value(1)).current;
   const ifContentAnim = useRef(new Animated.Value(0)).current;
   const ifContentReady = useRef(false);
 
+  // ── Stable demo values computed once on mount (never touch real data) ──────
+  const demoRef = useRef({
+    start:     Date.now() - 6 * 60 * 60 * 1000,       // 6 hours ago
+    windowEnd: Date.now() + 2.75 * 60 * 60 * 1000,    // 2h 45m from now
+    end:       Date.now() - 30 * 60 * 1000,            // 30 min ago (eating window closed)
+  });
+
+  // ── Effective display values -- real props unless a tutorial override is active ──
+  const dIsIdle    = tutorialOverrideState === 'idle';
+  const dIsActive  = tutorialOverrideState === 'active';
+  const dIsEating  = tutorialOverrideState === 'eating';
+  const effIfStart    = dIsIdle ? null : (dIsActive || dIsEating ? demoRef.current.start : ifStart);
+  const effIfEnd      = dIsIdle ? null : (dIsEating ? demoRef.current.end : dIsActive ? null : ifEnd);
+  const effIsOpen     = dIsActive ? true : isOpen;
+  const effWindowEnd  = dIsActive ? demoRef.current.windowEnd : windowEnd;
+  const effRemaining  = dIsActive ? 2.75 * 60 * 60 * 1000 : remaining;
+  const effIfTargetMs = dIsEating ? 16 * 60 * 60 * 1000 : ifTargetMs;
+  const effIfActualMs = dIsEating ? 8 * 60 * 60 * 1000 : ifActualMs;
+  const effResultLabel = dIsEating ? 'COMPLETE' : ifResultLabel;
+  const effResultColor = dIsEating ? theme.accentGreen : ifResultColor;
+
+  // ── When tutorial forces a state with content, snap animation to fully visible ─
   useEffect(() => {
-    if (!ifStart) {
+    if (dIsActive || dIsEating) {
+      ifContentAnim.setValue(1);
+    }
+  }, [tutorialOverrideState]);
+
+  useEffect(() => {
+    if (!effIfStart) {
       const pulse = Animated.loop(
         Animated.sequence([
           Animated.timing(ifPulse, { toValue: 1.025, duration: 1400, useNativeDriver: true }),
@@ -505,26 +533,26 @@ function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen, remain
       pulse.start();
       return () => pulse.stop();
     }
-  }, [ifStart]);
+  }, [effIfStart]);
 
   useEffect(() => {
-    if (ifStart && !ifContentReady.current) {
+    if (effIfStart && !ifContentReady.current) {
       ifContentReady.current = true;
       ifContentAnim.setValue(0);
       Animated.timing(ifContentAnim, { toValue: 1, duration: 350, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
     }
-    if (!ifStart) {
+    if (!effIfStart) {
       ifContentReady.current = false;
       ifContentAnim.setValue(0);
     }
-  }, [ifStart]);
+  }, [effIfStart]);
 
   useEffect(() => {
-    if (ifEnd) {
+    if (effIfEnd) {
       ifContentAnim.setValue(0);
       Animated.timing(ifContentAnim, { toValue: 1, duration: 350, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
     }
-  }, [ifEnd]);
+  }, [effIfEnd]);
 
   const contentOpacity = ifContentAnim;
   const contentTranslate = ifContentAnim.interpolate({ inputRange: [0, 1], outputRange: [12, 0] });
@@ -564,10 +592,10 @@ function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen, remain
           <Text style={[styles.cardLabel, { marginBottom: 0, color: theme.textMuted }]}>Intermittent Fast · {ifMethod}</Text>
           <TooltipIcon tooltipKey="if_countdown" />
         </View>
-        {ifStart && (
+        {effIfStart && (
           <IFPill
-            label={ifEnd ? ifResultLabel : isOpen ? 'OPEN' : 'CLOSED'}
-            color={ifEnd ? ifResultColor : isOpen ? theme.accentGreen : theme.accentRed}
+            label={effIfEnd ? effResultLabel : effIsOpen ? 'OPEN' : 'CLOSED'}
+            color={effIfEnd ? effResultColor : effIsOpen ? theme.accentGreen : theme.accentRed}
           />
         )}
       </View>
@@ -590,7 +618,7 @@ function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen, remain
         </View>
       )}
 
-      {!ifStart && (
+      {!effIfStart && (
         <Animated.View style={{ transform: [{ scale: ifPulse }] }}>
           <PressableButton
             style={{ backgroundColor: theme.accentGreen, borderRadius: 8, paddingVertical: 9, paddingHorizontal: 14, alignItems: 'center' }}
@@ -602,16 +630,16 @@ function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen, remain
         </Animated.View>
       )}
 
-      {ifStart && !ifEnd && (
+      {effIfStart && !effIfEnd && (
         <View ref={ifActiveRef} collapsable={false}>
         <Animated.View style={{ opacity: contentOpacity, transform: [{ translateY: contentTranslate }] }}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 12 }}>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.ifLabel, { marginBottom: 4, color: theme.textMuted }]}>{isOpen ? 'Window closes in' : 'Window closed'}</Text>
-              {remaining ? (() => {
-                const [hh, mm, ss] = formatTime(remaining).split(':');
+              <Text style={[styles.ifLabel, { marginBottom: 4, color: theme.textMuted }]}>{effIsOpen ? 'Window closes in' : 'Window closed'}</Text>
+              {effRemaining ? (() => {
+                const [hh, mm, ss] = formatTime(effRemaining).split(':');
                 const seg = [styles.ifCountdown, { color: theme.accentBlueRaw }];
-                const shouldPulse = remaining <= 30 * 60 * 1000;
+                const shouldPulse = effRemaining <= 30 * 60 * 1000;
                 return (
                   <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
                     <PulseSegment value={hh} style={seg} shouldPulse={shouldPulse} />
@@ -629,14 +657,14 @@ function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen, remain
               <View style={{ alignItems: 'center' }}>
                 <Text style={[styles.ifLabel, { color: theme.textMuted, marginBottom: 2 }]}>Started</Text>
                 <Text style={{ fontSize: 22, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>
-                  {new Date(ifStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(effIfStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </Text>
               </View>
-              {windowEnd && (
+              {effWindowEnd && (
                 <View style={{ alignItems: 'center' }}>
                   <Text style={[styles.ifLabel, { color: theme.textMuted, marginBottom: 2 }]}>Closes</Text>
                   <Text style={{ fontSize: 22, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>
-                    {new Date(windowEnd).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(effWindowEnd).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </Text>
                 </View>
               )}
@@ -665,30 +693,30 @@ function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen, remain
                   <Text style={{ color: theme.accentGreen, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Confirm</Text>
                 </TouchableOpacity>
               </View>
-              <DateTimePicker mode="time" value={pickerTime || (ifStart ? new Date(ifStart) : new Date())} display="spinner" textColor={theme.textPrimary} onChange={(_, d) => { if (d) setPrickerTime(d); }} />
+              <DateTimePicker mode="time" value={pickerTime || (effIfStart ? new Date(effIfStart) : new Date())} display="spinner" textColor={theme.textPrimary} onChange={(_, d) => { if (d) setPrickerTime(d); }} />
             </View>
           )}
         </Animated.View>
         </View>
       )}
 
-      {ifStart && ifEnd && (
+      {effIfStart && effIfEnd && (
         <View ref={ifEatingRef} collapsable={false}>
         <Animated.View style={{ opacity: contentOpacity, transform: [{ translateY: contentTranslate }] }}>
           <View style={{ borderTopWidth: 1, borderTopColor: theme.borderCardTop, paddingTop: 12, marginBottom: 14 }}>
             <View style={{ flexDirection: 'row', gap: 28, marginBottom: 12 }}>
               <View>
                 <Text style={[styles.ifLabel, { color: theme.textMuted, marginBottom: 2 }]}>Target</Text>
-                <Text style={{ fontSize: 22, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{formatHrMin(ifTargetMs)}</Text>
+                <Text style={{ fontSize: 22, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{formatHrMin(effIfTargetMs)}</Text>
               </View>
               <View>
                 <Text style={[styles.ifLabel, { color: theme.textMuted, marginBottom: 2 }]}>Actual</Text>
-                <Text style={{ fontSize: 22, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{ifActualMs ? formatHrMin(ifActualMs) : '--'}</Text>
+                <Text style={{ fontSize: 22, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{effIfActualMs ? formatHrMin(effIfActualMs) : '--'}</Text>
               </View>
               <View>
                 <Text style={[styles.ifLabel, { color: theme.textMuted, marginBottom: 2 }]}>Window</Text>
                 <Text style={{ fontSize: 22, color: theme.textSecondary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>
-                  {new Date(ifStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} → {new Date(ifEnd).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {new Date(effIfStart).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} → {new Date(effIfEnd).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </Text>
               </View>
             </View>
@@ -710,7 +738,7 @@ function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen, remain
                   <Text style={{ color: theme.accentGreen, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Confirm</Text>
                 </TouchableOpacity>
               </View>
-              <DateTimePicker mode="time" value={pickerTime || (ifStart ? new Date(ifStart) : new Date())} display="spinner" textColor={theme.textPrimary} onChange={(_, d) => { if (d) setPrickerTime(d); }} />
+              <DateTimePicker mode="time" value={pickerTime || (effIfStart ? new Date(effIfStart) : new Date())} display="spinner" textColor={theme.textPrimary} onChange={(_, d) => { if (d) setPrickerTime(d); }} />
             </View>
           )}
           {showEndTimePicker && (
@@ -721,7 +749,7 @@ function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen, remain
                   <Text style={{ color: theme.accentGreen, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Confirm</Text>
                 </TouchableOpacity>
               </View>
-              <DateTimePicker mode="time" value={pickerTime || (ifEnd ? new Date(ifEnd) : new Date())} display="spinner" textColor={theme.textPrimary} onChange={(_, d) => { if (d) setPrickerTime(d); }} />
+              <DateTimePicker mode="time" value={pickerTime || (effIfEnd ? new Date(effIfEnd) : new Date())} display="spinner" textColor={theme.textPrimary} onChange={(_, d) => { if (d) setPrickerTime(d); }} />
             </View>
           )}
         </Animated.View>
@@ -735,7 +763,11 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const { showToast } = useToast();
-  const { startTutorial } = useTutorial();
+  const { startTutorial, registerScrollView, unregisterScrollView, activeState: tutorialActiveState } = useTutorial();
+  // Derive IF card demo state from whichever tutorial step is currently active.
+  // undefined when no tutorial running -- card uses real data as normal.
+  const tutorialIfCardState = (tutorialActiveState?.tutorial.steps[tutorialActiveState.stepIndex] as any)?.ifCardState as
+    'idle' | 'active' | 'eating' | undefined;
   const toolkitRef = useTutorialTarget('meta_toolkit_icon');
   // ── Tutorial spotlight targets ────────────────────────────────────────────────
   const calCardRef       = useTutorialTarget('cal_card_main');
@@ -910,6 +942,12 @@ export default function HomeScreen() {
   const scrollRef = useRef<any>(null);
   const dailyNoteRef = useRef<any>(null);
   const dailyNoteCardRef = useRef<any>(null);
+
+  // ── Register home ScrollView with tutorial system so off-screen targets can be scrolled into view ──
+  useEffect(() => {
+    registerScrollView('home', scrollRef);
+    return () => unregisterScrollView('home');
+  }, []);
   const editSheetHeight = useRef<number>(Dimensions.get('window').height);
   const waterLoaded = useRef(false);
   const [dailyVerse,     setDailyVerse]     = useState<{text:string;reference:string}|null>(null);
@@ -1752,6 +1790,7 @@ export default function HomeScreen() {
       onResetComplete={() => { setIfStart(null); setIfEnd(null); saveToFirebase(todayKey, 'ifStart', null); saveToFirebase(todayKey, 'ifEnd', null); }}
       onConfirmStart={(t: Date) => { const now = new Date(); t.setFullYear(now.getFullYear(), now.getMonth(), now.getDate()); setIfStart(t.getTime()); saveToFirebase(todayKey, 'ifStart', t.getTime()); }}
       onConfirmEnd={(t: Date) => { const now = new Date(); t.setFullYear(now.getFullYear(), now.getMonth(), now.getDate()); const ne = t.getTime(); setIfEnd(ne); saveToFirebase(todayKey, 'ifEnd', ne); }}
+      tutorialOverrideState={tutorialIfCardState}
     />
   );
 

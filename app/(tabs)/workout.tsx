@@ -20,6 +20,8 @@ import { useHealthKit } from '../../useHealthKit';
 import { BLANK_DAY, DEFAULT_TAGS, DayProgram, Exercise, Routine, TAG_COLOR_PALETTE, WorkoutTag, PRESET_ROUTINES } from '../../workoutData';
 import MuscleMap from '../../components/MuscleMap';
 import { showToolkit } from '../../components/ToolkitSheet';
+import { useTutorial } from '../../context/TutorialContext';
+import { useTutorialTarget } from '../../hooks/useTutorialTarget';
 
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -58,6 +60,8 @@ export default function WorkoutScreen() {
   const { theme } = useTheme();
   const { showToast } = useToast();
   const [activeDay, setActiveDay] = useState(todayKey);
+  const activeDayRef = useRef(todayKey);
+  useEffect(() => { activeDayRef.current = activeDay; }, [activeDay]);
   const [loaded, setLoaded] = useState(false);
   const [checks, setChecks] = useState<Record<string, Record<string, boolean>>>({});
 const [cardioComplete, setCardioComplete] = useState<Record<string, boolean>>({});
@@ -72,6 +76,16 @@ const [weeklyTemplate, setWeeklyTemplate] = useState<Record<string, DayProgram>>
   const dayScrollRef = useRef<any>(null);
   const mainScrollRef = useRef<any>(null);
   const noteInputRef = useRef<any>(null);
+
+  // Tutorial spotlight targets
+  const dayScrollerRef     = useTutorialTarget('workout_day_scroller');
+  const progressCountRef   = useTutorialTarget('workout_progress_count');
+  const effortCardRef      = useTutorialTarget('workout_effort');
+  const firstExerciseRef   = useTutorialTarget('workout_exercise_row');
+  const firstSetsRepsRef   = useTutorialTarget('workout_sets_reps');
+  const firstCardioRef     = useTutorialTarget('workout_cardio_fields');
+  const workoutFabRef      = useTutorialTarget('workout_fab');
+  const { registerScrollView, unregisterScrollView, registerTutorialAction, unregisterTutorialAction } = useTutorial();
   const hasScrolled = useRef(false);
 const [labelInput, setLabelInput] = useState('');
   const [form, setForm] = useState({ name: '', sets: '', reps: '', rest: '', note: '', isCardio: false, duration: '', distance: '', speed: '', incline: '', resistance: '', hr: '', calories: ''});
@@ -112,6 +126,85 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
   useEffect(() => {
     Animated.spring(fabScale, { toValue: 1, useNativeDriver: true, friction: 6, tension: 120, delay: 300 }).start();
   }, []);
+
+  // Register main ScrollView so tutorial auto-scroll works on this tab
+  useEffect(() => {
+    registerScrollView('workout', mainScrollRef);
+    return () => unregisterScrollView('workout');
+  }, []);
+
+  // Tutorial demo actions
+  const addTutorialExercise = useCallback(async () => {
+    // Scroll to top instantly BEFORE the overlay opens -- avoids off-screen
+    // spotlight when the user launched the tutorial while scrolled down.
+    mainScrollRef.current?.scrollTo({ y: 0, animated: false });
+
+    const benchEx = {
+      id: 'tutorial_demo_bench',
+      name: 'Bench Press',
+      sets: '3',
+      reps: '8',
+      rest: '90',
+      note: '',
+      isCardio: false,
+      isTutorialDemo: true,
+    };
+    const treadEx = {
+      id: 'tutorial_demo_treadmill',
+      name: 'Treadmill',
+      sets: '',
+      reps: '',
+      rest: '',
+      note: '',
+      isCardio: true,
+      duration: '30',
+      distance: '2.5',
+      speed: '5.0',
+      incline: '',
+      resistance: '',
+      hr: '',
+      calories: '280',
+      isTutorialDemo: true,
+    };
+    try {
+      const raw = await AsyncStorage.getItem('pj_workout_state');
+      const data = raw ? JSON.parse(raw) : {};
+      const dayKey = activeDayRef.current;
+      const dayProg = data.programs?.[dayKey] || { type: 'unassigned', exercises: [], tags: [], focus: '' };
+      // Strip any stale demo entries, then prepend both demo exercises
+      const filtered = (dayProg.exercises || []).filter((e: any) => !e.isTutorialDemo);
+      const newExercises = [benchEx, treadEx, ...filtered];
+      const newPrograms = { ...(data.programs || {}), [dayKey]: { ...dayProg, exercises: newExercises } };
+      await storageSet('pj_workout_state', JSON.stringify({ ...data, programs: newPrograms }));
+      setPrograms(newPrograms);
+    } catch {}
+  }, []);
+
+  const deleteTutorialExercise = useCallback(async () => {
+    try {
+      const raw = await AsyncStorage.getItem('pj_workout_state');
+      const data = raw ? JSON.parse(raw) : {};
+      const newPrograms = Object.fromEntries(
+        Object.entries(data.programs || {}).map(([key, prog]: [string, any]) => [
+          key,
+          { ...prog, exercises: (prog.exercises || []).filter((e: any) => !e.isTutorialDemo) },
+        ])
+      );
+      await storageSet('pj_workout_state', JSON.stringify({ ...data, programs: newPrograms }));
+      setPrograms(newPrograms);
+    } catch {}
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      registerTutorialAction('addTutorialExercise', addTutorialExercise);
+      registerTutorialAction('deleteTutorialExercise', deleteTutorialExercise);
+      return () => {
+        unregisterTutorialAction('addTutorialExercise');
+        unregisterTutorialAction('deleteTutorialExercise');
+      };
+    }, [addTutorialExercise, deleteTutorialExercise, registerTutorialAction, unregisterTutorialAction])
+  );
 
   const manageTagsAnim = useSharedValue(600);
   const manageTagsOverlayAnim = useRef(new Animated.Value(0)).current;
@@ -759,11 +852,11 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled">
 
+        <View ref={dayScrollerRef} collapsable={false} style={{ marginBottom: 16 }}>
         <ScrollView
           ref={dayScrollRef}
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={styles.dayTabsContainer}
           onLayout={() => {}}>
           {DATES.map(({ key, dayName, label }) => {
             const c = theme.accentBlue;
@@ -813,6 +906,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
             );
           })}
         </ScrollView>
+        </View>
 
         <View style={{ marginBottom: 12 }}>
           {(() => {
@@ -882,7 +976,9 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                   <Text style={[styles.progressLabel, { fontSize: 18, color: programs[activeDay]?.customLabel ? theme.textSecondary : theme.textDim, fontFamily: 'DMSans_600SemiBold', flex: 1 }]} numberOfLines={1} ellipsizeMode="tail">{programs[activeDay]?.customLabel || 'Add label...'}</Text>
                 </View>
               </TouchableOpacity>
-              <Text style={[styles.progressCount, { color: doneCount === exercises.length && exercises.length > 0 ? theme.statusGood : color }]}>{doneCount}/{exercises.length}</Text>
+              <View ref={progressCountRef} collapsable={false}>
+                <Text style={[styles.progressCount, { color: doneCount === exercises.length && exercises.length > 0 ? theme.statusGood : color }]}>{doneCount}/{exercises.length}</Text>
+              </View>
             </View>
             <View style={[styles.progressBarBg, { backgroundColor: theme.bgProgressTrack }]}>
               <Animated.View style={[styles.progressBarFill, { width: progressAnim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }), backgroundColor: theme.accentBlue }]} />
@@ -903,7 +999,10 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
             const isDone = dayChecks[ex.id];
             return (
               <ScaleDecorator>
-                <View style={[styles.exerciseItem, isDone && styles.exerciseDone, {
+                <View
+                  ref={ex.id === 'tutorial_demo_bench' ? firstExerciseRef : undefined}
+                  collapsable={false}
+                  style={[styles.exerciseItem, isDone && styles.exerciseDone, {
                   backgroundColor: theme.bgCard,
                   borderColor: theme.borderCard,
                   borderLeftColor: isDone ? theme.accentBlue : theme.textDim,
@@ -932,18 +1031,22 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                         )}
                       </TouchableOpacity>
                       {ex.isCardio ? (
-                        <Text style={[styles.exerciseMeta, { color: theme.textMuted }]}>
-                          {[
-                            ex.duration ? (ex.fromAppleHealth ? ex.duration : `${ex.duration} min`) : null,
-                            ex.distance ? `${ex.distance} mi` : null,
-                            ex.speed ? `${ex.speed} mph` : null,
-                            ex.incline ? `${ex.incline}% incline` : null,
-                            ex.hr ? `${ex.hr} bpm` : null,
-                            ex.calories ? `${ex.calories} cal` : null,
-                          ].filter(Boolean).join(' · ') || 'Cardio · tap edit to log stats'}
-                        </Text>
+                        <View ref={ex.id === 'tutorial_demo_treadmill' ? firstCardioRef : undefined} collapsable={false}>
+                          <Text style={[styles.exerciseMeta, { color: theme.textMuted }]}>
+                            {[
+                              ex.duration ? (ex.fromAppleHealth ? ex.duration : `${ex.duration} min`) : null,
+                              ex.distance ? `${ex.distance} mi` : null,
+                              ex.speed ? `${ex.speed} mph` : null,
+                              ex.incline ? `${ex.incline}% incline` : null,
+                              ex.hr ? `${ex.hr} bpm` : null,
+                              ex.calories ? `${ex.calories} cal` : null,
+                            ].filter(Boolean).join(' · ') || 'Cardio · tap edit to log stats'}
+                          </Text>
+                        </View>
                       ) : (
-                        <Text style={[styles.exerciseMeta, { color: theme.textMuted }]}>{ex.sets} sets · {ex.reps} reps · {ex.rest} rest</Text>
+                        <View ref={ex.id === 'tutorial_demo_bench' ? firstSetsRepsRef : undefined} collapsable={false}>
+                          <Text style={[styles.exerciseMeta, { color: theme.textMuted }]}>{ex.sets} sets · {ex.reps} reps · {ex.rest} rest</Text>
+                        </View>
                       )}
                       {ex.note ? <Text style={[styles.exerciseNote, { color: theme.textDim }]}>{ex.note}</Text> : null}
                     </View>
@@ -995,7 +1098,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
           </View>
         )}
 
-        <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, marginTop: 12 }]}>
+        <View ref={effortCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, marginTop: 12 }]}>
           <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Today's Effort</Text>
           <View style={{ flexDirection: 'column', gap: 8, marginTop: 12 }}>
             {[[1,2,3,4,5],[6,7,8,9,10]].map((row, ri) => (
@@ -1420,16 +1523,18 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
       )}
 
       {/* Main FAB */}
-      <Animated.View style={{ position: 'absolute', bottom: 16, right: 20, transform: [{ scale: fabScale }] }}>
-        <TouchableOpacity
-          onPress={toggleFabMenu}
-          onPressIn={() => Animated.timing(fabScale, { toValue: 0.85, duration: 80, useNativeDriver: true }).start()}
-          onPressOut={() => Animated.timing(fabScale, { toValue: 1, duration: 80, useNativeDriver: true }).start()}
-          activeOpacity={1}
-          style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 }}>
-          <Ionicons name={showFabMenu ? 'close' : 'add'} size={28} color={theme.bgPrimary} />
-        </TouchableOpacity>
-      </Animated.View>
+      <View ref={workoutFabRef} collapsable={false} style={{ position: 'absolute', bottom: 16, right: 20 }}>
+        <Animated.View style={{ transform: [{ scale: fabScale }] }}>
+          <TouchableOpacity
+            onPress={toggleFabMenu}
+            onPressIn={() => Animated.timing(fabScale, { toValue: 0.85, duration: 80, useNativeDriver: true }).start()}
+            onPressOut={() => Animated.timing(fabScale, { toValue: 1, duration: 80, useNativeDriver: true }).start()}
+            activeOpacity={1}
+            style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 8 }}>
+            <Ionicons name={showFabMenu ? 'close' : 'add'} size={28} color={theme.bgPrimary} />
+          </TouchableOpacity>
+        </Animated.View>
+      </View>
 
       {/* Load Routine Modal */}
       {showLoadRoutineModal && (() => {

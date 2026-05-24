@@ -47,6 +47,9 @@ export interface TutorialContextType {
   getTarget: (key: string) => React.RefObject<View | null> | undefined;
   registerTutorialAction: (key: string, callback: () => Promise<void>) => void;
   unregisterTutorialAction: (key: string) => void;
+  registerScrollView: (key: string, ref: React.RefObject<any>) => void;
+  unregisterScrollView: (key: string) => void;
+  getScrollViews: () => Record<string, React.RefObject<any>>;
   activeState: ActiveTutorialState | null;
 }
 
@@ -57,6 +60,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
   const activeStateRef = useRef<ActiveTutorialState | null>(null);
   const refs = useRef<Record<string, React.RefObject<View | null>>>({});
   const actions = useRef<Record<string, () => Promise<void>>>({});
+  const scrollViewRefs = useRef<Record<string, React.RefObject<any>>>({});
 
   const setActiveState = useCallback((value: ActiveTutorialState | null) => {
     activeStateRef.current = value;
@@ -81,6 +85,16 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     delete actions.current[key];
   }, []);
 
+  const registerScrollView = useCallback((key: string, ref: React.RefObject<any>) => {
+    scrollViewRefs.current[key] = ref;
+  }, []);
+
+  const unregisterScrollView = useCallback((key: string) => {
+    delete scrollViewRefs.current[key];
+  }, []);
+
+  const getScrollViews = useCallback(() => scrollViewRefs.current, []);
+
   const startTutorial = useCallback(async (id: string) => {
     const { TUTORIALS } = await import('../data/tutorials');
     const tutorial = TUTORIALS.find(t => t.id === id);
@@ -91,6 +105,14 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
       const raw = await AsyncStorage.getItem('pj_settings');
       if (raw) styleMode = JSON.parse(raw)?.styleMode ?? 'balanced';
     } catch {}
+
+    // Fire preAction before first step appears (e.g. inject demo data so it
+    // is already on-screen when step 0 opens -- no "it just appeared" surprise)
+    const preActionKey = (tutorial as any).preAction as string | undefined;
+    if (preActionKey) {
+      const action = actions.current[preActionKey];
+      if (action) { try { await action(); } catch {} }
+    }
 
     const firstStep = findNextValidStep(0, tutorial.steps, styleMode, refs.current);
     if (firstStep >= tutorial.steps.length) return;
@@ -123,6 +145,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     const prev = activeStateRef.current;
     if (prev) markTutorialSeen(prev.tutorial.id);
     try { actions.current['deleteTutorialEntry']?.(); } catch {}
+    try { actions.current['deleteTutorialExercise']?.(); } catch {}
     setActiveState(null);
   }, [setActiveState]);
 
@@ -131,6 +154,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
       startTutorial, advanceStep, skipTutorial,
       registerTarget, unregisterTarget, getTarget,
       registerTutorialAction, unregisterTutorialAction,
+      registerScrollView, unregisterScrollView, getScrollViews,
       activeState,
     }}>
       {children}

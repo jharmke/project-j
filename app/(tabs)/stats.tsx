@@ -18,6 +18,8 @@ import { StatsCardEditModal } from '../../components/StatsCardEditModal';
 import TooltipIcon from '../../components/TooltipIcon';
 import { storageSet } from '../../utils/storage';
 import { showToolkit } from '../../components/ToolkitSheet';
+import { useTutorial } from '../../context/TutorialContext';
+import { useTutorialTarget } from '../../hooks/useTutorialTarget';
 
 // ── Streak types and constants ────────────────────────────────────────────────
 
@@ -203,6 +205,12 @@ function calcSleepScore(
 export default function StatsScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
+
+  // Tutorial spotlight targets
+  const fabRef            = useTutorialTarget('stats_fab');
+  const streaksSectionRef = useTutorialTarget('stats_streaks_section');
+  const statsScrollRef    = useRef<any>(null);
+  const { registerScrollView, unregisterScrollView } = useTutorial();
 
   const [trendPeriod, setTrendPeriod] = useState<'7' | '30' | '90'>('30');
   const [activePeriod, setActivePeriod] = useState<'7' | '30' | '90' | '180' | 'ytd'>('7');
@@ -733,6 +741,12 @@ export default function StatsScreen() {
     }, [calendarMonth, calendarYear])
   );
 
+  // Register stats ScrollView so tutorial auto-scroll works on this tab
+  useEffect(() => {
+    registerScrollView('stats', statsScrollRef);
+    return () => unregisterScrollView('stats');
+  }, []);
+
   useEffect(() => {
     if (hasLoadedProfile.current) {
       loadPeriodData(activePeriod, calTarget, sleepGoal, profileBmr);
@@ -1011,7 +1025,7 @@ export default function StatsScreen() {
         </View>
       </View>
 
-      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      <ScrollView ref={statsScrollRef} style={styles.container} contentContainerStyle={styles.content}>
 
         {statsCards
           .filter(c => c.type === 'system')
@@ -1173,7 +1187,7 @@ export default function StatsScreen() {
             );
             if (section.systemKey === 'streaks') return (
               <CollapsibleSection key={section.id} label={section.label} subtitle="Consistency tracking" defaultOpen={isFirst} theme={theme} first={isFirst}>
-          <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
+          <View ref={streaksSectionRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
             {/* Card header row -- (i) inline with label, gear on right */}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: liveStreaks.length > 0 ? 16 : 0 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -1707,7 +1721,8 @@ export default function StatsScreen() {
       )}
 
       {/* ── Main FAB ── */}
-      <Animated.View style={{ position: 'absolute', bottom: 16, right: 20, transform: [{ scale: fabScale }] }}>
+      <View ref={fabRef} collapsable={false} style={{ position: 'absolute', bottom: 16, right: 20 }}>
+      <Animated.View style={{ transform: [{ scale: fabScale }] }}>
         <TouchableOpacity
           onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); toggleFabMenu(); }}
           onPressIn={() => Animated.timing(fabScale, { toValue: 0.9, duration: 80, useNativeDriver: true }).start()}
@@ -1717,6 +1732,7 @@ export default function StatsScreen() {
           <Ionicons name={showFabMenu ? 'close' : 'add'} size={28} color="#ffffff" />
         </TouchableOpacity>
       </Animated.View>
+      </View>
 
       {dayDetailDate !== null && (
         <Modal transparent animationType="none" visible={dayDetailDate !== null} onRequestClose={closeDayDetail} statusBarTranslucent hardwareAccelerated

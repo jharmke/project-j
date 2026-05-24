@@ -67,6 +67,8 @@ Rules:
 
 **Fires**: Once for ALL users regardless of coaching mode or faith journey. Triggered by a gentle bottom sheet prompt on first home screen load after onboarding complete -- see LOCKED DECISIONS. Does NOT auto-fire the overlay. User opts in.
 
+**Re-trigger**: Currently no way to replay once dismissed (accidentally or intentionally). Dev tool needed -- "Reset Tutorials" in Settings > Dev Tools (7-tap hidden section) calls resetAllTutorials() from TutorialContext. In NOW. Long term: consider "Replay App Orientation" in Settings > Help.
+
 **Skippable**: Yes, immediately, no guilt.
 
 **Length**: 3-4 steps maximum. Brief. Tight.
@@ -132,7 +134,7 @@ No toolkit needed: Today's Message, Water, Steps, Reading Plans, Today's Thought
 | `cal_card` | Calories Card | Running net formula, what Remaining/Active/NET mean in plain language, color coding per mode (Discipline tight thresholds / Balanced forgiving / Mindful no color), what to actually do when numbers are red |
 | `macros_card` | Macros Card | What macros are and why they matter (for a complete beginner), reading the bars against goals in context of real logged food, identity colors (protein green / carbs amber / fat red), over-goal behavior |
 | `sleep_card` | Sleep Score | Score algorithm explained simply (duration + deep + REM), what the stage colors mean, what "Well Rested" actually requires, Path 2/3 feel-rating requirement, what to change to improve score |
-| `if_card` | Intermittent Fasting | What IF is (beginner explanation), the 3 states (idle / active fast / completed), how to start a fast, how to log last meal, how to close the window, editing start/end times |
+| `if_card` | Intermittent Fasting | What IF is (beginner explanation), the 3 states (idle / active fast / completed), how to start a fast, how to log last meal, how to close the window, editing start/end times. **STATE DEPENDENCY**: Tutorial authored assuming State 1 (fast not started). Steps targeting if_card_active (State 2) and if_card_eating (State 3) are conditionally rendered -- if user runs tutorial from wrong state, those steps show confusing full-screen dim. Fix TBD in NOW (see roadmap). |
 | `yvy_card` | You vs Yesterday | What the card is tracking and why, the 7 metrics and how each is measured, win/loss/tie logic in plain language, score bar (Discipline/Balanced only), Mindful neutral framing |
 
 Fitness Metrics, Weight, Today's Training, Gratitude Streak: toolkit only, no tutorial.

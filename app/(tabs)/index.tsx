@@ -2932,13 +2932,6 @@ export default function HomeScreen() {
 
       {/* ── Header ── */}
       <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
-        <View ref={toolkitRef} collapsable={false} style={{ marginRight: 8 }}>
-          <TouchableOpacity
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); showToolkit('home'); }}
-            style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
-            <Ionicons name="help-circle" size={14} color={theme.accentBlue} />
-          </TouchableOpacity>
-        </View>
         <View style={{ flex:1 }}>
           <Text style={[styles.headerLabel, { color: theme.textMuted }]}>PROJECT J</Text>
           <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>
@@ -2949,7 +2942,7 @@ export default function HomeScreen() {
           </Text>
         </View>
 
-        <View style={{ flexDirection:'row', gap:8 }}>
+        <View style={{ flexDirection:'row', gap:8, alignItems:'center' }}>
             <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); fetchTodayData(); setRefreshKey(k=>k+1); showToast('Health data refreshed', undefined, 'info'); }}
               style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
               <Ionicons name="refresh" size={14} color={theme.accentBlue} />
@@ -2961,6 +2954,11 @@ export default function HomeScreen() {
             <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); enterEditMode(); }} style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
               <Ionicons name="grid" size={14} color={theme.accentBlue} />
             </TouchableOpacity>
+            <View ref={toolkitRef} collapsable={false}>
+              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); showToolkit('home'); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+                <Ionicons name="help-circle" size={22} color={theme.accentBlue} />
+              </TouchableOpacity>
+            </View>
           </View>
       </View>
 

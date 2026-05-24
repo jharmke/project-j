@@ -99,6 +99,7 @@ function RootLayoutNav() {
         <Stack.Screen name="mission" options={{ headerShown: false }} />
         <Stack.Screen name="diagnostic-report" options={{ headerShown: false }} />
         <Stack.Screen name="definitions" options={{ headerShown: false }} />
+        <Stack.Screen name="tutorials" options={{ headerShown: false }} />
       </Stack>
       <ThemedStatusBar />
       <AchievementToastRenderer />

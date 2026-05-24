@@ -29,13 +29,16 @@ Rules:
 ## Entry Points
 
 ### 1. Tab-Level Toolkit Icon
-- Universal icon in the **far left of each tab header** on every tab that has tutorials
-- Left side = informational. Right side = operational (refresh, library, grid, trophy). Never mix.
-- Tapping opens a Toolkit sheet for that tab/screen
-- Sheet contains:
-  - "Take a Tour" button(s) at the top -- PRIMARY CTA, accent fill, full width, lists each available tutorial by name
-  - Quick definitions section below
-  - "All Tutorials" link at the bottom routing to Settings > Help > Tutorials
+- Universal `?` icon in the **far RIGHT of each tab header** on every tab -- SHIPPED 2026-05-23
+- Floating symbol only, no box or border. Size 22. Sits after operational buttons (refresh, library, grid, settings).
+- NOTE: Original spec said far left. Changed -- having it boxed on the left felt wrong visually and conflicted with the header hierarchy. Right side, floating, is correct.
+- Tapping opens a Toolkit modal for that tab/screen
+- Modal is centered fade-in/fade-out (matching TooltipModal pattern) -- NOT a slide-up sheet. Dark overlay, centered card, accent top border (borderTopWidth 2, accentBlueRaw + '55'), handle pill, close X in header.
+- Modal contains:
+  - Label: "[TAB] TOOLKIT" in muted small caps
+  - "Guided Tours" heading + subtitle
+  - Tutorial rows: play icon, name, description, chevron
+  - "All Tutorials" row at bottom (grid icon) -- routes to /tutorials screen
 - Filled/solid Ionicon variant only (build standard)
 
 ### 2. Card-Level Toolkit (inside (i) modal)
@@ -45,9 +48,14 @@ Rules:
 - **Animation**: subtle breathing pulse on the Take a Tour button -- slow scale 1.0 → 1.04 → 1.0, same energy as IF green button. Invitation, not a shout.
 - Top-left and top-right corners of the toolkit modal are clear -- button has room
 
-### 3. Settings > Help > Tutorials Section
-- Lists ALL available tutorials across the entire app, organized by screen/feature
-- Each entry: tutorial title, one-line description of what it covers, "Start Tutorial" button
+### 3. Settings > Help > Tutorials Section -- SHIPPED 2026-05-23
+- Settings > Help shows a single "View Tutorials -->" row with subtitle "X guided tours available"
+- Taps to dedicated `/tutorials` screen (app/tutorials.tsx)
+- Tutorials screen: horizontal filter pills (All / Home / Nutrition / Workout / Stats / Profile), scrollable list of TutorialCard rows
+- Each card: play icon, tab label, tutorial name, description, step count, chevron
+- Tapping a card: router.back() then 350ms delay then startTutorial(id)
+- Empty state: icon + message for tabs with no tutorials yet
+- Pattern matches definitions.tsx exactly
 - Secondary discoverability path -- users who want to browse all tutorials come here
 - This is the exhaustive reference, not the primary entry point
 
@@ -318,12 +326,13 @@ interface Tutorial {
 
 ## BUILD ORDER
 
-1. **Architecture + Design** -- COMPLETE 2026-05-23. All decisions locked (see LOCKED DECISIONS). TutorialContext + TutorialOverlay engine first, tested with dummy 2-step tutorial on calories card before any real content added.
-2. **Tab-level toolkit icons** -- add to all 5 tab headers (far left), build Toolkit sheet component (reusable), wire up for each tab
-3. **Take a Tour button** -- add to all (i) modals that will have tutorials (breathing pulse animation), Settings > Help > Tutorials section stub
-4. **Settings > Help > Tutorials section** -- list all tutorials with title + description + Start Tutorial button
-5. **Meta-tutorial** -- depends on steps 2-4. 3-4 steps, skippable, fires once for all users
-6. **Individual tutorials -- priority order:**
+1. **Architecture + Design** -- DONE 2026-05-23.
+2. **Engine** -- DONE 2026-05-23. TutorialContext, useTutorialTarget, TutorialOverlay (4-panel scrim, callout bubble, NEXT/SKIP/DONE, progress dots/count), data/tutorials.ts (19 tutorials, all mode-aware copy), pj_tutorials AsyncStorage key.
+3. **Tab-level toolkit icons + ToolkitSheet modal** -- DONE 2026-05-23. ? icon far right all 5 headers. Centered fade modal (not slide-up). Per-tab tutorial lists. "All Tutorials" routes to /tutorials screen.
+4. **Take a Tour button + /tutorials screen** -- DONE 2026-05-23. 7 TooltipModals wired with breathing pulse. Dedicated app/tutorials.tsx with filter pills. Settings > Help has single row routing to it.
+5. **Meta-tutorial** -- DONE 2026-05-23. Auto-fires 1500ms after first home load, once ever.
+6. **Spotlight target wiring** -- TODO. Wire useTutorialTarget to actual card Views in all 5 tabs. Home first (cal_card_main, macros_card_main, sleep_card_main, if_card_main, yvy_card_main), then log, workout, stats, profile. Currently degrades gracefully to full-screen dim.
+7. **Individual tutorials -- priority order:**
    - Logging Food (most critical -- food logging is the core habit and biggest drop-off risk)
    - Managing Your Log
    - Barcode Scanner
@@ -360,7 +369,11 @@ interface Tutorial {
 
 **Tab toolkit icon**: `help-circle` filled Ionicon. Distinct from card-level `information-circle` filled (`i`). Hierarchy: `?` = whole screen, `i` = this card specifically. Visually consistent family, functionally distinct.
 
+**Tab toolkit icon placement**: Far RIGHT of header, floating (no box, no border, no background). Size 22. Sits after operational buttons. CHANGED from original far-left spec -- left felt wrong visually in practice.
+
 **Tab toolkit icon pulse**: YES -- same exact behavior as existing (i) card icons. 3 pulses, 1500ms delay on mount, fires once per cold launch until seen, permanently stops after first tap. Same infrastructure, same pattern.
+
+**ToolkitSheet animation**: Centered fade-in/fade-out modal. NOT a slide-up. Matches TooltipModal exactly. CHANGED from original slide-up spec -- slide-up feels inconsistent with every other modal in the app.
 
 **Take a Tour button pulse**: Same breathing pulse as described (slow 1.0 → 1.04 scale). Stops after first tap, same seen-state pattern as (i) icons.
 

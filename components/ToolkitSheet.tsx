@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
+  Animated,
   Modal,
   ScrollView,
   StyleSheet,
@@ -9,8 +10,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import Reanimated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getTutorialsForTab } from '../data/tutorials';
 import { useTheme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
@@ -41,7 +40,7 @@ export function ToolkitRenderer() {
   return <ToolkitSheetInner tab={tab} onClose={() => setTab(null)} />;
 }
 
-// ─── Sheet ────────────────────────────────────────────────────────────────────
+// ─── Modal ────────────────────────────────────────────────────────────────────
 
 const TAB_LABELS: Record<string, string> = {
   home:    'HOME',
@@ -54,21 +53,37 @@ const TAB_LABELS: Record<string, string> = {
 function ToolkitSheetInner({ tab, onClose }: { tab: string; onClose: () => void }) {
   const { theme } = useTheme();
   const { startTutorial } = useTutorial();
-  const insets = useSafeAreaInsets();
   const router = useRouter();
 
-  const translateY = useSharedValue(600);
-  const animStyle  = useAnimatedStyle(() => ({ transform: [{ translateY: translateY.value }] }));
+  const overlayOpacity = useRef(new Animated.Value(0)).current;
+  const cardOpacity    = useRef(new Animated.Value(0)).current;
+  const cardTranslateY = useRef(new Animated.Value(16)).current;
 
   const tutorials = getTutorialsForTab(tab as any);
 
-  const handleShow = () => {
-    translateY.value = withSpring(0, { damping: 20, stiffness: 200 });
+  const animateIn = () => {
+    overlayOpacity.setValue(0);
+    cardOpacity.setValue(0);
+    cardTranslateY.setValue(16);
+
+    Animated.parallel([
+      Animated.timing(overlayOpacity, { toValue: 1, duration: 200, useNativeDriver: true }),
+      Animated.timing(cardOpacity,    { toValue: 1, duration: 220, useNativeDriver: true }),
+      Animated.timing(cardTranslateY, { toValue: 0, duration: 220, useNativeDriver: true }),
+    ]).start();
   };
 
   const handleClose = () => {
-    translateY.value = withSpring(600, { damping: 22, stiffness: 220 });
-    setTimeout(onClose, 280);
+    Animated.parallel([
+      Animated.timing(overlayOpacity, { toValue: 0, duration: 180, useNativeDriver: true }),
+      Animated.timing(cardOpacity,    { toValue: 0, duration: 180, useNativeDriver: true }),
+      Animated.timing(cardTranslateY, { toValue: 16, duration: 180, useNativeDriver: true }),
+    ]).start(() => {
+      overlayOpacity.setValue(0);
+      cardOpacity.setValue(0);
+      cardTranslateY.setValue(16);
+      onClose();
+    });
   };
 
   const handleStart = (id: string) => {
@@ -78,7 +93,7 @@ function ToolkitSheetInner({ tab, onClose }: { tab: string; onClose: () => void 
 
   const handleAllTutorials = () => {
     handleClose();
-    setTimeout(() => router.push('/settings'), 320);
+    setTimeout(() => router.push('/tutorials' as any), 320);
   };
 
   return (
@@ -86,31 +101,35 @@ function ToolkitSheetInner({ tab, onClose }: { tab: string; onClose: () => void 
       visible
       transparent
       animationType="none"
-      onShow={handleShow}
+      onShow={animateIn}
       onRequestClose={handleClose}
+      statusBarTranslucent
     >
       <ToastRenderer />
 
-      {/* Backdrop */}
-      <TouchableOpacity
-        style={[StyleSheet.absoluteFill, styles.backdrop]}
-        activeOpacity={1}
-        onPress={handleClose}
-      />
+      {/* Overlay */}
+      <Animated.View
+        style={[StyleSheet.absoluteFill, styles.overlay, { opacity: overlayOpacity }]}
+      >
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={handleClose} />
+      </Animated.View>
 
-      {/* Sheet container */}
-      <View style={styles.sheetContainer} pointerEvents="box-none">
-        <Reanimated.View
-          style={[
-            styles.sheet,
-            { backgroundColor: theme.bgSheet, paddingBottom: insets.bottom + 8 },
-            animStyle,
-          ]}
-        >
+      {/* Card container */}
+      <View style={styles.cardContainer} pointerEvents="box-none">
+        <Animated.View style={[
+          styles.card,
+          {
+            backgroundColor: theme.bgSheet,
+            borderColor: theme.borderCard,
+            borderTopColor: theme.accentBlueRaw + '55',
+            opacity: cardOpacity,
+            transform: [{ translateY: cardTranslateY }],
+          },
+        ]}>
           {/* Handle pill */}
           <View style={[styles.handle, { backgroundColor: 'rgba(255,255,255,0.15)' }]} />
 
-          {/* Header */}
+          {/* Header row */}
           <View style={styles.header}>
             <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>
               {TAB_LABELS[tab] ?? tab.toUpperCase()} TOOLKIT
@@ -126,9 +145,9 @@ function ToolkitSheetInner({ tab, onClose }: { tab: string; onClose: () => void 
           </Text>
 
           <ScrollView
-            style={styles.list}
             showsVerticalScrollIndicator={false}
             alwaysBounceVertical={false}
+            style={styles.list}
           >
             {tutorials.map((t, i) => (
               <TouchableOpacity
@@ -169,29 +188,32 @@ function ToolkitSheetInner({ tab, onClose }: { tab: string; onClose: () => void 
               <Ionicons name="chevron-forward" size={14} color={theme.textMuted} />
             </TouchableOpacity>
           </ScrollView>
-        </Reanimated.View>
+        </Animated.View>
       </View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    backgroundColor: 'rgba(0,0,0,0.5)',
+  overlay: {
+    backgroundColor: 'rgba(0,0,0,0.6)',
   },
-  sheetContainer: {
+  cardContainer: {
     flex: 1,
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
   },
-  sheet: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    borderWidth: 0.5,
-    borderColor: 'rgba(255,255,255,0.1)',
-    borderBottomWidth: 0,
-    paddingHorizontal: 16,
-    paddingTop: 8,
+  card: {
+    width: '100%',
     maxHeight: '80%',
+    borderRadius: 20,
+    borderWidth: 0.5,
+    borderTopWidth: 2,
+    overflow: 'hidden',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 16,
   },
   handle: {
     width: 36,

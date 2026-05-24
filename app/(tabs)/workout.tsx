@@ -737,11 +737,6 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={[styles.container, { paddingTop: insets.top }]}>
         <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
-          <TouchableOpacity
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); showToolkit('workout'); }}
-            style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center', marginRight: 8 }}>
-            <Ionicons name="help-circle" size={14} color={theme.accentBlue} />
-          </TouchableOpacity>
           <View style={{ flex: 1 }}>
             <Text style={[styles.headerLabel, { color: theme.textMuted }]}>PROJECT J</Text>
             <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>Workout</Text>
@@ -749,9 +744,14 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
               {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </Text>
           </View>
-          <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/workout-library'); }} style={[styles.libraryBtn, { height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
-            <Text style={[styles.libraryBtnText, { color: theme.accentBlue }]}>Library</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/workout-library'); }} style={[styles.libraryBtn, { height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
+              <Text style={[styles.libraryBtnText, { color: theme.accentBlue }]}>Library</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); showToolkit('workout'); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+              <Ionicons name="help-circle" size={22} color={theme.accentBlue} />
+            </TouchableOpacity>
+          </View>
         </View>
       <ScrollView
         ref={mainScrollRef}

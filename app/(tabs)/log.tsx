@@ -634,11 +634,6 @@ export default function LogScreen() {
   return (
     <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={[styles.container, { paddingTop: insets.top }]}>
       <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
-        <TouchableOpacity
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); showToolkit('log'); }}
-          style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center', marginRight: 8 }}>
-          <Ionicons name="help-circle" size={14} color={theme.accentBlue} />
-        </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={[styles.headerLabel, { color: theme.textMuted }]}>PROJECT J</Text>
           <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>Food Log</Text>
@@ -656,11 +651,16 @@ export default function LogScreen() {
             </TouchableOpacity>
           </View>
         </View>
-        <TouchableOpacity
-            style={[styles.libraryBtn, { height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push({ pathname: '/add-food', params: { meal: 'browse', date: activeDate } }); }}>
-            <Text style={[styles.libraryBtnText, { color: theme.accentBlue }]}>Library</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <TouchableOpacity
+              style={[styles.libraryBtn, { height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push({ pathname: '/add-food', params: { meal: 'browse', date: activeDate } }); }}>
+              <Text style={[styles.libraryBtnText, { color: theme.accentBlue }]}>Library</Text>
           </TouchableOpacity>
+          <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); showToolkit('log'); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+            <Ionicons name="help-circle" size={22} color={theme.accentBlue} />
+          </TouchableOpacity>
+        </View>
       </View>
       <ScrollView
         contentContainerStyle={styles.content}

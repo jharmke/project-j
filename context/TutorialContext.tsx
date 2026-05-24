@@ -1,13 +1,32 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
 import { View } from 'react-native';
-import type { Tutorial } from '../data/tutorials';
+import type { Tutorial, TutorialStep as TutorialStepData } from '../data/tutorials';
 
 export interface TutorialStep {
   targetKey: string;
   title: string;
   body: { discipline: string; balanced: string; mindful: string };
   highlightPadding?: number;
+  skipIfTargetMissing?: boolean;
+  skipForModes?: ('discipline' | 'balanced' | 'mindful')[];
+}
+
+function findNextValidStep(
+  fromIndex: number,
+  steps: TutorialStepData[],
+  styleMode: string,
+  registeredRefs: Record<string, React.RefObject<View | null>>
+): number {
+  let i = fromIndex;
+  while (i < steps.length) {
+    const step = steps[i];
+    const skippedForMode = step.skipForModes?.includes(styleMode as 'discipline' | 'balanced' | 'mindful');
+    const skippedForMissing = step.skipIfTargetMissing && step.targetKey !== 'none' && !registeredRefs[step.targetKey]?.current;
+    if (!skippedForMode && !skippedForMissing) return i;
+    i++;
+  }
+  return steps.length;
 }
 
 export interface ActiveTutorialState {
@@ -53,13 +72,15 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
       if (raw) styleMode = JSON.parse(raw)?.styleMode ?? 'balanced';
     } catch {}
 
-    setActiveState({ tutorial, stepIndex: 0, styleMode });
+    const firstStep = findNextValidStep(0, tutorial.steps, styleMode, refs.current);
+    if (firstStep >= tutorial.steps.length) return;
+    setActiveState({ tutorial, stepIndex: firstStep, styleMode });
   }, []);
 
   const advanceStep = useCallback(() => {
     setActiveState(prev => {
       if (!prev) return null;
-      const next = prev.stepIndex + 1;
+      const next = findNextValidStep(prev.stepIndex + 1, prev.tutorial.steps, prev.styleMode, refs.current);
       if (next >= prev.tutorial.steps.length) {
         markTutorialSeen(prev.tutorial.id);
         return null;

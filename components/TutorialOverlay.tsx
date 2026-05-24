@@ -55,6 +55,8 @@ export default function TutorialOverlay() {
   const bubbleOpacity  = useRef(new Animated.Value(0)).current;
   const bubbleTransY   = useRef(new Animated.Value(16)).current;
 
+  const [spotActive, setSpotActive] = useState(false);
+
   const prevTutorialId = useRef<string | null>(null);
   const prevStepIndex  = useRef<number>(-1);
   const isExiting      = useRef(false);
@@ -126,6 +128,7 @@ export default function TutorialOverlay() {
     await animateSpot(layout, true);
     setBubblePos(pos);
     setRenderState(state);
+    setSpotActive(layout !== null);
     setVisible(true);
 
     // One frame delay ensures React commits the render before animation starts
@@ -153,6 +156,7 @@ export default function TutorialOverlay() {
     setBubblePos(pos);
     setRenderState(state);
     await animateSpot(layout, false);
+    setSpotActive(layout !== null);
 
     bubbleTransY.setValue(8);
     Animated.parallel([
@@ -235,20 +239,22 @@ export default function TutorialOverlay() {
         pointerEvents="none"
       />
 
-      {/* Accent ring overlaid on spotlight cutout */}
-      <Animated.View
-        style={{
-          position: 'absolute',
-          left: spotX,
-          top: spotY,
-          width: spotW,
-          height: spotH,
-          borderRadius: RADIUS,
-          borderWidth: 1.5,
-          borderColor: theme.accentBlueRaw + '99',
-        }}
-        pointerEvents="none"
-      />
+      {/* Accent ring overlaid on spotlight cutout -- hidden when no spotlight (avoids 0x0 dot artifact) */}
+      {spotActive && (
+        <Animated.View
+          style={{
+            position: 'absolute',
+            left: spotX,
+            top: spotY,
+            width: spotW,
+            height: spotH,
+            borderRadius: RADIUS,
+            borderWidth: 1.5,
+            borderColor: theme.accentBlueRaw + '99',
+          }}
+          pointerEvents="none"
+        />
+      )}
 
       {/* Callout bubble */}
       <Animated.View

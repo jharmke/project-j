@@ -94,12 +94,8 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
         explanation: 'Up to 4 metrics are shown at a time. Net Calories, Steps, Sleep Score, and Water are shown first. Weight, Active Calories, and Sleep Hours fill in when the primary metrics aren\'t available.',
       },
       {
-        term: 'Win / Loss / Tie',
-        explanation: 'Each metric compares today vs yesterday. More steps is a win. Closer to your calorie target is a win. Higher sleep score is a win. Small differences count as a tie.',
-      },
-      {
-        term: 'Score',
-        explanation: 'The YOU · YESTERDAY · TIED tally at the bottom shows how many metrics you won, lost, or tied for the day.',
+        term: 'Color Coding',
+        explanation: 'Metrics where today is ahead light up in your accent color with a highlight bar on the left. Metrics where yesterday was higher appear dimmed with a bar on the right. Ties show both values in the same muted tone.',
       },
     ],
   },

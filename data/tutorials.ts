@@ -3,6 +3,8 @@ export interface TutorialStep {
   title: string;
   body: { discipline: string; balanced: string; mindful: string };
   highlightPadding?: number;
+  skipIfTargetMissing?: boolean;
+  skipForModes?: ('discipline' | 'balanced' | 'mindful')[];
 }
 
 export interface Tutorial {
@@ -26,7 +28,7 @@ export const TUTORIALS: Tutorial[] = [
         targetKey: 'meta_toolkit_icon',
         title: 'YOUR TOOLKIT',
         body: {
-          discipline: 'Every tab has a ? icon in the top-left. That\'s your toolkit. Tap it for definitions, context, and guided tours specific to that tab.',
+          discipline: 'Every tab has a ? icon in the top-right. That\'s your toolkit. Tap it for definitions, context, and guided tours specific to that tab.',
           balanced: 'See the ? icon up here? Every tab has one. Tap it anytime you want help with what you\'re looking at.',
           mindful: 'That ? icon is always there when you need it. No pressure -- tap it whenever you\'re curious about something.',
         },
@@ -72,6 +74,7 @@ export const TUTORIALS: Tutorial[] = [
       {
         targetKey: 'cal_card_remaining',
         title: 'REMAINING',
+        skipForModes: ['mindful'],
         body: {
           discipline: 'Remaining = your target minus what you\'ve eaten. Stay positive to hit your deficit. Go negative and you\'re in surplus.',
           balanced: 'Remaining shows how many calories you have left before hitting your daily goal. It updates every time you log food.',
@@ -81,6 +84,7 @@ export const TUTORIALS: Tutorial[] = [
       {
         targetKey: 'cal_card_active',
         title: 'ACTIVE',
+        skipForModes: ['mindful'],
         body: {
           discipline: 'Active calories come straight from Apple Health -- exercise, workouts, movement. These earn you more room in your daily budget.',
           balanced: 'Active calories are what you\'ve burned through movement today. They\'re pulled automatically from Apple Health.',
@@ -90,6 +94,7 @@ export const TUTORIALS: Tutorial[] = [
       {
         targetKey: 'cal_card_net',
         title: 'RUNNING NET',
+        skipForModes: ['mindful'],
         body: {
           discipline: 'Running Net = consumed minus active burn minus running BMR. It\'s your live deficit or surplus. Negative means you\'re in deficit -- that\'s the goal if you\'re cutting.',
           balanced: 'Running Net puts everything together -- food eaten, calories burned, and your resting metabolism. It\'s the most complete number on the card.',
@@ -172,14 +177,15 @@ export const TUTORIALS: Tutorial[] = [
         targetKey: 'sleep_card_main',
         title: 'YOUR SLEEP SCORE',
         body: {
-          discipline: 'Your sleep score is a 0-100 rating. It\'s calculated from duration, deep sleep, and REM sleep. Optimize all three.',
-          balanced: 'Your sleep card shows a score based on how long you slept and the quality of your sleep stages.',
-          mindful: 'This card shows a gentle reading of your sleep. It\'s not a grade -- it\'s just context for how you might be feeling today.',
+          discipline: 'Your sleep score is a 0-100 rating calculated from duration, deep sleep, and REM sleep. It activates once Apple Health has sleep data, or you can manually rate how you felt to unlock it.',
+          balanced: 'Your sleep card shows a score based on how long you slept and the quality of your sleep stages. Connect Apple Health or use the feel rating below to get your first score.',
+          mindful: 'This card shows a gentle reading of your sleep. It fills in as Apple Health data arrives -- or you can rate how you felt when you woke up to get started.',
         },
       },
       {
         targetKey: 'sleep_donut',
         title: 'THE SCORE',
+        skipIfTargetMissing: true,
         body: {
           discipline: '85+ = Well Rested. 70-84 = Could Be Better. Below 70 = Poor Sleep. Duration earns 40 points. Deep sleep 30. REM 30. Hit all three.',
           balanced: 'The number in the center is your score out of 100. 85 or above is Well Rested. Below 70 is Poor Sleep. The colored ring shows your stages.',
@@ -189,6 +195,7 @@ export const TUTORIALS: Tutorial[] = [
       {
         targetKey: 'sleep_stages',
         title: 'SLEEP STAGES',
+        skipIfTargetMissing: true,
         body: {
           discipline: 'Core sleep is your base. Deep sleep (purple) is recovery and growth -- target 15-20% of total. REM (green) is brain recovery and memory -- target 20-25%.',
           balanced: 'The colored sections show your sleep stages. Core is the foundation, deep sleep is physical recovery, REM is mental recovery.',
@@ -207,6 +214,7 @@ export const TUTORIALS: Tutorial[] = [
       {
         targetKey: 'sleep_feel',
         title: 'FEEL RATING',
+        skipIfTargetMissing: true,
         body: {
           discipline: 'No Apple Health stage data? Rate how you feel 1-5. This unlocks the score calculation and feeds the feel-bonus (up to +40 pts). Log it accurately.',
           balanced: 'If your Apple Health doesn\'t have detailed sleep stages, you can rate how you felt when you woke up. This still gives you a score.',
@@ -233,16 +241,17 @@ export const TUTORIALS: Tutorial[] = [
       },
       {
         targetKey: 'if_card_main',
-        title: 'STARTING A FAST',
+        title: 'THE CYCLE',
         body: {
-          discipline: 'Tap START FAST to begin your fasting window. The countdown starts immediately. Your method determines the window length.',
-          balanced: 'Tap START FAST when you\'re ready to begin your fast. The timer counts down your window and shows you when eating begins.',
-          mindful: 'When you\'re ready, tap START FAST. The card counts down your window for you. There\'s no pressure to follow it perfectly every day.',
+          discipline: 'Three stages, three buttons. START FAST begins the countdown. TAP WHEN YOU EAT the moment you break your fast -- this opens your eating window. LAST MEAL closes it when you\'re done for the day. That\'s the whole loop.',
+          balanced: 'The card walks you through three stages. START FAST begins your fast. When you eat your first meal, tap TAP WHEN YOU EAT to open your window. When you\'re done eating for the day, tap LAST MEAL to close it.',
+          mindful: 'Three gentle transitions: start your fast, mark when you first eat, and note your last meal. The card guides you through each one. Tap when it feels right -- no pressure to be exact.',
         },
       },
       {
         targetKey: 'if_card_active',
         title: 'DURING YOUR FAST',
+        skipIfTargetMissing: true,
         body: {
           discipline: 'The countdown shows time remaining. TAP WHEN YOU EAT closes your fast and starts your eating window. Do it exactly when you eat your first bite.',
           balanced: 'While fasting, the countdown shows how much time remains. When you eat your first meal, tap TAP WHEN YOU EAT to open your window.',
@@ -252,6 +261,7 @@ export const TUTORIALS: Tutorial[] = [
       {
         targetKey: 'if_card_eating',
         title: 'YOUR EATING WINDOW',
+        skipIfTargetMissing: true,
         body: {
           discipline: 'Your eating window is open. Eat your meals. When you\'re done for the day, tap LAST MEAL to log it and close the window. Start your next fast.',
           balanced: 'During your eating window, eat normally. When you\'re done with your last meal, tap LAST MEAL to log when you finished eating.',
@@ -262,9 +272,9 @@ export const TUTORIALS: Tutorial[] = [
         targetKey: 'if_card_main',
         title: 'EDITING TIMES',
         body: {
-          discipline: 'Need to adjust your start or end time? Tap Edit Start or Edit End. Accuracy matters -- your window analytics depend on correct times.',
-          balanced: 'You can edit your start and end times if you forgot to tap at the right moment. Tap Edit Start or Edit End to adjust.',
-          mindful: 'If the times don\'t feel right, you can edit them anytime. Tap Edit Start or Edit End -- there\'s no judgment on what times you choose.',
+          discipline: 'Once a fast or eating window is active, Edit Start and Edit End let you correct your times. Accuracy matters -- your window analytics depend on it.',
+          balanced: 'Once your fast is running, you can tap Edit Start or Edit End to fix your times if you forgot to tap at the right moment.',
+          mindful: 'While a fast is active, Edit Start and Edit End let you adjust your times anytime. No judgment on what you choose.',
         },
       },
     ],
@@ -288,19 +298,21 @@ export const TUTORIALS: Tutorial[] = [
       {
         targetKey: 'yvy_metrics',
         title: 'THE METRICS',
+        skipIfTargetMissing: true,
         body: {
           discipline: '4 metrics shown: Net Calories, Steps, Sleep Score, Water. These are your core daily performance indicators. Hit more today than yesterday.',
           balanced: 'The card tracks 4 key metrics: Net Calories, Steps, Sleep Score, and Water. Each shows your result for today vs yesterday.',
-          mindful: 'Four things are compared: Net Calories, Steps, Sleep Score, and Water. Each is just one piece of your day.',
+          mindful: 'Three things are compared in this mode: Steps, Sleep Score, and Water. Each is just one piece of your day.',
         },
       },
       {
         targetKey: 'yvy_metrics',
-        title: 'WIN / LOSS / TIE',
+        title: 'COLOR CODING',
+        skipIfTargetMissing: true,
         body: {
-          discipline: 'Win: today\'s number beats yesterday\'s. Loss: it doesn\'t. Tie: exact match. Net calories uses closest-to-target logic. Sleep and water use exact match.',
-          balanced: 'Green means you did better today. Red means yesterday was stronger. Gray means a tie. Net calories is judged on closeness to your target.',
-          mindful: 'Green, red, and gray are just comparisons -- not judgments. Some days will be green, some red. Both are part of the process.',
+          discipline: 'Accent color with a left bar: you\'re ahead today. Dimmed with a right bar: yesterday was stronger. No bar: dead even. Net calories uses closest-to-target logic, not raw number.',
+          balanced: 'Metrics where you\'re ahead show in your accent color with a highlight bar on the left. Metrics where yesterday was higher appear dimmed. Ties show both values in the same muted tone.',
+          mindful: 'Today and yesterday are shown side by side. Neither side is highlighted -- they\'re just numbers. Notice the patterns that feel meaningful to you.',
         },
       },
       {

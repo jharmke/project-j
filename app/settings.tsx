@@ -37,6 +37,7 @@ import {
   requestNotificationPermission,
 } from '../services/notifications';
 import { TUTORIALS } from '../data/tutorials';
+import { resetAllTutorials } from '../context/TutorialContext';
 
 type FaithJourney = 'rooted' | 'exploring' | 'notrightnow';
 
@@ -1820,6 +1821,24 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Compares local key count to Firestore doc count.</Text>
               </View>
               <Ionicons name="checkmark-circle-outline" size={18} color={theme.accentBlue} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Alert.alert('Reset Tutorials', 'Clear all tutorial seen states? All tutorials will fire again as if seen for the first time, including the app orientation.', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Reset', style: 'destructive', onPress: async () => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                  await resetAllTutorials();
+                  Alert.alert('Done', 'Tutorial states cleared. Restart the app to see the app orientation again.');
+                }},
+              ]);
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Reset Tutorials</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Re-enables all tutorials including app orientation.</Text>
+              </View>
+              <Ionicons name="school-outline" size={18} color={theme.accentRed} />
             </TouchableOpacity>
           </View>
         )}

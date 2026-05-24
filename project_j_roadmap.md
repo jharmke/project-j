@@ -534,18 +534,88 @@ Live release build testing. Log all bugs here in real-time. Status: open / fixed
     [x] Step title not accent colored -- was theme.textPrimary (near-black in light mode). Fix: theme.accentBlueRaw. TutorialOverlay.tsx.
     [x] Spotlight resize animation choppy (38 FPS in dev) -- spring animations on JS thread for layout properties (uNativeDriver: false required). Switched to Easing.out(Easing.cubic) timing (260ms, deterministic). Should be smooth on release build; dev-mode JS overhead is expected. TutorialOverlay.tsx.
     [x] Off-screen target freezes app -- stopgap shipped this session. isOffScreen() helper detects out-of-viewport coords after measureInWindow. Falls back to null layout (full-screen dim + centered bubble -- Skip always reachable). Auto-scroll to card is the proper fix, logged in NOW below. TutorialOverlay.tsx.
+    [x] Engine robustness pass -- 2026-05-24. findNextValidStep() added to TutorialContext. Two new TutorialStep fields: skipIfTargetMissing (skip step if ref not registered -- handles dynamic/conditional UI) and skipForModes (skip step for specific coaching modes). startTutorial and advanceStep both use findNextValidStep so invalid steps are silently skipped on launch and on every NEXT tap. TutorialContext.tsx + data/tutorials.ts interface.
+    [x] Home tab tutorial data fixes -- 2026-05-24. Applied across 5 tutorials: cal_card steps 2/3/4 get skipForModes:['mindful'] (stat row not mounted in Mindful); sleep_card step 1 copy rewritten for empty state, steps 2/3/5 get skipIfTargetMissing (donut/stages/feel conditionally mounted); if_card steps 3/4 get skipIfTargetMissing (state-specific elements), steps 2+5 copy rewritten to be state-agnostic; yvy_card steps 2/3 get skipIfTargetMissing (metrics not mounted in empty state) + Mindful copy corrected (removed Net Calories reference and color-indicator language); meta step 1 discipline copy fixed ("top-left" -> "top-right"). data/tutorials.ts.
+    [x] TutorialOverlay accent ring dot bug -- 2026-05-24. When targetKey is 'none', spotW/spotH animate to 0 but borderWidth:1.5 rendered a visible blue dot at screen center. Fix: spotActive state boolean, set true only when layout is non-null. Accent ring conditionally rendered. TutorialOverlay.tsx.
+    [x] Reset Tutorials dev tool -- 2026-05-24. "Reset Tutorials" row added to 7-tap Dev Tools section in settings.tsx. Calls resetAllTutorials() (clears pj_tutorials + pj_tutorial_meta). Destructive alert confirm + heavy haptic. Now you can reset and retest tutorials without digging in AsyncStorage.
 
 NOW -- active this session
   [ ] Tutorial auto-scroll to off-screen target -- CRITICAL BUG. When a tutorial step targets a card not currently visible in the ScrollView, the overlay shows but the spotlight/bubble are off-screen and the Pressable absorber freezes all interaction. Stopgap shipped (off-screen fallback to full-screen dim). Proper fix: when measureInWindow returns off-screen coordinates, scroll the main ScrollView to bring the target into view, then re-measure. Requires registering ScrollView refs per tab in TutorialContext (or a separate context) and calling scrollTo. Affects all tabs with scrollable content. MUST ship before external TestFlight.
   [ ] Tutorial language audit -- 79 instances of " -- " (double-dash) found in data/tutorials.ts across all 19 tutorials and 3 mode variants. All need to be converted to em dashes or reworded. Also audit for tone consistency per mode, accuracy of feature descriptions, and any copy that references UI elements incorrectly. High volume change -- dedicated pass required.
-  [ ] Meta tutorial dev tool -- user has no way to replay the meta tutorial once dismissed (intentionally or accidentally). resetAllTutorials() already exists in TutorialContext.tsx but is not wired to dev tools in settings.tsx. Add "Reset Tutorials" row to the 7-tap dev section -- fires resetAllTutorials(), alert confirms. Quick add. settings.tsx.
-  [ ] IF card tutorial state-dependency -- when if_card tutorial is run while IF is in State 3 (eating window), step 3 targets if_card_active which is only mounted in State 2 (active fast). Step shows confusing full-screen dim mid-tutorial. Tutorial was authored assuming user starts from State 1. Options: (a) state-aware step skipping in engine (skip steps whose target key isn't currently mounted), (b) pre-launch check -- warn user to reset IF first, (c) restructure tutorial steps to not rely on mid-state views. Investigate and decide before Log tab wiring since Log tutorials will have similar navigation-state dependency issues.
 
 SOON -- confirmed next few sessions
+  tutorialOverrideState pattern -- architectural idea for stateful card tutorials. When a tutorial starts on a card that has multiple UI states driven by real data (IF card: idle/active/eating; sleep card: path 1/2/3; YvY: empty/populated), the card should accept a tutorialOverrideState prop that forces it to render a specific state purely visually -- no AsyncStorage changes, no real data touched. Tutorial engine advances through all states in sequence so every step gets a guaranteed spotlight on the target element. When tutorial ends or is skipped, prop clears and card snaps back to actual state. Primary use case: IF card tutorial so steps 3+4 (TAP WHEN YOU EAT, LAST MEAL) always spotlight correctly regardless of which state the user starts from. Pattern is broadly reusable -- any card with conditional rendering driven by real-time state is a candidate. IFCard is the first implementation target.
+  Head-to-Head toolkit -- app/head-to-head.tsx has no (i) tooltip or guided tour. WLT explanation, score bar, delta lines, and the "Results locked at midnight" concept all live here and have no in-app explanation. Needs: tooltipRegistry entry (key: 'head_to_head'), TooltipIcon on the screen header, definitions for Score, Win/Loss/Tie logic (per metric rules), Delta column, Results countdown. This is where WLT explanation belongs -- NOT in the YvY home card tooltip.
   Dev tools "Restore from Cloud" button -- restoreIfFresh() auto-fires on true fresh install but only when zero local pj_* data exists. If partial data exists (e.g., some keys present but a day's log is missing after a build switch), auto-restore does not trigger. Add a manual "Restore from Cloud" button to dev tools that forces the full Firestore restore regardless of local state -- for recovery after build switches where data ends up partially missing. services/syncService.ts + settings.tsx. BEFORE NEXT TESTFLIGHT BUILD.
   Tutorial hidden-card guard -- if a user hides a home card (e.g., IF card removed via Edit Layout) and then launches that card's tutorial from the Home toolkit, the target refs are unregistered and the tutorial runs as a confusing text-only full-screen-dim walkthrough. Correct behavior: check if first step's target key is registered before starting; if not and the tutorial is for a hideable home card, show "The [Card Name] card isn't on your home screen. Add it from Edit Layout to follow along." and cancel. Only home tab card tutorials (cal_card, macros_card, sleep_card, if_card, yvy_card) need this guard -- log/workout/stats/profile screens always have content visible. TutorialContext.tsx + startTutorial(). In spec under Edge Cases.
   Tutorial spotlight target wiring (Log tab next) -- Home tab fully wired this session. Log tab keys still open: log_meal_add, log_search_bar, log_result_row, log_food_detail_amount, log_food_detail_stepper, log_food_detail_serving, log_food_detail_meal, log_save_btn, log_entry_row, log_delete_btn, log_date_nav, log_meal_total, log_today_total. Then workout, stats, profile. Same pattern: useTutorialTarget('key') + ref={ref} collapsable={false} on target View.
-  Smart Tips / Smart Insights -- SEPARATE DEDICATED SCOPING SESSION REQUIRED before any build. Do not build piecemeal. Design alongside Effort vs Results as a system (EvR = backward looking, Smart Tips = forward looking). Three tip tiers: Urgent / Pattern / Insight. Max 1 tip/day, cooldown on repeats, biggest issue first. Faith/mode aware language. Possible home: dedicated Smart Tip home card. Full spec TBD in scoping session.
+  Smart Tips / Smart Insights -- DESIGN NOTES CAPTURED 2026-05-24. DO NOT BUILD PIECEMEAL. Full scoping session required before any code. Design as a system with Effort vs Results. Notes below are ideation and discussion -- nothing locked yet.
+
+  NORTH STAR: feels like a real coach watching your data -- not an app surfacing generic advice. Tips read like a person looked at your specific numbers and drew a conclusion you wouldn't have found yourself. Target tone example: "You're eating at a deficit but only hitting 86g of protein. At your size, that's the difference between losing fat and losing muscle. The scale might move but you won't like what you're losing." Language is "we noticed..." -- observational, specific, never preachy. Core differentiator: diagnosing WHY you're stuck before the user wastes weeks doing it wrong.
+
+  WHAT THE SYSTEM IS: A rules engine layered on user data, time-aware and cross-dimensional. Not single-metric snapshots -- the power is in connecting multiple signals to produce a diagnosis the user couldn't have made themselves. Weak tip example: "Protein is low. Protein helps preserve muscle." Strong tip example: "Protein is low AND fiber is low AND you're only logging 50% of days. The pattern suggests your diet skews heavily processed, which would explain why hunger is probably an issue even in a deficit." Tips should feel like customized personal messages, not templates with fill-in-the-blank data. More specific personal data woven into tip language = better.
+
+  DATA SOURCES: weight trends, calories / net calories, macros (protein, fiber, fat, carbs), extended nutrition (sodium, sugar, vitamins), activity / cardio patterns, logging consistency, sleep (when available).
+
+  THE THREE TIP TIERS (directional, not finalized):
+  - Urgent: something actively working against the user's goal right now. High signal, small count. Should be rare -- if it fires every week it loses meaning. Should feel like "hey man, we need to talk." Examples: net calories consistently above goal for 5+ days while cutting, protein so low muscle retention is at risk.
+  - Pattern: consistent behavioral trend quietly causing damage. Not a crisis but left unchecked it becomes one. These make the system feel smart -- catching things the user didn't notice because no single day looked that bad. Example: every weekend calories spike 400-600 over goal, erasing the weekday deficit. No single day was a disaster. The pattern is.
+  - Insight: editorial, things the user would never think to check. Not urgent, not a pattern necessarily. Just a smart observation. Example: sodium is consistently high on days you weigh more -- that's probably water retention not fat gain, don't panic on those weigh-in days.
+
+  TRIGGER LOGIC (open, not resolved -- two failure modes: too noisy or too quiet):
+  A tip fires only when it clears three gates:
+  1. Magnitude -- the gap is meaningful, not minor. Directional idea: 20%+ under protein target, not 5%. Exact thresholds TBD.
+  2. Consistency -- it's a pattern, not a one-day blip. Minimum window probably 4-5 days for most triggers.
+  3. Novelty -- hasn't been surfaced recently. Cooldown period TBD.
+  Miss any gate = stays queued.
+
+  PRIORITY RANKING (how system decides what to show): Tier (Urgent > Pattern > Insight), then Magnitude (how far off), then Duration (how long pattern has been happening). Highest ranked tip wins the card slot. Not random, not rotating equally -- most worthy tip wins. When issue resolves or cools down, next moves up.
+
+  OTHER TRIGGER GUARDRAILS: max one tip per day. Same tip no-repeat cooldown (X days TBD). Logging consistency affects confidence -- low logging days should affect whether a tip fires or gets flagged low-confidence.
+
+  PLATEAU vs EVERGREEN:
+  - Plateau-triggered: reactive. Weight stalls for X days, then system goes looking for a culprit. Different urgency, different rules.
+  - Evergreen: proactive. Don't need a plateau to fire, just need the pattern present.
+  These need separate trigger logic and separate cadence rules.
+
+  TWO MODES FRAMEWORK:
+  - Reactive mode: user is frustrated and asking "why am I not making progress?" High intent, high attention, wants depth and a real diagnosis. "Help me" button idea lives here.
+  - Proactive mode: system catches something before user even knows to ask. Lower friction, has to earn its place without being annoying. Morning debrief card idea lives here.
+  Both feel necessary. They might live in different places but run off the same engine.
+
+  FEATURE HOMES (not decided):
+  - Home screen Smart Tips card: proactive mode home. One card max. Shows single highest priority active tip. Not a notification, just there when you open the app.
+  - Card visual ideas: auto-swipe / cycle animation through 2-3 tips (feels alive, not static), dot indicator at bottom so user knows there's more, small brain or spark icon to signal intelligence, subtle animated gradient or shimmer on card border (just enough to catch the eye, not loud), sub-label "based on your last 14 days" to signal data-driven and personalized, slightly different elevation than standard home cards -- distinct but not jarring.
+  - Smart Tips dedicated screen: tapping home card goes here. Full diagnosis, coach voice throughout, more context, maybe one suggested action. Not a data dump -- focused and readable. Links to Effort vs Results at the bottom.
+  - Day Detail: smart placement -- user just logged, looking back at day, right headspace to receive a tip. Pattern and Insight tier only here (not Urgent -- Urgent lives on home screen). Day detail tips shorter -- one or two sentences, tap to expand. Same engine, condensed format.
+  - Push notifications: flagged as risky. Easy to ignore, easy to disable, bad tip damages trust fast. Tentative thinking: hold push notifications for Urgent tier only, only after multi-day confirmed pattern. Not a priority.
+  - Dedicated standalone tab: currently disfavored. Risk is it becomes a graveyard tab nobody visits.
+
+  SMART TIPS vs EFFORT vs RESULTS -- THE DISTINCTION:
+  Smart Tips = the diagnosis. Coach voice, pattern recognition, cross-referenced signals. Tells you what's wrong and why. Actionable, personal, short enough to actually read.
+  Effort vs Results = the evidence. The data that backs up the diagnosis. Where you go to see the full picture. More like a lab report than a conversation.
+  Concrete use case: user logging 3 weeks, calories mostly on point, weight flat for 10 days. Smart Tips home card: "We noticed your weight has been flat for 10 days despite hitting your calorie goal most days. Your protein is averaging 86g -- about 40g below your target. At a deficit with low protein, your body is likely holding onto fat and losing muscle instead. That could explain the stall." User taps. Goes to Smart Tips screen. Sees full diagnosis + suggested action: "try hitting 120g+ for the next 7 days." User taps "See the data behind this." Goes to Effort vs Results, auto-scrolled to macro section. Sees: weight trend chart (flat 10 days), calorie accuracy (11/14 days), protein trend (86g vs 124-177g target), logging consistency (10/14 days), burn accuracy (80%).
+
+  WHAT EFFORT vs RESULTS SHOULD BECOME: current state tries to be both diagnosis and evidence, doing neither well. Should become a proper performance report answering three questions: How consistent was I? Was my effort accurate (burn, logging, calories)? What did my body actually do in response? Power is in showing weight trend vs calorie trend vs activity trend together. Did effort match results? If not, why not? Not to tell user what to do -- to show the evidence so they understand the diagnosis Smart Tips already gave them.
+
+  LINKING SMART TIPS TO EFFORT vs RESULTS: Smart Tips is the primary referrer. Smart Tips screen should have a link at the bottom -- "See the data behind this" or "View your full report" -- that deep links into Effort vs Results, auto-scrolled to the relevant section. If tip is about protein, land on macro section. Not a generic dump to top of page. Other potential entry points: weight log contextual link, end-of-day reflection nudge after full logged day.
+
+  OPEN QUESTIONS (unresolved as of 2026-05-24):
+  - Exact threshold values for magnitude gates (protein gap %, calorie gap %, etc.)
+  - Cooldown duration (X days between same tip repeating)
+  - Minimum consistency window (4-5 days discussed, not locked)
+  - Final home(s) for proactive vs reactive modes
+  - Whether "help me" button is its own screen or CTA inside existing page
+  - How plateau detection works technically (X days flat weight = plateau trigger)
+  - How low logging consistency affects tip confidence / firing rules
+  - How tips get generated: hardcoded rules engine vs AI-assisted vs hybrid (first real fork in the road, not yet discussed)
+  - How tip history / archive works (user should probably be able to see past tips)
+  - How tips interact with user goals (cut vs bulk vs maintain changes what gets flagged)
+  - Bible / faith layer -- any overlap with morning intention feature?
+  - Whether day detail tip is same tip as home card or a different one
+  - Auto-swipe card -- how many tips cycle, what determines the set
+
+  NOT YET DISCUSSED: actual build approach for tip generation engine, tip history archive UI, goal-mode awareness (cut vs bulk vs maintain), faith integration overlap.
 
 Running Plans -- dedicated planning session before building. Structured multi-week training plans for common race distances (5K, 10K, half marathon, full marathon). User inputs current mile/5K/10K PR times + fitness level → app generates personalized day-by-day plan. PR tracking section for all race distances. Daily workout prescriptions integrate with workout tab (just like loading a routine). Diet tips per training phase (carb loading, recovery nutrition, race week). Garmin-inspired intelligent plan generation. Depends on HR Zone Training shipping first (zone targets are core to plan prescriptions). Dedicated running section separate from general workout tab -- may warrant its own tab or sub-screen.
 Workout library sort + filter -- dedicated session. Filter button opens bottom sheet: tag chips (Push/Pull/Legs/Core/Cardio), type (Lift/Cardio), muscle group (when field exists). Sort options: A-Z, Z-A, Favorites First, Recently Used. Both active simultaneously. Filter resets on library exit. High priority -- needed alongside routine builder.
@@ -600,6 +670,8 @@ Custom water amount modal -- DONE. bgSheet, Animated.Value fade, tap-outside dis
 [x] Recipe builder unit dropdown click-outside dismiss -- converted inline Animated.View to Modal-based dropdown using measureInWindow for position. Tapping anywhere outside closes it smoothly. recipe-builder.tsx.
 [x] Recipe builder extended nutrition in totals -- Ingredient interface extended with fiber/sugar/sodium/cholesterol/saturatedFat. Total Nutrition and Per Serving cards now show extended row when any ingredient has extended data. recipe-builder.tsx.
 [x] Multiple serving sizes on custom My Foods -- additionalServings: [{label, grams}] saved on MyFood objects. CustomFoodCreator.tsx: Add Serving UI in create flow. Both Edit Food modals (add-food.tsx and food-detail.tsx): manage additional servings inline. food-detail.tsx: builds customServings array from additionalServings + per-gram rates, shows serving picker when >1 serving, bypasses syntheticServing path.
+[ ] Clone food additional serving size units -- adding an additional serving size on a cloned food only allows grams. Should allow all custom units (ml, fl oz, oz, etc.) same as original CustomFoodCreator serving unit picker. food-detail.tsx or CustomFoodCreator.tsx. (SOON)
+[ ] Cloned food calorie mismatch in serving picker -- serving size picker shows wrong calorie value (e.g. 158 kcal) while macro donut shows correct value (e.g. 160 kcal) for cloned My Foods. Picker pulling stale or incorrect calorie data. food-detail.tsx. (SOON)
 [x] Recipe 0 kcal / no macros in Recipes tab -- getCalories fell through to 0 when foodNutrients was empty. Fixed: falls back to food.cal. getMacros had no recipe branch. Fixed: isRecipe path reads recipeData.totalProtein/Carbs/Fat divided by servingCount. add-food.tsx.
 [x] Recipe builder capital G fix -- Bebas Neue renders lowercase as uppercase. Wrapped "g" unit in nested DMSans Text (macroUnit style, fontSize 14) inside each macroVal. Total Nutrition and Per Serving cards fixed. recipe-builder.tsx.
 [x] GoogleService-Info.plist gitignored -- added to .gitignore. Run: git rm --cached GoogleService-Info.plist then commit. Rotate the Google API key in Google Cloud Console (was exposed in commit f6b94736 on public repo). Firebase API keys are lower-risk than typical secrets but rotation is still best practice.
@@ -638,7 +710,7 @@ Tab bar scroll-to-top -- tapping the active tab icon when already on that tab sh
 Big dimmed card icon watermark -- large version of each card's icon sitting behind card content at ~5% opacity. Subtle texture, gives cards more identity. Apply to all home screen cards.
 Steps goal button -- remove goal button from steps card top right. Move step goal setting to profile/settings alongside other goals.
 Weight projected graph in profile -- add alongside weight goal card in profile.
-exerciseMinutes on Today's Training card -- surface Apple Health exercise minutes alongside the workout summary. Pull from pj_YYYY-MM-DD exerciseMinutes field (persisted since this session). Show as a stat row or subtle secondary line. (SOON)
+exerciseMinutes on Today's Training card -- reposition to bottom-right stat area under the exercise minutes label. Currently surfaced as bottom stat line (confirmed working on release build). Position adjustment to bottom-right needed. index.tsx. (SOON)
 Physical measurements in profile -- waist, neck, hip fields. Enables Navy method body fat estimate and other formulas that require body circumference. Feeds more accurate color coding on Fitness Metrics card. (SOON)
 [x] Shimmer effect extension -- steps bar at/over goal: white LinearGradient sweep (same pattern as water bar). Sleep score donut at >= 85: center score does a quick scale pop (1.08x, 200ms out cubic) + white circular flash overlay (opacity 0→0.18→0), repeating every ~3.3s. Ring arc shimmer scrapped (SVG compositing artifacts). Active cals, macros, calories bars intentionally skipped.
 Goals consolidation -- move all daily goals (calories, water, steps, sleep, macros, weight goal) into a dedicated Goals section in profile or settings. Two sub-sections: Fitness Goals (steps, sleep, active cals) and Nutrition Goals (calories, water, macros). Removes scatter of goals across home screen cards and profile. Dedicated session.
@@ -699,12 +771,14 @@ Social and accountability -- lightweight accountability partner feature, not a f
 Vitamins & minerals fields on Custom Food Creator -- Vitamin D, Calcium, Iron, Potassium. Power users track these, feeds future reporting. (SOON)
 My Foods delete warning -- confirm Alert before × delete on library list rows. DONE. Shows food name, "cannot be undone." Destructive style. add-food.tsx.
 Custom Food Creator photo upload -- photo field on create/edit. (SOON)
+Food library sort + filter -- My Foods and Favorites tabs need sort options: A-Z, Z-A, by calorie amount. Sort sheet or pills, same general pattern as workout library. Dedicated session. (SOON)
 "Adding to" UX from library -- when food detail opened from library, meal selector should be more prominent since user must always pick. Currently defaults to Morning. (SOON)
 Calorie breakdown by meal -- each slot gets a budget. Unclear if needed, revisit later.
 
 Workout
 
 [x] Today's Training empty/rest day states (partial) -- unassigned day state shipped: card with Load Routine + Add Exercise buttons. Rest day warm encouragement state still open. workout.tsx.
+[ ] BUG: Rest day empty state not overridden by Apple Health workout -- importing an Apple Health workout while the day is tagged as rest did not show the workout or override the empty state. Workout only appeared after manually removing the rest tag. Bug. workout.tsx. (SOON)
 You vs Yesterday streak (vsStreak) -- state declared and badge renders but never calculated or persisted. Always 0. Needs full implementation: calculate win/loss result at end of day, persist streak count to AsyncStorage, reset on loss.
 My Programs builder -- name it, assign focus/tags/color per day, save, load. MOVED TO SOON.
 Programs button move to library -- DONE. See workout library redesign in DONE section.
@@ -719,6 +793,7 @@ IF card polish -- green TAP WHEN YOU EAT button needs bgInset+'80' semi-transpar
 [x] Workout tab nested scroll bug -- DraggableFlatList inside ScrollView warning. Attempted fix broke entire workout tab; reverted. Determined acceptable as-is -- scroll architecture stable, warning does not affect functionality.
 [x] Workout drag handle -- hit target and dead zone resolved.
 Edit exercise input validation -- decimal/integer restrictions on all numeric fields, same standard as weight input. (SOON)
+[ ] Cardio distance format inconsistency -- distance saves as "1 MI" when user types "1" but "1.0 MI" when user types "1.0". Should be uniform format X.XX across all cardio fields regardless of input. Audit all cardio numeric fields (duration, distance, speed, incline, resistance) for consistent display format. workout.tsx. (SOON)
 Apple Health avg HR per workout -- research whether kingstinct library exposes avg HR per workout sample; if yes, auto-populate on workout sync. (SOON)
 Last-used dimmed prefill -- when adding an exercise, ghost in last logged sets/reps/weight as placeholder text. Storage lookup by exercise name on modal open. Always blank until user types -- never auto-fills. (workout tab pass item)
   [x] Sessions System -- SHIPPED as Routine Builder. See DONE section.
@@ -810,6 +885,7 @@ Today's Message overhaul -- full spec below. Dedicated session.
 [x] Achievement toast scroll-to-highlight -- SHIPPED. Toast tap navigates to /achievements?highlightId=def.id. achievements.tsx: useLocalSearchParams reads highlightId, forceOpenCat state auto-opens target category via forceOpen prop on CollapsibleCategory, onCategoryLayout tracks Y per category, ScrollView scrolls to category Y after 450ms. AchievementCard gets highlight prop: 2x scale pulse (1.0→1.06→1.0, ~1.5s) on highlighted card. AchievementToast.tsx + achievements.tsx.
 Achievement toast remaining -- trigger context under name, wording update before App Store launch. Still open.
 Achievement page trophy hex cards -- inconsistent sizes across cards. All hex badges must be uniform size. CPP bug. (SOON)
+[ ] "Consistent Voice" achievement missing description -- no custom description text defined for this achievement. achievementData.ts. (SOON)
 Cycling Bible verses -- fine-print / sub-label style text, centered at the bottom of applicable tabs. Confirmed scope: Log tab and Workout tab only. Home already has Today's Message card -- two verses on home is too much, intentionally excluded. Unobtrusive ambient faith element, not a card. Thematically relevant per tab: food/stewardship verse for Log, effort/perseverance verse for Workout. Rooted: always on. Exploring: optional or off. NRN: hidden. Expand to other tabs only if it feels natural after launch. (SOON)
 
 Process and infrastructure

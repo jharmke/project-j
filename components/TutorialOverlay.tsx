@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Animated,
   Dimensions,
+  Easing,
   Pressable,
   StyleSheet,
   Text,
@@ -22,6 +23,14 @@ const SCRIM      = 'rgba(0,0,0,0.82)';
 
 type TargetRect = { x: number; y: number; w: number; h: number };
 type BubblePos  = { above: boolean; value: number };
+
+// Returns true when a measured rect is outside the visible viewport.
+// Off-screen targets fall back to full-screen dim + centered bubble so
+// the user can always reach Skip -- preventing input-absorber freeze.
+function isOffScreen(l: TargetRect | null): boolean {
+  if (!l) return false;
+  return l.y + l.h < 0 || l.y > SH - TAB_H - 50;
+}
 
 export default function TutorialOverlay() {
   const { activeState, advanceStep, skipTutorial, getTarget } = useTutorial();
@@ -94,10 +103,10 @@ export default function TutorialOverlay() {
     }
     return new Promise(resolve => {
       Animated.parallel([
-        Animated.spring(spotX, { toValue: tx, tension: 120, friction: 14, useNativeDriver: false }),
-        Animated.spring(spotY, { toValue: ty, tension: 120, friction: 14, useNativeDriver: false }),
-        Animated.spring(spotW, { toValue: tw, tension: 120, friction: 14, useNativeDriver: false }),
-        Animated.spring(spotH, { toValue: th, tension: 120, friction: 14, useNativeDriver: false }),
+        Animated.timing(spotX, { toValue: tx, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
+        Animated.timing(spotY, { toValue: ty, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
+        Animated.timing(spotW, { toValue: tw, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
+        Animated.timing(spotH, { toValue: th, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: false }),
       ]).start(() => resolve());
     });
   }, [spotX, spotY, spotW, spotH]);
@@ -110,7 +119,8 @@ export default function TutorialOverlay() {
     bubbleTransY.setValue(16);
 
     const firstStep = state.tutorial.steps[state.stepIndex];
-    const layout    = await measureTarget(firstStep.targetKey);
+    const rawLayout = await measureTarget(firstStep.targetKey);
+    const layout    = isOffScreen(rawLayout) ? null : rawLayout;
     const pos       = computeBubblePos(layout);
 
     await animateSpot(layout, true);
@@ -137,8 +147,9 @@ export default function TutorialOverlay() {
       Animated.timing(bubbleOpacity, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => resolve());
     });
 
-    const layout = await measureTarget(step.targetKey);
-    const pos    = computeBubblePos(layout);
+    const rawLayout = await measureTarget(step.targetKey);
+    const layout    = isOffScreen(rawLayout) ? null : rawLayout;
+    const pos       = computeBubblePos(layout);
     setBubblePos(pos);
     setRenderState(state);
     await animateSpot(layout, false);
@@ -166,6 +177,9 @@ export default function TutorialOverlay() {
   useEffect(() => {
     if (!activeState) {
       if (visible && !isExiting.current) doExit();
+      // Reset tracking so the same tutorial can be replayed immediately
+      prevTutorialId.current = null;
+      prevStepIndex.current  = -1;
       return;
     }
 
@@ -262,8 +276,9 @@ export default function TutorialOverlay() {
                       styles.dot,
                       {
                         width: i === stepIdx ? 16 : 6,
-                        backgroundColor:
-                          i === stepIdx ? theme.accentBlueRaw : 'rgba(255,255,255,0.2)',
+                        backgroundColor: i === stepIdx ? theme.accentBlueRaw : 'transparent',
+                        borderWidth: i === stepIdx ? 0 : 1.5,
+                        borderColor: i === stepIdx ? 'transparent' : theme.textMuted,
                       },
                     ]}
                   />
@@ -283,7 +298,7 @@ export default function TutorialOverlay() {
           </View>
 
           {/* Title */}
-          <Text style={[styles.title, { color: theme.textPrimary }]}>{step.title}</Text>
+          <Text style={[styles.title, { color: theme.accentBlueRaw }]}>{step.title}</Text>
 
           {/* Body */}
           <Text style={[styles.body, { color: theme.textSecondary }]}>{bodyText}</Text>

@@ -109,6 +109,20 @@ Full architecture spec to be written in dedicated build session before any code 
 
 ---
 
+## Edge Cases
+
+### Hidden Card + Tutorial Launch
+Home tab cards can be hidden or removed by the user via Edit Layout. If a user hides the IF card (for example) and then opens the Home Toolkit and taps the IF tutorial, the tutorial's target refs are unregistered (component not mounted). Current behavior: overlay fires with full-screen dim + centered bubble on every step -- no spotlight anywhere. Tutorial runs as a confusing text-only walkthrough for a feature not even visible on screen.
+
+**Correct behavior**: Guard at `startTutorial()` time for home-tab tutorials whose primary card can be hidden. Check if the tutorial's first step target key is registered in TutorialContext before starting. If unregistered and the tutorial is for a hideable home card, show an inline message instead: *"The [Card Name] card isn't on your home screen right now. Add it from Edit Layout to follow along."* Do not start the tutorial. Other tabs (Log, Workout, Stats, Profile) always have their content visible -- this guard only applies to home tab card tutorials.
+
+Cards this applies to: cal_card, macros_card, sleep_card, if_card, yvy_card -- all can be hidden via Edit Layout.
+Cards this does NOT apply to: log tutorials, workout tutorials, stats tutorials, profile tutorials -- those screens always render their content.
+
+**Status**: Not yet implemented. In SOON. Current behavior is graceful fallback (no crash/freeze) but bad UX.
+
+---
+
 ## HOME TAB
 
 ### Toolkits

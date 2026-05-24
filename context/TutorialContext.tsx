@@ -10,6 +10,9 @@ export interface TutorialStep {
   highlightPadding?: number;
   skipIfTargetMissing?: boolean;
   skipForModes?: ('discipline' | 'balanced' | 'mindful')[];
+  navigateTo?: string;
+  navigateDelay?: number;
+  tutorialAction?: string;
 }
 
 function findNextValidStep(
@@ -37,19 +40,28 @@ export interface ActiveTutorialState {
 
 export interface TutorialContextType {
   startTutorial: (id: string) => Promise<void>;
-  advanceStep: () => void;
+  advanceStep: () => Promise<void>;
   skipTutorial: () => void;
   registerTarget: (key: string, ref: React.RefObject<View | null>) => void;
   unregisterTarget: (key: string) => void;
   getTarget: (key: string) => React.RefObject<View | null> | undefined;
+  registerTutorialAction: (key: string, callback: () => Promise<void>) => void;
+  unregisterTutorialAction: (key: string) => void;
   activeState: ActiveTutorialState | null;
 }
 
 const TutorialContext = createContext<TutorialContextType | null>(null);
 
 export function TutorialProvider({ children }: { children: React.ReactNode }) {
-  const [activeState, setActiveState] = useState<ActiveTutorialState | null>(null);
+  const [activeState, setActiveStateReact] = useState<ActiveTutorialState | null>(null);
+  const activeStateRef = useRef<ActiveTutorialState | null>(null);
   const refs = useRef<Record<string, React.RefObject<View | null>>>({});
+  const actions = useRef<Record<string, () => Promise<void>>>({});
+
+  const setActiveState = useCallback((value: ActiveTutorialState | null) => {
+    activeStateRef.current = value;
+    setActiveStateReact(value);
+  }, []);
 
   const registerTarget = useCallback((key: string, ref: React.RefObject<View | null>) => {
     refs.current[key] = ref;
@@ -60,6 +72,14 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const getTarget = useCallback((key: string) => refs.current[key], []);
+
+  const registerTutorialAction = useCallback((key: string, callback: () => Promise<void>) => {
+    actions.current[key] = callback;
+  }, []);
+
+  const unregisterTutorialAction = useCallback((key: string) => {
+    delete actions.current[key];
+  }, []);
 
   const startTutorial = useCallback(async (id: string) => {
     const { TUTORIALS } = await import('../data/tutorials');
@@ -75,31 +95,41 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     const firstStep = findNextValidStep(0, tutorial.steps, styleMode, refs.current);
     if (firstStep >= tutorial.steps.length) return;
     setActiveState({ tutorial, stepIndex: firstStep, styleMode });
-  }, []);
+  }, [setActiveState]);
 
-  const advanceStep = useCallback(() => {
-    setActiveState(prev => {
-      if (!prev) return null;
-      const next = findNextValidStep(prev.stepIndex + 1, prev.tutorial.steps, prev.styleMode, refs.current);
-      if (next >= prev.tutorial.steps.length) {
-        markTutorialSeen(prev.tutorial.id);
-        return null;
+  const advanceStep = useCallback(async () => {
+    const prev = activeStateRef.current;
+    if (!prev) return;
+
+    const currentStep = prev.tutorial.steps[prev.stepIndex] as TutorialStepData & { tutorialAction?: string };
+
+    if (currentStep?.tutorialAction) {
+      const action = actions.current[currentStep.tutorialAction];
+      if (action) {
+        try { await action(); } catch {}
       }
-      return { ...prev, stepIndex: next };
-    });
-  }, []);
+    }
+
+    const next = findNextValidStep(prev.stepIndex + 1, prev.tutorial.steps, prev.styleMode, refs.current);
+    if (next >= prev.tutorial.steps.length) {
+      markTutorialSeen(prev.tutorial.id);
+      setActiveState(null);
+    } else {
+      setActiveState({ ...prev, stepIndex: next });
+    }
+  }, [setActiveState]);
 
   const skipTutorial = useCallback(() => {
-    setActiveState(prev => {
-      if (prev) markTutorialSeen(prev.tutorial.id);
-      return null;
-    });
-  }, []);
+    const prev = activeStateRef.current;
+    if (prev) markTutorialSeen(prev.tutorial.id);
+    setActiveState(null);
+  }, [setActiveState]);
 
   return (
     <TutorialContext.Provider value={{
       startTutorial, advanceStep, skipTutorial,
       registerTarget, unregisterTarget, getTarget,
+      registerTutorialAction, unregisterTutorialAction,
       activeState,
     }}>
       {children}

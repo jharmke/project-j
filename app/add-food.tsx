@@ -15,6 +15,9 @@ import { USDA_API_KEY } from '../config';
 import { db, getUserId, loadFromFirebase, saveToFirebase } from '../firebaseConfig';
 import { storageSet } from '../utils/storage';
 import { useTheme } from '../theme';
+import { useTutorial } from '../context/TutorialContext';
+import { useTutorialTarget } from '../hooks/useTutorialTarget';
+import { TUTORIAL_CHICKEN_BREAST } from '../data/tutorialFood';
 import CryptoJS from 'crypto-js';
 
 
@@ -336,8 +339,12 @@ export default function AddFoodScreen() {
 const [recentFoods, setRecentFoods] = useState<SearchResult[]>([]);
 const [favorites, setFavorites] = useState<MyFood[]>([]);
 const [recipes, setRecipes] = useState<any[]>([]);
-const { meal, date, selectMode, day, recipeMode } = useLocalSearchParams<{ meal: string; date: string; selectMode: string; day: string; recipeMode: string }>();
+const { meal, date, selectMode, day, recipeMode, tutorialMode } = useLocalSearchParams<{ meal: string; date: string; selectMode: string; day: string; recipeMode: string; tutorialMode: string }>();
 const isRecipeMode = recipeMode === 'true';
+const isTutorialMode = tutorialMode === 'true';
+const searchBarRef = useTutorialTarget('log_search_bar');
+const firstResultRef = useRef<View>(null);
+const { registerTarget, unregisterTarget } = useTutorial();
 const [showEditMyFood, setShowEditMyFood] = useState(false);
 const [showSavedFoodsSection, setShowSavedFoodsSection] = useState(false);
 const [editFoodData, setEditFoodData] = useState<any>(null);
@@ -572,6 +579,26 @@ const saveEditFood = async () => {
       showMyFoods('');
     }
   }, [myFoods]);
+
+  useEffect(() => {
+    if (!isTutorialMode) return;
+    const s0 = TUTORIAL_CHICKEN_BREAST.servings.serving[0];
+    const tutorialResult = {
+      description: TUTORIAL_CHICKEN_BREAST.food_name,
+      foodNutrients: [
+        { nutrientName: 'Energy', unitName: 'KCAL', value: parseInt(s0.calories) },
+        { nutrientName: 'Protein', unitName: 'G', value: parseFloat(s0.protein) },
+        { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: parseFloat(s0.carbohydrate) },
+        { nutrientName: 'Total lipid (fat)', unitName: 'G', value: parseFloat(s0.fat) },
+      ],
+      fsId: TUTORIAL_CHICKEN_BREAST.food_id,
+      isTutorialFood: true,
+    };
+    setResults([tutorialResult as any]);
+    setQuery(TUTORIAL_CHICKEN_BREAST.food_name);
+    registerTarget('log_result_row', firstResultRef);
+    return () => unregisterTarget('log_result_row');
+  }, [isTutorialMode]);
 
   const loadMyFoods = async () => {
     try {
@@ -1082,14 +1109,14 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
 </View>
 
       {/* Search */}
-      <View style={styles.searchRow}>
+      <View ref={searchBarRef} style={styles.searchRow}>
         <TextInput
           style={styles.searchInput}
           placeholder="Search food..."
           placeholderTextColor={theme.textDim}
           value={query}
           onChangeText={searchFood}
-          
+
         />
         </View>
 
@@ -1217,7 +1244,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
           const foodName = nameParts[0];
           const brandName = (item as any).brand || (nameParts.length > 1 ? nameParts.slice(1).join(' · ') : null);
           return (
-            <Animated.View style={{ opacity: activeTab === 'favorites' && !query.trim() ? getFavOpacity(item.description) : 1 }}>
+            <Animated.View ref={index === 0 && isTutorialMode ? (firstResultRef as any) : undefined} style={{ opacity: activeTab === 'favorites' && !query.trim() ? getFavOpacity(item.description) : 1 }}>
             <TouchableOpacity style={[styles.resultItem, (item as any).isOverride && styles.resultItemSet]} onPress={() => openFoodDetail(item)}>
               <View style={styles.resultLeft}>
                 {/* Badges */}

@@ -36,12 +36,28 @@ function ThemedStatusBar() {
   return <StatusBar style={themeId === 'dark' ? 'light' : 'dark'} />;
 }
 
+async function removeTutorialEntries() {
+  try {
+    const today = new Date();
+    const todayKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    const saved = await AsyncStorage.getItem(`pj_${todayKey}`);
+    if (!saved) return;
+    const data = JSON.parse(saved);
+    if (!data.entries || !Array.isArray(data.entries)) return;
+    const hasOrphans = data.entries.some((e: any) => e?.tutorialEntry);
+    if (!hasOrphans) return;
+    const cleaned = data.entries.filter((e: any) => !e?.tutorialEntry);
+    await AsyncStorage.setItem(`pj_${todayKey}`, JSON.stringify({ ...data, entries: cleaned }));
+  } catch {}
+}
+
 function RootLayoutNav() {
   const { user, loading: authLoading } = useAuth();
   const [onboardingChecked, setOnboardingChecked] = useState(false);
   const [onboardingComplete, setOnboardingComplete] = useState(false);
 
   useEffect(() => {
+    removeTutorialEntries();
     AsyncStorage.getItem('pj_onboarding_complete')
       .then(val => {
         setOnboardingComplete(val === 'true');

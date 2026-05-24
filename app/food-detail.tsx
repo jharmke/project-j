@@ -16,7 +16,48 @@ import { showCelebration } from '../components/CelebrationOverlay';
 import { saveToFirebase } from '../firebaseConfig';
 import { storageSet } from '../utils/storage';
 import { useTheme } from '../theme';
+import { useTutorial } from '../context/TutorialContext';
+import { useTutorialTarget } from '../hooks/useTutorialTarget';
+import { TUTORIAL_CHICKEN_BREAST } from '../data/tutorialFood';
 import CryptoJS from 'crypto-js';
+
+function buildTutorialChickenFood() {
+  const fsServings = TUTORIAL_CHICKEN_BREAST.servings.serving.map(s => ({
+    label: s.serving_description,
+    calories: Math.round(parseFloat(s.calories)),
+    protein: parseFloat(s.protein),
+    carbs: parseFloat(s.carbohydrate),
+    fat: parseFloat(s.fat),
+    fiber: 0,
+    sugar: 0,
+    sodium: parseFloat(s.sodium),
+    cholesterol: parseFloat(s.cholesterol),
+    saturatedFat: parseFloat(s.saturated_fat),
+    grams: parseFloat(s.metric_serving_amount),
+    unit: s.metric_serving_unit,
+    isDefault: s.serving_id === '__tutorial_serving_100g__',
+  }));
+  return {
+    description: TUTORIAL_CHICKEN_BREAST.food_name,
+    fsId: TUTORIAL_CHICKEN_BREAST.food_id,
+    foodNutrients: [
+      { nutrientName: 'Energy', unitName: 'KCAL', value: 165 },
+      { nutrientName: 'Protein', unitName: 'G', value: 31 },
+      { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: 0 },
+      { nutrientName: 'Total lipid (fat)', unitName: 'G', value: 3.6 },
+      { nutrientName: 'Fiber, total dietary', unitName: 'G', value: 0 },
+      { nutrientName: 'Sugars, total including NLEA', unitName: 'G', value: 0 },
+      { nutrientName: 'Sodium, Na', unitName: 'MG', value: 74 },
+      { nutrientName: 'Cholesterol', unitName: 'MG', value: 85 },
+      { nutrientName: 'Fatty acids, total saturated', unitName: 'G', value: 1 },
+      { nutrientName: 'Polyunsaturated Fat', unitName: 'G', value: 0.8 },
+      { nutrientName: 'Monounsaturated Fat', unitName: 'G', value: 1.2 },
+      { nutrientName: 'Potassium, K', unitName: 'MG', value: 256 },
+    ],
+    fsServings,
+    fsServingGrams: 100,
+  };
+}
 
 const AnimCircle = Reanimated.createAnimatedComponent(Circle);
 
@@ -144,15 +185,18 @@ async function fetchFatSecretServings(fsId: string): Promise<any[]> {
 export default function FoodDetailScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
-  const { foodJson, meal, date, entryIndex, recipeMode } = useLocalSearchParams<{ 
-    foodJson: string; 
-    meal: string; 
+  const { foodJson, meal, date, entryIndex, recipeMode, tutorialMode, tutorialFood } = useLocalSearchParams<{
+    foodJson: string;
+    meal: string;
     date: string;
     entryIndex: string;
     recipeMode: string;
+    tutorialMode: string;
+    tutorialFood: string;
   }>();
 const isRecipeMode = recipeMode === 'true';
-  const food = foodJson ? JSON.parse(foodJson) : null;
+const isTutorialMode = tutorialMode === 'true';
+  const food = tutorialFood === 'chicken_breast' ? buildTutorialChickenFood() : (foodJson ? JSON.parse(foodJson) : null);
   const fsServings: any[] = food?.fsServings || [];
   const myFoodAdditionalServings: Array<{ label: string; grams: number }> = food?.myFoodData?.additionalServings || [];
   const baseServingSize = food?.myFoodData?.servingSize || parseFloat(food?.existingAmount || '100') || 100;
@@ -203,6 +247,12 @@ const isRecipeMode = recipeMode === 'true';
     grams: food?.fsServingGrams || defaultFsServing.grams,
   } : defaultFsServing;
   const { showToast } = useToast();
+  const amountRowRef = useTutorialTarget('log_food_detail_amount');
+  const stepperRowRef = useTutorialTarget('log_food_detail_stepper');
+  const servingPickerRef = useTutorialTarget('log_food_detail_serving');
+  const mealSelectorRef = useTutorialTarget('log_food_detail_meal');
+  const saveButtonRef = useTutorialTarget('log_save_btn');
+  const { registerTutorialAction, unregisterTutorialAction } = useTutorial();
   const [isFav, setIsFav] = useState(false);
   const [showSaveAsCopy, setShowSaveAsCopy] = useState(false);
   const [showEllipsisMenu, setShowEllipsisMenu] = useState(false);
@@ -290,6 +340,46 @@ const isRecipeMode = recipeMode === 'true';
     };
     loadFav();
   }, []);
+
+  const tutorialSaveDataRef = useRef({ amount: '100', unit: 'g', calories: 0, currentMeal: 'Lunch', protein: 0, carbs: 0, fat: 0, calPer100g: 0, proteinPer100g: 0, carbsPer100g: 0, fatPer100g: 0 });
+
+  useEffect(() => {
+    tutorialSaveDataRef.current = { amount, unit, calories, currentMeal, protein, carbs, fat, calPer100g, proteinPer100g, carbsPer100g, fatPer100g };
+  });
+
+  useEffect(() => {
+    if (!isTutorialMode) return;
+    const saveTutorialEntry = async () => {
+      try {
+        const d = tutorialSaveDataRef.current;
+        const today = new Date();
+        const todayKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+        const saved = await AsyncStorage.getItem(`pj_${todayKey}`);
+        const current = saved ? JSON.parse(saved) : {};
+        const entries = current.entries || [];
+        const tutorialEntry = {
+          name: `${food.description} (${d.amount}${d.unit})`,
+          cal: d.calories,
+          meal: d.currentMeal,
+          protein: d.protein,
+          carbs: d.carbs,
+          fat: d.fat,
+          calPer100g: d.calPer100g,
+          proteinPer100g: d.proteinPer100g,
+          carbsPer100g: d.carbsPer100g,
+          fatPer100g: d.fatPer100g,
+          foodNutrients: food.foodNutrients || [],
+          timestamp: Date.now(),
+          fsId: food.fsId || null,
+          tutorialEntry: true,
+        };
+        entries.push(tutorialEntry);
+        await AsyncStorage.setItem(`pj_${todayKey}`, JSON.stringify({ ...current, entries }));
+      } catch {}
+    };
+    registerTutorialAction('saveTutorialEntry', saveTutorialEntry);
+    return () => unregisterTutorialAction('saveTutorialEntry');
+  }, [isTutorialMode]);
 
   const toggleFav = async () => {
     // Spring animation
@@ -695,6 +785,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
         {/* Serving picker -- shows when multiple servings available (FatSecret or custom additional) */}
         {(fsServings.length > 1 || customServings.length > 1) && (
           <TouchableOpacity
+            ref={servingPickerRef as any}
             style={styles.servingPickerBtn}
             onPress={() => setShowServingPicker(true)}>
             <View>
@@ -707,7 +798,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
 
         {/* Servings stepper */}
         {effectiveServing && (
-          <View style={[styles.amountRow, { marginBottom: 12 }]}>
+          <View ref={stepperRowRef} style={[styles.amountRow, { marginBottom: 12 }]}>
             <View>
               <Text style={styles.amountLabel}>Servings</Text>
               {effectiveServing.label ? <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>{effectiveServing.label}</Text> : null}
@@ -764,7 +855,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
         )}
 
         {/* Amount input -- label reflects actual serving unit */}
-        <View style={styles.amountRow}>
+        <View ref={amountRowRef} style={styles.amountRow}>
           <Text style={styles.amountLabel}>Amount ({effectiveServing?.unit || food?.servingUnitType || 'g'})</Text>
           <TextInput
             style={styles.amountInput}
@@ -906,6 +997,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
 
        {/* Meal selector -- inline dropdown */}
 <TouchableOpacity
+  ref={mealSelectorRef as any}
   style={styles.mealSelector}
   onPress={() => {
     if (showMealPicker) {
@@ -950,6 +1042,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
 )}
 
 <TouchableOpacity
+  ref={saveButtonRef as any}
   style={[styles.logBtn, isEditing && !hasChanges && { opacity: 0.4 }]}
   onPress={saveEntry}
   disabled={isEditing && !hasChanges}>

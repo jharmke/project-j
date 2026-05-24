@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
@@ -61,13 +62,12 @@ export default function TutorialOverlay() {
   const prevStepIndex  = useRef<number>(-1);
   const isExiting      = useRef(false);
 
-  // ── Measure a registered target view ──────────────────────────────────────
+  // ── Measure a registered target view (single attempt) ────────────────────
   const measureTarget = useCallback((key: string): Promise<TargetRect | null> => {
     return new Promise(resolve => {
       if (key === 'none') { resolve(null); return; }
       const ref = getTarget(key);
       if (!ref?.current) { resolve(null); return; }
-      // Small delay lets layout settle after navigation or re-render
       setTimeout(() => {
         ref.current!.measureInWindow((x, y, w, h) => {
           resolve(w > 0 && h > 0 ? { x, y, w, h } : null);
@@ -75,6 +75,22 @@ export default function TutorialOverlay() {
       }, 60);
     });
   }, [getTarget]);
+
+  // ── Retry measure -- used after navigation when refs may not be ready yet ─
+  const measureTargetWithRetry = useCallback(async (
+    key: string,
+    maxAttempts = 5,
+    delayMs = 150,
+  ): Promise<TargetRect | null> => {
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      if (attempt > 0) {
+        await new Promise<void>(r => setTimeout(r, delayMs));
+      }
+      const result = await measureTarget(key);
+      if (result !== null) return result;
+    }
+    return null;
+  }, [measureTarget]);
 
   // ── Compute bubble position (above or below spotlight) ───────────────────
   const computeBubblePos = useCallback((layout: TargetRect | null): BubblePos => {
@@ -142,7 +158,7 @@ export default function TutorialOverlay() {
     }, 16);
   }, [measureTarget, computeBubblePos, animateSpot]);
 
-  // ── Step transition: bubble out → move spotlight → bubble in ─────────────
+  // ── Step transition: bubble out → (navigate?) → move spotlight → bubble in ─
   const doStepTransition = useCallback(async (state: ActiveTutorialState) => {
     const step = state.tutorial.steps[state.stepIndex];
 
@@ -150,9 +166,31 @@ export default function TutorialOverlay() {
       Animated.timing(bubbleOpacity, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => resolve());
     });
 
-    const rawLayout = await measureTarget(step.targetKey);
-    const layout    = isOffScreen(rawLayout) ? null : rawLayout;
-    const pos       = computeBubblePos(layout);
+    // If this step requires a screen change, navigate first then retry measurement
+    const navigateTo = (step as { navigateTo?: string }).navigateTo;
+    const navigateDelay = (step as { navigateDelay?: number }).navigateDelay ?? 200;
+
+    let rawLayout: TargetRect | null;
+    if (navigateTo === 'back') {
+      router.back();
+      await new Promise<void>(r => setTimeout(r, navigateDelay));
+      rawLayout = await measureTargetWithRetry(step.targetKey);
+    } else if (navigateTo === 'back_twice') {
+      router.back();
+      await new Promise<void>(r => setTimeout(r, 300));
+      router.back();
+      await new Promise<void>(r => setTimeout(r, navigateDelay));
+      rawLayout = await measureTargetWithRetry(step.targetKey);
+    } else if (navigateTo) {
+      router.push(navigateTo as never);
+      await new Promise<void>(r => setTimeout(r, navigateDelay));
+      rawLayout = await measureTargetWithRetry(step.targetKey);
+    } else {
+      rawLayout = await measureTarget(step.targetKey);
+    }
+
+    const layout = isOffScreen(rawLayout) ? null : rawLayout;
+    const pos    = computeBubblePos(layout);
     setBubblePos(pos);
     setRenderState(state);
     await animateSpot(layout, false);
@@ -163,7 +201,7 @@ export default function TutorialOverlay() {
       Animated.timing(bubbleOpacity, { toValue: 1, duration: 150, useNativeDriver: true }),
       Animated.spring(bubbleTransY, { toValue: 0, tension: 200, friction: 14, useNativeDriver: true }),
     ]).start();
-  }, [measureTarget, computeBubblePos, animateSpot]);
+  }, [measureTarget, measureTargetWithRetry, computeBubblePos, animateSpot]);
 
   // ── Tutorial exit: bubble out → overlay out → unmount ────────────────────
   const doExit = useCallback(() => {

@@ -5,6 +5,9 @@ export interface TutorialStep {
   highlightPadding?: number;
   skipIfTargetMissing?: boolean;
   skipForModes?: ('discipline' | 'balanced' | 'mindful')[];
+  navigateTo?: string;
+  navigateDelay?: number;
+  tutorialAction?: string;
 }
 
 export interface Tutorial {
@@ -332,97 +335,114 @@ export const TUTORIALS: Tutorial[] = [
   {
     id: 'log_food',
     name: 'Logging Food',
-    description: 'Find a food, pick your serving, and add it to your log.',
+    description: 'Walk through the full logging flow -- search, detail, log, and delete a real example entry.',
     tab: 'log',
     steps: [
       {
         targetKey: 'log_meal_add',
-        title: 'OPENING THE LIBRARY',
+        title: 'ADDING TO YOUR LOG',
         body: {
-          discipline: 'Tap the + button on any meal slot to open the food library. This is where every food you log starts.',
-          balanced: 'Tap the + next to a meal section to open the food library. From there you can search, browse recents, or use favorites.',
-          mindful: 'Tap the + on any meal to open the food library. Browse at your own pace -- there\'s no rush.',
+          discipline: 'Tap the + next to any meal section to open the food library. Every food you log starts here. We will walk through the full flow now.',
+          balanced: 'Tap the + next to a meal to open the food library. We will walk through a live example so you can see the full flow.',
+          mindful: 'Tap the + on any meal to open the food library. We will walk through a real example together -- no pressure, just exploring.',
         },
       },
       {
         targetKey: 'log_search_bar',
         title: 'SEARCHING FOR FOOD',
+        navigateTo: '/add-food?tutorialMode=true',
+        navigateDelay: 400,
         body: {
-          discipline: 'Type the food name. Results pull from FatSecret\'s database of millions of foods. Be specific -- "grilled chicken breast" beats "chicken".',
-          balanced: 'Type what you ate in the search bar. Results come from FatSecret\'s database. You\'ll also see your recent foods and favorites below.',
-          mindful: 'Type what you\'re looking for. The database is large -- most things are in there. If you don\'t find it, you can create your own food.',
+          discipline: 'Type the food name to search FatSecret\'s database of millions of foods. We have pre-loaded an example below so you can see what results look like.',
+          balanced: 'Type what you ate to search the food database. An example food is already shown below so you can see how results appear.',
+          mindful: 'Search for any food by typing its name. We have loaded an example below so you can explore without typing anything.',
         },
       },
       {
         targetKey: 'log_result_row',
         title: 'READING RESULTS',
         body: {
-          discipline: 'Each row shows: food name, brand, calories, and macro strip (P/C/F). Tap the row to open full detail and log it.',
-          balanced: 'Search results show the food name, brand, calorie count, and a quick macro breakdown. Tap any row to see the full detail and choose your serving.',
+          discipline: 'Each row: food name, calories, and a P/C/F macro strip. Brand foods show the brand. Tap any row to open full detail and set your serving.',
+          balanced: 'Results show the food name, calorie count, and a quick macro breakdown. Tap a row to open the full detail screen and choose your serving.',
           mindful: 'Each result shows the food with its calorie count and macros. Tap one to open it and choose how much you had.',
         },
       },
       {
         targetKey: 'log_food_detail_amount',
         title: 'SERVING SIZE',
+        navigateTo: '/food-detail?tutorialMode=true&tutorialFood=chicken_breast',
+        navigateDelay: 400,
         body: {
-          discipline: 'The amount field shows grams by default. Change it to your actual portion. The macros recalculate in real time. Accuracy here is everything.',
-          balanced: 'The amount field lets you enter how much you had. Type your gram amount or use the serving picker to choose a different unit.',
-          mindful: 'You can type in how much you ate by weight, or use the serving picker to choose from the food\'s listed serving sizes.',
+          discipline: 'Amount field defaults to 100g. Type your actual gram weight for precision. Macros recalculate live. Accuracy here compounds over time.',
+          balanced: 'The amount field lets you enter exactly how much you had. Macros update in real time as you type.',
+          mindful: 'You can type in how much you ate by weight. Everything recalculates as you adjust -- no pressure to be exact.',
         },
       },
       {
         targetKey: 'log_food_detail_stepper',
         title: 'SERVINGS STEPPER',
         body: {
-          discipline: 'Use the +/- stepper to multiply servings (1, 1.5, 2, 2.5...). Fast way to log multiples without doing the math yourself.',
-          balanced: 'The stepper lets you quickly multiply servings. Had two servings? Tap + once. The macros update automatically.',
-          mindful: 'The +/- buttons let you add more or fewer servings without typing. Tap + to add a serving, - to reduce it.',
+          discipline: 'Tap + to multiply servings in 0.5 increments (1, 1.5, 2...). Faster than calculating grams when you know you had "2 servings".',
+          balanced: 'The + and - buttons adjust the number of servings. Handy when you had a labeled amount like "2 cups" instead of a gram weight.',
+          mindful: 'Use + or - to add or remove servings without typing. Tap + if you had more than one serving.',
         },
       },
       {
         targetKey: 'log_food_detail_serving',
         title: 'SERVING PICKER',
         body: {
-          discipline: 'Tap the serving name to switch units -- grams, oz, cups, the actual FatSecret serving sizes. Match what\'s on the nutrition label.',
-          balanced: 'If the food has multiple serving options, tap the serving name to switch between them. Useful for labeled servings like "1 cup" or "1 slice".',
-          mindful: 'Different serving sizes for the same food are available in the serving picker. Choose whichever makes it easiest to log what you actually had.',
+          discipline: 'Tap the serving name to switch units. Match the label on your food. This example has 100g, 1 breast (172g), and 1 oz -- three real options.',
+          balanced: 'Tap the serving name to switch between different serving options. This food shows 100g, 1 breast, and 1 oz as examples.',
+          mindful: 'Different serving sizes are available here. Pick whichever option matches what you actually had.',
         },
       },
       {
         targetKey: 'log_food_detail_meal',
         title: 'CHOOSE YOUR MEAL',
         body: {
-          discipline: 'Pick the meal slot this food belongs to. Keeps your log organized and makes meal-level totals accurate.',
-          balanced: 'Tap the meal selector to assign this food to Morning, Lunch, Dinner, or Snacks. Helps keep your log organized.',
-          mindful: 'Assign the food to whichever meal feels right. This is just for your own organization -- no right answer.',
+          discipline: 'Assign this food to a meal slot. Meal-level totals only work when entries are correctly assigned. Lunch is selected by default.',
+          balanced: 'Tap the meal selector to assign this to Morning, Lunch, Dinner, or Snacks. Keeps your log organized.',
+          mindful: 'Assign the food to whatever meal fits. This is just for your own organization -- no right or wrong answer.',
         },
       },
       {
         targetKey: 'log_save_btn',
-        title: 'LOGGING IT',
+        title: 'LOG IT',
+        tutorialAction: 'saveTutorialEntry',
         body: {
-          discipline: 'Tap LOG IT to save. The food appears in your meal section immediately and your macro totals update. Log every meal to get accurate data.',
-          balanced: 'Tap LOG IT to add the food to your log. It\'ll appear in the meal section right away and your totals update instantly.',
-          mindful: 'Tap LOG IT when you\'re ready. No pressure to log everything perfectly -- any logging is better than none.',
+          discipline: 'Tap NEXT and we will log this entry for you as a live demo. It will appear in your log immediately -- and we will clean it up right after.',
+          balanced: 'Tap NEXT and we will add this example entry to your log so you can see how it looks. We will remove it at the end of the tour.',
+          mindful: 'Tap NEXT and we will add this example food to your log. Do not worry -- we will remove it once the tour is done.',
         },
       },
       {
         targetKey: 'log_entry_row',
         title: 'YOUR LOGGED ENTRY',
+        navigateTo: 'back_twice',
+        navigateDelay: 600,
         body: {
-          discipline: 'The food now appears in your log. Tap it to edit the gram amount, serving, or meal. Long-press the meal header for more options.',
+          discipline: 'The entry is now in your log. Tap any entry to reopen it and edit the amount, serving, or meal. Your totals update instantly.',
           balanced: 'Your food is now in the log. Tap any entry to edit it later -- change the amount, serving, or move it to a different meal.',
-          mindful: 'Your food is logged. Tap it anytime to make changes. Everything stays editable until you\'re happy with it.',
+          mindful: 'Your food is logged. Tap it anytime to make changes. Everything stays editable.',
+        },
+      },
+      {
+        targetKey: 'log_delete_btn',
+        title: 'REMOVING AN ENTRY',
+        tutorialAction: 'deleteTutorialEntry',
+        body: {
+          discipline: 'Tap the X on any entry to remove it. Totals recalculate immediately. Tap NEXT and we will remove this example entry now.',
+          balanced: 'Tap the X on any food entry to remove it from your log. Tap NEXT and we will clean up this demo entry.',
+          mindful: 'Tap the X to remove an entry. Tap NEXT and we will remove this example -- no trace left behind.',
         },
       },
       {
         targetKey: 'none',
         title: 'QUICK TIPS',
         body: {
-          discipline: 'Recents tab: last 20 foods you logged, fastest re-log. Favorites tab: starred foods for instant access. Star any food from search results or food detail.',
-          balanced: 'The Recents tab shows your last 20 logged foods -- great for foods you eat often. Star foods to save them in the Favorites tab.',
-          mindful: 'The Recents and Favorites tabs make re-logging easy. Use whichever approach makes logging feel lighter for you.',
+          discipline: 'Demo entry removed. Recents tab: your last 20 logged foods, fastest re-log. Favorites tab: star any food for instant access.',
+          balanced: 'Done -- the demo entry has been removed. The Recents tab shows your last 20 logged foods. Star any food to save it in Favorites.',
+          mindful: 'All cleaned up. The Recents and Favorites tabs make re-logging easier over time. Use whichever feels right.',
         },
       },
     ],

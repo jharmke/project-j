@@ -15,6 +15,8 @@ import { showCelebration } from '../../components/CelebrationOverlay';
 import TooltipIcon from '../../components/TooltipIcon';
 import { useTheme } from '../../theme';
 import { useToast } from '../../components/Toast';
+import { useTutorial } from '../../context/TutorialContext';
+import { useTutorialTarget } from '../../hooks/useTutorialTarget';
 import { useHealthKit } from '../../useHealthKit';
 import ReAnimated, { useAnimatedStyle, useSharedValue, withTiming, useAnimatedProps, withRepeat, cancelAnimation, Easing as ReAnimEasing } from 'react-native-reanimated';
 import { showToolkit } from '../../components/ToolkitSheet';
@@ -37,6 +39,7 @@ interface FoodEntry {
   fatPer100g?: number;
   foodNutrients?: any[];
   fsId?: string;
+  tutorialEntry?: boolean;
 }
 
 
@@ -127,6 +130,14 @@ export default function LogScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const { showToast } = useToast();
+  const mealAddRef = useTutorialTarget('log_meal_add');
+  const dateNavRef = useTutorialTarget('log_date_nav');
+  const mealTotalRef = useTutorialTarget('log_meal_total');
+  const todayTotalRef = useTutorialTarget('log_today_total');
+  const tutorialEntryRef = useRef<View>(null);
+  const tutorialDeleteRef = useRef<View>(null);
+  const tutorialEntryRegistered = useRef(false);
+  const { registerTarget, unregisterTarget, registerTutorialAction, unregisterTutorialAction } = useTutorial();
   const [loaded, setLoaded] = useState(false);
   const [entries, setEntries] = useState<FoodEntry[]>([]);
   const [water, setWater] = useState(0);
@@ -446,6 +457,11 @@ export default function LogScreen() {
   setTotalCarbs(Math.round(clean.reduce((s: number, e: any) => s + (e.carbs || 0), 0) * 10) / 10);
   setTotalFat(Math.round(clean.reduce((s: number, e: any) => s + (e.fat || 0), 0) * 10) / 10);
   if (clean.length !== data.entries.length) storageSet(`pj_${dateKey}`, JSON.stringify({ ...data, entries: clean }));
+  const tutEntry = clean.find((e: any) => e.tutorialEntry);
+  if (tutEntry) {
+    setExpandedMeals(prev => ({ ...prev, [tutEntry.meal]: true }));
+    setVisibleMeals(prev => ({ ...prev, [tutEntry.meal]: true }));
+  }
 }
             if (typeof data.water === 'number') setWater(Math.max(0, data.water));
             if (data.caloriesBurned) setCaloriesBurned(parseInt(data.caloriesBurned) || 0);
@@ -539,6 +555,42 @@ export default function LogScreen() {
     saveField('entries', newEntries);
     saveToFirebase(activeDate, 'entries', newEntries);
   };
+
+  useEffect(() => {
+    const hasTutorialEntry = entries.some(e => e.tutorialEntry);
+    if (hasTutorialEntry && !tutorialEntryRegistered.current) {
+      registerTarget('log_entry_row', tutorialEntryRef);
+      registerTarget('log_delete_btn', tutorialDeleteRef);
+      tutorialEntryRegistered.current = true;
+    } else if (!hasTutorialEntry && tutorialEntryRegistered.current) {
+      unregisterTarget('log_entry_row');
+      unregisterTarget('log_delete_btn');
+      tutorialEntryRegistered.current = false;
+    }
+  }, [entries]);
+
+  useEffect(() => {
+    const deleteTutorialEntry = async () => {
+      try {
+        const today = new Date();
+        const todayKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+        const saved = await AsyncStorage.getItem(`pj_${todayKey}`);
+        if (!saved) return;
+        const data = JSON.parse(saved);
+        const cleaned = (data.entries || []).filter((e: any) => !e.tutorialEntry);
+        await AsyncStorage.setItem(`pj_${todayKey}`, JSON.stringify({ ...data, entries: cleaned }));
+        setEntries(prev => {
+          const next = prev.filter(e => !e.tutorialEntry);
+          setTotalProtein(Math.round(next.reduce((s, e) => s + (e.protein || 0), 0) * 10) / 10);
+          setTotalCarbs(Math.round(next.reduce((s, e) => s + (e.carbs || 0), 0) * 10) / 10);
+          setTotalFat(Math.round(next.reduce((s, e) => s + (e.fat || 0), 0) * 10) / 10);
+          return next;
+        });
+      } catch {}
+    };
+    registerTutorialAction('deleteTutorialEntry', deleteTutorialEntry);
+    return () => unregisterTutorialAction('deleteTutorialEntry');
+  }, []);
 
   const toggleAdvanced = () => {
     if (!advancedExpanded) {
@@ -637,7 +689,7 @@ export default function LogScreen() {
         <View style={{ flex: 1 }}>
           <Text style={[styles.headerLabel, { color: theme.textMuted }]}>PROJECT J</Text>
           <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>Food Log</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
+          <View ref={dateNavRef} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
             <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openCalPicker(); }} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
               <Text style={{ fontSize: 9, color: isToday ? theme.textMuted : theme.accentAmber, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>
                 {formatActiveDate()}
@@ -668,7 +720,7 @@ export default function LogScreen() {
       >
 
       {/* Today's Total Card */}
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
+      <View ref={todayTotalRef} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
         <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Today's Total</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <View style={{ flex: 1 }}>
@@ -732,7 +784,7 @@ export default function LogScreen() {
       </View>
 
       {/* Meal Sections */}
-      {MEALS.map(meal => {
+      {MEALS.map((meal, mealIdx) => {
         const mealEntries = entries.filter(e => e.meal === meal);
         const mealTotal = mealEntries.reduce((s, e) => s + e.cal, 0);
         const mealProtein = Math.round(mealEntries.reduce((s, e) => s + (e.protein || 0), 0));
@@ -744,13 +796,14 @@ export default function LogScreen() {
           <View key={meal} style={[styles.mealRow, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
             {/* + button on left */}
             <TouchableOpacity
+              ref={mealIdx === 0 ? (mealAddRef as any) : undefined}
               style={styles.mealAddBtn}
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push({ pathname: '/add-food', params: { meal, date: activeDate } }); }}>
               <Text style={[styles.mealAddBtnText, { color: theme.accentBlue }]}>+</Text>
             </TouchableOpacity>
 
             {/* Meal info middle */}
-            <TouchableOpacity style={[styles.mealInfo, { flexDirection: 'row', alignItems: 'center' }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleMeal(meal); }}>
+            <TouchableOpacity ref={mealIdx === 0 ? (mealTotalRef as any) : undefined} style={[styles.mealInfo, { flexDirection: 'row', alignItems: 'center' }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleMeal(meal); }}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.mealName, { color: theme.textPrimary }]}>{meal}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2, opacity: mealTotal > 0 ? 1 : 0 }}>
@@ -793,6 +846,7 @@ export default function LogScreen() {
                 ) : (
                   mealEntries.map((entry, i) => (
                     <TouchableOpacity
+                      ref={entry.tutorialEntry ? (tutorialEntryRef as any) : undefined}
                       key={i}
                       style={[styles.foodEntry, { backgroundColor: theme.accentBlueBg }]}
                       onPress={() => router.push({
@@ -858,6 +912,7 @@ export default function LogScreen() {
                           <Text style={[styles.foodEntryCalLabel, { color: theme.textMuted }]}>kcal</Text>
                         </View>
                         <TouchableOpacity
+                          ref={entry.tutorialEntry ? (tutorialDeleteRef as any) : undefined}
                           onPress={() => {
                             Alert.alert(
                               'Remove Entry',

@@ -370,7 +370,7 @@ export const TUTORIALS: Tutorial[] = [
       {
         targetKey: 'log_food_detail_amount',
         title: 'SERVING SIZE',
-        navigateTo: '/food-detail?tutorialMode=true&tutorialFood=chicken_breast',
+        navigateTo: '/food-detail?tutorialMode=true&tutorialFood=chicken_breast&meal=Lunch',
         navigateDelay: 400,
         body: {
           discipline: 'Amount field defaults to 100g. Type your actual gram weight for precision. Macros recalculate live. Accuracy here compounds over time.',
@@ -416,14 +416,14 @@ export const TUTORIALS: Tutorial[] = [
         },
       },
       {
-        targetKey: 'log_entry_row',
+        targetKey: 'log_today_total',
         title: 'YOUR LOGGED ENTRY',
         navigateTo: 'back_twice',
         navigateDelay: 600,
         body: {
-          discipline: 'The entry is now in your log. Tap any entry to reopen it and edit the amount, serving, or meal. Your totals update instantly.',
-          balanced: 'Your food is now in the log. Tap any entry to edit it later -- change the amount, serving, or move it to a different meal.',
-          mindful: 'Your food is logged. Tap it anytime to make changes. Everything stays editable.',
+          discipline: 'Entry saved -- see how Today\'s Total updated instantly. Expand the Lunch section below to see the entry. Tap any entry to reopen and edit it.',
+          balanced: 'Your food is in the log and Today\'s Total updated right away. Expand the Lunch section to see the entry. Tap it anytime to edit.',
+          mindful: 'Your food is logged and your totals have updated. Expand the Lunch section to see it. You can tap any entry to make changes.',
         },
       },
       {

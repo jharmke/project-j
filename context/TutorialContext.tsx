@@ -122,6 +122,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
   const skipTutorial = useCallback(() => {
     const prev = activeStateRef.current;
     if (prev) markTutorialSeen(prev.tutorial.id);
+    try { actions.current['deleteTutorialEntry']?.(); } catch {}
     setActiveState(null);
   }, [setActiveState]);
 

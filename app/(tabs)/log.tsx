@@ -459,6 +459,7 @@ export default function LogScreen() {
   if (clean.length !== data.entries.length) storageSet(`pj_${dateKey}`, JSON.stringify({ ...data, entries: clean }));
   const tutEntry = clean.find((e: any) => e.tutorialEntry);
   if (tutEntry) {
+    getMealAnim(tutEntry.meal).setValue(1);
     setExpandedMeals(prev => ({ ...prev, [tutEntry.meal]: true }));
     setVisibleMeals(prev => ({ ...prev, [tutEntry.meal]: true }));
   }

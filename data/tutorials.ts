@@ -362,9 +362,9 @@ export const TUTORIALS: Tutorial[] = [
         yvyDemo: true,
         title: 'THE METRICS',
         body: {
-          discipline: '4 metrics shown: Running Net, Steps, Sleep Score, and Water. These are your core daily performance indicators. The demo shows today winning 3 of 4.',
-          balanced: 'The card tracks 4 key metrics: Running Net, Steps, Sleep Score, and Water. Each shows your result for today vs yesterday. This demo shows today winning 3 of 4.',
-          mindful: 'Steps, Sleep Score, and Water are compared in this mode. Each is just one piece of your day. This demo shows a sample comparison.',
+          discipline: '4 metrics shown: Running Net, Steps, Sleep Score, and Water. These are your core daily performance indicators. The demo shows today winning 3 of 4. If any of these are missing (no sleep data yet, steps not tracked), backup metrics like weight, active calories, or sleep hours fill the slots automatically.',
+          balanced: 'The card tracks 4 key metrics: Running Net, Steps, Sleep Score, and Water. Each shows your result for today vs yesterday. This demo shows today winning 3 of 4. If a primary metric has no data yet, a backup like weight, active calories, or sleep hours steps in so the card always has something to show.',
+          mindful: 'Steps, Sleep Score, and Water are compared in this mode. Each is just one piece of your day. This demo shows a sample comparison. If any metric has no data, a backup fills in so the card stays useful from day one.',
         },
       },
       {

@@ -367,6 +367,7 @@ export default function SettingsScreen() {
   const [devCelebLabel, setDevCelebLabel] = useState<string | undefined>(undefined);
   const [devTapCount, setDevTapCount] = useState(0);
   const [devUnlocked, setDevUnlocked] = useState(false);
+  const [devForceSleepManual, setDevForceSleepManual] = useState(false);
   const [importRange, setImportRange] = useState<14 | 30 | 90>(30);
   const [importing, setImporting] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -504,6 +505,7 @@ export default function SettingsScreen() {
           if (data.styleMode) setStyleMode(data.styleMode);
           if (data.faithJourney) setFaithJourney(data.faithJourney);
           if (data.burnAccuracyPct !== undefined) setBurnAccuracyPct(data.burnAccuracyPct);
+          if (data.devForceSleepManual !== undefined) setDevForceSleepManual(data.devForceSleepManual);
         }
         // Load notification settings
         const ns = await loadNotificationSettings();
@@ -1840,6 +1842,21 @@ export default function SettingsScreen() {
               </View>
               <Ionicons name="school-outline" size={18} color={theme.accentRed} />
             </TouchableOpacity>
+
+            <View style={[styles.row, { borderTopColor: theme.borderCard }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Force Sleep: Manual Path</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Sleep tutorial uses feel-rating path regardless of Apple Health data.</Text>
+              </View>
+              <ToggleSwitch
+                value={devForceSleepManual}
+                onValueChange={(val) => {
+                  setDevForceSleepManual(val);
+                  saveSetting('devForceSleepManual', val);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
+              />
+            </View>
           </View>
         )}
 

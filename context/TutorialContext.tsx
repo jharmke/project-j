@@ -50,6 +50,8 @@ export interface TutorialContextType {
   registerScrollView: (key: string, ref: React.RefObject<any>) => void;
   unregisterScrollView: (key: string) => void;
   getScrollViews: () => Record<string, React.RefObject<any>>;
+  registerIdResolver: (id: string, resolver: () => string) => void;
+  unregisterIdResolver: (id: string) => void;
   activeState: ActiveTutorialState | null;
 }
 
@@ -61,6 +63,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
   const refs = useRef<Record<string, React.RefObject<View | null>>>({});
   const actions = useRef<Record<string, () => Promise<void>>>({});
   const scrollViewRefs = useRef<Record<string, React.RefObject<any>>>({});
+  const idResolvers = useRef<Record<string, () => string>>({});
 
   const setActiveState = useCallback((value: ActiveTutorialState | null) => {
     activeStateRef.current = value;
@@ -95,9 +98,18 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
 
   const getScrollViews = useCallback(() => scrollViewRefs.current, []);
 
+  const registerIdResolver = useCallback((id: string, resolver: () => string) => {
+    idResolvers.current[id] = resolver;
+  }, []);
+
+  const unregisterIdResolver = useCallback((id: string) => {
+    delete idResolvers.current[id];
+  }, []);
+
   const startTutorial = useCallback(async (id: string) => {
+    const resolvedId = idResolvers.current[id]?.() ?? id;
     const { TUTORIALS } = await import('../data/tutorials');
-    const tutorial = TUTORIALS.find(t => t.id === id);
+    const tutorial = TUTORIALS.find(t => t.id === resolvedId);
     if (!tutorial) return;
 
     let styleMode = 'balanced';
@@ -155,6 +167,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
       registerTarget, unregisterTarget, getTarget,
       registerTutorialAction, unregisterTutorialAction,
       registerScrollView, unregisterScrollView, getScrollViews,
+      registerIdResolver, unregisterIdResolver,
       activeState,
     }}>
       {children}

@@ -763,11 +763,13 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const { showToast } = useToast();
-  const { startTutorial, registerScrollView, unregisterScrollView, activeState: tutorialActiveState } = useTutorial();
+  const { startTutorial, registerScrollView, unregisterScrollView, activeState: tutorialActiveState, registerIdResolver, unregisterIdResolver } = useTutorial();
   // Derive IF card demo state from whichever tutorial step is currently active.
   // undefined when no tutorial running -- card uses real data as normal.
   const tutorialIfCardState = (tutorialActiveState?.tutorial.steps[tutorialActiveState.stepIndex] as any)?.ifCardState as
     'idle' | 'active' | 'eating' | undefined;
+  // Derive YvY demo flag -- true when the active tutorial step has yvyDemo: true.
+  const yvyTutorialDemo = !!(tutorialActiveState?.tutorial.steps[tutorialActiveState.stepIndex] as any)?.yvyDemo;
   const toolkitRef = useTutorialTarget('meta_toolkit_icon');
   // ── Tutorial spotlight targets ────────────────────────────────────────────────
   const calCardRef       = useTutorialTarget('cal_card_main');
@@ -979,6 +981,7 @@ export default function HomeScreen() {
   const [styleMode, setStyleMode] = useState<'discipline' | 'balanced' | 'mindful'>('balanced');
   const [faithJourney, setFaithJourney] = useState<'rooted' | 'exploring' | 'notrightnow'>('rooted');
   const [burnAccuracyPct, setBurnAccuracyPct] = useState(100);
+  const [devForceSleepManual, setDevForceSleepManual] = useState(false);
 
   // BMR + profile biometrics
   const [profileBmr,      setProfileBmr]      = useState(0);
@@ -1021,6 +1024,15 @@ export default function HomeScreen() {
   };
 
   const { activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, bodyFatPct, exerciseMinutes, fetchTodayData } = useHealthKit();
+
+  // ── Sleep tutorial resolver: routes sleep_card to the manual-path tutorial when
+  //    no Apple Health sleep data is present, or when dev override is active. ──
+  useEffect(() => {
+    registerIdResolver('sleep_card', () =>
+      (sleepHours && sleepHours > 0 && !devForceSleepManual) ? 'sleep_card' : 'sleep_card_manual'
+    );
+    return () => unregisterIdResolver('sleep_card');
+  }, [sleepHours, devForceSleepManual, registerIdResolver, unregisterIdResolver]);
 
   const getDateKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   const [todayKey, setTodayKey] = useState(() => getDateKey(new Date()));
@@ -1461,6 +1473,7 @@ export default function HomeScreen() {
           if (sd.styleMode) setStyleMode(sd.styleMode);
           if (sd.faithJourney) setFaithJourney(sd.faithJourney);
           if (sd.burnAccuracyPct !== undefined) setBurnAccuracyPct(sd.burnAccuracyPct);
+          if (sd.devForceSleepManual !== undefined) setDevForceSleepManual(sd.devForceSleepManual);
         }
 
         // Onboarding -- open Edit Layout sheet if flagged from Screen 7
@@ -2769,7 +2782,7 @@ export default function HomeScreen() {
     const isEligible = (m: Metric) =>
       m.todayVal !== null && m.ydVal !== null;
 
-    const selected: Metric[] = [];
+    let selected: Metric[] = [];
     for (const id of tier1Ids) {
       if (selected.length >= 4) break;
       const m = metricMap[id];
@@ -2783,15 +2796,34 @@ export default function HomeScreen() {
       }
     }
 
+    // ── Tutorial demo override: show hardcoded 3-1 demo so all 4 Tier 1 metrics are guaranteed ──
+    if (yvyTutorialDemo) {
+      selected = [
+        { id: 'net' as MetricId, label: 'Running Net', sub: 'Calorie target pace', todayVal: -220, ydVal: 180,
+          format: (v: number) => `${v > 0 ? '+' : ''}${Math.round(v).toLocaleString()}`, unit: 'kcal',
+          winCondition: () => 'win' as 'win' | 'lose' | 'tie' },
+        { id: 'steps' as MetricId, label: 'Steps', sub: '10,000 Goal', todayVal: 8420, ydVal: 7100,
+          format: (v: number) => `${(v / 1000).toFixed(1)}k`, unit: 'steps',
+          winCondition: () => 'win' as 'win' | 'lose' | 'tie' },
+        { id: 'sleepScore' as MetricId, label: 'Sleep Score', sub: `${sleepGoal}h Goal`, todayVal: 78, ydVal: 71,
+          format: (v: number) => Math.round(v).toString(), unit: '/100',
+          winCondition: () => 'win' as 'win' | 'lose' | 'tie' },
+        { id: 'water' as MetricId, label: 'Water', sub: `${waterGoal} Oz Goal`, todayVal: 60, ydVal: 72,
+          format: (v: number) => Math.round(v).toString(), unit: 'oz',
+          winCondition: () => 'lose' as 'win' | 'lose' | 'tie' },
+      ];
+    }
+
     // ── Not enough data ──
-    if (selected.length < 2) return null;
+    if (!yvyTutorialDemo && selected.length < 2) return null;
 
     // ── Score ──
     type Result = 'win' | 'lose' | 'tie';
-    const results: Result[] = selected.map(m => {
+    let results: Result[] = selected.map(m => {
       if (m.todayVal === null || m.ydVal === null) return 'tie';
       return m.winCondition(m.todayVal, m.ydVal);
     });
+    if (yvyTutorialDemo) results = ['win', 'win', 'win', 'lose'];
     const wins   = results.filter(r => r === 'win').length;
     const losses = results.filter(r => r === 'lose').length;
     const ties   = results.filter(r => r === 'tie').length;
@@ -2823,7 +2855,7 @@ export default function HomeScreen() {
       const slot4 = cycleOptions[todayDate % cycleOptions.length];
       if (slot4) mindfulSelected = [...mindfulSelected, slot4 as any];
     }
-    const displayMetrics = isMindful ? mindfulSelected : selected;
+    const displayMetrics = yvyTutorialDemo ? selected : (isMindful ? mindfulSelected : selected);
 
     return (
       <View ref={yvyCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
@@ -2860,7 +2892,7 @@ export default function HomeScreen() {
         {/* Metric rows */}
         <View ref={yvyMetricsRef} collapsable={false}>
         {displayMetrics.map((m: any, i: number) => {
-          const result = isMindful ? 'tie' : results[i];
+          const result = (yvyTutorialDemo || !isMindful) ? results[i] : 'tie';
           const isSlot4 = isMindful && m.id && !['steps','sleepScore','water','net'].includes(m.id);
           const rowColor = theme.textSecondary;
           const todayColor = isMindful ? rowColor : (result === 'win' ? winColor : theme.textDim);

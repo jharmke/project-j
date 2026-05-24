@@ -11,6 +11,8 @@ export interface TutorialStep {
   // Card-specific visual override: forces a card to render a particular demo state
   // without touching any real data. Clear on tutorial end/skip to restore real state.
   ifCardState?: 'idle' | 'active' | 'eating';
+  // When true, YvY card renders hardcoded demo values instead of real data.
+  yvyDemo?: boolean;
 }
 
 export interface Tutorial {
@@ -185,9 +187,9 @@ export const TUTORIALS: Tutorial[] = [
         targetKey: 'sleep_card_main',
         title: 'YOUR SLEEP SCORE',
         body: {
-          discipline: 'Your sleep score is a 0-100 rating calculated from duration, deep sleep, and REM sleep. It activates once Apple Health has sleep data, or you can manually rate how you felt to unlock it.',
-          balanced: 'Your sleep card shows a score based on how long you slept and the quality of your sleep stages. Connect Apple Health or use the feel rating below to get your first score.',
-          mindful: 'This card shows a gentle reading of your sleep. It fills in as Apple Health data arrives -- or you can rate how you felt when you woke up to get started.',
+          discipline: 'Your sleep is scored 0-100 based on duration, deep sleep, and REM. Apple Health fills this in automatically each morning. The better your sleep quality, the higher your score.',
+          balanced: 'Your sleep card shows a score based on how long you slept and the quality of your sleep stages. Apple Health fills this in automatically each morning.',
+          mindful: 'This card shows a gentle reading of your sleep. Duration and quality combine into a score that Apple Health fills in automatically each morning.',
         },
       },
       {
@@ -227,6 +229,54 @@ export const TUTORIALS: Tutorial[] = [
           discipline: 'No Apple Health stage data? Rate how you feel 1-5. This unlocks the score calculation and feeds the feel-bonus (up to +40 pts). Log it accurately.',
           balanced: 'If your Apple Health doesn\'t have detailed sleep stages, you can rate how you felt when you woke up. This still gives you a score.',
           mindful: 'The feel rating (1-5) is your chance to check in with yourself in the morning. How you feel matters, regardless of what the data says.',
+        },
+      },
+    ],
+  },
+
+  // sleep_card_manual is not listed in TAB_TUTORIALS -- it is auto-selected
+  // by the sleep resolver in index.tsx when sleepHours === 0 (no Apple Health data).
+  {
+    id: 'sleep_card_manual',
+    name: 'Sleep Score',
+    description: 'How to unlock your sleep score using the feel rating when Apple Health is not connected.',
+    tab: 'home',
+    steps: [
+      {
+        targetKey: 'sleep_card_main',
+        title: 'YOUR SLEEP SCORE',
+        body: {
+          discipline: 'Your sleep card tracks rest quality. Apple Health fills it in when connected. Until then, rate how you felt when you woke up each morning to unlock your score.',
+          balanced: 'Your sleep card shows a score based on your rest quality. When Apple Health is connected it fills in automatically. Without it, the feel rating below unlocks your score.',
+          mindful: 'This card tracks how your sleep felt. If Apple Health is connected it fills in automatically. The feel rating below is how you get started without it.',
+        },
+      },
+      {
+        targetKey: 'sleep_feel',
+        title: 'RATE HOW YOU SLEPT',
+        skipIfTargetMissing: true,
+        body: {
+          discipline: 'Tap 1 to 5 to rate how you felt this morning. 1 is rough, 5 is great. This unlocks your score and feeds the feel bonus, up to +40 points on top of duration.',
+          balanced: 'Tap 1 to 5 to rate how you felt when you woke up. This activates your sleep score. You can update it anytime during the day.',
+          mindful: 'Rate how rested you feel this morning, 1 to 5. There is no right answer. This is just a check-in, and it unlocks your sleep score for the day.',
+        },
+      },
+      {
+        targetKey: 'sleep_card_main',
+        title: 'YOUR SCORE',
+        body: {
+          discipline: '85 or above is Well Rested. 70 to 84 is Could Be Better. Below 70 is Poor Sleep. Duration earns up to 60 points and the feel rating earns up to 40.',
+          balanced: 'Once you rate, your score appears out of 100. Well Rested is 85 and above. Could Be Better is 70 to 84. Below 70 is Poor Sleep.',
+          mindful: 'Your score appears after you rate. Well Rested, Could Be Better, and Poor Sleep are gentle labels, not verdicts. The number is just a reference point.',
+        },
+      },
+      {
+        targetKey: 'sleep_card_main',
+        title: 'IMPROVING YOUR SCORE',
+        body: {
+          discipline: 'Consistent bedtime matters more than any supplement or hack. Cut screens 30 min before bed. Keep the room cold. Same wake time every day, even weekends.',
+          balanced: 'Consistent sleep and wake times are the biggest driver of better scores. Small changes add up: earlier bedtime, darker room, no screens before sleep.',
+          mindful: 'If you want to improve your sleep, consistency usually helps more than anything else. Same bedtime, same wake time. The rest follows naturally.',
         },
       },
     ],
@@ -299,40 +349,52 @@ export const TUTORIALS: Tutorial[] = [
     steps: [
       {
         targetKey: 'yvy_card_main',
+        yvyDemo: true,
         title: 'YOU VS YESTERDAY',
         body: {
-          discipline: 'This card compares today\'s metrics to yesterday\'s. Not to some ideal standard -- to yourself. The only competition worth having.',
+          discipline: 'This card compares today\'s metrics to yesterday\'s. Not to some ideal standard, to yourself. The only competition worth having.',
           balanced: 'You vs Yesterday compares today\'s stats to yesterday\'s. It\'s about consistency and forward momentum, one day at a time.',
-          mindful: 'This card shows today and yesterday side by side. It\'s a gentle way to notice patterns -- not to win or lose.',
+          mindful: 'This card shows today and yesterday side by side. It\'s a gentle way to notice patterns, not to win or lose.',
         },
       },
       {
         targetKey: 'yvy_metrics',
+        yvyDemo: true,
         title: 'THE METRICS',
-        skipIfTargetMissing: true,
         body: {
-          discipline: '4 metrics shown: Net Calories, Steps, Sleep Score, Water. These are your core daily performance indicators. Hit more today than yesterday.',
-          balanced: 'The card tracks 4 key metrics: Net Calories, Steps, Sleep Score, and Water. Each shows your result for today vs yesterday.',
-          mindful: 'Three things are compared in this mode: Steps, Sleep Score, and Water. Each is just one piece of your day.',
+          discipline: '4 metrics shown: Running Net, Steps, Sleep Score, and Water. These are your core daily performance indicators. The demo shows today winning 3 of 4.',
+          balanced: 'The card tracks 4 key metrics: Running Net, Steps, Sleep Score, and Water. Each shows your result for today vs yesterday. This demo shows today winning 3 of 4.',
+          mindful: 'Steps, Sleep Score, and Water are compared in this mode. Each is just one piece of your day. This demo shows a sample comparison.',
         },
       },
       {
         targetKey: 'yvy_metrics',
+        yvyDemo: true,
         title: 'COLOR CODING',
-        skipIfTargetMissing: true,
         body: {
           discipline: 'Accent color with a left bar: you\'re ahead today. Dimmed with a right bar: yesterday was stronger. No bar: dead even. Net calories uses closest-to-target logic, not raw number.',
           balanced: 'Metrics where you\'re ahead show in your accent color with a highlight bar on the left. Metrics where yesterday was higher appear dimmed. Ties show both values in the same muted tone.',
-          mindful: 'Today and yesterday are shown side by side. Neither side is highlighted -- they\'re just numbers. Notice the patterns that feel meaningful to you.',
+          mindful: 'Today and yesterday are shown side by side. Neither side is highlighted, just numbers. Notice the patterns that feel meaningful to you.',
         },
       },
       {
         targetKey: 'yvy_card_main',
+        yvyDemo: true,
         title: 'KEEP TRACKING',
         body: {
           discipline: 'The card needs data to work. Log food, water, and let Apple Health do its job. The more consistent your logging, the better this card gets.',
           balanced: 'Log consistently and this card becomes more meaningful over time. The more data you have, the clearer your patterns become.',
-          mindful: 'The card fills in as you log. You don\'t have to log everything perfectly -- just what feels useful and sustainable for you.',
+          mindful: 'The card fills in as you log. You don\'t have to log everything perfectly, just what feels useful and sustainable for you.',
+        },
+      },
+      {
+        targetKey: 'yvy_card_main',
+        yvyDemo: true,
+        title: 'HEAD TO HEAD',
+        body: {
+          discipline: 'Tap anywhere on this card to open Head to Head, a deeper breakdown where you can compare any two specific days side by side with full metric detail.',
+          balanced: 'Tap anywhere on this card to open Head to Head, where you can pick any two days and compare every metric in detail.',
+          mindful: 'Tap anywhere on this card to open Head to Head, where you can look at any two days side by side without any win or loss framing.',
         },
       },
     ],

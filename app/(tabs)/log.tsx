@@ -593,6 +593,33 @@ export default function LogScreen() {
     return () => unregisterTutorialAction('deleteTutorialEntry');
   }, []);
 
+  useEffect(() => {
+    const addTutorialFoodEntries = async () => {
+      try {
+        const today = new Date();
+        const dk = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+        const saved = await AsyncStorage.getItem(`pj_${dk}`);
+        const data = saved ? JSON.parse(saved) : { entries: [], water: 0 };
+        if ((data.entries || []).some((e: any) => e.tutorialEntry)) return;
+        const demo: FoodEntry[] = [
+          { name: 'Grilled Chicken Breast', cal: 165, meal: 'Lunch', protein: 31, carbs: 0, fat: 3.6, tutorialEntry: true, timestamp: Date.now() },
+          { name: 'Brown Rice', cal: 216, meal: 'Lunch', protein: 4, carbs: 45, fat: 1.8, tutorialEntry: true, timestamp: Date.now() + 1 },
+        ];
+        const newEntries = [...(data.entries || []).filter((e: any) => e != null), ...demo];
+        await AsyncStorage.setItem(`pj_${dk}`, JSON.stringify({ ...data, entries: newEntries }));
+        setEntries(newEntries);
+        setTotalProtein(Math.round(newEntries.reduce((s, e) => s + (e.protein || 0), 0) * 10) / 10);
+        setTotalCarbs(Math.round(newEntries.reduce((s, e) => s + (e.carbs || 0), 0) * 10) / 10);
+        setTotalFat(Math.round(newEntries.reduce((s, e) => s + (e.fat || 0), 0) * 10) / 10);
+        getMealAnim('Lunch').setValue(1);
+        setExpandedMeals(prev => ({ ...prev, Lunch: true }));
+        setVisibleMeals(prev => ({ ...prev, Lunch: true }));
+      } catch {}
+    };
+    registerTutorialAction('addTutorialFoodEntries', addTutorialFoodEntries);
+    return () => unregisterTutorialAction('addTutorialFoodEntries');
+  }, []);
+
   const toggleAdvanced = () => {
     if (!advancedExpanded) {
       setAdvancedVisible(true);
@@ -804,7 +831,7 @@ export default function LogScreen() {
             </TouchableOpacity>
 
             {/* Meal info middle */}
-            <TouchableOpacity ref={mealIdx === 0 ? (mealTotalRef as any) : undefined} style={[styles.mealInfo, { flexDirection: 'row', alignItems: 'center' }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleMeal(meal); }}>
+            <TouchableOpacity ref={entries.some(e => e.tutorialEntry) ? (meal === 'Lunch' ? (mealTotalRef as any) : undefined) : (mealIdx === 0 ? (mealTotalRef as any) : undefined)} style={[styles.mealInfo, { flexDirection: 'row', alignItems: 'center' }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleMeal(meal); }}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.mealName, { color: theme.textPrimary }]}>{meal}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2, opacity: mealTotal > 0 ? 1 : 0 }}>

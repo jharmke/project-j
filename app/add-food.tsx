@@ -1316,7 +1316,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                   <Text style={styles.resultCal}>{getCalories(item)}</Text>
                   <Text style={styles.resultCalLabel}>kcal</Text>
                 </View>
-                {item.isMyFood && (
+                {item.isMyFood && activeTab !== 'pinned' && (
                   <>
                     <TouchableOpacity
                       onPress={() => {

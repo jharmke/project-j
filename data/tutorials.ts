@@ -523,6 +523,7 @@ export const TUTORIALS: Tutorial[] = [
     name: 'Managing Your Log',
     description: 'Edit entries, remove food, navigate dates, and understand totals.',
     tab: 'log',
+    preAction: 'addTutorialFoodEntries',
     steps: [
       {
         targetKey: 'log_entry_row',
@@ -563,9 +564,10 @@ export const TUTORIALS: Tutorial[] = [
       {
         targetKey: 'log_today_total',
         title: 'TODAY\'S TOTAL',
+        tutorialAction: 'deleteTutorialEntry',
         body: {
           discipline: 'Today\'s Total at the top shows your full day: calories, protein, carbs, fat bars against goals. This matches your home screen calorie card.',
-          balanced: 'The Today\'s Total card summarizes everything you\'ve logged -- total calories and your macro progress bars.',
+          balanced: 'The Today\'s Total card summarizes everything you\'ve logged: total calories and your macro progress bars.',
           mindful: 'The summary at the top shows all of today\'s logged nutrition together. It updates in real time as you log.',
         },
       },

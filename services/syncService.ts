@@ -54,9 +54,11 @@ export async function restoreIfFresh(): Promise<boolean> {
       if (data.key && data.value) pairs.push([data.key, data.value]);
     });
 
-    if (pairs.length > 0) await AsyncStorage.multiSet(pairs);
+    const existingKeys = await AsyncStorage.getAllKeys();
+    const newPairs = pairs.filter(([key]) => !existingKeys.includes(key));
+    if (newPairs.length > 0) await AsyncStorage.multiSet(newPairs);
     await AsyncStorage.setItem(RESTORE_GATE_KEY, 'true');
-    return pairs.length > 0;
+    return newPairs.length > 0;
   } catch {
     return false;
   }

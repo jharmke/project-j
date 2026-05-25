@@ -1360,6 +1360,10 @@ export default function HomeScreen() {
   useFocusEffect(useCallback(() => {
     const loadCals = async () => {
       try {
+        const settingsRawEarly = await AsyncStorage.getItem('pj_settings');
+        const localAccuracyPct: number = settingsRawEarly
+          ? (JSON.parse(settingsRawEarly).burnAccuracyPct ?? 100)
+          : burnAccuracyPct;
         const saved = await AsyncStorage.getItem(`pj_${getDateKey(new Date())}`);
         if (saved) {
           const data = JSON.parse(saved);
@@ -1411,7 +1415,7 @@ export default function HomeScreen() {
           if (yd2.entries && Array.isArray(yd2.entries)) {
             const ydClean = yd2.entries.filter((e: any) => e != null);
             const ydConsumed = ydClean.reduce((s: number, e: any) => s + (e.cal || 0), 0);
-            const ydBurned = Math.round((yd2.activeCalories || yd2.caloriesBurned || 0) * burnAccuracyPct / 100);
+            const ydBurned = Math.round((yd2.activeCalories || yd2.caloriesBurned || 0) * localAccuracyPct / 100);
             const profileRaw2 = await AsyncStorage.getItem('pj_profile');
             let ydBmr = 0;
             if (profileRaw2) {
@@ -1438,7 +1442,7 @@ export default function HomeScreen() {
           // Yesterday water
           if (typeof yd2.water === 'number') setYdWater(yd2.water);
           // Yesterday active calories
-          if (yd2.activeCalories) setYdActiveCalories(Math.round(yd2.activeCalories * burnAccuracyPct / 100));
+          if (yd2.activeCalories) setYdActiveCalories(Math.round(yd2.activeCalories * localAccuracyPct / 100));
           // Yesterday sleep score
           if (yd2.sleepOverride || yd2.sleepHours) {
             const ydHours = yd2.sleepOverride || yd2.sleepHours;

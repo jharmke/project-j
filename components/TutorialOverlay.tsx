@@ -173,7 +173,28 @@ export default function TutorialOverlay() {
     bubbleTransY.setValue(16);
 
     const firstStep = state.tutorial.steps[state.stepIndex];
-    const rawLayout = await measureTarget(firstStep.targetKey);
+    const navigateTo = (firstStep as any).navigateTo as string | undefined;
+    const navigateDelay = ((firstStep as any).navigateDelay as number) ?? 200;
+
+    let rawLayout: TargetRect | null;
+    if (navigateTo === 'back') {
+      router.back();
+      await new Promise<void>(r => setTimeout(r, navigateDelay));
+      rawLayout = await measureTargetWithRetry(firstStep.targetKey);
+    } else if (navigateTo === 'back_twice') {
+      router.back();
+      await new Promise<void>(r => setTimeout(r, 300));
+      router.back();
+      await new Promise<void>(r => setTimeout(r, navigateDelay));
+      rawLayout = await measureTargetWithRetry(firstStep.targetKey);
+    } else if (navigateTo) {
+      router.push(navigateTo as never);
+      await new Promise<void>(r => setTimeout(r, navigateDelay));
+      rawLayout = await measureTargetWithRetry(firstStep.targetKey);
+    } else {
+      rawLayout = await measureTarget(firstStep.targetKey);
+    }
+
     let layout = isOffScreen(rawLayout) ? null : rawLayout;
     if (isOffScreen(rawLayout)) {
       await scrollToTarget(firstStep.targetKey);

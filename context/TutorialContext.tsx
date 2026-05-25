@@ -158,6 +158,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     if (prev) markTutorialSeen(prev.tutorial.id);
     try { actions.current['deleteTutorialEntry']?.(); } catch {}
     try { actions.current['deleteTutorialExercise']?.(); } catch {}
+    try { actions.current['clearTutorialScanState']?.(); } catch {}
     setActiveState(null);
   }, [setActiveState]);
 

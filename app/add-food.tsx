@@ -342,9 +342,15 @@ const [recipes, setRecipes] = useState<any[]>([]);
 const { meal, date, selectMode, day, recipeMode, tutorialMode } = useLocalSearchParams<{ meal: string; date: string; selectMode: string; day: string; recipeMode: string; tutorialMode: string }>();
 const isRecipeMode = recipeMode === 'true';
 const isTutorialMode = tutorialMode === 'true';
+const [isTutorialScanMode, setIsTutorialScanMode] = useState(false);
 const searchBarRef = useTutorialTarget('log_search_bar');
+const barcodeIconRef = useTutorialTarget('add_food_barcode_icon');
 const firstResultRef = useRef<View>(null);
-const { registerTarget, unregisterTarget } = useTutorial();
+const topResultRef = useRef<View>(null);
+const setButtonRef = useRef<View>(null);
+const unsetButtonRef = useRef<View>(null);
+const createBarcodeRef = useRef<View>(null);
+const { registerTarget, unregisterTarget, registerTutorialAction, unregisterTutorialAction } = useTutorial();
 const [showEditMyFood, setShowEditMyFood] = useState(false);
 const [showSavedFoodsSection, setShowSavedFoodsSection] = useState(false);
 const [editFoodData, setEditFoodData] = useState<any>(null);
@@ -530,6 +536,7 @@ const saveEditFood = async () => {
   };
 
   const unsetOverride = async (barcode: string) => {
+    if (barcode === 'tutorial_barcode_demo') return;
     try {
       const removedItem = barcodeOverrides[barcode];
       const updated = { ...barcodeOverrides };
@@ -563,7 +570,7 @@ const saveEditFood = async () => {
   };
 
   const saveOverride = async (item: any) => {
-    if (!lastScannedBarcode) return;
+    if (!lastScannedBarcode || lastScannedBarcode === 'tutorial_barcode_demo') return;
     try {
       await pinFoodToBarcode(lastScannedBarcode, item);
       setResults(prev => prev.map(r => r.description === item.description ? { ...r, isOverride: true } : r));
@@ -599,6 +606,108 @@ const saveEditFood = async () => {
     registerTarget('log_result_row', firstResultRef);
     return () => unregisterTarget('log_result_row');
   }, [isTutorialMode]);
+
+  useEffect(() => {
+    if (isTutorialScanMode) {
+      registerTarget('add_food_top_result', topResultRef);
+      registerTarget('add_food_set_button', setButtonRef);
+      registerTarget('add_food_unset_button', unsetButtonRef);
+      registerTarget('add_food_create_barcode', createBarcodeRef);
+    } else {
+      unregisterTarget('add_food_top_result');
+      unregisterTarget('add_food_set_button');
+      unregisterTarget('add_food_unset_button');
+      unregisterTarget('add_food_create_barcode');
+    }
+  }, [isTutorialScanMode]);
+
+  useEffect(() => {
+    const showTutorialScanResults = async () => {
+      setIsTutorialScanMode(true);
+      setLastScannedBarcode('tutorial_barcode_demo');
+      setQuery('Chicken Breast');
+      setResults([
+        {
+          description: 'Chicken Breast, Grilled',
+          foodNutrients: [
+            { nutrientName: 'Energy', unitName: 'KCAL', value: 165 },
+            { nutrientName: 'Protein', unitName: 'G', value: 31 },
+            { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: 0 },
+            { nutrientName: 'Total lipid (fat)', unitName: 'G', value: 3.6 },
+          ],
+          isOverride: false,
+          isTutorialFood: true,
+          fsId: null,
+        },
+        {
+          description: 'Chicken Breast, Roasted',
+          foodNutrients: [
+            { nutrientName: 'Energy', unitName: 'KCAL', value: 172 },
+            { nutrientName: 'Protein', unitName: 'G', value: 32 },
+            { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: 1 },
+            { nutrientName: 'Total lipid (fat)', unitName: 'G', value: 4.2 },
+          ],
+          isOverride: false,
+          isTutorialFood: true,
+          fsId: null,
+        },
+        {
+          description: 'Chicken Breast, Breaded',
+          foodNutrients: [
+            { nutrientName: 'Energy', unitName: 'KCAL', value: 220 },
+            { nutrientName: 'Protein', unitName: 'G', value: 24 },
+            { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: 15 },
+            { nutrientName: 'Total lipid (fat)', unitName: 'G', value: 8 },
+          ],
+          isOverride: false,
+          isTutorialFood: true,
+          fsId: null,
+        },
+      ] as any[]);
+    };
+    registerTutorialAction('showTutorialScanResults', showTutorialScanResults);
+    return () => unregisterTutorialAction('showTutorialScanResults');
+  }, []);
+
+  useEffect(() => {
+    const switchToSetFoodsTab = async () => {
+      setQuery('');
+      setBarcodeOverrides(prev => ({
+        tutorial_barcode_demo: { isMyFood: false, description: 'Chicken Breast, Grilled' },
+        ...prev,
+      }));
+      setActiveTab('pinned');
+    };
+    registerTutorialAction('switchToSetFoodsTab', switchToSetFoodsTab);
+    return () => unregisterTutorialAction('switchToSetFoodsTab');
+  }, []);
+
+  useEffect(() => {
+    const showTutorialNoMatchState = async () => {
+      setResults([]);
+      setQuery('');
+      setActiveTab('recent');
+    };
+    registerTutorialAction('showTutorialNoMatchState', showTutorialNoMatchState);
+    return () => unregisterTutorialAction('showTutorialNoMatchState');
+  }, []);
+
+  useEffect(() => {
+    const clearTutorialScanState = async () => {
+      setIsTutorialScanMode(false);
+      setLastScannedBarcode(null);
+      setResults([]);
+      setQuery('');
+      setActiveTab('recent');
+      setShowSavedFoodsSection(false);
+      try {
+        const saved = await AsyncStorage.getItem('pj_barcode_overrides');
+        setBarcodeOverrides(saved ? JSON.parse(saved) : {});
+      } catch {}
+    };
+    registerTutorialAction('clearTutorialScanState', clearTutorialScanState);
+    return () => unregisterTutorialAction('clearTutorialScanState');
+  }, []);
 
   const loadMyFoods = async () => {
     try {
@@ -1101,6 +1210,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
   <Text style={styles.headerTitle}>{meal === 'browse' ? 'Food Library' : `Add to ${meal}`}</Text>
   <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
     <TouchableOpacity
+      ref={barcodeIconRef as any}
       onPress={startScan}
       style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, padding: 6, alignItems: 'center', justifyContent: 'center', width: 38, height: 38 }}>
       <Ionicons name="barcode-outline" size={24} color={theme.accentBlue} />
@@ -1128,6 +1238,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
             <Text style={{ flex: 1, fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Tap SET on the correct item to confirm it for future scans</Text>
           </View>
           <TouchableOpacity
+            ref={isTutorialScanMode ? (createBarcodeRef as any) : undefined}
             onPress={() => { setBarcodeForCreate(lastScannedBarcode); setShowCreateFood(true); }}
             style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, gap: 4 }}>
             <Ionicons name="add-circle-outline" size={13} color={theme.accentBlueRaw} />
@@ -1244,7 +1355,13 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
           const foodName = nameParts[0];
           const brandName = (item as any).brand || (nameParts.length > 1 ? nameParts.slice(1).join(' · ') : null);
           return (
-            <Animated.View ref={index === 0 && isTutorialMode ? (firstResultRef as any) : undefined} style={{ opacity: activeTab === 'favorites' && !query.trim() ? getFavOpacity(item.description) : 1 }}>
+            <Animated.View
+              ref={
+                index === 0 && isTutorialScanMode ? (topResultRef as any) :
+                index === 0 && isTutorialMode ? (firstResultRef as any) :
+                undefined
+              }
+              style={{ opacity: activeTab === 'favorites' && !query.trim() ? getFavOpacity(item.description) : 1 }}>
             <TouchableOpacity style={[styles.resultItem, (item as any).isOverride && styles.resultItemSet]} onPress={() => openFoodDetail(item)}>
               <View style={styles.resultLeft}>
                 {/* Badges */}
@@ -1282,6 +1399,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
               <View style={styles.resultRight}>
                 {activeTab === 'pinned' ? (
                   <TouchableOpacity
+                    ref={index === 0 && isTutorialScanMode ? (unsetButtonRef as any) : undefined}
                     onPress={() => {
                       const foodName = (item as any).description || 'this food';
                       Alert.alert(
@@ -1300,6 +1418,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                   <Ionicons name="checkmark-circle" size={16} color={theme.accentGreen} style={{ marginRight: 6 }} />
                 ) : lastScannedBarcode ? (
                   <TouchableOpacity
+                    ref={index === 1 && isTutorialScanMode ? (setButtonRef as any) : undefined}
                     onPress={() => saveOverride(item)}
                     style={{ marginRight: 6, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 3 }}>
                     <Text style={{ fontSize: 10, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>SET</Text>

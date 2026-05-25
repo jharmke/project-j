@@ -644,48 +644,76 @@ export const TUTORIALS: Tutorial[] = [
     tab: 'log',
     steps: [
       {
-        targetKey: 'none',
-        title: 'CUSTOM FOOD CREATOR',
+        // Step 0: spotlights the + FAB. noTabBarOffset=true because add-food
+        // has no tab bar -- without it, isOffScreen falsely clips the FAB.
+        // tutorialAction fires on NEXT, opening the creator inline.
+        targetKey: 'create_food_fab',
+        noTabBarOffset: true,
+        navigateTo: '/add-food?meal=browse',
+        navigateDelay: 900,
+        tutorialAction: 'openCreatorForTutorial',
+        title: 'THE + BUTTON',
         body: {
-          discipline: 'Open the food library, tap the + FAB, and choose Create Food. Name and calories are required. Everything else is optional but adds accuracy.',
-          balanced: 'To create a custom food, open the Library, tap the + button, and choose Create Food. Fill in the name and calories at minimum.',
-          mindful: 'Creating a custom food is straightforward. Open the Library, tap +, and choose Create Food. Add as much or as little as you want.',
+          discipline: 'The + button opens a speed dial: Create Food for a custom entry, Create Recipe for a multi-ingredient meal. Tap NEXT and we will open the creator and walk through each field.',
+          balanced: 'The + button at the bottom of the library opens Create Food and Create Recipe. Tap NEXT and we will walk through the creator together.',
+          mindful: 'The + button is where custom foods live. Tap NEXT and we will open the creator and explore each section.',
         },
       },
       {
-        targetKey: 'none',
-        title: 'REQUIRED FIELDS',
+        // Step 1: spotlights the full card for an undimmed overview of the form.
+        targetKey: 'create_food_card',
+        title: 'THE CREATE FOOD FORM',
         body: {
-          discipline: 'Name and calories are required -- marked with *. Everything else is optional. But if you leave out macros, protein/carbs/fat will all show as 0.',
-          balanced: 'Name and calories are the only required fields. You can add macros and other details too for a more complete picture.',
-          mindful: 'Just name and calories are required. Add macros if you have the label -- if not, the food will still save and log correctly.',
+          discipline: 'Two required fields -- name and calories. Everything else (serving size, macros, extended nutrition) is optional but recommended. This demo has Protein Shake pre-filled so the Save button is already active.',
+          balanced: 'Name and calories are the only required fields. Everything else is optional. We pre-filled a demo food so you can see the whole flow.',
+          mindful: 'Only name and calories are required. Fill in whatever feels useful and skip the rest -- the food saves either way.',
         },
       },
       {
-        targetKey: 'none',
-        title: 'OPTIONAL DETAILS',
+        // Step 2: spotlights the name input.
+        targetKey: 'create_food_name',
+        title: 'FOOD NAME',
         body: {
-          discipline: 'Brand, macros, extended nutrition (fiber/sodium/saturated fat/cholesterol/sugar) all available. Pull from the nutrition label if you have it.',
-          balanced: 'The optional section adds macros, brand, and extended nutrition. Tap to expand it if you have the nutrition label handy.',
-          mindful: 'More details are available if you want them -- brand, macros, and extended nutrition. Only fill in what feels useful to you.',
+          discipline: 'Required. This is how the food shows in search and your log. Be specific -- "Protein Shake, Chocolate" beats "Shake." Demo has it pre-filled.',
+          balanced: 'The food name is searchable later, so be as descriptive as you want. Demo already has "Protein Shake" filled in.',
+          mindful: 'Use whatever name makes sense to you -- there is no wrong answer here.',
         },
       },
       {
-        targetKey: 'none',
-        title: 'SERVING SIZE',
+        // Step 3: spotlights calories + serving size + unit pills as one section.
+        // tutorialAction fires on NEXT and expands the macros section so step 4
+        // shows the full expanded area already open.
+        targetKey: 'create_food_calories_section',
+        tutorialAction: 'expandOptionalSection',
+        title: 'CALORIES & SERVING SIZE',
         body: {
-          discipline: 'Set the serving size and unit (g, ml, oz, cups, etc.) to match the nutrition label. This is what the food detail screen will default to.',
-          balanced: 'Set a serving size and unit so the food always opens with the right default amount. Choose whatever unit is on the label.',
-          mindful: 'The serving size sets the default amount when you log this food later. Choose whatever makes sense for how you use it.',
+          discipline: 'Required. Pull calories from the label. Serving size (right field) + unit pill sets what one serving weighs -- this makes per-gram math accurate when you adjust amounts later.',
+          balanced: 'Enter calories from the label, then set the serving size to the right. Together they let the app scale correctly when you log a different amount.',
+          mindful: 'Calories from the label, serving size to the right. If you do not have the label, no stress -- just enter what you know.',
         },
       },
       {
-        targetKey: 'none',
-        title: 'SAVE AS COPY',
+        // Step 4: spotlights the whole macros section (toggle + expanded fields).
+        // expandOptionalSection fired when NEXT was pressed on step 3, so the
+        // section is already open and the spotlight covers the full expanded area.
+        targetKey: 'create_food_macros_section',
+        title: 'MACROS & EXTENDED',
         body: {
-          discipline: 'For FatSecret foods with wrong data, use "..." → Save as Copy. Creates your own editable version with the correct macros.',
-          balanced: 'Found a food with slightly wrong data? Tap "..." on the food detail screen and choose Save as Copy. Edit whatever needs fixing.',
-          mindful: 'The "..." menu on any FatSecret food lets you save your own copy with the data you actually need. No database editing required.',
+          discipline: 'Protein, carbs, fat, fiber, sodium, cholesterol, saturated fat -- all from the label. Skip any and they show as 0 in your log. Your macro bars will not reflect foods with missing macros.',
+          balanced: 'These fields are all optional. Fill in what you have from the label. The more you enter, the more accurate your macro tracking.',
+          mindful: 'Add whatever macro info you have. If the label is not handy, skip it and save -- the food still logs correctly without them.',
+        },
+      },
+      {
+        // Step 5: spotlights save button. tutorialAction closes creator and
+        // navigates back to the tab the user came from.
+        targetKey: 'create_food_save',
+        tutorialAction: 'closeCreatorAfterTutorial',
+        title: 'SAVE FOOD',
+        body: {
+          discipline: 'Hit SAVE FOOD and it goes straight to My Foods -- no sync delay. Tap DONE to close this demo. In real use the food writes to your personal library permanently.',
+          balanced: 'Tap SAVE FOOD when ready. It shows up in My Foods right away. Tap DONE to close this demo -- nothing is actually saved since this is a walkthrough.',
+          mindful: 'When you are ready, tap SAVE FOOD. It goes straight to My Foods. Tap DONE to close -- we did not save anything real here.',
         },
       },
     ],

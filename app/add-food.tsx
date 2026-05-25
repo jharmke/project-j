@@ -343,8 +343,10 @@ const { meal, date, selectMode, day, recipeMode, tutorialMode } = useLocalSearch
 const isRecipeMode = recipeMode === 'true';
 const isTutorialMode = tutorialMode === 'true';
 const [isTutorialScanMode, setIsTutorialScanMode] = useState(false);
+const [isTutorialCreateMode, setIsTutorialCreateMode] = useState(false);
 const searchBarRef = useTutorialTarget('log_search_bar');
 const barcodeIconRef = useTutorialTarget('add_food_barcode_icon');
+const createFoodFabRef = useTutorialTarget('create_food_fab');
 const firstResultRef = useRef<View>(null);
 const topResultRef = useRef<View>(null);
 const setButtonRef = useRef<View>(null);
@@ -707,6 +709,31 @@ const saveEditFood = async () => {
     };
     registerTutorialAction('clearTutorialScanState', clearTutorialScanState);
     return () => unregisterTutorialAction('clearTutorialScanState');
+  }, []);
+
+  useEffect(() => {
+    const openCreatorForTutorial = async () => {
+      setShowCreateFood(true);
+      setIsTutorialCreateMode(true);
+      // Small settle delay so React can render the inline creator and
+      // register its refs before the tutorial engine starts measuring.
+      await new Promise<void>(r => setTimeout(r, 120));
+    };
+    registerTutorialAction('openCreatorForTutorial', openCreatorForTutorial);
+    return () => unregisterTutorialAction('openCreatorForTutorial');
+  }, []);
+
+  useEffect(() => {
+    const closeCreatorAfterTutorial = async () => {
+      setShowCreateFood(false);
+      setIsTutorialCreateMode(false);
+      // Navigate back to whichever tab launched the tutorial (small delay
+      // so the close animation has time to start before the screen transitions).
+      await new Promise<void>(r => setTimeout(r, 150));
+      router.back();
+    };
+    registerTutorialAction('closeCreatorAfterTutorial', closeCreatorAfterTutorial);
+    return () => unregisterTutorialAction('closeCreatorAfterTutorial');
   }, []);
 
   const loadMyFoods = async () => {
@@ -1596,7 +1623,9 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
      <CustomFoodCreator
         visible={showCreateFood}
         title={barcodeForCreate ? 'Create & Set Food' : undefined}
-        onClose={() => { setShowCreateFood(false); setBarcodeForCreate(null); }}
+        tutorialMode={isTutorialCreateMode}
+        prefill={isTutorialCreateMode ? { name: 'Protein Shake', calories: 200 } : undefined}
+        onClose={() => { setShowCreateFood(false); setBarcodeForCreate(null); setIsTutorialCreateMode(false); }}
         onSaved={(newFood) => {
           loadMyFoods();
           if (barcodeForCreate) {
@@ -1940,6 +1969,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
 
           <Animated.View style={{ position: 'absolute', bottom: 20 + insets.bottom, right: 20, transform: [{ scale: fabScale }] }}>
             <TouchableOpacity
+              ref={createFoodFabRef as any}
               onPress={toggleFabMenu}
               onPressIn={() => Animated.timing(fabScale, { toValue: 0.9, duration: 80, useNativeDriver: true }).start()}
               onPressOut={() => Animated.timing(fabScale, { toValue: 1, duration: 80, useNativeDriver: true }).start()}

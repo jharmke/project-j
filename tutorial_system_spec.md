@@ -360,6 +360,69 @@ Defined actions:
 
 ---
 
+## SPOTLIGHTING INSIDE A MODAL -- INLINE RENDER PATTERN
+
+**Problem:** React Native Modals create a new native window layer above everything, including TutorialOverlay (which lives in `_layout.tsx`). Any `useTutorialTarget` ref registered inside a component rendered as a `<Modal>` is measured in a different coordinate space -- the spotlight cutout never lines up with the actual element. You cannot spotlight individual fields inside a Modal.
+
+**Solution:** When the tutorial needs to spotlight elements inside a component that normally renders as a Modal, pass a `tutorialMode` boolean prop. In that mode the component renders as an absolute-positioned `Animated.View` (`StyleSheet.absoluteFillObject`) instead of a `<Modal>`. TutorialOverlay in `_layout.tsx` sits above the Stack, which sits above the screen View, which sits above the inline component -- so the spotlight measures and spotlights refs inside the inline component correctly.
+
+**Pattern (applied in CustomFoodCreator.tsx):**
+
+```tsx
+// tutorialMode=false (default): renders as Modal
+<Modal visible={visible} transparent ...>
+  {cardContent}
+</Modal>
+
+// tutorialMode=true: renders as inline absoluteFill View
+<Animated.View style={[StyleSheet.absoluteFillObject, { opacity: overlayOpacity, ... }]}>
+  {cardContent}
+</Animated.View>
+```
+
+**Key details:**
+- `inlineMounted` state controls whether the inline view is in the tree. Set true on `visible=true`, stays true through the close animation (so we don't unmount mid-fade), then false after animation completes.
+- The component's internal scroll view is registered with `registerScrollView(key, ref)` so `scrollToTarget` can scroll to deep refs (like the save button at the bottom of the form).
+- Card `ref={cardRef}` on the outer card Animated.View spotlights the ENTIRE card undimmed -- use this for a "full form overview" step before zooming into individual fields.
+- Wrapper Views around groups of related fields (e.g., `create_food_calories_section`, `create_food_macros_section`) let a single spotlight cover multiple inputs at once.
+- `handleSave` must be guarded: `if (tutorialMode) { handleClose(); return; }` -- never write to storage during a tutorial.
+- The component's `skipTutorial` cleanup should close it: `TutorialContext.skipTutorial()` calls `actions.current['closeCreatorAfterTutorial']?.()` which sets state to unmount the inline view.
+
+**Do NOT use this pattern for:**
+- Components where only ONE field needs spotlighting -- just wire a ref on that field directly, no `tutorialMode` prop needed.
+- Components you cannot modify (e.g., system sheets). Use `targetKey: 'none'` or spotlight a surrounding element.
+
+---
+
+## noTabBarOffset -- SPOTLIGHTING NEAR THE SCREEN BOTTOM ON NON-TAB SCREENS
+
+**Problem:** `isOffScreen()` in TutorialOverlay uses `TAB_H = 64` in its bottom-clip threshold. This is correct for tab screens (elements near the bottom are hidden behind the tab bar). But on screens with no tab bar (e.g., `add-food`, `food-detail`, `recipe-builder`), this 64px buffer falsely flags elements near the screen bottom as off-screen, preventing the spotlight from rendering.
+
+**Example:** The + FAB on `add-food` sits at `bottom: 20 + insets.bottom (~34px)`. FAB top y ≈ SH - 110. Threshold: `SH - TAB_H - 50 = SH - 114`. FAB y (SH-110) > threshold (SH-114) by just 4px -- falsely off-screen.
+
+**Solution:** Add `noTabBarOffset: true` to any TutorialStep targeting an element on a screen with no tab bar. TutorialOverlay reads this flag and passes `noTabBar=true` to `isOffScreen()`, which uses `tabH = 0` instead of `TAB_H = 64`.
+
+```ts
+// In tutorials.ts
+{ targetKey: 'create_food_fab', noTabBarOffset: true, navigateTo: '/add-food?meal=browse', ... }
+
+// isOffScreen signature
+function isOffScreen(l: TargetRect | null, noTabBar = false): boolean {
+  const tabH = noTabBar ? 0 : TAB_H;
+  if (l.y > SH - tabH - 50) return true;
+  if (l.y + l.h > SH - tabH - 24) return true;
+  ...
+}
+```
+
+**Screens that need `noTabBarOffset: true`** on steps targeting bottom-of-screen elements:
+- `add-food` -- FAB, scan banner elements
+- `food-detail`, `recipe-builder`, `recipe-log`, etc.
+
+Tab screens (log, workout, stats, home, profile) do NOT need this flag -- their tab bar is real and the offset is correct.
+
+---
+
 ## TUTORIAL DATA ISOLATION
 
 Any data written during a tutorial must leave zero permanent footprint. The contract: tutorial data never reaches Firestore, never fires achievements, never affects streaks, never appears in stats, graphs, or any reporting. Not ever.

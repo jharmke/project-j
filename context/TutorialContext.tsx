@@ -13,6 +13,10 @@ export interface TutorialStep {
   navigateTo?: string;
   navigateDelay?: number;
   tutorialAction?: string;
+  /** Set true for steps on screens that have no bottom tab bar (e.g. add-food).
+   *  Removes the TAB_H offset from isOffScreen so elements near the bottom of
+   *  those screens are not falsely flagged as off-screen. */
+  noTabBarOffset?: boolean;
 }
 
 function findNextValidStep(
@@ -159,6 +163,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     try { actions.current['deleteTutorialEntry']?.(); } catch {}
     try { actions.current['deleteTutorialExercise']?.(); } catch {}
     try { actions.current['clearTutorialScanState']?.(); } catch {}
+    try { actions.current['closeCreatorAfterTutorial']?.(); } catch {}
     setActiveState(null);
   }, [setActiveState]);
 

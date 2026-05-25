@@ -30,11 +30,14 @@ type BubblePos  = { above: boolean; value: number };
 // the user can always reach Skip -- preventing input-absorber freeze.
 // Also returns true when the bottom of the target clips under the tab bar
 // (top visible but bottom obscured) -- triggers scroll to bring it clear.
-function isOffScreen(l: TargetRect | null): boolean {
+// noTabBar: pass true for screens that have no bottom tab bar (e.g. add-food)
+// so elements near the screen bottom are not falsely flagged as off-screen.
+function isOffScreen(l: TargetRect | null, noTabBar = false): boolean {
   if (!l) return false;
   if (l.y + l.h < 0) return true;                  // off top
-  if (l.y > SH - TAB_H - 50) return true;          // off bottom
-  if (l.y + l.h > SH - TAB_H - 24) return true;    // bottom clips into tab bar
+  const tabH = noTabBar ? 0 : TAB_H;
+  if (l.y > SH - tabH - 50) return true;           // off bottom
+  if (l.y + l.h > SH - tabH - 24) return true;     // bottom clips into tab bar / safe area
   return false;
 }
 
@@ -136,9 +139,12 @@ export default function TutorialOverlay() {
     const spaceAbove = spotTop;
     const spaceBelow = SH - spotBottom - TAB_H;
     if (spaceAbove >= spaceBelow) {
-      // Bubble bottom edge = spotTop - BUBBLE_GAP
-      // In absolute coords: bottom = SH - (spotTop - BUBBLE_GAP)
-      return { above: true, value: SH - (spotTop - BUBBLE_GAP) };
+      // Bubble bottom edge = spotTop - BUBBLE_GAP (in absolute coords from screen bottom)
+      const rawValue = SH - (spotTop - BUBBLE_GAP);
+      // Clamp so bubble doesn't extend above the screen (title/counter would be cut off).
+      // A ~220px bubble needs its bottom at most SH-260px to keep top below status bar (~40px).
+      const clamped = Math.min(rawValue, SH - 260);
+      return { above: true, value: clamped };
     }
     return { above: false, value: spotBottom + BUBBLE_GAP };
   }, []);
@@ -175,6 +181,7 @@ export default function TutorialOverlay() {
     const firstStep = state.tutorial.steps[state.stepIndex];
     const navigateTo = (firstStep as any).navigateTo as string | undefined;
     const navigateDelay = ((firstStep as any).navigateDelay as number) ?? 200;
+    const noTabBar = !!((firstStep as any).noTabBarOffset);
 
     let rawLayout: TargetRect | null;
     if (navigateTo === 'back') {
@@ -195,11 +202,11 @@ export default function TutorialOverlay() {
       rawLayout = await measureTarget(firstStep.targetKey);
     }
 
-    let layout = isOffScreen(rawLayout) ? null : rawLayout;
-    if (isOffScreen(rawLayout)) {
+    let layout = isOffScreen(rawLayout, noTabBar) ? null : rawLayout;
+    if (isOffScreen(rawLayout, noTabBar)) {
       await scrollToTarget(firstStep.targetKey);
       const remeasured = await measureTargetWithRetry(firstStep.targetKey);
-      layout = isOffScreen(remeasured) ? null : remeasured;
+      layout = isOffScreen(remeasured, noTabBar) ? null : remeasured;
     }
     const pos       = computeBubblePos(layout);
 
@@ -231,6 +238,7 @@ export default function TutorialOverlay() {
     // If this step requires a screen change, navigate first then retry measurement
     const navigateTo = (step as { navigateTo?: string }).navigateTo;
     const navigateDelay = (step as { navigateDelay?: number }).navigateDelay ?? 200;
+    const noTabBar = !!((step as any).noTabBarOffset);
 
     let rawLayout: TargetRect | null;
     if (navigateTo === 'back') {
@@ -251,11 +259,11 @@ export default function TutorialOverlay() {
       rawLayout = await measureTarget(step.targetKey);
     }
 
-    let layout = isOffScreen(rawLayout) ? null : rawLayout;
-    if (isOffScreen(rawLayout)) {
+    let layout = isOffScreen(rawLayout, noTabBar) ? null : rawLayout;
+    if (isOffScreen(rawLayout, noTabBar)) {
       await scrollToTarget(step.targetKey);
       const remeasured = await measureTargetWithRetry(step.targetKey);
-      layout = isOffScreen(remeasured) ? null : remeasured;
+      layout = isOffScreen(remeasured, noTabBar) ? null : remeasured;
     }
     const pos    = computeBubblePos(layout);
     setBubblePos(pos);

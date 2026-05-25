@@ -160,6 +160,23 @@ DONE -- SHIPPED
 [x] Routine Builder -- SHIPPED + polished. pj_routines AsyncStorage key stores Routine[] (id, name, tags, exercises, starred). RoutineBuilderModal: centered scale-pop, name field, tag pills (excludes tag_rest), inline exercise search (max 5 results) + browse button (full scrollable library in-modal, already-added exercises dimmed with checkmark), inline quick-add form (name + type, adds to routine only). Exercise rows fully editable: lift gets SETS/REPS/REST fields (numeric keypad), cardio gets DURATION/DISTANCE (row 1) + SPEED/INCLINE/RESIST (row 2, decimal-pad with filterDecimal). All fields default empty. Routines tab in workout-library.tsx: DraggableFlatList with star toggle, pencil (edit), trash (delete + Alert confirm), LOAD ROUTINE button opens day picker. workout.tsx FAB converted to speed dial: Add Exercise + Load Routine items with staggered spring animation, backdrop dismiss. Day pickers (both library + workout tab): week navigation arrows, THIS WEEK/NEXT WEEK/WEEK OF label, past days dimmed + non-tappable, forward weeks unlimited, selections persist across week navigation. LoadRoutineModal: routine list + day picker, pre-selects active day. Load operation replaces exercises + tags on selected days via read-then-merge (never touches checks, notes, cardioLogs, or other day data). Auto-converts rest days on load. workoutData.ts Routine interface added.
 
 
+ACTIVE BUGS -- fix before anything else
+
+[ ] TUTORIAL POLISH PASS -- dedicated session required. Confirmed good: spotlight animation quality, highlighting, interactive flows, app stability. Issues to fix as a batch:
+  - Spotlight transition lag: old highlight position lingers ~half second before snapping to new target on step advance. TutorialOverlay.tsx timing issue. Affects all tutorials.
+  - Auto-scroll to off-screen targets: when real logged data pushes demo entries below the viewport, scrollToTarget doesn't bring the target into view. Affects log_food and manage_log, likely others.
+  - Demo entries mixing with real data: log_food and manage_log inject into Lunch which already has real entries. Copy like "expand Lunch to see the entry" is confusing. Need to inject into an empty section or handle real-entries-present case.
+  - End navigation: barcode and recipes leave user in food library after DONE instead of returning to launch point. Likely affects other tutorials that navigate away. Full audit needed.
+  - Launch tab: tutorials list (app/tutorials.tsx) must navigate to correct tab before starting tutorial so context is right and user lands correctly when done.
+  - Stats and profile tutorials not yet interactive or polished -- dedicated pass after above issues resolved.
+[ ] You vs Yesterday -- burn accuracy setting not applied to net calorie calculation. YvY shows -798 running net, Head to Head shows -488 (correct, applies burn accuracy). Audit all consumers of burn accuracy beyond Head to Head and day-detail.
+[ ] Food log past days -- active calories shown are today's live value, not the historical value for that day. day-detail has the correct per-day value so the source data is there.
+[ ] Food log past days -- navigating from today directly to yesterday doesn't update the data. Going back to 2 days ago and then back to yesterday works. Something stale in the today→yesterday transition.
+[ ] Day detail workouts -- showing "unassigned" tag even after user assigned it to cardio earlier that day. Tag assignment not reflecting correctly in day detail.
+[ ] Sign in page -- "Already have an account? Sign In" text link is broken (does nothing). Also audit Google/Apple logo consistency on that screen.
+[ ] Hot dog investigation -- "Hot Dog Frank Bar S" shows 90 kcal in favorites/recents but 70 kcal when searched directly. Likely two FatSecret entries with same name where favorites/recents stored the wrong ID, or IDs are colliding. Investigate before fixing.
+[ ] Recents 100g bug (partial) -- top 2 recents (beans, gluten free brownies) open to 100g instead of correct serving size. All other recents are correct. Favorites tab shows correct serving (130g) for the same beans food. Pattern suggests fsId missing or serving lookup failing specifically for these entries -- need to check if these are FatSecret foods or custom My Foods, and why only top 2 are affected. Confirmed on TestFlight build 9 2026-05-25.
+
 NOW -- active this session
 [x] Day detail sleep bedtime/wake times showing '--' -- fmtTime was trying to parse already-formatted time strings via new Date(). Fixed: return val directly. day-detail.tsx.
 [x] Day detail sleepGoal default wrong -- was 8, home screen was 7. Fixed to 7. day-detail.tsx.
@@ -561,6 +578,24 @@ NOW -- active this session
   [x] exercise_library interactive tutorial -- SHIPPED 2026-05-25. 5-step tour navigating to /workout-library. Step 0: search bar (workout_lib_search, navigateTo + 700ms delay). Step 1: first FlatList row (workout_lib_exercise_row, index===0, skipIfTargetMissing). Step 2: filter button (workout_lib_filter_btn, wrapped View, skipIfTargetMissing) -- NEXT fires tutorialAction openTutorialExerciseDetail which selects Bench Press and renders exercise detail as inline View (not Modal, same RN Modal constraint as create_food). Step 3: muscle map + instructions spotlighted together under one ref (workout_lib_muscle_map) -- NEXT fires closeTutorialExerciseDetail (animated close). Step 4: FAB (workout_lib_fab) -- DONE fires closeExerciseLibraryTutorial (router.back()). All steps noTabBarOffset:true. Skip cleanup wired in TutorialContext. noTabBarOffset field added to TutorialStep interface in data/tutorials.ts. 3 files: app/workout-library.tsx, data/tutorials.ts, context/TutorialContext.tsx.
 
 SOON -- confirmed next few sessions
+
+  Tutorial polish --
+  [ ] Tutorials list page -- remove side > arrows from each tutorial row. Play button is sufficient, arrows are redundant.
+  [ ] Tutorial copy language audit -- 79 double-dash instances in data/tutorials.ts, tone consistency per mode, accuracy of feature descriptions. Dedicated pass.
+
+  Food --
+  [ ] Hot dog / FatSecret duplicate investigation -- favorites/recents show 90 kcal for "Hot Dog Frank Bar S", direct search shows 70 kcal. Two entries with same name likely storing different IDs. Needs investigation before fix.
+  [ ] Net Carbs -- implement net carbs (total carbs minus fiber) throughout the app. Show alongside or instead of total carbs where relevant. Add to toolkits and tutorials. Needs design decision on placement before building.
+  [ ] Food library uniform card height -- all tabs (Recent, My Foods, Favorites, Recipes, Set Foods) should use consistent card height regardless of name length or missing brand. Some cards are slightly different sizes, looks messy.
+
+  Home/UX --
+  [ ] Apple sync last sync time -- surface last HealthKit sync time somewhere on cards that show synced data (steps, active cals, etc.) so user knows if data is stale. Design decision on placement needed.
+  [ ] IF card placement -- consider moving IF card to Food Log tab instead of Home. Would give log tab more content and clean up Home. Decision needed before building.
+  [ ] Haptics audit -- Today's Message card tap to Bible has no haptic. Journal icon on same card has no haptic. Sweep all tappable elements for missing haptics.
+  [ ] Workout notes saved state -- after saving, dim the text or add a visual indicator (checkmark, etc.) so it's clear the note is saved. Same for Today's Thoughts / daily note card. Any text field save state should have a visual indicator.
+  [ ] Workout day scroller -- unselected days look too plain. Consider a light border or subtle treatment to give them more definition.
+  [ ] Water modal edit entries -- add pencil icon to edit existing water log entries (time/amount). Add delete confirmation warning if not already present.
+
   tutorialOverrideState pattern -- architectural idea for stateful card tutorials. When a tutorial starts on a card that has multiple UI states driven by real data (IF card: idle/active/eating; sleep card: path 1/2/3; YvY: empty/populated), the card should accept a tutorialOverrideState prop that forces it to render a specific state purely visually -- no AsyncStorage changes, no real data touched. Tutorial engine advances through all states in sequence so every step gets a guaranteed spotlight on the target element. When tutorial ends or is skipped, prop clears and card snaps back to actual state. Primary use case: IF card tutorial so steps 3+4 (TAP WHEN YOU EAT, LAST MEAL) always spotlight correctly regardless of which state the user starts from. Pattern is broadly reusable -- any card with conditional rendering driven by real-time state is a candidate. IFCard is the first implementation target.
   Head-to-Head toolkit -- app/head-to-head.tsx has no (i) tooltip or guided tour. WLT explanation, score bar, delta lines, and the "Results locked at midnight" concept all live here and have no in-app explanation. Needs: tooltipRegistry entry (key: 'head_to_head'), TooltipIcon on the screen header, definitions for Score, Win/Loss/Tie logic (per metric rules), Delta column, Results countdown. This is where WLT explanation belongs -- NOT in the YvY home card tooltip.
   Dev tools "Restore from Cloud" button -- restoreIfFresh() auto-fires on true fresh install but only when zero local pj_* data exists. If partial data exists (e.g., some keys present but a day's log is missing after a build switch), auto-restore does not trigger. Add a manual "Restore from Cloud" button to dev tools that forces the full Firestore restore regardless of local state -- for recovery after build switches where data ends up partially missing. services/syncService.ts + settings.tsx. BEFORE NEXT TESTFLIGHT BUILD.
@@ -696,6 +731,7 @@ Custom water amount modal -- DONE. bgSheet, Animated.Value fade, tap-outside dis
 [x] GoogleService-Info.plist EAS build failure (root fix) -- EAS pre-flight scanner reads app.json statically, sees googleServicesFile path not in git, hard fails before any hook runs. Hook approach never worked. Fix: created app.config.js that wraps app.json and overrides googleServicesFile with process.env.GOOGLE_SERVICE_INFO_PLIST ?? './GoogleService-Info.plist'. Dynamic evaluation bypasses static pre-flight check. EAS sets env var to decoded secret file path at build time. app.json untouched. FIXED 2026-05-22.
 App-wide OZ to oz audit -- index.tsx and log.tsx fixed this session. day-detail and any other screens not yet checked. Complete audit needed. (SOON)
 Recipe builder -- edit ingredient amounts inline. Currently requires delete + re-add to change a logged ingredient's amount. Need edit mode: pencil tap on ingredient row opens inline amount field (or tap-to-edit). Sets/grams editable without deleting. recipe-builder.tsx. (SOON)
+Recipe builder macro label spacing -- ingredient rows show "P31g" "C0g" with no space between letter and number. Should be "P 31g" "C 0g". Quick fix. recipe-builder.tsx. (SOON)
 Recipe builder -- delete ingredient confirmation Alert. Currently instant delete, no warning. Add destructive confirm Alert before removing any ingredient. recipe-builder.tsx. (SOON)
 Recipe builder -- "Add to Diary" log modal. Current modal slides up from bottom (wrong pattern) AND has a transparent background. Fix: convert to centered fade-in modal (non-negotiable per app pattern) + solid bgSheet background, fully opaque. recipe-builder.tsx. (SOON)
 
@@ -723,7 +759,7 @@ Tooltip/toolkit pass -- update wording and info on existing tooltip cards, add t
 Loading states audit -- sweep all screens, ensure nothing feels flashy or jumpy on load. (SOON)
 Error handling audit -- review what happens when things fail silently across the app. No user should ever be left on a broken state with no feedback. (SOON)
 Mindful mode content hiding -- weight graphs, body comp data, and performance-heavy cards should not show for Mindful users. Audit all cards and hide irrelevant content per mode.
-Tab bar scroll-to-top -- tapping the active tab icon when already on that tab should scroll the screen back to top.
+Tab bar scroll-to-top -- tapping the active tab icon when already on that tab should scroll the screen back to top. Confirmed still needed 2026-05-25.
 Big dimmed card icon watermark -- large version of each card's icon sitting behind card content at ~5% opacity. Subtle texture, gives cards more identity. Apply to all home screen cards.
 Steps goal button -- remove goal button from steps card top right. Move step goal setting to profile/settings alongside other goals.
 Weight projected graph in profile -- add alongside weight goal card in profile.

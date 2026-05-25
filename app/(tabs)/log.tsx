@@ -291,7 +291,7 @@ export default function LogScreen() {
   };
   
   const totalCals = entries.reduce((s, e) => s + e.cal, 0);
-  const adjustedTarget = calTarget + Math.round((activeCalories > 0 ? activeCalories : caloriesBurned) * burnAccuracyPct / 100);
+  const adjustedTarget = calTarget + Math.round((isToday && activeCalories > 0 ? activeCalories : caloriesBurned) * burnAccuracyPct / 100);
   const calPct = adjustedTarget > 0 ? (totalCals / adjustedTarget) * 100 : 0;
   const getAdvancedNutrient = (name: string) => {
     return Math.round(entries.reduce((s, e) => {
@@ -465,7 +465,7 @@ export default function LogScreen() {
   }
 }
             if (typeof data.water === 'number') setWater(Math.max(0, data.water));
-            if (data.caloriesBurned) setCaloriesBurned(parseInt(data.caloriesBurned) || 0);
+            setCaloriesBurned(parseInt(data.activeCalories || data.caloriesBurned) || 0);
           } else {
             setEntries([]);
             setWater(0);
@@ -511,6 +511,7 @@ export default function LogScreen() {
         } catch (e) {
           console.log('Reload error', e);
         }
+        skipDateEffect.current = false;
       };
       reload(focusDateKey);
     }, [])
@@ -522,6 +523,7 @@ export default function LogScreen() {
     const loadDay = async () => {
       setEntries([]);
       setWater(0);
+      setCaloriesBurned(0);
       setTotalProtein(0);
       setTotalCarbs(0);
       setTotalFat(0);
@@ -537,7 +539,7 @@ export default function LogScreen() {
             setTotalFat(Math.round(clean.reduce((s: number, e: any) => s + (e.fat || 0), 0) * 10) / 10);
           }
           if (typeof data.water === 'number') setWater(Math.max(0, data.water));
-          if (data.caloriesBurned) setCaloriesBurned(parseInt(data.caloriesBurned) || 0);
+          setCaloriesBurned(parseInt(data.activeCalories || data.caloriesBurned) || 0);
         }
         setLogRefreshKey(k => k + 1);
       } catch (e) {
@@ -762,7 +764,7 @@ export default function LogScreen() {
               <ReAnimated.View style={[styles.progressBarFill, useAnimatedStyle(() => ({ width: withTiming(`${Math.min(calPct, 100)}%` as any, { duration: 400 }) })), { backgroundColor: calColor }]} />
             </View>
             <Text style={[styles.calRemaining, { color: theme.textMuted }]}>
-              {adjustedTarget > 0 ? (totalCals < adjustedTarget ? `${adjustedTarget - totalCals} kcal remaining (${Math.round(activeCalories * burnAccuracyPct / 100)} burned)` : `${totalCals - adjustedTarget} kcal over target (${Math.round(activeCalories * burnAccuracyPct / 100)} burned)`) : ''}
+              {adjustedTarget > 0 ? (totalCals < adjustedTarget ? `${adjustedTarget - totalCals} kcal remaining (${Math.round((isToday && activeCalories > 0 ? activeCalories : caloriesBurned) * burnAccuracyPct / 100)} burned)` : `${totalCals - adjustedTarget} kcal over target (${Math.round((isToday && activeCalories > 0 ? activeCalories : caloriesBurned) * burnAccuracyPct / 100)} burned)`) : ''}
             </Text>
           </View>
           <MacroStackedBar protein={totalProtein} carbs={totalCarbs} fat={totalFat} proteinGoal={macroGoals.protein} carbsGoal={macroGoals.carbs} fatGoal={macroGoals.fat} theme={theme} />

@@ -726,48 +726,118 @@ export const TUTORIALS: Tutorial[] = [
     tab: 'log',
     steps: [
       {
-        targetKey: 'none',
-        title: 'THE RECIPE BUILDER',
+        // Step 0: Start in the food library, spotlight the + FAB
+        targetKey: 'create_food_fab',
+        navigateTo: '/add-food?meal=browse',
+        noTabBarOffset: true,
+        title: 'THE + BUTTON',
         body: {
-          discipline: 'Open the Library → + FAB → Create Recipe. Add every ingredient. The builder calculates total and per-serving nutrition automatically.',
-          balanced: 'Tap + in the food library and choose Create Recipe to build a meal. Add your ingredients and the nutrition calculates itself.',
-          mindful: 'The recipe builder lets you log home-cooked meals accurately. Add each ingredient once and log portions as needed.',
+          discipline: 'This is your food creator. Tap + to access Create Food for single items or Create Recipe for full dishes. We are going to the recipe builder now.',
+          balanced: 'Tap + here in the food library to access the creator options. Create Recipe is where full meals get built. Let\'s go there.',
+          mindful: 'This + button opens your creation options. Create Food is for single items, Create Recipe is for full meals. We will explore the recipe builder together.',
         },
       },
       {
-        targetKey: 'none',
+        // Step 1: Inside recipe-builder, spotlight the recipe name input
+        targetKey: 'recipe_name_input',
+        navigateTo: '/recipe-builder',
+        noTabBarOffset: true,
+        title: 'NAME YOUR RECIPE',
+        body: {
+          discipline: 'Name your recipe specifically. "Meal Prep Chicken Bowl" is findable. "Chicken" is not. We pre-loaded Chicken Breast, Brown Rice, and Olive Oil as demo ingredients.',
+          balanced: 'Give your recipe a name you will recognize later. We added three demo ingredients so you can see the full builder in action.',
+          mindful: 'Start with a name that means something to you. We added a few demo ingredients so you can see how the builder works.',
+        },
+      },
+      {
+        // Step 2: Spotlight the Search Food + Create buttons row
+        targetKey: 'recipe_add_ingredient_row',
+        noTabBarOffset: true,
         title: 'ADDING INGREDIENTS',
         body: {
-          discipline: 'Search for each ingredient via the food search bar. Set the gram amount per ingredient accurately. Every gram affects the final per-serving number.',
-          balanced: 'Search and add each ingredient. Set the gram amount for each one. The total nutrition updates as you add ingredients.',
-          mindful: 'Add your ingredients one at a time through the search bar. Set whatever amount you used -- it doesn\'t need to be exact.',
+          discipline: 'Two ways to add: Search Food pulls from the full FatSecret database by name or barcode. Create builds a custom item on the spot if it is not in the database.',
+          balanced: 'Tap Search Food to find any ingredient by name. Or tap Create to build a custom item if something is not in the database.',
+          mindful: 'Use Search Food to find ingredients by name. Create is there if you need to add something custom. Both options are always available.',
         },
       },
       {
-        targetKey: 'none',
-        title: 'TOTAL WEIGHT',
+        // Step 3: Spotlight the ingredients list card
+        targetKey: 'recipe_ingredients_card',
+        noTabBarOffset: true,
+        title: 'INGREDIENT LIST',
         body: {
-          discipline: 'Enter the total cooked weight of the recipe. This is the denominator for all per-serving calculations. Weigh it -- don\'t guess.',
-          balanced: 'Enter the total weight of the finished recipe. This helps the app calculate how much nutrition is in each serving.',
-          mindful: 'The total weight field helps calculate portions. Enter an approximate weight if you don\'t have a scale -- it\'s still useful.',
+          discipline: 'The list tracks everything added. Each item shows its macros auto-calculated from the amount you set. Trash icon removes it. Accuracy here drives accuracy everywhere.',
+          balanced: 'Your ingredients list shows each item with its nutrition contribution. Tap the trash icon to remove anything. What you put in here flows into your log.',
+          mindful: 'This is your ingredient list. Each item shows what it contributes. Nothing is permanent -- the trash icon removes any ingredient.',
         },
       },
       {
-        targetKey: 'none',
-        title: 'SERVINGS COUNT',
+        // Step 4: Spotlight a single ingredient row
+        targetKey: 'recipe_ingredient_row',
+        noTabBarOffset: true,
+        title: 'INGREDIENT ROW',
         body: {
-          discipline: 'Set how many servings the recipe makes. All per-serving nutrition divides by this number. Review the per-serving card before saving.',
-          balanced: 'Enter how many servings the recipe makes. The app divides the total nutrition by this number to show per-serving values.',
-          mindful: 'How many portions does this recipe make? Enter that number and the per-serving nutrition figures itself out.',
+          discipline: 'Each row shows the amount, calories, and P/C/F split. If the macros look wrong, remove and re-add with the correct gram weight.',
+          balanced: 'Each ingredient shows its amount and nutrition contribution at a glance. The more accurate your amounts, the more accurate your log.',
+          mindful: 'Each ingredient row shows what it contributes. Do your best with amounts -- a reasonable estimate is always better than skipping the log.',
         },
       },
       {
-        targetKey: 'none',
-        title: 'LOGGING A RECIPE',
+        // Step 5: Spotlight the total nutrition card
+        targetKey: 'recipe_totals_card',
+        noTabBarOffset: true,
+        title: 'TOTAL NUTRITION',
         body: {
-          discipline: 'Saved recipes appear in the Recipes tab of the food library. Tap to log. Use servings or grams to log your exact portion.',
-          balanced: 'Your saved recipes are in the Recipes tab. Tap one to log it -- choose how many servings you had or enter a gram amount.',
-          mindful: 'Find your recipes in the Recipes tab. Tap one and log however much you had. The math is already done for you.',
+          discipline: 'This is the running total for the full batch. Every ingredient summed automatically. This number divided by your serving count gives you the per-serving values.',
+          balanced: 'Total Nutrition sums every ingredient automatically. You never calculate anything manually -- just add accurate ingredients and the math is done.',
+          mindful: 'This adds up everything in your recipe automatically. You do not have to do any math -- it all updates as you add ingredients.',
+        },
+      },
+      {
+        // Step 6: Spotlight the servings card
+        targetKey: 'recipe_servings_card',
+        noTabBarOffset: true,
+        title: 'SERVINGS',
+        body: {
+          discipline: 'Set the number of servings the batch makes. Per-serving nutrition divides automatically. This is what gets logged each time you pull this recipe.',
+          balanced: 'Enter how many servings the recipe makes. The per-serving breakdown updates instantly. This is what gets logged when you use the recipe.',
+          mindful: 'Set how many portions this recipe makes. The per-serving numbers update right away. No pressure to be exact -- a good estimate is fine.',
+        },
+      },
+      {
+        // Step 7: Spotlight the save button -- action saves the demo recipe then step 8 navigates to Recipes tab
+        targetKey: 'recipe_save_btn',
+        noTabBarOffset: true,
+        tutorialAction: 'saveTutorialRecipe',
+        title: 'SAVE THE RECIPE',
+        body: {
+          discipline: 'Tap DONE to save this demo recipe and see where it lives in your library. The real Save button works identically -- one tap, saved permanently.',
+          balanced: 'Tap DONE and we will save this demo recipe so you can see where it shows up. In real use, tap Save and the recipe goes straight to your library.',
+          mindful: 'Tap DONE and we will save this demo so you can see where recipes live. In real use, tap Save whenever it feels ready.',
+        },
+      },
+      {
+        // Step 8: Navigate to Recipes tab -- spotlight the tab pills so user sees exactly where they landed
+        targetKey: 'add_food_tab_pills',
+        navigateTo: '/add-food?meal=browse&tutorialTab=recipes',
+        noTabBarOffset: true,
+        title: 'THE RECIPES TAB',
+        body: {
+          discipline: 'You are inside your food library -- the same screen you use to search foods. Recipes is one of five tabs here. Every recipe you save lands in this tab, always one tap from your log.',
+          balanced: 'This is your food library. Recipes is one of the tabs across the top -- it is where every saved recipe lives. The same place you come to search for foods when logging a meal.',
+          mindful: 'You are in your food library. See the tabs across the top -- Recipes is where all your saved recipes live. It is always here when you want to log a meal you have built.',
+        },
+      },
+      {
+        // Step 9: Spotlight the demo recipe row -- shows the saved recipe and how to delete
+        targetKey: 'recipe_library_row',
+        noTabBarOffset: true,
+        tutorialAction: 'deleteTutorialRecipe',
+        title: 'YOUR SAVED RECIPE',
+        body: {
+          discipline: 'There is the demo recipe. Tap it to log a portion. The × removes a recipe permanently -- it will confirm before deleting. Tap DONE and we will clean this one up.',
+          balanced: 'Here is the recipe we just saved. Tap to log a portion anytime. Tap the × to delete a recipe -- it will ask first. Tap DONE and we will remove the demo.',
+          mindful: 'Here is the recipe we made together. Tap it to log whenever you are ready. The × removes a recipe if you need to. Tap DONE and we will clean this up.',
         },
       },
     ],

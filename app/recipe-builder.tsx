@@ -10,6 +10,8 @@ import { useToast } from '../components/Toast';
 import { saveToFirebase } from '../firebaseConfig';
 import { storageSet } from '../utils/storage';
 import { useTheme } from '../theme';
+import { useTutorial } from '../context/TutorialContext';
+import { useTutorialTarget } from '../hooks/useTutorialTarget';
 
 interface Ingredient {
   id: string;
@@ -66,6 +68,8 @@ export default function RecipeBuilderScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const { showToast } = useToast();
+  const { activeState, registerTutorialAction, unregisterTutorialAction, registerScrollView, unregisterScrollView } = useTutorial();
+  const isTutorialMode = activeState?.tutorial.id === 'recipes';
   const { recipeId } = useLocalSearchParams<{ recipeId: string }>();
 
   const [recipeName, setRecipeName] = useState('');
@@ -79,6 +83,17 @@ export default function RecipeBuilderScreen() {
   const [unitBtnPos, setUnitBtnPos] = useState<{ top: number; right: number } | null>(null);
   const weightUnitAnim = useRef(new Animated.Value(0)).current;
   const unitBtnRef = useRef<View>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const tutorialStateRef = useRef<any>({});
+
+  // Tutorial spotlight refs
+  const nameInputRef = useTutorialTarget('recipe_name_input');
+  const addRowRef = useTutorialTarget('recipe_add_ingredient_row');
+  const ingredientsCardRef = useTutorialTarget('recipe_ingredients_card');
+  const ingredientRowRef = useTutorialTarget('recipe_ingredient_row');
+  const totalsCardRef = useTutorialTarget('recipe_totals_card');
+  const servingsCardRef = useTutorialTarget('recipe_servings_card');
+  const saveBtnRef = useTutorialTarget('recipe_save_btn');
 
   const openWeightUnitDropdown = () => {
     weightUnitAnim.setValue(0);
@@ -97,6 +112,73 @@ export default function RecipeBuilderScreen() {
 
   useEffect(() => {
     if (recipeId) loadExistingRecipe();
+  }, []);
+
+  // Inject demo ingredients when the recipes tutorial is active
+  useEffect(() => {
+    if (isTutorialMode && !recipeId) {
+      setRecipeName('Chicken Bowl');
+      setServingCount('4');
+      setIngredients([
+        { id: 'demo_1', name: 'Chicken Breast', cal: 165, protein: 31, carbs: 0, fat: 3.6, fiber: 0, sugar: 0, sodium: 74, cholesterol: 85, saturatedFat: 1, amount: 100, unit: 'g' },
+        { id: 'demo_2', name: 'Brown Rice', cal: 216, protein: 4, carbs: 45, fat: 1.8, fiber: 3.5, sugar: 0, sodium: 10, cholesterol: 0, saturatedFat: 0, amount: 100, unit: 'g' },
+        { id: 'demo_3', name: 'Olive Oil', cal: 119, protein: 0, carbs: 0, fat: 13.5, fiber: 0, sugar: 0, sodium: 0, cholesterol: 0, saturatedFat: 1.9, amount: 14, unit: 'g' },
+      ]);
+    }
+  }, [isTutorialMode]);
+
+  // Keep tutorialStateRef current so action callbacks always read latest values
+  useEffect(() => {
+    tutorialStateRef.current = {
+      recipeName, ingredients, totalWeight, totalWeightUnit, servings, servingName,
+      totalCal, totalProtein, totalCarbs, totalFat, totalFiber, totalSugar,
+      totalSodium, totalCholesterol, totalSaturatedFat,
+    };
+  });
+
+  // Register scroll view + tutorial actions on mount
+  useEffect(() => {
+    registerScrollView('recipe_builder_scroll', scrollViewRef);
+    registerTutorialAction('saveTutorialRecipe', async () => {
+      const s = tutorialStateRef.current;
+      const tutorialRecipe = {
+        id: 'tutorial_recipe_temp',
+        name: s.recipeName?.trim() || 'Demo Chicken Bowl',
+        ingredients: s.ingredients || [],
+        totalWeight: parseFloat(s.totalWeight) || 0,
+        totalWeightUnit: s.totalWeightUnit || 'g',
+        servingCount: s.servings || 4,
+        servingName: s.servingName || 'serving',
+        totalCal: s.totalCal || 0,
+        totalProtein: s.totalProtein || 0,
+        totalCarbs: s.totalCarbs || 0,
+        totalFat: s.totalFat || 0,
+        totalFiber: s.totalFiber || 0,
+        totalSugar: s.totalSugar || 0,
+        totalSodium: s.totalSodium || 0,
+        totalCholesterol: s.totalCholesterol || 0,
+        totalSaturatedFat: s.totalSaturatedFat || 0,
+        createdAt: Date.now(),
+        tutorialRecipe: true,
+      };
+      try {
+        const saved = await AsyncStorage.getItem('pj_recipes');
+        const existing = saved ? JSON.parse(saved) : [];
+        const cleaned = existing.filter((r: any) => !r.tutorialRecipe);
+        await storageSet('pj_recipes', JSON.stringify([...cleaned, tutorialRecipe]));
+      } catch {}
+      // Pop recipe-builder out of the nav stack so the user never lands back here
+      // after the tutorial ends. Step 8's navigateTo fires after this resolves.
+      router.back();
+    });
+    registerTutorialAction('closeRecipeTutorial', async () => {
+      router.back();
+    });
+    return () => {
+      unregisterScrollView('recipe_builder_scroll');
+      unregisterTutorialAction('saveTutorialRecipe');
+      unregisterTutorialAction('closeRecipeTutorial');
+    };
   }, []);
 
   useFocusEffect(
@@ -183,6 +265,7 @@ export default function RecipeBuilderScreen() {
 
   const saveRecipe = async () => {
     if (!canSave) return;
+    if (isTutorialMode) return; // blocked in tutorial -- saveTutorialRecipe action handles it
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const recipe: Recipe = {
@@ -229,15 +312,18 @@ export default function RecipeBuilderScreen() {
           <Text style={styles.backBtnText}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{recipeId ? 'Edit Recipe' : 'New Recipe'}</Text>
-        <TouchableOpacity
-          onPress={saveRecipe}
-          disabled={!canSave}
-          style={[styles.saveBtn, !canSave && { opacity: 0.35 }]}>
-          <Text style={styles.saveBtnText}>Save</Text>
-        </TouchableOpacity>
+        <View ref={saveBtnRef} collapsable={false}>
+          <TouchableOpacity
+            onPress={saveRecipe}
+            disabled={!canSave}
+            style={[styles.saveBtn, !canSave && { opacity: 0.35 }]}>
+            <Text style={styles.saveBtnText}>Save</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
+        ref={scrollViewRef}
         contentContainerStyle={styles.content}
         keyboardDismissMode="on-drag"
         keyboardShouldPersistTaps="handled"
@@ -246,17 +332,19 @@ export default function RecipeBuilderScreen() {
         {/* Recipe Name */}
         <View style={styles.card}>
           <Text style={styles.cardLabel}>Recipe Name</Text>
-          <TextInput
-            style={styles.recipeNameInput}
-            placeholder="e.g. Chicken Stir Fry"
-            placeholderTextColor={theme.textDim}
-            value={recipeName}
-            onChangeText={setRecipeName}
-          />
+          <View ref={nameInputRef} collapsable={false}>
+            <TextInput
+              style={styles.recipeNameInput}
+              placeholder="e.g. Chicken Stir Fry"
+              placeholderTextColor={theme.textDim}
+              value={recipeName}
+              onChangeText={setRecipeName}
+            />
+          </View>
         </View>
 
         {/* Add Ingredient buttons */}
-        <View style={styles.addRow}>
+        <View ref={addRowRef} style={styles.addRow}>
           <TouchableOpacity
             style={styles.addIngredientBtn}
             onPress={() => router.push({ pathname: '/add-food', params: { meal: 'recipe', date: 'recipe', recipeMode: 'true' } })}>
@@ -270,7 +358,7 @@ export default function RecipeBuilderScreen() {
         </View>
 
         {/* Ingredients */}
-        <View style={styles.card}>
+        <View ref={ingredientsCardRef} style={styles.card}>
           <Text style={styles.cardLabel}>Ingredients ({ingredients.length})</Text>
           {ingredients.length === 0 ? (
             <View style={styles.emptyState}>
@@ -280,7 +368,7 @@ export default function RecipeBuilderScreen() {
             </View>
           ) : (
             ingredients.map((ing, idx) => (
-              <View key={ing.id} style={[styles.ingredientRow, idx < ingredients.length - 1 && styles.ingredientBorder]}>
+              <View key={ing.id} ref={idx === 0 ? ingredientRowRef : null} style={[styles.ingredientRow, idx < ingredients.length - 1 && styles.ingredientBorder]}>
                 <View style={styles.ingredientLeft}>
                   <Text style={styles.ingredientName} numberOfLines={1}>{ing.name}</Text>
                   <View style={styles.ingredientMeta}>
@@ -303,7 +391,7 @@ export default function RecipeBuilderScreen() {
 
         {/* Running Totals */}
         {ingredients.length > 0 && (
-          <View style={styles.card}>
+          <View ref={totalsCardRef} style={styles.card}>
             <Text style={styles.cardLabel}>Total Nutrition</Text>
             <View style={styles.macroRow}>
               <View style={styles.macroStat}>
@@ -354,7 +442,7 @@ export default function RecipeBuilderScreen() {
         )}
 
         {/* Servings */}
-        <View style={styles.card}>
+        <View ref={servingsCardRef} style={styles.card}>
           <Text style={styles.cardLabel}>Servings</Text>
           <View style={styles.servingRow}>
             <View style={{ flex: 0.35 }}>

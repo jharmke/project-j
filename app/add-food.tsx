@@ -339,7 +339,7 @@ export default function AddFoodScreen() {
 const [recentFoods, setRecentFoods] = useState<SearchResult[]>([]);
 const [favorites, setFavorites] = useState<MyFood[]>([]);
 const [recipes, setRecipes] = useState<any[]>([]);
-const { meal, date, selectMode, day, recipeMode, tutorialMode } = useLocalSearchParams<{ meal: string; date: string; selectMode: string; day: string; recipeMode: string; tutorialMode: string }>();
+const { meal, date, selectMode, day, recipeMode, tutorialMode, tutorialTab } = useLocalSearchParams<{ meal: string; date: string; selectMode: string; day: string; recipeMode: string; tutorialMode: string; tutorialTab: string }>();
 const isRecipeMode = recipeMode === 'true';
 const isTutorialMode = tutorialMode === 'true';
 const [isTutorialScanMode, setIsTutorialScanMode] = useState(false);
@@ -347,6 +347,9 @@ const [isTutorialCreateMode, setIsTutorialCreateMode] = useState(false);
 const searchBarRef = useTutorialTarget('log_search_bar');
 const barcodeIconRef = useTutorialTarget('add_food_barcode_icon');
 const createFoodFabRef = useTutorialTarget('create_food_fab');
+const tutorialRecipeRowRef = useTutorialTarget('recipe_library_row');
+const tutorialRecipeDeleteRef = useTutorialTarget('recipe_library_delete_btn');
+const addFoodTabPillsRef = useTutorialTarget('add_food_tab_pills');
 const firstResultRef = useRef<View>(null);
 const topResultRef = useRef<View>(null);
 const setButtonRef = useRef<View>(null);
@@ -494,6 +497,33 @@ const saveEditFood = async () => {
     loadRecent();
     loadRecipes();
     loadBarcodeOverrides();
+  }, []);
+
+  // Auto-switch to Recipes tab when arriving from recipes tutorial step 7
+  useEffect(() => {
+    if (tutorialTab === 'recipes') {
+      setActiveTab('recipes');
+    }
+  }, [tutorialTab]);
+
+  // Register deleteTutorialRecipe action so TutorialContext can call it on DONE or skip
+  useEffect(() => {
+    registerTutorialAction('deleteTutorialRecipe', async () => {
+      try {
+        const saved = await AsyncStorage.getItem('pj_recipes');
+        if (saved) {
+          const all = JSON.parse(saved);
+          const cleaned = all.filter((r: any) => !r.tutorialRecipe);
+          if (cleaned.length !== all.length) {
+            await storageSet('pj_recipes', JSON.stringify(cleaned));
+            setRecipes(cleaned);
+          }
+        }
+      } catch {}
+    });
+    return () => {
+      unregisterTutorialAction('deleteTutorialRecipe');
+    };
   }, []);
 
   useFocusEffect(
@@ -956,6 +986,28 @@ const openFoodDetail = async (food: SearchResult) => {
     );
   };
 
+  const deleteRecipe = (recipeId: string, recipeName: string) => {
+    Alert.alert(
+      'Delete Recipe',
+      `Remove "${recipeName}" from your Recipes? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            const updated = recipes.filter((r: any) => r.id !== recipeId);
+            setRecipes(updated);
+            await storageSet('pj_recipes', JSON.stringify(updated));
+            await saveToFirebase('recipes', 'list', updated);
+            showToast('Recipe deleted', recipeName, 'success');
+          },
+        },
+      ]
+    );
+  };
+
   const startScan = async () => {
     const { status } = await Camera.requestCameraPermissionsAsync();
     if (status === 'granted') {
@@ -1276,7 +1328,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
 
 {/* Tabs -- only show when not searching */}
       {!query.trim() && (
-        <View style={styles.tabRow}>
+        <View ref={addFoodTabPillsRef} collapsable={false} style={styles.tabRow}>
           <TouchableOpacity
             style={[styles.tab, activeTab === 'recent' && styles.tabActive]}
             onPress={() => setActiveTab('recent')}>
@@ -1386,6 +1438,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
               ref={
                 index === 0 && isTutorialScanMode ? (topResultRef as any) :
                 index === 0 && isTutorialMode ? (firstResultRef as any) :
+                (item as any).recipeData?.tutorialRecipe ? (tutorialRecipeRowRef as any) :
                 undefined
               }
               style={{ opacity: activeTab === 'favorites' && !query.trim() ? getFavOpacity(item.description) : 1 }}>
@@ -1473,6 +1526,21 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                       <Text style={{ fontSize: 12, color: theme.accentBlue, fontFamily: 'DMSans_500Medium' }}>Edit</Text>
                     </TouchableOpacity>
                     <TouchableOpacity onPress={() => deleteMyFood(myFoods.findIndex(f => f.name === item.description))} style={styles.deleteBtn}>
+                      <Text style={styles.deleteBtnText}>×</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+                {item.isRecipe && activeTab === 'recipes' && (
+                  <>
+                    <TouchableOpacity
+                      onPress={() => router.push({ pathname: '/recipe-builder', params: { recipeId: (item as any).recipeData?.id } })}
+                      style={{ marginLeft: 4, paddingHorizontal: 8, paddingVertical: 10 }}>
+                      <Text style={{ fontSize: 12, color: theme.accentBlue, fontFamily: 'DMSans_500Medium' }}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      ref={(item as any).recipeData?.tutorialRecipe ? (tutorialRecipeDeleteRef as any) : undefined}
+                      onPress={() => deleteRecipe((item as any).recipeData?.id, item.description)}
+                      style={styles.deleteBtn}>
                       <Text style={styles.deleteBtnText}>×</Text>
                     </TouchableOpacity>
                   </>

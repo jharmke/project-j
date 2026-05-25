@@ -16,6 +16,8 @@ import { checkWorkoutAchievements, getCelebTier } from '../achievementData';
 import { PRESET_PROGRAMS, PRESET_ROUTINES, PresetProgram, DayProgram, Exercise, Routine, TAG_COLOR_PALETTE, WorkoutTag, DEFAULT_TAGS } from '../workoutData';
 import { useTheme } from '../theme';
 import MuscleMap from '../components/MuscleMap';
+import { useTutorial } from '../context/TutorialContext';
+import { useTutorialTarget } from '../hooks/useTutorialTarget';
 
 interface LibraryExercise {
   id: string;
@@ -1612,6 +1614,17 @@ export default function WorkoutLibraryScreen() {
   const { theme } = useTheme();
   const { showToast } = useToast();
 
+  // ── Tutorial spotlight targets ─────────────────────────────────────────────
+  const { registerTutorialAction, unregisterTutorialAction } = useTutorial();
+  const libSearchRef      = useTutorialTarget('workout_lib_search');
+  const libExerciseRowRef = useTutorialTarget('workout_lib_exercise_row');
+  const libFilterBtnRef   = useTutorialTarget('workout_lib_filter_btn');
+  const libFabRef         = useTutorialTarget('workout_lib_fab');
+  const libMuscleMapRef   = useTutorialTarget('workout_lib_muscle_map');
+  const [showTutorialDetail, setShowTutorialDetail] = useState(false);
+  // Stable ref so tutorial actions always have latest library without re-registering on every load
+  const libraryRef = useRef<LibraryExercise[]>([]);
+
   const [library, setLibrary] = useState<LibraryExercise[]>([]);
   const [activeTab, setActiveTab] = useState<'all' | 'favorites' | 'programs' | 'routines'>('all');
   const [query, setQuery] = useState('');
@@ -1695,6 +1708,51 @@ export default function WorkoutLibraryScreen() {
       }
     };
     load();
+  }, []);
+
+  // Keep libraryRef current so tutorial actions always see the latest library
+  useEffect(() => { libraryRef.current = library; }, [library]);
+
+  // ── Tutorial actions for exercise_library tour ────────────────────────────
+  useEffect(() => {
+    registerTutorialAction('openTutorialExerciseDetail', async () => {
+      const lib = libraryRef.current;
+      const demo = lib.find(ex => ex.id === 'l2') ?? lib.find(ex => ex.primaryMuscles?.length) ?? lib[0];
+      if (!demo) return;
+      setSelectedEx(demo);
+      setShowDayPicker(false);
+      detailOverlay.value = 0;
+      detailCardScale.value = 0.92;
+      detailCardOpacity.value = 1;
+      setShowTutorialDetail(true);
+      detailOverlay.value = withTiming(1, { duration: 250 });
+      detailCardScale.value = withSpring(1, { damping: 24, stiffness: 320, overshootClamping: true });
+      // Wait for React to re-render and register libMuscleMapRef, plus animation to settle
+      await new Promise<void>(resolve => setTimeout(resolve, 400));
+    });
+
+    registerTutorialAction('closeTutorialExerciseDetail', async () => {
+      await new Promise<void>(resolve => {
+        detailOverlay.value = withTiming(0, { duration: 160 });
+        detailCardScale.value = withTiming(0.88, { duration: 160 });
+        detailCardOpacity.value = withTiming(0, { duration: 160 }, () => {
+          runOnJS(setShowTutorialDetail)(false);
+          runOnJS(setShowDayPicker)(false);
+          runOnJS(resolve)();
+        });
+      });
+    });
+
+    registerTutorialAction('closeExerciseLibraryTutorial', async () => {
+      setShowTutorialDetail(false);
+      router.back();
+    });
+
+    return () => {
+      unregisterTutorialAction('openTutorialExerciseDetail');
+      unregisterTutorialAction('closeTutorialExerciseDetail');
+      unregisterTutorialAction('closeExerciseLibraryTutorial');
+    };
   }, []);
 
   useFocusEffect(useCallback(() => {
@@ -2096,7 +2154,7 @@ export default function WorkoutLibraryScreen() {
         <View style={{ width: 60 }} />
       </View>
 
-      <View style={styles.searchRow}>
+      <View ref={libSearchRef} collapsable={false} style={styles.searchRow}>
         <TextInput
           style={[styles.searchInput, (activeTab === 'all' || activeTab === 'favorites') && { flex: 1, marginRight: 8 }]}
           placeholder={activeTab === 'programs' ? 'Search programs...' : activeTab === 'routines' ? 'Search routines...' : 'Search exercises...'}
@@ -2105,6 +2163,7 @@ export default function WorkoutLibraryScreen() {
           onChangeText={setQuery}
         />
         {(activeTab === 'all' || activeTab === 'favorites') && (
+          <View ref={libFilterBtnRef} collapsable={false}>
           <TouchableOpacity
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openFilterModal(); }}
             style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: filterActiveCount > 0 ? theme.accentBlueBg : theme.bgInset, borderWidth: 1, borderColor: filterActiveCount > 0 ? theme.accentBlueBorder : theme.borderCard, alignItems: 'center', justifyContent: 'center' }}>
@@ -2115,6 +2174,7 @@ export default function WorkoutLibraryScreen() {
               </View>
             )}
           </TouchableOpacity>
+          </View>
         )}
       </View>
 
@@ -2137,7 +2197,8 @@ export default function WorkoutLibraryScreen() {
           keyExtractor={item => item.id}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ paddingTop: 8, paddingBottom: 120 }}
-          renderItem={({ item }) => (
+          renderItem={({ item, index }) => (
+            <View ref={index === 0 ? libExerciseRowRef : undefined} collapsable={false}>
             <TouchableOpacity style={styles.exItem} onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               if (isSelectMode) {
@@ -2177,6 +2238,7 @@ export default function WorkoutLibraryScreen() {
                 )}
               </View>
             </TouchableOpacity>
+            </View>
           )}
           ListEmptyComponent={
             <View style={{ alignItems: 'center', paddingVertical: 60 }}>
@@ -2713,7 +2775,7 @@ export default function WorkoutLibraryScreen() {
       )}
 
       {/* Main FAB */}
-      <Animated.View style={{ position: 'absolute', bottom: 20 + insets.bottom, right: 20, transform: [{ scale: fabScale }] }}>
+      <Animated.View ref={libFabRef} collapsable={false} style={{ position: 'absolute', bottom: 20 + insets.bottom, right: 20, transform: [{ scale: fabScale }] }}>
         <TouchableOpacity
           onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); toggleFabMenu(); }}
           onPressIn={() => Animated.timing(fabScale, { toValue: 0.9, duration: 80, useNativeDriver: true }).start()}
@@ -2807,6 +2869,65 @@ export default function WorkoutLibraryScreen() {
           </Modal>
         );
       })()}
+
+      {/* ── Tutorial inline detail view ─────────────────────────────────────────
+          Renders the exercise detail as a View (not Modal) so TutorialOverlay
+          can measure refs inside it. Only active during exercise_library tutorial. */}
+      {showTutorialDetail && selectedEx && (
+        <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+          <Reanimated.View style={[{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center' }, detailOverlayStyle]}>
+            <Reanimated.View style={[{ width: '90%', maxHeight: '88%' }, detailCardStyle]}>
+              <View style={{ backgroundColor: theme.bgSheet, borderRadius: 14, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, overflow: 'hidden' }}>
+                <ScrollView scrollEnabled={false} showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20 }}>
+                  <View style={[styles.typeBadge, selectedEx.type === 'cardio' && styles.typeBadgeCardio, { alignSelf: 'flex-start', marginBottom: 8 }]}>
+                    <Text style={[styles.typeBadgeText, selectedEx.type === 'cardio' && { color: theme.accentAmber }]}>{selectedEx.type.toUpperCase()}</Text>
+                  </View>
+                  <Text style={{ color: selectedEx.type === 'cardio' ? theme.accentAmber : theme.accentBlue, fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginBottom: 12 }}>{selectedEx.name}</Text>
+
+                  <View ref={libMuscleMapRef} collapsable={false}>
+                    {(selectedEx.primaryMuscles?.length || selectedEx.secondaryMuscles?.length) ? (
+                      <View style={{ marginBottom: 14 }}>
+                        <MuscleMap primaryMuscles={selectedEx.primaryMuscles} secondaryMuscles={selectedEx.secondaryMuscles} scale={0.62} />
+                        <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 8, marginTop: 12 }}>MUSCLES</Text>
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                          {selectedEx.primaryMuscles?.map(m => (
+                            <View key={m} style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
+                              <Text style={{ color: theme.accentBlue, fontSize: 11, fontFamily: 'DMSans_600SemiBold' }}>
+                                {m.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                              </Text>
+                            </View>
+                          ))}
+                          {selectedEx.secondaryMuscles?.map(m => (
+                            <View key={m} style={{ backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
+                              <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: 'DMSans_500Medium' }}>
+                                {m.replace(/_/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                              </Text>
+                            </View>
+                          ))}
+                        </View>
+                      </View>
+                    ) : null}
+
+                    {selectedEx.instructions?.length ? (
+                      <View style={{ marginBottom: 16 }}>
+                        <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 10 }}>HOW TO PERFORM</Text>
+                        {selectedEx.instructions.map((step, i) => (
+                          <View key={i} style={{ flexDirection: 'row', marginBottom: 10, gap: 10 }}>
+                            <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
+                              <Text style={{ color: theme.accentBlue, fontSize: 11, fontFamily: 'DMSans_700Bold' }}>{i + 1}</Text>
+                            </View>
+                            <Text style={{ flex: 1, color: theme.textSecondary, fontSize: 13, fontFamily: 'DMSans_400Regular', lineHeight: 19 }}>{step}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    ) : null}
+                  </View>
+                </ScrollView>
+              </View>
+            </Reanimated.View>
+          </Reanimated.View>
+        </View>
+      )}
     </View>
   );
 }

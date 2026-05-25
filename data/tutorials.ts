@@ -8,6 +8,10 @@ export interface TutorialStep {
   navigateTo?: string;
   navigateDelay?: number;
   tutorialAction?: string;
+  /** Set true for steps on screens that have no bottom tab bar (e.g. add-food, workout-library).
+   *  Removes the TAB_H offset from isOffScreen so elements near the bottom of
+   *  those screens are not falsely flagged as off-screen. */
+  noTabBarOffset?: boolean;
   // Card-specific visual override: forces a card to render a particular demo state
   // without touching any real data. Clear on tutorial end/skip to restore real state.
   ifCardState?: 'idle' | 'active' | 'eating';
@@ -1039,52 +1043,70 @@ export const TUTORIALS: Tutorial[] = [
   {
     id: 'exercise_library',
     name: 'Exercise Library',
-    description: 'Search exercises, filter by muscle group, and create custom ones.',
+    description: 'Search exercises, view muscle maps and instructions, and create custom ones.',
     tab: 'workout',
     steps: [
       {
-        targetKey: 'none',
+        // Step 0: Navigate to the library and spotlight the search bar.
+        targetKey: 'workout_lib_search',
+        noTabBarOffset: true,
+        navigateTo: '/workout-library',
+        navigateDelay: 700,
         title: 'SEARCHING EXERCISES',
         body: {
-          discipline: 'Open the Library from the workout tab header. Search bar is always visible. Find any exercise by name -- database covers all major lifts and machines.',
-          balanced: 'Open the Library from the Workout header. Search by name to find any exercise. Results update as you type.',
-          mindful: 'The library is opened from the Workout header. Search by name or browse the full list.',
+          discipline: 'Every exercise in your library is searchable. Type to filter instantly. Default sort is A-Z. The library covers all major lifts, machines, and cardio -- plus anything you add.',
+          balanced: 'Search by name to find any exercise. The list filters instantly as you type. You can also filter by muscle group or exercise type using the button to the right.',
+          mindful: 'Search by name to find what you are looking for. The list narrows as you type -- nothing complicated.',
         },
       },
       {
-        targetKey: 'none',
+        // Step 1: Spotlight the first exercise row -- explain row anatomy.
+        targetKey: 'workout_lib_exercise_row',
+        noTabBarOffset: true,
+        skipIfTargetMissing: true,
+        title: 'EXERCISE ROWS',
+        body: {
+          discipline: 'Each row shows the exercise type (LIFT or CARDIO) and name. Tap the star to save it to your Favorites tab for quick access. Tap the row to open full detail.',
+          balanced: 'Each row shows the exercise type and name. Tap the star to save it to your Favorites tab. Tap any row to open its full detail screen.',
+          mindful: 'Each row shows the exercise type and name. Star the ones you do regularly so they are easy to find. Tap any row for more detail.',
+        },
+      },
+      {
+        // Step 2: Spotlight the filter button. NEXT fires tutorialAction to open inline detail.
+        targetKey: 'workout_lib_filter_btn',
+        noTabBarOffset: true,
+        skipIfTargetMissing: true,
+        tutorialAction: 'openTutorialExerciseDetail',
         title: 'FILTERING',
         body: {
-          discipline: 'Tap the Filter button to narrow by muscle group, exercise type, or tag. Stack filters for precise selection. Filter resets on library exit.',
-          balanced: 'Tap Filter to narrow results by muscle group, type, or tag. Multiple filters can be active at once.',
-          mindful: 'The Filter button lets you narrow results by body part or exercise type. Useful when you know what you want to train but not the name.',
+          discipline: 'Tap Filter to narrow by muscle group (Chest/Back/Legs etc.) or type (lift or cardio). Multiple filters can stack. The badge shows how many are active. Filter resets when you leave.',
+          balanced: 'Tap Filter to narrow results by muscle group or exercise type. Active filters show a badge count on the button. Filter resets when you leave the library.',
+          mindful: 'The filter button narrows the list by body part or exercise type. Useful when you know what you want to train but not the specific exercise name.',
         },
       },
       {
-        targetKey: 'none',
-        title: 'EXERCISE DETAIL',
+        // Step 3: Spotlight the muscle map in the inline detail view (opened by step 2's action).
+        // NEXT fires tutorialAction to close the inline detail before step 4.
+        targetKey: 'workout_lib_muscle_map',
+        noTabBarOffset: true,
+        tutorialAction: 'closeTutorialExerciseDetail',
+        title: 'MUSCLE MAP AND INSTRUCTIONS',
         body: {
-          discipline: 'Tap any exercise row to open its detail modal. Shows muscle map, HOW TO PERFORM steps, primary and secondary muscles. Study it.',
-          balanced: 'Tap any exercise to see its detail -- a muscle map showing what it works and step-by-step instructions for how to do it.',
-          mindful: 'Tap any exercise for its detail page. There\'s a muscle diagram and step-by-step instructions if you want them.',
+          discipline: 'Tap any exercise row to open this detail view. Primary muscles shown in orange (front and back). Secondary muscles muted. Below the map: numbered HOW TO PERFORM steps. Build form before you ever touch a weight.',
+          balanced: 'Tap any exercise row to see this detail view. The muscle diagram shows exactly what the exercise trains. Step-by-step instructions are listed below for exercises you are still learning.',
+          mindful: 'Tap any exercise row to see this. The muscle diagram shows what gets worked. Instructions are there if you want them -- no obligation to read everything.',
         },
       },
       {
-        targetKey: 'none',
-        title: 'MUSCLE MAP',
-        body: {
-          discipline: 'Orange = primary muscles worked. Muted orange = secondary. Front and back views. Use this to ensure balanced training across all muscle groups.',
-          balanced: 'The muscle diagram shows what the exercise works. Orange is primary, lighter is secondary. Front and back views are shown.',
-          mindful: 'The muscle map is just a visual of what the exercise engages. It\'s a helpful reference, not a prescription.',
-        },
-      },
-      {
-        targetKey: 'none',
+        // Step 4: Spotlight the FAB -- explain creating custom exercises. DONE fires nav-back.
+        targetKey: 'workout_lib_fab',
+        noTabBarOffset: true,
+        tutorialAction: 'closeExerciseLibraryTutorial',
         title: 'CREATING AN EXERCISE',
         body: {
-          discipline: 'Tap the FAB → Create Exercise. Name, type (lift/cardio), muscles, and instructions. Saved to your library permanently.',
-          balanced: 'Tap the + FAB and choose Create Exercise to add your own. Fill in the name, type, and any details you want to track.',
-          mindful: 'To add a custom exercise, tap the + FAB and choose Create Exercise. Name it and add as much detail as you want.',
+          discipline: 'Tap the + FAB to open the speed dial. Choose Create Exercise to add a custom entry. Fill in name, type, muscles, and instructions. Saves to your library permanently alongside the defaults.',
+          balanced: 'Tap the + button to open your options. Create Exercise lets you add anything not in the default library. Fill in as much detail as you want.',
+          mindful: 'Tap + to add a custom exercise. Give it a name, pick a type, and add any details you want to track. It saves to your library.',
         },
       },
     ],

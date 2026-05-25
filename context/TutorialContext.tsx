@@ -166,6 +166,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     try { actions.current['closeCreatorAfterTutorial']?.(); } catch {}
     try { actions.current['deleteTutorialRecipe']?.(); } catch {}
     try { actions.current['closeRecipeTutorial']?.(); } catch {}
+    try { actions.current['closeExerciseLibraryTutorial']?.(); } catch {}
     setActiveState(null);
   }, [setActiveState]);
 

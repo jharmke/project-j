@@ -81,6 +81,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
   const [profileBmr, setProfileBmr] = useState(0);
   const [sleepGoal, setSleepGoal] = useState(7);
   const [burnAccuracyPct, setBurnAccuracyPct] = useState(100);
+  const [workoutTags, setWorkoutTags] = useState<any[]>([]);
   const [calPickerVisible, setCalPickerVisible] = useState(false);
   const [pickerYear, setPickerYear] = useState(0);
   const [pickerMonth, setPickerMonth] = useState(0);
@@ -120,6 +121,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
         if (settingsRaw) {
           const sd = JSON.parse(settingsRaw);
           if (sd.burnAccuracyPct !== undefined) setBurnAccuracyPct(sd.burnAccuracyPct);
+          if (sd.workoutTags && Array.isArray(sd.workoutTags)) setWorkoutTags(sd.workoutTags);
         }
         const profileRaw = await AsyncStorage.getItem('pj_profile');
         if (profileRaw) {
@@ -469,10 +471,29 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
           <Ionicons name="barbell" size={130} color={theme.accentBlueRaw} style={styles.heroIcon} />
           <TouchableOpacity onPress={() => setWorkoutOpen(!workoutOpen)} style={styles.cardRow} activeOpacity={0.7}>
             <Text style={[styles.cardLabel, { marginBottom: 0 }]}>
-              {dayprogram ? `${dayprogram.focus || dayprogram.type} · ${donecount}/${exercises.length}` : 'Workout'}
+              {dayprogram ? `Workout · ${donecount}/${exercises.length}` : 'Workout'}
             </Text>
             <Ionicons name={workoutOpen ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textDim} />
           </TouchableOpacity>
+          {(() => {
+            const dayTags = dayprogram?.tags || [];
+            const tagObjs = dayTags.map((id: string) => workoutTags.find((t: any) => t.id === id)).filter(Boolean);
+            return (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8, marginBottom: 4 }}>
+                {tagObjs.length === 0 ? (
+                  <View style={{ borderWidth: 1, borderColor: theme.borderSubtle, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
+                    <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.textDim }}>UNASSIGNED</Text>
+                  </View>
+                ) : (
+                  tagObjs.map((tag: any) => (
+                    <View key={tag.id} style={{ backgroundColor: tag.color + '99', borderWidth: 1, borderColor: tag.color, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
+                      <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: '#ffffff' }}>{tag.label.toUpperCase()}</Text>
+                    </View>
+                  ))
+                )}
+              </View>
+            );
+          })()}
           {workoutOpen && (
             <View style={{ marginTop: 10 }}>
               {exercises.length === 0 ? (

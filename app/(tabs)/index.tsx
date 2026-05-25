@@ -2109,7 +2109,7 @@ export default function HomeScreen() {
                 <View style={{ flexDirection: 'row', alignItems:'center' }}>
                   <View style={{ borderWidth: 1, borderColor: theme.borderSubtle, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
                     <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.textDim }}>
-                      {todayProgram?.customLabel || todayProgram?.focus || 'UNASSIGNED'}
+                      {todayProgram?.customLabel || 'UNASSIGNED'}
                     </Text>
                   </View>
                   {kcalBadge}

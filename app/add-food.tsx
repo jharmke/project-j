@@ -914,9 +914,35 @@ const openFoodDetail = async (food: SearchResult) => {
     const myFoodMatch = food.isMyFood
       ? (myFoods.find(f => f.name === food.description) || (food as any).myFoodData || null)
       : null;
-    const fsId = (food as any).fsId;
+    let fsId: string | null = (food as any).fsId ?? null;
     const customServingSize = (food as any).servingSize;
     const isCustomFood = !!(food as any).isCustom || !!(myFoodMatch as any)?.isCustom;
+
+    // Resolve missing fsId for stale diary/recent entries logged before fsId was stored.
+    // Order: favorites (in-memory, instant) -> myFoods (in-memory, instant) -> FatSecret name search (API).
+    if (!fsId && !isCustomFood && food.description) {
+      const foodName = (food as any).fullName || food.description;
+      // 1. Check favorites
+      const favMatch = favorites.find(f => f.name === foodName || f.name === food.description);
+      if (favMatch?.fsId) {
+        fsId = favMatch.fsId;
+      }
+      // 2. Check myFoods
+      if (!fsId) {
+        const myFoodByName = myFoods.find(f => f.name === foodName || f.name === food.description);
+        if (myFoodByName?.fsId) {
+          fsId = myFoodByName.fsId;
+        }
+      }
+      // 3. FatSecret name search as final fallback
+      if (!fsId) {
+        try {
+          const nameResults = await fetchFatSecretSearch(foodName);
+          if (nameResults.length > 0) fsId = (nameResults[0] as any).fsId ?? null;
+        } catch {}
+      }
+    }
+
     let fsServings: any[] = [];
     if (fsId && !(food as any).fromBarcode) {
       fsServings = await fetchFatSecretServings(fsId);
@@ -926,8 +952,9 @@ const openFoodDetail = async (food: SearchResult) => {
     router.push({
       pathname: '/food-detail',
       params: {
-        foodJson: JSON.stringify({ 
-          ...food, 
+        foodJson: JSON.stringify({
+          ...food,
+          fsId,
           isMyFood: food.isMyFood,
           isCustom: (food as any).isCustom || (myFoodMatch as any)?.isCustom || false,
           brand: (myFoodMatch as any)?.brand || null,

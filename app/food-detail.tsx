@@ -182,6 +182,45 @@ async function fetchFatSecretServings(fsId: string): Promise<any[]> {
   }
 }
 
+// Search FatSecret by name and return servings for the top result.
+// Used as a fallback when a food has no fsId (stale diary/recent entry).
+async function fetchFatSecretByName(name: string): Promise<any[]> {
+  try {
+    const FS_KEY = 'b8543feaeabd412f81427bc901e2f3b9';
+    const FS_SECRET = '659c1da30b4e48eaab5788534cb2b77a';
+    const FS_BASE = 'https://platform.fatsecret.com/rest/server.api';
+    const oauth: Record<string, string> = {
+      oauth_consumer_key: FS_KEY,
+      oauth_nonce: Math.random().toString(36).substring(2) + Date.now().toString(36),
+      oauth_signature_method: 'HMAC-SHA1',
+      oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
+      oauth_version: '1.0',
+    };
+    const apiParams: Record<string, string> = { method: 'foods.search', search_expression: name, format: 'json', max_results: '5' };
+    const allParams = { ...oauth, ...apiParams };
+    const sorted = Object.keys(allParams).sort().map(k =>
+      `${encodeURIComponent(k)}=${encodeURIComponent(allParams[k])}`
+    ).join('&');
+    const base = `GET&${encodeURIComponent(FS_BASE)}&${encodeURIComponent(sorted)}`;
+    const signingKey = `${encodeURIComponent(FS_SECRET)}&`;
+    const sig = CryptoJS.HmacSHA1(base, signingKey).toString(CryptoJS.enc.Base64);
+    const finalParams: Record<string, string> = { ...allParams, oauth_signature: sig };
+    const qs = Object.keys(finalParams).sort().map(k =>
+      `${encodeURIComponent(k)}=${encodeURIComponent(finalParams[k])}`
+    ).join('&');
+    const res = await fetch(`${FS_BASE}?${qs}`);
+    const data = await res.json();
+    let foods = data?.foods?.food;
+    if (!foods) return [];
+    if (!Array.isArray(foods)) foods = [foods];
+    const firstFoodId = foods[0]?.food_id;
+    if (!firstFoodId) return [];
+    return fetchFatSecretServings(firstFoodId);
+  } catch {
+    return [];
+  }
+}
+
 export default function FoodDetailScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
@@ -303,17 +342,27 @@ const isTutorialMode = tutorialMode === 'true';
   } : null;
 
   useEffect(() => {
-    if (fsServings.length === 0 && food?.fsId) {
-      fetchFatSecretServings(food.fsId).then(servings => {
-        if (servings.length > 0) {
-          const def = (searchResultCal !== null ? servings.find((s: any) => s.calories === searchResultCal) : null) || servings.find((s: any) => s.isDefault) || servings[0];
+    const resolveServings = async () => {
+      if (fsServings.length > 0) return;
+      let servings: any[] = [];
+      if (food?.fsId) {
+        // Has fsId -- fetch servings directly
+        servings = await fetchFatSecretServings(food.fsId).catch(() => []);
+      } else if (!food?.isCustom && food?.description) {
+        // No fsId (stale entry) -- search by name and use top result's servings
+        servings = await fetchFatSecretByName(food.description).catch(() => []);
+      }
+      if (servings.length > 0) {
+        const def = (searchResultCal !== null ? servings.find((s: any) => s.calories === searchResultCal) : null) || servings.find((s: any) => s.isDefault) || servings[0];
+        if (def) {
           setSelectedServing(def);
           if (def.grams > 0 && !isEditing) {
             setAmount(def.grams.toString());
           }
         }
-      }).catch(() => {});
-    }
+      }
+    };
+    resolveServings();
   }, []);
 
   // For edit mode custom foods: look up base serving size from My Foods when not already known

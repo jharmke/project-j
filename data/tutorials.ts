@@ -18,6 +18,10 @@ export interface TutorialStep {
   /** Pin the tutorial bubble to the bottom of the screen (above the tab bar).
    *  Use alongside noDimOverlay so the bubble doesn't block the visible content. */
   bubbleAtBottom?: boolean;
+  /** Scroll all registered scroll views to y=0 before measuring this step's target.
+   *  Use when the target is always at the top of the scroll view but the user may
+   *  have scrolled past it -- measureInWindow returns 0x0 for above-viewport elements. */
+  scrollToTop?: boolean;
   // Card-specific visual override: forces a card to render a particular demo state
   // without touching any real data. Clear on tutorial end/skip to restore real state.
   ifCardState?: 'idle' | 'active' | 'eating';
@@ -686,6 +690,7 @@ export const TUTORIALS: Tutorial[] = [
       {
         targetKey: 'log_today_total',
         title: 'TODAY\'S TOTAL',
+        scrollToTop: true,
         tutorialAction: 'deleteTutorialEntry',
         body: {
           discipline: 'Today\'s Total at the top shows your full day: calories, protein, carbs, fat bars against goals. This matches your home screen calorie card.',

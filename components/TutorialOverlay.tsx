@@ -237,25 +237,22 @@ export default function TutorialOverlay() {
     const noTabBar      = !!((step as any).noTabBarOffset);
 
     if (!navigateTo) {
-      // No navigation: measure first, then start spotlight + bubble fade simultaneously.
-      // Eliminates the ~150ms dead time where the old spotlight sat idle during bubble fade.
-      let rawLayout = await measureTargetWithRetry(step.targetKey);
+      const shouldScrollToTop = !!(step as any).scrollToTop;
 
-      // measureInWindow returns zeros for elements scrolled above the viewport on iOS.
-      // If null but the ref is registered, scroll to it (measureLayout works regardless
-      // of visibility) then remeasure.
-      if (!rawLayout && getTarget(step.targetKey)?.current) {
-        await scrollToTarget(step.targetKey);
-        rawLayout = await measureTargetWithRetry(step.targetKey);
-      }
-
-      if (isOffScreen(rawLayout, noTabBar)) {
-        // Off-screen: fade bubble first, then scroll + animate sequentially.
-        // (Scrolling while bubble is visible looks jarring -- keep this path sequential.)
-        await new Promise<void>(resolve => {
-          Animated.timing(bubbleOpacity, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => resolve());
+      if (shouldScrollToTop) {
+        // Target is always at the top of the scroll view but user may be scrolled past it.
+        // measureInWindow returns 0x0 for above-viewport elements on iOS, so scroll first.
+        // Scroll is instant (animated: false); settle time overlaps with bubble fade.
+        const svMap = getScrollViews();
+        Object.values(svMap).forEach(svRef => {
+          try { (svRef?.current as any)?.scrollTo?.({ y: 0, animated: false }); } catch {}
         });
-        await scrollToTarget(step.targetKey);
+        await Promise.all([
+          new Promise<void>(resolve => {
+            Animated.timing(bubbleOpacity, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => resolve());
+          }),
+          new Promise<void>(r => setTimeout(r, 350)),
+        ]);
         const remeasured = await measureTargetWithRetry(step.targetKey);
         const layout = isOffScreen(remeasured, noTabBar) ? null : remeasured;
         setBubblePos(computeBubblePos(layout));
@@ -263,18 +260,42 @@ export default function TutorialOverlay() {
         await animateSpot(layout, false);
         setSpotActive(layout !== null);
       } else {
-        // On-screen: kick spotlight off immediately while bubble fades in parallel.
-        const layout      = rawLayout;
-        const spotPromise = animateSpot(layout, false);
-        // Await bubble fade -- at opacity 0 it's safe to swap content.
-        await new Promise<void>(resolve => {
-          Animated.timing(bubbleOpacity, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => resolve());
-        });
-        setBubblePos(computeBubblePos(layout));
-        setRenderState(state);
-        // Spotlight started 150ms ago -- wait for it to reach destination (~110ms left).
-        await spotPromise;
-        setSpotActive(layout !== null);
+        // No navigation: measure first, then start spotlight + bubble fade simultaneously.
+        // Eliminates the ~150ms dead time where the old spotlight sat idle during bubble fade.
+        let rawLayout = await measureTargetWithRetry(step.targetKey);
+
+        // If null but ref is registered, try scrollToTarget (uses measureLayout -- viewport-independent).
+        if (!rawLayout && getTarget(step.targetKey)?.current) {
+          await scrollToTarget(step.targetKey);
+          rawLayout = await measureTargetWithRetry(step.targetKey);
+        }
+
+        if (isOffScreen(rawLayout, noTabBar)) {
+          // Off-screen: fade bubble first, then scroll + animate sequentially.
+          await new Promise<void>(resolve => {
+            Animated.timing(bubbleOpacity, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => resolve());
+          });
+          await scrollToTarget(step.targetKey);
+          const remeasured = await measureTargetWithRetry(step.targetKey);
+          const layout = isOffScreen(remeasured, noTabBar) ? null : remeasured;
+          setBubblePos(computeBubblePos(layout));
+          setRenderState(state);
+          await animateSpot(layout, false);
+          setSpotActive(layout !== null);
+        } else {
+          // On-screen: kick spotlight off immediately while bubble fades in parallel.
+          const layout      = rawLayout;
+          const spotPromise = animateSpot(layout, false);
+          // Await bubble fade -- at opacity 0 it's safe to swap content.
+          await new Promise<void>(resolve => {
+            Animated.timing(bubbleOpacity, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => resolve());
+          });
+          setBubblePos(computeBubblePos(layout));
+          setRenderState(state);
+          // Spotlight started 150ms ago -- wait for it to reach destination (~110ms left).
+          await spotPromise;
+          setSpotActive(layout !== null);
+        }
       }
     } else {
       // Navigation required: sequential (must navigate before measuring).

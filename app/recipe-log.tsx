@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
-import { KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { Animated, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useToast } from '../components/Toast';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { saveToFirebase } from '../firebaseConfig';
 import { storageSet } from '../utils/storage';
@@ -20,6 +21,18 @@ export default function RecipeLogScreen() {
   const [weightAmount, setWeightAmount] = useState('');
   const [showMealPicker, setShowMealPicker] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState(meal || 'Lunch');
+  const { showToast } = useToast();
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  const openMealPicker = () => {
+    fadeAnim.setValue(0);
+    setShowMealPicker(true);
+  };
+  const closeMealPicker = () => {
+    Animated.timing(fadeAnim, { toValue: 0, duration: 160, useNativeDriver: true }).start(() => {
+      setShowMealPicker(false);
+    });
+  };
 
   if (!recipe) return null;
 
@@ -40,6 +53,7 @@ export default function RecipeLogScreen() {
 
   const logRecipe = async (mealName: string) => {
     if (!calories) return;
+    setShowMealPicker(false);
     try {
       const saved = await AsyncStorage.getItem(`pj_${date}`);
       const current = saved ? JSON.parse(saved) : {};
@@ -59,6 +73,7 @@ export default function RecipeLogScreen() {
       entries.push(newEntry);
       await storageSet(`pj_${date}`, JSON.stringify({ ...current, entries }));
       await saveToFirebase(date, 'entries', entries);
+      showToast('Recipe logged', recipe.name, 'success');
       router.back();
       router.back();
     } catch (e) {
@@ -185,30 +200,37 @@ export default function RecipeLogScreen() {
         </View>
 
         {/* Add to Diary */}
-        <TouchableOpacity style={styles.logBtn} onPress={() => setShowMealPicker(true)}>
+        <TouchableOpacity style={styles.logBtn} onPress={openMealPicker}>
           <Text style={styles.logBtnText}>ADD TO DIARY</Text>
         </TouchableOpacity>
 
       </ScrollView>
 
       {/* Meal Picker Modal */}
-      <Modal visible={showMealPicker} transparent animationType="slide">
-        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={() => setShowMealPicker(false)}>
-          <View style={styles.modal}>
+      <Modal
+        visible={showMealPicker}
+        transparent
+        animationType="none"
+        onShow={() => Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start()}
+        onRequestClose={closeMealPicker}>
+        <Animated.View style={[styles.modalOverlay, { opacity: fadeAnim }]}>
+          <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={closeMealPicker} />
+          <View style={styles.modal} pointerEvents="box-none">
+            <View style={styles.handlePill} />
             <Text style={styles.modalTitle}>Add to which meal?</Text>
             {MEALS.map(m => (
               <TouchableOpacity
                 key={m}
                 style={styles.mealOption}
-                onPress={() => { setShowMealPicker(false); logRecipe(m); }}>
+                onPress={() => logRecipe(m)}>
                 <Text style={styles.mealOptionText}>{m}</Text>
               </TouchableOpacity>
             ))}
-            <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowMealPicker(false)}>
+            <TouchableOpacity style={styles.cancelBtn} onPress={closeMealPicker}>
               <Text style={styles.cancelBtnText}>Cancel</Text>
             </TouchableOpacity>
           </View>
-        </TouchableOpacity>
+        </Animated.View>
       </Modal>
 
     </View>
@@ -251,11 +273,23 @@ const useStyles = (theme: any) => StyleSheet.create({
   nutritionTitle: { fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 },
   logBtn: { backgroundColor: theme.accentGreen, borderRadius: 10, padding: 16, alignItems: 'center' },
   logBtnText: { color: theme.bgPrimary, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
-  modalOverlay: { flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'flex-end' },
-  modal: { backgroundColor: theme.bgCard, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24, borderWidth: 1, borderColor: theme.borderCard },
-  modalTitle: { fontSize: 18, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', marginBottom: 16 },
-  mealOption: { padding: 16, borderBottomWidth: 1, borderBottomColor: theme.borderSubtle, alignItems: 'center' },
+  modalOverlay: { flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 },
+  modal: {
+    backgroundColor: theme.bgSheet,
+    borderRadius: 16,
+    borderWidth: 0.5,
+    borderColor: theme.borderCard,
+    borderTopWidth: 1.5,
+    borderTopColor: theme.accentBlueRaw,
+    padding: 24,
+    width: '100%',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 16, elevation: 12,
+    alignItems: 'center',
+  },
+  handlePill: { width: 36, height: 4, backgroundColor: theme.borderCard, borderRadius: 2, marginBottom: 16 },
+  modalTitle: { fontSize: 18, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginBottom: 16 },
+  mealOption: { width: '100%', padding: 14, borderBottomWidth: 1, borderBottomColor: theme.borderSubtle, alignItems: 'center' },
   mealOptionText: { fontSize: 16, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' },
-  cancelBtn: { padding: 16, alignItems: 'center', marginTop: 4 },
+  cancelBtn: { width: '100%', padding: 14, alignItems: 'center', marginTop: 4 },
   cancelBtnText: { color: theme.accentRed, fontSize: 14, fontFamily: 'DMSans_500Medium' },
 });

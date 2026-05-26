@@ -600,7 +600,7 @@ SOON -- confirmed next few sessions
 
   Home/UX --
   [ ] Apple sync last sync time -- surface last HealthKit sync time somewhere on cards that show synced data (steps, active cals, etc.) so user knows if data is stale. Design decision on placement needed.
-  [ ] IF card placement -- consider moving IF card to Food Log tab instead of Home. Would give log tab more content and clean up Home. Decision needed before building.
+  [x] IF card moved to Log tab -- IFCard extracted to components/IFCard.tsx (exports IF_METHODS, formatTime, formatHrMin, IFCard). Removed from index.tsx (CardId, CARD_REGISTRY, DEFAULT_ORDER, all IF state + computed + save/load logic, renderIFCard, case 'if'). Added to log.tsx with own currentTime interval, IF state, computed values, load/save useEffects, scrollRef registered for tutorial. Live card (today) + read-only past-day summary (readOnly prop, hides method pills + action buttons, shows State 3 summary when ifStart + ifEnd both present on a past date). Tutorial updated: tab 'home' → 'log', navigateTo '/(tabs)/log' on first step, TAB_TUTORIALS moved from home to log group, if_card moved to end of log list. SHIPPED 2026-05-26.
   [ ] Haptics audit -- Today's Message card tap to Bible has no haptic. Journal icon on same card has no haptic. Sweep all tappable elements for missing haptics.
   [ ] Workout notes saved state -- after saving, dim the text or add a visual indicator (checkmark, etc.) so it's clear the note is saved. Same for Today's Thoughts / daily note card. Any text field save state should have a visual indicator.
   [ ] Workout day scroller -- unselected days look too plain. Consider a light border or subtle treatment to give them more definition.
@@ -752,7 +752,7 @@ App-wide OZ to oz audit -- index.tsx and log.tsx fixed this session. day-detail 
 Recipe builder -- edit ingredient amounts inline. Currently requires delete + re-add to change a logged ingredient's amount. Need edit mode: pencil tap on ingredient row opens inline amount field (or tap-to-edit). Sets/grams editable without deleting. recipe-builder.tsx. (SOON)
 [x] Recipe builder macro label spacing -- ingredient rows showed "P31g" "C0g". Fixed: space added between letter and number, values normalized to 1 decimal place (toFixed(1)), ingMacro column width bumped 38→50px for consistent alignment. recipe-builder.tsx. FIXED 2026-05-26.
 [x] Recipe builder delete ingredient confirmation -- instant delete replaced with destructive Alert ("Remove [food name]?"). Alert import added. recipe-builder.tsx. FIXED 2026-05-26.
-Recipe builder -- "Add to Diary" log modal. Current modal slides up from bottom (wrong pattern) AND has a transparent background. Fix: convert to centered fade-in modal (non-negotiable per app pattern) + solid bgSheet background, fully opaque. recipe-builder.tsx. (SOON)
+[x] Recipe builder -- "Add to Diary" log modal. Converted from bottom-sheet slide-up (wrong pattern) + transparent bgCard to centered fade-in (animationType none + Animated.Value) + bgSheet (fully opaque on all themes). Handle pill + accent top border + Bebas title. Also added toast on log ("Recipe logged") per build standard. recipe-log.tsx. FIXED 2026-05-26.
 
 Women's health and HealthKit
 
@@ -861,7 +861,7 @@ Workout tab Tags button -- redesign to match current button conventions. Away fr
 Workout tab muscle group breakdown -- visual showing which muscle groups were trained in today's session. Related to muscle group tags + filter on exercise library. Build after tags are on exercises. (SOON)
 Workout tab previous session comparison -- show how today stacks up vs the last time this workout was done. Per exercise, not just overall. (SOON)
 Workout library FAB -- DONE. See workout library redesign in DONE section. Create Exercise active, Create Program + Create Routine disabled (coming soon).
-IF card polish -- green TAP WHEN YOU EAT button needs bgInset+'80' semi-transparent treatment to match other cards. Timer hero icon verify on device. (SOON)
+[x] IF card polish -- TAP WHEN YOU EAT button converted from solid accentGreen fill + white text to accentGreenBg + accentGreenBorder + accentGreen text. Matches interactive button pattern used everywhere else. index.tsx. FIXED 2026-05-26.
 [x] Workout tab nested scroll bug -- DraggableFlatList inside ScrollView warning. Attempted fix broke entire workout tab; reverted. Determined acceptable as-is -- scroll architecture stable, warning does not affect functionality.
 [x] Workout drag handle -- hit target and dead zone resolved.
 Edit exercise input validation -- decimal/integer restrictions on all numeric fields, same standard as weight input. (SOON)

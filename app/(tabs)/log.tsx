@@ -20,7 +20,14 @@ import { useTutorialTarget } from '../../hooks/useTutorialTarget';
 import { useHealthKit } from '../../useHealthKit';
 import ReAnimated, { useAnimatedStyle, useSharedValue, withTiming, useAnimatedProps, withRepeat, cancelAnimation, Easing as ReAnimEasing } from 'react-native-reanimated';
 import { showToolkit } from '../../components/ToolkitSheet';
-
+import { IFCard, IF_METHODS } from '../../components/IFCard';
+import {
+  scheduleIFWindowNotifications,
+  cancelIFWindowNotifications,
+  loadNotificationSettings,
+  shouldAskPermission,
+  requestNotificationPermission,
+} from '../../services/notifications';
 
 const WATER_TARGET = 128;
 const MEALS = ['Morning', 'Lunch', 'Dinner', 'Snacks'];
@@ -137,7 +144,10 @@ export default function LogScreen() {
   const tutorialEntryRef = useRef<View>(null);
   const tutorialDeleteRef = useRef<View>(null);
   const tutorialEntryRegistered = useRef(false);
-  const { registerTarget, unregisterTarget, registerTutorialAction, unregisterTutorialAction } = useTutorial();
+  const { registerTarget, unregisterTarget, registerTutorialAction, unregisterTutorialAction, registerScrollView, unregisterScrollView, activeState: tutorialActiveState } = useTutorial();
+  const scrollRef = useRef<any>(null);
+  const tutorialIfCardState = (tutorialActiveState?.tutorial.steps[tutorialActiveState.stepIndex] as any)?.ifCardState as
+    'idle' | 'active' | 'eating' | undefined;
   const [loaded, setLoaded] = useState(false);
   const [entries, setEntries] = useState<FoodEntry[]>([]);
   const [water, setWater] = useState(0);
@@ -185,6 +195,23 @@ export default function LogScreen() {
   const returningFromChild = useRef(false);
   const activeDateRef = useRef(activeDate);
 
+  // IF state (always today -- IF tracks the current day's fast, not the browsed date)
+  const [ifStart,       setIfStart]       = useState<number|null>(null);
+  const [ifMethod,      setIfMethod]      = useState<string>('16:8');
+  const [ifEnd,         setIfEnd]         = useState<number|null>(null);
+  const [ifCustomHours, setIfCustomHours] = useState<string>('16');
+  const [showTimePicker,    setShowTimePicker]      = useState(false);
+  const [showEndTimePicker, setShowEndTimePicker]   = useState(false);
+  const [pickerTime,        setPrickerTime]         = useState<Date|null>(null);
+  const [currentTime,       setCurrentTime]         = useState(Date.now());
+  const ifLoaded = useRef(false);
+
+  // Past-day IF read state (read-only summary when browsing a past date)
+  const [pastIfStart,       setPastIfStart]       = useState<number|null>(null);
+  const [pastIfEnd,         setPastIfEnd]         = useState<number|null>(null);
+  const [pastIfMethod,      setPastIfMethod]      = useState<string>('16:8');
+  const [pastIfCustomHours, setPastIfCustomHours] = useState<string>('16');
+
   const goToPrevDay = () => {
     const d = new Date(activeDate + 'T12:00:00');
     d.setDate(d.getDate() - 1);
@@ -199,6 +226,26 @@ export default function LogScreen() {
   };
 
   const isToday = activeDate === todayKey;
+
+  // IF computed values -- always based on currentTime (1-second interval)
+  const windowHours = ifMethod === 'Custom' ? (parseInt(ifCustomHours) || 16) : (IF_METHODS[ifMethod]?.eat || 8);
+  const windowEnd   = ifStart ? ifStart + windowHours * 3600000 : null;
+  const remaining   = windowEnd && !ifEnd ? windowEnd - currentTime : null;
+  const isOpen      = remaining !== null && remaining > 0;
+  const ifActualMs  = ifEnd && ifStart ? ifEnd - ifStart : null;
+  const ifTargetMs  = windowHours * 3600000;
+  const ifOverUnderMs = ifEnd && windowEnd ? ifEnd - windowEnd : null;
+  const ifResultColor = ifOverUnderMs === null ? '#888888' : ifOverUnderMs <= 5*60000 ? '#10b981' : ifOverUnderMs <= 45*60000 ? '#f59e0b' : '#ef4444';
+  const ifResultLabel = ifOverUnderMs === null ? '' : ifOverUnderMs <= 5*60000 ? 'COMPLETE' : ifOverUnderMs <= 45*60000 ? `MISSED BY ${Math.round(ifOverUnderMs/60000)}M` : 'FAILED';
+
+  // Past-day IF computed values (read-only, no currentTime dependency)
+  const pastWindowHours    = pastIfMethod === 'Custom' ? (parseInt(pastIfCustomHours) || 16) : (IF_METHODS[pastIfMethod]?.eat || 8);
+  const pastWindowEnd      = pastIfStart ? pastIfStart + pastWindowHours * 3600000 : null;
+  const pastIfActualMs     = pastIfEnd && pastIfStart ? pastIfEnd - pastIfStart : null;
+  const pastIfTargetMs     = pastWindowHours * 3600000;
+  const pastIfOverUnderMs  = pastIfEnd && pastWindowEnd ? pastIfEnd - pastWindowEnd : null;
+  const pastIfResultColor  = pastIfOverUnderMs === null ? '#888888' : pastIfOverUnderMs <= 5*60000 ? '#10b981' : pastIfOverUnderMs <= 45*60000 ? '#f59e0b' : '#ef4444';
+  const pastIfResultLabel  = pastIfOverUnderMs === null ? '' : pastIfOverUnderMs <= 5*60000 ? 'COMPLETE' : pastIfOverUnderMs <= 45*60000 ? `MISSED BY ${Math.round(pastIfOverUnderMs/60000)}M` : 'FAILED';
 
   const openCalPicker = () => {
     const parts = activeDate.split('-');
@@ -428,6 +475,60 @@ export default function LogScreen() {
     load();
   }, []);
 
+  // ── Register log ScrollView with tutorial system ──────────────────────────
+  useEffect(() => {
+    registerScrollView('log', scrollRef);
+    return () => unregisterScrollView('log');
+  }, []);
+
+  // ── 1-second currentTime tick for IF countdown ────────────────────────────
+  useEffect(() => {
+    const interval = setInterval(() => setCurrentTime(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // ── Load IF data for today on mount ───────────────────────────────────────
+  useEffect(() => {
+    const loadIF = async () => {
+      try {
+        const saved = await AsyncStorage.getItem(`pj_${todayKey}`);
+        if (saved) {
+          const data = JSON.parse(saved);
+          if (data.ifMethod)      setIfMethod(data.ifMethod);
+          if (data.ifCustomHours) setIfCustomHours(data.ifCustomHours);
+          if (data.ifStart) {
+            const startDate = new Date(data.ifStart);
+            const startKey = `${startDate.getFullYear()}-${String(startDate.getMonth()+1).padStart(2,'0')}-${String(startDate.getDate()).padStart(2,'0')}`;
+            if (startKey === todayKey) {
+              setIfStart(data.ifStart);
+              if (data.ifEnd) setIfEnd(data.ifEnd);
+            }
+          }
+        }
+      } catch (e) {
+        console.log('IF load error', e);
+      } finally {
+        ifLoaded.current = true;
+      }
+    };
+    loadIF();
+  }, []);
+
+  // ── Auto-save IF state for today whenever it changes ────────────────────
+  useEffect(() => {
+    if (!ifLoaded.current) return;
+    const saveIF = async () => {
+      try {
+        const existing = await AsyncStorage.getItem(`pj_${todayKey}`);
+        const current = existing ? JSON.parse(existing) : {};
+        await storageSet(`pj_${todayKey}`, JSON.stringify({
+          ...current, ifStart, ifMethod, ifEnd, ifCustomHours,
+        }));
+      } catch (e) { console.log('IF save error', e); }
+    };
+    saveIF();
+  }, [ifStart, ifEnd, ifMethod, ifCustomHours]);
+
   useFocusEffect(
     useCallback(() => {
       const reload = async (dateKey: string) => {
@@ -535,6 +636,8 @@ export default function LogScreen() {
       setTotalProtein(0);
       setTotalCarbs(0);
       setTotalFat(0);
+      setPastIfStart(null);
+      setPastIfEnd(null);
       try {
         const saved = await AsyncStorage.getItem(`pj_${activeDate}`);
         if (saved) {
@@ -548,6 +651,13 @@ export default function LogScreen() {
           }
           if (typeof data.water === 'number') setWater(Math.max(0, data.water));
           setCaloriesBurned(parseInt(data.activeCalories || data.caloriesBurned) || 0);
+          // Load past-day IF data for read-only summary
+          if (data.ifStart && data.ifEnd) {
+            setPastIfStart(data.ifStart);
+            setPastIfEnd(data.ifEnd);
+            if (data.ifMethod) setPastIfMethod(data.ifMethod);
+            if (data.ifCustomHours) setPastIfCustomHours(data.ifCustomHours);
+          }
         }
         setLogRefreshKey(k => k + 1);
       } catch (e) {
@@ -753,6 +863,7 @@ export default function LogScreen() {
         </View>
       </View>
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={styles.content}
         onScrollBeginDrag={() => {}}
       >
@@ -1016,6 +1127,94 @@ export default function LogScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* IF Card -- live today view */}
+      {isToday && (
+        <IFCard
+          theme={theme}
+          ifStart={ifStart}
+          ifEnd={ifEnd}
+          ifMethod={ifMethod}
+          ifCustomHours={ifCustomHours}
+          isOpen={isOpen}
+          remaining={remaining}
+          windowEnd={windowEnd}
+          ifResultLabel={ifResultLabel}
+          ifResultColor={ifResultColor}
+          ifTargetMs={ifTargetMs}
+          ifActualMs={ifActualMs}
+          showTimePicker={showTimePicker}
+          showEndTimePicker={showEndTimePicker}
+          pickerTime={pickerTime}
+          setIfMethod={(m: string) => { setIfMethod(m); saveToFirebase(todayKey, 'ifMethod', m); }}
+          setIfCustomHours={setIfCustomHours}
+          setIfStart={setIfStart}
+          setIfEnd={setIfEnd}
+          setShowTimePicker={setShowTimePicker}
+          setShowEndTimePicker={setShowEndTimePicker}
+          setPrickerTime={setPrickerTime}
+          onStartFast={async () => {
+            const now = Date.now();
+            setIfStart(now);
+            setIfEnd(null);
+            const wHours = ifMethod === 'Custom' ? (parseInt(ifCustomHours) || 16) : (IF_METHODS[ifMethod]?.eat || 8);
+            const wEnd = now + wHours * 3600000;
+            const notifSettings = await loadNotificationSettings();
+            const sm: any = styleMode;
+            scheduleIFWindowNotifications(wEnd, notifSettings, sm).catch(() => {});
+            const ask = await shouldAskPermission();
+            if (ask) requestNotificationPermission().catch(() => {});
+          }}
+          onLastMeal={() => {
+            const end = Date.now();
+            setIfEnd(end);
+            saveToFirebase(todayKey, 'ifEnd', end);
+            cancelIFWindowNotifications().catch(() => {});
+          }}
+          onResetFast={() => { setIfStart(null); setIfEnd(null); saveToFirebase(todayKey, 'ifStart', null); }}
+          onCancelFast={() => { setIfStart(null); setIfEnd(null); saveToFirebase(todayKey, 'ifStart', null); }}
+          onResetComplete={() => { setIfStart(null); setIfEnd(null); saveToFirebase(todayKey, 'ifStart', null); saveToFirebase(todayKey, 'ifEnd', null); }}
+          onConfirmStart={(t: Date) => { const now = new Date(); t.setFullYear(now.getFullYear(), now.getMonth(), now.getDate()); setIfStart(t.getTime()); saveToFirebase(todayKey, 'ifStart', t.getTime()); }}
+          onConfirmEnd={(t: Date) => { const now = new Date(); t.setFullYear(now.getFullYear(), now.getMonth(), now.getDate()); const ne = t.getTime(); setIfEnd(ne); saveToFirebase(todayKey, 'ifEnd', ne); }}
+          tutorialOverrideState={tutorialIfCardState}
+        />
+      )}
+
+      {/* IF Card -- read-only past day summary (only when both start + end logged) */}
+      {!isToday && pastIfStart && pastIfEnd && (
+        <IFCard
+          theme={theme}
+          ifStart={pastIfStart}
+          ifEnd={pastIfEnd}
+          ifMethod={pastIfMethod}
+          ifCustomHours={pastIfCustomHours}
+          isOpen={false}
+          remaining={null}
+          windowEnd={pastWindowEnd}
+          ifResultLabel={pastIfResultLabel}
+          ifResultColor={pastIfResultColor}
+          ifTargetMs={pastIfTargetMs}
+          ifActualMs={pastIfActualMs}
+          showTimePicker={false}
+          showEndTimePicker={false}
+          pickerTime={null}
+          setIfMethod={() => {}}
+          setIfCustomHours={() => {}}
+          setIfStart={() => {}}
+          setIfEnd={() => {}}
+          setShowTimePicker={() => {}}
+          setShowEndTimePicker={() => {}}
+          setPrickerTime={() => {}}
+          onStartFast={() => {}}
+          onLastMeal={() => {}}
+          onResetFast={() => {}}
+          onCancelFast={() => {}}
+          onResetComplete={() => {}}
+          onConfirmStart={() => {}}
+          onConfirmEnd={() => {}}
+          readOnly
+        />
+      )}
 
     </ScrollView>
 

@@ -290,11 +290,12 @@ export const TUTORIALS: Tutorial[] = [
     id: 'if_card',
     name: 'Intermittent Fasting',
     description: 'What IF is, how the three states work, and how to use the card.',
-    tab: 'home',
+    tab: 'log',
     steps: [
       {
         targetKey: 'if_card_main',
         ifCardState: 'idle',
+        navigateTo: '/(tabs)/log',
         title: 'INTERMITTENT FASTING',
         body: {
           discipline: 'IF is a time-restricted eating protocol. You eat within a defined window each day and fast outside it. 16:8 is the standard: 16 hours fasting, 8-hour eating window.',
@@ -1354,8 +1355,8 @@ export const TUTORIALS: Tutorial[] = [
 // ─── Tab → Tutorial Mapping ───────────────────────────────────────────────────
 
 export const TAB_TUTORIALS: Record<string, string[]> = {
-  home: ['cal_card', 'macros_card', 'sleep_card', 'if_card', 'yvy_card'],
-  log: ['log_food', 'manage_log', 'barcode', 'create_food', 'recipes'],
+  home: ['cal_card', 'macros_card', 'sleep_card', 'yvy_card'],
+  log: ['log_food', 'manage_log', 'barcode', 'create_food', 'recipes', 'if_card'],
   workout: ['workout_basics', 'programs', 'routines', 'exercise_library'],
   stats: ['graph_creator', 'streaks', 'effort_vs_results'],
   profile: ['faith_and_style'],

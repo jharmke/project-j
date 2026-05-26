@@ -629,6 +629,23 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
       const saved = await AsyncStorage.getItem(`pj_${date}`);
       const current = saved ? JSON.parse(saved) : {};
       const entries = current.entries || [];
+      // Augment foodNutrients with extended data from serving (fiber, sugar, sodium, etc.)
+      // FatSecret text-search results only carry 4 macros; barcode already includes extended.
+      const baseNutrients = [...(food.foodNutrients || [])];
+      if (food.fsId && effectiveServing) {
+        const extMap = [
+          { nutrientName: 'Fiber, total dietary', unitName: 'G', key: 'fiber' },
+          { nutrientName: 'Sugars, total including NLEA', unitName: 'G', key: 'sugar' },
+          { nutrientName: 'Sodium, Na', unitName: 'MG', key: 'sodium' },
+          { nutrientName: 'Cholesterol', unitName: 'MG', key: 'cholesterol' },
+          { nutrientName: 'Fatty acids, total saturated', unitName: 'G', key: 'saturatedFat' },
+        ];
+        extMap.forEach(({ nutrientName, unitName, key }) => {
+          if (!baseNutrients.find(n => n.nutrientName === nutrientName)) {
+            baseNutrients.push({ nutrientName, unitName, value: (effectiveServing as any)[key] || 0 });
+          }
+        });
+      }
       const newEntry = {
   name: `${food.description} (${amount}${unit})`,
   cal: calories,
@@ -647,7 +664,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
   loggedAmount: amount,
   loggedUnit: unit,
   servingGrams: effectiveServing?.grams,
-  foodNutrients: food.foodNutrients || [],
+  foodNutrients: baseNutrients,
   timestamp: entryTime.getTime(),
   fsId: food.fsId || null,
 };

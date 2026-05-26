@@ -182,6 +182,8 @@ export default function LogScreen() {
   const calFadeAnim = useRef(new Animated.Value(0)).current;
   const skipDateEffect = useRef(false);
   const dateEffectMounted = useRef(false);
+  const returningFromChild = useRef(false);
+  const activeDateRef = useRef(activeDate);
 
   const goToPrevDay = () => {
     const d = new Date(activeDate + 'T12:00:00');
@@ -428,18 +430,6 @@ export default function LogScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      const t = new Date();
-      const focusDateKey = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
-      skipDateEffect.current = true;
-      setActiveDate(focusDateKey);
-      AsyncStorage.getItem('pj_settings').then(s => {
-        if (s) {
-          const d = JSON.parse(s);
-          if (d.styleMode) setStyleMode(d.styleMode);
-          if (d.burnAccuracyPct !== undefined) setBurnAccuracyPct(d.burnAccuracyPct);
-        }
-      });
-      loadAchievements().then(store => setAchievementStore(store));
       const reload = async (dateKey: string) => {
         setEntries([]);
         setWater(0);
@@ -513,11 +503,29 @@ export default function LogScreen() {
         }
         skipDateEffect.current = false;
       };
+      if (returningFromChild.current) {
+        returningFromChild.current = false;
+        reload(activeDateRef.current);
+        return;
+      }
+      const t = new Date();
+      const focusDateKey = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+      AsyncStorage.getItem('pj_settings').then(s => {
+        if (s) {
+          const d = JSON.parse(s);
+          if (d.styleMode) setStyleMode(d.styleMode);
+          if (d.burnAccuracyPct !== undefined) setBurnAccuracyPct(d.burnAccuracyPct);
+        }
+      });
+      loadAchievements().then(store => setAchievementStore(store));
+      skipDateEffect.current = true;
+      setActiveDate(focusDateKey);
       reload(focusDateKey);
     }, [])
   );
 
   useEffect(() => {
+    activeDateRef.current = activeDate;
     if (!dateEffectMounted.current) { dateEffectMounted.current = true; return; }
     if (skipDateEffect.current) { skipDateEffect.current = false; return; }
     const loadDay = async () => {
@@ -736,7 +744,7 @@ export default function LogScreen() {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <TouchableOpacity
               style={[styles.libraryBtn, { height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push({ pathname: '/add-food', params: { meal: 'browse', date: activeDate } }); }}>
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); returningFromChild.current = true; router.push({ pathname: '/add-food', params: { meal: 'browse', date: activeDate } }); }}>
               <Text style={[styles.libraryBtnText, { color: theme.accentBlue }]}>Library</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); showToolkit('log'); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
@@ -828,7 +836,7 @@ export default function LogScreen() {
             <TouchableOpacity
               ref={mealIdx === 0 ? (mealAddRef as any) : undefined}
               style={styles.mealAddBtn}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); router.push({ pathname: '/add-food', params: { meal, date: activeDate } }); }}>
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); returningFromChild.current = true; router.push({ pathname: '/add-food', params: { meal, date: activeDate } }); }}>
               <Text style={[styles.mealAddBtnText, { color: theme.accentBlue }]}>+</Text>
             </TouchableOpacity>
 
@@ -879,7 +887,7 @@ export default function LogScreen() {
                       ref={entry.tutorialEntry ? (tutorialEntryRef as any) : undefined}
                       key={i}
                       style={[styles.foodEntry, { backgroundColor: theme.accentBlueBg }]}
-                      onPress={() => router.push({
+                      onPress={() => { returningFromChild.current = true; router.push({
                         pathname: '/food-detail',
                         params: {
                           foodJson: JSON.stringify({
@@ -904,7 +912,7 @@ export default function LogScreen() {
                           date: activeDate,
                           entryIndex: String(entries.indexOf(entry)),
                         }
-                      })}>
+                      }); }}>
                       <View style={styles.foodEntryLeft}>
                         {(() => {
                           const rawName = entry.name.replace(/\s*\(.*?\)\s*$/, '');

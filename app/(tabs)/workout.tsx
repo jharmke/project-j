@@ -50,7 +50,7 @@ const filterDecimal = (v: string, set: (s: string) => void) => {
   if (dot === -1) { set(stripped); }
   else {
     const before = stripped.slice(0, dot);
-    const after = stripped.slice(dot + 1).replace(/\./g, '').slice(0, 1);
+    const after = stripped.slice(dot + 1).replace(/\./g, '').slice(0, 2);
     set(before + '.' + after);
   }
 };

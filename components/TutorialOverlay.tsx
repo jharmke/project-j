@@ -199,7 +199,9 @@ export default function TutorialOverlay() {
       await new Promise<void>(r => setTimeout(r, navigateDelay));
       rawLayout = await measureTargetWithRetry(firstStep.targetKey);
     } else {
-      rawLayout = await measureTarget(firstStep.targetKey);
+      // Use retry here too -- preAction tutorials need time for React to re-render
+      // and register the target ref before we can measure it.
+      rawLayout = await measureTargetWithRetry(firstStep.targetKey);
     }
 
     let layout = isOffScreen(rawLayout, noTabBar) ? null : rawLayout;

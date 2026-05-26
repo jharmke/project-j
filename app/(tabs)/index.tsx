@@ -82,6 +82,37 @@ const DEFAULT_VISIBLE: Record<CardId, boolean> = Object.fromEntries(
   CARD_REGISTRY.map(c => [c.id, c.defaultVisible])
 ) as Record<CardId, boolean>;
 
+const REFLECTION_PROMPTS: string[] = [
+  "What's one thing this brings to mind for you today?",
+  "How does this land for where you are right now?",
+  "What would it look like to carry this into today?",
+  "What do you want to remember from this?",
+  "Is there something here you've been needing to hear?",
+  "What's one word that comes to mind reading this?",
+  "Where do you need this today?",
+  "What would change if you believed this fully today?",
+  "How are you carrying this into your day?",
+  "What does this stir up for you?",
+  "Is this something you need to sit with longer?",
+  "What would acting on this look like today?",
+];
+
+// Mode-specific default card orders -- only applied on fresh install (no saved cardOrder)
+const DISCIPLINE_ORDER: CardId[] = [
+  'verse', 'calories', 'workout', 'sleep', 'macros', 'steps', 'water', 'weight',
+  'fitness_metrics', 'vs_yesterday', 'gratitude_streak', 'reading_plans', 'daily_note',
+];
+const MINDFUL_ORDER: CardId[] = [
+  'verse', 'gratitude_streak', 'sleep', 'calories', 'workout', 'water', 'steps',
+  'weight', 'reading_plans', 'daily_note', 'vs_yesterday',
+];
+// Mindful hides macros and fitness_metrics by default -- users can add via Edit Layout
+const MINDFUL_VISIBLE: Record<CardId, boolean> = {
+  ...DEFAULT_VISIBLE,
+  macros: false,
+  fitness_metrics: false,
+};
+
 // ─── Constants ────────────────────────────────────────────────────────────────
 const WATER_TARGET = 128;
 const PROGRAM: Record<string, any> = {
@@ -863,11 +894,20 @@ export default function HomeScreen() {
         const s = await AsyncStorage.getItem('pj_settings');
         if (s) {
           const parsed = JSON.parse(s);
+          const mode = parsed.styleMode || 'balanced';
+          const defaultOrder = mode === 'discipline' ? DISCIPLINE_ORDER : mode === 'mindful' ? MINDFUL_ORDER : DEFAULT_ORDER;
+          const defaultVisible = mode === 'mindful' ? MINDFUL_VISIBLE : DEFAULT_VISIBLE;
           if (parsed.cardOrder && Array.isArray(parsed.cardOrder)) {
-            const merged = [...parsed.cardOrder, ...DEFAULT_ORDER.filter(id => !parsed.cardOrder.includes(id))];
+            const merged = [...parsed.cardOrder, ...defaultOrder.filter(id => !parsed.cardOrder.includes(id))];
             setCardOrder(merged);
+          } else {
+            setCardOrder(defaultOrder);
           }
-          if (parsed.cardVisible && typeof parsed.cardVisible === 'object') setCardVisible({ ...DEFAULT_VISIBLE, ...parsed.cardVisible });
+          if (parsed.cardVisible && typeof parsed.cardVisible === 'object') {
+            setCardVisible({ ...defaultVisible, ...parsed.cardVisible });
+          } else {
+            setCardVisible(defaultVisible);
+          }
         }
       } catch (e) {
         console.log('Layout load error', e);
@@ -1396,6 +1436,19 @@ export default function HomeScreen() {
           </View>
           <Text style={[styles.verseText, { color: theme.textSecondary }]}>"{dailyVerse?.text}"</Text>
           <Text style={[styles.verseRef, { color: theme.textMuted }]}>{dailyVerse?.reference}</Text>
+          {dailyVerse && (() => {
+            const [y, m, d] = todayKey.split('-').map(Number);
+            const date = new Date(y, m - 1, d);
+            const dayOfYear = Math.floor((date.getTime() - new Date(y, 0, 1).getTime()) / 86400000);
+            const prompt = REFLECTION_PROMPTS[dayOfYear % REFLECTION_PROMPTS.length];
+            return (
+              <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 0.5, borderTopColor: theme.borderCardVerse }}>
+                <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', lineHeight: 16 }}>
+                  {prompt}
+                </Text>
+              </View>
+            );
+          })()}
         </TouchableOpacity>
       </Animated.View>
     );
@@ -2556,7 +2609,9 @@ export default function HomeScreen() {
 
   const renderCardById = (id: CardId) => {
     switch (id) {
-      case 'verse':           return renderVerseCard();
+      case 'verse':
+        if (faithJourney === 'notrightnow') return null;
+        return renderVerseCard();
       case 'calories':        return renderCaloriesCard();
       case 'macros':          return renderMacrosCard();
       case 'water':           return renderWaterCard();

@@ -750,8 +750,8 @@ Custom water amount modal -- DONE. bgSheet, Animated.Value fade, tap-outside dis
 [x] GoogleService-Info.plist EAS build failure (root fix) -- EAS pre-flight scanner reads app.json statically, sees googleServicesFile path not in git, hard fails before any hook runs. Hook approach never worked. Fix: created app.config.js that wraps app.json and overrides googleServicesFile with process.env.GOOGLE_SERVICE_INFO_PLIST ?? './GoogleService-Info.plist'. Dynamic evaluation bypasses static pre-flight check. EAS sets env var to decoded secret file path at build time. app.json untouched. FIXED 2026-05-22.
 App-wide OZ to oz audit -- index.tsx and log.tsx fixed this session. day-detail and any other screens not yet checked. Complete audit needed. (SOON)
 Recipe builder -- edit ingredient amounts inline. Currently requires delete + re-add to change a logged ingredient's amount. Need edit mode: pencil tap on ingredient row opens inline amount field (or tap-to-edit). Sets/grams editable without deleting. recipe-builder.tsx. (SOON)
-Recipe builder macro label spacing -- ingredient rows show "P31g" "C0g" with no space between letter and number. Should be "P 31g" "C 0g". Quick fix. recipe-builder.tsx. (SOON)
-Recipe builder -- delete ingredient confirmation Alert. Currently instant delete, no warning. Add destructive confirm Alert before removing any ingredient. recipe-builder.tsx. (SOON)
+[x] Recipe builder macro label spacing -- ingredient rows showed "P31g" "C0g". Fixed: space added between letter and number, values normalized to 1 decimal place (toFixed(1)), ingMacro column width bumped 38→50px for consistent alignment. recipe-builder.tsx. FIXED 2026-05-26.
+[x] Recipe builder delete ingredient confirmation -- instant delete replaced with destructive Alert ("Remove [food name]?"). Alert import added. recipe-builder.tsx. FIXED 2026-05-26.
 Recipe builder -- "Add to Diary" log modal. Current modal slides up from bottom (wrong pattern) AND has a transparent background. Fix: convert to centered fade-in modal (non-negotiable per app pattern) + solid bgSheet background, fully opaque. recipe-builder.tsx. (SOON)
 
 Women's health and HealthKit

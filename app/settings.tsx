@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -767,7 +768,7 @@ export default function SettingsScreen() {
   const faithActiveCount = [notifSettings.morningIntention.enabled, notifSettings.eveningGratitude.enabled, notifSettings.prayerCheckin.enabled].filter(Boolean).length;
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.bgPrimary, paddingTop: insets.top }}>
+    <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
       <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
         <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={{ marginRight: 12 }}>
           <Ionicons name="arrow-back" size={22} color={theme.accentBlue} />
@@ -1957,7 +1958,7 @@ export default function SettingsScreen() {
         onDismiss={() => setDevCelebVisible(false)}
       />
 
-    </View>
+    </LinearGradient>
   );
 }
 

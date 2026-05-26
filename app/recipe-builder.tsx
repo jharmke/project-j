@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useRef, useEffect, useState } from 'react';
-import { Animated, Dimensions, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, Dimensions, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import CustomFoodCreator from '../components/CustomFoodCreator';
 import { useToast } from '../components/Toast';
@@ -235,8 +235,18 @@ export default function RecipeBuilderScreen() {
   };
 
   const removeIngredient = (id: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setIngredients(prev => prev.filter(i => i.id !== id));
+    const ing = ingredients.find(i => i.id === id);
+    Alert.alert(
+      'Remove Ingredient',
+      `Remove ${ing?.name ?? 'this ingredient'}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Remove', style: 'destructive', onPress: () => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+          setIngredients(prev => prev.filter(i => i.id !== id));
+        }},
+      ]
+    );
   };
 
   const totalCal = ingredients.reduce((s, i) => s + i.cal, 0);
@@ -376,9 +386,9 @@ export default function RecipeBuilderScreen() {
                     <Text style={styles.ingDot}>·</Text>
                     <Text style={styles.ingCal}>{ing.cal} kcal</Text>
                     <Text style={styles.ingDot}>·</Text>
-                    <Text style={[styles.ingMacro, { color: theme.macroProtein }]}>P{ing.protein}g</Text>
-                    <Text style={[styles.ingMacro, { color: theme.macroCarbs }]}>C{ing.carbs}g</Text>
-                    <Text style={[styles.ingMacro, { color: theme.macroFat }]}>F{ing.fat}g</Text>
+                    <Text style={[styles.ingMacro, { color: theme.macroProtein }]}>P {Number(ing.protein).toFixed(1)}g</Text>
+                    <Text style={[styles.ingMacro, { color: theme.macroCarbs }]}>C {Number(ing.carbs).toFixed(1)}g</Text>
+                    <Text style={[styles.ingMacro, { color: theme.macroFat }]}>F {Number(ing.fat).toFixed(1)}g</Text>
                   </View>
                 </View>
                 <TouchableOpacity onPress={() => removeIngredient(ing.id)} style={styles.removeBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -638,7 +648,7 @@ const useStyles = (theme: any) => StyleSheet.create({
   ingAmount: { width: 56, fontSize: 11, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' },
   ingDot: { fontSize: 11, color: theme.textDim, marginHorizontal: 3 },
   ingCal: { width: 60, fontSize: 11, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' },
-  ingMacro: { width: 38, fontSize: 11, fontFamily: 'DMSans_500Medium' },
+  ingMacro: { width: 50, fontSize: 11, fontFamily: 'DMSans_500Medium' },
   removeBtn: { padding: 4 },
   macroRow: { flexDirection: 'row', alignItems: 'center' },
   macroStat: { flex: 1, alignItems: 'center' },

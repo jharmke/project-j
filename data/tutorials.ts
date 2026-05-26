@@ -12,6 +12,12 @@ export interface TutorialStep {
    *  Removes the TAB_H offset from isOffScreen so elements near the bottom of
    *  those screens are not falsely flagged as off-screen. */
   noTabBarOffset?: boolean;
+  /** Skip the 4-panel scrim so underlying UI is fully visible. Use for steps that want
+   *  the user to see screen content (e.g. edit layout card rows, add cards tab). */
+  noDimOverlay?: boolean;
+  /** Pin the tutorial bubble to the bottom of the screen (above the tab bar).
+   *  Use alongside noDimOverlay so the bubble doesn't block the visible content. */
+  bubbleAtBottom?: boolean;
   // Card-specific visual override: forces a card to render a particular demo state
   // without touching any real data. Clear on tutorial end/skip to restore real state.
   ifCardState?: 'idle' | 'active' | 'eating';
@@ -68,7 +74,118 @@ export const TUTORIALS: Tutorial[] = [
     ],
   },
 
+  // meta_mindful is not in TAB_TUTORIALS -- auto-selected via id resolver in index.tsx
+  // when styleMode === 'mindful'. All body text is warm/neutral across all three modes
+  // since only Mindful users ever reach this tutorial.
+  {
+    id: 'meta_mindful',
+    name: 'App Orientation',
+    description: 'A gentle introduction to your space and how the app works.',
+    tab: 'home',
+    steps: [
+      {
+        targetKey: 'none',
+        title: 'YOUR SPACE',
+        body: {
+          discipline: 'This is your space. No scores, no judgment -- just showing up. This app works for you, not the other way around.',
+          balanced: 'This is your space. No scores, no judgment -- just showing up. This app works for you, not the other way around.',
+          mindful: 'This is your space. No scores, no judgment -- just showing up. This app works for you, not the other way around.',
+        },
+      },
+      {
+        targetKey: 'none',
+        title: 'YOUR CARDS',
+        body: {
+          discipline: 'These cards give you a gentle picture of your day. You don\'t have to track everything -- just what feels right for you.',
+          balanced: 'These cards give you a gentle picture of your day. You don\'t have to track everything -- just what feels right for you.',
+          mindful: 'These cards give you a gentle picture of your day. You don\'t have to track everything -- just what feels right for you.',
+        },
+      },
+      {
+        targetKey: 'meta_toolkit_icon',
+        skipIfTargetMissing: true,
+        title: 'WHEN YOU\'RE CURIOUS',
+        body: {
+          discipline: 'The ? in each tab has guided tours for every feature. A good place to start is the Edit Layout tour -- it shows you how to remove any card you don\'t want.',
+          balanced: 'The ? in each tab has guided tours for every feature. A good place to start is the Edit Layout tour -- it shows you how to remove any card you don\'t want.',
+          mindful: 'The ? in each tab has guided tours for every feature. A good place to start is the Edit Layout tour -- it shows you how to remove any card you don\'t want.',
+        },
+      },
+      {
+        targetKey: 'none',
+        title: 'YOUR PACE',
+        body: {
+          discipline: 'There\'s no perfect way to use this app. Go at your own pace, and let it meet you where you are.',
+          balanced: 'There\'s no perfect way to use this app. Go at your own pace, and let it meet you where you are.',
+          mindful: 'There\'s no perfect way to use this app. Go at your own pace, and let it meet you where you are.',
+        },
+      },
+    ],
+  },
+
   // ─── HOME TAB ─────────────────────────────────────────────────────────────────
+
+  {
+    id: 'edit_layout',
+    name: 'Edit Layout',
+    description: 'Customize which cards appear on your home screen and in what order.',
+    tab: 'home',
+    steps: [
+      {
+        targetKey: 'edit_layout_btn',
+        tutorialAction: 'openEditLayoutForTutorial',
+        title: 'YOUR HOME LAYOUT',
+        body: {
+          discipline: 'That grid icon opens Edit Layout. Tap NEXT and we\'ll open it to walk through what\'s inside.',
+          balanced: 'That grid icon opens Edit Layout. Tap NEXT and we\'ll open it together.',
+          mindful: 'That grid icon opens Edit Layout. Tap NEXT and we\'ll walk through it whenever you\'re ready.',
+        },
+      },
+      {
+        targetKey: 'none',
+        noDimOverlay: true,
+        bubbleAtBottom: true,
+        title: 'CARD ROWS',
+        body: {
+          discipline: 'Each row is one home screen card -- name, description, and two controls. The badge on the left toggles visibility. The grip on the right reorders.',
+          balanced: 'Each row here is a home screen card. It shows the name, a short description, and two controls. We\'ll walk through both.',
+          mindful: 'Take a look. Each row is one of your home screen cards -- a name, a description, and a couple of controls. We\'ll go through them together.',
+        },
+      },
+      {
+        targetKey: 'edit_layout_drag',
+        skipIfTargetMissing: true,
+        title: 'DRAG TO REORDER',
+        body: {
+          discipline: 'Long-press this grip icon and drag the row up or down to reorder that card on your home screen. Changes save the moment you lift.',
+          balanced: 'Long-press this grip icon and drag to reorder the card. Changes save instantly.',
+          mindful: 'Long-press this grip and drag to move the card wherever feels right. Rearrange freely.',
+        },
+      },
+      {
+        targetKey: 'edit_layout_eye',
+        skipIfTargetMissing: true,
+        tutorialAction: 'switchToAddCardsForTutorial',
+        title: 'SHOW AND HIDE',
+        body: {
+          discipline: 'Tap this badge to toggle the card on or off. Red means it\'s showing, green means it\'s hidden. Zero effect on your data.',
+          balanced: 'Tap this badge to hide or show the card. Hidden cards stay in the list but disappear from your home screen. Data is never affected.',
+          mindful: 'Tap this badge to hide or show the card. Nothing is deleted -- it steps back until you want it again.',
+        },
+      },
+      {
+        targetKey: 'none',
+        noDimOverlay: true,
+        bubbleAtBottom: true,
+        title: 'ADD CARDS',
+        body: {
+          discipline: 'Add Cards shows your custom Stats graphs -- pin any to the home screen. Hidden home cards also appear here so you can restore them.',
+          balanced: 'Add Cards shows hidden home cards you can restore, plus custom Stats graphs you can pin to your home screen.',
+          mindful: 'Add Cards is where hidden cards live and where you can pin Stats graphs to your home screen. Everything\'s here when you want it.',
+        },
+      },
+    ],
+  },
 
   {
     id: 'cal_card',
@@ -1355,7 +1472,7 @@ export const TUTORIALS: Tutorial[] = [
 // ─── Tab → Tutorial Mapping ───────────────────────────────────────────────────
 
 export const TAB_TUTORIALS: Record<string, string[]> = {
-  home: ['cal_card', 'macros_card', 'sleep_card', 'yvy_card'],
+  home: ['cal_card', 'macros_card', 'sleep_card', 'yvy_card', 'edit_layout'],
   log: ['log_food', 'manage_log', 'barcode', 'create_food', 'recipes', 'if_card'],
   workout: ['workout_basics', 'programs', 'routines', 'exercise_library'],
   stats: ['graph_creator', 'streaks', 'effort_vs_results'],

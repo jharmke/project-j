@@ -318,13 +318,20 @@ export default function TutorialOverlay() {
   const step = renderState.tutorial.steps[renderState.stepIndex];
   if (!step) return null;
 
-  const totalSteps = renderState.tutorial.steps.length;
-  const stepIdx    = renderState.stepIndex;
-  const isLastStep = stepIdx === totalSteps - 1;
-  const useDots    = totalSteps <= 6;
-  const bodyText   =
+  const totalSteps    = renderState.tutorial.steps.length;
+  const stepIdx       = renderState.stepIndex;
+  const isLastStep    = stepIdx === totalSteps - 1;
+  const useDots       = totalSteps <= 6;
+  const bodyText      =
     step.body[renderState.styleMode as 'discipline' | 'balanced' | 'mindful'] ??
     step.body.balanced;
+  const noDimOverlay  = !!(step as any).noDimOverlay;
+  const bubbleAtBottom = !!(step as any).bubbleAtBottom;
+  const bubbleStyle   = bubbleAtBottom
+    ? { bottom: TAB_H + 16 }
+    : bubblePos.above
+      ? { bottom: bubblePos.value }
+      : { top: bubblePos.value };
 
   return (
     <Animated.View
@@ -334,26 +341,30 @@ export default function TutorialOverlay() {
       {/* Full-screen touch absorber -- sits below bubble in z-order, blocks all background touches */}
       <Pressable style={StyleSheet.absoluteFill} onPress={() => {}} />
 
-      {/* 4-panel scrim -- visual only, pointerEvents none (Pressable above handles touch blocking) */}
-      <Animated.View
-        style={{ position: 'absolute', top: 0, left: 0, right: 0, height: spotY, backgroundColor: SCRIM }}
-        pointerEvents="none"
-      />
-      <Animated.View
-        style={{ position: 'absolute', top: bottomTop, left: 0, right: 0, bottom: 0, backgroundColor: SCRIM }}
-        pointerEvents="none"
-      />
-      <Animated.View
-        style={{ position: 'absolute', top: spotY, height: spotH, left: 0, width: spotX, backgroundColor: SCRIM }}
-        pointerEvents="none"
-      />
-      <Animated.View
-        style={{ position: 'absolute', top: spotY, height: spotH, left: rightLeft, right: 0, backgroundColor: SCRIM }}
-        pointerEvents="none"
-      />
+      {/* 4-panel scrim -- skipped on noDimOverlay steps so underlying UI is fully visible */}
+      {!noDimOverlay && (
+        <>
+          <Animated.View
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, height: spotY, backgroundColor: SCRIM }}
+            pointerEvents="none"
+          />
+          <Animated.View
+            style={{ position: 'absolute', top: bottomTop, left: 0, right: 0, bottom: 0, backgroundColor: SCRIM }}
+            pointerEvents="none"
+          />
+          <Animated.View
+            style={{ position: 'absolute', top: spotY, height: spotH, left: 0, width: spotX, backgroundColor: SCRIM }}
+            pointerEvents="none"
+          />
+          <Animated.View
+            style={{ position: 'absolute', top: spotY, height: spotH, left: rightLeft, right: 0, backgroundColor: SCRIM }}
+            pointerEvents="none"
+          />
+        </>
+      )}
 
       {/* Accent ring overlaid on spotlight cutout -- hidden when no spotlight (avoids 0x0 dot artifact) */}
-      {spotActive && (
+      {spotActive && !noDimOverlay && (
         <Animated.View
           style={{
             position: 'absolute',
@@ -373,7 +384,7 @@ export default function TutorialOverlay() {
       <Animated.View
         style={[
           styles.bubbleWrapper,
-          bubblePos.above ? { bottom: bubblePos.value } : { top: bubblePos.value },
+          bubbleStyle,
           { opacity: bubbleOpacity, transform: [{ translateY: bubbleTransY }] },
         ]}
         pointerEvents="box-none"

@@ -490,7 +490,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const { showToast } = useToast();
-  const { startTutorial, registerScrollView, unregisterScrollView, activeState: tutorialActiveState, registerIdResolver, unregisterIdResolver } = useTutorial();
+  const { startTutorial, registerScrollView, unregisterScrollView, activeState: tutorialActiveState, registerIdResolver, unregisterIdResolver, registerTutorialAction, unregisterTutorialAction } = useTutorial();
   // Derive YvY demo flag -- true when the active tutorial step has yvyDemo: true.
   const yvyTutorialDemo = !!(tutorialActiveState?.tutorial.steps[tutorialActiveState.stepIndex] as any)?.yvyDemo;
   const toolkitRef = useTutorialTarget('meta_toolkit_icon');
@@ -507,16 +507,21 @@ export default function HomeScreen() {
   const sleepDonutRef    = useTutorialTarget('sleep_donut');
   const sleepStagesRef   = useTutorialTarget('sleep_stages');
   const sleepFeelRef     = useTutorialTarget('sleep_feel');
-  const yvyCardRef       = useTutorialTarget('yvy_card_main');
-  const yvyMetricsRef    = useTutorialTarget('yvy_metrics');
+  const yvyCardRef        = useTutorialTarget('yvy_card_main');
+  const yvyMetricsRef     = useTutorialTarget('yvy_metrics');
+  const editLayoutBtnRef  = useTutorialTarget('edit_layout_btn');
+  const editLayoutDragRef = useTutorialTarget('edit_layout_drag');
+  const editLayoutEyeRef  = useTutorialTarget('edit_layout_eye');
+  const editLayoutTabsRef = useTutorialTarget('edit_layout_tabs');
   // showAchievementToast is now a direct import
 
   // Layout state
   const [cardOrder,   setCardOrder]   = useState<CardId[]>(DEFAULT_ORDER);
   const [cardVisible, setCardVisible] = useState<Record<CardId, boolean>>(DEFAULT_VISIBLE);
-  const [editMode,    setEditMode]    = useState(false);
+  const [editMode,         setEditMode]         = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
-  const [editTab, setEditTab] = useState<'my' | 'add'>('my');
+  const [editTab,          setEditTab]          = useState<'my' | 'add'>('my');
+  const [editTutorialMode, setEditTutorialMode] = useState(false);
   const [allStatsCards, setAllStatsCards] = useState<StatsCard[]>(DEFAULT_STATS_CARDS);
   const [pinnedTrendData, setPinnedTrendData] = useState<Record<string, TrendData>>({});
   const [homeEditCard, setHomeEditCard] = useState<StatsCard | null>(null);
@@ -748,6 +753,42 @@ export default function HomeScreen() {
     );
     return () => unregisterIdResolver('sleep_card');
   }, [sleepHours, devForceSleepManual, registerIdResolver, unregisterIdResolver]);
+
+  // ── Meta tutorial resolver: routes to mindful variant for Mindful mode users ──
+  useEffect(() => {
+    registerIdResolver('meta', () => styleMode === 'mindful' ? 'meta_mindful' : 'meta');
+    return () => unregisterIdResolver('meta');
+  }, [styleMode, registerIdResolver, unregisterIdResolver]);
+
+  // ── Edit Layout tutorial: opens inline (non-Modal) edit layout so
+  //    TutorialOverlay can spotlight elements inside it. editSheetAnim set to 1
+  //    immediately -- the overlay handles its own fade-in, no sheet animation needed.
+  useEffect(() => {
+    registerTutorialAction('openEditLayoutForTutorial', async () => {
+      editSheetAnim.setValue(1);
+      setEditTab('my');
+      setEditTutorialMode(true);
+      setEditModalVisible(true);
+      setEditMode(true);
+    });
+    registerTutorialAction('switchToAddCardsForTutorial', async () => {
+      setEditTab('add');
+    });
+    return () => {
+      unregisterTutorialAction('openEditLayoutForTutorial');
+      unregisterTutorialAction('switchToAddCardsForTutorial');
+    };
+  }, [registerTutorialAction, unregisterTutorialAction]);
+
+  // ── When tutorial ends (done or skip), tear down inline edit layout ──
+  useEffect(() => {
+    if (!tutorialActiveState && editTutorialMode) {
+      setEditTutorialMode(false);
+      setEditMode(false);
+      setEditModalVisible(false);
+      setEditTab('my');
+    }
+  }, [tutorialActiveState]);
 
   const getDateKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   const [todayKey, setTodayKey] = useState(() => getDateKey(new Date()));
@@ -1022,9 +1063,12 @@ export default function HomeScreen() {
   }, []);
 
   // ── Meta-tutorial: fires once on first home load ─────────────────────────────
+  // Checks both 'meta' and 'meta_mindful' so Mindful users who completed meta_mindful
+  // are not re-prompted after the id resolver routes 'meta' to 'meta_mindful'.
   useEffect(() => {
-    isTutorialSeen('meta').then(seen => {
-      if (!seen) setTimeout(() => startTutorial('meta'), 1500);
+    Promise.all([isTutorialSeen('meta'), isTutorialSeen('meta_mindful')]).then(([metaSeen, mindfulSeen]) => {
+      if (metaSeen || mindfulSeen) return;
+      setTimeout(() => startTutorial('meta'), 1500);
     });
   }, []);
 
@@ -2699,9 +2743,11 @@ export default function HomeScreen() {
               style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
               <Ionicons name="calendar" size={14} color={theme.accentBlue} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); enterEditMode(); }} style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
-              <Ionicons name="grid" size={14} color={theme.accentBlue} />
-            </TouchableOpacity>
+            <View ref={editLayoutBtnRef} collapsable={false}>
+              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); enterEditMode(); }} style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
+                <Ionicons name="grid" size={14} color={theme.accentBlue} />
+              </TouchableOpacity>
+            </View>
             <View ref={toolkitRef} collapsable={false}>
               <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); showToolkit('home'); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
                 <Ionicons name="help-circle" size={22} color={theme.accentBlue} />
@@ -2963,7 +3009,119 @@ export default function HomeScreen() {
       </ScrollView>
 
       </LinearGradient>
-      {editModalVisible && (
+      {/* ── Edit Layout tutorial: inline preview so TutorialOverlay can spotlight
+           the drag handle and eye toggle without being behind the Modal layer ── */}
+      {editTutorialMode && cardOrder.length > 0 && (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' }]}>
+          <View style={[styles.editSheet, { backgroundColor: theme.bgSheet, borderColor: theme.borderSheet, borderWidth: 0.5 }]}>
+            {/* Handle bar */}
+            <View style={{ alignSelf: 'center', paddingVertical: 10, paddingHorizontal: 40 }}>
+              <View style={[styles.editSheetHandle, { backgroundColor: theme.sheetHandle }]} />
+            </View>
+            {/* Header */}
+            <View style={[styles.editSheetHeader, { borderBottomColor: theme.borderSubtle }]}>
+              <Text style={{ fontSize: 13, color: theme.accentBlueRaw, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>Edit Layout</Text>
+              <View style={{ backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder, borderRadius: 6, paddingHorizontal: 14, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ color: theme.accentGreen, fontSize: 12, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>DONE</Text>
+              </View>
+            </View>
+            {/* Segmented tabs -- dynamic, reflects editTab state */}
+            <View ref={editLayoutTabsRef} collapsable={false} style={{ flexDirection: 'row', paddingHorizontal: 16, paddingVertical: 10 }}>
+              <View style={{ flex: 1, flexDirection: 'row', backgroundColor: theme.bgInput, borderRadius: 10, padding: 3 }}>
+                <View style={{ flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center', backgroundColor: editTab === 'my' ? theme.accentBlueRaw : 'transparent' }}>
+                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', color: editTab === 'my' ? '#ffffff' : theme.textMuted }}>My Cards</Text>
+                </View>
+                <View style={{ flex: 1, paddingVertical: 8, borderRadius: 8, alignItems: 'center', backgroundColor: editTab === 'add' ? theme.accentBlueRaw : 'transparent' }}>
+                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', color: editTab === 'add' ? '#ffffff' : theme.textMuted }}>Add Cards</Text>
+                </View>
+              </View>
+            </View>
+            {/* MY CARDS tab */}
+            {editTab === 'my' && (
+              <ScrollView showsVerticalScrollIndicator={false} scrollEnabled={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}>
+                {cardOrder.slice(0, 4).map((id, idx) => {
+                  const cardMeta = CARD_REGISTRY.find(c => c.id === id);
+                  if (!cardMeta) return null;
+                  const isVisible = cardVisible[id];
+                  const isFirst = idx === 0;
+                  return (
+                    <View key={id} style={styles.editCardRow}>
+                      <View ref={isFirst ? editLayoutEyeRef : undefined} collapsable={false}>
+                        <TouchableOpacity
+                          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleCardVisible(id); }}
+                          style={[styles.editBadge, { backgroundColor: isVisible ? theme.accentRedBg : theme.accentGreenBg, borderColor: isVisible ? theme.accentRedBorder : theme.accentGreenBorder }]}
+                        >
+                          <Ionicons name={isVisible ? 'remove' : 'add'} size={14} color={isVisible ? theme.accentRed : theme.accentGreen} />
+                        </TouchableOpacity>
+                      </View>
+                      <View style={[styles.editCardPreview, { backgroundColor: theme.bgEditCard, borderColor: theme.borderCard }, !isVisible && { opacity: 0.35 }]}>
+                        <Text style={[styles.editCardLabel, { color: theme.textPrimary }]}>{cardMeta.label}</Text>
+                        <Text style={[styles.editCardDesc, { color: theme.textDim }]}>{cardMeta.description}</Text>
+                      </View>
+                      <View ref={isFirst ? editLayoutDragRef : undefined} collapsable={false}>
+                        <View style={styles.dragHandle}>
+                          <Ionicons name="menu-outline" size={20} color={theme.textDim} />
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })}
+                {cardOrder.length > 4 && (
+                  <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 8, textAlign: 'center' }}>
+                    + {cardOrder.length - 4} more card{cardOrder.length - 4 !== 1 ? 's' : ''}
+                  </Text>
+                )}
+              </ScrollView>
+            )}
+            {/* ADD CARDS tab */}
+            {editTab === 'add' && (
+              <ScrollView showsVerticalScrollIndicator={false} scrollEnabled={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 20 }}>
+                <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 8, marginTop: 4 }}>Home Cards</Text>
+                {CARD_REGISTRY.filter(m => !cardVisible[m.id]).length === 0 ? (
+                  <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginBottom: 12 }}>All cards are currently visible.</Text>
+                ) : (
+                  CARD_REGISTRY.filter(m => !cardVisible[m.id]).map(m => (
+                    <View key={m.id} style={styles.editCardRow}>
+                      <View style={[styles.editBadge, { backgroundColor: theme.accentGreenBg, borderColor: theme.accentGreenBorder }]}>
+                        <Ionicons name="add" size={14} color={theme.accentGreen} />
+                      </View>
+                      <View style={[styles.editCardPreview, { backgroundColor: theme.bgEditCard, borderColor: theme.borderCard }]}>
+                        <Text style={[styles.editCardLabel, { color: theme.textPrimary }]}>{m.label}</Text>
+                        <Text style={[styles.editCardDesc, { color: theme.textDim }]}>{m.description}</Text>
+                      </View>
+                      <View style={[styles.dragHandle, { opacity: 0 }]}>
+                        <Ionicons name="menu-outline" size={20} color={theme.textDim} />
+                      </View>
+                    </View>
+                  ))
+                )}
+                <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 8, marginTop: 12 }}>Custom Stats Graphs</Text>
+                {allStatsCards.filter(c => c.type === 'graph' && c.placement !== 'both').length === 0 ? (
+                  <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>Build a graph in the Stats tab to pin it here for a quick home screen view.</Text>
+                ) : (
+                  allStatsCards.filter(c => c.type === 'graph' && c.placement !== 'both').slice(0, 3).map(card => (
+                    <View key={card.id} style={styles.editCardRow}>
+                      <View style={[styles.editBadge, { backgroundColor: theme.accentGreenBg, borderColor: theme.accentGreenBorder }]}>
+                        <Ionicons name="add" size={14} color={theme.accentGreen} />
+                      </View>
+                      <View style={[styles.editCardPreview, { backgroundColor: theme.bgEditCard, borderColor: theme.borderCard }]}>
+                        <Text style={[styles.editCardLabel, { color: theme.textPrimary }]}>{card.label}</Text>
+                        <Text style={[styles.editCardDesc, { color: theme.textDim }]}>{card.period}D graph</Text>
+                      </View>
+                      <View style={[styles.dragHandle, { opacity: 0 }]}>
+                        <Ionicons name="menu-outline" size={20} color={theme.textDim} />
+                      </View>
+                    </View>
+                  ))
+                )}
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      )}
+
+      {/* ── Edit Layout: normal Modal ── */}
+      {editModalVisible && !editTutorialMode && (
         <Modal transparent animationType="none" visible={editModalVisible} onRequestClose={exitEditMode} statusBarTranslucent hardwareAccelerated
           onShow={() => {
             editSheetAnim.setValue(0);
@@ -3024,20 +3182,25 @@ export default function HomeScreen() {
                 renderItem={({ item: id, drag, isActive }: RenderItemParams<CardId>) => {
                   const meta = CARD_REGISTRY.find(c => c.id === id)!;
                   const visible = cardVisible[id];
+                  const isFirstCard = id === cardOrder[0];
                   return (
                     <ScaleDecorator>
                       <View style={[styles.editCardRow, isActive && { opacity: 0.85 }]}>
-                        <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleCardVisible(id); }}
-                          style={[styles.editBadge, { backgroundColor: visible ? theme.accentRedBg : theme.accentGreenBg, borderColor: visible ? theme.accentRedBorder : theme.accentGreenBorder }]}>
-                          <Ionicons name={visible ? 'remove' : 'add'} size={14} color={visible ? theme.accentRed : theme.accentGreen} />
-                        </TouchableOpacity>
+                        <View ref={isFirstCard ? editLayoutEyeRef : undefined} collapsable={false}>
+                          <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleCardVisible(id); }}
+                            style={[styles.editBadge, { backgroundColor: visible ? theme.accentRedBg : theme.accentGreenBg, borderColor: visible ? theme.accentRedBorder : theme.accentGreenBorder }]}>
+                            <Ionicons name={visible ? 'remove' : 'add'} size={14} color={visible ? theme.accentRed : theme.accentGreen} />
+                          </TouchableOpacity>
+                        </View>
                         <View style={[styles.editCardPreview, { backgroundColor: theme.bgEditCard, borderColor: theme.borderCard }, !visible && { opacity:0.35 }]}>
                           <Text style={[styles.editCardLabel, { color: theme.textPrimary }]}>{meta.label}</Text>
                           <Text style={[styles.editCardDesc, { color: theme.textDim }]}>{meta.description}</Text>
                         </View>
-                        <TouchableOpacity onLongPress={drag} delayLongPress={0} style={styles.dragHandle}>
-                          <Ionicons name="menu-outline" size={20} color={theme.textDim} />
-                        </TouchableOpacity>
+                        <View ref={isFirstCard ? editLayoutDragRef : undefined} collapsable={false}>
+                          <TouchableOpacity onLongPress={drag} delayLongPress={0} style={styles.dragHandle}>
+                            <Ionicons name="menu-outline" size={20} color={theme.textDim} />
+                          </TouchableOpacity>
+                        </View>
                       </View>
                     </ScaleDecorator>
                   );

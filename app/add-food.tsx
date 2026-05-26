@@ -520,6 +520,7 @@ const saveEditFood = async () => {
           }
         }
       } catch {}
+      router.back();
     });
     return () => {
       unregisterTutorialAction('deleteTutorialRecipe');
@@ -736,6 +737,7 @@ const saveEditFood = async () => {
         const saved = await AsyncStorage.getItem('pj_barcode_overrides');
         setBarcodeOverrides(saved ? JSON.parse(saved) : {});
       } catch {}
+      router.back();
     };
     registerTutorialAction('clearTutorialScanState', clearTutorialScanState);
     return () => unregisterTutorialAction('clearTutorialScanState');
@@ -757,8 +759,6 @@ const saveEditFood = async () => {
     const closeCreatorAfterTutorial = async () => {
       setShowCreateFood(false);
       setIsTutorialCreateMode(false);
-      // Navigate back to whichever tab launched the tutorial (small delay
-      // so the close animation has time to start before the screen transitions).
       await new Promise<void>(r => setTimeout(r, 150));
       router.back();
     };

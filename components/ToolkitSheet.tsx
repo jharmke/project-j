@@ -50,6 +50,14 @@ const TAB_LABELS: Record<string, string> = {
   profile: 'PROFILE',
 };
 
+const TAB_ROUTES: Record<string, string> = {
+  home:    '/(tabs)/',
+  log:     '/(tabs)/log',
+  workout: '/(tabs)/workout',
+  stats:   '/(tabs)/stats',
+  profile: '/(tabs)/profile',
+};
+
 function ToolkitSheetInner({ tab, onClose }: { tab: string; onClose: () => void }) {
   const { theme } = useTheme();
   const { startTutorial } = useTutorial();

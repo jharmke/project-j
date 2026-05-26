@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
 import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
 import { View } from 'react-native';
 import type { Tutorial, TutorialStep as TutorialStepData } from '../data/tutorials';
@@ -40,10 +41,11 @@ export interface ActiveTutorialState {
   tutorial: Tutorial;
   stepIndex: number;
   styleMode: string;
+  returnRoute?: string;
 }
 
 export interface TutorialContextType {
-  startTutorial: (id: string) => Promise<void>;
+  startTutorial: (id: string, returnRoute?: string) => Promise<void>;
   advanceStep: () => Promise<void>;
   skipTutorial: () => void;
   registerTarget: (key: string, ref: React.RefObject<View | null>) => void;
@@ -110,7 +112,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     delete idResolvers.current[id];
   }, []);
 
-  const startTutorial = useCallback(async (id: string) => {
+  const startTutorial = useCallback(async (id: string, returnRoute?: string) => {
     const resolvedId = idResolvers.current[id]?.() ?? id;
     const { TUTORIALS } = await import('../data/tutorials');
     const tutorial = TUTORIALS.find(t => t.id === resolvedId);
@@ -132,7 +134,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
 
     const firstStep = findNextValidStep(0, tutorial.steps, styleMode, refs.current);
     if (firstStep >= tutorial.steps.length) return;
-    setActiveState({ tutorial, stepIndex: firstStep, styleMode });
+    setActiveState({ tutorial, stepIndex: firstStep, styleMode, returnRoute });
   }, [setActiveState]);
 
   const advanceStep = useCallback(async () => {
@@ -151,7 +153,9 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     const next = findNextValidStep(prev.stepIndex + 1, prev.tutorial.steps, prev.styleMode, refs.current);
     if (next >= prev.tutorial.steps.length) {
       markTutorialSeen(prev.tutorial.id);
+      const returnRoute = prev.returnRoute;
       setActiveState(null);
+      if (returnRoute) setTimeout(() => router.push(returnRoute as any), 300);
     } else {
       setActiveState({ ...prev, stepIndex: next });
     }
@@ -160,6 +164,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
   const skipTutorial = useCallback(() => {
     const prev = activeStateRef.current;
     if (prev) markTutorialSeen(prev.tutorial.id);
+    const returnRoute = prev?.returnRoute;
     try { actions.current['deleteTutorialEntry']?.(); } catch {}
     try { actions.current['deleteTutorialExercise']?.(); } catch {}
     try { actions.current['clearTutorialScanState']?.(); } catch {}
@@ -168,6 +173,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     try { actions.current['closeRecipeTutorial']?.(); } catch {}
     try { actions.current['closeExerciseLibraryTutorial']?.(); } catch {}
     setActiveState(null);
+    if (returnRoute) setTimeout(() => router.push(returnRoute as any), 300);
   }, [setActiveState]);
 
   return (

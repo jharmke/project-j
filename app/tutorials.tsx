@@ -3,7 +3,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TUTORIALS, Tutorial } from '../data/tutorials';
+import { TAB_TUTORIALS, Tutorial, getTutorialById } from '../data/tutorials';
 import { useTheme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
 
@@ -78,14 +78,14 @@ export default function TutorialsScreen() {
   const { startTutorial } = useTutorial();
   const [selectedFilter, setSelectedFilter] = useState<TabFilter>('All');
 
-  const feature = TUTORIALS.filter(t => t.id !== 'meta');
+  const allListed = Object.values(TAB_TUTORIALS).flat().map(id => getTutorialById(id)).filter(Boolean) as Tutorial[];
   const filtered = TAB_MAP[selectedFilter] === null
-    ? feature
-    : feature.filter(t => t.tab === TAB_MAP[selectedFilter]);
+    ? allListed
+    : allListed.filter(t => t.tab === TAB_MAP[selectedFilter]);
 
   const handleStart = (id: string) => {
     router.back();
-    setTimeout(() => startTutorial(id), 350);
+    setTimeout(() => startTutorial(id, '/tutorials'), 350);
   };
 
   return (

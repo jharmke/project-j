@@ -68,7 +68,6 @@ function TutorialCard({ tutorial, theme, onStart }: { tutorial: Tutorial; theme:
         </Text>
       </View>
 
-      <Ionicons name="chevron-forward" size={14} color={theme.textMuted} style={{ marginLeft: 8 }} />
     </TouchableOpacity>
   );
 }

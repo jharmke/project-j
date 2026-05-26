@@ -227,49 +227,79 @@ export default function TutorialOverlay() {
     }, 16);
   }, [measureTarget, measureTargetWithRetry, scrollToTarget, computeBubblePos, animateSpot]);
 
-  // ── Step transition: bubble out → (navigate?) → move spotlight → bubble in ─
+  // ── Step transition: (navigate?) → move spotlight + fade bubble → bubble in ──
   const doStepTransition = useCallback(async (state: ActiveTutorialState) => {
-    const step = state.tutorial.steps[state.stepIndex];
-
-    await new Promise<void>(resolve => {
-      Animated.timing(bubbleOpacity, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => resolve());
-    });
-
-    // If this step requires a screen change, navigate first then retry measurement
-    const navigateTo = (step as { navigateTo?: string }).navigateTo;
+    const step          = state.tutorial.steps[state.stepIndex];
+    const navigateTo    = (step as { navigateTo?: string }).navigateTo;
     const navigateDelay = (step as { navigateDelay?: number }).navigateDelay ?? 200;
-    const noTabBar = !!((step as any).noTabBarOffset);
+    const noTabBar      = !!((step as any).noTabBarOffset);
 
-    let rawLayout: TargetRect | null;
-    if (navigateTo === 'back') {
-      router.back();
-      await new Promise<void>(r => setTimeout(r, navigateDelay));
-      rawLayout = await measureTargetWithRetry(step.targetKey);
-    } else if (navigateTo === 'back_twice') {
-      router.back();
-      await new Promise<void>(r => setTimeout(r, 300));
-      router.back();
-      await new Promise<void>(r => setTimeout(r, navigateDelay));
-      rawLayout = await measureTargetWithRetry(step.targetKey);
-    } else if (navigateTo) {
-      router.push(navigateTo as never);
-      await new Promise<void>(r => setTimeout(r, navigateDelay));
-      rawLayout = await measureTargetWithRetry(step.targetKey);
+    if (!navigateTo) {
+      // No navigation: measure first, then start spotlight + bubble fade simultaneously.
+      // Eliminates the ~150ms dead time where the old spotlight sat idle during bubble fade.
+      const rawLayout = await measureTarget(step.targetKey);
+
+      if (isOffScreen(rawLayout, noTabBar)) {
+        // Off-screen: fade bubble first, then scroll + animate sequentially.
+        // (Scrolling while bubble is visible looks jarring -- keep this path sequential.)
+        await new Promise<void>(resolve => {
+          Animated.timing(bubbleOpacity, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => resolve());
+        });
+        await scrollToTarget(step.targetKey);
+        const remeasured = await measureTargetWithRetry(step.targetKey);
+        const layout = isOffScreen(remeasured, noTabBar) ? null : remeasured;
+        setBubblePos(computeBubblePos(layout));
+        setRenderState(state);
+        await animateSpot(layout, false);
+        setSpotActive(layout !== null);
+      } else {
+        // On-screen: kick spotlight off immediately while bubble fades in parallel.
+        const layout      = rawLayout;
+        const spotPromise = animateSpot(layout, false);
+        // Await bubble fade -- at opacity 0 it's safe to swap content.
+        await new Promise<void>(resolve => {
+          Animated.timing(bubbleOpacity, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => resolve());
+        });
+        setBubblePos(computeBubblePos(layout));
+        setRenderState(state);
+        // Spotlight started 150ms ago -- wait for it to reach destination (~110ms left).
+        await spotPromise;
+        setSpotActive(layout !== null);
+      }
     } else {
-      rawLayout = await measureTarget(step.targetKey);
-    }
+      // Navigation required: sequential (must navigate before measuring).
+      await new Promise<void>(resolve => {
+        Animated.timing(bubbleOpacity, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => resolve());
+      });
 
-    let layout = isOffScreen(rawLayout, noTabBar) ? null : rawLayout;
-    if (isOffScreen(rawLayout, noTabBar)) {
-      await scrollToTarget(step.targetKey);
-      const remeasured = await measureTargetWithRetry(step.targetKey);
-      layout = isOffScreen(remeasured, noTabBar) ? null : remeasured;
+      let rawLayout: TargetRect | null;
+      if (navigateTo === 'back') {
+        router.back();
+        await new Promise<void>(r => setTimeout(r, navigateDelay));
+        rawLayout = await measureTargetWithRetry(step.targetKey);
+      } else if (navigateTo === 'back_twice') {
+        router.back();
+        await new Promise<void>(r => setTimeout(r, 300));
+        router.back();
+        await new Promise<void>(r => setTimeout(r, navigateDelay));
+        rawLayout = await measureTargetWithRetry(step.targetKey);
+      } else {
+        router.push(navigateTo as never);
+        await new Promise<void>(r => setTimeout(r, navigateDelay));
+        rawLayout = await measureTargetWithRetry(step.targetKey);
+      }
+
+      let layout = isOffScreen(rawLayout, noTabBar) ? null : rawLayout;
+      if (isOffScreen(rawLayout, noTabBar)) {
+        await scrollToTarget(step.targetKey);
+        const remeasured = await measureTargetWithRetry(step.targetKey);
+        layout = isOffScreen(remeasured, noTabBar) ? null : remeasured;
+      }
+      setBubblePos(computeBubblePos(layout));
+      setRenderState(state);
+      await animateSpot(layout, false);
+      setSpotActive(layout !== null);
     }
-    const pos    = computeBubblePos(layout);
-    setBubblePos(pos);
-    setRenderState(state);
-    await animateSpot(layout, false);
-    setSpotActive(layout !== null);
 
     bubbleTransY.setValue(8);
     Animated.parallel([

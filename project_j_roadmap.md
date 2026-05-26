@@ -582,6 +582,8 @@ NOW -- active this session
 
 SOON -- confirmed next few sessions
 
+  [ ] Calorie card UX review -- two different "net" numbers visible simultaneously (OVER and RUNNING NET) calculated differently, causing confusion. OVER = consumed vs adjusted target (base goal + active cals). RUNNING NET = consumed - active burn - partial BMR (shrinks toward midnight). Review whether to simplify into one clear number, improve labels, or add a tooltip/explainer that makes the distinction obvious without needing math.
+
   Tutorial polish --
   [ ] Tutorials list page -- remove side > arrows from each tutorial row. Play button is sufficient, arrows are redundant.
   [ ] Tutorial copy language audit -- 79 double-dash instances in data/tutorials.ts, tone consistency per mode, accuracy of feature descriptions. Dedicated pass.

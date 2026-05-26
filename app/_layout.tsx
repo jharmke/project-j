@@ -10,7 +10,7 @@ import { useFonts } from 'expo-font';
 import { Stack, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { LogBox } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -55,6 +55,9 @@ function RootLayoutNav() {
   const { user, loading: authLoading } = useAuth();
   const [onboardingChecked, setOnboardingChecked] = useState(false);
   const [onboardingComplete, setOnboardingComplete] = useState(false);
+  // Only route to /sign-in once per app session -- prevents re-navigation when
+  // the user signs in while already on the sign-in screen (kills the animation).
+  const hasInitialRouted = useRef(false);
 
   useEffect(() => {
     removeTutorialEntries();
@@ -72,9 +75,15 @@ function RootLayoutNav() {
     if (!user) {
       router.replace('/sign-in');
       SplashScreen.hideAsync();
+      hasInitialRouted.current = true;
     } else if (!onboardingComplete) {
-      router.replace('/onboarding/welcome');
+      // Only navigate on first fire (app launch). If user just signed in while
+      // already on /sign-in, skip -- sign-in.tsx handles the stage transition.
+      if (!hasInitialRouted.current) {
+        router.replace('/sign-in');
+      }
       SplashScreen.hideAsync();
+      hasInitialRouted.current = true;
     } else {
       // On a fresh device, restore from Firestore before showing the app.
       // On an existing device hasPjData is true so this returns instantly.

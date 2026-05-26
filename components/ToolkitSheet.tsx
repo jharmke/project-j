@@ -171,7 +171,6 @@ function ToolkitSheetInner({ tab, onClose }: { tab: string; onClose: () => void 
                     {t.description}
                   </Text>
                 </View>
-                <Ionicons name="chevron-forward" size={14} color={theme.textMuted} />
               </TouchableOpacity>
             ))}
 

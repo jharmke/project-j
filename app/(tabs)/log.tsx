@@ -52,7 +52,7 @@ interface FoodEntry {
 
 const AnimCircle = ReAnimated.createAnimatedComponent(Circle);
 
-function MacroStackedBar({ protein, carbs, fat, proteinGoal, carbsGoal, fatGoal, theme }: { protein: number; carbs: number; fat: number; proteinGoal: number; carbsGoal: number; fatGoal: number; theme: any }) {
+function MacroStackedBar({ protein, carbs, fat, proteinGoal, carbsGoal, fatGoal, theme, showNetCarbs }: { protein: number; carbs: number; fat: number; proteinGoal: number; carbsGoal: number; fatGoal: number; theme: any; showNetCarbs?: boolean }) {
   const proteinAnim = useSharedValue(0);
   const carbsAnim   = useSharedValue(0);
   const fatAnim     = useSharedValue(0);
@@ -185,6 +185,7 @@ export default function LogScreen() {
   const { activeCalories } = useHealthKit();
   const [styleMode, setStyleMode] = useState<'discipline' | 'balanced' | 'mindful'>('balanced');
   const [burnAccuracyPct, setBurnAccuracyPct] = useState(100);
+  const [showNetCarbs, setShowNetCarbs] = useState(false);
   const [macroGoals, setMacroGoals] = useState({ protein: 0, carbs: 0, fat: 0 });
   const [calPickerVisible, setCalPickerVisible] = useState(false);
   const [pickerYear, setPickerYear] = useState(0);
@@ -616,6 +617,7 @@ export default function LogScreen() {
           const d = JSON.parse(s);
           if (d.styleMode) setStyleMode(d.styleMode);
           if (d.burnAccuracyPct !== undefined) setBurnAccuracyPct(d.burnAccuracyPct);
+          if (d.showNetCarbs !== undefined) setShowNetCarbs(d.showNetCarbs);
         }
       });
       loadAchievements().then(store => setAchievementStore(store));
@@ -886,7 +888,16 @@ export default function LogScreen() {
               {adjustedTarget > 0 ? (totalCals < adjustedTarget ? `${adjustedTarget - totalCals} kcal remaining (${Math.round((isToday && activeCalories > 0 ? activeCalories : caloriesBurned) * burnAccuracyPct / 100)} burned)` : `${totalCals - adjustedTarget} kcal over target (${Math.round((isToday && activeCalories > 0 ? activeCalories : caloriesBurned) * burnAccuracyPct / 100)} burned)`) : ''}
             </Text>
           </View>
-          <MacroStackedBar protein={totalProtein} carbs={totalCarbs} fat={totalFat} proteinGoal={macroGoals.protein} carbsGoal={macroGoals.carbs} fatGoal={macroGoals.fat} theme={theme} />
+          <MacroStackedBar
+            protein={totalProtein}
+            carbs={showNetCarbs ? Math.max(0, Math.round((totalCarbs - totalFiber) * 10) / 10) : totalCarbs}
+            fat={totalFat}
+            proteinGoal={macroGoals.protein}
+            carbsGoal={macroGoals.carbs}
+            fatGoal={macroGoals.fat}
+            theme={theme}
+            showNetCarbs={showNetCarbs}
+          />
         </View>
       </View>
 

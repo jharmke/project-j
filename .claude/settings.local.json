@@ -32,7 +32,8 @@
       "Bash(node -e \"const pkg = require\\('./node_modules/react-native-body-highlighter/dist/index.js'\\); console.log\\('loaded'\\);\")",
       "Bash(Copy-Item *)",
       "Bash(Remove-Item *)",
-      "PowerShell(Remove-Item *)"
+      "PowerShell(Remove-Item *)",
+      "Bash(grep -n \"ToastRenderer\\\\|</View>$\\\\|^      }\" \"C:/Users/jthar/ProjectJ/app/\\(tabs\\)/index.tsx\")"
     ]
   }
 }

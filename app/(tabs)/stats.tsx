@@ -232,6 +232,7 @@ export default function StatsScreen() {
   const hasLoadedProfile = useRef(false);
   const [styleMode, setStyleMode] = useState<'Discipline' | 'Balanced' | 'Mindful'>('Balanced');
   const [faithJourney, setFaithJourney] = useState<'rooted' | 'exploring' | 'notrightnow'>('rooted');
+  const [showNetCarbs, setShowNetCarbs] = useState(false);
   const [periodData, setPeriodData] = useState({
     avgCal: 0, avgProtein: 0, avgCarbs: 0, avgFat: 0,
     avgWater: 0, avgSteps: 0, avgActiveCals: 0, avgSleep: 0, avgNetCals: 0,
@@ -350,7 +351,7 @@ export default function StatsScreen() {
     } catch {}
   };
 
-  const loadPeriodData = async (period: '7' | '30' | '90' | '180' | 'ytd', calTgt: number, sleepGoalVal: number, bmr = 0) => {
+  const loadPeriodData = async (period: '7' | '30' | '90' | '180' | 'ytd', calTgt: number, sleepGoalVal: number, bmr = 0, netCarbsMode = false) => {
     let dates: string[] = [];
     const nowD = new Date();
     if (period === 'ytd') {
@@ -361,7 +362,7 @@ export default function StatsScreen() {
       const days = parseInt(period);
       for (let i = days - 1; i >= 0; i--) dates.push(offsetToDateKey(i));
     }
-    let totalCal = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0, totalWater = 0, totalNetCal = 0;
+    let totalCal = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0, totalFiber = 0, totalWater = 0, totalNetCal = 0;
     let totalSteps = 0, stepsDays = 0, totalActiveCals = 0, activeDays = 0, totalSleep = 0, sleepDays = 0;
     let totalSleepScore = 0, sleepScoreDays = 0, calGoalDays = 0;
     let dietDays = 0, waterDays = 0, workoutDays = 0;
@@ -377,8 +378,16 @@ export default function StatsScreen() {
             totalCal += dayCal;
             totalNetCal += dayCal - (data.activeCalories || 0) - bmr;
             totalProtein += data.entries.reduce((s: number, e: any) => s + (e.protein || 0), 0);
-            totalCarbs += data.entries.reduce((s: number, e: any) => s + (e.carbs || 0), 0);
-            totalFat += data.entries.reduce((s: number, e: any) => s + (e.fat || 0), 0);
+            totalCarbs   += data.entries.reduce((s: number, e: any) => s + (e.carbs || 0), 0);
+            totalFat     += data.entries.reduce((s: number, e: any) => s + (e.fat || 0), 0);
+            totalFiber   += data.entries.reduce((s: number, e: any) => {
+              const n = e.foodNutrients?.find((fn: any) => fn.nutrientName === 'Fiber, total dietary');
+              if (!n) return s;
+              const scale = e.fsId
+                ? ((e.calPer100g && e.calPer100g > 0) ? (e.cal / e.calPer100g) : 0)
+                : (() => { const sc = e.servingGrams && (e.calPer100g ?? 0) > 0 ? (e.calPer100g ?? 0) * e.servingGrams / 100 : 0; return sc > 0 ? e.cal / sc : 0; })();
+              return s + (n.value || 0) * scale;
+            }, 0);
             if (calTgt > 0) {
               const pct = (dayCal / calTgt) * 100;
               if (pct >= 80 && pct <= 106) calGoalDays++;
@@ -402,7 +411,8 @@ export default function StatsScreen() {
     setPeriodData({
       avgCal: dietDays > 0 ? Math.round(totalCal / dietDays) : 0,
       avgProtein: dietDays > 0 ? Math.round(totalProtein / dietDays * 10) / 10 : 0,
-      avgCarbs: dietDays > 0 ? Math.round(totalCarbs / dietDays * 10) / 10 : 0,
+      avgCarbs: dietDays > 0 ? Math.round(
+        (netCarbsMode ? Math.max(0, totalCarbs - totalFiber) : totalCarbs) / dietDays * 10) / 10 : 0,
       avgFat: dietDays > 0 ? Math.round(totalFat / dietDays * 10) / 10 : 0,
       avgNetCals: dietDays > 0 ? Math.round(totalNetCal / dietDays) : 0,
       avgWater: waterDays > 0 ? Math.round(totalWater / waterDays) : 0,
@@ -652,7 +662,7 @@ export default function StatsScreen() {
         }
         setExcludedDays(exDays);
 
-        let target = 0, step = 10000, sleep = 8, bmr = 0, streakBaseTarget = 0, burnAccuracy = 100;
+        let target = 0, step = 10000, sleep = 8, bmr = 0, streakBaseTarget = 0, burnAccuracy = 100, netCarbsMode = false;
         let wGoal = 128, aCalGoal = 500, exMinsGoal = 30, pGoal = 0;
         let currentStyleMode = 'Balanced', currentFaithJourney = 'rooted';
         try {
@@ -700,6 +710,7 @@ export default function StatsScreen() {
             if (d.styleMode) { setStyleMode(d.styleMode); currentStyleMode = d.styleMode; }
             if (d.faithJourney) { setFaithJourney(d.faithJourney); currentFaithJourney = d.faithJourney; }
             if (d.burnAccuracyPct !== undefined) burnAccuracy = d.burnAccuracyPct;
+            if (d.showNetCarbs !== undefined) { netCarbsMode = d.showNetCarbs; setShowNetCarbs(d.showNetCarbs); }
           }
         } catch {}
         setCalTarget(target);
@@ -733,7 +744,7 @@ export default function StatsScreen() {
         await Promise.all([
           loadAllCardData(cards, 30, sleep),
           loadRecords(),
-          loadPeriodData(activePeriod, target, sleep, bmr),
+          loadPeriodData(activePeriod, target, sleep, bmr, netCarbsMode),
           loadStreaks(config, target, streakBaseTarget, burnAccuracy, wGoal, aCalGoal, exMinsGoal, pGoal, sleep, currentFaithJourney),
         ]);
       };
@@ -749,7 +760,7 @@ export default function StatsScreen() {
 
   useEffect(() => {
     if (hasLoadedProfile.current) {
-      loadPeriodData(activePeriod, calTarget, sleepGoal, profileBmr);
+      loadPeriodData(activePeriod, calTarget, sleepGoal, profileBmr, showNetCarbs);
     }
   }, [activePeriod]);
 
@@ -1161,6 +1172,7 @@ export default function StatsScreen() {
                 sleepGoal={sleepGoal}
                 onPeriodChange={handleCardPeriodChange}
                 onEditPress={(card) => setEditCard(card)}
+                showNetCarbs={showNetCarbs}
               />
             ))}
             </CollapsibleSection>

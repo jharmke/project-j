@@ -360,6 +360,7 @@ export default function SettingsScreen() {
   const { user, signOut } = useAuth();
   const { showToast } = useToast();
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
+  const [showNetCarbs, setShowNetCarbs] = useState(false);
   const [styleMode, setStyleMode] = useState<'discipline' | 'balanced' | 'mindful'>('balanced');
   const [faithJourney, setFaithJourney] = useState<FaithJourney>('rooted');
   const [burnAccuracyPct, setBurnAccuracyPct] = useState(100);
@@ -503,6 +504,7 @@ export default function SettingsScreen() {
         if (saved) {
           const data = JSON.parse(saved);
           if (data.hapticsEnabled !== undefined) setHapticsEnabled(data.hapticsEnabled);
+          if (data.showNetCarbs !== undefined) setShowNetCarbs(data.showNetCarbs);
           if (data.styleMode) setStyleMode(data.styleMode);
           if (data.faithJourney) setFaithJourney(data.faithJourney);
           if (data.burnAccuracyPct !== undefined) setBurnAccuracyPct(data.burnAccuracyPct);
@@ -950,6 +952,26 @@ export default function SettingsScreen() {
 
             <View style={{ height: 1, backgroundColor: theme.borderCard, marginVertical: 16 }} />
 
+            {/* Net Carbs toggle */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <View style={{ flex: 1, paddingRight: 12 }}>
+                <Text style={[styles.goalLabel, { color: theme.textMuted, marginBottom: 2 }]}>Net Carbs Mode</Text>
+                <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', lineHeight: 15 }}>
+                  Shows total carbs minus fiber everywhere in the app.
+                </Text>
+              </View>
+              <ToggleSwitch value={showNetCarbs} onValueChange={v => { setShowNetCarbs(v); saveSetting('showNetCarbs', v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }} />
+            </View>
+            {showNetCarbs && (
+              <View style={{ backgroundColor: theme.bgInset, borderRadius: 8, padding: 10, marginBottom: 8 }}>
+                <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', lineHeight: 16 }}>
+                  Net carbs mode is on. Your Carbs goal below now represents your net carbs target -- update it if you'd like a more specific number.
+                </Text>
+              </View>
+            )}
+
+            <View style={{ height: 1, backgroundColor: theme.borderCard, marginVertical: 16 }} />
+
             {/* Macros */}
             <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Macros</Text>
             <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', color: theme.textMuted, marginBottom: 14 }}>
@@ -977,9 +999,9 @@ export default function SettingsScreen() {
             {goalProfile.macroMode === 'ratio' ? (
               <View>
                 {[
-                  { label: 'Protein', pctKey: 'macroProteinPct' as keyof GoalProfile, color: theme.macroProtein },
-                  { label: 'Carbs',   pctKey: 'macroCarbsPct'   as keyof GoalProfile, color: theme.macroCarbs },
-                  { label: 'Fat',     pctKey: 'macroFatPct'     as keyof GoalProfile, color: theme.macroFat },
+                  { label: 'Protein',                         pctKey: 'macroProteinPct' as keyof GoalProfile, color: theme.macroProtein },
+                  { label: showNetCarbs ? 'Net Carbs' : 'Carbs', pctKey: 'macroCarbsPct'   as keyof GoalProfile, color: theme.macroCarbs },
+                  { label: 'Fat',                             pctKey: 'macroFatPct'     as keyof GoalProfile, color: theme.macroFat },
                 ].map(({ label, pctKey, color }) => {
                   const pct = parseFloat(goalProfile[pctKey] as string) || 0;
                   const calsPerGram = label === 'Fat' ? 9 : 4;
@@ -1026,9 +1048,9 @@ export default function SettingsScreen() {
             ) : (
               <View>
                 {[
-                  { label: 'Protein', gKey: 'macroProteinG' as keyof GoalProfile, color: theme.macroProtein, calsPerGram: 4 },
-                  { label: 'Carbs',   gKey: 'macroCarbsG'   as keyof GoalProfile, color: theme.macroCarbs,   calsPerGram: 4 },
-                  { label: 'Fat',     gKey: 'macroFatG'     as keyof GoalProfile, color: theme.macroFat,     calsPerGram: 9 },
+                  { label: 'Protein',                            gKey: 'macroProteinG' as keyof GoalProfile, color: theme.macroProtein, calsPerGram: 4 },
+                  { label: showNetCarbs ? 'Net Carbs' : 'Carbs', gKey: 'macroCarbsG'   as keyof GoalProfile, color: theme.macroCarbs,   calsPerGram: 4 },
+                  { label: 'Fat',                                gKey: 'macroFatG'     as keyof GoalProfile, color: theme.macroFat,     calsPerGram: 9 },
                 ].map(({ label, gKey, color, calsPerGram }) => {
                   const grams = parseFloat(goalProfile[gKey] as string) || 0;
                   const kcal  = Math.round(grams * calsPerGram);

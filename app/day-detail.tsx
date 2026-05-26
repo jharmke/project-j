@@ -81,6 +81,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
   const [profileBmr, setProfileBmr] = useState(0);
   const [sleepGoal, setSleepGoal] = useState(7);
   const [burnAccuracyPct, setBurnAccuracyPct] = useState(100);
+  const [showNetCarbs, setShowNetCarbs] = useState(false);
   const [workoutTags, setWorkoutTags] = useState<any[]>([]);
   const [calPickerVisible, setCalPickerVisible] = useState(false);
   const [pickerYear, setPickerYear] = useState(0);
@@ -122,6 +123,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
           const sd = JSON.parse(settingsRaw);
           if (sd.burnAccuracyPct !== undefined) setBurnAccuracyPct(sd.burnAccuracyPct);
           if (sd.workoutTags && Array.isArray(sd.workoutTags)) setWorkoutTags(sd.workoutTags);
+          if (sd.showNetCarbs !== undefined) setShowNetCarbs(sd.showNetCarbs);
         }
         const profileRaw = await AsyncStorage.getItem('pj_profile');
         if (profileRaw) {
@@ -177,9 +179,18 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
   const runningBmr = isToday && profileBmr > 0 ? Math.round((profileBmr / 1440) * minutesToday) : profileBmr;
   const netcals = totalCals - caloriesBurned - runningBmr;
 
-  const totalFiber = Math.round(entries.reduce((s: number, e: any) => { const n = e.foodnutrients?.find((fn: any) => fn.nutrientname === 'fiber, total dietary'); return s + ((n?.value || 0) * (e.calper100g > 0 ? e.cal / e.calper100g : 0)); }, 0) * 10) / 10;
-  const totalSodium = Math.round(entries.reduce((s: number, e: any) => { const n = e.foodnutrients?.find((fn: any) => fn.nutrientname === 'sodium, na'); return s + ((n?.value || 0) * (e.calper100g > 0 ? e.cal / e.calper100g : 0)); }, 0));
-  const totalSugar = Math.round(entries.reduce((s: number, e: any) => { const n = e.foodnutrients?.find((fn: any) => fn.nutrientname === 'sugars, total including nlea'); return s + ((n?.value || 0) * (e.calper100g > 0 ? e.cal / e.calper100g : 0)); }, 0) * 10) / 10;
+  const getEntryNutrient = (name: string, round = 10) => Math.round(entries.reduce((s: number, e: any) => {
+    const n = e.foodNutrients?.find((fn: any) => fn.nutrientName === name);
+    if (!n) return s;
+    const scale = e.fsId
+      ? ((e.calPer100g && e.calPer100g > 0) ? (e.cal / e.calPer100g) : 0)
+      : (() => { const sc = e.servingGrams && (e.calPer100g ?? 0) > 0 ? (e.calPer100g ?? 0) * e.servingGrams / 100 : 0; return sc > 0 ? e.cal / sc : 0; })();
+    return s + (n.value || 0) * scale;
+  }, 0) * round) / round;
+  const totalFiber  = getEntryNutrient('Fiber, total dietary');
+  const totalSodium = Math.round(getEntryNutrient('Sodium, Na', 1));
+  const totalSugar  = getEntryNutrient('Sugars, total including NLEA');
+  const totalNetCarbs = Math.max(0, Math.round((totalCarbs - totalFiber) * 10) / 10);
 
   const sleepHours: number = data?.sleepOverride ?? data?.sleepHours ?? 0;
   const sleepStages: SleepStages | null = data?.sleepStages ?? null;
@@ -372,8 +383,8 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
               <Text style={styles.statLabel}>Protein</Text>
             </View>
             <View style={styles.stat}>
-              <Text style={[styles.statVal, { color: '#c47d1a' }]}>{totalCarbs}<Text style={styles.statUnit}>g</Text></Text>
-              <Text style={styles.statLabel}>Carbs</Text>
+              <Text style={[styles.statVal, { color: '#c47d1a' }]}>{showNetCarbs && totalFiber > 0 ? totalNetCarbs : totalCarbs}<Text style={styles.statUnit}>g</Text></Text>
+              <Text style={styles.statLabel}>{showNetCarbs && totalFiber > 0 ? 'Net Carbs' : 'Carbs'}</Text>
             </View>
             <View style={styles.stat}>
               <Text style={[styles.statVal, { color: '#a83232' }]}>{totalFat}<Text style={styles.statUnit}>g</Text></Text>
@@ -618,8 +629,23 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
             </TouchableOpacity>
             {advNutritionOpen && (
               <View style={{ marginTop: 10 }}>
+                {/* Net carbs trio -- always shown when fiber data is present */}
+                {totalFiber > 0 && (
+                  <View style={{ backgroundColor: theme.bgInset, borderRadius: 8, padding: 10, marginBottom: 12 }}>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Carb Breakdown</Text>
+                    {[
+                      { label: 'Total Carbs', value: `${totalCarbs}g`,    color: '#c47d1a' },
+                      { label: 'Fiber',       value: `${totalFiber}g`,    color: '#6366f1' },
+                      { label: 'Net Carbs',   value: `${totalNetCarbs}g`, color: '#c47d1a' },
+                    ].map((row, i, arr) => (
+                      <View key={row.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: i < arr.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderSubtle }}>
+                        <Text style={[styles.sectionLabel, i === arr.length - 1 && { fontFamily: 'DMSans_700Bold', color: theme.textPrimary }]}>{row.label}</Text>
+                        <Text style={{ fontSize: 13, color: i === arr.length - 1 ? row.color : theme.textMuted, fontFamily: i === arr.length - 1 ? 'DMSans_700Bold' : 'DMSans_600SemiBold' }}>{row.value}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
                 {[
-                  { label: 'Fiber',  value: totalFiber,  unit: 'g',  color: '#6366f1' },
                   { label: 'Sugar',  value: totalSugar,  unit: 'g',  color: '#ec4899' },
                   { label: 'Sodium', value: totalSodium, unit: 'mg', color: '#8b5cf6' },
                 ].map((n, i, arr) => (

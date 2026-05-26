@@ -33,6 +33,7 @@ import { saveStatsCards } from '../../statsCardRegistry';
 import { useTutorial, isTutorialSeen } from '../../context/TutorialContext';
 import { useTutorialTarget } from '../../hooks/useTutorialTarget';
 import { showToolkit } from '../../components/ToolkitSheet';
+import ToggleSwitch from '../../components/ToggleSwitch';
 
 // ─── Card Registry ────────────────────────────────────────────────────────────
 export type CardId =
@@ -653,6 +654,9 @@ export default function HomeScreen() {
   const [totalProtein,   setTotalProtein]   = useState(0);
   const [totalCarbs,     setTotalCarbs]     = useState(0);
   const [totalFat,       setTotalFat]       = useState(0);
+  const [totalFiber,     setTotalFiber]     = useState(0);
+  const [showNetCarbs,   setShowNetCarbs]   = useState(false);
+  const [showMacroGearSheet, setShowMacroGearSheet] = useState(false);
   const [stepGoal,       setStepGoal]       = useState(10000);
   const [sleepGoal,      setSleepGoal]      = useState(7);
   const [activeCalGoal,  setActiveCalGoal]  = useState(500);
@@ -834,6 +838,7 @@ export default function HomeScreen() {
           setTotalProtein(0);
           setTotalCarbs(0);
           setTotalFat(0);
+          setTotalFiber(0);
           setCaloriesBurned(0);
           setSleepOverride(null);
           setSleepStoredBed(null);
@@ -956,6 +961,17 @@ export default function HomeScreen() {
     };
     loadLayout();
   }, []);
+
+  // ── Net carbs setting toggle ──────────────────────────────────────────────────
+  const toggleNetCarbs = async (val: boolean) => {
+    setShowNetCarbs(val);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      const s = await AsyncStorage.getItem('pj_settings');
+      const current = s ? JSON.parse(s) : {};
+      await storageSet('pj_settings', JSON.stringify({ ...current, showNetCarbs: val }));
+    } catch (e) {}
+  };
 
   // ── Save layout ──────────────────────────────────────────────────────────────
   const saveLayout = async (order: CardId[], visible: Record<CardId, boolean>) => {
@@ -1116,6 +1132,14 @@ export default function HomeScreen() {
             setTotalProtein(Math.round(clean.reduce((s: number, e: any) => s + (e.protein||0), 0) * 10) / 10);
             setTotalCarbs(  Math.round(clean.reduce((s: number, e: any) => s + (e.carbs  ||0), 0) * 10) / 10);
             setTotalFat(    Math.round(clean.reduce((s: number, e: any) => s + (e.fat    ||0), 0) * 10) / 10);
+            setTotalFiber(  Math.round(clean.reduce((s: number, e: any) => {
+              const n = e.foodNutrients?.find((fn: any) => fn.nutrientName === 'Fiber, total dietary');
+              if (!n) return s;
+              const scale = e.fsId
+                ? ((e.calPer100g && e.calPer100g > 0) ? (e.cal / e.calPer100g) : 0)
+                : (() => { const sc = e.servingGrams && (e.calPer100g ?? 0) > 0 ? (e.calPer100g ?? 0) * e.servingGrams / 100 : 0; return sc > 0 ? e.cal / sc : 0; })();
+              return s + (n.value || 0) * scale;
+            }, 0) * 10) / 10);
           }
           setCaloriesBurned(parseInt(data.caloriesBurned)||0);
           if (data.sleepOverride) setSleepOverride(data.sleepOverride);
@@ -1218,6 +1242,7 @@ export default function HomeScreen() {
           if (sd.faithJourney) setFaithJourney(sd.faithJourney);
           if (sd.burnAccuracyPct !== undefined) setBurnAccuracyPct(sd.burnAccuracyPct);
           if (sd.devForceSleepManual !== undefined) setDevForceSleepManual(sd.devForceSleepManual);
+          if (sd.showNetCarbs !== undefined) setShowNetCarbs(sd.showNetCarbs);
         }
 
         // Onboarding -- open Edit Layout sheet if flagged from Screen 7
@@ -1589,10 +1614,11 @@ export default function HomeScreen() {
   };
 
   const renderMacrosCard = () => {
+    const netCarbs = Math.max(0, Math.round((totalCarbs - totalFiber) * 10) / 10);
     const macros = [
-      { label: 'Protein', val: totalProtein, goal: macroGoals.protein, color: theme.macroProtein },
-      { label: 'Carbs',   val: totalCarbs,   goal: macroGoals.carbs,   color: theme.macroCarbs },
-      { label: 'Fat',     val: totalFat,     goal: macroGoals.fat,     color: theme.macroFat },
+      { label: 'Protein',                            val: totalProtein,              goal: macroGoals.protein, color: theme.macroProtein },
+      { label: showNetCarbs ? 'Net Carbs' : 'Carbs', val: showNetCarbs ? netCarbs : totalCarbs, goal: macroGoals.carbs, color: theme.macroCarbs },
+      { label: 'Fat',                                val: totalFat,                  goal: macroGoals.fat,     color: theme.macroFat },
     ];
     return (
       <View ref={macrosCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
@@ -1603,7 +1629,12 @@ export default function HomeScreen() {
             <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Macros Today</Text>
             <TooltipIcon tooltipKey="macros_today" />
           </View>
-          <Text style={{ fontSize:9, color: theme.textDim, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase' }}>vs goal</Text>
+          <View style={{ flexDirection:'row', alignItems:'center', gap:10 }}>
+            <Text style={{ fontSize:9, color: theme.textDim, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase' }}>vs goal</Text>
+            <TouchableOpacity onPress={() => setShowMacroGearSheet(true)} hitSlop={{ top:8, bottom:8, left:8, right:8 }}>
+              <Ionicons name="settings" size={15} color={showNetCarbs ? theme.accentBlue : theme.textMuted} />
+            </TouchableOpacity>
+          </View>
         </View>
         <View style={{ gap:7 }}>
           {macros.map((m, i) => {
@@ -3013,6 +3044,7 @@ export default function HomeScreen() {
               sleepGoal={sleepGoal}
               onPeriodChange={handlePinnedCardPeriodChange}
               onEditPress={(c) => setHomeEditCard(c)}
+              showNetCarbs={showNetCarbs}
             />
           ))}
       </ScrollView>
@@ -3318,6 +3350,32 @@ export default function HomeScreen() {
         onDelete={handleHomeCardDelete}
         theme={theme}
       />
+
+      {/* ── Macro gear modal ── */}
+      <Modal visible={showMacroGearSheet} transparent animationType="slide" onRequestClose={() => setShowMacroGearSheet(false)}>
+        <TouchableOpacity style={{ flex:1, backgroundColor:'rgba(0,0,0,0.55)', justifyContent:'flex-end' }} activeOpacity={1} onPress={() => setShowMacroGearSheet(false)}>
+          <TouchableOpacity activeOpacity={1} onPress={() => {}}>
+            <View style={{ backgroundColor: theme.bgSheet, borderTopLeftRadius:18, borderTopRightRadius:18, borderTopWidth:1.5, borderTopColor: theme.accentBlueRaw, borderLeftWidth:0.5, borderRightWidth:0.5, borderColor: theme.borderCard, paddingTop:12, paddingHorizontal:20, paddingBottom: insets.bottom + 20 }}>
+              <View style={{ width:36, height:4, borderRadius:2, backgroundColor: theme.sheetHandle, alignSelf:'center', marginBottom:18 }} />
+              <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:3, textTransform:'uppercase', marginBottom:16 }}>Macro Display</Text>
+              <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between' }}>
+                <View style={{ flex:1, paddingRight:12 }}>
+                  <Text style={{ fontSize:15, color: theme.textPrimary, fontFamily:'DMSans_600SemiBold', marginBottom:3 }}>Net Carbs</Text>
+                  <Text style={{ fontSize:12, color: theme.textMuted, fontFamily:'DMSans_400Regular', lineHeight:17 }}>
+                    Show carbs as total minus fiber everywhere in the app.
+                  </Text>
+                </View>
+                <ToggleSwitch value={showNetCarbs} onValueChange={toggleNetCarbs} />
+              </View>
+              {showNetCarbs && (
+                <Text style={{ fontSize:11, color: theme.textDim, fontFamily:'DMSans_400Regular', lineHeight:16, marginTop:12 }}>
+                  Tip: you can set a specific net carbs goal in Settings {'>'} Goals.
+                </Text>
+              )}
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
 
     </View>
   );

@@ -681,7 +681,7 @@ function WorkoutFrequencyChart({ data, theme }: {
   );
 }
 
-export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal, sleepGoal, onPeriodChange, onEditPress, homeMode = false }: {
+export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal, sleepGoal, onPeriodChange, onEditPress, homeMode = false, showNetCarbs = false }: {
   card: StatsCard;
   cardTrendData: TrendData;
   theme: any;
@@ -691,6 +691,7 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
   onPeriodChange?: (cardId: string, period: CardPeriod) => void;
   onEditPress?: (card: StatsCard) => void;
   homeMode?: boolean;
+  showNetCarbs?: boolean;
 }) {
   const shadow = { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 12, elevation: 6 };
 
@@ -711,9 +712,17 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
               fmtY={(v) => v >= 1000 ? `${Math.round(v / 100) / 10}k` : `${Math.round(v)}`}
               fmtFull={(v) => Math.round(v).toLocaleString()} gradientId={`cl_${card.id}`} theme={theme} />
           : <CalorieBarChart data={cardTrendData.cal} calTarget={calTarget} theme={theme} color={gc} />;
-      case 'macros':
-        return <MacroBarChart data={cardTrendData.macro} theme={theme}
+      case 'macros': {
+        const macroData = showNetCarbs
+          ? cardTrendData.macro.map(m => {
+              const fiberEntry = cardTrendData.fiber.find(f => f.date === m.date);
+              const fiber = fiberEntry?.value ?? 0;
+              return { ...m, carbs: Math.max(0, m.carbs - Math.round(fiber)) };
+            })
+          : cardTrendData.macro;
+        return <MacroBarChart data={macroData} theme={theme}
           proteinColor={card.macroColors?.protein} carbsColor={card.macroColors?.carbs} fatColor={card.macroColors?.fat} />;
+      }
       case 'steps':
         return ct === 'bar'
           ? <GenericBarChart data={cardTrendData.steps} color={gc ?? theme.accentBlue} unit=""
@@ -817,9 +826,15 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
       case 'macros': {
         if (d.macro.length === 0) return undefined;
         const avgP = Math.round(d.macro.reduce((s, x) => s + x.protein, 0) / d.macro.length * 10) / 10;
-        const avgC = Math.round(d.macro.reduce((s, x) => s + x.carbs, 0) / d.macro.length * 10) / 10;
         const avgF = Math.round(d.macro.reduce((s, x) => s + x.fat, 0) / d.macro.length * 10) / 10;
-        return [{ label: 'Avg Protein', value: `${avgP}g` }, { label: 'Avg Carbs', value: `${avgC}g` }, { label: 'Avg Fat', value: `${avgF}g` }];
+        const avgC = showNetCarbs
+          ? Math.round(d.macro.reduce((s, x) => {
+              const fiberEntry = d.fiber.find(f => f.date === x.date);
+              const fiber = fiberEntry?.value ?? 0;
+              return s + Math.max(0, x.carbs - fiber);
+            }, 0) / d.macro.length * 10) / 10
+          : Math.round(d.macro.reduce((s, x) => s + x.carbs, 0) / d.macro.length * 10) / 10;
+        return [{ label: 'Avg Protein', value: `${avgP}g` }, { label: showNetCarbs ? 'Avg Net Carbs' : 'Avg Carbs', value: `${avgC}g` }, { label: 'Avg Fat', value: `${avgF}g` }];
       }
       case 'steps': {
         if (d.steps.length === 0) return undefined;

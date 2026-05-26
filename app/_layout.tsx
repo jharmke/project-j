@@ -11,10 +11,10 @@ import { Stack, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
-import { LogBox } from 'react-native';
+import { AppState, LogBox } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { restoreIfFresh } from '../services/syncService';
+import { restoreIfFresh, uploadAllLocal } from '../services/syncService';
 import { setupNotificationHandler } from '../services/notifications';
 import { runDailyNotificationScheduler } from '../services/notificationScheduler';
 import { AchievementToastProvider, AchievementToastRenderer } from '../components/AchievementToast';
@@ -58,6 +58,17 @@ function RootLayoutNav() {
   // Only route to /sign-in once per app session -- prevents re-navigation when
   // the user signs in while already on the sign-in screen (kills the animation).
   const hasInitialRouted = useRef(false);
+
+  // Flush all local data to Firestore whenever the app backgrounds.
+  // Ensures today's data is in the cloud before a build switch wipes local storage.
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      if (nextAppState === 'background') {
+        uploadAllLocal().catch(() => {});
+      }
+    });
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     removeTutorialEntries();

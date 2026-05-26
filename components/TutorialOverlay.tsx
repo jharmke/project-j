@@ -239,7 +239,15 @@ export default function TutorialOverlay() {
     if (!navigateTo) {
       // No navigation: measure first, then start spotlight + bubble fade simultaneously.
       // Eliminates the ~150ms dead time where the old spotlight sat idle during bubble fade.
-      const rawLayout = await measureTarget(step.targetKey);
+      let rawLayout = await measureTargetWithRetry(step.targetKey);
+
+      // measureInWindow returns zeros for elements scrolled above the viewport on iOS.
+      // If null but the ref is registered, scroll to it (measureLayout works regardless
+      // of visibility) then remeasure.
+      if (!rawLayout && getTarget(step.targetKey)?.current) {
+        await scrollToTarget(step.targetKey);
+        rawLayout = await measureTargetWithRetry(step.targetKey);
+      }
 
       if (isOffScreen(rawLayout, noTabBar)) {
         // Off-screen: fade bubble first, then scroll + animate sequentially.

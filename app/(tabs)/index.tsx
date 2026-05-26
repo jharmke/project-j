@@ -1062,15 +1062,24 @@ export default function HomeScreen() {
     loadData();
   }, []);
 
-  // ── Meta-tutorial: fires once on first home load ─────────────────────────────
+  // ── Meta-tutorial: fires once on first real home focus ───────────────────────
   // Checks both 'meta' and 'meta_mindful' so Mindful users who completed meta_mindful
   // are not re-prompted after the id resolver routes 'meta' to 'meta_mindful'.
-  useEffect(() => {
+  // useFocusEffect cleanup cancels the timer if auth/onboarding redirects away before
+  // 1500ms -- prevents the tutorial firing on the sign-in or onboarding screens.
+  // metaTutorialFiredRef gates re-runs after the tutorial has actually been confirmed
+  // seen or launched, but stays false if the timer was cancelled mid-redirect so the
+  // next real focus (user landing on home after onboarding) tries again.
+  const metaTutorialFiredRef = useRef(false);
+  useFocusEffect(useCallback(() => {
+    if (metaTutorialFiredRef.current) return;
+    let timerId: ReturnType<typeof setTimeout>;
     Promise.all([isTutorialSeen('meta'), isTutorialSeen('meta_mindful')]).then(([metaSeen, mindfulSeen]) => {
-      if (metaSeen || mindfulSeen) return;
-      setTimeout(() => startTutorial('meta'), 1500);
+      if (metaSeen || mindfulSeen) { metaTutorialFiredRef.current = true; return; }
+      timerId = setTimeout(() => { metaTutorialFiredRef.current = true; startTutorial('meta'); }, 1500);
     });
-  }, []);
+    return () => clearTimeout(timerId);
+  }, []));
 
   // ── Auto-save daily ──────────────────────────────────────────────────────────
   useEffect(() => {

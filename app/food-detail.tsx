@@ -11,6 +11,7 @@ import Reanimated, { useAnimatedProps, useSharedValue, withTiming } from 'react-
 import CustomFoodCreator from '../components/CustomFoodCreator';
 import { ToastRenderer, useToast } from '../components/Toast';
 import * as FileSystem from 'expo-file-system';
+import { Directory, File as FSFile, Paths } from 'expo-file-system/next';
 import * as ImagePicker from 'expo-image-picker';
 import { ACHIEVEMENTS, checkAndUnlock, loadAchievements, checkMomentumAchievements, checkNutritionAchievements, getCelebTier } from '../achievementData';
 import { showAchievementToast } from '../components/AchievementToast';
@@ -427,8 +428,8 @@ const isTutorialMode = tutorialMode === 'true';
       try {
         const uri = await AsyncStorage.getItem(`pj_food_photo_${foodId}`);
         if (!uri) return;
-        const info = await FileSystem.getInfoAsync(uri);
-        if (info.exists) {
+        const file = new FSFile(uri);
+        if (file.exists) {
           setPhotoUri(uri);
         } else {
           await AsyncStorage.removeItem(`pj_food_photo_${foodId}`);
@@ -932,13 +933,13 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
   const handlePhotoAdd = () => {
     if (!foodId) return;
     ActionSheetIOS.showActionSheetWithOptions(
-      { options: ['Cancel', 'Take Photo', 'Choose from Library'], cancelButtonIndex: 0 },
+      { options: ['Take Photo', 'Choose from Library', 'Cancel'], cancelButtonIndex: 2 },
       (buttonIndex) => {
-        if (buttonIndex === 0) return;
+        if (buttonIndex === 2) return;
         (async () => {
           try {
             let result: ImagePicker.ImagePickerResult;
-            if (buttonIndex === 1) {
+            if (buttonIndex === 0) {
               result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.85 });
             } else {
               result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.85 });
@@ -956,33 +957,44 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
   const savePhoto = async (sourceUri: string) => {
     if (!foodId) return;
     try {
-      const dir = `${FileSystem.documentDirectory}food_photos/`;
-      const dirInfo = await FileSystem.getInfoAsync(dir);
-      if (!dirInfo.exists) await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
       const safeId = foodId.replace(/[^a-zA-Z0-9_-]/g, '_');
-      const destUri = `${dir}${safeId}.jpg`;
-      await FileSystem.copyAsync({ from: sourceUri, to: destUri });
+      const photoDir = new Directory(Paths.document, 'food_photos');
+      if (!photoDir.exists) photoDir.create();
+      const destUri = `${photoDir.uri}${safeId}.jpg`;
+      const destFile = new FSFile(destUri);
+      if (destFile.exists) destFile.delete();
+      const srcFile = new FSFile(sourceUri);
+      srcFile.copy(destFile);
       await AsyncStorage.setItem(`pj_food_photo_${foodId}`, destUri);
       setPhotoUri(destUri);
+      setShowPhotoFullscreen(false);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       showToast('Photo saved', undefined, 'success');
-    } catch {
-      showToast('Photo save failed', 'Please try again', 'error');
+    } catch (e: any) {
+      showToast('Photo save failed', e?.message || 'Please try again', 'error');
     }
   };
 
-  const handlePhotoRemove = async () => {
+  const handlePhotoRemove = () => {
     if (!foodId || !photoUri) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    try {
-      await FileSystem.deleteAsync(photoUri, { idempotent: true });
-      await AsyncStorage.removeItem(`pj_food_photo_${foodId}`);
-      setPhotoUri(null);
-      setShowPhotoFullscreen(false);
-      showToast('Photo removed', undefined, 'success');
-    } catch {
-      showToast('Failed to remove photo', undefined, 'error');
-    }
+    Alert.alert('Remove Photo', 'Remove this photo?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove', style: 'destructive', onPress: async () => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+          try {
+            const file = new FSFile(photoUri);
+            if (file.exists) file.delete();
+            await AsyncStorage.removeItem(`pj_food_photo_${foodId}`);
+            setPhotoUri(null);
+            setShowPhotoFullscreen(false);
+            showToast('Photo removed', undefined, 'success');
+          } catch (e: any) {
+            showToast('Failed to remove photo', e?.message || 'Please try again', 'error');
+          }
+        }
+      },
+    ]);
   };
 
   const styles = useStyles(theme);
@@ -1062,26 +1074,6 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
           )}
         </View>
 
-        {foodStats && foodStats.count > 0 && (
-          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12, marginTop: -8 }}>
-            <View style={{ flex: 1, backgroundColor: theme.bgCard, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, padding: 10 }}>
-              <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>LOGGED</Text>
-              <Text style={{ fontSize: 18, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular' }}>{foodStats.count}x</Text>
-            </View>
-            <View style={{ flex: 1.8, backgroundColor: theme.bgCard, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, padding: 10 }}>
-              <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>LAST LOGGED</Text>
-              <Text style={{ fontSize: 18, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular' }}>
-                {foodStats.lastDate ? new Date(foodStats.lastDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '--'}
-              </Text>
-            </View>
-            <View style={{ flex: 1.8, backgroundColor: theme.bgCard, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, padding: 10 }}>
-              <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>AVG SERVING</Text>
-              <Text style={{ fontSize: 18, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular' }}>
-                {foodStats.avgGrams > 0 ? Math.round(foodStats.avgGrams) + 'g' : '--'}
-              </Text>
-            </View>
-          </View>
-        )}
         {/* Serving picker -- shows when multiple servings available (FatSecret or custom additional) */}
         {(fsServings.length > 1 || customServings.length > 1) && (
           <TouchableOpacity
@@ -1293,6 +1285,30 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
             );
           })()}
         </View>
+
+        {foodStats && foodStats.count > 0 && (
+          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16, marginTop: -4 }}>
+            <View style={{ flex: 1, backgroundColor: theme.bgCard, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, padding: 10 }}>
+              <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>LOGGED</Text>
+              <Text style={{ fontSize: 18, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular' }}>{foodStats.count}x</Text>
+            </View>
+            <View style={{ flex: 1.8, backgroundColor: theme.bgCard, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, padding: 10 }}>
+              <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>LAST LOGGED</Text>
+              <Text style={{ fontSize: 18, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular' }}>
+                {foodStats.lastDate ? new Date(foodStats.lastDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '--'}
+              </Text>
+            </View>
+            <View style={{ flex: 1.8, backgroundColor: theme.bgCard, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, padding: 10 }}>
+              <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>AVG SERVING</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+                <Text style={{ fontSize: 18, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular' }}>
+                  {foodStats.avgGrams > 0 ? Math.round(foodStats.avgGrams) : '--'}
+                </Text>
+                {foodStats.avgGrams > 0 && <Text style={{ fontSize: 12, color: theme.textPrimary, fontFamily: 'DMSans_500Medium', marginLeft: 1 }}>g</Text>}
+              </View>
+            </View>
+          </View>
+        )}
 
         {calPer100g === 0 && (
           <Text style={styles.noDataText}>No detailed nutrition data. Calories will be logged as entered.</Text>
@@ -1733,7 +1749,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
           )}
           <View style={{ flexDirection: 'row', gap: 12, marginTop: 24 }}>
             <TouchableOpacity
-              onPress={() => { setShowPhotoFullscreen(false); setTimeout(handlePhotoAdd, 80); }}
+              onPress={handlePhotoAdd}
               style={{ paddingHorizontal: 28, paddingVertical: 12, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 10 }}>
               <Text style={{ color: theme.accentBlue, fontSize: 15, fontFamily: 'DMSans_600SemiBold' }}>Replace</Text>
             </TouchableOpacity>

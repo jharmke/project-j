@@ -33,7 +33,8 @@
       "Bash(Copy-Item *)",
       "Bash(Remove-Item *)",
       "PowerShell(Remove-Item *)",
-      "Bash(grep -n \"ToastRenderer\\\\|</View>$\\\\|^      }\" \"C:/Users/jthar/ProjectJ/app/\\(tabs\\)/index.tsx\")"
+      "Bash(grep -n \"ToastRenderer\\\\|</View>$\\\\|^      }\" \"C:/Users/jthar/ProjectJ/app/\\(tabs\\)/index.tsx\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('\\\\n'.join\\(sorted\\(d.get\\('dependencies',{}\\).keys\\(\\)\\)\\)\\)\")"
     ]
   }
 }

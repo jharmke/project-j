@@ -4,12 +4,14 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Dimensions, Image, KeyboardAvoidingView, Linking, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActionSheetIOS, Alert, Animated, Dimensions, Image, KeyboardAvoidingView, Linking, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import Reanimated, { useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
 import CustomFoodCreator from '../components/CustomFoodCreator';
-import { useToast } from '../components/Toast';
+import { ToastRenderer, useToast } from '../components/Toast';
+import * as FileSystem from 'expo-file-system';
+import * as ImagePicker from 'expo-image-picker';
 import { ACHIEVEMENTS, checkAndUnlock, loadAchievements, checkMomentumAchievements, checkNutritionAchievements, getCelebTier } from '../achievementData';
 import { showAchievementToast } from '../components/AchievementToast';
 import { showCelebration } from '../components/CelebrationOverlay';
@@ -244,6 +246,7 @@ export default function FoodDetailScreen() {
 const isRecipeMode = recipeMode === 'true';
 const isTutorialMode = tutorialMode === 'true';
   const food = tutorialFood === 'chicken_breast' ? buildTutorialChickenFood() : (foodJson ? JSON.parse(foodJson) : null);
+  const foodId: string | null = food?.fsId || food?.myFoodData?.id || null;
   const fsServings: any[] = food?.fsServings || [];
   const myFoodAdditionalServings: Array<{ label: string; grams: number }> = food?.myFoodData?.additionalServings || [];
   const baseServingSize = food?.myFoodData?.servingSize || parseFloat(food?.existingAmount || '100') || 100;
@@ -304,6 +307,9 @@ const isTutorialMode = tutorialMode === 'true';
   const mealSelectorRef = useTutorialTarget('log_food_detail_meal');
   const saveButtonRef = useTutorialTarget('log_save_btn');
   const { registerTutorialAction, unregisterTutorialAction } = useTutorial();
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [showPhotoFullscreen, setShowPhotoFullscreen] = useState(false);
+  const [foodStats, setFoodStats] = useState<{ count: number; lastDate: string | null; avgGrams: number } | null>(null);
   const [isFav, setIsFav] = useState(false);
   const [showSaveAsCopy, setShowSaveAsCopy] = useState(false);
   const [showEllipsisMenu, setShowEllipsisMenu] = useState(false);
@@ -413,6 +419,57 @@ const isTutorialMode = tutorialMode === 'true';
       } catch (e) {}
     };
     loadFav();
+  }, []);
+
+  useEffect(() => {
+    if (!foodId) return;
+    (async () => {
+      try {
+        const uri = await AsyncStorage.getItem(`pj_food_photo_${foodId}`);
+        if (!uri) return;
+        const info = await FileSystem.getInfoAsync(uri);
+        if (info.exists) {
+          setPhotoUri(uri);
+        } else {
+          await AsyncStorage.removeItem(`pj_food_photo_${foodId}`);
+        }
+      } catch {}
+    })();
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      if (!food?.description) return;
+      try {
+        const allKeys = await AsyncStorage.getAllKeys();
+        const dayKeys = allKeys.filter(k => /^pj_\d{4}-\d{2}-\d{2}$/.test(k));
+        if (dayKeys.length === 0) return;
+        const pairs = await AsyncStorage.multiGet(dayKeys);
+        let count = 0;
+        let lastDate: string | null = null;
+        let totalAmount = 0;
+        for (const [key, raw] of pairs) {
+          if (!raw) continue;
+          try {
+            const data = JSON.parse(raw);
+            const entries: any[] = data.entries || [];
+            const dateStr = key.replace('pj_', '');
+            for (const entry of entries) {
+              if (!entry?.name) continue;
+              const isMatch = food.fsId
+                ? entry.fsId === food.fsId || entry.name.startsWith(food.description + ' (')
+                : entry.name.startsWith(food.description + ' (');
+              if (isMatch) {
+                count++;
+                if (!lastDate || dateStr > lastDate) lastDate = dateStr;
+                totalAmount += parseFloat(entry.loggedAmount || '0') || 0;
+              }
+            }
+          } catch {}
+        }
+        if (count > 0) setFoodStats({ count, lastDate, avgGrams: totalAmount / count });
+      } catch {}
+    })();
   }, []);
 
   const tutorialSaveDataRef = useRef({ amount: '100', unit: 'g', calories: 0, currentMeal: 'Lunch', protein: 0, carbs: 0, fat: 0, calPer100g: 0, proteinPer100g: 0, carbsPer100g: 0, fatPer100g: 0 });
@@ -872,6 +929,62 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
     }
   };
 
+  const handlePhotoAdd = () => {
+    if (!foodId) return;
+    ActionSheetIOS.showActionSheetWithOptions(
+      { options: ['Cancel', 'Take Photo', 'Choose from Library'], cancelButtonIndex: 0 },
+      (buttonIndex) => {
+        if (buttonIndex === 0) return;
+        (async () => {
+          try {
+            let result: ImagePicker.ImagePickerResult;
+            if (buttonIndex === 1) {
+              result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.85 });
+            } else {
+              result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.85 });
+            }
+            if (result.canceled) return;
+            await savePhoto(result.assets[0].uri);
+          } catch {
+            showToast('Photo failed', 'Unable to access camera or library', 'error');
+          }
+        })();
+      }
+    );
+  };
+
+  const savePhoto = async (sourceUri: string) => {
+    if (!foodId) return;
+    try {
+      const dir = `${FileSystem.documentDirectory}food_photos/`;
+      const dirInfo = await FileSystem.getInfoAsync(dir);
+      if (!dirInfo.exists) await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
+      const safeId = foodId.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const destUri = `${dir}${safeId}.jpg`;
+      await FileSystem.copyAsync({ from: sourceUri, to: destUri });
+      await AsyncStorage.setItem(`pj_food_photo_${foodId}`, destUri);
+      setPhotoUri(destUri);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      showToast('Photo saved', undefined, 'success');
+    } catch {
+      showToast('Photo save failed', 'Please try again', 'error');
+    }
+  };
+
+  const handlePhotoRemove = async () => {
+    if (!foodId || !photoUri) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    try {
+      await FileSystem.deleteAsync(photoUri, { idempotent: true });
+      await AsyncStorage.removeItem(`pj_food_photo_${foodId}`);
+      setPhotoUri(null);
+      setShowPhotoFullscreen(false);
+      showToast('Photo removed', undefined, 'success');
+    } catch {
+      showToast('Failed to remove photo', undefined, 'error');
+    }
+  };
+
   const styles = useStyles(theme);
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -918,11 +1031,57 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
       </View>
 
       <ScrollView contentContainerStyle={styles.content} automaticallyAdjustKeyboardInsets keyboardDismissMode="on-drag">
-        <Text style={styles.foodName}>{food.description}</Text>
-        {food.brand && (
-          <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium', marginTop: -14, marginBottom: 16 }}>{food.brand}</Text>
-        )}
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 20 }}>
+          <View style={{ flex: 1, paddingRight: foodId ? 16 : 0 }}>
+            <Text style={[styles.foodName, { marginBottom: food.brand ? 4 : 0 }]}>{food.description}</Text>
+            {food.brand && (
+              <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>{food.brand}</Text>
+            )}
+          </View>
+          {foodId && (
+            <TouchableOpacity
+              onPress={() => photoUri ? setShowPhotoFullscreen(true) : handlePhotoAdd()}
+              style={{ width: 64, height: 64 }}
+              activeOpacity={0.8}>
+              {photoUri ? (
+                <Image
+                  source={{ uri: photoUri }}
+                  style={{ width: 64, height: 64, borderRadius: 10 }}
+                  resizeMode="cover"
+                />
+              ) : (
+                <View style={{
+                  width: 64, height: 64, borderRadius: 10,
+                  borderWidth: 1.5, borderStyle: 'dashed', borderColor: theme.textDim,
+                  alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <Ionicons name="camera-outline" size={24} color={theme.textDim} />
+                </View>
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
 
+        {foodStats && foodStats.count > 0 && (
+          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12, marginTop: -8 }}>
+            <View style={{ flex: 1, backgroundColor: theme.bgCard, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, padding: 10 }}>
+              <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>LOGGED</Text>
+              <Text style={{ fontSize: 18, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular' }}>{foodStats.count}x</Text>
+            </View>
+            <View style={{ flex: 1.8, backgroundColor: theme.bgCard, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, padding: 10 }}>
+              <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>LAST LOGGED</Text>
+              <Text style={{ fontSize: 18, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular' }}>
+                {foodStats.lastDate ? new Date(foodStats.lastDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '--'}
+              </Text>
+            </View>
+            <View style={{ flex: 1.8, backgroundColor: theme.bgCard, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, padding: 10 }}>
+              <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>AVG SERVING</Text>
+              <Text style={{ fontSize: 18, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular' }}>
+                {foodStats.avgGrams > 0 ? Math.round(foodStats.avgGrams) + 'g' : '--'}
+              </Text>
+            </View>
+          </View>
+        )}
         {/* Serving picker -- shows when multiple servings available (FatSecret or custom additional) */}
         {(fsServings.length > 1 || customServings.length > 1) && (
           <TouchableOpacity
@@ -1558,6 +1717,36 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
             </Animated.View>
           </Animated.View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Photo Full-Screen Modal */}
+      <Modal visible={showPhotoFullscreen} transparent animationType="fade">
+        <ToastRenderer />
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.96)', justifyContent: 'center', alignItems: 'center' }}>
+          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => setShowPhotoFullscreen(false)} />
+          {photoUri && (
+            <Image
+              source={{ uri: photoUri }}
+              style={{ width: Dimensions.get('window').width * 0.88, height: Dimensions.get('window').width * 0.88, borderRadius: 16 }}
+              resizeMode="cover"
+            />
+          )}
+          <View style={{ flexDirection: 'row', gap: 12, marginTop: 24 }}>
+            <TouchableOpacity
+              onPress={() => { setShowPhotoFullscreen(false); setTimeout(handlePhotoAdd, 80); }}
+              style={{ paddingHorizontal: 28, paddingVertical: 12, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 10 }}>
+              <Text style={{ color: theme.accentBlue, fontSize: 15, fontFamily: 'DMSans_600SemiBold' }}>Replace</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handlePhotoRemove}
+              style={{ paddingHorizontal: 28, paddingVertical: 12, backgroundColor: 'rgba(204,51,51,0.15)', borderWidth: 1, borderColor: 'rgba(204,51,51,0.4)', borderRadius: 10 }}>
+              <Text style={{ color: '#cc3333', fontSize: 15, fontFamily: 'DMSans_600SemiBold' }}>Remove</Text>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity onPress={() => setShowPhotoFullscreen(false)} style={{ marginTop: 20, padding: 8 }}>
+            <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_500Medium' }}>Close</Text>
+          </TouchableOpacity>
+        </View>
       </Modal>
 
     </View>

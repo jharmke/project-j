@@ -17,7 +17,8 @@
       },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "NSUserNotificationUsageDescription": "Project J sends reminders for your fasting window, streaks, daily goals, and wellness check-ins."
+        "NSUserNotificationUsageDescription": "Project J sends reminders for your fasting window, streaks, daily goals, and wellness check-ins.",
+        "NSPhotoLibraryUsageDescription": "Project J uses your photo library to attach food photos for easy meal identification."
       },
       "privacyManifests": {
         "NSPrivacyAccessedAPITypes": [
@@ -79,6 +80,12 @@
         "@react-native-google-signin/google-signin",
         {
           "iosUrlScheme": "com.googleusercontent.apps.841973180275-obscsfo4ad9ibir9dtpcago5fuptojlg"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Project J uses your photo library to attach food photos for easy meal identification."
         }
       ]
     ],

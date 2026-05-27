@@ -603,8 +603,8 @@ NOW -- active this session
 
 SOON -- confirmed next few sessions
 
-  [ ] Food Detail Photo Feature -- Phase 1: fixed 64x64 thumbnail slot top-right of food detail page, dashed placeholder with camera-outline icon, tap to add via iOS action sheet (Take Photo / Choose from Library), tap thumbnail to expand full-screen, replace/remove from full-screen view. Storage: expo-file-system for image file, AsyncStorage pj_food_photo_{foodId} for URI. Applies to FatSecret foods (fsId), custom foods (custom_XXXXX), recipes (recipeId). Photo does NOT appear in search results, edit modal, or recipe builder. food-detail.tsx.
-  [ ] Food Detail Stats -- last logged date, total times logged, average serving size used. Query existing pj_YYYY-MM-DD diary entries. Low effort, data already exists. Exact placement on food detail TBD. food-detail.tsx.
+  [x] Food Detail Photo Feature -- Phase 1 SHIPPED 2026-05-27. 64x64 dashed slot top-right of food name/brand section. Empty: dashed border + camera-outline icon. Tap -> iOS ActionSheetIOS (Take Photo / Choose from Library). Photo copied to documentDirectory/food_photos/ via expo-file-system. URI stored in pj_food_photo_{foodId}. Thumbnail fills slot on fill. Tap thumbnail -> full-screen modal (Replace / Remove buttons, ToastRenderer inside modal). Remove: heavy haptic + file delete + AsyncStorage clear. foodId = food.fsId || food.myFoodData.id. Load on mount verifies file still exists; stale URI auto-clears. Packages added: expo-file-system ~19.0.22, expo-image-picker (added). app.json: NSPhotoLibraryUsageDescription + expo-image-picker plugin. Requires new EAS build. food-detail.tsx only.
+  [x] Food Detail Stats -- SHIPPED 2026-05-27. 3-card row (LOGGED / LAST LOGGED / AVG SERVING) below food name/brand section. Scans all pj_YYYY-MM-DD keys via AsyncStorage.multiGet, matches by entry.fsId === food.fsId OR name prefix. Only renders when count > 0. food-detail.tsx.
 
   [ ] Calorie card language/stat review -- make stats easier to digest.
 

@@ -868,7 +868,9 @@ export default function SettingsScreen() {
           <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
 
             {/* FITNESS GOALS */}
-            <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 16, marginTop: 4 }}>Fitness Goals</Text>
+            <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginBottom: 16, marginTop: 4 }}>
+              <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Fitness Goals</Text>
+            </View>
 
             {/* Steps */}
             <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Steps</Text>
@@ -921,12 +923,16 @@ export default function SettingsScreen() {
             {/* Sleep Goal */}
             <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Sleep Goal</Text>
             <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', color: theme.textMuted, marginBottom: 12 }}>How many hours of sleep are you aiming for each night?</Text>
-            <SleepGoalPicker value={goalProfile.sleepGoal || '7'} onChange={v => updateGoalField('sleepGoal', v)} theme={theme} />
+            <View style={{ backgroundColor: theme.bgInset, borderRadius: 10, paddingVertical: 16, paddingHorizontal: 8 }}>
+              <SleepGoalPicker value={goalProfile.sleepGoal || '7'} onChange={v => updateGoalField('sleepGoal', v)} theme={theme} />
+            </View>
 
             <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 20, marginBottom: 16 }} />
 
             {/* NUTRITION GOALS */}
-            <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 16 }}>Nutrition Goals</Text>
+            <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginBottom: 16 }}>
+              <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Nutrition Goals</Text>
+            </View>
 
             {/* Calorie Target */}
             <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Daily Calorie Target</Text>
@@ -1012,7 +1018,7 @@ export default function SettingsScreen() {
                       <Text style={[styles.goalLabel, { color: theme.textMuted }]}>{label}</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                         <TextInput
-                          style={[styles.goalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color, flex: 1, marginBottom: 0, textAlign: 'center', fontSize: 20, fontFamily: 'BebasNeue_400Regular' }]}
+                          style={[styles.goalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, borderLeftColor: color, borderLeftWidth: 3, color, flex: 1, marginBottom: 0, textAlign: 'center', fontSize: 20, fontFamily: 'BebasNeue_400Regular' }]}
                           value={goalProfile[pctKey] as string}
                           onChangeText={v => updateGoalField(pctKey, v)}
                           keyboardType="number-pad"
@@ -1021,7 +1027,7 @@ export default function SettingsScreen() {
                           placeholderTextColor={theme.textPlaceholder}
                         />
                         <Text style={{ color: theme.textMuted, fontSize: 16, fontFamily: 'DMSans_400Regular' }}>%</Text>
-                        <View style={{ flex: 2, backgroundColor: theme.bgInset, borderRadius: 8, padding: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <View style={{ flex: 2, backgroundColor: theme.bgInset, borderRadius: 8, borderWidth: 0.5, borderColor: color + '50', padding: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
                           <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
                             <Text style={{ color, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{grams}</Text>
                             <Text style={{ color, fontSize: 11, fontFamily: 'DMSans_500Medium' }}>g</Text>
@@ -1060,7 +1066,7 @@ export default function SettingsScreen() {
                       <Text style={[styles.goalLabel, { color: theme.textMuted }]}>{label}</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                         <TextInput
-                          style={[styles.goalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color, flex: 1, marginBottom: 0, textAlign: 'center', fontSize: 20, fontFamily: 'BebasNeue_400Regular' }]}
+                          style={[styles.goalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, borderLeftColor: color, borderLeftWidth: 3, color, flex: 1, marginBottom: 0, textAlign: 'center', fontSize: 20, fontFamily: 'BebasNeue_400Regular' }]}
                           value={goalProfile[gKey] as string}
                           onChangeText={v => updateGoalField(gKey, v)}
                           keyboardType="number-pad"
@@ -1069,7 +1075,7 @@ export default function SettingsScreen() {
                           placeholderTextColor={theme.textPlaceholder}
                         />
                         <Text style={{ color: theme.textMuted, fontSize: 16, fontFamily: 'DMSans_400Regular' }}>g</Text>
-                        <View style={{ flex: 2, backgroundColor: theme.bgInset, borderRadius: 8, padding: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
+                        <View style={{ flex: 2, backgroundColor: theme.bgInset, borderRadius: 8, borderWidth: 0.5, borderColor: color + '50', padding: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
                           <Text style={{ color, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{kcal} kcal</Text>
                           <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: 'DMSans_400Regular', alignSelf: 'center' }}>{pct}%</Text>
                         </View>
@@ -1116,7 +1122,9 @@ export default function SettingsScreen() {
 
         {/* ── Faith & Style ── */}
         <CollapsibleSection label="Faith & Style" subtitle="Coaching Mode · Faith Journey" defaultOpen={false} theme={theme}>
-          <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', paddingHorizontal: 16, paddingBottom: 8 }}>Coaching Mode</Text>
+          <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginBottom: 8 }}>
+            <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Coaching Mode</Text>
+          </View>
           {([
             { key: 'discipline', label: 'Discipline', sub: 'Tight targets. Direct feedback. Commit fully.' },
             { key: 'balanced',   label: 'Balanced',   sub: 'Encouraging. Forgiving. Steady progress.' },
@@ -1165,8 +1173,9 @@ export default function SettingsScreen() {
             );
           })}
 
-          <View style={{ height: 1, backgroundColor: theme.borderCard, marginHorizontal: 16, marginTop: 8, marginBottom: 12 }} />
-          <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', paddingHorizontal: 16, paddingBottom: 8 }}>Faith Journey</Text>
+          <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 16, marginBottom: 8 }}>
+            <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Faith Journey</Text>
+          </View>
           {([
             { key: 'rooted',      label: 'Rooted',        sub: 'Full faith experience. Daily verse, prayer, Bible reader.' },
             { key: 'exploring',   label: 'Exploring',     sub: 'Faith features present but gentle.' },
@@ -1199,8 +1208,8 @@ export default function SettingsScreen() {
         {/* ── Health ── */}
         <CollapsibleSection label="Health" subtitle="Burn Accuracy · Apple Health" defaultOpen={false} theme={theme}>
           <View style={{ paddingHorizontal: 16, paddingBottom: 16, gap: 10 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary, flex: 1 }}>Active Calorie Accuracy</Text>
+            <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', flex: 1 }}>Active Calorie Accuracy</Text>
               <TooltipIcon tooltipKey="burn_accuracy" />
             </View>
             <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, lineHeight: 18 }}>
@@ -1229,8 +1238,9 @@ export default function SettingsScreen() {
             )}
           </View>
 
-          <View style={{ height: 1, backgroundColor: theme.borderCard, marginHorizontal: 16, marginBottom: 16 }} />
-          <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 3, textTransform: 'uppercase', paddingHorizontal: 16, marginBottom: 12 }}>Workout History Import</Text>
+          <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 4, marginBottom: 12 }}>
+            <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Workout History Import</Text>
+          </View>
           <View style={{ paddingHorizontal: 16, paddingBottom: 16, gap: 12 }}>
             <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, lineHeight: 18 }}>
               Import your Apple Health workout history into Project J. Existing data and manual entries will not be affected.
@@ -1548,9 +1558,9 @@ export default function SettingsScreen() {
         {/* ── Help ── */}
         <CollapsibleSection label="Help" subtitle="Definitions · Guides · Prayer" defaultOpen={false} theme={theme}>
           <View style={{ paddingBottom: 8 }}>
-            <Text style={{ fontSize: 9, letterSpacing: 3, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', color: theme.textMuted, paddingHorizontal: 16, paddingBottom: 8 }}>
-              Definitions
-            </Text>
+            <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 8, marginBottom: 8 }}>
+              <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Definitions</Text>
+            </View>
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/definitions'); }} activeOpacity={0.7}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>View Definitions</Text>
@@ -1558,9 +1568,9 @@ export default function SettingsScreen() {
               </View>
               <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
             </TouchableOpacity>
-            <Text style={{ fontSize: 9, letterSpacing: 3, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', color: theme.textMuted, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>
-              Tips {'&'} Guides
-            </Text>
+            <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 16, marginBottom: 8 }}>
+              <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Tips {'&'} Guides</Text>
+            </View>
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/mission'); }} activeOpacity={0.7}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Our Mission</Text>
@@ -1568,9 +1578,9 @@ export default function SettingsScreen() {
               </View>
               <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
             </TouchableOpacity>
-            <Text style={{ fontSize: 9, letterSpacing: 3, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', color: theme.textMuted, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>
-              Tutorials
-            </Text>
+            <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 16, marginBottom: 8 }}>
+              <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Tutorials</Text>
+            </View>
             <TouchableOpacity
               style={[styles.row, { borderTopColor: theme.borderCard }]}
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/tutorials' as any); }}
@@ -1582,9 +1592,9 @@ export default function SettingsScreen() {
               </View>
               <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
             </TouchableOpacity>
-            <Text style={{ fontSize: 9, letterSpacing: 3, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', color: theme.textMuted, paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>
-              Prayer
-            </Text>
+            <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 16, marginBottom: 8 }}>
+              <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Prayer</Text>
+            </View>
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowPrayerModal(true); }} activeOpacity={0.7}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Send a Prayer Request</Text>
@@ -1994,8 +2004,8 @@ const styles = StyleSheet.create({
   row:         { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderTopWidth: 0.5 },
   rowTitle:    { fontSize: 14, fontFamily: 'DMSans_500Medium', marginBottom: 2 },
   rowSub:      { fontSize: 11, fontFamily: 'DMSans_400Regular' },
-  goalLabel:   { fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 6, marginTop: 2 },
+  goalLabel:   { fontSize: 9, fontFamily: 'DMSans_600SemiBold', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4, marginTop: 2 },
   goalHint:    { fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginTop: 4 },
-  goalInput:   { borderWidth: 0.5, borderRadius: 8, padding: 10, fontSize: 15, fontFamily: 'DMSans_400Regular', marginBottom: 4 },
+  goalInput:   { borderWidth: 1, borderRadius: 8, padding: 10, fontSize: 15, fontFamily: 'DMSans_400Regular', marginBottom: 4 },
   modeBtn:     { flex: 1, padding: 10, borderWidth: 0.5, borderRadius: 8, alignItems: 'center' },
 });

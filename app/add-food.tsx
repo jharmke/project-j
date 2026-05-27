@@ -7,7 +7,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, FlatList, Image, KeyboardAvoidingView, Linking, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Reanimated, { Easing as ReEasing, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
+import Reanimated, { Easing as ReEasing, runOnJS, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { Svg, Path, G } from 'react-native-svg';
 import { useToast } from '../components/Toast';
 import CustomFoodCreator from '../components/CustomFoodCreator';
@@ -369,6 +369,12 @@ const [showSavedFoodsSection, setShowSavedFoodsSection] = useState(false);
 const [editFoodData, setEditFoodData] = useState<any>(null);
 const editOverlayAnim = useRef(new Animated.Value(0)).current;
 const editCardAnim = useRef(new Animated.Value(0)).current;
+const [sortOption, setSortOption] = useState<'az' | 'za' | 'cal-hl' | 'cal-lh' | 'protein-hl'>('az');
+const [showSortModal, setShowSortModal] = useState(false);
+const sortOverlay = useSharedValue(0);
+const sortScale = useSharedValue(0.92);
+const sortOverlayStyle = useAnimatedStyle(() => ({ opacity: sortOverlay.value }));
+const sortCardStyle = useAnimatedStyle(() => ({ transform: [{ scale: sortScale.value }] }));
 const [lastScannedBarcode, setLastScannedBarcode] = useState<string | null>(null);
 const [barcodeOverrides, setBarcodeOverrides] = useState<Record<string, any>>({});
 const [showFabMenu, setShowFabMenu] = useState(false);
@@ -494,6 +500,24 @@ const saveEditFood = async () => {
   }
 };
 
+  const openSortModal = () => {
+    sortOverlay.value = 0;
+    sortScale.value = 0.92;
+    setShowSortModal(true);
+  };
+
+  const onSortModalShow = () => {
+    sortOverlay.value = withTiming(1, { duration: 180 });
+    sortScale.value = withSpring(1, { damping: 24, stiffness: 320, overshootClamping: true });
+  };
+
+  const closeSortModal = () => {
+    sortOverlay.value = withTiming(0, { duration: 140 });
+    sortScale.value = withTiming(0.92, { duration: 140 }, (finished) => {
+      if (finished) runOnJS(setShowSortModal)(false);
+    });
+  };
+
   const openFabMenu = () => {
     fabItem1Anim.setValue(0);
     fabItem2Anim.setValue(0);
@@ -555,6 +579,11 @@ const saveEditFood = async () => {
     useCallback(() => {
       loadFavorites();
       loadMyFoods();
+      loadRecipes();
+      loadRecent();
+      return () => {
+        setSortOption('az');
+      };
     }, [])
   );
 
@@ -902,6 +931,21 @@ const saveEditFood = async () => {
     };
   };
 
+  const applySortToFoodItems = (items: any[]) => {
+    return [...items].sort((a, b) => {
+      const nameA = (a.description || '').toLowerCase();
+      const nameB = (b.description || '').toLowerCase();
+      switch (sortOption) {
+        case 'az': return nameA.localeCompare(nameB);
+        case 'za': return nameB.localeCompare(nameA);
+        case 'cal-hl': return getCalories(b) - getCalories(a);
+        case 'cal-lh': return getCalories(a) - getCalories(b);
+        case 'protein-hl': return (getMacros(b)?.protein || 0) - (getMacros(a)?.protein || 0);
+        default: return 0;
+      }
+    });
+  };
+
 const openFoodDetail = async (food: SearchResult) => {
     if ((food as any).isRecipe) {
       router.push({
@@ -1186,7 +1230,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
   const loadRecent = async () => {
     try {
       // Pull last 30 days of entries and get unique foods
-      const recent: {name: string, cal: number, protein?: number, carbs?: number, fat?: number, calPer100g?: number, proteinPer100g?: number, carbsPer100g?: number, fatPer100g?: number, foodNutrients?: any[], fsId?: string | null}[] = [];
+      const recent: {name: string, cal: number, protein?: number, carbs?: number, fat?: number, brand?: string, calPer100g?: number, proteinPer100g?: number, carbsPer100g?: number, fatPer100g?: number, foodNutrients?: any[], fsId?: string | null}[] = [];
       const seen = new Set<string>();
       for (let i = 0; i < 30; i++) {
         const d = new Date();
@@ -1200,15 +1244,22 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
               const dedupeKey = e.fsId || e.name.replace(/\s*\(.*?\)\s*$/, '');
               if (!seen.has(dedupeKey)) {
                 seen.add(dedupeKey);
-                recent.push({ name: e.name, cal: e.labelCal || e.calPer100g || e.cal, protein: e.labelProtein ?? e.proteinPer100g ?? e.protein, carbs: e.labelCarbs ?? e.carbsPer100g ?? e.carbs, fat: e.labelFat ?? e.fatPer100g ?? e.fat, calPer100g: e.calPer100g, proteinPer100g: e.proteinPer100g, carbsPer100g: e.carbsPer100g, fatPer100g: e.fatPer100g, foodNutrients: e.foodNutrients, fsId: e.fsId || null });
+                recent.push({ name: e.name, cal: e.labelCal || e.calPer100g || e.cal, protein: e.labelProtein ?? e.proteinPer100g ?? e.protein, carbs: e.labelCarbs ?? e.carbsPer100g ?? e.carbs, fat: e.labelFat ?? e.fatPer100g ?? e.fat, brand: e.brand || null, calPer100g: e.calPer100g, proteinPer100g: e.proteinPer100g, carbsPer100g: e.carbsPer100g, fatPer100g: e.fatPer100g, foodNutrients: e.foodNutrients, fsId: e.fsId || null });
               }
             });
           }
         }
       }
+      // Enrich brand from pj_my_foods for custom foods that predate brand being saved to diary entries
+      const savedFoods = await AsyncStorage.getItem('pj_my_foods');
+      const myFoodsMap: Record<string, string> = {};
+      if (savedFoods) {
+        (JSON.parse(savedFoods) as MyFood[]).forEach(f => { if (f.brand) myFoodsMap[f.name] = f.brand; });
+      }
       setRecentFoods(recent.slice(0, 15).map(f => ({
         description: f.name.replace(/\s*\(.*?\)\s*$/, ''),
         fullName: f.name,
+        brand: f.brand || myFoodsMap[f.name.replace(/\s*\(.*?\)\s*$/, '')] || null,
         foodNutrients: [
           { nutrientName: 'Energy', unitName: 'KCAL', value: f.cal },
           { nutrientName: 'Protein', unitName: 'G', value: f.protein || 0 },
@@ -1408,7 +1459,19 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         </View>
       )}
 
-      
+      {/* Sort button -- only on sortable tabs, hidden while searching */}
+      {!query.trim() && activeTab !== 'recent' && (
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 14, paddingTop: 6, paddingBottom: 2 }}>
+          <TouchableOpacity
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openSortModal(); }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, backgroundColor: sortOption !== 'az' ? theme.accentBlueBg : 'transparent', borderWidth: 1, borderColor: sortOption !== 'az' ? theme.accentBlueBorder : 'transparent' }}>
+            <Ionicons name="swap-vertical" size={13} color={sortOption !== 'az' ? theme.accentBlue : theme.textMuted} />
+            <Text style={{ fontSize: 11, color: sortOption !== 'az' ? theme.accentBlue : theme.textMuted, fontFamily: 'DMSans_600SemiBold' }}>
+              {sortOption === 'az' ? 'Sort' : sortOption === 'za' ? 'Z-A' : sortOption === 'cal-hl' ? 'Cal: High-Low' : sortOption === 'cal-lh' ? 'Cal: Low-High' : 'Protein: High-Low'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Loading indicator -- shows when searching and no results yet */}
       {searching && query.trim() && results.length === 0 && (
@@ -1433,9 +1496,9 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
 
       {/* Results */}
       <FlatList
-        data={query.trim() ? results : 
+        data={query.trim() ? results :
           activeTab === 'recent' ? recentFoods :
-          activeTab === 'favorites' ? favorites.map(f => ({
+          activeTab === 'favorites' ? applySortToFoodItems(favorites.map(f => ({
   description: f.name,
   foodNutrients: [
     { nutrientName: 'Energy', unitName: 'KCAL', value: f.cal },
@@ -1450,20 +1513,20 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
   ],
   isMyFood: false,
   fsId: (f as any).fsId || null,
-})) :
-          activeTab === 'recipes' ? recipes.map((r: any) => ({
+}))) :
+          activeTab === 'recipes' ? applySortToFoodItems(recipes.map((r: any) => ({
             description: r.name,
             foodNutrients: [],
             isRecipe: true,
             recipeData: r,
             cal: Math.round(r.totalCal / r.servingCount),
-          })) :
-          activeTab === 'pinned' ? Object.entries(barcodeOverrides).map(([barcode, item]: [string, any]) => ({
+          }))) :
+          activeTab === 'pinned' ? applySortToFoodItems(Object.entries(barcodeOverrides).map(([barcode, item]: [string, any]) => ({
             ...resolveMyFoodOverride({ ...item, isOverride: true }),
             _pinnedBarcode: barcode,
             isPinned: true,
-          })) :
-          myFoods.map(f => ({
+          }))) :
+          applySortToFoodItems(myFoods.map(f => ({
             description: f.name,
             brand: f.brand || null,
             foodNutrients: [
@@ -1476,7 +1539,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
           servingSize: (f as any).servingSize || null,
           servingUnit: (f as any).servingUnit || null,
           isCustom: (f as any).isCustom || false,
-          }))
+          })))
         }
         keyExtractor={(_, i) => i.toString()}
         renderItem={({ item, index }) => {
@@ -1504,10 +1567,8 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                   </View>
                 )}
                 {/* Food name + brand */}
-                <Text style={styles.resultName} numberOfLines={2}>{foodName}</Text>
-                {brandName && (
-                  <Text style={styles.resultBrand} numberOfLines={1}>{brandName}</Text>
-                )}
+                <Text style={styles.resultName} numberOfLines={1}>{foodName}</Text>
+                <Text style={[styles.resultBrand, !brandName && { color: theme.textDim }]} numberOfLines={1}>{brandName || 'Unbranded'}</Text>
                 {/* Macro strip */}
                 {macros && (
                   <View style={styles.macroStrip}>
@@ -2031,6 +2092,44 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         </Animated.View>
       )}
 
+      {/* Sort modal */}
+      <Modal visible={showSortModal} transparent animationType="none" onRequestClose={closeSortModal} onShow={onSortModalShow}>
+        <Reanimated.View style={[{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }, sortOverlayStyle]}>
+          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={closeSortModal} />
+          <Reanimated.View style={[{ backgroundColor: theme.bgSheet, borderRadius: 18, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, width: '100%', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20 }, sortCardStyle]}>
+            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeSortModal(); }} style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }}>
+              <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.textDim }} />
+            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
+              <Text style={{ color: theme.accentBlue, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>SORT</Text>
+              {sortOption !== 'az' && (
+                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setSortOption('az'); }} style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: theme.accentRedBorder, backgroundColor: theme.accentRedBg }}>
+                  <Text style={{ color: theme.accentRed, fontSize: 11, fontFamily: 'DMSans_700Bold' }}>CLEAR</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            <View style={{ padding: 20 }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                {([
+                  ['az', 'A–Z'],
+                  ['za', 'Z–A'],
+                  ['cal-hl', 'Calories: High-Low'],
+                  ['cal-lh', 'Calories: Low-High'],
+                  ['protein-hl', 'Protein: High-Low'],
+                ] as const).map(([val, label]) => (
+                  <TouchableOpacity
+                    key={val}
+                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setSortOption(val); }}
+                    style={{ backgroundColor: sortOption === val ? theme.accentBlueBg : theme.bgInset, borderWidth: 1, borderColor: sortOption === val ? theme.accentBlueBorder : theme.borderCard, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 }}>
+                    <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: sortOption === val ? theme.accentBlue : theme.textMuted }}>{label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </Reanimated.View>
+        </Reanimated.View>
+      </Modal>
+
       {/* FAB -- only in browse/library mode */}
       {meal === 'browse' && (
         <>
@@ -2118,6 +2217,7 @@ const useStyles = (theme: any, themeId: string) => {
   resultItem: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     marginHorizontal: 12, marginVertical: 4,
+    minHeight: 76,
     backgroundColor: theme.bgCard,
     borderWidth: 0.5, borderColor: theme.borderCard,
     borderTopColor: 'rgba(255,255,255,0.1)',
@@ -2147,9 +2247,9 @@ const useStyles = (theme: any, themeId: string) => {
   cancelScanText: { color: theme.textPrimary, fontSize: 16, fontFamily: 'DMSans_600SemiBold' },
   tabRow: { flexDirection: 'row', marginHorizontal: 16, marginBottom: 8, backgroundColor: theme.bgProgressTrack, borderRadius: 8, padding: 4 },
   tab: { flex: 1, padding: 8, alignItems: 'center', borderRadius: 6 },
-  tabActive: { backgroundColor: theme.bgCard },
+  tabActive: { backgroundColor: theme.bgCard, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.15, shadowRadius: 3 },
   tabText: { fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium' },
-  tabTextActive: { color: theme.textPrimary },
+  tabTextActive: { color: theme.textPrimary, fontFamily: 'DMSans_700Bold' },
   modalOverlay: { flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'flex-end' },
   modal: { backgroundColor: theme.bgCard, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 24, borderWidth: 1, borderColor: theme.borderCard },
   modalTitle: { fontSize: 18, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', marginBottom: 16 },

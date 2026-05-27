@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Animated, FlatList, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, Easing, FlatList, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
@@ -1631,7 +1631,7 @@ export default function WorkoutLibraryScreen() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingEx, setEditingEx] = useState<LibraryExercise | null>(null);
   const [form, setForm] = useState<Partial<LibraryExercise>>({ type: 'lift', defaultSets: '', defaultReps: '', defaultRest: '' });
-  const [sortOption, setSortOption] = useState<'az' | 'za' | 'favorites' | 'recent'>('az');
+  const [sortOption, setSortOption] = useState<'az' | 'za' | 'favorites' | 'recent' | 'active-first'>('az');
   const [filterTags, setFilterTags] = useState<string[]>([]);
   const [filterType, setFilterType] = useState<'all' | 'lift' | 'cardio'>('all');
   const [showFilterModal, setShowFilterModal] = useState(false);
@@ -1656,6 +1656,16 @@ export default function WorkoutLibraryScreen() {
   const loadRoutineOverlayStyle = useAnimatedStyle(() => ({ opacity: loadRoutineOverlay.value }));
   const loadRoutineCardStyle = useAnimatedStyle(() => ({ transform: [{ scale: loadRoutineScale.value }] }));
   const [loadPickerWeekOffset, setLoadPickerWeekOffset] = useState(0);
+  const [myRoutinesExpanded, setMyRoutinesExpanded] = useState(true);
+  const [presetsExpanded, setPresetsExpanded] = useState(true);
+  const [myRoutinesContentH, setMyRoutinesContentH] = useState<number | null>(null);
+  const [presetsContentH, setPresetsContentH] = useState<number | null>(null);
+  const myRoutinesAnimHeight = useRef(new Animated.Value(9999)).current;
+  const presetsAnimHeight = useRef(new Animated.Value(9999)).current;
+  const myRoutinesOpacity = useRef(new Animated.Value(1)).current;
+  const presetsOpacity = useRef(new Animated.Value(1)).current;
+  const myRoutinesChevron = useRef(new Animated.Value(1)).current;
+  const presetsChevron = useRef(new Animated.Value(1)).current;
 
   const { selectMode, day } = useLocalSearchParams<{ selectMode: string; day: string }>();
   const isSelectMode = selectMode === 'true';
@@ -1808,6 +1818,12 @@ export default function WorkoutLibraryScreen() {
       setFilterType('all');
     };
   }, []));
+
+  useEffect(() => {
+    setSortOption('az');
+    setFilterTags([]);
+    setFilterType('all');
+  }, [activeTab]);
 
   const saveLibrary = async (updated: LibraryExercise[]) => {
     setLibrary(updated);
@@ -2057,12 +2073,36 @@ export default function WorkoutLibraryScreen() {
     return list;
   };
 
-  const filterActiveCount = (sortOption !== 'az' ? 1 : 0) + (filterType !== 'all' ? 1 : 0) + filterTags.length;
+  const filterActiveCount =
+    activeTab === 'programs' ? (sortOption !== 'az' ? 1 : 0) :
+    activeTab === 'routines' ? (sortOption !== 'az' ? 1 : 0) + filterTags.length :
+    (sortOption !== 'az' ? 1 : 0) + (filterType !== 'all' ? 1 : 0) + filterTags.length;
+
+  const getFilteredRoutines = (routines: Routine[]) => {
+    let result = routines.filter(r =>
+      (!query.trim() || r.name.toLowerCase().includes(query.toLowerCase())) &&
+      (filterTags.length === 0 || r.tags.some(t => filterTags.includes(t)))
+    );
+    if (sortOption === 'az') result = [...result].sort((a, b) => a.name.localeCompare(b.name));
+    else if (sortOption === 'za') result = [...result].sort((a, b) => b.name.localeCompare(a.name));
+    return result;
+  };
+
+  const getFilteredPrograms = (programs: CustomProgram[]) => {
+    let result = programs.filter(p => !query.trim() || p.name.toLowerCase().includes(query.toLowerCase()));
+    if (sortOption === 'az') result = [...result].sort((a, b) => a.name.localeCompare(b.name));
+    else if (sortOption === 'za') result = [...result].sort((a, b) => b.name.localeCompare(a.name));
+    else if (sortOption === 'active-first') result = [...result].sort((a, b) => activeProgramName === a.name ? -1 : activeProgramName === b.name ? 1 : 0);
+    return result;
+  };
 
   const openFilterModal = () => {
     filterOverlay.value = 0;
     filterScale.value = 0.92;
     setShowFilterModal(true);
+  };
+
+  const onFilterModalShow = () => {
     filterOverlay.value = withTiming(1, { duration: 180 });
     filterScale.value = withSpring(1, { damping: 24, stiffness: 320, overshootClamping: true });
   };
@@ -2139,6 +2179,54 @@ export default function WorkoutLibraryScreen() {
     else openFabMenu();
   };
 
+  const toggleMyRoutines = () => {
+    const opening = !myRoutinesExpanded;
+    setMyRoutinesExpanded(opening);
+    const h = myRoutinesContentH ?? 9999;
+    Animated.parallel([
+      Animated.timing(myRoutinesAnimHeight, {
+        toValue: opening ? h : 0,
+        duration: 280,
+        easing: opening ? Easing.out(Easing.cubic) : Easing.in(Easing.cubic),
+        useNativeDriver: false,
+      }),
+      Animated.timing(myRoutinesOpacity, {
+        toValue: opening ? 1 : 0,
+        duration: opening ? 220 : 180,
+        useNativeDriver: true,
+      }),
+      Animated.timing(myRoutinesChevron, {
+        toValue: opening ? 1 : 0,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const togglePresets = () => {
+    const opening = !presetsExpanded;
+    setPresetsExpanded(opening);
+    const h = presetsContentH ?? 9999;
+    Animated.parallel([
+      Animated.timing(presetsAnimHeight, {
+        toValue: opening ? h : 0,
+        duration: 280,
+        easing: opening ? Easing.out(Easing.cubic) : Easing.in(Easing.cubic),
+        useNativeDriver: false,
+      }),
+      Animated.timing(presetsOpacity, {
+        toValue: opening ? 1 : 0,
+        duration: opening ? 220 : 180,
+        useNativeDriver: true,
+      }),
+      Animated.timing(presetsChevron, {
+        toValue: opening ? 1 : 0,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
   const styles = useStyles(theme);
 
   return (
@@ -2156,13 +2244,13 @@ export default function WorkoutLibraryScreen() {
 
       <View ref={libSearchRef} collapsable={false} style={styles.searchRow}>
         <TextInput
-          style={[styles.searchInput, (activeTab === 'all' || activeTab === 'favorites') && { flex: 1, marginRight: 8 }]}
+          style={[styles.searchInput, { flex: 1, marginRight: 8 }]}
           placeholder={activeTab === 'programs' ? 'Search programs...' : activeTab === 'routines' ? 'Search routines...' : 'Search exercises...'}
           placeholderTextColor={theme.textPlaceholder}
           value={query}
           onChangeText={setQuery}
         />
-        {(activeTab === 'all' || activeTab === 'favorites') && (
+        {true && (
           <View ref={libFilterBtnRef} collapsable={false}>
           <TouchableOpacity
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openFilterModal(); }}
@@ -2255,11 +2343,11 @@ export default function WorkoutLibraryScreen() {
       ) : activeTab === 'programs' ? (
         <View style={{ flex: 1 }}>
         <DraggableFlatList
-          data={myPrograms.filter(p => !query.trim() || p.name.toLowerCase().includes(query.toLowerCase()))}
+          data={getFilteredPrograms(myPrograms)}
           keyExtractor={p => p.id}
           contentContainerStyle={{ paddingTop: 8, paddingBottom: 120 }}
           onDragEnd={({ data }) => {
-            if (!query.trim()) saveMyPrograms(data);
+            if (!query.trim() && sortOption === 'az') saveMyPrograms(data);
           }}
           ListHeaderComponent={activeProgramName ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.bgInset, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 12, marginHorizontal: 12, marginBottom: 16, borderWidth: 0.5, borderColor: theme.accentBlueBorder }}>
@@ -2334,130 +2422,200 @@ export default function WorkoutLibraryScreen() {
         </View>
       ) : (
         <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: 8, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
-          {/* Presets section */}
+          {/* My Routines section -- first */}
+          <TouchableOpacity
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleMyRoutines(); }}
+            style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 12, marginBottom: 10, marginTop: 4, paddingVertical: 4 }}
+            activeOpacity={0.7}>
+            <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>MY ROUTINES</Text>
+            <View style={{ flex: 1, height: 0.5, backgroundColor: theme.borderCard, marginLeft: 10, marginRight: 8 }} />
+            <Animated.View style={{ transform: [{ rotate: myRoutinesChevron.interpolate({ inputRange: [0, 1], outputRange: ['-90deg', '0deg'] }) }] }}>
+              <Ionicons name="chevron-down" size={14} color={theme.textMuted} />
+            </Animated.View>
+          </TouchableOpacity>
+          <Animated.View style={[
+            { overflow: 'hidden' },
+            myRoutinesContentH !== null ? { height: myRoutinesAnimHeight } : {},
+          ]}>
+            <Animated.View style={{ opacity: myRoutinesOpacity }}
+              onLayout={e => {
+                const h = e.nativeEvent.layout.height;
+                if (h > 0) {
+                  setMyRoutinesContentH(h);
+                  if (myRoutinesExpanded) myRoutinesAnimHeight.setValue(h);
+                }
+              }}>
+              {getFilteredRoutines(myRoutines).length === 0 ? (
+                <View style={{ alignItems: 'center', paddingVertical: 32, paddingHorizontal: 32 }}>
+                  <Ionicons name="repeat-outline" size={36} color={theme.textDim} />
+                  <Text style={{ color: theme.textPrimary, fontSize: 15, fontFamily: 'DMSans_600SemiBold', marginTop: 12 }}>No custom routines yet</Text>
+                  <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular', marginTop: 6, textAlign: 'center', lineHeight: 20 }}>
+                    Tap + to build your own, or duplicate a preset below.
+                  </Text>
+                </View>
+              ) : (
+                <DraggableFlatList
+                  data={getFilteredRoutines(myRoutines)}
+                  keyExtractor={r => r.id}
+                  scrollEnabled={false}
+                  onDragEnd={({ data }) => { if (!query.trim() && sortOption === 'az') saveMyRoutines(data); }}
+                  renderItem={({ item: routine, drag, isActive }: RenderItemParams<Routine>) => (
+                    <ScaleDecorator>
+                      <View style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderRadius: 12, padding: 16, marginHorizontal: 12, marginBottom: 12, opacity: isActive ? 0.95 : 1, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
+                          <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'DMSans_700Bold', flex: 1, marginRight: 8 }}>{routine.name}</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); saveMyRoutines(myRoutines.map(r => r.id === routine.id ? { ...r, starred: !r.starred } : r)); }}
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
+                              <Ionicons name={routine.starred ? 'star' : 'star-outline'} size={16} color={routine.starred ? theme.accentAmber : theme.textDim} />
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setEditingRoutine(routine); setShowRoutineBuilder(true); }}
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
+                              <Ionicons name="pencil" size={15} color={theme.textMuted} />
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleDeleteRoutine(routine); }}
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
+                              <Ionicons name="trash-outline" size={15} color={theme.accentRed} />
+                            </TouchableOpacity>
+                            <TouchableOpacity onLongPress={drag} delayLongPress={150}
+                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
+                              <Ionicons name="reorder-three" size={18} color={theme.textDim} />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                        <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 6 }}>
+                          {routine.exercises.length} EXERCISE{routine.exercises.length !== 1 ? 'S' : ''}
+                        </Text>
+                        {routine.exercises.length > 0 && (
+                          <View style={{ marginBottom: routine.tags.length > 0 ? 10 : 14, borderRadius: 6, overflow: 'hidden', borderWidth: 0.5, borderColor: theme.borderCard }}>
+                            {routine.exercises.map((ex, idx) => (
+                              <View key={ex.id} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 7, backgroundColor: idx % 2 === 0 ? theme.bgInset : 'transparent', borderTopWidth: idx > 0 ? 0.5 : 0, borderTopColor: theme.borderCard }}>
+                                <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: ex.isCardio ? theme.accentAmber : theme.accentBlue, marginRight: 8, flexShrink: 0 }} />
+                                <Text style={{ color: theme.textSecondary, fontSize: 12, fontFamily: 'DMSans_400Regular', flex: 1 }}>{ex.name}</Text>
+                                {(ex.sets || ex.reps) ? (
+                                  <Text style={{ color: theme.textDim, fontSize: 10, fontFamily: 'DMSans_500Medium', marginLeft: 8 }}>
+                                    {[ex.sets && `${ex.sets}×`, ex.reps].filter(Boolean).join('')}
+                                  </Text>
+                                ) : null}
+                              </View>
+                            ))}
+                          </View>
+                        )}
+                        {routine.tags.length > 0 && (
+                          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+                            {routine.tags.map(tagId => {
+                              const tag = libTags.find(t => t.id === tagId);
+                              if (!tag) return null;
+                              return (
+                                <View key={tagId} style={{ backgroundColor: tag.color + '99', borderWidth: 1, borderColor: tag.color, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
+                                  <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: '#ffffff' }}>{tag.label.toUpperCase()}</Text>
+                                </View>
+                              );
+                            })}
+                          </View>
+                        )}
+                        <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openLoadRoutinePicker(routine); }}
+                          style={{ paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
+                          <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>LOAD ROUTINE</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </ScaleDecorator>
+                  )}
+                />
+              )}
+            </Animated.View>
+          </Animated.View>
+
+          {/* Presets section -- below My Routines */}
           {(() => {
-            const filtered = PRESET_ROUTINES.filter(r => !query.trim() || r.name.toLowerCase().includes(query.toLowerCase()));
+            const filtered = getFilteredRoutines(PRESET_ROUTINES);
             if (filtered.length === 0) return null;
             return (
-              <View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 12, marginBottom: 10, marginTop: 4 }}>
-                  <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.accentBlue, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>PRESETS</Text>
-                  <View style={{ flex: 1, height: 0.5, backgroundColor: theme.accentBlue, opacity: 0.3, marginLeft: 10 }} />
-                </View>
-                {filtered.map(routine => (
-                  <View key={routine.id} style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderRadius: 12, padding: 16, marginHorizontal: 12, marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 5 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <Text style={{ color: theme.textPrimary, fontSize: 15, fontFamily: 'DMSans_700Bold', flex: 1, marginRight: 8 }}>{routine.name}</Text>
-                      <View style={{ backgroundColor: theme.bgInset, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
-                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold', letterSpacing: 1 }}>PRESET</Text>
+              <View style={{ marginTop: 8 }}>
+                <TouchableOpacity
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); togglePresets(); }}
+                  style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 12, marginBottom: 10, paddingVertical: 4 }}
+                  activeOpacity={0.7}>
+                  <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>PRESETS</Text>
+                  <View style={{ flex: 1, height: 0.5, backgroundColor: theme.borderCard, marginLeft: 10, marginRight: 8 }} />
+                  <Animated.View style={{ transform: [{ rotate: presetsChevron.interpolate({ inputRange: [0, 1], outputRange: ['-90deg', '0deg'] }) }] }}>
+                    <Ionicons name="chevron-down" size={14} color={theme.textMuted} />
+                  </Animated.View>
+                </TouchableOpacity>
+                <Animated.View style={[
+                  { overflow: 'hidden' },
+                  presetsContentH !== null ? { height: presetsAnimHeight } : {},
+                ]}>
+                  <Animated.View style={{ opacity: presetsOpacity }}
+                    onLayout={e => {
+                      const h = e.nativeEvent.layout.height;
+                      if (h > 0) {
+                        setPresetsContentH(h);
+                        if (presetsExpanded) presetsAnimHeight.setValue(h);
+                      }
+                    }}>
+                    {filtered.map(routine => (
+                      <View key={routine.id} style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderRadius: 12, padding: 16, marginHorizontal: 12, marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 5 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
+                          <Text style={{ color: theme.textPrimary, fontSize: 15, fontFamily: 'DMSans_700Bold', flex: 1, marginRight: 8 }}>{routine.name}</Text>
+                          <View style={{ backgroundColor: theme.bgInset, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
+                            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold', letterSpacing: 1 }}>PRESET</Text>
+                          </View>
+                        </View>
+                        <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 6 }}>
+                          {routine.exercises.length} EXERCISE{routine.exercises.length !== 1 ? 'S' : ''}
+                        </Text>
+                        {routine.exercises.length > 0 && (
+                          <View style={{ marginBottom: routine.tags.length > 0 ? 8 : 12, borderRadius: 6, overflow: 'hidden', borderWidth: 0.5, borderColor: theme.borderCard }}>
+                            {routine.exercises.map((ex, idx) => (
+                              <View key={ex.id} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 7, backgroundColor: idx % 2 === 0 ? theme.bgInset : 'transparent', borderTopWidth: idx > 0 ? 0.5 : 0, borderTopColor: theme.borderCard }}>
+                                <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: ex.isCardio ? theme.accentAmber : theme.accentBlue, marginRight: 8, flexShrink: 0 }} />
+                                <Text style={{ color: theme.textSecondary, fontSize: 12, fontFamily: 'DMSans_400Regular', flex: 1 }}>{ex.name}</Text>
+                                {(ex.sets || ex.reps) ? (
+                                  <Text style={{ color: theme.textDim, fontSize: 10, fontFamily: 'DMSans_500Medium', marginLeft: 8 }}>
+                                    {[ex.sets && `${ex.sets}×`, ex.reps].filter(Boolean).join('')}
+                                  </Text>
+                                ) : null}
+                              </View>
+                            ))}
+                          </View>
+                        )}
+                        {routine.tags.length > 0 && (
+                          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+                            {routine.tags.map(tagId => {
+                              const tag = libTags.find(t => t.id === tagId);
+                              if (!tag) return null;
+                              return (
+                                <View key={tagId} style={{ backgroundColor: tag.color + '99', borderWidth: 1, borderColor: tag.color, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
+                                  <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: '#ffffff' }}>{tag.label.toUpperCase()}</Text>
+                                </View>
+                              );
+                            })}
+                          </View>
+                        )}
+                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                          <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openLoadRoutinePicker(routine); }}
+                            style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
+                            <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>USE</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            onPress={async () => {
+                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                              const copy: Routine = { ...routine, id: makeId(), name: routine.name, isPreset: false, exercises: routine.exercises.map(e => ({ ...e, id: makeId() })) };
+                              await saveMyRoutines([...myRoutines, copy]);
+                              showToast('Routine duplicated', copy.name, 'success');
+                            }}
+                            style={{ paddingVertical: 10, paddingHorizontal: 14, borderRadius: 8, alignItems: 'center', backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard }}>
+                            <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Duplicate</Text>
+                          </TouchableOpacity>
+                        </View>
                       </View>
-                    </View>
-                    <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_400Regular', marginBottom: routine.tags.length > 0 ? 8 : 12 }}>
-                      {routine.exercises.length} exercise{routine.exercises.length !== 1 ? 's' : ''} · {routine.exercises.slice(0, 3).map(e => e.name).join(', ')}{routine.exercises.length > 3 ? '...' : ''}
-                    </Text>
-                    {routine.tags.length > 0 && (
-                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-                        {routine.tags.map(tagId => {
-                          const tag = libTags.find(t => t.id === tagId);
-                          if (!tag) return null;
-                          return (
-                            <View key={tagId} style={{ backgroundColor: tag.color + '99', borderWidth: 1, borderColor: tag.color, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
-                              <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: '#ffffff' }}>{tag.label.toUpperCase()}</Text>
-                            </View>
-                          );
-                        })}
-                      </View>
-                    )}
-                    <View style={{ flexDirection: 'row', gap: 8 }}>
-                      <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openLoadRoutinePicker(routine); }}
-                        style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
-                        <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>USE</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={async () => {
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                          const copy: Routine = { ...routine, id: makeId(), name: routine.name, isPreset: false, exercises: routine.exercises.map(e => ({ ...e, id: makeId() })) };
-                          await saveMyRoutines([...myRoutines, copy]);
-                          showToast('Routine duplicated', copy.name, 'success');
-                        }}
-                        style={{ paddingVertical: 10, paddingHorizontal: 14, borderRadius: 8, alignItems: 'center', backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard }}>
-                        <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Duplicate</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                ))}
+                    ))}
+                  </Animated.View>
+                </Animated.View>
               </View>
             );
           })()}
-
-          {/* My Routines section */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 12, marginBottom: 10, marginTop: 8 }}>
-            <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>MY ROUTINES</Text>
-            <View style={{ flex: 1, height: 0.5, backgroundColor: theme.borderCard, marginLeft: 10 }} />
-          </View>
-          {myRoutines.filter(r => !query.trim() || r.name.toLowerCase().includes(query.toLowerCase())).length === 0 ? (
-            <View style={{ alignItems: 'center', paddingVertical: 40, paddingHorizontal: 32 }}>
-              <Ionicons name="repeat-outline" size={36} color={theme.textDim} />
-              <Text style={{ color: theme.textPrimary, fontSize: 15, fontFamily: 'DMSans_600SemiBold', marginTop: 12 }}>No custom routines yet</Text>
-              <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular', marginTop: 6, textAlign: 'center', lineHeight: 20 }}>
-                Tap + to build your own, or duplicate a preset above.
-              </Text>
-            </View>
-          ) : (
-            <DraggableFlatList
-              data={myRoutines.filter(r => !query.trim() || r.name.toLowerCase().includes(query.toLowerCase()))}
-              keyExtractor={r => r.id}
-              scrollEnabled={false}
-              onDragEnd={({ data }) => { if (!query.trim()) saveMyRoutines(data); }}
-              renderItem={({ item: routine, drag, isActive }: RenderItemParams<Routine>) => (
-                <ScaleDecorator>
-                  <View style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderRadius: 12, padding: 16, marginHorizontal: 12, marginBottom: 12, opacity: isActive ? 0.95 : 1, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 8 }}>
-                      <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'DMSans_700Bold', flex: 1, marginRight: 8 }}>{routine.name}</Text>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                        <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); saveMyRoutines(myRoutines.map(r => r.id === routine.id ? { ...r, starred: !r.starred } : r)); }}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
-                          <Ionicons name={routine.starred ? 'star' : 'star-outline'} size={16} color={routine.starred ? theme.accentAmber : theme.textDim} />
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setEditingRoutine(routine); setShowRoutineBuilder(true); }}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
-                          <Ionicons name="pencil" size={15} color={theme.textMuted} />
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleDeleteRoutine(routine); }}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
-                          <Ionicons name="trash-outline" size={15} color={theme.accentRed} />
-                        </TouchableOpacity>
-                        <TouchableOpacity onLongPress={drag} delayLongPress={150}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
-                          <Ionicons name="reorder-three" size={18} color={theme.textDim} />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                    <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_400Regular', marginBottom: routine.tags.length > 0 ? 10 : 14 }}>
-                      {routine.exercises.length} exercise{routine.exercises.length !== 1 ? 's' : ''}
-                    </Text>
-                    {routine.tags.length > 0 && (
-                      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
-                        {routine.tags.map(tagId => {
-                          const tag = libTags.find(t => t.id === tagId);
-                          if (!tag) return null;
-                          return (
-                            <View key={tagId} style={{ backgroundColor: tag.color + '99', borderWidth: 1, borderColor: tag.color, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
-                              <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: '#ffffff' }}>{tag.label.toUpperCase()}</Text>
-                            </View>
-                          );
-                        })}
-                      </View>
-                    )}
-                    <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openLoadRoutinePicker(routine); }}
-                      style={{ paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
-                      <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>LOAD ROUTINE</Text>
-                    </TouchableOpacity>
-                  </View>
-                </ScaleDecorator>
-              )}
-            />
-          )}
         </ScrollView>
       )}
 
@@ -2653,60 +2811,67 @@ export default function WorkoutLibraryScreen() {
       </Modal>
 
       {/* Sort + Filter modal */}
-      <Modal visible={showFilterModal} transparent animationType="none" onRequestClose={closeFilterModal}>
+      <Modal visible={showFilterModal} transparent animationType="none" onRequestClose={closeFilterModal} onShow={onFilterModalShow}>
         <Reanimated.View style={[{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }, filterOverlayStyle]}>
           <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={closeFilterModal} />
           <Reanimated.View style={[{ backgroundColor: theme.bgSheet, borderRadius: 18, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, width: '100%', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20 }, filterCardStyle]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
-              <Text style={{ color: theme.accentBlue, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>SORT & FILTER</Text>
-              <View style={{ flexDirection: 'row', gap: 10 }}>
-                {filterActiveCount > 0 && (
-                  <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setSortOption('az'); setFilterTags([]); setFilterType('all'); }} style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: theme.accentRedBorder, backgroundColor: theme.accentRedBg }}>
-                    <Text style={{ color: theme.accentRed, fontSize: 11, fontFamily: 'DMSans_700Bold' }}>CLEAR</Text>
-                  </TouchableOpacity>
-                )}
-                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeFilterModal(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <Ionicons name="close" size={20} color={theme.textMuted} />
+            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeFilterModal(); }} style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }}>
+              <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.textDim }} />
+            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
+              <Text style={{ color: theme.accentBlue, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{activeTab === 'programs' ? 'SORT' : 'SORT & FILTER'}</Text>
+              {filterActiveCount > 0 && (
+                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setSortOption('az'); setFilterTags([]); setFilterType('all'); }} style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: theme.accentRedBorder, backgroundColor: theme.accentRedBg }}>
+                  <Text style={{ color: theme.accentRed, fontSize: 11, fontFamily: 'DMSans_700Bold' }}>CLEAR</Text>
                 </TouchableOpacity>
-              </View>
+              )}
             </View>
             <View style={{ padding: 20 }}>
               <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 12 }}>SORT</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
-                {([['az', 'A–Z'], ['za', 'Z–A'], ['favorites', 'Favorites First'], ['recent', 'Recently Used']] as const).map(([val, label]) => (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: activeTab === 'programs' ? 0 : 20 }}>
+                {(activeTab === 'programs'
+                  ? [['az', 'A–Z'], ['za', 'Z–A'], ['active-first', 'Active First']] as const
+                  : activeTab === 'routines'
+                  ? [['az', 'A–Z'], ['za', 'Z–A']] as const
+                  : [['az', 'A–Z'], ['za', 'Z–A'], ['favorites', 'Favorites First'], ['recent', 'Recently Used']] as const
+                ).map(([val, label]) => (
                   <TouchableOpacity
                     key={val}
-                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setSortOption(val); }}
+                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setSortOption(val as any); }}
                     style={{ backgroundColor: sortOption === val ? theme.accentBlueBg : theme.bgInset, borderWidth: 1, borderColor: sortOption === val ? theme.accentBlueBorder : theme.borderCard, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 }}>
                     <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: sortOption === val ? theme.accentBlue : theme.textMuted }}>{label}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
-              <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 12 }}>TYPE</Text>
-              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 20 }}>
-                {([['all', 'All'], ['lift', 'Lift'], ['cardio', 'Cardio']] as const).map(([val, label]) => (
-                  <TouchableOpacity
-                    key={val}
-                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setFilterType(val); }}
-                    style={{ backgroundColor: filterType === val ? theme.accentBlueBg : theme.bgInset, borderWidth: 1, borderColor: filterType === val ? theme.accentBlueBorder : theme.borderCard, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 }}>
-                    <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: filterType === val ? theme.accentBlue : theme.textMuted }}>{label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-              <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 12 }}>TAG</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                {libTags.filter(t => t.id !== 'tag_rest').map(tag => {
-                  const active = filterTags.includes(tag.id);
-                  return (
+              {(activeTab === 'all' || activeTab === 'favorites') && (<>
+                <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 12 }}>TYPE</Text>
+                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 20 }}>
+                  {([['all', 'All'], ['lift', 'Lift'], ['cardio', 'Cardio']] as const).map(([val, label]) => (
                     <TouchableOpacity
-                      key={tag.id}
-                      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setFilterTags(prev => active ? prev.filter(id => id !== tag.id) : [...prev, tag.id]); }}
-                      style={{ backgroundColor: active ? tag.color + '99' : 'transparent', borderWidth: 1, borderColor: active ? tag.color : theme.borderCard, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 }}>
-                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: active ? '#ffffff' : theme.textMuted }}>{tag.label}</Text>
+                      key={val}
+                      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setFilterType(val); }}
+                      style={{ backgroundColor: filterType === val ? theme.accentBlueBg : theme.bgInset, borderWidth: 1, borderColor: filterType === val ? theme.accentBlueBorder : theme.borderCard, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 }}>
+                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: filterType === val ? theme.accentBlue : theme.textMuted }}>{label}</Text>
                     </TouchableOpacity>
-                  );
-                })}
-              </View>
+                  ))}
+                </View>
+              </>)}
+              {(activeTab === 'all' || activeTab === 'favorites' || activeTab === 'routines') && (<>
+                <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 12 }}>TAG</Text>
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                  {libTags.filter(t => t.id !== 'tag_rest').map(tag => {
+                    const active = filterTags.includes(tag.id);
+                    return (
+                      <TouchableOpacity
+                        key={tag.id}
+                        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setFilterTags(prev => active ? prev.filter(id => id !== tag.id) : [...prev, tag.id]); }}
+                        style={{ backgroundColor: active ? tag.color + '99' : 'transparent', borderWidth: 1, borderColor: active ? tag.color : theme.borderCard, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 }}>
+                        <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: active ? '#ffffff' : theme.textMuted }}>{tag.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </>)}
             </View>
           </Reanimated.View>
         </Reanimated.View>
@@ -2942,9 +3107,9 @@ const useStyles = (theme: any) => StyleSheet.create({
   searchInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 14, fontFamily: 'DMSans_400Regular' },
   tabRow: { flexDirection: 'row', marginHorizontal: 12, marginBottom: 8, backgroundColor: theme.bgProgressTrack, borderRadius: 8, padding: 4 },
   tab: { flex: 1, padding: 8, alignItems: 'center', borderRadius: 6 },
-  tabActive: { backgroundColor: theme.bgCard },
+  tabActive: { backgroundColor: theme.bgCard, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.15, shadowRadius: 3 },
   tabText: { fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_500Medium' },
-  tabTextActive: { color: theme.textPrimary },
+  tabTextActive: { color: theme.textPrimary, fontFamily: 'DMSans_700Bold' },
   sectionLabel: { fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginHorizontal: 16, marginBottom: 10 },
   exItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14, marginHorizontal: 12, marginVertical: 4, borderRadius: 10, borderWidth: 0.5, borderLeftWidth: 3, borderColor: theme.borderCard, borderTopColor: 'rgba(255,255,255,0.1)', borderLeftColor: theme.accentBlueRaw, backgroundColor: theme.bgCard, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 3 },
   exLeft: { flex: 1, marginRight: 12 },

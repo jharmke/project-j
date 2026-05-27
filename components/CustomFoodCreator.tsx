@@ -39,6 +39,14 @@ interface CustomFoodCreatorProps {
     sodium?: number;
     cholesterol?: number;
     saturatedFat?: number;
+    polyunsaturatedFat?: number;
+    monounsaturatedFat?: number;
+    potassium?: number;
+    vitaminA?: number;
+    vitaminC?: number;
+    calcium?: number;
+    iron?: number;
+    sugarAlcohols?: number;
     servingGrams?: number;
     servingLabel?: string;
     servingUnitType?: string;
@@ -81,6 +89,14 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
   const [sodium, setSodium] = useState('');
   const [cholesterol, setCholesterol] = useState('');
   const [saturatedFat, setSaturatedFat] = useState('');
+  const [polyunsaturatedFat, setPolyunsaturatedFat] = useState('');
+  const [monounsaturatedFat, setMonounsaturatedFat] = useState('');
+  const [potassium, setPotassium] = useState('');
+  const [vitaminA, setVitaminA] = useState('');
+  const [vitaminC, setVitaminC] = useState('');
+  const [calcium, setCalcium] = useState('');
+  const [iron, setIron] = useState('');
+  const [sugarAlcohols, setSugarAlcohols] = useState('');
   const [servingGrams, setServingGrams] = useState('');
   const [servingLabel, setServingLabel] = useState('');
   const [servingUnitType, setServingUnitType] = useState('g');
@@ -131,6 +147,14 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
         setSodium(prefill.sodium?.toString() || '');
         setCholesterol(prefill.cholesterol?.toString() || '');
         setSaturatedFat(prefill.saturatedFat?.toString() || '');
+        setPolyunsaturatedFat(prefill.polyunsaturatedFat?.toString() || '');
+        setMonounsaturatedFat(prefill.monounsaturatedFat?.toString() || '');
+        setPotassium(prefill.potassium?.toString() || '');
+        setVitaminA(prefill.vitaminA?.toString() || '');
+        setVitaminC(prefill.vitaminC?.toString() || '');
+        setCalcium(prefill.calcium?.toString() || '');
+        setIron(prefill.iron?.toString() || '');
+        setSugarAlcohols(prefill.sugarAlcohols?.toString() || '');
         setServingGrams(prefill.servingGrams?.toString() || '');
         setServingLabel(prefill.servingLabel || '');
         setServingUnitType(prefill.servingUnitType || 'g');
@@ -210,6 +234,14 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
         ...(sodium ? { sodium: parseFloat(sodium) } : {}),
         ...(cholesterol ? { cholesterol: parseFloat(cholesterol) } : {}),
         ...(saturatedFat ? { saturatedFat: parseFloat(saturatedFat) } : {}),
+        ...(polyunsaturatedFat ? { polyunsaturatedFat: parseFloat(polyunsaturatedFat) } : {}),
+        ...(monounsaturatedFat ? { monounsaturatedFat: parseFloat(monounsaturatedFat) } : {}),
+        ...(potassium ? { potassium: parseFloat(potassium) } : {}),
+        ...(vitaminA ? { vitaminA: parseFloat(vitaminA) } : {}),
+        ...(vitaminC ? { vitaminC: parseFloat(vitaminC) } : {}),
+        ...(calcium ? { calcium: parseFloat(calcium) } : {}),
+        ...(iron ? { iron: parseFloat(iron) } : {}),
+        ...(sugarAlcohols ? { sugarAlcohols: parseFloat(sugarAlcohols) } : {}),
         servingSize: grams,
         servingUnitType: servingUnitType,
         servingUnit: servingLabel.trim() || `${grams}${servingUnitType}`,
@@ -226,11 +258,19 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
           { nutrientName: 'Protein', unitName: 'G', value: parseFloat(protein) || 0 },
           { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: parseFloat(carbs) || 0 },
           { nutrientName: 'Total lipid (fat)', unitName: 'G', value: parseFloat(fat) || 0 },
-          { nutrientName: 'Fiber, total dietary', unitName: 'G', value: parseFloat(fiber) || 0 },
-          { nutrientName: 'Sugars, total including NLEA', unitName: 'G', value: parseFloat(sugar) || 0 },
-          { nutrientName: 'Sodium, Na', unitName: 'MG', value: parseFloat(sodium) || 0 },
-          { nutrientName: 'Cholesterol', unitName: 'MG', value: parseFloat(cholesterol) || 0 },
-          { nutrientName: 'Fatty acids, total saturated', unitName: 'G', value: parseFloat(saturatedFat) || 0 },
+          { nutrientName: 'Fiber, total dietary',         unitName: 'G',   value: parseFloat(fiber) || 0 },
+          { nutrientName: 'Sugars, total including NLEA', unitName: 'G',   value: parseFloat(sugar) || 0 },
+          { nutrientName: 'Sodium, Na',                   unitName: 'MG',  value: parseFloat(sodium) || 0 },
+          { nutrientName: 'Cholesterol',                  unitName: 'MG',  value: parseFloat(cholesterol) || 0 },
+          { nutrientName: 'Fatty acids, total saturated', unitName: 'G',   value: parseFloat(saturatedFat) || 0 },
+          { nutrientName: 'Polyunsaturated Fat',          unitName: 'G',   value: parseFloat(polyunsaturatedFat) || 0 },
+          { nutrientName: 'Monounsaturated Fat',          unitName: 'G',   value: parseFloat(monounsaturatedFat) || 0 },
+          { nutrientName: 'Potassium, K',                 unitName: 'MG',  value: parseFloat(potassium) || 0 },
+          { nutrientName: 'Vitamin A',                    unitName: 'MCG', value: parseFloat(vitaminA) || 0 },
+          { nutrientName: 'Vitamin C',                    unitName: 'MG',  value: parseFloat(vitaminC) || 0 },
+          { nutrientName: 'Calcium, Ca',                  unitName: 'MG',  value: parseFloat(calcium) || 0 },
+          { nutrientName: 'Iron, Fe',                     unitName: 'MG',  value: parseFloat(iron) || 0 },
+          { nutrientName: 'Sugar Alcohols',               unitName: 'G',   value: parseFloat(sugarAlcohols) || 0 },
         ],
       };
       const updated = [...existing, newFood].sort((a, b) => a.name.localeCompare(b.name));
@@ -451,8 +491,24 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
                   <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={fat} onChangeText={setFat} keyboardType="decimal-pad" />
                 </View>
               </View>
-              <Text style={[s.sectionLabel, { marginTop: 12 }]}>EXTENDED</Text>
+              <Text style={[s.sectionLabel, { marginTop: 12 }]}>EXTENDED FATS</Text>
               <View style={s.twoCol}>
+                <View style={[s.fieldRow, { flex: 1 }]}>
+                  <Text style={s.fieldLabel}>Sat. Fat <Text style={s.unitText}>g</Text></Text>
+                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={saturatedFat} onChangeText={setSaturatedFat} keyboardType="decimal-pad" />
+                </View>
+                <View style={[s.fieldRow, { flex: 1 }]}>
+                  <Text style={s.fieldLabel}>Poly Fat <Text style={s.unitText}>g</Text></Text>
+                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={polyunsaturatedFat} onChangeText={setPolyunsaturatedFat} keyboardType="decimal-pad" />
+                </View>
+                <View style={[s.fieldRow, { flex: 1 }]}>
+                  <Text style={s.fieldLabel}>Mono Fat <Text style={s.unitText}>g</Text></Text>
+                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={monounsaturatedFat} onChangeText={setMonounsaturatedFat} keyboardType="decimal-pad" />
+                </View>
+              </View>
+              <Text style={[s.sectionLabel, { marginTop: 12 }]}>OTHER NUTRIENTS</Text>
+              {/* Row 1: Fiber / Sugar / Sugar Alc. */}
+              <View style={{ flexDirection: 'row', gap: 10 }}>
                 <View style={[s.fieldRow, { flex: 1 }]}>
                   <Text style={s.fieldLabel}>Fiber <Text style={s.unitText}>g</Text></Text>
                   <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={fiber} onChangeText={setFiber} keyboardType="decimal-pad" />
@@ -462,6 +518,13 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
                   <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={sugar} onChangeText={setSugar} keyboardType="decimal-pad" />
                 </View>
                 <View style={[s.fieldRow, { flex: 1 }]}>
+                  <Text style={s.fieldLabel}>Sugar Alc. <Text style={s.unitText}>g</Text></Text>
+                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={sugarAlcohols} onChangeText={setSugarAlcohols} keyboardType="decimal-pad" />
+                </View>
+              </View>
+              {/* Row 2: Sodium / Cholesterol / Potassium */}
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <View style={[s.fieldRow, { flex: 1 }]}>
                   <Text style={s.fieldLabel}>Sodium <Text style={s.unitText}>mg</Text></Text>
                   <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={sodium} onChangeText={setSodium} keyboardType="decimal-pad" />
                 </View>
@@ -470,8 +533,31 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
                   <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={cholesterol} onChangeText={setCholesterol} keyboardType="decimal-pad" />
                 </View>
                 <View style={[s.fieldRow, { flex: 1 }]}>
-                  <Text style={s.fieldLabel}>Sat. Fat <Text style={s.unitText}>g</Text></Text>
-                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={saturatedFat} onChangeText={setSaturatedFat} keyboardType="decimal-pad" />
+                  <Text style={s.fieldLabel}>Potassium <Text style={s.unitText}>mg</Text></Text>
+                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={potassium} onChangeText={setPotassium} keyboardType="decimal-pad" />
+                </View>
+              </View>
+              <Text style={[s.sectionLabel, { marginTop: 12 }]}>VITAMINS & MINERALS</Text>
+              {/* Row 1: Vitamin A / Vitamin C */}
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <View style={[s.fieldRow, { flex: 1 }]}>
+                  <Text style={s.fieldLabel}>Vitamin A <Text style={s.unitText}>mcg</Text></Text>
+                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={vitaminA} onChangeText={setVitaminA} keyboardType="decimal-pad" />
+                </View>
+                <View style={[s.fieldRow, { flex: 1 }]}>
+                  <Text style={s.fieldLabel}>Vitamin C <Text style={s.unitText}>mg</Text></Text>
+                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={vitaminC} onChangeText={setVitaminC} keyboardType="decimal-pad" />
+                </View>
+              </View>
+              {/* Row 2: Calcium / Iron */}
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <View style={[s.fieldRow, { flex: 1 }]}>
+                  <Text style={s.fieldLabel}>Calcium <Text style={s.unitText}>mg</Text></Text>
+                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={calcium} onChangeText={setCalcium} keyboardType="decimal-pad" />
+                </View>
+                <View style={[s.fieldRow, { flex: 1 }]}>
+                  <Text style={s.fieldLabel}>Iron <Text style={s.unitText}>mg</Text></Text>
+                  <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={iron} onChangeText={setIron} keyboardType="decimal-pad" />
                 </View>
               </View>
             </View>

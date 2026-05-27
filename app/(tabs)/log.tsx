@@ -363,6 +363,10 @@ export default function LogScreen() {
   const totalSodium = getAdvancedNutrient('Sodium, Na');
   const totalCholesterol = getAdvancedNutrient('Cholesterol');
   const totalSatFat = getAdvancedNutrient('Fatty acids, total saturated');
+  const totalPolyFat = getAdvancedNutrient('Polyunsaturated Fat');
+  const totalMonoFat = getAdvancedNutrient('Monounsaturated Fat');
+  const totalPotassium = Math.round(getAdvancedNutrient('Potassium, K'));
+  const totalSugarAlcohols = getAdvancedNutrient('Sugar Alcohols');
   const calDelta = Math.abs(totalCals - adjustedTarget);
   const calColor = styleMode === 'mindful'
     ? theme.textSecondary
@@ -890,7 +894,7 @@ export default function LogScreen() {
           </View>
           <MacroStackedBar
             protein={totalProtein}
-            carbs={showNetCarbs ? Math.max(0, Math.round((totalCarbs - totalFiber) * 10) / 10) : totalCarbs}
+            carbs={showNetCarbs ? Math.max(0, Math.round((totalCarbs - totalFiber - totalSugarAlcohols) * 10) / 10) : totalCarbs}
             fat={totalFat}
             proteinGoal={macroGoals.protein}
             carbsGoal={macroGoals.carbs}
@@ -917,26 +921,34 @@ export default function LogScreen() {
         </TouchableOpacity>
         {advancedVisible && (
           <Animated.View style={{ opacity: advancedAnim }}>
-            {[
-              { label: 'Fiber',         value: totalFiber,       unit: 'g',  dv: 28,   color: '#6366f1' },
-              { label: 'Sugar',         value: totalSugar,       unit: 'g',  dv: 50,   color: '#ec4899' },
-              { label: 'Sodium',        value: totalSodium,      unit: 'mg', dv: 2300, color: '#8b5cf6' },
-              { label: 'Cholesterol',   value: totalCholesterol, unit: 'mg', dv: 300,  color: '#14b8a6' },
-              { label: 'Saturated Fat', value: totalSatFat,      unit: 'g',  dv: 20,   color: '#f97316' },
-            ].map(n => (
+            {([
+              { label: 'Fiber',              value: totalFiber,          unit: 'g',  dv: 28,   color: '#6366f1' },
+              { label: 'Sugar',              value: totalSugar,          unit: 'g',  dv: 50,   color: '#ec4899' },
+              { label: 'Sugar Alcohols',     value: totalSugarAlcohols,  unit: 'g',  dv: null, color: '#a78bfa' },
+              { label: 'Sodium',             value: totalSodium,         unit: 'mg', dv: 2300, color: '#8b5cf6' },
+              { label: 'Cholesterol',        value: totalCholesterol,    unit: 'mg', dv: 300,  color: '#14b8a6' },
+              { label: 'Potassium',          value: totalPotassium,      unit: 'mg', dv: 4700, color: '#06b6d4' },
+              { label: 'Saturated Fat',      value: totalSatFat,         unit: 'g',  dv: 20,   color: '#f97316' },
+              { label: 'Polyunsaturated Fat',value: totalPolyFat,        unit: 'g',  dv: null, color: '#a83232' },
+              { label: 'Monounsaturated Fat',value: totalMonoFat,        unit: 'g',  dv: null, color: '#cc6633' },
+            ] as { label: string; value: number; unit: string; dv: number | null; color: string }[]).filter(n => n.value > 0).map(n => (
               <View key={n.label} style={{ paddingVertical: 10, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                   <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>{n.label}</Text>
                   <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={{ fontSize: 13, color: n.value > 0 ? theme.textPrimary : theme.textDim, fontFamily: 'DMSans_600SemiBold' }}>
-                      {n.value > 0 ? `${n.value}${n.unit}` : '--'}
+                    <Text style={{ fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold' }}>
+                      {n.value}{n.unit}
                     </Text>
-                    <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>/ {n.dv}{n.unit} recommended</Text>
+                    {n.dv != null && (
+                      <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>/ {n.dv}{n.unit} recommended</Text>
+                    )}
                   </View>
                 </View>
-                <View style={{ height: 4, borderRadius: 2, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
-                  <View style={{ height: '100%', borderRadius: 2, backgroundColor: n.color, width: `${Math.min(100, n.value > 0 ? (n.value / n.dv) * 100 : 0)}%` }} />
-                </View>
+                {n.dv != null && (
+                  <View style={{ height: 4, borderRadius: 2, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
+                    <View style={{ height: '100%', borderRadius: 2, backgroundColor: n.color, width: `${Math.min(100, (n.value / n.dv) * 100)}%` }} />
+                  </View>
+                )}
               </View>
             ))}
           </Animated.View>

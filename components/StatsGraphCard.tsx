@@ -717,7 +717,9 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
           ? cardTrendData.macro.map(m => {
               const fiberEntry = cardTrendData.fiber.find(f => f.date === m.date);
               const fiber = fiberEntry?.value ?? 0;
-              return { ...m, carbs: Math.max(0, m.carbs - Math.round(fiber)) };
+              const saEntry = cardTrendData.sugarAlcohols?.find(f => f.date === m.date);
+              const sugarAlc = saEntry?.value ?? 0;
+              return { ...m, carbs: Math.max(0, m.carbs - Math.round(fiber) - Math.round(sugarAlc)) };
             })
           : cardTrendData.macro;
         return <MacroBarChart data={macroData} theme={theme}
@@ -831,7 +833,9 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
           ? Math.round(d.macro.reduce((s, x) => {
               const fiberEntry = d.fiber.find(f => f.date === x.date);
               const fiber = fiberEntry?.value ?? 0;
-              return s + Math.max(0, x.carbs - fiber);
+              const saEntry = d.sugarAlcohols?.find(f => f.date === x.date);
+              const sugarAlc = saEntry?.value ?? 0;
+              return s + Math.max(0, x.carbs - fiber - sugarAlc);
             }, 0) / d.macro.length * 10) / 10
           : Math.round(d.macro.reduce((s, x) => s + x.carbs, 0) / d.macro.length * 10) / 10;
         return [{ label: 'Avg Protein', value: `${avgP}g` }, { label: showNetCarbs ? 'Avg Net Carbs' : 'Avg Carbs', value: `${avgC}g` }, { label: 'Avg Fat', value: `${avgF}g` }];

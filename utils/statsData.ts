@@ -21,6 +21,7 @@ export type TrendData = {
   sodium: { date: string; value: number }[];
   cholesterol: { date: string; value: number }[];
   saturatedFat: { date: string; value: number }[];
+  sugarAlcohols: { date: string; value: number }[];
   effortScore: { date: string; value: number }[];
 };
 
@@ -28,7 +29,7 @@ export const EMPTY_TREND_DATA: TrendData = {
   weight: [], cal: [], steps: [], activeCal: [], sleep: [], macro: [], workoutDay: [],
   water: [], netCal: [], sleepScore: [], restingHR: [], respiratoryRate: [], bloodOxygen: [],
   bodyFatPct: [], exerciseMinutes: [], fiber: [], sodium: [], cholesterol: [], saturatedFat: [],
-  effortScore: [],
+  sugarAlcohols: [], effortScore: [],
 };
 
 export const offsetToDateKey = (offset: number): string => {
@@ -93,6 +94,7 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
   const sodH: TrendData['sodium'] = [];
   const choH: TrendData['cholesterol'] = [];
   const sfH: TrendData['saturatedFat'] = [];
+  const saH: TrendData['sugarAlcohols'] = [];
   const esH: TrendData['effortScore'] = [];
 
   for (let i = days - 1; i >= 0; i--) {
@@ -118,10 +120,12 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
             const sodiumVal = getEntryNutrient(data.entries, 'Sodium, Na');
             const choVal = getEntryNutrient(data.entries, 'Cholesterol');
             const sfVal = getEntryNutrient(data.entries, 'Fatty acids, total saturated');
+            const saVal = getEntryNutrient(data.entries, 'Sugar Alcohols');
             if (fiberVal > 0) fbH.push({ date: dateKey, value: fiberVal });
             if (sodiumVal > 0) sodH.push({ date: dateKey, value: sodiumVal });
             if (choVal > 0) choH.push({ date: dateKey, value: choVal });
             if (sfVal > 0) sfH.push({ date: dateKey, value: sfVal });
+            if (saVal > 0) saH.push({ date: dateKey, value: saVal });
           }
         }
         if (data.steps) sh.push({ date: dateKey, value: data.steps });
@@ -154,7 +158,7 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
     weight: wh, cal: ch, steps: sh, activeCal: ah, sleep: slh, macro: mh, workoutDay: wdh,
     water: waterH, netCal: ncH, sleepScore: ssH, restingHR: rhrH, respiratoryRate: rrH,
     bloodOxygen: boH, bodyFatPct: bfH, exerciseMinutes: emH, effortScore: esH,
-    fiber: fbH, sodium: sodH, cholesterol: choH, saturatedFat: sfH,
+    fiber: fbH, sodium: sodH, cholesterol: choH, saturatedFat: sfH, sugarAlcohols: saH,
   };
 };
 

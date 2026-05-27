@@ -187,10 +187,20 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
       : (() => { const sc = e.servingGrams && (e.calPer100g ?? 0) > 0 ? (e.calPer100g ?? 0) * e.servingGrams / 100 : 0; return sc > 0 ? e.cal / sc : 0; })();
     return s + (n.value || 0) * scale;
   }, 0) * round) / round;
-  const totalFiber  = getEntryNutrient('Fiber, total dietary');
-  const totalSodium = Math.round(getEntryNutrient('Sodium, Na', 1));
-  const totalSugar  = getEntryNutrient('Sugars, total including NLEA');
-  const totalNetCarbs = Math.max(0, Math.round((totalCarbs - totalFiber) * 10) / 10);
+  const totalFiber          = getEntryNutrient('Fiber, total dietary');
+  const totalSodium         = Math.round(getEntryNutrient('Sodium, Na', 1));
+  const totalSugar          = getEntryNutrient('Sugars, total including NLEA');
+  const totalCholesterol    = Math.round(getEntryNutrient('Cholesterol', 1));
+  const totalSatFat         = getEntryNutrient('Fatty acids, total saturated');
+  const totalPolyFat        = getEntryNutrient('Polyunsaturated Fat');
+  const totalMonoFat        = getEntryNutrient('Monounsaturated Fat');
+  const totalPotassium      = Math.round(getEntryNutrient('Potassium, K', 1));
+  const totalVitaminA       = Math.round(getEntryNutrient('Vitamin A', 1));
+  const totalVitaminC       = Math.round(getEntryNutrient('Vitamin C', 1));
+  const totalCalcium        = Math.round(getEntryNutrient('Calcium, Ca', 1));
+  const totalIron           = getEntryNutrient('Iron, Fe');
+  const totalSugarAlcohols  = getEntryNutrient('Sugar Alcohols');
+  const totalNetCarbs = Math.max(0, Math.round((totalCarbs - totalFiber - totalSugarAlcohols) * 10) / 10);
 
   const sleepHours: number = data?.sleepOverride ?? data?.sleepHours ?? 0;
   const sleepStages: SleepStages | null = data?.sleepStages ?? null;
@@ -581,6 +591,93 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
           )}
         </View>
 
+        {/* Advanced Nutrition */}
+        {(totalFiber > 0 || totalSodium > 0 || totalSugar > 0 || totalSatFat > 0 || totalPolyFat > 0 || totalMonoFat > 0 || totalCholesterol > 0 || totalPotassium > 0 || totalSugarAlcohols > 0 || totalVitaminA > 0 || totalVitaminC > 0 || totalCalcium > 0 || totalIron > 0) && (
+          <View style={styles.card}>
+            <Ionicons name="leaf" size={130} color={theme.accentBlueRaw} style={styles.heroIcon} />
+            <TouchableOpacity onPress={() => setAdvNutritionOpen(!advNutritionOpen)} style={styles.cardRow} activeOpacity={0.7}>
+              <Text style={[styles.cardLabel, { marginBottom: 0 }]}>Advanced Nutrition</Text>
+              <Ionicons name={advNutritionOpen ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textDim} />
+            </TouchableOpacity>
+            {advNutritionOpen && (
+              <View style={{ marginTop: 10 }}>
+
+                {/* Carb Breakdown */}
+                {totalFiber > 0 && (
+                  <View style={{ backgroundColor: theme.bgInset, borderRadius: 8, padding: 10, marginBottom: 12 }}>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Carb Breakdown</Text>
+                    {[
+                      { label: 'Total Carbs',    value: `${totalCarbs}g`,          bold: false },
+                      { label: 'Fiber',           value: `${totalFiber}g`,          bold: false },
+                      ...(totalSugarAlcohols > 0 ? [{ label: 'Sugar Alcohols', value: `${totalSugarAlcohols}g`, bold: false }] : []),
+                      { label: 'Net Carbs',      value: `${totalNetCarbs}g`,       bold: true  },
+                    ].map((row, i, arr) => (
+                      <View key={row.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: i < arr.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderSubtle }}>
+                        <Text style={[styles.sectionLabel, row.bold && { fontFamily: 'DMSans_700Bold', color: theme.textPrimary }]}>{row.label}</Text>
+                        <Text style={{ fontSize: 13, color: row.bold ? '#c47d1a' : theme.textMuted, fontFamily: row.bold ? 'DMSans_700Bold' : 'DMSans_600SemiBold' }}>{row.value}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* Extended Fats */}
+                {(totalSatFat > 0 || totalPolyFat > 0 || totalMonoFat > 0) && (
+                  <View style={{ backgroundColor: theme.bgInset, borderRadius: 8, padding: 10, marginBottom: 12 }}>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Extended Fats</Text>
+                    {[
+                      { label: 'Saturated Fat',   value: totalSatFat,  unit: 'g' },
+                      { label: 'Polyunsaturated', value: totalPolyFat, unit: 'g' },
+                      { label: 'Monounsaturated', value: totalMonoFat, unit: 'g' },
+                    ].filter(n => n.value > 0).map((n, i, arr) => (
+                      <View key={n.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: i < arr.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderSubtle }}>
+                        <Text style={styles.sectionLabel}>{n.label}</Text>
+                        <Text style={{ fontSize: 13, color: '#a83232', fontFamily: 'DMSans_600SemiBold' }}>{n.value}{n.unit}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* Other Nutrients */}
+                {(totalSugar > 0 || totalCholesterol > 0 || totalSodium > 0 || totalPotassium > 0) && (
+                  <View style={{ backgroundColor: theme.bgInset, borderRadius: 8, padding: 10, marginBottom: 12 }}>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Other Nutrients</Text>
+                    {[
+                      { label: 'Sugar',       value: totalSugar,       unit: 'g',  color: '#ec4899' },
+                      { label: 'Cholesterol', value: totalCholesterol, unit: 'mg', color: theme.textSecondary },
+                      { label: 'Sodium',      value: totalSodium,      unit: 'mg', color: '#8b5cf6' },
+                      { label: 'Potassium',   value: totalPotassium,   unit: 'mg', color: '#06b6d4' },
+                    ].filter(n => n.value > 0).map((n, i, arr) => (
+                      <View key={n.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: i < arr.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderSubtle }}>
+                        <Text style={styles.sectionLabel}>{n.label}</Text>
+                        <Text style={{ fontSize: 13, color: n.color, fontFamily: 'DMSans_600SemiBold' }}>{n.value}{n.unit}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* Vitamins & Minerals */}
+                {(totalVitaminA > 0 || totalVitaminC > 0 || totalCalcium > 0 || totalIron > 0) && (
+                  <View style={{ backgroundColor: theme.bgInset, borderRadius: 8, padding: 10, marginBottom: 4 }}>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Vitamins & Minerals</Text>
+                    {[
+                      { label: 'Vitamin A', value: totalVitaminA, unit: 'mcg' },
+                      { label: 'Vitamin C', value: totalVitaminC, unit: 'mg'  },
+                      { label: 'Calcium',   value: totalCalcium,  unit: 'mg'  },
+                      { label: 'Iron',      value: totalIron,     unit: 'mg'  },
+                    ].filter(n => n.value > 0).map((n, i, arr) => (
+                      <View key={n.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: i < arr.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderSubtle }}>
+                        <Text style={styles.sectionLabel}>{n.label}</Text>
+                        <Text style={{ fontSize: 13, color: theme.accentGreen, fontFamily: 'DMSans_600SemiBold' }}>{n.value}{n.unit}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+              </View>
+            )}
+          </View>
+        )}
+
         {/* Journal */}
         {journalEntries.length > 0 && (
           <View style={styles.card}>
@@ -616,48 +713,6 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
             <Ionicons name="create" size={130} color={theme.accentBlueRaw} style={styles.heroIcon} />
             <Text style={styles.cardLabel}>Daily Note</Text>
             <Text style={styles.noteText}>{data.dailyNote}</Text>
-          </View>
-        )}
-
-        {/* Advanced Nutrition */}
-        {(totalFiber > 0 || totalSodium > 0 || totalSugar > 0) && (
-          <View style={styles.card}>
-            <Ionicons name="leaf" size={130} color={theme.accentBlueRaw} style={styles.heroIcon} />
-            <TouchableOpacity onPress={() => setAdvNutritionOpen(!advNutritionOpen)} style={styles.cardRow} activeOpacity={0.7}>
-              <Text style={[styles.cardLabel, { marginBottom: 0 }]}>Advanced Nutrition</Text>
-              <Ionicons name={advNutritionOpen ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textDim} />
-            </TouchableOpacity>
-            {advNutritionOpen && (
-              <View style={{ marginTop: 10 }}>
-                {/* Net carbs trio -- always shown when fiber data is present */}
-                {totalFiber > 0 && (
-                  <View style={{ backgroundColor: theme.bgInset, borderRadius: 8, padding: 10, marginBottom: 12 }}>
-                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Carb Breakdown</Text>
-                    {[
-                      { label: 'Total Carbs', value: `${totalCarbs}g`,    color: '#c47d1a' },
-                      { label: 'Fiber',       value: `${totalFiber}g`,    color: '#6366f1' },
-                      { label: 'Net Carbs',   value: `${totalNetCarbs}g`, color: '#c47d1a' },
-                    ].map((row, i, arr) => (
-                      <View key={row.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: i < arr.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderSubtle }}>
-                        <Text style={[styles.sectionLabel, i === arr.length - 1 && { fontFamily: 'DMSans_700Bold', color: theme.textPrimary }]}>{row.label}</Text>
-                        <Text style={{ fontSize: 13, color: i === arr.length - 1 ? row.color : theme.textMuted, fontFamily: i === arr.length - 1 ? 'DMSans_700Bold' : 'DMSans_600SemiBold' }}>{row.value}</Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
-                {[
-                  { label: 'Sugar',  value: totalSugar,  unit: 'g',  color: '#ec4899' },
-                  { label: 'Sodium', value: totalSodium, unit: 'mg', color: '#8b5cf6' },
-                ].map((n, i, arr) => (
-                  <View key={n.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: i < arr.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderSubtle }}>
-                    <Text style={styles.sectionLabel}>{n.label}</Text>
-                    <Text style={{ fontSize: 13, color: n.value > 0 ? n.color : theme.textPlaceholder, fontFamily: 'DMSans_600SemiBold' }}>
-                      {n.value > 0 ? `${n.value}${n.unit}` : '--'}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            )}
           </View>
         )}
 

@@ -362,7 +362,7 @@ export default function StatsScreen() {
       const days = parseInt(period);
       for (let i = days - 1; i >= 0; i--) dates.push(offsetToDateKey(i));
     }
-    let totalCal = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0, totalFiber = 0, totalWater = 0, totalNetCal = 0;
+    let totalCal = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0, totalFiber = 0, totalSugarAlcohols = 0, totalWater = 0, totalNetCal = 0;
     let totalSteps = 0, stepsDays = 0, totalActiveCals = 0, activeDays = 0, totalSleep = 0, sleepDays = 0;
     let totalSleepScore = 0, sleepScoreDays = 0, calGoalDays = 0;
     let dietDays = 0, waterDays = 0, workoutDays = 0;
@@ -382,6 +382,14 @@ export default function StatsScreen() {
             totalFat     += data.entries.reduce((s: number, e: any) => s + (e.fat || 0), 0);
             totalFiber   += data.entries.reduce((s: number, e: any) => {
               const n = e.foodNutrients?.find((fn: any) => fn.nutrientName === 'Fiber, total dietary');
+              if (!n) return s;
+              const scale = e.fsId
+                ? ((e.calPer100g && e.calPer100g > 0) ? (e.cal / e.calPer100g) : 0)
+                : (() => { const sc = e.servingGrams && (e.calPer100g ?? 0) > 0 ? (e.calPer100g ?? 0) * e.servingGrams / 100 : 0; return sc > 0 ? e.cal / sc : 0; })();
+              return s + (n.value || 0) * scale;
+            }, 0);
+            totalSugarAlcohols += data.entries.reduce((s: number, e: any) => {
+              const n = e.foodNutrients?.find((fn: any) => fn.nutrientName === 'Sugar Alcohols');
               if (!n) return s;
               const scale = e.fsId
                 ? ((e.calPer100g && e.calPer100g > 0) ? (e.cal / e.calPer100g) : 0)
@@ -412,7 +420,7 @@ export default function StatsScreen() {
       avgCal: dietDays > 0 ? Math.round(totalCal / dietDays) : 0,
       avgProtein: dietDays > 0 ? Math.round(totalProtein / dietDays * 10) / 10 : 0,
       avgCarbs: dietDays > 0 ? Math.round(
-        (netCarbsMode ? Math.max(0, totalCarbs - totalFiber) : totalCarbs) / dietDays * 10) / 10 : 0,
+        (netCarbsMode ? Math.max(0, totalCarbs - totalFiber - totalSugarAlcohols) : totalCarbs) / dietDays * 10) / 10 : 0,
       avgFat: dietDays > 0 ? Math.round(totalFat / dietDays * 10) / 10 : 0,
       avgNetCals: dietDays > 0 ? Math.round(totalNetCal / dietDays) : 0,
       avgWater: waterDays > 0 ? Math.round(totalWater / waterDays) : 0,

@@ -236,6 +236,14 @@ async function fetchFatSecretServings(fsId: string): Promise<any[]> {
       sodium: parseFloat(s.sodium || '0'),
       cholesterol: parseFloat(s.cholesterol || '0'),
       saturatedFat: parseFloat(s.saturated_fat || '0'),
+      polyunsaturatedFat: parseFloat(s.polyunsaturated_fat || '0'),
+      monounsaturatedFat: parseFloat(s.monounsaturated_fat || '0'),
+      potassium: parseFloat(s.potassium || '0'),
+      vitaminA: parseFloat(s.vitamin_a || '0'),
+      vitaminC: parseFloat(s.vitamin_c || '0'),
+      calcium: parseFloat(s.calcium || '0'),
+      iron: parseFloat(s.iron || '0'),
+      sugarAlcohols: parseFloat(s.sugar_alcohols || '0'),
       grams: parseFloat(s.metric_serving_amount || '0'),
       unit: s.metric_serving_unit || 'g',
       isDefault: s.is_default === '1',
@@ -396,6 +404,14 @@ const openEditModal = (food: any) => {
     sodium: food.sodium?.toString() || '',
     cholesterol: food.cholesterol?.toString() || '',
     saturatedFat: food.saturatedFat?.toString() || '',
+    polyunsaturatedFat: food.polyunsaturatedFat?.toString() || '',
+    monounsaturatedFat: food.monounsaturatedFat?.toString() || '',
+    potassium: food.potassium?.toString() || '',
+    vitaminA: food.vitaminA?.toString() || '',
+    vitaminC: food.vitaminC?.toString() || '',
+    calcium: food.calcium?.toString() || '',
+    iron: food.iron?.toString() || '',
+    sugarAlcohols: food.sugarAlcohols?.toString() || '',
     servingGrams: food.servingSize?.toString() || '100',
     servingUnitType: food.servingUnitType || 'g',
     servingLabel: food.servingUnit || '',
@@ -448,6 +464,14 @@ const saveEditFood = async () => {
         sodium: parseFloat(editFoodData.sodium) || 0,
         cholesterol: parseFloat(editFoodData.cholesterol) || 0,
         saturatedFat: parseFloat(editFoodData.saturatedFat) || 0,
+        polyunsaturatedFat: parseFloat(editFoodData.polyunsaturatedFat) || 0,
+        monounsaturatedFat: parseFloat(editFoodData.monounsaturatedFat) || 0,
+        potassium: parseFloat(editFoodData.potassium) || 0,
+        vitaminA: parseFloat(editFoodData.vitaminA) || 0,
+        vitaminC: parseFloat(editFoodData.vitaminC) || 0,
+        calcium: parseFloat(editFoodData.calcium) || 0,
+        iron: parseFloat(editFoodData.iron) || 0,
+        sugarAlcohols: parseFloat(editFoodData.sugarAlcohols) || 0,
         servingSize: servingGrams,
         servingUnitType,
         servingUnit: servingLabel,
@@ -1756,7 +1780,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
             }}>
               <View style={{ height: 4, width: 40, backgroundColor: theme.borderCard, borderRadius: 2, alignSelf: 'center', marginTop: 12 }} />
               <Text style={{ fontSize: 16, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, textAlign: 'center', marginTop: 8, marginBottom: 4 }}>EDIT FOOD</Text>
-              <ScrollView style={{ maxHeight: 460 }} contentContainerStyle={{ padding: 16, paddingTop: 8 }} keyboardShouldPersistTaps="handled">
+              <ScrollView style={{ maxHeight: 580 }} contentContainerStyle={{ padding: 16, paddingTop: 8 }} keyboardShouldPersistTaps="handled">
                 {/* Basic Info */}
                 <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Basic Info</Text>
                 {([
@@ -1804,12 +1828,17 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                 {/* Extended Nutrition -- 2 column pairs */}
                 <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
                 <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Extended Nutrition</Text>
-                {([
-                  [{ label: 'FIBER (g)', key: 'fiber' }, { label: 'SUGAR (g)', key: 'sugar' }],
-                  [{ label: 'SODIUM (mg)', key: 'sodium' }, { label: 'CHOLESTEROL (mg)', key: 'cholesterol' }],
-                ] as { label: string; key: string }[][]).map((row, ri) => (
+                {[
+                  [{ label: 'FIBER (g)',            key: 'fiber' },              { label: 'SUGAR (g)',          key: 'sugar' }],
+                  [{ label: 'SUGAR ALCOHOLS (g)',    key: 'sugarAlcohols' },      { label: 'SODIUM (mg)',        key: 'sodium' }],
+                  [{ label: 'CHOLESTEROL (mg)',      key: 'cholesterol' },        { label: 'POTASSIUM (mg)',     key: 'potassium' }],
+                  [{ label: 'SATURATED FAT (g)',     key: 'saturatedFat' },       { label: 'POLY FAT (g)',       key: 'polyunsaturatedFat' }],
+                  [{ label: 'MONO FAT (g)',          key: 'monounsaturatedFat' }, { label: 'VITAMIN A (mcg)',    key: 'vitaminA' }],
+                  [{ label: 'VITAMIN C (mg)',        key: 'vitaminC' },           { label: 'CALCIUM (mg)',       key: 'calcium' }],
+                  [{ label: 'IRON (mg)',             key: 'iron' },               null],
+                ].map((row, ri) => (
                   <View key={ri} style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
-                    {row.map(f => (
+                    {row.map((f, fi) => f ? (
                       <View key={f.key} style={{ flex: 1 }}>
                         <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, marginBottom: 4 }}>{f.label}</Text>
                         <TextInput
@@ -1817,27 +1846,14 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                           value={editFoodData?.[f.key] || ''}
                           onChangeText={v => setEditFoodData((p: any) => p ? { ...p, [f.key]: filterDecimal(v) } : null)}
                           keyboardType="decimal-pad"
+                          placeholder="--"
                           placeholderTextColor={theme.textDim}
                           selectTextOnFocus
                         />
                       </View>
-                    ))}
+                    ) : <View key={fi} style={{ flex: 1 }} />)}
                   </View>
                 ))}
-                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, marginBottom: 4 }}>SATURATED FAT (g)</Text>
-                    <TextInput
-                      style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: 'DMSans_400Regular' }}
-                      value={editFoodData?.saturatedFat || ''}
-                      onChangeText={v => setEditFoodData((p: any) => p ? { ...p, saturatedFat: filterDecimal(v) } : null)}
-                      keyboardType="decimal-pad"
-                      placeholderTextColor={theme.textDim}
-                      selectTextOnFocus
-                    />
-                  </View>
-                  <View style={{ flex: 1 }} />
-                </View>
                 {/* Serving */}
                 <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
                 <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Serving</Text>

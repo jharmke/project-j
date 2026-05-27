@@ -654,7 +654,8 @@ export default function HomeScreen() {
   const [totalProtein,   setTotalProtein]   = useState(0);
   const [totalCarbs,     setTotalCarbs]     = useState(0);
   const [totalFat,       setTotalFat]       = useState(0);
-  const [totalFiber,     setTotalFiber]     = useState(0);
+  const [totalFiber,        setTotalFiber]        = useState(0);
+  const [totalSugarAlcohols, setTotalSugarAlcohols] = useState(0);
   const [showNetCarbs,   setShowNetCarbs]   = useState(false);
   const [showMacroGearSheet, setShowMacroGearSheet] = useState(false);
   const [stepGoal,       setStepGoal]       = useState(10000);
@@ -839,6 +840,7 @@ export default function HomeScreen() {
           setTotalCarbs(0);
           setTotalFat(0);
           setTotalFiber(0);
+          setTotalSugarAlcohols(0);
           setCaloriesBurned(0);
           setSleepOverride(null);
           setSleepStoredBed(null);
@@ -1134,6 +1136,14 @@ export default function HomeScreen() {
             setTotalFat(    Math.round(clean.reduce((s: number, e: any) => s + (e.fat    ||0), 0) * 10) / 10);
             setTotalFiber(  Math.round(clean.reduce((s: number, e: any) => {
               const n = e.foodNutrients?.find((fn: any) => fn.nutrientName === 'Fiber, total dietary');
+              if (!n) return s;
+              const scale = e.fsId
+                ? ((e.calPer100g && e.calPer100g > 0) ? (e.cal / e.calPer100g) : 0)
+                : (() => { const sc = e.servingGrams && (e.calPer100g ?? 0) > 0 ? (e.calPer100g ?? 0) * e.servingGrams / 100 : 0; return sc > 0 ? e.cal / sc : 0; })();
+              return s + (n.value || 0) * scale;
+            }, 0) * 10) / 10);
+            setTotalSugarAlcohols(Math.round(clean.reduce((s: number, e: any) => {
+              const n = e.foodNutrients?.find((fn: any) => fn.nutrientName === 'Sugar Alcohols');
               if (!n) return s;
               const scale = e.fsId
                 ? ((e.calPer100g && e.calPer100g > 0) ? (e.cal / e.calPer100g) : 0)
@@ -1614,7 +1624,7 @@ export default function HomeScreen() {
   };
 
   const renderMacrosCard = () => {
-    const netCarbs = Math.max(0, Math.round((totalCarbs - totalFiber) * 10) / 10);
+    const netCarbs = Math.max(0, Math.round((totalCarbs - totalFiber - totalSugarAlcohols) * 10) / 10);
     const macros = [
       { label: 'Protein',                            val: totalProtein,              goal: macroGoals.protein, color: theme.macroProtein },
       { label: showNetCarbs ? 'Net Carbs' : 'Carbs', val: showNetCarbs ? netCarbs : totalCarbs, goal: macroGoals.carbs, color: theme.macroCarbs },

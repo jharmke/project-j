@@ -173,6 +173,14 @@ async function fetchFatSecretServings(fsId: string): Promise<any[]> {
       sodium: parseFloat(s.sodium || '0'),
       cholesterol: parseFloat(s.cholesterol || '0'),
       saturatedFat: parseFloat(s.saturated_fat || '0'),
+      polyunsaturatedFat: parseFloat(s.polyunsaturated_fat || '0'),
+      monounsaturatedFat: parseFloat(s.monounsaturated_fat || '0'),
+      potassium: parseFloat(s.potassium || '0'),
+      vitaminA: parseFloat(s.vitamin_a || '0'),
+      vitaminC: parseFloat(s.vitamin_c || '0'),
+      calcium: parseFloat(s.calcium || '0'),
+      iron: parseFloat(s.iron || '0'),
+      sugarAlcohols: parseFloat(s.sugar_alcohols || '0'),
       grams: parseFloat(s.metric_serving_amount || '0'),
       unit: s.metric_serving_unit || 'g',
       isDefault: s.is_default === '1',
@@ -248,6 +256,8 @@ const isTutorialMode = tutorialMode === 'true';
           carbs: Math.round(((food.carbsPer100g || 0) * baseServingSize / 100) * 10) / 10,
           fat: Math.round(((food.fatPer100g || 0) * baseServingSize / 100) * 10) / 10,
           fiber: 0, sugar: 0, sodium: 0, cholesterol: 0, saturatedFat: 0,
+          polyunsaturatedFat: 0, monounsaturatedFat: 0, potassium: 0,
+          vitaminA: 0, vitaminC: 0, calcium: 0, iron: 0, sugarAlcohols: 0,
           grams: baseServingSize,
           unit: food.servingUnitType || 'g',
           isDefault: true,
@@ -259,6 +269,8 @@ const isTutorialMode = tutorialMode === 'true';
           carbs: Math.round(((food.carbsPer100g || 0) * s.grams / 100) * 10) / 10,
           fat: Math.round(((food.fatPer100g || 0) * s.grams / 100) * 10) / 10,
           fiber: 0, sugar: 0, sodium: 0, cholesterol: 0, saturatedFat: 0,
+          polyunsaturatedFat: 0, monounsaturatedFat: 0, potassium: 0,
+          vitaminA: 0, vitaminC: 0, calcium: 0, iron: 0, sugarAlcohols: 0,
           grams: s.grams,
           unit: food.servingUnitType || 'g',
           isDefault: false,
@@ -295,6 +307,9 @@ const isTutorialMode = tutorialMode === 'true';
   const [isFav, setIsFav] = useState(false);
   const [showSaveAsCopy, setShowSaveAsCopy] = useState(false);
   const [showEllipsisMenu, setShowEllipsisMenu] = useState(false);
+  const [fatsOpen, setFatsOpen] = useState(true);
+  const [otherOpen, setOtherOpen] = useState(true);
+  const [vitaminsOpen, setVitaminsOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 60, right: 16 });
   const ellipsisRef = useRef<TouchableOpacity>(null);
   const menuAnim = useRef(new Animated.Value(0)).current;
@@ -323,6 +338,8 @@ const isTutorialMode = tutorialMode === 'true';
       unit: food.servingUnitType || 'g',
       label: food.servingUnit || `${baseGrams}${food.servingUnitType || 'g'}`,
       fiber: 0, sugar: 0, sodium: 0, cholesterol: 0, saturatedFat: 0,
+      polyunsaturatedFat: 0, monounsaturatedFat: 0, potassium: 0,
+      vitaminA: 0, vitaminC: 0, calcium: 0, iron: 0, sugarAlcohols: 0,
       isDefault: true,
     };
   })();
@@ -339,6 +356,14 @@ const isTutorialMode = tutorialMode === 'true';
     sodium: effectiveServing.sodium / effectiveServing.grams,
     cholesterol: effectiveServing.cholesterol / effectiveServing.grams,
     saturatedFat: effectiveServing.saturatedFat / effectiveServing.grams,
+    polyunsaturatedFat: (effectiveServing.polyunsaturatedFat ?? 0) / effectiveServing.grams,
+    monounsaturatedFat: (effectiveServing.monounsaturatedFat ?? 0) / effectiveServing.grams,
+    potassium: (effectiveServing.potassium ?? 0) / effectiveServing.grams,
+    vitaminA: (effectiveServing.vitaminA ?? 0) / effectiveServing.grams,
+    vitaminC: (effectiveServing.vitaminC ?? 0) / effectiveServing.grams,
+    calcium: (effectiveServing.calcium ?? 0) / effectiveServing.grams,
+    iron: (effectiveServing.iron ?? 0) / effectiveServing.grams,
+    sugarAlcohols: (effectiveServing.sugarAlcohols ?? 0) / effectiveServing.grams,
   } : null;
 
   useEffect(() => {
@@ -531,6 +556,32 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
 
   if (!food) return null;
 
+  // Helper: compute a scaled extended nutrient value for the current serving/amount state.
+  // Returns null when no data is available at all for this nutrient.
+  const computeExtended = (servingKey: string, nutrientName: string): number | null => {
+    const sk = effectiveServing ? (effectiveServing as any)[servingKey] : null;
+    if (food?.fsId && effectiveServing && sk != null) {
+      if (useServingBased) return Math.round(sk * servingCount * 10) / 10;
+      if (servingRates && (servingRates as any)[servingKey] != null)
+        return Math.round((servingRates as any)[servingKey] * grams * 10) / 10;
+      return Math.round(sk * 10) / 10;
+    }
+    const n = food.foodNutrients?.find((fn: any) => fn.nutrientName === nutrientName);
+    if (n) {
+      let scale: number;
+      if (useExisting) scale = 1;
+      else if (!food?.fsId && effectiveServing && effectiveServing.grams > 0)
+        scale = useServingBased ? servingCount : grams / effectiveServing.grams;
+      else scale = multiplier;
+      return Math.round((n.value || 0) * scale * 10) / 10;
+    }
+    if (effectiveServing && sk != null && sk > 0) {
+      const raw = useServingBased ? sk * servingCount : servingRates ? (servingRates as any)[servingKey] * grams : sk;
+      return Math.round(raw * 10) / 10;
+    }
+    return null;
+  };
+
   const getNutrientPer100g = (name: string, unitName: string = 'G') => {
     const n = food.foodNutrients?.find((n: any) => 
       n.nutrientName === name && n.unitName === unitName
@@ -634,11 +685,19 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
       const baseNutrients = [...(food.foodNutrients || [])];
       if (food.fsId && effectiveServing) {
         const extMap = [
-          { nutrientName: 'Fiber, total dietary', unitName: 'G', key: 'fiber' },
-          { nutrientName: 'Sugars, total including NLEA', unitName: 'G', key: 'sugar' },
-          { nutrientName: 'Sodium, Na', unitName: 'MG', key: 'sodium' },
-          { nutrientName: 'Cholesterol', unitName: 'MG', key: 'cholesterol' },
-          { nutrientName: 'Fatty acids, total saturated', unitName: 'G', key: 'saturatedFat' },
+          { nutrientName: 'Fiber, total dietary',          unitName: 'G',   key: 'fiber' },
+          { nutrientName: 'Sugars, total including NLEA',  unitName: 'G',   key: 'sugar' },
+          { nutrientName: 'Sodium, Na',                    unitName: 'MG',  key: 'sodium' },
+          { nutrientName: 'Cholesterol',                   unitName: 'MG',  key: 'cholesterol' },
+          { nutrientName: 'Fatty acids, total saturated',  unitName: 'G',   key: 'saturatedFat' },
+          { nutrientName: 'Polyunsaturated Fat',           unitName: 'G',   key: 'polyunsaturatedFat' },
+          { nutrientName: 'Monounsaturated Fat',           unitName: 'G',   key: 'monounsaturatedFat' },
+          { nutrientName: 'Potassium, K',                  unitName: 'MG',  key: 'potassium' },
+          { nutrientName: 'Vitamin A',                     unitName: 'MCG', key: 'vitaminA' },
+          { nutrientName: 'Vitamin C',                     unitName: 'MG',  key: 'vitaminC' },
+          { nutrientName: 'Calcium, Ca',                   unitName: 'MG',  key: 'calcium' },
+          { nutrientName: 'Iron, Fe',                      unitName: 'MG',  key: 'iron' },
+          { nutrientName: 'Sugar Alcohols',                unitName: 'G',   key: 'sugarAlcohols' },
         ];
         extMap.forEach(({ nutrientName, unitName, key }) => {
           if (!baseNutrients.find(n => n.nutrientName === nutrientName)) {
@@ -724,6 +783,14 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
       sodium: mf?.sodium?.toString() || '',
       cholesterol: mf?.cholesterol?.toString() || '',
       saturatedFat: mf?.saturatedFat?.toString() || '',
+      polyunsaturatedFat: mf?.polyunsaturatedFat?.toString() || '',
+      monounsaturatedFat: mf?.monounsaturatedFat?.toString() || '',
+      potassium: mf?.potassium?.toString() || '',
+      vitaminA: mf?.vitaminA?.toString() || '',
+      vitaminC: mf?.vitaminC?.toString() || '',
+      calcium: mf?.calcium?.toString() || '',
+      iron: mf?.iron?.toString() || '',
+      sugarAlcohols: mf?.sugarAlcohols?.toString() || '',
       servingGrams: (mf?.servingSize ?? src.servingSize)?.toString() || '100',
       servingUnitType: mf?.servingUnitType || src.servingUnitType || 'g',
       servingLabel: mf?.servingUnit || src.servingUnit || '',
@@ -776,6 +843,14 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
           sodium: parseFloat(editFoodData.sodium) || 0,
           cholesterol: parseFloat(editFoodData.cholesterol) || 0,
           saturatedFat: parseFloat(editFoodData.saturatedFat) || 0,
+          polyunsaturatedFat: parseFloat(editFoodData.polyunsaturatedFat) || 0,
+          monounsaturatedFat: parseFloat(editFoodData.monounsaturatedFat) || 0,
+          potassium: parseFloat(editFoodData.potassium) || 0,
+          vitaminA: parseFloat(editFoodData.vitaminA) || 0,
+          vitaminC: parseFloat(editFoodData.vitaminC) || 0,
+          calcium: parseFloat(editFoodData.calcium) || 0,
+          iron: parseFloat(editFoodData.iron) || 0,
+          sugarAlcohols: parseFloat(editFoodData.sugarAlcohols) || 0,
           servingSize: servingGrams,
           servingUnitType,
           servingUnit: servingLabel,
@@ -969,54 +1044,95 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
             </View>
           </View>
 
-          {/* Extended nutrition */}
-          {[
-            { label: 'Fiber', key: 'Fiber, total dietary', color: '#6366f1', servingKey: 'fiber' },
-            { label: 'Sugar', key: 'Sugars, total including NLEA', color: '#ec4899', servingKey: 'sugar' },
-            { label: 'Sodium', key: 'Sodium, Na', color: '#8b5cf6', unitName: 'MG', servingKey: 'sodium' },
-            { label: 'Cholesterol', key: 'Cholesterol', color: '#14b8a6', unitName: 'MG', servingKey: 'cholesterol' },
-            { label: 'Saturated Fat', key: 'Fatty acids, total saturated', color: '#f97316', servingKey: 'saturatedFat' },
-          ].map(nutrient => {
-            const n = food.foodNutrients?.find((fn: any) => fn.nutrientName === nutrient.key);
-            let val: number | null = null;
-            const sk = effectiveServing ? (effectiveServing as any)[nutrient.servingKey] : null;
-            if (food?.fsId && effectiveServing && sk != null) {
-              // FatSecret food with a loaded serving -- use effectiveServing as source of truth.
-              // foodNutrients from barcode are per-serving (not per-100g), so we can't use multiplier.
-              if (useServingBased) {
-                val = Math.round(sk * servingCount * 10) / 10;
-              } else if (servingRates && (servingRates as any)[nutrient.servingKey] != null) {
-                val = Math.round((servingRates as any)[nutrient.servingKey] * grams * 10) / 10;
-              } else {
-                val = Math.round(sk * 10) / 10;
-              }
-            } else if (n) {
-              let scale: number;
-              if (useExisting) {
-                scale = 1;
-              } else if (!food?.fsId && effectiveServing && effectiveServing.grams > 0) {
-                scale = useServingBased ? servingCount : grams / effectiveServing.grams;
-              } else {
-                scale = multiplier;
-              }
-              val = Math.round((n.value || 0) * scale * 10) / 10;
-            } else if (effectiveServing && sk != null && sk > 0) {
-              const raw = useServingBased
-                ? sk * servingCount
-                : servingRates
-                  ? (servingRates as any)[nutrient.servingKey] * grams
-                  : sk;
-              val = Math.round(raw * 10) / 10;
-            }
-            const unit2 = nutrient.unitName === 'MG' ? 'mg' : 'g';
-            if (val === null) return null;
+          {/* ── Extended Fats ── */}
+          {(() => {
+            const satFat   = computeExtended('saturatedFat',       'Fatty acids, total saturated');
+            const polyFat  = computeExtended('polyunsaturatedFat', 'Polyunsaturated Fat');
+            const monoFat  = computeExtended('monounsaturatedFat', 'Monounsaturated Fat');
+            const rows = [
+              { label: 'Saturated Fat',       val: satFat,  unit: 'g' },
+              { label: 'Polyunsaturated Fat', val: polyFat, unit: 'g' },
+              { label: 'Monounsaturated Fat', val: monoFat, unit: 'g' },
+            ].filter(r => r.val !== null && r.val !== 0);
+            if (rows.length === 0) return null;
             return (
-              <View key={nutrient.key} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6, borderTopWidth: 1, borderTopColor: theme.borderSubtle }}>
-                <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{nutrient.label}</Text>
-                <Text style={{ fontSize: 12, color: theme.textPrimary, fontFamily: 'DMSans_500Medium' }}>{val}{unit2}</Text>
+              <View style={{ marginTop: 4 }}>
+                <TouchableOpacity onPress={() => setFatsOpen(o => !o)} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: theme.borderSubtle }}>
+                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>Extended Fats</Text>
+                  <Ionicons name={fatsOpen ? 'chevron-up' : 'chevron-down'} size={13} color={theme.textDim} />
+                </TouchableOpacity>
+                {fatsOpen && rows.map(r => (
+                  <View key={r.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
+                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{r.label}</Text>
+                    <Text style={{ fontSize: 12, color: theme.textPrimary, fontFamily: 'DMSans_500Medium' }}>{r.val}{r.unit}</Text>
+                  </View>
+                ))}
               </View>
             );
-          })}
+          })()}
+
+          {/* ── Other Nutrients ── */}
+          {(() => {
+            const fiber         = computeExtended('fiber',         'Fiber, total dietary');
+            const sugar         = computeExtended('sugar',         'Sugars, total including NLEA');
+            const sugarAlc      = computeExtended('sugarAlcohols', 'Sugar Alcohols');
+            const cholesterol   = computeExtended('cholesterol',   'Cholesterol');
+            const sodium        = computeExtended('sodium',        'Sodium, Na');
+            const potassium     = computeExtended('potassium',     'Potassium, K');
+            const rows = [
+              { label: 'Fiber',          val: fiber,       unit: 'g'  },
+              { label: 'Sugar',          val: sugar,       unit: 'g'  },
+              { label: 'Sugar Alcohols', val: sugarAlc,    unit: 'g'  },
+              { label: 'Cholesterol',    val: cholesterol, unit: 'mg' },
+              { label: 'Sodium',         val: sodium,      unit: 'mg' },
+              { label: 'Potassium',      val: potassium,   unit: 'mg' },
+            ].filter(r => r.val !== null && r.val !== 0);
+            if (rows.length === 0) return null;
+            return (
+              <View style={{ marginTop: 4 }}>
+                <TouchableOpacity onPress={() => setOtherOpen(o => !o)} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: theme.borderSubtle }}>
+                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>Other Nutrients</Text>
+                  <Ionicons name={otherOpen ? 'chevron-up' : 'chevron-down'} size={13} color={theme.textDim} />
+                </TouchableOpacity>
+                {otherOpen && rows.map(r => (
+                  <View key={r.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
+                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{r.label}</Text>
+                    <Text style={{ fontSize: 12, color: theme.textPrimary, fontFamily: 'DMSans_500Medium' }}>{r.val}{r.unit}</Text>
+                  </View>
+                ))}
+              </View>
+            );
+          })()}
+
+          {/* ── Vitamins & Minerals ── */}
+          {food?.fsId && (() => {
+            const vitA  = computeExtended('vitaminA', 'Vitamin A');
+            const vitC  = computeExtended('vitaminC', 'Vitamin C');
+            const calc  = computeExtended('calcium',  'Calcium, Ca');
+            const iron  = computeExtended('iron',     'Iron, Fe');
+            const rows = [
+              { label: 'Vitamin A', val: vitA, unit: 'mcg' },
+              { label: 'Vitamin C', val: vitC, unit: 'mg'  },
+              { label: 'Calcium',   val: calc, unit: 'mg'  },
+              { label: 'Iron',      val: iron, unit: 'mg'  },
+            ];
+            return (
+              <View style={{ marginTop: 4 }}>
+                <TouchableOpacity onPress={() => setVitaminsOpen(o => !o)} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: theme.borderSubtle }}>
+                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>Vitamins & Minerals</Text>
+                  <Ionicons name={vitaminsOpen ? 'chevron-up' : 'chevron-down'} size={13} color={theme.textDim} />
+                </TouchableOpacity>
+                {vitaminsOpen && rows.map(r => (
+                  <View key={r.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
+                    <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{r.label}</Text>
+                    <Text style={{ fontSize: 12, color: r.val ? theme.textPrimary : theme.textDim, fontFamily: 'DMSans_500Medium' }}>
+                      {r.val ? `${r.val}${r.unit}` : '--'}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            );
+          })()}
         </View>
 
         {calPer100g === 0 && (
@@ -1206,6 +1322,14 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
           sodium: selectedServing?.sodium ?? defaultFsServing?.sodium,
           cholesterol: selectedServing?.cholesterol ?? defaultFsServing?.cholesterol,
           saturatedFat: selectedServing?.saturatedFat ?? defaultFsServing?.saturatedFat,
+          polyunsaturatedFat: selectedServing?.polyunsaturatedFat ?? defaultFsServing?.polyunsaturatedFat,
+          monounsaturatedFat: selectedServing?.monounsaturatedFat ?? defaultFsServing?.monounsaturatedFat,
+          potassium: selectedServing?.potassium ?? defaultFsServing?.potassium,
+          vitaminA: selectedServing?.vitaminA ?? defaultFsServing?.vitaminA,
+          vitaminC: selectedServing?.vitaminC ?? defaultFsServing?.vitaminC,
+          calcium: selectedServing?.calcium ?? defaultFsServing?.calcium,
+          iron: selectedServing?.iron ?? defaultFsServing?.iron,
+          sugarAlcohols: selectedServing?.sugarAlcohols ?? defaultFsServing?.sugarAlcohols,
           servingGrams: selectedServing?.grams ?? defaultFsServing?.grams,
           servingLabel: selectedServing?.label ?? defaultFsServing?.label,
           servingUnitType: selectedServing?.unit ?? defaultFsServing?.unit ?? 'g',
@@ -1260,7 +1384,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
             }}>
               <View style={{ height: 4, width: 40, backgroundColor: theme.borderCard, borderRadius: 2, alignSelf: 'center', marginTop: 12 }} />
               <Text style={{ fontSize: 16, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, textAlign: 'center', marginTop: 8, marginBottom: 4 }}>EDIT FOOD</Text>
-              <ScrollView style={{ maxHeight: 460 }} contentContainerStyle={{ padding: 16, paddingTop: 8 }} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled">
+              <ScrollView style={{ maxHeight: 580 }} contentContainerStyle={{ padding: 16, paddingTop: 8 }} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled">
                 {/* Basic Info */}
                 <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Basic Info</Text>
                 {([
@@ -1308,12 +1432,17 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
                 {/* Extended Nutrition -- 2 column pairs */}
                 <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
                 <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Extended Nutrition</Text>
-                {([
-                  [{ label: 'FIBER (g)', key: 'fiber' }, { label: 'SUGAR (g)', key: 'sugar' }],
-                  [{ label: 'SODIUM (mg)', key: 'sodium' }, { label: 'CHOLESTEROL (mg)', key: 'cholesterol' }],
-                ] as { label: string; key: string }[][]).map((row, ri) => (
+                {[
+                  [{ label: 'FIBER (g)',           key: 'fiber' },             { label: 'SUGAR (g)',          key: 'sugar' }],
+                  [{ label: 'SUGAR ALCOHOLS (g)',   key: 'sugarAlcohols' },     { label: 'SODIUM (mg)',        key: 'sodium' }],
+                  [{ label: 'CHOLESTEROL (mg)',     key: 'cholesterol' },       { label: 'POTASSIUM (mg)',     key: 'potassium' }],
+                  [{ label: 'SATURATED FAT (g)',    key: 'saturatedFat' },      { label: 'POLY FAT (g)',       key: 'polyunsaturatedFat' }],
+                  [{ label: 'MONO FAT (g)',         key: 'monounsaturatedFat' }, { label: 'VITAMIN A (mcg)',   key: 'vitaminA' }],
+                  [{ label: 'VITAMIN C (mg)',       key: 'vitaminC' },          { label: 'CALCIUM (mg)',       key: 'calcium' }],
+                  [{ label: 'IRON (mg)',            key: 'iron' },              null],
+                ].map((row, ri) => (
                   <View key={ri} style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
-                    {row.map(f => (
+                    {row.map((f, fi) => f ? (
                       <View key={f.key} style={{ flex: 1 }}>
                         <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, marginBottom: 4 }}>{f.label}</Text>
                         <TextInput
@@ -1321,27 +1450,14 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
                           value={editFoodData?.[f.key] || ''}
                           onChangeText={v => setEditFoodData((p: any) => p ? { ...p, [f.key]: filterDecimal(v) } : null)}
                           keyboardType="decimal-pad"
+                          placeholder="--"
                           placeholderTextColor={theme.textDim}
                           selectTextOnFocus
                         />
                       </View>
-                    ))}
+                    ) : <View key={fi} style={{ flex: 1 }} />)}
                   </View>
                 ))}
-                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, marginBottom: 4 }}>SATURATED FAT (g)</Text>
-                    <TextInput
-                      style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: 'DMSans_400Regular' }}
-                      value={editFoodData?.saturatedFat || ''}
-                      onChangeText={v => setEditFoodData((p: any) => p ? { ...p, saturatedFat: filterDecimal(v) } : null)}
-                      keyboardType="decimal-pad"
-                      placeholderTextColor={theme.textDim}
-                      selectTextOnFocus
-                    />
-                  </View>
-                  <View style={{ flex: 1 }} />
-                </View>
                 {/* Serving */}
                 <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
                 <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Serving</Text>

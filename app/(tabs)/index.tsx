@@ -715,10 +715,10 @@ export default function HomeScreen() {
   };
 
   const deleteWaterEntry = async (idx: number) => {
-    const entry = waterEntries[idx];
-    const deltaOz = entry.sign === 'add' ? -entry.amount : entry.amount;
-    const newWater = Math.max(0, water + deltaOz);
     const newEntries = waterEntries.filter((_, i) => i !== idx);
+    const newWater = Math.max(0, newEntries.reduce(
+      (sum, e) => sum + (e.sign === 'add' ? e.amount : -e.amount), 0
+    ));
     setWater(newWater);
     setWaterEntries(newEntries);
     const existing = await AsyncStorage.getItem(`pj_${todayKey}`);

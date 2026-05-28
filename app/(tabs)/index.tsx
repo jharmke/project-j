@@ -670,8 +670,20 @@ export default function HomeScreen() {
     Animated.timing(waterModalAnim, { toValue: 0, duration: 140, useNativeDriver: true }).start(() => setShowWaterCustomModal(false));
   };
 
+  const saveWaterGoal = async () => {
+    const g = parseInt(waterGoalInput);
+    if (!g || g <= 0) return;
+    setWaterGoal(g);
+    Keyboard.dismiss();
+    const existing = await AsyncStorage.getItem('pj_profile');
+    const current = existing ? JSON.parse(existing) : {};
+    await storageSet('pj_profile', JSON.stringify({ ...current, waterGoal: String(g) }));
+    showToast('Water goal saved', `${g} oz daily goal`, 'success');
+  };
+
   const openWaterDetailModal = () => {
     setWaterPresetInputs([String(waterPresets[0]), String(waterPresets[1]), String(waterPresets[2])]);
+    setWaterGoalInput(String(waterGoal));
     setShowWaterDetailModal(true);
     waterDetailAnim.setValue(0);
     Animated.timing(waterDetailAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start();
@@ -756,6 +768,7 @@ export default function HomeScreen() {
   const [showWaterDetailModal, setShowWaterDetailModal] = useState(false);
   const waterDetailAnim = useRef(new Animated.Value(0)).current;
   const [waterPresetInputs, setWaterPresetInputs] = useState<[string,string,string]>(['','','']);
+  const [waterGoalInput, setWaterGoalInput] = useState('');
 
   const [currentTime, setCurrentTime] = useState(Date.now());
 
@@ -3050,20 +3063,24 @@ export default function HomeScreen() {
           ? sleepWakeTime.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })
           : sleepStoredWake ?? '6:00 AM';
         return (
-          <Animated.View style={{ position:'absolute', top:0, bottom:0, left:0, right:0, backgroundColor: theme.overlayBg, justifyContent:'center', alignItems:'center', zIndex:999, opacity: waterDetailAnim }}>
+          <Animated.View style={{ position:'absolute', top:0, bottom:0, left:0, right:0, backgroundColor: theme.overlayBg, zIndex:999, opacity: waterDetailAnim }}>
             <TouchableOpacity style={StyleSheet.absoluteFill} onPress={closeWaterDetailModal} activeOpacity={1} />
-            <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              style={{ flex:1, justifyContent:'center', alignItems:'center' }}
+              pointerEvents="box-none">
             <Animated.View style={{ width:'92%', maxHeight:'82%', backgroundColor: theme.bgSheet, borderRadius:16, borderWidth:0.5, borderColor: theme.borderCard, borderTopWidth:1.5, borderTopColor: theme.accentBlueRaw, overflow:'hidden', transform:[{scale: cardScale}] }}>
-              {/* Handle pill */}
+              {/* Handle + header always visible above scroll */}
               <TouchableOpacity onPress={closeWaterDetailModal} style={{ alignItems:'center', paddingTop:12, paddingBottom:8 }}>
                 <View style={{ width:36, height:4, borderRadius:2, backgroundColor: theme.sheetHandle }} />
               </TouchableOpacity>
-              {/* Header */}
               <View style={{ paddingHorizontal:16, paddingBottom:12 }}>
                 <Text style={{ fontSize:9, color: theme.accentBlueRaw, fontFamily:'DMSans_700Bold', letterSpacing:3, textTransform:'uppercase' }}>Water Log</Text>
               </View>
               <View style={{ height:0.5, backgroundColor: theme.borderCard, marginHorizontal:16 }} />
-              {/* Progress / On Track */}
+              {/* All sections scrollable so Daily Goal is reachable with keyboard open */}
+              <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} nestedScrollEnabled={true} contentContainerStyle={{ flexGrow:1 }}>
+              {/* Progress */}
               <View style={{ paddingHorizontal:16, paddingTop:14, paddingBottom:14 }}>
                 <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
                   <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase' }}>Progress</Text>
@@ -3103,7 +3120,7 @@ export default function HomeScreen() {
               <View style={{ paddingHorizontal:16, paddingTop:12, paddingBottom:4 }}>
                 <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase' }}>Entries</Text>
               </View>
-              <ScrollView style={{ maxHeight:180 }} contentContainerStyle={{ paddingHorizontal:16, paddingBottom:8 }} showsVerticalScrollIndicator={false} keyboardDismissMode="on-drag">
+              <ScrollView style={{ maxHeight:180 }} contentContainerStyle={{ paddingHorizontal:16, paddingBottom:8 }} showsVerticalScrollIndicator={false} nestedScrollEnabled={true} keyboardDismissMode="on-drag">
                 {waterEntries.length === 0 ? (
                   <Text style={{ fontSize:12, color: theme.textDim, fontFamily:'DMSans_400Regular', textAlign:'center', paddingVertical:14 }}>No entries yet today</Text>
                 ) : (
@@ -3156,8 +3173,39 @@ export default function HomeScreen() {
                   <Text style={{ color: presetsSaveable ? theme.accentBlue : theme.textDim, fontFamily:'DMSans_600SemiBold', fontSize:14 }}>Save Presets</Text>
                 </TouchableOpacity>
               </View>
+              <View style={{ height:0.5, backgroundColor: theme.borderCard, marginHorizontal:0, marginBottom:0, marginTop:0 }} />
+              {/* Daily Goal */}
+              <View style={{ paddingHorizontal:16, paddingTop:14, paddingBottom:20 }}>
+                <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:10 }}>Daily Goal</Text>
+                <View style={{ flexDirection:'row', gap:8, alignItems:'flex-start' }}>
+                  <View style={{ flex:1 }}>
+                    <TextInput
+                      style={{ backgroundColor: theme.bgInput, borderWidth:0.5, borderColor: theme.borderInput, borderRadius:8, color: theme.textPrimary, padding:10, fontSize:18, fontFamily:'BebasNeue_400Regular', textAlign:'center', width:'100%' }}
+                      value={waterGoalInput}
+                      onChangeText={v => setWaterGoalInput(v.replace(/[^0-9]/g,''))}
+                      keyboardType="number-pad"
+                      placeholder={String(waterGoal)}
+                      placeholderTextColor={theme.textPlaceholder}
+                    />
+                    <Text style={{ fontSize:9, color: theme.textDim, fontFamily:'DMSans_500Medium', marginTop:3, textAlign:'center' }}>oz</Text>
+                  </View>
+                  {(() => {
+                    const goalInputNum = parseInt(waterGoalInput);
+                    const goalSaveable = !isNaN(goalInputNum) && goalInputNum > 0 && goalInputNum !== waterGoal;
+                    return (
+                      <TouchableOpacity
+                        style={{ flex:2, backgroundColor: goalSaveable ? theme.accentBlueBg : theme.bgInput, borderWidth:1, borderColor: goalSaveable ? theme.accentBlueBorder : theme.borderInput, borderRadius:8, padding:12, alignItems:'center', opacity: goalSaveable ? 1 : 0.5, marginTop:1 }}
+                        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); saveWaterGoal(); }}
+                        disabled={!goalSaveable}>
+                        <Text style={{ color: goalSaveable ? theme.accentBlue : theme.textDim, fontFamily:'DMSans_600SemiBold', fontSize:14 }}>Save Goal</Text>
+                      </TouchableOpacity>
+                    );
+                  })()}
+                </View>
+              </View>
+              </ScrollView>
             </Animated.View>
-            </TouchableWithoutFeedback>
+            </KeyboardAvoidingView>
           </Animated.View>
         );
       })()}
@@ -3239,7 +3287,7 @@ export default function HomeScreen() {
            the drag handle and eye toggle without being behind the Modal layer ── */}
       {editTutorialMode && cardOrder.length > 0 && (
         <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' }]}>
-          <View style={[styles.editSheet, { backgroundColor: theme.bgSheet, borderColor: theme.borderSheet, borderWidth: 0.5 }]}>
+          <View style={[styles.editSheet, { backgroundColor: theme.bgSheet, borderColor: theme.borderSheet, borderWidth: 0.5, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw }]}>
             {/* Handle bar */}
             <View style={{ alignSelf: 'center', paddingVertical: 10, paddingHorizontal: 40 }}>
               <View style={[styles.editSheetHandle, { backgroundColor: theme.sheetHandle }]} />
@@ -3363,6 +3411,8 @@ export default function HomeScreen() {
             <Animated.View style={[styles.editSheet, {
               backgroundColor: theme.bgSheet,
               borderColor: theme.borderSheet,
+              borderTopWidth: 1.5,
+              borderTopColor: theme.accentBlueRaw,
               opacity: editSheetAnim,
             }]}>
             <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); exitEditMode(); }} style={{ alignSelf:'center', paddingVertical:10, paddingHorizontal:40 }}>

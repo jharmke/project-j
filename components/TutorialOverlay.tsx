@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ActiveTutorialState } from '../context/TutorialContext';
 import { useTutorial } from '../context/TutorialContext';
 import { useTheme } from '../theme';
@@ -45,6 +46,7 @@ function isOffScreen(l: TargetRect | null, noTabBar = false): boolean {
 export default function TutorialOverlay() {
   const { activeState, advanceStep, skipTutorial, getTarget, getScrollViews } = useTutorial();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const [visible,     setVisible]     = useState(false);
   const [renderState, setRenderState] = useState<ActiveTutorialState | null>(null);
@@ -390,7 +392,7 @@ export default function TutorialOverlay() {
   const noDimOverlay  = !!(step as any).noDimOverlay;
   const bubbleAtBottom = !!(step as any).bubbleAtBottom;
   const bubbleStyle   = bubbleAtBottom
-    ? { bottom: TAB_H + 16 }
+    ? { bottom: TAB_H + insets.bottom + 16 }
     : bubblePos.above
       ? { bottom: bubblePos.value }
       : { top: bubblePos.value };

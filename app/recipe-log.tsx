@@ -1,14 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useToast } from '../components/Toast';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { saveToFirebase } from '../firebaseConfig';
 import { storageSet } from '../utils/storage';
 import { useTheme } from '../theme';
-
-const MEALS = ['Morning', 'Lunch', 'Dinner', 'Snacks'];
+import { DEFAULT_MEAL_SLOTS, MealSlot, loadMealSlots } from '../utils/mealSlots';
 
 export default function RecipeLogScreen() {
   const insets = useSafeAreaInsets();
@@ -20,7 +19,12 @@ export default function RecipeLogScreen() {
   const [servingAmount, setServingAmount] = useState('1');
   const [weightAmount, setWeightAmount] = useState('');
   const [showMealPicker, setShowMealPicker] = useState(false);
-  const [selectedMeal, setSelectedMeal] = useState(meal || 'Lunch');
+  const [selectedMeal, setSelectedMeal] = useState(meal || 'ms_lunch');
+  const [mealSlots, setMealSlots] = useState<MealSlot[]>(DEFAULT_MEAL_SLOTS);
+
+  useEffect(() => {
+    loadMealSlots().then(({ mealSlots: slots }) => setMealSlots(slots));
+  }, []);
   const { showToast } = useToast();
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -245,12 +249,12 @@ export default function RecipeLogScreen() {
           <View style={styles.modal} pointerEvents="box-none">
             <View style={styles.handlePill} />
             <Text style={styles.modalTitle}>Add to which meal?</Text>
-            {MEALS.map(m => (
+            {mealSlots.map(slot => (
               <TouchableOpacity
-                key={m}
+                key={slot.id}
                 style={styles.mealOption}
-                onPress={() => logRecipe(m)}>
-                <Text style={styles.mealOptionText}>{m}</Text>
+                onPress={() => logRecipe(slot.id)}>
+                <Text style={styles.mealOptionText}>{slot.name}</Text>
               </TouchableOpacity>
             ))}
             <TouchableOpacity style={styles.cancelBtn} onPress={closeMealPicker}>

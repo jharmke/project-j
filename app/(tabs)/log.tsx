@@ -4,7 +4,10 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, Easing, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
+import PressableButton from '../../components/PressableButton';
+import { DEFAULT_MEAL_SLOTS, MealSlot, findSlotForMeal, loadMealSlots, saveMealSlots } from '../../utils/mealSlots';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
@@ -30,7 +33,6 @@ import {
 } from '../../services/notifications';
 
 const WATER_TARGET = 128;
-const MEALS = ['Morning', 'Lunch', 'Dinner', 'Snacks'];
 
 interface FoodEntry {
   name: string;
@@ -141,6 +143,10 @@ export default function LogScreen() {
   const dateNavRef = useTutorialTarget('log_date_nav');
   const mealTotalRef = useTutorialTarget('log_meal_total');
   const todayTotalRef = useTutorialTarget('log_today_total');
+  const logEditLayoutBtnRef = useTutorialTarget('log_edit_layout_btn');
+  const logEditSlotNameRef  = useTutorialTarget('log_edit_slot_name');
+  const logEditSlotDragRef  = useTutorialTarget('log_edit_slot_drag');
+  const logEditAddBtnRef    = useTutorialTarget('log_edit_add_btn');
   const tutorialEntryRef = useRef<View>(null);
   const tutorialDeleteRef = useRef<View>(null);
   const tutorialEntryRegistered = useRef(false);
@@ -181,6 +187,18 @@ export default function LogScreen() {
   const [showWaterCustomModal, setShowWaterCustomModal] = useState(false);
   const [waterCustomSign, setWaterCustomSign] = useState<'add'|'subtract'>('add');
   const [waterCustomInput, setWaterCustomInput] = useState('');
+  const [showWaterDetailModal, setShowWaterDetailModal] = useState(false);
+  const waterDetailAnim = useRef(new Animated.Value(0)).current;
+  const [waterPresetInputs, setWaterPresetInputs] = useState<[string,string,string]>(['','','']);
+  const [waterGoalInput, setWaterGoalInput] = useState('');
+  const [mealSlots, setMealSlots] = useState<MealSlot[]>(DEFAULT_MEAL_SLOTS);
+  const [slotNameCache, setSlotNameCache] = useState<Record<string, string>>({});
+  const [showEditMeals, setShowEditMeals] = useState(false);
+  const [editMealsTutorialMode, setEditMealsTutorialMode] = useState(false);
+  const editMealsAnim = useRef(new Animated.Value(0)).current;
+  const editMealsListRef = useRef<any>(null);
+  const [editingSlotId, setEditingSlotId] = useState<string | null>(null);
+  const [editingSlotName, setEditingSlotName] = useState('');
   const [logRefreshKey, setLogRefreshKey] = useState(0);
   const { activeCalories } = useHealthKit();
   const [styleMode, setStyleMode] = useState<'discipline' | 'balanced' | 'mindful'>('balanced');
@@ -392,6 +410,13 @@ export default function LogScreen() {
   useEffect(() => { loadAchievements().then(store => setAchievementStore(store)); }, []);
 
   useEffect(() => {
+    loadMealSlots().then(({ mealSlots: slots, slotNameCache: cache }) => {
+      setMealSlots(slots);
+      setSlotNameCache(cache);
+    });
+  }, []);
+
+  useEffect(() => {
     const load = async () => {
     try {
         const saved = await AsyncStorage.getItem(`pj_${activeDate}`);
@@ -555,9 +580,11 @@ export default function LogScreen() {
   if (clean.length !== data.entries.length) storageSet(`pj_${dateKey}`, JSON.stringify({ ...data, entries: clean }));
   const tutEntry = clean.find((e: any) => e.tutorialEntry);
   if (tutEntry) {
-    getMealAnim(tutEntry.meal).setValue(1);
-    setExpandedMeals(prev => ({ ...prev, [tutEntry.meal]: true }));
-    setVisibleMeals(prev => ({ ...prev, [tutEntry.meal]: true }));
+    const tutSlot = findSlotForMeal(tutEntry.meal, mealSlots);
+    const tutKey = tutSlot?.id ?? tutEntry.meal;
+    getMealAnim(tutKey).setValue(1);
+    setExpandedMeals(prev => ({ ...prev, [tutKey]: true }));
+    setVisibleMeals(prev => ({ ...prev, [tutKey]: true }));
   }
 }
             if (typeof data.water === 'number') setWater(Math.max(0, data.water));
@@ -622,6 +649,8 @@ export default function LogScreen() {
           if (d.styleMode) setStyleMode(d.styleMode);
           if (d.burnAccuracyPct !== undefined) setBurnAccuracyPct(d.burnAccuracyPct);
           if (d.showNetCarbs !== undefined) setShowNetCarbs(d.showNetCarbs);
+          if (Array.isArray(d.mealSlots) && d.mealSlots.length > 0) setMealSlots(d.mealSlots);
+          if (d.slotNameCache && typeof d.slotNameCache === 'object') setSlotNameCache(d.slotNameCache);
         }
       });
       loadAchievements().then(store => setAchievementStore(store));
@@ -638,6 +667,7 @@ export default function LogScreen() {
     const loadDay = async () => {
       setEntries([]);
       setWater(0);
+      setWaterEntries([]);
       setCaloriesBurned(0);
       setTotalProtein(0);
       setTotalCarbs(0);
@@ -656,6 +686,7 @@ export default function LogScreen() {
             setTotalFat(Math.round(clean.reduce((s: number, e: any) => s + (e.fat || 0), 0) * 10) / 10);
           }
           if (typeof data.water === 'number') setWater(Math.max(0, data.water));
+          if (Array.isArray(data.waterEntries)) setWaterEntries(data.waterEntries);
           setCaloriesBurned(parseInt(data.activeCalories || data.caloriesBurned) || 0);
           // Load past-day IF data for read-only summary
           if (data.ifStart && data.ifEnd) {
@@ -728,8 +759,8 @@ export default function LogScreen() {
         const data = saved ? JSON.parse(saved) : { entries: [], water: 0 };
         if ((data.entries || []).some((e: any) => e.tutorialEntry)) return;
         const demo: FoodEntry[] = [
-          { name: 'Grilled Chicken Breast', cal: 165, meal: 'Lunch', protein: 31, carbs: 0, fat: 3.6, tutorialEntry: true, timestamp: Date.now() },
-          { name: 'Brown Rice', cal: 216, meal: 'Lunch', protein: 4, carbs: 45, fat: 1.8, tutorialEntry: true, timestamp: Date.now() + 1 },
+          { name: 'Grilled Chicken Breast', cal: 165, meal: 'ms_lunch', protein: 31, carbs: 0, fat: 3.6, tutorialEntry: true, timestamp: Date.now() },
+          { name: 'Brown Rice', cal: 216, meal: 'ms_lunch', protein: 4, carbs: 45, fat: 1.8, tutorialEntry: true, timestamp: Date.now() + 1 },
         ];
         const newEntries = [...(data.entries || []).filter((e: any) => e != null), ...demo];
         await AsyncStorage.setItem(`pj_${dk}`, JSON.stringify({ ...data, entries: newEntries }));
@@ -737,14 +768,40 @@ export default function LogScreen() {
         setTotalProtein(Math.round(newEntries.reduce((s, e) => s + (e.protein || 0), 0) * 10) / 10);
         setTotalCarbs(Math.round(newEntries.reduce((s, e) => s + (e.carbs || 0), 0) * 10) / 10);
         setTotalFat(Math.round(newEntries.reduce((s, e) => s + (e.fat || 0), 0) * 10) / 10);
-        getMealAnim('Lunch').setValue(1);
-        setExpandedMeals(prev => ({ ...prev, Lunch: true }));
-        setVisibleMeals(prev => ({ ...prev, Lunch: true }));
+        getMealAnim('ms_lunch').setValue(1);
+        setExpandedMeals(prev => ({ ...prev, 'ms_lunch': true }));
+        setVisibleMeals(prev => ({ ...prev, 'ms_lunch': true }));
       } catch {}
     };
     registerTutorialAction('addTutorialFoodEntries', addTutorialFoodEntries);
     return () => unregisterTutorialAction('addTutorialFoodEntries');
   }, []);
+
+  useEffect(() => {
+    registerTutorialAction('openEditMealsForTutorial', async () => {
+      editMealsAnim.setValue(1);
+      setEditMealsTutorialMode(true);
+      setShowEditMeals(true);
+    });
+    registerTutorialAction('scrollEditListToEnd', async () => {
+      editMealsListRef.current?.scrollToEnd({ animated: false });
+      await new Promise(r => setTimeout(r, 300));
+    });
+    return () => {
+      unregisterTutorialAction('openEditMealsForTutorial');
+      unregisterTutorialAction('scrollEditListToEnd');
+    };
+  }, []);
+
+  // Tear down inline edit sheet when tutorial ends or is skipped
+  useEffect(() => {
+    if (!tutorialActiveState && editMealsTutorialMode) {
+      setEditMealsTutorialMode(false);
+      setShowEditMeals(false);
+      setEditingSlotId(null);
+      editMealsAnim.setValue(0);
+    }
+  }, [tutorialActiveState]);
 
   const toggleAdvanced = () => {
     if (!advancedExpanded) {
@@ -788,6 +845,112 @@ export default function LogScreen() {
   const closeWaterCustomModal = () => {
     waterCustomInputRef.current?.blur();
     Animated.timing(waterModalAnim, { toValue: 0, duration: 140, useNativeDriver: true }).start(() => setShowWaterCustomModal(false));
+  };
+
+  const openWaterDetailModal = () => {
+    setWaterPresetInputs([String(waterPresets[0]), String(waterPresets[1]), String(waterPresets[2])]);
+    setWaterGoalInput(String(waterGoal));
+    setShowWaterDetailModal(true);
+    waterDetailAnim.setValue(0);
+    Animated.timing(waterDetailAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+  };
+  const closeWaterDetailModal = () => {
+    Keyboard.dismiss();
+    Animated.timing(waterDetailAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => setShowWaterDetailModal(false));
+  };
+
+  const deleteWaterEntry = async (idx: number) => {
+    const newEntries = waterEntries.filter((_, i) => i !== idx);
+    const newWater = Math.max(0, newEntries.reduce((sum, e) => sum + (e.sign === 'add' ? e.amount : -e.amount), 0));
+    setWater(newWater);
+    setWaterEntries(newEntries);
+    const existing = await AsyncStorage.getItem(`pj_${activeDate}`);
+    const current = existing ? JSON.parse(existing) : {};
+    await storageSet(`pj_${activeDate}`, JSON.stringify({ ...current, water: newWater, waterEntries: newEntries, waterGoal }));
+    saveToFirebase(activeDate, 'water', newWater);
+    showToast('Entry removed', `${newWater} oz total`, 'info');
+  };
+
+  const saveWaterPresets = async () => {
+    const p0 = parseInt(waterPresetInputs[0]);
+    const p1 = parseInt(waterPresetInputs[1]);
+    const p2 = parseInt(waterPresetInputs[2]);
+    if (!p0 || !p1 || !p2 || p0 <= 0 || p1 <= 0 || p2 <= 0) return;
+    const newPresets: [number, number, number] = [p0, p1, p2];
+    setWaterPresets(newPresets);
+    Keyboard.dismiss();
+    const existing = await AsyncStorage.getItem('pj_profile');
+    const current = existing ? JSON.parse(existing) : {};
+    await storageSet('pj_profile', JSON.stringify({ ...current, waterPresets: newPresets }));
+    showToast('Presets saved', undefined, 'success');
+  };
+
+  const saveWaterGoal = async () => {
+    const g = parseInt(waterGoalInput);
+    if (!g || g <= 0) return;
+    setWaterGoal(g);
+    Keyboard.dismiss();
+    const existing = await AsyncStorage.getItem('pj_profile');
+    const current = existing ? JSON.parse(existing) : {};
+    await storageSet('pj_profile', JSON.stringify({ ...current, waterGoal: String(g) }));
+    showToast('Water goal saved', `${g} oz daily goal`, 'success');
+  };
+
+  const openEditMeals = () => {
+    editMealsAnim.setValue(0);
+    setShowEditMeals(true);
+  };
+  const closeEditMeals = () => {
+    setEditingSlotId(null);
+    Keyboard.dismiss();
+    Animated.timing(editMealsAnim, { toValue: 0, duration: 160, useNativeDriver: true }).start(() => setShowEditMeals(false));
+  };
+
+  const addMealSlot = async () => {
+    if (mealSlots.length >= 8) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const newId = `ms_${Date.now()}`;
+    const newName = 'New Meal';
+    const newSlots = [...mealSlots, { id: newId, name: newName }];
+    const newCache = { ...slotNameCache, [newId]: newName };
+    setMealSlots(newSlots);
+    setSlotNameCache(newCache);
+    await saveMealSlots(newSlots, newCache);
+    setEditingSlotId(newId);
+    setEditingSlotName(newName);
+  };
+
+  const deleteMealSlot = (slotId: string) => {
+    const slot = mealSlots.find(s => s.id === slotId);
+    if (!slot) return;
+    const hasEntriesToday = entries.some(e => e.meal === slotId || e.meal === slot.name);
+    Alert.alert(
+      `Delete "${slot.name}"?`,
+      hasEntriesToday
+        ? 'This slot has entries logged today. They won\'t be erased from your history, but they won\'t appear in your log going forward.'
+        : 'This meal slot will be removed from your log.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: async () => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+          const newSlots = mealSlots.filter(s => s.id !== slotId);
+          setMealSlots(newSlots);
+          await saveMealSlots(newSlots, slotNameCache);
+        }},
+      ]
+    );
+  };
+
+  const commitRename = async (slotId: string, newName: string) => {
+    const trimmed = newName.trim();
+    setEditingSlotId(null);
+    if (!trimmed) return;
+    const newSlots = mealSlots.map(s => s.id === slotId ? { ...s, name: trimmed } : s);
+    const newCache = { ...slotNameCache, [slotId]: trimmed };
+    setMealSlots(newSlots);
+    setSlotNameCache(newCache);
+    await saveMealSlots(newSlots, newCache);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const updateWater = async (oz: number) => {
@@ -863,6 +1026,13 @@ export default function LogScreen() {
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); returningFromChild.current = true; router.push({ pathname: '/add-food', params: { meal: 'browse', date: activeDate } }); }}>
               <Text style={[styles.libraryBtnText, { color: theme.accentBlue }]}>Library</Text>
           </TouchableOpacity>
+          <View ref={logEditLayoutBtnRef as any} collapsable={false}>
+            <TouchableOpacity
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); openEditMeals(); }}
+              style={{ borderWidth:1, borderRadius:6, paddingHorizontal:12, paddingVertical:6, height:32, alignItems:'center', justifyContent:'center', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }}>
+              <Ionicons name="grid" size={14} color={theme.accentBlue} />
+            </TouchableOpacity>
+          </View>
           <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); showToolkit('log'); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
             <Ionicons name="help-circle" size={22} color={theme.accentBlue} />
           </TouchableOpacity>
@@ -956,28 +1126,29 @@ export default function LogScreen() {
       </View>
 
       {/* Meal Sections */}
-      {MEALS.map((meal, mealIdx) => {
-        const mealEntries = entries.filter(e => e.meal === meal);
+      {mealSlots.map((slot, mealIdx) => {
+        const meal = slot.id;
+        const mealEntries = entries.filter(e => e.meal === slot.id || e.meal === slot.name);
         const mealTotal = mealEntries.reduce((s, e) => s + e.cal, 0);
         const mealProtein = Math.round(mealEntries.reduce((s, e) => s + (e.protein || 0), 0));
         const mealCarbs = Math.round(mealEntries.reduce((s, e) => s + (e.carbs || 0), 0));
         const mealFat = Math.round(mealEntries.reduce((s, e) => s + (e.fat || 0), 0));
-        const isExpanded = expandedMeals[meal];
+        const isExpanded = expandedMeals[slot.id];
 
         return (
-          <View key={meal} style={[styles.mealRow, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
+          <View key={slot.id} style={[styles.mealRow, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
             {/* + button on left */}
             <TouchableOpacity
               ref={mealIdx === 0 ? (mealAddRef as any) : undefined}
               style={styles.mealAddBtn}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); returningFromChild.current = true; router.push({ pathname: '/add-food', params: { meal, date: activeDate } }); }}>
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); returningFromChild.current = true; router.push({ pathname: '/add-food', params: { meal: slot.id, date: activeDate } }); }}>
               <Text style={[styles.mealAddBtnText, { color: theme.accentBlue }]}>+</Text>
             </TouchableOpacity>
 
             {/* Meal info middle */}
-            <TouchableOpacity ref={entries.some(e => e.tutorialEntry) ? (meal === 'Lunch' ? (mealTotalRef as any) : undefined) : (mealIdx === 0 ? (mealTotalRef as any) : undefined)} style={[styles.mealInfo, { flexDirection: 'row', alignItems: 'center' }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleMeal(meal); }}>
+            <TouchableOpacity ref={entries.some(e => e.tutorialEntry) ? (slot.id === 'ms_lunch' ? (mealTotalRef as any) : undefined) : (mealIdx === 0 ? (mealTotalRef as any) : undefined)} style={[styles.mealInfo, { flexDirection: 'row', alignItems: 'center' }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleMeal(slot.id); }}>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.mealName, { color: theme.textPrimary }]}>{meal}</Text>
+                <Text style={[styles.mealName, { color: theme.textPrimary }]}>{slot.name}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2, opacity: mealTotal > 0 ? 1 : 0 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                     <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#0d9268' }} />
@@ -1002,15 +1173,15 @@ export default function LogScreen() {
             </TouchableOpacity>
 
             {/* Chevron on right */}
-            <TouchableOpacity style={styles.mealChevron} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleMeal(meal); }}>
+            <TouchableOpacity style={styles.mealChevron} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleMeal(slot.id); }}>
               <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={theme.textMuted} />
             </TouchableOpacity>
 
             {/* Expanded food list */}
-            {visibleMeals[meal] && (
+            {visibleMeals[slot.id] && (
               <Animated.View style={{
                 width: '100%',
-                opacity: getMealAnim(meal),
+                opacity: getMealAnim(slot.id),
               }}>
               <View style={[styles.mealExpanded, { borderTopColor: theme.borderCard }]}>
                 {mealEntries.length === 0 ? (
@@ -1114,40 +1285,46 @@ export default function LogScreen() {
       })}
 
       {/* Water Card */}
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowOpacity: 0, elevation: 0, overflow: 'hidden' }]}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-          <Ionicons name="water-outline" size={11} color={theme.textMuted} />
-          <Text style={[styles.cardLabel, { marginBottom: 0, color: theme.textMuted }]}>
-            {'Water · '}
-            <Text style={{ textTransform: 'none' }}>{water}oz / {waterGoal}oz</Text>
-          </Text>
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
+        <Ionicons name="water" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Ionicons name="water-outline" size={11} color={theme.textMuted} />
+            <Text style={[styles.cardLabel, { marginBottom: 0, color: theme.textMuted }]}>
+              {'Water · '}
+              <Text style={{ textTransform: 'none' }}>{water}oz / {waterGoal}oz</Text>
+            </Text>
+          </View>
+          <TouchableOpacity onPress={openWaterDetailModal} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="settings-outline" size={16} color={theme.textMuted} />
+          </TouchableOpacity>
         </View>
         <WaterBar pct={waterPct} color={theme.accentBlue} trackColor={theme.bgProgressTrack} refreshKey={logRefreshKey} overGoal={water > waterGoal} />
         <View style={styles.waterBtns}>
           {waterPresets.map((oz, i) => (
-            <TouchableOpacity key={i} style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); updateWater(oz); }}>
+            <PressableButton key={i} style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => updateWater(oz)}>
               <Text style={[styles.waterBtnText, { color: theme.accentBlue }]}>+{oz} oz</Text>
-            </TouchableOpacity>
+            </PressableButton>
           ))}
-          <TouchableOpacity style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); openWaterCustomModal('add'); }}>
+          <PressableButton style={[styles.waterBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]} onPress={() => openWaterCustomModal('add')}>
             <View style={{ alignItems: 'center', justifyContent: 'center', width: 20, height: 20 }}>
               <Ionicons name="water-outline" size={18} color={theme.accentBlue} />
               <Text style={{ color: theme.accentBlue, fontSize: 9, fontFamily: 'DMSans_700Bold', position: 'absolute', bottom: -2, right: -4 }}>+</Text>
             </View>
-          </TouchableOpacity>
+          </PressableButton>
         </View>
         <View style={[styles.waterBtns, { marginTop: 8 }]}>
           {waterPresets.map((oz, i) => (
-            <TouchableOpacity key={i} style={[styles.waterBtnRed, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); updateWater(-oz); }}>
+            <PressableButton key={i} style={[styles.waterBtnRed, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]} onPress={() => updateWater(-oz)}>
               <Text style={[styles.waterBtnRedText, { color: theme.accentRed }]}>-{oz} oz</Text>
-            </TouchableOpacity>
+            </PressableButton>
           ))}
-          <TouchableOpacity style={[styles.waterBtnRed, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); openWaterCustomModal('subtract'); }}>
+          <PressableButton style={[styles.waterBtnRed, { backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder }]} onPress={() => openWaterCustomModal('subtract')}>
             <View style={{ alignItems: 'center', justifyContent: 'center', width: 20, height: 20 }}>
               <Ionicons name="water-outline" size={18} color={theme.accentRed} />
               <Text style={{ color: theme.accentRed, fontSize: 9, fontFamily: 'DMSans_700Bold', position: 'absolute', bottom: -2, right: -4 }}>-</Text>
             </View>
-          </TouchableOpacity>
+          </PressableButton>
         </View>
       </View>
 
@@ -1273,6 +1450,299 @@ export default function LogScreen() {
         </View>
       </Animated.View>
     )}
+
+    {/* Water Detail Modal */}
+    {showWaterDetailModal && (() => {
+      const goalMet = water >= waterGoal;
+      const wakeMs = (() => { const d = new Date(); d.setHours(6, 0, 0, 0); return d.getTime(); })();
+      const bedMs  = (() => { const d = new Date(); d.setHours(22, 0, 0, 0); return d.getTime(); })();
+      const totalMinutes = Math.max(1, (bedMs - wakeMs) / 60000);
+      const elapsedMinutes = Math.min(totalMinutes, Math.max(0, (Date.now() - wakeMs) / 60000));
+      const expectedOz = isToday ? Math.round((elapsedMinutes / totalMinutes) * waterGoal) : waterGoal;
+      const pct = expectedOz > 0 ? Math.min(1, water / expectedOz) : 1;
+      const statusLabel = goalMet ? 'Goal Met!' : pct >= 0.9 ? 'On Track' : pct >= 0.7 ? 'Behind' : 'Falling Behind';
+      const statusColor = goalMet || pct >= 0.9 ? theme.statusGood : pct >= 0.7 ? theme.statusWarn : theme.statusBad;
+      const cardScale = waterDetailAnim.interpolate({ inputRange: [0, 1], outputRange: [0.93, 1] });
+      const presetsValid = waterPresetInputs.every(v => { const n = parseInt(v); return !isNaN(n) && n > 0; });
+      const presetsChanged = waterPresetInputs.some((v, i) => { const n = parseInt(v); return !isNaN(n) && n > 0 && n !== waterPresets[i]; });
+      const presetsSaveable = presetsValid && presetsChanged;
+      const goalInputNum = parseInt(waterGoalInput);
+      const goalSaveable = !isNaN(goalInputNum) && goalInputNum > 0 && goalInputNum !== waterGoal;
+      return (
+        <Animated.View style={{ position:'absolute', top:0, bottom:0, left:0, right:0, backgroundColor: theme.overlayBg, zIndex:999, opacity: waterDetailAnim }}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} onPress={closeWaterDetailModal} activeOpacity={1} />
+          <KeyboardAvoidingView
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            style={{ flex:1, justifyContent:'center', alignItems:'center' }}
+            pointerEvents="box-none">
+            <Animated.View style={{ width:'92%', maxHeight:'86%', backgroundColor: theme.bgSheet, borderRadius:16, borderWidth:0.5, borderColor: theme.borderCard, borderTopWidth:1.5, borderTopColor: theme.accentBlueRaw, overflow:'hidden', transform:[{scale: cardScale}] }}>
+              {/* Handle + header always visible above scroll */}
+              <TouchableOpacity onPress={closeWaterDetailModal} style={{ alignItems:'center', paddingTop:12, paddingBottom:8 }}>
+                <View style={{ width:36, height:4, borderRadius:2, backgroundColor: theme.sheetHandle }} />
+              </TouchableOpacity>
+              <View style={{ paddingHorizontal:16, paddingBottom:12 }}>
+                <Text style={{ fontSize:9, color: theme.accentBlueRaw, fontFamily:'DMSans_700Bold', letterSpacing:3, textTransform:'uppercase' }}>Water Log</Text>
+              </View>
+              <View style={{ height:0.5, backgroundColor: theme.borderCard, marginHorizontal:16 }} />
+              {/* Everything below the header is scrollable so Daily Goal is reachable when keyboard is open */}
+              <ScrollView
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+                nestedScrollEnabled={true}
+                contentContainerStyle={{ flexGrow:1 }}>
+                {/* Progress */}
+                <View style={{ paddingHorizontal:16, paddingTop:14, paddingBottom:14 }}>
+                  <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+                    <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase' }}>Progress</Text>
+                    <View style={{ backgroundColor: statusColor+'22', borderRadius:12, paddingHorizontal:8, paddingVertical:3 }}>
+                      <Text style={{ fontSize:10, color: statusColor, fontFamily:'DMSans_700Bold', letterSpacing:1 }}>{statusLabel}</Text>
+                    </View>
+                  </View>
+                  <View style={{ flexDirection:'row', marginBottom:12 }}>
+                    <View style={{ flex:1 }}>
+                      <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:2 }}>Logged</Text>
+                      <Text style={{ fontSize:28, color: theme.accentBlueRaw, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>
+                        {water}<Text style={{ fontSize:14, color: theme.textMuted, fontFamily:'BebasNeue_400Regular' }}> oz</Text>
+                      </Text>
+                      <Text style={{ fontSize:10, color: theme.textDim, fontFamily:'DMSans_400Regular' }}>of {waterGoal} oz goal</Text>
+                    </View>
+                    {isToday && !goalMet ? (
+                      <View style={{ flex:1, borderLeftWidth:0.5, borderLeftColor: theme.borderCard, paddingLeft:14 }}>
+                        <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:2 }}>Expected Now</Text>
+                        <Text style={{ fontSize:28, color: statusColor, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>
+                          {expectedOz}<Text style={{ fontSize:14, color: theme.textMuted, fontFamily:'BebasNeue_400Regular' }}> oz</Text>
+                        </Text>
+                        <Text style={{ fontSize:10, color: theme.textDim, fontFamily:'DMSans_400Regular' }}>by this time of day</Text>
+                      </View>
+                    ) : (
+                      <View style={{ flex:1, borderLeftWidth:0.5, borderLeftColor: theme.borderCard, paddingLeft:14, justifyContent:'center' }}>
+                        <Text style={{ fontSize:28, color: theme.statusGood, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>{goalMet ? 'Goal' : ''}</Text>
+                        <Text style={{ fontSize:20, color: theme.statusGood, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>{goalMet ? 'Complete' : ''}</Text>
+                      </View>
+                    )}
+                  </View>
+                  <View style={{ height:8, backgroundColor: theme.bgProgressTrack, borderRadius:8, overflow:'hidden' }}>
+                    <View style={{ height:'100%', borderRadius:8, backgroundColor: theme.accentBlue, width:`${Math.min(100, (water / waterGoal) * 100)}%` }} />
+                  </View>
+                </View>
+                <View style={{ height:0.5, backgroundColor: theme.borderCard, marginHorizontal:16 }} />
+                {/* Entry Log */}
+                <View style={{ paddingHorizontal:16, paddingTop:12, paddingBottom:4 }}>
+                  <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase' }}>Entries</Text>
+                </View>
+                <ScrollView style={{ maxHeight:160 }} contentContainerStyle={{ paddingHorizontal:16, paddingBottom:8 }} showsVerticalScrollIndicator={false} nestedScrollEnabled={true} keyboardDismissMode="on-drag">
+                  {waterEntries.length === 0 ? (
+                    <Text style={{ fontSize:12, color: theme.textDim, fontFamily:'DMSans_400Regular', textAlign:'center', paddingVertical:14 }}>No entries yet</Text>
+                  ) : (
+                    [...waterEntries].reverse().map((entry, displayIdx) => {
+                      const realIdx = waterEntries.length - 1 - displayIdx;
+                      const entryTime = new Date(entry.timestamp).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+                      return (
+                        <View key={realIdx} style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingVertical:9, borderBottomWidth:0.5, borderBottomColor: theme.borderCard }}>
+                          <Text style={{ fontSize:12, color: theme.textMuted, fontFamily:'DMSans_500Medium', width:68 }}>{entryTime}</Text>
+                          <Text style={{ fontSize:14, color: entry.sign === 'add' ? theme.statusGood : theme.statusBad, fontFamily:'DMSans_600SemiBold', flex:1 }}>
+                            {entry.sign === 'add' ? '+' : '-'}{entry.amount} oz
+                          </Text>
+                          <TouchableOpacity onPress={() => deleteWaterEntry(realIdx)} hitSlop={{top:8,bottom:8,left:12,right:8}}>
+                            <Ionicons name="trash-outline" size={16} color={theme.accentRed} />
+                          </TouchableOpacity>
+                        </View>
+                      );
+                    })
+                  )}
+                </ScrollView>
+                <View style={{ height:0.5, backgroundColor: theme.borderCard, marginHorizontal:16 }} />
+                {/* Presets */}
+                <View style={{ paddingHorizontal:16, paddingTop:14, paddingBottom:10 }}>
+                  <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:10 }}>Quick Add Presets</Text>
+                  <View style={{ flexDirection:'row', gap:8, marginBottom:10 }}>
+                    {([0,1,2] as const).map(i => (
+                      <View key={i} style={{ flex:1, alignItems:'center' }}>
+                        <TextInput
+                          style={{ backgroundColor: theme.bgInput, borderWidth:0.5, borderColor: theme.borderInput, borderRadius:8, color: theme.textPrimary, padding:10, fontSize:18, fontFamily:'BebasNeue_400Regular', textAlign:'center', width:'100%' }}
+                          value={waterPresetInputs[i]}
+                          onChangeText={v => { const cleaned = v.replace(/[^0-9]/g,''); const next = [...waterPresetInputs] as [string,string,string]; next[i] = cleaned; setWaterPresetInputs(next); }}
+                          keyboardType="number-pad"
+                          placeholder={String(waterPresets[i])}
+                          placeholderTextColor={theme.textPlaceholder}
+                        />
+                        <Text style={{ fontSize:9, color: theme.textDim, fontFamily:'DMSans_500Medium', marginTop:3 }}>oz</Text>
+                      </View>
+                    ))}
+                  </View>
+                  <TouchableOpacity
+                    style={{ backgroundColor: presetsSaveable ? theme.accentBlueBg : theme.bgInput, borderWidth:1, borderColor: presetsSaveable ? theme.accentBlueBorder : theme.borderInput, borderRadius:8, padding:12, alignItems:'center', opacity: presetsSaveable ? 1 : 0.5 }}
+                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); saveWaterPresets(); }}
+                    disabled={!presetsSaveable}>
+                    <Text style={{ color: presetsSaveable ? theme.accentBlue : theme.textDim, fontFamily:'DMSans_600SemiBold', fontSize:14 }}>Save Presets</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={{ height:0.5, backgroundColor: theme.borderCard, marginHorizontal:16 }} />
+                {/* Daily Goal */}
+                <View style={{ paddingHorizontal:16, paddingTop:14, paddingBottom:20 }}>
+                  <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:10 }}>Daily Goal</Text>
+                  <View style={{ flexDirection:'row', gap:8, alignItems:'flex-start' }}>
+                    <View style={{ flex:1 }}>
+                      <TextInput
+                        style={{ backgroundColor: theme.bgInput, borderWidth:0.5, borderColor: theme.borderInput, borderRadius:8, color: theme.textPrimary, padding:10, fontSize:18, fontFamily:'BebasNeue_400Regular', textAlign:'center' }}
+                        value={waterGoalInput}
+                        onChangeText={v => setWaterGoalInput(v.replace(/[^0-9]/g,''))}
+                        keyboardType="number-pad"
+                        placeholder={String(waterGoal)}
+                        placeholderTextColor={theme.textPlaceholder}
+                      />
+                      <Text style={{ fontSize:9, color: theme.textDim, fontFamily:'DMSans_500Medium', marginTop:3, textAlign:'center' }}>oz</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={{ flex:2, backgroundColor: goalSaveable ? theme.accentBlueBg : theme.bgInput, borderWidth:1, borderColor: goalSaveable ? theme.accentBlueBorder : theme.borderInput, borderRadius:8, padding:12, alignItems:'center', opacity: goalSaveable ? 1 : 0.5, marginTop:1 }}
+                      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); saveWaterGoal(); }}
+                      disabled={!goalSaveable}>
+                      <Text style={{ color: goalSaveable ? theme.accentBlue : theme.textDim, fontFamily:'DMSans_600SemiBold', fontSize:14 }}>Save Goal</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </ScrollView>
+            </Animated.View>
+          </KeyboardAvoidingView>
+        </Animated.View>
+      );
+    })()}
+
+    {/* Edit Meal Slots -- shared content, rendered into both Modal and inline tutorialMode view */}
+    {(() => {
+      const editSheetCardStyle = {
+        width: '92%' as const,
+        borderRadius: 20,
+        maxHeight: '72%' as const,
+        borderWidth: 0.5,
+        borderTopWidth: 1.5,
+        borderColor: theme.borderSheet,
+        borderTopColor: theme.accentBlueRaw,
+        backgroundColor: theme.bgSheet,
+        flex: 1 as const,
+        overflow: 'hidden' as const,
+      };
+      const content = (
+        <>
+          {/* Handle -- marginTop/Bottom 12 on pill matches editSheetHandle from home tab */}
+          <TouchableOpacity
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeEditMeals(); }}
+            style={{ alignSelf:'center', paddingVertical:10, paddingHorizontal:40 }}>
+            <View style={{ width:36, height:4, borderRadius:2, backgroundColor: theme.sheetHandle, marginTop:12, marginBottom:12 }} />
+          </TouchableOpacity>
+          {/* Header -- matches editSheetHeader from home tab */}
+          <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:16, paddingBottom:16, borderBottomWidth:0.5, borderBottomColor: theme.borderSubtle }}>
+            <View>
+              <Text style={{ fontSize:13, color: theme.accentBlueRaw, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase' }}>Edit Meal Slots</Text>
+              <Text style={{ fontSize:10, color: theme.textDim, fontFamily:'DMSans_400Regular', marginTop:2 }}>{mealSlots.length} of 8 slots</Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeEditMeals(); }}
+              style={{ backgroundColor: theme.accentGreenBg, borderWidth:1, borderColor: theme.accentGreenBorder, borderRadius:6, paddingHorizontal:14, paddingVertical:6, height:32, alignItems:'center', justifyContent:'center' }}>
+              <Text style={{ color: theme.accentGreen, fontSize:12, fontFamily:'DMSans_700Bold', letterSpacing:1 }}>DONE</Text>
+            </TouchableOpacity>
+          </View>
+          {/* Slot list -- flex:1 wrapper constrains FlatList to remaining card height, enabling scroll */}
+          <View style={{ flex:1 }}>
+          <DraggableFlatList
+            ref={editMealsListRef}
+            data={mealSlots}
+            keyExtractor={s => s.id}
+            onDragEnd={({ data }) => { setMealSlots(data); saveMealSlots(data, slotNameCache); }}
+            contentContainerStyle={{ paddingHorizontal:16, paddingTop:10 }}
+            ListFooterComponent={() => (
+              <View style={{ paddingBottom:20 }}>
+                <View style={{ height:0.5, backgroundColor: theme.borderCard, marginBottom:12, marginTop:2 }} />
+                <View ref={logEditAddBtnRef as any} collapsable={false}>
+                  <TouchableOpacity
+                    style={{ flexDirection:'row', alignItems:'center', justifyContent:'center', gap:8, paddingVertical:13, borderRadius:8, backgroundColor: mealSlots.length >= 8 ? theme.bgInput : theme.accentBlueBg, borderWidth:1, borderColor: mealSlots.length >= 8 ? theme.borderInput : theme.accentBlueBorder, opacity: mealSlots.length >= 8 ? 0.5 : 1 }}
+                    onPress={addMealSlot}
+                    disabled={mealSlots.length >= 8}>
+                    <Ionicons name="add" size={16} color={mealSlots.length >= 8 ? theme.textDim : theme.accentBlue} />
+                    <Text style={{ fontSize:14, color: mealSlots.length >= 8 ? theme.textDim : theme.accentBlue, fontFamily:'DMSans_600SemiBold' }}>
+                      {mealSlots.length >= 8 ? 'Maximum 8 slots reached' : 'Add Meal Slot'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+            renderItem={({ item: slot, drag, isActive }: RenderItemParams<MealSlot>) => {
+              const isEditing = editingSlotId === slot.id;
+              const isFirst = mealSlots[0]?.id === slot.id;
+              return (
+                <ScaleDecorator>
+                  <View style={[{ flexDirection:'row', alignItems:'center', gap:10, marginBottom:10 }, isActive && { opacity:0.85 }]}>
+                    {/* Delete badge -- matches editBadge size/shape, red colorway */}
+                    <TouchableOpacity
+                      onPress={() => deleteMealSlot(slot.id)}
+                      style={{ width:28, height:28, borderRadius:14, borderWidth:1, alignItems:'center', justifyContent:'center', backgroundColor: theme.accentRedBg, borderColor: theme.accentRedBorder, opacity: mealSlots.length <= 1 ? 0.3 : 1 }}
+                      hitSlop={{ top:4, bottom:4, left:4, right:4 }}
+                      disabled={mealSlots.length <= 1}>
+                      <Ionicons name="remove" size={14} color={theme.accentRed} />
+                    </TouchableOpacity>
+                    {/* Card -- matches editCardPreview layout */}
+                    <View ref={isFirst ? (logEditSlotNameRef as any) : undefined} collapsable={false} style={{ flex:1, borderWidth:0.5, borderRadius:10, paddingHorizontal:14, paddingVertical:10, backgroundColor: theme.bgEditCard, borderColor: theme.borderCard }}>
+                      {isEditing ? (
+                        <TextInput
+                          autoFocus
+                          value={editingSlotName}
+                          onChangeText={setEditingSlotName}
+                          onBlur={() => commitRename(slot.id, editingSlotName)}
+                          onSubmitEditing={() => commitRename(slot.id, editingSlotName)}
+                          returnKeyType="done"
+                          style={{ fontSize:13, color: theme.textPrimary, fontFamily:'DMSans_600SemiBold', padding:0 }}
+                        />
+                      ) : (
+                        <TouchableOpacity
+                          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setEditingSlotId(slot.id); setEditingSlotName(slot.name); }}
+                          hitSlop={{ top:4, bottom:4, left:0, right:0 }}>
+                          <Text style={{ fontSize:13, color: theme.textPrimary, fontFamily:'DMSans_600SemiBold', marginBottom:2 }}>{slot.name}</Text>
+                          <Text style={{ fontSize:11, color: theme.textDim, fontFamily:'DMSans_400Regular' }}>Tap to rename</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                    {/* Drag handle -- matches dragHandle size/padding */}
+                    <View ref={isFirst ? (logEditSlotDragRef as any) : undefined} collapsable={false}>
+                      <TouchableOpacity onLongPress={drag} delayLongPress={0} style={{ padding:8 }}>
+                        <Ionicons name="menu-outline" size={20} color={theme.textDim} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </ScaleDecorator>
+              );
+            }}
+          />
+          </View>
+        </>
+      );
+      return (
+        <>
+          {/* Normal Modal -- hidden during tutorial so TutorialOverlay can spotlight elements inside */}
+          {showEditMeals && !editMealsTutorialMode && (
+            <Modal transparent animationType="none" visible={showEditMeals} onRequestClose={closeEditMeals} statusBarTranslucent hardwareAccelerated
+              onShow={() => {
+                editMealsAnim.setValue(0);
+                Animated.timing(editMealsAnim, { toValue: 1, duration: 220, easing: Easing.out(Easing.quad), useNativeDriver: true }).start();
+              }}>
+              <Animated.View style={{ flex:1, backgroundColor:'rgba(0,0,0,0.6)', opacity: editMealsAnim, justifyContent:'center', alignItems:'center' }}>
+                <TouchableOpacity style={{ position:'absolute', top:0, left:0, right:0, bottom:0 }} activeOpacity={1} onPress={closeEditMeals} />
+                <Animated.View style={[editSheetCardStyle, { opacity: editMealsAnim }]}>
+                  {content}
+                </Animated.View>
+              </Animated.View>
+            </Modal>
+          )}
+          {/* Inline absoluteFill for tutorial mode -- TutorialOverlay can spotlight inside this */}
+          {editMealsTutorialMode && showEditMeals && (
+            <View style={[StyleSheet.absoluteFillObject, { backgroundColor:'rgba(0,0,0,0.6)', justifyContent:'center', alignItems:'center' }]}>
+              <View style={editSheetCardStyle}>
+                {content}
+              </View>
+            </View>
+          )}
+        </>
+      );
+    })()}
 
       <Modal visible={calPickerVisible} transparent animationType="none" onRequestClose={closeCalPicker}>
         <Animated.View style={{ flex: 1, opacity: calFadeAnim }}>

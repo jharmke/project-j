@@ -19,6 +19,7 @@ import { showCelebration } from '../components/CelebrationOverlay';
 import { saveToFirebase } from '../firebaseConfig';
 import { storageSet } from '../utils/storage';
 import { useTheme } from '../theme';
+import { DEFAULT_MEAL_SLOTS, MealSlot, loadMealSlots } from '../utils/mealSlots';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { TUTORIAL_CHICKEN_BREAST } from '../data/tutorialFood';
@@ -473,7 +474,7 @@ const isTutorialMode = tutorialMode === 'true';
     })();
   }, []);
 
-  const tutorialSaveDataRef = useRef({ amount: '100', unit: 'g', calories: 0, currentMeal: 'Lunch', protein: 0, carbs: 0, fat: 0, calPer100g: 0, proteinPer100g: 0, carbsPer100g: 0, fatPer100g: 0 });
+  const tutorialSaveDataRef = useRef({ amount: '100', unit: 'g', calories: 0, currentMeal: 'ms_lunch', protein: 0, carbs: 0, fat: 0, calPer100g: 0, proteinPer100g: 0, carbsPer100g: 0, fatPer100g: 0 });
 
   useEffect(() => {
     tutorialSaveDataRef.current = { amount, unit, calories, currentMeal, protein, carbs, fat, calPer100g, proteinPer100g, carbsPer100g, fatPer100g };
@@ -596,7 +597,11 @@ const [showTimePicker, setShowTimePicker] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [unit, setUnit] = useState<'g' | 'oz' | 'serving'>(food?.existingUnit || 'g');
     const [showMealPicker, setShowMealPicker] = useState(false);
-const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Morning' : meal);
+const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_morning' : meal);
+  const [mealSlots, setMealSlots] = useState<MealSlot[]>(DEFAULT_MEAL_SLOTS);
+  useEffect(() => {
+    loadMealSlots().then(({ mealSlots: slots }) => setMealSlots(slots));
+  }, []);
   const [showEditFoodModal, setShowEditFoodModal] = useState(false);
   const [editFoodData, setEditFoodData] = useState<any>(null);
   const editOverlayAnim = useRef(new Animated.Value(0)).current;
@@ -1372,7 +1377,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
     }
   }}>
   <Text style={styles.mealSelectorLabel}>Adding to</Text>
-  <Text style={styles.mealSelectorValue}>{currentMeal} {showMealPicker ? '▲' : '▼'}</Text>
+  <Text style={styles.mealSelectorValue}>{mealSlots.find(s => s.id === currentMeal || s.name === currentMeal)?.name ?? currentMeal} {showMealPicker ? '▲' : '▼'}</Text>
 </TouchableOpacity>
 {showMealPicker && (
   <Animated.View style={{
@@ -1388,18 +1393,18 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'Mor
     marginBottom: 10,
     marginTop: -6,
   }}>
-    {['Morning', 'Lunch', 'Dinner', 'Snacks'].map((m, i) => (
+    {mealSlots.map((slot, i) => (
       <TouchableOpacity
-        key={m}
-        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: i < 3 ? 1 : 0, borderBottomColor: theme.borderSubtle }}
+        key={slot.id}
+        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: i < mealSlots.length - 1 ? 1 : 0, borderBottomColor: theme.borderSubtle }}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          setCurrentMeal(m);
+          setCurrentMeal(slot.id);
           setHasChanges(true);
           Animated.timing(mealDropdownAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => setShowMealPicker(false));
         }}>
-        <Text style={{ fontSize: 15, color: currentMeal === m ? theme.accentBlue : theme.textSecondary, fontFamily: currentMeal === m ? 'DMSans_600SemiBold' : 'DMSans_400Regular' }}>{m}</Text>
-        {currentMeal === m && <Ionicons name="checkmark" size={16} color={theme.accentBlue} />}
+        <Text style={{ fontSize: 15, color: (currentMeal === slot.id || currentMeal === slot.name) ? theme.accentBlue : theme.textSecondary, fontFamily: (currentMeal === slot.id || currentMeal === slot.name) ? 'DMSans_600SemiBold' : 'DMSans_400Regular' }}>{slot.name}</Text>
+        {(currentMeal === slot.id || currentMeal === slot.name) && <Ionicons name="checkmark" size={16} color={theme.accentBlue} />}
       </TouchableOpacity>
     ))}
   </Animated.View>

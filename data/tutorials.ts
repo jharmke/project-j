@@ -531,6 +531,66 @@ export const TUTORIALS: Tutorial[] = [
   // ─── LOG TAB ──────────────────────────────────────────────────────────────────
 
   {
+    id: 'log_edit_layout',
+    name: 'Edit Meal Slots',
+    description: 'Add your own meal categories, rename the defaults, and rearrange your food log.',
+    tab: 'log',
+    steps: [
+      {
+        targetKey: 'log_edit_layout_btn',
+        tutorialAction: 'openEditMealsForTutorial',
+        title: 'YOUR MEAL SLOTS',
+        body: {
+          discipline: 'That grid icon opens your meal slot editor. Tap NEXT and we\'ll open it.',
+          balanced: 'That grid icon opens the meal slot editor. Tap NEXT and we\'ll walk through it.',
+          mindful: 'That grid icon lets you customize your meal layout. Tap NEXT whenever you\'re ready.',
+        },
+      },
+      {
+        targetKey: 'none',
+        noDimOverlay: true,
+        bubbleAtBottom: true,
+        title: 'MEAL SLOTS',
+        body: {
+          discipline: 'Each row is one meal bucket: Morning, Lunch, Dinner, Snacks by default. You can have up to 8. Rename, reorder, or delete any of them.',
+          balanced: 'Each row is one of your meal categories. You start with 4 but can add up to 8. Rename, reorder, or remove them however you like.',
+          mindful: 'These are your meal categories. Start with the 4 defaults or customize however feels right. Up to 8 total.',
+        },
+      },
+      {
+        targetKey: 'log_edit_slot_name',
+        skipIfTargetMissing: true,
+        title: 'RENAME A SLOT',
+        body: {
+          discipline: 'Tap any meal name to rename it inline. Changes apply immediately across your full log history.',
+          balanced: 'Tap any meal name to rename it. The name updates everywhere: your log, history, all of it.',
+          mindful: 'Tap any meal name to rename it to whatever fits your life. "Breakfast," "Pre-Workout," whatever works for you.',
+        },
+      },
+      {
+        targetKey: 'log_edit_slot_drag',
+        skipIfTargetMissing: true,
+        tutorialAction: 'scrollEditListToEnd',
+        title: 'DRAG TO REORDER',
+        body: {
+          discipline: 'Long-press this grip and drag to reorder the slot. Order saves instantly.',
+          balanced: 'Long-press this grip to drag the slot wherever you want it. Changes save automatically.',
+          mindful: 'Long-press and drag to rearrange. Put things in whatever order feels natural.',
+        },
+      },
+      {
+        targetKey: 'log_edit_add_btn',
+        title: 'ADD A SLOT',
+        body: {
+          discipline: 'This is your Add Meal Slot button. You can have up to 8 total. If it reads "Maximum 8 slots reached," remove a slot first to make room.',
+          balanced: 'Tap this to add a new meal category. You can have up to 8 total. If you\'re at the limit, remove one first.',
+          mindful: 'This adds new categories whenever you need them. Up to 8 total. If it\'s greyed out, you\'ve hit the limit. Remove one to open a spot.',
+        },
+      },
+    ],
+  },
+
+  {
     id: 'log_food',
     name: 'Logging Food',
     description: 'Walk through the full logging flow -- search, detail, log, and delete a real example entry.',
@@ -1528,7 +1588,7 @@ export const TUTORIALS: Tutorial[] = [
 
 export const TAB_TUTORIALS: Record<string, string[]> = {
   home: ['cal_card', 'macros_card', 'sleep_card', 'yvy_card', 'edit_layout'],
-  log: ['log_food', 'manage_log', 'barcode', 'create_food', 'recipes', 'if_card'],
+  log: ['log_food', 'manage_log', 'barcode', 'log_edit_layout', 'create_food', 'recipes', 'if_card'],
   workout: ['workout_basics', 'programs', 'routines', 'exercise_library'],
   stats: ['graph_creator', 'streaks', 'effort_vs_results'],
   profile: ['faith_and_style'],

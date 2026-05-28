@@ -6,8 +6,7 @@ import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View }
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
 import { storageSet } from '../utils/storage';
-
-const MEALS = ['Morning', 'Lunch', 'Dinner', 'Snacks'];
+import { DEFAULT_MEAL_SLOTS, MealSlot, findSlotForMeal, loadMealSlots, getMealDisplayName } from '../utils/mealSlots';
 
 type SleepStages = { core: number; deep: number; rem: number; totalMs: number };
 
@@ -87,6 +86,8 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
   const [calPickerVisible, setCalPickerVisible] = useState(false);
   const [pickerYear, setPickerYear] = useState(0);
   const [pickerMonth, setPickerMonth] = useState(0);
+  const [mealSlots, setMealSlots] = useState<MealSlot[]>(DEFAULT_MEAL_SLOTS);
+  const [slotNameCache, setSlotNameCache] = useState<Record<string, string>>({});
   const calFadeAnim = useRef(new Animated.Value(0)).current;
 
   const today = new Date();
@@ -97,6 +98,13 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
     const d = new Date(dateStr + 'T12:00:00');
     return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
   };
+
+  useEffect(() => {
+    loadMealSlots().then(({ mealSlots: slots, slotNameCache: cache }) => {
+      setMealSlots(slots);
+      setSlotNameCache(cache);
+    });
+  }, []);
 
   useEffect(() => {
     const load = async () => {
@@ -568,25 +576,35 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
               {entries.length === 0 ? (
                 <Text style={styles.emptyText}>No food logged this day.</Text>
               ) : (
-                MEALS.map(meal => {
-                  const mealEntries = entries.filter((e: any) => e.meal === meal);
-                  if (mealEntries.length === 0) return null;
-                  const mealTotal = mealEntries.reduce((s: number, e: any) => s + e.cal, 0);
-                  return (
-                    <View key={meal} style={{ marginBottom: 12 }}>
-                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
-                        <Text style={styles.sectionLabel}>{meal}</Text>
-                        <Text style={{ fontSize: 12, color: theme.accentGreen, fontFamily: 'DMSans_600SemiBold' }}>{mealTotal} kcal</Text>
-                      </View>
-                      {mealEntries.map((entry: any, i: number) => (
-                        <View key={i} style={styles.foodRow}>
-                          <Text style={styles.foodName} numberOfLines={1}>{entry.name}</Text>
-                          <Text style={styles.foodCal}>{entry.cal} kcal</Text>
+                (() => {
+                  const allMealKeys: string[] = Array.from(new Set(entries.map((e: any) => String(e.meal))));
+                  const orderedKeys: string[] = [
+                    ...mealSlots.map(s => s.id).filter(id => allMealKeys.some(k => k === id || mealSlots.find(s => s.id === id)?.name === k)),
+                    ...allMealKeys.filter(k => !mealSlots.find(s => s.id === k || s.name === k)),
+                  ];
+                  const seen = new Set<string>();
+                  return orderedKeys.filter(k => { if (seen.has(k)) return false; seen.add(k); return true; }).map((mealKey: string) => {
+                    const slot = findSlotForMeal(mealKey, mealSlots);
+                    const displayName = slot ? slot.name : getMealDisplayName(mealKey, mealSlots, slotNameCache);
+                    const mealEntries = entries.filter((e: any) => e.meal === mealKey || (slot && e.meal === slot.name));
+                    if (mealEntries.length === 0) return null;
+                    const mealTotal = mealEntries.reduce((s: number, e: any) => s + e.cal, 0);
+                    return (
+                      <View key={mealKey} style={{ marginBottom: 12 }}>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 }}>
+                          <Text style={styles.sectionLabel}>{displayName}</Text>
+                          <Text style={{ fontSize: 12, color: theme.accentGreen, fontFamily: 'DMSans_600SemiBold' }}>{mealTotal} kcal</Text>
                         </View>
-                      ))}
-                    </View>
-                  );
-                })
+                        {mealEntries.map((entry: any, i: number) => (
+                          <View key={i} style={styles.foodRow}>
+                            <Text style={styles.foodName} numberOfLines={1}>{entry.name}</Text>
+                            <Text style={styles.foodCal}>{entry.cal} kcal</Text>
+                          </View>
+                        ))}
+                      </View>
+                    );
+                  });
+                })()
               )}
             </View>
           )}

@@ -158,8 +158,8 @@ Fitness Metrics, Weight, Today's Training, Gratitude Streak: toolkit only, no tu
 ## LOG TAB
 
 ### Tab-Level Toolkit
-- Hub toolkit accessed from Log tab header icon (far left)
-- Does NOT have a single "Take a Tour" -- instead lists all 5 available tutorials by name
+- Hub toolkit accessed from Log tab header icon (far right)
+- Does NOT have a single "Take a Tour" -- instead lists all available tutorials by name
 - User picks which tutorial they need from the list
 
 ### Toolkits
@@ -172,7 +172,7 @@ Fitness Metrics, Weight, Today's Training, Gratitude Streak: toolkit only, no tu
 
 No other toolkits needed on log tab.
 
-### Tutorials (5)
+### Tutorials (6) -- order in TAB_TUTORIALS: log_food, manage_log, barcode, log_edit_layout, create_food, recipes, if_card
 
 | Tutorial ID | Name | Covers |
 |-------------|------|--------|
@@ -181,6 +181,8 @@ No other toolkits needed on log tab.
 | `barcode` | Barcode Scanner | Opening the scanner, what happens on a match, what happens on no match, the SET system (what it is and why), pinning a food to a barcode, unset a food, Create & Set for new foods, saved overrides persist |
 | `create_food` | Creating Your Own Food | Opening CustomFoodCreator, required fields (name + calories), optional fields (brand, macros, extended nutrition), serving size + unit, saving to My Foods library, how to edit a saved food later, Save as Copy for FatSecret foods |
 | `recipes` | Recipes | **INTERACTIVE -- SHIPPED 2026-05-25.** 10-step tour. Step 0 spotlights + FAB in food library. Step 1 navigates to recipe-builder, spotlights name input (demo ingredients auto-injected: Chicken Breast + Brown Rice + Olive Oil). Steps 2-6 spotlight add ingredient row, ingredients card, single ingredient row, total nutrition card, servings card. Step 7 spotlights Save button -- saveTutorialRecipe action saves with tutorialRecipe:true marker then router.back() pops recipe-builder cleanly. Step 8 navigates to Recipes tab, spotlights tab pills bar (orientation). Step 9 spotlights recipe row, deleteTutorialRecipe fires on DONE. No data footprint. |
+
+| `log_edit_layout` | Edit Meal Slots | Grid icon (styles.headerBtn bordered box, grid size 14) in Log header opens centered popup modal. Slot system: up to 8 slots, IDs stable, names changeable. Edit sheet uses tutorialMode inline pattern (same as streaks manage): Modal gated with !editMealsTutorialMode, absoluteFill View when tutorial active. Step 0: spotlight log_edit_layout_btn, tutorialAction openEditMealsForTutorial (sets editMealsTutorialMode + opens sheet). Step 1: noDimOverlay + bubbleAtBottom (overview -- user sees full modal). Step 2: spotlight log_edit_slot_name (rename). Step 3: spotlight log_edit_slot_drag, tutorialAction scrollEditListToEnd (FlatList.scrollToEnd + 300ms settle before step 4). Step 4: spotlight log_edit_add_btn -- always registered regardless of slot count. Copy covers both states: "up to 8 total, remove one to make room" so it's accurate whether button is active or greyed. Total: 5 steps. |
 
 **Note on log_food length**: Target 10-12 steps maximum. If step count exceeds this during build, split into `log_food_1` (find + log) and `log_food_2` (edit + remove + navigate). Decision at build time. Easy to digest is non-negotiable.
 

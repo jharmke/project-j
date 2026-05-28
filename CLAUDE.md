@@ -93,14 +93,15 @@ data/bible-web.ts -- Full KJV Bible, all 66 books
 useHealthKit.ts -- HealthKit hook
 useTooltip.ts -- AsyncStorage-backed hook, returns seen + markSeen + reset per tooltip key
 tooltipRegistry.ts -- Central tooltip definitions. Settings > Help auto-populates from this.
+utils/mealSlots.ts -- Meal slot system (MealSlot interface, DEFAULT_MEAL_SLOTS, loadMealSlots, saveMealSlots, getMealDisplayName, findSlotForMeal)
 firebaseConfig.ts, workoutData.ts, config.ts
 
 ## AsyncStorage Keys
 pj_YYYY-MM-DD -- daily data (entries, water, weight, steps, activeCalories, caloriesBurned, sleep fields, IF fields, excluded)
 pj_workout_state -- workout (checks, cardioComplete, programs, workoutNotes, cardioLogs, weeklyTemplate)
 pj_my_foods, pj_favorites, pj_recipes, pj_exercise_library
-pj_profile -- profile + waterPresets + stepGoal + sleepGoal
-pj_settings -- app settings including hapticsEnabled, cardOrder, cardVisible, theme, selectedAccent, workoutTags
+pj_profile -- profile + waterPresets + waterGoal + stepGoal + sleepGoal
+pj_settings -- app settings including hapticsEnabled, cardOrder, cardVisible, theme, selectedAccent, workoutTags, mealSlots (MealSlot[] up to 8 custom meal categories with stable IDs), slotNameCache (Record of all slot names ever -- never shrinks, used to display deleted slot names in history)
 pj_bible_reflections -- all journal entries
 pj_verse_rotation -- shuffled verse rotation order and current index
 pj_bible_{BookName}_{chapterNum} -- cached KJV chapter verses

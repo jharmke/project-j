@@ -16,7 +16,7 @@ export default function RecipeLogScreen() {
   const { recipeJson, meal, date } = useLocalSearchParams<{ recipeJson: string; meal: string; date: string }>();
 
   const recipe = recipeJson ? JSON.parse(recipeJson) : null;
-  const [logMode, setLogMode] = useState<'serving' | 'weight'>('serving');
+  const [logMode, setLogMode] = useState<'serving' | 'weight'>(recipe?.defaultToWeight && recipe?.totalWeight > 0 ? 'weight' : 'serving');
   const [servingAmount, setServingAmount] = useState('1');
   const [weightAmount, setWeightAmount] = useState('');
   const [showMealPicker, setShowMealPicker] = useState(false);
@@ -55,6 +55,29 @@ export default function RecipeLogScreen() {
     if (!calories) return;
     setShowMealPicker(false);
     try {
+      if (date === 'recipe') {
+        const makeId = () => Math.random().toString(36).substr(2, 9);
+        const ingredient = {
+          id: makeId(),
+          name: recipe.name,
+          cal: calories,
+          protein,
+          carbs,
+          fat,
+          fiber: Math.round((recipe.totalFiber || 0) * multiplier * 10) / 10,
+          sugar: Math.round((recipe.totalSugar || 0) * multiplier * 10) / 10,
+          sodium: Math.round((recipe.totalSodium || 0) * multiplier),
+          cholesterol: Math.round((recipe.totalCholesterol || 0) * multiplier),
+          saturatedFat: Math.round((recipe.totalSaturatedFat || 0) * multiplier * 10) / 10,
+          amount: logMode === 'weight' ? parseFloat(weightAmount) : parseFloat(servingAmount),
+          unit: logMode === 'weight' ? (recipe.totalWeightUnit || 'g') : recipe.servingName,
+        };
+        await AsyncStorage.setItem('pj_pending_ingredient', JSON.stringify(ingredient));
+        showToast('Added to recipe', recipe.name, 'success');
+        router.back();
+        router.back();
+        return;
+      }
       const saved = await AsyncStorage.getItem(`pj_${date}`);
       const current = saved ? JSON.parse(saved) : {};
       const entries = current.entries || [];
@@ -81,6 +104,7 @@ export default function RecipeLogScreen() {
     }
   };
 
+  const weightUnitWord: Record<string, string> = { g: 'grams', oz: 'ounces', lbs: 'pounds', ml: 'milliliters', cups: 'cups' };
   const styles = useStyles(theme);
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -111,15 +135,15 @@ export default function RecipeLogScreen() {
               <Text style={styles.macroLabel}>cal/{recipe.servingName}</Text>
             </View>
             <View style={styles.macroStat}>
-              <Text style={[styles.macroVal, { color: theme.macroProtein }]}>{Math.round(recipe.totalProtein / servingCount * 10) / 10}g</Text>
+              <Text style={[styles.macroVal, { color: theme.macroProtein }]}>{Math.round(recipe.totalProtein / servingCount * 10) / 10}<Text style={styles.macroUnit}>g</Text></Text>
               <Text style={styles.macroLabel}>protein</Text>
             </View>
             <View style={styles.macroStat}>
-              <Text style={[styles.macroVal, { color: theme.macroCarbs }]}>{Math.round(recipe.totalCarbs / servingCount * 10) / 10}g</Text>
+              <Text style={[styles.macroVal, { color: theme.macroCarbs }]}>{Math.round(recipe.totalCarbs / servingCount * 10) / 10}<Text style={styles.macroUnit}>g</Text></Text>
               <Text style={styles.macroLabel}>carbs</Text>
             </View>
             <View style={styles.macroStat}>
-              <Text style={[styles.macroVal, { color: theme.macroFat }]}>{Math.round(recipe.totalFat / servingCount * 10) / 10}g</Text>
+              <Text style={[styles.macroVal, { color: theme.macroFat }]}>{Math.round(recipe.totalFat / servingCount * 10) / 10}<Text style={styles.macroUnit}>g</Text></Text>
               <Text style={styles.macroLabel}>fat</Text>
             </View>
           </View>
@@ -161,7 +185,7 @@ export default function RecipeLogScreen() {
         {/* Amount Input */}
         <View style={styles.amountRow}>
           <Text style={styles.amountLabel}>
-            {logMode === 'serving' ? `How many ${recipe.servingName}?` : `How many ${recipe.totalWeightUnit}?`}
+            {logMode === 'serving' ? `How many ${recipe.servingName}?` : `How many ${weightUnitWord[recipe.totalWeightUnit] || recipe.totalWeightUnit}?`}
           </Text>
           <TextInput
             style={styles.amountInput}
@@ -177,7 +201,7 @@ export default function RecipeLogScreen() {
           <Text style={styles.nutritionTitle}>
             {logMode === 'serving'
               ? `Nutrition for ${servingAmount} ${recipe.servingName}`
-              : `Nutrition for ${weightAmount || '0'}${recipe.totalWeightUnit}`}
+              : `Nutrition for ${weightAmount || '0'} ${weightUnitWord[recipe.totalWeightUnit] || recipe.totalWeightUnit}`}
           </Text>
           <View style={styles.macroRow}>
             <View style={styles.macroStat}>
@@ -185,23 +209,26 @@ export default function RecipeLogScreen() {
               <Text style={styles.macroLabel}>Calories</Text>
             </View>
             <View style={styles.macroStat}>
-              <Text style={[styles.macroVal, { color: theme.macroProtein }]}>{protein}g</Text>
+              <Text style={[styles.macroVal, { color: theme.macroProtein }]}>{protein}<Text style={styles.macroUnit}>g</Text></Text>
               <Text style={styles.macroLabel}>Protein</Text>
             </View>
             <View style={styles.macroStat}>
-              <Text style={[styles.macroVal, { color: theme.macroCarbs }]}>{carbs}g</Text>
+              <Text style={[styles.macroVal, { color: theme.macroCarbs }]}>{carbs}<Text style={styles.macroUnit}>g</Text></Text>
               <Text style={styles.macroLabel}>Carbs</Text>
             </View>
             <View style={styles.macroStat}>
-              <Text style={[styles.macroVal, { color: theme.macroFat }]}>{fat}g</Text>
+              <Text style={[styles.macroVal, { color: theme.macroFat }]}>{fat}<Text style={styles.macroUnit}>g</Text></Text>
               <Text style={styles.macroLabel}>Fat</Text>
             </View>
           </View>
         </View>
 
         {/* Add to Diary */}
-        <TouchableOpacity style={styles.logBtn} onPress={openMealPicker}>
-          <Text style={styles.logBtnText}>ADD TO DIARY</Text>
+        <TouchableOpacity
+          style={[styles.logBtn, !calories && { opacity: 0.35 }]}
+          onPress={date === 'recipe' ? () => logRecipe('recipe') : openMealPicker}
+          disabled={!calories}>
+          <Text style={styles.logBtnText}>{date === 'recipe' ? 'ADD TO RECIPE' : 'ADD TO DIARY'}</Text>
         </TouchableOpacity>
 
       </ScrollView>
@@ -252,6 +279,7 @@ const useStyles = (theme: any) => StyleSheet.create({
   macroRow: { flexDirection: 'row', justifyContent: 'space-between' },
   macroStat: { alignItems: 'center', flex: 1 },
   macroVal: { fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },
+  macroUnit: { fontSize: 13, fontFamily: 'DMSans_400Regular', letterSpacing: 0 },
   macroLabel: { fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 2, textAlign: 'center' },
   section: { marginBottom: 16 },
   sectionLabel: { fontSize: 9, letterSpacing: 3, color: theme.textMuted, textTransform: 'uppercase', fontFamily: 'DMSans_500Medium', marginBottom: 8 },

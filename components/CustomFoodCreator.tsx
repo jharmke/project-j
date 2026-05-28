@@ -4,7 +4,9 @@ import { storageSet } from '../utils/storage';
 import * as Haptics from 'expo-haptics';
 import { useEffect, useRef, useState } from 'react';
 import {
+  ActionSheetIOS,
   Animated,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -15,6 +17,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Directory, File as FSFile, Paths } from 'expo-file-system/next';
+import * as ImagePicker from 'expo-image-picker';
 import { saveToFirebase } from '../firebaseConfig';
 import { useTheme } from '../theme';
 import { useToast } from './Toast';
@@ -106,6 +110,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
   const optionalMeasured = useRef(0);
   const prefillExpanded = useRef(false);
   const [saving, setSaving] = useState(false);
+  const [pendingPhotoUri, setPendingPhotoUri] = useState<string | null>(null);
 
   // Register the creator's ScrollView so the tutorial engine can scrollToTarget
   // when the save button is near or below the visible area.
@@ -195,6 +200,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
     setCholesterol(''); setSaturatedFat('');
     setServingGrams(''); setServingLabel(''); setServingUnitType('g');
     setAdditionalServings([]);
+    setPendingPhotoUri(null);
     setShowOptional(false);
     optionalHeight.setValue(0);
     optionalMeasured.current = 0;
@@ -206,6 +212,35 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
     const toValue = showOptional ? 0 : optionalMeasured.current;
     Animated.timing(optionalHeight, { toValue, duration: 250, useNativeDriver: false }).start();
     setShowOptional(v => !v);
+  };
+
+  const handlePhotoAdd = () => {
+    const options = pendingPhotoUri
+      ? ['Take Photo', 'Choose from Library', 'Remove Photo', 'Cancel']
+      : ['Take Photo', 'Choose from Library', 'Cancel'];
+    const cancelIndex = options.length - 1;
+    const destructiveIndex = pendingPhotoUri ? 2 : undefined;
+    ActionSheetIOS.showActionSheetWithOptions(
+      { options, cancelButtonIndex: cancelIndex, destructiveButtonIndex: destructiveIndex },
+      (buttonIndex) => {
+        if (buttonIndex === cancelIndex) return;
+        if (pendingPhotoUri && buttonIndex === 2) { setPendingPhotoUri(null); return; }
+        (async () => {
+          try {
+            let result: ImagePicker.ImagePickerResult;
+            if (buttonIndex === 0) {
+              result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.85 });
+            } else {
+              result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.85 });
+            }
+            if (result.canceled) return;
+            setPendingPhotoUri(result.assets[0].uri);
+          } catch {
+            showToast('Photo failed', 'Unable to access camera or library', 'error');
+          }
+        })();
+      }
+    );
   };
 
   const canSave = name.trim().length > 0 && calories.trim().length > 0 && parseInt(calories) > 0;
@@ -273,6 +308,21 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
           { nutrientName: 'Sugar Alcohols',               unitName: 'G',   value: parseFloat(sugarAlcohols) || 0 },
         ],
       };
+      if (pendingPhotoUri) {
+        try {
+          const safeId = id.replace(/[^a-zA-Z0-9_-]/g, '_');
+          const photoDir = new Directory(Paths.document, 'food_photos');
+          if (!photoDir.exists) photoDir.create();
+          const destUri = `${photoDir.uri}${safeId}.jpg`;
+          const destFile = new FSFile(destUri);
+          if (destFile.exists) destFile.delete();
+          const srcFile = new FSFile(pendingPhotoUri);
+          srcFile.copy(destFile);
+          await AsyncStorage.setItem(`pj_food_photo_${id}`, destUri);
+        } catch (e) {
+          console.log('CustomFoodCreator photo save error', e);
+        }
+      }
       const updated = [...existing, newFood].sort((a, b) => a.name.localeCompare(b.name));
       await storageSet('pj_my_foods', JSON.stringify(updated));
       await saveToFirebase('my_foods', 'foods', updated);
@@ -323,17 +373,28 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
           />
         </View>
 
-        {/* Brand */}
+        {/* Brand + Photo */}
         <View style={s.fieldRow}>
           <Text style={s.fieldLabel}>Brand</Text>
-          <TextInput
-            style={s.input}
-            placeholder="e.g. Tyson"
-            placeholderTextColor={theme.textPlaceholder}
-            value={brand}
-            onChangeText={setBrand}
-            autoCapitalize="words"
-          />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <TextInput
+              style={[s.input, { flex: 1 }]}
+              placeholder="e.g. Tyson"
+              placeholderTextColor={theme.textPlaceholder}
+              value={brand}
+              onChangeText={setBrand}
+              autoCapitalize="words"
+            />
+            <TouchableOpacity onPress={handlePhotoAdd} style={{ width: 64, height: 64 }} activeOpacity={0.8}>
+              {pendingPhotoUri ? (
+                <Image source={{ uri: pendingPhotoUri }} style={{ width: 64, height: 64, borderRadius: 10 }} resizeMode="cover" />
+              ) : (
+                <View style={{ width: 64, height: 64, borderRadius: 10, borderWidth: 1.5, borderStyle: 'dashed', borderColor: theme.textDim, alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="camera-outline" size={24} color={theme.textDim} />
+                </View>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Calories section wrapper -- spotlit as one unit by tutorial step 3 */}

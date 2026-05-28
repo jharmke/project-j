@@ -47,6 +47,7 @@ interface Recipe {
   totalCholesterol?: number;
   totalSaturatedFat?: number;
   createdAt: number;
+  defaultToWeight?: boolean;
 }
 
 const makeId = () => Math.random().toString(36).substr(2, 9);
@@ -78,6 +79,7 @@ export default function RecipeBuilderScreen() {
   const [totalWeightUnit, setTotalWeightUnit] = useState('g');
   const [servingCount, setServingCount] = useState('1');
   const [servingName, setServingName] = useState('serving');
+  const [defaultToWeight, setDefaultToWeight] = useState(false);
   const [showCustomFoodModal, setShowCustomFoodModal] = useState(false);
   const [showWeightUnitDropdown, setShowWeightUnitDropdown] = useState(false);
   const [unitBtnPos, setUnitBtnPos] = useState<{ top: number; right: number } | null>(null);
@@ -210,6 +212,7 @@ export default function RecipeBuilderScreen() {
           setTotalWeightUnit(recipe.totalWeightUnit);
           setServingCount(recipe.servingCount.toString());
           setServingName(recipe.servingName);
+          setDefaultToWeight(recipe.defaultToWeight || false);
         }
       }
     } catch (e) {}
@@ -296,6 +299,7 @@ export default function RecipeBuilderScreen() {
         totalCholesterol,
         totalSaturatedFat,
         createdAt: Date.now(),
+        defaultToWeight,
       };
       const saved = await AsyncStorage.getItem('pj_recipes');
       let recipes = saved ? JSON.parse(saved) : [];
@@ -551,6 +555,12 @@ export default function RecipeBuilderScreen() {
               </TouchableOpacity>
             </View>
           </View>
+          <TouchableOpacity style={styles.defaultWeightToggleRow} onPress={() => setDefaultToWeight(v => !v)} activeOpacity={0.7}>
+            <View style={[styles.defaultWeightCheckbox, defaultToWeight && styles.defaultWeightCheckboxActive]}>
+              {defaultToWeight && <Ionicons name="checkmark" size={12} color={theme.bgPrimary} />}
+            </View>
+            <Text style={styles.defaultWeightLabel}>Log by weight by default</Text>
+          </TouchableOpacity>
         </View>
 
       </ScrollView>
@@ -674,6 +684,10 @@ const useStyles = (theme: any) => StyleSheet.create({
     borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 14, fontFamily: 'DMSans_400Regular',
   },
   weightRow: { flexDirection: 'row', gap: 8, alignItems: 'flex-end' },
+  defaultWeightToggleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 14 },
+  defaultWeightCheckbox: { width: 20, height: 20, borderRadius: 4, borderWidth: 1, borderColor: theme.borderInput, backgroundColor: theme.bgInput, alignItems: 'center', justifyContent: 'center' },
+  defaultWeightCheckboxActive: { backgroundColor: theme.accentBlue, borderColor: theme.accentBlue },
+  defaultWeightLabel: { fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_400Regular' },
   unitPickerBtn: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder,

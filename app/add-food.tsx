@@ -39,6 +39,7 @@ interface MyFood {
   servingUnit?: string;
   fsId?: string | null;
   brand?: string;
+  isCustom?: boolean;
 }
 
 interface SearchResult {
@@ -610,6 +611,7 @@ const saveEditFood = async () => {
     }
     return {
       description: fresh.name,
+      brand: fresh.brand || null,
       foodNutrients: [
         { nutrientName: 'Energy', unitName: 'KCAL', value: fresh.cal },
         { nutrientName: 'Protein', unitName: 'G', value: fresh.protein || 0 },
@@ -838,6 +840,8 @@ const saveEditFood = async () => {
       .map(f => ({
         description: f.name,
         brand: f.brand || null,
+        isCustom: f.isCustom || true,
+        servingSize: f.servingSize,
         foodNutrients: [
           { nutrientName: 'Energy', unitName: 'KCAL', value: f.cal },
           { nutrientName: 'Protein', unitName: 'G', value: f.protein || 0 },
@@ -959,6 +963,10 @@ const openFoodDetail = async (food: SearchResult) => {
       return;
     }
     if (isRecipeMode) {
+      const myFoodMatch = food.isMyFood
+        ? (myFoods.find(f => f.name === food.description) || (food as any).myFoodData || null)
+        : null;
+      const isCustomFood = !!(food as any).isCustom || !!(myFoodMatch as any)?.isCustom;
       const fsId = (food as any).fsId;
       let fsServings: any[] = [];
       if (fsId && !(food as any).fromBarcode) {
@@ -970,6 +978,23 @@ const openFoodDetail = async (food: SearchResult) => {
           foodJson: JSON.stringify({
             ...food,
             fsServings: fsServings.length > 0 ? fsServings : undefined,
+            ...(isCustomFood && myFoodMatch ? {
+              existingCal: myFoodMatch.cal,
+              existingProtein: myFoodMatch.protein || 0,
+              existingCarbs: myFoodMatch.carbs || 0,
+              existingFat: myFoodMatch.fat || 0,
+              calPer100g: (myFoodMatch as any).calPer100g || 0,
+              proteinPer100g: (myFoodMatch as any).proteinPer100g || 0,
+              carbsPer100g: (myFoodMatch as any).carbsPer100g || 0,
+              fatPer100g: (myFoodMatch as any).fatPer100g || 0,
+              foodNutrients: (myFoodMatch as any).foodNutrients || food.foodNutrients || [],
+              servingUnitType: (myFoodMatch as any).servingUnitType || 'g',
+              servingUnit: (myFoodMatch as any).servingUnit || '',
+              existingAmount: ((myFoodMatch as any).servingSize || 100).toString(),
+              myFoodData: myFoodMatch,
+              isCustom: true,
+              brand: (myFoodMatch as any).brand || null,
+            } : {}),
           }),
           meal: 'recipe',
           date: 'recipe',
@@ -1256,24 +1281,46 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
       if (savedFoods) {
         (JSON.parse(savedFoods) as MyFood[]).forEach(f => { if (f.brand) myFoodsMap[f.name] = f.brand; });
       }
-      setRecentFoods(recent.slice(0, 15).map(f => ({
-        description: f.name.replace(/\s*\(.*?\)\s*$/, ''),
-        fullName: f.name,
-        brand: f.brand || myFoodsMap[f.name.replace(/\s*\(.*?\)\s*$/, '')] || null,
-        foodNutrients: [
-          { nutrientName: 'Energy', unitName: 'KCAL', value: f.cal },
-          { nutrientName: 'Protein', unitName: 'G', value: f.protein || 0 },
-          { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: f.carbs || 0 },
-          { nutrientName: 'Total lipid (fat)', unitName: 'G', value: f.fat || 0 },
-        ],
-        calPer100g: f.calPer100g,
-        proteinPer100g: f.proteinPer100g,
-        carbsPer100g: f.carbsPer100g,
-        fatPer100g: f.fatPer100g,
-        isMyFood: false,
-        isRecent: true,
-        fsId: f.fsId || null,
-      })));
+      const savedRecipesRaw = await AsyncStorage.getItem('pj_recipes');
+      const recipeByName: Record<string, any> = {};
+      if (savedRecipesRaw) {
+        (JSON.parse(savedRecipesRaw) as any[]).forEach(r => { recipeByName[r.name] = r; });
+      }
+      setRecentFoods(recent.slice(0, 15).map(f => {
+        const stripped = f.name.replace(/\s*\(.*?\)\s*$/, '');
+        const matchedRecipe = recipeByName[stripped];
+        if (matchedRecipe) {
+          return {
+            description: stripped,
+            fullName: f.name,
+            foodNutrients: [],
+            isMyFood: false,
+            isRecent: true,
+            isRecipe: true,
+            recipeData: matchedRecipe,
+            cal: Math.round(matchedRecipe.totalCal / (matchedRecipe.servingCount || 1)),
+            fsId: null,
+          };
+        }
+        return {
+          description: stripped,
+          fullName: f.name,
+          brand: f.brand || myFoodsMap[stripped] || null,
+          foodNutrients: [
+            { nutrientName: 'Energy', unitName: 'KCAL', value: f.cal },
+            { nutrientName: 'Protein', unitName: 'G', value: f.protein || 0 },
+            { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: f.carbs || 0 },
+            { nutrientName: 'Total lipid (fat)', unitName: 'G', value: f.fat || 0 },
+          ],
+          calPer100g: f.calPer100g,
+          proteinPer100g: f.proteinPer100g,
+          carbsPer100g: f.carbsPer100g,
+          fatPer100g: f.fatPer100g,
+          isMyFood: false,
+          isRecent: true,
+          fsId: f.fsId || null,
+        };
+      }));
     } catch (e) {
       console.log('Load recent error', e);
     }
@@ -1364,6 +1411,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
       updated = [...favorites, {
         name,
         cal,
+        brand: (food as any).brand || null,
         protein: getN('Protein'),
         carbs: getN('Carbohydrate, by difference'),
         fat: getN('Total lipid (fat)'),
@@ -1589,7 +1637,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
               </View>
               {/* Right side -- fixed layout so everything aligns */}
               <View style={styles.resultRight}>
-                {activeTab === 'pinned' ? (
+                {(item as any).isPinned ? (
                   <TouchableOpacity
                     ref={index === 0 && isTutorialScanMode ? (unsetButtonRef as any) : undefined}
                     onPress={() => {

@@ -94,9 +94,9 @@ function ToolkitSheetInner({ tab, onClose }: { tab: string; onClose: () => void 
     });
   };
 
-  const handleStart = (id: string) => {
+  const handleStart = (id: string, returnRoute?: string) => {
     handleClose();
-    setTimeout(() => startTutorial(id), 320);
+    setTimeout(() => startTutorial(id, returnRoute), 320);
   };
 
   const handleAllTutorials = () => {
@@ -160,7 +160,7 @@ function ToolkitSheetInner({ tab, onClose }: { tab: string; onClose: () => void 
             {tutorials.map((t, i) => (
               <TouchableOpacity
                 key={t.id}
-                onPress={() => handleStart(t.id)}
+                onPress={() => handleStart(t.id, t.returnRoute)}
                 style={[
                   styles.row,
                   {
@@ -175,7 +175,7 @@ function ToolkitSheetInner({ tab, onClose }: { tab: string; onClose: () => void 
                 </View>
                 <View style={styles.rowText}>
                   <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>{t.name}</Text>
-                  <Text style={[styles.rowDesc,  { color: theme.textSecondary }]} numberOfLines={1}>
+                  <Text style={[styles.rowDesc,  { color: theme.textSecondary }]}>
                     {t.description}
                   </Text>
                 </View>

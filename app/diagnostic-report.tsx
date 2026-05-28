@@ -1,12 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router, useFocusEffect } from 'expo-router';
-import { ReactNode, useCallback, useState } from 'react';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ToastRenderer, useToast } from '../components/Toast';
 import TooltipIcon from '../components/TooltipIcon';
 import { useTheme } from '../theme';
+import { useTutorial } from '../context/TutorialContext';
+import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import {
   BurnAccuracyFinding,
   ConsistencyFinding,
@@ -269,21 +271,67 @@ function SleepCard({ f, isMindful, theme, shadowStyle }: { f: SleepFinding; isMi
   );
 }
 
+// ── Tutorial demo report ───────────────────────────────────────────────────────
+
+const TUTORIAL_DEMO_REPORT: DiagnosticReport = {
+  id: 'tutorial_demo',
+  generatedAt: new Date().toISOString(),
+  windowDays: 30,
+  dateRangeStart: '2026-04-28',
+  dateRangeEnd: '2026-05-27',
+  goalDirection: 'lose',
+  summary: 'You logged 22 of 30 days. Your calorie deficit looks solid on paper, but sleep quality and weekend patterns are likely holding back your results.',
+  insufficientData: false,
+  minLoggedDays: 22,
+  consistency: { type: 'consistency', status: 'attention', loggedDays: 22, totalDays: 30, suspectDays: 2, excludedDays: 0, rate: 0.73 },
+  deficit: { type: 'deficit', status: 'good', goalDirection: 'lose', avgDailyDeficit: -340, expectedChangeLbs: 2.9, actualChangeLbs: -1.6, gapLbs: 1.3, loggedDays: 22, hasWeightData: true },
+  burnAccuracy: { type: 'burnAccuracy', status: 'attention', burnAccuracyPct: 100, avgActiveCalPerDay: 480, isFlagged: true },
+  macros: { type: 'macros', status: 'attention', macroStatus: 'attention', fiberStatus: 'good', avgProtein: 112, proteinGoalMin: 140, proteinGoalMax: 160, avgFiber: 28, hasData: true, bodyWeightLbs: 185, lowFiberNote: false },
+  sleep: { type: 'sleep', status: 'attention', avgSleepScore: 61, avgSleepHours: 6.4, totalSleepDays: 18, poorSleepCalDelta: 180, hasEnoughData: true },
+  correlations: {
+    type: 'correlations',
+    correlations: [
+      { id: 'sleep_intake', headline: 'After nights under 6 hours, you logged 180 more calories', detail: 'Sleep deprivation raises ghrelin (hunger) and lowers leptin (fullness). This pattern appeared consistently across your window.' },
+      { id: 'weekend_pattern', headline: 'Weekend calories averaged 350 more than weekdays', detail: 'Weekends showed a consistent surplus pattern. Most of the gap between expected and actual weight change comes from these days.' },
+    ],
+  },
+  suggestions: [
+    { rank: 1, headline: 'Protect your sleep', detail: 'Getting under 6 hours consistently is adding about 180 extra calories per day through appetite shifts. Prioritizing sleep could close most of your result gap.' },
+    { rank: 2, headline: 'Set a weekend calorie buffer', detail: 'Your weekday logging is strong. On weekends, plan for a 200-300 cal higher limit rather than trying to match weekday strictness.' },
+    { rank: 3, headline: 'Adjust your burn estimate', detail: 'Your burn accuracy is at 100%. Most wearables overestimate by 15-25%. Try 85% in Settings > Health for more accurate math.' },
+  ],
+};
+
 // ── Main screen ────────────────────────────────────────────────────────────────
 
 export default function DiagnosticReportScreen() {
   const insets = useSafeAreaInsets();
   const { theme: t } = useTheme();
   const { showToast } = useToast();
+  const { tutorial } = useLocalSearchParams<{ tutorial?: string }>();
+  const isTutorialMode = tutorial === '1';
+
+  const { registerScrollView, unregisterScrollView } = useTutorial();
+  const windowPickerRef     = useTutorialTarget('evr_window_picker');
+  const generateBtnRef      = useTutorialTarget('evr_generate_btn');
+  const findingsSectionRef  = useTutorialTarget('evr_findings_section');
+  const correlationsRef     = useTutorialTarget('evr_correlations');
+  const suggestionsRef      = useTutorialTarget('evr_suggestions');
+  const scrollRef = useRef<any>(null);
 
   const [savedReports, setSavedReports] = useState<DiagnosticReport[]>([]);
-  const [currentReport, setCurrentReport] = useState<DiagnosticReport | null>(null);
-  const [selectedWindow, setSelectedWindow] = useState<ReportWindow>(30);
+  const [currentReport, setCurrentReport] = useState<DiagnosticReport | null>(isTutorialMode ? TUTORIAL_DEMO_REPORT : null);
+  const [selectedWindow, setSelectedWindow] = useState<ReportWindow>(isTutorialMode ? 30 : 30);
   const [generating, setGenerating] = useState(false);
-  const [initialized, setInitialized] = useState(false);
+  const [initialized, setInitialized] = useState(isTutorialMode);
   const [styleMode, setStyleMode] = useState<'Discipline' | 'Balanced' | 'Mindful'>('Balanced');
   const [loggedDayCounts, setLoggedDayCounts] = useState<Record<number, number>>({});
   const [showAllSuggestions, setShowAllSuggestions] = useState(false);
+
+  useEffect(() => {
+    registerScrollView('effort_vs_results', scrollRef);
+    return () => unregisterScrollView('effort_vs_results');
+  }, []);
 
   const isMindful = styleMode === 'Mindful';
   const shadowStyle = { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 3 };
@@ -299,6 +347,7 @@ export default function DiagnosticReportScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      if (isTutorialMode) return;
       setInitialized(false);
       const load = async () => {
         try {
@@ -320,7 +369,7 @@ export default function DiagnosticReportScreen() {
         setInitialized(true);
       };
       load();
-    }, [])
+    }, [isTutorialMode])
   );
 
   const handleGenerate = async () => {
@@ -365,7 +414,7 @@ export default function DiagnosticReportScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 32 }]} showsVerticalScrollIndicator={false}>
 
         {/* Title */}
         <View style={{ paddingHorizontal: 4, marginBottom: 16, flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
@@ -374,7 +423,7 @@ export default function DiagnosticReportScreen() {
         </View>
 
         {/* Window picker */}
-        <View style={{ flexDirection: 'row', gap: 8 }}>
+        <View ref={windowPickerRef} collapsable={false} style={{ flexDirection: 'row', gap: 8 }}>
           {([14, 30, 90] as ReportWindow[]).map(w => (
             <TouchableOpacity
               key={w}
@@ -401,6 +450,7 @@ export default function DiagnosticReportScreen() {
 
         {/* Generate button */}
         <TouchableOpacity
+          ref={generateBtnRef}
           onPress={handleGenerate}
           disabled={!initialized || generating || isBlocked}
           style={{
@@ -417,7 +467,7 @@ export default function DiagnosticReportScreen() {
             </View>
           ) : (
             <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: '#fff' }}>
-              {!currentReport ? 'Generate Analysis' : needsRegenerate ? `Regenerate for ${selectedWindow} days` : 'Regenerate'}
+              {isTutorialMode || !currentReport ? 'Generate Analysis' : needsRegenerate ? `Regenerate for ${selectedWindow} days` : 'Regenerate'}
             </Text>
           )}
         </TouchableOpacity>
@@ -477,7 +527,9 @@ export default function DiagnosticReportScreen() {
             {/* Finding cards */}
             {!currentReport.insufficientData && (
               <>
-                <ConsistencyCard f={currentReport.consistency} isMindful={isMindful} theme={t} shadowStyle={shadowStyle} />
+                <View ref={findingsSectionRef} collapsable={false}>
+                  <ConsistencyCard f={currentReport.consistency} isMindful={isMindful} theme={t} shadowStyle={shadowStyle} />
+                </View>
                 {currentReport.deficit && <DeficitCard f={currentReport.deficit} isMindful={isMindful} theme={t} shadowStyle={shadowStyle} />}
                 {currentReport.burnAccuracy && <BurnAccuracyCard f={currentReport.burnAccuracy} isMindful={isMindful} theme={t} shadowStyle={shadowStyle} />}
                 {currentReport.macros && <MacroCard f={currentReport.macros} isMindful={isMindful} theme={t} shadowStyle={shadowStyle} />}
@@ -485,7 +537,7 @@ export default function DiagnosticReportScreen() {
 
                 {/* Correlations */}
                 {currentReport.correlations && currentReport.correlations.correlations.length > 0 && (
-                  <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw, ...shadowStyle }]}>
+                  <View ref={correlationsRef} collapsable={false} style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw, ...shadowStyle }]}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
                       <ChipLabel label="PATTERNS IN YOUR DATA" theme={t} />
                       <TooltipIcon tooltipKey="diagnostic_correlations" />
@@ -506,7 +558,7 @@ export default function DiagnosticReportScreen() {
 
                 {/* Suggestions */}
                 {currentReport.suggestions.length > 0 && (
-                  <View>
+                  <View ref={suggestionsRef} collapsable={false}>
                     <Text style={[styles.sectionLabel, { color: t.textMuted }]}>
                       {isMindful ? 'THINGS TO EXPLORE' : 'YOUR TOP SUGGESTIONS'}
                     </Text>

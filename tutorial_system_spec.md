@@ -232,13 +232,25 @@ No toolkit needed: exercise list/checkoff, sets/reps fields, cardio fields, FAB,
 
 No toolkit needed: Records (self-explanatory -- all-time bests with dates)
 
-### Tutorials (3)
+### Tutorials (3) -- ALL SHIPPED 2026-05-27
 
-| Tutorial ID | Name | Covers |
-|-------------|------|--------|
-| `graph_creator` | Graph Creator | Adding a graph (FAB → Add Graph), picking a data type (19 options, 4 categories), chart type (line/bar), timeframe (7d/30d/90d), color picker, live preview, saving. Editing an existing graph (gear icon): label, chart type, timeframe, color, delete. Pinning a graph to home screen. Period pills per card vs global period pills. |
-| `streaks` | Streaks | The 14 preset streak types (auto-tracked vs manual check-in), adding a streak tile, removing one, reordering (long-press drag), creating a custom streak (name + emoji), grace days explained (Balanced earns more than Discipline, Mindful no punishment), saver system (earn after 7 consecutive days, auto-applies on 1-day gap), Gratitude and Bible streaks faith-gated |
-| `effort_vs_results` | Effort vs Results | What this feature is (backward-looking analysis, pairs with Smart Tips forward-looking), selecting a time window (14/30/90d), generating a report, reading finding cards (Consistency / Deficit / Burn Accuracy / Macros / Sleep), understanding correlations (9 pattern types), suggestions section, archiving reports, what to do when insufficient data |
+| Tutorial ID | Name | Steps | Status |
+|-------------|------|-------|--------|
+| `graph_creator` | Graph Creator | 8 | SHIPPED -- fully interactive |
+| `streaks` | Streaks | 5 | SHIPPED -- fully interactive |
+| `effort_vs_results` | Effort vs Results | 6 | SHIPPED -- fully interactive with demo report |
+
+**graph_creator** (8 steps): preAction `injectTutorialGraph` injects a demo calories bar graph + force-opens Trends CollapsibleSection. Step 1 spotlights FAB, NEXT opens creator as inline absoluteFill View (tutorialMode pattern -- not a Modal, so TutorialOverlay can measure refs inside it). Step 2 noDimOverlay + bubbleAtBottom so full data grid visible, NEXT auto-selects Calories. Step 3 spotlights chart type row ("CHART TYPE"), NEXT auto-selects Bar. Step 4 spotlights color swatches. Step 5 "LIVE PREVIEW" spotlights preview StatsGraphCard (graph_creator_preview_card ref on wrapper View). Step 6 spotlights ADD TO STATS button, NEXT closes creator. Step 7 spotlights injected graph card in Trends. Step 8 "EDIT OR REMOVE" spotlights settings icon (editBtnRef prop on StatsGraphCard passed for tutorial card only), DONE fires deleteTutorialGraph removing demo graph.
+
+**streaks** (5 steps): preAction `openStreaksSectionForTutorial` force-opens the Streaks CollapsibleSection (CollapsibleSection has forceOpen prop). Step 1 spotlights streaks card. Step 2 spotlights first streak tile. Step 3 spotlights gear icon, NEXT fires `openStreaksManage` -- opens Manage Streaks as inline absoluteFill View (tutorialMode pattern). Step 4 spotlights manage panel. Step 5 spotlights Create Custom button, DONE fires `closeStreaksManage`. Note: grace days/savers steps intentionally omitted -- feature not implemented in app.
+
+**effort_vs_results** (6 steps): `returnRoute: '/(tabs)/stats'` so tutorial always returns to Stats on end/skip. Step 1 no spotlight, `navigateTo: '/diagnostic-report?tutorial=1'` -- screen detects tutorial param and pre-loads TUTORIAL_DEMO_REPORT (static realistic 30-day DiagnosticReport, bypasses all AsyncStorage loads, generate button shows "Generate Analysis" in tutorial mode not "Regenerate"). Steps 2-6 spotlight: window picker, generate button, ConsistencyCard only (evr_findings_section wraps first card only -- wrapping all 5 was too tall for viewport), correlations, suggestions. All steps noTabBarOffset. ToolkitSheet passes `t.returnRoute` to startTutorial so returnRoute works from the toolkit.
+
+### tutorialMode inline pattern (for spotlighting inside Modals)
+RN Modals create a new native window layer. measureInWindow inside a Modal returns coordinates relative to that Modal's window, not the app window -- TutorialOverlay cannot draw spotlights correctly. Solution: gate the real Modal with `{!tutorialMode && <Modal...>}` and render an identical inline absoluteFill View when `tutorialMode` is true. Refs inside the inline View are measurable normally by TutorialOverlay. Implemented for: Manage Streaks modal (streaksManageTutorialMode), Graph Creator modal (creatorTutorialMode).
+
+### CollapsibleSection forceOpen pattern
+Stats CollapsibleSections default to closed when not the first section. `CollapsibleSection` accepts `forceOpen?: boolean` -- when it flips to true, a useEffect opens the section with the normal fade animation. Used by: Streaks section (streaksSectionForceOpen, set by openStreaksSectionForTutorial preAction), Trends section (trendsSectionForceOpen, set by injectTutorialGraph, cleared by deleteTutorialGraph).
 
 ---
 
@@ -319,7 +331,7 @@ Understanding Your Style (1 -- first article for Tips & Guides section)
 ### Step data structure
 ```ts
 interface TutorialStep {
-  targetKey: string          // matches registered ref key
+  targetKey: string          // matches registered ref key; 'none' = no spotlight, full-screen dim
   title: string              // Bebas heading
   body: { discipline: string; balanced: string; mindful: string }
   highlightPadding?: number  // default 8
@@ -328,11 +340,22 @@ interface TutorialStep {
   navigateTo?: string        // router path to navigate BEFORE this step renders (interactive tutorial system)
   navigateDelay?: number     // ms to wait after navigation for refs to register (default 600ms)
   tutorialAction?: string    // named action to fire when NEXT is tapped on this step, before advancing
+  noTabBarOffset?: boolean   // set true for screens without a tab bar (diagnostic-report, add-food, workout-library) so isOffScreen() doesn't add TAB_H to bottom clip check
+  noDimOverlay?: boolean     // skip the 4-panel scrim -- fully visible UI behind overlay. Use when user needs to SEE the content (e.g. data grid in graph creator step 2)
+  bubbleAtBottom?: boolean   // pin callout bubble above tab bar instead of auto-positioning above/below spotlight. Use alongside noDimOverlay so bubble doesn't block visible content
+  scrollToTop?: boolean      // scroll all registered ScrollViews to y=0 before measuring. Use when target is at top of scroll view but user may have scrolled past it
+  ifCardState?: 'idle' | 'active' | 'eating'  // forces IFCard to render a specific visual state without touching real data
+  yvyDemo?: boolean          // forces YvY card to render hardcoded demo values instead of real data
 }
 
 interface Tutorial {
   id: string
+  name: string
+  description: string        // shown in ToolkitSheet and tutorials.tsx -- no truncation, full wrap
+  tab: 'home' | 'log' | 'workout' | 'stats' | 'profile'
   steps: TutorialStep[]
+  preAction?: string         // action key fired before step 0 opens -- use to inject demo data so it's on-screen when overlay fades in (no "it just appeared" surprise)
+  returnRoute?: string       // route to navigate to on tutorial end/skip -- use for tutorials that navigate away from the launch screen (e.g. effort_vs_results navigates to /diagnostic-report, returns to /(tabs)/stats)
 }
 ```
 

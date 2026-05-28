@@ -96,12 +96,20 @@ const fmtRecordDate = (dk: string | null) => {
 
 // ── Collapsible section header ─────────────────────────────────────────────────
 
-function CollapsibleSection({ label, subtitle, children, defaultOpen = true, theme, first = false }: {
-  label: string, subtitle?: string, children: React.ReactNode, defaultOpen?: boolean, theme: any, first?: boolean
+function CollapsibleSection({ label, subtitle, children, defaultOpen = true, theme, first = false, forceOpen = false }: {
+  label: string, subtitle?: string, children: React.ReactNode, defaultOpen?: boolean, theme: any, first?: boolean, forceOpen?: boolean
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const [visible, setVisible] = useState(defaultOpen);
   const fadeAnim = useRef(new Animated.Value(defaultOpen ? 1 : 0)).current;
+
+  useEffect(() => {
+    if (forceOpen && !open) {
+      setOpen(true);
+      setVisible(true);
+      Animated.timing(fadeAnim, { toValue: 1, duration: 280, useNativeDriver: true }).start();
+    }
+  }, [forceOpen]);
 
   const toggle = () => {
     const opening = !open;
@@ -207,10 +215,29 @@ export default function StatsScreen() {
   const { theme } = useTheme();
 
   // Tutorial spotlight targets
-  const fabRef            = useTutorialTarget('stats_fab');
-  const streaksSectionRef = useTutorialTarget('stats_streaks_section');
-  const statsScrollRef    = useRef<any>(null);
-  const { registerScrollView, unregisterScrollView } = useTutorial();
+  const fabRef                    = useTutorialTarget('stats_fab');
+  const streaksSectionRef         = useTutorialTarget('stats_streaks_section');
+  const streakTileRef             = useTutorialTarget('stats_streak_tile');
+  const streakGearRef             = useTutorialTarget('stats_streak_gear');
+  const streakManagePanelRef      = useTutorialTarget('stats_streak_manage_panel');
+  const streakCreateCustomBtnRef  = useTutorialTarget('stats_streak_create_custom_btn');
+  const graphCreatorDataGridRef   = useTutorialTarget('graph_creator_data_grid');
+  const graphCreatorChartTypeRef  = useTutorialTarget('graph_creator_chart_type');
+  const graphCreatorColorRef      = useTutorialTarget('graph_creator_color');
+  const graphCreatorSaveBtnRef    = useTutorialTarget('graph_creator_save_btn');
+  const graphCreatorPreviewCardRef = useTutorialTarget('graph_creator_preview_card');
+  const graphCreatorCardRef       = useTutorialTarget('graph_creator_graph_card');
+  const graphCreatorEditBtnRef    = useTutorialTarget('graph_creator_edit_btn');
+  const statsScrollRef            = useRef<any>(null);
+  const manageStreaksScrollRef    = useRef<any>(null);
+  const creatorScrollRef          = useRef<any>(null);
+  const { registerScrollView, unregisterScrollView, registerTutorialAction, unregisterTutorialAction } = useTutorial();
+
+  const [streaksManageTutorialMode, setStreaksManageTutorialMode] = useState(false);
+  const [creatorTutorialMode, setCreatorTutorialMode] = useState(false);
+  const [streaksSectionForceOpen, setStreaksSectionForceOpen] = useState(false);
+  const [trendsSectionForceOpen, setTrendsSectionForceOpen] = useState(false);
+  const tutorialGraphIdRef = useRef<string | null>(null);
 
   const [trendPeriod, setTrendPeriod] = useState<'7' | '30' | '90'>('30');
   const [activePeriod, setActivePeriod] = useState<'7' | '30' | '90' | '180' | 'ytd'>('7');
@@ -766,6 +793,108 @@ export default function StatsScreen() {
     return () => unregisterScrollView('stats');
   }, []);
 
+  // Register manage streaks scroll view when in tutorial mode
+  useEffect(() => {
+    if (streaksManageTutorialMode) {
+      registerScrollView('stats_manage', manageStreaksScrollRef);
+    } else {
+      unregisterScrollView('stats_manage');
+    }
+    return () => unregisterScrollView('stats_manage');
+  }, [streaksManageTutorialMode]);
+
+  // Register graph creator scroll view when in tutorial mode
+  useEffect(() => {
+    if (creatorTutorialMode) {
+      registerScrollView('graph_creator', creatorScrollRef);
+    } else {
+      unregisterScrollView('graph_creator');
+    }
+    return () => unregisterScrollView('graph_creator');
+  }, [creatorTutorialMode]);
+
+  // Register tutorial actions for stats tab tutorials
+  useEffect(() => {
+    // Streaks section auto-open for tutorial
+    registerTutorialAction('openStreaksSectionForTutorial', async () => {
+      setStreaksSectionForceOpen(true);
+    });
+
+    // Streaks manage modal actions
+    registerTutorialAction('openStreaksManage', async () => {
+      setStreaksManageTutorialMode(true);
+      setShowManageStreaks(true);
+      manageStreaksAnim.setValue(1);
+    });
+    registerTutorialAction('closeStreaksManage', async () => {
+      setStreaksManageTutorialMode(false);
+      setShowManageStreaks(false);
+    });
+
+    // Graph creator tutorial actions
+    registerTutorialAction('openGraphCreatorTutorial', async () => {
+      setCreatorTutorialMode(true);
+      setCreatorStep(1);
+      setCreatorDataKey(null);
+      setCreatorChartType(null);
+      setCreatorVisible(true);
+      creatorSheetAnim.setValue(1);
+      creatorOverlayAnim.setValue(1);
+    });
+    registerTutorialAction('creatorAutoToStep2', async () => {
+      handleCreatorSelectDataKey('calories' as DataKey);
+    });
+    registerTutorialAction('creatorAutoToStep3', async () => {
+      setCreatorChartType('bar' as ChartType);
+      setCreatorStep(3);
+    });
+    registerTutorialAction('closeGraphCreatorTutorial', async () => {
+      setCreatorTutorialMode(false);
+      setCreatorVisible(false);
+      setCreatorColor(undefined);
+    });
+
+    // Tutorial graph injection / cleanup
+    registerTutorialAction('injectTutorialGraph', async () => {
+      const tutId = 'tutorial_graph_calories';
+      tutorialGraphIdRef.current = tutId;
+      const tutCard: StatsCard = {
+        id: tutId,
+        type: 'graph',
+        dataKey: 'calories' as DataKey,
+        chartType: 'bar' as ChartType,
+        period: 7,
+        label: 'Calories',
+        visible: true,
+        order: -1,
+        placement: 'stats',
+      };
+      setStatsCards(prev => {
+        if (prev.some(c => c.id === tutId)) return prev;
+        return [tutCard, ...prev];
+      });
+      setTrendsSectionForceOpen(true);
+    });
+    registerTutorialAction('deleteTutorialGraph', async () => {
+      const tutId = tutorialGraphIdRef.current ?? 'tutorial_graph_calories';
+      setStatsCards(prev => prev.filter(c => c.id !== tutId));
+      tutorialGraphIdRef.current = null;
+      setTrendsSectionForceOpen(false);
+    });
+
+    return () => {
+      unregisterTutorialAction('openStreaksSectionForTutorial');
+      unregisterTutorialAction('openStreaksManage');
+      unregisterTutorialAction('closeStreaksManage');
+      unregisterTutorialAction('openGraphCreatorTutorial');
+      unregisterTutorialAction('creatorAutoToStep2');
+      unregisterTutorialAction('creatorAutoToStep3');
+      unregisterTutorialAction('closeGraphCreatorTutorial');
+      unregisterTutorialAction('injectTutorialGraph');
+      unregisterTutorialAction('deleteTutorialGraph');
+    };
+  }, []);
+
   useEffect(() => {
     if (hasLoadedProfile.current) {
       loadPeriodData(activePeriod, calTarget, sleepGoal, profileBmr, showNetCarbs);
@@ -1149,7 +1278,7 @@ export default function StatsScreen() {
             </CollapsibleSection>
             );
             if (section.systemKey === 'trends') return (
-              <CollapsibleSection key={section.id} label={section.label} subtitle="Charts and graphs over time" defaultOpen={isFirst} theme={theme} first={isFirst}>
+              <CollapsibleSection key={section.id} label={section.label} subtitle="Charts and graphs over time" defaultOpen={isFirst} theme={theme} first={isFirst} forceOpen={trendsSectionForceOpen}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <View style={{ flexDirection: 'row', gap: 6 }}>
               {(['7', '30', '90'] as const).map(p => (
@@ -1169,20 +1298,25 @@ export default function StatsScreen() {
           {statsCards
             .filter(c => c.type === 'graph' && c.visible)
             .sort((a, b) => a.order - b.order)
-            .map(card => (
-              <StatsGraphCard
-                key={card.id}
-                card={card}
-                cardTrendData={trendDataMap[card.period.toString()] ?? EMPTY_TREND_DATA}
-                theme={theme}
-                calTarget={calTarget}
-                stepGoal={stepGoal}
-                sleepGoal={sleepGoal}
-                onPeriodChange={handleCardPeriodChange}
-                onEditPress={(card) => setEditCard(card)}
-                showNetCarbs={showNetCarbs}
-              />
-            ))}
+            .map(card => {
+              const isTutCard = card.id === tutorialGraphIdRef.current;
+              return (
+                <View key={card.id} ref={isTutCard ? graphCreatorCardRef : undefined} collapsable={false}>
+                  <StatsGraphCard
+                    card={card}
+                    cardTrendData={trendDataMap[card.period.toString()] ?? EMPTY_TREND_DATA}
+                    theme={theme}
+                    calTarget={calTarget}
+                    stepGoal={stepGoal}
+                    sleepGoal={sleepGoal}
+                    onPeriodChange={handleCardPeriodChange}
+                    onEditPress={(card) => setEditCard(card)}
+                    showNetCarbs={showNetCarbs}
+                    editBtnRef={isTutCard ? graphCreatorEditBtnRef : undefined}
+                  />
+                </View>
+              );
+            })}
             </CollapsibleSection>
             );
             if (section.systemKey === 'records') return (
@@ -1206,7 +1340,7 @@ export default function StatsScreen() {
             </CollapsibleSection>
             );
             if (section.systemKey === 'streaks') return (
-              <CollapsibleSection key={section.id} label={section.label} subtitle="Consistency tracking" defaultOpen={isFirst} theme={theme} first={isFirst}>
+              <CollapsibleSection key={section.id} label={section.label} subtitle="Consistency tracking" defaultOpen={isFirst} theme={theme} first={isFirst} forceOpen={streaksSectionForceOpen}>
           <View ref={streaksSectionRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
             {/* Card header row -- (i) inline with label, gear on right */}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: liveStreaks.length > 0 ? 16 : 0 }}>
@@ -1214,7 +1348,7 @@ export default function StatsScreen() {
                 <Text style={[styles.cardLabel, { color: theme.textMuted }]}>STREAKS</Text>
                 <TooltipIcon tooltipKey="streaks_card" />
               </View>
-              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openManageStreaks(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <TouchableOpacity ref={streakGearRef} collapsable={false} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openManageStreaks(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                 <Ionicons name="settings" size={16} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
@@ -1239,9 +1373,12 @@ export default function StatsScreen() {
                         const colorIdx = (rowIdx * 3 + colIdx) % STREAK_COLORS.length;
                         const tileColor = STREAK_COLORS[colorIdx];
                         const isTappable = s.isManual;
+                        const isFirstTile = rowIdx === 0 && colIdx === 0;
                         return (
                           <TouchableOpacity
                             key={s.id}
+                            ref={isFirstTile ? streakTileRef : undefined}
+                            collapsable={false}
                             onPress={isTappable ? () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleManualCheckIn(s); } : undefined}
                             activeOpacity={isTappable ? 0.7 : 1}
                             style={{ alignItems: 'center', width: '33%' }}>
@@ -1495,8 +1632,185 @@ export default function StatsScreen() {
         </Animated.View>
       </Modal>
 
+      {/* Graph Creator -- inline absoluteFill for tutorial mode */}
+      {creatorTutorialMode && creatorVisible && (
+        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.55)', justifyContent: 'flex-end' }]}>
+          <View style={{
+            backgroundColor: theme.bgSheet,
+            borderTopLeftRadius: 20, borderTopRightRadius: 20,
+            borderWidth: 0.5, borderBottomWidth: 0, borderColor: theme.borderSheet,
+            maxHeight: Dimensions.get('window').height * 0.85,
+          }}>
+            <View style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 4 }}>
+              <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
+            </View>
+            <ScrollView ref={creatorScrollRef} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 16 }} showsVerticalScrollIndicator={false}>
+              {/* Header */}
+              <View style={{ paddingTop: 12, paddingBottom: 20 }}>
+                <Text style={{ fontFamily: 'BebasNeue_400Regular', fontSize: 22, letterSpacing: 3, color: theme.accentBlueRaw }}>
+                  {creatorStep === 1 ? 'CHOOSE DATA TYPE' : creatorStep === 2 ? 'CHOOSE CHART TYPE' : 'PREVIEW'}
+                </Text>
+              </View>
+
+              {/* Step 1: Data type grid */}
+              {creatorStep === 1 && (
+                <View ref={graphCreatorDataGridRef} collapsable={false} style={{ gap: 16 }}>
+                  {DATA_KEY_CATEGORIES.map(cat => {
+                    const keys = (Object.keys(DATA_KEY_META) as DataKey[]).filter(dk => DATA_KEY_META[dk].category === cat);
+                    return (
+                      <View key={cat}>
+                        <Text style={{ fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted, marginBottom: 10 }}>
+                          {cat}
+                        </Text>
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                          {keys.map(dk => {
+                            const meta = DATA_KEY_META[dk];
+                            const sel = creatorDataKey === dk;
+                            return (
+                              <TouchableOpacity key={dk} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleCreatorSelectDataKey(dk); }}
+                                style={{ width: '47%', backgroundColor: sel ? theme.accentBlueBg : theme.bgCard,
+                                  borderWidth: 1, borderColor: sel ? theme.accentBlueRaw : theme.borderCard,
+                                  borderRadius: 12, padding: 14, alignItems: 'center', gap: 6 }}>
+                                <Ionicons name={meta.icon as any} size={22} color={sel ? theme.accentBlue : theme.textMuted} />
+                                <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: sel ? theme.accentBlue : theme.textPrimary, textAlign: 'center' }}>
+                                  {meta.label}
+                                </Text>
+                                <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: theme.textDim, textAlign: 'center', lineHeight: 13 }}>
+                                  {meta.description}
+                                </Text>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+
+              {/* Step 2: Chart type */}
+              {creatorStep === 2 && creatorDataKey && (
+                <View ref={graphCreatorChartTypeRef} collapsable={false} style={{ flexDirection: 'row', gap: 12 }}>
+                  {availableChartTypes(creatorDataKey).map(ct => {
+                    const sel = creatorChartType === ct;
+                    return (
+                      <TouchableOpacity key={ct} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCreatorChartType(ct); setCreatorStep(3); }}
+                        style={{ flex: 1, backgroundColor: sel ? theme.accentBlueBg : theme.bgCard,
+                          borderWidth: 1.5, borderColor: sel ? theme.accentBlueRaw : theme.borderCard,
+                          borderRadius: 14, padding: 24, alignItems: 'center', gap: 10 }}>
+                        <Ionicons name={ct === 'line' ? 'analytics-outline' : 'bar-chart-outline'} size={32}
+                          color={sel ? theme.accentBlue : theme.textMuted} />
+                        <Text style={{ fontSize: 16, fontFamily: 'DMSans_700Bold', color: sel ? theme.accentBlue : theme.textPrimary }}>
+                          {ct === 'line' ? 'Line' : 'Bar'}
+                        </Text>
+                        <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim, textAlign: 'center' }}>
+                          {ct === 'line' ? 'Trend line with area fill' : 'Daily bar chart'}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+
+              {/* Step 3: Color + preview + save */}
+              {creatorStep === 3 && creatorDataKey && creatorChartType && (
+                <>
+                  {creatorDataKey !== 'workoutFreq' && (
+                    <View ref={graphCreatorColorRef} collapsable={false}>
+                      <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 10 }}>
+                        {creatorDataKey === 'macros' ? 'Macro Colors' : 'Color'}
+                      </Text>
+                      {creatorDataKey === 'macros' ? (
+                        <>
+                          {([
+                            { key: 'protein' as const, label: 'Protein' },
+                            { key: 'carbs' as const, label: 'Carbs' },
+                            { key: 'fat' as const, label: 'Fat' },
+                          ]).map(({ key, label }) => {
+                            const usedColors = Object.entries(creatorMacroColors)
+                              .filter(([k]) => k !== key)
+                              .map(([, v]) => v);
+                            return (
+                              <View key={key} style={{ marginBottom: 10 }}>
+                                <Text style={{ fontSize: 9, fontFamily: 'DMSans_600SemiBold', letterSpacing: 1.5, textTransform: 'uppercase', color: theme.textDim, marginBottom: 6 }}>{label}</Text>
+                                <View style={{ flexDirection: 'row', gap: 8 }}>
+                                  {GRAPH_SWATCHES.map(sw => {
+                                    const selected = creatorMacroColors[key] === sw;
+                                    const blocked = usedColors.includes(sw);
+                                    return (
+                                      <TouchableOpacity key={sw} disabled={blocked}
+                                        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCreatorMacroColors(prev => ({ ...prev, [key]: sw })); }}
+                                        style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: sw,
+                                          opacity: blocked ? 0.2 : 1,
+                                          borderWidth: selected ? 2 : 0, borderColor: '#ffffff',
+                                          alignItems: 'center', justifyContent: 'center' }}>
+                                        {selected && <Ionicons name="checkmark" size={13} color="#ffffff" />}
+                                      </TouchableOpacity>
+                                    );
+                                  })}
+                                </View>
+                              </View>
+                            );
+                          })}
+                          <View style={{ height: 4 }} />
+                        </>
+                      ) : (
+                        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+                          {GRAPH_SWATCHES.map(sw => {
+                            const selected = creatorColor === sw;
+                            return (
+                              <TouchableOpacity key={sw}
+                                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCreatorColor(selected ? undefined : sw); }}
+                                style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: sw,
+                                  borderWidth: selected ? 2 : 0, borderColor: '#ffffff',
+                                  alignItems: 'center', justifyContent: 'center' }}>
+                                {selected && <Ionicons name="checkmark" size={13} color="#ffffff" />}
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                      )}
+                    </View>
+                  )}
+                  <View ref={graphCreatorPreviewCardRef} collapsable={false}>
+                    <StatsGraphCard
+                      card={{ id: 'creator_preview', type: 'graph', dataKey: creatorDataKey, chartType: creatorChartType, period: 7, label: DATA_KEY_META[creatorDataKey].label, visible: true, order: 0, placement: 'stats',
+                        color: creatorColor,
+                        macroColors: (creatorMacroColors.protein !== MACRO_PROTEIN || creatorMacroColors.carbs !== MACRO_CARBS || creatorMacroColors.fat !== MACRO_FAT) ? creatorMacroColors : undefined,
+                      }}
+                      cardTrendData={trendDataMap['7'] ?? EMPTY_TREND_DATA}
+                      theme={theme}
+                      calTarget={calTarget}
+                      stepGoal={stepGoal}
+                      sleepGoal={sleepGoal}
+                      onPeriodChange={() => {}}
+                      onEditPress={() => {}}
+                    />
+                  </View>
+                  <TouchableOpacity
+                    ref={graphCreatorSaveBtnRef}
+                    collapsable={false}
+                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); handleAddCard(); }}
+                    style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 4 }}>
+                    <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: '#fff', letterSpacing: 1.5 }}>ADD TO STATS</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </ScrollView>
+
+            {/* Step indicator */}
+            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 7, paddingTop: 10, paddingBottom: 16 }}>
+              {[1, 2, 3].map(s => (
+                <View key={s} style={{ width: s === creatorStep ? 16 : 6, height: 6, borderRadius: 3,
+                  backgroundColor: s <= creatorStep ? theme.accentBlueRaw : theme.borderSubtle }} />
+              ))}
+            </View>
+          </View>
+        </View>
+      )}
+
       {/* ── CREATOR MODAL ── */}
-      <Modal transparent animationType="none" visible={creatorVisible} onRequestClose={closeCreatorModal} statusBarTranslucent hardwareAccelerated
+      {!creatorTutorialMode && <Modal transparent animationType="none" visible={creatorVisible} onRequestClose={closeCreatorModal} statusBarTranslucent hardwareAccelerated
         onShow={() => {
           Animated.parallel([
             Animated.timing(creatorSheetAnim, { toValue: 1, duration: 320, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
@@ -1686,7 +2000,7 @@ export default function StatsScreen() {
             </View>
           </Animated.View>
         </View>
-      </Modal>
+      </Modal>}
 
       {/* ── CARD EDIT MODAL ── */}
       <StatsCardEditModal
@@ -1772,8 +2086,80 @@ export default function StatsScreen() {
         </Modal>
       )}
 
+      {/* Manage Streaks -- inline absoluteFill for tutorial mode so spotlight works */}
+      {streaksManageTutorialMode && showManageStreaks && (
+        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' }]}>
+          <View ref={streakManagePanelRef} collapsable={false} style={{
+            width: '92%', maxHeight: '72%', borderRadius: 16, backgroundColor: theme.bgSheet,
+            borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderSheet, borderTopColor: theme.accentBlueRaw,
+            padding: 20,
+          }}>
+            <Text style={{ fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw, marginBottom: 16 }}>MANAGE STREAKS</Text>
+            <ScrollView ref={manageStreaksScrollRef} showsVerticalScrollIndicator={false}>
+              {streakConfig.length > 0 && (
+                <>
+                  <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 10 }}>ACTIVE</Text>
+                  {streakConfig.map(item => {
+                    const live = liveStreaks.find(l => l.id === item.id);
+                    const meta = item.key ? BUILTIN_STREAK_META[item.key] : null;
+                    const isManual = meta ? meta.isManual : true;
+                    return (
+                      <View key={item.id} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
+                        <Text style={{ fontSize: 20, marginRight: 10 }}>{item.emoji}</Text>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary }}>{item.label}</Text>
+                          <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim }}>{live ? `${live.value} day streak · ` : ''}{isManual ? 'Manual check-in' : 'Auto-tracked'}</Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+                  <View style={{ height: 20 }} />
+                </>
+              )}
+              {(() => {
+                const activeIds = new Set(streakConfig.map(s => s.id));
+                const isNRN = faithJourney === 'notrightnow';
+                const available = (Object.keys(BUILTIN_STREAK_META) as BuiltinStreakKey[]).filter(key => {
+                  if (BUILTIN_STREAK_META[key].faithGated && isNRN) return false;
+                  return !activeIds.has(`builtin_${key}`);
+                });
+                if (available.length === 0) return null;
+                return (
+                  <>
+                    <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 10 }}>ADD PRESET</Text>
+                    {available.map(key => {
+                      const meta = BUILTIN_STREAK_META[key];
+                      return (
+                        <View key={key} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
+                          <Text style={{ fontSize: 20, marginRight: 10 }}>{meta.emoji}</Text>
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary }}>{meta.label}</Text>
+                            <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim }}>{meta.isManual ? 'Manual check-in' : 'Auto-tracked'}</Text>
+                          </View>
+                          <Ionicons name="add-circle-outline" size={20} color={theme.accentBlue} />
+                        </View>
+                      );
+                    })}
+                    <View style={{ height: 20 }} />
+                  </>
+                );
+              })()}
+              <TouchableOpacity
+                ref={streakCreateCustomBtnRef}
+                collapsable={false}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder,
+                  borderRadius: 10, paddingVertical: 12, marginTop: 4, marginBottom: 8 }}>
+                <Ionicons name="add" size={18} color={theme.accentBlue} />
+                <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlue }}>Create Custom Streak</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      )}
+
       {/* Manage Streaks Modal */}
-      <Modal transparent animationType="none" visible={showManageStreaks} onRequestClose={closeManageStreaks} statusBarTranslucent>
+      {!streaksManageTutorialMode && <Modal transparent animationType="none" visible={showManageStreaks} onRequestClose={closeManageStreaks} statusBarTranslucent>
         <Animated.View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', opacity: manageStreaksAnim }}>
           <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={closeManageStreaks} />
           <Animated.View style={{
@@ -1869,7 +2255,7 @@ export default function StatsScreen() {
             </ScrollView>
           </Animated.View>
         </Animated.View>
-      </Modal>
+      </Modal>}
 
       {/* Create Custom Streak Modal */}
       <Modal transparent animationType="none" visible={showCreateCustom} onRequestClose={closeCreateCustom} statusBarTranslucent>

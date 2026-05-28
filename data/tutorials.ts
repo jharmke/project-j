@@ -37,6 +37,8 @@ export interface Tutorial {
   steps: TutorialStep[];
   // Optional action key fired before step 0 opens (inject demo data before overlay appears)
   preAction?: string;
+  // Route to navigate to when the tutorial ends or is skipped (for tutorials that navigate away)
+  returnRoute?: string;
 }
 
 export const TUTORIALS: Tutorial[] = [
@@ -251,7 +253,7 @@ export const TUTORIALS: Tutorial[] = [
   {
     id: 'macros_card',
     name: 'Macros Card',
-    description: 'What protein, carbs, and fat mean and how to read your bars.',
+    description: 'What protein, carbs, and fat mean, how to read your bars, and what net carbs means.',
     tab: 'home',
     steps: [
       {
@@ -276,9 +278,9 @@ export const TUTORIALS: Tutorial[] = [
         targetKey: 'macros_carbs',
         title: 'CARBS',
         body: {
-          discipline: 'Carbs are your primary fuel. Time them around training for performance. Cut them to accelerate fat loss -- but don\'t eliminate them.',
-          balanced: 'Carbs give you energy throughout the day. Your goal is set based on how you split your macros in settings.',
-          mindful: 'Carbs provide energy for your body and brain. Your bar fills as you log foods containing carbohydrates.',
+          discipline: 'Carbs are your primary fuel. Time them around training for performance. If you\'ve enabled Net Carbs in Settings, this bar shows total carbs minus fiber and sugar alcohols -- the carbs that actually impact blood sugar.',
+          balanced: 'Carbs give you energy throughout the day. If you\'ve enabled Net Carbs in Settings, this bar shows net carbs (total carbs minus fiber and sugar alcohols) instead of total carbs.',
+          mindful: 'Carbs provide energy for your body and brain. If you\'ve turned on Net Carbs in Settings, your bar shows net carbs -- total carbs minus fiber and sugar alcohols.',
         },
       },
       {
@@ -1240,52 +1242,87 @@ export const TUTORIALS: Tutorial[] = [
   {
     id: 'graph_creator',
     name: 'Graph Creator',
-    description: 'Add custom graphs to your Stats page and pin them to your home screen.',
+    description: 'Build custom graphs for 19 data types, choose your chart style and color, and add them to your Stats page or pin them to your home screen.',
     tab: 'stats',
+    preAction: 'injectTutorialGraph',
     steps: [
       {
         targetKey: 'stats_fab',
+        tutorialAction: 'openGraphCreatorTutorial',
         title: 'ADDING A GRAPH',
         body: {
-          discipline: 'Tap the + FAB in the bottom-right of Stats. Choose "Add Graph." 19 data types across 4 categories. Build exactly what you want to track.',
-          balanced: 'Tap the + FAB in Stats and choose "Add Graph." You\'ll walk through picking a data type, chart style, and timeframe.',
-          mindful: 'Tap the + button in Stats and choose "Add Graph." Pick what you want to see and the app builds the chart for you.',
+          discipline: 'Tap the + FAB to open the Graph Creator. 19 data types across 4 categories. Build exactly what you want to track.',
+          balanced: 'Tap the + FAB and choose "Add Graph." You\'ll pick a data type, chart style, and color.',
+          mindful: 'Tap the + button and choose "Add Graph." Pick what you want to see and the app builds the chart for you.',
         },
       },
       {
-        targetKey: 'none',
-        title: 'PICKING DATA',
+        targetKey: 'graph_creator_data_grid',
+        tutorialAction: 'creatorAutoToStep2',
+        noDimOverlay: true,
+        bubbleAtBottom: true,
+        title: 'CHOOSE YOUR DATA',
         body: {
-          discipline: 'Choose from 19 data types: Nutrition (calories, macros, fiber, sodium), Activity (steps, active cals, exercise mins, effort), Body (weight, body fat), Sleep & Recovery (score, hours).',
+          discipline: '19 data types across 4 categories: Nutrition (calories, macros, fiber, sodium), Activity (steps, active cals, effort), Body (weight, body fat), Sleep & Recovery (score, hours).',
           balanced: 'Pick what you want to graph. Options include calories, macros, steps, weight, sleep, and more -- organized by category.',
           mindful: 'Choose from the available data types. Pick whatever feels interesting or useful to see over time.',
         },
       },
       {
-        targetKey: 'none',
+        targetKey: 'graph_creator_chart_type',
+        tutorialAction: 'creatorAutoToStep3',
         title: 'CHART TYPE',
         body: {
-          discipline: 'Line or bar. Line = trends and rates of change. Bar = daily volumes. Macros force stacked bar (protein/carbs/fat per day). Choose based on the story you want to tell.',
-          balanced: 'Choose line or bar chart. Line charts are good for trends, bar charts for daily amounts. Macros use stacked bars automatically.',
-          mindful: 'Line or bar -- either works. Pick whichever looks clearer to you. You can always change it later.',
+          discipline: 'Line charts show trend and direction over time. Bar charts show daily volume at a glance. Line for weight trend, bar for calorie adherence.',
+          balanced: 'Pick the chart style that helps you read your data most clearly. Line for trend direction, bar for daily totals.',
+          mindful: 'Line or bar -- pick whichever helps you digest the information best. You can always change it later.',
         },
       },
       {
-        targetKey: 'none',
-        title: 'TIMEFRAME AND COLOR',
+        targetKey: 'graph_creator_color',
+        title: 'PICK A COLOR',
         body: {
-          discipline: '7, 30, or 90 days. 7d shows recent daily detail. 90d shows trends. Color picker lets you own the visual. 8 curated options.',
-          balanced: 'Pick 7, 30, or 90 days for the chart window. Then choose a color from the swatches to personalize the graph.',
-          mindful: 'Choose how many days to show and a color that resonates. 7 days shows recent detail, 90 days shows the bigger picture.',
+          discipline: 'Color is visual separation. Use different colors for different metrics so you can scan your stats page instantly.',
+          balanced: 'Color-code your graphs to tell them apart at a glance. 8 curated options to choose from.',
+          mindful: 'Pick a color that resonates with you. This is your space -- make it feel right.',
         },
       },
       {
-        targetKey: 'none',
-        title: 'EDITING AND PINNING',
+        targetKey: 'graph_creator_preview_card',
+        title: 'LIVE PREVIEW',
         body: {
-          discipline: 'Tap the gear icon on any graph card to edit label, chart type, timeframe, or color. Pin it to your home screen via the Edit Layout → Add Cards panel.',
-          balanced: 'Tap the gear on any graph to edit it. To put a graph on your home screen, open Edit Layout → Add Cards and pin it.',
-          mindful: 'Tap the gear icon to change any graph. You can also pin your favorite graphs to the home screen from the Edit Layout panel.',
+          discipline: 'This is a live preview using your real data. What you see is exactly what will appear on your Stats page.',
+          balanced: 'The preview below shows exactly what your graph will look like with your actual data before you commit.',
+          mindful: 'Take a look at the preview below. If it feels right, add it. If you want to adjust the color or style, go back.',
+        },
+      },
+      {
+        targetKey: 'graph_creator_save_btn',
+        tutorialAction: 'closeGraphCreatorTutorial',
+        title: 'ADD TO STATS',
+        body: {
+          discipline: 'Tap ADD TO STATS and your graph appears in the Trends section immediately. Pin it to your home screen via Edit Layout.',
+          balanced: 'Tap ADD TO STATS and your graph shows up in the Trends section. You can pin any graph to your home screen from Edit Layout.',
+          mindful: 'Tap ADD TO STATS and the graph appears. It\'s there when you want it -- no pressure to check it daily.',
+        },
+      },
+      {
+        targetKey: 'graph_creator_graph_card',
+        title: 'YOUR GRAPH',
+        body: {
+          discipline: 'Your graph lives in the Trends section. Use the period buttons to change the time window. Tap the settings icon to edit it anytime.',
+          balanced: 'Your new graph is right here in Trends. Tap the period buttons to change the time window, or tap the settings icon to edit or rename it.',
+          mindful: 'Your graph is here whenever you want to look at it. Adjust the time window or settings whenever you like.',
+        },
+      },
+      {
+        targetKey: 'graph_creator_edit_btn',
+        tutorialAction: 'deleteTutorialGraph',
+        title: 'EDIT OR REMOVE',
+        body: {
+          discipline: 'Tap the settings icon on any graph card to rename it, change chart type, adjust timeframe, recolor, or delete it permanently.',
+          balanced: 'Tap the settings icon to open graph options: rename, recolor, change chart type, or delete. The demo graph will be removed now.',
+          mindful: 'The settings icon lets you adjust or remove any graph. The demo graph we used for this tour will be removed when you tap DONE.',
         },
       },
     ],
@@ -1294,8 +1331,9 @@ export const TUTORIALS: Tutorial[] = [
   {
     id: 'streaks',
     name: 'Streaks',
-    description: 'Set up streak tiles, earn grace days, and understand the saver system.',
+    description: 'Set up streak tiles, track habits daily, and create your own custom streaks.',
     tab: 'stats',
+    preAction: 'openStreaksSectionForTutorial',
     steps: [
       {
         targetKey: 'stats_streaks_section',
@@ -1307,47 +1345,40 @@ export const TUTORIALS: Tutorial[] = [
         },
       },
       {
-        targetKey: 'stats_streaks_section',
+        targetKey: 'stats_streak_tile',
         title: 'STREAK TILES',
         body: {
-          discipline: 'Up to 5 active streak tiles. Each shows your current streak and last 7 days. Manual tiles flash "LOGGED" for 1.5s when checked. Long-press to drag reorder.',
+          discipline: 'Each tile shows your current streak count and a 7-day dot grid. Manual tiles flash "LOGGED" when checked. Long-press to drag and reorder.',
           balanced: 'Each tile shows your current streak and a 7-day dot grid. Manual tiles have a tap-to-check-in button. Drag to reorder.',
           mindful: 'Streak tiles show your day count and a week view. Tap to check in on manual habits. Arrange them however you like.',
         },
       },
       {
-        targetKey: 'none',
-        title: 'MANAGING STREAKS',
+        targetKey: 'stats_streak_gear',
+        tutorialAction: 'openStreaksManage',
+        title: 'THE GEAR ICON',
         body: {
-          discipline: 'Tap the gear on the Streaks card to manage. Add presets (14 types), remove tiles, create custom streaks (name + emoji), reorder.',
-          balanced: 'Tap the gear icon to add new streaks, remove ones you don\'t need, or create a custom one with your own name and emoji.',
-          mindful: 'The gear icon opens streak management. Add what matters to you, remove what doesn\'t. This is your setup.',
+          discipline: 'Tap the gear to open streak management. Add from 14 preset habits, remove tiles you don\'t need, or create your own.',
+          balanced: 'Tap the gear icon to manage your streaks. Add new ones, remove ones you don\'t need, or create a custom streak.',
+          mindful: 'The gear icon opens streak management. Add what matters to you, remove what doesn\'t.',
         },
       },
       {
-        targetKey: 'none',
-        title: 'GRACE DAYS',
+        targetKey: 'stats_streak_manage_panel',
+        title: 'MANAGE PANEL',
         body: {
-          discipline: 'Miss one day? Grace days let you cover it without losing your streak. Balanced mode earns more grace days than Discipline. Spend them wisely.',
-          balanced: 'Grace days automatically cover a missed day so you don\'t lose your streak. You earn them by maintaining streaks consistently.',
-          mindful: 'In Mindful mode, streaks don\'t penalize you. Grace days exist for Balanced and Discipline modes as a buffer for real life.',
+          discipline: 'Active streaks are at the top. Below are 14 preset habits ready to add -- nutrition, fitness, sleep, and faith. Tap any to activate it.',
+          balanced: 'Your active streaks appear at the top. Below that are preset streaks you can add with a tap. Drag to reorder active ones.',
+          mindful: 'This panel shows what\'s active and what\'s available. Add the ones that fit your life and leave the rest.',
         },
       },
       {
-        targetKey: 'none',
-        title: 'SAVER SYSTEM',
-        body: {
-          discipline: 'After 7 consecutive days, earn a Streak Saver. Auto-applies on the next missed day. Cap: 1 (Discipline) or 2 (Balanced). Earn them, don\'t waste them.',
-          balanced: 'After 7 straight days on a streak, you earn a Saver. It automatically protects you the next time you miss a day.',
-          mindful: 'Savers are earned after a week of consistency. They apply automatically if you miss a day -- no action needed.',
-        },
-      },
-      {
-        targetKey: 'none',
+        targetKey: 'stats_streak_create_custom_btn',
+        tutorialAction: 'closeStreaksManage',
         title: 'CUSTOM STREAKS',
         body: {
-          discipline: 'Tap Create Custom in the manage sheet. Name it, pick an emoji, and check it in manually each day. Track any habit not covered by the 14 presets.',
-          balanced: 'Create Custom lets you build a streak for any habit you want to track -- just give it a name and an emoji.',
+          discipline: 'Create any habit not in the presets. Name it, pick an emoji, and check it in manually each day. Track whatever drives you.',
+          balanced: 'Create Custom lets you track any habit with your own name and emoji. Check it in manually each day.',
           mindful: 'Custom streaks are for whatever habit matters to you personally. Name it, pick an emoji, and check in when you want.',
         },
       },
@@ -1357,52 +1388,69 @@ export const TUTORIALS: Tutorial[] = [
   {
     id: 'effort_vs_results',
     name: 'Effort vs Results',
-    description: 'Generate a data analysis of why your results look the way they do.',
+    description: 'Generate a data-driven analysis of why your results look the way they do across consistency, deficit, macros, sleep, and more.',
     tab: 'stats',
+    returnRoute: '/(tabs)/stats',
     steps: [
       {
         targetKey: 'none',
-        title: 'WHAT IT DOES',
+        navigateTo: '/diagnostic-report?tutorial=1',
+        navigateDelay: 900,
+        title: 'EFFORT VS RESULTS',
         body: {
-          discipline: 'Effort vs Results is a backward-looking analysis engine. You tell it the window, it finds patterns in your data and explains what\'s driving your outcomes.',
-          balanced: 'Effort vs Results analyzes your logged data and surfaces patterns that explain your results. It needs enough data to find real signals.',
+          discipline: 'This is a backward-looking analysis engine. It scans your logged data and finds patterns that explain your actual outcomes -- not averages, real patterns.',
+          balanced: 'Effort vs Results analyzes your logged data and surfaces what\'s actually affecting your results. It needs enough logged days to find real signals.',
           mindful: 'Effort vs Results is an analysis tool. It looks at your data and surfaces observations -- not conclusions, just patterns to consider.',
         },
       },
       {
-        targetKey: 'none',
-        title: 'PICKING A WINDOW',
+        targetKey: 'evr_window_picker',
+        title: 'PICK A WINDOW',
+        noTabBarOffset: true,
         body: {
-          discipline: 'Choose 14, 30, or 90 days. More data = more reliable findings. 90-day reports need 30+ logged days. Shorter windows need fewer.',
+          discipline: 'Choose 14, 30, or 90 days. More data equals more reliable findings. 90-day reports need 30+ logged days. 14-day is a quick pulse check.',
           balanced: 'Choose how many days to analyze: 14, 30, or 90. Longer windows give more reliable results but need more data.',
           mindful: 'Pick a time window for the analysis. Longer windows give a broader picture, shorter ones are more recent.',
         },
       },
       {
-        targetKey: 'none',
-        title: 'GENERATING A REPORT',
+        targetKey: 'evr_generate_btn',
+        title: 'GENERATE',
+        noTabBarOffset: true,
         body: {
-          discipline: 'Tap GENERATE. The engine scans all logged days in the window. If there\'s insufficient data, it tells you exactly how many days are needed.',
+          discipline: 'Tap GENERATE. The engine scans every logged day in the window. If you don\'t have enough data, it tells you exactly how many days you need.',
           balanced: 'Tap GENERATE to run the analysis. If you don\'t have enough logged days, it\'ll tell you what\'s missing.',
           mindful: 'Tap GENERATE when you\'re ready. If there\'s not enough data yet, the app will let you know without any pressure.',
         },
       },
       {
-        targetKey: 'none',
-        title: 'READING FINDINGS',
+        targetKey: 'evr_findings_section',
+        title: 'YOUR FINDINGS',
+        noTabBarOffset: true,
         body: {
-          discipline: 'Findings cover: Logging Consistency, Calorie Deficit Accuracy, Burn Accuracy, Macro Quality, Sleep Quality. Each is graded against your actual data.',
-          balanced: 'Finding cards explain what the data shows for each key area: consistency, calories, macros, sleep, and burn accuracy.',
-          mindful: 'Finding cards share what the data shows. Read them as observations -- not verdicts. Take what\'s useful and leave the rest.',
+          discipline: 'Each card grades a key area -- Logging Consistency, Calorie Deficit, Burn Accuracy, Macros, and Sleep -- against your actual data, not a generic standard.',
+          balanced: 'Each card covers a key area: consistency, calories, macros, sleep, and burn accuracy. Status indicators show where you\'re on track and where to focus.',
+          mindful: 'These cards share what the data shows for each area. Read them as observations -- not grades. Take what\'s useful to you.',
         },
       },
       {
-        targetKey: 'none',
-        title: 'CORRELATIONS',
+        targetKey: 'evr_correlations',
+        title: 'PATTERNS IN YOUR DATA',
+        noTabBarOffset: true,
         body: {
           discipline: '9 correlation patterns analyzed: sleep-to-intake, burn days, weekday/weekend, water-to-cals, and more. These are the patterns that explain plateaus.',
-          balanced: 'The correlations section shows connections between different habits. Things like sleep affecting next-day eating, or high burn days affecting appetite.',
-          mindful: 'Correlations show how different habits connect. These are just patterns -- interesting to notice, not rules to follow.',
+          balanced: 'The patterns section shows how different habits connect -- things like sleep affecting next-day eating, or high burn days affecting appetite.',
+          mindful: 'Patterns show how different habits connect. These are just observations -- interesting to notice, not rules to follow.',
+        },
+      },
+      {
+        targetKey: 'evr_suggestions',
+        title: 'YOUR SUGGESTIONS',
+        noTabBarOffset: true,
+        body: {
+          discipline: 'Ranked action items derived from your findings. These are specific to your data -- not generic advice. Start with rank 1 and build from there.',
+          balanced: 'Suggestions are ranked by impact based on your specific findings. They tell you the most effective place to focus your effort.',
+          mindful: 'These are observations reframed as gentle next steps. You decide what fits your life right now.',
         },
       },
     ],

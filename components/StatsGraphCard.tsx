@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Dimensions, Easing, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle, Defs, Line, LinearGradient as SvgLinearGradient, Path, Polyline, Rect, Stop, Text as SvgText } from 'react-native-svg';
 import { CardPeriod, DATA_KEY_META, StatsCard } from '../statsCardRegistry';
@@ -681,7 +681,7 @@ function WorkoutFrequencyChart({ data, theme }: {
   );
 }
 
-export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal, sleepGoal, onPeriodChange, onEditPress, homeMode = false, showNetCarbs = false }: {
+export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal, sleepGoal, onPeriodChange, onEditPress, homeMode = false, showNetCarbs = false, editBtnRef }: {
   card: StatsCard;
   cardTrendData: TrendData;
   theme: any;
@@ -692,6 +692,7 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
   onEditPress?: (card: StatsCard) => void;
   homeMode?: boolean;
   showNetCarbs?: boolean;
+  editBtnRef?: React.RefObject<any>;
 }) {
   const shadow = { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 12, elevation: 6 };
 
@@ -965,7 +966,7 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
           ))}
         </View>
         {!homeMode && (
-          <TouchableOpacity onPress={() => onEditPress?.(card)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <TouchableOpacity ref={editBtnRef} onPress={() => onEditPress?.(card)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <Ionicons name="settings-outline" size={13} color={theme.textMuted} />
           </TouchableOpacity>
         )}

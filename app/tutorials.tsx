@@ -60,7 +60,7 @@ function TutorialCard({ tutorial, theme, onStart }: { tutorial: Tutorial; theme:
         <Text style={{ fontSize: 15, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary, marginBottom: 2 }}>
           {tutorial.name}
         </Text>
-        <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 18 }} numberOfLines={2}>
+        <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 18 }}>
           {tutorial.description}
         </Text>
         <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 6 }}>

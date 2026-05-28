@@ -172,6 +172,9 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     try { actions.current['deleteTutorialRecipe']?.(); } catch {}
     try { actions.current['closeRecipeTutorial']?.(); } catch {}
     try { actions.current['closeExerciseLibraryTutorial']?.(); } catch {}
+    try { actions.current['closeStreaksManage']?.(); } catch {}
+    try { actions.current['closeGraphCreatorTutorial']?.(); } catch {}
+    try { actions.current['deleteTutorialGraph']?.(); } catch {}
     setActiveState(null);
     if (returnRoute) setTimeout(() => router.push(returnRoute as any), 300);
   }, [setActiveState]);

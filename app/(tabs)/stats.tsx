@@ -148,41 +148,6 @@ function CollapsibleSection({ label, subtitle, children, defaultOpen = true, the
   );
 }
 
-// ── Collapsible card (for calendar) ───────────────────────────────────────────
-
-function CollapsibleCard({ label, defaultOpen = false, children, theme }: {
-  label: string, defaultOpen?: boolean, children: React.ReactNode, theme: any
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-  const [visible, setVisible] = useState(defaultOpen);
-  const fadeAnim = useRef(new Animated.Value(defaultOpen ? 1 : 0)).current;
-
-  const toggle = () => {
-    const opening = !open;
-    setOpen(opening);
-    if (opening) {
-      setVisible(true);
-      Animated.timing(fadeAnim, { toValue: 1, duration: 300, useNativeDriver: true }).start();
-    } else {
-      Animated.timing(fadeAnim, { toValue: 0, duration: 100, useNativeDriver: true }).start(() => setVisible(false));
-    }
-  };
-
-  return (
-    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
-      <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 44, paddingVertical: 12, marginVertical: -12 }} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggle(); }}>
-        <Text style={[styles.cardLabel, { color: theme.textMuted }]}>{label}</Text>
-        <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={14} color={theme.textMuted} />
-      </TouchableOpacity>
-      {visible && (
-        <Animated.View style={{ marginTop: 12, opacity: fadeAnim }}>
-          {children}
-        </Animated.View>
-      )}
-    </View>
-  );
-}
-
 // ── Sleep score (mirrors index.tsx) ──────────────────────────────────────────
 
 const FEEL_BONUS: Record<number, number> = { 1: 0, 2: 10, 3: 20, 4: 30, 5: 40 };
@@ -1410,7 +1375,7 @@ export default function StatsScreen() {
             );
             if (section.systemKey === 'calendar') return (
               <CollapsibleSection key={section.id} label={section.label} subtitle="Day-by-day history" defaultOpen={isFirst} theme={theme} first={isFirst}>
-          <CollapsibleCard label="Monthly View" defaultOpen={true} theme={theme}>
+                <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
               <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); if (calendarMonth === 0) { setCalendarMonth(11); setCalendarYear(y => y - 1); } else setCalendarMonth(m => m - 1); }} style={{ padding: 8 }}>
                 <Ionicons name="chevron-back" size={18} color={theme.accentBlue} />
@@ -1473,7 +1438,7 @@ export default function StatsScreen() {
                 </View>
               ))}
             </View>
-          </CollapsibleCard>
+                </View>
               </CollapsibleSection>
             );
             if (section.systemKey === 'reports') return (

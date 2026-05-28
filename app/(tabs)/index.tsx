@@ -233,14 +233,13 @@ function MacroDonut({ protein, carbs, fat, calories, theme }: { protein: number;
 
 const AnimCircle = ReAnimated.createAnimatedComponent(Circle);
 
-const FEEL_BONUS: Record<number, number> = { 1: 0, 2: 10, 3: 20, 4: 30, 5: 40 };
-
 function calcSleepScore(
   sleepHours: number | null,
   sleepStages: { core: number; deep: number; rem: number; totalMs: number } | null,
   sleepGoal: number,
   feelRating?: number | null,
   isManual?: boolean,
+  consistencyPts = 0,
 ): { score: number | null; hasStages: boolean; path: 1 | 2 | 3 } {
   if (!sleepHours || sleepHours <= 0) return { score: null, hasStages: false, path: 3 };
 
@@ -262,8 +261,61 @@ function calcSleepScore(
   const path = isManual ? 3 : 2;
   if (!feelRating) return { score: null, hasStages: false, path };
   const durationPts = Math.min(60, (sleepHours / sleepGoal) * 60);
-  const bonus = FEEL_BONUS[feelRating] ?? 0;
-  return { score: Math.round(Math.min(100, durationPts + bonus)), hasStages: false, path };
+  const feelPts = ((feelRating - 1) / 9) * 30;
+  return { score: Math.round(Math.min(100, durationPts + feelPts + consistencyPts)), hasStages: false, path };
+}
+
+// Parses "10:30 PM" or "2:45 AM" to minutes from midnight
+function parseBedTimeToMins(str: string): number | null {
+  const match = str.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if (!match) return null;
+  let h = parseInt(match[1]);
+  const m = parseInt(match[2]);
+  const ampm = match[3].toUpperCase();
+  if (ampm === 'PM' && h < 12) h += 12;
+  if (ampm === 'AM' && h === 12) h = 0;
+  return h * 60 + m;
+}
+
+async function calcBedtimeConsistencyPts(todayBedStr: string | null, todayKey: string): Promise<number> {
+  if (!todayBedStr) return 0;
+  const todayMins = parseBedTimeToMins(todayBedStr);
+  if (todayMins === null) return 0;
+  const today = new Date();
+  const keys: string[] = [];
+  for (let i = 1; i <= 7; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    keys.push(`pj_${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
+  }
+  const results = await AsyncStorage.multiGet(keys);
+  const priorMins: number[] = [];
+  for (const [, val] of results) {
+    if (!val) continue;
+    try {
+      const data = JSON.parse(val);
+      const bt = data.sleepBedTime;
+      if (bt) {
+        const mins = parseBedTimeToMins(bt);
+        if (mins !== null) priorMins.push(mins);
+      }
+    } catch {}
+  }
+  if (priorMins.length < 3) return 5; // neutral -- not enough history
+  // Normalize prior times to within ±12h of today to handle midnight wrap
+  const normalized = priorMins.map(m => {
+    let diff = m - todayMins;
+    if (diff > 720) diff -= 1440;
+    if (diff < -720) diff += 1440;
+    return todayMins + diff;
+  });
+  const avg = normalized.reduce((a, b) => a + b, 0) / normalized.length;
+  const dev = Math.abs(todayMins - avg);
+  const wrappedDev = Math.min(dev, 1440 - dev);
+  if (wrappedDev <= 30) return 10;
+  if (wrappedDev <= 60) return 7;
+  if (wrappedDev <= 90) return 3;
+  return 0;
 }
 
 const SLEEP_TIPS: Record<string, string[]> = {
@@ -283,12 +335,12 @@ const SLEEP_TIPS: Record<string, string[]> = {
     "Sleep debt builds faster than you think. Prioritizing one early night can reset your rhythm.",
   ],
   good: [
-    "Solid night. Your body recovered well -- make the most of it today.",
-    "Great sleep. Consistency is the key -- same bedtime tonight.",
+    "Solid night. Your body recovered well. Make the most of it today.",
+    "Great sleep. Consistency is the key: same bedtime tonight.",
     "Your body did its job last night. Fuel it well today.",
   ],
   catch_all: [
-    "Your sleep was decent but there's room to improve. Focus on consistency -- same bedtime and wake time every day.",
+    "Your sleep was decent but there's room to improve. Focus on consistency: same bedtime and wake time every day.",
     "Good effort but not quite there. Even small improvements to your sleep environment can add up.",
     "You're close to a great night. Winding down 30 minutes earlier could push you over the edge.",
   ],
@@ -316,6 +368,74 @@ function getSleepTip(
   if (sleepHours < sleepGoal * 0.85) return SLEEP_TIPS.low_duration[daySeed];
   if (score >= 85) return SLEEP_TIPS.good[daySeed];
   return SLEEP_TIPS.catch_all[daySeed];
+}
+
+function ScoreRing({ score, scoreColor, trackColor, donutSize, donutStroke, donutRadius, donutCirc, shimmer, refreshKey }: {
+  score: number; scoreColor: string; trackColor: string;
+  donutSize: number; donutStroke: number; donutRadius: number; donutCirc: number;
+  shimmer?: boolean; refreshKey?: number;
+}) {
+  const arcAnim = useSharedValue(0);
+  const shimmerScale = useSharedValue(1);
+  const shimmerFlash = useSharedValue(0);
+
+  useEffect(() => {
+    cancelAnimation(arcAnim);
+    arcAnim.value = 0;
+    setTimeout(() => {
+      arcAnim.value = withTiming((score / 100) * donutCirc, { duration: 1000, easing: ReAnimEasing.out(ReAnimEasing.cubic) });
+    }, 200);
+  }, [score, refreshKey]);
+
+  useEffect(() => {
+    if (shimmer) {
+      shimmerScale.value = withRepeat(
+        withSequence(
+          withTiming(1.08, { duration: 200, easing: ReAnimEasing.out(ReAnimEasing.cubic) }),
+          withTiming(1.0,  { duration: 350, easing: ReAnimEasing.in(ReAnimEasing.cubic) }),
+          withDelay(2800, withTiming(1.0, { duration: 1 })),
+        ), -1, false,
+      );
+      shimmerFlash.value = withRepeat(
+        withSequence(
+          withTiming(0.18, { duration: 150 }),
+          withTiming(0.0,  { duration: 400 }),
+          withDelay(2800, withTiming(0.0, { duration: 1 })),
+        ), -1, false,
+      );
+    } else {
+      cancelAnimation(shimmerScale);
+      cancelAnimation(shimmerFlash);
+      shimmerScale.value = 1;
+      shimmerFlash.value = 0;
+    }
+  }, [shimmer]);
+
+  const arcStyle = useAnimatedStyle(() => ({ strokeDasharray: `${arcAnim.value} ${donutCirc}` } as any));
+  const shimmerCenterStyle = useAnimatedStyle(() => ({ transform: [{ scale: shimmerScale.value }] }));
+  const shimmerFlashStyle  = useAnimatedStyle(() => ({ opacity: shimmerFlash.value }));
+
+  return (
+    <View>
+      <Svg width={donutSize} height={donutSize}>
+        <Circle cx={donutSize/2} cy={donutSize/2} r={donutRadius} stroke={trackColor} strokeWidth={donutStroke} fill="none" />
+        <AnimCircle cx={donutSize/2} cy={donutSize/2} r={donutRadius} stroke={scoreColor} strokeWidth={donutStroke} fill="none"
+          animatedProps={arcStyle} strokeLinecap="round" rotation="-90" origin={`${donutSize/2},${donutSize/2}`} />
+      </Svg>
+      <View style={{ position:'absolute', top:0, left:0, width:donutSize, height:donutSize, alignItems:'center', justifyContent:'center' }}>
+        <ReAnimated.View style={[{ alignItems:'center' }, shimmerCenterStyle]}>
+          <View style={{ shadowColor:'#000000', shadowOffset:{width:0,height:2}, shadowOpacity:0.18, shadowRadius:0 }}>
+            <Text style={{ fontSize:36, fontFamily:'BebasNeue_400Regular', color:scoreColor, letterSpacing:1, lineHeight:38, opacity:0.88 }}>{score}</Text>
+          </View>
+          <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:2, color:scoreColor, textTransform:'uppercase', opacity:0.7 }}>/100</Text>
+        </ReAnimated.View>
+        <ReAnimated.View
+          pointerEvents="none"
+          style={[{ position:'absolute', width:donutSize*0.45, height:donutSize*0.45, borderRadius:donutSize*0.225, backgroundColor:'white' }, shimmerFlashStyle]}
+        />
+      </View>
+    </View>
+  );
 }
 
 function SleepDonut({ coreFrac, deepFrac, remFrac, donutCirc, donutSize, donutStroke, donutRadius, coreColor, deepColor, remColor, trackColor, gapFrac, refreshKey, score, scoreColor, shimmer }: {
@@ -698,6 +818,8 @@ export default function HomeScreen() {
   const [showWakeTimePicker,setShowWakeTimePicker]  = useState(false);
   const [activeSleepPicker, setActiveSleepPicker]   = useState<'bed'|'wake'|null>(null);
   const [sleepFeelRating,   setSleepFeelRating]     = useState<number|null>(null);
+  const [sleepConsistencyPts, setSleepConsistencyPts] = useState(0);
+  const sleepFeelAnims = useRef([...Array(10)].map(() => new Animated.Value(1))).current;
   const [sleepManualCore,   setSleepManualCore]     = useState<string>('');
   const [sleepManualDeep,   setSleepManualDeep]     = useState<string>('');
   const [sleepManualRem,    setSleepManualRem]      = useState<string>('');
@@ -1153,7 +1275,10 @@ export default function HomeScreen() {
           }
           setCaloriesBurned(parseInt(data.caloriesBurned)||0);
           if (data.sleepOverride) setSleepOverride(data.sleepOverride);
-          if (data.sleepBedTime)  setSleepStoredBed(data.sleepBedTime);
+          if (data.sleepBedTime) {
+            setSleepStoredBed(data.sleepBedTime);
+            calcBedtimeConsistencyPts(data.sleepBedTime, todayKey).then(setSleepConsistencyPts);
+          }
           if (data.sleepWakeTime) setSleepStoredWake(data.sleepWakeTime);
           if (data.sleepFeelRating) setSleepFeelRating(data.sleepFeelRating);
           if (data.sleepManualCore) setSleepManualCore(String(data.sleepManualCore));
@@ -2032,6 +2157,7 @@ export default function HomeScreen() {
                 const bedStr=sleepBedTime.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
                 const wakeStr=sleepWakeTime.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
                 await storageSet(`pj_${todayKey}`,JSON.stringify({...current,sleepOverride:val,sleepBedTime:bedStr,sleepWakeTime:wakeStr}));
+                calcBedtimeConsistencyPts(bedStr, todayKey).then(setSleepConsistencyPts);
                 await saveToFirebase(todayKey,'sleepOverride',val);
                 checkSleepAchievements().then(unlocked => {
                   unlocked.forEach(def => {
@@ -2065,7 +2191,7 @@ export default function HomeScreen() {
           <Text style={{ fontSize:13, color: theme.textDim, fontFamily:'DMSans_400Regular', fontStyle:'italic' }}>No sleep data for last night</Text>
         ) : (() => {
           const isManual = !!sleepOverride;
-          const { score, hasStages, path } = calcSleepScore(displaySleep, sleepStages, sleepGoal, sleepFeelRating, isManual);
+          const { score, hasStages, path } = calcSleepScore(displaySleep, sleepStages, sleepGoal, sleepFeelRating, isManual, sleepConsistencyPts);
           const scoreColor = score !== null ? (score >= 85 ? theme.statusGood : score >= 70 ? theme.statusWarn : theme.statusBad) : theme.textDim;
           const scoreLabel = score !== null ? (score >= 85 ? 'Well Rested' : score >= 70 ? 'Could Be Better' : 'Poor Sleep') : null;
           const totalMs = sleepStages?.totalMs||(displaySleep*3600000);
@@ -2085,11 +2211,9 @@ export default function HomeScreen() {
           const tip = score !== null ? getSleepTip(score, displaySleep, sleepStages, sleepGoal, todayKey) : null;
 
           const FEEL_DESCRIPTORS: Record<number, string> = {
-            1: 'Rough night',
-            2: 'Not great',
-            3: 'Decent',
-            4: 'Good night',
-            5: 'Slept great',
+            1: 'Rough night', 2: 'Very poor', 3: 'Poor sleep', 4: 'Below average',
+            5: 'Okay', 6: 'Decent', 7: 'Pretty good', 8: 'Good night',
+            9: 'Great sleep', 10: 'Slept amazing',
           };
 
           const saveFeel = async (rating: number) => {
@@ -2099,78 +2223,129 @@ export default function HomeScreen() {
             await storageSet(`pj_${todayKey}`, JSON.stringify({ ...current, sleepFeelRating: rating }));
           };
 
+          const consistencyLabel = sleepConsistencyPts === 10 ? 'Consistent bedtime' :
+            sleepConsistencyPts === 7 ? 'Mostly consistent' :
+            sleepConsistencyPts === 3 ? 'Irregular bedtime' :
+            sleepConsistencyPts === 0 ? 'Inconsistent bedtime' : null;
+          const consistencyColor = sleepConsistencyPts >= 7 ? theme.statusGood :
+            sleepConsistencyPts >= 3 ? '#ca8a04' : theme.statusBad;
+          const feelColor = (r: number) => r <= 3 ? theme.statusBad : r <= 6 ? '#ca8a04' : theme.statusGood;
+
           return (
             <View>
-              <View style={{ flexDirection:'row', alignItems:'flex-start' }}>
-                <View style={{ width:160, paddingRight:12 }}>
-                  <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
-                    <Text style={{ fontSize:42, color: score !== null ? scoreColor : theme.textPrimary, fontFamily:'BebasNeue_400Regular', letterSpacing:1, opacity: 0.88 }}>{hrs}h {mins}m</Text>
-                  </View>
-                  {scoreLabel ? (
-                    <Text style={{ fontSize:9, color:scoreColor, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:10 }}>
-                      {scoreLabel}{isManual ? ' · manual' : ''}
-                    </Text>
-                  ) : (
-                    <Text style={{ fontSize:9, color: theme.textDim, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:10 }}>
-                      {isManual ? 'MANUAL' : 'HEALTHKIT'}
-                    </Text>
-                  )}
-                  {((sleepStoredBed&&sleepStoredWake)||sleepTimes) ? (
-                    <Text style={{ fontSize:12, color: theme.textMuted, fontFamily:'DMSans_500Medium', marginBottom: (!isManual && sleepAwakeMs > 0) ? 4 : 10 }}>
-                      {sleepStoredBed||sleepTimes?.bed} → {sleepStoredWake||sleepTimes?.wake}
-                    </Text>
-                  ) : null}
-                  {!isManual && sleepAwakeMs > 0 && (
-                    <Text style={{ fontSize:11, color: theme.textDim, fontFamily:'DMSans_400Regular', marginBottom:10 }}>
-                      {fmtMs(sleepAwakeMs)} awake during night
-                    </Text>
-                  )}
-                  {sleepStages && (
+              {sleepStages ? (
+                <View style={{ flexDirection:'row', alignItems:'flex-start' }}>
+                  <View style={{ width:160, paddingRight:12 }}>
+                    <View style={{ shadowColor:'#000000', shadowOffset:{width:0,height:2}, shadowOpacity:0.18, shadowRadius:0 }}>
+                      <Text style={{ fontSize:42, color:scoreColor, fontFamily:'BebasNeue_400Regular', letterSpacing:1, opacity:0.88 }}>{hrs}h {mins}m</Text>
+                    </View>
+                    {scoreLabel ? (
+                      <Text style={{ fontSize:9, color:scoreColor, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:10 }}>{scoreLabel}</Text>
+                    ) : (
+                      <Text style={{ fontSize:9, color:theme.textDim, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:10 }}>HEALTHKIT</Text>
+                    )}
+                    {sleepTimes && (
+                      <Text style={{ fontSize:12, color:theme.textMuted, fontFamily:'DMSans_500Medium', marginBottom: sleepAwakeMs > 0 ? 4 : 10 }}>
+                        {sleepTimes.bed} → {sleepTimes.wake}
+                      </Text>
+                    )}
+                    {sleepAwakeMs > 0 && (
+                      <Text style={{ fontSize:11, color:theme.textDim, fontFamily:'DMSans_400Regular', marginBottom:10 }}>{fmtMs(sleepAwakeMs)} awake during night</Text>
+                    )}
                     <View ref={sleepStagesRef} collapsable={false} style={{ gap:6 }}>
                       {[{label:'Core',color:theme.sleepCore,val:coreMs},{label:'Deep',color:theme.sleepDeep,val:deepMs},{label:'REM',color:theme.sleepRem,val:remMs}].map(s => (
                         <View key={s.label} style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
                           <View style={{ width:8, height:8, borderRadius:4, backgroundColor:s.color }} />
-                          <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:1, textTransform:'uppercase' }}>{s.label}</Text>
+                          <Text style={{ fontSize:9, color:theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:1, textTransform:'uppercase' }}>{s.label}</Text>
                           <Text style={{ fontSize:11, color:s.color, fontFamily:'DMSans_600SemiBold' }}>{fmtMs(s.val)}</Text>
                         </View>
                       ))}
                     </View>
+                  </View>
+                  <View ref={sleepDonutRef} collapsable={false}>
+                    <SleepDonut
+                      coreFrac={coreFrac} deepFrac={deepFrac} remFrac={remFrac}
+                      donutCirc={donutCirc} donutSize={donutSize} donutStroke={donutStroke} donutRadius={donutRadius}
+                      coreColor={theme.sleepCore} deepColor={theme.sleepDeep} remColor={theme.sleepRem}
+                      trackColor={theme.sleepTrack} gapFrac={gapFrac} refreshKey={refreshKey}
+                      score={score ?? 0} scoreColor={scoreColor}
+                      shimmer={score !== null && score >= 85}
+                    />
+                  </View>
+                </View>
+              ) : (
+                <View style={{ flexDirection:'row', alignItems:'center' }}>
+                  <View style={{ width:160, paddingRight:12 }}>
+                    <View style={{ shadowColor:'#000000', shadowOffset:{width:0,height:2}, shadowOpacity:0.18, shadowRadius:0 }}>
+                      <Text style={{ fontSize:42, color: score !== null ? scoreColor : theme.textPrimary, fontFamily:'BebasNeue_400Regular', letterSpacing:1, opacity:0.88 }}>{hrs}h {mins}m</Text>
+                    </View>
+                    {scoreLabel ? (
+                      <Text style={{ fontSize:9, color:scoreColor, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:6 }}>
+                        {scoreLabel}{isManual ? ' · manual' : ''}
+                      </Text>
+                    ) : (
+                      <Text style={{ fontSize:9, color:theme.textDim, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:6 }}>
+                        {isManual ? 'MANUAL' : 'HEALTHKIT'}
+                      </Text>
+                    )}
+                    {((sleepStoredBed&&sleepStoredWake)||sleepTimes) ? (
+                      <Text style={{ fontSize:12, color:theme.textMuted, fontFamily:'DMSans_500Medium', marginBottom:6 }}>
+                        {sleepStoredBed||sleepTimes?.bed} → {sleepStoredWake||sleepTimes?.wake}
+                      </Text>
+                    ) : null}
+                    {consistencyLabel && (
+                      <View style={{ flexDirection:'row', alignItems:'center', gap:5 }}>
+                        <View style={{ width:6, height:6, borderRadius:3, backgroundColor:consistencyColor }} />
+                        <Text style={{ fontSize:10, color:consistencyColor, fontFamily:'DMSans_500Medium' }}>{consistencyLabel}</Text>
+                      </View>
+                    )}
+                  </View>
+                  {score !== null && (
+                    <ScoreRing
+                      score={score} scoreColor={scoreColor} trackColor={theme.sleepTrack}
+                      donutSize={donutSize} donutStroke={donutStroke} donutRadius={donutRadius} donutCirc={donutCirc}
+                      shimmer={score >= 85} refreshKey={refreshKey}
+                    />
                   )}
                 </View>
-                {sleepStages && (
-                  <View ref={sleepDonutRef} collapsable={false}>
-                  <SleepDonut
-                    coreFrac={coreFrac} deepFrac={deepFrac} remFrac={remFrac}
-                    donutCirc={donutCirc} donutSize={donutSize} donutStroke={donutStroke} donutRadius={donutRadius}
-                    coreColor={theme.sleepCore} deepColor={theme.sleepDeep} remColor={theme.sleepRem}
-                    trackColor={theme.sleepTrack} gapFrac={gapFrac} refreshKey={refreshKey}
-                    score={score ?? 0} scoreColor={scoreColor}
-                    shimmer={score !== null && score >= 85}
-                  />
-                  </View>
-                )}
-              </View>
+              )}
 
-              {/* Feel rating prompt -- Path 2/3 only */}
+              {/* Feel rating prompt: Path 2/3 only */}
               {path !== 1 && (
                 <View ref={sleepFeelRef} collapsable={false} style={{ marginTop:12, paddingTop:12, borderTopWidth:0.5, borderTopColor:theme.borderSubtle }}>
-                  <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:10 }}>
+                  <Text style={{ fontSize:9, color:theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:10 }}>
                     {sleepFeelRating ? 'HOW DID YOU SLEEP?' : 'HOW DID YOU SLEEP? · REQUIRED FOR SCORE'}
                   </Text>
-                  <View style={{ flexDirection:'row', gap:6 }}>
-                    {[1,2,3,4,5].map(r => (
-                      <TouchableOpacity key={r} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); saveFeel(r); }} style={{
-                        flex:1, paddingVertical:8, borderRadius:8, alignItems:'center',
-                        backgroundColor: sleepFeelRating === r ? theme.accentBlueBg : theme.bgInput,
-                        borderWidth:1,
-                        borderColor: sleepFeelRating === r ? theme.accentBlueBorder : theme.borderInput,
-                      }}>
-                        <Text style={{ fontSize:16, fontFamily:'BebasNeue_400Regular', color: sleepFeelRating === r ? theme.accentBlue : theme.textDim }}>{r}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
+                  {[[1,2,3,4,5],[6,7,8,9,10]].map((row, ri) => (
+                    <View key={ri} style={{ flexDirection:'row', gap:6, marginBottom: ri === 0 ? 6 : 0 }}>
+                      {row.map(r => {
+                        const fc = feelColor(r);
+                        const selected = sleepFeelRating === r;
+                        const anim = sleepFeelAnims[r - 1];
+                        return (
+                          <Animated.View key={r} style={{ flex:1, transform:[{ scale: anim }] }}>
+                            <TouchableOpacity onPress={() => {
+                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                              Animated.sequence([
+                                Animated.timing(anim, { toValue:1.08, duration:70, useNativeDriver:true }),
+                                Animated.spring(anim, { toValue:1, useNativeDriver:true, friction:5, tension:150 }),
+                              ]).start();
+                              saveFeel(r);
+                            }} style={{
+                              paddingVertical:8, borderRadius:8, alignItems:'center',
+                              backgroundColor: selected ? fc : fc + '14',
+                              borderWidth: 0.5,
+                              borderColor: selected ? fc : fc + '40',
+                            }}>
+                              <Text style={{ fontSize:16, fontFamily:'BebasNeue_400Regular', color: selected ? '#ffffff' : fc }}>{r}</Text>
+                            </TouchableOpacity>
+                          </Animated.View>
+                        );
+                      })}
+                    </View>
+                  ))}
                   {sleepFeelRating && (
-                    <Text style={{ fontSize:10, color: theme.accentBlue, fontFamily:'DMSans_600SemiBold', marginTop:6, textAlign:'center' }}>
+                    <Text style={{ fontSize:10, color: feelColor(sleepFeelRating), fontFamily:'DMSans_600SemiBold', marginTop:6, textAlign:'center' }}>
                       {FEEL_DESCRIPTORS[sleepFeelRating]}
                     </Text>
                   )}
@@ -2392,7 +2567,7 @@ export default function HomeScreen() {
   const renderVsYesterdayCard = () => {
     // ── Today's values ──
     const todayNet = totalCals - displayedBurned - runningBmr;
-    const todaySleepScore = sleepHours ? calcSleepScore(sleepHours, sleepStages, sleepGoal, sleepFeelRating, !!sleepOverride) : null;
+    const todaySleepScore = sleepHours ? calcSleepScore(sleepHours, sleepStages, sleepGoal, sleepFeelRating, !!sleepOverride, sleepConsistencyPts) : null;
     const todaySleepHours = sleepOverride ?? sleepHours ?? null;
     const todayHasSleepScore = todaySleepScore !== null &&
         todaySleepScore.score !== null &&

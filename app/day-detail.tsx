@@ -10,7 +10,6 @@ import { storageSet } from '../utils/storage';
 const MEALS = ['Morning', 'Lunch', 'Dinner', 'Snacks'];
 
 type SleepStages = { core: number; deep: number; rem: number; totalMs: number };
-const FEEL_BONUS: Record<number, number> = { 1: 0, 2: 10, 3: 20, 4: 30, 5: 40 };
 
 function calcSleepScore(
   sleepHours: number | null,
@@ -18,6 +17,7 @@ function calcSleepScore(
   sleepGoal: number,
   feelRating?: number | null,
   isManual?: boolean,
+  consistencyPts = 0,
 ): { score: number | null; hasStages: boolean } {
   if (!sleepHours || sleepHours <= 0) return { score: null, hasStages: false };
   if (sleepStages && sleepStages.totalMs > 0) {
@@ -29,7 +29,8 @@ function calcSleepScore(
   }
   if (!feelRating) return { score: null, hasStages: false };
   const durationPts = Math.min(60, (sleepHours / sleepGoal) * 60);
-  return { score: Math.round(Math.min(100, durationPts + (FEEL_BONUS[feelRating] ?? 0))), hasStages: false };
+  const feelPts = ((feelRating - 1) / 9) * 30;
+  return { score: Math.round(Math.min(100, durationPts + feelPts + consistencyPts)), hasStages: false };
 }
 
 function fmtTime(val: string | null | undefined): string {

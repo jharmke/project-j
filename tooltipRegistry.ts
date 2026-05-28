@@ -18,15 +18,15 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     tutorialId: 'sleep_card',
     category: 'Sleep & Recovery',
     title: 'Sleep Score',
-    body: 'Your sleep score is a 0–100 rating calculated from three factors: how long you slept, how much Deep sleep you got, and how much REM sleep you got.\n\nDuration accounts for 40 points — scored against your sleep goal. Deep sleep accounts for 30 points, scoring highest around 20% of total sleep. REM accounts for 30 points — full credit at 22% or above, with a proportional score below that. More REM is never penalized.\n\nIf Apple Health can\'t provide stage data, your score is calculated using your feel rating (1–5) instead of stages.',
+    body: 'Your sleep score is a 0-100 rating. The formula depends on what data is available.\n\nWith Apple Health stage data: Duration 40 pts (power curve vs your sleep goal), Deep sleep 30 pts (ideal around 20% of total), REM sleep 30 pts (full credit at 22%+, never penalized for extra).\n\nWithout stage data: Duration 60 pts + Feel rating (1-10) up to 30 pts + Bedtime consistency up to 10 pts. Consistency compares your bedtime to your 7-day rolling average: within 30 min earns full 10 pts, within 60 min earns 7 pts, beyond that earns less.',
     example: {
-      label: 'Example',
+      label: 'Apple Health Example',
       lines: [
         { desc: 'Duration  (7.5 hrs, goal 8 hrs)', value: '37 / 40 pts' },
         { desc: 'Deep sleep  (19% of total)',       value: '28 / 30 pts' },
         { desc: 'REM sleep  (21% of total)',        value: '28 / 30 pts' },
       ],
-      result: { desc: 'Final Score', value: '93 — Well Rested' },
+      result: { desc: 'Final Score', value: '93: Well Rested' },
     },
   },
   {

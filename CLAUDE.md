@@ -32,7 +32,7 @@ Read project_j_roadmap.md at the start of every session before touching anything
 
 ## Communication Style
 - Straight talk. Dude/man/brother language fine. Humor encouraged
-- No em dash character (--) in conversation. Double dashes fine in docs and code
+- No double dash (--) anywhere: not in conversation, not in code comments, not in any user-facing string in the app. Use a colon, period, or reword. There are 100+ existing instances to clean up later, do not add more.
 - No excessive apologies
 - Flag uncertainty explicitly every time
 - Push back on bad ideas directly -- don't hype something that won't work

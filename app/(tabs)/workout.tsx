@@ -1085,9 +1085,9 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
             </Text>
             <View style={{ flexDirection: 'row', gap: 10, width: '100%', paddingHorizontal: 8 }}>
               <TouchableOpacity onPress={openLoadRoutineModal}
-                style={{ flex: 1, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}>
-                <Ionicons name="repeat-outline" size={18} color={theme.accentBlue} style={{ marginBottom: 4 }} />
-                <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Load Routine</Text>
+                style={{ flex: 1, backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}>
+                <Ionicons name="repeat-outline" size={18} color={theme.textMuted} style={{ marginBottom: 4 }} />
+                <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Load Routine</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => router.push({ pathname: '/workout-library', params: { selectMode: 'true', day: activeDay } })}
                 style={{ flex: 1, backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}>

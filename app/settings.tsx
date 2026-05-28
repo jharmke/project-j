@@ -646,6 +646,39 @@ export default function SettingsScreen() {
     });
   };
 
+  // When a goal changes, retroactively stamp the OLD goal onto any historical daily
+  // records that predate the snapshot system (no waterGoal/stepGoal/sleepGoal field yet).
+  // This prevents goal increases from retroactively breaking streak history.
+  const stampGoalsOnHistoricalDays = async (
+    oldWater: number | null, newWater: number | null,
+    oldStep: number | null, newStep: number | null,
+    oldSleep: number | null, newSleep: number | null,
+  ) => {
+    const waterChanged = oldWater !== null && newWater !== null && oldWater !== newWater;
+    const stepChanged  = oldStep  !== null && newStep  !== null && oldStep  !== newStep;
+    const sleepChanged = oldSleep !== null && newSleep !== null && oldSleep !== newSleep;
+    if (!waterChanged && !stepChanged && !sleepChanged) return;
+    try {
+      const allKeys = await AsyncStorage.getAllKeys();
+      const dayKeys = allKeys.filter((k: string) => /^pj_\d{4}-\d{2}-\d{2}$/.test(k));
+      if (dayKeys.length === 0) return;
+      const pairs = await AsyncStorage.multiGet(dayKeys);
+      const updates: [string, string][] = [];
+      for (const [key, val] of pairs) {
+        if (!val) continue;
+        try {
+          const data = JSON.parse(val);
+          const patch: Record<string, number> = {};
+          if (waterChanged && (data.water || 0) > 0 && data.waterGoal === undefined) patch.waterGoal = oldWater!;
+          if (stepChanged  && (data.steps  || 0) > 0 && data.stepGoal  === undefined) patch.stepGoal  = oldStep!;
+          if (sleepChanged && (data.sleepHours || 0) > 0 && data.sleepGoal === undefined) patch.sleepGoal = oldSleep!;
+          if (Object.keys(patch).length > 0) updates.push([key, JSON.stringify({ ...data, ...patch })]);
+        } catch {}
+      }
+      if (updates.length > 0) await AsyncStorage.multiSet(updates);
+    } catch {}
+  };
+
   const saveGoals = async () => {
     try {
       // Read full current profile so we never lose non-goal fields
@@ -674,6 +707,15 @@ export default function SettingsScreen() {
           synced.macroFatPct     = String(Math.round((fKcal / totalKcal) * 100));
         }
       }
+
+      // Stamp old goals onto historical days before saving new goals
+      const oldWater = base.waterGoal ? parseFloat(base.waterGoal) : null;
+      const newWater = synced.waterGoal ? parseFloat(synced.waterGoal) : null;
+      const oldStep  = base.stepGoal  ? parseFloat(base.stepGoal)  : null;
+      const newStep  = synced.stepGoal  ? parseFloat(synced.stepGoal)  : null;
+      const oldSleep = base.sleepGoal ? parseFloat(base.sleepGoal) : null;
+      const newSleep = synced.sleepGoal ? parseFloat(synced.sleepGoal) : null;
+      await stampGoalsOnHistoricalDays(oldWater, newWater, oldStep, newStep, oldSleep, newSleep);
 
       const merged = { ...base, ...synced };
       await storageSet('pj_profile', JSON.stringify(merged));
@@ -1718,7 +1760,7 @@ export default function SettingsScreen() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               Alert.alert('Reset Achievements', 'Clear all unlocked achievements? This cannot be undone.', [
                 { text: 'Cancel', style: 'cancel' },
-                { text: 'Reset', style: 'destructive', onPress: async () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); await AsyncStorage.removeItem('pj_achievements'); await AsyncStorage.removeItem('pj_goal_hit_counts'); await AsyncStorage.removeItem('pj_daily_goal_celebrations'); await AsyncStorage.removeItem('pj_momentum_checked'); await AsyncStorage.removeItem('pj_nutrition_ach_checked'); Alert.alert('Done', 'Achievements and goal counts cleared.'); } },
+                { text: 'Reset', style: 'destructive', onPress: async () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); await AsyncStorage.removeItem('pj_achievements'); await AsyncStorage.removeItem('pj_goal_hit_counts'); await AsyncStorage.removeItem('pj_daily_goal_celebrations'); await AsyncStorage.removeItem('pj_momentum_checked'); await AsyncStorage.removeItem('pj_nutrition_ach_checked'); await AsyncStorage.removeItem('pj_sleep_ach_checked'); await AsyncStorage.removeItem('pj_workout_ach_checked'); Alert.alert('Done', 'Achievements and goal counts cleared.'); } },
               ]);
             }}>
               <View style={{ flex: 1 }}>

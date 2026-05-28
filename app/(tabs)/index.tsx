@@ -690,7 +690,7 @@ export default function HomeScreen() {
     setWaterEntries(newEntries);
     const existing = await AsyncStorage.getItem(`pj_${todayKey}`);
     const current = existing ? JSON.parse(existing) : {};
-    await storageSet(`pj_${todayKey}`, JSON.stringify({ ...current, water: newWater, waterEntries: newEntries }));
+    await storageSet(`pj_${todayKey}`, JSON.stringify({ ...current, water: newWater, waterEntries: newEntries, waterGoal }));
     saveToFirebase(todayKey, 'water', newWater);
     if (deltaOz > 0) {
       showToast('Water logged', `+${Math.abs(deltaOz)} oz · ${newWater} oz total`, 'info');
@@ -723,7 +723,7 @@ export default function HomeScreen() {
     setWaterEntries(newEntries);
     const existing = await AsyncStorage.getItem(`pj_${todayKey}`);
     const current = existing ? JSON.parse(existing) : {};
-    await storageSet(`pj_${todayKey}`, JSON.stringify({ ...current, water: newWater, waterEntries: newEntries }));
+    await storageSet(`pj_${todayKey}`, JSON.stringify({ ...current, water: newWater, waterEntries: newEntries, waterGoal }));
     saveToFirebase(todayKey, 'water', newWater);
     showToast('Entry removed', `${newWater} oz total`, 'info');
   };
@@ -782,9 +782,9 @@ export default function HomeScreen() {
   const [sleepGoal,      setSleepGoal]      = useState(7);
   const [activeCalGoal,  setActiveCalGoal]  = useState(500);
   const [exerciseMinsGoal, setExerciseMinsGoal] = useState(30);
-  const prevStepsRef        = useRef(0);
-  const prevActiveCalRef    = useRef(0);
-  const prevExerciseMinsRef = useRef(0);
+  const prevStepsRef        = useRef<number | null>(null);
+  const prevActiveCalRef    = useRef<number | null>(null);
+  const prevExerciseMinsRef = useRef<number | null>(null);
   const prevSleepHoursRef   = useRef<number | null>(null);
   const [macroGoals,     setMacroGoals]     = useState({ protein: 0, carbs: 0, fat: 0 });
   const [goalWeight,     setGoalWeight]     = useState<number|null>(null);
@@ -998,8 +998,8 @@ export default function HomeScreen() {
         storageSet(`pj_${todayKey}`, JSON.stringify({
           ...current,
           ...(activeCalories > 0 ? { activeCalories } : {}),
-          ...(steps > 0 ? { steps } : {}),
-          ...(sleepHours !== null ? { sleepHours } : {}),
+          ...(steps > 0 ? { steps, stepGoal } : {}),
+          ...(sleepHours !== null ? { sleepHours, sleepGoal } : {}),
           ...(sleepStages !== null ? { sleepStages } : {}),
           ...(sleepTimes !== null ? { sleepBedTime: sleepTimes.bed, sleepWakeTime: sleepTimes.wake } : {}),
           ...(restingHR !== null ? { restingHR } : {}),
@@ -1011,7 +1011,7 @@ export default function HomeScreen() {
       });
     }
     if (loaded) {
-      if (steps > 0 && steps >= stepGoal && stepGoal > 0 && prevStepsRef.current < stepGoal) {
+      if (prevStepsRef.current !== null && steps > 0 && steps >= stepGoal && stepGoal > 0 && prevStepsRef.current < stepGoal) {
         handleDailyGoalHit('steps').then(({ fired, count: hitCount }) => {
           if (fired) {
             showCelebration('small', 'STEP GOAL'); showDailyGoalToast('Step Goal', hitCount, 'footsteps', '#10b981');
@@ -1032,19 +1032,19 @@ export default function HomeScreen() {
       }
       prevStepsRef.current = steps;
       const adjustedActiveCals = Math.round(activeCalories * burnAccuracyPct / 100);
-      const prevAdjustedActiveCals = Math.round(prevActiveCalRef.current * burnAccuracyPct / 100);
-      if (adjustedActiveCals > 0 && activeCalGoal > 0 && adjustedActiveCals >= activeCalGoal && prevAdjustedActiveCals < activeCalGoal) {
+      const prevAdjustedActiveCals = prevActiveCalRef.current !== null ? Math.round(prevActiveCalRef.current * burnAccuracyPct / 100) : null;
+      if (prevAdjustedActiveCals !== null && adjustedActiveCals > 0 && activeCalGoal > 0 && adjustedActiveCals >= activeCalGoal && prevAdjustedActiveCals < activeCalGoal) {
         handleDailyGoalHit('activeCals').then(({ fired, count: hitCount }) => {
           if (fired) { showCelebration('small', 'ACTIVE CALS'); showDailyGoalToast('Active Cal Goal', hitCount, 'flame', '#f97316'); }
         });
       }
       prevActiveCalRef.current = activeCalories;
-      if (exerciseMinutes !== null && exerciseMinsGoal > 0 && exerciseMinutes >= exerciseMinsGoal && prevExerciseMinsRef.current < exerciseMinsGoal) {
+      if (prevExerciseMinsRef.current !== null && exerciseMinutes !== null && exerciseMinsGoal > 0 && exerciseMinutes >= exerciseMinsGoal && prevExerciseMinsRef.current < exerciseMinsGoal) {
         handleDailyGoalHit('exerciseMins').then(({ fired, count: hitCount }) => {
           if (fired) { showCelebration('small', 'EXERCISE GOAL'); showDailyGoalToast('Exercise Goal', hitCount, 'bicycle', '#8b5cf6'); }
         });
       }
-      prevExerciseMinsRef.current = exerciseMinutes ?? 0;
+      prevExerciseMinsRef.current = exerciseMinutes;
       if (sleepHours !== null && prevSleepHoursRef.current === null) {
         checkSleepAchievements().then(unlocked => {
           unlocked.forEach(def => {

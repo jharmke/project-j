@@ -800,7 +800,7 @@ export default function LogScreen() {
     setWaterEntries(newEntries);
     const existing = await AsyncStorage.getItem(`pj_${activeDate}`);
     const current = existing ? JSON.parse(existing) : {};
-    await storageSet(`pj_${activeDate}`, JSON.stringify({ ...current, water: newWater, waterEntries: newEntries }));
+    await storageSet(`pj_${activeDate}`, JSON.stringify({ ...current, water: newWater, waterEntries: newEntries, waterGoal }));
     saveToFirebase(activeDate, 'water', newWater);
     if (oz > 0) {
       showToast('Water logged', `+${oz} oz · ${newWater} oz total`, 'info');

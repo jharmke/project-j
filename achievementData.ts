@@ -1705,6 +1705,9 @@ export async function checkFaithAchievements(
 // Loads its own store, writes to AsyncStorage, returns newly unlocked defs.
 
 export async function checkWorkoutAchievements(): Promise<AchievementDef[]> {
+  const today = new Date().toISOString().slice(0, 10);
+  const checked = await AsyncStorage.getItem('pj_workout_ach_checked');
+  if (checked === today) return [];
   const store = await loadAchievements();
   let updatedStore = store;
   const unlockedDefs: AchievementDef[] = [];
@@ -1749,6 +1752,7 @@ export async function checkWorkoutAchievements(): Promise<AchievementDef[]> {
     }
   } catch {}
 
+  await AsyncStorage.setItem('pj_workout_ach_checked', today);
   return unlockedDefs;
 }
 
@@ -1780,6 +1784,9 @@ function computeSleepScore(
 // Loads its own store, writes to AsyncStorage, returns newly unlocked defs.
 
 export async function checkSleepAchievements(): Promise<AchievementDef[]> {
+  const today = new Date().toISOString().slice(0, 10);
+  const checked = await AsyncStorage.getItem('pj_sleep_ach_checked');
+  if (checked === today) return [];
   const store = await loadAchievements();
   let updatedStore = store;
   const unlockedDefs: AchievementDef[] = [];
@@ -1827,6 +1834,7 @@ export async function checkSleepAchievements(): Promise<AchievementDef[]> {
     if (greenSleepDays >= 365) await unlock('sleep_green_365');
   } catch {}
 
+  await AsyncStorage.setItem('pj_sleep_ach_checked', today);
   return unlockedDefs;
 }
 

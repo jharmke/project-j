@@ -429,7 +429,7 @@ export default function StatsScreen() {
     config: StreakConfigItem[],
     target: number, streakBaseTarget: number, burnAccuracy: number,
     wGoal: number, aCalGoal: number, exMinsGoal: number, pGoal: number,
-    sGoal: number, currentFaithJourney: string,
+    sGoal: number, stepParam: number, currentFaithJourney: string,
   ) => {
     if (config.length === 0) return;
     const workoutRaw = await AsyncStorage.getItem('pj_workout_state');
@@ -446,12 +446,17 @@ export default function StatsScreen() {
     const effectiveTarget = target > 0 ? target : streakBaseTarget;
     const todayKey = offsetToDateKey(0);
 
+    // Read today's data for auto-tracked streak seeding
+    const todayRaw = await AsyncStorage.getItem(`pj_${todayKey}`);
+    const todayData = todayRaw ? JSON.parse(todayRaw) : null;
+    const todayExercises = (workoutState?.programs?.[todayKey]?.exercises || []).length > 0;
+
     // For each active streak, compute its value
     const streakCounters: Record<string, number> = {};
     const streakDone: Record<string, boolean> = {};
     const todayLogged: Record<string, boolean> = {};
 
-    // Seed today-is-logged for faith streaks (count immediately)
+    // Seed today-is-logged for all streak types
     for (const item of config) {
       if (item.type === 'builtin' && item.key === 'bible') {
         todayLogged[item.id] = bibleDates.has(todayKey);
@@ -466,9 +471,30 @@ export default function StatsScreen() {
         const dates = customDates[item.id] || [];
         todayLogged[item.id] = dates.includes(todayKey);
         streakCounters[item.id] = todayLogged[item.id] ? 1 : 0;
-      } else {
+      } else if (item.type === 'builtin' && item.key === 'calories') {
+        // Calories skip today -- fluid during the day, count only completed days
         todayLogged[item.id] = false;
         streakCounters[item.id] = 0;
+      } else {
+        // Auto-tracked streaks -- check today's actual data
+        let hit = false;
+        if (todayData && item.type === 'builtin' && item.key) {
+          const dayActive = Math.round((todayData.activeCalories || todayData.caloriesBurned || 0) * burnAccuracy / 100);
+          const totalProtein = (todayData.entries || []).reduce((s: number, e: any) => s + (e?.protein || 0), 0);
+          const { score: todaySleepScore } = calcSleepScore(todayData.sleepHours || null, todayData.sleepStages || null, todayData.sleepGoal || sGoal, todayData.sleepFeelRating || null, !todayData.sleepStages);
+          switch (item.key) {
+            case 'workout':      hit = todayExercises; break;
+            case 'protein':      hit = pGoal > 0 && totalProtein >= pGoal; break;
+            case 'water':        hit = (todayData.water || 0) >= (todayData.waterGoal || wGoal); break;
+            case 'steps':        hit = (todayData.steps || 0) >= (todayData.stepGoal || stepParam); break;
+            case 'activecals':   hit = aCalGoal > 0 && dayActive >= aCalGoal; break;
+            case 'exercisemins': hit = exMinsGoal > 0 && (todayData.exerciseMinutes || 0) >= exMinsGoal; break;
+            case 'sleepduration':hit = (todayData.sleepHours || 0) >= (todayData.sleepGoal || sGoal); break;
+            case 'sleepquality': hit = todaySleepScore !== null && todaySleepScore >= 85; break;
+          }
+        }
+        todayLogged[item.id] = hit;
+        streakCounters[item.id] = hit ? 1 : 0;
       }
       streakDone[item.id] = false;
     }
@@ -500,7 +526,8 @@ export default function StatsScreen() {
         const dayActive = Math.round((data.activeCalories || data.caloriesBurned || 0) * burnAccuracy / 100);
         const adjustedTarget = effectiveTarget + dayActive;
         const totalProtein = data.entries?.reduce((s: number, e: any) => s + (e.protein || 0), 0) || 0;
-        const { score: sleepScore } = calcSleepScore(data.sleepHours || null, data.sleepStages || null, sGoal, data.sleepFeelRating || null, !data.sleepStages);
+        const effectiveSleepGoal = data.sleepGoal || sGoal;
+        const { score: sleepScore } = calcSleepScore(data.sleepHours || null, data.sleepStages || null, effectiveSleepGoal, data.sleepFeelRating || null, !data.sleepStages);
 
         for (const item of config) {
           if (streakDone[item.id]) continue;
@@ -510,11 +537,11 @@ export default function StatsScreen() {
               case 'workout':     hit = (workoutState?.programs?.[dateKey]?.exercises || []).length > 0; break;
               case 'calories':    hit = adjustedTarget > 0 && calTotal >= adjustedTarget * 0.80 && calTotal <= adjustedTarget * 1.06; break;
               case 'protein':     hit = pGoal > 0 && totalProtein >= pGoal; break;
-              case 'water':       hit = (data.water || 0) >= wGoal; break;
-              case 'steps':       hit = (data.steps || 0) >= stepGoal; break;
+              case 'water':       hit = (data.water || 0) >= (data.waterGoal || wGoal); break;
+              case 'steps':       hit = (data.steps || 0) >= (data.stepGoal || stepParam); break;
               case 'activecals':  hit = aCalGoal > 0 && dayActive >= aCalGoal; break;
               case 'exercisemins':hit = exMinsGoal > 0 && (data.exerciseMinutes || 0) >= exMinsGoal; break;
-              case 'sleepduration': hit = (data.sleepHours || 0) >= sGoal; break;
+              case 'sleepduration': hit = (data.sleepHours || 0) >= effectiveSleepGoal; break;
               case 'sleepquality':  hit = sleepScore !== null && sleepScore >= 85; break;
               case 'bible':       hit = bibleDates.has(dateKey); break;
               case 'gratitude':   hit = gratitudeDates.has(dateKey); break;
@@ -641,7 +668,7 @@ export default function StatsScreen() {
     await storageSet('pj_streaks', JSON.stringify({ ...pjStreaksData, config: newConfig }));
     setStreakConfig(newConfig);
     // Re-run full calculation so history is reflected immediately
-    await loadStreaks(newConfig, calTarget, streakBaseTarget, burnAccuracy, waterGoal, activeCalGoal, exerciseMinsGoal, proteinGoal, sleepGoal, faithJourney);
+    await loadStreaks(newConfig, calTarget, streakBaseTarget, burnAccuracy, waterGoal, activeCalGoal, exerciseMinsGoal, proteinGoal, sleepGoal, stepGoal, faithJourney);
   };
 
   useFocusEffect(
@@ -745,7 +772,7 @@ export default function StatsScreen() {
           loadAllCardData(cards, 30, sleep),
           loadRecords(),
           loadPeriodData(activePeriod, target, sleep, bmr, netCarbsMode),
-          loadStreaks(config, target, streakBaseTarget, burnAccuracy, wGoal, aCalGoal, exMinsGoal, pGoal, sleep, currentFaithJourney),
+          loadStreaks(config, target, streakBaseTarget, burnAccuracy, wGoal, aCalGoal, exMinsGoal, pGoal, sleep, step, currentFaithJourney),
         ]);
       };
       loadAll();

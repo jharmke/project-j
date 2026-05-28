@@ -123,8 +123,13 @@ export async function loadSavedReports(): Promise<DiagnosticReport[]> {
 export async function saveReport(report: DiagnosticReport): Promise<void> {
   try {
     const existing = await loadSavedReports();
-    const filtered = existing.filter(r => r.id !== report.id);
-    const updated = [report, ...filtered].slice(0, 10);
+    const todayDate = new Date().toISOString().slice(0, 10);
+    // Replace any same-day same-window report instead of stacking a duplicate
+    const filtered = existing.filter(r =>
+      r.id !== report.id &&
+      !(r.windowDays === report.windowDays && r.generatedAt.slice(0, 10) === todayDate)
+    );
+    const updated = [report, ...filtered].slice(0, 15);
     await storageSet(STORAGE_KEY, JSON.stringify(updated));
   } catch {}
 }

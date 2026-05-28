@@ -134,6 +134,7 @@ function RootLayoutNav() {
         <Stack.Screen name="head-to-head" options={{ headerShown: false, animation: 'fade' }} />
         <Stack.Screen name="mission" options={{ headerShown: false }} />
         <Stack.Screen name="diagnostic-report" options={{ headerShown: false }} />
+        <Stack.Screen name="diagnostic-report-view" options={{ headerShown: false }} />
         <Stack.Screen name="definitions" options={{ headerShown: false }} />
         <Stack.Screen name="tutorials" options={{ headerShown: false }} />
       </Stack>

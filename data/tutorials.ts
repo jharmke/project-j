@@ -1425,6 +1425,8 @@ export const TUTORIALS: Tutorial[] = [
       },
       {
         targetKey: 'evr_findings_section',
+        navigateTo: '/diagnostic-report-view?tutorial=1',
+        navigateDelay: 1200,
         title: 'YOUR FINDINGS',
         noTabBarOffset: true,
         body: {

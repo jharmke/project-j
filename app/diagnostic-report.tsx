@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import * as Haptics from 'expo-haptics';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ToastRenderer, useToast } from '../components/Toast';
@@ -10,14 +11,8 @@ import { useTheme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import {
-  BurnAccuracyFinding,
-  ConsistencyFinding,
-  DeficitFinding,
   DiagnosticReport,
-  FindingStatus,
-  MacroFinding,
   ReportWindow,
-  SleepFinding,
   deleteReport,
   generateDiagnosticReport,
   loadSavedReports,
@@ -37,10 +32,6 @@ function fmtDate(dk: string): string {
 function fmtDateFull(dk: string): string {
   const [y, m, d] = dk.split('-');
   return `${MONTH_ABBR[parseInt(m) - 1]} ${parseInt(d)}, ${y}`;
-}
-
-function fmtLbs(v: number): string {
-  return `${Math.abs(Math.round(v * 10) / 10).toFixed(1)} lbs`;
 }
 
 function windowDateRange(windowDays: number): string {
@@ -75,291 +66,37 @@ async function countLoggedDaysInWindow(windowDays: number): Promise<number> {
   return count;
 }
 
-// ── Status pill ────────────────────────────────────────────────────────────────
-
-function StatusPill({ status, theme }: { status: FindingStatus; theme: any }) {
-  const label = status === 'good' ? 'LOOKING GOOD' : status === 'attention' ? 'WORTH ATTENTION' : 'LIKELY FACTOR';
-  const color = status === 'good' ? theme.statusGood : status === 'attention' ? theme.statusWarn : theme.statusBad;
-  return (
-    <View style={{ backgroundColor: color + '22', borderWidth: 1, borderColor: color + '55', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-      <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color }}>{label}</Text>
-    </View>
-  );
-}
-
-// ── Chip label ─────────────────────────────────────────────────────────────────
-
-function ChipLabel({ label, theme }: { label: string; theme: any }) {
-  return (
-    <View style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-      <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.accentBlueRaw }}>{label}</Text>
-    </View>
-  );
-}
-
-// ── Data row ───────────────────────────────────────────────────────────────────
-
-function DataRow({ label, value, valueColor, theme }: { label: string; value: string; valueColor?: string; theme: any }) {
-  return (
-    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 5, borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle }}>
-      <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, flex: 1 }}>{label}</Text>
-      <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: valueColor ?? theme.textPrimary }}>{value}</Text>
-    </View>
-  );
-}
-
-// ── Finding card ───────────────────────────────────────────────────────────────
-
-function FindingCard({
-  chipLabel, headline, status, showStatus, theme, shadowStyle, children,
-}: {
-  chipLabel: string;
-  headline: ReactNode;
-  status: FindingStatus;
-  showStatus: boolean;
-  theme: any;
-  shadowStyle: any;
-  children?: React.ReactNode;
-}) {
-  const topColor = showStatus
-    ? (status === 'good' ? theme.statusGood : status === 'attention' ? theme.statusWarn : theme.statusBad)
-    : theme.accentBlueRaw;
-  return (
-    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: topColor, ...shadowStyle }]}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-        <ChipLabel label={chipLabel} theme={theme} />
-        {showStatus && <StatusPill status={status} theme={theme} />}
-      </View>
-      <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', color: theme.textPrimary, letterSpacing: 1, marginBottom: children ? 10 : 0, lineHeight: 22 }}>
-        {headline}
-      </Text>
-      {children}
-    </View>
-  );
-}
-
-// ── Consistency card ───────────────────────────────────────────────────────────
-
-function ConsistencyCard({ f, isMindful, theme, shadowStyle }: { f: ConsistencyFinding; isMindful: boolean; theme: any; shadowStyle: any }) {
-  const rate = Math.round(f.rate * 100);
-  const headline = `${f.loggedDays} of ${f.totalDays} days logged  ·  ${rate}%`;
-  const noteText = f.status !== 'good'
-    ? isMindful
-      ? `There are some gaps in this window. More logging days give the report more to work with.`
-      : `Inconsistent logging creates gaps in the deficit calculation. Even rough entries on hard days are better than nothing.`
-    : null;
-  return (
-    <FindingCard chipLabel="LOGGING CONSISTENCY" headline={headline} status={f.status} showStatus={!isMindful} theme={theme} shadowStyle={shadowStyle}>
-      <DataRow label="Logged days" value={`${f.loggedDays} / ${f.totalDays}`} theme={theme} />
-      {f.suspectDays > 0 && <DataRow label="Under 400 cal (suspect)" value={`${f.suspectDays} day${f.suspectDays !== 1 ? 's' : ''}`} valueColor={!isMindful ? theme.statusWarn : undefined} theme={theme} />}
-      {f.excludedDays > 0 && <DataRow label="Excluded from stats" value={`${f.excludedDays} day${f.excludedDays !== 1 ? 's' : ''}`} theme={theme} />}
-      {noteText && <Text style={styles.noteText}>{noteText}</Text>}
-    </FindingCard>
-  );
-}
-
-// ── Deficit card ───────────────────────────────────────────────────────────────
-
-function DeficitCard({ f, isMindful, theme, shadowStyle }: { f: DeficitFinding; isMindful: boolean; theme: any; shadowStyle: any }) {
-  const chipLabel = f.goalDirection === 'gain' ? 'CALORIE SURPLUS' : 'CALORIE DEFICIT';
-  let headline = '';
-  if (f.actualChangeLbs !== null) {
-    const expAbs = fmtLbs(Math.abs(f.expectedChangeLbs));
-    const expDir = f.goalDirection === 'lose' ? 'lost' : 'gained';
-    const actAbs = fmtLbs(Math.abs(f.actualChangeLbs));
-    const actDir = f.actualChangeLbs <= 0 ? 'lost' : 'gained';
-    headline = `Expected ${expDir} ${expAbs}. Actually ${actDir} ${actAbs}.`;
-  } else {
-    const abs = Math.abs(Math.round(f.avgDailyDeficit));
-    headline = `Avg ${abs} cal/day ${f.avgDailyDeficit >= 0 ? 'deficit' : 'surplus'} logged`;
-  }
-  const gapColor = !isMindful && f.gapLbs != null && f.gapLbs > 0.3 ? theme.statusWarn : theme.textPrimary;
-  return (
-    <FindingCard chipLabel={chipLabel} headline={headline} status={f.status} showStatus={!isMindful && f.hasWeightData} theme={theme} shadowStyle={shadowStyle}>
-      <DataRow label="Avg daily deficit" value={`${Math.abs(Math.round(f.avgDailyDeficit)).toLocaleString()} cal`} theme={theme} />
-      {Math.abs(f.expectedChangeLbs) >= 0.1 && (
-        <DataRow label="Expected over window" value={`${f.goalDirection === 'lose' ? '-' : '+'}${fmtLbs(f.expectedChangeLbs)}`} theme={theme} />
-      )}
-      {f.actualChangeLbs !== null && (
-        <DataRow label="Actual weight change" value={`${f.actualChangeLbs <= 0 ? '-' : '+'}${fmtLbs(f.actualChangeLbs)}`} theme={theme} />
-      )}
-      {!isMindful && f.gapLbs != null && Math.abs(f.gapLbs) >= 0.3 && (
-        <DataRow
-          label={f.goalDirection === 'lose' ? (f.gapLbs > 0 ? 'Fell short by' : 'Exceeded by') : (f.gapLbs < 0 ? 'Fell short by' : 'Exceeded by')}
-          value={fmtLbs(f.gapLbs)}
-          valueColor={gapColor}
-          theme={theme}
-        />
-      )}
-      {!f.hasWeightData && (
-        <Text style={[styles.noteText, { color: theme.textSecondary }]}>
-          Log your weight at least twice in this window to compare expected vs actual results.
-        </Text>
-      )}
-    </FindingCard>
-  );
-}
-
-// ── Burn accuracy card ─────────────────────────────────────────────────────────
-
-function BurnAccuracyCard({ f, isMindful, theme, shadowStyle }: { f: BurnAccuracyFinding; isMindful: boolean; theme: any; shadowStyle: any }) {
-  const headline = f.burnAccuracyPct === 100 ? `Burn estimate hasn't been adjusted` : `Burn estimate adjusted to ${f.burnAccuracyPct}%`;
-  const note = f.isFlagged
-    ? isMindful
-      ? `Your burn estimate is using the default 100%. Most wearables measure differently -- adjusting this in Settings is something worth exploring.`
-      : `Apple Watch and most wearables overestimate active burn by 10-30%. Try Settings → Health and set it to 80-90% for more accurate math.`
-    : null;
-  return (
-    <FindingCard chipLabel="BURN ACCURACY" headline={headline} status={f.status} showStatus={!isMindful && f.isFlagged} theme={theme} shadowStyle={shadowStyle}>
-      <DataRow label="Avg active calories/day" value={`${f.avgActiveCalPerDay.toLocaleString()} cal`} theme={theme} />
-      <DataRow label="Current adjustment" value={`${f.burnAccuracyPct}%`} theme={theme} />
-      {f.burnAccuracyPct < 100 && (
-        <DataRow label="Adjusted avg/day" value={`${Math.round(f.avgActiveCalPerDay * f.burnAccuracyPct / 100).toLocaleString()} cal`} theme={theme} />
-      )}
-      {note && <Text style={[styles.noteText, { color: theme.textSecondary }]}>{note}</Text>}
-    </FindingCard>
-  );
-}
-
-// ── Macro card ─────────────────────────────────────────────────────────────────
-
-function MacroCard({ f, isMindful, theme, shadowStyle }: { f: MacroFinding; isMindful: boolean; theme: any; shadowStyle: any }) {
-  const headline: ReactNode = f.macroStatus === 'good' && f.fiberStatus === 'good'
-    ? 'Macros and food quality look balanced'
-    : f.macroStatus !== 'good'
-    ? <>Protein averaging {f.avgProtein}<Text style={{ fontFamily: 'DMSans_600SemiBold', fontSize: 18 }}>g</Text> -- below target</>
-    : 'Food quality has room to improve';
-  const proteinColor = !isMindful && f.macroStatus !== 'good' ? theme.statusWarn : theme.textPrimary;
-  const fiberColor = !isMindful && f.fiberStatus !== 'good' ? theme.statusWarn : theme.textPrimary;
-  const fiberNote = f.lowFiberNote
-    ? isMindful
-      ? `Fiber tends to reflect how much of your diet comes from whole foods. Your average of ${f.avgFiber}g/day is worth paying attention to.`
-      : `Low fiber usually means fewer fruits, vegetables, and whole grains. Fiber is the best available proxy for food quality we can measure.`
-    : null;
-  return (
-    <FindingCard chipLabel="MACRO QUALITY" headline={headline} status={f.status} showStatus={!isMindful} theme={theme} shadowStyle={shadowStyle}>
-      <DataRow label="Avg protein/day" value={`${f.avgProtein}g`} valueColor={proteinColor} theme={theme} />
-      <DataRow label="Protein target" value={`${f.proteinGoalMin}–${f.proteinGoalMax}g`} theme={theme} />
-      {f.avgFiber > 0 && <DataRow label="Avg fiber/day" value={`${f.avgFiber}g`} valueColor={fiberColor} theme={theme} />}
-      {f.avgFiber > 0 && <DataRow label="Fiber target" value="25–38g" theme={theme} />}
-      {fiberNote && <Text style={[styles.noteText, { color: theme.textSecondary }]}>{fiberNote}</Text>}
-    </FindingCard>
-  );
-}
-
-// ── Sleep card ─────────────────────────────────────────────────────────────────
-
-function SleepCard({ f, isMindful, theme, shadowStyle }: { f: SleepFinding; isMindful: boolean; theme: any; shadowStyle: any }) {
-  const headline = f.avgSleepScore !== null
-    ? `Avg sleep score: ${f.avgSleepScore} over ${f.totalSleepDays} nights`
-    : `Avg ${f.avgSleepHours}h/night over ${f.totalSleepDays} nights`;
-  const scoreColor = !isMindful && f.status !== 'good' ? theme.statusWarn : theme.textPrimary;
-  const note = f.status !== 'good'
-    ? isMindful
-      ? `Your sleep data shows some nights that could be improved. Sleep quality has an interesting relationship with appetite and energy.`
-      : `Poor sleep increases ghrelin (hunger hormone) and decreases leptin (fullness hormone), making fat loss harder even with a consistent deficit.`
-    : null;
-  return (
-    <FindingCard chipLabel="SLEEP QUALITY" headline={headline} status={f.status} showStatus={!isMindful} theme={theme} shadowStyle={shadowStyle}>
-      {f.avgSleepScore !== null && <DataRow label="Avg sleep score" value={`${f.avgSleepScore} / 100`} valueColor={scoreColor} theme={theme} />}
-      <DataRow label="Avg sleep duration" value={`${f.avgSleepHours}h`} theme={theme} />
-      {f.poorSleepCalDelta != null && f.poorSleepCalDelta > 0 && (
-        <DataRow label="Extra cals after poor sleep" value={`+${f.poorSleepCalDelta} cal`} valueColor={!isMindful ? theme.statusWarn : undefined} theme={theme} />
-      )}
-      {note && <Text style={[styles.noteText, { color: theme.textSecondary }]}>{note}</Text>}
-    </FindingCard>
-  );
-}
-
-// ── Tutorial demo report ───────────────────────────────────────────────────────
-
-const TUTORIAL_DEMO_REPORT: DiagnosticReport = {
-  id: 'tutorial_demo',
-  generatedAt: new Date().toISOString(),
-  windowDays: 30,
-  dateRangeStart: '2026-04-28',
-  dateRangeEnd: '2026-05-27',
-  goalDirection: 'lose',
-  summary: 'You logged 22 of 30 days. Your calorie deficit looks solid on paper, but sleep quality and weekend patterns are likely holding back your results.',
-  insufficientData: false,
-  minLoggedDays: 22,
-  consistency: { type: 'consistency', status: 'attention', loggedDays: 22, totalDays: 30, suspectDays: 2, excludedDays: 0, rate: 0.73 },
-  deficit: { type: 'deficit', status: 'good', goalDirection: 'lose', avgDailyDeficit: -340, expectedChangeLbs: 2.9, actualChangeLbs: -1.6, gapLbs: 1.3, loggedDays: 22, hasWeightData: true },
-  burnAccuracy: { type: 'burnAccuracy', status: 'attention', burnAccuracyPct: 100, avgActiveCalPerDay: 480, isFlagged: true },
-  macros: { type: 'macros', status: 'attention', macroStatus: 'attention', fiberStatus: 'good', avgProtein: 112, proteinGoalMin: 140, proteinGoalMax: 160, avgFiber: 28, hasData: true, bodyWeightLbs: 185, lowFiberNote: false },
-  sleep: { type: 'sleep', status: 'attention', avgSleepScore: 61, avgSleepHours: 6.4, totalSleepDays: 18, poorSleepCalDelta: 180, hasEnoughData: true },
-  correlations: {
-    type: 'correlations',
-    correlations: [
-      { id: 'sleep_intake', headline: 'After nights under 6 hours, you logged 180 more calories', detail: 'Sleep deprivation raises ghrelin (hunger) and lowers leptin (fullness). This pattern appeared consistently across your window.' },
-      { id: 'weekend_pattern', headline: 'Weekend calories averaged 350 more than weekdays', detail: 'Weekends showed a consistent surplus pattern. Most of the gap between expected and actual weight change comes from these days.' },
-    ],
-  },
-  suggestions: [
-    { rank: 1, headline: 'Protect your sleep', detail: 'Getting under 6 hours consistently is adding about 180 extra calories per day through appetite shifts. Prioritizing sleep could close most of your result gap.' },
-    { rank: 2, headline: 'Set a weekend calorie buffer', detail: 'Your weekday logging is strong. On weekends, plan for a 200-300 cal higher limit rather than trying to match weekday strictness.' },
-    { rank: 3, headline: 'Adjust your burn estimate', detail: 'Your burn accuracy is at 100%. Most wearables overestimate by 15-25%. Try 85% in Settings > Health for more accurate math.' },
-  ],
-};
-
 // ── Main screen ────────────────────────────────────────────────────────────────
 
 export default function DiagnosticReportScreen() {
   const insets = useSafeAreaInsets();
   const { theme: t } = useTheme();
   const { showToast } = useToast();
-  const { tutorial } = useLocalSearchParams<{ tutorial?: string }>();
-  const isTutorialMode = tutorial === '1';
 
   const { registerScrollView, unregisterScrollView } = useTutorial();
-  const windowPickerRef     = useTutorialTarget('evr_window_picker');
-  const generateBtnRef      = useTutorialTarget('evr_generate_btn');
-  const findingsSectionRef  = useTutorialTarget('evr_findings_section');
-  const correlationsRef     = useTutorialTarget('evr_correlations');
-  const suggestionsRef      = useTutorialTarget('evr_suggestions');
+  const windowPickerRef = useTutorialTarget('evr_window_picker');
+  const generateBtnRef  = useTutorialTarget('evr_generate_btn');
   const scrollRef = useRef<any>(null);
 
-  const [savedReports, setSavedReports] = useState<DiagnosticReport[]>([]);
-  const [currentReport, setCurrentReport] = useState<DiagnosticReport | null>(isTutorialMode ? TUTORIAL_DEMO_REPORT : null);
-  const [selectedWindow, setSelectedWindow] = useState<ReportWindow>(isTutorialMode ? 30 : 30);
-  const [generating, setGenerating] = useState(false);
-  const [initialized, setInitialized] = useState(isTutorialMode);
-  const [styleMode, setStyleMode] = useState<'Discipline' | 'Balanced' | 'Mindful'>('Balanced');
+  const [savedReports, setSavedReports]     = useState<DiagnosticReport[]>([]);
+  const [selectedWindow, setSelectedWindow] = useState<ReportWindow>(30);
+  const [generating, setGenerating]         = useState(false);
+  const [initialized, setInitialized]       = useState(false);
   const [loggedDayCounts, setLoggedDayCounts] = useState<Record<number, number>>({});
-  const [showAllSuggestions, setShowAllSuggestions] = useState(false);
+
+  const shadowStyle = { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 3 };
 
   useEffect(() => {
     registerScrollView('effort_vs_results', scrollRef);
     return () => unregisterScrollView('effort_vs_results');
   }, []);
 
-  const isMindful = styleMode === 'Mindful';
-  const shadowStyle = { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 3 };
-
-  // Locked when the current report for THIS window came back insufficient.
-  // Switching to a different window clears it.
-  const preCheckCount = loggedDayCounts[selectedWindow] ?? null;
-  const isBlocked = initialized && (
-    (!!currentReport?.insufficientData && currentReport.windowDays === selectedWindow) ||
-    (preCheckCount !== null && preCheckCount < minDaysForWindow(selectedWindow))
-  );
-  const needsRegenerate = !!currentReport && currentReport.windowDays !== selectedWindow;
-
   useFocusEffect(
     useCallback(() => {
-      if (isTutorialMode) return;
       setInitialized(false);
       const load = async () => {
-        try {
-          const s = await AsyncStorage.getItem('pj_settings');
-          if (s) { const d = JSON.parse(s); if (d.styleMode) setStyleMode(d.styleMode); }
-        } catch {}
         const reports = await loadSavedReports();
         setSavedReports(reports);
-        if (reports.length > 0) {
-          setCurrentReport(reports[0]);
-          setSelectedWindow(reports[0].windowDays);
-        }
         const [c14, c30, c90] = await Promise.all([
           countLoggedDaysInWindow(14),
           countLoggedDaysInWindow(30),
@@ -369,38 +106,50 @@ export default function DiagnosticReportScreen() {
         setInitialized(true);
       };
       load();
-    }, [isTutorialMode])
+    }, [])
   );
 
+  const isWindowBlocked = (w: ReportWindow): boolean =>
+    initialized && loggedDayCounts[w] !== undefined && loggedDayCounts[w] < minDaysForWindow(w);
+
+  const selectedBlocked = isWindowBlocked(selectedWindow);
+
   const handleGenerate = async () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setGenerating(true);
-    setShowAllSuggestions(false);
     try {
       const report = await generateDiagnosticReport(selectedWindow);
       await saveReport(report);
       const updated = await loadSavedReports();
       setSavedReports(updated);
-      setCurrentReport(updated[0]);
+      router.push(`/diagnostic-report-view?id=${encodeURIComponent(report.id)}`);
     } catch {
-      showToast('Could not generate report -- try again', undefined, 'error');
+      showToast('Could not generate report. Try again.', undefined, 'error');
     } finally {
       setGenerating(false);
     }
   };
 
-  const handleDeleteArchive = (id: string) => {
-    Alert.alert('Delete Report', 'Remove this saved report?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => {
-        await deleteReport(id);
-        const updated = await loadSavedReports();
-        setSavedReports(updated);
-        if (currentReport?.id === id) setCurrentReport(updated[0] ?? null);
-      }},
-    ]);
+  const handleDelete = (report: DiagnosticReport) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    Alert.alert(
+      'Delete Report',
+      'Remove this saved report? This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            await deleteReport(report.id);
+            const updated = await loadSavedReports();
+            setSavedReports(updated);
+            showToast('Report deleted', undefined, 'success');
+          },
+        },
+      ]
+    );
   };
-
-  const archiveReports = savedReports.filter(r => r.id !== currentReport?.id);
 
   return (
     <View style={{ flex: 1, backgroundColor: t.bgPrimary }}>
@@ -424,22 +173,38 @@ export default function DiagnosticReportScreen() {
 
         {/* Window picker */}
         <View ref={windowPickerRef} collapsable={false} style={{ flexDirection: 'row', gap: 8 }}>
-          {([14, 30, 90] as ReportWindow[]).map(w => (
-            <TouchableOpacity
-              key={w}
-              onPress={() => setSelectedWindow(w)}
-              style={{
-                flex: 1, paddingVertical: 9, borderRadius: 8, alignItems: 'center',
-                backgroundColor: selectedWindow === w ? t.accentBlueBg : t.bgCard,
-                borderWidth: 1, borderColor: selectedWindow === w ? t.accentBlueBorder : t.borderCard,
-              }}
-            >
-              <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: selectedWindow === w ? t.accentBlueRaw : t.textMuted }}>
-                {w === 14 ? '14 days' : w === 30 ? '30 days' : '90 days'}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {([14, 30, 90] as ReportWindow[]).map(w => {
+            const count   = loggedDayCounts[w];
+            const needed  = minDaysForWindow(w);
+            const blocked = isWindowBlocked(w);
+            const active  = selectedWindow === w;
+            return (
+              <TouchableOpacity
+                key={w}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setSelectedWindow(w);
+                }}
+                style={[styles.windowBtn, {
+                  backgroundColor: active ? t.accentBlueBg : t.bgCard,
+                  borderColor: active ? t.accentBlueBorder : t.borderCard,
+                  opacity: blocked && !active ? 0.55 : 1,
+                }]}
+              >
+                <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: active ? t.accentBlueRaw : t.textMuted }}>
+                  {w === 14 ? '14 days' : w === 30 ? '30 days' : '90 days'}
+                </Text>
+                {initialized && count !== undefined && blocked && (
+                  <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: blocked ? t.statusWarn : t.textMuted, marginTop: 2 }}>
+                    {count} / {needed} logged
+                  </Text>
+                )}
+              </TouchableOpacity>
+            );
+          })}
         </View>
+
+        {/* Date range pill */}
         <View style={{ alignItems: 'center', marginTop: 6, marginBottom: 12 }}>
           <View style={{ backgroundColor: t.accentBlueBg, borderWidth: 1, borderColor: t.accentBlueBorder, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 5 }}>
             <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: t.accentBlueRaw }}>
@@ -452,171 +217,98 @@ export default function DiagnosticReportScreen() {
         <TouchableOpacity
           ref={generateBtnRef}
           onPress={handleGenerate}
-          disabled={!initialized || generating || isBlocked}
-          style={{
+          disabled={!initialized || generating || selectedBlocked}
+          style={[styles.generateBtn, {
             backgroundColor: t.accentBlueRaw,
-            borderRadius: 10, paddingVertical: 14, alignItems: 'center',
-            marginBottom: 20,
-            opacity: !initialized ? 0.4 : generating ? 0.7 : isBlocked ? 0.4 : 1,
-          }}
+            opacity: !initialized ? 0.4 : generating ? 0.7 : selectedBlocked ? 0.4 : 1,
+          }]}
         >
           {generating ? (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <ActivityIndicator color="#fff" size="small" />
-              <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: '#fff' }}>Analyzing your data...</Text>
+              <Text style={styles.generateBtnText}>Analyzing your data...</Text>
             </View>
           ) : (
-            <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: '#fff' }}>
-              {isTutorialMode || !currentReport ? 'Generate Analysis' : needsRegenerate ? `Regenerate for ${selectedWindow} days` : 'Regenerate'}
+            <Text style={styles.generateBtnText}>
+              {selectedBlocked ? `Need ${minDaysForWindow(selectedWindow)} logged days` : 'Generate Analysis'}
             </Text>
           )}
         </TouchableOpacity>
 
-        {/* Empty state */}
-        {!currentReport && !generating && (
-          isBlocked ? (
-            <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw, ...shadowStyle, alignItems: 'center', paddingVertical: 36 }]}>
-              <Ionicons name="calendar-outline" size={48} color={t.textMuted} style={{ marginBottom: 14 }} />
-              <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', color: t.textPrimary, letterSpacing: 1, marginBottom: 8 }}>Not Enough Data Yet</Text>
-              <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: t.textSecondary, textAlign: 'center', lineHeight: 20, paddingHorizontal: 8 }}>
-                {`You have ${preCheckCount ?? 0} of ${minDaysForWindow(selectedWindow)} days logged in the ${selectedWindow}-day window. Keep logging your meals — the report unlocks when you hit ${minDaysForWindow(selectedWindow)}.`}
-              </Text>
-              <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: t.textMuted, textAlign: 'center', lineHeight: 18, marginTop: 12, paddingHorizontal: 8 }}>
-                Try a shorter window above if you have enough data there.
-              </Text>
-            </View>
-          ) : (
-            <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw, ...shadowStyle, alignItems: 'center', paddingVertical: 36 }]}>
-              <Ionicons name="analytics-outline" size={48} color={t.textMuted} style={{ marginBottom: 14 }} />
-              <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', color: t.textPrimary, letterSpacing: 1, marginBottom: 8 }}>No Analysis Yet</Text>
-              <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: t.textSecondary, textAlign: 'center', lineHeight: 20, paddingHorizontal: 8 }}>
-                Select a window above and tap Generate to see what your logged data says about your results.
-              </Text>
-              <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: t.textMuted, textAlign: 'center', lineHeight: 18, marginTop: 12, paddingHorizontal: 8 }}>
-                More data = more accurate findings. The report only works with what you've logged.
-              </Text>
-            </View>
-          )
-        )}
-
-        {/* Report content */}
-        {currentReport && !generating && (
-          <>
-            {/* Summary */}
-            <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw, ...shadowStyle }]}>
-              <Ionicons name="analytics" size={130} color={t.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.08 }} />
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <Text style={[styles.cardLabel, { color: t.textMuted }]}>SUMMARY</Text>
-                <TouchableOpacity onPress={() => handleDeleteArchive(currentReport.id)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <Ionicons name="trash-outline" size={16} color={t.statusBad} />
-                </TouchableOpacity>
-              </View>
-              <Text style={{ fontSize: 14, fontFamily: 'DMSans_400Regular', color: t.textSecondary, lineHeight: 22 }}>
-                {currentReport.summary}
-              </Text>
-              {currentReport.insufficientData && (
-                <View style={{ marginTop: 12, backgroundColor: t.statusWarn + '18', borderRadius: 8, padding: 12, borderLeftWidth: 3, borderLeftColor: t.statusWarn }}>
-                  <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: t.statusWarn, marginBottom: 2 }}>Needs more data</Text>
-                  <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: t.textSecondary, lineHeight: 18 }}>
-                    Log food for at least 7 days in this window to unlock the full analysis.
-                  </Text>
-                </View>
-              )}
-            </View>
-
-            {/* Finding cards */}
-            {!currentReport.insufficientData && (
-              <>
-                <View ref={findingsSectionRef} collapsable={false}>
-                  <ConsistencyCard f={currentReport.consistency} isMindful={isMindful} theme={t} shadowStyle={shadowStyle} />
-                </View>
-                {currentReport.deficit && <DeficitCard f={currentReport.deficit} isMindful={isMindful} theme={t} shadowStyle={shadowStyle} />}
-                {currentReport.burnAccuracy && <BurnAccuracyCard f={currentReport.burnAccuracy} isMindful={isMindful} theme={t} shadowStyle={shadowStyle} />}
-                {currentReport.macros && <MacroCard f={currentReport.macros} isMindful={isMindful} theme={t} shadowStyle={shadowStyle} />}
-                {currentReport.sleep && <SleepCard f={currentReport.sleep} isMindful={isMindful} theme={t} shadowStyle={shadowStyle} />}
-
-                {/* Correlations */}
-                {currentReport.correlations && currentReport.correlations.correlations.length > 0 && (
-                  <View ref={correlationsRef} collapsable={false} style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw, ...shadowStyle }]}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                      <ChipLabel label="PATTERNS IN YOUR DATA" theme={t} />
-                      <TooltipIcon tooltipKey="diagnostic_correlations" />
-                    </View>
-                    {currentReport.correlations.correlations.map((c, i) => (
-                      <View key={c.id}>
-                        {i > 0 && <View style={{ height: 0.5, backgroundColor: t.borderSubtle, marginVertical: 12 }} />}
-                        <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: t.textPrimary, lineHeight: 20, marginBottom: 4 }}>
-                          {c.headline}
-                        </Text>
-                        <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: t.textSecondary, lineHeight: 18 }}>
-                          {c.detail}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
-
-                {/* Suggestions */}
-                {currentReport.suggestions.length > 0 && (
-                  <View ref={suggestionsRef} collapsable={false}>
-                    <Text style={[styles.sectionLabel, { color: t.textMuted }]}>
-                      {isMindful ? 'THINGS TO EXPLORE' : 'YOUR TOP SUGGESTIONS'}
-                    </Text>
-                    {(showAllSuggestions ? currentReport.suggestions : currentReport.suggestions.slice(0, 3)).map(s => (
-                      <View key={s.rank} style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw, borderLeftWidth: 3, borderLeftColor: t.accentBlueRaw, ...shadowStyle, flexDirection: 'row', gap: 12 }]}>
-                        <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: t.accentBlueBg, borderWidth: 1, borderColor: t.accentBlueBorder, alignItems: 'center', justifyContent: 'center', marginTop: 1, flexShrink: 0 }}>
-                          <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: t.accentBlueRaw }}>{s.rank}</Text>
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: t.textPrimary, lineHeight: 20, marginBottom: 4 }}>{s.headline}</Text>
-                          <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: t.textSecondary, lineHeight: 18 }}>{s.detail}</Text>
-                        </View>
-                      </View>
-                    ))}
-                    {currentReport.suggestions.length > 3 && (
-                      <TouchableOpacity
-                        onPress={() => setShowAllSuggestions(v => !v)}
-                        style={{ alignItems: 'center', paddingVertical: 10 }}
-                      >
-                        <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: t.accentBlueRaw }}>
-                          {showAllSuggestions ? 'Show less' : `Show ${currentReport.suggestions.length - 3} more`}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                )}
-
-                {/* Disclaimer */}
-                <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: t.textMuted, textAlign: 'center', lineHeight: 16, paddingHorizontal: 16 }}>
-                  Based on your logged data only. For informational purposes only. Not medical advice.
-                </Text>
-              </>
-            )}
-          </>
-        )}
-
-        {/* Report history */}
-        {archiveReports.length > 0 && (
+        {/* Saved reports list */}
+        {savedReports.length > 0 && (
           <View style={{ marginTop: 8 }}>
-            <Text style={[styles.sectionLabel, { color: t.textMuted }]}>REPORT HISTORY</Text>
-            {archiveReports.map(r => (
-              <View key={r.id} style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.borderCard, ...shadowStyle, flexDirection: 'row', alignItems: 'center', gap: 12 }]}>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: t.textPrimary }}>
-                    {fmtDate(r.dateRangeStart)} – {fmtDateFull(r.dateRangeEnd)}
-                  </Text>
-                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: t.textSecondary, marginTop: 2 }}>
-                    {r.windowDays}d window · {r.insufficientData ? 'Insufficient data' : `${r.minLoggedDays} days logged`}
-                  </Text>
-                </View>
+            <Text style={[styles.sectionLabel, { color: t.textMuted }]}>SAVED REPORTS</Text>
+            {(() => {
+              // Most recent report id per window duration
+              const currentPerWindow = new Map<ReportWindow, string>();
+              savedReports.forEach(r => { if (!currentPerWindow.has(r.windowDays)) currentPerWindow.set(r.windowDays, r.id); });
+              return savedReports.map(r => {
+              const isCurrent = currentPerWindow.get(r.windowDays) === r.id;
+              return (
                 <TouchableOpacity
-                  onPress={() => handleDeleteArchive(r.id)}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  key={r.id}
+                  activeOpacity={0.75}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    router.push(`/diagnostic-report-view?id=${encodeURIComponent(r.id)}`);
+                  }}
+                  style={[styles.reportRow, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: isCurrent ? t.accentBlueRaw : t.borderCard, ...shadowStyle }]}
                 >
-                  <Ionicons name="trash-outline" size={16} color={t.statusBad} />
+                  <View style={{ flex: 1, gap: 4 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      {isCurrent && (
+                        <View style={{ backgroundColor: t.accentBlueBg, borderWidth: 1, borderColor: t.accentBlueBorder, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 }}>
+                          <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: t.accentBlueRaw }}>CURRENT</Text>
+                        </View>
+                      )}
+                      <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: t.textSecondary }}>
+                        {fmtDate(r.dateRangeStart)} – {fmtDateFull(r.dateRangeEnd)}
+                      </Text>
+                    </View>
+                    <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: t.textMuted }}>
+                      {r.windowDays}-day window{r.insufficientData ? '  ·  Insufficient data' : `  ·  ${r.minLoggedDays} days logged`}
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => handleDelete(r)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    style={{ padding: 4 }}
+                  >
+                    <Ionicons name="trash-outline" size={16} color={t.statusBad} />
+                  </TouchableOpacity>
                 </TouchableOpacity>
-              </View>
-            ))}
+              );
+            });
+            })()}
+          </View>
+        )}
+
+        {/* Empty state when no reports and not blocked */}
+        {savedReports.length === 0 && initialized && !selectedBlocked && (
+          <View style={[styles.emptyCard, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw, ...shadowStyle }]}>
+            <Ionicons name="analytics-outline" size={48} color={t.textMuted} style={{ marginBottom: 14 }} />
+            <Text style={[styles.emptyTitle, { color: t.textPrimary }]}>No Reports Yet</Text>
+            <Text style={[styles.emptyBody, { color: t.textSecondary }]}>
+              Select a window and tap Generate to see what your logged data says about your results.
+            </Text>
+            <Text style={[styles.emptyHint, { color: t.textMuted }]}>
+              More data means more accurate findings.
+            </Text>
+          </View>
+        )}
+
+        {/* Blocked empty state */}
+        {savedReports.length === 0 && initialized && selectedBlocked && (
+          <View style={[styles.emptyCard, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw, ...shadowStyle }]}>
+            <Ionicons name="calendar-outline" size={48} color={t.textMuted} style={{ marginBottom: 14 }} />
+            <Text style={[styles.emptyTitle, { color: t.textPrimary }]}>Not Enough Data Yet</Text>
+            <Text style={[styles.emptyBody, { color: t.textSecondary }]}>
+              {`You have ${loggedDayCounts[selectedWindow] ?? 0} of ${minDaysForWindow(selectedWindow)} days logged in the ${selectedWindow}-day window. Keep logging and this unlocks automatically.`}
+            </Text>
+            <Text style={[styles.emptyHint, { color: t.textMuted }]}>
+              Try a shorter window if you have enough data there.
+            </Text>
           </View>
         )}
 
@@ -629,7 +321,6 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingBottom: 8,
   },
@@ -653,17 +344,24 @@ const styles = StyleSheet.create({
     letterSpacing: 3,
     lineHeight: 52,
   },
-  card: {
-    borderRadius: 14,
-    borderWidth: 0.5,
-    borderTopWidth: 1.5,
-    padding: 16,
+  windowBtn: {
+    flex: 1,
+    paddingVertical: 9,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    minHeight: 44,
+    justifyContent: 'center',
   },
-  cardLabel: {
-    fontSize: 9,
-    fontFamily: 'DMSans_700Bold',
-    letterSpacing: 3,
-    textTransform: 'uppercase',
+  generateBtn: {
+    borderRadius: 10,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  generateBtnText: {
+    fontSize: 14,
+    fontFamily: 'DMSans_600SemiBold',
+    color: '#fff',
   },
   sectionLabel: {
     fontSize: 9,
@@ -672,10 +370,43 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginBottom: 10,
   },
-  noteText: {
-    fontSize: 12,
+  reportRow: {
+    borderRadius: 14,
+    borderWidth: 0.5,
+    borderTopWidth: 1.5,
+    padding: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 8,
+  },
+  emptyCard: {
+    borderRadius: 14,
+    borderWidth: 0.5,
+    borderTopWidth: 1.5,
+    padding: 16,
+    alignItems: 'center',
+    paddingVertical: 36,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontFamily: 'BebasNeue_400Regular',
+    letterSpacing: 1,
+    marginBottom: 8,
+  },
+  emptyBody: {
+    fontSize: 13,
     fontFamily: 'DMSans_400Regular',
+    textAlign: 'center',
+    lineHeight: 20,
+    paddingHorizontal: 8,
+  },
+  emptyHint: {
+    fontSize: 11,
+    fontFamily: 'DMSans_400Regular',
+    textAlign: 'center',
     lineHeight: 18,
-    marginTop: 10,
+    marginTop: 12,
+    paddingHorizontal: 8,
   },
 });

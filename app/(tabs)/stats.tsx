@@ -1188,11 +1188,6 @@ export default function StatsScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-            {periodData.loggedDays > 0 && (
-              <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginBottom: 10 }}>
-                Based on {periodData.loggedDays} day{periodData.loggedDays !== 1 ? 's' : ''} with food logged
-              </Text>
-            )}
             <View style={{ position: 'relative' }}>
               <View style={{ position: 'absolute', top: 0, bottom: 0, left: '50%', width: 0.5, backgroundColor: theme.borderSubtle }} />
               {styleMode !== 'Mindful' && (

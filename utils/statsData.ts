@@ -23,6 +23,7 @@ export type TrendData = {
   saturatedFat: { date: string; value: number }[];
   sugarAlcohols: { date: string; value: number }[];
   effortScore: { date: string; value: number }[];
+  excludedCounts: { diet: number; water: number; exercise: number };
 };
 
 export const EMPTY_TREND_DATA: TrendData = {
@@ -30,6 +31,7 @@ export const EMPTY_TREND_DATA: TrendData = {
   water: [], netCal: [], sleepScore: [], restingHR: [], respiratoryRate: [], bloodOxygen: [],
   bodyFatPct: [], exerciseMinutes: [], fiber: [], sodium: [], cholesterol: [], saturatedFat: [],
   sugarAlcohols: [], effortScore: [],
+  excludedCounts: { diet: 0, water: 0, exercise: 0 },
 };
 
 export const offsetToDateKey = (offset: number): string => {
@@ -96,6 +98,7 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
   const sfH: TrendData['saturatedFat'] = [];
   const saH: TrendData['sugarAlcohols'] = [];
   const esH: TrendData['effortScore'] = [];
+  let exDiet = 0, exWater = 0, exExercise = 0;
 
   for (let i = days - 1; i >= 0; i--) {
     const dateKey = offsetToDateKey(i);
@@ -104,8 +107,12 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
       const saved = await AsyncStorage.getItem(`pj_${dateKey}`);
       if (saved) {
         const data = JSON.parse(saved);
+        const excl = data.excluded || {};
+        if (excl.diet) exDiet++;
+        if (excl.water) exWater++;
+        if (excl.exercise) exExercise++;
         if (data.weight) wh.push({ date: dateKey, value: data.weight });
-        if (data.entries?.length > 0) {
+        if (!excl.diet && data.entries?.length > 0) {
           const total = data.entries.reduce((s: number, e: any) => s + e.cal, 0);
           if (total > 0) {
             ch.push({ date: dateKey, cal: total });
@@ -113,9 +120,7 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
             const c = data.entries.reduce((s: number, e: any) => s + (e.carbs || 0), 0);
             const f = data.entries.reduce((s: number, e: any) => s + (e.fat || 0), 0);
             if (p + c + f > 0) mh.push({ date: dateKey, protein: Math.round(p), carbs: Math.round(c), fat: Math.round(f) });
-            // Net calories (consumed - active burn; active defaults to 0 when not tracked)
             ncH.push({ date: dateKey, value: Math.round(total - (data.activeCalories || 0)) });
-            // Extended nutrients
             const fiberVal = getEntryNutrient(data.entries, 'Fiber, total dietary');
             const sodiumVal = getEntryNutrient(data.entries, 'Sodium, Na');
             const choVal = getEntryNutrient(data.entries, 'Cholesterol');
@@ -129,8 +134,8 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
           }
         }
         if (data.steps) sh.push({ date: dateKey, value: data.steps });
-        if (data.activeCalories) ah.push({ date: dateKey, value: data.activeCalories });
-        if (typeof data.water === 'number' && data.water > 0) waterH.push({ date: dateKey, value: data.water });
+        if (!excl.exercise && data.activeCalories) ah.push({ date: dateKey, value: data.activeCalories });
+        if (!excl.water && typeof data.water === 'number' && data.water > 0) waterH.push({ date: dateKey, value: data.water });
         // Sleep
         const sleepH = data.sleepOverride || data.sleepHours;
         if (sleepH) {
@@ -146,10 +151,10 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
         if (data.respiratoryRate) rrH.push({ date: dateKey, value: data.respiratoryRate });
         if (data.bloodOxygen) boH.push({ date: dateKey, value: data.bloodOxygen });
         if (data.bodyFatPct) bfH.push({ date: dateKey, value: data.bodyFatPct });
-        if (data.exerciseMinutes) emH.push({ date: dateKey, value: data.exerciseMinutes });
-        hadWorkout = (workoutState.programs?.[dateKey]?.exercises?.length ?? 0) > 0;
+        if (!excl.exercise && data.exerciseMinutes) emH.push({ date: dateKey, value: data.exerciseMinutes });
+        if (!excl.exercise) hadWorkout = (workoutState.programs?.[dateKey]?.exercises?.length ?? 0) > 0;
         const es = workoutState.cardioLogs?.[dateKey]?.effortScore;
-        if (es != null) esH.push({ date: dateKey, value: es });
+        if (!excl.exercise && es != null) esH.push({ date: dateKey, value: es });
       }
     } catch {}
     wdh.push({ date: dateKey, hadWorkout });
@@ -159,6 +164,7 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
     water: waterH, netCal: ncH, sleepScore: ssH, restingHR: rhrH, respiratoryRate: rrH,
     bloodOxygen: boH, bodyFatPct: bfH, exerciseMinutes: emH, effortScore: esH,
     fiber: fbH, sodium: sodH, cholesterol: choH, saturatedFat: sfH, sugarAlcohols: saH,
+    excludedCounts: { diet: exDiet, water: exWater, exercise: exExercise },
   };
 };
 

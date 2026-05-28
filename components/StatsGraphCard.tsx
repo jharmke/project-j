@@ -982,6 +982,22 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
           ))}
         </View>
       )}
+      {(() => {
+        const excMapping: Partial<Record<string, 'diet' | 'water' | 'exercise'>> = {
+          calories: 'diet', macros: 'diet', netCalories: 'diet', fiber: 'diet',
+          sodium: 'diet', cholesterol: 'diet', saturatedFat: 'diet',
+          water: 'water',
+          activeCals: 'exercise', workoutFreq: 'exercise', exerciseMinutes: 'exercise', effortScore: 'exercise',
+        };
+        const excType = card.dataKey ? excMapping[card.dataKey] : undefined;
+        const count = excType ? (cardTrendData.excludedCounts?.[excType] ?? 0) : 0;
+        if (count === 0) return null;
+        return (
+          <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginTop: 8 }}>
+            {count} day{count !== 1 ? 's' : ''} excluded
+          </Text>
+        );
+      })()}
     </View>
   );
 }

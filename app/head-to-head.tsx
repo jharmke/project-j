@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
+import { computeDayNet, buildDailyBmrMap, offsetToDateKey } from '../utils/statsData';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type MetricId = 'net' | 'steps' | 'sleepScore' | 'water' | 'weight' | 'activeCals' | 'sleepHours';
@@ -75,18 +76,26 @@ function displayDate(key: string): string {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-async function loadSnapshot(dateKey: string, sleepGoal: number, calTarget: number, weightGoalPace: string, profileBmr: number, burnAccuracyPct: number = 100): Promise<DaySnapshot> {
+async function loadSnapshot(dateKey: string, sleepGoal: number, calTarget: number, weightGoalPace: string, burnAccuracyPct: number = 100): Promise<DaySnapshot> {
   const snap: DaySnapshot = { net: null, steps: null, sleepScore: null, sleepHours: null, water: null, activeCals: null, weight: null };
   try {
     const raw = await AsyncStorage.getItem(`pj_${dateKey}`);
     if (!raw) return snap;
     const d = JSON.parse(raw);
 
-    // Net calories
+    // Net calories: use the canonical computeDayNet with per-day BMR so this
+    // matches day-detail, the graph, and At a Glance exactly (each day uses its
+    // own logged weight). Keep the 400-cal floor so near-empty days don't show a
+    // misleading net.
     if (d.entries && Array.isArray(d.entries)) {
       const consumed = d.entries.reduce((s: number, e: any) => s + e.cal, 0);
-      const burned = Math.round((d.activeCalories || d.caloriesBurned || 0) * burnAccuracyPct / 100);
-      if (consumed >= 400) snap.net = consumed - burned - (profileBmr ?? 0);
+      if (consumed >= 400) {
+        const bmrMap = await buildDailyBmrMap([dateKey]);
+        const isToday = dateKey === offsetToDateKey(0);
+        const now = new Date();
+        const minutesNow = now.getHours() * 60 + now.getMinutes();
+        snap.net = computeDayNet(consumed, d, bmrMap[dateKey] ?? 0, burnAccuracyPct, isToday, minutesNow);
+      }
     }
 
     // Steps
@@ -267,7 +276,6 @@ export default function HeadToHeadScreen() {
   const [sleepGoal, setSleepGoal] = useState(7);
   const [calTarget, setCalTarget] = useState(1800);
   const [weightGoalPace, setWeightGoalPace] = useState('lose_1');
-  const [profileBmr, setProfileBmr] = useState(0);
   const [burnAccuracyPct, setBurnAccuracyPct] = useState(100);
 
   // Load profile settings once
@@ -305,7 +313,6 @@ export default function HeadToHeadScreen() {
               ? Math.round((10 * wKg) + (6.25 * hCm) - (5 * age) + 5)
               : Math.round((10 * wKg) + (6.25 * hCm) - (5 * age) - 161);
             const tdee = Math.round((bmr * (LIFESTYLE_MULTIPLIERS[p.lifestyleActivity] ?? 1.2)) + (TRAINING_BONUSES[p.trainingFrequency] ?? 0));
-            setProfileBmr(bmr);
             setCalTarget(tdee + (GOAL_DEFICITS[p.weightGoal] ?? -500));
           }
         }
@@ -336,15 +343,15 @@ export default function HeadToHeadScreen() {
     const load = async () => {
       setLoading(true);
       const [a, b] = await Promise.all([
-        loadSnapshot(dateA, sleepGoal, calTarget, weightGoalPace, profileBmr, burnAccuracyPct),
-        loadSnapshot(dateB, sleepGoal, calTarget, weightGoalPace, profileBmr, burnAccuracyPct),
+        loadSnapshot(dateA, sleepGoal, calTarget, weightGoalPace, burnAccuracyPct),
+        loadSnapshot(dateB, sleepGoal, calTarget, weightGoalPace, burnAccuracyPct),
       ]);
       setSnapA(a);
       setSnapB(b);
       setLoading(false);
     };
     load();
-  }, [dateA, dateB, sleepGoal, calTarget, weightGoalPace, profileBmr, profileLoaded]);
+  }, [dateA, dateB, sleepGoal, calTarget, weightGoalPace, profileLoaded]);
 
   const accentRaw = theme.accentBlueRaw;
 

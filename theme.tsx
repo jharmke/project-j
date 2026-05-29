@@ -64,14 +64,14 @@ export const ACCENT_PALETTES: Record<ThemeId, AccentOption[]> = {
     { id: 'rust',    label: 'Black',    color: '#2a3040', accentBlue: '#2a3040', accentBlueBg: 'rgba(42,48,64,0.12)',   accentBlueBorder: 'rgba(42,48,64,0.28)',   gradientStart: '#a0a8b0' },
   ],
   warm: [
-    { id: 'indigo',  label: 'Burgundy', color: '#8a1828', accentBlue: '#8a1828', accentBlueBg: 'rgba(138,24,40,0.10)',  accentBlueBorder: 'rgba(138,24,40,0.25)',  gradientStart: '#e0c8cc' },
-    { id: 'rust',    label: 'Rust',     color: '#c04828', accentBlue: '#c04828', accentBlueBg: 'rgba(192,72,40,0.12)',  accentBlueBorder: 'rgba(192,72,40,0.28)',  gradientStart: '#e8ccc0' },
-    { id: 'default', label: 'Amber',    color: '#c2621a', accentBlue: '#c2621a', accentBlueBg: 'rgba(194,98,26,0.12)',  accentBlueBorder: 'rgba(194,98,26,0.28)',  gradientStart: '#e8d0b0' },
-    { id: 'mauve',   label: 'Mocha',    color: '#8a6040', accentBlue: '#8a6040', accentBlueBg: 'rgba(138,96,64,0.12)',  accentBlueBorder: 'rgba(138,96,64,0.28)',  gradientStart: '#e0d4c8' },
-    { id: 'cyan',    label: 'Forest',   color: '#2a6040', accentBlue: '#2a6040', accentBlueBg: 'rgba(42,96,64,0.10)',   accentBlueBorder: 'rgba(42,96,64,0.25)',   gradientStart: '#d0e0d8' },
-    { id: 'teal',    label: 'Teal',     color: '#2a8870', accentBlue: '#2a8870', accentBlueBg: 'rgba(42,136,112,0.12)', accentBlueBorder: 'rgba(42,136,112,0.28)', gradientStart: '#d0e4e0' },
-    { id: 'sage',    label: 'Navy',     color: '#1e3a5f', accentBlue: '#1e3a5f', accentBlueBg: 'rgba(30,58,95,0.10)',   accentBlueBorder: 'rgba(30,58,95,0.25)',   gradientStart: '#ccd0dc' },
-    { id: 'orange',  label: 'Black',    color: '#281810', accentBlue: '#281810', accentBlueBg: 'rgba(40,24,16,0.10)',   accentBlueBorder: 'rgba(40,24,16,0.25)',   gradientStart: '#d0c8c0' },
+    { id: 'indigo',  label: 'Burgundy', color: '#8a1828', accentBlue: '#8a1828', accentBlueBg: 'rgba(138,24,40,0.10)',  accentBlueBorder: 'rgba(138,24,40,0.25)',  gradientStart: '#ead9dc' },
+    { id: 'rust',    label: 'Rust',     color: '#c04828', accentBlue: '#c04828', accentBlueBg: 'rgba(192,72,40,0.12)',  accentBlueBorder: 'rgba(192,72,40,0.28)',  gradientStart: '#eddcd3' },
+    { id: 'default', label: 'Amber',    color: '#c2621a', accentBlue: '#c2621a', accentBlueBg: 'rgba(194,98,26,0.12)',  accentBlueBorder: 'rgba(194,98,26,0.28)',  gradientStart: '#ece3d1' },
+    { id: 'mauve',   label: 'Mocha',    color: '#8a6040', accentBlue: '#8a6040', accentBlueBg: 'rgba(138,96,64,0.12)',  accentBlueBorder: 'rgba(138,96,64,0.28)',  gradientStart: '#eae0d4' },
+    { id: 'cyan',    label: 'Forest',   color: '#2a6040', accentBlue: '#2a6040', accentBlueBg: 'rgba(42,96,64,0.10)',   accentBlueBorder: 'rgba(42,96,64,0.25)',   gradientStart: '#dde9e1' },
+    { id: 'teal',    label: 'Teal',     color: '#2a8870', accentBlue: '#2a8870', accentBlueBg: 'rgba(42,136,112,0.12)', accentBlueBorder: 'rgba(42,136,112,0.28)', gradientStart: '#dde9e6' },
+    { id: 'sage',    label: 'Navy',     color: '#1e3a5f', accentBlue: '#1e3a5f', accentBlueBg: 'rgba(30,58,95,0.10)',   accentBlueBorder: 'rgba(30,58,95,0.25)',   gradientStart: '#dfe2ea' },
+    { id: 'orange',  label: 'Black',    color: '#281810', accentBlue: '#281810', accentBlueBg: 'rgba(40,24,16,0.10)',   accentBlueBorder: 'rgba(40,24,16,0.25)',   gradientStart: '#e6e1da' },
   ],
   blush: [
     { id: 'rust',       label: 'Lipstick', color: '#cc1144', accentBlue: '#cc1144', accentBlueBg: 'rgba(204,17,68,0.12)',   accentBlueBorder: 'rgba(204,17,68,0.28)'   },
@@ -400,13 +400,13 @@ const warm: Theme = {
   name: 'Warm',
   paid: true,
 
-  bgPrimary:        '#f5ece0',
+  bgPrimary:        '#f3ece0',
   bgCard:           '#fff4e4',
   bgCardVerse:      '#fff8e8',
-  bgInput:          '#f5e8d4',
-  bgProgressTrack:  '#e8d4b8',
+  bgInput:          '#efe9dd',
+  bgProgressTrack:  '#e4ddce',
   bgSheet:          '#fff8f0',
-  bgInset:          '#f0e0cc',
+  bgInset:          '#ece4d6',
   bgEditCard:       '#fff8f0',
 
   borderCard:       'rgba(180,120,40,0.14)',
@@ -448,24 +448,24 @@ const warm: Theme = {
   sleepCore:        '#b87820',
   sleepDeep:        '#9060a0',
   sleepRem:         '#3a8a58',
-  sleepTrack:       '#e8d4b8',
+  sleepTrack:       '#e4ddce',
 
   workoutPush:      '#b87820',
   workoutPull:      '#3a8a58',
   workoutLegs:      '#b86c10',
   workoutCardio:    '#9a8060',
 
-  ifMethodBg:       '#f0e0cc',
+  ifMethodBg:       '#ece4d6',
   ifMethodBorder:   'rgba(180,120,40,0.20)',
   ifMethodText:     '#9a7050',
 
-  donutTrack:       '#e8d4b8',
-  iconMuted:        '#d8c4a0',
+  donutTrack:       '#e4ddce',
+  iconMuted:        '#cfc6b4',
   sheetHandle:      'rgba(180,120,40,0.22)',
   overlayBg:        'rgba(60,30,10,0.40)',
 
   gradientStart:    '#e8c898',
-  gradientEnd:      '#f5ece0',
+  gradientEnd:      '#f3ece0',
 };
 
 // ─── Blush Theme (light, airy, pink - Megan's) ────────────────────────────────

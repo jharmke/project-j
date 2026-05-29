@@ -1,5 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageSet } from './utils/storage';
+import { evaluateCalorieGoalHit, paceTargetFromWeightGoal } from './utils/goalHit';
+import { buildDailyBmrMap } from './utils/statsData';
 
 export type AchievementCategory = 'hydration' | 'steps' | 'weight' | 'momentum' | 'faith' | 'nutrition' | 'journal' | 'workout' | 'sleep';
 export type AchievementTier = 'small' | 'medium' | 'large' | 'diamond';
@@ -1853,19 +1855,24 @@ export async function checkNutritionAchievements(): Promise<AchievementDef[]> {
   } catch {}
   try { await storageSet('pj_nutrition_ach_checked', today); } catch {}
 
-  // Load calorie target from pj_settings (with pj_profile fallback)
+  // Load calorie target from pj_settings (with pj_profile fallback), plus the
+  // weight goal (for the pace target) and burn accuracy. All needed by the
+  // shared goalHit evaluator below.
   let calTarget = 0;
+  let weightGoal = '';
+  let burnAccuracyPct = 100;
   try {
     const settingsRaw = await AsyncStorage.getItem('pj_settings');
     const settings    = settingsRaw ? JSON.parse(settingsRaw) : {};
     calTarget = parseFloat(settings.calTarget) || 0;
-    if (!calTarget) {
-      const profileRaw = await AsyncStorage.getItem('pj_profile');
-      const profile    = profileRaw ? JSON.parse(profileRaw) : {};
-      calTarget = parseFloat(profile.calTarget) || 0;
-    }
+    if (settings.burnAccuracyPct !== undefined) burnAccuracyPct = settings.burnAccuracyPct;
+    const profileRaw = await AsyncStorage.getItem('pj_profile');
+    const profile    = profileRaw ? JSON.parse(profileRaw) : {};
+    weightGoal = profile.weightGoal || '';
+    if (!calTarget) calTarget = parseFloat(profile.calTarget) || 0;
   } catch {}
   if (calTarget <= 0) return []; // no valid target, can't evaluate
+  const paceTarget = paceTargetFromWeightGoal(weightGoal);
 
   // Scan all completed daily keys (exclude today -- still in progress)
   let nutritionGoalDays = 0;
@@ -1875,6 +1882,10 @@ export async function checkNutritionAchievements(): Promise<AchievementDef[]> {
       k => /^pj_\d{4}-\d{2}-\d{2}$/.test(k) && k !== `pj_${today}`
     );
 
+    // Per-day BMR for net math (Way 2). Built once. Today is excluded above,
+    // so every day here is a past day (isToday false, full BMR, no running clock).
+    const bmrMap = await buildDailyBmrMap(dailyKeys.map(k => k.slice(3)));
+
     for (const key of dailyKeys) {
       try {
         const raw = await AsyncStorage.getItem(key);
@@ -1882,12 +1893,19 @@ export async function checkNutritionAchievements(): Promise<AchievementDef[]> {
         const data    = JSON.parse(raw);
         const entries = Array.isArray(data.entries) ? data.entries.filter(Boolean) : [];
         if (entries.length < 1) continue;
-        const consumed       = entries.reduce((sum: number, e: any) => sum + (e.cal || 0), 0);
-        const adjustedTarget = calTarget + (data.activeCalories ?? 0);
-        if (adjustedTarget <= 0) continue;
-        if (consumed >= adjustedTarget - 300 && consumed <= adjustedTarget + 150) {
-          nutritionGoalDays++;
-        }
+        const consumed = entries.reduce((sum: number, e: any) => sum + (e.cal || 0), 0);
+        const dateKey  = key.slice(3);
+        const result = evaluateCalorieGoalHit({
+          consumed,
+          dayData: data,
+          dayBmr: bmrMap[dateKey] ?? 0,
+          calTarget,
+          paceTarget,
+          burnAccuracyPct,
+          isToday: false,
+          minutesNow: 0,
+        });
+        if (result.hit) nutritionGoalDays++;
       } catch { /* skip corrupted day */ }
     }
   } catch {}

@@ -31,7 +31,7 @@ export const ACCENT_PALETTES: Record<ThemeId, AccentOption[]> = {
     { id: 'lilac',   label: 'Neon', color: '#22c55e', accentBlue: '#22c55e', accentBlueBg: 'rgba(34,197,94,0.15)',   accentBlueBorder: 'rgba(34,197,94,0.30)',   gradientStart: '#0d2e18' },
     { id: 'teal',    label: 'Teal',       color: '#14b8a6', accentBlue: '#14b8a6', accentBlueBg: 'rgba(20,184,166,0.15)',  accentBlueBorder: 'rgba(20,184,166,0.30)',  gradientStart: '#0d2e2a' },
     { id: 'silver',  label: 'Cyan',       color: '#22d3ee', accentBlue: '#22d3ee', accentBlueBg: 'rgba(34,211,238,0.15)',  accentBlueBorder: 'rgba(34,211,238,0.30)',  gradientStart: '#0d2a2e' },
-    { id: 'default', label: 'Blue',       color: '#3b82f6', accentBlue: '#3b82f6', accentBlueBg: 'rgba(59,130,246,0.15)',  accentBlueBorder: 'rgba(59,130,246,0.30)',  gradientStart: '#0d1a2e' },
+    { id: 'default', label: 'Blue',       color: '#3b82f6', accentBlue: '#3b82f6', accentBlueBg: 'rgba(59,130,246,0.15)',  accentBlueBorder: 'rgba(59,130,246,0.30)',  gradientStart: '#17171c' },
     { id: 'indigo',  label: 'Indigo',     color: '#6366f1', accentBlue: '#6366f1', accentBlueBg: 'rgba(99,102,241,0.15)',  accentBlueBorder: 'rgba(99,102,241,0.30)',  gradientStart: '#0f0d2e' },
     { id: 'purple',  label: 'Purple',     color: '#9333ea', accentBlue: '#9333ea', accentBlueBg: 'rgba(147,51,234,0.15)',  accentBlueBorder: 'rgba(147,51,234,0.30)',  gradientStart: '#1a0d2e' },
     { id: 'mauve',   label: 'Hot Pink',   color: '#ec4899', accentBlue: '#ec4899', accentBlueBg: 'rgba(236,72,153,0.15)',  accentBlueBorder: 'rgba(236,72,153,0.30)',  gradientStart: '#2e0d20' },
@@ -178,14 +178,14 @@ const dark: Theme = {
   name: 'Dark',
   paid: false,
 
-  bgPrimary:        '#1a1a28',
-  bgCard:           '#262638',
+  bgPrimary:        '#161619',
+  bgCard:           '#2a2a2e',
   bgCardVerse:      '#22223a',
-  bgInput:          '#1e1e2c',
-  bgProgressTrack:  '#222232',
-  bgSheet:          '#1e1e2c',
-  bgInset:          '#222232',
-  bgEditCard:       '#262638',
+  bgInput:          '#1f1f22',
+  bgProgressTrack:  '#242428',
+  bgSheet:          '#1f1f22',
+  bgInset:          '#242428',
+  bgEditCard:       '#2a2a2e',
 
   borderCard:       'rgba(255,255,255,0.06)',
   borderCardTop:    'rgba(255,255,255,0.10)',
@@ -197,8 +197,8 @@ const dark: Theme = {
 
   textPrimary:      '#e8e8f0',
   textSecondary:    '#a0a0b8',
-  textMuted:        '#8888aa',
-  textDim:          '#666680',
+  textMuted:        '#8e8e9a',
+  textDim:          '#74747e',
   textPlaceholder:  '#444455',
   textWhite:        '#ffffff',
 
@@ -243,7 +243,7 @@ const dark: Theme = {
   overlayBg:        'rgba(0,0,0,0.60)',
 
   gradientStart:    '#0d1a2e',
-  gradientEnd:      '#1a1a28',
+  gradientEnd:      '#161619',
 };
 
 // ─── Light Theme ─────────────────────────────────────────────────────────────

@@ -377,7 +377,6 @@ function ScoreRing({ score, scoreColor, trackColor, donutSize, donutStroke, donu
 }) {
   const arcAnim = useSharedValue(0);
   const shimmerScale = useSharedValue(1);
-  const shimmerFlash = useSharedValue(0);
 
   useEffect(() => {
     cancelAnimation(arcAnim);
@@ -396,24 +395,14 @@ function ScoreRing({ score, scoreColor, trackColor, donutSize, donutStroke, donu
           withDelay(2800, withTiming(1.0, { duration: 1 })),
         ), -1, false,
       );
-      shimmerFlash.value = withRepeat(
-        withSequence(
-          withTiming(0.18, { duration: 150 }),
-          withTiming(0.0,  { duration: 400 }),
-          withDelay(2800, withTiming(0.0, { duration: 1 })),
-        ), -1, false,
-      );
     } else {
       cancelAnimation(shimmerScale);
-      cancelAnimation(shimmerFlash);
       shimmerScale.value = 1;
-      shimmerFlash.value = 0;
     }
   }, [shimmer]);
 
   const arcStyle = useAnimatedStyle(() => ({ strokeDasharray: `${arcAnim.value} ${donutCirc}` } as any));
   const shimmerCenterStyle = useAnimatedStyle(() => ({ transform: [{ scale: shimmerScale.value }] }));
-  const shimmerFlashStyle  = useAnimatedStyle(() => ({ opacity: shimmerFlash.value }));
 
   return (
     <View>
@@ -429,10 +418,6 @@ function ScoreRing({ score, scoreColor, trackColor, donutSize, donutStroke, donu
           </View>
           <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:2, color:scoreColor, textTransform:'uppercase', opacity:0.7 }}>/100</Text>
         </ReAnimated.View>
-        <ReAnimated.View
-          pointerEvents="none"
-          style={[{ position:'absolute', width:donutSize*0.45, height:donutSize*0.45, borderRadius:donutSize*0.225, backgroundColor:'white' }, shimmerFlashStyle]}
-        />
       </View>
     </View>
   );
@@ -448,7 +433,6 @@ function SleepDonut({ coreFrac, deepFrac, remFrac, donutCirc, donutSize, donutSt
   const deepAnim = useSharedValue(0);
   const remAnim  = useSharedValue(0);
   const shimmerScale = useSharedValue(1);
-  const shimmerFlash = useSharedValue(0);
 
   useEffect(() => {
     coreAnim.value = 0;
@@ -476,20 +460,9 @@ function SleepDonut({ coreFrac, deepFrac, remFrac, donutCirc, donutSize, donutSt
         -1,
         false,
       );
-      shimmerFlash.value = withRepeat(
-        withSequence(
-          withTiming(0.18, { duration: 150 }),
-          withTiming(0.0,  { duration: 400 }),
-          withDelay(2800, withTiming(0.0, { duration: 1 })),
-        ),
-        -1,
-        false,
-      );
     } else {
       cancelAnimation(shimmerScale);
-      cancelAnimation(shimmerFlash);
       shimmerScale.value = 1;
-      shimmerFlash.value = 0;
     }
   }, [shimmer]);
 
@@ -497,7 +470,6 @@ function SleepDonut({ coreFrac, deepFrac, remFrac, donutCirc, donutSize, donutSt
   const deepStyle = useAnimatedStyle(() => ({ strokeDasharray: `${deepAnim.value} ${donutCirc}` } as any));
   const remStyle  = useAnimatedStyle(() => ({ strokeDasharray: `${remAnim.value} ${donutCirc}`  } as any));
   const shimmerCenterStyle = useAnimatedStyle(() => ({ transform: [{ scale: shimmerScale.value }] }));
-  const shimmerFlashStyle  = useAnimatedStyle(() => ({ opacity: shimmerFlash.value }));
 
   return (
     <View>
@@ -517,10 +489,6 @@ function SleepDonut({ coreFrac, deepFrac, remFrac, donutCirc, donutSize, donutSt
           </View>
           <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: scoreColor, textTransform: 'uppercase', opacity: 0.7 }}>/100</Text>
         </ReAnimated.View>
-        <ReAnimated.View
-          pointerEvents="none"
-          style={[{ position: 'absolute', width: donutSize * 0.45, height: donutSize * 0.45, borderRadius: donutSize * 0.225, backgroundColor: 'white' }, shimmerFlashStyle]}
-        />
       </View>
     </View>
   );

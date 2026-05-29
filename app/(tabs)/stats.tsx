@@ -13,6 +13,7 @@ import { useTheme } from '../../theme';
 import { CardPeriod, ChartType, DATA_KEY_CATEGORIES, DATA_KEY_META, DataKey, DEFAULT_STATS_CARDS, StatsCard, availableChartTypes, generateCardId, loadStatsCards, saveStatsCards } from '../../statsCardRegistry';
 import { ToastRenderer, useToast } from '../../components/Toast';
 import { EMPTY_TREND_DATA, TrendData, fetchTrendData as fetchTrendDataUtil, offsetToDateKey, computeDayNet, buildDailyBmrMap } from '../../utils/statsData';
+import { evaluateCalorieGoalHit, paceTargetFromWeightGoal } from '../../utils/goalHit';
 import { StatsGraphCard, GRAPH_SWATCHES, MACRO_PROTEIN, MACRO_CARBS, MACRO_FAT } from '../../components/StatsGraphCard';
 import { StatsCardEditModal } from '../../components/StatsCardEditModal';
 import TooltipIcon from '../../components/TooltipIcon';
@@ -240,6 +241,7 @@ export default function StatsScreen() {
   const [proteinGoal, setProteinGoal] = useState(0);
   const [streakBaseTarget, setStreakBaseTarget] = useState(0);
   const [burnAccuracy, setBurnAccuracy] = useState(100);
+  const [weightGoal, setWeightGoal] = useState('');
 
   // Manage streaks modal
   const [showManageStreaks, setShowManageStreaks] = useState(false);
@@ -344,7 +346,7 @@ export default function StatsScreen() {
     } catch {}
   };
 
-  const loadPeriodData = async (period: '7' | '30' | '90' | '180' | 'ytd', calTgt: number, sleepGoalVal: number, burnAccuracyPct = 100, netCarbsMode = false) => {
+  const loadPeriodData = async (period: '7' | '30' | '90' | '180' | 'ytd', calTgt: number, sleepGoalVal: number, burnAccuracyPct = 100, netCarbsMode = false, paceTarget = 0) => {
     let dates: string[] = [];
     const nowD = new Date();
     if (period === 'ytd') {
@@ -394,8 +396,17 @@ export default function StatsScreen() {
               return s + (n.value || 0) * scale;
             }, 0);
             if (calTgt > 0) {
-              const pct = (dayCal / calTgt) * 100;
-              if (pct >= 80 && pct <= 106) calGoalDays++;
+              const result = evaluateCalorieGoalHit({
+                consumed: dayCal,
+                dayData: data,
+                dayBmr: bmrMap[dateKey] ?? 0,
+                calTarget: calTgt,
+                paceTarget,
+                burnAccuracyPct,
+                isToday: dateKey === todayKey,
+                minutesNow,
+              });
+              if (result.hit) calGoalDays++;
             }
             dietDays++;
           }
@@ -436,6 +447,7 @@ export default function StatsScreen() {
     target: number, streakBaseTarget: number, burnAccuracy: number,
     wGoal: number, aCalGoal: number, exMinsGoal: number, pGoal: number,
     sGoal: number, stepParam: number, currentFaithJourney: string,
+    paceTarget: number,
   ) => {
     if (config.length === 0) return;
     const workoutRaw = await AsyncStorage.getItem('pj_workout_state');
@@ -451,6 +463,17 @@ export default function StatsScreen() {
     const journalDates = new Set(reflections.filter((r: any) => r.category === 'personal').map((r: any) => (r.date || '').slice(0, 10)).filter(Boolean));
     const effectiveTarget = target > 0 ? target : streakBaseTarget;
     const todayKey = offsetToDateKey(0);
+
+    // Calorie streak (Way 2) needs per-day BMR for the net check. The walk-back
+    // caps at 365 days, so build that window once up front (one multiGet) and
+    // only when a calorie streak is actually active.
+    const hasCalorieStreak = config.some(item => item.type === 'builtin' && item.key === 'calories');
+    let calBmrMap: Record<string, number> = {};
+    if (hasCalorieStreak) {
+      const streakDates: string[] = [];
+      for (let d = 1; d <= 365; d++) streakDates.push(offsetToDateKey(d));
+      calBmrMap = await buildDailyBmrMap(streakDates);
+    }
 
     // Read today's data for auto-tracked streak seeding
     const todayRaw = await AsyncStorage.getItem(`pj_${todayKey}`);
@@ -530,7 +553,6 @@ export default function StatsScreen() {
         const data = JSON.parse(saved);
         const calTotal = data.entries?.reduce((s: number, e: any) => s + e.cal, 0) || 0;
         const dayActive = Math.round((data.activeCalories || data.caloriesBurned || 0) * burnAccuracy / 100);
-        const adjustedTarget = effectiveTarget + dayActive;
         const totalProtein = data.entries?.reduce((s: number, e: any) => s + (e.protein || 0), 0) || 0;
         const effectiveSleepGoal = data.sleepGoal || sGoal;
         const { score: sleepScore } = calcSleepScore((data.sleepOverride ?? data.sleepHours) || null, data.sleepStages || null, effectiveSleepGoal, data.sleepFeelRating || null, !data.sleepStages, data.sleepConsistencyPts ?? 0);
@@ -541,7 +563,20 @@ export default function StatsScreen() {
           if (item.type === 'builtin') {
             switch (item.key) {
               case 'workout':     hit = (workoutState?.programs?.[dateKey]?.exercises || []).length > 0; break;
-              case 'calories':    hit = adjustedTarget > 0 && calTotal >= adjustedTarget * 0.80 && calTotal <= adjustedTarget * 1.06; break;
+              case 'calories': {
+                const result = evaluateCalorieGoalHit({
+                  consumed: calTotal,
+                  dayData: data,
+                  dayBmr: calBmrMap[dateKey] ?? 0,
+                  calTarget: effectiveTarget,
+                  paceTarget,
+                  burnAccuracyPct: burnAccuracy,
+                  isToday: false,
+                  minutesNow: 0,
+                });
+                hit = result.hit;
+                break;
+              }
               case 'protein':     hit = pGoal > 0 && totalProtein >= pGoal; break;
               case 'water':       hit = (data.water || 0) >= (data.waterGoal || wGoal); break;
               case 'steps':       hit = (data.steps || 0) >= (data.stepGoal || stepParam); break;
@@ -674,7 +709,7 @@ export default function StatsScreen() {
     await storageSet('pj_streaks', JSON.stringify({ ...pjStreaksData, config: newConfig }));
     setStreakConfig(newConfig);
     // Re-run full calculation so history is reflected immediately
-    await loadStreaks(newConfig, calTarget, streakBaseTarget, burnAccuracy, waterGoal, activeCalGoal, exerciseMinsGoal, proteinGoal, sleepGoal, stepGoal, faithJourney);
+    await loadStreaks(newConfig, calTarget, streakBaseTarget, burnAccuracy, waterGoal, activeCalGoal, exerciseMinsGoal, proteinGoal, sleepGoal, stepGoal, faithJourney, paceTargetFromWeightGoal(weightGoal));
   };
 
   useFocusEffect(
@@ -697,11 +732,13 @@ export default function StatsScreen() {
 
         let target = 0, step = 10000, sleep = 8, bmr = 0, streakBaseTarget = 0, burnAccuracy = 100, netCarbsMode = false;
         let wGoal = 128, aCalGoal = 500, exMinsGoal = 30, pGoal = 0;
+        let weightGoalLocal = '';
         let currentStyleMode = 'Balanced', currentFaithJourney = 'rooted';
         try {
           const p = await AsyncStorage.getItem('pj_profile');
           if (p) {
             const d = JSON.parse(p);
+            if (d.weightGoal) weightGoalLocal = d.weightGoal;
             if (d.stepGoal) step = parseInt(d.stepGoal);
             if (d.sleepGoal) sleep = parseFloat(d.sleepGoal);
             if (d.waterGoal) wGoal = parseFloat(d.waterGoal);
@@ -756,6 +793,8 @@ export default function StatsScreen() {
         setProteinGoal(pGoal);
         setStreakBaseTarget(streakBaseTarget);
         setBurnAccuracy(burnAccuracy);
+        setWeightGoal(weightGoalLocal);
+        const paceTarget = paceTargetFromWeightGoal(weightGoalLocal);
         hasLoadedProfile.current = true;
 
         // Load streak config -- apply defaults on first load
@@ -777,8 +816,8 @@ export default function StatsScreen() {
         await Promise.all([
           loadAllCardData(cards, 30, sleep),
           loadRecords(burnAccuracy),
-          loadPeriodData(activePeriod, target, sleep, burnAccuracy, netCarbsMode),
-          loadStreaks(config, target, streakBaseTarget, burnAccuracy, wGoal, aCalGoal, exMinsGoal, pGoal, sleep, step, currentFaithJourney),
+          loadPeriodData(activePeriod, target, sleep, burnAccuracy, netCarbsMode, paceTarget),
+          loadStreaks(config, target, streakBaseTarget, burnAccuracy, wGoal, aCalGoal, exMinsGoal, pGoal, sleep, step, currentFaithJourney, paceTarget),
         ]);
       };
       loadAll();
@@ -895,7 +934,7 @@ export default function StatsScreen() {
 
   useEffect(() => {
     if (hasLoadedProfile.current) {
-      loadPeriodData(activePeriod, calTarget, sleepGoal, burnAccuracy, showNetCarbs);
+      loadPeriodData(activePeriod, calTarget, sleepGoal, burnAccuracy, showNetCarbs, paceTargetFromWeightGoal(weightGoal));
     }
   }, [activePeriod]);
 

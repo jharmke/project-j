@@ -282,7 +282,7 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
           sodium = getEntryNutrient(d.entries, 'Sodium, Na');
         }
         if (d.weight) weight = d.weight;
-        activeCalories = d.activeCalories || 0;
+        activeCalories = d.activeCalories || d.caloriesBurned || 0;
         if (d.steps) steps = d.steps;
         if (typeof d.water === 'number') water = d.water;
         const sh = d.sleepOverride || d.sleepHours;

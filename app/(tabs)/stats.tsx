@@ -156,6 +156,7 @@ function calcSleepScore(
   sleepGoal: number,
   feelRating?: number | null,
   isManual?: boolean,
+  consistencyPts = 0,
 ): { score: number | null; path: 1 | 2 | 3 } {
   if (!sleepHours || sleepHours <= 0) return { score: null, path: 3 };
   if (sleepStages && sleepStages.totalMs > 0) {
@@ -169,7 +170,7 @@ function calcSleepScore(
   if (!feelRating) return { score: null, path };
   const durationPts = Math.min(60, (sleepHours / sleepGoal) * 60);
   const feelPts = ((feelRating - 1) / 9) * 30;
-  return { score: Math.round(Math.min(100, durationPts + feelPts)), path };
+  return { score: Math.round(Math.min(100, durationPts + feelPts + consistencyPts)), path };
 }
 
 // ── Main screen ───────────────────────────────────────────────────────────────
@@ -313,7 +314,7 @@ export default function StatsScreen() {
     setTrendDataMap(newMap);
   };
 
-  const loadRecords = async () => {
+  const loadRecords = async (burnAccuracyPct = 100) => {
     try {
       const allKeys = await AsyncStorage.getAllKeys();
       const dayKeys = allKeys.filter(k => /^pj_\d{4}-\d{2}-\d{2}$/.test(k));
@@ -327,7 +328,8 @@ export default function StatsScreen() {
           const data = JSON.parse(val);
           const dateKey = key.replace('pj_', '');
           if ((data.steps || 0) > maxSteps) { maxSteps = data.steps; maxStepsDate = dateKey; }
-          if ((data.activeCalories || 0) > maxActiveCals) { maxActiveCals = data.activeCalories; maxActiveCalsDate = dateKey; }
+          const adjActiveCal = Math.round((data.activeCalories || data.caloriesBurned || 0) * burnAccuracyPct / 100);
+          if (adjActiveCal > maxActiveCals) { maxActiveCals = adjActiveCal; maxActiveCalsDate = dateKey; }
           if ((data.water || 0) > maxWater) { maxWater = data.water; maxWaterDate = dateKey; }
           const sh = data.sleepOverride || data.sleepHours;
           if (sh && sh > maxSleepH) { maxSleepH = sh; maxSleepHDate = dateKey; }
@@ -401,11 +403,12 @@ export default function StatsScreen() {
           if (data.weight) { if (startWeight === null) startWeight = data.weight; endWeight = data.weight; }
           if (!excl.exercise && (data.caloriesBurned || data.entries?.length > 0)) workoutDays++;
           if (data.steps) { totalSteps += data.steps; stepsDays++; }
-          if (data.activeCalories) { totalActiveCals += data.activeCalories; activeDays++; }
+          const rawActiveCal = data.activeCalories || data.caloriesBurned || 0;
+          if (rawActiveCal > 0) { totalActiveCals += Math.round(rawActiveCal * burnAccuracyPct / 100); activeDays++; }
           const sleepH = data.sleepOverride || data.sleepHours;
           if (sleepH) {
             totalSleep += sleepH; sleepDays++;
-            const { score, path } = calcSleepScore(sleepH, data.sleepStages || null, sleepGoalVal, data.sleepFeelRating ?? null, !!data.sleepOverride);
+            const { score, path } = calcSleepScore(sleepH, data.sleepStages || null, sleepGoalVal, data.sleepFeelRating ?? null, !!data.sleepOverride, data.sleepConsistencyPts ?? 0);
             if (score !== null && (path === 1 || data.sleepFeelRating)) { totalSleepScore += score; sleepScoreDays++; }
           }
         }
@@ -484,7 +487,7 @@ export default function StatsScreen() {
         if (todayData && item.type === 'builtin' && item.key) {
           const dayActive = Math.round((todayData.activeCalories || todayData.caloriesBurned || 0) * burnAccuracy / 100);
           const totalProtein = (todayData.entries || []).reduce((s: number, e: any) => s + (e?.protein || 0), 0);
-          const { score: todaySleepScore } = calcSleepScore(todayData.sleepHours || null, todayData.sleepStages || null, todayData.sleepGoal || sGoal, todayData.sleepFeelRating || null, !todayData.sleepStages);
+          const { score: todaySleepScore } = calcSleepScore((todayData.sleepOverride ?? todayData.sleepHours) || null, todayData.sleepStages || null, todayData.sleepGoal || sGoal, todayData.sleepFeelRating || null, !todayData.sleepStages, todayData.sleepConsistencyPts ?? 0);
           switch (item.key) {
             case 'workout':      hit = todayExercises; break;
             case 'protein':      hit = pGoal > 0 && totalProtein >= pGoal; break;
@@ -492,7 +495,7 @@ export default function StatsScreen() {
             case 'steps':        hit = (todayData.steps || 0) >= (todayData.stepGoal || stepParam); break;
             case 'activecals':   hit = aCalGoal > 0 && dayActive >= aCalGoal; break;
             case 'exercisemins': hit = exMinsGoal > 0 && (todayData.exerciseMinutes || 0) >= exMinsGoal; break;
-            case 'sleepduration':hit = (todayData.sleepHours || 0) >= (todayData.sleepGoal || sGoal); break;
+            case 'sleepduration':hit = ((todayData.sleepOverride ?? todayData.sleepHours) || 0) >= (todayData.sleepGoal || sGoal); break;
             case 'sleepquality': hit = todaySleepScore !== null && todaySleepScore >= 85; break;
           }
         }
@@ -530,7 +533,7 @@ export default function StatsScreen() {
         const adjustedTarget = effectiveTarget + dayActive;
         const totalProtein = data.entries?.reduce((s: number, e: any) => s + (e.protein || 0), 0) || 0;
         const effectiveSleepGoal = data.sleepGoal || sGoal;
-        const { score: sleepScore } = calcSleepScore(data.sleepHours || null, data.sleepStages || null, effectiveSleepGoal, data.sleepFeelRating || null, !data.sleepStages);
+        const { score: sleepScore } = calcSleepScore((data.sleepOverride ?? data.sleepHours) || null, data.sleepStages || null, effectiveSleepGoal, data.sleepFeelRating || null, !data.sleepStages, data.sleepConsistencyPts ?? 0);
 
         for (const item of config) {
           if (streakDone[item.id]) continue;
@@ -544,7 +547,7 @@ export default function StatsScreen() {
               case 'steps':       hit = (data.steps || 0) >= (data.stepGoal || stepParam); break;
               case 'activecals':  hit = aCalGoal > 0 && dayActive >= aCalGoal; break;
               case 'exercisemins':hit = exMinsGoal > 0 && (data.exerciseMinutes || 0) >= exMinsGoal; break;
-              case 'sleepduration': hit = (data.sleepHours || 0) >= effectiveSleepGoal; break;
+              case 'sleepduration': hit = ((data.sleepOverride ?? data.sleepHours) || 0) >= effectiveSleepGoal; break;
               case 'sleepquality':  hit = sleepScore !== null && sleepScore >= 85; break;
               case 'bible':       hit = bibleDates.has(dateKey); break;
               case 'gratitude':   hit = gratitudeDates.has(dateKey); break;
@@ -773,7 +776,7 @@ export default function StatsScreen() {
 
         await Promise.all([
           loadAllCardData(cards, 30, sleep),
-          loadRecords(),
+          loadRecords(burnAccuracy),
           loadPeriodData(activePeriod, target, sleep, burnAccuracy, netCarbsMode),
           loadStreaks(config, target, streakBaseTarget, burnAccuracy, wGoal, aCalGoal, exMinsGoal, pGoal, sleep, step, currentFaithJourney),
         ]);

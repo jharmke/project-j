@@ -1179,6 +1179,26 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
   const stats = getStats();
   const iconName = card.dataKey ? DATA_KEY_META[card.dataKey].icon : 'analytics-outline';
 
+  // Sample-size sublabel: how many data points this card is actually based on.
+  // Uniform across every card so averages never hide their sample size.
+  const sampleInfo = (() => {
+    if (!card.dataKey) return null;
+    const arrByKey: Record<string, { date: string }[]> = {
+      weight: cardTrendData.weight, calories: cardTrendData.cal, steps: cardTrendData.steps,
+      activeCals: cardTrendData.activeCal, sleep: cardTrendData.sleep, macros: cardTrendData.macro,
+      water: cardTrendData.water, netCalories: cardTrendData.netCal,
+      sleepScore: cardTrendData.sleepScore, restingHR: cardTrendData.restingHR,
+      respiratoryRate: cardTrendData.respiratoryRate, bloodOxygen: cardTrendData.bloodOxygen,
+      bodyFatPct: cardTrendData.bodyFatPct, exerciseMinutes: cardTrendData.exerciseMinutes,
+      effortScore: cardTrendData.effortScore, fiber: cardTrendData.fiber, sodium: cardTrendData.sodium,
+      cholesterol: cardTrendData.cholesterol, saturatedFat: cardTrendData.saturatedFat,
+    };
+    const arr = arrByKey[card.dataKey];
+    if (!arr || arr.length === 0) return null;
+    const noun = (card.dataKey === 'sleep' || card.dataKey === 'sleepScore') ? 'night' : 'day';
+    return { count: arr.length, noun };
+  })();
+
   return (
     <View style={{ borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14, padding: 16, marginBottom: 12, backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadow }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
@@ -1212,6 +1232,11 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
             </View>
           ))}
         </View>
+      )}
+      {sampleInfo && (
+        <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginTop: 8 }}>
+          Based on {sampleInfo.count} {sampleInfo.noun}{sampleInfo.count !== 1 ? 's' : ''} of data
+        </Text>
       )}
       {(() => {
         const excMapping: Partial<Record<string, 'diet' | 'water' | 'exercise'>> = {

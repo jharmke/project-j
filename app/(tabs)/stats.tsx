@@ -1233,6 +1233,9 @@ export default function StatsScreen() {
             if (section.systemKey === 'atAGlance') return (
               <CollapsibleSection key={section.id} label={section.label} subtitle="Averages across your logged days" defaultOpen={isFirst} theme={theme} first={isFirst}>
           <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 4 }}>
+              <TooltipIcon tooltipKey="at_a_glance" />
+            </View>
             <View style={{ flexDirection: 'row', gap: 6, marginBottom: 14 }}>
               {(['7', '30', '90', '180', 'ytd'] as const).map(p => (
                 <TouchableOpacity key={p} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setActivePeriod(p); }}

@@ -228,7 +228,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     body: 'Streaks track how many consecutive days you hit a goal or complete a habit. Each streak counts backward from today -- a streak ends the moment you miss a day.\n\nTap the gear icon to add, remove, or create custom streaks. Your configuration is saved and never reset automatically.',
     definitions: [
       { term: 'Workout', explanation: 'Counts any day you log at least one exercise. Rest days do not break the streak.' },
-      { term: 'Calories', explanation: 'Counts days you land between 80% and 106% of your full daily calorie target, including active burn for that day.' },
+      { term: 'Calories', explanation: 'Counts completed days you hit your calorie goal. On days with workout or activity data, it checks your net calories (food minus active burn minus the calories your body burned at rest) against your weight-goal pace target. On days without activity data, it checks your intake against your calorie target. Today is not counted until the day ends.' },
       { term: 'Protein', explanation: 'Counts days your total logged protein meets or exceeds your daily protein goal set in profile.' },
       { term: 'Water', explanation: 'Counts days your total logged water meets or exceeds your water goal.' },
       { term: 'Steps', explanation: 'Counts days your Apple Health step count meets or exceeds your step goal.' },
@@ -242,6 +242,30 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
       { term: 'Morning Intention', explanation: 'A manual habit streak. Tap the tile each morning to check in. Tap again to undo if you tapped by mistake.' },
       { term: 'Prayer', explanation: 'A manual habit streak. Tap the tile to check in for the day. Tap again to undo.' },
       { term: 'Custom', explanation: 'Create your own streak with any name and emoji. Custom streaks are always manual -- tap the tile to check in each day.' },
+    ],
+  },
+  {
+    key: 'at_a_glance',
+    category: 'Reports',
+    title: 'At a Glance',
+    body: 'A quick summary of your selected period (7 days, 30 days, and so on). Some stats are averages, others are day counts. Two of the counts use different denominators on purpose, which is worth knowing.',
+    definitions: [
+      {
+        term: 'Completed days only',
+        explanation: 'Calories, net calories, active calories, water, and steps skip today while it is still in progress. A partial day would drag the averages down and is not a finished result yet.',
+      },
+      {
+        term: 'CAL GOAL / DAY',
+        explanation: 'How many of your logged, completed days you hit your calorie goal, out of the days you actually logged food. Example: 4 / 6 means 4 hits across 6 logged days. A day with no food logged cannot be a calorie hit, so it is not in the total.',
+      },
+      {
+        term: 'WORKOUT DAYS',
+        explanation: 'How many days you worked out, out of every day in the period (including today). Example: 3 / 7 means 3 workouts across the full week. This is why CAL GOAL and WORKOUT DAYS can show different totals: one counts logged days, the other counts all days.',
+      },
+      {
+        term: 'Sleep, sleep score, and weight',
+        explanation: 'These include today. Last night\'s sleep is complete data, and a weigh-in is a finished point-in-time reading, so they count right away.',
+      },
     ],
   },
   {

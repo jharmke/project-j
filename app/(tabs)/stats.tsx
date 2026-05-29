@@ -372,7 +372,12 @@ export default function StatsScreen() {
         if (saved) {
           const data = JSON.parse(saved);
           const excl = data.excluded || {};
-          if (!excl.diet && data.entries?.length > 0) {
+          const isTodayKey = dateKey === todayKey;
+          // Completed days only (skip today): calories, macros/net, cal-goal count, water,
+          // steps, active calories. Today is in progress, so a partial day skews the averages
+          // and is not a real goal hit yet. Workout days, sleep, sleep score, and weight DO
+          // include today (those are complete or point-in-time data).
+          if (!isTodayKey && !excl.diet && data.entries?.length > 0) {
             const dayCal = data.entries.reduce((s: number, e: any) => s + e.cal, 0);
             totalCal += dayCal;
             totalNetCal += computeDayNet(dayCal, data, bmrMap[dateKey] ?? 0, burnAccuracyPct, dateKey === todayKey, minutesNow);
@@ -410,12 +415,12 @@ export default function StatsScreen() {
             }
             dietDays++;
           }
-          if (!excl.water && data.water) { totalWater += data.water; waterDays++; }
+          if (!isTodayKey && !excl.water && data.water) { totalWater += data.water; waterDays++; }
           if (data.weight) { if (startWeight === null) startWeight = data.weight; endWeight = data.weight; }
           if (!excl.exercise && (data.caloriesBurned || data.entries?.length > 0)) workoutDays++;
-          if (data.steps) { totalSteps += data.steps; stepsDays++; }
+          if (!isTodayKey && data.steps) { totalSteps += data.steps; stepsDays++; }
           const rawActiveCal = data.activeCalories || data.caloriesBurned || 0;
-          if (rawActiveCal > 0) { totalActiveCals += Math.round(rawActiveCal * burnAccuracyPct / 100); activeDays++; }
+          if (!isTodayKey && rawActiveCal > 0) { totalActiveCals += Math.round(rawActiveCal * burnAccuracyPct / 100); activeDays++; }
           const sleepH = data.sleepOverride || data.sleepHours;
           if (sleepH) {
             totalSleep += sleepH; sleepDays++;

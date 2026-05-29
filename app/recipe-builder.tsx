@@ -409,7 +409,7 @@ export default function RecipeBuilderScreen() {
             <Text style={styles.cardLabel}>Total Nutrition</Text>
             <View style={styles.macroRow}>
               <View style={styles.macroStat}>
-                <Text style={[styles.macroVal, { color: theme.textPrimary }]}>{totalCal}</Text>
+                <Text style={[styles.macroVal, { color: theme.textSecondary }]}>{totalCal}</Text>
                 <Text style={styles.macroLabel}>kcal</Text>
               </View>
               <View style={styles.macroDivider} />
@@ -487,7 +487,7 @@ export default function RecipeBuilderScreen() {
               <Text style={[styles.cardLabel, { color: theme.accentBlue, marginBottom: 12 }]}>Per {servingName}</Text>
               <View style={styles.macroRow}>
                 <View style={styles.macroStat}>
-                  <Text style={[styles.macroVal, { color: theme.textPrimary }]}>{calPerServing}</Text>
+                  <Text style={[styles.macroVal, { color: theme.textSecondary }]}>{calPerServing}</Text>
                   <Text style={styles.macroLabel}>kcal</Text>
                 </View>
                 <View style={styles.macroDivider} />
@@ -653,7 +653,7 @@ const useStyles = (theme: any) => StyleSheet.create({
   ingredientRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
   ingredientBorder: { borderBottomWidth: 1, borderBottomColor: theme.borderSubtle },
   ingredientLeft: { flex: 1, marginRight: 12 },
-  ingredientName: { fontSize: 14, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', marginBottom: 4 },
+  ingredientName: { fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', marginBottom: 4 },
   ingredientMeta: { flexDirection: 'row', alignItems: 'center' },
   ingAmount: { width: 56, fontSize: 11, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' },
   ingDot: { fontSize: 11, color: theme.textDim, marginHorizontal: 3 },

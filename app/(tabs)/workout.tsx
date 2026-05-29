@@ -888,10 +888,10 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                       )}
                       <Text style={[styles.dayTabText, { color: theme.textMuted },
                         isActiveDayTab && { color: c },
-                        !isActiveDayTab && { color: isPast ? theme.textSecondary : theme.textMuted }]}>{dayName}</Text>
+                        !isActiveDayTab && { color: isPast ? theme.textMuted : theme.textSecondary }]}>{dayName}</Text>
                       <Text style={[styles.dayTabText, { color: theme.textMuted, fontSize: 11 },
                         isActiveDayTab && { color: c },
-                        !isActiveDayTab && { color: isPast ? theme.textMuted : theme.textMuted }]}>{label}</Text>
+                        !isActiveDayTab && { color: isPast ? theme.textMuted : theme.textSecondary }]}>{label}</Text>
                       {rightDots.length > 0 && (
                         <View style={{ position: 'absolute', right: 4, top: 0, bottom: 0, justifyContent: 'center', gap: 3 }}>
                           {rightDots.map(t => (

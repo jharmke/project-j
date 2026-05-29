@@ -1053,7 +1053,7 @@ export default function LogScreen() {
               <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
                 <Text style={[styles.calNumber, { color: calColor, opacity: 0.88 }]}>{totalCals}</Text>
               </View>
-              <Text style={[styles.calTarget, { color: theme.textMuted }]}>/ {adjustedTarget} kcal</Text>
+              <Text style={[styles.calTarget, { color: theme.textSecondary }]}>/ {adjustedTarget} kcal</Text>
             </View>
             <View style={[styles.progressBarBg, { backgroundColor: theme.bgProgressTrack }]}>
               <ReAnimated.View style={[styles.progressBarFill, useAnimatedStyle(() => ({ width: withTiming(`${Math.min(calPct, 100)}%` as any, { duration: 400 }) })), { backgroundColor: calColor }]} />
@@ -1106,7 +1106,7 @@ export default function LogScreen() {
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                   <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>{n.label}</Text>
                   <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={{ fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold' }}>
+                    <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' }}>
                       {n.value}{n.unit}
                     </Text>
                     {n.dv != null && (
@@ -1148,7 +1148,7 @@ export default function LogScreen() {
             {/* Meal info middle */}
             <TouchableOpacity ref={entries.some(e => e.tutorialEntry) ? (slot.id === 'ms_lunch' ? (mealTotalRef as any) : undefined) : (mealIdx === 0 ? (mealTotalRef as any) : undefined)} style={[styles.mealInfo, { flexDirection: 'row', alignItems: 'center' }]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleMeal(slot.id); }}>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.mealName, { color: theme.textPrimary }]}>{slot.name}</Text>
+                <Text style={[styles.mealName, { color: theme.textSecondary }]}>{slot.name}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2, opacity: mealTotal > 0 ? 1 : 0 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                     <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: '#0d9268' }} />
@@ -1166,7 +1166,7 @@ export default function LogScreen() {
               </View>
               {mealTotal > 0 && (
                 <View style={{ alignItems: 'flex-end', marginRight: 4 }}>
-                  <Text style={{ color: theme.textPrimary, fontSize: 18, fontFamily: 'BebasNeue_400Regular', lineHeight: 20 }}>{mealTotal}</Text>
+                  <Text style={{ color: theme.textSecondary, fontSize: 18, fontFamily: 'BebasNeue_400Regular', lineHeight: 20 }}>{mealTotal}</Text>
                   <Text style={{ color: theme.textDim, fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase' }}>kcal</Text>
                 </View>
               )}
@@ -1559,7 +1559,7 @@ export default function LogScreen() {
                     {([0,1,2] as const).map(i => (
                       <View key={i} style={{ flex:1, alignItems:'center' }}>
                         <TextInput
-                          style={{ backgroundColor: theme.bgInput, borderWidth:0.5, borderColor: theme.borderInput, borderRadius:8, color: theme.textPrimary, padding:10, fontSize:18, fontFamily:'BebasNeue_400Regular', textAlign:'center', width:'100%' }}
+                          style={{ backgroundColor: theme.bgInput, borderWidth:0.5, borderColor: theme.borderInput, borderRadius:8, color: theme.textSecondary, padding:10, fontSize:18, fontFamily:'BebasNeue_400Regular', textAlign:'center', width:'100%' }}
                           value={waterPresetInputs[i]}
                           onChangeText={v => { const cleaned = v.replace(/[^0-9]/g,''); const next = [...waterPresetInputs] as [string,string,string]; next[i] = cleaned; setWaterPresetInputs(next); }}
                           keyboardType="number-pad"
@@ -1584,7 +1584,7 @@ export default function LogScreen() {
                   <View style={{ flexDirection:'row', gap:8, alignItems:'flex-start' }}>
                     <View style={{ flex:1 }}>
                       <TextInput
-                        style={{ backgroundColor: theme.bgInput, borderWidth:0.5, borderColor: theme.borderInput, borderRadius:8, color: theme.textPrimary, padding:10, fontSize:18, fontFamily:'BebasNeue_400Regular', textAlign:'center' }}
+                        style={{ backgroundColor: theme.bgInput, borderWidth:0.5, borderColor: theme.borderInput, borderRadius:8, color: theme.textSecondary, padding:10, fontSize:18, fontFamily:'BebasNeue_400Regular', textAlign:'center' }}
                         value={waterGoalInput}
                         onChangeText={v => setWaterGoalInput(v.replace(/[^0-9]/g,''))}
                         keyboardType="number-pad"

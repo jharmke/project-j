@@ -2276,7 +2276,7 @@ const useStyles = (theme: any, themeId: string) => {
   resultLeft: { flex: 1, marginRight: 12 },
   savedBadge: { backgroundColor: theme.accentBlueBg, borderRadius: 3, paddingHorizontal: 5, paddingVertical: 1, alignSelf: 'flex-start', marginBottom: 4 },
   savedBadgeText: { fontSize: 8, color: theme.accentBlue, fontFamily: 'DMSans_700Bold' },
-  resultName: { fontSize: 14, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold' },
+  resultName: { fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' },
   resultBrand: { fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 1 },
   macroStrip: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 5 },
   macroDot: { flexDirection: 'row', alignItems: 'center', gap: 3 },

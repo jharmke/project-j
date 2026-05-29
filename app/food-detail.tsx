@@ -1119,7 +1119,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                 <Text style={{ fontSize: 22, color: theme.accentBlue, fontFamily: 'DMSans_400Regular', lineHeight: 26 }}>−</Text>
               </TouchableOpacity>
               <TextInput
-                style={{ width: 54, textAlign: 'center', fontSize: 22, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, paddingVertical: 4 }}
+                style={{ width: 54, textAlign: 'center', fontSize: 22, color: theme.textSecondary, fontFamily: 'BebasNeue_400Regular', backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, paddingVertical: 4 }}
                 value={servingCountStr}
                 onChangeText={v => {
                   const stripped = v.replace(/[^0-9.]/g, '');
@@ -1225,7 +1225,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                 {fatsOpen && rows.map(r => (
                   <View key={r.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
                     <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{r.label}</Text>
-                    <Text style={{ fontSize: 12, color: theme.textPrimary, fontFamily: 'DMSans_500Medium' }}>{r.val}{r.unit}</Text>
+                    <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>{r.val}{r.unit}</Text>
                   </View>
                 ))}
               </View>
@@ -1258,7 +1258,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                 {otherOpen && rows.map(r => (
                   <View key={r.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
                     <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{r.label}</Text>
-                    <Text style={{ fontSize: 12, color: theme.textPrimary, fontFamily: 'DMSans_500Medium' }}>{r.val}{r.unit}</Text>
+                    <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>{r.val}{r.unit}</Text>
                   </View>
                 ))}
               </View>
@@ -1286,7 +1286,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                 {vitaminsOpen && rows.map(r => (
                   <View key={r.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
                     <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{r.label}</Text>
-                    <Text style={{ fontSize: 12, color: r.val ? theme.textPrimary : theme.textDim, fontFamily: 'DMSans_500Medium' }}>
+                    <Text style={{ fontSize: 12, color: r.val ? theme.textSecondary : theme.textDim, fontFamily: 'DMSans_500Medium' }}>
                       {r.val ? `${r.val}${r.unit}` : '--'}
                     </Text>
                   </View>
@@ -1300,21 +1300,21 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16, marginTop: -4 }}>
             <View style={{ flex: 1, backgroundColor: theme.bgCard, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, padding: 10 }}>
               <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>LOGGED</Text>
-              <Text style={{ fontSize: 18, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular' }}>{foodStats.count}x</Text>
+              <Text style={{ fontSize: 18, color: theme.textSecondary, fontFamily: 'BebasNeue_400Regular' }}>{foodStats.count}x</Text>
             </View>
             <View style={{ flex: 1.8, backgroundColor: theme.bgCard, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, padding: 10 }}>
               <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>LAST LOGGED</Text>
-              <Text style={{ fontSize: 18, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular' }}>
+              <Text style={{ fontSize: 18, color: theme.textSecondary, fontFamily: 'BebasNeue_400Regular' }}>
                 {foodStats.lastDate ? new Date(foodStats.lastDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '--'}
               </Text>
             </View>
             <View style={{ flex: 1.8, backgroundColor: theme.bgCard, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, padding: 10 }}>
               <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>AVG SERVING</Text>
               <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                <Text style={{ fontSize: 18, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular' }}>
+                <Text style={{ fontSize: 18, color: theme.textSecondary, fontFamily: 'BebasNeue_400Regular' }}>
                   {foodStats.avgGrams > 0 ? Math.round(foodStats.avgGrams) : '--'}
                 </Text>
-                {foodStats.avgGrams > 0 && <Text style={{ fontSize: 12, color: theme.textPrimary, fontFamily: 'DMSans_500Medium', marginLeft: 1 }}>g</Text>}
+                {foodStats.avgGrams > 0 && <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: 'DMSans_500Medium', marginLeft: 1 }}>g</Text>}
               </View>
             </View>
           </View>
@@ -1791,7 +1791,7 @@ const useStyles = (theme: any) => StyleSheet.create({
   backBtnText: { color: theme.accentBlue, fontSize: 14, fontFamily: 'DMSans_500Medium' },
   headerTitle: { fontSize: 20, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, flex: 1, textAlign: 'center' },
   content: { padding: 16 },
-  foodName: { fontSize: 18, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', marginBottom: 20, lineHeight: 24 },
+  foodName: { fontSize: 18, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', marginBottom: 20, lineHeight: 24 },
   unitRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   unitBtn: { flex: 1, padding: 10, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, alignItems: 'center' },
   unitBtnActive: { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder },
@@ -1799,7 +1799,7 @@ const useStyles = (theme: any) => StyleSheet.create({
   unitBtnTextActive: { color: theme.accentBlue },
   amountRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 },
   amountLabel: { fontSize: 14, color: theme.textMuted, fontFamily: 'DMSans_400Regular' },
-  amountInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 24, fontFamily: 'BebasNeue_400Regular', width: 120, textAlign: 'center' },
+  amountInput: { backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textSecondary, padding: 12, fontSize: 24, fontFamily: 'BebasNeue_400Regular', width: 120, textAlign: 'center' },
   nutritionCard: { backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, padding: 16, marginBottom: 20 },
   nutritionTitle: { fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 12 },
   nutritionRow: { flexDirection: 'row', justifyContent: 'space-between' },

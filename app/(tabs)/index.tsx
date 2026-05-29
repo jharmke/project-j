@@ -1683,9 +1683,9 @@ export default function HomeScreen() {
   const renderCaloriesCard = () => {
     const remaining = adjustedTarget - totalCals;
     const stats = [
-      { label: remaining >= 0 ? 'REMAINING' : 'OVER', value: Math.abs(remaining), color: remaining >= 0 ? theme.textPrimary : theme.statusBad },
-      { label: 'ACTIVE', value: displayedBurned, color: theme.textPrimary },
-      { label: 'RUNNING NET', value: `${net > 0 ? '+' : ''}${Math.round(net)}`, color: theme.textPrimary },
+      { label: remaining >= 0 ? 'REMAINING' : 'OVER', value: Math.abs(remaining), color: remaining >= 0 ? theme.textSecondary : theme.statusBad },
+      { label: 'ACTIVE', value: displayedBurned, color: theme.textSecondary },
+      { label: 'RUNNING NET', value: `${net > 0 ? '+' : ''}${Math.round(net)}`, color: theme.textSecondary },
     ];
 
     // Mindful: check if it's after 8pm for potential nudge
@@ -1905,15 +1905,15 @@ export default function HomeScreen() {
         return (
           <View style={[styles.weightRow, { paddingTop: 10, borderTopWidth: 0.5, borderTopColor: theme.borderCardTop }]}>
             <View style={styles.weightStat}>
-              <Text style={[styles.weightVal, { color: styleMode === 'mindful' ? theme.textSecondary : theme.textPrimary }]}>{goalWeight} lbs</Text>
+              <Text style={[styles.weightVal, { color: theme.textSecondary }]}>{goalWeight} lbs</Text>
               <Text style={[styles.weightLbl, { color: theme.textMuted }]}>Goal</Text>
             </View>
             <View style={styles.weightStat}>
-              <Text style={[styles.weightVal, { color: styleMode === 'mindful' ? theme.textSecondary : theme.textPrimary }]}>{lbsToGo !== null ? `${Math.round(lbsToGo * 10) / 10} lbs` : '--'}</Text>
+              <Text style={[styles.weightVal, { color: theme.textSecondary }]}>{lbsToGo !== null ? `${Math.round(lbsToGo * 10) / 10} lbs` : '--'}</Text>
               <Text style={[styles.weightLbl, { color: theme.textMuted }]}>To Go</Text>
             </View>
             <View style={styles.weightStat}>
-              <Text style={[styles.weightVal, { color: styleMode === 'mindful' ? theme.textSecondary : theme.textPrimary }]}>{projectedDate || '--'}</Text>
+              <Text style={[styles.weightVal, { color: theme.textSecondary }]}>{projectedDate || '--'}</Text>
               <Text style={[styles.weightLbl, { color: theme.textMuted }]}>Projected</Text>
             </View>
           </View>
@@ -3149,7 +3149,7 @@ export default function HomeScreen() {
                   {([0,1,2] as const).map(i => (
                     <View key={i} style={{ flex:1, alignItems:'center' }}>
                       <TextInput
-                        style={{ backgroundColor: theme.bgInput, borderWidth:0.5, borderColor: theme.borderInput, borderRadius:8, color: theme.textPrimary, padding:10, fontSize:18, fontFamily:'BebasNeue_400Regular', textAlign:'center', width:'100%' }}
+                        style={{ backgroundColor: theme.bgInput, borderWidth:0.5, borderColor: theme.borderInput, borderRadius:8, color: theme.textSecondary, padding:10, fontSize:18, fontFamily:'BebasNeue_400Regular', textAlign:'center', width:'100%' }}
                         value={waterPresetInputs[i]}
                         onChangeText={v => {
                           const cleaned = v.replace(/[^0-9]/g,'');
@@ -3180,7 +3180,7 @@ export default function HomeScreen() {
                 <View style={{ flexDirection:'row', gap:8, alignItems:'flex-start' }}>
                   <View style={{ flex:1 }}>
                     <TextInput
-                      style={{ backgroundColor: theme.bgInput, borderWidth:0.5, borderColor: theme.borderInput, borderRadius:8, color: theme.textPrimary, padding:10, fontSize:18, fontFamily:'BebasNeue_400Regular', textAlign:'center', width:'100%' }}
+                      style={{ backgroundColor: theme.bgInput, borderWidth:0.5, borderColor: theme.borderInput, borderRadius:8, color: theme.textSecondary, padding:10, fontSize:18, fontFamily:'BebasNeue_400Regular', textAlign:'center', width:'100%' }}
                       value={waterGoalInput}
                       onChangeText={v => setWaterGoalInput(v.replace(/[^0-9]/g,''))}
                       keyboardType="number-pad"
@@ -3631,7 +3631,7 @@ const styles = StyleSheet.create({
   verseRef:         { fontSize:9, fontFamily:'DMSans_700Bold', textAlign:'center', letterSpacing:2, textTransform:'uppercase' },
   calRow:           { flexDirection:'row', alignItems:'baseline', gap:6, marginBottom:10 },
   calNumber:        { fontSize:52, lineHeight:56, fontFamily:'BebasNeue_400Regular', letterSpacing:1 },
-  calTarget:        { fontSize:14, fontFamily:'DMSans_400Regular' },
+  calTarget:        { fontSize:14, fontFamily:'DMSans_700Bold', letterSpacing: 0.3 },
   calRemaining:     { fontSize:12, fontFamily:'DMSans_400Regular' },
   progressBarBg:    { height:6, borderRadius:6, overflow:'hidden', marginBottom:12 },
   progressBarFill:  { height:'100%', borderRadius:6 },

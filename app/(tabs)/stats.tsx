@@ -1195,21 +1195,21 @@ export default function StatsScreen() {
                   <View style={[styles.glanceRow, { borderBottomColor: theme.borderSubtle }]}>
                     <View style={styles.glanceCellL}>
                       <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>CALORIES / DAY</Text>
-                      <Text style={[styles.glanceVal, { color: theme.textPrimary }]}>{periodData.avgCal > 0 ? `${periodData.avgCal} kcal` : '--'}</Text>
+                      <Text style={[styles.glanceVal, { color: theme.textSecondary }]}>{periodData.avgCal > 0 ? `${periodData.avgCal} kcal` : '--'}</Text>
                     </View>
                     <View style={styles.glanceCellR}>
                       <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>NET CALS / DAY</Text>
-                      <Text style={[styles.glanceVal, { color: theme.textPrimary }]}>{periodData.avgNetCals !== 0 ? `${periodData.avgNetCals} kcal` : '--'}</Text>
+                      <Text style={[styles.glanceVal, { color: theme.textSecondary }]}>{periodData.avgNetCals !== 0 ? `${periodData.avgNetCals} kcal` : '--'}</Text>
                     </View>
                   </View>
                   <View style={[styles.glanceRow, { borderBottomColor: theme.borderSubtle }]}>
                     <View style={styles.glanceCellL}>
                       <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>ACTIVE CALS / DAY</Text>
-                      <Text style={[styles.glanceVal, { color: theme.textPrimary }]}>{periodData.avgActiveCals > 0 ? `${periodData.avgActiveCals} kcal` : '--'}</Text>
+                      <Text style={[styles.glanceVal, { color: theme.textSecondary }]}>{periodData.avgActiveCals > 0 ? `${periodData.avgActiveCals} kcal` : '--'}</Text>
                     </View>
                     <View style={styles.glanceCellR}>
                       <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>CAL GOAL / DAY</Text>
-                      <Text style={[styles.glanceVal, { color: theme.textPrimary }]}>{periodData.loggedDays > 0 ? `${periodData.calGoalDays} / ${periodData.loggedDays}` : '--'}</Text>
+                      <Text style={[styles.glanceVal, { color: theme.textSecondary }]}>{periodData.loggedDays > 0 ? `${periodData.calGoalDays} / ${periodData.loggedDays}` : '--'}</Text>
                     </View>
                   </View>
                 </>
@@ -1217,22 +1217,22 @@ export default function StatsScreen() {
               <View style={[styles.glanceRow, { borderBottomColor: theme.borderSubtle }]}>
                 <View style={styles.glanceCellL}>
                   <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>STEPS / DAY</Text>
-                  <Text style={[styles.glanceVal, { color: theme.textPrimary }]}>{periodData.avgSteps > 0 ? periodData.avgSteps.toLocaleString() : '--'}</Text>
+                  <Text style={[styles.glanceVal, { color: theme.textSecondary }]}>{periodData.avgSteps > 0 ? periodData.avgSteps.toLocaleString() : '--'}</Text>
                 </View>
                 <View style={styles.glanceCellR}>
                   <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>WORKOUT DAYS</Text>
-                  <Text style={[styles.glanceVal, { color: theme.textPrimary }]}>{`${periodData.workoutDays} / ${periodData.totalDays}`}</Text>
+                  <Text style={[styles.glanceVal, { color: theme.textSecondary }]}>{`${periodData.workoutDays} / ${periodData.totalDays}`}</Text>
                 </View>
               </View>
               {styleMode === 'Mindful' && (
                 <View style={[styles.glanceRow, { borderBottomColor: theme.borderSubtle }]}>
                   <View style={styles.glanceCellL}>
                     <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>WORKOUT DAYS</Text>
-                    <Text style={[styles.glanceVal, { color: theme.textPrimary }]}>{`${periodData.workoutDays} / ${periodData.totalDays}`}</Text>
+                    <Text style={[styles.glanceVal, { color: theme.textSecondary }]}>{`${periodData.workoutDays} / ${periodData.totalDays}`}</Text>
                   </View>
                   <View style={styles.glanceCellR}>
                     <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>SLEEP / NIGHT</Text>
-                    <Text style={[styles.glanceVal, { color: theme.textPrimary }]}>{periodData.avgSleep > 0 ? `${Math.floor(periodData.avgSleep)}h ${Math.round((periodData.avgSleep % 1) * 60)}m` : '--'}</Text>
+                    <Text style={[styles.glanceVal, { color: theme.textSecondary }]}>{periodData.avgSleep > 0 ? `${Math.floor(periodData.avgSleep)}h ${Math.round((periodData.avgSleep % 1) * 60)}m` : '--'}</Text>
                   </View>
                 </View>
               )}
@@ -1240,18 +1240,18 @@ export default function StatsScreen() {
                 <View style={[styles.glanceRow, { borderBottomColor: theme.borderSubtle }]}>
                   <View style={styles.glanceCellL}>
                     <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>SLEEP / NIGHT</Text>
-                    <Text style={[styles.glanceVal, { color: theme.textPrimary }]}>{periodData.avgSleep > 0 ? `${Math.floor(periodData.avgSleep)}h ${Math.round((periodData.avgSleep % 1) * 60)}m` : '--'}</Text>
+                    <Text style={[styles.glanceVal, { color: theme.textSecondary }]}>{periodData.avgSleep > 0 ? `${Math.floor(periodData.avgSleep)}h ${Math.round((periodData.avgSleep % 1) * 60)}m` : '--'}</Text>
                   </View>
                   <View style={styles.glanceCellR}>
                     <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>SLEEP SCORE</Text>
-                    <Text style={[styles.glanceVal, { color: theme.textPrimary }]}>{periodData.avgSleepScore !== null ? periodData.avgSleepScore.toString() : '--'}</Text>
+                    <Text style={[styles.glanceVal, { color: theme.textSecondary }]}>{periodData.avgSleepScore !== null ? periodData.avgSleepScore.toString() : '--'}</Text>
                   </View>
                 </View>
               )}
               <View style={[styles.glanceRow, { borderBottomColor: 'transparent' }]}>
                 <View style={styles.glanceCellL}>
                   <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>WATER / DAY</Text>
-                  <Text style={[styles.glanceVal, { color: theme.textPrimary }]}>{periodData.avgWater > 0 ? `${periodData.avgWater} oz` : '--'}</Text>
+                  <Text style={[styles.glanceVal, { color: theme.textSecondary }]}>{periodData.avgWater > 0 ? `${periodData.avgWater} oz` : '--'}</Text>
                 </View>
                 <View style={styles.glanceCellR}>
                   <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>WEIGHT CHANGE</Text>

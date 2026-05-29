@@ -152,7 +152,8 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
           if (w && p.birthday && p.heightFt && p.heightIn) {
             const wKg = w * 0.453592;
             const hCm = (parseFloat(p.heightFt) * 30.48) + (parseFloat(p.heightIn) * 2.54);
-            const age = Math.floor((Date.now() - new Date(p.birthday).getTime()) / (365.25 * 24 * 3600 * 1000));
+            const bparts = String(p.birthday).split('-');
+            const age = Math.floor((Date.now() - new Date(parseInt(bparts[0]), parseInt(bparts[1]) - 1, parseInt(bparts[2])).getTime()) / (365.25 * 24 * 3600 * 1000));
             const bmr = p.sex === 'male' ? Math.round((10*wKg)+(6.25*hCm)-(5*age)+5) : Math.round((10*wKg)+(6.25*hCm)-(5*age)-161);
             setProfileBmr(bmr);
           }

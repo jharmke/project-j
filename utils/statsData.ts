@@ -40,6 +40,100 @@ export const offsetToDateKey = (offset: number): string => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
+// ── Net calorie + BMR: single source of truth ───────────────────────────────
+// All net-calorie numbers in the app (net cal graph, At a Glance avg, day detail)
+// must flow through these helpers so they can never drift apart again.
+//
+// Canonical formula (mirrors day-detail.tsx exactly):
+//   net = consumed - (active x burnAccuracy) - BMR
+//   BMR per day uses that day's logged weight, else the most recent weigh-in
+//   within the prior 30 days, else 0. Today uses running (time-proportional) BMR.
+
+type BmrBio = { heightCm: number; ageYears: number; isMale: boolean } | null;
+
+// Parse profile biometrics into BMR inputs. Uses the date-safe birthday split
+// parser (avoids the iOS UTC-midnight off-by-one), so every caller agrees on age.
+function parseBmrBio(profile: any): BmrBio {
+  if (!profile || !profile.birthday || !profile.heightFt || profile.heightIn === undefined || profile.heightIn === null) return null;
+  const heightCm = (parseFloat(profile.heightFt) * 30.48) + (parseFloat(profile.heightIn) * 2.54);
+  const parts = String(profile.birthday).split('-');
+  if (parts.length !== 3) return null;
+  const bd = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+  const ageYears = Math.floor((Date.now() - bd.getTime()) / (365.25 * 24 * 3600 * 1000));
+  return { heightCm, ageYears, isMale: profile.sex === 'male' };
+}
+
+function bmrFromWeight(weightLbs: number, bio: BmrBio): number {
+  if (!bio) return 0;
+  const wKg = weightLbs * 0.453592;
+  return bio.isMale
+    ? Math.round((10 * wKg) + (6.25 * bio.heightCm) - (5 * bio.ageYears) + 5)
+    : Math.round((10 * wKg) + (6.25 * bio.heightCm) - (5 * bio.ageYears) - 161);
+}
+
+const dateKeyMinus = (dateKey: string, daysBack: number): string => {
+  const d = new Date(dateKey + 'T12:00:00');
+  d.setDate(d.getDate() - daysBack);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+// Build a per-day BMR map for the given date keys, mirroring day-detail.tsx:
+// each day uses its own logged weight, else the most recent weigh-in within the
+// prior 30 days, else 0 (no BMR subtracted). Reads pj_profile internally so
+// callers stay simple and cannot pass a stale or wrong value.
+export async function buildDailyBmrMap(dateKeys: string[]): Promise<Record<string, number>> {
+  const map: Record<string, number> = {};
+  if (dateKeys.length === 0) return map;
+  let bio: BmrBio = null;
+  try {
+    const praw = await AsyncStorage.getItem('pj_profile');
+    if (praw) bio = parseBmrBio(JSON.parse(praw));
+  } catch {}
+  if (!bio) { for (const k of dateKeys) map[k] = 0; return map; }
+
+  // Gather every key we might need: the requested days + 30 days before the earliest.
+  const sorted = [...dateKeys].sort();
+  const earliest = sorted[0];
+  const need = new Set<string>(dateKeys);
+  for (let i = 1; i <= 30; i++) need.add(dateKeyMinus(earliest, i));
+  const weightByDate: Record<string, number> = {};
+  try {
+    const raw = await AsyncStorage.multiGet([...need].map(k => `pj_${k}`));
+    for (const [storeKey, val] of raw) {
+      if (!val) continue;
+      try { const d = JSON.parse(val); if (d.weight) weightByDate[storeKey.slice(3)] = d.weight; } catch {}
+    }
+  } catch {}
+
+  for (const dateKey of dateKeys) {
+    let w: number | null = weightByDate[dateKey] ?? null;
+    if (w == null) {
+      for (let i = 1; i <= 30; i++) {
+        const k = dateKeyMinus(dateKey, i);
+        if (weightByDate[k] != null) { w = weightByDate[k]; break; }
+      }
+    }
+    map[dateKey] = w != null ? bmrFromWeight(w, bio) : 0;
+  }
+  return map;
+}
+
+// The one true net-calorie formula. consumed is passed in so it always matches
+// the calories shown elsewhere for the same day.
+export function computeDayNet(
+  consumed: number,
+  dayData: any,
+  dayBmr: number,
+  burnAccuracyPct: number,
+  isToday: boolean,
+  minutesNow: number,
+): number {
+  const rawActive = dayData.activeCalories || dayData.caloriesBurned || 0;
+  const burned = Math.round(rawActive * burnAccuracyPct / 100);
+  const bmr = isToday && dayBmr > 0 ? Math.round((dayBmr / 1440) * minutesNow) : dayBmr;
+  return Math.round(consumed - burned - bmr);
+}
+
 function calcSleepScoreForTrend(
   sleepHours: number,
   sleepStages: { core: number; deep: number; rem: number; totalMs: number } | null,
@@ -100,6 +194,19 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
   const esH: TrendData['effortScore'] = [];
   let exDiet = 0, exWater = 0, exExercise = 0;
 
+  // Net cal inputs: per-day BMR map + burn accuracy, read once up front.
+  const dateKeys: string[] = [];
+  for (let i = days - 1; i >= 0; i--) dateKeys.push(offsetToDateKey(i));
+  const bmrMap = await buildDailyBmrMap(dateKeys);
+  let burnAccuracyPct = 100;
+  try {
+    const sraw = await AsyncStorage.getItem('pj_settings');
+    if (sraw) { const sd = JSON.parse(sraw); if (sd.burnAccuracyPct !== undefined) burnAccuracyPct = sd.burnAccuracyPct; }
+  } catch {}
+  const nowD = new Date();
+  const minutesNow = nowD.getHours() * 60 + nowD.getMinutes();
+  const todayKey = offsetToDateKey(0);
+
   for (let i = days - 1; i >= 0; i--) {
     const dateKey = offsetToDateKey(i);
     let hadWorkout = false;
@@ -120,7 +227,7 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
             const c = data.entries.reduce((s: number, e: any) => s + (e.carbs || 0), 0);
             const f = data.entries.reduce((s: number, e: any) => s + (e.fat || 0), 0);
             if (p + c + f > 0) mh.push({ date: dateKey, protein: Math.round(p), carbs: Math.round(c), fat: Math.round(f) });
-            ncH.push({ date: dateKey, value: Math.round(total - (data.activeCalories || 0)) });
+            ncH.push({ date: dateKey, value: computeDayNet(total, data, bmrMap[dateKey] ?? 0, burnAccuracyPct, dateKey === todayKey, minutesNow) });
             const fiberVal = getEntryNutrient(data.entries, 'Fiber, total dietary');
             const sodiumVal = getEntryNutrient(data.entries, 'Sodium, Na');
             const choVal = getEntryNutrient(data.entries, 'Cholesterol');

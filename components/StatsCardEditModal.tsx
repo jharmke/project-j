@@ -180,8 +180,8 @@ export function StatsCardEditModal({ card, onClose, onSave, onDelete, theme }: P
                 ))}
               </View>
 
-              {/* Color picker -- hidden for workoutFreq */}
-              {card?.dataKey !== 'workoutFreq' && (
+              {/* Color picker -- hidden for workoutFreq + netCalories (semantic coloring) */}
+              {card?.dataKey !== 'workoutFreq' && card?.dataKey !== 'netCalories' && (
                 <>
                   <Text style={styles.sectionLabel(theme)}>
                     {card?.dataKey === 'macros' ? 'Macro Colors' : 'Color'}

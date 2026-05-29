@@ -12,7 +12,7 @@ import { DayDetailContent } from '../day-detail';
 import { useTheme } from '../../theme';
 import { CardPeriod, ChartType, DATA_KEY_CATEGORIES, DATA_KEY_META, DataKey, DEFAULT_STATS_CARDS, StatsCard, availableChartTypes, generateCardId, loadStatsCards, saveStatsCards } from '../../statsCardRegistry';
 import { ToastRenderer, useToast } from '../../components/Toast';
-import { EMPTY_TREND_DATA, TrendData, fetchTrendData as fetchTrendDataUtil, offsetToDateKey } from '../../utils/statsData';
+import { EMPTY_TREND_DATA, TrendData, fetchTrendData as fetchTrendDataUtil, offsetToDateKey, computeDayNet, buildDailyBmrMap } from '../../utils/statsData';
 import { StatsGraphCard, GRAPH_SWATCHES, MACRO_PROTEIN, MACRO_CARBS, MACRO_FAT } from '../../components/StatsGraphCard';
 import { StatsCardEditModal } from '../../components/StatsCardEditModal';
 import TooltipIcon from '../../components/TooltipIcon';
@@ -342,7 +342,7 @@ export default function StatsScreen() {
     } catch {}
   };
 
-  const loadPeriodData = async (period: '7' | '30' | '90' | '180' | 'ytd', calTgt: number, sleepGoalVal: number, bmr = 0, netCarbsMode = false) => {
+  const loadPeriodData = async (period: '7' | '30' | '90' | '180' | 'ytd', calTgt: number, sleepGoalVal: number, burnAccuracyPct = 100, netCarbsMode = false) => {
     let dates: string[] = [];
     const nowD = new Date();
     if (period === 'ytd') {
@@ -353,6 +353,10 @@ export default function StatsScreen() {
       const days = parseInt(period);
       for (let i = days - 1; i >= 0; i--) dates.push(offsetToDateKey(i));
     }
+    // Net cal: same per-day BMR + accuracy pipeline as the net cal graph.
+    const bmrMap = await buildDailyBmrMap(dates);
+    const minutesNow = nowD.getHours() * 60 + nowD.getMinutes();
+    const todayKey = offsetToDateKey(0);
     let totalCal = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0, totalFiber = 0, totalSugarAlcohols = 0, totalWater = 0, totalNetCal = 0;
     let totalSteps = 0, stepsDays = 0, totalActiveCals = 0, activeDays = 0, totalSleep = 0, sleepDays = 0;
     let totalSleepScore = 0, sleepScoreDays = 0, calGoalDays = 0;
@@ -367,7 +371,7 @@ export default function StatsScreen() {
           if (!excl.diet && data.entries?.length > 0) {
             const dayCal = data.entries.reduce((s: number, e: any) => s + e.cal, 0);
             totalCal += dayCal;
-            totalNetCal += dayCal - (data.activeCalories || 0) - bmr;
+            totalNetCal += computeDayNet(dayCal, data, bmrMap[dateKey] ?? 0, burnAccuracyPct, dateKey === todayKey, minutesNow);
             totalProtein += data.entries.reduce((s: number, e: any) => s + (e.protein || 0), 0);
             totalCarbs   += data.entries.reduce((s: number, e: any) => s + (e.carbs || 0), 0);
             totalFat     += data.entries.reduce((s: number, e: any) => s + (e.fat || 0), 0);
@@ -770,7 +774,7 @@ export default function StatsScreen() {
         await Promise.all([
           loadAllCardData(cards, 30, sleep),
           loadRecords(),
-          loadPeriodData(activePeriod, target, sleep, bmr, netCarbsMode),
+          loadPeriodData(activePeriod, target, sleep, burnAccuracy, netCarbsMode),
           loadStreaks(config, target, streakBaseTarget, burnAccuracy, wGoal, aCalGoal, exMinsGoal, pGoal, sleep, step, currentFaithJourney),
         ]);
       };
@@ -888,7 +892,7 @@ export default function StatsScreen() {
 
   useEffect(() => {
     if (hasLoadedProfile.current) {
-      loadPeriodData(activePeriod, calTarget, sleepGoal, profileBmr, showNetCarbs);
+      loadPeriodData(activePeriod, calTarget, sleepGoal, burnAccuracy, showNetCarbs);
     }
   }, [activePeriod]);
 
@@ -1701,7 +1705,7 @@ export default function StatsScreen() {
               {/* Step 3: Color + preview + save */}
               {creatorStep === 3 && creatorDataKey && creatorChartType && (
                 <>
-                  {creatorDataKey !== 'workoutFreq' && (
+                  {creatorDataKey !== 'workoutFreq' && creatorDataKey !== 'netCalories' && (
                     <View ref={graphCreatorColorRef} collapsable={false}>
                       <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 10 }}>
                         {creatorDataKey === 'macros' ? 'Macro Colors' : 'Color'}
@@ -1898,7 +1902,7 @@ export default function StatsScreen() {
               {creatorStep === 3 && creatorDataKey && creatorChartType && (
                 <>
                   {/* Color picker */}
-                  {creatorDataKey !== 'workoutFreq' && (
+                  {creatorDataKey !== 'workoutFreq' && creatorDataKey !== 'netCalories' && (
                     <>
                       <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 10 }}>
                         {creatorDataKey === 'macros' ? 'Macro Colors' : 'Color'}

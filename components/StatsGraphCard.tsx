@@ -19,6 +19,11 @@ export const GRAPH_SWATCHES = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6'
 
 const fmtDate = (dk: string) => { const [,m,d] = dk.split('-'); return `${parseInt(m)}/${parseInt(d)}`; };
 
+// Net calorie semantic color: deficit = green (on track for a cut), surplus =
+// amber, red when large. Shared by the net cal bar + line so they never drift.
+const netSignColor = (v: number, theme: any) =>
+  v < 0 ? (theme.accentGreen ?? '#0d9268') : (v > 300 ? (theme.accentRed ?? '#cc3333') : '#d4860a');
+
 function niceYTicks(minVal: number, maxVal: number, targetCount = 4): number[] {
   const range = (maxVal - minVal) || 1;
   const roughStep = range / (targetCount - 1);
@@ -415,6 +420,232 @@ function GenericBarChart({ data, color, unit, theme, fmtY, fmtFull, startFromZer
   );
 }
 
+// Net calorie bar chart with a dynamic zero baseline. The zero line floats to
+// wherever 0 falls within the actual data range, so the chart uses its full
+// height no matter the distribution. Deficit bars hang below zero (green),
+// surplus bars rise above it (amber, or red when large). Mirrors the locked
+// NetCalBarChart spec.
+function NetCalBarChart({ data, theme, fmtFull }: {
+  data: { date: string; value: number }[],
+  theme: any,
+  fmtFull?: (v: number) => string,
+}) {
+  const [callout, setCallout] = useState<{ x: number; v: number; label1: string; label2: string } | null>(null);
+  const { slideAnim } = useChartAnim(data.length > 0);
+
+  if (data.length === 0) {
+    return (
+      <View style={{ height: CHART_HEIGHT, alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+        <Ionicons name="analytics-outline" size={24} color={theme.iconMuted} />
+        <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>Not enough data yet</Text>
+      </View>
+    );
+  }
+
+  const values = data.map(d => d.value);
+  // Range always includes zero so the baseline is on-chart.
+  const rangeMin = Math.min(0, ...values);
+  const rangeMax = Math.max(0, ...values);
+  const ticks = niceYTicks(rangeMin, rangeMax, 4);
+  const tickMin = ticks[0];
+  const tickMax = ticks[ticks.length - 1] || 1;
+  const tickRange = tickMax - tickMin || 1;
+  const fmtY = (v: number) => Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${Math.round(v)}`;
+  const fmtFull_ = fmtFull ?? ((v: number) => Math.round(v).toLocaleString());
+
+  const chartH = CHART_HEIGHT - CHART_PAD_TOP - CHART_PAD_BOTTOM;
+  const plotLeft = CHART_PAD_LEFT;
+  const plotRight = CHART_WIDTH - CHART_PAD_RIGHT;
+  const plotW = plotRight - plotLeft;
+  const toY = (v: number) => CHART_PAD_TOP + (1 - (v - tickMin) / tickRange) * chartH;
+  const zeroY = toY(0);
+  const midIdx = Math.floor(data.length / 2);
+  const BAR_W = Math.min(16, plotW / data.length - 3);
+  const slot = plotW / data.length;
+
+  const barColor = (v: number) => netSignColor(v, theme);
+
+  return (
+    <Animated.View style={{ transform: [{ translateY: slideAnim }] }}>
+      <Svg width={CHART_WIDTH} height={CHART_HEIGHT}>
+        <Rect x={0} y={0} width={CHART_WIDTH} height={CHART_HEIGHT} fill="transparent" onPress={() => setCallout(null)} />
+        {ticks.map((tick, i) => (
+          <Line key={`g${i}`} x1={plotLeft} y1={toY(tick)} x2={plotRight} y2={toY(tick)}
+            stroke={tick === 0 ? theme.textDim : theme.borderSubtle} strokeWidth={1} opacity={tick === 0 ? 0.55 : 1} />
+        ))}
+        {ticks.map((tick, i) => (
+          <SvgText key={`y${i}`} x={plotLeft - 4} y={toY(tick) + 3}
+            fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">
+            {fmtY(tick)}
+          </SvgText>
+        ))}
+        {data.map((d, i) => {
+          const v = d.value;
+          const valY = toY(v);
+          let barH = Math.abs(valY - zeroY);
+          if (barH < 2) barH = 2;
+          const drawTop = v >= 0 ? zeroY - barH : zeroY;
+          const x = plotLeft + i * slot + (slot - BAR_W) / 2;
+          return (
+            <Rect key={i} x={x} y={drawTop} width={BAR_W} height={barH}
+              fill={barColor(v)} opacity={0.85} rx={2} />
+          );
+        })}
+        {/* Full-height transparent hit targets: tapping anywhere in a day's
+            column selects it, so tiny near-zero bars are still easy to hit. */}
+        {data.map((d, i) => {
+          const cx = plotLeft + i * slot + slot / 2;
+          return (
+            <Rect key={`hit${i}`} x={plotLeft + i * slot} y={CHART_PAD_TOP} width={slot} height={chartH}
+              fill="transparent"
+              onPress={() => setCallout(prev =>
+                prev?.label1 === fmtDate(d.date) ? null :
+                { x: cx, v: d.value, label1: fmtDate(d.date), label2: `${fmtFull_(d.value)} kcal` }
+              )} />
+          );
+        })}
+        <SvgText x={plotLeft} y={CHART_HEIGHT} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium">
+          {fmtDate(data[0].date)}
+        </SvgText>
+        {data.length > 10 && (
+          <SvgText x={plotLeft + (midIdx / data.length) * plotW + slot / 2} y={CHART_HEIGHT}
+            fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">
+            {fmtDate(data[midIdx].date)}
+          </SvgText>
+        )}
+        <SvgText x={plotRight} y={CHART_HEIGHT} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">
+          {fmtDate(data[data.length - 1].date)}
+        </SvgText>
+        {callout !== null && (() => {
+          const cPillW = Math.max(callout.label1.length, callout.label2.length) * 6 + 14;
+          const cPillH = 32;
+          const cPillX = Math.min(Math.max(callout.x - cPillW / 2, plotLeft), plotRight - cPillW);
+          // Anchor on the opposite side of zero from the bar so the pill never
+          // covers the tapped bar: deficit -> above the zero line, surplus -> below.
+          const cPillY = callout.v < 0
+            ? Math.max(CHART_PAD_TOP - 2, zeroY - cPillH - 10)
+            : Math.min(CHART_HEIGHT - cPillH - 2, zeroY + 10);
+          return (
+            <>
+              <Rect x={cPillX} y={cPillY} width={cPillW} height={cPillH}
+                fill={theme.bgCard} stroke={theme.borderCard} strokeWidth={0.5} rx={6}
+                onPress={() => setCallout(null)} />
+              <SvgText x={cPillX + cPillW / 2} y={cPillY + 12} fill={theme.textDim}
+                fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">{callout.label1}</SvgText>
+              <SvgText x={cPillX + cPillW / 2} y={cPillY + 26} fill={theme.textPrimary}
+                fontSize={10} fontFamily="DMSans_700Bold" textAnchor="middle">{callout.label2}</SvgText>
+            </>
+          );
+        })()}
+      </Svg>
+    </Animated.View>
+  );
+}
+
+// Net calorie line chart. Semantic, not color-customizable: neutral line, an
+// emphasized zero baseline, and dots colored by sign (green deficit / amber-red
+// surplus) so above/below zero reads at a glance.
+function NetCalLineChart({ data, theme, gradientId }: {
+  data: { date: string; value: number }[],
+  theme: any,
+  gradientId: string,
+}) {
+  const [callout, setCallout] = useState<{ x: number; y: number; label1: string; label2: string } | null>(null);
+  const { slideAnim } = useChartAnim(data.length >= 2);
+
+  if (data.length < 2) {
+    return (
+      <View style={{ height: CHART_HEIGHT, alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+        <Ionicons name="analytics-outline" size={24} color={theme.iconMuted} />
+        <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>Not enough data yet</Text>
+      </View>
+    );
+  }
+
+  const values = data.map(d => d.value);
+  // Range always includes zero so the baseline is on-chart.
+  const dataMin = Math.min(0, ...values);
+  const dataMax = Math.max(0, ...values);
+  const ticks = niceYTicks(dataMin, dataMax, 4);
+  const tickMin = ticks[0];
+  const tickMax = ticks[ticks.length - 1];
+  const tickRange = tickMax - tickMin || 1;
+
+  const chartH = CHART_HEIGHT - CHART_PAD_TOP - CHART_PAD_BOTTOM;
+  const plotLeft = CHART_PAD_LEFT;
+  const plotRight = CHART_WIDTH - CHART_PAD_RIGHT;
+  const plotW = plotRight - plotLeft;
+  const chartBottom = CHART_PAD_TOP + chartH;
+
+  const toX = (i: number) => plotLeft + (i / (data.length - 1)) * plotW;
+  const toY = (v: number) => CHART_PAD_TOP + (1 - (v - tickMin) / tickRange) * chartH;
+
+  const lineColor = theme.textSecondary;
+  const points = data.map((d, i) => `${toX(i)},${toY(d.value)}`).join(' ');
+  const midIdx = Math.floor(data.length / 2);
+  const fmtY = (v: number) => Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${Math.round(v)}`;
+  const fmtFull = (v: number) => Math.round(v).toLocaleString();
+
+  const areaPath =
+    `M ${toX(0)},${toY(data[0].value)} ` +
+    data.slice(1).map((d, i) => `L ${toX(i + 1)},${toY(d.value)}`).join(' ') +
+    ` L ${toX(data.length - 1)},${chartBottom} L ${toX(0)},${chartBottom} Z`;
+
+  return (
+    <Animated.View style={{ transform: [{ translateY: slideAnim }] }}>
+      <Svg width={CHART_WIDTH} height={CHART_HEIGHT}>
+        <Defs>
+          <SvgLinearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={lineColor} stopOpacity={0.18} />
+            <Stop offset="1" stopColor={lineColor} stopOpacity={0} />
+          </SvgLinearGradient>
+        </Defs>
+        <Rect x={0} y={0} width={CHART_WIDTH} height={CHART_HEIGHT} fill="transparent" onPress={() => setCallout(null)} />
+        {ticks.map((tick, i) => (
+          <Line key={`g${i}`} x1={plotLeft} y1={toY(tick)} x2={plotRight} y2={toY(tick)}
+            stroke={tick === 0 ? theme.textDim : theme.borderSubtle} strokeWidth={tick === 0 ? 1.5 : 1} opacity={tick === 0 ? 0.6 : 1} />
+        ))}
+        {ticks.map((tick, i) => (
+          <SvgText key={`y${i}`} x={plotLeft - 4} y={toY(tick) + 3}
+            fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">{fmtY(tick)}</SvgText>
+        ))}
+        <Path d={areaPath} fill={`url(#${gradientId})`} />
+        <Polyline points={points} fill="none" stroke={lineColor} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
+        {/* Dots colored by sign */}
+        {data.map((d, i) => (
+          <Circle key={`dot${i}`} cx={toX(i)} cy={toY(d.value)} r={3.5} fill={netSignColor(d.value, theme)} />
+        ))}
+        <SvgText x={plotLeft} y={CHART_HEIGHT} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium">{fmtDate(data[0].date)}</SvgText>
+        {data.length > 10 && (
+          <SvgText x={toX(midIdx)} y={CHART_HEIGHT} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">{fmtDate(data[midIdx].date)}</SvgText>
+        )}
+        <SvgText x={plotRight} y={CHART_HEIGHT} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">{fmtDate(data[data.length - 1].date)}</SvgText>
+        {/* Invisible tap circles at each data point */}
+        {data.map((d, i) => (
+          <Circle key={`tap${i}`} cx={toX(i)} cy={toY(d.value)} r={18} fill="transparent"
+            onPress={() => setCallout(prev =>
+              prev?.label1 === fmtDate(d.date) ? null :
+              { x: toX(i), y: toY(d.value), label1: fmtDate(d.date), label2: `${fmtFull(d.value)} kcal` }
+            )} />
+        ))}
+        {callout !== null && (() => {
+          const cPillW = Math.max(callout.label1.length, callout.label2.length) * 6 + 14;
+          const cPillH = 32;
+          const cPillX = Math.min(Math.max(callout.x - cPillW / 2, plotLeft), plotRight - cPillW);
+          const cPillY = Math.max(CHART_PAD_TOP - 2, callout.y - cPillH - 10);
+          return (
+            <>
+              <Rect x={cPillX} y={cPillY} width={cPillW} height={cPillH} fill={theme.bgCard} stroke={theme.borderCard} strokeWidth={0.5} rx={6} onPress={() => setCallout(null)} />
+              <SvgText x={cPillX + cPillW / 2} y={cPillY + 12} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">{callout.label1}</SvgText>
+              <SvgText x={cPillX + cPillW / 2} y={cPillY + 26} fill={theme.textPrimary} fontSize={10} fontFamily="DMSans_700Bold" textAnchor="middle">{callout.label2}</SvgText>
+            </>
+          );
+        })()}
+      </Svg>
+    </Animated.View>
+  );
+}
+
 function MacroBarChart({ data, theme, proteinColor, carbsColor, fatColor }: {
   data: { date: string; protein: number; carbs: number; fat: number }[],
   theme: any,
@@ -758,8 +989,8 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
           : <LineChart data={cardTrendData.water} color={gc ?? '#06b6d4'} unit=" oz" fmtY={v => `${Math.round(v)}`} gradientId={`wtr_${card.id}`} theme={theme} />;
       case 'netCalories':
         return ct === 'bar'
-          ? <GenericBarChart data={cardTrendData.netCal} color={gc ?? '#e06840'} unit=" kcal" fmtY={v => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${Math.round(v)}`} fmtFull={v => Math.round(v).toLocaleString()} theme={theme} />
-          : <LineChart data={cardTrendData.netCal} color={gc ?? '#e06840'} unit=" kcal" fmtY={v => Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${Math.round(v)}`} fmtFull={v => Math.round(v).toLocaleString()} gradientId={`ncl_${card.id}`} theme={theme} />;
+          ? <NetCalBarChart data={cardTrendData.netCal} fmtFull={v => Math.round(v).toLocaleString()} theme={theme} />
+          : <NetCalLineChart data={cardTrendData.netCal} gradientId={`ncl_${card.id}`} theme={theme} />;
       case 'sleepScore':
         return ct === 'bar'
           ? <GenericBarChart data={cardTrendData.sleepScore} color={gc ?? '#8b5cf6'} unit="" fmtY={v => `${Math.round(v)}`} theme={theme} />

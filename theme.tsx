@@ -74,8 +74,8 @@ export const ACCENT_PALETTES: Record<ThemeId, AccentOption[]> = {
     { id: 'orange',  label: 'Black',    color: '#281810', accentBlue: '#281810', accentBlueBg: 'rgba(40,24,16,0.10)',   accentBlueBorder: 'rgba(40,24,16,0.25)',   gradientStart: '#e6e1da' },
   ],
   blush: [
-    { id: 'rust',       label: 'Lipstick', color: '#cc1144', accentBlue: '#cc1144', accentBlueBg: 'rgba(204,17,68,0.12)',   accentBlueBorder: 'rgba(204,17,68,0.28)'   },
-    { id: 'default',    label: 'Rose',     color: '#d4607a', accentBlue: '#d4607a', accentBlueBg: 'rgba(212,96,122,0.12)',  accentBlueBorder: 'rgba(212,96,122,0.28)'  },
+    { id: 'default',    label: 'Lipstick', color: '#cc1144', accentBlue: '#cc1144', accentBlueBg: 'rgba(204,17,68,0.12)',   accentBlueBorder: 'rgba(204,17,68,0.28)'   },
+    { id: 'rust',       label: 'Rose',     color: '#d4607a', accentBlue: '#d4607a', accentBlueBg: 'rgba(212,96,122,0.12)',  accentBlueBorder: 'rgba(212,96,122,0.28)'  },
     { id: 'discipline', label: 'Amber',    color: '#c2621a', accentBlue: '#c2621a', accentBlueBg: 'rgba(194,98,26,0.12)',   accentBlueBorder: 'rgba(194,98,26,0.28)'   },
     { id: 'orange',     label: 'Yellow',   color: '#ffe600', accentBlue: '#ffe600', accentBlueBg: 'rgba(255,230,0,0.15)',   accentBlueBorder: 'rgba(255,230,0,0.35)',   buttonColor: '#8a6f00', buttonBg: 'rgba(138,111,0,0.15)', buttonBorder: 'rgba(138,111,0,0.35)' },
     { id: 'green',      label: 'Green',    color: '#2d6a4f', accentBlue: '#2d6a4f', accentBlueBg: 'rgba(45,106,79,0.12)',   accentBlueBorder: 'rgba(45,106,79,0.28)'   },
@@ -474,8 +474,8 @@ const blush: Theme = {
   name: 'Blush',
   paid: true,
 
-  bgPrimary:        '#f5c8d8',
-  bgCard:           'rgba(255,248,252,0.95)',
+  bgPrimary:        '#f9dae5',
+  bgCard:           'rgba(253,238,245,0.95)',
   bgCardVerse:      'rgba(255,252,245,0.92)',
   bgInput:          '#fce8ed',
   bgProgressTrack:  '#f8d8e0',
@@ -492,9 +492,9 @@ const blush: Theme = {
   borderInset:      'rgba(200,80,110,0.08)',
 
   textPrimary:      '#3a1a22',
-  textSecondary:    '#8a5060',
-  textMuted:        '#aa7080',
-  textDim:          '#cc99aa',
+  textSecondary:    '#6a3644',
+  textMuted:        '#834a5a',
+  textDim:          '#b07a8a',
   textPlaceholder:  '#ddbbcc',
   textWhite:        '#3a1a22',
 
@@ -538,8 +538,8 @@ const blush: Theme = {
   sheetHandle:      'rgba(200,80,110,0.18)',
   overlayBg:        'rgba(60,10,20,0.40)',
 
-  gradientStart:    '#e8a0bc',
-  gradientEnd:      '#f5c8d8',
+  gradientStart:    '#f0bdce',
+  gradientEnd:      '#f9dae5',
 };
 
 // ─── Theme Map ────────────────────────────────────────────────────────────────

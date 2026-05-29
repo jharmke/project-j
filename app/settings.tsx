@@ -839,7 +839,7 @@ export default function SettingsScreen() {
               const isActive = themeId === id;
               const previewBg: Record<string, string> = { dark: '#1a1a24', light: '#ffffff', slate: '#d8dde4', warm: '#6b5a48', blush: '#f5e8ec' };
               const previewText: Record<string, string> = { dark: '#e8e8f0', light: '#1a1a2e', slate: '#1c2533', warm: '#f0e8d8', blush: '#3a1a24' };
-              const previewAccent: Record<string, string> = { dark: '#3b82f6', light: '#2563eb', slate: '#4a7fa5', warm: '#f0a040', blush: '#d4607a' };
+              const previewAccent: Record<string, string> = { dark: '#3b82f6', light: '#2563eb', slate: '#4a7fa5', warm: '#f0a040', blush: '#cc1144' };
               return (
                 <TouchableOpacity
                   key={id}

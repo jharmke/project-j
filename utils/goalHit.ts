@@ -99,9 +99,11 @@ export function calorieColorTier(
   adjustedTarget: number,
   styleMode: string,
 ): 'good' | 'warn' | 'bad' | 'neutral' {
-  if (styleMode === 'Mindful') return 'neutral';
+  // Case-insensitive: index.tsx uses lowercase styleMode, stats.tsx capitalized.
+  const mode = (styleMode || '').toLowerCase();
+  if (mode === 'mindful') return 'neutral';
   if (result.hit) return 'good';
   const delta = Math.abs(consumed - adjustedTarget);
-  if (styleMode === 'Discipline') return delta <= 149 ? 'warn' : 'bad';
+  if (mode === 'discipline') return delta <= 149 ? 'warn' : 'bad';
   return delta <= 300 ? 'warn' : 'bad'; // Balanced
 }

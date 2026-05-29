@@ -27,6 +27,7 @@ import GratitudeStreakCard from '../../components/GratitudeStreakCard';
 import ReadingPlansCard from '../../components/ReadingPlansCard';
 import { StatsCard, CardPeriod, DATA_KEY_META, DEFAULT_STATS_CARDS } from '../../statsCardRegistry';
 import { TrendData, EMPTY_TREND_DATA, fetchTrendData } from '../../utils/statsData';
+import { evaluateCalorieGoalHit, calorieColorTier, paceTargetFromWeightGoal } from '../../utils/goalHit';
 import { StatsGraphCard } from '../../components/StatsGraphCard';
 import { StatsCardEditModal } from '../../components/StatsCardEditModal';
 import { saveStatsCards } from '../../statsCardRegistry';
@@ -815,11 +816,12 @@ export default function HomeScreen() {
   const [profileBmr,      setProfileBmr]      = useState(0);
   const [profileSex,      setProfileSex]      = useState<'male' | 'female' | null>(null);
   const [profileAge,      setProfileAge]      = useState<number | null>(null);
+  const nowMinutes = (() => {
+    const now = new Date(currentTime);
+    return now.getHours() * 60 + now.getMinutes();
+  })();
   const runningBmr = profileBmr > 0
-    ? Math.round((profileBmr / 1440) * (() => {
-        const now = new Date(currentTime);
-        return now.getHours() * 60 + now.getMinutes();
-      })())
+    ? Math.round((profileBmr / 1440) * nowMinutes)
     : 0;
 
   // You vs Yesterday state
@@ -907,16 +909,25 @@ export default function HomeScreen() {
   const displayedBurned = hkCalories;
   const calPct   = adjustedTarget > 0 ? (totalCals / adjustedTarget) * 100 : 0;
   const net = totalCals - displayedBurned - runningBmr;
-  const calDelta = Math.abs(totalCals - adjustedTarget);
-  const calColor = styleMode === 'mindful'
-    ? theme.textSecondary
-    : styleMode === 'discipline'
-      ? calDelta <= 50  ? theme.statusGood
-      : calDelta <= 149 ? theme.statusWarn
-      : theme.statusBad
-    : /* balanced */ calDelta <= 150 ? theme.statusGood
-      : calDelta <= 300 ? theme.statusWarn
-      : theme.statusBad;
+  // Shared goal-hit logic (Way 1 / Way 2). Green appears only on a real hit, so
+  // the home card can never contradict the streak/achievements. Non-hit days
+  // still split warn vs bad by the existing mode delta. See utils/goalHit.ts.
+  const calGoalResult = evaluateCalorieGoalHit({
+    consumed: totalCals,
+    dayData: { activeCalories, caloriesBurned },
+    dayBmr: profileBmr,
+    calTarget,
+    paceTarget: paceTargetFromWeightGoal(weightGoalPace),
+    burnAccuracyPct,
+    isToday: true,
+    minutesNow: nowMinutes,
+  });
+  const calTier = calorieColorTier(calGoalResult, totalCals, adjustedTarget, styleMode);
+  const calColor =
+    calTier === 'neutral' ? theme.textSecondary
+    : calTier === 'good'  ? theme.statusGood
+    : calTier === 'warn'  ? theme.statusWarn
+    : theme.statusBad;
   const todayProgram = PROGRAM[todayDay];
   const isLift   = todayProgram?.type === 'lift';
   const dayColor = isLift ? todayProgram.color : '#888888';

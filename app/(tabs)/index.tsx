@@ -27,7 +27,6 @@ import GratitudeStreakCard from '../../components/GratitudeStreakCard';
 import ReadingPlansCard from '../../components/ReadingPlansCard';
 import { StatsCard, CardPeriod, DATA_KEY_META, DEFAULT_STATS_CARDS } from '../../statsCardRegistry';
 import { TrendData, EMPTY_TREND_DATA, fetchTrendData } from '../../utils/statsData';
-import { evaluateCalorieGoalHit, calorieColorTier, paceTargetFromWeightGoal } from '../../utils/goalHit';
 import { StatsGraphCard } from '../../components/StatsGraphCard';
 import { StatsCardEditModal } from '../../components/StatsCardEditModal';
 import { saveStatsCards } from '../../statsCardRegistry';
@@ -909,25 +908,24 @@ export default function HomeScreen() {
   const displayedBurned = hkCalories;
   const calPct   = adjustedTarget > 0 ? (totalCals / adjustedTarget) * 100 : 0;
   const net = totalCals - displayedBurned - runningBmr;
-  // Shared goal-hit logic (Way 1 / Way 2). Green appears only on a real hit, so
-  // the home card can never contradict the streak/achievements. Non-hit days
-  // still split warn vs bad by the existing mode delta. See utils/goalHit.ts.
-  const calGoalResult = evaluateCalorieGoalHit({
-    consumed: totalCals,
-    dayData: { activeCalories, caloriesBurned },
-    dayBmr: profileBmr,
-    calTarget,
-    paceTarget: paceTargetFromWeightGoal(weightGoalPace),
-    burnAccuracyPct,
-    isToday: true,
-    minutesNow: nowMinutes,
-  });
-  const calTier = calorieColorTier(calGoalResult, totalCals, adjustedTarget, styleMode);
-  const calColor =
-    calTier === 'neutral' ? theme.textSecondary
-    : calTier === 'good'  ? theme.statusGood
-    : calTier === 'warn'  ? theme.statusWarn
-    : theme.statusBad;
+  // Today's live card uses intuitive proximity coloring (how close consumed is to
+  // the adjusted target), NOT the Way 1/Way 2 hit. Reason: today's net uses
+  // running BMR, so a weight-loss net is already a big deficit by midday and the
+  // hit rule would flash green before you've finished eating. The shared hit
+  // logic stays on completed-day surfaces (streak, achievements, At-a-Glance),
+  // and today is never in the streak so nothing contradicts. A smart time-aware
+  // color (green early when under is fine, flag a deep deficit late in the day)
+  // is the parked deep-deficit / late-day nudge feature. See roadmap.
+  const calDelta = Math.abs(totalCals - adjustedTarget);
+  const calColor = styleMode === 'mindful'
+    ? theme.textSecondary
+    : styleMode === 'discipline'
+      ? calDelta <= 50  ? theme.statusGood
+      : calDelta <= 149 ? theme.statusWarn
+      : theme.statusBad
+    : /* balanced */ calDelta <= 150 ? theme.statusGood
+      : calDelta <= 300 ? theme.statusWarn
+      : theme.statusBad;
   const todayProgram = PROGRAM[todayDay];
   const isLift   = todayProgram?.type === 'lift';
   const dayColor = isLift ? todayProgram.color : '#888888';

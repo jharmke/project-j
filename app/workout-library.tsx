@@ -927,14 +927,141 @@ function DayRow({ day, state, onChange, allTags, onAddTag, theme }: {
   );
 }
 
+// ── Wheel Picker ──────────────────────────────────────────────────────────────
+const WH = 36;
+const SETS_ITEMS = ['1','2','3','4','5','6','7','8','9','10'];
+const REPS_ITEMS = Array.from({ length: 30 }, (_, i) => String(i + 1));
+const REPS_HIGH_ITEMS = ['—', ...REPS_ITEMS];
+const REST_MIN_ITEMS = ['0','1','2','3','4','5','6','7','8','9','10'];
+const REST_SEC_ITEMS = ['00','05','10','15','20','25','30','35','40','45','50','55'];
+const DUR_HR_ITEMS = ['0','1','2','3','4','5','6','7','8','9','10'];
+const DUR_MIN_ITEMS = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
+const DUR_SEC_ITEMS = ['00','05','10','15','20','25','30','35','40','45','50','55'];
+
+function parseReps(val: string): { low: string; high: string } {
+  if (!val) return { low: '1', high: '—' };
+  const m = val.match(/^(\d+)\s*[–\-]\s*(\d+)$/);
+  if (m) return { low: m[1], high: m[2] };
+  const n = parseInt(val);
+  return { low: isNaN(n) ? '1' : String(n), high: '—' };
+}
+function formatReps(low: string, high: string): string {
+  return high === '—' ? low : `${low}–${high}`;
+}
+function parseRest(val: string): { min: string; sec: string } {
+  if (!val) return { min: '0', sec: '00' };
+  const mmss = val.match(/^(\d+):(\d{2})$/);
+  if (mmss) return { min: mmss[1], sec: REST_SEC_ITEMS.includes(mmss[2]) ? mmss[2] : '00' };
+  const sOnly = val.match(/^(\d+)s?$/);
+  if (sOnly) {
+    const total = parseInt(sOnly[1]);
+    const m = Math.floor(total / 60);
+    const s = Math.round((total % 60) / 5) * 5;
+    return { min: String(m), sec: s >= 60 ? '55' : String(s).padStart(2, '0') };
+  }
+  return { min: '0', sec: '00' };
+}
+function formatRest(min: string, sec: string): string {
+  if (min === '0' && sec === '00') return '';
+  return `${min}:${sec}`;
+}
+function parseDuration(val: string): { hr: string; min: string; sec: string } {
+  if (!val) return { hr: '0', min: '00', sec: '00' };
+  const hms = val.match(/^(\d+):(\d{2}):(\d{2})$/);
+  if (hms) return { hr: hms[1], min: hms[2], sec: hms[3] };
+  const mmss = val.match(/^(\d+):(\d{2})$/);
+  if (mmss) return { hr: '0', min: mmss[1].padStart(2, '0'), sec: mmss[2] };
+  return { hr: '0', min: '00', sec: '00' };
+}
+function formatDuration(hr: string, min: string, sec: string): string {
+  if (hr === '0' && min === '00' && sec === '00') return '';
+  const h = parseInt(hr);
+  if (h === 0) return `${parseInt(min)}:${sec}`;
+  return `${h}:${min}:${sec}`;
+}
+function displayRest(val: string): string {
+  if (!val) return '–';
+  const { min, sec } = parseRest(val);
+  if (min === '0' && sec === '00') return '–';
+  if (min === '0') return `${parseInt(sec)}s`;
+  if (sec === '00') return `${min}m`;
+  return `${min}:${sec}`;
+}
+function displayDuration(val: string | undefined): string {
+  if (!val) return '–';
+  const { hr, min, sec } = parseDuration(val);
+  if (hr === '0' && min === '00' && sec === '00') return '–';
+  const h = parseInt(hr);
+  const m = parseInt(min);
+  if (h === 0 && sec === '00') return `${m}m`;
+  if (h === 0) return `${m}:${sec}`;
+  return `${h}:${min}:${sec}`;
+}
+
+function WheelPicker({ items, value, onChange, theme, width }: {
+  items: string[]; value: string; onChange: (v: string) => void; theme: any; width: number;
+}) {
+  const ref = useRef<ScrollView>(null);
+  const initIdx = Math.max(0, items.indexOf(value));
+  const [displayIdx, setDisplayIdx] = useState(initIdx);
+  const mounted = useRef(false);
+
+  useEffect(() => {
+    ref.current?.scrollTo({ y: initIdx * WH, animated: false });
+  }, []);
+
+  useEffect(() => {
+    if (!mounted.current) { mounted.current = true; return; }
+    const newIdx = Math.max(0, items.indexOf(value));
+    if (newIdx !== displayIdx) {
+      setDisplayIdx(newIdx);
+      ref.current?.scrollTo({ y: newIdx * WH, animated: true });
+    }
+  }, [value]);
+
+  return (
+    <View style={{ width, height: WH * 3, overflow: 'hidden' }}>
+      <View pointerEvents="none" style={{
+        position: 'absolute', top: WH, left: 0, right: 0, height: WH,
+        borderTopWidth: 0.5, borderBottomWidth: 0.5, borderColor: theme.accentBlueRaw, zIndex: 1,
+      }} />
+      <ScrollView
+        ref={ref}
+        showsVerticalScrollIndicator={false}
+        snapToInterval={WH}
+        decelerationRate="fast"
+        contentContainerStyle={{ paddingVertical: WH }}
+        onMomentumScrollEnd={e => {
+          const i = Math.max(0, Math.min(Math.round(e.nativeEvent.contentOffset.y / WH), items.length - 1));
+          setDisplayIdx(i);
+          if (items[i] !== value) onChange(items[i]);
+        }}
+        nestedScrollEnabled
+      >
+        {items.map((item, i) => (
+          <View key={i} style={{ height: WH, alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{
+              fontSize: i === displayIdx ? 16 : 13,
+              fontFamily: i === displayIdx ? 'DMSans_600SemiBold' : 'DMSans_400Regular',
+              color: i === displayIdx ? theme.textPrimary : theme.textSecondary,
+              opacity: i === displayIdx ? 1 : Math.abs(i - displayIdx) === 1 ? 0.8 : 0.5,
+            }}>{item}</Text>
+          </View>
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
 function ProgramBuilderModal({ onClose, onSave, editingProgram }: {
   onClose: () => void;
   onSave: (p: CustomProgram) => void;
   editingProgram: CustomProgram | null;
 }) {
   const { theme } = useTheme();
-  const sheetY = useSharedValue(900);
-  const [kbHeight, setKbHeight] = useState(0);
+  const overlayAnim = useSharedValue(0);
+  const cardScale = useSharedValue(0.92);
+  const cardOpacity = useSharedValue(1);
   const [name, setName] = useState('');
   const [desc, setDesc] = useState('');
   const [days, setDays] = useState<Record<ProgramDayKey, BuilderDayState>>(defaultBuilderDays);
@@ -971,19 +1098,22 @@ function ProgramBuilderModal({ onClose, onSave, editingProgram }: {
       setName(''); setDesc(''); setDays(defaultBuilderDays());
     }
     loadTags();
-    sheetY.value = withSpring(0, { damping: 26, stiffness: 180, overshootClamping: true });
-    const show = Keyboard.addListener('keyboardWillShow', e => setKbHeight(e.endCoordinates.height));
-    const hide = Keyboard.addListener('keyboardWillHide', () => setKbHeight(0));
-    return () => { show.remove(); hide.remove(); };
+    overlayAnim.value = withTiming(1, { duration: 200 });
+    cardOpacity.value = 1;
+    cardScale.value = withSpring(1, { damping: 24, stiffness: 320, overshootClamping: true });
   }, []);
 
   const close = () => {
     Keyboard.dismiss();
-    sheetY.value = withSpring(900, { damping: 26, stiffness: 180, overshootClamping: true });
-    setTimeout(onClose, 280);
+    overlayAnim.value = withTiming(0, { duration: 150 });
+    cardScale.value = withTiming(0.92, { duration: 150 });
+    cardOpacity.value = withTiming(0, { duration: 140 }, (finished) => {
+      if (finished) runOnJS(onClose)();
+    });
   };
 
-  const animStyle = useAnimatedStyle(() => ({ transform: [{ translateY: sheetY.value }] }));
+  const overlayStyle = useAnimatedStyle(() => ({ opacity: overlayAnim.value }));
+  const cardStyle = useAnimatedStyle(() => ({ transform: [{ scale: cardScale.value }], opacity: cardOpacity.value }));
   const canSave = name.trim().length > 0;
 
   const openTagCreator = (day: ProgramDayKey) => {
@@ -1042,99 +1172,97 @@ function ProgramBuilderModal({ onClose, onSave, editingProgram }: {
   };
 
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+    <Modal transparent animationType="none" visible onRequestClose={close}>
+      <ToastRenderer />
+      <Reanimated.View style={[StyleSheet.absoluteFill, { backgroundColor: theme.overlayBg }, overlayStyle]} pointerEvents="none" />
       <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={close} />
-      <Reanimated.View style={[{
-        position: 'absolute', left: 0, right: 0, bottom: 0, height: '91%',
-        backgroundColor: theme.bgSheet, borderTopLeftRadius: 20, borderTopRightRadius: 20,
-        borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw,
-        shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.25, shadowRadius: 16,
-        paddingBottom: kbHeight,
-      }, animStyle]}>
-        <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); close(); }} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 8 }}>
-          <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
-        </TouchableOpacity>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
-          <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw }}>
-            {editingProgram ? 'EDIT PROGRAM' : 'CREATE PROGRAM'}
-          </Text>
-          <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); close(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Ionicons name="close" size={20} color={theme.textMuted} />
-          </TouchableOpacity>
-        </View>
-        <ToastRenderer />
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 48 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 6 }}>
-            PROGRAM NAME <Text style={{ color: theme.accentRed }}>*</Text>
-          </Text>
-          <TextInput
-            style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 15, fontFamily: 'DMSans_400Regular', marginBottom: 16 }}
-            placeholder="e.g. My PPL Program"
-            placeholderTextColor={theme.textPlaceholder}
-            value={name}
-            onChangeText={setName}
-            autoCapitalize="words"
-          />
-          <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 6 }}>
-            DESCRIPTION <Text style={{ color: theme.textDim, fontSize: 9 }}>(optional)</Text>
-          </Text>
-          <TextInput
-            ref={descRef}
-            style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 13, fontFamily: 'DMSans_400Regular', marginBottom: 24, height: 64, textAlignVertical: 'top' }}
-            placeholder="Briefly describe this program..."
-            placeholderTextColor={theme.textPlaceholder}
-            value={desc}
-            onChangeText={setDesc}
-            multiline
-            onBlur={() => descRef.current?.setNativeProps({ selection: { start: 0, end: 0 } })}
-          />
-          <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 12 }}>WEEKLY SCHEDULE</Text>
-          {PROGRAM_DAYS.map(d => (
-            <DayRow key={d} day={d} state={days[d]} allTags={allTags} onAddTag={openTagCreator} onChange={updated => setDays(prev => ({ ...prev, [d]: updated }))} theme={theme} />
-          ))}
-          <TouchableOpacity
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); handleSave(); }}
-            disabled={!canSave}
-            style={{ marginTop: 8, backgroundColor: theme.accentBlue, borderRadius: 10, paddingVertical: 14, alignItems: 'center', opacity: canSave ? 1 : 0.4 }}>
-            <Text style={{ color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 18, letterSpacing: 2 }}>
-              {editingProgram ? 'SAVE PROGRAM' : 'CREATE PROGRAM'}
-            </Text>
-          </TouchableOpacity>
-        </ScrollView>
-
-        {showTagCreator && (
-          <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-            <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setShowTagCreator(false)} />
-            <View style={{ position: 'absolute', top: '28%', left: 20, right: 20, backgroundColor: theme.bgSheet, borderRadius: 16, padding: 20, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 16 }}>
-              <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw, marginBottom: 14 }}>NEW TAG</Text>
-              <TextInput
-                style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 14, fontFamily: 'DMSans_400Regular', marginBottom: 14 }}
-                placeholder="Tag name"
-                placeholderTextColor={theme.textPlaceholder}
-                value={newTagName}
-                onChangeText={setNewTagName}
-                autoCapitalize="words"
-                autoFocus
-              />
-              <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 10 }}>COLOR</Text>
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
-                {TAG_COLOR_PALETTE.map(c => (
-                  <TouchableOpacity key={c} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setNewTagColor(c); }} style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: c, borderWidth: newTagColor === c ? 2.5 : 0, borderColor: '#ffffff' }} />
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={StyleSheet.absoluteFill} pointerEvents="box-none">
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }} pointerEvents="box-none">
+          <Reanimated.View pointerEvents="box-none" style={[{ width: '100%', maxHeight: '70%' }, cardStyle]}>
+            <View pointerEvents="auto" style={{ backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12 }}>
+              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); close(); }} style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }}>
+                <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
+              </TouchableOpacity>
+              <View style={{ paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
+                <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw }}>
+                  {editingProgram ? 'EDIT PROGRAM' : 'CREATE PROGRAM'}
+                </Text>
+              </View>
+              <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 48 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+                <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 6 }}>
+                  PROGRAM NAME <Text style={{ color: theme.accentRed }}>*</Text>
+                </Text>
+                <TextInput
+                  style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 15, fontFamily: 'DMSans_400Regular', marginBottom: 16 }}
+                  placeholder="e.g. My PPL Program"
+                  placeholderTextColor={theme.textPlaceholder}
+                  value={name}
+                  onChangeText={setName}
+                  autoCapitalize="words"
+                />
+                <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 6 }}>
+                  DESCRIPTION <Text style={{ color: theme.textDim, fontSize: 9 }}>(optional)</Text>
+                </Text>
+                <TextInput
+                  ref={descRef}
+                  style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 13, fontFamily: 'DMSans_400Regular', marginBottom: 24, height: 64, textAlignVertical: 'top' }}
+                  placeholder="Briefly describe this program..."
+                  placeholderTextColor={theme.textPlaceholder}
+                  value={desc}
+                  onChangeText={setDesc}
+                  multiline
+                  onBlur={() => descRef.current?.setNativeProps({ selection: { start: 0, end: 0 } })}
+                />
+                <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 12 }}>WEEKLY SCHEDULE</Text>
+                {PROGRAM_DAYS.map(d => (
+                  <DayRow key={d} day={d} state={days[d]} allTags={allTags} onAddTag={openTagCreator} onChange={updated => setDays(prev => ({ ...prev, [d]: updated }))} theme={theme} />
                 ))}
-              </View>
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowTagCreator(false); }} style={{ flex: 1, padding: 12, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, alignItems: 'center' }}>
-                  <Text style={{ color: theme.textMuted, fontFamily: 'DMSans_500Medium', fontSize: 14 }}>Cancel</Text>
+                <TouchableOpacity
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); handleSave(); }}
+                  disabled={!canSave}
+                  style={{ marginTop: 8, backgroundColor: theme.accentBlue, borderRadius: 10, paddingVertical: 14, alignItems: 'center', opacity: canSave ? 1 : 0.4 }}>
+                  <Text style={{ color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 18, letterSpacing: 2 }}>
+                    {editingProgram ? 'SAVE PROGRAM' : 'CREATE PROGRAM'}
+                  </Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); handleCreateTag(); }} disabled={!newTagName.trim()} style={{ flex: 1, padding: 12, backgroundColor: theme.accentBlue, borderRadius: 8, alignItems: 'center', opacity: newTagName.trim() ? 1 : 0.4 }}>
-                  <Text style={{ color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 1 }}>ADD TAG</Text>
-                </TouchableOpacity>
-              </View>
+              </ScrollView>
+            </View>
+          </Reanimated.View>
+        </View>
+      </KeyboardAvoidingView>
+
+      {showTagCreator && (
+        <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setShowTagCreator(false)} />
+          <View style={{ position: 'absolute', top: '28%', left: 20, right: 20, backgroundColor: theme.bgSheet, borderRadius: 16, padding: 20, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.35, shadowRadius: 16 }}>
+            <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw, marginBottom: 14 }}>NEW TAG</Text>
+            <TextInput
+              style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 14, fontFamily: 'DMSans_400Regular', marginBottom: 14 }}
+              placeholder="Tag name"
+              placeholderTextColor={theme.textPlaceholder}
+              value={newTagName}
+              onChangeText={setNewTagName}
+              autoCapitalize="words"
+              autoFocus
+            />
+            <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 10 }}>COLOR</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+              {TAG_COLOR_PALETTE.map(c => (
+                <TouchableOpacity key={c} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setNewTagColor(c); }} style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: c, borderWidth: newTagColor === c ? 2.5 : 0, borderColor: '#ffffff' }} />
+              ))}
+            </View>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowTagCreator(false); }} style={{ flex: 1, padding: 12, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, alignItems: 'center' }}>
+                <Text style={{ color: theme.textMuted, fontFamily: 'DMSans_500Medium', fontSize: 14 }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); handleCreateTag(); }} disabled={!newTagName.trim()} style={{ flex: 1, padding: 12, backgroundColor: theme.accentBlue, borderRadius: 8, alignItems: 'center', opacity: newTagName.trim() ? 1 : 0.4 }}>
+                <Text style={{ color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 16, letterSpacing: 1 }}>ADD TAG</Text>
+              </TouchableOpacity>
             </View>
           </View>
-        )}
-      </Reanimated.View>
-    </View>
+        </View>
+      )}
+    </Modal>
   );
 }
 
@@ -1162,8 +1290,9 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
   const { theme } = useTheme();
   const overlayAnim = useSharedValue(0);
   const cardScale = useSharedValue(0.92);
+  const cardOpacity = useSharedValue(1);
   const overlayAnimStyle = useAnimatedStyle(() => ({ opacity: overlayAnim.value }));
-  const cardScaleStyle = useAnimatedStyle(() => ({ transform: [{ scale: cardScale.value }] }));
+  const cardScaleStyle = useAnimatedStyle(() => ({ transform: [{ scale: cardScale.value }], opacity: cardOpacity.value }));
 
   const [name, setName] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
@@ -1179,6 +1308,13 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
   const fillPickerScale = useSharedValue(0.92);
   const fillPickerOverlayStyle = useAnimatedStyle(() => ({ opacity: fillPickerAnim.value }));
   const fillPickerCardStyle = useAnimatedStyle(() => ({ transform: [{ scale: fillPickerScale.value }] }));
+  const [showExPicker, setShowExPicker] = useState(false);
+  const [exPickerTarget, setExPickerTarget] = useState<{ exId: string; field: 'sets'|'reps'|'rest'|'duration' } | null>(null);
+  const exPickerOverlay = useSharedValue(0);
+  const exPickerCard = useSharedValue(0.92);
+  const exPickerOpacity = useSharedValue(1);
+  const exPickerOverlayStyle = useAnimatedStyle(() => ({ opacity: exPickerOverlay.value }));
+  const exPickerCardStyle = useAnimatedStyle(() => ({ transform: [{ scale: exPickerCard.value }], opacity: exPickerOpacity.value }));
 
   const updateExercise = (id: string, field: keyof Exercise, value: string) => {
     setExercises(prev => prev.map(e => e.id === id ? { ...e, [field]: value } : e));
@@ -1194,13 +1330,15 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
       setStarred(editingRoutine.starred);
     }
     overlayAnim.value = withTiming(1, { duration: 200 });
+    cardOpacity.value = 1;
     cardScale.value = withSpring(1, { damping: 24, stiffness: 320, overshootClamping: true });
   }, []);
 
   const close = () => {
     Keyboard.dismiss();
     overlayAnim.value = withTiming(0, { duration: 150 });
-    cardScale.value = withTiming(0.92, { duration: 150 }, (finished) => {
+    cardScale.value = withTiming(0.92, { duration: 150 });
+    cardOpacity.value = withTiming(0, { duration: 140 }, (finished) => {
       if (finished) runOnJS(onClose)();
     });
   };
@@ -1275,6 +1413,24 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
     });
   };
 
+  const openExPicker = (exId: string, field: 'sets'|'reps'|'rest'|'duration') => {
+    exPickerOverlay.value = 0;
+    exPickerCard.value = 0.92;
+    exPickerOpacity.value = 1;
+    setExPickerTarget({ exId, field });
+    setShowExPicker(true);
+    exPickerOverlay.value = withTiming(1, { duration: 180 });
+    exPickerCard.value = withSpring(1, { damping: 24, stiffness: 320, overshootClamping: true });
+  };
+
+  const closeExPicker = () => {
+    exPickerOverlay.value = withTiming(0, { duration: 140 });
+    exPickerCard.value = withTiming(0.92, { duration: 140 });
+    exPickerOpacity.value = withTiming(0, { duration: 130 }, (finished) => {
+      if (finished) runOnJS(setShowExPicker)(false);
+    });
+  };
+
   const applyPreset = (preset: Routine) => {
     const newExercises: Exercise[] = preset.exercises.map(ex => ({
       ...ex,
@@ -1295,15 +1451,15 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
         style={StyleSheet.absoluteFill}
         pointerEvents="box-none">
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }} pointerEvents="box-none">
-          <Reanimated.View pointerEvents="box-none" style={[{ width: '100%', maxHeight: '92%' }, cardScaleStyle]}>
+          <Reanimated.View pointerEvents="box-none" style={[{ width: '100%', maxHeight: '70%' }, cardScaleStyle]}>
             <View pointerEvents="auto" style={{ backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
+              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); close(); }} style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }}>
+                <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
+              </TouchableOpacity>
+              <View style={{ paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
                 <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw }}>
                   {editingRoutine ? 'EDIT ROUTINE' : 'CREATE ROUTINE'}
                 </Text>
-                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); close(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <Ionicons name="close" size={20} color={theme.textMuted} />
-                </TouchableOpacity>
               </View>
 
               <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20, paddingBottom: 32 }}>
@@ -1420,50 +1576,42 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
                           {ex.isCardio ? 'CARDIO' : 'LIFT'}
                         </Text>
                       </View>
-                      <Text style={{ flex: 1, color: theme.textPrimary, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>{ex.name}</Text>
+                      <Text style={{ flex: 1, color: theme.textSecondary, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>{ex.name}</Text>
                       <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); removeExercise(ex.id); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
                         <Ionicons name="trash-outline" size={16} color={theme.accentRed} />
                       </TouchableOpacity>
                     </View>
                     {!ex.isCardio ? (
                       <View style={{ flexDirection: 'row', gap: 6 }}>
-                        {([
-                          { label: 'SETS', field: 'sets' as keyof Exercise, kb: 'numeric' as any },
-                          { label: 'REPS', field: 'reps' as keyof Exercise, kb: 'numeric' as any },
-                          { label: 'REST', field: 'rest' as keyof Exercise, kb: 'numeric' as any },
-                        ]).map(({ label, field, kb }) => (
-                          <View key={String(field)} style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 8, letterSpacing: 2, color: theme.textDim, fontFamily: 'DMSans_700Bold', marginBottom: 3, textTransform: 'uppercase' }}>{label}</Text>
-                            <TextInput
-                              style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, color: theme.textPrimary, paddingHorizontal: 8, paddingVertical: 6, fontSize: 13, fontFamily: 'DMSans_400Regular', textAlign: 'center' }}
-                              placeholder="--"
-                              placeholderTextColor={theme.textPlaceholder}
-                              value={(ex[field] as string) || ''}
-                              onChangeText={v => updateExercise(ex.id, field, v)}
-                              keyboardType={kb}
-                            />
-                          </View>
+                        {(['sets','reps','rest'] as const).map(field => (
+                          <TouchableOpacity key={field} onPress={() => openExPicker(ex.id, field)}
+                            style={{ flex: field === 'sets' ? 1 : 1.4, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, paddingVertical: 8, alignItems: 'center' }}>
+                            <Text style={{ fontSize: 8, letterSpacing: 2, color: theme.textDim, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 3 }}>{field.toUpperCase()}</Text>
+                            <Text style={{ color: (field === 'sets' ? ex.sets : field === 'reps' ? ex.reps : ex.rest) ? theme.textSecondary : theme.textPlaceholder, fontSize: 14, fontFamily: 'DMSans_600SemiBold' }}>
+                              {field === 'sets' ? (ex.sets || '–') : field === 'reps' ? (ex.reps || '–') : displayRest(ex.rest)}
+                            </Text>
+                          </TouchableOpacity>
                         ))}
                       </View>
                     ) : (
                       <>
+                        <TouchableOpacity onPress={() => openExPicker(ex.id, 'duration')}
+                          style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, paddingVertical: 8, alignItems: 'center', marginBottom: 6 }}>
+                          <Text style={{ fontSize: 8, letterSpacing: 2, color: theme.textDim, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 3 }}>DURATION</Text>
+                          <Text style={{ color: ex.duration ? theme.textSecondary : theme.textPlaceholder, fontSize: 14, fontFamily: 'DMSans_600SemiBold' }}>{displayDuration(ex.duration)}</Text>
+                        </TouchableOpacity>
                         <View style={{ flexDirection: 'row', gap: 6, marginBottom: 6 }}>
-                          {([
-                            { label: 'DURATION', field: 'duration' as keyof Exercise, kb: 'default' as any, dec: false },
-                            { label: 'DISTANCE', field: 'distance' as keyof Exercise, kb: 'decimal-pad' as any, dec: true },
-                          ]).map(({ label, field, kb, dec }) => (
-                            <View key={String(field)} style={{ flex: 1 }}>
-                              <Text style={{ fontSize: 8, letterSpacing: 2, color: theme.textDim, fontFamily: 'DMSans_700Bold', marginBottom: 3, textTransform: 'uppercase' }}>{label}</Text>
-                              <TextInput
-                                style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, color: theme.textPrimary, paddingHorizontal: 8, paddingVertical: 6, fontSize: 13, fontFamily: 'DMSans_400Regular', textAlign: 'center' }}
-                                placeholder="--"
-                                placeholderTextColor={theme.textPlaceholder}
-                                value={(ex[field] as string) || ''}
-                                onChangeText={v => updateExercise(ex.id, field, dec ? filterDecimal(v) : v)}
-                                keyboardType={kb}
-                              />
-                            </View>
-                          ))}
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ fontSize: 8, letterSpacing: 2, color: theme.textDim, fontFamily: 'DMSans_700Bold', marginBottom: 3, textTransform: 'uppercase' }}>DISTANCE</Text>
+                            <TextInput
+                              style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, color: theme.textPrimary, paddingHorizontal: 8, paddingVertical: 6, fontSize: 13, fontFamily: 'DMSans_400Regular', textAlign: 'center' }}
+                              placeholder="--"
+                              placeholderTextColor={theme.textPlaceholder}
+                              value={ex.distance || ''}
+                              onChangeText={v => updateExercise(ex.id, 'distance', filterDecimal(v))}
+                              keyboardType="decimal-pad"
+                            />
+                          </View>
                         </View>
                         <View style={{ flexDirection: 'row', gap: 6 }}>
                           {([
@@ -1585,7 +1733,7 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
                       }}
                         style={{ backgroundColor: theme.bgInset, borderRadius: 10, padding: 14, marginBottom: idx < fillPresets.length - 1 ? 10 : 0, borderWidth: 0.5, borderColor: theme.borderCard }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                          <Text style={{ color: theme.textPrimary, fontSize: 14, fontFamily: 'DMSans_600SemiBold', flex: 1 }}>{preset.name}</Text>
+                          <Text style={{ color: theme.textSecondary, fontSize: 14, fontFamily: 'DMSans_600SemiBold', flex: 1 }}>{preset.name}</Text>
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                             <Text style={{ color: theme.textMuted, fontSize: 11, fontFamily: 'DMSans_500Medium' }}>
                               {preset.exercises.length} exercise{preset.exercises.length !== 1 ? 's' : ''}
@@ -1605,6 +1753,87 @@ function RoutineBuilderModal({ onClose, onSave, editingRoutine, library, allTags
           </View>
         </Modal>
       )}
+
+      {showExPicker && exPickerTarget && (() => {
+        const targetEx = exercises.find(e => e.id === exPickerTarget.exId);
+        if (!targetEx) return null;
+        const field = exPickerTarget.field;
+        const rp = parseReps(targetEx.reps);
+        const rt = parseRest(targetEx.rest);
+        const dur = parseDuration(targetEx.duration || '');
+        const labels: Record<string, string> = { sets: 'SETS', reps: 'REPS', rest: 'REST', duration: 'DURATION' };
+        const repsHighItems = ['—', ...Array.from({ length: 30 - parseInt(rp.low) }, (_, i) => String(i + parseInt(rp.low) + 1))];
+        return (
+          <Modal transparent animationType="none" visible onRequestClose={closeExPicker}>
+            <Reanimated.View style={[StyleSheet.absoluteFill, { backgroundColor: theme.overlayBg }, exPickerOverlayStyle]} pointerEvents="none" />
+            <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeExPicker} />
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 40 }} pointerEvents="box-none">
+              <Reanimated.View pointerEvents="box-none" style={[{ width: '100%' }, exPickerCardStyle]}>
+                <View pointerEvents="auto" style={{ backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, padding: 20 }}>
+                  <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', textAlign: 'center', marginBottom: 12 }}>{labels[field]}</Text>
+
+                  {field === 'sets' && (
+                    <View style={{ alignItems: 'center' }}>
+                      <WheelPicker items={SETS_ITEMS} value={targetEx.sets || '1'} onChange={v => updateExercise(targetEx.id, 'sets', v)} theme={theme} width={80} />
+                    </View>
+                  )}
+
+                  {field === 'reps' && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                      <WheelPicker items={REPS_ITEMS} value={rp.low} onChange={v => {
+                        const newHigh = rp.high !== '—' && parseInt(rp.high) <= parseInt(v) ? '—' : rp.high;
+                        updateExercise(targetEx.id, 'reps', formatReps(v, newHigh));
+                      }} theme={theme} width={72} />
+                      <Text style={{ color: theme.textDim, fontSize: 20, marginHorizontal: 14 }}>–</Text>
+                      <WheelPicker items={repsHighItems} value={repsHighItems.includes(rp.high) ? rp.high : '—'} onChange={v => {
+                        updateExercise(targetEx.id, 'reps', formatReps(rp.low, v));
+                      }} theme={theme} width={72} />
+                    </View>
+                  )}
+
+                  {field === 'rest' && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                      <View style={{ alignItems: 'center' }}>
+                        <WheelPicker items={REST_MIN_ITEMS} value={rt.min} onChange={v => updateExercise(targetEx.id, 'rest', formatRest(v, rt.sec))} theme={theme} width={72} />
+                        <Text style={{ color: theme.textDim, fontSize: 10, fontFamily: 'DMSans_500Medium', marginTop: 4 }}>min</Text>
+                      </View>
+                      <Text style={{ color: theme.textDim, fontSize: 20, marginHorizontal: 14, marginBottom: 18 }}>:</Text>
+                      <View style={{ alignItems: 'center' }}>
+                        <WheelPicker items={REST_SEC_ITEMS} value={rt.sec} onChange={v => updateExercise(targetEx.id, 'rest', formatRest(rt.min, v))} theme={theme} width={72} />
+                        <Text style={{ color: theme.textDim, fontSize: 10, fontFamily: 'DMSans_500Medium', marginTop: 4 }}>sec</Text>
+                      </View>
+                    </View>
+                  )}
+
+                  {field === 'duration' && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                      <View style={{ alignItems: 'center' }}>
+                        <WheelPicker items={DUR_HR_ITEMS} value={dur.hr} onChange={v => updateExercise(targetEx.id, 'duration', formatDuration(v, dur.min, dur.sec))} theme={theme} width={60} />
+                        <Text style={{ color: theme.textDim, fontSize: 10, fontFamily: 'DMSans_500Medium', marginTop: 4 }}>hr</Text>
+                      </View>
+                      <View style={{ width: 16 }} />
+                      <View style={{ alignItems: 'center' }}>
+                        <WheelPicker items={DUR_MIN_ITEMS} value={dur.min} onChange={v => updateExercise(targetEx.id, 'duration', formatDuration(dur.hr, v, dur.sec))} theme={theme} width={60} />
+                        <Text style={{ color: theme.textDim, fontSize: 10, fontFamily: 'DMSans_500Medium', marginTop: 4 }}>min</Text>
+                      </View>
+                      <View style={{ width: 16 }} />
+                      <View style={{ alignItems: 'center' }}>
+                        <WheelPicker items={DUR_SEC_ITEMS} value={dur.sec} onChange={v => updateExercise(targetEx.id, 'duration', formatDuration(dur.hr, dur.min, v))} theme={theme} width={60} />
+                        <Text style={{ color: theme.textDim, fontSize: 10, fontFamily: 'DMSans_500Medium', marginTop: 4 }}>sec</Text>
+                      </View>
+                    </View>
+                  )}
+
+                  <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); closeExPicker(); }}
+                    style={{ marginTop: 16, backgroundColor: theme.accentBlue, borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}>
+                    <Text style={{ color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 18, letterSpacing: 2 }}>DONE</Text>
+                  </TouchableOpacity>
+                </View>
+              </Reanimated.View>
+            </View>
+          </Modal>
+        );
+      })()}
     </Modal>
   );
 }
@@ -1677,8 +1906,9 @@ export default function WorkoutLibraryScreen() {
 
   const addOverlay = useSharedValue(0);
   const addScale = useSharedValue(0.92);
+  const addCardOpacity = useSharedValue(1);
   const addOverlayStyle = useAnimatedStyle(() => ({ opacity: addOverlay.value }));
-  const addCardAnimStyle = useAnimatedStyle(() => ({ transform: [{ scale: addScale.value }] }));
+  const addCardAnimStyle = useAnimatedStyle(() => ({ transform: [{ scale: addScale.value }], opacity: addCardOpacity.value }));
   const detailOverlay = useSharedValue(0);
   const detailCardOpacity = useSharedValue(1);
   const detailCardScale = useSharedValue(0.92);
@@ -2139,6 +2369,7 @@ export default function WorkoutLibraryScreen() {
   const openAddModal = (ex: LibraryExercise | null = null) => {
     addOverlay.value = 0;
     addScale.value = 0.92;
+    addCardOpacity.value = 1;
     if (ex) { setEditingEx(ex); setForm({ ...ex }); }
     else { setEditingEx(null); setForm({ type: 'lift', name: '', defaultSets: '', defaultReps: '', defaultRest: '', note: '' }); }
     setShowAddModal(true);
@@ -2149,7 +2380,8 @@ export default function WorkoutLibraryScreen() {
   const closeAddModal = () => {
     Keyboard.dismiss();
     addOverlay.value = withTiming(0, { duration: 140 });
-    addScale.value = withTiming(0.92, { duration: 140 }, (finished) => {
+    addScale.value = withTiming(0.92, { duration: 140 });
+    addCardOpacity.value = withTiming(0, { duration: 130 }, (finished) => {
       if (finished) runOnJS(setShowAddModal)(false);
     });
   };
@@ -2331,7 +2563,7 @@ export default function WorkoutLibraryScreen() {
           ListEmptyComponent={
             <View style={{ alignItems: 'center', paddingVertical: 60 }}>
               <Ionicons name="barbell-outline" size={40} color={theme.textDim} />
-              <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'DMSans_600SemiBold', marginTop: 12 }}>
+              <Text style={{ color: theme.textSecondary, fontSize: 16, fontFamily: 'DMSans_600SemiBold', marginTop: 12 }}>
                 {activeTab === 'favorites' ? 'No favorites yet' : 'No exercises found'}
               </Text>
               <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular', marginTop: 6, textAlign: 'center', paddingHorizontal: 32 }}>
@@ -2353,7 +2585,7 @@ export default function WorkoutLibraryScreen() {
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.bgInset, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 12, marginHorizontal: 12, marginBottom: 16, borderWidth: 0.5, borderColor: theme.accentBlueBorder }}>
               <View>
                 <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 2 }}>ACTIVE PROGRAM</Text>
-                <Text style={{ fontSize: 15, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold' }}>{activeProgramName}</Text>
+                <Text style={{ fontSize: 15, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' }}>{activeProgramName}</Text>
               </View>
               <TouchableOpacity
                 onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleClearProgram(); }}
@@ -2365,7 +2597,7 @@ export default function WorkoutLibraryScreen() {
           ListEmptyComponent={
             <View style={{ alignItems: 'center', paddingVertical: 60, paddingHorizontal: 32 }}>
               <Ionicons name="barbell-outline" size={40} color={theme.textDim} />
-              <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'DMSans_600SemiBold', marginTop: 12 }}>No programs yet</Text>
+              <Text style={{ color: theme.textSecondary, fontSize: 16, fontFamily: 'DMSans_600SemiBold', marginTop: 12 }}>No programs yet</Text>
               <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular', marginTop: 6, textAlign: 'center' }}>Tap + to create your first program.</Text>
             </View>
           }
@@ -2373,7 +2605,7 @@ export default function WorkoutLibraryScreen() {
             <ScaleDecorator>
               <View style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderRadius: 12, padding: 16, marginHorizontal: 12, marginBottom: 12, opacity: isActive ? 0.95 : 1, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'DMSans_700Bold', flex: 1, marginRight: 8 }}>{program.name}</Text>
+                  <Text style={{ color: theme.textSecondary, fontSize: 16, fontFamily: 'DMSans_700Bold', flex: 1, marginRight: 8 }}>{program.name}</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                     <TouchableOpacity
                       onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setEditingProgram(program); setShowBuilder(true); }}
@@ -2448,80 +2680,66 @@ export default function WorkoutLibraryScreen() {
               {getFilteredRoutines(myRoutines).length === 0 ? (
                 <View style={{ alignItems: 'center', paddingVertical: 32, paddingHorizontal: 32 }}>
                   <Ionicons name="repeat-outline" size={36} color={theme.textDim} />
-                  <Text style={{ color: theme.textPrimary, fontSize: 15, fontFamily: 'DMSans_600SemiBold', marginTop: 12 }}>No custom routines yet</Text>
+                  <Text style={{ color: theme.textSecondary, fontSize: 15, fontFamily: 'DMSans_600SemiBold', marginTop: 12 }}>No custom routines yet</Text>
                   <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular', marginTop: 6, textAlign: 'center', lineHeight: 20 }}>
                     Tap + to build your own, or duplicate a preset below.
                   </Text>
                 </View>
               ) : (
-                <DraggableFlatList
-                  data={getFilteredRoutines(myRoutines)}
-                  keyExtractor={r => r.id}
-                  scrollEnabled={false}
-                  onDragEnd={({ data }) => { if (!query.trim() && sortOption === 'az') saveMyRoutines(data); }}
-                  renderItem={({ item: routine, drag, isActive }: RenderItemParams<Routine>) => (
-                    <ScaleDecorator>
-                      <View style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderRadius: 12, padding: 16, marginHorizontal: 12, marginBottom: 12, opacity: isActive ? 0.95 : 1, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
-                          <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'DMSans_700Bold', flex: 1, marginRight: 8 }}>{routine.name}</Text>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); saveMyRoutines(myRoutines.map(r => r.id === routine.id ? { ...r, starred: !r.starred } : r)); }}
-                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
-                              <Ionicons name={routine.starred ? 'star' : 'star-outline'} size={16} color={routine.starred ? theme.accentAmber : theme.textDim} />
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setEditingRoutine(routine); setShowRoutineBuilder(true); }}
-                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
-                              <Ionicons name="pencil" size={15} color={theme.textMuted} />
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleDeleteRoutine(routine); }}
-                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
-                              <Ionicons name="trash-outline" size={15} color={theme.accentRed} />
-                            </TouchableOpacity>
-                            <TouchableOpacity onLongPress={drag} delayLongPress={150}
-                              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
-                              <Ionicons name="reorder-three" size={18} color={theme.textDim} />
-                            </TouchableOpacity>
-                          </View>
+                <View>
+                  {getFilteredRoutines(myRoutines).map((routine) => (
+                    <View key={routine.id} style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderRadius: 12, padding: 16, marginHorizontal: 12, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
+                        <Text style={{ color: theme.textSecondary, fontSize: 16, fontFamily: 'DMSans_700Bold', flex: 1, marginRight: 8 }}>{routine.name}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                          <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setEditingRoutine(routine); setShowRoutineBuilder(true); }}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
+                            <Ionicons name="pencil" size={15} color={theme.textMuted} />
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleDeleteRoutine(routine); }}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
+                            <Ionicons name="trash-outline" size={15} color={theme.accentRed} />
+                          </TouchableOpacity>
                         </View>
-                        <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 6 }}>
-                          {routine.exercises.length} EXERCISE{routine.exercises.length !== 1 ? 'S' : ''}
-                        </Text>
-                        {routine.exercises.length > 0 && (
-                          <View style={{ marginBottom: routine.tags.length > 0 ? 10 : 14, borderRadius: 6, overflow: 'hidden', borderWidth: 0.5, borderColor: theme.borderCard }}>
-                            {routine.exercises.map((ex, idx) => (
-                              <View key={ex.id} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 7, backgroundColor: idx % 2 === 0 ? theme.bgInset : 'transparent', borderTopWidth: idx > 0 ? 0.5 : 0, borderTopColor: theme.borderCard }}>
-                                <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: ex.isCardio ? theme.accentAmber : theme.accentBlue, marginRight: 8, flexShrink: 0 }} />
-                                <Text style={{ color: theme.textSecondary, fontSize: 12, fontFamily: 'DMSans_400Regular', flex: 1 }}>{ex.name}</Text>
-                                {(ex.sets || ex.reps) ? (
-                                  <Text style={{ color: theme.textDim, fontSize: 10, fontFamily: 'DMSans_500Medium', marginLeft: 8 }}>
-                                    {[ex.sets && `${ex.sets}×`, ex.reps].filter(Boolean).join('')}
-                                  </Text>
-                                ) : null}
-                              </View>
-                            ))}
-                          </View>
-                        )}
-                        {routine.tags.length > 0 && (
-                          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
-                            {routine.tags.map(tagId => {
-                              const tag = libTags.find(t => t.id === tagId);
-                              if (!tag) return null;
-                              return (
-                                <View key={tagId} style={{ backgroundColor: tag.color + '99', borderWidth: 1, borderColor: tag.color, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
-                                  <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: '#ffffff' }}>{tag.label.toUpperCase()}</Text>
-                                </View>
-                              );
-                            })}
-                          </View>
-                        )}
-                        <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openLoadRoutinePicker(routine); }}
-                          style={{ paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
-                          <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>LOAD ROUTINE</Text>
-                        </TouchableOpacity>
                       </View>
-                    </ScaleDecorator>
-                  )}
-                />
+                      <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 6 }}>
+                        {routine.exercises.length} EXERCISE{routine.exercises.length !== 1 ? 'S' : ''}
+                      </Text>
+                      {routine.exercises.length > 0 && (
+                        <View style={{ marginBottom: routine.tags.length > 0 ? 10 : 14, borderRadius: 6, overflow: 'hidden', borderWidth: 0.5, borderColor: theme.borderCard }}>
+                          {routine.exercises.map((ex, idx) => (
+                            <View key={ex.id} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 7, backgroundColor: idx % 2 === 0 ? theme.bgInset : 'transparent', borderTopWidth: idx > 0 ? 0.5 : 0, borderTopColor: theme.borderCard }}>
+                              <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: ex.isCardio ? theme.accentAmber : theme.accentBlue, marginRight: 8, flexShrink: 0 }} />
+                              <Text style={{ color: theme.textSecondary, fontSize: 12, fontFamily: 'DMSans_400Regular', flex: 1 }} numberOfLines={1}>{ex.name}</Text>
+                              {(ex.sets || ex.reps) ? (
+                                <Text style={{ color: theme.textDim, fontSize: 10, fontFamily: 'DMSans_500Medium', marginLeft: 8, flexShrink: 0 }}>
+                                  {[ex.sets && `${ex.sets}×`, ex.reps].filter(Boolean).join('')}
+                                </Text>
+                              ) : null}
+                            </View>
+                          ))}
+                        </View>
+                      )}
+                      {routine.tags.length > 0 && (
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
+                          {routine.tags.map(tagId => {
+                            const tag = libTags.find(t => t.id === tagId);
+                            if (!tag) return null;
+                            return (
+                              <View key={tagId} style={{ backgroundColor: tag.color + '99', borderWidth: 1, borderColor: tag.color, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
+                                <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: '#ffffff' }}>{tag.label.toUpperCase()}</Text>
+                              </View>
+                            );
+                          })}
+                        </View>
+                      )}
+                      <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openLoadRoutinePicker(routine); }}
+                        style={{ paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
+                        <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>LOAD ROUTINE</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
               )}
             </Animated.View>
           </Animated.View>
@@ -2557,7 +2775,7 @@ export default function WorkoutLibraryScreen() {
                     {filtered.map(routine => (
                       <View key={routine.id} style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderRadius: 12, padding: 16, marginHorizontal: 12, marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 5 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
-                          <Text style={{ color: theme.textPrimary, fontSize: 15, fontFamily: 'DMSans_700Bold', flex: 1, marginRight: 8 }}>{routine.name}</Text>
+                          <Text style={{ color: theme.textSecondary, fontSize: 15, fontFamily: 'DMSans_700Bold', flex: 1, marginRight: 8 }}>{routine.name}</Text>
                           <View style={{ backgroundColor: theme.bgInset, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>
                             <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold', letterSpacing: 1 }}>PRESET</Text>
                           </View>
@@ -2570,9 +2788,9 @@ export default function WorkoutLibraryScreen() {
                             {routine.exercises.map((ex, idx) => (
                               <View key={ex.id} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 7, backgroundColor: idx % 2 === 0 ? theme.bgInset : 'transparent', borderTopWidth: idx > 0 ? 0.5 : 0, borderTopColor: theme.borderCard }}>
                                 <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: ex.isCardio ? theme.accentAmber : theme.accentBlue, marginRight: 8, flexShrink: 0 }} />
-                                <Text style={{ color: theme.textSecondary, fontSize: 12, fontFamily: 'DMSans_400Regular', flex: 1 }}>{ex.name}</Text>
+                                <Text style={{ color: theme.textSecondary, fontSize: 12, fontFamily: 'DMSans_400Regular', flex: 1 }} numberOfLines={1}>{ex.name}</Text>
                                 {(ex.sets || ex.reps) ? (
-                                  <Text style={{ color: theme.textDim, fontSize: 10, fontFamily: 'DMSans_500Medium', marginLeft: 8 }}>
+                                  <Text style={{ color: theme.textDim, fontSize: 10, fontFamily: 'DMSans_500Medium', marginLeft: 8, flexShrink: 0 }}>
                                     {[ex.sets && `${ex.sets}×`, ex.reps].filter(Boolean).join('')}
                                   </Text>
                                 ) : null}
@@ -2626,7 +2844,10 @@ export default function WorkoutLibraryScreen() {
           {selectedEx ? (
             <Reanimated.View style={[{ width: '90%', maxHeight: '88%' }, detailCardStyle]}>
             <TouchableOpacity activeOpacity={1} style={{ backgroundColor: theme.bgSheet, borderRadius: 14, width: '100%', borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, overflow: 'hidden' }}>
-              <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 20 }}>
+              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeDetailModal(); }} style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 6 }}>
+                <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
+              </TouchableOpacity>
+              <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}>
               <View style={[styles.typeBadge, selectedEx.type === 'cardio' && styles.typeBadgeCardio, { alignSelf: 'flex-start', marginBottom: 8 }]}>
                 <Text style={[styles.typeBadgeText, selectedEx.type === 'cardio' && { color: theme.accentAmber }]}>{selectedEx.type.toUpperCase()}</Text>
               </View>
@@ -2686,7 +2907,7 @@ export default function WorkoutLibraryScreen() {
                     }}>
                       <Text style={{ color: theme.textPrimary, fontSize: 20, paddingHorizontal: 8 }}>‹</Text>
                     </TouchableOpacity>
-                    <Text style={{ color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', fontSize: 14 }}>
+                    <Text style={{ color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', fontSize: 14 }}>
                       {['January','February','March','April','May','June','July','August','September','October','November','December'][calMonth]} {calYear}
                     </Text>
                     <TouchableOpacity onPress={() => {
@@ -2760,16 +2981,18 @@ export default function WorkoutLibraryScreen() {
 
       <Modal visible={showAddModal} transparent animationType="none" onRequestClose={closeAddModal}>
         <ToastRenderer />
-        <Reanimated.View style={[{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'flex-end', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 340 }, addOverlayStyle]}>
-          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={closeAddModal} />
-          <Reanimated.View style={[{ backgroundColor: theme.bgSheet, borderRadius: 20, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, width: '100%', height: 420, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20 }, addCardAnimStyle]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
+        <Reanimated.View style={[StyleSheet.absoluteFill, { backgroundColor: theme.overlayBg }, addOverlayStyle]} pointerEvents="none" />
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeAddModal} />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }} pointerEvents="box-none">
+          <Reanimated.View pointerEvents="box-none" style={[{ width: '100%' }, addCardAnimStyle]}>
+          <View pointerEvents="auto" style={{ backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20 }}>
+            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeAddModal(); }} style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }}>
+              <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
+            </TouchableOpacity>
+            <View style={{ paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
               <Text style={styles.modalTitle}>{editingEx ? 'EDIT EXERCISE' : 'ADD EXERCISE'}</Text>
-              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeAddModal(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Ionicons name="close" size={20} color={theme.textMuted} />
-              </TouchableOpacity>
             </View>
-            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
+            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
               <View style={{ padding: 20 }}>
                 <TextInput style={styles.modalInput} placeholder="Exercise name" placeholderTextColor={theme.textPlaceholder} value={form.name || ''} onChangeText={v => setForm(p => ({ ...p, name: v }))} autoCapitalize="words" />
                 <Text style={styles.modalLabel}>Type</Text>
@@ -2806,8 +3029,9 @@ export default function WorkoutLibraryScreen() {
                 </View>
               </View>
             </ScrollView>
+          </View>
           </Reanimated.View>
-        </Reanimated.View>
+        </View>
       </Modal>
 
       {/* Sort + Filter modal */}
@@ -3117,7 +3341,7 @@ const useStyles = (theme: any) => StyleSheet.create({
   typeBadge: { backgroundColor: theme.accentBlueBg, borderRadius: 3, paddingHorizontal: 5, paddingVertical: 1 },
   typeBadgeCardio: { backgroundColor: `${theme.accentAmber}26` },
   typeBadgeText: { fontSize: 8, color: theme.accentBlue, fontFamily: 'DMSans_700Bold', letterSpacing: 1 },
-  exName: { fontSize: 14, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', flex: 1 },
+  exName: { fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', flex: 1 },
   exNote: { fontSize: 11, color: theme.textDim, fontStyle: 'italic', fontFamily: 'DMSans_400Regular' },
   exActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   modalTitle: { fontSize: 22, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 },

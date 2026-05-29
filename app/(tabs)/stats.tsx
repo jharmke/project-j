@@ -150,8 +150,6 @@ function CollapsibleSection({ label, subtitle, children, defaultOpen = true, the
 
 // ── Sleep score (mirrors index.tsx) ──────────────────────────────────────────
 
-const FEEL_BONUS: Record<number, number> = { 1: 0, 2: 10, 3: 20, 4: 30, 5: 40 };
-
 function calcSleepScore(
   sleepHours: number | null,
   sleepStages: { core: number; deep: number; rem: number; totalMs: number } | null,
@@ -161,7 +159,7 @@ function calcSleepScore(
 ): { score: number | null; path: 1 | 2 | 3 } {
   if (!sleepHours || sleepHours <= 0) return { score: null, path: 3 };
   if (sleepStages && sleepStages.totalMs > 0) {
-    const durationPts = Math.min(40, (sleepHours / sleepGoal) * 40);
+    const durationPts = Math.min(40, Math.pow(sleepHours / sleepGoal, 3) * 40);
     const totalMs = sleepStages.totalMs;
     const deepPts = Math.max(0, 30 - (Math.abs(sleepStages.deep / totalMs - 0.20) / 0.20) * 30);
     const remPts  = Math.min(30, Math.max(0, (sleepStages.rem / totalMs / 0.22) * 30));
@@ -170,7 +168,8 @@ function calcSleepScore(
   const path = isManual ? 3 : 2;
   if (!feelRating) return { score: null, path };
   const durationPts = Math.min(60, (sleepHours / sleepGoal) * 60);
-  return { score: Math.round(Math.min(100, durationPts + (FEEL_BONUS[feelRating] ?? 0))), path };
+  const feelPts = ((feelRating - 1) / 9) * 30;
+  return { score: Math.round(Math.min(100, durationPts + feelPts)), path };
 }
 
 // ── Main screen ───────────────────────────────────────────────────────────────

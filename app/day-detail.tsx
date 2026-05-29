@@ -217,7 +217,8 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
   const sleepBedTime: string | null = data?.sleepBedTime ?? null;
   const sleepWakeTime: string | null = data?.sleepWakeTime ?? null;
   const fmtSleep = (h: number) => { if (!h) return '--'; const hrs = Math.floor(h); const m = Math.round((h - hrs) * 60); return m > 0 ? `${hrs}h ${m}m` : `${hrs}h`; };
-  const { score: sleepScore, hasStages } = calcSleepScore(sleepHours || null, sleepStages, sleepGoal, sleepFeelRating || null);
+  const sleepConsistencyPts: number = data?.sleepConsistencyPts ?? 0;
+  const { score: sleepScore, hasStages } = calcSleepScore(sleepHours || null, sleepStages, sleepGoal, sleepFeelRating || null, !!data?.sleepOverride, sleepConsistencyPts);
   const sleepLabel = sleepScore !== null ? (sleepScore >= 85 ? 'Well Rested' : sleepScore >= 70 ? 'Could Be Better' : 'Poor Sleep') : null;
   const sleepScoreColor = sleepScore !== null ? (sleepScore >= 85 ? theme.accentGreen : sleepScore >= 70 ? '#d4860a' : theme.accentRed) : theme.textDim;
 
@@ -486,7 +487,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                     <View style={styles.metaRow}>
                       <Text style={styles.metaLabel}>How you felt</Text>
                       <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' }}>
-                        {(['', 'Rough', 'Okay', 'Decent', 'Good', 'Great'] as string[])[sleepFeelRating]}
+                        {({ 1:'Rough night', 2:'Very poor', 3:'Poor sleep', 4:'Below average', 5:'Okay', 6:'Decent', 7:'Pretty good', 8:'Good night', 9:'Great sleep', 10:'Slept amazing' } as Record<number,string>)[sleepFeelRating] ?? ''}
                       </Text>
                     </View>
                   </>

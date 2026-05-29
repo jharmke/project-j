@@ -40,24 +40,24 @@ export const offsetToDateKey = (offset: number): string => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
-const FEEL_BONUS: Record<number, number> = { 1: 0, 2: 10, 3: 20, 4: 30, 5: 40 };
-
 function calcSleepScoreForTrend(
   sleepHours: number,
   sleepStages: { core: number; deep: number; rem: number; totalMs: number } | null,
   sleepGoal: number,
   feelRating: number | null,
   isManual: boolean,
+  consistencyPts = 0,
 ): number | null {
   if (sleepStages && sleepStages.totalMs > 0) {
-    const durationPts = Math.min(40, (sleepHours / sleepGoal) * 40);
+    const durationPts = Math.min(40, Math.pow(sleepHours / sleepGoal, 3) * 40);
     const totalMs = sleepStages.totalMs;
     const deepPts = Math.max(0, 30 - (Math.abs(sleepStages.deep / totalMs - 0.20) / 0.20) * 30);
     const remPts = Math.min(30, Math.max(0, (sleepStages.rem / totalMs / 0.22) * 30));
     return Math.round(durationPts + deepPts + remPts);
   }
   if (!feelRating) return null;
-  return Math.round(Math.min(100, Math.min(60, (sleepHours / sleepGoal) * 60) + (FEEL_BONUS[feelRating] ?? 0)));
+  const feelPts = ((feelRating - 1) / 9) * 30;
+  return Math.round(Math.min(100, Math.min(60, (sleepHours / sleepGoal) * 60) + feelPts + consistencyPts));
 }
 
 function getEntryNutrient(entries: any[], nutrientName: string): number {
@@ -143,7 +143,8 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
           const stages = data.sleepStages || null;
           const feel = data.sleepFeelRating ?? null;
           const isManual = !!data.sleepOverride;
-          const score = calcSleepScoreForTrend(sleepH, stages, sleepGoal, feel, isManual);
+          const consistencyPts = data.sleepConsistencyPts ?? 0;
+          const score = calcSleepScoreForTrend(sleepH, stages, sleepGoal, feel, isManual, consistencyPts);
           if (score !== null) ssH.push({ date: dateKey, value: score });
         }
         // HealthKit metrics persisted to storage

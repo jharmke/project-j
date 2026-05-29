@@ -30,8 +30,6 @@ interface DaySnapshot {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const FEEL_BONUS: Record<number, number> = { 1: 0, 2: 10, 3: 20, 4: 30, 5: 40 };
-
 function calcSleepScore(
   sleepHours: number | null,
   sleepStages: { core: number; deep: number; rem: number; totalMs: number } | null,
@@ -41,7 +39,7 @@ function calcSleepScore(
 ): { score: number | null; hasStages: boolean; path: 1 | 2 | 3 } {
   if (!sleepHours || sleepHours <= 0) return { score: null, hasStages: false, path: 3 };
   if (sleepStages && sleepStages.totalMs > 0) {
-    const durationPts = Math.min(40, (sleepHours / sleepGoal) * 40);
+    const durationPts = Math.min(40, Math.pow(sleepHours / sleepGoal, 3) * 40);
     const totalMs = sleepStages.totalMs;
     const deepPct = sleepStages.deep / totalMs;
     const remPct = sleepStages.rem / totalMs;
@@ -55,8 +53,8 @@ function calcSleepScore(
   const path = isManual ? 3 : 2;
   if (!feelRating) return { score: null, hasStages: false, path };
   const durationPts = Math.min(60, (sleepHours / sleepGoal) * 60);
-  const bonus = FEEL_BONUS[feelRating] ?? 0;
-  return { score: Math.round(Math.min(100, durationPts + bonus)), hasStages: false, path };
+  const feelPts = ((feelRating - 1) / 9) * 30;
+  return { score: Math.round(Math.min(100, durationPts + feelPts)), hasStages: false, path };
 }
 
 function fmt(d: Date) {

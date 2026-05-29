@@ -1290,7 +1290,14 @@ export default function HomeScreen() {
           if (data.sleepOverride) setSleepOverride(data.sleepOverride);
           if (data.sleepBedTime) {
             setSleepStoredBed(data.sleepBedTime);
-            calcBedtimeConsistencyPts(data.sleepBedTime, todayKey).then(setSleepConsistencyPts);
+            calcBedtimeConsistencyPts(data.sleepBedTime, todayKey).then(async (pts) => {
+              setSleepConsistencyPts(pts);
+              if (pts !== (data.sleepConsistencyPts ?? -1)) {
+                const raw = await AsyncStorage.getItem(`pj_${todayKey}`);
+                const cur = raw ? JSON.parse(raw) : {};
+                await storageSet(`pj_${todayKey}`, JSON.stringify({ ...cur, sleepConsistencyPts: pts }));
+              }
+            });
           }
           if (data.sleepWakeTime) setSleepStoredWake(data.sleepWakeTime);
           if (data.sleepFeelRating) setSleepFeelRating(data.sleepFeelRating);
@@ -1362,7 +1369,8 @@ export default function HomeScreen() {
             const ydStages = yd2.sleepStages || null;
             const ydFeel = yd2.sleepFeelRating ?? null;
             const ydIsManual = !!yd2.sleepOverride;
-            const { score: ydScore, path: ydPath } = calcSleepScore(ydHours, ydStages, sleepGoal, ydFeel, ydIsManual);
+            const ydConsistencyPts = yd2.sleepConsistencyPts ?? 0;
+            const { score: ydScore, path: ydPath } = calcSleepScore(ydHours, ydStages, sleepGoal, ydFeel, ydIsManual, ydConsistencyPts);
             if (ydPath === 1 || ydFeel) setYdSleepScore(ydScore);
             else setYdSleepScore(null);
           }
@@ -2170,7 +2178,12 @@ export default function HomeScreen() {
                 const bedStr=sleepBedTime.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
                 const wakeStr=sleepWakeTime.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
                 await storageSet(`pj_${todayKey}`,JSON.stringify({...current,sleepOverride:val,sleepBedTime:bedStr,sleepWakeTime:wakeStr}));
-                calcBedtimeConsistencyPts(bedStr, todayKey).then(setSleepConsistencyPts);
+                calcBedtimeConsistencyPts(bedStr, todayKey).then(async (pts) => {
+                  setSleepConsistencyPts(pts);
+                  const raw2 = await AsyncStorage.getItem(`pj_${todayKey}`);
+                  const cur2 = raw2 ? JSON.parse(raw2) : {};
+                  await storageSet(`pj_${todayKey}`, JSON.stringify({ ...cur2, sleepConsistencyPts: pts }));
+                });
                 await saveToFirebase(todayKey,'sleepOverride',val);
                 checkSleepAchievements().then(unlocked => {
                   unlocked.forEach(def => {

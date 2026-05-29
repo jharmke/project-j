@@ -733,12 +733,14 @@ export default function StatsScreen() {
         let target = 0, step = 10000, sleep = 8, bmr = 0, streakBaseTarget = 0, burnAccuracy = 100, netCarbsMode = false;
         let wGoal = 128, aCalGoal = 500, exMinsGoal = 30, pGoal = 0;
         let weightGoalLocal = '';
+        let profileCalTarget = 0;
         let currentStyleMode = 'Balanced', currentFaithJourney = 'rooted';
         try {
           const p = await AsyncStorage.getItem('pj_profile');
           if (p) {
             const d = JSON.parse(p);
             if (d.weightGoal) weightGoalLocal = d.weightGoal;
+            if (d.calTarget) profileCalTarget = parseInt(d.calTarget) || 0;
             if (d.stepGoal) step = parseInt(d.stepGoal);
             if (d.sleepGoal) sleep = parseFloat(d.sleepGoal);
             if (d.waterGoal) wGoal = parseFloat(d.waterGoal);
@@ -783,6 +785,11 @@ export default function StatsScreen() {
             if (d.showNetCarbs !== undefined) { netCarbsMode = d.showNetCarbs; setShowNetCarbs(d.showNetCarbs); }
           }
         } catch {}
+        // calTarget fallback: pj_settings.calTarget, else pj_profile.calTarget,
+        // else the computed TDEE+deficit. Without this, stats read 0 when the
+        // target lived only in the profile, which gated the At-a-Glance CAL GOAL
+        // count to 0/N while the streak (which already falls back) still counted.
+        if (!target) target = profileCalTarget || streakBaseTarget || 0;
         setCalTarget(target);
         setStepGoal(step);
         setSleepGoal(sleep);

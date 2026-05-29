@@ -234,6 +234,7 @@ Every operation that can fail must communicate it to the user.
 - Every tooltip entry must be added to tooltipRegistry.ts
 - One (i) per card, one modal, full picture. Never a standalone tooltip for a single stat
 - Categories: Nutrition, Fitness, Sleep & Recovery
+- Keep in sync: whenever a change alters user-facing behavior (a calculation, rule, count, color, or layout), update the matching tooltipRegistry.ts entry AND data/tutorials.ts in the SAME session. Stale explainers mislead users. Never batch to later. Grep the registry and tutorials for the touched feature/terms after every behavior change.
 
 **Modal + ScrollView Pattern**
 When Modal contains ScrollView + overlay dismiss:

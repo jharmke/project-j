@@ -73,7 +73,7 @@ function DataRow({ label, value, valueColor, theme }: { label: string; value: st
   return (
     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 5, borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle }}>
       <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, flex: 1 }}>{label}</Text>
-      <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: valueColor ?? theme.textPrimary }}>{value}</Text>
+      <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: valueColor ?? theme.textSecondary }}>{value}</Text>
     </View>
   );
 }
@@ -100,7 +100,7 @@ function FindingCard({
         <ChipLabel label={chipLabel} theme={theme} />
         {showStatus && <StatusPill status={status} theme={theme} />}
       </View>
-      <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', color: theme.textPrimary, letterSpacing: 1, marginBottom: children ? 10 : 0, lineHeight: 22 }}>
+      <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', color: theme.textSecondary, letterSpacing: 1, marginBottom: children ? 10 : 0, lineHeight: 22 }}>
         {headline}
       </Text>
       {children}
@@ -143,7 +143,7 @@ function DeficitCard({ f, isMindful, theme, shadowStyle }: { f: DeficitFinding; 
     const abs = Math.abs(Math.round(f.avgDailyDeficit));
     headline = `Avg ${abs} cal/day ${f.avgDailyDeficit >= 0 ? 'deficit' : 'surplus'} logged`;
   }
-  const gapColor = !isMindful && f.gapLbs != null && f.gapLbs > 0.3 ? theme.statusWarn : theme.textPrimary;
+  const gapColor = !isMindful && f.gapLbs != null && f.gapLbs > 0.3 ? theme.statusWarn : theme.textSecondary;
   return (
     <FindingCard chipLabel={chipLabel} headline={headline} status={f.status} showStatus={!isMindful && f.hasWeightData} theme={theme} shadowStyle={shadowStyle}>
       <DataRow label="Avg daily deficit" value={`${Math.abs(Math.round(f.avgDailyDeficit)).toLocaleString()} cal`} theme={theme} />
@@ -199,8 +199,8 @@ function MacroCard({ f, isMindful, theme, shadowStyle }: { f: MacroFinding; isMi
     : f.macroStatus !== 'good'
     ? <>Protein averaging {f.avgProtein}<Text style={{ fontFamily: 'DMSans_600SemiBold', fontSize: 18 }}>g</Text> -- below target</>
     : 'Food quality has room to improve';
-  const proteinColor = !isMindful && f.macroStatus !== 'good' ? theme.statusWarn : theme.textPrimary;
-  const fiberColor = !isMindful && f.fiberStatus !== 'good' ? theme.statusWarn : theme.textPrimary;
+  const proteinColor = !isMindful && f.macroStatus !== 'good' ? theme.statusWarn : theme.textSecondary;
+  const fiberColor = !isMindful && f.fiberStatus !== 'good' ? theme.statusWarn : theme.textSecondary;
   const fiberNote = f.lowFiberNote
     ? isMindful
       ? `Fiber tends to reflect how much of your diet comes from whole foods. Your average of ${f.avgFiber}g/day is worth paying attention to.`
@@ -223,7 +223,7 @@ function SleepCard({ f, isMindful, theme, shadowStyle }: { f: any; isMindful: bo
   const headline = f.avgSleepScore !== null
     ? `Avg sleep score: ${f.avgSleepScore} over ${f.totalSleepDays} nights`
     : `Avg ${f.avgSleepHours}h/night over ${f.totalSleepDays} nights`;
-  const scoreColor = !isMindful && f.status !== 'good' ? theme.statusWarn : theme.textPrimary;
+  const scoreColor = !isMindful && f.status !== 'good' ? theme.statusWarn : theme.textSecondary;
   const note = f.status !== 'good'
     ? isMindful
       ? `Your sleep data shows some nights that could be improved. Sleep quality has an interesting relationship with appetite and energy.`
@@ -429,7 +429,7 @@ export default function DiagnosticReportViewScreen() {
                   {report.correlations.correlations.map((c, i) => (
                     <View key={c.id}>
                       {i > 0 && <View style={{ height: 0.5, backgroundColor: t.borderSubtle, marginVertical: 12 }} />}
-                      <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: t.textPrimary, lineHeight: 20, marginBottom: 4 }}>
+                      <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: t.textSecondary, lineHeight: 20, marginBottom: 4 }}>
                         {c.headline}
                       </Text>
                       <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: t.textSecondary, lineHeight: 18 }}>
@@ -452,7 +452,7 @@ export default function DiagnosticReportViewScreen() {
                         <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: t.accentBlueRaw }}>{s.rank}</Text>
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: t.textPrimary, lineHeight: 20, marginBottom: 4 }}>{s.headline}</Text>
+                        <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: t.textSecondary, lineHeight: 20, marginBottom: 4 }}>{s.headline}</Text>
                         <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: t.textSecondary, lineHeight: 18 }}>{s.detail}</Text>
                       </View>
                     </View>

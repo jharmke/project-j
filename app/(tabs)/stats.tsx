@@ -1452,17 +1452,7 @@ export default function StatsScreen() {
                 <Ionicons name="chevron-forward" size={18} color={theme.accentBlue} />
               </TouchableOpacity>
             </View>
-            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: 12 }}>
-              {[
-                { label: 'On Target', bg: 'rgba(16,185,129,0.15)', border: 'rgba(16,185,129,0.3)', color: theme.statusGood },
-                { label: 'Close', bg: 'rgba(245,158,11,0.15)', border: 'rgba(245,158,11,0.3)', color: theme.statusWarn },
-                { label: 'Off', bg: 'rgba(239,68,68,0.15)', border: 'rgba(239,68,68,0.3)', color: theme.statusBad },
-              ].map(l => (
-                <View key={l.label} style={{ backgroundColor: l.bg, borderWidth: 1, borderColor: l.border, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 3 }}>
-                  <Text style={{ color: l.color, fontSize: 10, fontFamily: 'DMSans_600SemiBold' }}>{l.label}</Text>
-                </View>
-              ))}
-            </View>
+            {/* On Target / Close / Off legend hidden 2026-05-29: calendar day-cell coloring (site #3) deferred, Justin on the fence. Cell-tint code left in place (getDayStatus / dayStatusColor). Restore this legend via git if the feature is revisited. */}
             <View style={styles.calGrid}>
               {['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => (
                 <Text key={d} style={[styles.calDayHeader, { color: theme.textMuted }]}>{d}</Text>

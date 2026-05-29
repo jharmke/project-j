@@ -644,25 +644,31 @@ SOON -- confirmed next few sessions
   [ ] Calorie card language/stat review -- make stats easier to digest.
 
   Calorie, Goal Logic & Coaching --
-  [ ] Calorie goal hit logic overhaul -- currently inconsistent across three places: (1) home card calorie color coding in index.tsx, (2) calorie streak calculation in stats.tsx, (3) achievement trigger in achievementData.ts. Achievement system already does it correctly -- uses calTarget + activeCalories as the adjusted target. Streak and home are unverified and likely diverge from each other and from achievements.
-    New logic direction (approved 2026-05-29, pending implementation and edge case code review session):
+  [~] Calorie goal hit logic overhaul -- STATUS: IN PROGRESS (started 2026-05-29). Full build doc: SPEC_calorie_goal_hit.md (decisions locked, do not re-litigate). AUDIT FINDING 2026-05-29: goal-hit is currently computed 6 divergent ways, not 3. Correction to the prior note below: the achievement trigger does NOT do it correctly. It uses RAW active calories (calTarget + data.activeCalories, no burn-accuracy modifier), which is itself a burn-accuracy bug. The 6 sites: (1) achievementData.ts checkNutritionAchievements, (2) home calorie card index.tsx, (3) stats.tsx calendar dots, (4) stats.tsx At a Glance CAL GOAL/DAY count, (5) stats.tsx calorie streak, (6) log.tsx calorie color. This is a rewrite to one shared util (utils/goalHit.ts), not a reconcile.
+    LOCKED DECISIONS (2026-05-29, signed off by Justin. See SPEC_calorie_goal_hit.md for worked examples):
+    Decision 1: Way 2 hit band is directional +/-150, UNIVERSAL across all modes. Lose: net <= paceTarget+150. Gain: net >= paceTarget-150. Maintain: abs(net) <= 150. The band does not vary by coaching mode (modes change presentation only, because streak/achievement counts are recomputed by re-walking history, so a mode-dependent band would silently rewrite history on toggle).
+    Decision 2: Way 1 window keeps the asymmetric -300/+150 against the static calTarget. No net math, no BMR subtraction. The deficit is already baked into calTarget.
+    Decision 3: active-cals floor = 50 is the Way 1 vs Way 2 switch. adjustedActive = round((activeCalories||caloriesBurned)*acc/100). Below 50 uses Way 1 (dead/unworn watch guard), 50 or above uses Way 2. Manually logged active cals count, not just HealthKit.
+    Decision 4: home/log card color stays graded, but the green/good zone is redefined to mean exactly a hit per Way 1/Way 2, so the card and the streak can never contradict. Non-hit days still split warn vs bad by mode delta. Mindful is neutral, no color.
+    DATA CAVEAT (accepted by Justin): moving streak / At-a-Glance count / calendar dots / achievement count onto Way 1/Way 2 will recompute historical numbers up or down. This is a pure display recompute. No pj_ daily record is touched, nothing is deleted or overwritten. Justin's words: "MY streaks changing is whatever, its fine. As long as the logic is good for future stuff and for users starting from scratch."
+    Original direction text (still accurate, kept for context):
     Way 2 (primary -- evaluates first): Check true net calories (consumed minus active burn with accuracy modifier applied minus BMR) against the user's daily pace target (e.g. -750 for 1.5 lb/week). If net is within a reasonable range of the pace target, it is a hit. This is the primary check for any user with meaningful HealthKit burn data. What "reasonable range" means needs to be decided during the coding session -- rough idea is +/- 100-150 kcal of the pace target, but this should be tested against real data before locking.
     Way 1 (fallback only): Fires ONLY when active cals are below ~50. This threshold handles: dead watch, no wearable, rest day with zero HealthKit data. Checks consumed vs static calorie target with a tolerance range. Way 1 and Way 2 are mutually exclusive -- Way 2 always takes priority when burn data is present. The ~50 threshold is specifically designed to handle the dead-watch edge case: if a watch dies mid-workout and Apple Health reports 0 active cals, Way 2 would incorrectly evaluate against BMR only and might miss a real hit. The ~50 floor prevents that fallthrough.
     Deep deficit floor (not decided -- research required): If net drops below roughly 40-50% of BMR, still counts as a goal hit but surfaces a coaching nudge (see coaching nudge item below). Does NOT block the achievement or streak. Threshold scales with the user's actual BMR, not a fixed number. Consult dietitian-level guidance before locking this threshold.
     Critical rule: whatever logic is finalized must be byte-for-byte identical in all three places (index.tsx, stats.tsx, achievementData.ts). No paraphrasing, no "close enough." Extract to a shared utility function in utils/ to enforce this. The three-way drift that exists today happened because each location was written separately. It will happen again if the logic is not centralized.
-    Related: Way 1 / Way 2 direction explicitly approved as of 2026-05-29 gym session. (SOON)
-  [ ] Burn accuracy app-wide consistency audit -- the burn accuracy adjustment (100/90/80/70% pill in Settings > Health) must be verified as correctly applied everywhere active calories or net calories appear in a user-facing calculation. The rule is absolute: no raw HealthKit active calorie values in any computation except raw storage writes. Every downstream use must apply the modifier.
-    Audit checklist with known status as of 2026-05-29:
-    - achievementData.ts: confirmed correct.
+    Related: Way 1 / Way 2 direction explicitly approved as of 2026-05-29 gym session. (IN PROGRESS)
+  [~] Burn accuracy app-wide consistency audit -- STATUS: IN PROGRESS (started 2026-05-29, paired with goal hit overhaul, SPEC_calorie_goal_hit.md). The burn accuracy adjustment (100/90/80/70% pill in Settings > Health) must be verified as correctly applied everywhere active calories or net calories appear in a user-facing calculation. The rule is absolute: no raw HealthKit active calorie values in any computation except raw storage writes. Every downstream use must apply the modifier. Storage key confirmed: pj_settings.burnAccuracyPct (default 100).
+    Audit checklist with status as of 2026-05-29 (per SPEC_calorie_goal_hit.md audit):
+    - achievementData.ts: WRONG. Uses raw data.activeCalories, no modifier. Fixed implicitly when site moves to the goalHit util.
     - YvY net cal in index.tsx: confirmed correct (fixed 2026-05-25 -- loadCals now reads pj_settings locally at call time before computing ydBurned).
-    - Head-to-head net cal in head-to-head.tsx: unverified.
-    - Home card calorie color coding in index.tsx: unverified.
-    - Calorie streak calculation in stats.tsx: unverified.
-    - fetchTrendData net cal graph in utils/statsData.ts: unverified, suspected broken per graph accuracy bug above.
-    - Effort vs Results report in utils/diagnosticReport.ts: unverified.
+    - Head-to-head net cal in head-to-head.tsx: DRIFT. loadSnapshot rolls its own net (consumed - burned - profileBmr). Repoint at computeDayNet.
+    - Home card calorie color coding in index.tsx: to verify during wiring (Step 4). hkCalories must already carry the modifier.
+    - Calorie streak calculation in stats.tsx: to be replaced by goalHit util (Step 3).
+    - fetchTrendData net cal graph in utils/statsData.ts: confirmed correct (uses computeDayNet, the canonical net formula).
+    - Effort vs Results report in utils/diagnosticReport.ts: BUGS. ~L285 reads raw d.activeCalories with no caloriesBurned fallback; surplus/deficit pattern detection (~L452/458/617) uses raw active and raw calTarget*1.1/0.9. Fix in Step 7.
     - Day summary (not yet built): must be built accuracy-aware from day one, not retroactively patched.
     - Morning card (not yet built): same rule.
-    Every item above must be checked and confirmed or fixed before this item closes. One dedicated audit pass, not piecemeal fixes discovered at random. Pair this with the goal hit logic overhaul session since both touch the same code paths. (SOON)
+    Every item above must be checked and confirmed or fixed before this item closes. One dedicated audit pass, not piecemeal fixes discovered at random. Pair this with the goal hit logic overhaul session since both touch the same code paths. (IN PROGRESS)
   [ ] Weekly pace helper text in settings -- under each pace option in the weight goal / pace picker, show the approximate daily net calorie target needed to stay on pace. These are fixed values from the 3,500 cal/lb rule -- universal science, not personalized to the user:
     Lose 2.0 lb/wk: about -1,000 kcal/day net
     Lose 1.5 lb/wk: about -750 kcal/day net

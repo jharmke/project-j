@@ -2067,7 +2067,7 @@ export default function HomeScreen() {
             </View>
             {sleepBedTime && sleepWakeTime && (
               <Text style={{ fontSize:12, color: theme.textMuted, fontFamily:'DMSans_400Regular', textAlign:'center', marginBottom:8 }}>
-                {(() => { let diff=sleepWakeTime.getTime()-sleepBedTime.getTime(); if(diff<0) diff+=24*3600000; return `${Math.round(diff/3600000*10)/10} hrs of sleep`; })()}
+                {(() => { let diff=sleepWakeTime.getTime()-sleepBedTime.getTime(); if(diff<0) diff+=24*3600000; const h=Math.floor(diff/3600000); const m=Math.round((diff%3600000)/60000); return m>0?`${h}h ${m}m of sleep`:`${h}h of sleep`; })()}
               </Text>
             )}
             {activeSleepPicker !== null && (
@@ -2095,7 +2095,7 @@ export default function HomeScreen() {
                 if(!sleepBedTime||!sleepWakeTime) return;
                 let diff=sleepWakeTime.getTime()-sleepBedTime.getTime();
                 if(diff<0) diff+=24*3600000;
-                const val=Math.round(diff/3600000*10)/10;
+                const val=Math.round(diff/60000)/60;
                 setSleepOverride(val);
                 const saved=await AsyncStorage.getItem(`pj_${todayKey}`);
                 const current=saved?JSON.parse(saved):{};
@@ -2130,7 +2130,7 @@ export default function HomeScreen() {
                   delete current.sleepFeelRating;
                   await storageSet(`pj_${todayKey}`,JSON.stringify(current));
                   setEditingSleep(false); setActiveSleepPicker(null);
-                }} style={{ backgroundColor: theme.accentRedBg, borderWidth:1, borderColor: theme.accentRedBorder, borderRadius:6, paddingHorizontal:16, alignItems:'center' }}>
+                }} style={{ backgroundColor: theme.accentRedBg, borderWidth:1, borderColor: theme.accentRedBorder, borderRadius:6, paddingVertical:10, paddingHorizontal:16, alignItems:'center' }}>
                   <Text style={{ color: theme.accentRed, fontSize:13, fontFamily:'DMSans_500Medium' }}>Clear</Text>
                 </TouchableOpacity>
               )}

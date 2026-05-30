@@ -28,6 +28,7 @@ import GratitudeStreakCard from '../../components/GratitudeStreakCard';
 import ReadingPlansCard from '../../components/ReadingPlansCard';
 import { StatsCard, CardPeriod, DATA_KEY_META, DEFAULT_STATS_CARDS } from '../../statsCardRegistry';
 import { TrendData, EMPTY_TREND_DATA, fetchTrendData } from '../../utils/statsData';
+import { calcSleepScore } from '../../utils/sleepScore';
 import { StatsGraphCard } from '../../components/StatsGraphCard';
 import { StatsCardEditModal } from '../../components/StatsCardEditModal';
 import { saveStatsCards } from '../../statsCardRegistry';
@@ -236,38 +237,6 @@ function MacroDonut({ protein, carbs, fat, calories, theme }: { protein: number;
 }
 
 const AnimCircle = ReAnimated.createAnimatedComponent(Circle);
-
-function calcSleepScore(
-  sleepHours: number | null,
-  sleepStages: { core: number; deep: number; rem: number; totalMs: number } | null,
-  sleepGoal: number,
-  feelRating?: number | null,
-  isManual?: boolean,
-  consistencyPts = 0,
-): { score: number | null; hasStages: boolean; path: 1 | 2 | 3 } {
-  if (!sleepHours || sleepHours <= 0) return { score: null, hasStages: false, path: 3 };
-
-  // Path 1 -- HealthKit hours + stages
-  if (sleepStages && sleepStages.totalMs > 0) {
-    const durationPts = Math.min(40, Math.pow(sleepHours / sleepGoal, 3) * 40);
-    const totalMs = sleepStages.totalMs;
-    const deepPct = sleepStages.deep / totalMs;
-    const remPct = sleepStages.rem / totalMs;
-    const deepIdeal = 0.20;
-    const deepDiff = Math.abs(deepPct - deepIdeal);
-    const deepPts = Math.max(0, 30 - (deepDiff / deepIdeal) * 30);
-    const remIdeal = 0.22;
-    const remPts = Math.min(30, Math.max(0, (remPct / remIdeal) * 30));
-    return { score: Math.round(durationPts + deepPts + remPts), hasStages: true, path: 1 };
-  }
-
-  // Path 2 (HealthKit hours only) or Path 3 (manual) -- feel rating required
-  const path = isManual ? 3 : 2;
-  if (!feelRating) return { score: null, hasStages: false, path };
-  const durationPts = Math.min(60, (sleepHours / sleepGoal) * 60);
-  const feelPts = ((feelRating - 1) / 9) * 30;
-  return { score: Math.round(Math.min(100, durationPts + feelPts + consistencyPts)), hasStages: false, path };
-}
 
 // Parses "10:30 PM" or "2:45 AM" to minutes from midnight
 function parseBedTimeToMins(str: string): number | null {

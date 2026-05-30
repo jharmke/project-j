@@ -17,6 +17,7 @@ import { showAchievementToast, showDailyGoalToast } from '../../components/Achie
 import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, weightEntryIsPlausible, getWeightMilestonesCrossed, isGoalWeightHit, handleDailyGoalHit, checkMomentumAchievements, checkSleepAchievements, getCelebTier } from '../../achievementData';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { storageSet } from '../../utils/storage';
+import { loadCalorieTargets } from '../../utils/calorieTarget';
 import { useTheme } from '../../theme';
 import { useHealthKit } from '../../useHealthKit';
 import { DayDetailContent } from '../day-detail';
@@ -126,6 +127,9 @@ const PROGRAM: Record<string, any> = {
   Fri: { focus: 'Cardio',      type: 'cardio' },
 };
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+// Signed daily calorie delta per pace (negative = deficit, positive = surplus).
+// Single source of truth for the calTarget calc (loadData), the on-pace target, and the projected-date calc.
+const GOAL_DEFICITS: Record<string, number> = { lose_2: -1000, lose_1_5: -750, lose_1: -500, lose_0_5: -250, maintain: 0, gain_0_5: 250, gain_1: 500 };
 const VERSES = [
   // Strength & Perseverance
   { text: "I can do all things through Christ which strengtheneth me.", reference: "Philippians 4:13" },
@@ -904,9 +908,15 @@ export default function HomeScreen() {
   const [todayDay, setTodayDay] = useState(() => DAY_NAMES[new Date().getDay()]);
   const rawHkCalories = activeCalories > 0 ? activeCalories : caloriesBurned;
   const hkCalories    = Math.round(rawHkCalories * burnAccuracyPct / 100);
-  const adjustedTarget= calTarget + hkCalories;
   const displayedBurned = hkCalories;
-  const calPct   = adjustedTarget > 0 ? (totalCals / adjustedTarget) * 100 : 0;
+  // On-pace target = the calories you can eat today to stay on your weekly pace.
+  // = BMR + measured active burn - pace deficit (no TDEE double-count of activity),
+  // floored at calTarget (TDEE - deficit) so a dead/charging watch or a non-tracker
+  // never sees a too-low target. Rises above the floor only when real active burn
+  // exceeds the activity TDEE already estimated. See roadmap: calorie card overhaul.
+  const paceDeficit  = GOAL_DEFICITS[weightGoalPace] ?? -500;
+  const onPaceTarget = Math.max(calTarget, profileBmr + hkCalories + paceDeficit);
+  const calPct   = onPaceTarget > 0 ? (totalCals / onPaceTarget) * 100 : 0;
   const net = totalCals - displayedBurned - runningBmr;
   // Today's live card uses intuitive proximity coloring (how close consumed is to
   // the adjusted target), NOT the Way 1/Way 2 hit. Reason: today's net uses
@@ -916,7 +926,7 @@ export default function HomeScreen() {
   // and today is never in the streak so nothing contradicts. A smart time-aware
   // color (green early when under is fine, flag a deep deficit late in the day)
   // is the parked deep-deficit / late-day nudge feature. See roadmap.
-  const calDelta = Math.abs(totalCals - adjustedTarget);
+  const calDelta = Math.abs(totalCals - onPaceTarget);
   const calColor = styleMode === 'mindful'
     ? theme.textSecondary
     : styleMode === 'discipline'
@@ -1393,9 +1403,6 @@ export default function HomeScreen() {
           if (p.waterGoal && parseInt(p.waterGoal) > 0) setWaterGoal(parseInt(p.waterGoal));
           if (p.activeCalGoal && parseInt(p.activeCalGoal) > 0) setActiveCalGoal(parseInt(p.activeCalGoal));
           if (p.exerciseMinsGoal && parseInt(p.exerciseMinsGoal) > 0) setExerciseMinsGoal(parseInt(p.exerciseMinsGoal));
-          if (p.calTarget && parseInt(p.calTarget) > 0) {
-            setCalTarget(parseInt(p.calTarget));
-          }
           if (p.goalWeight && parseFloat(p.goalWeight) > 0) setGoalWeight(parseFloat(p.goalWeight));
           if (p.weightGoal) setWeightGoalPace(p.weightGoal);
 
@@ -1422,44 +1429,16 @@ export default function HomeScreen() {
             });
           }
 
-          if (p.lifestyleActivity && p.trainingFrequency && p.weightGoal) {
-            const LIFESTYLE_MULTIPLIERS: Record<string,number> = {
-              sedentary:1.2, light:1.3, active:1.45, very_active:1.6,
-            };
-            const TRAINING_BONUSES: Record<string,number> = {
-              none:0, '1x':100, '3x':200, '5x':300, daily:400,
-            };
-            const GOAL_DEFICITS: Record<string,number> = {
-              lose_2:-1000, lose_1_5:-750, lose_1:-500, lose_0_5:-250, maintain:0, gain_0_5:250, gain_1:500,
-            };
-            const dayData = await AsyncStorage.getItem(`pj_${todayKey}`);
-            const todayW = dayData ? JSON.parse(dayData)?.weight : null;
-            // Fall back to last known weight so BMR loads even without today's weigh-in
-            let w = todayW;
-            if (!w) {
-              for (let i = 1; i <= 30; i++) {
-                const d = new Date(); d.setDate(d.getDate()-i);
-                const dk = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-                const ld = await AsyncStorage.getItem(`pj_${dk}`);
-                if (ld) { const ldp = JSON.parse(ld); if (ldp.weight) { w = ldp.weight; break; } }
-              }
-            }
-            if (p.sex) setProfileSex(p.sex === 'male' ? 'male' : 'female');
-            if (p.birthday) {
-              const parts = p.birthday.split('-');
-              setProfileAge(Math.floor((Date.now() - new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2])).getTime()) / (365.25*24*3600*1000)));
-            }
-            if (w && p.birthday && p.heightFt && p.heightIn) {
-              const wKg  = w * 0.453592;
-              const hCm  = (parseFloat(p.heightFt)*30.48) + (parseFloat(p.heightIn)*2.54);
-              const parts = p.birthday.split('-');
-              const age  = Math.floor((Date.now() - new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2])).getTime()) / (365.25*24*3600*1000));
-              const bmr  = p.sex === 'male' ? Math.round((10*wKg)+(6.25*hCm)-(5*age)+5) : Math.round((10*wKg)+(6.25*hCm)-(5*age)-161);
-              const tdee = Math.round((bmr * (LIFESTYLE_MULTIPLIERS[p.lifestyleActivity]??1.2)) + (TRAINING_BONUSES[p.trainingFrequency]??0));
-              setProfileBmr(bmr);
-              setCalTarget(tdee + (GOAL_DEFICITS[p.weightGoal]??-500));
-            }
+          if (p.sex) setProfileSex(p.sex === 'male' ? 'male' : 'female');
+          if (p.birthday) {
+            const parts = p.birthday.split('-');
+            setProfileAge(Math.floor((Date.now() - new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2])).getTime()) / (365.25*24*3600*1000)));
           }
+          // Calorie target + BMR via the shared helper: honors the recommended/manual
+          // toggle and always computes BMR for live net. Same call log uses, so the two match.
+          const targets = await loadCalorieTargets(todayKey);
+          setProfileBmr(targets.bmr);
+          setCalTarget(targets.calTarget);
         }
         // Momentum achievement check -- consecutive logging days
         const momentumUnlocked = await checkMomentumAchievements();
@@ -1666,11 +1645,11 @@ export default function HomeScreen() {
   };
 
   const renderCaloriesCard = () => {
-    const remaining = adjustedTarget - totalCals;
+    const remaining = onPaceTarget - totalCals;
     const stats = [
       { label: remaining >= 0 ? 'REMAINING' : 'OVER', value: Math.abs(remaining), color: remaining >= 0 ? theme.textSecondary : theme.statusBad },
       { label: 'ACTIVE', value: displayedBurned, color: theme.textSecondary },
-      { label: 'RUNNING NET', value: `${net > 0 ? '+' : ''}${Math.round(net)}`, color: theme.textSecondary },
+      { label: 'LIVE NET', value: `${net > 0 ? '+' : ''}${Math.round(net)}`, color: theme.textSecondary },
     ];
 
     // Mindful: check if it's after 8pm for potential nudge
@@ -1704,7 +1683,7 @@ export default function HomeScreen() {
           <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
             <Text style={[styles.calNumber, { color: styleMode === 'mindful' ? theme.textSecondary : calColor, opacity: 0.88 }]}>{totalCals}</Text>
           </View>
-          <Text style={[styles.calTarget, { color: theme.textSecondary }]}>/ {styleMode === 'mindful' ? calTarget : adjustedTarget} kcal</Text>
+          <Text style={[styles.calTarget, { color: theme.textSecondary }]}>/ {styleMode === 'mindful' ? calTarget : onPaceTarget} kcal</Text>
         </View>
 
         {/* Progress bar -- neutral color in Mindful */}
@@ -1873,7 +1852,6 @@ export default function HomeScreen() {
         </View>
       </View>
       {goalWeight && (() => {
-        const GOAL_DEFICITS: Record<string, number> = { lose_2: -1000, lose_1_5: -750, lose_1: -500, lose_0_5: -250, maintain: 0, gain_0_5: 250, gain_1: 500 };
         const currentW = weight || lastKnownWeight?.val || null;
         const deficit = GOAL_DEFICITS[weightGoalPace];
         let projectedDate: string | null = null;

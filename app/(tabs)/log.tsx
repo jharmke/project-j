@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { storageSet } from '../../utils/storage';
+import { loadCalorieTargets } from '../../utils/calorieTarget';
 import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, handleDailyGoalHit, getCelebTier } from '../../achievementData';
 import { showAchievementToast, showDailyGoalToast } from '../../components/AchievementToast';
 import { showCelebration } from '../../components/CelebrationOverlay';
@@ -76,27 +77,27 @@ function MacroStackedBar({ protein, carbs, fat, proteinGoal, carbsGoal, fatGoal,
   const fatStyle     = useAnimatedStyle(() => ({ width: `${fatAnim.value}%` as any }));
 
   return (
-    <View style={{ width: 110, justifyContent: 'center', gap: 10 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-        <View style={{ flex: 1, height: 5, borderRadius: 3, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
+    <View style={{ width: 140, paddingLeft: 22, justifyContent: 'center', gap: 12 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+        <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
           <ReAnimated.View style={[{ height: '100%', borderRadius: 3, backgroundColor: theme.macroProtein }, proteinStyle]} />
         </View>
-        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', width: 10 }}>P</Text>
-        <Text style={{ fontSize: 13, color: theme.macroProtein, fontFamily: 'DMSans_600SemiBold', width: 40, textAlign: 'right' }}>{Math.round(protein)}<Text style={{ fontSize: 9, color: theme.textMuted }}>g</Text></Text>
+        <Text style={{ fontSize: 11, color: theme.macroProtein, fontFamily: 'DMSans_700Bold', width: 12 }}>P</Text>
+        <Text style={{ fontSize: 15, color: theme.macroProtein, fontFamily: 'DMSans_600SemiBold', width: 46, textAlign: 'right' }}>{Math.round(protein)}<Text style={{ fontSize: 10, color: theme.macroProtein }}>g</Text></Text>
       </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-        <View style={{ flex: 1, height: 5, borderRadius: 3, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+        <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
           <ReAnimated.View style={[{ height: '100%', borderRadius: 3, backgroundColor: theme.macroCarbs }, carbsStyle]} />
         </View>
-        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', width: 10 }}>C</Text>
-        <Text style={{ fontSize: 13, color: theme.macroCarbs, fontFamily: 'DMSans_600SemiBold', width: 40, textAlign: 'right' }}>{Math.round(carbs)}<Text style={{ fontSize: 9, color: theme.textMuted }}>g</Text></Text>
+        <Text style={{ fontSize: 11, color: theme.macroCarbs, fontFamily: 'DMSans_700Bold', width: 12 }}>C</Text>
+        <Text style={{ fontSize: 15, color: theme.macroCarbs, fontFamily: 'DMSans_600SemiBold', width: 46, textAlign: 'right' }}>{Math.round(carbs)}<Text style={{ fontSize: 10, color: theme.macroCarbs }}>g</Text></Text>
       </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-        <View style={{ flex: 1, height: 5, borderRadius: 3, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+        <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
           <ReAnimated.View style={[{ height: '100%', borderRadius: 3, backgroundColor: theme.macroFat }, fatStyle]} />
         </View>
-        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', width: 10 }}>F</Text>
-        <Text style={{ fontSize: 13, color: theme.macroFat, fontFamily: 'DMSans_600SemiBold', width: 40, textAlign: 'right' }}>{Math.round(fat)}<Text style={{ fontSize: 9, color: theme.textMuted }}>g</Text></Text>
+        <Text style={{ fontSize: 11, color: theme.macroFat, fontFamily: 'DMSans_700Bold', width: 12 }}>F</Text>
+        <Text style={{ fontSize: 15, color: theme.macroFat, fontFamily: 'DMSans_600SemiBold', width: 46, textAlign: 'right' }}>{Math.round(fat)}<Text style={{ fontSize: 10, color: theme.macroFat }}>g</Text></Text>
       </View>
     </View>
   );
@@ -159,6 +160,8 @@ export default function LogScreen() {
   const [water, setWater] = useState(0);
   const [waterEntries, setWaterEntries] = useState<{amount:number;timestamp:string;sign:'add'|'remove'}[]>([]);
   const [calTarget, setCalTarget] = useState(0);
+  const [profileBmr, setProfileBmr] = useState(0);
+  const [paceDeficit, setPaceDeficit] = useState(-500);
   const [totalProtein, setTotalProtein] = useState(0);
   const [totalCarbs, setTotalCarbs] = useState(0);
   const [totalFat, setTotalFat] = useState(0);
@@ -359,8 +362,23 @@ export default function LogScreen() {
   };
   
   const totalCals = entries.reduce((s, e) => s + e.cal, 0);
-  const adjustedTarget = calTarget + Math.round((isToday && activeCalories > 0 ? activeCalories : caloriesBurned) * burnAccuracyPct / 100);
-  const calPct = adjustedTarget > 0 ? (totalCals / adjustedTarget) * 100 : 0;
+  const activeAdj = Math.round((isToday && activeCalories > 0 ? activeCalories : caloriesBurned) * burnAccuracyPct / 100);
+  // On-pace target floored at calTarget. Mirrors the home Calories card (see index.tsx):
+  // BMR + measured active - pace deficit, but never below calTarget (TDEE - deficit).
+  const onPaceTarget = Math.max(calTarget, profileBmr + activeAdj + paceDeficit);
+  const displayTarget = styleMode === 'mindful' ? calTarget : onPaceTarget;
+  const calPct = displayTarget > 0 ? (totalCals / displayTarget) * 100 : 0;
+  // Bottom stat strip (mirrors the home Calories card: REMAINING | ACTIVE | LIVE NET).
+  const remainingVal = displayTarget - totalCals;
+  const nowMinLog = new Date(currentTime).getHours() * 60 + new Date(currentTime).getMinutes();
+  const runningBmrLog = profileBmr > 0 ? Math.round((profileBmr / 1440) * nowMinLog) : 0;
+  // Running BMR for today (day still in progress), full BMR for a completed past day.
+  const logNet = totalCals - activeAdj - (isToday ? runningBmrLog : profileBmr);
+  const calStats = [
+    { label: remainingVal >= 0 ? 'REMAINING' : 'OVER', value: `${Math.abs(Math.round(remainingVal))}`, color: remainingVal >= 0 ? theme.textSecondary : theme.statusBad },
+    { label: 'ACTIVE', value: `${activeAdj}`, color: theme.textSecondary },
+    { label: 'LIVE NET', value: `${logNet > 0 ? '+' : ''}${Math.round(logNet)}`, color: theme.textSecondary },
+  ];
   const getAdvancedNutrient = (name: string) => {
     return Math.round(entries.reduce((s, e) => {
       const n = e.foodNutrients?.find((fn: any) => fn.nutrientName === name);
@@ -385,7 +403,7 @@ export default function LogScreen() {
   const totalMonoFat = getAdvancedNutrient('Monounsaturated Fat');
   const totalPotassium = Math.round(getAdvancedNutrient('Potassium, K'));
   const totalSugarAlcohols = getAdvancedNutrient('Sugar Alcohols');
-  const calDelta = Math.abs(totalCals - adjustedTarget);
+  const calDelta = Math.abs(totalCals - displayTarget);
   const calColor = styleMode === 'mindful'
     ? theme.textSecondary
     : styleMode === 'discipline'
@@ -446,34 +464,11 @@ export default function LogScreen() {
           const p = JSON.parse(profileData);
           if (p.waterPresets) setWaterPresets(p.waterPresets);
           if (p.waterGoal && parseInt(p.waterGoal) > 0) setWaterGoal(parseInt(p.waterGoal));
-          const GOAL_DEFICITS: Record<string, number> = {
-            lose_2: -1000, lose_1_5: -750, lose_1: -500, lose_0_5: -250,
-            maintain: 0, gain_0_5: 250, gain_1: 500,
-          };
-          if (p.calTarget && parseInt(p.calTarget) > 0) {
-            setCalTarget(parseInt(p.calTarget));
-          } else if (p.lifestyleActivity && p.trainingFrequency && p.weightGoal) {
-            const LIFESTYLE_MULTIPLIERS: Record<string, number> = {
-              sedentary: 1.2, light: 1.3, active: 1.45, very_active: 1.6,
-            };
-            const TRAINING_BONUSES: Record<string, number> = {
-              none: 0, '1x': 100, '3x': 200, '5x': 300, daily: 400,
-            };
-            const dayData = await AsyncStorage.getItem(`pj_${activeDate}`);
-            const weight = dayData ? JSON.parse(dayData)?.weight : null;
-            if (weight && p.birthday && p.heightFt && p.heightIn) {
-              const weightKg = weight * 0.453592;
-              const heightCm = (parseFloat(p.heightFt) * 30.48) + (parseFloat(p.heightIn) * 2.54);
-              const parts = p.birthday.split('-');
-              const age = Math.floor((Date.now() - new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2])).getTime()) / (365.25 * 24 * 3600 * 1000));
-              const bmr = p.sex === 'male'
-                ? Math.round((10 * weightKg) + (6.25 * heightCm) - (5 * age) + 5)
-                : Math.round((10 * weightKg) + (6.25 * heightCm) - (5 * age) - 161);
-              const tdee = Math.round((bmr * (LIFESTYLE_MULTIPLIERS[p.lifestyleActivity] ?? 1.2)) + (TRAINING_BONUSES[p.trainingFrequency] ?? 0));
-              const deficit = GOAL_DEFICITS[p.weightGoal] ?? -500;
-              setCalTarget(tdee + deficit);
-            }
-          }
+          // Calorie target + BMR via the shared helper (same call home uses, so they match).
+          const targets = await loadCalorieTargets(activeDate);
+          setCalTarget(targets.calTarget);
+          setProfileBmr(targets.bmr);
+          setPaceDeficit(targets.paceDeficit);
           // Macro goals -- same logic as home tab
           const kcalForMacros = parseInt(p.calTarget) || 0;
           if (p.macroMode === 'fixed' && p.macroProteinG && p.macroCarbsG && p.macroFatG) {
@@ -601,34 +596,11 @@ export default function LogScreen() {
           const p = JSON.parse(profileData);
           if (p.waterPresets) setWaterPresets(p.waterPresets);
           if (p.waterGoal && parseInt(p.waterGoal) > 0) setWaterGoal(parseInt(p.waterGoal));
-          const GOAL_DEFICITS: Record<string, number> = {
-            lose_2: -1000, lose_1_5: -750, lose_1: -500, lose_0_5: -250,
-            maintain: 0, gain_0_5: 250, gain_1: 500,
-          };
-          if (p.calTarget && parseInt(p.calTarget) > 0) {
-            setCalTarget(parseInt(p.calTarget));
-          } else if (p.lifestyleActivity && p.trainingFrequency && p.weightGoal) {
-            const LIFESTYLE_MULTIPLIERS: Record<string, number> = {
-              sedentary: 1.2, light: 1.3, active: 1.45, very_active: 1.6,
-            };
-            const TRAINING_BONUSES: Record<string, number> = {
-              none: 0, '1x': 100, '3x': 200, '5x': 300, daily: 400,
-            };
-            const dayData = await AsyncStorage.getItem(`pj_${dateKey}`);
-            const weight = dayData ? JSON.parse(dayData)?.weight : null;
-            if (weight && p.birthday && p.heightFt && p.heightIn) {
-              const weightKg = weight * 0.453592;
-              const heightCm = (parseFloat(p.heightFt) * 30.48) + (parseFloat(p.heightIn) * 2.54);
-              const parts = p.birthday.split('-');
-              const age = Math.floor((Date.now() - new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2])).getTime()) / (365.25 * 24 * 3600 * 1000));
-              const bmr = p.sex === 'male'
-                ? Math.round((10 * weightKg) + (6.25 * heightCm) - (5 * age) + 5)
-                : Math.round((10 * weightKg) + (6.25 * heightCm) - (5 * age) - 161);
-              const tdee = Math.round((bmr * (LIFESTYLE_MULTIPLIERS[p.lifestyleActivity] ?? 1.2)) + (TRAINING_BONUSES[p.trainingFrequency] ?? 0));
-              const deficit = GOAL_DEFICITS[p.weightGoal] ?? -500;
-              setCalTarget(tdee + deficit);
-            }
-          }
+          // Calorie target + BMR via the shared helper (same call home uses, so they match).
+          const targets = await loadCalorieTargets(dateKey);
+          setCalTarget(targets.calTarget);
+          setProfileBmr(targets.bmr);
+          setPaceDeficit(targets.paceDeficit);
         }
         setLogRefreshKey(k => k + 1);
         } catch (e) {
@@ -1053,14 +1025,11 @@ export default function LogScreen() {
               <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
                 <Text style={[styles.calNumber, { color: calColor, opacity: 0.88 }]}>{totalCals}</Text>
               </View>
-              <Text style={[styles.calTarget, { color: theme.textSecondary }]}>/ {adjustedTarget} kcal</Text>
+              <Text style={[styles.calTarget, { color: theme.textSecondary }]}>/ {displayTarget} kcal</Text>
             </View>
             <View style={[styles.progressBarBg, { backgroundColor: theme.bgProgressTrack }]}>
               <ReAnimated.View style={[styles.progressBarFill, useAnimatedStyle(() => ({ width: withTiming(`${Math.min(calPct, 100)}%` as any, { duration: 400 }) })), { backgroundColor: calColor }]} />
             </View>
-            <Text style={[styles.calRemaining, { color: theme.textMuted }]}>
-              {adjustedTarget > 0 ? (totalCals < adjustedTarget ? `${adjustedTarget - totalCals} kcal remaining (${Math.round((isToday && activeCalories > 0 ? activeCalories : caloriesBurned) * burnAccuracyPct / 100)} burned)` : `${totalCals - adjustedTarget} kcal over target (${Math.round((isToday && activeCalories > 0 ? activeCalories : caloriesBurned) * burnAccuracyPct / 100)} burned)`) : ''}
-            </Text>
           </View>
           <MacroStackedBar
             protein={totalProtein}
@@ -1073,6 +1042,20 @@ export default function LogScreen() {
             showNetCarbs={showNetCarbs}
           />
         </View>
+        {/* Bottom stat strip -- full width, mirrors home Calories card. Hidden in Mindful. */}
+        {styleMode !== 'mindful' && (
+          <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCardTop, paddingTop: 10, marginTop: 10, flexDirection: 'row' }}>
+            {calStats.map((s, i) => (
+              <View key={i} style={{ flex: 1, alignItems: i === 1 ? 'center' : i === 2 ? 'flex-end' : 'flex-start' }}>
+                <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 2 }}>{s.label}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
+                  <Text style={{ fontSize: 18, color: s.color, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{s.value}</Text>
+                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>kcal</Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
       </View>
 
       {/* Advanced Nutrition Card */}

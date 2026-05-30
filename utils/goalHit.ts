@@ -87,23 +87,3 @@ export function evaluateCalorieGoalHit(input: GoalHitInput): GoalHitResult {
   }
   return { hit, way: 2, net, adjustedActive };
 }
-
-// Graded color for the home/log calorie card. Green appears only on a real hit,
-// so the card can never contradict the streak. Non-hit days split warn vs bad
-// by the existing mode delta thresholds. Mindful returns neutral (no color).
-// adjustedTarget for the home card = calTarget + adjustedActive; it is used only
-// to grade warn vs bad on a miss, never to decide the hit itself.
-export function calorieColorTier(
-  result: GoalHitResult,
-  consumed: number,
-  adjustedTarget: number,
-  styleMode: string,
-): 'good' | 'warn' | 'bad' | 'neutral' {
-  // Case-insensitive: index.tsx uses lowercase styleMode, stats.tsx capitalized.
-  const mode = (styleMode || '').toLowerCase();
-  if (mode === 'mindful') return 'neutral';
-  if (result.hit) return 'good';
-  const delta = Math.abs(consumed - adjustedTarget);
-  if (mode === 'discipline') return delta <= 149 ? 'warn' : 'bad';
-  return delta <= 300 ? 'warn' : 'bad'; // Balanced
-}

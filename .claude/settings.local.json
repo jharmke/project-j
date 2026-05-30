@@ -36,7 +36,13 @@
       "Bash(grep -n \"ToastRenderer\\\\|</View>$\\\\|^      }\" \"C:/Users/jthar/ProjectJ/app/\\(tabs\\)/index.tsx\")",
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('\\\\n'.join\\(sorted\\(d.get\\('dependencies',{}\\).keys\\(\\)\\)\\)\\)\")",
       "PowerShell(Get-Content \"C:\\\\Users\\\\jthar\\\\ProjectJ\\\\app\\\\\\(tabs\\)\\\\log.tsx\" | Select-Object -Index \\(1018..1075\\) | ForEach-Object -Begin {$i=1019} -Process { \"{0}: {1}\" -f $i, $_; $i++ } | Out-String -Width 220)",
-      "PowerShell(Get-Content \"C:\\\\Users\\\\jthar\\\\ProjectJ\\\\data\\\\tutorials.ts\" | Select-Object -Index \\(2725..2745\\) | ForEach-Object -Begin {$i=2726} -Process { \"{0}: {1}\" -f $i, $_; $i++ } | Out-String -Width 260)"
+      "PowerShell(Get-Content \"C:\\\\Users\\\\jthar\\\\ProjectJ\\\\data\\\\tutorials.ts\" | Select-Object -Index \\(2725..2745\\) | ForEach-Object -Begin {$i=2726} -Process { \"{0}: {1}\" -f $i, $_; $i++ } | Out-String -Width 260)",
+      "PowerShell(Select-String -Path \"C:\\\\Users\\\\jthar\\\\ProjectJ\\\\app\\\\achievements.tsx\" -Pattern \"nutritionGoalDays|adjustedTarget|nutritionCalTarget|activeCalories\" | ForEach-Object { \"{0}: {1}\" -f $_.LineNumber, \\($_.Line.Trim\\(\\)\\) } | Out-String -Width 220)",
+      "Bash(awk NR>=655 && NR<=720 *)",
+      "Bash(awk NR>=1855 && NR<=1912 *)",
+      "Bash(awk NR>=1 && NR<=30 *)",
+      "Bash(awk NR>=88 && NR<=120 *)",
+      "Bash(awk NR>=1820 && NR<=1858 *)"
     ]
   }
 }

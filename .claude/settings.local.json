@@ -34,7 +34,9 @@
       "Bash(Remove-Item *)",
       "PowerShell(Remove-Item *)",
       "Bash(grep -n \"ToastRenderer\\\\|</View>$\\\\|^      }\" \"C:/Users/jthar/ProjectJ/app/\\(tabs\\)/index.tsx\")",
-      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('\\\\n'.join\\(sorted\\(d.get\\('dependencies',{}\\).keys\\(\\)\\)\\)\\)\")"
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('\\\\n'.join\\(sorted\\(d.get\\('dependencies',{}\\).keys\\(\\)\\)\\)\\)\")",
+      "PowerShell(Get-Content \"C:\\\\Users\\\\jthar\\\\ProjectJ\\\\app\\\\\\(tabs\\)\\\\log.tsx\" | Select-Object -Index \\(1018..1075\\) | ForEach-Object -Begin {$i=1019} -Process { \"{0}: {1}\" -f $i, $_; $i++ } | Out-String -Width 220)",
+      "PowerShell(Get-Content \"C:\\\\Users\\\\jthar\\\\ProjectJ\\\\data\\\\tutorials.ts\" | Select-Object -Index \\(2725..2745\\) | ForEach-Object -Begin {$i=2726} -Process { \"{0}: {1}\" -f $i, $_; $i++ } | Out-String -Width 260)"
     ]
   }
 }

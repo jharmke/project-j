@@ -91,7 +91,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     definitions: [
       {
         term: 'Metrics',
-        explanation: 'Up to 4 metrics are shown at a time. Net Calories, Steps, Sleep Score, and Water are shown first. Weight, Active Calories, and Sleep Hours fill in when the primary metrics aren\'t available.',
+        explanation: 'Up to 4 metrics are shown at a time. Net Cals, Steps, Sleep Score, and Water are shown first. Weight, Active Calories, and Sleep Hours fill in when the primary metrics aren\'t available.',
       },
       {
         term: 'Color Coding',
@@ -132,35 +132,71 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     body: 'Everything you need to know about how your calories are tracked and what each number means.',
     definitions: [
       {
+        term: 'On-Pace Target',
+        explanation: 'The number after the slash. It\'s how much you can eat today and still stay on pace: your resting burn (BMR) plus the active calories you\'ve burned today, minus your pace deficit. It\'s floored at your daily target so a dead watch or an early morning never shows a too-low number, and it climbs above that floor once you out-burn a normal day.',
+      },
+      {
         term: 'Remaining',
-        explanation: 'Your calorie target minus what you\'ve eaten so far today. Goes red when you\'ve exceeded your target.',
+        explanation: 'Your on-pace target minus what you\'ve eaten so far today. Goes red when you\'ve exceeded it.',
       },
       {
         term: 'Active',
         explanation: 'Calories burned through exercise and movement, pulled live from Apple Health. If these seem high, you can adjust accuracy in Settings → Health.',
       },
       {
-        term: 'Net',
-        explanation: 'The truest picture of your day: calories consumed minus active burn minus the calories your body has already burned at rest since midnight (running BMR). A lower net means more of a deficit.',
+        term: 'Live Net',
+        explanation: 'The truest picture of your day: calories consumed minus active burn minus the calories your body has already burned at rest since midnight (running BMR). A lower Live Net means more of a deficit.',
       },
       {
         term: 'Running BMR',
-        explanation: 'Your body burns calories around the clock just to stay alive -- breathing, circulation, organ function. Running BMR is the portion of that already earned since midnight. It grows throughout the day so your net gets lower even if you don\'t eat or move.',
+        explanation: 'Your body burns calories around the clock just to stay alive: breathing, circulation, organ function. Running BMR is the portion of that already earned since midnight. It grows throughout the day so your Live Net gets lower even if you don\'t eat or move.',
       },
       {
         term: 'Color Coding',
-        explanation: 'The big calorie number turns green when you\'re on target, yellow when you\'re close to your limit, and red when you\'ve gone over.',
+        explanation: 'The big calorie number is green when you\'re right around your on-pace target, amber as you drift from it, and red when you\'re well off it in either direction.',
       },
     ],
     example: {
-      label: 'Net Calories Example',
+      label: 'Live Net Example',
       lines: [
         { desc: 'Calories consumed',   value: '1,400 kcal' },
         { desc: 'Active burn',         value: '− 320 kcal' },
         { desc: 'Running BMR (14 hrs)', value: '− 510 kcal' },
       ],
-      result: { desc: 'Net Calories', value: '570 kcal' },
+      result: { desc: 'Live Net', value: '570 kcal' },
     },
+  },
+  {
+    key: 'todays_total',
+    category: 'Nutrition',
+    title: 'Today\'s Total',
+    body: 'Your running calorie and macro totals for the day, using the same on-pace math as your home calorie card.',
+    definitions: [
+      {
+        term: 'On-Pace Target',
+        explanation: 'The number after the slash. It\'s how much you can eat today and still stay on pace: your resting burn (BMR) plus the active calories you\'ve burned today, minus your pace deficit. It\'s floored at your daily target so a dead watch or an early morning never shows a too-low number, and it climbs above that floor once you out-burn a normal day.',
+      },
+      {
+        term: 'Protein / Carbs / Fat',
+        explanation: 'The mini-bars show each macro\'s total so far against its daily goal: protein green, carbs amber, fat red. The number is grams eaten and the bar fills as you log.',
+      },
+      {
+        term: 'Remaining',
+        explanation: 'Your on-pace target minus what you\'ve eaten so far today. Goes red when you\'ve exceeded it.',
+      },
+      {
+        term: 'Active',
+        explanation: 'Calories burned through exercise and movement, pulled live from Apple Health. If these seem high, you can adjust accuracy in Settings → Health.',
+      },
+      {
+        term: 'Live Net',
+        explanation: 'The truest picture of your day: calories consumed minus active burn minus the calories your body has already burned at rest since midnight (running BMR). A lower Live Net means more of a deficit.',
+      },
+      {
+        term: 'Color Coding',
+        explanation: 'The calorie number is green when you\'re right around your on-pace target, amber as you drift from it, and red when you\'re well off it in either direction.',
+      },
+    ],
   },
   {
     key: 'burn_accuracy',

@@ -1018,7 +1018,10 @@ export default function LogScreen() {
 
       {/* Today's Total Card */}
       <View ref={todayTotalRef} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
-        <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Today's Total</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+          <Text style={[styles.cardLabel, { color: theme.textMuted, marginBottom: 0 }]}>Today's Total</Text>
+          <TooltipIcon tooltipKey="todays_total" />
+        </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <View style={{ flex: 1 }}>
             <View style={styles.calRow}>

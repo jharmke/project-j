@@ -2576,7 +2576,7 @@ export default function HomeScreen() {
     const allMetrics: Metric[] = [
       {
         id: 'net',
-        label: 'Running Net',
+        label: 'Net Cals',
         sub: (() => {
           const paceLabels: Record<string, string> = {
             lose_2:   'Lose 2 lbs / wk pace',
@@ -2696,7 +2696,7 @@ export default function HomeScreen() {
     // ── Tutorial demo override: show hardcoded 3-1 demo so all 4 Tier 1 metrics are guaranteed ──
     if (yvyTutorialDemo) {
       selected = [
-        { id: 'net' as MetricId, label: 'Running Net', sub: 'Calorie target pace', todayVal: -220, ydVal: 180,
+        { id: 'net' as MetricId, label: 'Net Cals', sub: 'Calorie target pace', todayVal: -220, ydVal: 180,
           format: (v: number) => `${v > 0 ? '+' : ''}${Math.round(v).toLocaleString()}`, unit: 'kcal',
           winCondition: () => 'win' as 'win' | 'lose' | 'tie' },
         { id: 'steps' as MetricId, label: 'Steps', sub: '10,000 Goal', todayVal: 8420, ydVal: 7100,

@@ -394,7 +394,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
             </View>
             <View style={styles.stat}>
               <Text style={styles.statVal}>{totalCals > 0 ? `${netcals > 0 ? '+' : ''}${Math.round(netcals)}` : '--'}</Text>
-              <Text style={styles.statLabel}>Running Net</Text>
+              <Text style={styles.statLabel}>Net Cals</Text>
             </View>
           </View>
           <View style={styles.divider} />

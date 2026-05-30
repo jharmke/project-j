@@ -387,7 +387,7 @@ export default function HeadToHeadScreen() {
   const metrics: MetricDef[] = snapA && snapB ? [
     {
       id: 'net',
-      label: 'Running Net',
+      label: 'Net Cals',
       sub: paceLabels[weightGoalPace] ?? 'Calorie target pace',
       icon: 'flame',
       valA: snapA.net,

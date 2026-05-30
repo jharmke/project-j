@@ -203,9 +203,9 @@ export const TUTORIALS: Tutorial[] = [
         targetKey: 'cal_card_main',
         title: 'CALORIES TODAY',
         body: {
-          discipline: 'Your calorie card is mission control. Everything you eat and burn flows through here. Master this number and you master your progress.',
-          balanced: 'Your calories card shows your complete daily picture -- what you ate, what you burned, and where you stand.',
-          mindful: 'This card shows what you\'ve logged today. It\'s just information -- use it however feels right for you.',
+          discipline: 'Your calorie card is mission control. The big number is what you\'ve eaten; the number after the slash is your on-pace target for today. Master this and you master your progress.',
+          balanced: 'Your calories card shows your complete daily picture: what you ate, what you burned, and where you stand. The number after the slash is your on-pace target for today.',
+          mindful: 'This card shows what you\'ve logged today against your on-pace target. It\'s just information, use it however feels right for you.',
         },
       },
       {
@@ -213,9 +213,9 @@ export const TUTORIALS: Tutorial[] = [
         title: 'REMAINING',
         skipForModes: ['mindful'],
         body: {
-          discipline: 'Remaining = your target minus what you\'ve eaten. Stay positive to hit your deficit. Go negative and you\'re in surplus.',
-          balanced: 'Remaining shows how many calories you have left before hitting your daily goal. It updates every time you log food.',
-          mindful: 'Remaining shows the gap between your goal and what you\'ve logged. There\'s no right answer -- it\'s just where you are.',
+          discipline: 'Remaining = your on-pace target minus what you\'ve eaten. Stay positive to hit your deficit. Go negative and you\'re in surplus.',
+          balanced: 'Remaining shows how many calories you have left to reach your on-pace target. It updates every time you log food.',
+          mindful: 'Remaining shows the gap between your on-pace target and what you\'ve logged. There\'s no right answer here, just where you are.',
         },
       },
       {
@@ -230,12 +230,12 @@ export const TUTORIALS: Tutorial[] = [
       },
       {
         targetKey: 'cal_card_net',
-        title: 'RUNNING NET',
+        title: 'LIVE NET',
         skipForModes: ['mindful'],
         body: {
-          discipline: 'Running Net = consumed minus active burn minus running BMR. It\'s your live deficit or surplus. Negative means you\'re in deficit -- that\'s the goal if you\'re cutting.',
-          balanced: 'Running Net puts everything together -- food eaten, calories burned, and your resting metabolism. It\'s the most complete number on the card.',
-          mindful: 'Running Net combines what you ate, what you burned, and what your body uses at rest. It\'s your complete daily picture so far.',
+          discipline: 'Live Net = consumed minus active burn minus running BMR. It\'s your live deficit or surplus. Negative means you\'re in a deficit, the goal if you\'re cutting.',
+          balanced: 'Live Net puts everything together: food eaten, calories burned, and your resting metabolism. It\'s the most complete number on the card.',
+          mindful: 'Live Net combines what you ate, what you burned, and what your body uses at rest. It\'s your complete daily picture so far.',
         },
       },
       {
@@ -490,8 +490,8 @@ export const TUTORIALS: Tutorial[] = [
         yvyDemo: true,
         title: 'THE METRICS',
         body: {
-          discipline: '4 metrics shown: Running Net, Steps, Sleep Score, and Water. These are your core daily performance indicators. The demo shows today winning 3 of 4. If any of these are missing (no sleep data yet, steps not tracked), backup metrics like weight, active calories, or sleep hours fill the slots automatically.',
-          balanced: 'The card tracks 4 key metrics: Running Net, Steps, Sleep Score, and Water. Each shows your result for today vs yesterday. This demo shows today winning 3 of 4. If a primary metric has no data yet, a backup like weight, active calories, or sleep hours steps in so the card always has something to show.',
+          discipline: '4 metrics shown: Net Cals, Steps, Sleep Score, and Water. These are your core daily performance indicators. The demo shows today winning 3 of 4. If any of these are missing (no sleep data yet, steps not tracked), backup metrics like weight, active calories, or sleep hours fill the slots automatically.',
+          balanced: 'The card tracks 4 key metrics: Net Cals, Steps, Sleep Score, and Water. Each shows your result for today vs yesterday. This demo shows today winning 3 of 4. If a primary metric has no data yet, a backup like weight, active calories, or sleep hours steps in so the card always has something to show.',
           mindful: 'Steps, Sleep Score, and Water are compared in this mode. Each is just one piece of your day. This demo shows a sample comparison. If any metric has no data, a backup fills in so the card stays useful from day one.',
         },
       },

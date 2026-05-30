@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageSet } from './storage';
 import { offsetToDateKey } from './statsData';
+import { calcSleepScore } from './sleepScore';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -160,24 +161,6 @@ function getEntryNutrient(entries: any[], nutrientName: string): number {
   }, 0) * 10) / 10;
 }
 
-function calcSleepScore(
-  sleepHours: number,
-  sleepStages: any | null,
-  sleepGoal: number,
-  feelRating: number | null,
-): number | null {
-  if (sleepStages && sleepStages.totalMs > 0) {
-    const durationPts = Math.min(40, (sleepHours / sleepGoal) * 40);
-    const totalMs = sleepStages.totalMs;
-    const deepPts = Math.max(0, 30 - (Math.abs(sleepStages.deep / totalMs - 0.20) / 0.20) * 30);
-    const remPts = Math.min(30, Math.max(0, (sleepStages.rem / totalMs / 0.22) * 30));
-    return Math.round(durationPts + deepPts + remPts);
-  }
-  if (!feelRating) return null;
-  const FEEL_BONUS: Record<number, number> = { 1: 0, 2: 10, 3: 20, 4: 30, 5: 40 };
-  return Math.round(Math.min(100, Math.min(60, (sleepHours / sleepGoal) * 60) + (FEEL_BONUS[feelRating] ?? 0)));
-}
-
 function avg(arr: number[]): number {
   if (arr.length === 0) return 0;
   return arr.reduce((s, v) => s + v, 0) / arr.length;
@@ -288,7 +271,7 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
         const sh = d.sleepOverride || d.sleepHours;
         if (sh) {
           sleepHours = sh;
-          sleepScore = calcSleepScore(sh, d.sleepStages || null, sleepGoal, d.sleepFeelRating ?? null);
+          sleepScore = calcSleepScore(sh, d.sleepStages || null, sleepGoal, d.sleepFeelRating ?? null, !!d.sleepOverride, d.sleepConsistencyPts ?? 0).score;
         }
       }
     } catch {}

@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
 import { computeDayNet, buildDailyBmrMap, offsetToDateKey } from '../utils/statsData';
+import { calcSleepScore } from '../utils/sleepScore';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type MetricId = 'net' | 'steps' | 'sleepScore' | 'water' | 'weight' | 'activeCals' | 'sleepHours';
@@ -31,33 +32,6 @@ interface DaySnapshot {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-function calcSleepScore(
-  sleepHours: number | null,
-  sleepStages: { core: number; deep: number; rem: number; totalMs: number } | null,
-  sleepGoal: number,
-  feelRating?: number | null,
-  isManual?: boolean,
-): { score: number | null; hasStages: boolean; path: 1 | 2 | 3 } {
-  if (!sleepHours || sleepHours <= 0) return { score: null, hasStages: false, path: 3 };
-  if (sleepStages && sleepStages.totalMs > 0) {
-    const durationPts = Math.min(40, Math.pow(sleepHours / sleepGoal, 3) * 40);
-    const totalMs = sleepStages.totalMs;
-    const deepPct = sleepStages.deep / totalMs;
-    const remPct = sleepStages.rem / totalMs;
-    const deepIdeal = 0.20;
-    const deepDiff = Math.abs(deepPct - deepIdeal);
-    const deepPts = Math.max(0, 30 - (deepDiff / deepIdeal) * 30);
-    const remIdeal = 0.22;
-    const remPts = Math.min(30, Math.max(0, (remPct / remIdeal) * 30));
-    return { score: Math.round(durationPts + deepPts + remPts), hasStages: true, path: 1 };
-  }
-  const path = isManual ? 3 : 2;
-  if (!feelRating) return { score: null, hasStages: false, path };
-  const durationPts = Math.min(60, (sleepHours / sleepGoal) * 60);
-  const feelPts = ((feelRating - 1) / 9) * 30;
-  return { score: Math.round(Math.min(100, durationPts + feelPts)), hasStages: false, path };
-}
-
 function fmt(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
@@ -118,7 +92,8 @@ async function loadSnapshot(dateKey: string, sleepGoal: number, calTarget: numbe
       const stages = d.sleepStages || null;
       const feelRating = d.sleepFeelRating ?? null;
       const isManual = !!d.sleepOverride;
-      const { score, path } = calcSleepScore(hours, stages, sleepGoal, feelRating, isManual);
+      const consistencyPts = d.sleepConsistencyPts ?? 0;
+      const { score, path } = calcSleepScore(hours, stages, sleepGoal, feelRating, isManual, consistencyPts);
       if (path === 1 || feelRating) snap.sleepScore = score;
     }
   } catch (e) {

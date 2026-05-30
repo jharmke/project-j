@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { calcSleepScore } from './sleepScore';
 
 export type TrendData = {
   weight: { date: string; value: number }[];
@@ -134,26 +135,6 @@ export function computeDayNet(
   return Math.round(consumed - burned - bmr);
 }
 
-function calcSleepScoreForTrend(
-  sleepHours: number,
-  sleepStages: { core: number; deep: number; rem: number; totalMs: number } | null,
-  sleepGoal: number,
-  feelRating: number | null,
-  isManual: boolean,
-  consistencyPts = 0,
-): number | null {
-  if (sleepStages && sleepStages.totalMs > 0) {
-    const durationPts = Math.min(40, Math.pow(sleepHours / sleepGoal, 3) * 40);
-    const totalMs = sleepStages.totalMs;
-    const deepPts = Math.max(0, 30 - (Math.abs(sleepStages.deep / totalMs - 0.20) / 0.20) * 30);
-    const remPts = Math.min(30, Math.max(0, (sleepStages.rem / totalMs / 0.22) * 30));
-    return Math.round(durationPts + deepPts + remPts);
-  }
-  if (!feelRating) return null;
-  const feelPts = ((feelRating - 1) / 9) * 30;
-  return Math.round(Math.min(100, Math.min(60, (sleepHours / sleepGoal) * 60) + feelPts + consistencyPts));
-}
-
 function getEntryNutrient(entries: any[], nutrientName: string): number {
   return Math.round(entries.reduce((s: number, e: any) => {
     const n = e.foodNutrients?.find((fn: any) => fn.nutrientName === nutrientName);
@@ -252,7 +233,7 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
           const feel = data.sleepFeelRating ?? null;
           const isManual = !!data.sleepOverride;
           const consistencyPts = data.sleepConsistencyPts ?? 0;
-          const score = calcSleepScoreForTrend(sleepH, stages, sleepGoal, feel, isManual, consistencyPts);
+          const score = calcSleepScore(sleepH, stages, sleepGoal, feel, isManual, consistencyPts).score;
           if (score !== null) ssH.push({ date: dateKey, value: score });
         }
         // HealthKit metrics persisted to storage

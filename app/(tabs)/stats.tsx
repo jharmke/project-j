@@ -18,6 +18,7 @@ import { StatsGraphCard, GRAPH_SWATCHES, MACRO_PROTEIN, MACRO_CARBS, MACRO_FAT }
 import { StatsCardEditModal } from '../../components/StatsCardEditModal';
 import TooltipIcon from '../../components/TooltipIcon';
 import { storageSet } from '../../utils/storage';
+import { calcSleepScore } from '../../utils/sleepScore';
 import { showToolkit } from '../../components/ToolkitSheet';
 import { useTutorial } from '../../context/TutorialContext';
 import { useTutorialTarget } from '../../hooks/useTutorialTarget';
@@ -150,29 +151,6 @@ function CollapsibleSection({ label, subtitle, children, defaultOpen = true, the
 }
 
 // ── Sleep score (mirrors index.tsx) ──────────────────────────────────────────
-
-function calcSleepScore(
-  sleepHours: number | null,
-  sleepStages: { core: number; deep: number; rem: number; totalMs: number } | null,
-  sleepGoal: number,
-  feelRating?: number | null,
-  isManual?: boolean,
-  consistencyPts = 0,
-): { score: number | null; path: 1 | 2 | 3 } {
-  if (!sleepHours || sleepHours <= 0) return { score: null, path: 3 };
-  if (sleepStages && sleepStages.totalMs > 0) {
-    const durationPts = Math.min(40, Math.pow(sleepHours / sleepGoal, 3) * 40);
-    const totalMs = sleepStages.totalMs;
-    const deepPts = Math.max(0, 30 - (Math.abs(sleepStages.deep / totalMs - 0.20) / 0.20) * 30);
-    const remPts  = Math.min(30, Math.max(0, (sleepStages.rem / totalMs / 0.22) * 30));
-    return { score: Math.round(durationPts + deepPts + remPts), path: 1 };
-  }
-  const path = isManual ? 3 : 2;
-  if (!feelRating) return { score: null, path };
-  const durationPts = Math.min(60, (sleepHours / sleepGoal) * 60);
-  const feelPts = ((feelRating - 1) / 9) * 30;
-  return { score: Math.round(Math.min(100, durationPts + feelPts + consistencyPts)), path };
-}
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 

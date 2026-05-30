@@ -7,30 +7,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
 import { storageSet } from '../utils/storage';
 import { DEFAULT_MEAL_SLOTS, MealSlot, findSlotForMeal, loadMealSlots, getMealDisplayName } from '../utils/mealSlots';
+import { calcSleepScore } from '../utils/sleepScore';
 
 type SleepStages = { core: number; deep: number; rem: number; totalMs: number };
-
-function calcSleepScore(
-  sleepHours: number | null,
-  sleepStages: SleepStages | null,
-  sleepGoal: number,
-  feelRating?: number | null,
-  isManual?: boolean,
-  consistencyPts = 0,
-): { score: number | null; hasStages: boolean } {
-  if (!sleepHours || sleepHours <= 0) return { score: null, hasStages: false };
-  if (sleepStages && sleepStages.totalMs > 0) {
-    const durationPts = Math.min(40, Math.pow(sleepHours / sleepGoal, 3) * 40);
-    const totalMs = sleepStages.totalMs;
-    const deepPts = Math.max(0, 30 - (Math.abs((sleepStages.deep / totalMs) - 0.20) / 0.20) * 30);
-    const remPts  = Math.min(30, Math.max(0, (sleepStages.rem / totalMs / 0.22) * 30));
-    return { score: Math.round(durationPts + deepPts + remPts), hasStages: true };
-  }
-  if (!feelRating) return { score: null, hasStages: false };
-  const durationPts = Math.min(60, (sleepHours / sleepGoal) * 60);
-  const feelPts = ((feelRating - 1) / 9) * 30;
-  return { score: Math.round(Math.min(100, durationPts + feelPts + consistencyPts)), hasStages: false };
-}
 
 function fmtTime(val: string | null | undefined): string {
   if (!val) return '--';

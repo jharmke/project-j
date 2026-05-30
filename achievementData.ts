@@ -1912,7 +1912,11 @@ export async function checkNutritionAchievements(): Promise<AchievementDef[]> {
 
   if (nutritionGoalDays === 0) return [];
 
-  // Exact match -- only the achievement whose threshold equals the current count fires
+  // Unlock every milestone at or below the current count (>=, like the sleep
+  // achievements above). NOT exact-match: an exact === would orphan a badge any
+  // time the count skips its threshold (backdated data, logging gaps), leaving it
+  // stuck "10/10 but locked" forever. Catches up multiple badges in one pass;
+  // checkAndUnlock no-ops anything already unlocked. Caller toasts the highest.
   const milestones = [
     { id: 'nutrition_1',   threshold: 1   },
     { id: 'nutrition_10',  threshold: 10  },
@@ -1924,12 +1928,18 @@ export async function checkNutritionAchievements(): Promise<AchievementDef[]> {
     { id: 'nutrition_365', threshold: 365 },
   ];
 
-  const target = milestones.find(m => m.threshold === nutritionGoalDays);
-  if (!target) return [];
-
-  const store = await loadAchievements();
-  const { newlyUnlocked, updatedStore: _u } = await checkAndUnlock(target.id, store);
-  if (!newlyUnlocked) return [];
-  const def = ACHIEVEMENTS.find(a => a.id === target.id);
-  return def ? [def] : [];
+  let store = await loadAchievements();
+  const newlyUnlockedDefs: AchievementDef[] = [];
+  for (const m of milestones) {
+    if (nutritionGoalDays < m.threshold) continue;
+    const { newlyUnlocked, updatedStore } = await checkAndUnlock(m.id, store);
+    store = updatedStore;
+    if (newlyUnlocked) {
+      const def = ACHIEVEMENTS.find(a => a.id === m.id);
+      if (def) newlyUnlockedDefs.push(def);
+    }
+  }
+  // All earned milestones are now unlocked in storage. Toast only the highest so a
+  // multi-badge catch-up (rare: backdated data, big gaps) fires one toast, not a burst.
+  return newlyUnlockedDefs.length > 0 ? [newlyUnlockedDefs[newlyUnlockedDefs.length - 1]] : [];
 }

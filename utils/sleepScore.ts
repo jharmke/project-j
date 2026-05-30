@@ -25,7 +25,7 @@ export function calcSleepScore(
 ): { score: number | null; hasStages: boolean; path: 1 | 2 | 3 } {
   if (!sleepHours || sleepHours <= 0) return { score: null, hasStages: false, path: 3 };
 
-  // Path 1 -- HealthKit hours + stages
+  // Path 1: HealthKit hours plus stages
   if (sleepStages && sleepStages.totalMs > 0) {
     const durationPts = Math.min(40, Math.pow(sleepHours / sleepGoal, 3) * 40);
     const totalMs = sleepStages.totalMs;
@@ -39,7 +39,7 @@ export function calcSleepScore(
     return { score: Math.round(durationPts + deepPts + remPts), hasStages: true, path: 1 };
   }
 
-  // Path 2 (HealthKit hours only) or Path 3 (manual) -- feel rating required
+  // Path 2 (HealthKit hours only) or Path 3 (manual): feel rating required
   const path = isManual ? 3 : 2;
   if (!feelRating) return { score: null, hasStages: false, path };
   const durationPts = Math.min(60, (sleepHours / sleepGoal) * 60);

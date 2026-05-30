@@ -29,6 +29,8 @@ import ReadingPlansCard from '../../components/ReadingPlansCard';
 import { StatsCard, CardPeriod, DATA_KEY_META, DEFAULT_STATS_CARDS } from '../../statsCardRegistry';
 import { TrendData, EMPTY_TREND_DATA, fetchTrendData } from '../../utils/statsData';
 import { calcSleepScore } from '../../utils/sleepScore';
+import { runDayScoreScan } from '../../utils/dayScoreStore';
+import { DayScore } from '../../utils/dayScore';
 import { StatsGraphCard } from '../../components/StatsGraphCard';
 import { StatsCardEditModal } from '../../components/StatsCardEditModal';
 import { saveStatsCards } from '../../statsCardRegistry';
@@ -957,6 +959,27 @@ export default function HomeScreen() {
       subscription.remove();
       clearTimeout(midnightTimer);
     };
+  }, []);
+
+  // ── Day Score: compute yesterday + backfill recent days, once per calendar day
+  // Fires on mount and on app foreground (the real "first load after 5am" moment).
+  // runDayScoreScan is self-gated, so multiple triggers are safe. The returned
+  // yesterday score is stashed for the morning pop-up (step 3).
+  const pendingDayScoreRef = useRef<DayScore | null>(null);
+  useEffect(() => {
+    const runScan = () => {
+      runDayScoreScan(getDateKey(new Date()), new Date().toISOString())
+        .then(score => {
+          if (score) {
+            pendingDayScoreRef.current = score;
+            console.log('[DayScore] yesterday:', score.composite, score.label);
+          }
+        })
+        .catch(e => console.log('[DayScore] scan error', e));
+    };
+    runScan();
+    const sub = AppState.addEventListener('change', s => { if (s === 'active') runScan(); });
+    return () => sub.remove();
   }, []);
 
   // ── Persist HealthKit to storage ────────────────────────────────────────────

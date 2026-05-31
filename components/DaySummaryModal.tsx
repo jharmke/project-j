@@ -156,7 +156,9 @@ function ScoreRing({ value, color, theme, celebrate }: { value: number; color: s
   const isShine = celebrate === 'shine';
 
   // Cycle phases (fractions of the loop): pulse, then a quick glint, then rest.
-  const PULSE_END = 0.21, GLINT_END = 0.36;   // rest fills the remainder
+  // Glint window is deliberately short so it reads as a fast real-life shimmer
+  // (~0.07 of the 2800ms loop ≈ 200ms sweep), not a slow travel.
+  const PULSE_END = 0.21, GLINT_END = 0.28;   // rest fills the remainder
 
   useEffect(() => {
     arc.value = 0;

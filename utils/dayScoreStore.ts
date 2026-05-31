@@ -33,6 +33,18 @@ function keyForOffset(todayKey: string, offset: number): string {
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
 }
 
+// A day counts as fully excluded from the Day Score (no score, dash in archive,
+// out of the weekly average) only when every category exclusion is on. The app
+// stores per-category exclusions as { diet, water, exercise } (Day Detail
+// toggles + calendar dots); the pop-up's "Exclude this day" sets all three. A
+// legacy plain-boolean excluded is also honored for safety.
+export function isDayExcluded(day: any): boolean {
+  const ex = day?.excluded;
+  if (ex === true) return true;
+  if (ex && typeof ex === 'object') return !!(ex.diet && ex.water && ex.exercise);
+  return false;
+}
+
 // Workout day type + completion counts for a date, mirroring the workout tab:
 // program is the per-date entry, falling back to the weekly template, then blank.
 // Cardio completion is a boolean separate from exercise checks, so a completed
@@ -108,7 +120,7 @@ export async function buildDayScoreInput(dateKey: string, computedAt: string): P
   const sleepConsistencyPts = day.sleepConsistencyPts ?? 0;
 
   return {
-    excluded: !!day.excluded,
+    excluded: isDayExcluded(day),
     computedAt,
     styleMode,
     hasFood,
@@ -159,7 +171,7 @@ async function ensureDayScore(dateKey: string, nowISO: string): Promise<DayScore
   if (!raw) return null;
   let day: any;
   try { day = JSON.parse(raw); } catch { return null; }
-  if (day.excluded) return null;
+  if (isDayExcluded(day)) return null;
   if (day.dayScore) return day.dayScore;
   return computeAndStoreDayScore(dateKey, nowISO);
 }
@@ -192,7 +204,10 @@ export async function excludeDayFromAverages(dateKey: string): Promise<void> {
   if (!raw) return;
   let day: any;
   try { day = JSON.parse(raw); } catch { return; }
-  const merged: any = { ...day, excluded: true };
+  // Merge into the existing per-category exclusion object, never replace it, so
+  // the calendar dots and Day Detail toggles stay intact. Full day = all three.
+  const prevEx = (day.excluded && typeof day.excluded === 'object') ? day.excluded : {};
+  const merged: any = { ...day, excluded: { ...prevEx, diet: true, water: true, exercise: true } };
   if (day.dayScore) merged.dayScore = { ...day.dayScore, excludedFromAverages: true };
   await storageSet(`pj_${dateKey}`, JSON.stringify(merged));
 }
@@ -221,7 +236,7 @@ export async function runDayScoreScan(todayKey: string, nowISO: string): Promise
     if (!raw) continue;
     let day: any;
     try { day = JSON.parse(raw); } catch { continue; }
-    if (day.dayScore || day.excluded) continue;
+    if (day.dayScore || isDayExcluded(day)) continue;
     await computeAndStoreDayScore(fullKey.slice(3), nowISO); // strip "pj_"
   }
 
@@ -285,7 +300,7 @@ export async function loadDayScoreArchive(todayKey: string, mode: StyleMode): Pr
     byDate.set(dateKey, {
       dateKey,
       hasData: true,
-      excluded: !!day.excluded,
+      excluded: isDayExcluded(day),
       score: day.dayScore && typeof day.dayScore.composite === 'number' ? day.dayScore as DayScore : null,
     });
   }

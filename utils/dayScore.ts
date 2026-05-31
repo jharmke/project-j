@@ -34,6 +34,12 @@ const SLEEP_FLOOR = 50;
 
 export interface DayScoreInput {
   excluded: boolean;
+  // Per-category exclusions (diet / water / exercise) from the day record. An
+  // excluded category drops its sub-components from scoring; when every sub of a
+  // category is excluded, the whole category drops out and the rest renormalize.
+  dietExcluded: boolean;
+  waterExcluded: boolean;
+  exerciseExcluded: boolean;
   computedAt: string;            // ISO timestamp, supplied by the caller
   styleMode: StyleMode;
 
@@ -90,6 +96,7 @@ export interface DayScore {
   } | null;
   computedAt: string;
   excludedFromAverages: boolean;
+  version?: number;              // stamped by the store; bump to force recompute
 }
 
 function round1(n: number): number {
@@ -162,19 +169,19 @@ function calorieSubScore(input: DayScoreInput): { score: number; hit: boolean } 
 function nutritionScore(input: DayScoreInput): { score: number; detail: NonNullable<DayScore['nutritionDetail']> } | null {
   if (!input.hasFood) return null;
 
-  // Calorie sub needs a target to grade against. No target set, no calorie sub.
-  // (The UI should urge the user to set a calorie goal for an accurate score.)
-  const caloriePresent = input.calTarget > 0;
+  // Calorie + protein are diet sub-components: excluding diet drops them both.
+  // Calorie also needs a target to grade against (no target, no calorie sub).
+  const caloriePresent = input.calTarget > 0 && !input.dietExcluded;
   const cal = caloriePresent ? calorieSubScore(input) : { score: 0, hit: false };
 
-  // Protein present only when a protein goal exists. Proximity vs goal, capped.
-  const proteinPresent = input.proteinGoalG > 0;
+  // Protein present only when a protein goal exists and diet is not excluded.
+  const proteinPresent = input.proteinGoalG > 0 && !input.dietExcluded;
   const proteinScore = proteinPresent
     ? Math.min(PROTEIN_MAX, PROTEIN_MAX * (input.actualProteinG / input.proteinGoalG))
     : 0;
 
-  // Water present only when a goal is set and water was logged. Proximity, capped.
-  const waterPresent = input.waterGoal > 0 && input.waterLogged > 0;
+  // Water present only when a goal is set, water was logged, and water is not excluded.
+  const waterPresent = input.waterGoal > 0 && input.waterLogged > 0 && !input.waterExcluded;
   const waterScore = waterPresent
     ? Math.min(WATER_MAX, WATER_MAX * (input.waterLogged / input.waterGoal))
     : 0;
@@ -213,6 +220,7 @@ function nutritionScore(input: DayScoreInput): { score: number; detail: NonNulla
 //  - Mindful is presence based; a rest-tagged day is excluded (no judgment).
 // The day type only matters here as the rest signal (dayType === 'rest').
 function activityScore(input: DayScoreInput): { score: number; detail: NonNullable<DayScore['activityDetail']> } | null {
+  if (input.exerciseExcluded) return null;   // exercise excluded: Activity drops out
   const adjActive = adjustedActiveCals(input);
   const goal = input.activeCalGoal;
   const isRest = input.dayType === 'rest';

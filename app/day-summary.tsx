@@ -137,6 +137,9 @@ export default function DaySummaryScreen() {
     ? Math.round((input.dayData?.activeCalories || input.dayData?.caloriesBurned || 0) * input.burnAccuracyPct / 100)
     : 0;
   const net = input ? Math.round(input.consumed - adjustedActive - input.dayBmr) : null;
+  const dietExcluded = !!input?.dietExcluded;
+  const waterExcluded = !!input?.waterExcluded;
+  const exerciseExcluded = !!input?.exerciseExcluded;
 
   const shown = Math.round(score.composite);
   const heroColor = isMindful ? theme.accentBlue : (shown >= 80 ? theme.statusGood : shown >= 60 ? theme.statusWarn : theme.statusBad);
@@ -243,7 +246,9 @@ export default function DaySummaryScreen() {
           </SectionCard>
         ) : (
           <SectionCard label="Nutrition" icon="restaurant" value={null} innerRef={nutritionRef}>
-            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 4 }}>No food logged this day.</Text>
+            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 4 }}>
+              {dietExcluded || waterExcluded ? 'Nutrition was excluded for this day.' : 'No food logged this day.'}
+            </Text>
           </SectionCard>
         )}
 
@@ -263,7 +268,9 @@ export default function DaySummaryScreen() {
           </SectionCard>
         ) : (
           <SectionCard label="Activity" icon="barbell" value={null} innerRef={activityRef}>
-            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 4 }}>No activity data this day.</Text>
+            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 4 }}>
+              {exerciseExcluded ? 'Activity was excluded for this day.' : 'No activity data this day.'}
+            </Text>
           </SectionCard>
         )}
 

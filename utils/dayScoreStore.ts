@@ -18,6 +18,9 @@ import { computeDayScore, scoreLabel, DayScore, DayScoreInput, DayType, StyleMod
 
 const SCAN_GATE_KEY = 'pj_last_dayscore_scan';
 const ARCHIVE_WINDOW_DAYS = 90;
+// Bump when the scoring logic changes so stored scores recompute once. v2 added
+// per-category (diet/water/exercise) exclusion handling.
+const DAYSCORE_VERSION = 2;
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function dayNameFromKey(dateKey: string): string {
@@ -119,8 +122,16 @@ export async function buildDayScoreInput(dateKey: string, computedAt: string): P
   const sleepIsManual = !!day.sleepOverride;
   const sleepConsistencyPts = day.sleepConsistencyPts ?? 0;
 
+  // Per-category exclusions: diet drops calorie + protein, water drops the water
+  // sub, exercise drops Activity. A fully-excluded day (all three) is handled by
+  // isDayExcluded above (no score at all).
+  const exObj = (day.excluded && typeof day.excluded === 'object') ? day.excluded : {};
+
   return {
     excluded: isDayExcluded(day),
+    dietExcluded: !!exObj.diet,
+    waterExcluded: !!exObj.water,
+    exerciseExcluded: !!exObj.exercise,
     computedAt,
     styleMode,
     hasFood,
@@ -157,10 +168,11 @@ export async function computeAndStoreDayScore(dateKey: string, computedAt: strin
   const score = computeDayScore(input);
   if (!score) return null;
 
+  const stamped: DayScore = { ...score, version: DAYSCORE_VERSION };
   const raw = await AsyncStorage.getItem(`pj_${dateKey}`);
   const cur = raw ? JSON.parse(raw) : {};
-  await storageSet(`pj_${dateKey}`, JSON.stringify({ ...cur, dayScore: score }));
-  return score;
+  await storageSet(`pj_${dateKey}`, JSON.stringify({ ...cur, dayScore: stamped }));
+  return stamped;
 }
 
 // Return a day's score, computing and storing it once if it does not exist yet.
@@ -172,7 +184,7 @@ async function ensureDayScore(dateKey: string, nowISO: string): Promise<DayScore
   let day: any;
   try { day = JSON.parse(raw); } catch { return null; }
   if (isDayExcluded(day)) return null;
-  if (day.dayScore) return day.dayScore;
+  if (day.dayScore && day.dayScore.version === DAYSCORE_VERSION) return day.dayScore;
   return computeAndStoreDayScore(dateKey, nowISO);
 }
 
@@ -219,9 +231,13 @@ export async function runDayScoreScan(todayKey: string, nowISO: string): Promise
   // Yesterday is always ensured, so the pop-up has it on every morning open.
   const yesterdayScore = await ensureDayScore(keyForOffset(todayKey, 1), nowISO);
 
-  // The wider backfill is gated to once per day (it is the expensive part).
+  // The wider backfill is gated to once per day (it is the expensive part). The
+  // gate value includes DAYSCORE_VERSION so a logic bump forces one extra rescan
+  // (which migrates every stored score to the new version) even if today already
+  // ran under the old version.
+  const gateVal = `${todayKey}:v${DAYSCORE_VERSION}`;
   let alreadyScanned = false;
-  try { alreadyScanned = (await AsyncStorage.getItem(SCAN_GATE_KEY)) === todayKey; } catch {}
+  try { alreadyScanned = (await AsyncStorage.getItem(SCAN_GATE_KEY)) === gateVal; } catch {}
   if (alreadyScanned) return yesterdayScore;
 
   const keys: string[] = [];
@@ -236,11 +252,12 @@ export async function runDayScoreScan(todayKey: string, nowISO: string): Promise
     if (!raw) continue;
     let day: any;
     try { day = JSON.parse(raw); } catch { continue; }
-    if (day.dayScore || isDayExcluded(day)) continue;
+    if (isDayExcluded(day)) continue;
+    if (day.dayScore && day.dayScore.version === DAYSCORE_VERSION) continue;
     await computeAndStoreDayScore(fullKey.slice(3), nowISO); // strip "pj_"
   }
 
-  try { await storageSet(SCAN_GATE_KEY, todayKey); } catch {}
+  try { await storageSet(SCAN_GATE_KEY, gateVal); } catch {}
   return yesterdayScore;
 }
 

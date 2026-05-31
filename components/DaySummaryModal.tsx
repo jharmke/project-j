@@ -223,14 +223,6 @@ export default function DaySummaryModal({ score, dateKey, theme, styleMode, fait
   const overlayStyle = useAnimatedStyle(() => ({ opacity: overlay.value }));
   const cardStyle = useAnimatedStyle(() => ({ transform: [{ scale: cardScale.value }] }));
 
-  // "YESTERDAY" only when this really is yesterday (morning pop-up). Tapping an
-  // older day from the archive shows a neutral chip instead.
-  const chipLabel = (() => {
-    const t = new Date(); t.setDate(t.getDate() - 1);
-    const yKey = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
-    return dateKey === yKey ? 'YESTERDAY' : 'DAY SUMMARY';
-  })();
-
   useEffect(() => {
     if (faithJourney === 'rooted') hadFaithEntryOn(dateKey).then(setHadFaith);
   }, [dateKey, faithJourney]);
@@ -337,21 +329,21 @@ export default function DaySummaryModal({ score, dateKey, theme, styleMode, fait
             shadowRadius: 16,
           }}>
             {/* Handle pill (tap to dismiss) */}
-            <TouchableOpacity onPress={dismiss} hitSlop={{ top: 10, bottom: 10, left: 40, right: 40 }} style={{ alignItems: 'center', paddingBottom: 16 }}>
+            <TouchableOpacity onPress={dismiss} hitSlop={{ top: 10, bottom: 10, left: 40, right: 40 }} style={{ alignItems: 'center', paddingBottom: 14 }}>
               <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
             </TouchableOpacity>
 
-            {/* Top-left label: matches the app's other modals and balances the (i) */}
-            <Text style={{ position: 'absolute', top: 17, left: 16, zIndex: 5, fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>Day Summary</Text>
-
-            {/* Info (i): explains the Day Score, reads from tooltipRegistry */}
-            <View style={{ position: 'absolute', top: 14, right: 16, zIndex: 5 }}>
-              <TooltipIcon tooltipKey="day_score" size={18} />
+            {/* Header row: title + inline (i), matching every other surface in the app */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+              <Text style={{ fontSize: 18, letterSpacing: 2, fontFamily: 'BebasNeue_400Regular', color: theme.accentBlue }}>DAY SUMMARY</Text>
+              {/* Bebas sits high in its line box; lift the (i) to the caps' optical center */}
+              <View style={{ transform: [{ translateY: -2 }] }}>
+                <TooltipIcon tooltipKey="day_score" />
+              </View>
             </View>
 
-            {/* YESTERDAY chip + date */}
-            <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', textAlign: 'center' }}>{chipLabel}</Text>
-            <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginTop: 4 }}>{formatLongDate(dateKey)}</Text>
+            {/* Date (lead-in to the centered hero) */}
+            <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginTop: 2 }}>{formatLongDate(dateKey)}</Text>
 
             {/* Hero composite ring + label + context line */}
             <View style={{ alignItems: 'center', marginTop: 12 }}>

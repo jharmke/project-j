@@ -254,6 +254,10 @@ export default function StatsScreen() {
   // VIEW FULL SUMMARY handoff: open the Reports section and scroll to the archive.
   const [reportsSectionForceOpen, setReportsSectionForceOpen] = useState(false);
   const reportsLayoutY = useRef<number | null>(null);
+  // Archive calendar picker: jump straight to a week.
+  const [showArchiveCalendar, setShowArchiveCalendar] = useState(false);
+  const [archiveCalMonth, setArchiveCalMonth] = useState(new Date().getMonth());
+  const [archiveCalYear, setArchiveCalYear] = useState(new Date().getFullYear());
 
   const [creatorVisible, setCreatorVisible] = useState(false);
   const [creatorStep, setCreatorStep] = useState<1 | 2 | 3>(1);
@@ -883,6 +887,29 @@ export default function StatsScreen() {
     setExpandedWeeks(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
+  // Dates that have a (non-excluded) score, for the calendar picker.
+  const scoredDateSet = () => {
+    const s = new Set<string>();
+    archiveWeeks.forEach(w => w.days.forEach(d => { if (d.score && !d.excluded) s.add(d.dateKey); }));
+    return s;
+  };
+
+  // Calendar picker: jump to the week containing a date (expand it, scroll there).
+  const jumpToWeekForDate = (dateKey: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const p = dateKey.split('-').map(Number);
+    const dt = new Date(p[0], p[1] - 1, p[2]);
+    dt.setDate(dt.getDate() - dt.getDay());
+    const wsKey = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+    setExpandedWeeks({ [wsKey]: true });
+    setShowArchiveCalendar(false);
+    setReportsSectionForceOpen(true);
+    setTimeout(() => {
+      if (reportsLayoutY.current != null) statsScrollRef.current?.scrollTo({ y: Math.max(0, reportsLayoutY.current - 12), animated: true });
+      setReportsSectionForceOpen(false);
+    }, 400);
+  };
+
   const renderArchiveDayRow = (day: ArchiveDay) => {
     const sc = day.score;
     const open = () => { if (sc && !day.excluded) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setArchiveSummary({ score: sc, dateKey: day.dateKey }); } };
@@ -916,7 +943,12 @@ export default function StatsScreen() {
       <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, marginTop: 12 }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
           <Text style={[styles.cardLabel, { color: theme.textMuted }]}>DAY SUMMARIES</Text>
-          <TooltipIcon tooltipKey="day_score" />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowArchiveCalendar(true); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="calendar" size={16} color={theme.accentBlueRaw} />
+            </TouchableOpacity>
+            <TooltipIcon tooltipKey="day_score" />
+          </View>
         </View>
 
         {archiveLoading ? (
@@ -2264,6 +2296,63 @@ export default function StatsScreen() {
           onClose={() => { setArchiveSummary(null); loadArchive(); }}
         />
       )}
+
+      {/* Archive calendar picker: jump to any scored day's week */}
+      {showArchiveCalendar && (() => {
+        const now2 = new Date();
+        const todayKey2 = `${now2.getFullYear()}-${String(now2.getMonth() + 1).padStart(2, '0')}-${String(now2.getDate()).padStart(2, '0')}`;
+        const dim = new Date(archiveCalYear, archiveCalMonth + 1, 0).getDate();
+        const firstDay = new Date(archiveCalYear, archiveCalMonth, 1).getDay();
+        const scored = scoredDateSet();
+        const isCurrentMonth = archiveCalYear === now2.getFullYear() && archiveCalMonth === now2.getMonth();
+        const prevMonth = () => { if (archiveCalMonth === 0) { setArchiveCalMonth(11); setArchiveCalYear(y => y - 1); } else setArchiveCalMonth(m => m - 1); };
+        const nextMonth = () => { if (isCurrentMonth) return; if (archiveCalMonth === 11) { setArchiveCalMonth(0); setArchiveCalYear(y => y + 1); } else setArchiveCalMonth(m => m + 1); };
+        return (
+          <Modal transparent animationType="fade" onRequestClose={() => setShowArchiveCalendar(false)}>
+            <TouchableOpacity style={{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center' }} activeOpacity={1} onPress={() => setShowArchiveCalendar(false)}>
+              <TouchableOpacity activeOpacity={1} onPress={() => {}} style={{ width: '88%', maxWidth: 380 }}>
+                <View style={{ backgroundColor: theme.bgSheet, borderRadius: 18, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, padding: 20 }}>
+                  <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', textAlign: 'center', marginBottom: 10 }}>JUMP TO A DAY</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                    <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); prevMonth(); }} style={{ padding: 8 }}>
+                      <Ionicons name="chevron-back" size={18} color={theme.accentBlue} />
+                    </TouchableOpacity>
+                    <Text style={{ fontSize: 15, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold' }}>{ARCH_MONTHS[archiveCalMonth]} {archiveCalYear}</Text>
+                    <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); nextMonth(); }} disabled={isCurrentMonth} style={{ padding: 8, opacity: isCurrentMonth ? 0.25 : 1 }}>
+                      <Ionicons name="chevron-forward" size={18} color={theme.accentBlue} />
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.calGrid}>
+                    {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
+                      <Text key={d} style={[styles.calDayHeader, { color: theme.textMuted }]}>{d}</Text>
+                    ))}
+                    {Array.from({ length: firstDay }).map((_, i) => (
+                      <View key={`e${i}`} style={{ width: '14.28%' }} />
+                    ))}
+                    {Array.from({ length: dim }).map((_, i) => {
+                      const day = i + 1;
+                      const dateKey = `${archiveCalYear}-${String(archiveCalMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                      const isToday = dateKey === todayKey2;
+                      const isFuture = dateKey > todayKey2;
+                      const has = scored.has(dateKey);
+                      return (
+                        <TouchableOpacity key={day} disabled={!has || isFuture}
+                          onPress={() => jumpToWeekForDate(dateKey)}
+                          style={[styles.calDay, has && !isFuture && { backgroundColor: theme.accentBlueBg }, isToday && [styles.calDayToday, { borderColor: theme.accentBlueBorder }]]}>
+                          <Text style={[styles.calDayText, { color: isFuture ? theme.textDim : has ? theme.accentBlue : theme.textMuted }]}>{day}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                  <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginTop: 12, lineHeight: 15 }}>
+                    Highlighted days have a score. Tap one to jump to its week.
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </TouchableOpacity>
+          </Modal>
+        );
+      })()}
 
       {/* Manage Streaks -- inline absoluteFill for tutorial mode so spotlight works */}
       {streaksManageTutorialMode && showManageStreaks && (

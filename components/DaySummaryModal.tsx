@@ -33,6 +33,8 @@ interface Props {
   styleMode: StyleMode;
   faithJourney: FaithJourney;
   onClose: () => void;        // clears the parent's daySummary state
+  onViewSummary?: () => void; // morning pop-up: navigate to the archive. Omit in
+                              // the archive itself (the button is then hidden).
 }
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -207,7 +209,7 @@ function ScoreRing({ value, color, theme, celebrate }: { value: number; color: s
   );
 }
 
-export default function DaySummaryModal({ score, dateKey, theme, styleMode, faithJourney, onClose }: Props) {
+export default function DaySummaryModal({ score, dateKey, theme, styleMode, faithJourney, onClose, onViewSummary }: Props) {
   const { showToast } = useToast();
   const [hadFaith, setHadFaith] = useState(false);
   const [confirmingExclude, setConfirmingExclude] = useState(false);
@@ -275,9 +277,9 @@ export default function DaySummaryModal({ score, dateKey, theme, styleMode, fait
   };
 
   const handleViewSummary = () => {
-    // Stub until the Stats Reports archive (step 4) exists.
+    if (!onViewSummary) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    showToast('Full summary is coming soon', undefined, 'info');
+    onViewSummary();
   };
 
   const isMindful = styleMode === 'mindful';
@@ -387,10 +389,12 @@ export default function DaySummaryModal({ score, dateKey, theme, styleMode, fait
             {/* Divider */}
             <View style={{ height: 0.5, backgroundColor: theme.borderCard, marginTop: 20, marginBottom: 16 }} />
 
-            {/* VIEW FULL SUMMARY */}
-            <TouchableOpacity onPress={handleViewSummary} style={{ paddingVertical: 13, borderRadius: 10, alignItems: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
-              <Text style={{ color: theme.accentBlue, fontSize: 13, letterSpacing: 1, fontFamily: 'DMSans_600SemiBold' }}>VIEW FULL SUMMARY</Text>
-            </TouchableOpacity>
+            {/* VIEW FULL SUMMARY (morning pop-up only; hidden when already in the archive) */}
+            {onViewSummary && (
+              <TouchableOpacity onPress={handleViewSummary} style={{ paddingVertical: 13, borderRadius: 10, alignItems: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
+                <Text style={{ color: theme.accentBlue, fontSize: 13, letterSpacing: 1, fontFamily: 'DMSans_600SemiBold' }}>VIEW FULL SUMMARY</Text>
+              </TouchableOpacity>
+            )}
 
             {/* GOT IT (the obvious labeled exit, secondary bordered button) */}
             <TouchableOpacity onPress={dismiss} style={{ paddingVertical: 13, borderRadius: 10, alignItems: 'center', marginTop: 8, backgroundColor: theme.bgInset, borderWidth: 0.5, borderColor: theme.borderCard }}>

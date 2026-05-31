@@ -306,7 +306,9 @@ export function computeDayScore(input: DayScoreInput): DayScore | null {
 
   return {
     composite,
-    label: scoreLabel(composite, input.styleMode),
+    // Label off the rounded number that gets displayed, so a shown "95" never
+    // reads Excellent one day and Elite the next (composite is 1-decimal).
+    label: scoreLabel(Math.round(composite), input.styleMode),
     nutritionScore: nutrition ? round1(nutrition.score) : null,
     activityScore: activity ? round1(activity.score) : null,
     sleepScore: sleep ? round1(sleep.score) : null,

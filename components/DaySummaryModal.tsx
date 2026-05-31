@@ -18,7 +18,7 @@ import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import TooltipIcon from './TooltipIcon';
 import { ToastRenderer, useToast } from './Toast';
-import { DayScore } from '../utils/dayScore';
+import { DayScore, scoreLabel } from '../utils/dayScore';
 import { excludeDayFromAverages, loadRecentComposites } from '../utils/dayScoreStore';
 
 const AnimCircle = Reanimated.createAnimatedComponent(Circle);
@@ -354,7 +354,7 @@ export default function DaySummaryModal({ score, dateKey, theme, styleMode, fait
             <View style={{ alignItems: 'center', marginTop: 12 }}>
               <ScoreRing value={score.composite} color={heroColor} theme={theme} celebrate={celebrate} />
               <Text style={{ fontSize: 20, letterSpacing: 2, fontFamily: 'BebasNeue_400Regular', color: heroColor, marginTop: 8 }}>
-                {score.label.toUpperCase()}
+                {scoreLabel(Math.round(score.composite), styleMode).toUpperCase()}
               </Text>
               {!!contextLine && (
                 <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginTop: 4 }}>{contextLine}</Text>

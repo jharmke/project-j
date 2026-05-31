@@ -14,7 +14,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageSet } from './storage';
 import { loadCalorieTargets } from './calorieTarget';
-import { computeDayScore, DayScore, DayScoreInput, DayType, StyleMode } from './dayScore';
+import { computeDayScore, scoreLabel, DayScore, DayScoreInput, DayType, StyleMode } from './dayScore';
 
 const SCAN_GATE_KEY = 'pj_last_dayscore_scan';
 const ARCHIVE_WINDOW_DAYS = 90;
@@ -227,4 +227,96 @@ export async function runDayScoreScan(todayKey: string, nowISO: string): Promise
 
   try { await storageSet(SCAN_GATE_KEY, todayKey); } catch {}
   return yesterdayScore;
+}
+
+// ─── 90-day archive (Stats > Reports), grouped by week ───────────────────────
+
+export interface ArchiveDay {
+  dateKey: string;
+  hasData: boolean;                 // a pj_ record exists for the day
+  excluded: boolean;
+  score: DayScore | null;           // null when no score (no data / today / future)
+}
+
+export interface ArchiveWeek {
+  startKey: string;                 // Sunday of the week (YYYY-MM-DD)
+  endKey: string;                   // Saturday of the week (YYYY-MM-DD)
+  days: ArchiveDay[];               // chronological, Sunday to Saturday
+  avgComposite: number | null;      // mean of non-excluded scored days, or null
+  avgLabel: string | null;          // label for avgComposite in the given mode
+  scoredCount: number;              // non-excluded days with a composite
+  loggedCount: number;              // days with a pj_ record (any data)
+}
+
+// Sunday-of-week key for a date (the app calendar is Sunday-first).
+function weekStartKey(dateKey: string): string {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() - dt.getDay());
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+}
+
+function addDaysKey(dateKey: string, n: number): string {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() + n);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+}
+
+// Loads the last ARCHIVE_WINDOW_DAYS completed days (yesterday back), grouped
+// into Sunday-Saturday weeks, most recent week first. Read-only: it surfaces
+// whatever scores the once-per-day scan has already computed and stored; it does
+// not compute or write. Weekly average excludes excluded days. mode only affects
+// the average label text.
+export async function loadDayScoreArchive(todayKey: string, mode: StyleMode): Promise<ArchiveWeek[]> {
+  // Gather yesterday back through the window into a date-keyed map.
+  const keys: string[] = [];
+  for (let offset = 1; offset <= ARCHIVE_WINDOW_DAYS; offset++) keys.push(`pj_${keyForOffset(todayKey, offset)}`);
+
+  let pairs: readonly [string, string | null][] = [];
+  try { pairs = await AsyncStorage.multiGet(keys); } catch { return []; }
+
+  const byDate = new Map<string, ArchiveDay>();
+  for (const [fullKey, raw] of pairs) {
+    const dateKey = fullKey.slice(3); // strip "pj_"
+    if (!raw) { byDate.set(dateKey, { dateKey, hasData: false, excluded: false, score: null }); continue; }
+    let day: any;
+    try { day = JSON.parse(raw); } catch { byDate.set(dateKey, { dateKey, hasData: false, excluded: false, score: null }); continue; }
+    byDate.set(dateKey, {
+      dateKey,
+      hasData: true,
+      excluded: !!day.excluded,
+      score: day.dayScore && typeof day.dayScore.composite === 'number' ? day.dayScore as DayScore : null,
+    });
+  }
+
+  // Group into Sunday-Saturday weeks. Build each week's 7 day slots so a row can
+  // render the full week even where days are missing or outside the window.
+  const weekStarts = new Set<string>();
+  for (const dateKey of byDate.keys()) weekStarts.add(weekStartKey(dateKey));
+
+  const weeks: ArchiveWeek[] = [];
+  for (const startKey of weekStarts) {
+    const days: ArchiveDay[] = [];
+    for (let i = 0; i < 7; i++) {
+      const dk = addDaysKey(startKey, i);
+      days.push(byDate.get(dk) || { dateKey: dk, hasData: false, excluded: false, score: null });
+    }
+    const scored = days.filter(d => d.score && !d.excluded);
+    const avgComposite = scored.length
+      ? Math.round((scored.reduce((s, d) => s + (d.score as DayScore).composite, 0) / scored.length) * 10) / 10
+      : null;
+    weeks.push({
+      startKey,
+      endKey: addDaysKey(startKey, 6),
+      days,
+      avgComposite,
+      avgLabel: avgComposite !== null ? scoreLabel(avgComposite, mode) : null,
+      scoredCount: scored.length,
+      loggedCount: days.filter(d => d.hasData).length,
+    });
+  }
+
+  weeks.sort((a, b) => (a.startKey < b.startKey ? 1 : -1)); // most recent first
+  return weeks;
 }

@@ -4,7 +4,7 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Dimensions, Easing, Keyboard, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { Alert, Animated, Dimensions, Easing, Keyboard, LayoutAnimation, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -19,6 +19,9 @@ import { StatsCardEditModal } from '../../components/StatsCardEditModal';
 import TooltipIcon from '../../components/TooltipIcon';
 import { storageSet } from '../../utils/storage';
 import { calcSleepScore } from '../../utils/sleepScore';
+import { loadDayScoreArchive, ArchiveWeek, ArchiveDay } from '../../utils/dayScoreStore';
+import { DayScore } from '../../utils/dayScore';
+import DaySummaryModal from '../../components/DaySummaryModal';
 import { showToolkit } from '../../components/ToolkitSheet';
 import { useTutorial } from '../../context/TutorialContext';
 import { useTutorialTarget } from '../../hooks/useTutorialTarget';
@@ -240,6 +243,13 @@ export default function StatsScreen() {
 
   const [dayDetailDate, setDayDetailDate] = useState<string | null>(null);
   const dayDetailAnim = useRef(new Animated.Value(0)).current;
+
+  // Day Score archive (Reports > Day Summaries): 90 days grouped by week.
+  const [archiveWeeks, setArchiveWeeks] = useState<ArchiveWeek[]>([]);
+  const [archiveLoading, setArchiveLoading] = useState(true);
+  const [expandedWeeks, setExpandedWeeks] = useState<Record<string, boolean>>({});
+  // Tapping a past day reopens that day's summary card (same modal as the morning pop-up).
+  const [archiveSummary, setArchiveSummary] = useState<{ score: DayScore; dateKey: string } | null>(null);
 
   const [creatorVisible, setCreatorVisible] = useState(false);
   const [creatorStep, setCreatorStep] = useState<1 | 2 | 3>(1);
@@ -813,6 +823,120 @@ export default function StatsScreen() {
       loadAll();
     }, [calendarMonth, calendarYear])
   );
+
+  // Load the Day Score archive (Reports > Day Summaries). Reused by the focus
+  // effect and after the summary modal closes (an exclusion may have changed it).
+  const loadArchive = useCallback(async () => {
+    const now = new Date();
+    const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const mode = styleMode.toLowerCase() as 'discipline' | 'balanced' | 'mindful';
+    try {
+      const weeks = await loadDayScoreArchive(todayKey, mode);
+      setArchiveWeeks(weeks);
+    } catch {}
+    setArchiveLoading(false);
+  }, [styleMode]);
+
+  useFocusEffect(useCallback(() => { loadArchive(); }, [loadArchive]));
+
+  // ─── Day Score archive (Reports > Day Summaries) rendering ──────────────────
+  const ARCH_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const ARCH_DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const archMonthDay = (key: string) => { const p = key.split('-').map(Number); return `${ARCH_MONTHS[p[1] - 1]} ${p[2]}`; };
+  const archWeekRange = (s: string, e: string) => {
+    const sp = s.split('-').map(Number); const ep = e.split('-').map(Number);
+    return sp[1] === ep[1] ? `${archMonthDay(s)} - ${ep[2]}` : `${archMonthDay(s)} - ${archMonthDay(e)}`;
+  };
+  const archDow = (key: string) => { const p = key.split('-').map(Number); return ARCH_DOW[new Date(p[0], p[1] - 1, p[2]).getDay()]; };
+  const archTierColor = (v: number) => styleMode === 'Mindful'
+    ? theme.accentBlue
+    : (v >= 80 ? theme.statusGood : v >= 60 ? theme.statusWarn : theme.statusBad);
+
+  const toggleWeek = (key: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    LayoutAnimation.configureNext(LayoutAnimation.create(220, LayoutAnimation.Types.easeInEaseOut, LayoutAnimation.Properties.opacity));
+    setExpandedWeeks(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const renderArchiveDayRow = (day: ArchiveDay) => {
+    const sc = day.score;
+    const open = () => { if (sc && !day.excluded) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setArchiveSummary({ score: sc, dateKey: day.dateKey }); } };
+    return (
+      <TouchableOpacity key={day.dateKey} activeOpacity={sc && !day.excluded ? 0.6 : 1} onPress={open}
+        style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 4, borderTopWidth: 0.5, borderTopColor: theme.borderCard }}>
+        <Text style={{ width: 76, fontSize: 12, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>{archDow(day.dateKey)} {day.dateKey.split('-')[2]}</Text>
+        {day.excluded || !sc ? (
+          <Text style={{ flex: 1, fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>{day.excluded ? 'Excluded' : 'No score'}</Text>
+        ) : (
+          <>
+            <Text style={{ width: 34, fontSize: 20, lineHeight: 22, fontFamily: 'BebasNeue_400Regular', color: archTierColor(sc.composite) }}>{Math.round(sc.composite)}</Text>
+            <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
+              {[['N', sc.nutritionScore], ['A', sc.activityScore], ['R', sc.sleepScore]].map(([lbl, val]) => (
+                <View key={lbl as string} style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
+                  <Text style={{ fontSize: 8, color: theme.textMuted, fontFamily: 'DMSans_700Bold' }}>{lbl}</Text>
+                  <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' }}>{val !== null ? Math.round(val as number) : '–'}</Text>
+                </View>
+              ))}
+            </View>
+            <Ionicons name="chevron-forward" size={14} color={theme.textDim} style={{ marginLeft: 8 }} />
+          </>
+        )}
+      </TouchableOpacity>
+    );
+  };
+
+  const renderDayArchive = () => {
+    const weeks = archiveWeeks.filter(w => w.loggedCount > 0);
+    return (
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, marginTop: 12 }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <Text style={[styles.cardLabel, { color: theme.textMuted }]}>DAY SUMMARIES</Text>
+          <TooltipIcon tooltipKey="day_score" />
+        </View>
+
+        {archiveLoading ? (
+          <View style={{ paddingVertical: 24, alignItems: 'center' }}>
+            <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>Loading your summaries…</Text>
+          </View>
+        ) : weeks.length === 0 ? (
+          <View style={{ paddingVertical: 24, alignItems: 'center', paddingHorizontal: 16 }}>
+            <Ionicons name="sparkles-outline" size={28} color={theme.textDim} style={{ marginBottom: 8 }} />
+            <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', marginBottom: 4 }}>No summaries yet</Text>
+            <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular', textAlign: 'center', lineHeight: 17 }}>
+              Your Day Score appears the morning after a logged day. Keep logging and your history fills in here.
+            </Text>
+          </View>
+        ) : (
+          weeks.map(w => {
+            const isOpen = !!expandedWeeks[w.startKey];
+            return (
+              <View key={w.startKey} style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard }}>
+                <TouchableOpacity onPress={() => toggleWeek(w.startKey)} activeOpacity={0.6}
+                  style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 4 }}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold' }}>{archWeekRange(w.startKey, w.endKey)}</Text>
+                    <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>
+                      {w.scoredCount} {w.scoredCount === 1 ? 'day' : 'days'} scored
+                      {w.avgLabel ? ` · ${w.avgLabel}` : ''}
+                    </Text>
+                  </View>
+                  {w.avgComposite !== null && (
+                    <Text style={{ fontSize: 26, lineHeight: 28, fontFamily: 'BebasNeue_400Regular', color: archTierColor(w.avgComposite), marginRight: 10 }}>{Math.round(w.avgComposite)}</Text>
+                  )}
+                  <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textMuted} />
+                </TouchableOpacity>
+                {isOpen && (
+                  <View style={{ paddingBottom: 6 }}>
+                    {w.days.filter(d => d.score !== null || d.excluded).map(renderArchiveDayRow)}
+                  </View>
+                )}
+              </View>
+            );
+          })
+        )}
+      </View>
+    );
+  };
 
   // Register stats ScrollView so tutorial auto-scroll works on this tab
   useEffect(() => {
@@ -1509,6 +1633,7 @@ export default function StatsScreen() {
                     <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: '#fff' }}>Open Analysis</Text>
                   </TouchableOpacity>
                 </View>
+                {renderDayArchive()}
               </CollapsibleSection>
             );
             return null;
@@ -2099,6 +2224,18 @@ export default function StatsScreen() {
             </Animated.View>
           </Animated.View>
         </Modal>
+      )}
+
+      {/* Day summary card for a tapped archive day (same modal as the morning pop-up) */}
+      {archiveSummary && (
+        <DaySummaryModal
+          score={archiveSummary.score}
+          dateKey={archiveSummary.dateKey}
+          theme={theme}
+          styleMode={styleMode.toLowerCase() as 'discipline' | 'balanced' | 'mindful'}
+          faithJourney={faithJourney}
+          onClose={() => { setArchiveSummary(null); loadArchive(); }}
+        />
       )}
 
       {/* Manage Streaks -- inline absoluteFill for tutorial mode so spotlight works */}

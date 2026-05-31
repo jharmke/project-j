@@ -219,6 +219,14 @@ export default function DaySummaryModal({ score, dateKey, theme, styleMode, fait
   const overlayStyle = useAnimatedStyle(() => ({ opacity: overlay.value }));
   const cardStyle = useAnimatedStyle(() => ({ transform: [{ scale: cardScale.value }] }));
 
+  // "YESTERDAY" only when this really is yesterday (morning pop-up). Tapping an
+  // older day from the archive shows a neutral chip instead.
+  const chipLabel = (() => {
+    const t = new Date(); t.setDate(t.getDate() - 1);
+    const yKey = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+    return dateKey === yKey ? 'YESTERDAY' : 'DAY SUMMARY';
+  })();
+
   useEffect(() => {
     if (faithJourney === 'rooted') hadFaithEntryOn(dateKey).then(setHadFaith);
   }, [dateKey, faithJourney]);
@@ -335,7 +343,7 @@ export default function DaySummaryModal({ score, dateKey, theme, styleMode, fait
             </View>
 
             {/* YESTERDAY chip + date */}
-            <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', textAlign: 'center' }}>YESTERDAY</Text>
+            <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', textAlign: 'center' }}>{chipLabel}</Text>
             <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginTop: 4 }}>{formatLongDate(dateKey)}</Text>
 
             {/* Hero composite ring + label + context line */}

@@ -164,6 +164,39 @@ async function ensureDayScore(dateKey: string, nowISO: string): Promise<DayScore
   return computeAndStoreDayScore(dateKey, nowISO);
 }
 
+// Composites for up to `count` completed days immediately before beforeKey,
+// skipping excluded days and days with no score. Feeds the pop-up's context line
+// (best day this week / vs weekly average). Read-only, never writes.
+export async function loadRecentComposites(beforeKey: string, count: number): Promise<number[]> {
+  const keys: string[] = [];
+  for (let i = 1; i <= count; i++) keys.push(`pj_${keyForOffset(beforeKey, i)}`);
+  let pairs: readonly [string, string | null][] = [];
+  try { pairs = await AsyncStorage.multiGet(keys); } catch { return []; }
+  const out: number[] = [];
+  for (const [, raw] of pairs) {
+    if (!raw) continue;
+    try {
+      const day = JSON.parse(raw);
+      if (day.excluded) continue;
+      if (day.dayScore && typeof day.dayScore.composite === 'number') out.push(day.dayScore.composite);
+    } catch {}
+  }
+  return out;
+}
+
+// Fast-exclude path from the morning pop-up. Read-then-merge: flips the day's
+// excluded flag and mirrors it onto the stored dayScore so the archive shows a
+// dash and weekly averages skip it. Never replaces the day record.
+export async function excludeDayFromAverages(dateKey: string): Promise<void> {
+  const raw = await AsyncStorage.getItem(`pj_${dateKey}`);
+  if (!raw) return;
+  let day: any;
+  try { day = JSON.parse(raw); } catch { return; }
+  const merged: any = { ...day, excluded: true };
+  if (day.dayScore) merged.dayScore = { ...day.dayScore, excludedFromAverages: true };
+  await storageSet(`pj_${dateKey}`, JSON.stringify(merged));
+}
+
 // Ensures yesterday is scored (every call) and, at most once per calendar day,
 // backfills any older completed day in the 90-day window that has data but no
 // score yet. Returns yesterday's score for the morning pop-up (step 3).

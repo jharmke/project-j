@@ -31,6 +31,7 @@ import { TrendData, EMPTY_TREND_DATA, fetchTrendData } from '../../utils/statsDa
 import { calcSleepScore } from '../../utils/sleepScore';
 import { runDayScoreScan } from '../../utils/dayScoreStore';
 import { DayScore } from '../../utils/dayScore';
+import DaySummaryModal from '../../components/DaySummaryModal';
 import { StatsGraphCard } from '../../components/StatsGraphCard';
 import { StatsCardEditModal } from '../../components/StatsCardEditModal';
 import { saveStatsCards } from '../../statsCardRegistry';
@@ -965,21 +966,34 @@ export default function HomeScreen() {
   // Fires on mount and on app foreground (the real "first load after 5am" moment).
   // runDayScoreScan is self-gated, so multiple triggers are safe. The returned
   // yesterday score is stashed for the morning pop-up (step 3).
-  const pendingDayScoreRef = useRef<DayScore | null>(null);
+  // Yesterday's score + date for the morning Day Summary pop-up (null = hidden).
+  const [daySummary, setDaySummary] = useState<{ score: DayScore; dateKey: string } | null>(null);
+  const summaryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
-    const runScan = () => {
-      runDayScoreScan(getDateKey(new Date()), new Date().toISOString())
-        .then(score => {
-          if (score) {
-            pendingDayScoreRef.current = score;
-            console.log('[DayScore] yesterday:', score.composite, score.label);
-          }
-        })
-        .catch(e => console.log('[DayScore] scan error', e));
+    const runScan = async () => {
+      try {
+        const todayKey = getDateKey(new Date());
+        const score = await runDayScoreScan(todayKey, new Date().toISOString());
+        if (!score) return;                       // excluded / no data: no pop-up
+        // Gate: only after 5am, and at most once per calendar day.
+        if (new Date().getHours() < 5) return;
+        const lastShown = await AsyncStorage.getItem('pj_last_summary_shown');
+        if (lastShown === todayKey) return;
+        if (summaryTimerRef.current) return;      // a show is already pending
+        const y = new Date(); y.setDate(y.getDate() - 1);
+        const yKey = getDateKey(y);
+        // Brief delay so the home screen paints first; stamp the gate only when
+        // the modal actually shows (a kill during the delay won't burn the day).
+        summaryTimerRef.current = setTimeout(async () => {
+          summaryTimerRef.current = null;
+          await storageSet('pj_last_summary_shown', todayKey);
+          setDaySummary({ score, dateKey: yKey });
+        }, 800);
+      } catch (e) { console.log('[DayScore] scan error', e); }
     };
     runScan();
     const sub = AppState.addEventListener('change', s => { if (s === 'active') runScan(); });
-    return () => sub.remove();
+    return () => { sub.remove(); if (summaryTimerRef.current) clearTimeout(summaryTimerRef.current); };
   }, []);
 
   // ── Persist HealthKit to storage ────────────────────────────────────────────
@@ -3571,6 +3585,18 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
+
+      {/* Morning Day Summary pop-up (yesterday's Day Score) */}
+      {daySummary && (
+        <DaySummaryModal
+          score={daySummary.score}
+          dateKey={daySummary.dateKey}
+          theme={theme}
+          styleMode={styleMode}
+          faithJourney={faithJourney}
+          onClose={() => setDaySummary(null)}
+        />
+      )}
 
     </View>
   );

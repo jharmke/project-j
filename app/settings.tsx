@@ -1815,6 +1815,24 @@ export default function SettingsScreen() {
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Alert.alert('Replay Day Summary', "Clear today's gate so the morning pop-up fires again?", [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Replay', onPress: async () => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                  await AsyncStorage.removeItem('pj_last_summary_shown');
+                  Alert.alert('Done', 'Gate cleared. Close the app fully and reopen it to see the pop-up.');
+                }},
+              ]);
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Replay Day Summary</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Re-fires the morning Day Score pop-up on next app open.</Text>
+              </View>
+              <Ionicons name="sunny-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               Alert.alert('Force Restore from Firestore', 'This wipes all local pj_* data and pulls everything from your cloud backup. Use only if your data is missing after signing in.', [
                 { text: 'Cancel', style: 'cancel' },
                 { text: 'Restore', style: 'destructive', onPress: async () => {

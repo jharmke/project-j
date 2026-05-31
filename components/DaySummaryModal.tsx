@@ -16,6 +16,7 @@ import Svg, { Circle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import TooltipIcon from './TooltipIcon';
 import { ToastRenderer, useToast } from './Toast';
 import { DayScore } from '../utils/dayScore';
 import { excludeDayFromAverages, loadRecentComposites } from '../utils/dayScoreStore';
@@ -327,6 +328,11 @@ export default function DaySummaryModal({ score, dateKey, theme, styleMode, fait
             <TouchableOpacity onPress={dismiss} hitSlop={{ top: 10, bottom: 10, left: 40, right: 40 }} style={{ alignItems: 'center', paddingBottom: 16 }}>
               <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
             </TouchableOpacity>
+
+            {/* Info (i): explains the Day Score, reads from tooltipRegistry */}
+            <View style={{ position: 'absolute', top: 14, right: 16, zIndex: 5 }}>
+              <TooltipIcon tooltipKey="day_score" size={18} />
+            </View>
 
             {/* YESTERDAY chip + date */}
             <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', textAlign: 'center' }}>YESTERDAY</Text>

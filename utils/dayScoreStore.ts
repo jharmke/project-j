@@ -208,6 +208,33 @@ export async function loadRecentComposites(beforeKey: string, count: number): Pr
   return out;
 }
 
+// Picks the best day to anchor the Day Score tour on. Walks back from yesterday
+// and prefers the most recent non-excluded day that has all three categories
+// scored (richest tour -- every card shows real numbers), falling back to the
+// most recent day with any stored score. Returns null when nothing qualifies
+// (brand-new user with no full day yet). Read-only, never writes.
+export async function findMostRecentTourDay(todayKey: string): Promise<string | null> {
+  const keys: string[] = [];
+  for (let offset = 1; offset <= ARCHIVE_WINDOW_DAYS; offset++) keys.push(`pj_${keyForOffset(todayKey, offset)}`);
+  let pairs: readonly [string, string | null][] = [];
+  try { pairs = await AsyncStorage.multiGet(keys); } catch { return null; }
+
+  let firstScored: string | null = null;
+  for (const [fullKey, raw] of pairs) {
+    if (!raw) continue;
+    let day: any;
+    try { day = JSON.parse(raw); } catch { continue; }
+    if (isDayExcluded(day)) continue;
+    const sc = day.dayScore;
+    if (!sc || typeof sc.composite !== 'number') continue;
+    const dateKey = fullKey.slice(3); // strip "pj_"
+    if (!firstScored) firstScored = dateKey; // keys are yesterday-first, so this is the most recent
+    const full = sc.nutritionScore !== null && sc.activityScore !== null && sc.sleepScore !== null;
+    if (full) return dateKey;
+  }
+  return firstScored;
+}
+
 // Fast-exclude path from the morning pop-up. Read-then-merge: flips the day's
 // excluded flag and mirrors it onto the stored dayScore so the archive shows a
 // dash and weekly averages skip it. Never replaces the day record.

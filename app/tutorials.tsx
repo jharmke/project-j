@@ -84,8 +84,12 @@ export default function TutorialsScreen() {
     : allListed.filter(t => t.tab === TAB_MAP[selectedFilter]);
 
   const handleStart = (id: string) => {
+    // Tours that navigate away (preAction pushes a page, e.g. Day Summary) carry
+    // their own returnRoute ('back') so they pop that page instead of stacking a
+    // fresh tutorials list on top of it. Others default back to the list.
+    const ret = (getTutorialById(id) as any)?.returnRoute ?? '/tutorials';
     router.back();
-    setTimeout(() => startTutorial(id, '/tutorials'), 350);
+    setTimeout(() => startTutorial(id, ret), 350);
   };
 
   return (

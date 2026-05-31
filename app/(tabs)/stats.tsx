@@ -19,7 +19,7 @@ import { StatsCardEditModal } from '../../components/StatsCardEditModal';
 import TooltipIcon from '../../components/TooltipIcon';
 import { storageSet } from '../../utils/storage';
 import { calcSleepScore } from '../../utils/sleepScore';
-import { loadDayScoreArchive, ArchiveWeek, ArchiveDay } from '../../utils/dayScoreStore';
+import { loadDayScoreArchive, findMostRecentTourDay, ArchiveWeek, ArchiveDay } from '../../utils/dayScoreStore';
 import { DayScore } from '../../utils/dayScore';
 import DaySummaryModal from '../../components/DaySummaryModal';
 import { archiveNav } from '../../utils/archiveNav';
@@ -1113,6 +1113,23 @@ export default function StatsScreen() {
       setTrendsSectionForceOpen(false);
     });
 
+    // Day Score tour: opens the full summary page on the best real day so the
+    // tour can spotlight live elements. Returns false to abort the tour when the
+    // user has no full day yet (its own toast tells them what to do).
+    registerTutorialAction('openDaySummaryForTour', async () => {
+      const now = new Date();
+      const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const date = await findMostRecentTourDay(todayKey);
+      if (!date) {
+        showToast('Log a full day first', 'Once you earn a Day Score, this tour walks you through it.', 'info');
+        return false;
+      }
+      router.push(`/day-summary?date=${date}`);
+      // Give the page time to mount + finish its async load so the ring/cards
+      // exist before the overlay measures step 0 (adds to its own retry budget).
+      await new Promise<void>(r => setTimeout(r, 450));
+    });
+
     return () => {
       unregisterTutorialAction('openStreaksSectionForTutorial');
       unregisterTutorialAction('openStreaksManage');
@@ -1123,6 +1140,7 @@ export default function StatsScreen() {
       unregisterTutorialAction('closeGraphCreatorTutorial');
       unregisterTutorialAction('injectTutorialGraph');
       unregisterTutorialAction('deleteTutorialGraph');
+      unregisterTutorialAction('openDaySummaryForTour');
     };
   }, []);
 

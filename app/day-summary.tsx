@@ -15,7 +15,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
@@ -27,6 +27,7 @@ import { DayScore, DayScoreInput, scoreLabel, StyleMode, CATEGORY_WEIGHTS } from
 import { buildDayScoreInput, excludeDayFromAverages } from '../utils/dayScoreStore';
 import { winAndCoachLines, contextLine as computeContextLine, hadFaithEntryOn } from '../utils/daySummaryCopy';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
+import { useTutorial } from '../context/TutorialContext';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -59,6 +60,15 @@ export default function DaySummaryScreen() {
   const activityRef = useTutorialTarget('ds_activity');
   const recoveryRef = useTutorialTarget('ds_recovery');
   const excludeRef = useTutorialTarget('ds_exclude');
+
+  // Register the page's ScrollView so the tutorial overlay can scroll off-screen
+  // targets (Recovery, Exclude) into view before spotlighting them.
+  const scrollRef = useRef<ScrollView>(null);
+  const { registerScrollView, unregisterScrollView } = useTutorial();
+  useEffect(() => {
+    registerScrollView('day_summary', scrollRef);
+    return () => unregisterScrollView('day_summary');
+  }, [registerScrollView, unregisterScrollView]);
 
   // Fast-exclude from the page (mirrors the modal): heavy haptic, write, toast,
   // then back to wherever the user came from (the archive shows a dash).
@@ -222,7 +232,7 @@ export default function DaySummaryScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
       {Header}
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 32 }} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollRef} style={{ flex: 1 }} contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 120 }} showsVerticalScrollIndicator={false}>
 
         {/* Date */}
         <Text style={{ fontSize: 17, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, textAlign: 'center', marginTop: 4 }}>
@@ -323,9 +333,11 @@ export default function DaySummaryScreen() {
         </Text>
 
         {/* Exclude this day (inline confirm, mirrors the morning modal) */}
-        <View ref={excludeRef} collapsable={false}>
+        {/* marginTop is on the wrapper (outside its measured frame) so the tutorial
+            spotlight hugs just the button, not 16px of empty space above it. */}
+        <View ref={excludeRef} collapsable={false} style={{ marginTop: 16 }}>
           {confirmingExclude ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 14, marginTop: 16, flexWrap: 'wrap' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 14, flexWrap: 'wrap' }}>
               <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Remove from your weekly average?</Text>
               <TouchableOpacity onPress={() => setConfirmingExclude(false)} hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}>
                 <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' }}>Cancel</Text>
@@ -335,7 +347,7 @@ export default function DaySummaryScreen() {
               </TouchableOpacity>
             </View>
           ) : (
-            <TouchableOpacity onPress={() => setConfirmingExclude(true)} hitSlop={{ top: 10, bottom: 10, left: 20, right: 20 }} style={{ alignItems: 'center', marginTop: 16 }}>
+            <TouchableOpacity onPress={() => setConfirmingExclude(true)} hitSlop={{ top: 10, bottom: 10, left: 20, right: 20 }} style={{ alignItems: 'center' }}>
               <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular', textDecorationLine: 'underline' }}>Exclude this day</Text>
             </TouchableOpacity>
           )}

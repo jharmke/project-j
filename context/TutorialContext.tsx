@@ -51,7 +51,7 @@ export interface TutorialContextType {
   registerTarget: (key: string, ref: React.RefObject<View | null>) => void;
   unregisterTarget: (key: string) => void;
   getTarget: (key: string) => React.RefObject<View | null> | undefined;
-  registerTutorialAction: (key: string, callback: () => Promise<void>) => void;
+  registerTutorialAction: (key: string, callback: () => Promise<void | boolean>) => void;
   unregisterTutorialAction: (key: string) => void;
   registerScrollView: (key: string, ref: React.RefObject<any>) => void;
   unregisterScrollView: (key: string) => void;
@@ -67,7 +67,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
   const [activeState, setActiveStateReact] = useState<ActiveTutorialState | null>(null);
   const activeStateRef = useRef<ActiveTutorialState | null>(null);
   const refs = useRef<Record<string, React.RefObject<View | null>>>({});
-  const actions = useRef<Record<string, () => Promise<void>>>({});
+  const actions = useRef<Record<string, () => Promise<void | boolean>>>({});
   const scrollViewRefs = useRef<Record<string, React.RefObject<any>>>({});
   const idResolvers = useRef<Record<string, () => string>>({});
 
@@ -86,7 +86,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
 
   const getTarget = useCallback((key: string) => refs.current[key], []);
 
-  const registerTutorialAction = useCallback((key: string, callback: () => Promise<void>) => {
+  const registerTutorialAction = useCallback((key: string, callback: () => Promise<void | boolean>) => {
     actions.current[key] = callback;
   }, []);
 
@@ -118,6 +118,11 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     const tutorial = TUTORIALS.find(t => t.id === resolvedId);
     if (!tutorial) return;
 
+    // Launchers that pass no returnRoute (e.g. the (i) modal's Take a Tour) fall
+    // back to the tutorial's own returnRoute. Lets a tour that navigates away
+    // (preAction pushes a page) always clean up after itself.
+    const effectiveReturn = returnRoute ?? (tutorial as any).returnRoute;
+
     let styleMode = 'balanced';
     try {
       const raw = await AsyncStorage.getItem('pj_settings');
@@ -129,12 +134,21 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     const preActionKey = (tutorial as any).preAction as string | undefined;
     if (preActionKey) {
       const action = actions.current[preActionKey];
-      if (action) { try { await action(); } catch {} }
+      // No registered handler -- can't set the tour up (e.g. owning screen not
+      // mounted), so don't open a tour with nothing to point at.
+      if (!action) return;
+      // A preAction may abort the tour by returning false (e.g. prerequisite
+      // data missing -- it shows its own toast). Existing actions return void,
+      // which is not === false, so they are unaffected.
+      try {
+        const result = await action();
+        if (result === false) return;
+      } catch { return; }
     }
 
     const firstStep = findNextValidStep(0, tutorial.steps, styleMode, refs.current);
     if (firstStep >= tutorial.steps.length) return;
-    setActiveState({ tutorial, stepIndex: firstStep, styleMode, returnRoute });
+    setActiveState({ tutorial, stepIndex: firstStep, styleMode, returnRoute: effectiveReturn });
   }, [setActiveState]);
 
   const advanceStep = useCallback(async () => {
@@ -155,7 +169,8 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
       markTutorialSeen(prev.tutorial.id);
       const returnRoute = prev.returnRoute;
       setActiveState(null);
-      if (returnRoute) setTimeout(() => router.push(returnRoute as any), 300);
+      if (returnRoute === 'back') setTimeout(() => router.back(), 300);
+      else if (returnRoute) setTimeout(() => router.push(returnRoute as any), 300);
     } else {
       setActiveState({ ...prev, stepIndex: next });
     }
@@ -176,7 +191,8 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     try { actions.current['closeGraphCreatorTutorial']?.(); } catch {}
     try { actions.current['deleteTutorialGraph']?.(); } catch {}
     setActiveState(null);
-    if (returnRoute) setTimeout(() => router.push(returnRoute as any), 300);
+    if (returnRoute === 'back') setTimeout(() => router.back(), 300);
+    else if (returnRoute) setTimeout(() => router.push(returnRoute as any), 300);
   }, [setActiveState]);
 
   return (

@@ -17,7 +17,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     key: 'day_score',
     tutorialId: 'day_score',
     category: 'Reports',
-    title: 'Day Score',
+    title: 'Day Summary',
     body: 'Each morning you get a single 0-100 score for the day before -- a snapshot of how the day went across three areas. It is weighted Nutrition 40%, Activity 35%, Recovery 25%. Any area with no logged data drops out and the rest re-balance, so you are only ever graded on what you actually tracked.\n\nScoring is proximity-based, not pass/fail: getting close to a goal earns most of the points. Today is never scored while it is still in progress -- the score only appears the morning after.',
     definitions: [
       {

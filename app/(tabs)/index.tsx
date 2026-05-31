@@ -3580,7 +3580,7 @@ export default function HomeScreen() {
                 <View style={{ flex:1, paddingRight:12 }}>
                   <Text style={{ fontSize:15, color: theme.textPrimary, fontFamily:'DMSans_600SemiBold', marginBottom:3 }}>Net Carbs</Text>
                   <Text style={{ fontSize:12, color: theme.textMuted, fontFamily:'DMSans_400Regular', lineHeight:17 }}>
-                    Show carbs as total minus fiber everywhere in the app.
+                    Show carbs as total minus fiber and sugar alcohols everywhere in the app.
                   </Text>
                 </View>
                 <ToggleSwitch value={showNetCarbs} onValueChange={toggleNetCarbs} />

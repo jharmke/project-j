@@ -333,7 +333,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     key: 'net_carbs_explained',
     category: 'Nutrition',
     title: 'Net Carbs',
-    body: 'Net carbs are total carbohydrates minus fiber. The idea: fiber passes through your body undigested and doesn\'t raise blood sugar, so many people -- especially those following low-carb or keto diets -- track net carbs as their real carbohydrate intake rather than total carbs.',
+    body: 'Net carbs are total carbohydrates minus fiber and sugar alcohols. The idea: fiber and sugar alcohols pass through your body largely undigested and have little impact on blood sugar, so many people, especially those following low-carb or keto diets, track net carbs as their real carbohydrate intake rather than total carbs.',
     definitions: [
       {
         term: 'Total Carbs',
@@ -345,20 +345,21 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
       },
       {
         term: 'Net Carbs',
-        explanation: 'Total carbs minus fiber. When net carbs mode is on, this is the number shown on your macro card, log, and stats -- and the number compared against your carbs goal.',
+        explanation: 'Total carbs minus fiber and sugar alcohols. When net carbs mode is on, this is the number shown on your macro card, log, and stats, and the number compared against your carbs goal.',
       },
       {
         term: 'Sugar Alcohols',
-        explanation: 'Partially absorbed sweeteners found in some packaged foods. Not yet included in the net carbs calculation -- coming in a future update.',
+        explanation: 'Partially absorbed sweeteners found in some packaged foods. Subtracted from total carbs along with fiber when net carbs mode is on.',
       },
     ],
     example: {
       label: 'Example',
       lines: [
-        { desc: 'Total Carbs', value: '35g' },
-        { desc: 'Fiber',       value: '− 8g' },
+        { desc: 'Total Carbs',    value: '35g' },
+        { desc: 'Fiber',          value: '− 8g' },
+        { desc: 'Sugar Alcohols', value: '− 2g' },
       ],
-      result: { desc: 'Net Carbs', value: '27g' },
+      result: { desc: 'Net Carbs', value: '25g' },
     },
   },
   {

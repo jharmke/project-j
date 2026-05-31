@@ -32,6 +32,7 @@ import { calcSleepScore } from '../../utils/sleepScore';
 import { runDayScoreScan } from '../../utils/dayScoreStore';
 import { DayScore } from '../../utils/dayScore';
 import DaySummaryModal from '../../components/DaySummaryModal';
+import DayScoreDisclaimerModal from '../../components/DayScoreDisclaimerModal';
 import { StatsGraphCard } from '../../components/StatsGraphCard';
 import { StatsCardEditModal } from '../../components/StatsCardEditModal';
 import { saveStatsCards } from '../../statsCardRegistry';
@@ -967,7 +968,10 @@ export default function HomeScreen() {
   // runDayScoreScan is self-gated, so multiple triggers are safe. The returned
   // yesterday score is stashed for the morning pop-up (step 3).
   // Yesterday's score + date for the morning Day Summary pop-up (null = hidden).
+  // dayScoreDisclaimer holds the pending summary while the first-use disclaimer
+  // shows; on acknowledge it hands off to daySummary.
   const [daySummary, setDaySummary] = useState<{ score: DayScore; dateKey: string } | null>(null);
+  const [dayScoreDisclaimer, setDayScoreDisclaimer] = useState<{ score: DayScore; dateKey: string } | null>(null);
   const summaryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     const runScan = async () => {
@@ -987,7 +991,10 @@ export default function HomeScreen() {
         summaryTimerRef.current = setTimeout(async () => {
           summaryTimerRef.current = null;
           await storageSet('pj_last_summary_shown', todayKey);
-          setDaySummary({ score, dateKey: yKey });
+          // First ever score: show the one-time disclaimer gate first.
+          const seen = await AsyncStorage.getItem('pj_dayscore_disclaimer_seen');
+          if (seen === 'true') setDaySummary({ score, dateKey: yKey });
+          else setDayScoreDisclaimer({ score, dateKey: yKey });
         }, 800);
       } catch (e) { console.log('[DayScore] scan error', e); }
     };
@@ -3585,6 +3592,18 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
+
+      {/* First-use disclaimer gate, shown before the very first Day Summary */}
+      {dayScoreDisclaimer && (
+        <DayScoreDisclaimerModal
+          theme={theme}
+          onAcknowledge={() => {
+            storageSet('pj_dayscore_disclaimer_seen', 'true');
+            setDaySummary(dayScoreDisclaimer);
+            setDayScoreDisclaimer(null);
+          }}
+        />
+      )}
 
       {/* Morning Day Summary pop-up (yesterday's Day Score) */}
       {daySummary && (

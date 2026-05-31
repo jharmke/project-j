@@ -1815,12 +1815,12 @@ export default function SettingsScreen() {
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              Alert.alert('Replay Day Summary', "Clear today's gate so the morning pop-up fires again?", [
+              Alert.alert('Replay Day Summary', "Clear today's gate so the morning pop-up fires again? (Also resets the first-use disclaimer.)", [
                 { text: 'Cancel', style: 'cancel' },
                 { text: 'Replay', onPress: async () => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-                  await AsyncStorage.removeItem('pj_last_summary_shown');
-                  Alert.alert('Done', 'Gate cleared. Close the app fully and reopen it to see the pop-up.');
+                  await AsyncStorage.multiRemove(['pj_last_summary_shown', 'pj_dayscore_disclaimer_seen']);
+                  Alert.alert('Done', 'Gate cleared. Close the app fully and reopen it to see the disclaimer, then the pop-up.');
                 }},
               ]);
             }}>

@@ -1758,7 +1758,7 @@ export default function HomeScreen() {
           <View style={{ flexDirection:'row', alignItems:'center', gap:10 }}>
             <Text style={{ fontSize:9, color: theme.textDim, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase' }}>vs goal</Text>
             <TouchableOpacity onPress={() => setShowMacroGearSheet(true)} hitSlop={{ top:8, bottom:8, left:8, right:8 }}>
-              <Ionicons name="settings" size={15} color={showNetCarbs ? theme.accentBlue : theme.textMuted} />
+              <Ionicons name="settings" size={16} color={theme.textMuted} />
             </TouchableOpacity>
           </View>
         </View>
@@ -1803,7 +1803,7 @@ export default function HomeScreen() {
           </Text>
         </View>
         <TouchableOpacity onPress={openWaterDetailModal} hitSlop={{ top:8, bottom:8, left:8, right:8 }}>
-          <Ionicons name="settings-outline" size={16} color={theme.textMuted} />
+          <Ionicons name="settings" size={16} color={theme.textMuted} />
         </TouchableOpacity>
       </View>
       <AnimatedProgressBar pct={Math.min(100,(water/waterGoal)*100)} color={theme.accentBlue} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} overGoal={water > waterGoal} />
@@ -2086,7 +2086,7 @@ export default function HomeScreen() {
             <TooltipIcon tooltipKey="sleep_score" />
           </View>
           <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setEditingSleep(!editingSleep); }} hitSlop={{ top:8, bottom:8, left:8, right:8 }}>
-            <Ionicons name="settings-outline" size={16} color={theme.textMuted} />
+            <Ionicons name="settings" size={16} color={theme.textMuted} />
           </TouchableOpacity>
         </View>
         

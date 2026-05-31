@@ -1282,7 +1282,7 @@ export default function LogScreen() {
             </Text>
           </View>
           <TouchableOpacity onPress={openWaterDetailModal} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Ionicons name="settings-outline" size={16} color={theme.textMuted} />
+            <Ionicons name="settings" size={16} color={theme.textMuted} />
           </TouchableOpacity>
         </View>
         <WaterBar pct={waterPct} color={theme.accentBlue} trackColor={theme.bgProgressTrack} refreshKey={logRefreshKey} overGoal={water > waterGoal} />

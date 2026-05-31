@@ -935,7 +935,7 @@ export default function StatsScreen() {
 
   const renderArchiveDayRow = (day: ArchiveDay) => {
     const sc = day.score;
-    const open = () => { if (sc && !day.excluded) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setArchiveSummary({ score: sc, dateKey: day.dateKey }); } };
+    const open = () => { if (sc && !day.excluded) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/day-summary', params: { date: day.dateKey } }); } };
     return (
       <TouchableOpacity key={day.dateKey} activeOpacity={sc && !day.excluded ? 0.6 : 1} onPress={open}
         style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 4, borderTopWidth: 0.5, borderTopColor: theme.borderCard }}>

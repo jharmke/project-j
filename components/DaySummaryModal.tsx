@@ -148,17 +148,14 @@ function PillBar({ value, color, progress }: { value: number | null; color: stri
 // celebrate: 'pulse' (great day) adds a gentle scale shimmer; 'shine' (elite)
 // adds a bright glint that sweeps around the ring (reads on any theme). Both fire
 // only after the arc finishes filling.
-function ScoreRing({ value, color, theme, celebrate }: { value: number; color: string; theme: any; celebrate: 'none' | 'pulse' | 'shine' }) {
+export function ScoreRing({ value, color, theme, celebrate }: { value: number; color: string; theme: any; celebrate: 'none' | 'pulse' | 'shine' }) {
   const size = 152, stroke = 10, radius = (size - stroke) / 2;
   const circ = 2 * Math.PI * radius;
   const arc = useSharedValue(0);
-  const t = useSharedValue(0);   // one shared clock (0 to 1) drives pulse + glint
-  const isShine = celebrate === 'shine';
+  const t = useSharedValue(0);   // shared clock (0 to 1) drives the pulse swell
 
-  // Cycle phases (fractions of the loop): pulse, then a quick glint, then rest.
-  // Glint window is deliberately short so it reads as a fast real-life shimmer
-  // (~0.07 of the 2800ms loop ≈ 200ms sweep), not a slow travel.
-  const PULSE_END = 0.21, GLINT_END = 0.28;   // rest fills the remainder
+  // Pulse phase as a fraction of the loop; the rest of the cycle sits at rest.
+  const PULSE_END = 0.21;
 
   useEffect(() => {
     arc.value = 0;
@@ -180,14 +177,6 @@ function ScoreRing({ value, color, theme, celebrate }: { value: number; color: s
     const scale = v < PULSE_END ? 1 + 0.05 * Math.sin(Math.PI * (v / PULSE_END)) : 1;
     return { transform: [{ scale }] };
   });
-  // Glint: sweeps the ring during the phase right after the pulse, hidden otherwise.
-  const sweepProps = useAnimatedProps(() => {
-    const v = t.value;
-    const span = GLINT_END - PULSE_END;
-    const active = v >= PULSE_END && v <= GLINT_END;
-    const local = active ? (v - PULSE_END) / span : 1;
-    return { strokeDashoffset: -local * circ, strokeOpacity: active ? 1 : 0 } as any;
-  });
 
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
@@ -195,16 +184,13 @@ function ScoreRing({ value, color, theme, celebrate }: { value: number; color: s
         <Circle cx={size / 2} cy={size / 2} r={radius} stroke={theme.bgInput} strokeWidth={stroke} fill="none" />
         <AnimCircle cx={size / 2} cy={size / 2} r={radius} stroke={color} strokeWidth={stroke} fill="none"
           animatedProps={arcProps} strokeLinecap="round" rotation="-90" origin={`${size / 2},${size / 2}`} />
-        {isShine && (
-          <AnimCircle cx={size / 2} cy={size / 2} r={radius} stroke="rgba(255,255,255,0.7)" strokeWidth={stroke} fill="none"
-            strokeDasharray={`${circ * 0.05} ${circ}`} animatedProps={sweepProps}
-            strokeLinecap="round" rotation="-90" origin={`${size / 2},${size / 2}`} />
-        )}
       </Svg>
       <Reanimated.View style={[{ alignItems: 'center' }, pulseStyle]}>
-        <Text style={{ fontSize: 54, lineHeight: 58, fontFamily: 'BebasNeue_400Regular', color, opacity: 0.92 }}>
-          {Math.round(value)}
-        </Text>
+        <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
+          <Text style={{ fontSize: 54, lineHeight: 58, fontFamily: 'BebasNeue_400Regular', color, opacity: 0.92 }}>
+            {Math.round(value)}
+          </Text>
+        </View>
         <Text style={{ fontSize: 8, letterSpacing: 2, fontFamily: 'DMSans_700Bold', color, opacity: 0.55, marginTop: -2 }}>OUT OF 100</Text>
       </Reanimated.View>
     </View>

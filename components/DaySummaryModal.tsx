@@ -338,7 +338,7 @@ export default function DaySummaryModal({ score, dateKey, theme, styleMode, fait
               <Text style={{ fontSize: 18, letterSpacing: 2, fontFamily: 'BebasNeue_400Regular', color: theme.accentBlue }}>DAY SUMMARY</Text>
               {/* Bebas sits high in its line box; lift the (i) to the caps' optical center */}
               <View style={{ transform: [{ translateY: -2 }] }}>
-                <TooltipIcon tooltipKey="day_score" />
+                <TooltipIcon tooltipKey="day_score" hideTour />
               </View>
             </View>
 

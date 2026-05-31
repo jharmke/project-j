@@ -9,9 +9,10 @@ interface Props {
   tooltipKey: string;
   visible: boolean;
   onClose: () => void;
+  hideTour?: boolean;
 }
 
-export default function TooltipModal({ tooltipKey, visible, onClose }: Props) {
+export default function TooltipModal({ tooltipKey, visible, onClose, hideTour }: Props) {
   const { theme } = useTheme();
   const { startTutorial } = useTutorial();
 
@@ -55,7 +56,7 @@ export default function TooltipModal({ tooltipKey, visible, onClose }: Props) {
         ]).start();
 
         // Breathing pulse on tour button
-        if (def?.tutorialId) {
+        if (def?.tutorialId && !hideTour) {
           Animated.loop(
             Animated.sequence([
               Animated.timing(tourPulse, { toValue: 1,   duration: 900, useNativeDriver: true }),
@@ -218,8 +219,9 @@ export default function TooltipModal({ tooltipKey, visible, onClose }: Props) {
               </Animated.View>
             )}
 
-            {/* Take a Tour button -- shown when a tutorial is linked to this tooltip */}
-            {def.tutorialId && (
+            {/* Take a Tour button -- shown when a tutorial is linked to this tooltip
+                and the host allows it (hidden inside the Day Summary modal). */}
+            {def.tutorialId && !hideTour && (
               <Animated.View style={{ opacity: buttonOpacity, marginTop: 20, alignSelf: 'stretch' }}>
                 <Animated.View style={{ opacity: tourPulse }}>
                   <TouchableOpacity
@@ -244,7 +246,7 @@ export default function TooltipModal({ tooltipKey, visible, onClose }: Props) {
             )}
 
             {/* Got it button */}
-            <Animated.View style={{ opacity: buttonOpacity, marginTop: def.tutorialId ? 10 : 20, alignSelf: 'stretch' }}>
+            <Animated.View style={{ opacity: buttonOpacity, marginTop: def.tutorialId && !hideTour ? 10 : 20, alignSelf: 'stretch' }}>
               <TouchableOpacity
                 onPress={handleClose}
                 style={[styles.button, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}

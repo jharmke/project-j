@@ -8,9 +8,13 @@ import TooltipModal from './TooltipModal';
 interface Props {
   tooltipKey: string;
   size?: number;
+  /** Hide the "Take a Tour" button in the tooltip modal (explainer only).
+   *  Use where the linked tutorial cannot run from here, e.g. inside another
+   *  modal -- the tour lives on the full Day Summary page instead. */
+  hideTour?: boolean;
 }
 
-export default function TooltipIcon({ tooltipKey, size = 13 }: Props) {
+export default function TooltipIcon({ tooltipKey, size = 13, hideTour }: Props) {
   const { theme } = useTheme();
   const { seen, markSeen } = useTooltip(tooltipKey);
   const [modalVisible, setModalVisible] = useState(false);
@@ -56,6 +60,7 @@ export default function TooltipIcon({ tooltipKey, size = 13 }: Props) {
         tooltipKey={tooltipKey}
         visible={modalVisible}
         onClose={handleClose}
+        hideTour={hideTour}
       />
     </>
   );

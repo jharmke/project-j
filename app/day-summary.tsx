@@ -25,6 +25,7 @@ import { useToast } from '../components/Toast';
 import { ScoreRing } from '../components/DaySummaryModal';
 import { DayScore, DayScoreInput, scoreLabel, StyleMode, CATEGORY_WEIGHTS } from '../utils/dayScore';
 import { buildDayScoreInput, excludeDayFromAverages } from '../utils/dayScoreStore';
+import { winAndCoachLines, contextLine as computeContextLine, hadFaithEntryOn } from '../utils/daySummaryCopy';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -46,6 +47,9 @@ export default function DaySummaryScreen() {
   const [input, setInput] = useState<DayScoreInput | null>(null);
   const [excluded, setExcluded] = useState(false);
   const [confirmingExclude, setConfirmingExclude] = useState(false);
+  const [winLine, setWinLine] = useState('');
+  const [coachLine, setCoachLine] = useState('');
+  const [contextLine, setContextLine] = useState('');
   const styleMode: StyleMode = (input?.styleMode as StyleMode) || 'balanced';
   const isMindful = styleMode === 'mindful';
 
@@ -72,11 +76,27 @@ export default function DaySummaryScreen() {
       try {
         const raw = await AsyncStorage.getItem(`pj_${date}`);
         const day = raw ? JSON.parse(raw) : null;
-        setScore(day?.dayScore ?? null);
+        const sc: DayScore | null = day?.dayScore ?? null;
+        setScore(sc);
         const ex = day?.excluded;
         setExcluded(ex === true || (ex && typeof ex === 'object' && !!(ex.diet && ex.water && ex.exercise)));
         const inp = await buildDayScoreInput(date, new Date().toISOString());
         setInput(inp);
+
+        // Narrative lines (shared with the morning modal): win, coach, context.
+        if (sc) {
+          const mindful = (inp?.styleMode ?? 'balanced') === 'mindful';
+          let faithJourney = 'rooted';
+          try {
+            const s = await AsyncStorage.getItem('pj_settings');
+            if (s) faithJourney = JSON.parse(s)?.faithJourney ?? 'rooted';
+          } catch {}
+          const faithEligible = faithJourney === 'rooted' && (await hadFaithEntryOn(date));
+          const lines = winAndCoachLines(sc, mindful, faithEligible);
+          setWinLine(lines.winLine);
+          setCoachLine(lines.coachLine);
+          setContextLine(await computeContextLine(date, sc.composite, mindful));
+        }
       } catch {}
       setLoading(false);
     })();
@@ -209,14 +229,23 @@ export default function DaySummaryScreen() {
           {date ? formatLongDate(date) : ''}
         </Text>
 
-        {/* Hero ring + label */}
-        <View ref={ringRef} collapsable={false} style={{ alignItems: 'center', marginTop: 10, marginBottom: 22 }}>
+        {/* Hero ring + label + narrative (context / win / coach) */}
+        <View ref={ringRef} collapsable={false} style={{ alignItems: 'center', marginTop: 10, marginBottom: 18 }}>
           <ScoreRing value={score.composite} color={heroColor} theme={theme} celebrate={celebrate} />
           <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0, marginTop: 10 }}>
             <Text style={{ fontSize: 24, letterSpacing: 2, fontFamily: 'BebasNeue_400Regular', color: heroColor }}>
               {scoreLabel(shown, styleMode).toUpperCase()}
             </Text>
           </View>
+          {!!contextLine && (
+            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', textAlign: 'center', marginTop: 8 }}>{contextLine}</Text>
+          )}
+          {!!winLine && (
+            <Text style={{ fontSize: 14, color: theme.accentBlue, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', textAlign: 'center', marginTop: 12, lineHeight: 20, paddingHorizontal: 12 }}>{winLine}</Text>
+          )}
+          {!!coachLine && (
+            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', textAlign: 'center', marginTop: 6, lineHeight: 17, paddingHorizontal: 12 }}>{coachLine}</Text>
+          )}
         </View>
 
         {presentCats.length < 3 && (

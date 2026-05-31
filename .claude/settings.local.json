@@ -42,7 +42,8 @@
       "Bash(awk NR>=1855 && NR<=1912 *)",
       "Bash(awk NR>=1 && NR<=30 *)",
       "Bash(awk NR>=88 && NR<=120 *)",
-      "Bash(awk NR>=1820 && NR<=1858 *)"
+      "Bash(awk NR>=1820 && NR<=1858 *)",
+      "Bash(Select-String -Pattern \"Day Score|Summary|tip|Tip\")"
     ]
   }
 }

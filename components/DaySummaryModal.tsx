@@ -341,6 +341,9 @@ export default function DaySummaryModal({ score, dateKey, theme, styleMode, fait
               <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
             </TouchableOpacity>
 
+            {/* Top-left label: matches the app's other modals and balances the (i) */}
+            <Text style={{ position: 'absolute', top: 17, left: 16, zIndex: 5, fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>Day Summary</Text>
+
             {/* Info (i): explains the Day Score, reads from tooltipRegistry */}
             <View style={{ position: 'absolute', top: 14, right: 16, zIndex: 5 }}>
               <TooltipIcon tooltipKey="day_score" size={18} />

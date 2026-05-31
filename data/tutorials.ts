@@ -1582,12 +1582,76 @@ export const TUTORIALS: Tutorial[] = [
       },
     ],
   },
+
+  // ─── DAY SCORE ────────────────────────────────────────────────────────────────
+  {
+    id: 'day_score',
+    name: 'Your Day Score',
+    description: 'How your morning 0-100 Day Score works across Nutrition, Activity, and Recovery -- and why a bad night never tanks it.',
+    tab: 'home',
+    steps: [
+      {
+        targetKey: 'none',
+        title: 'YOUR DAY SCORE',
+        body: {
+          discipline: 'Every morning you get a 0-100 score for the day before -- one number grading how the day went across nutrition, activity, and recovery. Today is never scored while it is still in progress.',
+          balanced: 'Each morning you will see a score out of 100 for the day before -- a quick snapshot of how the day went across nutrition, activity, and recovery.',
+          mindful: 'Each morning brings a gentle score for the day before -- a snapshot across nutrition, activity, and recovery. It is a reflection, not a verdict.',
+        },
+      },
+      {
+        targetKey: 'none',
+        title: 'THREE AREAS',
+        body: {
+          discipline: 'The score is weighted: Nutrition 40%, Activity 35%, Recovery 25%. Any area with no logged data drops out and the rest re-balance -- you are only graded on what you tracked.',
+          balanced: 'Three areas make up the score: Nutrition (40%), Activity (35%), and Recovery (25%). If you did not log an area, it simply drops out and the others adjust.',
+          mindful: 'Three areas shape the score: nutrition, activity, and recovery. Anything you did not track simply steps aside, so you are never measured against blanks.',
+        },
+      },
+      {
+        targetKey: 'none',
+        title: 'A BAD NIGHT WON\'T TANK IT',
+        body: {
+          discipline: 'Recovery comes from your sleep, and any night you log earns a floor. A rough night will not tank your day -- we grade the behavior of tracking and prioritizing rest, not just the outcome. This is why Recovery can read higher than your raw sleep score.',
+          balanced: 'Recovery is built from your sleep, but any night you log earns a minimum -- so one rough night will not crater your whole score. That is why Recovery can read a little higher than your raw sleep score.',
+          mindful: 'Recovery comes from your sleep, and a night you log always counts for something. A hard night is never held against you -- showing up and resting still matters.',
+        },
+      },
+      {
+        targetKey: 'none',
+        title: 'CLOSE COUNTS',
+        body: {
+          discipline: 'Scoring is proximity-based: get close to a goal and you earn most of the points -- no all-or-nothing cliffs. The more consistently you log, the more accurate your score.',
+          balanced: 'You do not have to be perfect -- getting close to your goals earns most of the points. And the more you log, the more your score reflects your real days.',
+          mindful: 'Getting close counts -- there is no pass or fail here. The more you log, the more the score reflects your actual days.',
+        },
+      },
+      {
+        targetKey: 'none',
+        title: 'REST DAYS',
+        body: {
+          discipline: 'On training days, completing your workout counts. On a rest day, tag it as Rest so it is not dinged for having no workout -- your active calories still earn credit.',
+          balanced: 'If you take a rest day, tag it as Rest in your workout so the score does not expect a workout. Your movement that day still counts.',
+          mindful: 'Taking a rest day is good. Tag it as Rest so the day is not measured against a workout you intentionally set aside.',
+        },
+      },
+      {
+        targetKey: 'none',
+        title: 'OFF DAYS',
+        body: {
+          discipline: 'Sick, traveling, or a planned off day? Tap "Exclude this day" on the summary so it does not drag your weekly average. The score appears each morning; a full history view is coming soon.',
+          balanced: 'For a genuine off day, tap "Exclude this day" so it does not affect your averages. Your score shows up each morning, and a full history view is on the way.',
+          mindful: 'For an off day, you can quietly exclude it so it does not weigh on your averages. The score appears each morning -- no need to seek it out.',
+        },
+      },
+    ],
+  },
 ];
 
 // ─── Tab → Tutorial Mapping ───────────────────────────────────────────────────
 
 export const TAB_TUTORIALS: Record<string, string[]> = {
-  home: ['cal_card', 'macros_card', 'sleep_card', 'yvy_card', 'edit_layout'],
+  home: ['cal_card', 'macros_card', 'sleep_card', 'yvy_card', 'day_score', 'edit_layout'],
   log: ['log_food', 'manage_log', 'barcode', 'log_edit_layout', 'create_food', 'recipes', 'if_card'],
   workout: ['workout_basics', 'programs', 'routines', 'exercise_library'],
   stats: ['graph_creator', 'streaks', 'effort_vs_results'],

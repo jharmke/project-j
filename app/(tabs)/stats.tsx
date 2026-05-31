@@ -22,6 +22,7 @@ import { calcSleepScore } from '../../utils/sleepScore';
 import { loadDayScoreArchive, ArchiveWeek, ArchiveDay } from '../../utils/dayScoreStore';
 import { DayScore } from '../../utils/dayScore';
 import DaySummaryModal from '../../components/DaySummaryModal';
+import { archiveNav } from '../../utils/archiveNav';
 import { showToolkit } from '../../components/ToolkitSheet';
 import { useTutorial } from '../../context/TutorialContext';
 import { useTutorialTarget } from '../../hooks/useTutorialTarget';
@@ -250,6 +251,9 @@ export default function StatsScreen() {
   const [expandedWeeks, setExpandedWeeks] = useState<Record<string, boolean>>({});
   // Tapping a past day reopens that day's summary card (same modal as the morning pop-up).
   const [archiveSummary, setArchiveSummary] = useState<{ score: DayScore; dateKey: string } | null>(null);
+  // VIEW FULL SUMMARY handoff: open the Reports section and scroll to the archive.
+  const [reportsSectionForceOpen, setReportsSectionForceOpen] = useState(false);
+  const reportsLayoutY = useRef<number | null>(null);
 
   const [creatorVisible, setCreatorVisible] = useState(false);
   const [creatorStep, setCreatorStep] = useState<1 | 2 | 3>(1);
@@ -838,6 +842,27 @@ export default function StatsScreen() {
   }, [styleMode]);
 
   useFocusEffect(useCallback(() => { loadArchive(); }, [loadArchive]));
+
+  // VIEW FULL SUMMARY handoff from the morning pop-up: open Reports, expand
+  // yesterday's week, and scroll to the Day Summaries archive.
+  useFocusEffect(
+    useCallback(() => {
+      if (!archiveNav.pending) return;
+      archiveNav.pending = false;
+      setReportsSectionForceOpen(true);
+      const y = new Date(); y.setDate(y.getDate() - 1);
+      const ws = new Date(y); ws.setDate(ws.getDate() - ws.getDay()); // Sunday of that week
+      const wsKey = `${ws.getFullYear()}-${String(ws.getMonth() + 1).padStart(2, '0')}-${String(ws.getDate()).padStart(2, '0')}`;
+      setExpandedWeeks(prev => ({ ...prev, [wsKey]: true }));
+      const t = setTimeout(() => {
+        if (reportsLayoutY.current != null) {
+          statsScrollRef.current?.scrollTo({ y: Math.max(0, reportsLayoutY.current - 12), animated: true });
+        }
+        setReportsSectionForceOpen(false);
+      }, 500);
+      return () => clearTimeout(t);
+    }, [])
+  );
 
   // ─── Day Score archive (Reports > Day Summaries) rendering ──────────────────
   const ARCH_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -1616,7 +1641,8 @@ export default function StatsScreen() {
               </CollapsibleSection>
             );
             if (section.systemKey === 'reports') return (
-              <CollapsibleSection key={section.id} label={section.label} subtitle="Effort vs. results analysis" defaultOpen={isFirst} theme={theme} first={isFirst}>
+              <View key={section.id} onLayout={e => { reportsLayoutY.current = e.nativeEvent.layout.y; }}>
+              <CollapsibleSection label={section.label} subtitle="Effort vs. results analysis" defaultOpen={isFirst} theme={theme} first={isFirst} forceOpen={reportsSectionForceOpen}>
                 <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, overflow: 'hidden' }]}>
                   <Ionicons name="analytics" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -1635,6 +1661,7 @@ export default function StatsScreen() {
                 </View>
                 {renderDayArchive()}
               </CollapsibleSection>
+              </View>
             );
             return null;
           })}

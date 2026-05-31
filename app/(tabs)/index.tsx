@@ -33,6 +33,7 @@ import { runDayScoreScan } from '../../utils/dayScoreStore';
 import { DayScore } from '../../utils/dayScore';
 import DaySummaryModal from '../../components/DaySummaryModal';
 import DayScoreDisclaimerModal from '../../components/DayScoreDisclaimerModal';
+import { archiveNav } from '../../utils/archiveNav';
 import { StatsGraphCard } from '../../components/StatsGraphCard';
 import { StatsCardEditModal } from '../../components/StatsCardEditModal';
 import { saveStatsCards } from '../../statsCardRegistry';
@@ -3614,7 +3615,7 @@ export default function HomeScreen() {
           styleMode={styleMode}
           faithJourney={faithJourney}
           onClose={() => setDaySummary(null)}
-          onViewSummary={() => { setDaySummary(null); router.push('/(tabs)/stats'); }}
+          onViewSummary={() => { setDaySummary(null); archiveNav.pending = true; router.push('/(tabs)/stats'); }}
         />
       )}
 

@@ -2535,6 +2535,7 @@ export default function HomeScreen() {
           disabled={!noteIsDirty}
           onPress={async () => {
             if (!noteIsDirty) return;
+            Haptics.impactAsync(isClearing ? Haptics.ImpactFeedbackStyle.Heavy : Haptics.ImpactFeedbackStyle.Medium);
             try {
               const raw = await AsyncStorage.getItem('pj_bible_reflections');
               const entries: any[] = raw ? JSON.parse(raw) : [];

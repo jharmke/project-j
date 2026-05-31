@@ -1314,7 +1314,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                 <Text style={{ fontSize: 18, color: theme.textSecondary, fontFamily: 'BebasNeue_400Regular' }}>
                   {foodStats.avgGrams > 0 ? Math.round(foodStats.avgGrams) : '--'}
                 </Text>
-                {foodStats.avgGrams > 0 && <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: 'DMSans_500Medium', marginLeft: 1 }}>g</Text>}
+                {foodStats.avgGrams > 0 && <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: 'DMSans_500Medium', marginLeft: 1 }}>{effectiveServing?.unit || food?.servingUnitType || 'g'}</Text>}
               </View>
             </View>
           </View>

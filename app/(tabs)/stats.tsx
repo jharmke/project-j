@@ -288,8 +288,31 @@ export default function StatsScreen() {
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
+  // Re-scan the current month's pj_ keys for exclusion flags so the calendar dots
+  // update immediately after day-detail closes (the modal lives inside this tab, so
+  // useFocusEffect never re-fires on its own). Read-only, sets state only.
+  const reloadExcludedDays = async () => {
+    const exDays: { date: string, diet: boolean, water: boolean, exercise: boolean }[] = [];
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateKey = `${calendarYear}-${String(calendarMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      try {
+        const saved = await AsyncStorage.getItem(`pj_${dateKey}`);
+        if (saved) {
+          const data = JSON.parse(saved);
+          if (data.excluded && Object.values(data.excluded).some(v => v === true)) {
+            exDays.push({ date: dateKey, diet: !!data.excluded.diet, water: !!data.excluded.water, exercise: !!data.excluded.exercise });
+          }
+        }
+      } catch {}
+    }
+    setExcludedDays(exDays);
+  };
+
   const closeDayDetail = () => {
-    Animated.timing(dayDetailAnim, { toValue: 0, duration: 180, useNativeDriver: true }).start(() => setDayDetailDate(null));
+    Animated.timing(dayDetailAnim, { toValue: 0, duration: 180, useNativeDriver: true }).start(() => {
+      setDayDetailDate(null);
+      reloadExcludedDays();
+    });
   };
 
   const fetchTrendData = fetchTrendDataUtil;

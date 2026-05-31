@@ -1218,7 +1218,7 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
         </View>
         {!homeMode && (
           <TouchableOpacity ref={editBtnRef} onPress={() => onEditPress?.(card)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Ionicons name="settings-outline" size={13} color={theme.textMuted} />
+            <Ionicons name="settings" size={16} color={theme.textMuted} />
           </TouchableOpacity>
         )}
       </View>

@@ -512,7 +512,10 @@ pj_smart_tips: {
   cooldowns: {              // ruleId -> ISO date last fired
     [ruleId: string]: string
   },
-  lastComputed: string      // ISO date of last full computation
+  lastComputed: string,     // ISO date of last full computation
+  topicLedger: {            // cross-surface diversity memory (Session 69, see 15.3)
+    [topic: string]: { date: string, surface: string }  // topic/domain -> last surfaced; 14-day rolling, pruned on write
+  }
 }
 
 Tip: {
@@ -648,7 +651,7 @@ The lightweight surfaces (Day Takeaway, Weekly, Monthly, Home card) actively spr
 - Topic-ownership priority when surfaces contend for the same topic: Monthly beats Weekly beats Day. A multi-day pattern is most truthfully a higher-altitude observation, and a lower surface can always fall back to a different standout, whereas a week or month cannot manufacture a different period.
 - Thin-data caveat: a user whose only issue is one topic will still see that topic across surfaces. The positive layer and the Day Takeaway standout supply variety in that case. Accepted as rare; may be supplemented with positive encouragement messages.
 
-Ledger storage location and memory duration are OPEN, see Section 16.
+Ledger storage (Session 69): stored in pj_smart_tips as a topicLedger field keyed by topic/domain, each entry { date, surface } (see Section 11). Memory duration is a 14-day rolling window (starting value, tune after TestFlight): within 14 days a recently surfaced topic is deprioritized on the lightweight surfaces (tie-break only; urgency overrides). Entries older than 14 days are pruned on write. The ledger is read at compute time for the frozen Day/Weekly/Monthly snapshots (so the diverse pick freezes with the snapshot) and fresh-on-open for the Home card; EvR does not read or write it.
 
 ### 15.4 Pop-up firing rule
 
@@ -719,7 +722,7 @@ These remain to be decided in upcoming sessions. None blocked the Session 68 arc
 5. MOSTLY RESOLVED (Session 69): the stranded "two confidence tiers" table was moved under its 6.2 header; Discipline and Balanced confirmed to SHARE one copy pool in v1 (8.1 reworded to match); the Day Takeaway is documented secular by design (15.1) with "Rooted faith flavor on the Day Takeaway" added to the parked faith candidates (9.2). The trigger library had NO duplicate section numbers, that part of the original item was inaccurate. LEFT BY CHOICE: the spec's duplicate section numbers (two 3.5, two 6.0, two 13) stay as-is; fixing the 6.0 pair cleanly requires renumbering the whole 6.x chain and breaking cross-references for a purely cosmetic gain, so it is deferred to a dedicated renumber pass if ever worth it.
 6. NEW (Session 68): the Day Takeaway engine rule set must be written before build, the standout ranking plus the personal-history comparators. It is not in the current trigger library.
 7. NEW (Session 68): Weekly and Monthly tip rules (windows, thresholds, aggregation from daily) must be written. The trigger library currently covers only the 7-day rolling stream.
-8. Cross-surface topic ledger: storage location and memory duration are undefined.
+8. RESOLVED (Session 69): the cross-surface topic ledger lives in pj_smart_tips as a topicLedger field (topic/domain -> { date, surface }), 14-day rolling memory (starting value), pruned on write, read at compute time for the frozen surfaces and fresh-on-open for the Home card, EvR exempt. See 15.3 and Section 11.
 9. VERIFY: current Day Score recompute-on-edit and goal-snapshot behavior in code (see 15.5). May spin off as its own Day Score item.
 
 ---

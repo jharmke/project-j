@@ -22,6 +22,14 @@ import {
   deleteReport,
   loadSavedReports,
 } from '../utils/diagnosticReport';
+import {
+  SmartTipsStore,
+  StoredTip,
+  TIPS_GATED,
+  computeAndStoreSmartTips,
+  isCrossSignalRule,
+  loadSmartTips,
+} from '../utils/smartTipsEngine';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -241,6 +249,69 @@ function SleepCard({ f, isMindful, theme, shadowStyle }: { f: any; isMindful: bo
   );
 }
 
+// ── Smart Tip cards ────────────────────────────────────────────────────────────
+
+function InsightTipCard({ tip, isBlurred, theme, shadowStyle }: { tip: StoredTip; isBlurred: boolean; theme: any; shadowStyle: any }) {
+  const chipLabel = tip.positive ? 'CORRELATION: POSITIVE' : 'CORRELATION: INSIGHT';
+  if (isBlurred) {
+    return (
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <ChipLabel label="INSIGHT" theme={theme} />
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Ionicons name="lock-closed" size={12} color={theme.textMuted} />
+            <View style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
+              <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.accentBlueRaw }}>PRO</Text>
+            </View>
+          </View>
+        </View>
+        <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, lineHeight: 20, marginBottom: 10 }}>
+          {tip.title}
+        </Text>
+        <View style={{ gap: 6 }}>
+          <View style={{ height: 10, backgroundColor: theme.textMuted + '30', borderRadius: 4, width: '100%' }} />
+          <View style={{ height: 10, backgroundColor: theme.textMuted + '30', borderRadius: 4, width: '82%' }} />
+          <View style={{ height: 10, backgroundColor: theme.textMuted + '20', borderRadius: 4, width: '65%' }} />
+        </View>
+      </View>
+    );
+  }
+  return (
+    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
+      <View style={{ marginBottom: 10 }}>
+        <ChipLabel label={chipLabel} theme={theme} />
+      </View>
+      <Text style={{ fontSize: 15, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, lineHeight: 21, marginBottom: 8 }}>
+        {tip.title}
+      </Text>
+      <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 20 }}>
+        {tip.body}
+      </Text>
+    </View>
+  );
+}
+
+function SmartTipCard({ tip, theme, shadowStyle }: { tip: StoredTip; theme: any; shadowStyle: any }) {
+  const borderColor = tip.positive ? theme.statusGood : tip.tier === 'urgent' ? theme.statusBad : theme.statusWarn;
+  const chipLabel = tip.positive ? 'POSITIVE' : tip.tier.toUpperCase();
+  const chipColor = tip.positive ? theme.statusGood : tip.tier === 'urgent' ? theme.statusBad : theme.statusWarn;
+  return (
+    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: borderColor, ...shadowStyle }]}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+        <View style={{ backgroundColor: chipColor + '22', borderWidth: 1, borderColor: chipColor + '55', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+          <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: chipColor }}>{chipLabel}</Text>
+        </View>
+      </View>
+      <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, lineHeight: 20, marginBottom: 6 }}>
+        {tip.title}
+      </Text>
+      <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 18 }}>
+        {tip.body}
+      </Text>
+    </View>
+  );
+}
+
 // ── Tutorial demo report ───────────────────────────────────────────────────────
 
 const TUTORIAL_DEMO_REPORT: DiagnosticReport = {
@@ -291,6 +362,7 @@ export default function DiagnosticReportViewScreen() {
   const [styleMode, setStyleMode] = useState<'Discipline' | 'Balanced' | 'Mindful'>('Balanced');
   const [showAllSuggestions, setShowAllSuggestions] = useState(false);
   const [notFound, setNotFound]   = useState(false);
+  const [smartTips, setSmartTips] = useState<SmartTipsStore | null>(null);
 
   const isMindful = styleMode === 'Mindful';
   const shadowStyle = { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 3 };
@@ -316,6 +388,10 @@ export default function DiagnosticReportViewScreen() {
         } else {
           setNotFound(true);
         }
+        // Load stored Smart Tips for instant display, then refresh in background
+        const stored = await loadSmartTips();
+        if (stored) setSmartTips(stored);
+        computeAndStoreSmartTips().then(fresh => setSmartTips(fresh)).catch(() => {});
       };
       load();
     }, [id, isTutorialMode])
@@ -419,59 +495,38 @@ export default function DiagnosticReportViewScreen() {
               {report.macros && <MacroCard f={report.macros} isMindful={isMindful} theme={t} shadowStyle={shadowStyle} />}
               {report.sleep && <SleepCard f={report.sleep} isMindful={isMindful} theme={t} shadowStyle={shadowStyle} />}
 
-              {/* Correlations */}
-              {report.correlations && report.correlations.correlations.length > 0 && (
-                <View ref={correlationsRef} collapsable={false} style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw, ...shadowStyle }]}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                    <ChipLabel label="PATTERNS IN YOUR DATA" theme={t} />
-                    <TooltipIcon tooltipKey="diagnostic_correlations" />
+              {/* Smart Tips: domain coaching (single-signal, free) */}
+              {(() => {
+                const domainTips = (smartTips?.activeTips ?? []).filter(tip => !isCrossSignalRule(tip.ruleId));
+                if (!domainTips.length) return null;
+                return (
+                  <View ref={suggestionsRef} collapsable={false}>
+                    <Text style={[styles.sectionLabel, { color: t.textMuted }]}>
+                      {isMindful ? 'PATTERNS AND WINS' : 'SMART TIPS'}
+                    </Text>
+                    {domainTips.map(tip => (
+                      <SmartTipCard key={tip.id} tip={tip} theme={t} shadowStyle={shadowStyle} />
+                    ))}
                   </View>
-                  {report.correlations.correlations.map((c, i) => (
-                    <View key={c.id}>
-                      {i > 0 && <View style={{ height: 0.5, backgroundColor: t.borderSubtle, marginVertical: 12 }} />}
-                      <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: t.textSecondary, lineHeight: 20, marginBottom: 4 }}>
-                        {c.headline}
-                      </Text>
-                      <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: t.textSecondary, lineHeight: 18 }}>
-                        {c.detail}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              )}
+                );
+              })()}
 
-              {/* Suggestions */}
-              {report.suggestions.length > 0 && (
-                <View ref={suggestionsRef} collapsable={false}>
-                  <Text style={[styles.sectionLabel, { color: t.textMuted }]}>
-                    {isMindful ? 'THINGS TO EXPLORE' : 'YOUR TOP SUGGESTIONS'}
-                  </Text>
-                  {(showAllSuggestions ? report.suggestions : report.suggestions.slice(0, 3)).map(s => (
-                    <View key={s.rank} style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw, borderLeftWidth: 3, borderLeftColor: t.accentBlueRaw, ...shadowStyle, flexDirection: 'row', gap: 12 }]}>
-                      <View style={{ width: 24, height: 24, borderRadius: 12, backgroundColor: t.accentBlueBg, borderWidth: 1, borderColor: t.accentBlueBorder, alignItems: 'center', justifyContent: 'center', marginTop: 1, flexShrink: 0 }}>
-                        <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: t.accentBlueRaw }}>{s.rank}</Text>
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: t.textSecondary, lineHeight: 20, marginBottom: 4 }}>{s.headline}</Text>
-                        <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: t.textSecondary, lineHeight: 18 }}>{s.detail}</Text>
-                      </View>
-                    </View>
-                  ))}
-                  {report.suggestions.length > 3 && (
-                    <TouchableOpacity
-                      onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        setShowAllSuggestions(v => !v);
-                      }}
-                      style={{ alignItems: 'center', paddingVertical: 10 }}
-                    >
-                      <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: t.accentBlueRaw }}>
-                        {showAllSuggestions ? 'Show less' : `Show ${report.suggestions.length - 3} more`}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              )}
+              {/* Smart Tips: cross-signal insight cards (gated) */}
+              {(() => {
+                const insightTips = (smartTips?.activeTips ?? [])
+                  .filter(tip => isCrossSignalRule(tip.ruleId))
+                  .slice(0, 5);
+                if (!insightTips.length) return null;
+                return (
+                  <View ref={correlationsRef} collapsable={false}>
+                    <Text style={[styles.sectionLabel, { color: t.textMuted }]}>PATTERNS IN YOUR DATA</Text>
+                    {insightTips.map((tip, idx) => {
+                      const isBlurred = TIPS_GATED && idx > 0;
+                      return <InsightTipCard key={tip.id} tip={tip} isBlurred={isBlurred} theme={t} shadowStyle={shadowStyle} />;
+                    })}
+                  </View>
+                );
+              })()}
 
               {/* Disclaimer */}
               <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: t.textMuted, textAlign: 'center', lineHeight: 16, paddingHorizontal: 16 }}>

@@ -25,7 +25,8 @@ import { useToast } from '../components/Toast';
 import { ScoreRing } from '../components/DaySummaryModal';
 import { DayScore, DayScoreInput, scoreLabel, StyleMode, CATEGORY_WEIGHTS } from '../utils/dayScore';
 import { buildDayScoreInput, excludeDayFromAverages, ensureFreshDayScore } from '../utils/dayScoreStore';
-import { winAndCoachLines, contextLine as computeContextLine, hadFaithEntryOn } from '../utils/daySummaryCopy';
+import { contextLine as computeContextLine, hadFaithEntryOn } from '../utils/daySummaryCopy';
+import { ensureDayTakeaway, resolveTakeawayBody, StoredDayTakeaway } from '../utils/dayTakeaway';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { useTutorial } from '../context/TutorialContext';
 
@@ -48,9 +49,9 @@ export default function DaySummaryScreen() {
   const [input, setInput] = useState<DayScoreInput | null>(null);
   const [excluded, setExcluded] = useState(false);
   const [confirmingExclude, setConfirmingExclude] = useState(false);
-  const [winLine, setWinLine] = useState('');
-  const [coachLine, setCoachLine] = useState('');
+  const [takeaway, setTakeaway] = useState<StoredDayTakeaway | null>(null);
   const [contextLine, setContextLine] = useState('');
+  const [mindfulGrowthAreas, setMindfulGrowthAreas] = useState(false);
   // The page renders in the user's CURRENT coaching mode (colors, celebration,
   // labels, copy), not the mode frozen into the score. The score NUMBER and
   // sub-scores stay frozen via the snapshot; only presentation follows current mode,
@@ -118,14 +119,23 @@ export default function DaySummaryScreen() {
         } catch {}
         setDisplayMode(currentMode);
 
-        // Narrative lines (shared with the morning modal): win, coach, context.
+        // Context line + Day Takeaway (replaces win/coach lines per spec 7.1, 15.1)
         if (sc) {
           const mindful = currentMode === 'mindful';
-          const faithEligible = faithJourney === 'rooted' && (await hadFaithEntryOn(date));
-          const lines = winAndCoachLines(sc, mindful, faithEligible);
-          setWinLine(lines.winLine);
-          setCoachLine(lines.coachLine);
           setContextLine(await computeContextLine(date, sc.composite, mindful));
+
+          // Read goal from snapshot (frozen on the record), fall back to live profile
+          let weightGoal = 'maintain';
+          let mindfulGrowthAreas = false;
+          try {
+            const raw2 = await AsyncStorage.getItem(`pj_${date}`);
+            if (raw2) { const d = JSON.parse(raw2); weightGoal = d.goalSnapshot?.weightGoal ?? weightGoal; }
+            const sRaw = await AsyncStorage.getItem('pj_settings');
+            if (sRaw) { const s = JSON.parse(sRaw); mindfulGrowthAreas = s.mindfulGrowthAreas === true; setMindfulGrowthAreas(mindfulGrowthAreas); }
+          } catch {}
+
+          const ta = await ensureDayTakeaway(date, sc, weightGoal, currentMode, mindfulGrowthAreas);
+          setTakeaway(ta);
         }
       } catch {}
       setLoading(false);
@@ -272,12 +282,14 @@ export default function DaySummaryScreen() {
           {!!contextLine && (
             <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', textAlign: 'center', marginTop: 8 }}>{contextLine}</Text>
           )}
-          {!!winLine && (
-            <Text style={{ fontSize: 14, color: theme.accentBlue, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', textAlign: 'center', marginTop: 12, lineHeight: 20, paddingHorizontal: 12 }}>{winLine}</Text>
-          )}
-          {!!coachLine && (
-            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', textAlign: 'center', marginTop: 6, lineHeight: 17, paddingHorizontal: 12 }}>{coachLine}</Text>
-          )}
+          {!!takeaway && (() => {
+            const body = resolveTakeawayBody(takeaway, isMindful, mindfulGrowthAreas);
+            return body ? (
+              <Text style={{ fontSize: 14, color: theme.accentBlue, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', textAlign: 'center', marginTop: 12, lineHeight: 20, paddingHorizontal: 12 }}>
+                {body}
+              </Text>
+            ) : null;
+          })()}
         </View>
 
         {presentCats.length < 3 && (

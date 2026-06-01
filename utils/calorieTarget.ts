@@ -45,7 +45,12 @@ export function computeBmr(profile: any, weightLbs: number): number {
 }
 
 // Weight (lbs) to use for a date: that date's logged weight, else the most recent
-// weigh-in within the prior 30 days, else null. Same rule on home and log.
+// weigh-in within the prior 365 days, else null. Used ONLY to feed BMR (computeBmr
+// below) -- it is not the weight-card display source. The window is a year, not a
+// month, because BMR must not silently fall to zero just because a user lapsed on
+// weigh-ins: a stale weight gives a near-correct BMR, whereas zero produces a wildly
+// wrong calorie net on the home card. (Was 30 days, which zeroed BMR after a month.)
+// A lapse beyond a year is caught downstream by the net-display BMR-zero guard.
 export async function resolveWeightForDate(dateKey: string): Promise<number | null> {
   try {
     const raw = await AsyncStorage.getItem(`pj_${dateKey}`);
@@ -54,7 +59,7 @@ export async function resolveWeightForDate(dateKey: string): Promise<number | nu
   } catch {}
   const parts = dateKey.split('-').map(Number);
   const base = new Date(parts[0], (parts[1] || 1) - 1, parts[2] || 1);
-  for (let i = 1; i <= 30; i++) {
+  for (let i = 1; i <= 365; i++) {
     const d = new Date(base); d.setDate(d.getDate() - i);
     const dk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     try {

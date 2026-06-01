@@ -354,6 +354,7 @@ export default function YourStyleScreen() {
   };
 
   const handleContinue = async () => {
+    if (!canContinue) return;
     try {
       const existing = await AsyncStorage.getItem('pj_settings');
       const current  = existing ? JSON.parse(existing) : {};
@@ -411,6 +412,11 @@ export default function YourStyleScreen() {
   };
 
   const oneliner = getOneliner(selectedMode, score);
+
+  // Current weight is required for net-based modes (Balanced/Discipline): BMR, and
+  // therefore the calorie net shown on the home card, needs it. Mindful never shows
+  // net, so weight stays optional there.
+  const canContinue = selectedMode === 'mindful' || parseFloat(currentWeight) > 0;
 
   return (
     <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1 }}>
@@ -802,11 +808,18 @@ export default function YourStyleScreen() {
 
       {/* Continue footer */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + 16, borderTopColor: theme.borderCard, backgroundColor: theme.gradientEnd }]}>
+        {!canContinue && (
+          <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textDim, textAlign: 'center', marginBottom: 10 }}>
+            Enter your current weight to continue.
+          </Text>
+        )}
         <TouchableOpacity
-          style={[styles.continueBtn, { backgroundColor: theme.accentBlueRaw }]}
+          style={[styles.continueBtn, { backgroundColor: canContinue ? theme.accentBlueRaw : theme.bgInput, borderWidth: canContinue ? 0 : 0.5, borderColor: theme.borderInput }]}
           onPress={handleContinue}
+          disabled={!canContinue}
+          activeOpacity={0.85}
         >
-          <Text style={[styles.continueBtnText, { color: '#ffffff' }]}>
+          <Text style={[styles.continueBtnText, { color: canContinue ? '#ffffff' : theme.textDim }]}>
             {selectedMode === 'discipline' ? "I'M READY" : 'CONTINUE'}
           </Text>
         </TouchableOpacity>

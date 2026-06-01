@@ -1663,7 +1663,9 @@ export default function HomeScreen() {
     const stats = [
       { label: remaining >= 0 ? 'REMAINING' : 'OVER', value: Math.abs(remaining), color: remaining >= 0 ? theme.textSecondary : theme.statusBad },
       { label: 'ACTIVE', value: displayedBurned, color: theme.textSecondary },
-      { label: 'LIVE NET', value: `${net > 0 ? '+' : ''}${Math.round(net)}`, color: theme.textSecondary },
+      // Net needs BMR. With no resolvable weight (BMR 0), net would be overstated by
+      // the whole missing BMR, so show a dash + hint instead of a wrong number.
+      { label: 'LIVE NET', value: profileBmr > 0 ? `${net > 0 ? '+' : ''}${Math.round(net)}` : '—', color: theme.textSecondary },
     ];
 
     // Mindful: check if it's after 8pm for potential nudge
@@ -1728,6 +1730,13 @@ export default function HomeScreen() {
         )}
 
         
+
+        {/* No BMR (no resolvable weight): explain the dashed net, point to the fix. */}
+        {styleMode !== 'mindful' && profileBmr === 0 && (
+          <Text style={{ fontSize:11, color: theme.textMuted, fontFamily:'DMSans_400Regular', fontStyle:'italic', marginTop:6 }}>
+            Log your weight to see your calorie net.
+          </Text>
+        )}
 
         {/* Mindful evening nudge */}
         {showMindfulNudge && (
@@ -2604,7 +2613,9 @@ export default function HomeScreen() {
           };
           return paceLabels[weightGoalPace] ?? 'Calorie target pace';
         })(),
-        todayVal: totalCals > 0 || displayedBurned > 0 ? todayNet : null,
+        // Net needs BMR; with no resolvable weight (BMR 0) it would be wrong, so treat
+        // it as no-data and let another metric take the slot rather than show a lie.
+        todayVal: profileBmr > 0 && (totalCals > 0 || displayedBurned > 0) ? todayNet : null,
         ydVal: ydCals,
         format: v => `${v > 0 ? '+' : ''}${Math.round(v).toLocaleString()}`,
         unit: 'kcal',

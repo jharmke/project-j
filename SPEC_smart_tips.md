@@ -365,6 +365,8 @@ Full Day Summary page structure under the hero:
 
 The win line is fully retired. Its job is now done by the Smart Tip. Do not add it back.
 
+SESSION 68 UPDATE: the replacement is the Day Takeaway engine (Section 15.1), not a rolling Smart Tip. The win line stays retired.
+
 ### 7.2 Copy placement rules (LOCKED)
 
 - Context (where does this day rank) lives directly under the score. Nowhere else.
@@ -439,6 +441,8 @@ Do not build any of these in v1. Revisit after launch when real user behavior gi
 
 Smart Tips lives inside the Effort vs Results report as an enhanced, smarter version of the existing "YOUR TOP SUGGESTIONS" section. EvR is the only place where the full Smart Tips experience lives. All other surfaces show a condensed version and route back to EvR for the full picture.
 
+SESSION 68 UPDATE: refined. EvR is the source of truth for the LIVE ROLLING stream only. The Day, Weekly, and Monthly summaries carry their own self-contained period tips that do NOT live in EvR. See Section 15.
+
 EvR structure with Smart Tips integrated:
 - Existing data cards (logging consistency, burn accuracy, macro quality, sleep quality, patterns) unchanged
 - "YOUR TOP SUGGESTIONS" section replaced by full Smart Tips section
@@ -460,6 +464,8 @@ Replaces the win line entirely (see Section 7.1).
 Tip is day-specific -- generated from that day's data, not the rolling window.
 Not gated -- all users see this tip regardless of tier.
 
+SESSION 68 UPDATE: this slot is the Day Takeaway engine (Section 15.1), not a rolling Smart Tip. It is day-scoped via the standout picker plus a personal-history yardstick.
+
 ### 10.4 Weekly Summary (LOCKED -- build when weekly summary ships)
 
 1-2 tips max. Most relevant to that week's patterns.
@@ -478,6 +484,8 @@ No tips. Too compact, wrong moment. Score and category pills only.
 ### 10.7 Placement rule (LOCKED)
 
 EvR is the source of truth for Smart Tips. No other surface duplicates the full tip experience. Every condensed surface points back to EvR. A tip that appears in the weekly summary and in EvR is not duplication -- it is a preview routing to the home.
+
+SESSION 68 UPDATE: superseded for period snapshots. EvR is the source of truth for the live rolling stream only. Day, Weekly, and Monthly tips are self-contained and do not appear in EvR. See Section 15.
 
 ---
 
@@ -574,3 +582,102 @@ Items discussed but not yet locked. Resolved items move to their section above.
 | 12 | Placement principle (Day Summary dilemma) | LOCKED -- see Section 7 |
 | 13 | Monetization gating UX detail (blurred card design, copy) | LOCKED -- see Section 3.5 |
 | 14 | Exact price point and trial duration | OPEN -- decide before App Store launch, not a build blocker |
+
+---
+
+## 15. SURFACE TIP ARCHITECTURE (Session 68 resolutions)
+
+This section refines Sections 7.1, 10.1, 10.3, and 10.7. It is the result of the Session 68 scoping pass and supersedes the parts of those sections noted inline. Where this section and an earlier section disagree, this section wins.
+
+### 15.0 Core reframe: two tip worlds, not one source of truth
+
+The earlier "EvR is the single source of truth, every tip that fires anywhere also lives in EvR" model is replaced. There are two distinct tip worlds:
+
+1. LIVE ROLLING STREAM (EvR + Home card): a window that slides up to today. EvR is comprehensive (shows every qualifying rolling tip up to the cap of 5, no diversity filtering). The Home card previews the single highest-priority rolling tip and routes to EvR. This world regenerates fresh on open and rotates copy variants for freshness.
+2. FROZEN PERIOD SNAPSHOTS (Day / Weekly / Monthly summaries): each scoped to one completed period. Stored, deterministic, computed against a frozen goal snapshot. Each carries its own tips. These do NOT aggregate into EvR.
+
+The whole point of the split: it kills cross-surface repetition. A day note talks about that day, a weekly about that week, EvR about the rolling trend. Different scopes, different homes.
+
+### 15.1 Day Takeaway engine (the single-day "smart" surface)
+
+A single day cannot satisfy the multi-day windows every rolling rule requires (3 of 5, 5 of 7, and so on), so the Day Summary does NOT use the rolling Smart Tip rules at all. It uses a dedicated Day Takeaway engine.
+
+Naming: it is a Day Takeaway, NOT a "Smart Tip." It replaces BOTH the retired win line and the coach line (this supersedes the "Smart Tip slot" language in 7.1 and 10.3).
+
+Two intelligence sources:
+- Standout picker: rank the day's Day Score sub-components (nutrition, activity, sleep, and their sub-parts) and surface the single most notable one, positive or corrective. Examples: "Sleep carried this day." "Strong day, protein was the one gap."
+- Personal-history yardstick: layer in record, streak, or first-in-N-days context by ranking today against the user's own recent baseline. Examples: "Your highest protein in two weeks." "First step-goal hit in 8 days." "Five days straight on your calorie goal."
+
+Hard guardrail: today is the noun, history is only the adjective. The Day Takeaway's subject is always that single day. History may be used only as a yardstick to make today's number meaningful. It must never make a multi-day period the subject (no "you have been averaging higher than last week"). That is weekly territory.
+
+Gating: ungated. Every user sees the Day Takeaway regardless of tier. It is the evolved win/coach line and is never paywalled.
+
+Mindful: default shows the positive standout. A corrective standout fires only with growth areas ON (ties to an open item, Section 16).
+
+Build note: the Day Takeaway needs its own rule set written (the standout ranking logic plus the personal-history comparators). It is NOT in the current trigger library, which is entirely 7-day rolling. See Section 16.
+
+### 15.2 Altitude model (same topic, different zoom is not duplication)
+
+The same metric legitimately matters at multiple scopes. It is presented at escalating altitude:
+- Day Takeaway: "Protein was the gap today." (one day, today is the subject)
+- Weekly: "Protein was under goal 4 of 7 days last week." (a pattern within a week)
+- Monthly: "Protein has been your most consistent miss, under goal in 3 of 4 weeks." (a trend across weeks)
+- EvR: deepest. "Over 90 days, low protein tracks with your low-energy days. It is your number one lever, here is what to do." (diagnosis plus correlation plus action)
+
+EvR stays comprehensive. Topics are never stripped from it. The hard rule from 6.5 still holds: the identical insight at the same altitude never appears twice; the same insight at a different altitude is allowed and expected.
+
+### 15.3 Diversity rule (prevents topic fatigue across surfaces)
+
+The lightweight surfaces (Day Takeaway, Weekly, Monthly, Home card) actively spread topics so the user does not get hammered with the same topic in one sitting.
+
+- EvR is EXEMPT from diversity. It is the full report; the user went there to see everything.
+- Urgency OVERRIDES diversity. Never hide an Urgent tip for the sake of variety. Diversity only breaks ties among equal-priority tips.
+- One shared cross-surface ledger. A single "recently surfaced topics" memory is read by all lightweight surfaces, not a per-surface memory, so the weekly and monthly cannot both headline the same topic back to back.
+- Topic-ownership priority when surfaces contend for the same topic: Monthly beats Weekly beats Day. A multi-day pattern is most truthfully a higher-altitude observation, and a lower surface can always fall back to a different standout, whereas a week or month cannot manufacture a different period.
+- Thin-data caveat: a user whose only issue is one topic will still see that topic across surfaces. The positive layer and the Day Takeaway standout supply variety in that case. Accepted as rare; may be supplemented with positive encouragement messages.
+
+Ledger storage location and memory duration are OPEN, see Section 16.
+
+### 15.4 Pop-up firing rule
+
+This is a SEPARATE mechanism from the topic-ownership priority in 15.3 (which decides who talks about a topic). This decides which morning pop-up actually fires. They share the same Monthly > Weekly > Day order by coincidence of altitude.
+
+- Morning pop-ups never stack. One pop-up per app-open, maximum.
+- The highest-altitude pop-up that is due wins: Monthly > Weekly > Day.
+- The non-firing summaries are not lost. Each has its persistent full page in Stats > Reports.
+- The Monthly page is a hub: it drills into its weeks, and weeks drill into their days. The firing pop-up may carry a one-line pointer to the others in Reports.
+- Worst-case pileup is Monday (Day plus Weekly due together) and the 1st of the month (Day plus Weekly plus Monthly). The single-pop-up rule is specifically for those mornings.
+
+### 15.5 Storage, recompute, and the immutable goal snapshot
+
+- Store-and-lock: each period's selected tip(s) are stored on that period's record. The Day Takeaway stores on pj_YYYY-MM-DD alongside the dayScore object; Weekly and Monthly aggregate from the stored daily records. Stored fields include the tip/rule id, the chosen copy variant, and the data values at fire time.
+- Deterministic variant selection for frozen snapshots: the variant is chosen by a deterministic seed (for example a hash of date plus ruleId), never random and never rotate-on-read. A frozen period therefore never rerolls its wording on reopen or on recompute. The "rotate, never the same twice in a row" rule applies ONLY to the live rolling stream in 15.0.
+- Anti-abuse: because viewing never recomputes and frozen variants are deterministic, a free user cannot reroll the single free tip by reopening a summary. The only thing that changes a stored tip is a real underlying-data edit.
+- Recompute-on-edit principle: a report reflects the data. It recomputes ONLY when the user edits that period's real logged data (backfilling a forgotten entry, excluding or un-excluding a day). It never recomputes on view.
+- Immutable goal snapshot: when a day's report is first computed, the goals then in effect (calTarget, proteinGoalG, waterGoal, activeCalGoal, stepGoal, sleepGoal, weightGoal, and any others a rule reads) are stored alongside it and are immutable. Recompute-on-edit uses the frozen snapshot. Forward goal or setting changes NEVER retroactively rewrite history. Your June report does not change because you moved a target in August.
+- Cascade: editing one day recomputes that day, then the week and the month that contain it (weekly and monthly aggregate from daily). The goal snapshot lives at the day level only; higher altitudes roll up from there.
+- No manual regenerate for Day, Weekly, or Monthly. Completed-period reports self-maintain via recompute-on-edit. EvR is the only surface with live, fresh-on-open behavior, and a regenerate action makes sense there because EvR is explicitly "as of now."
+- Tier gating happens at RENDER time, not store time, so a stored tip re-blurs correctly if a Pro user lapses to free.
+- In-progress periods (today, the current mid-week, the current month) get NO stored tip. Summaries are completed-period only, consistent with Day Score.
+- VERIFY IN CODE before build: whether the current Day Score (utils/dayScoreStore.ts) already stores goal context and whether it recomputes when a past day's data is edited. Justin's forgotten-water example (a backfilled 22 oz that did not move the already-generated score) suggests it does not. This may require adding goal-snapshot fields plus a recompute-on-edit trigger, and may be its own Day Score item independent of Smart Tips.
+
+### 15.6 What this section supersedes
+
+- 7.1 and 10.3: the Day Summary "Smart Tip slot" is the Day Takeaway engine (15.1), ungated. The win line stays retired.
+- 10.1 and 10.7: EvR is the source of truth for the LIVE ROLLING stream only, not for period snapshots. Period snapshots are self-contained and do not live in EvR.
+
+---
+
+## 16. SESSION 68 OPEN ITEMS (carry forward, not yet resolved)
+
+These remain to be decided in upcoming sessions. None blocked the Session 68 architecture above.
+
+1. Mindful suppression vs blurred paywall cards (original issue 2): the order of operations, and whether a Mindful free user (growth areas OFF) sees blurred corrective cards at all. Suppress-before-gate was gestured at but not locked. The Mindful safety promise (the doc ties it to ED recovery and body image) is at stake. HIGH priority.
+2. Per-surface free vs Pro counts (original issue 3): walk every surface (EvR, Home card, Day Takeaway, Weekly, Monthly) and decide how many tips each shows and what is gated. Day Takeaway is already decided as ungated. Everything else is open.
+3. cal_under / cal_over naming (original issue 4): the names are inverted from intuition (cal_under fires when net is ABOVE the deficit target, that is, eating too much). Rename or add clarifying comments so the engine is not wired backwards.
+4. Logging-completeness math and Urgent window (original issue 5): restate "80%" as concrete day counts per window (3 of 3 is 100%, not 80%), and reconcile the Urgent window mismatch. Section 6.1 says a 3-day window, TRIGGER_LIBRARY.md 1.2 says 3 of the last 5 days.
+5. Minor cleanup pass: duplicate section numbers in this spec (two 3.5, two 6.0, two 13) and in the trigger library; the orphaned Section 6.2 body that is physically stranded below 6.6 (the "two confidence tiers" table belongs under the empty 6.2 header); Discipline and Balanced sharing one copy pool though 8.1 says their tone should differ; and the Rooted faith flavor on the Day Summary now that the win line (which carried "your body and your spirit") is retired and faith tips are parked to post-launch per 9.2.
+6. NEW (Session 68): the Day Takeaway engine rule set must be written before build, the standout ranking plus the personal-history comparators. It is not in the current trigger library.
+7. NEW (Session 68): Weekly and Monthly tip rules (windows, thresholds, aggregation from daily) must be written. The trigger library currently covers only the 7-day rolling stream.
+8. Cross-surface topic ledger: storage location and memory duration are undefined.
+9. VERIFY: current Day Score recompute-on-edit and goal-snapshot behavior in code (see 15.5). May spin off as its own Day Score item.

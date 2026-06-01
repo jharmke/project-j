@@ -187,7 +187,7 @@ Add `dayScore` object to `pj_YYYY-MM-DD`:
 
 ```ts
 dayScore: {
-  composite: number;           // 0-100, rounded to 1 decimal
+  composite: number;           // 0-100, floored (Math.floor), never rounded up. 94.8 = 94. Label tier assignment uses floored value.
   label: string;               // e.g. "Great"
   nutritionScore: number | null;   // 0-100 or null if excluded
   activityScore: number | null;    // 0-100 or null if excluded

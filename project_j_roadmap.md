@@ -647,6 +647,8 @@ NOW -- Calorie Card Denominator Overhaul (Session 62, 2026-05-30)
 
 NOW -- Session 64 gym list (Justin, 2026-05-31)
 
+  [ ] NULL BMR AUDIT -- verify every net-based calculation in the app gates on bmr > 0. If BMR is 0 (incomplete profile), net calculations silently produce wrong numbers rather than erroring. For Smart Tips: gate any net-based rule on bmr > 0, skip net-based tips entirely if not. App-wide audit needed before TestFlight ships. (NOW -- Session 67)
+
   [ ] Firebase Storage migration for food photos -- food photos are currently LOCAL ONLY (expo-file-system, URI in pj_food_photo_{foodId}). App delete or new phone = photo data loss, unacceptable. Migrate to Firebase Storage. Also the hard blocker for Body Progress photos (same storage solution -- see SPEC_body_progress.md). (NOW)
   [ ] Advanced Nutrition Card overhaul (log.tsx):
         - Value color coding -- red when over limit, green when hitting target, nutrient-aware logic (each nutrient knows whether "over" is bad: e.g. sodium/sugar over = red, fiber/protein hitting target = green).
@@ -655,6 +657,7 @@ NOW -- Session 64 gym list (Justin, 2026-05-31)
         - Disclaimer at the bottom of the gear modal.
   [ ] Settings -- Macro presets UI -- mirror the onboarding four presets (potentially more options) inside Settings. Currently only exists in onboarding, not built in Settings. (NOW) [Claude note: Justin listed this under a "Settings" sub-header between NOW and Parked; bucketed NOW with the rest of the gym list, move to SOON if intended otherwise.]
   [ ] Settings -- Appearance section collapsed by default. (NOW)
+  [ ] AsyncStorage cloud backup gap -- ALL pj_* keys are local-only. A new phone install or app reinstall wipes everything: food logs, workout history, journal entries, streaks, achievements -- all irreplaceable user data. Firebase Firestore is already in the stack (build-switch backup exists for pj_YYYY-MM-DD keys) but a full systematic audit and backup solution is needed for ALL pj_* keys. Priority order: pj_YYYY-MM-DD (daily logs, most critical), pj_bible_reflections (journal), pj_my_foods, pj_favorites, pj_recipes, pj_workout_state, pj_profile, pj_settings, pj_streaks, pj_achievements. Derived/cache keys (pj_smart_tips, pj_tooltip_*, pj_verse_rotation) intentionally excluded -- these regenerate automatically. Needs dedicated architecture session before building. Data loss on reinstall is a retention-killer and App Store review risk. (NOW)
 
 SOON -- confirmed next few sessions
 
@@ -829,6 +832,8 @@ SOON -- confirmed next few sessions
   [x] NEXT button haptics -- SHIPPED 2026-05-27. Every tutorial NEXT/DONE tap fires Haptics.ImpactFeedbackStyle.Light before advanceStep(). components/TutorialOverlay.tsx.
   [x] Net carbs in macros tutorial -- SHIPPED 2026-05-27. macros_card description updated. CARBS step body (all 3 modes) now mentions net carbs: if showNetCarbs is on, bar shows net carbs (total - fiber - sugar alcohols) instead of total. data/tutorials.ts.
   Smart Tips / Smart Insights -- DESIGN NOTES CAPTURED 2026-05-24. DO NOT BUILD PIECEMEAL. Full scoping session required before any code. Design as a system with Effort vs Results. Notes below are ideation and discussion -- nothing locked yet.
+
+  [~] SCOPING KICKED OFF (2026-05-31): Smart Tips scoping moved to an external Claude thread (regular chat / Project, not Claude Code) to preserve Claude Code budget. Deliverable from that thread = SPEC_smart_tips.md in the same rigor/structure as SPEC_day_score_and_summary.md. Kickoff message drafted in Claude Code with all context inlined (north star, 3-layer model Day Score vs Effort-vs-Results vs Smart Tips, data sources, delivery surfaces, the 13 open questions, the win/context redundancy dilemma from line 690, mode + faith behavior, out-of-scope list). OPEN BLOCKER carried into that thread: monetization stance unresolved (roadmap free/pro "1 tip free rest locked" vs the "no paywall, fully free, donate only" preference); Justin to confirm; spec to keep the gating layer toggleable until then. When SPEC_smart_tips.md comes back, sanity-check it against the codebase here before any build, then mark this scoping done.
 
   NORTH STAR: feels like a real coach watching your data -- not an app surfacing generic advice. Tips read like a person looked at your specific numbers and drew a conclusion you wouldn't have found yourself. Target tone example: "You're eating at a deficit but only hitting 86g of protein. At your size, that's the difference between losing fat and losing muscle. The scale might move but you won't like what you're losing." Language is "we noticed..." -- observational, specific, never preachy. Core differentiator: diagnosing WHY you're stuck before the user wastes weeks doing it wrong.
 

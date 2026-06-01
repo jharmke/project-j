@@ -454,6 +454,8 @@ EvR structure with Smart Tips integrated:
 - Free users: 1 Generic tip + 1 Smart Tip visible, remaining Smart Tips blurred with lock icon
 - Pro users: all tips visible, full quality, unblurred
 
+SESSION 69 UPDATE: the EvR "full Smart Tips section" is superseded by the finding-driven card architecture in Section 17. Coaching lives on spine cards, domain finding cards, and per-correlation insight cards; the orphan suggestions list is retired. Gating moves to the insight-card stack (free 1 unblurred + blurred rest, capped at 5); spine and domain cards are free.
+
 ### 10.2 Home card (LOCKED)
 
 One tip slot on the home screen, cycling.
@@ -706,7 +708,7 @@ This resolves Section 16 open item 1. It refines Sections 3.1, 3.5, and 8.2. Whe
 These remain to be decided in upcoming sessions. None blocked the Session 68 architecture above.
 
 1. RESOLVED (Session 69): suppress-before-gate is locked, both filters run at render time, default-Mindful free users (growth areas OFF) see zero blurred cards (B1: one positive shown, the rest hidden not blurred), and growth-areas-ON Mindful gates normally. Full resolution in Section 15.7. Spawned a small non-blocking follow-on: the warm fallback / empty-state copy for Mindful surfaces with no positive to show still needs writing, and the Day Takeaway and Weekly/Monthly rule sets (items 6 and 7) must each be able to surface a positive fallback.
-2. Per-surface free vs Pro counts (original issue 3): walk every surface (EvR, Home card, Day Takeaway, Weekly, Monthly) and decide how many tips each shows and what is gated. Day Takeaway is already decided as ungated. Everything else is open.
+2. PARTIALLY RESOLVED (Session 69): EvR is resolved via the card architecture in Section 17 (finding-driven domain cards are free, the insight-card stack is capped at 5 and gated 1 free + blurred rest, the orphan suggestions list is retired). Day Takeaway (ungated) and Home card (1 free / 3 Pro cycling) were already locked. STILL OPEN: Weekly and Monthly counts and gating. Current lean is ungated-on-tips with the paywall at the access level (free = last completed period, Pro = any period + history), not yet locked.
 3. cal_under / cal_over naming (original issue 4): the names are inverted from intuition (cal_under fires when net is ABOVE the deficit target, that is, eating too much). Rename or add clarifying comments so the engine is not wired backwards.
 4. Logging-completeness math and Urgent window (original issue 5): restate "80%" as concrete day counts per window (3 of 3 is 100%, not 80%), and reconcile the Urgent window mismatch. Section 6.1 says a 3-day window, TRIGGER_LIBRARY.md 1.2 says 3 of the last 5 days.
 5. Minor cleanup pass: duplicate section numbers in this spec (two 3.5, two 6.0, two 13) and in the trigger library; the orphaned Section 6.2 body that is physically stranded below 6.6 (the "two confidence tiers" table belongs under the empty 6.2 header); Discipline and Balanced sharing one copy pool though 8.1 says their tone should differ; and the Rooted faith flavor on the Day Summary now that the win line (which carried "your body and your spirit") is retired and faith tips are parked to post-launch per 9.2.
@@ -714,3 +716,71 @@ These remain to be decided in upcoming sessions. None blocked the Session 68 arc
 7. NEW (Session 68): Weekly and Monthly tip rules (windows, thresholds, aggregation from daily) must be written. The trigger library currently covers only the 7-day rolling stream.
 8. Cross-surface topic ledger: storage location and memory duration are undefined.
 9. VERIFY: current Day Score recompute-on-edit and goal-snapshot behavior in code (see 15.5). May spin off as its own Day Score item.
+
+---
+
+## 17. EvR CARD ARCHITECTURE (Session 69 resolution)
+
+This resolves the EvR portion of Section 16 open item 2 and supersedes the Smart Tips placement language in Section 10.1. EvR moves from "a fixed set of data cards plus an orphan suggestions list" to a finding-driven card system. Where this disagrees with 10.1, this wins.
+
+### 17.0 Why (grounded in the shipped code)
+
+The shipped EvR (utils/diagnosticReport.ts + app/diagnostic-report-view.tsx) already renders cards conditionally: every card except Logging Consistency renders only when its data exists, and cross-signal correlations are already bundled into a single "Patterns in your data" card holding an array. So this is an extension of the existing pattern, not a rewrite from scratch. The orphan "YOUR TOP SUGGESTIONS" numbered list at the bottom is retired.
+
+### 17.1 Three card classes
+
+1. Spine cards (always-on): a minimal foundation that always renders so the report is never empty and is always grounded.
+   - Logging Consistency: always. It is the data-quality meta-card and frames the reliability of everything else.
+   - Calorie / Deficit headline: always when the user has a weight goal. It is the spine of the whole report. Hidden only when no goal is set or there is not enough logged data, consistent with today's conditional behavior.
+   Spine cards are never gated and never capped.
+
+2. Domain finding cards (finding-driven): one card per domain (Macro Quality, Extended Nutrition, Hydration, Sleep, Activity, Weight Trend, Intermittent Fasting, plus the existing Burn Accuracy data-quality card). A domain card appears ONLY when that domain produced a finding this period (a corrective Pattern or Urgent, or a noteworthy positive Insight). A quiet, unremarkable domain renders no card. When a card does appear it shows its data rows, a status badge, and the domain's coaching line. The report's length therefore equals how much the data actually has to say.
+   - One card per domain. The highest-priority finding for that domain headlines the card and supplies its coaching line. Additional same-domain findings may appear as secondary lines, but the card stays one unit so it cannot balloon.
+   - Domain finding cards carry mostly single-signal Generic and Pattern coaching, which is free per Section 2.1. They are not gated.
+
+3. Insight cards (dynamic, the premium layer): the cross-signal correlations. Each correlation is its OWN card. This replaces the bundled "Patterns in your data" card. Insight cards are the "how did it know that" moments and the layer that can proliferate, so this is where the cap and the gating live:
+   - Ranked by priority, capped at 5 (the cap from Section 6.4 lives here).
+   - Gated: free sees 1 unblurred and the rest as blurred insight cards; Pro sees all unblurred. EvR is exempt from the diversity rule (15.3), so all qualifying insight cards up to the cap show.
+
+### 17.2 No orphans: rule-to-card mapping (build-gate)
+
+Retiring the suggestions list is only safe if every rule has a card home. This is a hard build-gate: no rule ships without a mapped home. If a rule does not map cleanly, that is a flag to resolve at build, never a junk-drawer fallback.
+
+| Card | Class | Rules that surface here |
+|------|-------|-------------------------|
+| Logging Consistency | Spine | log_consistency_low, log_streak_strong |
+| Calorie / Deficit | Spine (when goal set) | cal_under, cal_over, cal_small_gap, cal_outlier_week, cal_goal_hit, weekend_spike |
+| Burn Accuracy | Domain (data-quality, no trigger rule) | calibration card only; surfaces when active-calorie data exists |
+| Macro Quality | Domain | protein_under, protein_high |
+| Extended Nutrition | Domain | fiber_low, sodium_high, sugar_high |
+| Hydration | Domain | water_under, water_high |
+| Sleep | Domain | sleep_score_low, sleep_duration_short, sleep_bedtime_inconsistent, sleep_score_high, sleep_deep_low |
+| Activity | Domain | active_low, active_high, activity_streak_low, steps_low, steps_high, workout_low |
+| Weight Trend | Domain | weight_plateau, weight_wrong_direction, weight_on_track, weight_infrequent |
+| Intermittent Fasting | Domain (only for IF users) | if_inconsistent, if_late_close, if_consistent |
+| Insight cards (one per correlation) | Insight | cross_protein_sleep, cross_sodium_scale, cross_high_burn_overeating, cross_sleep_intake, cross_workout_intake, cross_steps_sleep, cross_fiber_calorie |
+
+New cards this requires building (do not exist today): Extended Nutrition (fiber, sodium, sugar are currently crammed into Macro), Hydration, Activity, Weight Trend (weight is currently only a row inside the Deficit card), Intermittent Fasting, and the per-correlation insight cards (currently one bundled "Patterns" card).
+
+### 17.3 Digestibility guardrails
+
+- Finding-driven rendering self-limits the report: a clean week shows the spine plus a couple of green positives; a messy week shows more, but every card earned its place. Nothing renders just to say "normal."
+- The full numeric dashboard is the Stats tab's job. EvR is the coaching report and shows what is worth coaching, not every metric.
+- Status badges (good / attention) let the eye triage fast: green is skippable, amber is "look here."
+- The cap of 5 on insight cards prevents the one layer that can proliferate from walling the report. If real-data testing shows reports still running long, add a total report ceiling; finding-driven plus the insight cap should self-regulate first.
+
+### 17.4 Mindful overlay (ties to 15.7)
+
+Render-time, suppress before gate, per Section 15.7.
+- Default Mindful (growth areas OFF): corrective domain findings are suppressed, so those cards do not appear at all. Positive findings still surface their cards. Insight cards are positive-only and follow B1 (one shown, the rest hidden, never blurred). If suppression leaves the report with only the spine, the spine still renders (it is foundational and neutral) and the warm fallback applies to any surface left with nothing positive.
+- Growth areas ON: corrective domain cards appear with Mindful-safe copy; insight cards gate normally, including blurred ones.
+
+### 17.5 What this supersedes
+
+- 10.1: the "YOUR TOP SUGGESTIONS section replaced by one Smart Tips section" model is replaced by this three-class card system. The suggestions list is retired; coaching lives on domain cards and insight cards.
+- The bundled "Patterns in your data" card is replaced by per-correlation insight cards.
+
+### 17.6 Spawned build notes (not blocking scoping)
+
+- Six new card types to build (Extended Nutrition, Hydration, Activity, Weight Trend, IF, per-correlation insight cards).
+- The DiagnosticReport shape (utils/diagnosticReport.ts) currently has fixed fields (deficit, burnAccuracy, consistency, macros, sleep, correlations[], suggestions[]). It will need new finding types and the suggestions[] field retired. A build-session concern, flagged here so it is not a surprise.

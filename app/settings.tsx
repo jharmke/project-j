@@ -1772,6 +1772,32 @@ export default function SettingsScreen() {
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Alert.alert('Clear Yesterday\'s Day Score', 'Removes only the derived score fields (dayScore + goalSnapshot) from yesterday\'s record so it re-scores fresh, with a recompute fingerprint, next time you open its summary. Your logged food, water, workout, and sleep are NOT touched.\n\nUse this to test recompute-on-edit: clear, open the summary to re-score, then edit and reopen to watch the score move.', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Clear Score', style: 'destructive', onPress: async () => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                  const d = new Date(); d.setDate(d.getDate() - 1);
+                  const key = `pj_${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                  try {
+                    const raw = await AsyncStorage.getItem(key);
+                    if (!raw) { Alert.alert('No data', 'No record exists for yesterday.'); return; }
+                    const day = JSON.parse(raw);
+                    delete day.dayScore; delete day.goalSnapshot;   // derived only; logged data untouched
+                    await AsyncStorage.setItem(key, JSON.stringify(day));
+                    Alert.alert('Done', 'Yesterday\'s Day Score cleared. Open its summary to re-score fresh, then edit its water and reopen to confirm the score recomputes.');
+                  } catch { Alert.alert('Error', 'Could not clear the score.'); }
+                } },
+              ]);
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Clear Yesterday's Day Score</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Re-scores yesterday fresh (recompute-on-edit test). Logged data untouched.</Text>
+              </View>
+              <Ionicons name="refresh-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               Alert.alert('Clear Food History', 'This will remove all logged food entries from the last 90 days. Water, steps, sleep, and weight data will not be affected.', [
                 { text: 'Cancel', style: 'cancel' },
                 { text: 'Clear', style: 'destructive', onPress: async () => {

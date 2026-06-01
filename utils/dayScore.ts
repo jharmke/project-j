@@ -98,6 +98,7 @@ export interface DayScore {
   computedAt: string;
   excludedFromAverages: boolean;
   version?: number;              // stamped by the store; bump to force recompute
+  dataSig?: string;              // fingerprint of the day's logged data; mismatch = edited = recompute (store-only)
 }
 
 // The goals in effect the day a score was computed, frozen onto the day record

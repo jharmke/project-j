@@ -161,15 +161,62 @@ export async function buildDayScoreInput(dateKey: string, computedAt: string): P
   };
 }
 
+// ─── Data signature (recompute-on-edit) ──────────────────────────────────────
+// A stable fingerprint of ONLY the day's logged data: food totals, water, steps,
+// raw active calories, workout state, sleep, and the exclusion flags. Goals,
+// coaching mode, and burn accuracy are deliberately excluded: a forward goal or
+// setting change must never rewrite a past day's frozen score (SPEC_smart_tips.md
+// 15.5). When this fingerprint differs from the one stored on the score, the day's
+// data was edited and the score recomputes; unchanged data yields an identical
+// fingerprint and is never re-rolled on view.
+function simpleHash(s: string): string {
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+}
+
+function dataSigFromInput(input: DayScoreInput): string {
+  // Raw active calories before the accuracy adjustment, matching adjustedActiveCals
+  // (activeCalories || caloriesBurned) so a HealthKit backfill moves the sig but a
+  // burn-accuracy recalibration does not. Jittery values are rounded so a 1-kcal
+  // wobble can't trigger a no-op recompute that bumps computedAt.
+  const rawActive = Math.round(input.dayData?.activeCalories || input.dayData?.caloriesBurned || 0);
+  const parts = [
+    input.hasFood ? 1 : 0,
+    Math.round(input.consumed),
+    Math.round(input.actualProteinG * 10),
+    Math.round(input.waterLogged * 10),
+    Math.round(input.steps),
+    rawActive,
+    input.dayType,
+    input.workoutCompletedCount,
+    input.workoutTotalCount,
+    input.sleepHours ?? '',
+    JSON.stringify(input.sleepStages ?? null),
+    input.sleepGoal,
+    input.sleepFeelRating ?? '',
+    input.sleepIsManual ? 1 : 0,
+    input.sleepConsistencyPts,
+    input.dietExcluded ? 1 : 0,
+    input.waterExcluded ? 1 : 0,
+    input.exerciseExcluded ? 1 : 0,
+    input.excluded ? 1 : 0,
+  ];
+  return simpleHash(parts.join('|'));
+}
+
 // Compute and store a single day's score. Read-then-merge: never replaces the
-// day record. Returns the score (null when the day has no scorable data).
-export async function computeAndStoreDayScore(dateKey: string, computedAt: string): Promise<DayScore | null> {
-  const input = await buildDayScoreInput(dateKey, computedAt);
+// day record. Returns the score (null when the day has no scorable data). An
+// already-built input may be passed in (the recompute guards build it to compare
+// signatures) to avoid loading it twice; the stamped sig is taken from that same
+// input so it can never drift from the comparison.
+export async function computeAndStoreDayScore(dateKey: string, computedAt: string, prebuiltInput?: DayScoreInput | null): Promise<DayScore | null> {
+  const input = prebuiltInput ?? await buildDayScoreInput(dateKey, computedAt);
   if (!input) return null;
   const score = computeDayScore(input);
   if (!score) return null;
 
-  const stamped: DayScore = { ...score, version: DAYSCORE_VERSION };
+  const stamped: DayScore = { ...score, version: DAYSCORE_VERSION, dataSig: dataSigFromInput(input) };
 
   // Freeze the goals in effect this compute alongside the score (spec 15.5). Purely
   // additive: read-then-merge preserves every existing field on the record, and days
@@ -201,8 +248,27 @@ async function ensureDayScore(dateKey: string, nowISO: string): Promise<DayScore
   let day: any;
   try { day = JSON.parse(raw); } catch { return null; }
   if (isDayExcluded(day)) return null;
-  if (day.dayScore && day.dayScore.version === DAYSCORE_VERSION) return day.dayScore;
-  return computeAndStoreDayScore(dateKey, nowISO);
+
+  const stored: DayScore | undefined = day.dayScore;
+  // No score yet, or a stale logic version: compute fresh (a version bump means
+  // the scoring logic changed, so every day recomputes once).
+  if (!stored || stored.version !== DAYSCORE_VERSION) return computeAndStoreDayScore(dateKey, nowISO);
+  // Legacy score with no data signature (scored before recompute-on-edit shipped):
+  // leave it frozen. There is no baseline to detect an edit, and recomputing now
+  // would pull in live goals and could rewrite history (SPEC_smart_tips.md 15.5).
+  if (stored.dataSig === undefined) return stored;
+  // Has a signature: recompute only when the day's logged data actually changed.
+  const input = await buildDayScoreInput(dateKey, nowISO);
+  if (!input) return stored;
+  if (dataSigFromInput(input) === stored.dataSig) return stored;
+  return computeAndStoreDayScore(dateKey, nowISO, input);
+}
+
+// Public entry for the recompute-on-edit path: ensures the viewed day reflects
+// any edit to its logged data, recomputing when its signature no longer matches.
+// Unchanged data returns the stored score untouched, so a view never re-rolls it.
+export async function ensureFreshDayScore(dateKey: string): Promise<DayScore | null> {
+  return ensureDayScore(dateKey, new Date().toISOString());
 }
 
 // Composites for up to `count` completed days immediately before beforeKey,
@@ -297,8 +363,19 @@ export async function runDayScoreScan(todayKey: string, nowISO: string): Promise
     let day: any;
     try { day = JSON.parse(raw); } catch { continue; }
     if (isDayExcluded(day)) continue;
-    if (day.dayScore && day.dayScore.version === DAYSCORE_VERSION) continue;
-    await computeAndStoreDayScore(fullKey.slice(3), nowISO); // strip "pj_"
+    const dateKey = fullKey.slice(3); // strip "pj_"
+    const stored: DayScore | undefined = day.dayScore;
+    if (stored && stored.version === DAYSCORE_VERSION) {
+      // Current-version score: recompute only if it carries a signature and the
+      // day's logged data has since changed. Legacy (no-sig) days stay frozen.
+      if (stored.dataSig === undefined) continue;
+      const input = await buildDayScoreInput(dateKey, nowISO);
+      if (!input || dataSigFromInput(input) === stored.dataSig) continue;
+      await computeAndStoreDayScore(dateKey, nowISO, input);
+      continue;
+    }
+    // No score or a stale version: compute fresh.
+    await computeAndStoreDayScore(dateKey, nowISO);
   }
 
   try { await storageSet(SCAN_GATE_KEY, gateVal); } catch {}

@@ -24,7 +24,7 @@ import TooltipIcon from '../components/TooltipIcon';
 import { useToast } from '../components/Toast';
 import { ScoreRing } from '../components/DaySummaryModal';
 import { DayScore, DayScoreInput, scoreLabel, StyleMode, CATEGORY_WEIGHTS } from '../utils/dayScore';
-import { buildDayScoreInput, excludeDayFromAverages } from '../utils/dayScoreStore';
+import { buildDayScoreInput, excludeDayFromAverages, ensureFreshDayScore } from '../utils/dayScoreStore';
 import { winAndCoachLines, contextLine as computeContextLine, hadFaithEntryOn } from '../utils/daySummaryCopy';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { useTutorial } from '../context/TutorialContext';
@@ -84,6 +84,11 @@ export default function DaySummaryScreen() {
     (async () => {
       if (!date) { setLoading(false); return; }
       try {
+        // Recompute-on-edit: if this day's logged data changed since it was last
+        // scored, refresh it before we read the record so the summary reflects the
+        // edit. Unchanged data is a no-op (same signature), so a plain view never
+        // re-rolls the score.
+        await ensureFreshDayScore(date);
         const raw = await AsyncStorage.getItem(`pj_${date}`);
         const day = raw ? JSON.parse(raw) : null;
         const sc: DayScore | null = day?.dayScore ?? null;

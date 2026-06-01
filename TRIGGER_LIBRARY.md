@@ -1693,7 +1693,268 @@ Mindful Variant 3: "There's a pattern: days with more fiber feel more settled ar
 
 ---
 
-## 12. OPEN ITEMS
+## 12. DAY TAKEAWAY ENGINE
+
+This is a SEPARATE engine from the rolling rules in Sections 3 through 9. It powers the single-line Day Takeaway on the full Day Summary page (spec 15.1). It does NOT use tiers, cooldowns, the 80% logging gate, or the 7-day windows that govern the rolling Smart Tips. Read spec Section 15.1 and 15.5 before building this.
+
+### 12.0 What it is and where it shows
+
+One line under the score ring on the full Day Summary page, between the context line ("Your best day this week.") and the category cards. It replaces both the retired win line and the retired coach line. Ungated: every user sees it regardless of tier. The compact morning pop-up does NOT show it (score and pills only, per spec 10.6).
+
+It answers one question: "What is the single most worth-saying thing about this one day?" Today is always the subject. History is only ever a yardstick (the hard guardrail from 15.1). It never makes a multi-day average the subject; that is Weekly and Monthly territory.
+
+### 12.1 HARD DEPENDENCY (build blocker, flagged not kicked)
+
+The Day Takeaway is a frozen period snapshot (15.5): stored on the day record, deterministic, never rerolled on view. That correctness depends on two Day Score behaviors that DO NOT EXIST in code today (verified, see spec Section 16 item 9 and the roadmap Day Score item):
+
+1. A per-day immutable goal snapshot (the goals in effect that day frozen onto the record). The picker is goal-weighted and the notable bands compare to goals, so it must read the frozen goals, never current ones.
+2. Recompute-on-edit (editing a past day's logged data recomputes that day).
+
+The Day Takeaway cannot be truly build-complete until that Day Score work lands. Build that first, or build the two together.
+
+### 12.2 PART 1: Standout picker (the subject of the line)
+
+**Pieces it ranks.** Five user-facing pieces, each read from the stored dayScore sub-scores (already mode-aware, so Mindful's presence-based activity is respected automatically):
+
+| Piece | Source sub-score | Max (for fill ratio) |
+|-------|------------------|----------------------|
+| Calories | nutritionDetail.calorieScore | CAL_MAX (55) |
+| Protein | nutritionDetail.proteinScore | PROTEIN_MAX (28) |
+| Water | nutritionDetail.waterScore | WATER_MAX (17) |
+| Activity | activityScore (category) | category max present that day |
+| Sleep | sleepScore (category) | category max present that day |
+
+**Fill ratio.** Each piece is normalized to a 0 to 100 percent fill ratio = earned / its own max. This puts the five pieces on one comparable scale even though their raw point values differ.
+
+**Only judge pieces that have real data.** A piece with no data for the day (null category) is not ranked. See the thin-data rule (12.2.4).
+
+**12.2.1 Goal importance tiers.** The picker is goal-weighted (spec 6.0). It scans the highest-priority tier first and only drops to a lower tier if nothing in the higher tier is notable.
+
+| Goal bucket | Tier 1 | Tier 2 | Tier 3 |
+|-------------|--------|--------|--------|
+| LOSE (lose_*) | Calories, Protein | Activity, Sleep | Water |
+| GAIN (gain_*) | Calories, Protein | Sleep, Activity | Water |
+| MAINTAIN | Calories, Protein, Activity, Sleep | Water | (none) |
+
+Water never headlines a LOSE or GAIN day unless literally nothing else is worth saying. Starting tiers, tunable after real-data testing.
+
+**12.2.2 Notable bands (absolute reality check).** A piece is only eligible to be a standout if it is genuinely strong or genuinely weak, not merely the relative outlier. This stops the engine from faking drama on a flat day or complimenting an evenly mediocre day.
+
+- Strong (positive candidate): fill ratio >= 90 percent.
+- Weak (corrective candidate): fill ratio < 60 percent.
+- Between 60 and 90: not notable on its own.
+
+Starting bands, tunable.
+
+**12.2.3 Selection logic (the order of operations).**
+
+1. Compute fill ratios for every piece with data.
+2. Walk the goal tiers top down. Within the highest tier that contains at least one notable piece (strong or weak), select the piece whose fill ratio is FURTHEST from the day's average fill ratio.
+3. Direction falls out of the pick: above average and strong = positive line ("X carried this day."). Below average and weak = corrective line ("X was the one gap.").
+4. If a single tier holds both a notable strong piece and a notable weak piece, the corrective piece wins the subject when the goal-critical piece is the weak one; otherwise lead with the goal-critical piece and the other becomes the optional second clause (12.3.3). This is the "Calories ran high, but sleep was excellent" pattern.
+5. Tie in distance-from-average: prefer the positive piece (the Day Summary is an emotional moment).
+6. No notable piece in any tier = balanced-day or thin-data copy (12.2.4 / 12.2.5).
+
+**12.2.4 Thin-data rule (honesty).** A barely-logged day still produces a Day Score. The picker must not overclaim:
+
+- Only one piece has data: speak only to that piece. Never say "balanced day."
+- Two or fewer pieces have data AND none is notable: use the thin-data copy pool (12.9.6), which gently notes the day was lightly logged rather than inventing a verdict.
+
+**12.2.5 Balanced-day case.** Three or more pieces have data, none is notable (all sit in the 60 to 90 band). Use the balanced-day copy pool (12.9.5), which says so honestly ("Solid, even day. Nothing stood out, in a good way."). It must not manufacture a fake standout.
+
+### 12.3 PART 2: Personal-history yardstick (the optional adjective)
+
+A history clause layered onto the standout, comparing TODAY'S value to the user's own recent history. Reads stored daily records over a lookback window.
+
+**Comparators:**
+
+| Comparator | Fires when | Example clause |
+|------------|-----------|----------------|
+| Streak | today continues an unbroken run of hitting a goal | "five days straight on your calorie goal" |
+| Record | today is the best value in the lookback window | "your highest protein in two weeks" |
+| First-in-N | today hit a goal not hit in N prior days | "first step goal hit in 8 days" |
+
+**Windows (starting values, tunable):**
+- Record lookback: 14 days.
+- First-in-N lookback: up to 30 days.
+- Streak: consecutive completed days up to and including today.
+
+**12.3.1 The hard guardrail (from 15.1).** The yardstick describes today's number against history. It may say "your highest protein in two weeks" (today is the subject). It may NEVER say "you have been averaging more protein lately" (a multi-day average as the subject). Banned phrasings: "you have been averaging", "this week you", "over the last few days you have". Those are Weekly territory.
+
+**12.3.2 Why this matters most for consistent users.** A user whose days are reliably strong rarely has a notable gap, so Part 1 often finds no corrective standout. For these users the yardstick carries the line: streaks, records, and milestones supply the variety that a single great-but-typical day cannot. This is the engine's answer to "will a consistent user just see the same thing every day" (no).
+
+**12.3.3 Combination rules.**
+- Default: standout sentence alone.
+- The yardstick prefers to attach to the standout's own metric ("Sleep carried this day, your best in two weeks.").
+- If the standout metric has no history hook but a DIFFERENT metric has a strong one, a single standalone yardstick line is allowed ("Five days straight on your calorie goal.").
+- A strong standout day with no history hook stays a single clean clause.
+- Never more than one history clause in a line.
+
+### 12.4 Anti-repeat and diversity (uses the existing topic ledger)
+
+The Day Takeaway reads and writes the SAME pj_smart_tips.topicLedger described in spec 15.3 and 11, with surface = "day". It does not get a parallel memory.
+
+- At compute time it reads the ledger and DEPRIORITIZES a topic surfaced on the day surface within the 14-day rolling window, so it does not lead with the same topic two completed days in a row when a viable alternative exists.
+- This is a tie-break and a preference, NOT an absolute ban. Consistent with 15.3's thin-data caveat: a user whose only notable piece is one topic (or whose day is thin) can still repeat it. The yardstick and the positive layer supply variety in that case.
+- After selection, it writes its chosen topic to the ledger { date, surface: "day" } and prunes entries older than 14 days, per 15.3.
+
+### 12.5 Mindful behavior
+
+Render-time, suppress before gate (spec 15.7). The Day Takeaway is ungated, so only suppression applies, but the mode-switch case still bites.
+
+- Default Mindful (growth areas OFF): positive standout only. Corrective standouts are suppressed. The positive layer and yardstick carry the line.
+- Growth areas ON: a corrective standout is allowed, rendered with the Mindful copy pool (warm, no numbers, observational).
+
+**12.5.1 The mode-switch hole and the positive-safe fallback (resolves the 15.7 spawned follow-on for this engine).** Frozen takeaways never recompute on view, but suppression runs at render. A corrective takeaway stored while in Discipline, then viewed after switching to default Mindful, would be hidden with nothing to show. Resolution, baked in:
+
+- At compute time the engine stores TWO picks on the day record: `primary` (the most-notable pick, either direction) and `positiveSafe` (the best positive-or-neutral pick the same day data supports, ignoring any corrective candidate).
+- Render logic: default Mindful shows `positiveSafe`; every other mode shows `primary`. Growth-areas-ON Mindful shows `primary` rendered in Mindful copy.
+- If a day genuinely has no positive or neutral pick at all (a rough, all-weak day) `positiveSafe` is null, and default Mindful falls to the warm fallback copy (12.9.7). This is the one safe empty-state, never a blurred card (there is no gating here anyway).
+- A mode switch is a render-time filter change, not a data edit, so it never recomputes or destroys the stored picks (consistent with 15.5 and 15.7). Switching back to Discipline restores `primary` identically.
+
+### 12.6 Faith
+
+Secular in v1, consistent with spec 9.1. The retired win line's "body and spirit" touch is intentionally not carried forward. A gentle Rooted faith flavor on the Day Takeaway is a parked post-launch candidate (spec 9.2), not built in v1.
+
+### 12.7 Storage, determinism, versioning
+
+- Stored on the day record (pj_YYYY-MM-DD) alongside the dayScore object, read-then-merge, never replace.
+- Stored fields per day: `primary` and `positiveSafe`, each carrying { takeawayId, variantIndex, metric, direction, fillRatio, yardstick (or null), goalSnapshotRef } plus a `dayTakeawayVersion` stamp (bump to force a one-time recompute when this engine's logic changes, mirroring DAYSCORE_VERSION).
+- Deterministic variant selection (15.5): variantIndex is chosen by a deterministic seed (hash of dateKey + takeawayId), NEVER random and NEVER rotate-on-read. A frozen day never rerolls its wording on reopen. The "rotate, never the same twice" rule (1.10) applies only to the live rolling stream, not here.
+- Completed days only. Today (in progress) gets NO stored takeaway, consistent with Day Score and the EvR completed-days-only window. The Day Summary for today shows no takeaway line (or a neutral placeholder, build decision).
+- Recompute only on a real data edit of that day (15.5), which cascades nothing upward by itself (Weekly and Monthly are their own engines, Section 13 of the spec / item 7).
+
+### 12.8 Takeaway IDs
+
+IDs are needed for the deterministic variant hash and the ledger topic key. Scheme: `takeaway_{metric}_{direction}` for standouts, `yard_{comparator}_{metric}` for yardstick clauses, plus the three fallbacks.
+
+Standout IDs: takeaway_cal_strong, takeaway_cal_gap, takeaway_protein_strong, takeaway_protein_gap, takeaway_water_strong, takeaway_water_gap, takeaway_activity_strong, takeaway_activity_gap, takeaway_sleep_strong, takeaway_sleep_gap.
+Yardstick IDs: yard_streak_cal, yard_streak_protein, yard_streak_steps, yard_streak_allthree, yard_record_protein, yard_record_sleep, yard_record_steps, yard_record_activecal, yard_first_steps, yard_first_cal, yard_first_workout.
+Fallback IDs: takeaway_balanced, takeaway_thin, takeaway_warm_fallback.
+Ledger topic key: the standout metric name (calories, protein, water, activity, sleep), so diversity tracks topic not exact line.
+
+### 12.9 Copy pools
+
+Discipline and Balanced SHARE one pool (spec 8.1). Mindful corrective gets its own pool (used only with growth areas ON). Positive lines are inherently gentle, so Mindful reuses the Discipline/Balanced positive pool; the build pass softens any line that reads too clinical for Mindful. Minimum 3 variants each (spec 1.10). Data slots use {variable}. No line uses raw clinical numbers in the Mindful pool.
+
+**12.9.1 Corrective standouts (Discipline / Balanced).**
+
+takeaway_cal_gap:
+1. "Strong day overall. Calories were the one piece that drifted."
+2. "Good day, but intake ran past your goal pace."
+3. "Most of today landed. Calories were the gap."
+
+takeaway_protein_gap:
+1. "Solid day. Protein was the one that came up short."
+2. "Good day overall, protein lagged the rest."
+3. "Today held together well, protein aside."
+
+takeaway_water_gap:
+1. "Good day. Hydration was the soft spot."
+2. "Most of today was on point. Water fell behind."
+3. "Strong day, water was the one to nudge."
+
+takeaway_activity_gap:
+1. "Good day. Movement was lighter than the rest of it."
+2. "Today mostly landed, activity was the quiet piece."
+3. "Strong elsewhere, the body got a lighter day."
+
+takeaway_sleep_gap:
+1. "Good day, but recovery was the weak link."
+2. "Most of today was strong. Sleep was the gap."
+3. "Solid day, sleep aside."
+
+**12.9.2 Positive standouts (Discipline / Balanced, reused by Mindful).**
+
+takeaway_cal_strong:
+1. "Calories were dialed in today."
+2. "Right on your goal pace. That is the lever that matters."
+3. "Intake was exactly where you wanted it."
+
+takeaway_protein_strong:
+1. "Protein led the way today."
+2. "You fueled this day well. Protein was the standout."
+3. "Strong protein day, the foundation was there."
+
+takeaway_water_strong:
+1. "Hydration carried this day."
+2. "Water was on point all day."
+3. "You stayed ahead on hydration."
+
+takeaway_activity_strong:
+1. "Activity carried this day."
+2. "The body did the work today."
+3. "Movement was the highlight."
+
+takeaway_sleep_strong:
+1. "Sleep carried this day."
+2. "Recovery was the standout. Your body got what it needed."
+3. "Sleep was the win today."
+
+**12.9.3 Corrective standouts (Mindful, growth areas ON only). Warm, no numbers.**
+
+takeaway_cal_gap (Mindful):
+1. "A lot went right today. Eating ran a little fuller than usual, worth a gentle eye."
+2. "Good day overall. Food was the one area that drifted a touch."
+
+takeaway_protein_gap (Mindful):
+1. "Today held together nicely. Protein was a little lighter than your other days."
+2. "A good day. Protein is the one spot with a bit of room."
+
+takeaway_water_gap (Mindful):
+1. "Nice day overall. Hydration was a little light, easy to top up tomorrow."
+2. "Good day. Water was the gentle reminder today."
+
+takeaway_activity_gap (Mindful):
+1. "A good day. Your body had a quieter one, which is part of the rhythm too."
+2. "Today mostly landed. Movement was lighter, and that is okay."
+
+takeaway_sleep_gap (Mindful):
+1. "Good day. Rest was a little uneven, even small bedtime shifts help."
+2. "Today went well. Sleep was the soft spot, worth a little care."
+
+**12.9.4 Yardstick clauses.** Append to a standout, or stand alone (12.3.3).
+
+Streak (yard_streak_*):
+1. "{n} days straight on your {goalLabel}."
+2. "that is {n} in a row now."
+3. "{n}-day streak and counting."
+
+Record (yard_record_*):
+1. "your highest {metric} in {window}."
+2. "your best {metric} day in {window}."
+3. "a {window} high for {metric}."
+
+First-in-N (yard_first_*):
+1. "first {goalLabel} hit in {n} days."
+2. "first time back on your {goalLabel} in {n} days."
+3. "{goalLabel} hit again after {n} days."
+
+**12.9.5 Balanced-day pool (takeaway_balanced).**
+1. "Solid, even day. Nothing stood out, in a good way."
+2. "A steady one across the board today."
+3. "Balanced day. Everything landed in a good place."
+
+**12.9.6 Thin-data pool (takeaway_thin).**
+1. "Light logging today, so this is just a partial read."
+2. "Not much logged today. What is here looks fine."
+3. "A quiet logging day. A bit more would sharpen the picture."
+
+**12.9.7 Warm fallback pool (takeaway_warm_fallback). Default Mindful, no positive to surface.**
+1. "Every day is part of the bigger picture. Tomorrow is a fresh start."
+2. "Some days are about just showing up. That counts."
+3. "Progress is not a straight line. You are still moving."
+
+### 12.10 Open items for this engine
+
+- Goal importance tiers (12.2.1), notable bands (12.2.2), and yardstick windows (12.3) are all starting values, tune after TestFlight real-data testing.
+- Positive-safe second pick storage (12.5.1) is my build decision to close the Mindful mode-switch hole; confirm at build, alternative is a generic warm fallback only.
+- Whether today's Day Summary shows a neutral placeholder or nothing in the takeaway slot (12.7) is a build decision.
+- The Mindful positive pool reuses the Discipline/Balanced positive lines; the build pass must re-read each for Mindful tone.
+
+---
+
+## 13. OPEN ITEMS
 
 Items still to be decided before build session starts.
 

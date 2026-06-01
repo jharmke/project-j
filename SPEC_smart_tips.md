@@ -480,6 +480,8 @@ Two routing options both present:
 - Tap the tip card itself: routes to EvR, scrolled to the Smart Tips section
 - "See all insights" link below the tip stack: same destination
 
+SESSION 69 UPDATE (resolves Section 16 item 2 for Weekly and Monthly): ungated, no blurred cards. 1-2 tips, same count for free and Pro. The paywall for periods is at the access level (free = last completed period, Pro = any period on demand + history), not at the tip level. Day Summary was already ungated via the Day Takeaway (15.1); this brings Weekly and Monthly in line. The Mindful overlay still applies (default Mindful shows positive period tips only); since these are ungated there is no blur to resolve. The full gated insight-card stack lives only in EvR (Section 17), which these surfaces route to.
+
 ### 10.5 Monthly Summary (LOCKED -- build when monthly summary ships)
 
 Same pattern as weekly. 1-2 tips max, routes to EvR via card tap or "See all insights" link.
@@ -708,8 +710,8 @@ This resolves Section 16 open item 1. It refines Sections 3.1, 3.5, and 8.2. Whe
 These remain to be decided in upcoming sessions. None blocked the Session 68 architecture above.
 
 1. RESOLVED (Session 69): suppress-before-gate is locked, both filters run at render time, default-Mindful free users (growth areas OFF) see zero blurred cards (B1: one positive shown, the rest hidden not blurred), and growth-areas-ON Mindful gates normally. Full resolution in Section 15.7. Spawned a small non-blocking follow-on: the warm fallback / empty-state copy for Mindful surfaces with no positive to show still needs writing, and the Day Takeaway and Weekly/Monthly rule sets (items 6 and 7) must each be able to surface a positive fallback.
-2. PARTIALLY RESOLVED (Session 69): EvR is resolved via the card architecture in Section 17 (finding-driven domain cards are free, the insight-card stack is capped at 5 and gated 1 free + blurred rest, the orphan suggestions list is retired). Day Takeaway (ungated) and Home card (1 free / 3 Pro cycling) were already locked. STILL OPEN: Weekly and Monthly counts and gating. Current lean is ungated-on-tips with the paywall at the access level (free = last completed period, Pro = any period + history), not yet locked.
-3. cal_under / cal_over naming (original issue 4): the names are inverted from intuition (cal_under fires when net is ABOVE the deficit target, that is, eating too much). Rename or add clarifying comments so the engine is not wired backwards.
+2. RESOLVED (Session 69): EvR via Section 17 (finding-driven domain cards free, insight-card stack capped at 5 and gated 1 free + blurred rest, suggestions list retired). Day Takeaway ungated (15.1); Home card 1 free / 3 Pro cycling (10.2). Weekly and Monthly: ungated, 1-2 tips, same count for both tiers, paywall at the access level (free = last completed period, Pro = any period + history), route to EvR for the gated depth (see 10.4). All surfaces now walked.
+3. RESOLVED (Session 69): cal_under renamed to net_above_pace (fires when net runs ABOVE paceTarget, ate more than plan) and cal_over to net_below_pace (net BELOW paceTarget, ate less than plan); threshold math is the source of truth. Goal behavior corrected: net_above_pace fires for LOSE/MAINTAIN (GAIN parked, excessive-surplus needs a dietitian-level threshold); net_below_pace fires for GAIN/MAINTAIN (LOSE parked, over-aggressive-deficit is the same parked research). Rule definitions fixed in TRIGGER_LIBRARY 3.1 and 3.2 plus the summary table. The copy variant pools (TRIGGER_LIBRARY section 11) were written around the old names and carry a re-sort / wording flag for build time.
 4. Logging-completeness math and Urgent window (original issue 5): restate "80%" as concrete day counts per window (3 of 3 is 100%, not 80%), and reconcile the Urgent window mismatch. Section 6.1 says a 3-day window, TRIGGER_LIBRARY.md 1.2 says 3 of the last 5 days.
 5. Minor cleanup pass: duplicate section numbers in this spec (two 3.5, two 6.0, two 13) and in the trigger library; the orphaned Section 6.2 body that is physically stranded below 6.6 (the "two confidence tiers" table belongs under the empty 6.2 header); Discipline and Balanced sharing one copy pool though 8.1 says their tone should differ; and the Rooted faith flavor on the Day Summary now that the win line (which carried "your body and your spirit") is retired and faith tips are parked to post-launch per 9.2.
 6. NEW (Session 68): the Day Takeaway engine rule set must be written before build, the standout ranking plus the personal-history comparators. It is not in the current trigger library.
@@ -749,7 +751,7 @@ Retiring the suggestions list is only safe if every rule has a card home. This i
 | Card | Class | Rules that surface here |
 |------|-------|-------------------------|
 | Logging Consistency | Spine | log_consistency_low, log_streak_strong |
-| Calorie / Deficit | Spine (when goal set) | cal_under, cal_over, cal_small_gap, cal_outlier_week, cal_goal_hit, weekend_spike |
+| Calorie / Deficit | Spine (when goal set) | net_above_pace, net_below_pace, cal_small_gap, cal_outlier_week, cal_goal_hit, weekend_spike |
 | Burn Accuracy | Domain (data-quality, no trigger rule) | calibration card only; surfaces when active-calorie data exists |
 | Macro Quality | Domain | protein_under, protein_high |
 | Extended Nutrition | Domain | fiber_low, sodium_high, sugar_high |

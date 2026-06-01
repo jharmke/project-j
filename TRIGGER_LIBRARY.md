@@ -101,11 +101,11 @@ Seven categories, domain-organized. Tier noted per rule.
 
 ## 3. NUTRITION RULES
 
-### 3.1 Calorie Gap -- Under Target (corrective)
+### 3.1 Net Above Pace (corrective)
 
-**Rule ID:** cal_under
+**Rule ID:** net_above_pace (renamed from cal_under in Session 69; the old name was backwards, since it fires when net runs ABOVE paceTarget, meaning the user ate MORE than plan. The threshold math is the source of truth.)
 
-**What it detects:** User is consistently running less of a deficit (or surplus) than their goal requires, as measured by net calories vs paceTarget.
+**What it detects:** User is consistently eating more than their goal pace allows, measured as net calories running above paceTarget.
 
 **Compare:** net calories vs paceTarget. Net = consumed - (activeCalories * burnAccuracyPct / 100) - BMR. Same formula as computeDayNet.
 
@@ -119,23 +119,25 @@ Seven categories, domain-organized. Tier noted per rule.
 
 | Tier | Threshold | Fire condition | Goal behavior |
 |------|-----------|---------------|---------------|
-| Pattern | net > paceTarget + 200 | 5 of last 7 qualifying days | LOSE: fires. MAINTAIN: fires. GAIN: escalates to Urgent (being under on a bulk directly opposes goal). |
-| Urgent | net > paceTarget + 500 | 3 of last 5 qualifying days | LOSE: fires (rarely -- this means near-maintenance despite cut goal). MAINTAIN: fires. GAIN: always fires (under on bulk = urgent). |
+| Pattern | net > paceTarget + 200 | 5 of last 7 qualifying days | LOSE: fires (deficit too small, eating too much). MAINTAIN: fires (running a surplus). GAIN: non-corrective in v1 (a bigger surplus still builds; see GAIN parked note). |
+| Urgent | net > paceTarget + 500 | 3 of last 5 qualifying days | LOSE: fires (near maintenance despite a cut goal). MAINTAIN: fires. GAIN: non-corrective in v1 (see GAIN parked note). |
 
-**Mindful behavior:** Suppressed by default. Allowed with Growth Areas ON. Copy never uses specific calorie numbers -- observational framing only.
+**GAIN parked note:** Eating well above the surplus target eventually becomes a problem (the excess goes to fat, the classic dirty bulk), but the threshold for "too much surplus" is dietitian-level research, tracked with the parked deep-deficit / extreme-net coaching item. Until that lands, net_above_pace does not fire corrective for GAIN.
+
+**Mindful behavior:** Suppressed by default. Allowed with Growth Areas ON. Copy never uses specific calorie numbers, observational framing only.
 
 **Goal-specific copy direction:**
 - LOSE: "You've been closer to maintenance than your goal pace this week."
 - MAINTAIN: "Your net has been running above target most days this week."
-- GAIN: "You've been consistently under your intake goal -- hard to build when you're under-fueling."
+- GAIN: no corrective copy in v1 (see GAIN parked note).
 
 ---
 
-### 3.2 Calorie Gap -- Over Target (corrective)
+### 3.2 Net Below Pace (corrective)
 
-**Rule ID:** cal_over
+**Rule ID:** net_below_pace (renamed from cal_over in Session 69; the old name was backwards, since it fires when net runs BELOW paceTarget, meaning the user ate LESS than plan. The threshold math is the source of truth.)
 
-**What it detects:** User is consistently running more calories than their goal allows -- too much surplus on a cut, or surplus when trying to maintain.
+**What it detects:** User is consistently eating less than their goal pace, measured as net calories running below paceTarget.
 
 **Compare:** net calories vs paceTarget. Same formula as 3.1.
 
@@ -143,21 +145,23 @@ Seven categories, domain-organized. Tier noted per rule.
 
 **Outlier exclusion:** Same as 3.1 (paceTarget + 900).
 
-**Structure:** X of Y days pattern.
+**Structure:** X of Y days pattern. A day "qualifies" if its net is below the threshold.
 
 **Thresholds:**
 
 | Tier | Threshold | Fire condition | Goal behavior |
 |------|-----------|---------------|---------------|
-| Pattern | net < paceTarget - 200 | 5 of last 7 qualifying days | LOSE: fires (surplus on a cut). MAINTAIN: fires. GAIN: Insight tier only -- being slightly over on a bulk is fine. |
-| Urgent | net < paceTarget - 500 | 3 of last 5 qualifying days | LOSE: fires. MAINTAIN: fires. GAIN: suppressed -- being well over on a bulk is not urgent. |
+| Pattern | net < paceTarget - 200 | 5 of last 7 qualifying days | GAIN: fires (under-fueling, hard to build). MAINTAIN: fires (running a deficit). LOSE: non-corrective in v1 (a bigger deficit; see LOSE parked note). |
+| Urgent | net < paceTarget - 500 | 3 of last 5 qualifying days | GAIN: fires (significant under-fueling). MAINTAIN: fires. LOSE: non-corrective in v1 (see LOSE parked note). |
+
+**LOSE parked note:** Eating well below target on a cut (an over-aggressive deficit, under-eating) is a real problem (muscle loss, energy, sustainability), but the threshold is dietitian-level research, tracked with the parked deep-deficit / extreme-net coaching item. Until that lands, net_below_pace does not fire corrective for LOSE.
 
 **Mindful behavior:** Suppressed by default. Allowed with Growth Areas ON. No numbers in Mindful copy.
 
 **Goal-specific copy direction:**
-- LOSE: "Most days this week your net has been above your deficit target."
-- MAINTAIN: "You've been running a consistent surplus -- might be worth a look."
-- GAIN: (Pattern only, positive framing) "You've been hitting your intake target well this week."
+- GAIN: "You've been consistently under your intake goal, hard to build when you're under-fueling." (moved here from the old cal_under)
+- MAINTAIN: "Your net has been running below your maintenance target most days this week."
+- LOSE: no corrective copy in v1 (see LOSE parked note).
 
 ---
 
@@ -1082,8 +1086,8 @@ These rules require cross-referencing two or more data streams. They are the tru
 
 | Rule ID | Category | Tier | Goal behavior | Mindful default |
 |---------|----------|------|---------------|-----------------|
-| cal_under | Nutrition | Pattern / Urgent | Goal-sensitive | Suppressed |
-| cal_over | Nutrition | Pattern / Urgent | Goal-sensitive | Suppressed |
+| net_above_pace | Nutrition | Pattern / Urgent | LOSE/MAINTAIN corrective; GAIN parked | Suppressed |
+| net_below_pace | Nutrition | Pattern / Urgent | GAIN/MAINTAIN corrective; LOSE parked | Suppressed |
 | cal_small_gap | Nutrition | Pattern | LOSE only | Suppressed |
 | cal_outlier_week | Nutrition | Insight | LOSE / MAINTAIN | Allowed |
 | protein_under | Nutrition | Pattern / Urgent | Goal-sensitive | Suppressed |
@@ -1132,6 +1136,8 @@ Every rule must have minimum 3 variants per tier per applicable coaching mode. T
 Rules: variants rotate. Never the same variant twice in a row. The engine tracks last-used variant index per rule in pj_smart_tips.cooldowns.
 
 ---
+
+> RENAME / RE-SORT FLAG (Session 69): the rule IDs below were renamed. cal_under is now net_above_pace (ate MORE than plan) and cal_over is now net_below_pace (ate LESS than plan). These variant pools were written around the OLD backwards names, so they are mis-sorted: the over-eating variants belong under net_above_pace and the under-eating / under-fueling variants belong under net_below_pace. Re-sort and polish wording at build time per the corrected rule definitions in 3.1 and 3.2. Do not ship these pools as-is. The sub-headers below still carry the old IDs on purpose, as a reminder that this pass is pending.
 
 ### cal_under -- Pattern (Discipline/Balanced, LOSE)
 

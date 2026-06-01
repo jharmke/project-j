@@ -286,6 +286,24 @@ These are not warnings or nags -- they are honest expectation-setting. The app m
 
 ### 6.2 Logging consistency and tip confidence (LOCKED)
 
+Two confidence tiers based on logging completeness within the window:
+
+| Logging completeness | Tip tier allowed | Behavior |
+|---------------------|-----------------|----------|
+| 80%+ of window days logged | Urgent / Pattern / Insight | Full Smart Tips fire normally |
+| Below 80% of window days logged | Generic only | Smart Tip is downgraded to Generic. Copy acknowledges the data gap honestly. |
+
+**Downgraded tip copy standard:**
+When a tip fires below the 80% threshold, the copy must acknowledge the incomplete data without being preachy or naggy. It states the observation and invites more logging as a natural next step.
+
+Good: "On the days you've logged this week, protein looks low. A few more logged days would give us a sharper picture."
+Bad: "You need to log more to see your Smart Tips." / "Log every day to unlock insights."
+
+**Chronic under-loggers:**
+Users who consistently log below 80% will only ever see Generic tips. This is acceptable -- the feature still delivers value, just not the full correlated layer. The welcome message and empty state copy (Section 6.1) set this expectation upfront so it never feels like a broken feature.
+
+**Mindful mode:** Same confidence tiers apply. Downgraded copy must use warm, observational language. Never frame incomplete logging as a failure.
+
 ### 6.3 Tip priority ranking (LOCKED)
 
 When multiple tips qualify simultaneously, the engine ranks them in this order:
@@ -323,24 +341,6 @@ A "Recent Insights" collapsible section lives at the bottom of EvR, below the ac
 Pro only. Free users see active tips only, no history.
 
 Longer-term history is handled naturally by the weekly and monthly summary structure -- pulling up a past week or month shows what tips fired during that period. No separate archive screen needed. The 7-day Recent Insights section is the short-term quick reference only.
-
-Two confidence tiers based on logging completeness within the window:
-
-| Logging completeness | Tip tier allowed | Behavior |
-|---------------------|-----------------|----------|
-| 80%+ of window days logged | Urgent / Pattern / Insight | Full Smart Tips fire normally |
-| Below 80% of window days logged | Generic only | Smart Tip is downgraded to Generic. Copy acknowledges the data gap honestly. |
-
-**Downgraded tip copy standard:**
-When a tip fires below the 80% threshold, the copy must acknowledge the incomplete data without being preachy or naggy. It states the observation and invites more logging as a natural next step.
-
-Good: "On the days you've logged this week, protein looks low. A few more logged days would give us a sharper picture."
-Bad: "You need to log more to see your Smart Tips." / "Log every day to unlock insights."
-
-**Chronic under-loggers:**
-Users who consistently log below 80% will only ever see Generic tips. This is acceptable -- the feature still delivers value, just not the full correlated layer. The welcome message and empty state copy (Section 6.1) set this expectation upfront so it never feels like a broken feature.
-
-**Mindful mode:** Same confidence tiers apply. Downgraded copy must use warm, observational language. Never frame incomplete logging as a failure.
 
 ---
 
@@ -381,7 +381,7 @@ SESSION 68 UPDATE: the replacement is the Day Takeaway engine (Section 15.1), no
 
 ### 8.1 Discipline and Balanced (LOCKED)
 
-Identical Smart Tips behavior. Same triggers, same thresholds, same tip types. Copy tone is slightly more direct for Discipline, slightly warmer for Balanced -- but this is a copy variant distinction only, not a behavioral one. No tips are suppressed or added based on these two modes.
+Identical Smart Tips behavior. Same triggers, same thresholds, same tip types. In v1 they also SHARE one copy pool per rule (the "Discipline/Balanced" pools in TRIGGER_LIBRARY section 11); there is no separate Discipline-only vs Balanced-only copy. The tonal difference once imagined (slightly more direct for Discipline, slightly warmer for Balanced) was judged too subtle to justify maintaining two full copy sets, and can be revisited post-launch if it proves worth it. No tips are suppressed or added based on these two modes.
 
 ### 8.2 Mindful (LOCKED)
 
@@ -435,6 +435,7 @@ There is potential for faith-adjacent Smart Tips behavior that hasn't fully crys
 - Gratitude/journal streak acknowledgment via tip copy
 - Faith Journey upgrade nudge triggered by Smart Tips engine
 - Rest day framing for Rooted users
+- Rooted faith flavor on the Day Takeaway / day summary (the retired win line carried a "body and spirit" touch; the v1 Day Takeaway is secular per 9.1, so this is the candidate to bring a gentle faith touch back for Rooted users)
 
 Do not build any of these in v1. Revisit after launch when real user behavior gives better signal on what would feel natural vs forced.
 
@@ -623,6 +624,8 @@ Gating: ungated. Every user sees the Day Takeaway regardless of tier. It is the 
 
 Mindful: default shows the positive standout. A corrective standout fires only with growth areas ON (ties to an open item, Section 16).
 
+Faith: secular in v1, consistent with 9.1. The retired win line's "body and spirit" touch is intentionally not carried forward. Bringing a gentle Rooted faith flavor back to the Day Takeaway is a parked candidate (9.2).
+
 Build note: the Day Takeaway needs its own rule set written (the standout ranking logic plus the personal-history comparators). It is NOT in the current trigger library, which is entirely 7-day rolling. See Section 16.
 
 ### 15.2 Altitude model (same topic, different zoom is not duplication)
@@ -713,7 +716,7 @@ These remain to be decided in upcoming sessions. None blocked the Session 68 arc
 2. RESOLVED (Session 69): EvR via Section 17 (finding-driven domain cards free, insight-card stack capped at 5 and gated 1 free + blurred rest, suggestions list retired). Day Takeaway ungated (15.1); Home card 1 free / 3 Pro cycling (10.2). Weekly and Monthly: ungated, 1-2 tips, same count for both tiers, paywall at the access level (free = last completed period, Pro = any period + history), route to EvR for the gated depth (see 10.4). All surfaces now walked.
 3. RESOLVED (Session 69): cal_under renamed to net_above_pace (fires when net runs ABOVE paceTarget, ate more than plan) and cal_over to net_below_pace (net BELOW paceTarget, ate less than plan); threshold math is the source of truth. Goal behavior corrected: net_above_pace fires for LOSE/MAINTAIN (GAIN parked, excessive-surplus needs a dietitian-level threshold); net_below_pace fires for GAIN/MAINTAIN (LOSE parked, over-aggressive-deficit is the same parked research). Rule definitions fixed in TRIGGER_LIBRARY 3.1 and 3.2 plus the summary table. The copy variant pools (TRIGGER_LIBRARY section 11) were written around the old names and carry a re-sort / wording flag for build time.
 4. RESOLVED (Session 69): canonical windows locked as Urgent = last 5 days (off on 3 of 5), Pattern/Insight = last 7 days (off on 5 of 7); Section 6.1 aligned to TRIGGER_LIBRARY 1.2. The 80% logging gate is now stated as concrete counts (Urgent 4 of 5, Pattern/Insight 6 of 7) and kept distinct from the magnitude count. Protein was the lone outlier (4 of 7 for both tiers) and was brought in line: Pattern 5 of 7, Urgent 3 of 5 (SPEC 5.3 + TRIGGER 3.5), which also matches its already-written copy.
-5. Minor cleanup pass: duplicate section numbers in this spec (two 3.5, two 6.0, two 13) and in the trigger library; the orphaned Section 6.2 body that is physically stranded below 6.6 (the "two confidence tiers" table belongs under the empty 6.2 header); Discipline and Balanced sharing one copy pool though 8.1 says their tone should differ; and the Rooted faith flavor on the Day Summary now that the win line (which carried "your body and your spirit") is retired and faith tips are parked to post-launch per 9.2.
+5. MOSTLY RESOLVED (Session 69): the stranded "two confidence tiers" table was moved under its 6.2 header; Discipline and Balanced confirmed to SHARE one copy pool in v1 (8.1 reworded to match); the Day Takeaway is documented secular by design (15.1) with "Rooted faith flavor on the Day Takeaway" added to the parked faith candidates (9.2). The trigger library had NO duplicate section numbers, that part of the original item was inaccurate. LEFT BY CHOICE: the spec's duplicate section numbers (two 3.5, two 6.0, two 13) stay as-is; fixing the 6.0 pair cleanly requires renumbering the whole 6.x chain and breaking cross-references for a purely cosmetic gain, so it is deferred to a dedicated renumber pass if ever worth it.
 6. NEW (Session 68): the Day Takeaway engine rule set must be written before build, the standout ranking plus the personal-history comparators. It is not in the current trigger library.
 7. NEW (Session 68): Weekly and Monthly tip rules (windows, thresholds, aggregation from daily) must be written. The trigger library currently covers only the 7-day rolling stream.
 8. Cross-surface topic ledger: storage location and memory duration are undefined.

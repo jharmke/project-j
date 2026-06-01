@@ -127,34 +127,44 @@ export async function buildDayScoreInput(dateKey: string, computedAt: string): P
   // isDayExcluded above (no score at all).
   const exObj = (day.excluded && typeof day.excluded === 'object') ? day.excluded : {};
 
+  // Snapshot-aware goal/setting resolution. Once a day has a frozen goalSnapshot
+  // (written on its first compute), every (re)build reads the goals AND settings in
+  // effect THAT day from it, so a forward goal / coaching-mode / burn-accuracy change
+  // never rewrites the day's score or its drift-proof display numbers (spec 15.5). A
+  // day with no snapshot yet (first-ever compute) uses live values, which then become
+  // its snapshot. Per-field ?? fallback covers older snapshots missing a newer field
+  // (e.g. step-1-era snapshots without styleMode / burnAccuracyPct). Only goals and
+  // scoring settings are frozen; the day's logged data below is always read live.
+  const snap: any = (day.goalSnapshot && typeof day.goalSnapshot === 'object') ? day.goalSnapshot : null;
+
   return {
     excluded: isDayExcluded(day),
     dietExcluded: !!exObj.diet,
     waterExcluded: !!exObj.water,
     exerciseExcluded: !!exObj.exercise,
     computedAt,
-    styleMode,
-    weightGoal: profile.weightGoal || 'maintain',
+    styleMode: snap?.styleMode ?? styleMode,
+    weightGoal: snap?.weightGoal ?? (profile.weightGoal || 'maintain'),
     hasFood,
     consumed,
     dayData: day,
-    dayBmr: bmr,
-    calTarget,
-    paceTarget: paceDeficit,
-    burnAccuracyPct,
-    proteinGoalG,
+    dayBmr: snap?.bmr ?? bmr,
+    calTarget: snap?.calTarget ?? calTarget,
+    paceTarget: snap?.paceTarget ?? paceDeficit,
+    burnAccuracyPct: snap?.burnAccuracyPct ?? burnAccuracyPct,
+    proteinGoalG: snap?.proteinGoalG ?? proteinGoalG,
     actualProteinG,
-    waterGoal,
+    waterGoal: snap?.waterGoal ?? waterGoal,
     waterLogged,
     dayType: ws.dayType,
-    activeCalGoal,
+    activeCalGoal: snap?.activeCalGoal ?? activeCalGoal,
     workoutCompletedCount: ws.completed,
     workoutTotalCount: ws.total,
     steps,
-    stepGoal,
+    stepGoal: snap?.stepGoal ?? stepGoal,
     sleepHours,
     sleepStages,
-    sleepGoal,
+    sleepGoal: snap?.sleepGoal ?? sleepGoal,
     sleepFeelRating,
     sleepIsManual,
     sleepConsistencyPts,
@@ -231,6 +241,8 @@ export async function computeAndStoreDayScore(dateKey: string, computedAt: strin
     stepGoal: input.stepGoal,
     sleepGoal: input.sleepGoal,
     weightGoal: input.weightGoal,
+    styleMode: input.styleMode,
+    burnAccuracyPct: input.burnAccuracyPct,
   };
 
   const raw = await AsyncStorage.getItem(`pj_${dateKey}`);

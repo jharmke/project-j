@@ -101,11 +101,15 @@ export interface DayScore {
   dataSig?: string;              // fingerprint of the day's logged data; mismatch = edited = recompute (store-only)
 }
 
-// The goals in effect the day a score was computed, frozen onto the day record
-// alongside the dayScore (spec SPEC_smart_tips.md 15.5). Recompute-on-edit reads
-// this frozen snapshot so a forward goal change never rewrites a past day's score.
-// Additive: written on each (re)compute; days scored before this existed simply
-// lack it until they are naturally recomputed.
+// The goals AND scoring settings in effect the day a score was computed, frozen
+// onto the day record alongside the dayScore (spec SPEC_smart_tips.md 15.5: "the
+// goals then in effect... and any others a rule reads"). Recompute-on-edit reads
+// this frozen snapshot so a forward goal, coaching-mode, or burn-accuracy change
+// never rewrites a past day's score. styleMode + burnAccuracyPct are settings, not
+// goals, but they feed the score, so they are frozen alongside the goals to keep a
+// recompute a faithful re-derivation of (edited data + original settings).
+// Additive: written on each (re)compute; days scored before a field existed simply
+// lack it until naturally recomputed, and readers fall back to live for it.
 export interface GoalSnapshot {
   bmr: number;
   calTarget: number;
@@ -116,6 +120,8 @@ export interface GoalSnapshot {
   stepGoal: number;
   sleepGoal: number;
   weightGoal: string;
+  styleMode: StyleMode;
+  burnAccuracyPct: number;
 }
 
 function round1(n: number): number {

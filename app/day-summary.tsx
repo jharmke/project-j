@@ -51,7 +51,12 @@ export default function DaySummaryScreen() {
   const [winLine, setWinLine] = useState('');
   const [coachLine, setCoachLine] = useState('');
   const [contextLine, setContextLine] = useState('');
-  const styleMode: StyleMode = (input?.styleMode as StyleMode) || 'balanced';
+  // The page renders in the user's CURRENT coaching mode (colors, celebration,
+  // labels, copy), not the mode frozen into the score. The score NUMBER and
+  // sub-scores stay frozen via the snapshot; only presentation follows current mode,
+  // so a Mindful user never sees judgment-style display resurfaced on an old day.
+  const [displayMode, setDisplayMode] = useState<StyleMode>('balanced');
+  const styleMode: StyleMode = displayMode;
   const isMindful = styleMode === 'mindful';
 
   // Tutorial spotlight targets (the tour lives on this page, not the modal).
@@ -98,14 +103,24 @@ export default function DaySummaryScreen() {
         const inp = await buildDayScoreInput(date, new Date().toISOString());
         setInput(inp);
 
+        // Current coaching mode + faith journey from live settings. Display and
+        // narrative follow CURRENT mode (not the score's frozen mode), so the page
+        // never resurfaces judgment copy/colors to a now-Mindful user.
+        let faithJourney = 'rooted';
+        let currentMode: StyleMode = 'balanced';
+        try {
+          const s = await AsyncStorage.getItem('pj_settings');
+          if (s) {
+            const parsed = JSON.parse(s);
+            faithJourney = parsed?.faithJourney ?? 'rooted';
+            currentMode = (parsed?.styleMode as StyleMode) || 'balanced';
+          }
+        } catch {}
+        setDisplayMode(currentMode);
+
         // Narrative lines (shared with the morning modal): win, coach, context.
         if (sc) {
-          const mindful = (inp?.styleMode ?? 'balanced') === 'mindful';
-          let faithJourney = 'rooted';
-          try {
-            const s = await AsyncStorage.getItem('pj_settings');
-            if (s) faithJourney = JSON.parse(s)?.faithJourney ?? 'rooted';
-          } catch {}
+          const mindful = currentMode === 'mindful';
           const faithEligible = faithJourney === 'rooted' && (await hadFaithEntryOn(date));
           const lines = winAndCoachLines(sc, mindful, faithEligible);
           setWinLine(lines.winLine);

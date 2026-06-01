@@ -175,8 +175,8 @@ function isWeekend(dateKey: string): boolean {
 // ── Main generation function ───────────────────────────────────────────────────
 
 export async function generateDiagnosticReport(windowDays: ReportWindow): Promise<DiagnosticReport> {
-  const today = offsetToDateKey(0);
-  const rangeStart = offsetToDateKey(windowDays - 1);
+  const yesterday = offsetToDateKey(1);
+  const rangeStart = offsetToDateKey(windowDays);
 
   // ── Load profile + settings ──
   let bodyWeightLbs = 0, weightGoal = 0, hasWeightGoal = false;
@@ -242,7 +242,7 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
 
   const days: DayData[] = [];
 
-  for (let i = windowDays - 1; i >= 0; i--) {
+  for (let i = windowDays; i >= 1; i--) {
     const dateKey = offsetToDateKey(i);
     let calories = 0, protein = 0, carbs = 0, fat = 0, fiber = 0, sodium = 0;
     let weight: number | null = null;
@@ -304,7 +304,7 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
     return {
       id: Date.now().toString(),
       generatedAt: new Date().toISOString(),
-      windowDays, dateRangeStart: rangeStart, dateRangeEnd: today, goalDirection,
+      windowDays, dateRangeStart: rangeStart, dateRangeEnd: yesterday, goalDirection,
       summary: `Not enough logged data to generate a full analysis. You need at least ${minDays} days with food logged in the ${windowDays}-day window. You currently have ${loggedDays} logged day${loggedDays !== 1 ? 's' : ''}.`,
       deficit: null, burnAccuracy: null, consistency, macros: null, sleep: null, correlations: null,
       suggestions: [{ rank: 1, headline: 'Log your food consistently', detail: `Aim for at least ${minDays} days of logging in a ${windowDays}-day window to unlock the full analysis. Even rough estimates count.` }],
@@ -665,7 +665,7 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
   return {
     id: Date.now().toString(),
     generatedAt: new Date().toISOString(),
-    windowDays, dateRangeStart: rangeStart, dateRangeEnd: today, goalDirection, summary,
+    windowDays, dateRangeStart: rangeStart, dateRangeEnd: yesterday, goalDirection, summary,
     deficit: deficitFinding, burnAccuracy: burnAccuracyFinding, consistency,
     macros: macroFinding, sleep: sleepFinding,
     correlations: correlations.length > 0 ? { type: 'correlations', correlations } : null,

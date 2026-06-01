@@ -103,6 +103,7 @@ Blurred card design:
 - Card is tappable, routes to subscription page.
 - All qualifying locked tips show as blurred cards. Do not cap the number of blurred cards. If the engine qualifies 4 locked tips, show all 4 blurred. Seeing multiple blurred cards signals real data patterns being missed, which is more compelling than artificially limiting to 1-2.
 - The word "locked" never appears in user-facing copy. The Pro badge does the job without feeling punitive.
+- Mindful exception (Session 69, LOCKED): default-Mindful users (growth areas OFF) see ZERO blurred cards. Suppression removes corrective tips before gating runs, so there is nothing corrective left to blur, and their surviving positive correlated tips follow B1 (one shown unblurred, the rest hidden entirely, never blurred). This is the one deliberate exception to the do-not-cap rule above. Growth-areas-ON Mindful users gate normally and do see blurred cards. Full logic in Section 15.7.
 
 TestFlight rule: gate is OFF for all TestFlight builds. All users see full Pro experience. Gate flips ON as a single config change pre-launch.
 
@@ -416,6 +417,10 @@ Storage: new field on pj_settings -- `mindfulGrowthAreas: boolean`, default fals
 
 Urgent tips fire in Mindful only when "Include growth areas" is ON. Even then, Urgent copy must never use alarming language. Same trigger, same tier classification internally, but copy is rewritten to Mindful standard before surfacing. The word "urgent" never appears in user-facing copy for Mindful users.
 
+### 8.5 Suppression and gating order (Session 69, LOCKED)
+
+The Mindful suppression filter and the tier gating filter are two separate filters that BOTH run at render time, in a fixed order: suppress first, then gate. Full resolution in Section 15.7. Key points repeated here so the Mindful section is self-contained: suppression is mode-driven and tier-independent (a Pro user in default Mindful still sees positives only; Pro does not unlock corrective tips), and suppression reads each rule's per-rule Mindful disposition, not a blanket corrective-equals-off (note the named exceptions: log_consistency_low is allowed with warm copy, weight_infrequent never fires in Mindful at all).
+
 ---
 
 ## 9. FAITH JOURNEY BEHAVIOR
@@ -666,13 +671,41 @@ This is a SEPARATE mechanism from the topic-ownership priority in 15.3 (which de
 - 7.1 and 10.3: the Day Summary "Smart Tip slot" is the Day Takeaway engine (15.1), ungated. The win line stays retired.
 - 10.1 and 10.7: EvR is the source of truth for the LIVE ROLLING stream only, not for period snapshots. Period snapshots are self-contained and do not live in EvR.
 
+### 15.7 Mindful suppression vs gating order (Session 69 resolution)
+
+This resolves Section 16 open item 1. It refines Sections 3.1, 3.5, and 8.2. Where it disagrees with an earlier section, this wins.
+
+**The problem.** Two independent filters act on a tip before it reaches the user: the Mindful suppression filter (8.2: default Mindful hides corrective tips) and the tier gating filter (3.1: free users get one Smart Tip unblurred, the rest render as blurred cards with the title still visible). Blurred cards leak their title. If gating ran first, a default-Mindful free user could see a blurred card whose title names a corrective topic, which breaks the Mindful safety promise the doc ties to ED recovery and body image.
+
+**Resolution, locked:**
+
+1. Suppress before gate. The Mindful suppression filter runs first on the full candidate pool, removing every tip its mode forbids. Only the survivors are handed to the gating filter. A corrective tip therefore never reaches the gate for a default-Mindful user; there is nothing corrective left to blur.
+
+2. Both filters run at RENDER time, in that order (suppress, then gate), against the user's CURRENT mode and tier. This matches 15.5, which already puts gating at render time so a lapsed Pro user re-blurs correctly. Suppression rides alongside it.
+
+3. Suppression is mode-driven and tier-independent. A Pro user in default Mindful still sees positives only. Being Pro does not unlock corrective tips; tier controls blur, mode controls existence.
+
+4. Suppression reads each rule's per-rule Mindful disposition, not a blanket corrective-equals-off. Most corrective rules are suppressed in default Mindful, but the trigger library names exceptions: log_consistency_low is allowed with warm copy, and weight_infrequent never fires in Mindful even with growth areas ON. The filter keys off the rule's Mindful flag, not its positive/corrective bit.
+
+5. B1, the free count for default Mindful. Default-Mindful free users (growth areas OFF) see zero blurred cards. Of the surviving positive correlated Smart Tips, one shows unblurred and the rest are hidden entirely (not blurred, no lock, no paywall nudge). This keeps the same one-free economy as every other mode; we delete the teases instead of blurring them. Generic positive tips remain unlimited and unblurred for everyone as always (2.1), so this only ever touches the correlated layer. Count of one is a starting value, tunable after TestFlight; one was chosen over two to avoid feeling like coddling.
+
+6. Growth-areas-ON Mindful users gate normally and do see blurred cards, including corrective ones rendered in Mindful-safe copy. They opted into the fuller picture.
+
+**Frozen-snapshot interaction (the mode-switch case).** Frozen period snapshots (Day Takeaway, Weekly, Monthly) store their chosen tip and never recompute on view (15.5). A user can store a corrective tip while in Discipline, then switch to default Mindful and reopen that period. The stored tip is never destroyed or recomputed on a mode switch; the render-time suppression filter simply hides it. Switching back to Discipline restores it, deterministically and identically, because it was filtered, not deleted. A mode switch is a render-time filter change, not a data edit, so it does not violate 15.5's recompute-only-on-edit rule.
+
+**Warm fallback (covers the empty case).** When suppression, or simply a rough data week, leaves a surface with no positive tip to show, the surface falls back to a warm encouragement / empty state rather than rendering blank. This is the catch-all across every surface (home card, EvR, and the frozen Day/Weekly/Monthly snapshots) whenever a default-Mindful user has nothing positive to surface. It is the one safe fallback that is never a blurred card.
+
+**Spawned follow-ons (not blocking):**
+- The exact warm fallback / empty-state copy for Mindful surfaces still needs writing.
+- The Day Takeaway rule set (open item 6) and the Weekly/Monthly rule set (open item 7) must each be able to surface a positive fallback, since render-time suppression can hide their stored standout. The Day Takeaway standout-picker model (positive by default, corrective only with growth ON) is the template for all three.
+
 ---
 
 ## 16. SESSION 68 OPEN ITEMS (carry forward, not yet resolved)
 
 These remain to be decided in upcoming sessions. None blocked the Session 68 architecture above.
 
-1. Mindful suppression vs blurred paywall cards (original issue 2): the order of operations, and whether a Mindful free user (growth areas OFF) sees blurred corrective cards at all. Suppress-before-gate was gestured at but not locked. The Mindful safety promise (the doc ties it to ED recovery and body image) is at stake. HIGH priority.
+1. RESOLVED (Session 69): suppress-before-gate is locked, both filters run at render time, default-Mindful free users (growth areas OFF) see zero blurred cards (B1: one positive shown, the rest hidden not blurred), and growth-areas-ON Mindful gates normally. Full resolution in Section 15.7. Spawned a small non-blocking follow-on: the warm fallback / empty-state copy for Mindful surfaces with no positive to show still needs writing, and the Day Takeaway and Weekly/Monthly rule sets (items 6 and 7) must each be able to surface a positive fallback.
 2. Per-surface free vs Pro counts (original issue 3): walk every surface (EvR, Home card, Day Takeaway, Weekly, Monthly) and decide how many tips each shows and what is gated. Day Takeaway is already decided as ungated. Everything else is open.
 3. cal_under / cal_over naming (original issue 4): the names are inverted from intuition (cal_under fires when net is ABOVE the deficit target, that is, eating too much). Rename or add clarifying comments so the engine is not wired backwards.
 4. Logging-completeness math and Urgent window (original issue 5): restate "80%" as concrete day counts per window (3 of 3 is 100%, not 80%), and reconcile the Urgent window mismatch. Section 6.1 says a 3-day window, TRIGGER_LIBRARY.md 1.2 says 3 of the last 5 days.

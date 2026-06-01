@@ -36,11 +36,13 @@ function fmtDateFull(dk: string): string {
 
 function windowDateRange(windowDays: number): string {
   const today = new Date();
-  const start = new Date(today);
+  const end = new Date(today);
+  end.setDate(end.getDate() - 1);
+  const start = new Date(end);
   start.setDate(start.getDate() - windowDays + 1);
   const pad = (n: number) => String(n).padStart(2, '0');
   const startKey = `${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(start.getDate())}`;
-  const endKey = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+  const endKey = `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())}`;
   return `${fmtDate(startKey)} – ${fmtDate(endKey)}`;
 }
 
@@ -48,7 +50,7 @@ async function countLoggedDaysInWindow(windowDays: number): Promise<number> {
   let count = 0;
   const today = new Date();
   const pad = (n: number) => String(n).padStart(2, '0');
-  for (let i = 0; i < windowDays; i++) {
+  for (let i = 1; i <= windowDays; i++) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
     const key = `pj_${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;

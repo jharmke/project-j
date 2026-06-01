@@ -1954,7 +1954,180 @@ First-in-N (yard_first_*):
 
 ---
 
-## 13. OPEN ITEMS
+## 13. WEEKLY AND MONTHLY TIP RULES
+
+These power the Weekly Summary and Monthly Summary surfaces (spec 10.4, 10.5). They are FROZEN PERIOD SNAPSHOTS (spec 15.0): scoped to one completed calendar period, stored, deterministic, self-contained. They do NOT live in EvR; they route to EvR for the deeper rolling picture. Read spec 15.0, 15.2, 15.3, 15.4, and 15.5 before building.
+
+Core reuse principle: Weekly and Monthly do NOT invent new thresholds. They reuse the rolling domain rules (Sections 3 through 9) evaluated against a fixed period. This section defines the windows, the aggregation, the selection, the storage, and the altitude-specific copy. The magnitude gates, goal-awareness, and Mindful dispositions all come from each rule's existing definition.
+
+### 13.0 Shared facts (both altitudes)
+
+- Ungated. 1 to 2 tips max per surface, same count for free and Pro (spec 10.4, Session 69). The paywall for periods is at the ACCESS level (free = last completed period only; Pro = any past period on demand + history), never at the tip level.
+- Route to EvR for depth (card tap or "See all insights" link, spec 10.4).
+- Completed periods only. An in-progress week or month gets NO stored tip, consistent with Day Score and the Day Takeaway (12.7).
+- Positive period tips are first-class: a metric strong across the whole period qualifies as a positive finding, same as the rolling positive rules.
+
+### 13.1 HARD DEPENDENCY (same as the Day Takeaway, 12.1)
+
+Weekly and Monthly aggregate FROZEN daily records, each carrying its own immutable goal snapshot (spec 15.5). That snapshot and recompute-on-edit DO NOT EXIST in code today (spec Section 16 item 9, roadmap Day Score item). These engines are not build-complete until that lands. Build the Day Score work first.
+
+### 13.2 WEEKLY
+
+**Window.** One completed calendar week, Sunday through Saturday, matching the app's existing week grouping (utils/dayScoreStore.ts weekStartKey is Sunday-first) and the Day Score archive. The Weekly Summary covers the most recently completed week and is due the following Monday (spec 15.4). A rolling last-7-days model is deliberately rejected: that is what EvR / the live rolling stream already is (spec 15.0), and a sliding window cannot be frozen, stored, or "due."
+
+**Inputs.** The 7 frozen daily records for that week (each with its frozen goal snapshot).
+
+**Rule evaluation.** Run the domain rules (Sections 3 through 9) against the 7 days, counting each rule's existing magnitude gate over the fixed week. The Pattern "X of 7" gate maps to the week exactly. Cross-signal Insight rules (Section 9) are multi-day and a 7-day week supports them, so they can surface weekly.
+
+**Urgent does not translate.** The live "urgent right now" concept is meaningless for a finished past week. Weekly never renders urgent or alarming framing. A finding whose magnitude would have hit the Urgent band still RANKS higher (more severe earns one of the 1 to 2 slots) and may use stronger corrective copy, but it is always framed as a past-week pattern, not a live emergency.
+
+**Logging gate.** Reuse the 80% gate: at least 6 of 7 days logged (spec 6.1, 6.2). Below that, the week downgrades to honest Generic-style copy or shows a thin-week note (reuse the 6.2 downgrade standard). The logging gate is separate from the magnitude count.
+
+**Selection.** Rank all qualifying findings by the priority ranking (spec 6.3: goal-tied metric first, then severity), take the top 1 to 2. Diversity / topic-ownership (13.4) can break ties.
+
+### 13.3 MONTHLY
+
+**Window.** One completed calendar month (1st through last day). A Sunday-Saturday week is assigned to the month that contains its END date (its Saturday). Starting rule, tunable: it keeps every week wholly in one month and is deterministic at boundaries.
+
+**Inputs.** The completed weeks assigned to that month, via their weekly findings, which themselves derive from the frozen daily records. This is the spec 15.5 cascade: daily rolls up to weekly, weekly rolls up to monthly.
+
+**Aggregation (the trend test).** A monthly finding fires for a metric that was a WEEKLY finding in at least 3 of the month's weeks (or a majority when the month has fewer than 4 complete weeks). The story at this altitude is recurrence across weeks, not any single week. Starting threshold, tunable.
+
+**Framing.** A trend across weeks, never a single-week or single-day event (spec 15.2 altitude rule). Corrective example: "Protein was under goal in 3 of 4 weeks last month." Positive example: "You hit your calorie goal every week last month."
+
+**Selection.** Rank monthly trend findings by priority and recurrence (more weeks affected ranks higher), take the top 1 to 2.
+
+### 13.4 Diversity and topic ownership (spec 15.3)
+
+Topic ownership when surfaces contend for the same topic: Monthly beats Weekly beats Day. Compute highest altitude first so it claims its topic in the shared ledger; the lower surface then deprioritizes an already-claimed topic and falls to its next-best finding.
+
+- All three surfaces read and write the shared pj_smart_tips.topicLedger (spec 11, 15.3), tagging the surface ("month", "week", "day"). 14-day rolling, pruned on write.
+- This is a tie-break / deprioritizer, not an absolute ban (spec 15.3 thin-data caveat): a user whose only issue is one topic can still see it at multiple altitudes, told at escalating zoom (the altitude model, spec 15.2). That is allowed and expected.
+- This is topic ownership (who talks about a topic), which is SEPARATE from pop-up firing (13.5 / spec 15.4, which decides which single pop-up fires). They share the Monthly > Weekly > Day order only by coincidence of altitude.
+
+### 13.5 Pop-up firing (restating spec 15.4)
+
+Weekly is due Monday, Monthly is due the 1st. One pop-up per app-open, maximum. The highest-altitude pop-up that is due wins: Monthly > Weekly > Day. Non-firing summaries are not lost; each has a persistent page in Stats > Reports, and the firing pop-up may carry a one-line pointer to the others. Worst-case pileups: Monday (Day + Weekly) and the 1st (Day + Weekly + Monthly).
+
+### 13.6 Mindful
+
+Render-time, suppress before gate (spec 15.7); these surfaces are ungated, so only suppression applies, plus the mode-switch case.
+
+- Default Mindful (growth OFF): positive period tips only. Corrective period findings suppressed.
+- Growth ON: corrective period findings allowed, rendered with the Mindful copy pool (warm, no numbers).
+- Warm fallback (spec 15.7): if suppression or a rough period leaves a surface with no positive period tip, it falls back to warm encouragement, never a blurred card.
+- Mode-switch: a stored corrective period tip is hidden by render-time suppression after a switch to default Mindful, never destroyed or recomputed. Apply the same positive-safe approach as the Day Takeaway (12.5.1): store a positiveSafe period pick alongside the primary so default Mindful always has a true positive to show without recompute, dropping to warm fallback only when the period has no positive at all.
+
+### 13.7 Storage, determinism, recompute (spec 15.5)
+
+- Store-and-lock. Weekly and Monthly selected tips are stored, keyed by period, in pj_smart_tips: weeklySnapshots keyed by weekStartKey (the Sunday), monthlySnapshots keyed by YYYY-MM. Each entry stores primary and positiveSafe picks (12.5.1 pattern), each carrying { ruleId, variantIndex, tier, finding data values, goalSnapshotRef } plus a version stamp (bump to force a one-time recompute on logic change).
+- Deterministic variant selection: variantIndex is a deterministic seed (hash of periodKey + ruleId), never random, never rotate-on-read (spec 15.5). A frozen period never rerolls its wording on reopen.
+- Recompute ONLY on a real data edit, cascading day to week to month (spec 15.5). Never recomputes on view, so a free user cannot reroll the single tip by reopening.
+- Completed periods only; in-progress periods store nothing.
+- Derived cache: if pj_smart_tips is lost, weekly and monthly regenerate deterministically from the frozen daily records on the next computation.
+
+### 13.8 Copy pools
+
+Weekly and Monthly each need their OWN altitude-specific copy, distinct from the rolling-stream copy AND from each other (spec 6.5: never identical copy on two surfaces). Discipline and Balanced share one pool (spec 8.1); Mindful corrective gets its own (growth ON only); positive lines are reused by Mindful with a build-time tone pass. Minimum 3 variants each (spec 1.10).
+
+Per the project's established copy convention (Section 14 open item 1: copy expands at build time once the pattern is locked), the headline-metric pools below establish the altitude templates in full. The remaining rules from the Section 10 summary table expand to weekly and monthly following these exact patterns at build time. The pattern, not a junk-drawer fallback, is what makes that safe.
+
+Data slots: {weekDays} = days affected in the week, {weeks} = weeks affected in the month, {totalWeeks} = weeks in the month, {goal} = the relevant goal value.
+
+**13.8.1 WEEKLY corrective (Discipline / Balanced).**
+
+protein_under (weekly):
+1. "Protein landed under your {goal}g goal on {weekDays} of 7 days last week."
+2. "Last week, most days came in under your protein target. On a cut that gap adds up."
+3. "Protein ran short most of last week. Worth a look heading into this one."
+
+net_above_pace (weekly):
+1. "Last week, intake ran past your goal pace on {weekDays} of 7 days."
+2. "Most days last week landed above your target pace. The deficit was thinner than planned."
+3. "Calories ran high across most of last week."
+
+sleep_score_low (weekly):
+1. "Sleep scored low on {weekDays} of 7 nights last week."
+2. "Recovery was uneven last week, with most nights below where you sleep best."
+3. "Last week was a rough stretch for sleep."
+
+active_low (weekly):
+1. "Activity ran light on {weekDays} of 7 days last week."
+2. "Last week was a quieter one for movement than your usual."
+3. "Most days last week came in under your activity goal."
+
+**13.8.2 WEEKLY positive (Discipline / Balanced, reused by Mindful).**
+
+cal_goal_hit (weekly):
+1. "You hit your calorie goal {weekDays} of 7 days last week. That is the lever that matters."
+2. "Last week was a strong one for intake, on goal nearly every day."
+3. "Calories were dialed in across most of last week."
+
+protein_high (weekly):
+1. "Protein stayed above goal on {weekDays} of 7 days last week. Strong week for the foundation."
+2. "Last week was one of your best for protein."
+3. "You fueled last week well, protein led most days."
+
+sleep_score_high (weekly):
+1. "Sleep was strong on {weekDays} of 7 nights last week. Your body got what it needed."
+2. "Last week was a great recovery week."
+3. "Most nights last week scored high for sleep."
+
+**13.8.3 WEEKLY corrective (Mindful, growth ON only). Warm, no numbers.**
+
+protein_under (weekly, Mindful):
+1. "Protein was a little lighter than usual across last week. It plays a quiet role in how you feel and recover."
+2. "Last week leaned low on protein most days. Something gentle to keep in mind, not a number to chase."
+
+sleep_score_low (weekly, Mindful):
+1. "Sleep was a bit uneven last week. Even small, steady bedtime shifts tend to add up."
+2. "Last week was a lighter stretch for rest. Worth a little care this week."
+
+**13.8.4 MONTHLY corrective (Discipline / Balanced).**
+
+protein_under (monthly):
+1. "Protein was under goal in {weeks} of {totalWeeks} weeks last month, your most consistent miss."
+2. "Across last month, protein came up short most weeks. It is the steadiest pattern in your data."
+3. "Last month, low protein showed up week after week. That is the one worth building a habit around."
+
+net_above_pace (monthly):
+1. "Intake ran above your goal pace in {weeks} of {totalWeeks} weeks last month."
+2. "Last month, the deficit kept landing thinner than planned, most weeks running high."
+3. "Across last month, calories trended above target week over week."
+
+sleep_score_low (monthly):
+1. "Sleep scored low in {weeks} of {totalWeeks} weeks last month."
+2. "Recovery was a recurring soft spot last month, low most weeks."
+3. "Last month, sleep was the pattern that kept repeating."
+
+**13.8.5 MONTHLY positive (Discipline / Balanced, reused by Mindful).**
+
+cal_goal_hit (monthly):
+1. "You hit your calorie goal every week last month. That kind of consistency is the whole game."
+2. "Last month was a strong, steady one for intake across the board."
+3. "Calories stayed on goal week after week last month."
+
+protein_high (monthly):
+1. "Protein stayed strong in {weeks} of {totalWeeks} weeks last month. A real foundation."
+2. "Last month was one of your best stretches for protein."
+3. "Week after week last month, protein led. That compounds."
+
+**13.8.6 MONTHLY corrective (Mindful, growth ON only).**
+
+protein_under (monthly, Mindful):
+1. "Protein leaned light across most of last month. A gentle area to give a little attention."
+2. "Last month, lower protein was a quiet recurring theme. Worth a small, steady focus, not a number."
+
+### 13.9 Open items for this engine
+
+- Sunday-Saturday week boundary, the week-to-month assignment by end-date (13.3), the 3-of-4-weeks monthly trend threshold (13.3), and the 80% weekly logging gate are all starting values, tune after TestFlight.
+- positiveSafe period pick (13.6) follows the Day Takeaway decision (12.5.1); confirm at build.
+- Full per-rule weekly and monthly copy expansion follows the templates in 13.8 at build time, per the established copy convention (Section 14 item 1).
+- New pj_smart_tips fields (weeklySnapshots, monthlySnapshots) must be added to the storage shape (spec Section 11) at build time.
+
+---
+
+## 14. OPEN ITEMS
 
 Items still to be decided before build session starts.
 

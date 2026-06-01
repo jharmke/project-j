@@ -31,9 +31,9 @@ These are locked in SPEC_smart_tips.md and repeated here for reference. Do not c
 
 | Tier | Minimum days | Logging completeness required |
 |------|-------------|-------------------------------|
-| Urgent | 3 of last 5 days | 80% of window days logged |
-| Pattern | 5 of last 7 days | 80% of window days logged |
-| Insight | 5 of last 7 days | 80% of window days logged |
+| Urgent | 3 of last 5 days | at least 4 of 5 days logged (80%) |
+| Pattern | 5 of last 7 days | at least 6 of 7 days logged (>=80%, since 5 of 7 = 71% rounds up) |
+| Insight | 5 of last 7 days | at least 6 of 7 days logged (>=80%) |
 
 ### 1.3 Cooldowns
 
@@ -212,9 +212,9 @@ Seven categories, domain-organized. Tier noted per rule.
 
 **Rule ID:** protein_under
 
-**LOCKED thresholds from SPEC_smart_tips.md Section 5.3:**
-- Pattern tier: below 70% of protein goal on 4 or more of the last 7 days
-- Urgent tier: below 50% of protein goal on 4 or more of the last 7 days
+**LOCKED thresholds from SPEC_smart_tips.md Section 5.3 (Session 69: aligned to the global 5/7 windows; protein previously used 4 of 7 for both tiers):**
+- Pattern tier: below 70% of protein goal on 5 or more of the last 7 days
+- Urgent tier: below 50% of protein goal on 3 or more of the last 5 days
 
 **Protein goal source:** ratio-based against calTarget. proteinGoalG = round((macroProteinPct / 100) * calTarget / 4). If macroMode is 'fixed': use macroProteinG directly.
 

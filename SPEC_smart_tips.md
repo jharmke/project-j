@@ -185,9 +185,9 @@ Two values define every trigger:
 
 Both must be met for a tip to fire. A single bad day never triggers a tip.
 
-**Protein threshold (LOCKED, starting values -- tune after real-data testing):**
-- Pattern tier: below 70% of protein goal on 4 or more of the last 7 days
-- Urgent tier: below 50% of protein goal on 4 or more of the last 7 days
+**Protein threshold (LOCKED, starting values -- tune after real-data testing; Session 69: aligned to the global 5/7 windows, protein previously used 4 of 7 for both tiers with no good reason):**
+- Pattern tier: below 70% of protein goal on 5 or more of the last 7 days
+- Urgent tier: below 50% of protein goal on 3 or more of the last 5 days
 - Positive Insight: above 110% of protein goal on 5 or more of the last 7 days
 
 All other metric thresholds: TO BE DECIDED (remaining trigger library built in dedicated session before build starts).
@@ -263,17 +263,17 @@ Cooldown is per-tip, not global. A protein Pattern tip cooling down does not blo
 
 Two window tiers based on urgency:
 
-| Tier | Minimum days | Logging completeness required |
-|------|-------------|-------------------------------|
-| Urgent | 3 days | 80% of window days must have logged data |
-| Pattern | 5 days | 80% of window days must have logged data |
-| Insight | 5 days | 80% of window days must have logged data |
+| Tier | Window | Magnitude (fire) count | Logging completeness required |
+|------|--------|------------------------|-------------------------------|
+| Urgent | last 5 days | metric off on 3 of 5 | at least 4 of 5 days logged (80%) |
+| Pattern | last 7 days | metric off on 5 of 7 | at least 6 of 7 days logged (>=80%) |
+| Insight | last 7 days | per rule (often 5 of 7) | at least 6 of 7 days logged (>=80%) |
 
-80% rule in practice: 3-day window requires 3 logged days. 5-day window requires 4 logged days. A day counts as "logged" if it has at least one food entry OR a workout entry OR a manual sleep entry. HealthKit-only days with no manual interaction do not count as logged for this purpose.
+Logging completeness in practice, stated as concrete counts rather than a recomputed percentage: the Urgent 5-day window requires at least 4 of 5 days logged, and the Pattern/Insight 7-day window requires at least 6 of 7 days logged (5 of 7 is only 71%, below the 80% bar, so it rounds up to 6). A day counts as "logged" if it has at least one food entry OR a workout entry OR a manual sleep entry. HealthKit-only days with no manual interaction do not count as logged for this purpose. This logging gate (was any data entered) is separate from the magnitude count above (how many days the metric was off); both must be met.
 
 Both conditions must be met before any tip fires -- minimum days AND logging completeness. A single bad day never triggers a tip.
 
-**Mindful mode:** Same minimums apply. Urgent tips use the same 3-day trigger but copy must never use urgent or alarming language. Same pattern detected, softer delivery. See Section 8.
+**Mindful mode:** Same minimums apply. Urgent tips use the same 5-day window (off on 3 of 5) but copy must never use urgent or alarming language. Same pattern detected, softer delivery. See Section 8.
 
 **Logging dependency note (LOCKED):**
 Smart Tips quality is directly tied to logging consistency. This must be communicated to the user at two moments:
@@ -712,7 +712,7 @@ These remain to be decided in upcoming sessions. None blocked the Session 68 arc
 1. RESOLVED (Session 69): suppress-before-gate is locked, both filters run at render time, default-Mindful free users (growth areas OFF) see zero blurred cards (B1: one positive shown, the rest hidden not blurred), and growth-areas-ON Mindful gates normally. Full resolution in Section 15.7. Spawned a small non-blocking follow-on: the warm fallback / empty-state copy for Mindful surfaces with no positive to show still needs writing, and the Day Takeaway and Weekly/Monthly rule sets (items 6 and 7) must each be able to surface a positive fallback.
 2. RESOLVED (Session 69): EvR via Section 17 (finding-driven domain cards free, insight-card stack capped at 5 and gated 1 free + blurred rest, suggestions list retired). Day Takeaway ungated (15.1); Home card 1 free / 3 Pro cycling (10.2). Weekly and Monthly: ungated, 1-2 tips, same count for both tiers, paywall at the access level (free = last completed period, Pro = any period + history), route to EvR for the gated depth (see 10.4). All surfaces now walked.
 3. RESOLVED (Session 69): cal_under renamed to net_above_pace (fires when net runs ABOVE paceTarget, ate more than plan) and cal_over to net_below_pace (net BELOW paceTarget, ate less than plan); threshold math is the source of truth. Goal behavior corrected: net_above_pace fires for LOSE/MAINTAIN (GAIN parked, excessive-surplus needs a dietitian-level threshold); net_below_pace fires for GAIN/MAINTAIN (LOSE parked, over-aggressive-deficit is the same parked research). Rule definitions fixed in TRIGGER_LIBRARY 3.1 and 3.2 plus the summary table. The copy variant pools (TRIGGER_LIBRARY section 11) were written around the old names and carry a re-sort / wording flag for build time.
-4. Logging-completeness math and Urgent window (original issue 5): restate "80%" as concrete day counts per window (3 of 3 is 100%, not 80%), and reconcile the Urgent window mismatch. Section 6.1 says a 3-day window, TRIGGER_LIBRARY.md 1.2 says 3 of the last 5 days.
+4. RESOLVED (Session 69): canonical windows locked as Urgent = last 5 days (off on 3 of 5), Pattern/Insight = last 7 days (off on 5 of 7); Section 6.1 aligned to TRIGGER_LIBRARY 1.2. The 80% logging gate is now stated as concrete counts (Urgent 4 of 5, Pattern/Insight 6 of 7) and kept distinct from the magnitude count. Protein was the lone outlier (4 of 7 for both tiers) and was brought in line: Pattern 5 of 7, Urgent 3 of 5 (SPEC 5.3 + TRIGGER 3.5), which also matches its already-written copy.
 5. Minor cleanup pass: duplicate section numbers in this spec (two 3.5, two 6.0, two 13) and in the trigger library; the orphaned Section 6.2 body that is physically stranded below 6.6 (the "two confidence tiers" table belongs under the empty 6.2 header); Discipline and Balanced sharing one copy pool though 8.1 says their tone should differ; and the Rooted faith flavor on the Day Summary now that the win line (which carried "your body and your spirit") is retired and faith tips are parked to post-launch per 9.2.
 6. NEW (Session 68): the Day Takeaway engine rule set must be written before build, the standout ranking plus the personal-history comparators. It is not in the current trigger library.
 7. NEW (Session 68): Weekly and Monthly tip rules (windows, thresholds, aggregation from daily) must be written. The trigger library currently covers only the 7-day rolling stream.

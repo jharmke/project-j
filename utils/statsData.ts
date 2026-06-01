@@ -208,7 +208,10 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
             const c = data.entries.reduce((s: number, e: any) => s + (e.carbs || 0), 0);
             const f = data.entries.reduce((s: number, e: any) => s + (e.fat || 0), 0);
             if (p + c + f > 0) mh.push({ date: dateKey, protein: Math.round(p), carbs: Math.round(c), fat: Math.round(f) });
-            ncH.push({ date: dateKey, value: computeDayNet(total, data, bmrMap[dateKey] ?? 0, burnAccuracyPct, dateKey === todayKey, minutesNow) });
+            // Net needs BMR; skip plotting BMR-0 days (no resolvable weight) so the net
+            // graph never shows a wrong, overstated point.
+            const ncBmr = bmrMap[dateKey] ?? 0;
+            if (ncBmr > 0) ncH.push({ date: dateKey, value: computeDayNet(total, data, ncBmr, burnAccuracyPct, dateKey === todayKey, minutesNow) });
             const fiberVal = getEntryNutrient(data.entries, 'Fiber, total dietary');
             const sodiumVal = getEntryNutrient(data.entries, 'Sodium, Na');
             const choVal = getEntryNutrient(data.entries, 'Cholesterol');

@@ -186,7 +186,9 @@ export default function DaySummaryScreen() {
   const adjustedActive = input
     ? Math.round((input.dayData?.activeCalories || input.dayData?.caloriesBurned || 0) * input.burnAccuracyPct / 100)
     : 0;
-  const net = input ? Math.round(input.consumed - adjustedActive - input.dayBmr) : null;
+  // Net needs BMR; with no resolvable weight (frozen BMR 0) it would be overstated by
+  // the whole missing BMR, so leave it null (the line below already renders null as "--").
+  const net = input && input.dayBmr > 0 ? Math.round(input.consumed - adjustedActive - input.dayBmr) : null;
   const dietExcluded = !!input?.dietExcluded;
   const waterExcluded = !!input?.waterExcluded;
   const exerciseExcluded = !!input?.exerciseExcluded;

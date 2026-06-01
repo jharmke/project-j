@@ -65,10 +65,15 @@ async function loadSnapshot(dateKey: string, sleepGoal: number, calTarget: numbe
       const consumed = d.entries.reduce((s: number, e: any) => s + e.cal, 0);
       if (consumed >= 400) {
         const bmrMap = await buildDailyBmrMap([dateKey]);
-        const isToday = dateKey === offsetToDateKey(0);
-        const now = new Date();
-        const minutesNow = now.getHours() * 60 + now.getMinutes();
-        snap.net = computeDayNet(consumed, d, bmrMap[dateKey] ?? 0, burnAccuracyPct, isToday, minutesNow);
+        const dayBmr = bmrMap[dateKey] ?? 0;
+        // Net needs BMR; with no resolvable weight (BMR 0) it would be overstated by the
+        // whole missing BMR, so leave net null rather than show a wrong comparison.
+        if (dayBmr > 0) {
+          const isToday = dateKey === offsetToDateKey(0);
+          const now = new Date();
+          const minutesNow = now.getHours() * 60 + now.getMinutes();
+          snap.net = computeDayNet(consumed, d, dayBmr, burnAccuracyPct, isToday, minutesNow);
+        }
       }
     }
 

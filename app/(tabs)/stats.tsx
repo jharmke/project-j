@@ -380,7 +380,7 @@ export default function StatsScreen() {
     const bmrMap = await buildDailyBmrMap(dates);
     const minutesNow = nowD.getHours() * 60 + nowD.getMinutes();
     const todayKey = offsetToDateKey(0);
-    let totalCal = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0, totalFiber = 0, totalSugarAlcohols = 0, totalWater = 0, totalNetCal = 0;
+    let totalCal = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0, totalFiber = 0, totalSugarAlcohols = 0, totalWater = 0, totalNetCal = 0, netDays = 0;
     let totalSteps = 0, stepsDays = 0, totalActiveCals = 0, activeDays = 0, totalSleep = 0, sleepDays = 0;
     let totalSleepScore = 0, sleepScoreDays = 0, calGoalDays = 0;
     let dietDays = 0, waterDays = 0, workoutDays = 0;
@@ -399,7 +399,10 @@ export default function StatsScreen() {
           if (!isTodayKey && !excl.diet && data.entries?.length > 0) {
             const dayCal = data.entries.reduce((s: number, e: any) => s + e.cal, 0);
             totalCal += dayCal;
-            totalNetCal += computeDayNet(dayCal, data, bmrMap[dateKey] ?? 0, burnAccuracyPct, dateKey === todayKey, minutesNow);
+            // Net needs BMR; exclude BMR-0 days (no resolvable weight) from the net
+            // average via their own denominator so a wrong-net day can't skew it.
+            const netDayBmr = bmrMap[dateKey] ?? 0;
+            if (netDayBmr > 0) { totalNetCal += computeDayNet(dayCal, data, netDayBmr, burnAccuracyPct, dateKey === todayKey, minutesNow); netDays++; }
             totalProtein += data.entries.reduce((s: number, e: any) => s + (e.protein || 0), 0);
             totalCarbs   += data.entries.reduce((s: number, e: any) => s + (e.carbs || 0), 0);
             totalFat     += data.entries.reduce((s: number, e: any) => s + (e.fat || 0), 0);
@@ -455,7 +458,7 @@ export default function StatsScreen() {
       avgCarbs: dietDays > 0 ? Math.round(
         (netCarbsMode ? Math.max(0, totalCarbs - totalFiber - totalSugarAlcohols) : totalCarbs) / dietDays * 10) / 10 : 0,
       avgFat: dietDays > 0 ? Math.round(totalFat / dietDays * 10) / 10 : 0,
-      avgNetCals: dietDays > 0 ? Math.round(totalNetCal / dietDays) : 0,
+      avgNetCals: netDays > 0 ? Math.round(totalNetCal / netDays) : 0,
       avgWater: waterDays > 0 ? Math.round(totalWater / waterDays) : 0,
       avgSteps: stepsDays > 0 ? Math.round(totalSteps / stepsDays) : 0,
       avgActiveCals: activeDays > 0 ? Math.round(totalActiveCals / activeDays) : 0,

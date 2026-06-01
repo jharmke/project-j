@@ -377,7 +377,9 @@ export default function LogScreen() {
   const calStats = [
     { label: remainingVal >= 0 ? 'REMAINING' : 'OVER', value: `${Math.abs(Math.round(remainingVal))}`, color: remainingVal >= 0 ? theme.textSecondary : theme.statusBad },
     { label: 'ACTIVE', value: `${activeAdj}`, color: theme.textSecondary },
-    { label: 'LIVE NET', value: `${logNet > 0 ? '+' : ''}${Math.round(logNet)}`, color: theme.textSecondary },
+    // Net needs BMR; with no resolvable weight (BMR 0) it would be overstated by the
+    // whole missing BMR, so show a dash + hint instead of a wrong number (mirrors home).
+    { label: 'LIVE NET', value: profileBmr > 0 ? `${logNet > 0 ? '+' : ''}${Math.round(logNet)}` : '—', color: theme.textSecondary },
   ];
   const getAdvancedNutrient = (name: string) => {
     return Math.round(entries.reduce((s, e) => {
@@ -1047,17 +1049,25 @@ export default function LogScreen() {
         </View>
         {/* Bottom stat strip -- full width, mirrors home Calories card. Hidden in Mindful. */}
         {styleMode !== 'mindful' && (
-          <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCardTop, paddingTop: 10, marginTop: 10, flexDirection: 'row' }}>
-            {calStats.map((s, i) => (
-              <View key={i} style={{ flex: 1, alignItems: i === 1 ? 'center' : i === 2 ? 'flex-end' : 'flex-start' }}>
-                <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 2 }}>{s.label}</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
-                  <Text style={{ fontSize: 18, color: s.color, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{s.value}</Text>
-                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>kcal</Text>
+          <>
+            <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCardTop, paddingTop: 10, marginTop: 10, flexDirection: 'row' }}>
+              {calStats.map((s, i) => (
+                <View key={i} style={{ flex: 1, alignItems: i === 1 ? 'center' : i === 2 ? 'flex-end' : 'flex-start' }}>
+                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 2 }}>{s.label}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
+                    <Text style={{ fontSize: 18, color: s.color, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{s.value}</Text>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>kcal</Text>
+                  </View>
                 </View>
-              </View>
-            ))}
-          </View>
+              ))}
+            </View>
+            {/* No BMR (no resolvable weight): explain the dashed net, point to the fix. */}
+            {profileBmr === 0 && (
+              <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginTop: 6 }}>
+                Log your weight to see your calorie net.
+              </Text>
+            )}
+          </>
         )}
       </View>
 

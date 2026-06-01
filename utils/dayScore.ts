@@ -42,6 +42,7 @@ export interface DayScoreInput {
   exerciseExcluded: boolean;
   computedAt: string;            // ISO timestamp, supplied by the caller
   styleMode: StyleMode;
+  weightGoal: string;            // pj_profile.weightGoal at compute time (frozen into the goal snapshot)
 
   // Nutrition
   hasFood: boolean;              // any food entries logged for the day
@@ -97,6 +98,23 @@ export interface DayScore {
   computedAt: string;
   excludedFromAverages: boolean;
   version?: number;              // stamped by the store; bump to force recompute
+}
+
+// The goals in effect the day a score was computed, frozen onto the day record
+// alongside the dayScore (spec SPEC_smart_tips.md 15.5). Recompute-on-edit reads
+// this frozen snapshot so a forward goal change never rewrites a past day's score.
+// Additive: written on each (re)compute; days scored before this existed simply
+// lack it until they are naturally recomputed.
+export interface GoalSnapshot {
+  bmr: number;
+  calTarget: number;
+  paceTarget: number;
+  proteinGoalG: number;
+  waterGoal: number;
+  activeCalGoal: number;
+  stepGoal: number;
+  sleepGoal: number;
+  weightGoal: string;
 }
 
 function round1(n: number): number {

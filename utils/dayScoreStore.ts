@@ -14,7 +14,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageSet } from './storage';
 import { loadCalorieTargets } from './calorieTarget';
-import { computeDayScore, scoreLabel, DayScore, DayScoreInput, DayType, StyleMode } from './dayScore';
+import { computeDayScore, scoreLabel, DayScore, DayScoreInput, DayType, StyleMode, GoalSnapshot } from './dayScore';
 
 const SCAN_GATE_KEY = 'pj_last_dayscore_scan';
 const ARCHIVE_WINDOW_DAYS = 90;
@@ -134,6 +134,7 @@ export async function buildDayScoreInput(dateKey: string, computedAt: string): P
     exerciseExcluded: !!exObj.exercise,
     computedAt,
     styleMode,
+    weightGoal: profile.weightGoal || 'maintain',
     hasFood,
     consumed,
     dayData: day,
@@ -169,9 +170,25 @@ export async function computeAndStoreDayScore(dateKey: string, computedAt: strin
   if (!score) return null;
 
   const stamped: DayScore = { ...score, version: DAYSCORE_VERSION };
+
+  // Freeze the goals in effect this compute alongside the score (spec 15.5). Purely
+  // additive: read-then-merge preserves every existing field on the record, and days
+  // scored before this existed keep their score untouched until naturally recomputed.
+  const goalSnapshot: GoalSnapshot = {
+    bmr: input.dayBmr,
+    calTarget: input.calTarget,
+    paceTarget: input.paceTarget,
+    proteinGoalG: input.proteinGoalG,
+    waterGoal: input.waterGoal,
+    activeCalGoal: input.activeCalGoal,
+    stepGoal: input.stepGoal,
+    sleepGoal: input.sleepGoal,
+    weightGoal: input.weightGoal,
+  };
+
   const raw = await AsyncStorage.getItem(`pj_${dateKey}`);
   const cur = raw ? JSON.parse(raw) : {};
-  await storageSet(`pj_${dateKey}`, JSON.stringify({ ...cur, dayScore: stamped }));
+  await storageSet(`pj_${dateKey}`, JSON.stringify({ ...cur, dayScore: stamped, goalSnapshot }));
   return stamped;
 }
 

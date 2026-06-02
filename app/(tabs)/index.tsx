@@ -41,10 +41,12 @@ import { useTutorial, isTutorialSeen } from '../../context/TutorialContext';
 import { useTutorialTarget } from '../../hooks/useTutorialTarget';
 import { showToolkit } from '../../components/ToolkitSheet';
 import ToggleSwitch from '../../components/ToggleSwitch';
+import { StoredTip, loadSmartTips } from '../../utils/smartTipsEngine';
 
 // ─── Card Registry ────────────────────────────────────────────────────────────
 export type CardId =
   | 'verse'
+  | 'smart_tip'
   | 'calories'
   | 'macros'
   | 'water'
@@ -67,6 +69,7 @@ interface CardMeta {
 
 const CARD_REGISTRY: CardMeta[] = [
   { id: 'verse',          label: "Today's Message",   description: 'Scripture for the day',                  defaultVisible: true },
+  { id: 'smart_tip',      label: 'Smart Tip',          description: 'Your top coaching insight for today',    defaultVisible: true },
   { id: 'calories',       label: 'Calories',           description: 'Daily calorie intake & progress',        defaultVisible: true },
   { id: 'macros',         label: 'Macros',             description: 'Protein, carbs & fat breakdown',         defaultVisible: true },
   { id: 'water',          label: 'Water',              description: 'Hydration tracking',                     defaultVisible: true },
@@ -82,7 +85,7 @@ const CARD_REGISTRY: CardMeta[] = [
 ];
 
 const DEFAULT_ORDER: CardId[] = [
-  'verse', 'calories', 'macros', 'water', 'weight', 'workout',
+  'verse', 'smart_tip', 'calories', 'macros', 'water', 'weight', 'workout',
   'steps', 'sleep', 'gratitude_streak', 'reading_plans',
   'fitness_metrics', 'daily_note', 'vs_yesterday',
 ];
@@ -973,6 +976,9 @@ export default function HomeScreen() {
   // shows; on acknowledge it hands off to daySummary.
   const [daySummary, setDaySummary] = useState<{ score: DayScore; dateKey: string } | null>(null);
   const [dayScoreDisclaimer, setDayScoreDisclaimer] = useState<{ score: DayScore; dateKey: string } | null>(null);
+  const [homeTips, setHomeTips] = useState<StoredTip[]>([]);
+  const [tipIndex, setTipIndex] = useState(0);
+  const tipOpacity = useRef(new Animated.Value(1)).current;
   const summaryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     const runScan = async () => {
@@ -1003,6 +1009,32 @@ export default function HomeScreen() {
     const sub = AppState.addEventListener('change', s => { if (s === 'active') runScan(); });
     return () => { sub.remove(); if (summaryTimerRef.current) clearTimeout(summaryTimerRef.current); };
   }, []);
+
+  // ── Load Smart Tips for home card ───────────────────────────────────────────
+  useFocusEffect(useCallback(() => {
+    loadSmartTips().then(store => {
+      const tips = store?.activeTips?.slice(0, 3) ?? [];
+      setHomeTips(tips);
+      // Only reset index if current index is out of bounds for the new set
+      setTipIndex(i => (i >= tips.length ? 0 : i));
+    }).catch(() => {});
+  }, []));
+
+  // ── Advance tip with fade animation ─────────────────────────────────────────
+  const advanceTip = useCallback(() => {
+    if (homeTips.length <= 1) return;
+    Animated.timing(tipOpacity, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
+      setTipIndex(i => (i + 1) % homeTips.length);
+      Animated.timing(tipOpacity, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+    });
+  }, [homeTips.length, tipOpacity]);
+
+  // ── Cycle tips on a timer ────────────────────────────────────────────────────
+  useEffect(() => {
+    if (homeTips.length <= 1) return;
+    const timer = setInterval(advanceTip, 22000);
+    return () => clearInterval(timer);
+  }, [homeTips.length, advanceTip]);
 
   // ── Persist HealthKit to storage ────────────────────────────────────────────
   useEffect(() => {
@@ -2888,6 +2920,61 @@ export default function HomeScreen() {
       case 'verse':
         if (faithJourney === 'notrightnow') return null;
         return renderVerseCard();
+      case 'smart_tip': {
+        const homeTip = homeTips[tipIndex] ?? null;
+        if (!homeTip) return null;
+        const tipBorderColor = homeTip.positive ? theme.statusGood : homeTip.tier === 'urgent' ? theme.statusBad : theme.statusWarn;
+        const chipLabel = homeTip.positive ? 'POSITIVE' : homeTip.tier.toUpperCase();
+        const chipColor = homeTip.positive ? theme.statusGood : homeTip.tier === 'urgent' ? theme.statusBad : theme.statusWarn;
+        const tipShadow = { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 3 };
+        const tipScale = new Animated.Value(1);
+        return (
+          <Animated.View style={{ transform: [{ scale: tipScale }] }}>
+            <TouchableOpacity
+              activeOpacity={0.99}
+              onPressIn={() => Animated.timing(tipScale, { toValue: 0.97, duration: 100, useNativeDriver: true }).start()}
+              onPressOut={() => Animated.timing(tipScale, { toValue: 1, duration: 150, useNativeDriver: true }).start()}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/diagnostic-report'); }}
+            >
+              <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: tipBorderColor, ...tipShadow }]}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <View style={{ backgroundColor: chipColor + '22', borderWidth: 1, borderColor: chipColor + '55', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                    <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: chipColor }}>{chipLabel}</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <Text style={[styles.cardLabel, { color: theme.textMuted, marginBottom: 0 }]}>SMART TIPS</Text>
+                    <TooltipIcon tooltipKey="smart_tip" size={14} />
+                  </View>
+                </View>
+                <Animated.View style={{ opacity: tipOpacity }}>
+                  <Text style={{ fontSize: 15, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, lineHeight: 21, marginBottom: 6 }}>{homeTip.title}</Text>
+                  <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 18, marginBottom: 12 }} numberOfLines={3}>{homeTip.body}</Text>
+                </Animated.View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlueRaw }}>View in Effort vs Results</Text>
+                    <Ionicons name="chevron-forward" size={12} color={theme.accentBlueRaw} />
+                  </View>
+                  {homeTips.length > 1 && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                      {homeTips.map((_, i) => (
+                        <View key={i} style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: i === tipIndex ? theme.accentBlueRaw : theme.textMuted + '40' }} />
+                      ))}
+                      <TouchableOpacity
+                        onPress={(e) => { e.stopPropagation(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); advanceTip(); }}
+                        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                        style={{ padding: 4, marginLeft: 2 }}
+                      >
+                        <Ionicons name="chevron-forward" size={14} color={theme.accentBlueRaw} />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
+        );
+      }
       case 'calories':        return renderCaloriesCard();
       case 'macros':          return renderMacrosCard();
       case 'water':           return renderWaterCard();

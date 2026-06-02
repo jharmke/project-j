@@ -1195,6 +1195,13 @@ export async function computeAndStoreSmartTips(): Promise<SmartTipsStore> {
   ]);
 
   const store: SmartTipsStore = existingStore ?? { ...EMPTY_STORE };
+
+  // Compute once per day. If already computed today, return stored tips as-is.
+  // Recomputing same-day fires cooldowns and wipes active tips on repeated EvR opens.
+  if (store.lastComputed && store.lastComputed.startsWith(todayKey) && store.activeTips.length > 0) {
+    return store;
+  }
+
   const workoutState: any = workoutRaw ? JSON.parse(workoutRaw) : {};
 
   const allDays = await loadWindowDays(todayKey, ctx, workoutState);

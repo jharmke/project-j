@@ -1798,6 +1798,24 @@ export default function SettingsScreen() {
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Alert.alert('Reset Smart Tips Cache', 'Clears the stored tips and all cooldowns so the engine recomputes fresh on next EvR open. Use this to test tip rendering. Your logged data is not affected.', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Reset', style: 'destructive', onPress: async () => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                  await AsyncStorage.removeItem('pj_smart_tips');
+                  Alert.alert('Done', 'Smart Tips cache cleared. Open Effort vs Results to recompute.');
+                }},
+              ]);
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Reset Smart Tips Cache</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Clears tips and cooldowns. Forces fresh recompute on next EvR open.</Text>
+              </View>
+              <Ionicons name="bulb-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               Alert.alert('Clear Food History', 'This will remove all logged food entries from the last 90 days. Water, steps, sleep, and weight data will not be affected.', [
                 { text: 'Cancel', style: 'cancel' },
                 { text: 'Clear', style: 'destructive', onPress: async () => {

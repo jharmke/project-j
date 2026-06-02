@@ -495,22 +495,6 @@ export default function DiagnosticReportViewScreen() {
               {report.macros && <MacroCard f={report.macros} isMindful={isMindful} theme={t} shadowStyle={shadowStyle} />}
               {report.sleep && <SleepCard f={report.sleep} isMindful={isMindful} theme={t} shadowStyle={shadowStyle} />}
 
-              {/* Smart Tips: domain coaching (single-signal, free) */}
-              {(() => {
-                const domainTips = (smartTips?.activeTips ?? []).filter(tip => !isCrossSignalRule(tip.ruleId));
-                if (!domainTips.length) return null;
-                return (
-                  <View ref={suggestionsRef} collapsable={false}>
-                    <Text style={[styles.sectionLabel, { color: t.textMuted }]}>
-                      {isMindful ? 'PATTERNS AND WINS' : 'SMART TIPS'}
-                    </Text>
-                    {domainTips.map(tip => (
-                      <SmartTipCard key={tip.id} tip={tip} theme={t} shadowStyle={shadowStyle} />
-                    ))}
-                  </View>
-                );
-              })()}
-
               {/* Smart Tips: cross-signal insight cards (gated) */}
               {(() => {
                 const insightTips = (smartTips?.activeTips ?? [])

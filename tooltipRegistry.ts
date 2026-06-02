@@ -282,6 +282,26 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     ],
   },
   {
+    key: 'smart_tip',
+    category: 'Reports',
+    title: 'Smart Tip',
+    body: 'Smart Tips are pattern-based coaching observations drawn from your logged data over the past 7 to 14 days. They read your patterns across protein, hydration, sleep, and activity, then surface the one finding most relevant to you right now.\n\nThe tip here is your highest-priority observation today. Tap the card to open Effort vs Results and see the full picture behind it.\n\nTips update once per day as your data changes. The more consistently you log, the more accurate and specific the tips become.',
+    definitions: [
+      {
+        term: 'Pattern tips',
+        explanation: 'Fire when a single metric has been consistently off target across most of the last 7 days. Examples: protein under goal, water goal missed most days, sleep scores low.',
+      },
+      {
+        term: 'Positive tips',
+        explanation: 'Appear when something is going consistently well. Hitting your water goal 7 days straight, strong sleep scores, activity streak. The system notices wins, not just gaps.',
+      },
+      {
+        term: 'Cross-signal insights',
+        explanation: 'The most valuable tier. These require enough data to detect a correlation between two signals. For example, sleep scores consistently lower after low-protein days. They take more time and logging to unlock.',
+      },
+    ],
+  },
+  {
     key: 'streaks_card',
     tutorialId: 'streaks',
     category: 'Habits',

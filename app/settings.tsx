@@ -1884,6 +1884,9 @@ export default function SettingsScreen() {
                   const uid = auth.currentUser?.uid;
                   if (!uid) { Alert.alert('Not signed in'); return; }
                   try {
+                    // Safety: push any local-only data up BEFORE wiping, so a key that
+                    // never synced (or is brand new) cannot be lost by the wipe-and-restore.
+                    await uploadAllLocal();
                     const allKeys = await AsyncStorage.getAllKeys();
                     const pjKeys = allKeys.filter(k => k.startsWith('pj_'));
                     if (pjKeys.length > 0) await AsyncStorage.multiRemove(pjKeys);

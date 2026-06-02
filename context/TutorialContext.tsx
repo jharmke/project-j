@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { storageSet } from '../utils/storage';
 import { router } from 'expo-router';
 import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
 import { View } from 'react-native';
@@ -214,7 +215,7 @@ async function markTutorialSeen(id: string) {
     const raw = await AsyncStorage.getItem('pj_tutorials');
     const data = raw ? JSON.parse(raw) : {};
     data[id] = { seen: true, completedAt: new Date().toISOString() };
-    await AsyncStorage.setItem('pj_tutorials', JSON.stringify(data));
+    await storageSet('pj_tutorials', JSON.stringify(data));
   } catch {}
 }
 

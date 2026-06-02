@@ -675,7 +675,7 @@ export default function SettingsScreen() {
           if (Object.keys(patch).length > 0) updates.push([key, JSON.stringify({ ...data, ...patch })]);
         } catch {}
       }
-      if (updates.length > 0) await AsyncStorage.multiSet(updates);
+      for (const [k, v] of updates) await storageSet(k, v);
     } catch {}
   };
 

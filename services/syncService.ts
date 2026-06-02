@@ -12,6 +12,9 @@ const RESTORE_GATE_KEY = 'pj_fresh_restore_done';
 function shouldSync(key: string): boolean {
   if (!key.startsWith('pj_')) return false;
   if (key === RESTORE_GATE_KEY) return false;
+  // Journal entries live under a pj_bible_ key but are precious user data, not the
+  // re-fetchable chapter cache the exclude list targets, so force them to sync.
+  if (key === 'pj_bible_reflections') return true;
   return !EXCLUDE_PREFIXES.some(p => key.startsWith(p));
 }
 

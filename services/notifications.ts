@@ -1,6 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import { storageSet } from '../utils/storage';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -75,7 +76,7 @@ export const loadNotificationSettings = async (): Promise<NotificationSettings> 
 };
 
 export const saveNotificationSettings = async (s: NotificationSettings) => {
-  await AsyncStorage.setItem('pj_notification_settings', JSON.stringify(s));
+  await storageSet('pj_notification_settings', JSON.stringify(s));
 };
 
 // ── Permission ────────────────────────────────────────────────────────────────

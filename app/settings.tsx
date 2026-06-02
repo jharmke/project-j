@@ -17,7 +17,7 @@ import { ACHIEVEMENTS } from '../achievementData';
 import { collection, getDocs } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { app, auth, db, saveToFirebase } from '../firebaseConfig';
-import { uploadAllLocal } from '../services/syncService';
+import { shouldSync, uploadAllLocal } from '../services/syncService';
 import { storageSet } from '../utils/storage';
 import { TOOLTIP_REGISTRY } from '../tooltipRegistry';
 import TooltipModal from '../components/TooltipModal';
@@ -1952,11 +1952,21 @@ export default function SettingsScreen() {
               const uid = auth.currentUser?.uid;
               if (!uid) { Alert.alert('Not signed in'); return; }
               const allKeys = await AsyncStorage.getAllKeys();
-              const localCount = allKeys.filter(k => k.startsWith('pj_') && !k.startsWith('pj_bible_')).length;
+              const shouldBe = allKeys.filter(k => shouldSync(k));
               const snap = await getDocs(collection(db, 'users', uid, 'store'));
-              const fsCount = snap.size;
-              const status = localCount === fsCount ? '✓ In sync' : '⚠ Mismatch';
-              Alert.alert('Sync Check', `Local: ${localCount} keys\nFirestore: ${fsCount} docs\n\n${status}`);
+              const cloudIds = new Set<string>();
+              snap.forEach(d => cloudIds.add(d.id));
+              const safeId = (k: string) => k.replace(/\//g, '_');
+              const missing = shouldBe.filter(k => !cloudIds.has(safeId(k)));
+              const journalUp = cloudIds.has('pj_bible_reflections');
+              if (missing.length === 0) {
+                const extra = snap.size - shouldBe.length;
+                Alert.alert('Backup Check', `All ${shouldBe.length} keys that should back up are in the cloud.\n\nJournal: ${journalUp ? 'backed up' : 'NOT in cloud'}\n\nThe cloud also holds ${extra} extra doc(s) for things removed locally. Harmless.`);
+              } else {
+                const list = missing.slice(0, 10).join('\n');
+                const more = missing.length > 10 ? `\n...and ${missing.length - 10} more` : '';
+                Alert.alert('Backup Check', `${missing.length} key(s) NOT backed up yet:\n${list}${more}\n\nTap Upload All Data to back them up.`);
+              }
             }}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowTitle, { color: theme.accentBlue }]}>Check Sync Status</Text>

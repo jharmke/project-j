@@ -9,7 +9,7 @@ const EXCLUDE_PREFIXES = ['pj_bible_'];
 // install has already run restoreIfFresh so we don't repeat it on every cold launch.
 const RESTORE_GATE_KEY = 'pj_fresh_restore_done';
 
-function shouldSync(key: string): boolean {
+export function shouldSync(key: string): boolean {
   if (!key.startsWith('pj_')) return false;
   if (key === RESTORE_GATE_KEY) return false;
   // Journal entries live under a pj_bible_ key but are precious user data, not the

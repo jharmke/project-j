@@ -1,90 +1,184 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import { defineSecret } from 'firebase-functions/params';
 import * as admin from 'firebase-admin';
+import Anthropic from '@anthropic-ai/sdk';
+import { screenForCrisis } from './crisis';
+import { buildSystemPrompt, FaithTier } from './faithSystemPrompt';
 
-// NOTE: admin.initializeApp() is already called once in index.ts. Do NOT call it again
-// here (calling it twice throws). This module only uses admin.firestore() at runtime,
-// inside the handler, so initialization has always happened by the time it runs.
+// NOTE: admin.initializeApp() is already called once in index.ts. Do NOT call it again here.
 //
-// Faith AI companion: Piece 3, the server-side gatekeeping (auth + per-user daily cap).
-// The actual AI call, the server-side crisis re-screen, and verse verification handoff
-// are added in Piece 4 where the stub is below. No Anthropic key and no cost yet.
-// No double dashes anywhere (project rule).
+// Faith AI companion: Pieces 3 + 4. Order of operations on every message:
+//   1. Auth: only signed-in users.
+//   2. Server-side crisis re-screen (backstop). On a hit, short-circuit to a crisis flag
+//      BEFORE counting or calling the AI, so a crisis never burns a message and is never
+//      blocked by the daily cap. The CLIENT renders the hardcoded crisis response.
+//   3. Per-user daily cap (atomic check-and-increment in Firestore).
+//   4. The Anthropic call, carrying the system prompt for the user's faith tier.
+//   5. AI crisis backstop: if the model flags a crisis it caught, refund the message and
+//      return the crisis flag (the client shows the same hardcoded crisis response).
+//   6. On any AI failure, refund the message and return the graceful "resting" fallback.
+// Verse verification runs CLIENT-SIDE on the returned reply (utils/faithVerse.ts).
+// Chat content is never logged. No double dashes anywhere (project rule).
 
-// Free tier: messages per user per day. Pro (about 50/day) does not exist yet because
-// no subscription system is built, so EVERYONE is free for now. When Pro ships, this
-// becomes a one-line lookup of the user's tier.
+const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY');
+
+// Free tier messages per user per day. Pro (about 50/day) does not exist yet (no
+// subscription system), so EVERYONE is free for now; this becomes a tier lookup later.
 const FREE_DAILY_CAP = 5;
 
-// Server-side date as a YYYY-MM-DD key, in UTC. Using the SERVER date (not a date sent
-// by the app) is deliberate: a client-supplied date could be spoofed to reset the cap.
-// Tradeoff flagged for build: the daily reset happens at UTC midnight, not the user's
-// local midnight. Acceptable for a US launch; revisit if it feels off in testing.
+// Cheap, fast model (Justin's intentional cost choice; tune up to Sonnet 4.6 if quality
+// needs it). Alias form, no date suffix.
+const MODEL = 'claude-haiku-4-5';
+const MAX_TOKENS = 800;            // concise replies; bounds cost and latency
+const MAX_HISTORY_TURNS = 12;      // cap the conversation sent to the API (cost + abuse)
+const CRISIS_TAG = '[[CRISIS]]';
+
 function todayKey(): string {
-  return new Date().toISOString().slice(0, 10);
+  return new Date().toISOString().slice(0, 10); // server UTC date; not client-spoofable
 }
 
-// The counter lives in a TOP-LEVEL collection the app has no security-rule access to, so
-// only the admin SDK (this function) can read or write it. This makes the cap impossible
-// to bypass from the client regardless of the users/{uid} rules. See PRIVACY AND SECURITY
-// in SPEC_faith_ai.md (Firestore rules still need a console verification for no permissive
-// catch-all, tracked separately).
 function usageDoc(uid: string) {
   return admin.firestore().collection('ai_usage').doc(uid);
 }
 
-export const faithCompanion = onCall({ maxInstances: 10 }, async (request) => {
-  // 1. Auth: only signed-in users. Blocks anonymous abuse.
-  if (!request.auth) {
-    throw new HttpsError('unauthenticated', 'Please sign in to use the companion.');
-  }
-  const uid = request.auth.uid;
-
-  const message = typeof request.data?.message === 'string' ? request.data.message.trim() : '';
-  if (!message) {
-    throw new HttpsError('invalid-argument', 'Message is required.');
-  }
-
-  // (Piece 4 inserts the server-side crisis re-screen here, BEFORE counting or calling AI.)
-
-  // 2. Per-user daily cap: atomic check-and-increment so concurrent calls cannot race
-  // past the limit. Counts a turn only when one is actually about to be served.
+// Best-effort refund of one reserved message (AI failed or turned out to be a crisis).
+async function refundMessage(uid: string): Promise<void> {
   const today = todayKey();
   const ref = usageDoc(uid);
-
-  const cap = await admin.firestore().runTransaction(async (tx) => {
-    const snap = await tx.get(ref);
-    const data = snap.exists ? (snap.data() as { date?: string; count?: number }) : {};
-    const count = data.date === today ? (data.count ?? 0) : 0;
-
-    if (count >= FREE_DAILY_CAP) {
-      return { allowed: false, used: count };
-    }
-    tx.set(
-      ref,
-      { date: today, count: count + 1, updatedAt: admin.firestore.FieldValue.serverTimestamp() },
-      { merge: true },
-    );
-    return { allowed: true, used: count + 1 };
-  });
-
-  if (!cap.allowed) {
-    // Friendly, never silent (matches the limit-hit UX in the spec). The Pro nudge for
-    // free users is added on the app side where this reason is shown.
-    return {
-      ok: false,
-      reason: 'daily_limit',
-      cap: FREE_DAILY_CAP,
-      used: cap.used,
-      message: "You're out of messages for today. They reset tomorrow.",
-    };
+  try {
+    await admin.firestore().runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      const data = snap.exists ? (snap.data() as { date?: string; count?: number }) : {};
+      if (data.date === today && (data.count ?? 0) > 0) {
+        tx.set(ref, { date: today, count: (data.count ?? 0) - 1 }, { merge: true });
+      }
+    });
+  } catch {
+    /* non-fatal: a missed refund only costs the user one message */
   }
+}
 
-  // 3. Stub. Piece 4 replaces this with: server-side crisis re-screen, the Anthropic call
-  // carrying the system prompt, and the verse-verification handoff to the client.
-  return {
-    ok: true,
-    used: cap.used,
-    cap: FREE_DAILY_CAP,
-    reply: '[Faith companion is not connected to the AI yet. Piece 4 wires the Anthropic call here.]',
-  };
-});
+export const faithCompanion = onCall(
+  { secrets: [ANTHROPIC_API_KEY], maxInstances: 10 },
+  async (request) => {
+    // 1. Auth.
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Please sign in to use the companion.');
+    }
+    const uid = request.auth.uid;
+
+    const data = (request.data ?? {}) as {
+      message?: unknown;
+      tier?: unknown;
+      history?: unknown;
+    };
+    const message = typeof data.message === 'string' ? data.message.trim() : '';
+    if (!message) {
+      throw new HttpsError('invalid-argument', 'Message is required.');
+    }
+    // Default to the gentler Exploring posture if unspecified (never presume belief).
+    const tier: FaithTier = data.tier === 'rooted' ? 'rooted' : 'exploring';
+
+    // 2. Server-side crisis re-screen (backstop). Short-circuit before counting or calling AI.
+    if (screenForCrisis(message)) {
+      return { ok: true, crisis: true };
+    }
+
+    // 3. Per-user daily cap: atomic check-and-increment so concurrent calls cannot race past it.
+    const today = todayKey();
+    const ref = usageDoc(uid);
+    const cap = await admin.firestore().runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      const d = snap.exists ? (snap.data() as { date?: string; count?: number }) : {};
+      const count = d.date === today ? (d.count ?? 0) : 0;
+      if (count >= FREE_DAILY_CAP) {
+        return { allowed: false, used: count };
+      }
+      tx.set(
+        ref,
+        { date: today, count: count + 1, updatedAt: admin.firestore.FieldValue.serverTimestamp() },
+        { merge: true },
+      );
+      return { allowed: true, used: count + 1 };
+    });
+
+    if (!cap.allowed) {
+      return {
+        ok: false,
+        reason: 'daily_limit',
+        cap: FREE_DAILY_CAP,
+        used: cap.used,
+        message: "You're out of messages for today. They reset tomorrow.",
+      };
+    }
+
+    // 4. Build the multi-turn message list (history, capped) and call Anthropic.
+    const rawHistory = Array.isArray(data.history) ? data.history : [];
+    const history = rawHistory
+      .filter(
+        (h): h is { role: 'user' | 'assistant'; text: string } =>
+          !!h &&
+          typeof (h as { text?: unknown }).text === 'string' &&
+          ((h as { role?: unknown }).role === 'user' || (h as { role?: unknown }).role === 'assistant'),
+      )
+      .slice(-MAX_HISTORY_TURNS)
+      .map((h) => ({ role: h.role, content: h.text } as Anthropic.MessageParam));
+
+    const messages: Anthropic.MessageParam[] = [
+      ...history,
+      { role: 'user', content: message },
+    ];
+
+    const client = new Anthropic({ apiKey: ANTHROPIC_API_KEY.value() });
+
+    let replyText = '';
+    try {
+      const response = await client.messages.create({
+        model: MODEL,
+        max_tokens: MAX_TOKENS,
+        system: [
+          {
+            type: 'text',
+            text: buildSystemPrompt(tier),
+            cache_control: { type: 'ephemeral' }, // caches when the prefix clears the model threshold
+          },
+        ],
+        messages,
+      });
+      replyText = response.content
+        .filter((b): b is Anthropic.TextBlock => b.type === 'text')
+        .map((b) => b.text)
+        .join('')
+        .trim();
+    } catch (err) {
+      // Log type only, never chat content (privacy spec).
+      const status = (err as { status?: number })?.status;
+      console.error('faithCompanion Anthropic call failed', { status, name: (err as Error)?.name });
+      await refundMessage(uid);
+      return {
+        ok: false,
+        reason: 'unavailable',
+        message: 'The companion is resting. Please try again in a little bit.',
+      };
+    }
+
+    // 5. AI crisis backstop: model flagged a crisis the screens missed. Refund (a crisis
+    // never costs a message) and let the client show the hardcoded crisis response.
+    if (replyText.includes(CRISIS_TAG)) {
+      await refundMessage(uid);
+      return { ok: true, crisis: true };
+    }
+
+    // 6. Empty reply is treated as a soft failure (refund + graceful fallback).
+    if (!replyText) {
+      await refundMessage(uid);
+      return {
+        ok: false,
+        reason: 'unavailable',
+        message: 'The companion is resting. Please try again in a little bit.',
+      };
+    }
+
+    return { ok: true, reply: replyText, used: cap.used, cap: FREE_DAILY_CAP };
+  },
+);

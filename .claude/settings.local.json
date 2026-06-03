@@ -43,7 +43,18 @@
       "Bash(awk NR>=1 && NR<=30 *)",
       "Bash(awk NR>=88 && NR<=120 *)",
       "Bash(awk NR>=1820 && NR<=1858 *)",
-      "Bash(Select-String -Pattern \"Day Score|Summary|tip|Tip\")"
+      "Bash(Select-String -Pattern \"Day Score|Summary|tip|Tip\")",
+      "PowerShell(npx tsc --noEmit)",
+      "PowerShell(git add app/\\(tabs\\)/log.tsx)",
+      "Bash(npm --version)",
+      "Bash(firebase --version)",
+      "PowerShell(firebase functions:list *)",
+      "Bash(node --experimental-strip-types _crisistest.ts)",
+      "Bash(node --experimental-strip-types _versetest.ts)",
+      "Bash(npm run *)",
+      "Skill(claude-api)",
+      "PowerShell(npm *)",
+      "PowerShell(node -e \"require\\('./functions/lib/index.js'\\); console.log\\('MODULE LOADED OK'\\); process.exit\\(0\\)\")"
     ]
   }
 }

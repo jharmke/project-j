@@ -12,7 +12,7 @@ import { useTheme } from '../theme';
  * profile name, or a person icon when no name is set. Photo upload waits on
  * the Firebase Storage migration. Tapping opens the Profile screen.
  */
-export default function HeaderAvatar() {
+export default function HeaderAvatar({ inert = false }: { inert?: boolean }) {
   const { theme } = useTheme();
   const [name, setName] = useState('');
 
@@ -40,9 +40,10 @@ export default function HeaderAvatar() {
 
   return (
     <TouchableOpacity
-      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.navigate('/profile'); }}
-      activeOpacity={0.8}
-      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      onPress={inert ? undefined : () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.navigate('/profile'); }}
+      disabled={inert}
+      activeOpacity={inert ? 1 : 0.8}
+      hitSlop={inert ? undefined : { top: 8, bottom: 8, left: 8, right: 8 }}
       style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: theme.bgCard, borderWidth: 1.5, borderColor: theme.accentBlueBorder, alignItems: 'center', justifyContent: 'center', shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 6, elevation: 4 }}>
       {initials
         ? <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 0.5 }}>{initials}</Text>

@@ -62,6 +62,46 @@ function LabelAnimated({ translate, opacity, label, color }: { translate: any, o
   return <Animated.Text style={[{ fontSize: 9, fontFamily: 'DMSans_600SemiBold', letterSpacing: 0.5, textTransform: 'uppercase', color }, style]}>{label}</Animated.Text>;
 }
 
+function FaithButton({ isFocused, scale, faithPulse, labelOpacity, labelTranslate, onPress, fishColor, amber }: { isFocused: boolean, scale: any, faithPulse: any, labelOpacity: any, labelTranslate: any, onPress: () => void, fishColor: string, amber: string }) {
+  const fishScaleStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+  // The fish itself glows: an amber copy of the fish sits behind the crisp one
+  // with an amber shadow, and only its opacity breathes, so the glow traces the
+  // fish shape (no disc). Glow shows ONLY when the tab is active (the inactive
+  // glow was tried and removed: it read poorly on light themes). Active fish
+  // gets the gold glow + a gold stroke; inactive is a plain neutral fish like
+  // the other tabs.
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: isFocused ? 0.5 + faithPulse.value * 0.5 : 0,
+  }));
+  return (
+    <TouchableOpacity style={styles.tab} onPress={onPress} activeOpacity={0.8}>
+      <Animated.View style={[styles.tabInner, fishScaleStyle]}>
+        <View style={{ width: 22, height: 22, alignItems: 'center', justifyContent: 'center' }}>
+          {/* glow layer: an amber copy of the fish with an amber shadow, behind
+              the crisp fish; the glow traces the fish shape, never a disc */}
+          <Animated.View style={[{
+            position: 'absolute',
+            shadowColor: amber,
+            shadowOffset: { width: 0, height: 0 },
+            shadowRadius: 6,
+            shadowOpacity: 1,
+          }, glowStyle]}>
+            <FaithIconFish size={22} color={amber} strokeWidth={3.6} />
+          </Animated.View>
+          {/* crisp fish on top. Active = amber/gold (faith identity), not the
+              generic textPrimary black the other tabs use; inactive = neutral. */}
+          <FaithIconFish size={22} color={isFocused ? amber : fishColor} strokeWidth={1.8} />
+        </View>
+        {isFocused && (
+          <LabelAnimated translate={labelTranslate} opacity={labelOpacity} label="Faith" color={isFocused ? amber : fishColor} />
+        )}
+      </Animated.View>
+    </TouchableOpacity>
+  );
+}
+
 export default function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
@@ -106,6 +146,7 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
 
   const pillOpacity = useSharedValue(1);
   const homePulse = useSharedValue(0.4);
+  const faithPulse = useSharedValue(0); // breathing glow for the Faith tab fish
 
   useEffect(() => {
     loadTabSettings();
@@ -150,6 +191,12 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
   useEffect(() => {
     homePulse.value = withRepeat(
       withTiming(1, { duration: 1800 }),
+      -1,
+      true
+    );
+    // Slower, calmer breath for the faith glow, oscillating 0 -> 1 -> 0.
+    faithPulse.value = withRepeat(
+      withTiming(1, { duration: 2200 }),
       -1,
       true
     );
@@ -208,6 +255,22 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
               bgCard={theme.bgCard}
               textSecondary={theme.textSecondary}
               macroProtein={theme.accentBlueRaw}
+            />
+          );
+        }
+
+        if (tab.isFaith) {
+          return (
+            <FaithButton
+              key={tab.name}
+              isFocused={isFocused}
+              scale={scales[i]}
+              faithPulse={faithPulse}
+              labelOpacity={labelOpacities[i]}
+              labelTranslate={labelTranslates[i]}
+              onPress={() => handlePress(tab.name, i)}
+              fishColor={color}
+              amber={theme.accentAmber}
             />
           );
         }

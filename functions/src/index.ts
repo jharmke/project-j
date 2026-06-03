@@ -7,6 +7,10 @@ import * as nodemailer from 'nodemailer';
 
 admin.initializeApp();
 
+// Faith AI companion (Piece 3 gatekeeping; Piece 4 adds the AI call). Defined in its own
+// file to keep this entry clean and avoid disturbing the functions above.
+export { faithCompanion } from './faithCompanion';
+
 const APPLE_PRIVATE_KEY = defineSecret('APPLE_PRIVATE_KEY');
 const GMAIL_APP_PASSWORD = defineSecret('GMAIL_APP_PASSWORD');
 

@@ -73,15 +73,17 @@ const SELF_HARM: RegExp[] = [
   /\bend(ing)? (my life|it all)\b/,
   /\btake my own life\b/,                                  // not "take my life" (hymn)
   /\bsuicid(e|al)\b/,
-  /\b(want|wanting|wanna) to die\b(?!\s+(to|unto)\b)/,     // excludes "die to self/sin"
-  /\b(want|wanting|wanna) to be dead\b/,
-  /\bwish i (was|were|wasn'?t) (dead|here|born|alive)\b/,
+  /\b(want(ing)? to|wanna) die\b(?!\s+(to|unto)\b)/,     // excludes "die to self/sin"
+  /\b(want(ing)? to|wanna) be dead\b/,
+  /\bwish i (was|were|wasn'?t) dead\b/,
+  /\bwish i wasn'?t (here|alive|born)\b/,                  // negative forms only; "wish I was born rich" stays quiet
+  /\bwish i('d| had| was| were)? never (been )?born\b/,    // "wish I had never been born"
   /\bbetter off (dead|without me)\b/,
   /\bno reason to (live|go on|be here)\b/,
   /\bno point in living\b/,
   /\bnot worth living\b/,
   /\bdon'?t want to (be here|live|exist|wake up|go on)\b/,
-  /\b(want|wanna|wanting|going) to give up on (life|living)\b/,
+  /\b(want(ing)? to|wanna|going to) give up on (life|living)\b/,
   /\bcan'?t (go on|keep going|do this anymore|take (it|this) anymore)\b(?!\s+without\b)/, // not "...without You"
   /\bself[ -]?harm\b/,
   /\b(want|wanna|going|trying|thinking about|need|tempted) (to )?(hurt|harm|cut) my ?self\b/, // intent-anchored, excludes injury

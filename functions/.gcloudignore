@@ -1,0 +1,11 @@
+# Files that must NOT ship inside the deployed Cloud Function bundle.
+# node_modules is reinstalled in the cloud from package.json, never uploaded.
+node_modules/
+.git/
+.gitignore
+*.log
+firebase-debug*.log
+
+# Local-only red-team harness and its output (run on a dev machine, never part of the function).
+_redteam_ai.cjs
+redteam_ai_results.txt

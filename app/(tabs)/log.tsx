@@ -982,16 +982,16 @@ export default function LogScreen() {
           <HeaderAvatar />
           <View style={{ flex: 1 }}>
             <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>Food Log</Text>
-            <View ref={dateNavRef} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
+            <View ref={dateNavRef} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 1, height: 12, overflow: 'visible' }}>
               <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openCalPicker(); }} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
                 <Text style={{ fontSize: 9, color: isToday ? theme.textMuted : theme.accentAmber, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>
                   {formatActiveDate()}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); goToPrevDay(); }} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}>
+              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); goToPrevDay(); }} hitSlop={{ top: 14, bottom: 14, left: 8, right: 8 }}>
                 <Ionicons name="chevron-back" size={16} color={theme.accentBlue} />
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); goToNextDay(); }} disabled={isToday} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}>
+              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); goToNextDay(); }} disabled={isToday} hitSlop={{ top: 14, bottom: 14, left: 8, right: 8 }}>
                 <Ionicons name="chevron-forward" size={16} color={isToday ? theme.textDim : theme.accentBlue} />
               </TouchableOpacity>
             </View>

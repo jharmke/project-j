@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FaithIconFish from '../../components/FaithIconFish';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import CompanionFAB from '../../components/CompanionFAB';
+import CompanionChat from '../../components/CompanionChat';
 import { useTheme } from '../../theme';
 
 /**
@@ -16,6 +18,7 @@ import { useTheme } from '../../theme';
 export default function FaithScreen() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const [chatOpen, setChatOpen] = useState(false);
   const now = new Date();
 
   return (
@@ -42,7 +45,8 @@ export default function FaithScreen() {
         </Text>
       </View>
 
-      <CompanionFAB />
+      <CompanionFAB onPress={() => setChatOpen(true)} />
+      <CompanionChat visible={chatOpen} onClose={() => setChatOpen(false)} />
     </LinearGradient>
   );
 }

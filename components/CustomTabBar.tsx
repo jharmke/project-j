@@ -13,17 +13,23 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
+import FaithIconFish from './FaithIconFish';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const TAB_BAR_HEIGHT = 64;
 
-const TABS = [
+// The first four tabs never change. The FIFTH slot is tier-aware: Faith for
+// Rooted/Exploring users, Profile for "Not Right Now" users. Keeping it always
+// 5 buttons means the pill geometry (SCREEN_WIDTH / 5) never has to handle a
+// 4-tab case. Profile stays reachable for Faith users via the header avatar.
+const BASE_TABS = [
   { name: 'log', label: 'Log', icon: 'restaurant', iconActive: 'restaurant' },
   { name: 'workout', label: 'Workout', icon: 'barbell-outline', iconActive: 'barbell' },
   { name: 'index', label: 'Home', icon: 'home', iconActive: 'home', isHome: true },
   { name: 'stats', label: 'Stats', icon: 'bar-chart-outline', iconActive: 'bar-chart' },
-  { name: 'profile', label: 'Profile', icon: 'person-outline', iconActive: 'person' },
 ];
+const PROFILE_TAB = { name: 'profile', label: 'Profile', icon: 'person-outline', iconActive: 'person' };
+const FAITH_TAB = { name: 'faith', label: 'Faith', isFaith: true };
 
 function HomeButton({ isFocused, scale, homePulse, onPress, bgCard, textSecondary, macroProtein }: { isFocused: boolean, scale: any, homePulse: any, onPress: () => void, bgCard: string, textSecondary: string, macroProtein: string }) {
   const animStyle = useAnimatedStyle(() => ({
@@ -61,22 +67,39 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
   const { theme } = useTheme();
   const hapticsEnabled = useRef(true);
   const [activeIndex, setActiveIndex] = useState(state.index);
+  const [showFaith, setShowFaith] = useState(true); // faith on by default; corrected after settings load
   const pillX = useSharedValue(0);
   const tabWidth = SCREEN_WIDTH / 5;
 
-  useEffect(() => {
+  // Fifth slot is tier-aware. Always exactly 5 buttons.
+  const tabs = [...BASE_TABS, showFaith ? FAITH_TAB : PROFILE_TAB];
+
+  // Read tab settings (haptics + faith tier). Called on mount and on every tab
+  // navigation, so a Faith Journey change in Settings swaps the 5th slot the
+  // moment the user navigates back, no restart needed. setShowFaith bails out
+  // when the value is unchanged, so the per-nav read costs nothing extra.
+  const loadTabSettings = () => {
     AsyncStorage.getItem('pj_settings').then(saved => {
       if (saved) {
         const data = JSON.parse(saved);
         if (data.hapticsEnabled !== undefined) hapticsEnabled.current = data.hapticsEnabled;
+        setShowFaith(data.faithJourney !== 'notrightnow');
+      } else {
+        setShowFaith(true);
       }
-    });
+    }).catch(() => {});
+  };
+
+  useEffect(() => {
+    loadTabSettings();
   }, []);
 
-  // Map router state index to our TABS order
+  // Map router state index to our tabs order. Returns -1 when the active route
+  // is NOT a visible bar button (e.g. a Faith user opening Profile via the
+  // header avatar), so the effects below can guard against it.
   const getTabsIndex = (routerIndex: number) => {
     const routeName = state.routes[routerIndex]?.name;
-    return TABS.findIndex(t => t.name === routeName);
+    return tabs.findIndex(t => t.name === routeName);
   };
 
   const currentTabsIndex = getTabsIndex(state.index);
@@ -85,7 +108,9 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
   const homePulse = useSharedValue(0.4);
 
   useEffect(() => {
+    loadTabSettings();
     const tabIdx = getTabsIndex(state.index);
+    if (tabIdx < 0) return; // on a non-bar screen; nothing to animate
     if (tabIdx !== 2) {
       labelOpacities[tabIdx].value = 0;
       labelOpacities[tabIdx].value = withTiming(1, { duration: 200 });
@@ -95,6 +120,12 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
   useEffect(() => {
     setActiveIndex(state.index);
     const tabIdx = getTabsIndex(state.index);
+    if (tabIdx < 0) {
+      // On a screen that is not a bar button (e.g. Profile for a Faith user).
+      // Hide the pill so no tab reads as active.
+      pillOpacity.value = withTiming(0, { duration: 150 });
+      return;
+    }
     const targetX = tabIdx * tabWidth + tabWidth / 2 - 36;
     if (tabIdx === 2) {
       // Going to home -- slide to home position and fade out
@@ -112,9 +143,9 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
     opacity: pillOpacity.value,
   }));
 
-  const scales = TABS.map(() => useSharedValue(1));
-  const labelTranslates = TABS.map(() => useSharedValue(8));
-  const labelOpacities = TABS.map(() => useSharedValue(0));
+  const scales = tabs.map(() => useSharedValue(1));
+  const labelTranslates = tabs.map(() => useSharedValue(8));
+  const labelOpacities = tabs.map(() => useSharedValue(0));
 
   useEffect(() => {
     homePulse.value = withRepeat(
@@ -158,7 +189,7 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
     <View style={[styles.container, { paddingBottom: insets.bottom, height: TAB_BAR_HEIGHT + insets.bottom, backgroundColor: theme.bgPrimary, borderTopColor: theme.borderCardTop }]}>
       <Animated.View style={[styles.pill, { backgroundColor: theme.borderSubtle, borderColor: theme.borderCard }, pillStyle]} />
 
-      {TABS.map((tab, i) => {
+      {tabs.map((tab, i) => {
         const routeIdx = state.routes.findIndex(r => r.name === tab.name);
         const isFocused = state.index === routeIdx;
         const color = isFocused ? theme.textPrimary : theme.textDim;
@@ -188,11 +219,15 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
             onPress={() => handlePress(tab.name, i)}
             activeOpacity={0.8}>
             <Animated.View style={[styles.tabInner, scaleStyle]}>
-              <Ionicons
-                name={(isFocused ? tab.iconActive : tab.icon) as any}
-                size={22}
-                color={color}
-              />
+              {tab.isFaith ? (
+                <FaithIconFish size={22} color={color} />
+              ) : (
+                <Ionicons
+                  name={(isFocused ? tab.iconActive : tab.icon) as any}
+                  size={22}
+                  color={color}
+                />
+              )}
               {isFocused && (
                 <LabelAnimated translate={labelTranslates[i]} opacity={labelOpacities[i]} label={tab.label} color={color} />
               )}

@@ -16,6 +16,7 @@ import { showCelebration } from '../../components/CelebrationOverlay';
 import { checkWorkoutAchievements, getCelebTier } from '../../achievementData';
 import { storageSet } from '../../utils/storage';
 import { useTheme } from '../../theme';
+import HeaderAvatar from '../../components/HeaderAvatar';
 import { useHealthKit } from '../../useHealthKit';
 import { BLANK_DAY, DEFAULT_TAGS, DayProgram, Exercise, Routine, TAG_COLOR_PALETTE, WorkoutTag, PRESET_ROUTINES } from '../../workoutData';
 import MuscleMap from '../../components/MuscleMap';
@@ -830,12 +831,14 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={[styles.container, { paddingTop: insets.top }]}>
         <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.headerLabel, { color: theme.textMuted }]}>PROJECT J</Text>
-            <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>Workout</Text>
-            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', marginTop: 1, letterSpacing: 2, textTransform: 'uppercase' }}>
-              {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-            </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+            <HeaderAvatar />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>Workout</Text>
+              <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', marginTop: 1, letterSpacing: 2, textTransform: 'uppercase' }}>
+                {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+              </Text>
+            </View>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/workout-library'); }} style={[styles.libraryBtn, { height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>

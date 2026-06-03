@@ -10,6 +10,7 @@ import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-nativ
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { DayDetailContent } from '../day-detail';
 import { useTheme } from '../../theme';
+import HeaderAvatar from '../../components/HeaderAvatar';
 import { CardPeriod, ChartType, DATA_KEY_CATEGORIES, DATA_KEY_META, DataKey, DEFAULT_STATS_CARDS, StatsCard, availableChartTypes, generateCardId, loadStatsCards, saveStatsCards } from '../../statsCardRegistry';
 import { ToastRenderer, useToast } from '../../components/Toast';
 import { EMPTY_TREND_DATA, TrendData, fetchTrendData as fetchTrendDataUtil, offsetToDateKey, computeDayNet, buildDailyBmrMap } from '../../utils/statsData';
@@ -1401,12 +1402,14 @@ export default function StatsScreen() {
   return (
     <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
       <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.headerLabel, { color: theme.textMuted }]}>PROJECT J</Text>
-          <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>Stats</Text>
-          <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', marginTop: 1, letterSpacing: 2, textTransform: 'uppercase' }}>
-            {now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-          </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+          <HeaderAvatar />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>Stats</Text>
+            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', marginTop: 1, letterSpacing: 2, textTransform: 'uppercase' }}>
+              {now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+            </Text>
+          </View>
         </View>
         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
           <TouchableOpacity

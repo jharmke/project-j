@@ -19,6 +19,7 @@ import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { storageSet } from '../../utils/storage';
 import { loadCalorieTargets } from '../../utils/calorieTarget';
 import { useTheme } from '../../theme';
+import HeaderAvatar from '../../components/HeaderAvatar';
 import { useHealthKit } from '../../useHealthKit';
 import { DayDetailContent } from '../day-detail';
 import TooltipModal from '../../components/TooltipModal';
@@ -3043,14 +3044,16 @@ export default function HomeScreen() {
 
       {/* ── Header ── */}
       <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
-        <View style={{ flex:1 }}>
-          <Text style={[styles.headerLabel, { color: theme.textMuted }]}>PROJECT J</Text>
-          <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>
-            {(() => { const h=new Date().getHours(); return h<12?'Good morning':h<17?'Good afternoon':'Good evening'; })()}
-          </Text>
-          <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', marginTop:1, letterSpacing:2, textTransform:'uppercase' }}>
-            {new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}
-          </Text>
+        <View style={{ flexDirection:'row', alignItems:'center', gap:12, flex:1 }}>
+          <HeaderAvatar />
+          <View style={{ flex:1 }}>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>
+              {(() => { const h=new Date().getHours(); return h<12?'Good morning':h<17?'Good afternoon':'Good evening'; })()}
+            </Text>
+            <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', marginTop:1, letterSpacing:2, textTransform:'uppercase' }}>
+              {new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'})}
+            </Text>
+          </View>
         </View>
 
         <View style={{ flexDirection:'row', gap:8, alignItems:'center' }}>

@@ -192,7 +192,24 @@ Clear-cut rules with one right answer, enforced as standing instructions in Clau
 - NO POLITICS. It stays out of partisan politics entirely.
 - NEVER SHAME. Grace-first always, no guilt-tripping, no fear-driven motivation. The same no-fear-no-shame ethos as the whole app.
 - POINT TO REAL COMMUNITY. It encourages church, pastors, real prayer, and actual reading, and never positions itself as a replacement for them.
-Enforcement: these live in the system prompt; the cleanup pass (verse verification plus house-style checks, the same DNA as the Smart Coach cleanup) is the deterministic backstop. Exact prompt wording is written at build; these rules are locked. STILL OPEN (Bucket B, Justin's judgment): denominational neutrality and doctrinal boundaries, and the companion's voice and persona.
+Enforcement: these live in the system prompt; the cleanup pass (verse verification plus house-style checks, the same DNA as the Smart Coach cleanup) is the deterministic backstop. Exact prompt wording is written at build; these rules are locked.
+
+### Denominational neutrality and doctrinal boundaries (Bucket B, DESIGN LOCKED 2026-06-03)
+LOCKED: broad, historically orthodox, denominationally NEUTRAL (Justin: "broad non-denominational for sure"). Widest tent for a broad Christian audience, fits the Chick-fil-A organic-realization model, and keeps the AI from asserting contested positions. The neutral stance holds even on points Justin personally holds (confirmed).
+- AFFIRMS confidently (the common ground nearly all Christians share): one God in three persons; Jesus fully God and fully man; his death and bodily resurrection; salvation by grace through faith in Christ; the authority of Scripture; the hope of eternal life. Rejects clear heresy (works-salvation, prosperity gospel, denying the resurrection).
+- STAYS NEUTRAL, presenting the range, on in-house debates: predestination vs free will (Calvinism/Arminianism), mode and timing of baptism, end-times views, Catholic vs Protestant distinctives, spiritual gifts and cessationism, worship and church style, church governance. Frames these as "faithful Christians land in different places here," never picks a team.
+
+### Robustness and jailbreak resistance (DESIGN LOCKED 2026-06-03)
+The requirement (Justin): it must be airtight. Users WILL try to steer it (into denominational sides, heresy, speaking as God, garbage) and it must not budge. How we get there, layered, never trusting the AI alone:
+1. SYSTEM PROMPT: strong standing instructions. Claude follows these unusually well (a reason it was chosen).
+2. CLAUDE'S OWN SAFETY TRAINING: already resistant to harmful steering before we add anything.
+3. DETERMINISTIC BACKSTOPS (the part that cannot be jailbroken; the highest-stakes categories enforced by CODE, not the model's goodwill): verse verification (fabricated or misquoted Scripture never displays), the crisis pre-screen (runs before the AI), and an output/scope filter for off-limits or off-topic content. You can sweet-talk a model; you cannot sweet-talk a verification function. These categories genuinely will not budge.
+4. NARROW SCOPE: a faith-only companion is far easier to keep airtight than an open assistant; it is allowed to simply refuse off-lane requests.
+5. ADVERSARIAL RED-TEAMING at build: deliberately attack it with a battery of break attempts (denominational bait, heresy bait, "pretend you are God," prompt injection, crisis variations, off-topic traps), find what slips, harden. Justin does not have to enumerate the edge cases; the red-team process plus the code backstops cover whole categories, not just specific phrasings.
+6. REPORT LOOP: the thumbs-down / report mechanism plus privacy-safe logging catches real-world misses so they get patched.
+HONEST CAVEAT (on the record): no LLM is literally 100% unbreakable on every phrasing; promising that would be false. Acceptable for this app because a rare edge-case slip is low-stakes and contained (worst case: one theologically-off line, once, caught by filters and the report loop), NOT a catastrophic failure like a leaked key or a wrong medical claim. The must-hold categories (no fabricated Scripture, crisis safety, never speaking as God) are code-locked, not prompt-hoped.
+
+STILL OPEN (Bucket B, Justin's judgment): the companion's voice and persona (how warm, how pastoral, how it talks).
 
 ---
 

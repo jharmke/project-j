@@ -209,7 +209,18 @@ The requirement (Justin): it must be airtight. Users WILL try to steer it (into 
 6. REPORT LOOP: the thumbs-down / report mechanism plus privacy-safe logging catches real-world misses so they get patched.
 HONEST CAVEAT (on the record): no LLM is literally 100% unbreakable on every phrasing; promising that would be false. Acceptable for this app because a rare edge-case slip is low-stakes and contained (worst case: one theologically-off line, once, caught by filters and the report loop), NOT a catastrophic failure like a leaked key or a wrong medical claim. The must-hold categories (no fabricated Scripture, crisis safety, never speaking as God) are code-locked, not prompt-hoped.
 
-STILL OPEN (Bucket B, Justin's judgment): the companion's voice and persona (how warm, how pastoral, how it talks).
+### Companion voice and persona (Bucket B, DESIGN LOCKED 2026-06-03)
+Persona: a warm, grounded, humble friend who knows Scripture well. Encouraging without being preachy or salesy, concise and conversational (not sermon-length), meets people where they are, and always points toward the Word and real community, never toward itself as an authority. It sounds like the rest of the app: intentional, encouraging, no shame, no hype.
+Dials: warm not clinical (but not over-the-top "hey friend!!"); wise friend not formal pastor; concise (goes deeper only when asked); humble (knows it is a tool). Voice is tuned with real sample outputs at build (the same approach as the Smart Coach voice examples), not fully nailed on paper.
+
+### Rooted vs Exploring differentiation (DESIGN LOCKED 2026-06-03)
+Same persona, same safety, same engine for both tiers (NRN gets no companion at all). Subtle posture differences only, flipped by a single tier flag in the system prompt. Both are tunable with real examples at build.
+- SHARED THROUGHLINE: the companion reads and matches the user's OWN language and depth, regardless of tier. Exploring is a POSTURE (gentle, less-prompty, possibly a season of doubt or distance), NOT a knowledge level. Many Exploring users know Scripture well; the companion never talks down and never assumes "newbie." (This drops the earlier "plainer vocabulary for Exploring" idea; vocabulary is matched to the person, not the tier. Vocab examples to be written at build.)
+- ROOTED: speaks as a fellow believer ("we"), references practices they already do, and any invitations are peer-level shared-practice language ("as you pray about this"). Assumes active faith. Does NOT nudge toward the basics (a mature practicing user does not need "want to pray?", which reads as condescending).
+- EXPLORING: presents rather than presumes on belief and practice ("the Bible teaches," "many Christians find"), never assuming they currently believe or practice. This is where a GENTLE, pressure-free, OPTIONAL invitation fits as a soft on-ramp ("if it helps, this might be something to sit with"), never commitment pressure, never assuming.
+- RECONCILED with the locked "Exploring = verse shown, no prompts" rule: that rule governs PASSIVE, unsolicited surfaces (the home screen never nags). The Faith AI is a conversation the user CHOSE to open, so a gentle optional invitation inside it is not a "prompt" in that sense. Invitations stay rare, optional, and pressure-free; if any ever read as pushing faith at an Exploring user, they get pulled. Fully tunable.
+
+With this, all of Bucket B is resolved and the v1 safety-and-identity design is complete (crisis routing, the system-prompt guardrails, denominational neutrality, jailbreak resistance, persona, and the tier split).
 
 ---
 

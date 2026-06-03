@@ -30,8 +30,8 @@ Separate track, shared DNA. The Smart Coach (SMART_COACH_SPEC.md) is bounded, ca
 The hard rule is faith is never paywalled (feedback-monetization memory, SPEC_smart_tips 3.4). This feature keeps that rule intact via a precise distinction:
 - FAITH CONTENT and ACCESS stay free forever: Bible, verse of the day, gratitude, devotionals, reading plans, AND a real, usable daily allowance of the AI.
 - What Pro buys is unlimited AI COMPUTE, not access to God's word. The premium thing is generative GPU horsepower, not Scripture.
-- Free AI = a GENEROUS DAILY allowance (starting value 5 per day, tunable after TestFlight). Never a lifetime cap. "5 ever" would be a paywall on faith; "5 a day" is fair-use on a compute resource. The distinction is the whole point.
-- Pro = unlimited or a much higher ceiling.
+- Free AI = a GENEROUS DAILY allowance (starting value 5 messages per day, tunable after TestFlight; a message is any single user turn, a question or a discussion reply). Never a lifetime cap. "5 ever" would be a paywall on faith; "5 a day" is fair-use on a compute resource. The distinction is the whole point.
+- Pro = effectively unlimited via a high daily backstop cap (starting value about 50 messages per day, tune after TestFlight), NOT a truly infinite ceiling, so even Pro usage cannot run up unbounded cost. See the TECHNICAL ARCHITECTURE section.
 
 This nuance is documented in the feedback-monetization memory so future work reads it as intentional, not a violation of the faith rule.
 
@@ -41,6 +41,53 @@ This nuance is documented in the feedback-monetization memory so future work rea
 - AI is the VOICE: phrases pastoral, scripture-grounded answers in the user's faith tier and tone.
 - Deterministic code VERIFIES: every verse the AI cites is checked against the app's own Bible text before display. No invented, misquoted, or hallucinated Scripture, ever. Same DNA as the Smart Coach cleanup pass (there it verifies numbers, here it verifies Scripture). This is both a safety net and a selling point.
 - Runs per message (open-ended), governed by the daily allowance and prompt caching to control cost. Cost is NOT the blocker; a grounded Q&A on a small model with caching is a fraction of a cent. The daily cap handles abuse.
+
+---
+
+## TECHNICAL ARCHITECTURE, PROVIDER, AND COST (locked 2026-06-03)
+The conceptual architecture above (AI voices, code verifies) gets its concrete technical realization here. These decisions were made in the AI build kickoff and are the foundation everything else sits on. No double dashes anywhere (project rule).
+
+### Provider: Claude via the Anthropic API
+- The model provider is Claude, used through the ANTHROPIC API (the developer platform at console.anthropic.com), NOT the Claude Pro chat product.
+- CRITICAL distinction (a common, costly confusion): a Claude PRO subscription (claude.ai) is the consumer chat product and grants NO API access and NO API credits. Building the app requires a SEPARATE Anthropic API account with its own login and its own billing. Justin's two personal Claude Pro accounts do not factor in.
+- Why Claude: best of the candidates at strictly obeying safety rules, which is the whole ballgame for a never-speak-as-God / crisis-routing / never-invent-Scripture feature; prompt caching makes the Bible-grounded calls very cheap; and it is the provider Justin actually has experience with. ChatGPT would also work; Grok is the weakest fit for a careful faith app.
+- Model choice: a smaller, cheaper Claude model is the target for the grounded Q&A (cost and latency); revisit per quality at build.
+
+### Account setup
+- A DEDICATED EMAIL for the app's business accounts (the Anthropic API account, and ideally Firebase and App Store Connect over time), separate from Justin's personal accounts, for clean billing and security separation. The exact address is pinned when the account is created.
+
+### Call path (the security spine)
+- An AI provider API key is a real secret and can NEVER ship inside the app (it would be extractable from the bundle and abusable). This is different from the Firebase config apiKey already in the client, which is only a public project identifier, not a secret.
+- Flow: APP to a FIREBASE CLOUD FUNCTION (callable) to the ANTHROPIC API and back to the app. The app never talks to Anthropic directly.
+- The Cloud Function is the secure middleman: it holds the AI key, identifies the signed-in user via the existing Firebase auth, enforces the per-user daily allowance by counting messages in Firestore, calls Anthropic, and returns the result. It never logs chat content (privacy spec). The Firestore security-rule lockdown (each user limited to their own documents) is tracked in the PRIVACY AND SECURITY section and is part of the same safety pass.
+- Chosen because the app is already on Firebase (auth + Firestore), so the function gets user identity and per-user counting for free and nothing leaves the existing ecosystem. Considered and not chosen: a separate standalone backend (more to manage) or a different serverless platform (new ecosystem).
+- VERSE VERIFICATION can run CLIENT-SIDE: the app already bundles the full KJV Bible (data/bible-web.ts), so it can check every verse the AI cites against its own text before display, with no server round trip needed for that safety check.
+
+### Backend reality today (verified in code 2026-06-03)
+- The app currently uses Firebase ONLY from the client: auth (Google + Apple sign-in) and Firestore (writes to users/{uid}/days/{dateKey} via firebaseConfig.ts). There is NO server-side code, NO Cloud Functions, and NO AI SDK installed. This feature adds genuinely new infrastructure.
+- Cloud Functions deploy through the Firebase CLI, a workflow separate from the EAS app builds. New habit, simple.
+
+### Billing model (two separate metered services)
+- FIREBASE BLAZE (Google): the server/middleman + storage. Cloud Functions that call an external API require the Blaze pay-as-you-go plan (Justin is already on Blaze). At this app's scale the cost rounds to zero thanks to a large free tier.
+- ANTHROPIC API: the AI brain itself, billed pay-as-you-go per token (NOT a subscription). A grounded message on a small model with caching is a fraction of a cent; with the daily caps, pennies per user per month; during TestFlight (Justin plus a few testers) a dollar or two per month total.
+- So it is not two big bills: one near-zero (Firebase) plus one tiny (Anthropic).
+
+### Cost safety (provably safe, layered; Justin's top concern)
+1. HARD SPEND CAP at Anthropic: set a max monthly spend in the console; past it the API stops serving and physically cannot bill more. Stronger still, run on PREPAID CREDITS with AUTO-RELOAD OFF so it literally cannot charge beyond the amount loaded. This alone makes a back-breaking bill impossible.
+2. PER-USER DAILY CAPS enforced in the Cloud Function BEFORE any Anthropic call: free 5 messages/day, Pro about 50/day. At the cap the function refuses without calling Anthropic, so no cost.
+3. SECURITY closes the abuse doors: the key lives server-side only (cannot be stolen from the app); only signed-in users can call the function (no anonymous spam); every user is capped. There is no door to run up the bill.
+4. FIREBASE BUDGET ALERT + a function MAX-INSTANCES cap so spend is flagged and the function cannot scale out of control.
+- WORST CASE by design: the AI gracefully stops responding until the next day or until Justin chooses to raise a cap. It can never quietly run up a huge bill.
+
+### Daily allowance (resolves the open fork)
+- The unit is a MESSAGE = any single user turn (a question OR a discussion reply); each one counts. Not "questions," not "conversations."
+- Free = 5 messages/day. Pro = about 50 messages/day, "effectively unlimited" via a high BACKSTOP cap rather than truly infinite, so even a Pro user hammering it (or a looping bug) cannot run up unbounded cost. Marketed as unlimited; a sane ceiling under the hood.
+- Both numbers are STARTING VALUES, tune after TestFlight. Never a lifetime cap (the compute-gated-not-faith-gated carve-out).
+
+### Limit-hit behavior in-app (never a silent stop)
+Two designed cases, both communicated (consistent with the app's error-state standard and the offline-fallback philosophy):
+1. USER USED THEIR DAILY MESSAGES (normal, expected): a clear, friendly message, for example "You're out of messages for today, they reset tomorrow." For free users this is the natural, non-naggy spot for a gentle "Pro gets more" nudge.
+2. GLOBAL SAFETY CAP HIT or ANY API FAILURE (rare): a graceful fallback, for example "The companion's resting, try again in a bit," never a raw error or a dead freeze.
 
 ---
 
@@ -146,7 +193,7 @@ Apple / compliance (disclaimers necessary but NOT sufficient; behavior is what p
 
 ## OPEN FORKS (status as of 2026-06-02 second pass)
 - Translation: evaluate BSB, re-diagnose WEB, or stay KJV. PINNED: deferred until after the profile-to-header + Faith tab structure ships; revisit in the AI build thread. Own decision, real code impact.
-- Daily-allowance unit: LEANING 5 MESSAGES per day (not full conversations-with-follow-ups, and not the "5 questions" framing). Not locked; open to a better unit. Tune after TestFlight.
+- Daily-allowance unit: RESOLVED 2026-06-03. The unit is a MESSAGE = any single user turn (a question OR a discussion reply); each one counts (not "questions," not "conversations"). Free = 5 messages/day, Pro = about 50 messages/day (effectively unlimited via a high backstop cap, not truly infinite). Both are starting values, tune after TestFlight. Never a lifetime cap (the faith carve-out). Full detail in the TECHNICAL ARCHITECTURE section.
 - Whether context-awareness touches the chat at all, or only a separate gentle surface. STILL OPEN, and a v2-only concern. Framing confirmed this pass: v1 has NO data access (pure scripture companion); v2 is the data-derived life-season-theme context-awareness. This fork only matters once v2 is on the table.
 - Companion scope: LOCKED v1 = faith-only (to get it off the ground). App-wide general assistant is a possible future evolution, acknowledged as a much bigger project with real liabilities; decided later, not v1. The global FAB is DROPPED; the Faith tab is the always-available entry.
 - Exact storage shape: extend pj_bible_reflections vs a new pj_plans_progress key. DEFERRED: Claude brings a recommendation when plans/reflection storage is actually built (Justin trusts the storage call). Does not block the profile/faith structure.
@@ -181,3 +228,4 @@ Plus a "Need a word right now" one-off bucket. Lengths vary (1, 5, 7, 14, 30).
   V1 vs V2: v1 = the standalone, safe, scripture-grounded faith AI plus the devotional plans, with NO data-awareness. v2 = context-awareness (rest/grace themes from the curated whitelist, plus data-personalized plan suggestions), gated on the Smart Coach brain existing; architect v1's AI handoff context-ready (empty seam) so v2 slots in. Content authoring (the launch plan library) is the real long pole, start it early.
   STILL OPEN: translation (BSB / re-diagnose WEB / stay KJV), daily-allowance unit (questions vs conversations), companion scope (faith-only v1 vs general assistant later), storage shape (extend pj_bible_reflections vs new pj_plans_progress), final launch category lineup, inline-AI exact UX (slide vs FAB).
 - 2026-06-02 (forks status + thread split): decided to BUILD the faith STRUCTURE in the current thread (Step 1: Profile moves to a top-left home-header avatar with initials/icon fallback, custom photo upload still gated on the Firebase Storage migration; Step 2: Faith tab + glowing dove in the freed bar slot pointing at a Hub scaffold) and push ALL the AI/content forks and the AI build itself to a fresh thread with clean context. Sequencing call: keep the Profile tab in the bar through Step 1 (avatar added alongside it, two doors temporarily) so the bar never drops to a broken 4-tab state; Step 2 swaps the Profile slot for Faith, leaving the avatar as the sole Profile door. Verified in code this pass: the only door to the Profile screen today is the tab button (no scattered router pushes to profile anywhere), and Settings is reached only from inside Profile (profile.tsx:326), so the profile-to-header move has almost nothing scattered to re-wire. Ionicons has NO dove, so the dove tab icon will need a custom SVG (react-native-svg is already in the stack). Fork movements this pass: translation PINNED until after the structure ships; daily-allowance leaning 5 MESSAGES per day (not conversations, not "questions"); companion scope LOCKED faith-only for v1 with app-wide as a possible-later, bigger-liability evolution; storage shape deferred to Claude's recommendation at build time; categories to be worked in the AI/content thread; inline-AI UX still open and needs a design pass (Justin cannot yet picture it). Clarified v1 vs v2 (Justin had them flipped): v1 = NO data access (pure scripture-grounded companion, the simpler safer thing we ship first), v2 = the life-season-theme context-awareness (the moat), gated on the Smart Coach brain. None of the open forks block the profile/faith structure.
+- 2026-06-03 (AI build kickoff, technical foundation locked): Provider = Claude via the Anthropic API (NOT Claude Pro, which gives no API access; a separate API account on a dedicated app email). Architecture locked: app to a Firebase Cloud Function (holds the key, enforces per-user daily caps via Firestore, never logs chat) to the Anthropic API and back; verse verification runs client-side against the bundled KJV. Verified in code that the app has no server / Cloud Functions / AI SDK today (client-side Firebase only). Billing understood: Firebase Blaze (near-zero at scale) plus Anthropic pay-as-you-go per token (pennies). Cost safety locked (Justin's top worry): hard Anthropic spend cap plus prepaid with auto-reload off, per-user daily caps enforced before any call, key server-side and auth-only (no abuse door), Firebase budget alert plus a function instance cap; worst case the AI gracefully stops, never a runaway bill. Daily-allowance fork RESOLVED: a message = any user turn (question or discussion), free 5/day, Pro about 50/day (effectively unlimited via a backstop, not infinite), tune after TestFlight. Limit-hit UX: two designed messages (daily allowance used; global-cap or API-failure fallback), never silent. Full detail in the new TECHNICAL ARCHITECTURE section. Next: create the dedicated email and the Anthropic API account, then build the safety layer (spec build priority one).

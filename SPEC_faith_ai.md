@@ -55,6 +55,7 @@ The conceptual architecture above (AI voices, code verifies) gets its concrete t
 
 ### Account setup
 - A DEDICATED EMAIL for the app's business accounts (the Anthropic API account, and ideally Firebase and App Store Connect over time), separate from Justin's personal accounts, for clean billing and security separation. The exact address is pinned when the account is created.
+- STATUS 2026-06-03 (live): owner/dev email is dev.harmke@gmail.com (free Gmail, personal-use type; INTERNAL only, never user-facing). The Anthropic API account is created under it as an INDIVIDUAL account. Cost safety is in place: $5 prepaid, AUTO-RELOAD OFF, and a $20/month spend limit set, so the bill is hard-capped (cannot exceed the loaded balance, ever). NO API key has been generated yet, deliberately, it will be created only when the Cloud Function exists to hold it. The public in-app SUPPORT email is a SEPARATE, deferred decision tied to the official app name; this dev email is not necessarily it.
 
 ### Call path (the security spine)
 - An AI provider API key is a real secret and can NEVER ship inside the app (it would be extractable from the bundle and abusable). This is different from the Firebase config apiKey already in the client, which is only a public project identifier, not a secret.
@@ -174,6 +175,24 @@ Apple / compliance (disclaimers necessary but NOT sufficient; behavior is what p
 - User REPORT mechanism for bad responses (the thumbs down doubles as this).
 - CONTENT FILTERING so it cannot be steered into producing garbage.
 - Terms of use + privacy.html updates (extends the Smart Coach AI privacy note already on the roadmap).
+
+### Crisis routing (DESIGN LOCKED 2026-06-03)
+The single most important guardrail, designed first. Defense in depth, the same brain-checks-the-AI DNA as the rest of the app:
+1. DETERMINISTIC PRE-SCREEN. Before a message ever reaches Claude, deterministic code screens the user's text for crisis signals (self-harm / suicide, abuse, immediate danger, acute medical emergency).
+2. SHORT-CIRCUIT on a hit (LOCKED): the app skips the AI entirely and shows a HARDCODED crisis response, so it can never be fumbled or hallucinated in the worst possible moment. No normal AI reply is generated.
+3. AI BACKSTOP: Claude is also instructed to recognize and route a crisis if anything slips past the screen. Two layers, code first, AI second.
+4. CARE AND FACTS ONLY (LOCKED): in an emergency, faith is dropped entirely. No scripture, no verse, no faith framing. A brief, human line of compassion (you matter, you are not alone), then real resources front and center. Dropping verses on someone mid-crisis can feel dismissive, exactly what this spec warns against.
+5. RESOURCES, US-FIRST (LOCKED): 988 (Suicide & Crisis Lifeline), Crisis Text Line (text HOME to 741741), 911 for immediate danger, plus a generic "contact your local emergency services" line for non-US users. Apple does NOT require international hotline coverage; it requires responsible, functional behavior, which the short-circuit provides. Matches the US launch.
+6. Exact wording is written at build; the structure and tone above are locked. Build-gating: nothing ships without this working.
+
+### System-prompt guardrails (Bucket A, DESIGN LOCKED 2026-06-03)
+Clear-cut rules with one right answer, enforced as standing instructions in Claude's system prompt (the AI's permanent identity and constraints on every call), with deterministic cleanup backstops where one applies. Locked as-is:
+- NEVER SPEAK AS GOD. The companion is a tool that shares and points to Scripture. It never claims to be the divine voice, never says "God is telling you" or speaks prophetically, never positions itself as God. It points to the Word, never impersonates the Author.
+- NO FABRICATION, HONESTY OVER CONFIDENCE. It never invents verses, scholarship ("the Greek really means"), or facts. When it does not know or is unsure, it says so plainly instead of inventing. Backstop: the client-side verse verification (against the bundled KJV) already enforces the no-invented-Scripture half deterministically.
+- NO POLITICS. It stays out of partisan politics entirely.
+- NEVER SHAME. Grace-first always, no guilt-tripping, no fear-driven motivation. The same no-fear-no-shame ethos as the whole app.
+- POINT TO REAL COMMUNITY. It encourages church, pastors, real prayer, and actual reading, and never positions itself as a replacement for them.
+Enforcement: these live in the system prompt; the cleanup pass (verse verification plus house-style checks, the same DNA as the Smart Coach cleanup) is the deterministic backstop. Exact prompt wording is written at build; these rules are locked. STILL OPEN (Bucket B, Justin's judgment): denominational neutrality and doctrinal boundaries, and the companion's voice and persona.
 
 ---
 

@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import FaithIconFish from '../../components/FaithIconFish';
 import HeaderAvatar from '../../components/HeaderAvatar';
+import CompanionFAB from '../../components/CompanionFAB';
 import { useTheme } from '../../theme';
 
 /**
@@ -40,6 +41,8 @@ export default function FaithScreen() {
           Verses, devotionals, and a scripture companion are on the way.
         </Text>
       </View>
+
+      <CompanionFAB />
     </LinearGradient>
   );
 }

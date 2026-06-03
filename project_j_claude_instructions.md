@@ -314,10 +314,10 @@ RN Modals create a new native window layer. Toast rendered in the normal tree is
 
 Theme System
 Token-based. One theme.ts file. Every component references tokens, never hardcoded hex values.
-Themes: Dark (free), Light (free, DEFAULT for new users), Midnight (paid), Slate (paid), Warm (paid), Blush (paid)
+Themes: Light (free, DEFAULT for new users), Dark (free), Slate, Warm, Blush. Light and Dark are unlocked by default; Slate, Warm, and Blush are earned by completing a short starter challenge. No theme is ever paid.
 Default theme is Light. Order in settings: Light, Dark, Slate, Warm, Blush.
-Each theme has accent color options. Paid feature.
-Testing standard: Build on Slate with yellow accent as primary. Audit all 5 themes x all accent options before marking any visual feature done.
+Each theme has accent color options. Accents are free: unlocking a theme grants full access to all of its accents.
+Testing standard: Justin's primary is Light with cyan accent (he switches accents occasionally). Audit all 5 themes x all accent options before marking any visual feature done.
 Theme preview rows in settings: hardcoded opaque bg/text/accent per theme row. Never use t.* tokens inside the theme preview loop -- use the hardcoded previewBg/previewText/previewAccent/previewAmber maps.
 
 ---

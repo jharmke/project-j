@@ -2,8 +2,8 @@
 // One file. All colors live here. No hardcoded hex anywhere else.
 // Swapping themes = one state change.
 //
-// Free:  dark, light
-// Paid:  slate, warm, blush
+// Default unlocked:  light, dark
+// Earned (starter challenge):  slate, warm, blush
 
 export type ThemeId = 'dark' | 'light' | 'slate' | 'warm' | 'blush';
 export type AccentId = 'default' | 'purple' | 'teal' | 'rose' | 'indigo' | 'green' | 'orange' | 'cyan' | 'rust' | 'sage' | 'mauve' | 'lilac' | 'silver' | 'discipline' | 'mindful';
@@ -91,7 +91,6 @@ export const ACCENT_PALETTES: Record<ThemeId, AccentOption[]> = {
 export interface Theme {
   id: ThemeId;
   name: string;
-  paid: boolean;
 
   // ── Backgrounds ─────────────────────────────────────────────────────────────
   bgPrimary: string;        // main screen background
@@ -176,7 +175,6 @@ export interface Theme {
 const dark: Theme = {
   id: 'dark',
   name: 'Dark',
-  paid: false,
 
   bgPrimary:        '#161619',
   bgCard:           '#2a2a2e',
@@ -250,7 +248,6 @@ const dark: Theme = {
 const light: Theme = {
   id: 'light',
   name: 'Light',
-  paid: false,
 
   bgPrimary:        '#f0f0f5',
   bgCard:           'rgba(255,255,255,0.85)',
@@ -324,7 +321,6 @@ const light: Theme = {
 const slate: Theme = {
   id: 'slate',
   name: 'Slate',
-  paid: true,
 
   bgPrimary:        '#bcc8d4',
   bgCard:           'rgba(228,234,244,0.90)',
@@ -398,7 +394,6 @@ const slate: Theme = {
 const warm: Theme = {
   id: 'warm',
   name: 'Warm',
-  paid: true,
 
   bgPrimary:        '#f3ece0',
   bgCard:           '#fff4e4',
@@ -472,7 +467,6 @@ const warm: Theme = {
 const blush: Theme = {
   id: 'blush',
   name: 'Blush',
-  paid: true,
 
   bgPrimary:        '#f9dae5',
   bgCard:           'rgba(253,238,245,0.95)',

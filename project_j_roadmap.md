@@ -693,6 +693,11 @@ NOW: gym list (2026-06-02)
   [ ] NOTIFICATIONS OVERHAUL (Smart Coach surface + settings simplification): today there are up to 11 independent notification types (Health & Habits, Fasting, Faith) firing separately with no coordination, which feels spammy. Goal: consolidate into a Smart Coach hybrid, one daily digest surfacing the most important coaching insight of the day, plus contextual triggers for time-sensitive items (IF window, streak at risk). Kill or reduce individual pings. Settings UI also needs a full simplification pass: 3 accordions with 11 individual toggles down to a small number of high-level controls. Notification delivery is a second surface for the same coaching logic, so design it with the coach, not separately. Surface decision open, discuss in Question 1. See SMART_COACH_SPEC.md.
   [ ] PRE-EXISTING TYPESCRIPT ERRORS (found 2026-06-02 during the data-sync audit, unrelated to any feature): npx tsc --noEmit reports about 17 errors that look like react-native / expo / reanimated type-def drift: collapsable prop on TouchableOpacity (stats.tsx), AnimatedRef + accentAmberBg / accentAmberBorder tokens (bible.tsx), RefObject<View | null> mismatches (day-summary.tsx), TouchableOpacity used as a type (food-detail.tsx), Expected 1 argument (AchievementToast.tsx), and NotificationBehavior missing shouldShowBanner / shouldShowList (notifications.ts handler). None block the dev build. Optional cleanup pass, not urgent. (BACKLOG)
 
+NOW: Short-term Challenges / Missions scoping (2026-06-03)
+
+  [ ] CHALLENGES / MISSIONS LAYER scoped this session. Full capture in SMART_COACH_SPEC.md, the "SHORT-TERM CHALLENGES / MISSIONS" section. Status SCOPING ONLY, parked behind the Faith AI + content track. The short-term action/commitment layer that closes the loop the Smart Tips open: recommended (coach-driven, e.g. protein under goal 6/7) plus manual (user-created) challenges, each with a reward. Reward decided: an in-the-moment completion celebration plus a TIERED "Challenges" achievement track (1/5/10/25), NOT one trophy per completion, NO new currency (reuses achievements). Mode rule: manual works in all modes; recommended is corrective so it is suppressed in default Mindful, gentle with growth areas on, full in Discipline/Balanced. Window shape (N-of-M vs streak) deferred to build. Cross-refs scenario 6.4 (almost-a-streak nudge) and the IF auto-start idea so they are not built twice. Parked extensions: personal weekly/monthly challenges (natural fit) and community/social challenges (major future phase, backend + moderation flagged).
+  [ ] THEME UNLOCK MODEL resolved (was the long-open "unlock mapping TBD"): Light + Dark unlocked by default; Slate, Warm, Blush earned via a short STARTER challenge (exact challenge TBD) that unlocks all three at once and doubles as onboarding (intro to customization + the achievement system); accents free and bundled with each theme; nothing is ever paid. Guards: the lock must read as a quest not a paywall, and existing users must be grandfathered (never re-lock a theme already in use). Same session: the stale "paid themes" labels were wiped from CLAUDE.md, project_j_claude_instructions.md, theme.tsx (unused paid flag removed, no live consumer), and this roadmap's monetization lines.
+
 NOW: gym notes batch (2026-06-03, Justin's thread-handoff notes; triaged + consolidated this session, dupes merged into existing items)
 
   Context: captured during the faith-structure thread but mostly OTHER tracks. The Smart Coach surfacing/quality items from this batch (significantly-off macro tip on Day Summary, EvR feels hidden, home smart-tip card needs a tint, IF auto-start/nudge) are logged in SMART_COACH_SPEC.md, NOT here. Items below are the bugs, polish, and features that belong in this roadmap.
@@ -1427,8 +1432,8 @@ Android -- React Native core code is largely reusable. HealthKit is iOS only; An
 
 Monetization and launch
 
-Theme monetization -- Light/Dark free, rest paid
-Accent color monetization -- TBD
+Theme monetization: Light/Dark unlocked by default, Slate/Warm/Blush earned via a short starter challenge (never paid)
+Accent colors: free, included with each unlocked theme
 Stats premium tiers -- non-standard charts paid
 App Store optimization
 Weight trend sparkline (LOW)

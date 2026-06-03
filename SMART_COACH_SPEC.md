@@ -220,9 +220,78 @@ Note on accuracy: the placeholder version claimed the scale was stalled. That li
 
 ---
 
+## SHORT-TERM CHALLENGES / MISSIONS (scoping capture, 2026-06-03)
+
+Status: SCOPING ONLY, nothing built. Parked behind the Faith AI + content track (the current priority). Coach-adjacent: the Smart Coach drives the recommended half, so it is captured here, but it may graduate into its own spec if the manual-creation and reward economy grow. No double dashes anywhere (project rule).
+
+### What it is
+A short-term Challenge / Mission layer: a bounded goal with a finish line and a reward. It is the ACTION layer that closes the loop the Smart Tips open. Today every layer TELLS you something: Day Score (how was yesterday), EvR (the 90-day backward read), Smart Tips (forward observation plus advice). None of them hands you a commitment you can complete. A Challenge is that missing "do something about it, then did you actually do it" piece: diagnosis to a bounded path back, not just "eat more."
+
+Two creation paths:
+1. RECOMMENDED (coach-driven). When the Smart Coach detects a gap (protein under goal on a short window like 6 of 7, or a longer window like 12 of 15), it can offer a bounded mini-challenge to get that specific thing back on track, with a reward attached, instead of only naming the gap and giving advice. Incentive and motivation to change, not just the observation.
+2. MANUAL (user-created). The user can spin up their own short-term challenge any time (pick the metric, target, and duration). Self-directed, no diagnosis required.
+
+### Naming
+"Challenge" or "Mission" both work for Justin (decide at build). Avoid the word "Goal": it already means weight goal, step goal, calorie goal, and sleep goal across the app and would collide.
+
+### Reward model (decided)
+- Per completion: an in-the-moment celebration (a "challenge complete" beat: toast, confetti, a satisfying moment) plus the actual result. Mode-aware tone. Always present regardless of anything else.
+- Permanent reward: a TIERED "Challenges" achievement track in the existing achievements system (complete 1, complete 5, complete 10, complete 25; optionally a few themed trophies like "protein comeback" or "first manual challenge"). The meta-accomplishment earns the trophy; the individual win earns the in-the-moment moment.
+- Explicitly NOT one permanent trophy per completed challenge: that would flood the achievements section with near-identical trophies and cheapen the whole system. Trophies stay scarce and meaningful.
+- NO new currency. No points, XP, or coins. Reuses the existing achievements system, which already feeds the existing theme-unlock economy. A parallel reward economy was considered and rejected (gamey, three reward systems fighting).
+
+### The starter challenge (special case, doubles as onboarding)
+A short, easy STARTER challenge (log 1 to 3 days, or similar; exact challenge TBD by Justin) unlocks the three non-default themes (Slate, Warm, Blush) all at once. Its reward is the theme unlock plus a first intro to the customization tools AND to the achievement / challenge system itself. It does triple duty: a tutorial for using the app, motivation to get going, and a first taste of customization and achievements.
+
+Theme model (this RESOLVES the long-open "theme unlock mapping TBD" from SPEC_smart_tips 3.4 and the monetization memory):
+- Light and Dark: unlocked by default.
+- Slate, Warm, Blush: earned via the starter challenge.
+- Accents: free and bundled. Unlocking a theme grants full access to ALL of its accents.
+- Nothing is ever paid. (The stale "paid themes" labels were wiped from CLAUDE.md, the duplicate instructions file, theme.tsx, and the roadmap on 2026-06-03.)
+
+Recommendation: unlock all three themes at once from the single starter challenge. One big "you just unlocked your whole customization palette" win teaches the system better than dribbling them out, and with only three locked themes, splitting them across multiple challenges would feel grindy. Whether to hold one or two back as deeper achievement rewards is a minor later call.
+
+Two hard guards:
+- FRAMING. Since themes are explicitly not paid, the lock must read as a quest ("complete this to unlock your themes"), never as a paywall-style withhold. The line between "earn it" and "the app is holding my settings hostage" is entirely in the presentation.
+- EXISTING USERS (data integrity). Never re-lock a theme someone already uses. Any theme-lock system must grandfather current users: auto-unlock anyone already on, or who has already selected, a non-default theme. Ties directly to the non-negotiable data-integrity rule.
+
+### Mode-awareness (hard rule, must be defined at build per the project standard)
+- MANUAL challenges: available in ALL coaching modes, including default Mindful. The user opted in themselves, so there is no imposition.
+- RECOMMENDED challenges: corrective by nature, so they are SUPPRESSED for default Mindful (growth areas OFF), which protects ED-recovery and body-image users (same ethos as Smart Tips suppression). They surface with gentle framing when growth areas is ON, and fully in Discipline / Balanced. The reward and any competition pressure is exactly what default Mindful guards against, a second reason recommended challenges are gated there.
+
+### Window shape (OPEN, deferred to build)
+- N-of-M ("hit X for N of the next M days"): forgiving, better for adherence and for Mindful. The current lean as the default.
+- Streak-style ("hit X every day for N days", one miss resets): more motivating but harsher. A possible optional harder mode.
+- Justin is unsure; deferred to build. Detection windows scale by horizon: short (around 6 of 7) for short-term challenges, longer (around 12 of 15) for longer-term ones (Justin's framing).
+
+### Relationship to existing systems (avoid double-building)
+- May absorb or relate to scenario 6.4 (the almost-a-streak nudge) and the IF auto-start / nudge automation idea (see "Open and next"). Both were the coach gesturing at "take an action" with no action layer to land on. This Challenge layer is that missing home. Cross-reference so they are not built twice.
+- Distinct from Day Score / EvR / Smart Tips: it is the commitment-with-a-finish-line layer, not another telling-you layer.
+- Recommended challenges would surface FROM Smart Coach findings (candidate surfaces: the EvR insight card, the Day Summary, the home smart-tip card). Exact surfacing TBD, ties to the open Question-1 surfacing discussion.
+
+### Parked extensions (from Justin's 2026-06-03 weekly / monthly + community idea)
+- PERSONAL weekly / monthly challenges: an app-featured "challenge of the week / month", opt-in, but still single-player (your data, your trophy). A natural extension of this system, and it aligns with the weekly / monthly reporting cadence already designed in SPEC_smart_tips. Low-to-medium scope. Build-later.
+- COMMUNITY / SOCIAL challenges: a MAJOR scope jump, flagged loudly. The app is local-first and single-user today (AsyncStorage plus per-user Firestore). Community means a real shared backend, public profiles, leaderboards, anti-cheat, moderation, abuse handling, privacy and safety review, and an Apple social-features review surface. Arguably its own product phase, not near-term. Parked, not killed.
+
+### Storage (deferred to build)
+A new pj_ AsyncStorage key (for example pj_challenges) holding active and completed challenges. Read-then-merge, never wholesale overwrite (data-integrity rule). Exact shape decided at build.
+
+### Answer-before-building checklist (open questions for the build session)
+- Final name: Challenge vs Mission.
+- Window shape: N-of-M vs streak-style, plus the default and any optional mode.
+- The exact starter challenge (what action, how many days).
+- Whether all three themes unlock at once, or one or two are held back as deeper achievement rewards.
+- Surfacing of recommended challenges (which Smart Coach surfaces carry them).
+- Storage shape (the pj_ key).
+- The tiered achievement track's exact tiers, plus any themed trophies.
+- The Mindful framing for recommended challenges (the growth-areas-on copy).
+
+---
+
 ## Checkpoint log
 - 2026-06-01: Decision locked, true hybrid AI coach. Captured architecture, foundational principles, two-list model.
 - 2026-06-01: Scenario Library v1 drafted: 9 families (Effort vs Results, One Gap, Multi-Signal Patterns, Sleep-Driven, Data Quality, Crushing It, Trend, IF, Safety) plus a "how the brain chooses" priority spine, a cross-cutting accuracy-guards list, and a Safety and Care override family. Reference gold-standard tip retained. Next: Justin reacts and expands, then we write Voice Examples.
 - 2026-06-01: Scenario Library expanded (Question 1 pass with Justin). Added 2.7/2.8 macro gaps, 3.7 NEAT collapse, 6.4 almost-a-streak nudge (narrow), 7.5 goal ambition vs reality, 8.4/8.5 IF timer + closed-window scenarios, Family 10 Recovery / Readiness, Family 11 Training Patterns, the staleness / flat-line guard, and data-readiness tags ([DATA: ready / needs-persistence / needs-build]). Decisions: Sleep and Recovery stay separate families; body recomp, full Momentum/Streaks, Re-engagement, and Milestones cut (overlap achievements/streaks or data-blocked); faith integration reopened (candidate: non-EvR surface); flagged a TRIGGER_LIBRARY threshold sanity audit. Verified in code: per-workout heart rate and HRV are NOT captured (Training intensity + HRV scenarios are data-gated); resting HR, respiratory rate, blood oxygen, exercise minutes DO store per day. Next: keep sharpening Question 1 or move to Question 2, then start fleshing Family 1 and writing Voice Examples.
 - 2026-06-02: Added scenario 3.8 Compensation / Restriction Rebound to Family 3 (from Justin's gym notes): binge-restrict swing detection with mandatory Family 9 care framing and an explicit do-not-praise-the-low-day guard. From the same gym notes, two coaching-surface candidates were captured (not yet decided) for the reopened faith / surfaces question: sleep card tips fed by the coach (Family 4 delivery) and a notifications overhaul (one daily coach digest plus time-sensitive contextual triggers, replacing 11 uncoordinated pings). Both parked as surface candidates pending the Question 1 discussion. Roadmap gym-list batch logged in parallel.
 - 2026-06-03: From Justin's gym-notes batch (consolidated in the roadmap this session), four SURFACING/QUALITY candidates captured under "Open and next" for the still-open Question-1 surface discussion: (1) a per-macro actionable tip in the macro's own Day Summary section when a macro is significantly off (protein the headline example, = Family 2.1 on the Day Summary surface); (2) EvR feels hidden because it needs a manual new-report generation to see the coaching, friction on a flagship feature; (3) the home smart-tip card needs a tint / stronger treatment to read as "smart"; (4) an IF auto-start-window / nudge AUTOMATION (a setting plus action, distinct from the 8.4/8.5 coach tips). None decided; all feed the surfaces discussion. No scenario-library or rulebook changes this pass.
+- 2026-06-03: Scoped a new SHORT-TERM CHALLENGES / MISSIONS layer (full capture in the new section above), the action / commitment layer that closes the loop the Smart Tips open. Recommended (coach-driven) plus manual (user-created) creation. Reward decided: an in-the-moment completion celebration plus a tiered Challenges achievement track (1/5/10/25), no new currency. A special starter challenge unlocks the three non-default themes (Slate/Warm/Blush) at once and intros the customization + achievement systems, which resolves the long-open theme-unlock mapping (Light/Dark default, the other three earned, accents free and bundled, nothing paid). Mode rule: manual works in all modes, recommended is suppressed in default Mindful and gentle with growth areas on. Window shape (N-of-M vs streak) deferred to build. Cross-references the 6.4 almost-a-streak nudge and the IF auto-start idea so they are not double-built. Parked extensions: personal weekly/monthly challenges (natural extension) and community/social challenges (major future phase). Same session, the stale "paid themes" labels were wiped app-wide (CLAUDE.md, the duplicate instructions file, theme.tsx, roadmap). Status: scoping only, parked behind the Faith AI track.

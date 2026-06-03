@@ -38,7 +38,7 @@ Read project_j_roadmap.md at the start of every session before touching anything
 - Push back on bad ideas directly -- don't hype something that won't work
 - Include the why but keep it tight
 - Weave in Biblical perspective where naturally relevant, never forced
-- Never assume which theme Justin is on. Primary testing theme is Slate with yellow accent
+- Never assume which theme Justin is on. Primary testing theme is Light with cyan accent
 
 ## Terminal
 Justin uses PowerShell only. One command at a time, never chained. Always send git commands explicitly one at a time (git add, git commit, git push).
@@ -127,10 +127,10 @@ Tag pills: backgroundColor t.color+'99', borderColor t.color, text color #ffffff
 
 ## Theme System
 Token-based. One theme.ts file. Every component references tokens, never hardcoded hex values.
-Themes: Dark (free), Light (free, DEFAULT for new users), Midnight (paid), Slate (paid), Warm (paid), Blush (paid)
+Themes: Light (free, DEFAULT for new users), Dark (free), Slate, Warm, Blush. Light and Dark are unlocked by default; Slate, Warm, and Blush are earned by completing a short starter challenge. No theme is ever paid.
 Default theme is Light. Order in settings: Light, Dark, Slate, Warm, Blush.
-Each theme has accent color options. Paid feature.
-Testing standard: Build on Slate with yellow accent as primary. Audit all 5 themes x all accent options before marking any visual feature done.
+Each theme has accent color options. Accents are free: unlocking a theme grants full access to all of its accents.
+Testing standard: Justin's primary is Light with cyan accent (he switches accents occasionally). Audit all 5 themes x all accent options before marking any visual feature done.
 Theme preview rows in settings: hardcoded opaque bg/text/accent per theme row. NEVER use t.* tokens inside the theme preview loop -- use hardcoded previewBg/previewText/previewAccent/previewAmber maps.
 
 ## Visual Philosophy

@@ -161,6 +161,57 @@ Storage: new pj_prayers key. Shape TBD at build. Read-then-merge, never wholesal
 
 ---
 
+### Card 4: Prayer, FULL BUILD SPEC (LOCKED 2026-06-04, ready to build as Bucket B step B2)
+
+Every decision below was worked out and locked with Justin in the scoping thread. This is the build-ready spec; nothing here is still open unless explicitly marked.
+
+ARCHITECTURE (choice A, locked): the Prayer entry on the faith tab is a COMPACT PREVIEW CARD that opens a DEDICATED FULL PRAYER SCREEN (new route app/prayer.tsx). It mirrors the Journal card pattern (preview + launcher, not the full thing inline). Chosen because a single card cannot gracefully hold a long active list plus a growing answered history; a real screen scrolls naturally. This also keeps the faith tab from being dominated by one giant card and stays consistent with the other faith cards. (This SUPERSEDES the earlier "self-contained card vs full screen, decide at build" note above; it is a full screen.)
+
+THE PREVIEW CARD (on the faith tab) shows:
+- The answered count as a hero stat, for example "12 answered", BUT only once the user has at least 1 answered prayer (so a list of all-ongoing prayers never reads as "you have 0").
+- The 2 to 3 most recent active prayers as read-only preview rows.
+- A "+ Add a prayer" quick-capture (opens the add pop-up).
+- A "View all" affordance that opens the full Prayer screen.
+- Build-time call: whether the tap-to-answer circle appears on the preview rows or only on the full screen. Lean: answer/manage actions live on the full screen, the preview is read-only plus quick-add.
+- Carries the faith-tab amber atmosphere / gold card edge like the other cards.
+
+THE DEDICATED PRAYER SCREEN (app/prayer.tsx):
+- All active prayers, scrolling normally (this is what solves the "15 open prayers" worry).
+- The mark-answered interaction (see below).
+- The full answered history, its own section, scrolling (solves the "huge answered list" worry). Collapsed/secondary so it never dominates.
+- Add a prayer (the pop-up).
+- Delete any prayer, WITH a confirm (it is real data).
+- A "Need prayer? Ask us" row that opens the EXISTING PrayerRequestModal (the email-to-Justin feature). This surfaces a currently-buried feature (it lives in Bible settings) and gives the screen a warm community dimension. Build-time call: add here and keep the Bible-settings entry too, or move it entirely. Lean: add here, keep both.
+- Edit prayer text is OUT for v1 (delete plus re-add covers it).
+- Should carry the faith look (header pattern consistent with other screens; the amber treatment).
+
+ADD UX (locked): a small CENTERED "Add prayer" pop-up, a fade modal, NOT a slide-up sheet (Justin dislikes slide-ups). Short text input (prayers are short) plus Save. The Save button DIMS when the input is empty, full accent when ready. Toast on save. KeyboardAvoidingView. Used from both the card (quick-capture) and the screen.
+
+MARK-ANSWERED INTERACTION (locked): tap the circle, it fills with a check plus a quick animation, success haptic, the row slides into the Answered section stamped with today's date, a small toast confirms. NO upfront confirmation dialog (a confirm on a celebratory action kills the moment). Accidental taps are handled by REVERSIBILITY: answered items have a "move back to active" (un-answer) tap. The circle is its OWN distinct 44pt target, separate from tapping the prayer text. Optional Undo on the toast is allowed but start without it.
+
+FRAMING, THE CRUX (locked, this resolved Justin's whole hesitation): warm, "things I am carrying before God," NOT a to-do checklist.
+- Ongoing / open-ended prayers are SUPPOSED to persist. Example Justin gave: praying nightly for a healthy baby and smooth pregnancy for 7 to 8 months until January. That prayer sitting in the list the whole time is not clutter, it is literally the thing he prays THROUGH each night; the list's purpose is to be the nightly prayer guide, not a backlog to clear. A long-lived prayer is faithfulness, not an overdue task.
+- The visual must read as "lifting up / carrying," not "task then done." Avoid a stark todo-checkbox feel; the circle is a gentle "mark answered when God shows up," not an overdue checkbox. This warmth is what dissolves the "why is this still open after 8 months" unease.
+- Marking answered is FULLY OPTIONAL. Open-ended prayers may never be marked; the user just deletes them when they are no longer on the heart, or never. No end date is ever required.
+- NO time/duration counter. The earlier "praying X days / weeks" idea is CUT, it risks reading as "still unanswered after 200 days" pressure, which cuts against the whole warm framing.
+- The answered list is a quiet celebration and record of God's faithfulness (the Ebenezer stone, "thus far the LORD has helped us"), kept unobtrusive (collapsed by default), so people who never use it never see it.
+
+DATA SHAPE (locked): new pj_prayers AsyncStorage key = an array of { id: string, text: string, status: 'active' | 'answered', createdAt: number, answeredAt: number | null }. Written through storageSet so it rides the cloud backup like the journal (read-then-merge, NEVER wholesale overwrite, data-integrity rule). pj_prayers is currently unused anywhere in the codebase (verified this thread), so no collision. It syncs via both the incremental storageSet path and the background sweep (it is not in any shouldSync exclude list).
+
+JOURNAL "PRAYER" CATEGORY RETIREMENT (locked): when the Prayer section ships, RETIRE the journal's "prayer" category so there is ONE home for prayer (this tracker) and the journal keeps its prose categories. Justin has only TEST prayers in the journal now and is fine losing them, so now is the clean time. For real users post-launch, prayer-tagged journal entries could fold into pj_prayers, a launch-time migration detail to handle carefully (read-then-merge). This touches journal.tsx (the category list / filter pills); assess impact before changing. Could be folded into B3 since B3 also touches journal.tsx.
+
+THE PRECEDENT PRINCIPLE (locked, broader, answers Justin's "does everything need its own page now?"): a category earns its own dedicated surface ONLY when it has a LIFECYCLE or STRUCTURE that prose-in-the-journal cannot hold. Prayer crosses that line (lifecycle: lift up, carry, answered, plus an answered tally). Gratitude crosses it (a daily HABIT with a streak, which is why it already has its own card). Workout notes (prose attached to a workout) and journal entries (verse / study / personal prose) do NOT cross it; they stay exactly where they are. This is NOT a precedent that every journal category needs a page; only true structure or lifecycle earns a surface.
+
+MINDFUL MODE (locked): identical in all three coaching modes. A neutral request tracker with no scores and no judgment language; nothing to soften.
+
+TIER (locked): Rooted and Exploring get the full card plus screen; NRN has no faith tab so it never appears. No tier difference within the feature.
+
+BUILD STANDARDS to honor (non-negotiable): empty state on both the card and the screen (icon plus "nothing yet" plus how to add); loading state; toast on every save; haptics (light for taps, success for answered, heavy for delete); 44pt touch targets; dim/inactive add button; KeyboardAvoidingView on the add modal and the screen.
+
+DISTINCT FROM THE EXISTING EMAIL FEATURE (verified in code this thread): components/PrayerRequestModal.tsx writes to Firestore users/{uid}/prayer_requests and triggers the onPrayerRequestCreated Cloud Function email to Justin. That is a SEPARATE feature (request prayer FROM the team). The new Prayer tracker is the user's OWN private LOCAL list (pj_prayers), never emailed. The only crossover is the "Ask us" row on the prayer screen, which opens that same existing modal.
+
+---
+
 ### Card 5: Journal
 
 What it shows: recent faith journal entries (verse, prayer, study, personal, gratitude categories). Entry count or streak if applicable. Quick-add FAB or inline add button.
@@ -302,3 +353,4 @@ NRN: the faith tab does not exist. Profile tab returns to the 5th bar slot. NRN 
   TAB ICON: confirmed the ichthys FISH (FaithIconFish.tsx), not the dove. The dove references in SPEC_faith_ai.md are now marked stale. This doc was already correct.
   HOME FAITH LAUNCHER CARD (preserved, Justin: "don't remove that home card idea"): the HOME tab keeps a faith launcher / hub card (VOTD + plan-resume + ask-companion) that routes INTO this Faith tab. That home launcher is a SEPARATE surface from the cards listed in this doc (which are the Faith tab's own internal cards). Card 1 here (Today's Message / VOTD) staying on both tabs is consistent with that; the home launcher is the entry point, the tab is the destination. Do not collapse or remove the home launcher when building the tab.
 - 2026-06-04 (build started, Bucket B). Build order: B1 framework + atmosphere + Bible card, B2 Prayer, B3 Gratitude + Journal + home migration, B4 faith edit layout, B5 Halo FAB nudge, B6 first-time experience. DONE + device-confirmed: B1 and the VOTD card. The faith tab now has its own card framework (faithCardOrder / faithCardVisible in pj_settings, separate from home, read-then-merge). The amber atmosphere is a candlelight wash from the top: deeper on Dark, brighter and warmer at higher opacity on the four light themes (a faint brown vanishes on near-white), plus a faint gold card edge; confirmed good on all themes. The Bible card is Option 2: a clean launcher into the existing reader, no plans section yet (that and the "Bible and Plans" title arrive with Bucket C). Today's Message shows the SAME verse as Home via a new shared data/verses.ts (VERSES + resolveDailyVerse extracted from index.tsx; Home refactored to use it; the lastDate guard keeps both tabs in sync; verified both show Psalm 46:1). The faith VOTD omits the reflection-prompt subtext (kept off per Justin) and, for now, the journal shortcut icon (decision DEFERRED until the Journal card lands in B3). The rich "feels like a place" liveness (arrival stagger, etc.) is a later polish pass.
+- 2026-06-04 (B2 Prayer fully scoped, ready to build, NOT yet built). Long design discussion with Justin, every decision locked in the new "Card 4: Prayer, FULL BUILD SPEC" section above. Headlines: choice A (compact preview card + a dedicated app/prayer.tsx screen, mirrors the Journal card pattern, scales where a single card cannot); warm "carrying before God" framing (NOT a todo checklist), which resolved Justin's hesitation about open-ended prayers sitting for months (the pregnancy example: persistent is the point, the list is the nightly prayer guide); marking answered is optional, instant-and-reversible, no confirm; the "praying X days" duration was CUT (reads as pressure); the answered count is the hero stat but only shows once at least 1 is answered; data shape pj_prayers = array of {id, text, status, createdAt, answeredAt} synced via storageSet; the journal "prayer" category gets retired when this ships (Justin has only test data); the "Ask us" row on the screen opens the existing email PrayerRequestModal; Mindful identical; Rooted/Exploring full, NRN none. The PRECEDENT PRINCIPLE was locked too (a category earns its own surface only with a lifecycle/structure prose cannot hold, so Prayer and Gratitude yes, workout notes and journal prose no). Captured here because the scoping thread was running low on budget; B2 is to be BUILT in a fresh thread from this spec.

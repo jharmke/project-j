@@ -6,8 +6,9 @@ import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
     Alert, Animated, FlatList, KeyboardAvoidingView, Modal, Platform,
-    ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View
+    ScrollView, Share, StyleSheet, Text, TextInput, TouchableOpacity, View
 } from 'react-native';
+import Svg, { Rect } from 'react-native-svg';
 import Reanimated, {
   useAnimatedRef, useSharedValue, useAnimatedReaction, withTiming,
   cancelAnimation, scrollTo as reanimatedScrollTo, Easing as ReanimatedEasing,
@@ -22,6 +23,8 @@ import { storageSet } from '../utils/storage';
 import { BIBLE_BOOKS, Book, Chapter, Verse, fetchChapter, parseReference } from '../data/bible-web';
 import { useTheme } from '../theme';
 import PrayerRequestModal from '../components/PrayerRequestModal';
+import CompanionFAB from '../components/CompanionFAB';
+import CompanionChat from '../components/CompanionChat';
 import { checkFaithAchievements, getCelebTier } from '../achievementData';
 import { showAchievementToast } from '../components/AchievementToast';
 import { showCelebration } from '../components/CelebrationOverlay';
@@ -56,12 +59,29 @@ const SPEED_PX_PER_MS: Record<ScrollSpeed, number> = { slow: 0.015, medium: 0.04
 const PREVIEW_TEXT = '"For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life."';
 const PREVIEW_REF = 'John 3:16';
 
+const HALO_GOLD = '#e8a020'; // Halo's identity gold (matches the companion FAB)
+
+// A small Latin cross in Halo's gold, used on the verse banner to mean "bring this to Halo."
+function HaloCross({ size = 16, color = HALO_GOLD }: { size?: number; color?: string }) {
+  const bar = Math.max(2, Math.round(size * 0.2));
+  const vH  = Math.round(size * 0.82);
+  const hW  = Math.round(size * 0.56);
+  return (
+    <Svg width={size} height={size}>
+      <Rect x={(size - bar) / 2} y={Math.round(size * 0.09)} width={bar} height={vH} rx={1} fill={color} />
+      <Rect x={(size - hW) / 2}  y={Math.round(size * 0.30)} width={hW}  height={bar} rx={1} fill={color} />
+    </Svg>
+  );
+}
+
 export default function BibleScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const { showToast } = useToast();
   const params = useLocalSearchParams();
 
+  const [companionOpen, setCompanionOpen] = useState(false);
+  const [companionSeed, setCompanionSeed] = useState<{ ref: string } | null>(null);
   const [selectedBook, setSelectedBook] = useState<Book>(BIBLE_BOOKS[0]);
   const [selectedChapter, setSelectedChapter] = useState<Chapter>(BIBLE_BOOKS[0].chapters[0]);
   const [chapterVerses, setChapterVerses] = useState<Verse[]>([]);
@@ -284,6 +304,21 @@ export default function BibleScreen() {
     setHighlightedVerse(verseNum); setHighlightedVerseRef(ref);
     setHighlightedVerseText(verseText); setReflectionText('');
     loadTodayAcknowledged(ref);
+  };
+
+  // Share the highlighted verse via the native sheet (which includes Copy on iOS).
+  const shareVerse = () => {
+    if (!highlightedVerseRef || !highlightedVerseText) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Share.share({ message: `"${highlightedVerseText}" ${highlightedVerseRef} (KJV)` }).catch(() => {});
+  };
+
+  // Bring the highlighted verse to Halo: open the companion with the verse attached as context.
+  const discussVerseWithHalo = () => {
+    if (!highlightedVerseRef) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setCompanionSeed({ ref: highlightedVerseRef });
+    setCompanionOpen(true);
   };
 
   const toggleFavorite = async () => {
@@ -636,9 +671,17 @@ export default function BibleScreen() {
               {highlightedVerseAcknowledged ? `Reflected · ${highlightedVerseRef}` : `Reflect · ${highlightedVerseRef}`}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={toggleFavorite} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Ionicons name={isCurrentFavorited ? 'star' : 'star-outline'} size={16} color={isCurrentFavorited ? theme.accentAmber : theme.textMuted} />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+            <TouchableOpacity onPress={toggleFavorite} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name={isCurrentFavorited ? 'star' : 'star-outline'} size={16} color={isCurrentFavorited ? theme.accentAmber : theme.textMuted} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={shareVerse} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="share-outline" size={16} color={theme.textMuted} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={discussVerseWithHalo} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <HaloCross size={16} />
+            </TouchableOpacity>
+          </View>
         </View>
       )}
 
@@ -1073,6 +1116,11 @@ export default function BibleScreen() {
       )}
 
       <PrayerRequestModal visible={showPrayerModal} onClose={() => setShowPrayerModal(false)} />
+
+      {/* Halo, the faith companion: bottom-left so it never collides with the bottom-right
+          auto-scroll FAB. Tier-gated inside the component (hidden for Not Right Now). */}
+      <CompanionFAB onPress={() => { setCompanionSeed(null); setCompanionOpen(true); }} bottom={20 + insets.bottom} />
+      <CompanionChat visible={companionOpen} seedContext={companionSeed} onClose={() => setCompanionOpen(false)} />
 
     </LinearGradient>
   );

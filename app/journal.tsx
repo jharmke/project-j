@@ -11,6 +11,8 @@ import {
     Text, TextInput, TouchableOpacity, View
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import CompanionFAB from '../components/CompanionFAB';
+import CompanionChat from '../components/CompanionChat';
 import { useToast } from '../components/Toast';
 import { storageSet } from '../utils/storage';
 import { useTheme } from '../theme';
@@ -335,6 +337,7 @@ export default function JournalScreen() {
   const { showToast } = useToast();
   const params = useLocalSearchParams();
 
+  const [companionOpen, setCompanionOpen] = useState(false);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [filterCategory, setFilterCategory] = useState<Category | null>(null);
@@ -709,6 +712,11 @@ export default function JournalScreen() {
           <Ionicons name="add" size={28} color="#ffffff" />
         </TouchableOpacity>
       </Animated.View>
+
+      {/* Halo, the faith companion: bottom-left so it never collides with the bottom-right
+          new-entry FAB. Tier-gated inside the component (hidden for Not Right Now). */}
+      <CompanionFAB onPress={() => setCompanionOpen(true)} bottom={32} />
+      <CompanionChat visible={companionOpen} onClose={() => setCompanionOpen(false)} />
 
       {/* Category picker sheet */}
       {showCategorySheet && (

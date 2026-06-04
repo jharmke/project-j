@@ -1,16 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  Animated, Keyboard, Linking, Modal, Platform, Pressable,
-  ScrollView, StyleSheet, Text, TextInput, View,
+  Alert, Animated, Keyboard, Linking, Modal, Platform, Pressable,
+  ScrollView, Share, StyleSheet, Text, TextInput, View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Rect } from 'react-native-svg';
+import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, runOnJS } from 'react-native-reanimated';
+import { GestureHandlerRootView, GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { router } from 'expo-router';
 import { app } from '../firebaseConfig';
 import { CRISIS_RESPONSE, screenForCrisis } from '../utils/faithCrisis';
+import {
+  extractReferences, validateStructure, verifyReferencesInText,
+  type VerifyResult, type VerifyStatus, type VerseRef,
+} from '../utils/faithVerse';
+import { fetchChapter } from '../data/bible-web';
+import { ToastRenderer, useToast } from './Toast';
 import { useTheme } from '../theme';
 
 // Halo's chat overlay. A transparent Modal that fades in over the current faith screen
@@ -34,7 +43,75 @@ const GREETINGS = [
 const pickGreeting = () => GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
 
 type Role = 'user' | 'halo' | 'system' | 'crisis';
-type Msg = { role: Role; text: string };
+// A Halo reply renders as segments so VERIFIED Scripture references become tappable links
+// while fabricated ones are stripped (see buildSegments). Plain text stays plain text.
+type Segment =
+  | { type: 'text'; value: string }
+  | { type: 'ref'; value: string; ref: VerseRef; realText: string | null };
+type Msg = { role: Role; text: string; segments?: Segment[]; feedback?: 'up' | 'down'; sent?: string };
+
+// Light cleanup for the gap a stripped (fabricated) reference can leave: empty parens, a
+// space before punctuation, or a doubled space. A safe no-op on normal prose.
+function cleanStripArtifacts(s: string): string {
+  return s
+    .replace(/\(\s*\)/g, '')
+    .replace(/\s+([,.;:!?])/g, '$1')
+    .replace(/[ \t]{2,}/g, ' ');
+}
+
+// Turn a reply + its verification results into render segments. Verified and unavailable
+// (structurally real) references become tappable links; invalid ones are stripped. Text
+// left touching by a strip is merged and cleaned so the sentence still reads naturally.
+function buildSegments(original: string, results: VerifyResult[]): { text: string; segments: Segment[] } {
+  const sorted = [...results].sort((a, b) => a.ref.index - b.ref.index);
+  const raw: Segment[] = [];
+  let cursor = 0;
+  for (const r of sorted) {
+    const start = r.ref.index;
+    const end = start + r.ref.raw.length;
+    if (start < cursor) continue; // overlap guard
+    if (start > cursor) raw.push({ type: 'text', value: original.slice(cursor, start) });
+    if (r.status === 'verified' || r.status === 'unavailable') {
+      raw.push({ type: 'ref', value: r.ref.raw, ref: r.ref, realText: r.realText });
+    }
+    // invalid_reference / invalid_verse: emit nothing (strip the fabricated citation).
+    cursor = end;
+  }
+  if (cursor < original.length) raw.push({ type: 'text', value: original.slice(cursor) });
+
+  // Merge adjacent text segments (a strip can leave two touching), then clean each.
+  const merged: Segment[] = [];
+  for (const s of raw) {
+    const last = merged[merged.length - 1];
+    if (s.type === 'text' && last && last.type === 'text') last.value += s.value;
+    else merged.push({ ...s });
+  }
+  for (const s of merged) if (s.type === 'text') s.value = cleanStripArtifacts(s.value);
+
+  const text = merged.map(s => s.value).join('');
+  return { text, segments: merged.length ? merged : [{ type: 'text', value: text }] };
+}
+
+// Verify Halo's Scripture before it renders so nothing fabricated or misquoted is ever shown.
+async function buildVerifiedReply(reply: string): Promise<{ text: string; segments: Segment[] }> {
+  try {
+    const results = await verifyReferencesInText(reply, fetchChapter);
+    return buildSegments(reply, results);
+  } catch {
+    // Defensive offline fallback: still strip fabricated books/chapters (no network needed),
+    // just without the verse-number/wording check or tappable links.
+    try {
+      const results: VerifyResult[] = extractReferences(reply).map(ref => {
+        const { bookValid, chapterValid } = validateStructure(ref);
+        const status: VerifyStatus = bookValid && chapterValid ? 'unavailable' : 'invalid_reference';
+        return { ref, status, realText: null };
+      });
+      return buildSegments(reply, results);
+    } catch {
+      return { text: reply, segments: [{ type: 'text', value: reply }] };
+    }
+  }
+}
 
 // A small Latin cross, used in Halo's gold badge so it matches the FAB.
 function MiniCross({ size, color }: { size: number; color: string }) {
@@ -103,19 +180,28 @@ function TypingDots() {
   );
 }
 
-export default function CompanionChat({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+export default function CompanionChat({
+  visible, onClose, seedContext,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  seedContext?: { ref: string } | null;
+}) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const { showToast } = useToast();
 
   const [messages, setMessages] = useState<Msg[]>(() => [{ role: 'halo', text: pickGreeting() }]);
   const [input, setInput] = useState('');
   const [kb, setKb] = useState(0); // keyboard height when shown
   const [sending, setSending] = useState(false);
   const [tier, setTier] = useState<'rooted' | 'exploring'>('exploring');
+  const [attachedContext, setAttachedContext] = useState<{ ref: string } | null>(null); // verse brought from the Bible reader
 
   const anim = useRef(new Animated.Value(0)).current; // 0 closed, 1 open
   const scrollRef = useRef<ScrollView>(null);
   const inputRef = useRef<TextInput>(null);
+  const dragY = useSharedValue(0); // drag-to-dismiss offset (Reanimated)
 
   // Faith tier drives Halo's posture (Rooted speaks as a fellow believer, Exploring is gentler).
   useEffect(() => {
@@ -129,6 +215,8 @@ export default function CompanionChat({ visible, onClose }: { visible: boolean; 
 
   useEffect(() => {
     if (visible) {
+      dragY.value = 0; // reset any prior drag offset so every open starts at rest
+      setAttachedContext(seedContext ?? null); // attach the verse if opened from a verse, else clear
       anim.setValue(0);
       Animated.timing(anim, { toValue: 1, duration: 220, useNativeDriver: false }).start();
     }
@@ -137,7 +225,13 @@ export default function CompanionChat({ visible, onClose }: { visible: boolean; 
   useEffect(() => {
     const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    const s = Keyboard.addListener(showEvt, e => setKb(e.endCoordinates?.height ?? 0));
+    const s = Keyboard.addListener(showEvt, e => {
+      setKb(e.endCoordinates?.height ?? 0);
+      // Re-scroll so the latest message clears the keyboard when it REOPENS. The content
+      // size does not change here (only the bottom padding does), so onContentSizeChange
+      // would not fire on its own; scroll after a beat so the new padding lays out first.
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
+    });
     const h = Keyboard.addListener(hideEvt, () => setKb(0));
     return () => { s.remove(); h.remove(); };
   }, []);
@@ -148,12 +242,84 @@ export default function CompanionChat({ visible, onClose }: { visible: boolean; 
     Animated.timing(anim, { toValue: 0, duration: 180, useNativeDriver: false }).start(() => onClose());
   };
 
-  const newChat = () => {
+  // Open a VERIFIED verse in the Bible reader: fade the chat out (same as the X), then route
+  // to the reader at that passage through its existing verseRef param path (navigateToRef).
+  const openRef = (seg: Extract<Segment, { type: 'ref' }>) => {
+    const { ref, realText } = seg;
+    if (!ref.book) return;
+    const refStr = `${ref.book} ${ref.chapter}:${ref.verseStart}${ref.verseEnd ? `-${ref.verseEnd}` : ''}`;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Keyboard.dismiss();
+    Animated.timing(anim, { toValue: 0, duration: 180, useNativeDriver: false }).start(() => {
+      onClose();
+      const params: Record<string, string> = { verseRef: refStr };
+      if (realText && !ref.verseEnd) params.verseText = realText; // single verse only
+      router.push({ pathname: '/bible', params });
+    });
+  };
+
+  // Share a reply via the native share sheet (which includes Copy on iOS), so copy + share
+  // are one tap with no extra dependency. Shares the clean, verified text.
+  const shareMessage = async (text: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      await Share.share({ message: text });
+    } catch {}
+  };
+
+  // Thumbs-down is the content-report hook: save the flagged exchange locally (append-only,
+  // read-then-merge). No external send yet; wiring to a review sink is a deferred follow-up.
+  const saveReport = async (userMessage: string, haloReply: string) => {
+    try {
+      const raw = await AsyncStorage.getItem('pj_halo_reports');
+      const all = raw ? JSON.parse(raw) : [];
+      all.push({ ts: Date.now(), tier, userMessage, haloReply });
+      await AsyncStorage.setItem('pj_halo_reports', JSON.stringify(all));
+    } catch {}
+  };
+
+  // Up/down toggles per reply. Setting either fires a thank-you toast; tapping the active one
+  // again clears it silently. Down also captures the exchange for review.
+  const setFeedback = (index: number, value: 'up' | 'down') => {
+    const cur = messages[index];
+    if (!cur) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const newVal = cur.feedback === value ? undefined : value;
+    setMessages(prev => prev.map((m, k) => (k === index ? { ...m, feedback: newVal } : m)));
+    if (!newVal) return; // toggled off
+    if (newVal === 'down') {
+      let userMessage = '';
+      for (let k = index - 1; k >= 0; k--) {
+        if (messages[k].role === 'user') { userMessage = messages[k].text; break; }
+      }
+      saveReport(userMessage, cur.text);
+    }
+    showToast(newVal === 'up' ? 'Thanks for the feedback' : 'Thanks, this helps improve Halo', undefined, 'success');
+  };
+
+  // The actual wipe: clears the thread back to a fresh greeting. Heavy haptic because it
+  // is destructive (the in-memory conversation is gone).
+  const resetChat = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     Keyboard.dismiss();
     setInput('');
     setSending(false);
     setMessages([{ role: 'halo', text: pickGreeting() }]);
+  };
+
+  const newChat = () => {
+    // Nothing to lose yet (only Halo's opening greeting, no typed text): just reset, no nag.
+    const hasConversation = messages.length > 1 || input.trim().length > 0;
+    if (!hasConversation) { resetChat(); return; }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Alert.alert(
+      'Start a new chat?',
+      'This clears your current conversation with Halo.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'New Chat', style: 'destructive', onPress: resetChat },
+      ],
+    );
   };
 
   const canSend = input.trim().length > 0 && !sending;
@@ -163,13 +329,23 @@ export default function CompanionChat({ visible, onClose }: { visible: boolean; 
     if (!text || sending) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
+    // If a verse is attached (brought from the Bible reader), send Halo the REFERENCE as
+    // context. Only the reference travels, never the verse text, so scripture never enters
+    // the crisis screen (lament passages carry death language by nature).
+    const ctx = attachedContext;
+    const outbound = ctx
+      ? `For context, I'm reading ${ctx.ref} and would like to talk about it. ${text}`
+      : text;
+
     // History the model sees: prior real turns only (skip system notices and crisis cards).
+    // User turns carry what was actually SENT (with any context) so Halo keeps the thread.
     const history = messages
       .filter(m => m.role === 'user' || m.role === 'halo')
-      .map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', text: m.text }));
+      .map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', text: m.role === 'user' ? (m.sent ?? m.text) : m.text }));
 
-    setMessages(prev => [...prev, { role: 'user', text }]);
+    setMessages(prev => [...prev, ctx ? { role: 'user', text, sent: outbound } : { role: 'user', text }]);
     setInput('');
+    setAttachedContext(null);
 
     // Client-side crisis short-circuit (layer 1): never route a crisis to the AI; show
     // the vetted hardcoded response instantly, offline-safe.
@@ -183,18 +359,24 @@ export default function CompanionChat({ visible, onClose }: { visible: boolean; 
 
     try {
       const callable = httpsCallable(getFunctions(app), 'faithCompanion');
-      const res = await callable({ message: text, tier, history });
+      const res = await callable({ message: outbound, tier, history });
       const data = (res.data ?? {}) as { ok?: boolean; reply?: string; crisis?: boolean; reason?: string; message?: string };
-      setSending(false);
 
       if (data.crisis) {
+        setSending(false);
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
         setMessages(prev => [...prev, { role: 'crisis', text: '' }]);
       } else if (data.ok && data.reply) {
-        setMessages(prev => [...prev, { role: 'halo', text: data.reply! }]);
+        // Verify Scripture BEFORE rendering so nothing fabricated ever flashes. Typing dots
+        // stay up for the extra beat (usually instant; one fetch worst case).
+        const built = await buildVerifiedReply(data.reply);
+        setSending(false);
+        setMessages(prev => [...prev, { role: 'halo', text: built.text, segments: built.segments }]);
       } else if (data.message) {
+        setSending(false);
         setMessages(prev => [...prev, { role: 'system', text: data.message! }]);
       } else {
+        setSending(false);
         setMessages(prev => [...prev, { role: 'system', text: 'Something went wrong. Please try again.' }]);
       }
     } catch (e) {
@@ -210,33 +392,55 @@ export default function CompanionChat({ visible, onClose }: { visible: boolean; 
   const backdropOpacity = anim.interpolate({ inputRange: [0, 1], outputRange: [0, 0.55] });
   const panelScale      = anim.interpolate({ inputRange: [0, 1], outputRange: [0.97, 1] });
 
+  // Drag-to-dismiss: a Pan on the top strip translates the panel down; past a threshold (or
+  // a fast flick) it slides off and closes, otherwise it springs back. Only downward drags
+  // engage, so taps on the handle / header buttons still work.
+  const closeFromDrag = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onClose();
+  };
+  const dragGesture = Gesture.Pan()
+    .activeOffsetY(10)
+    .failOffsetY(-10)
+    .onUpdate(e => { dragY.value = Math.max(0, e.translationY); })
+    .onEnd(e => {
+      if (e.translationY > 120 || e.velocityY > 800) {
+        dragY.value = withTiming(900, { duration: 180 }, finished => { if (finished) runOnJS(closeFromDrag)(); });
+      } else {
+        dragY.value = withSpring(0, { damping: 18, stiffness: 180 });
+      }
+    });
+  const dragStyle = useAnimatedStyle(() => ({ transform: [{ translateY: dragY.value }] }));
+
   return (
     <Modal transparent visible={visible} animationType="none" onRequestClose={close} statusBarTranslucent>
-      <View style={StyleSheet.absoluteFill}>
+      <GestureHandlerRootView style={StyleSheet.absoluteFill}>
         {/* Dim backdrop, tap to close. */}
         <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: '#000', opacity: backdropOpacity }]}>
           <Pressable style={StyleSheet.absoluteFill} onPress={close} />
         </Animated.View>
 
-        {/* Panel. */}
-        <Animated.View
-          style={[
-            styles.panel,
-            {
-              marginTop: insets.top + 96,
-              backgroundColor: theme.bgSheet,
-              borderColor: theme.borderSheet,
-              opacity: anim,
-              transform: [{ scale: panelScale }],
-            },
-          ]}
-        >
+        {/* Drag wrapper (Reanimated translateY) holds the open/close panel (RN Animated). */}
+        <Reanimated.View style={[{ flex: 1, marginTop: insets.top + 96 }, dragStyle]}>
+          <Animated.View
+            style={[
+              styles.panel,
+              {
+                backgroundColor: theme.bgSheet,
+                borderColor: theme.borderSheet,
+                opacity: anim,
+                transform: [{ scale: panelScale }],
+              },
+            ]}
+          >
           <View style={{ flex: 1, paddingBottom: kb }}>
-            {/* Handle: tap to close (drag-to-dismiss pinned for a gesture-handler pass). */}
-            <Pressable onPress={close} hitSlop={10} style={styles.handleWrap}>
-              <View style={[styles.handle, { backgroundColor: theme.textDim }]} />
-            </Pressable>
-            <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
+            {/* Top strip: drag down to dismiss, tap the handle to close. */}
+            <GestureDetector gesture={dragGesture}>
+              <View>
+                <Pressable onPress={close} hitSlop={10} style={styles.handleWrap}>
+                  <View style={[styles.handle, { backgroundColor: theme.textDim }]} />
+                </Pressable>
+                <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
               <View style={styles.brandRow}>
                 <View style={[styles.brandDot, { backgroundColor: GOLD }]}>
                   <MiniCross size={16} color={CROSS_DARK} />
@@ -248,13 +452,15 @@ export default function CompanionChat({ visible, onClose }: { visible: boolean; 
               </View>
               <View style={styles.headerActions}>
                 <Pressable onPress={newChat} hitSlop={12} style={styles.closeBtn}>
-                  <Ionicons name="create-outline" size={20} color={theme.textMuted} />
+                  <Ionicons name="refresh" size={20} color={theme.textMuted} />
                 </Pressable>
                 <Pressable onPress={close} hitSlop={12} style={styles.closeBtn}>
                   <Ionicons name="close" size={22} color={theme.textMuted} />
                 </Pressable>
               </View>
-            </View>
+                </View>
+                </View>
+              </GestureDetector>
 
             {/* Messages. */}
             <ScrollView
@@ -281,22 +487,78 @@ export default function CompanionChat({ visible, onClose }: { visible: boolean; 
                     />
                   );
                 }
+                const body = (
+                  <Text style={[styles.bubbleText, { color: theme.textPrimary }]}>
+                    {m.segments
+                      ? m.segments.map((s, j) =>
+                          s.type === 'ref' ? (
+                            <Text key={j} onPress={() => openRef(s)} style={styles.verseLink}>{s.value}</Text>
+                          ) : (
+                            <Text key={j}>{s.value}</Text>
+                          ),
+                        )
+                      : m.text}
+                  </Text>
+                );
+                // A real Halo reply (carries verified segments) gets an action row; the opening
+                // greeting and the user's own messages do not.
+                const isReply = m.role === 'halo' && !!m.segments;
+                if (!isReply) {
+                  return (
+                    <View
+                      key={i}
+                      style={[
+                        styles.bubble,
+                        m.role === 'user'
+                          ? { alignSelf: 'flex-end', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }
+                          : styles.haloBubble,
+                      ]}
+                    >
+                      {body}
+                    </View>
+                  );
+                }
                 return (
-                  <View
-                    key={i}
-                    style={[
-                      styles.bubble,
-                      m.role === 'user'
-                        ? { alignSelf: 'flex-end', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }
-                        : styles.haloBubble,
-                    ]}
-                  >
-                    <Text style={[styles.bubbleText, { color: theme.textPrimary }]}>{m.text}</Text>
+                  <View key={i} style={styles.replyWrap}>
+                    <View style={[styles.bubble, styles.haloBubble, styles.replyBubble]}>{body}</View>
+                    <View style={styles.actionRow}>
+                      <Pressable onPress={() => shareMessage(m.text)} hitSlop={8} style={styles.actionBtn}>
+                        <Ionicons name="share-outline" size={17} color={theme.textMuted} />
+                      </Pressable>
+                      <Pressable onPress={() => setFeedback(i, 'up')} hitSlop={8} style={styles.actionBtn}>
+                        <Ionicons
+                          name={m.feedback === 'up' ? 'thumbs-up' : 'thumbs-up-outline'}
+                          size={17}
+                          color={m.feedback === 'up' ? theme.accentGreen : theme.textMuted}
+                        />
+                      </Pressable>
+                      <Pressable onPress={() => setFeedback(i, 'down')} hitSlop={8} style={styles.actionBtn}>
+                        <Ionicons
+                          name={m.feedback === 'down' ? 'thumbs-down' : 'thumbs-down-outline'}
+                          size={17}
+                          color={m.feedback === 'down' ? theme.textSecondary : theme.textMuted}
+                        />
+                      </Pressable>
+                    </View>
                   </View>
                 );
               })}
               {sending && <TypingDots />}
             </ScrollView>
+
+            {/* Attached verse chip (when brought from the Bible reader). Dismissible: the
+                offer can always be waved off, matching the scalpel-not-default context rule. */}
+            {attachedContext && (
+              <View style={[styles.contextChip, { backgroundColor: 'rgba(232,160,32,0.12)', borderColor: 'rgba(232,160,32,0.32)' }]}>
+                <MiniCross size={12} color={GOLD} />
+                <Text style={[styles.contextChipText, { color: theme.textSecondary }]} numberOfLines={1}>
+                  Discussing {attachedContext.ref}
+                </Text>
+                <Pressable onPress={() => setAttachedContext(null)} hitSlop={8} style={styles.contextChipClose}>
+                  <Ionicons name="close" size={13} color={theme.textMuted} />
+                </Pressable>
+              </View>
+            )}
 
             {/* Input bar (seamless with the panel, no divider band). */}
             <View style={styles.inputBar}>
@@ -324,7 +586,11 @@ export default function CompanionChat({ visible, onClose }: { visible: boolean; 
             </Text>
           </View>
         </Animated.View>
-      </View>
+        </Reanimated.View>
+
+        {/* Toast layer ABOVE the modal (RN modals are a separate native window). */}
+        <ToastRenderer />
+      </GestureHandlerRootView>
     </Modal>
   );
 }
@@ -375,6 +641,11 @@ const styles = StyleSheet.create({
     borderLeftWidth: 2.5,
   },
   bubbleText: { fontSize: 14, fontFamily: 'DMSans_400Regular', lineHeight: 20 },
+  verseLink:  { color: GOLD, fontFamily: 'DMSans_600SemiBold', textDecorationLine: 'underline' },
+  replyWrap:   { alignSelf: 'flex-start', maxWidth: '86%', marginBottom: 10 },
+  replyBubble: { maxWidth: '100%', marginBottom: 0 },
+  actionRow:   { flexDirection: 'row', alignItems: 'center', marginTop: 2, paddingLeft: 2 },
+  actionBtn:   { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
   systemMsg:  { fontSize: 12, fontFamily: 'DMSans_400Regular', textAlign: 'center', alignSelf: 'center', maxWidth: '90%', marginVertical: 10, lineHeight: 17 },
   crisisCard: {
     alignSelf: 'stretch',
@@ -390,6 +661,9 @@ const styles = StyleSheet.create({
   crisisBtnDetail:{ fontSize: 12, fontFamily: 'DMSans_400Regular', marginTop: 1 },
   crisisSmall:    { fontSize: 11, fontFamily: 'DMSans_400Regular', lineHeight: 16 },
   crisisClosing:  { fontSize: 13, fontFamily: 'DMSans_600SemiBold', textAlign: 'center', marginTop: 2 },
+  contextChip:      { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', marginLeft: 12, marginBottom: 2, marginTop: 2, paddingVertical: 5, paddingHorizontal: 10, borderRadius: 14, borderWidth: 1 },
+  contextChipText:  { fontSize: 12, fontFamily: 'DMSans_600SemiBold', maxWidth: 220 },
+  contextChipClose: { padding: 2 },
   inputBar:   { flexDirection: 'row', alignItems: 'flex-end', gap: 10, paddingHorizontal: 12, paddingTop: 6 },
   input:      { flex: 1, minHeight: 44, maxHeight: 120, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, fontFamily: 'DMSans_400Regular' },
   sendBtn:    { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },

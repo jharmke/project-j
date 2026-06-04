@@ -464,6 +464,8 @@ These were discussed but not fully locked. Flag for design review before buildin
 
 6. **Video game cumulative XP number:** discussed and rejected for Day Score. Parked as potential future feature -- running lifetime total of all Day Score composites shown in profile or achievements. Not part of this spec.
 
+7. **Calories subtext formatting (added 2026-06-04, gym note 1):** the net-vs-pace-target display is conceptually correct, but the raw signed number (Justin's example: -825 kcal) reads as ALARMING when the user is actually on track. A big negative looks like a problem when a deficit on a lose goal is a win. Needs a presentation pass: sign convention, labeling, or phrasing that makes a deficit read as a win when appropriate (and a surplus read correctly per goal direction). The DATA stays exactly as is; only the presentation changes. Applies to the Day Summary calorie subtext (section 3.3); check whether the home calorie card subtext shares the same raw-signed display and needs the same treatment. Mode-aware: Mindful already strips net/countdown framing, so this mostly affects Discipline/Balanced. The eventual Smart Coach takeaway copy (section 10) is the richer fix, but a simple formatting pass can land before the engine exists.
+
 ---
 
 ## 10. SMART TIPS RELATIONSHIP (preview only, not spec)

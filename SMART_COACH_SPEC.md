@@ -110,6 +110,8 @@ Combinations that mean something neither signal does alone.
 - 4.4 LOW DEEP SLEEP. Adequate hours but low deep percentage; alcohol, late meals, screens.
 - 4.5 SLEEP CARRYING EVERYTHING (positive). Strong sleep lining up with better adherence and recovery.
 
+SLEEP COACH delivery quality (2026-06-04, gym note 7): the sleep card tip is the primary Family 4 surface, and today it fires the same generic lines repeatedly ("consistent bedtimes train your body"). The Family 4 version must REFERENCE THE USER'S ACTUAL DATA: their specific deep-sleep duration last night, their personal averages, their actual bedtime vs their best nights. Same hybrid brain/voice architecture as the rest of the coach (brain reads the real numbers, AI voices the observation). Internally this is the "Sleep Coach." It is delivered on the sleep card AND on the new sleep detail screen (see the roadmap sleep-detail item, which will get its own SPEC_sleep.md at build time). This is the quality bar for the existing roadmap item "SLEEP CARD TIPS LOW QUALITY."
+
 ## Family 5: Consistency, Data Quality, Confidence
 - 5.1 TOO SPARSE TO TRUST. Below the minimum logged days; the coach lowers its own confidence and says so honestly instead of faking a read.
 - 5.2 PARTIAL-DAY LOGGING. Days logged but suspiciously low calories (only breakfast); skews the deficit math. Flag the data gap, not the person.
@@ -217,6 +219,7 @@ Note on accuracy: the placeholder version claimed the scale was stalled. That li
   - EvR FEELS HIDDEN. Justin likes coaching living in EvR but it feels buried: the user must go into EvR AND generate a NEW report to see everything, too much friction for a flagship feature. Reinforces the spec's own "nearly invisible" lesson (see "Why we are rebuilding"). Visibility fix: make the latest coaching insight reachable without a manual report regeneration.
   - HOME SMART-TIP CARD treatment. The home smart-tip card feels hidden and not "smart" with just a top border; consider a tint / stronger card treatment so it reads as a premium flagship surface, not a footnote.
   - IF AUTO-START / NUDGE (automation, beyond a tip). A user setting to auto-start the fasting window after the first calories are logged, and/or reopen-or-nudge if food is logged after the window was manually closed. Cross-references scenarios 8.4 (timer not started) and 8.5 (eating past a closed window): those are coach TIPS, this is an ACTION/setting, likely a standalone IF feature that pairs with the tips. Decide whether the automation lives in IF settings vs the coach.
+  - FIRST-WEEK SMART MOMENT (2026-06-04, gym note 11). After a user's first 7 days of data, surface a moment: "Here's what I noticed about your first week." Runs the Smart Coach engine on a SHORTER data window (7 days) and catches new users exactly when they first have enough data to get real value, reinforcing the habit before they churn. This is a retention/onboarding play as much as a coaching one. Surface TBD (a card, a notification, or a modal) and timing TBD, but the trigger is clear: day 7 of real data. Confidence handling matters here (ties to Family 5.5 BRAND NEW): a 7-day read is thinner than the normal window, so the moment should be encouraging and observational, not a hard diagnosis. If delivered as a notification it routes through the Smart system (see SPEC_notifications.md).
 
 ---
 

@@ -26,6 +26,10 @@ const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY');
 // subscription system), so EVERYONE is free for now; this becomes a tier lookup later.
 const FREE_DAILY_CAP = 5;
 
+// Dev/test accounts that bypass the daily cap (effectively unlimited). Empty this before
+// public launch. Currently just Justin's uid for testing.
+const DEV_UNLIMITED_UIDS = ['zLZOx2aqiKXcl3tlg7LNmkwbGxH3'];
+
 // Cheap, fast model (Justin's intentional cost choice; tune up to Sonnet 4.6 if quality
 // needs it). Alias form, no date suffix.
 const MODEL = 'claude-haiku-4-5';
@@ -85,13 +89,14 @@ export const faithCompanion = onCall(
     }
 
     // 3. Per-user daily cap: atomic check-and-increment so concurrent calls cannot race past it.
+    const dailyCap = DEV_UNLIMITED_UIDS.includes(uid) ? 100000 : FREE_DAILY_CAP;
     const today = todayKey();
     const ref = usageDoc(uid);
     const cap = await admin.firestore().runTransaction(async (tx) => {
       const snap = await tx.get(ref);
       const d = snap.exists ? (snap.data() as { date?: string; count?: number }) : {};
       const count = d.date === today ? (d.count ?? 0) : 0;
-      if (count >= FREE_DAILY_CAP) {
+      if (count >= dailyCap) {
         return { allowed: false, used: count };
       }
       tx.set(
@@ -106,7 +111,7 @@ export const faithCompanion = onCall(
       return {
         ok: false,
         reason: 'daily_limit',
-        cap: FREE_DAILY_CAP,
+        cap: dailyCap,
         used: cap.used,
         message: "You're out of messages for today. They reset tomorrow.",
       };

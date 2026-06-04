@@ -45,6 +45,22 @@ function usageDoc(uid: string) {
   return admin.firestore().collection('ai_usage').doc(uid);
 }
 
+// Deterministic house-style backstop. The system prompt already forbids em dashes and
+// double hyphens, but a model can still slip one through, so we strip it here and the
+// reply can never ship with a dash (project rule). Single hyphens and number ranges
+// (verse refs like 11:28-30) are deliberately preserved so references never break.
+function sanitizeDashes(text: string): string {
+  return text
+    // en dash between numbers stays a verse range: 28–30 -> 28-30
+    .replace(/(\d)\s*–\s*(\d)/g, '$1-$2')
+    // em dash, any other en dash, or a double hyphen used to join thoughts -> comma
+    .replace(/\s*(?:—|–|--)\s*/g, ', ')
+    // tidy any artifacts the replacement can create
+    .replace(/\s+,/g, ',')
+    .replace(/,\s*,/g, ',')
+    .replace(/[ \t]{2,}/g, ' ');
+}
+
 // Best-effort refund of one reserved message (AI failed or turned out to be a crisis).
 async function refundMessage(uid: string): Promise<void> {
   const today = todayKey();
@@ -166,6 +182,10 @@ export const faithCompanion = onCall(
         message: 'The companion is resting. Please try again in a little bit.',
       };
     }
+
+    // House-style backstop: strip any dash the model slipped past the prompt rule, so the
+    // reply never ships with one. Runs before the crisis-tag check (the tag has no dashes).
+    replyText = sanitizeDashes(replyText);
 
     // 5. AI crisis backstop: model flagged a crisis the screens missed. Refund (a crisis
     // never costs a message) and let the client show the hardcoded crisis response.

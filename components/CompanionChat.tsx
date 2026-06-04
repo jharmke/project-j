@@ -42,6 +42,12 @@ const GREETINGS = [
 
 const pickGreeting = () => GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
 
+// Local cache of today's message usage so the counter can show the moment Halo opens (the
+// client cannot read the server's ai_usage counter, which is locked down by the rules).
+// The date is the server's UTC day, so a stale cache self-expires at the daily reset.
+const QUOTA_KEY = 'pj_halo_quota';
+const utcDay = () => new Date().toISOString().slice(0, 10);
+
 type Role = 'user' | 'halo' | 'system' | 'crisis';
 // A Halo reply renders as segments so VERIFIED Scripture references become tappable links
 // while fabricated ones are stripped (see buildSegments). Plain text stays plain text.
@@ -197,6 +203,7 @@ export default function CompanionChat({
   const [sending, setSending] = useState(false);
   const [tier, setTier] = useState<'rooted' | 'exploring'>('exploring');
   const [attachedContext, setAttachedContext] = useState<{ ref: string } | null>(null); // verse brought from the Bible reader
+  const [quota, setQuota] = useState<{ used: number; cap: number } | null>(null); // today's message usage, from the server
 
   const anim = useRef(new Animated.Value(0)).current; // 0 closed, 1 open
   const scrollRef = useRef<ScrollView>(null);
@@ -209,6 +216,21 @@ export default function CompanionChat({
       .then(raw => {
         const t = raw ? JSON.parse(raw).faithJourney : null;
         setTier(t === 'rooted' ? 'rooted' : 'exploring');
+      })
+      .catch(() => {});
+  }, []);
+
+  // Load today's cached usage so the counter shows on open (e.g. a free user at 4 of 5 sees
+  // the heads-up immediately, even after an app restart). Ignored if the cache is from an
+  // earlier UTC day (the server has reset the count by then).
+  useEffect(() => {
+    AsyncStorage.getItem(QUOTA_KEY)
+      .then(raw => {
+        if (!raw) return;
+        const q = JSON.parse(raw);
+        if (q && q.date === utcDay() && typeof q.used === 'number' && typeof q.cap === 'number') {
+          setQuota({ used: q.used, cap: q.cap });
+        }
       })
       .catch(() => {});
   }, []);
@@ -322,7 +344,26 @@ export default function CompanionChat({
     );
   };
 
+  // Update the counter state and cache it for next open (read-then-set; the server is the
+  // source of truth, this is just a display cache that self-expires by date).
+  const persistQuota = (used: number, cap: number) => {
+    setQuota({ used, cap });
+    AsyncStorage.setItem(QUOTA_KEY, JSON.stringify({ date: utcDay(), used, cap })).catch(() => {});
+  };
+
   const canSend = input.trim().length > 0 && !sending;
+
+  // Message counter + soft heads-up. Hidden until the first reply this session, and hidden
+  // for unlimited/dev accounts (where used climbs past cap). Goes gold at the last message
+  // so the daily wall is never abrupt.
+  const remaining = quota ? Math.max(0, quota.cap - quota.used) : null;
+  const showQuota = !!quota && quota.used <= quota.cap;
+  const quotaLow = remaining !== null && remaining <= 1;
+  const quotaLabel =
+    remaining === null ? ''
+      : remaining === 0 ? "That's all for today. Halo resets tomorrow."
+      : remaining === 1 ? '1 message left today. It resets tomorrow.'
+      : `${remaining} of ${quota!.cap} messages left today.`;
 
   const send = async () => {
     const text = input.trim();
@@ -360,7 +401,13 @@ export default function CompanionChat({
     try {
       const callable = httpsCallable(getFunctions(app), 'faithCompanion');
       const res = await callable({ message: outbound, tier, history });
-      const data = (res.data ?? {}) as { ok?: boolean; reply?: string; crisis?: boolean; reason?: string; message?: string };
+      const data = (res.data ?? {}) as { ok?: boolean; reply?: string; crisis?: boolean; reason?: string; message?: string; used?: number; cap?: number };
+
+      // Track today's usage for the counter. Present on a real reply and on the daily-limit
+      // response; absent on crisis/resting (those are refunded, so usage is unchanged).
+      if (typeof data.used === 'number' && typeof data.cap === 'number') {
+        persistQuota(data.used, data.cap);
+      }
 
       if (data.crisis) {
         setSending(false);
@@ -560,6 +607,11 @@ export default function CompanionChat({
               </View>
             )}
 
+            {/* Message counter / soft heads-up (gold on the last message). */}
+            {showQuota && (
+              <Text style={[styles.quota, { color: quotaLow ? GOLD : theme.textDim }]}>{quotaLabel}</Text>
+            )}
+
             {/* Input bar (seamless with the panel, no divider band). */}
             <View style={styles.inputBar}>
               <TextInput
@@ -664,6 +716,7 @@ const styles = StyleSheet.create({
   contextChip:      { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start', marginLeft: 12, marginBottom: 2, marginTop: 2, paddingVertical: 5, paddingHorizontal: 10, borderRadius: 14, borderWidth: 1 },
   contextChipText:  { fontSize: 12, fontFamily: 'DMSans_600SemiBold', maxWidth: 220 },
   contextChipClose: { padding: 2 },
+  quota:      { fontSize: 11, fontFamily: 'DMSans_600SemiBold', letterSpacing: 0.3, textAlign: 'center', paddingHorizontal: 16, paddingTop: 6, paddingBottom: 2 },
   inputBar:   { flexDirection: 'row', alignItems: 'flex-end', gap: 10, paddingHorizontal: 12, paddingTop: 6 },
   input:      { flex: 1, minHeight: 44, maxHeight: 120, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, fontSize: 14, fontFamily: 'DMSans_400Regular' },
   sendBtn:    { width: 44, height: 44, borderRadius: 22, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },

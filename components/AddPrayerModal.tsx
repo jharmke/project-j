@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Animated, KeyboardAvoidingView, Modal, Platform, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { addPrayer, updatePrayer, type Prayer } from '../utils/prayers';
@@ -12,14 +12,19 @@ import { ToastRenderer, useToast } from './Toast';
  * editPrayer => EDIT mode (pre-filled, updates in place); otherwise add. Owns the write + toast,
  * hands the fresh list back via onAdded.
  *
- * KEYBOARD (the hard-won bit): tapping a button while the keyboard is open needs TWO things, and
- * missing either one makes the first tap only dismiss the keyboard:
- *   1. A ScrollView with keyboardShouldPersistTaps="handled" so iOS lets the tap reach the button
- *      instead of absorbing it into "dismiss the keyboard."
- *   2. No layout shift: NO KeyboardAvoidingView and NO keyboard insets, because either one slides
- *      the card during the tap and cancels the press. The card is pinned at a fixed top instead,
- *      high enough that the keyboard never covers it.
- * The dim sits on the outer View (covers behind the keyboard, so no white gap).
+ * KEYBOARD (UNSOLVED on the faith TAB, works from a STACK screen): from the prayer-screen FAB this
+ * modal cancels/submits fine with the keyboard up. From the faith-TAB card it does NOT: with the
+ * keyboard up the first tap is spent dismissing the keyboard and never reaches the button (keyboard-
+ * DOWN taps fire fine, which is the tell). We tried everything the Halo chat uses (no ScrollView, no
+ * statusBarTranslucent, no autoFocus, a GestureHandlerRootView wrap) and none cured the tab case, so
+ * the root cause is still unknown. The faith card no longer opens this modal (its quick-add was
+ * removed); the ONLY entry point now is the prayer-screen FAB, where it works. Before any future
+ * faith-TAB modal opens here, this must be solved.
+ * What DOES matter for the working FAB path, keep it: NO ScrollView (a ScrollView inside a Modal
+ * eats the tap as its own onTouchStart), and the keyboard is raised by a short delayed focus, not
+ * autoFocus. The backdrop dim is full-screen so it also covers behind the keyboard, no white gap.
+ * The card is anchored near the TOP (justifyContent flex-start + paddingTop), high enough to clear
+ * the keyboard, so when the keyboard rises the card does NOT shift up (no jump / glitch).
  */
 
 interface Props {
@@ -55,6 +60,8 @@ export default function AddPrayerModal({ visible, onClose, onAdded, editPrayer }
       Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, damping: 18, stiffness: 250 }),
       Animated.timing(opacityAnim, { toValue: 1, duration: 180, useNativeDriver: true }),
     ]).start();
+    // Raise the keyboard AFTER the modal settles, not via autoFocus (see KEYBOARD note up top).
+    setTimeout(() => inputRef.current?.focus(), 250);
   };
 
   const close = () => {
@@ -83,109 +90,104 @@ export default function AddPrayerModal({ visible, onClose, onAdded, editPrayer }
   const canSave = text.trim().length > 0 && !saving;
 
   return (
-    <Modal transparent animationType="none" visible={visible} onRequestClose={close} onShow={animateIn} statusBarTranslucent>
+    <Modal transparent animationType="none" visible={visible} onRequestClose={close} onShow={animateIn}>
       <ToastRenderer />
-      <View style={{ flex: 1, backgroundColor: theme.overlayBg }}>
-        <ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{ flexGrow: 1, paddingTop: insets.top + 50, alignItems: 'center' }}
-          keyboardShouldPersistTaps="always"
-          showsVerticalScrollIndicator={false}
-          onTouchStart={() => console.log('[PRAYERMODAL] ScrollView onTouchStart')}
+      {/* Backdrop: solid, full-screen, dim also covers behind the keyboard. Tap to close. */}
+      <TouchableOpacity
+        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: theme.overlayBg }}
+        activeOpacity={1}
+        onPressIn={() => console.log('[PRAYERMODAL] backdrop onPressIn')}
+        onPress={() => { console.log('[PRAYERMODAL] backdrop onPress'); close(); }}
+      />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1, justifyContent: 'flex-start', alignItems: 'center', paddingTop: insets.top + 80 }}
+        pointerEvents="box-none"
+      >
+        <Animated.View
+          style={{
+            width: '88%',
+            backgroundColor: theme.bgSheet,
+            borderRadius: 14,
+            borderWidth: 0.5,
+            borderColor: theme.borderCard,
+            borderTopWidth: 1.5,
+            borderTopColor: `rgba(${GOLD},0.7)`,
+            padding: 20,
+            transform: [{ scale: scaleAnim }],
+            opacity: opacityAnim,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.18,
+            shadowRadius: 12,
+          }}
         >
-          {/* Backdrop: tap anywhere outside the card to close. */}
-          <Pressable
-            style={StyleSheet.absoluteFill}
-            onPressIn={() => console.log('[PRAYERMODAL] backdrop onPressIn')}
-            onPress={() => { console.log('[PRAYERMODAL] backdrop onPress'); close(); }}
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <Ionicons name="hand-left" size={15} color={theme.accentAmber} />
+            <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentAmber }}>
+              {isEdit ? 'Edit a Prayer' : 'Add a Prayer'}
+            </Text>
+          </View>
+          <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginBottom: 16, lineHeight: 20 }}>
+            {isEdit
+              ? 'Reword what you wrote. Everything else stays the same.'
+              : "Something you're carrying. Mark it answered whenever God shows up, or just let it rest here."}
+          </Text>
+
+          <TextInput
+            ref={inputRef}
+            value={text}
+            onChangeText={setText}
+            placeholder="What's on your heart?"
+            placeholderTextColor={theme.textDim}
+            multiline
+            style={{
+              backgroundColor: theme.bgInput,
+              borderWidth: 1,
+              borderColor: theme.borderInput,
+              borderRadius: 8,
+              padding: 12,
+              fontSize: 14,
+              fontFamily: 'DMSans_400Regular',
+              color: theme.textPrimary,
+              minHeight: 72,
+              textAlignVertical: 'top',
+              marginBottom: 16,
+            }}
+            onBlur={() => inputRef.current?.setNativeProps({ selection: { start: 0, end: 0 } })}
           />
 
-          <Animated.View
-            style={{
-              width: '88%',
-              backgroundColor: theme.bgSheet,
-              borderRadius: 14,
-              borderWidth: 0.5,
-              borderColor: theme.borderCard,
-              borderTopWidth: 1.5,
-              borderTopColor: `rgba(${GOLD},0.7)`,
-              padding: 20,
-              transform: [{ scale: scaleAnim }],
-              opacity: opacityAnim,
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.18,
-              shadowRadius: 12,
-            }}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-              <Ionicons name="hand-left" size={15} color={theme.accentAmber} />
-              <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentAmber }}>
-                {isEdit ? 'Edit a Prayer' : 'Add a Prayer'}
-              </Text>
-            </View>
-            <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginBottom: 16, lineHeight: 20 }}>
-              {isEdit
-                ? 'Reword what you wrote. Everything else stays the same.'
-                : "Something you're carrying. Mark it answered whenever God shows up, or just let it rest here."}
-            </Text>
-
-            <TextInput
-              ref={inputRef}
-              value={text}
-              onChangeText={setText}
-              placeholder="What's on your heart?"
-              placeholderTextColor={theme.textDim}
-              multiline
-              autoFocus
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            <TouchableOpacity
+              onPressIn={() => console.log('[PRAYERMODAL] cancel onPressIn')}
+              onPress={() => { console.log('[PRAYERMODAL] cancel onPress'); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); close(); }}
+              style={{ flex: 1, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 12, backgroundColor: theme.bgInput }}
+            >
+              <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted }}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPressIn={() => console.log('[PRAYERMODAL] add onPressIn')}
+              onPress={handleSave}
+              disabled={!canSave}
               style={{
-                backgroundColor: theme.bgInput,
-                borderWidth: 1,
-                borderColor: theme.borderInput,
-                borderRadius: 8,
-                padding: 12,
-                fontSize: 14,
-                fontFamily: 'DMSans_400Regular',
-                color: theme.textPrimary,
-                minHeight: 72,
-                textAlignVertical: 'top',
-                marginBottom: 16,
+                flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+                borderWidth: 1, borderRadius: 8, paddingVertical: 12,
+                backgroundColor: canSave ? `rgba(${GOLD},0.15)` : theme.bgInput,
+                borderColor: canSave ? `rgba(${GOLD},0.35)` : theme.borderInput,
+                opacity: canSave ? 1 : 0.4,
               }}
-              onBlur={() => inputRef.current?.setNativeProps({ selection: { start: 0, end: 0 } })}
-            />
-
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TouchableOpacity
-                onPressIn={() => console.log('[PRAYERMODAL] cancel onPressIn')}
-                onPress={() => { console.log('[PRAYERMODAL] cancel onPress'); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); close(); }}
-                style={{ flex: 1, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 12, backgroundColor: theme.bgInput }}
-              >
-                <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted }}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPressIn={() => console.log('[PRAYERMODAL] add onPressIn')}
-                onPress={handleSave}
-                disabled={!canSave}
-                style={{
-                  flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-                  borderWidth: 1, borderRadius: 8, paddingVertical: 12,
-                  backgroundColor: canSave ? `rgba(${GOLD},0.15)` : theme.bgInput,
-                  borderColor: canSave ? `rgba(${GOLD},0.35)` : theme.borderInput,
-                  opacity: canSave ? 1 : 0.4,
-                }}
-              >
-                {saving
-                  ? <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.accentAmber }}>Saving...</Text>
-                  : <>
-                      <Ionicons name={isEdit ? 'checkmark' : 'add'} size={16} color={theme.accentAmber} />
-                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.accentAmber }}>{isEdit ? 'Save' : 'Add'}</Text>
-                    </>
-                }
-              </TouchableOpacity>
-            </View>
-          </Animated.View>
-        </ScrollView>
-      </View>
+            >
+              {saving
+                ? <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.accentAmber }}>Saving...</Text>
+                : <>
+                    <Ionicons name={isEdit ? 'checkmark' : 'add'} size={16} color={theme.accentAmber} />
+                    <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.accentAmber }}>{isEdit ? 'Save' : 'Add'}</Text>
+                  </>
+              }
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

@@ -9,6 +9,7 @@ import * as Haptics from 'expo-haptics';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import CompanionFAB from '../../components/CompanionFAB';
 import CompanionChat from '../../components/CompanionChat';
+import BibleStartGuide from '../../components/BibleStartGuide';
 import { resolveDailyVerse, VERSES, type DailyVerse } from '../../data/verses';
 import { loadPrayers, getActive, type Prayer } from '../../utils/prayers';
 import { useTheme, type Theme } from '../../theme';
@@ -164,6 +165,25 @@ function PressCard({ onPress, style, children }: { onPress: () => void; style: a
   );
 }
 
+// Same press feel as PressCard. Pass wrapperStyle={{ flex: 1 }} for side-by-side row buttons, or
+// omit it for full-width stacked buttons.
+function PressButton({ onPress, style, wrapperStyle, children }: { onPress: () => void; style: any; wrapperStyle?: any; children: ReactNode }) {
+  const scale = useRef(new Animated.Value(1)).current;
+  return (
+    <Animated.View style={[wrapperStyle, { transform: [{ scale }] }]}>
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={onPress}
+        onPressIn={() => Animated.timing(scale, { toValue: 0.97, duration: 100, useNativeDriver: true }).start()}
+        onPressOut={() => Animated.timing(scale, { toValue: 1, duration: 150, useNativeDriver: true }).start()}
+        style={style}
+      >
+        {children}
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
 // Today's Message. Shows the SAME daily verse as the Home tab (shared rotation in
 // data/verses.ts) so they always match. Tapping opens the Bible reader at the passage.
 // The home-only extras (the reflection-prompt subtext Justin flagged, and the journal
@@ -192,27 +212,103 @@ function VotdCard({ verse, theme }: { verse: DailyVerse | null; theme: Theme }) 
   );
 }
 
-// The Bible card. Option 2 for now: a clean launcher into the existing Bible reader. When
-// devotional plans land (Bucket C), the active-plan section slots in above this row and the
-// label becomes "Bible and Plans."
+// The Bible card. Two states keyed on READ HISTORY (not tier): RETURNING (a saved spot exists in
+// pj_bible_last_read) shows "Continue reading: {Book} {Chapter}" and resumes there; FIRST-TIME (no
+// history) offers "Where do I start?" (a curated guide) and "Open the Bible" (jumps in, lands John
+// 1). Visual: gold book icon, warm amber title, no "King James Version" line. When devotional plans
+// land (Bucket C) the active-plan section slots in above and the label becomes "Bible and Plans."
 function BibleCard({ theme }: { theme: Theme }) {
-  return (
-    <PressCard
-      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/bible'); }}
-      style={[styles.card, { backgroundColor: theme.bgCard }]}
-    >
-      <View style={styles.cardLabelRow}>
-        <Ionicons name="book" size={12} color={theme.accentAmber} />
-        <Text style={[styles.cardLabel, { color: theme.textMuted }]}>BIBLE</Text>
-      </View>
-      <View style={styles.bibleRow}>
-        <View style={{ flex: 1 }}>
-          <Text style={[styles.bibleTitle, { color: theme.textPrimary }]}>Read the Bible</Text>
-          <Text style={[styles.bibleSub, { color: theme.textSecondary }]}>King James Version</Text>
+  const [lastRead, setLastRead] = useState<{ book: string; chapter: number } | null>(null);
+  const [guideOpen, setGuideOpen] = useState(false);
+
+  // Reload on focus so a spot recorded while reading shows up as "Continue reading" on return.
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true;
+      AsyncStorage.getItem('pj_bible_last_read')
+        .then(raw => {
+          if (!alive || !raw) return;
+          const p = JSON.parse(raw);
+          if (p && typeof p.book === 'string' && typeof p.chapter === 'number') setLastRead({ book: p.book, chapter: p.chapter });
+        })
+        .catch(() => {});
+      return () => { alive = false; };
+    }, []),
+  );
+
+  const openReader = (params?: Record<string, string>) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push(params ? { pathname: '/bible', params } : '/bible');
+  };
+
+  // Returning: the whole card resumes the saved spot (the reader's own picker covers going elsewhere).
+  if (lastRead) {
+    return (
+      <>
+        <View style={[styles.card, { backgroundColor: theme.bgCard }]}>
+          <View style={styles.cardLabelRow}>
+            <Ionicons name="book" size={12} color={theme.accentAmber} />
+            <Text style={[styles.cardLabel, { color: theme.textMuted }]}>BIBLE</Text>
+          </View>
+
+          {/* Primary: pick up where you left off. John 1 lives inside the button, not floating. */}
+          <PressButton
+            onPress={() => openReader({ openBook: lastRead.book, openChapter: String(lastRead.chapter) })}
+            style={[styles.bibleContinueBtn, { backgroundColor: 'rgba(212,134,10,0.1)', borderColor: 'rgba(212,134,10,0.4)' }]}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.bibleContinueLabel, { color: theme.textMuted }]}>CONTINUE READING</Text>
+              <Text style={[styles.bibleContinueRef, { color: theme.accentAmber }]}>{lastRead.book} {lastRead.chapter}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={theme.accentAmber} />
+          </PressButton>
+
+          {/* Secondary: the curated guide, a full-width button so nothing reads as loose text. */}
+          <PressButton
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setGuideOpen(true); }}
+            style={[styles.bibleFindBtn, { backgroundColor: 'rgba(212,134,10,0.08)', borderColor: 'rgba(212,134,10,0.4)' }]}
+          >
+            <Ionicons name="compass-outline" size={15} color={theme.accentAmber} />
+            <Text style={[styles.bibleFindBtnText, { color: theme.accentAmber }]}>Find something to read</Text>
+          </PressButton>
         </View>
-        <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
+        <BibleStartGuide visible={guideOpen} onClose={() => setGuideOpen(false)} />
+      </>
+    );
+  }
+
+  // First-time: no saved spot yet. Two clear doors, no presumption of beginner-ness.
+  return (
+    <>
+      <View style={[styles.card, { backgroundColor: theme.bgCard }]}>
+        <View style={styles.cardLabelRow}>
+          <Ionicons name="book" size={12} color={theme.accentAmber} />
+          <Text style={[styles.cardLabel, { color: theme.textMuted }]}>BIBLE</Text>
+        </View>
+        <Text style={[styles.bibleTitle, { color: theme.accentAmber }]}>Read the Bible</Text>
+        <Text style={[styles.bibleFirstSub, { color: theme.textSecondary }]}>
+          Not sure where to begin? Start with a guided pick, or jump straight in.
+        </Text>
+        <View style={styles.bibleBtnRow}>
+          <PressButton
+            wrapperStyle={{ flex: 1 }}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setGuideOpen(true); }}
+            style={[styles.bibleBtnPrimary, { backgroundColor: 'rgba(212,134,10,0.08)', borderColor: 'rgba(212,134,10,0.4)' }]}
+          >
+            <Ionicons name="compass-outline" size={15} color={theme.accentAmber} />
+            <Text style={[styles.bibleBtnPrimaryText, { color: theme.accentAmber }]}>Where do I start?</Text>
+          </PressButton>
+          <PressButton
+            wrapperStyle={{ flex: 1 }}
+            onPress={() => openReader({ openBook: 'John', openChapter: '1' })}
+            style={[styles.bibleBtnSecondary, { backgroundColor: 'rgba(212,134,10,0.08)', borderColor: 'rgba(212,134,10,0.4)' }]}
+          >
+            <Text style={[styles.bibleBtnSecondaryText, { color: theme.accentAmber }]}>Open the Bible</Text>
+          </PressButton>
+        </View>
       </View>
-    </PressCard>
+      <BibleStartGuide visible={guideOpen} onClose={() => setGuideOpen(false)} />
+    </>
   );
 }
 
@@ -300,9 +396,18 @@ const styles = StyleSheet.create({
   card:          { borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 0.5, borderColor: 'rgba(212,134,10,0.22)', borderTopColor: 'rgba(212,134,10,0.38)', shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.18, shadowRadius: 8, elevation: 4 },
   cardLabelRow:  { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 },
   cardLabel:     { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold' },
-  bibleRow:      { flexDirection: 'row', alignItems: 'center' },
-  bibleTitle:    { fontSize: 16, fontFamily: 'DMSans_600SemiBold' },
-  bibleSub:      { fontSize: 12, fontFamily: 'DMSans_400Regular', marginTop: 2 },
+  bibleTitle:           { fontSize: 16, fontFamily: 'DMSans_600SemiBold' },
+  bibleFirstSub:        { fontSize: 12, fontFamily: 'DMSans_400Regular', lineHeight: 18, marginTop: 4, marginBottom: 14 },
+  bibleContinueLabel:   { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', marginBottom: 3 },
+  bibleContinueRef:     { fontSize: 20, fontFamily: 'Lora_500Medium', letterSpacing: 0.3 },
+  bibleContinueBtn:     { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 10 },
+  bibleFindBtn:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderRadius: 10, paddingVertical: 12, minHeight: 44 },
+  bibleFindBtnText:     { fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
+  bibleBtnRow:          { flexDirection: 'row', gap: 10 },
+  bibleBtnPrimary:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderRadius: 8, paddingVertical: 12, minHeight: 44 },
+  bibleBtnPrimaryText:  { fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
+  bibleBtnSecondary:    { alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 8, paddingVertical: 12, minHeight: 44 },
+  bibleBtnSecondaryText:{ fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
   // Prayer preview card.
   prayerEmpty:        { fontSize: 13, fontFamily: 'DMSans_400Regular', lineHeight: 20, marginTop: 2, fontStyle: 'italic' },
   prayerPreviewBox:   { borderRadius: 10, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 7 },

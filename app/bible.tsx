@@ -119,6 +119,7 @@ export default function BibleScreen() {
   const animScrollRef = useAnimatedRef<ScrollView>();
   const verseYPositions = useRef<Record<number, number>>({});
   const shouldScrollOnLoad = useRef(false);
+  const lastReadInit = useRef(false); // skip the first commit so the Genesis-1 default never clobbers a saved spot
   const currentScrollYRef = useRef(0);
   const scrollYShared = useSharedValue(0);
   const contentHeightRef = useRef(0);
@@ -247,6 +248,8 @@ export default function BibleScreen() {
     const text = params.verseText as string | undefined;
     const planBook = params.planNavBook as string | undefined;
     const planChapter = params.planNavChapter as string | undefined;
+    const openBook = params.openBook as string | undefined;
+    const openChapter = params.openChapter as string | undefined;
     const openPlanBrowser = params.openPlanBrowser as string | undefined;
     if (ref) {
       setDailyVerseRef(ref);
@@ -259,10 +262,22 @@ export default function BibleScreen() {
         const ch = bk.chapters[chNum - 1];
         if (ch) { setSelectedBook(bk); setSelectedChapter(ch); }
       }
+    } else if (openBook && openChapter) {
+      // "Continue reading" / "Where do I start" from the faith Bible card: open at a book + chapter.
+      navigateToPlanPassage(openBook, parseInt(openChapter, 10));
     } else if (openPlanBrowser === '1') {
       setTimeout(() => setShowPlanBrowserModal(true), 350);
     }
   }, []);
+
+  // Persist the reading position so the faith Bible card can offer "Continue reading." Written via
+  // storageSet so it rides the cloud backup; touches no other key. The first commit is skipped so a
+  // bare Genesis-1 open (the default) never overwrites a real saved spot; only genuine navigation
+  // or a targeted open records a position.
+  useEffect(() => {
+    if (!lastReadInit.current) { lastReadInit.current = true; return; }
+    storageSet('pj_bible_last_read', JSON.stringify({ book: selectedBook.name, chapter: selectedChapter.chapter })).catch(() => {});
+  }, [selectedBook.name, selectedChapter.chapter]);
 
   const loadTodayAcknowledged = async (verseRef: string) => {
     try {

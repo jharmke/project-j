@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,6 +12,14 @@ import CompanionChat from '../../components/CompanionChat';
 import BibleStartGuide from '../../components/BibleStartGuide';
 import { resolveDailyVerse, VERSES, type DailyVerse } from '../../data/verses';
 import { loadPrayers, getActive, type Prayer } from '../../utils/prayers';
+import {
+  READING_PLANS, getPlanCompletion, getTodayReading, MAX_ACTIVE_PLANS, type ReadingPlansStorage,
+} from '../../data/readingPlans';
+import {
+  DEVOTIONALS, getDevotionalCompletion, MAX_ACTIVE_DEVOTIONALS, type DevotionalsStorage,
+} from '../../data/devotionals';
+import { loadReadingPlanProgress } from '../../utils/readingPlansProgress';
+import { loadDevotionalProgress, getDevotionalProgress, getNextDay } from '../../utils/devotionals';
 import { useTheme, type Theme } from '../../theme';
 
 /**
@@ -138,17 +146,6 @@ export default function FaithScreen() {
         showsVerticalScrollIndicator={false}
       >
         {visibleCards.map(id => renderCard(id))}
-
-        {/* TEMP dev launcher into the Plans hub, so plans + devotionals are testable before the
-            "Bible and Plans" card sections route to it. REMOVE when that card is finalized. */}
-        <TouchableOpacity
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/plans'); }}
-          activeOpacity={0.85}
-          style={[styles.tempDevotionalBtn, { borderColor: 'rgba(212,134,10,0.4)' }]}
-        >
-          <Ionicons name="flask-outline" size={15} color={theme.accentAmber} />
-          <Text style={[styles.tempDevotionalText, { color: theme.accentAmber }]}>Plans (test)</Text>
-        </TouchableOpacity>
       </ScrollView>
 
       <CompanionFAB onPress={() => setChatOpen(true)} />
@@ -223,16 +220,26 @@ function VotdCard({ verse, theme }: { verse: DailyVerse | null; theme: Theme }) 
   );
 }
 
-// The Bible card. Two states keyed on READ HISTORY (not tier): RETURNING (a saved spot exists in
-// pj_bible_last_read) shows "Continue reading: {Book} {Chapter}" and resumes there; FIRST-TIME (no
-// history) offers "Where do I start?" (a curated guide) and "Open the Bible" (jumps in, lands John
-// 1). Visual: gold book icon, warm amber title, no "King James Version" line. When devotional plans
-// land (Bucket C) the active-plan section slots in above and the label becomes "Bible and Plans."
+// The Bible and Plans card. THREE parts in one card:
+//  1. The Bible strip on top, keyed on READ HISTORY (not tier): RETURNING (a saved spot exists in
+//     pj_bible_last_read) shows "Continue reading: {Book} {Chapter}" and resumes there; FIRST-TIME
+//     (no history) offers "Where do I start?" (a curated guide) and "Open the Bible" (lands John 1).
+//  2. A horizontal divider.
+//  3. Two columns below it: ACTIVE Reading Plans (left) and ACTIVE Devotionals (right), split by a
+//     vertical divider. Each column shows up to its cap (3) of compact tiles that resume where you
+//     left off, a small "+ Browse" into /plans while under the cap, or a compact empty state with a
+//     Browse button when nothing is active. Both lists are capped (MAX_ACTIVE_PLANS /
+//     MAX_ACTIVE_DEVOTIONALS), so the card stays bounded and never needs a "+N more" overflow.
+// Read-only here: starting/dropping/answering all live on /plans and the day screen. The card just
+// reads progress on focus and routes. Visual: gold book icon, warm amber, no "King James Version".
 function BibleCard({ theme }: { theme: Theme }) {
   const [lastRead, setLastRead] = useState<{ book: string; chapter: number } | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [planStore, setPlanStore] = useState<ReadingPlansStorage>({});
+  const [devStore, setDevStore] = useState<DevotionalsStorage>({});
 
-  // Reload on focus so a spot recorded while reading shows up as "Continue reading" on return.
+  // Reload on focus so a spot recorded while reading, or a plan/devotional started or progressed on
+  // /plans or the day screen, shows up here on return. All three reads are read-only (no writes).
   useFocusEffect(
     useCallback(() => {
       let alive = true;
@@ -243,6 +250,8 @@ function BibleCard({ theme }: { theme: Theme }) {
           if (p && typeof p.book === 'string' && typeof p.chapter === 'number') setLastRead({ book: p.book, chapter: p.chapter });
         })
         .catch(() => {});
+      loadReadingPlanProgress().then(s => { if (alive) setPlanStore(s); }).catch(() => {});
+      loadDevotionalProgress().then(s => { if (alive) setDevStore(s); }).catch(() => {});
       return () => { alive = false; };
     }, []),
   );
@@ -252,74 +261,239 @@ function BibleCard({ theme }: { theme: Theme }) {
     router.push(params ? { pathname: '/bible', params } : '/bible');
   };
 
-  // Returning: the whole card resumes the saved spot (the reader's own picker covers going elsewhere).
-  if (lastRead) {
-    return (
-      <>
-        <View style={[styles.card, { backgroundColor: theme.bgCard }]}>
-          <View style={styles.cardLabelRow}>
-            <Ionicons name="book" size={12} color={theme.accentAmber} />
-            <Text style={[styles.cardLabel, { color: theme.textMuted }]}>BIBLE</Text>
-          </View>
+  // Resume a reading plan at the day's passage (mirrors the /plans page's openReadingPlan).
+  const continuePlan = (planId: string) => {
+    const plan = READING_PLANS.find(p => p.id === planId);
+    const prog = planStore[planId];
+    if (!plan || !prog) return;
+    const today = getTodayReading(plan, prog);
+    const passage = today === 'complete'
+      ? plan.days[plan.totalDays - 1].passages[0]
+      : today.day.passages[0];
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push({ pathname: '/bible', params: { planNavBook: passage.book, planNavChapter: String(passage.startChapter) } });
+  };
 
-          {/* Primary: pick up where you left off. John 1 lives inside the button, not floating. */}
-          <PressButton
-            onPress={() => openReader({ openBook: lastRead.book, openChapter: String(lastRead.chapter) })}
-            style={[styles.bibleContinueBtn, { backgroundColor: 'rgba(212,134,10,0.1)', borderColor: 'rgba(212,134,10,0.4)' }]}
-          >
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.bibleContinueLabel, { color: theme.textMuted }]}>CONTINUE READING</Text>
-              <Text style={[styles.bibleContinueRef, { color: theme.accentAmber }]}>{lastRead.book} {lastRead.chapter}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={theme.accentAmber} />
-          </PressButton>
+  // Resume a devotional on its next unfinished day (mirrors /plans).
+  const continueDevotional = (devId: string) => {
+    const dev = DEVOTIONALS.find(d => d.id === devId);
+    if (!dev) return;
+    const day = getNextDay(dev, getDevotionalProgress(devStore, devId));
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push({ pathname: '/devotional', params: { id: devId, day: String(day) } });
+  };
 
-          {/* Secondary: the curated guide, a full-width button so nothing reads as loose text. */}
-          <PressButton
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setGuideOpen(true); }}
-            style={[styles.bibleFindBtn, { backgroundColor: 'rgba(212,134,10,0.08)', borderColor: 'rgba(212,134,10,0.4)' }]}
-          >
-            <Ionicons name="compass-outline" size={15} color={theme.accentAmber} />
-            <Text style={[styles.bibleFindBtnText, { color: theme.accentAmber }]}>Find something to read</Text>
-          </PressButton>
-        </View>
-        <BibleStartGuide visible={guideOpen} onClose={() => setGuideOpen(false)} />
-      </>
-    );
-  }
+  const browse = (tab: 'reading' | 'devotionals') => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push({ pathname: '/plans', params: { tab } });
+  };
 
-  // First-time: no saved spot yet. Two clear doors, no presumption of beginner-ness.
+  const activePlans = READING_PLANS.filter(p => !!planStore[p.id]);
+  const activeDevs = DEVOTIONALS.filter(d => !!devStore[d.id]);
+
   return (
     <>
       <View style={[styles.card, { backgroundColor: theme.bgCard }]}>
         <View style={styles.cardLabelRow}>
           <Ionicons name="book" size={12} color={theme.accentAmber} />
-          <Text style={[styles.cardLabel, { color: theme.textMuted }]}>BIBLE</Text>
+          <Text style={[styles.cardLabel, { color: theme.textMuted }]}>BIBLE AND PLANS</Text>
         </View>
-        <Text style={[styles.bibleTitle, { color: theme.accentAmber }]}>Read the Bible</Text>
-        <Text style={[styles.bibleFirstSub, { color: theme.textSecondary }]}>
-          Not sure where to begin? Start with a guided pick, or jump straight in.
-        </Text>
-        <View style={styles.bibleBtnRow}>
-          <PressButton
-            wrapperStyle={{ flex: 1 }}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setGuideOpen(true); }}
-            style={[styles.bibleBtnPrimary, { backgroundColor: 'rgba(212,134,10,0.08)', borderColor: 'rgba(212,134,10,0.4)' }]}
-          >
-            <Ionicons name="compass-outline" size={15} color={theme.accentAmber} />
-            <Text style={[styles.bibleBtnPrimaryText, { color: theme.accentAmber }]}>Where do I start?</Text>
-          </PressButton>
-          <PressButton
-            wrapperStyle={{ flex: 1 }}
-            onPress={() => openReader({ openBook: 'John', openChapter: '1' })}
-            style={[styles.bibleBtnSecondary, { backgroundColor: 'rgba(212,134,10,0.08)', borderColor: 'rgba(212,134,10,0.4)' }]}
-          >
-            <Text style={[styles.bibleBtnSecondaryText, { color: theme.accentAmber }]}>Open the Bible</Text>
-          </PressButton>
+
+        {/* Part 1: the Bible reading strip. Returning resumes the last spot; first-time offers two doors. */}
+        {lastRead ? (
+          <>
+            <PressButton
+              onPress={() => openReader({ openBook: lastRead.book, openChapter: String(lastRead.chapter) })}
+              style={[styles.bibleContinueBtn, { backgroundColor: 'rgba(212,134,10,0.11)', borderColor: 'rgba(212,134,10,0.3)' }]}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.bibleContinueLabel, { color: theme.textMuted }]}>CONTINUE READING</Text>
+                <Text style={[styles.bibleContinueRef, { color: theme.accentAmber }]}>{lastRead.book} {lastRead.chapter}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={theme.accentAmber} />
+            </PressButton>
+            <PressButton
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setGuideOpen(true); }}
+              style={[styles.bibleFindBtn, { backgroundColor: 'rgba(212,134,10,0.06)', borderColor: 'rgba(212,134,10,0.3)' }]}
+            >
+              <Ionicons name="compass-outline" size={15} color={theme.accentAmber} />
+              <Text style={[styles.bibleFindBtnText, { color: theme.accentAmber }]}>Find something to read</Text>
+            </PressButton>
+          </>
+        ) : (
+          <>
+            <Text style={[styles.bibleTitle, { color: theme.accentAmber }]}>Read the Bible</Text>
+            <Text style={[styles.bibleFirstSub, { color: theme.textSecondary }]}>
+              Not sure where to begin? Start with a guided pick, or jump straight in.
+            </Text>
+            <View style={styles.bibleBtnRow}>
+              <PressButton
+                wrapperStyle={{ flex: 1 }}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setGuideOpen(true); }}
+                style={[styles.bibleBtnPrimary, { backgroundColor: 'rgba(212,134,10,0.06)', borderColor: 'rgba(212,134,10,0.3)' }]}
+              >
+                <Ionicons name="compass-outline" size={15} color={theme.accentAmber} />
+                <Text style={[styles.bibleBtnPrimaryText, { color: theme.accentAmber }]}>Where do I start?</Text>
+              </PressButton>
+              <PressButton
+                wrapperStyle={{ flex: 1 }}
+                onPress={() => openReader({ openBook: 'John', openChapter: '1' })}
+                style={[styles.bibleBtnSecondary, { backgroundColor: 'rgba(212,134,10,0.06)', borderColor: 'rgba(212,134,10,0.3)' }]}
+              >
+                <Text style={[styles.bibleBtnSecondaryText, { color: theme.accentAmber }]}>Open the Bible</Text>
+              </PressButton>
+            </View>
+          </>
+        )}
+
+        {/* Part 2: divider between Bible reading and your plans. */}
+        <View style={[styles.hDivider, { backgroundColor: 'rgba(212,134,10,0.18)' }]} />
+
+        {/* Part 3: two columns, active reading plans (left) | active devotionals (right). */}
+        <View style={styles.plansRow}>
+          <PlansColumn
+            theme={theme}
+            label="READING PLANS"
+            emptyText="No plans yet"
+            items={activePlans.map(p => {
+              const prog = planStore[p.id];
+              const today = getTodayReading(p, prog);
+              const ref = today === 'complete'
+                ? 'Done'
+                : `${today.day.passages[0].book} ${today.day.passages[0].startChapter}`;
+              return {
+                id: p.id,
+                icon: p.icon,
+                name: p.shortName,
+                progress: getPlanCompletion(p, prog),
+                ref,
+                onPress: () => continuePlan(p.id),
+              };
+            })}
+            atCap={activePlans.length >= MAX_ACTIVE_PLANS}
+            onBrowse={() => browse('reading')}
+          />
+          <View style={[styles.vDivider, { backgroundColor: 'rgba(212,134,10,0.18)' }]} />
+          <PlansColumn
+            theme={theme}
+            label="DEVOTIONALS"
+            emptyText="None yet"
+            items={activeDevs.map(d => {
+              const nextDay = getNextDay(d, getDevotionalProgress(devStore, d.id));
+              const day = d.days[nextDay - 1];
+              const ref = day ? `${day.passage.book} ${day.passage.startChapter}` : '';
+              return {
+                id: d.id,
+                icon: d.icon,
+                name: d.shortName,
+                progress: getDevotionalCompletion(d, devStore[d.id]),
+                ref,
+                onPress: () => continueDevotional(d.id),
+              };
+            })}
+            atCap={activeDevs.length >= MAX_ACTIVE_DEVOTIONALS}
+            onBrowse={() => browse('devotionals')}
+          />
         </View>
       </View>
       <BibleStartGuide visible={guideOpen} onClose={() => setGuideOpen(false)} />
     </>
+  );
+}
+
+type ColItem = {
+  id: string;
+  icon: string;
+  name: string;
+  progress: { completed: number; total: number; pct: number };
+  ref: string; // the next passage, e.g. "Matthew 1", shown to the right of X/Y
+  onPress: () => void;
+};
+
+// One column of the Bible and Plans card (Reading Plans or Devotionals). Shows up to the cap of
+// compact tiles, a "+ Browse" into /plans while under the cap, or a compact empty state with a
+// Browse button when nothing is active. Capped lists mean it never needs a "+N more" overflow.
+function PlansColumn({ theme, label, emptyText, items, atCap, onBrowse }: {
+  theme: Theme;
+  label: string;
+  emptyText: string;
+  items: ColItem[];
+  atCap: boolean;
+  onBrowse: () => void;
+}) {
+  return (
+    <View style={styles.plansCol}>
+      <Text style={[styles.colLabel, { color: theme.textMuted }]}>{label}</Text>
+      {items.length === 0 ? (
+        <View style={styles.emptyCol}>
+          <Text style={[styles.emptyColText, { color: theme.textSecondary }]}>{emptyText}</Text>
+          <PressButton
+            onPress={onBrowse}
+            style={[styles.emptyBrowseBtn, { backgroundColor: 'rgba(212,134,10,0.08)', borderColor: 'rgba(212,134,10,0.4)' }]}
+          >
+            <Text style={[styles.emptyBrowseText, { color: theme.accentAmber }]}>Browse</Text>
+          </PressButton>
+        </View>
+      ) : (
+        <>
+          {items.map(it => (
+            <PressCard
+              key={it.id}
+              onPress={it.onPress}
+              style={[styles.tile, { backgroundColor: 'rgba(212,134,10,0.06)', borderColor: theme.borderCard, borderLeftColor: theme.accentAmber }]}
+            >
+              <View style={styles.tileTop}>
+                <Ionicons name={it.icon as any} size={14} color={theme.accentAmber} />
+                <Text numberOfLines={1} style={[styles.tileName, { color: theme.accentAmber }]}>{it.name}</Text>
+              </View>
+              <TileProgress progress={it.progress} refLabel={it.ref} theme={theme} />
+            </PressCard>
+          ))}
+          {!atCap && (
+            <PressButton onPress={onBrowse} style={styles.browseLink}>
+              <Ionicons name="add" size={14} color={theme.textMuted} />
+              <Text style={[styles.browseLinkText, { color: theme.textMuted }]}>Browse</Text>
+            </PressButton>
+          )}
+        </>
+      )}
+    </View>
+  );
+}
+
+// Tile progress on the CARD: a uniform animated bar plus a caption row, "X/Y" on the left and the
+// next passage on the right, for BOTH columns so the tiles read as one consistent size (the /plans
+// page keeps its dots-for-short / bar-for-long treatment; this unified bar+X/Y is card-only).
+function TileProgress({ progress, refLabel, theme }: {
+  progress: { completed: number; total: number; pct: number };
+  refLabel: string;
+  theme: Theme;
+}) {
+  return (
+    <View>
+      <TileBar pct={progress.pct} theme={theme} />
+      <View style={styles.tileCaptionRow}>
+        <Text style={[styles.tileCaption, { color: theme.textMuted }]}>{progress.completed}/{progress.total}</Text>
+        {refLabel ? (
+          <Text numberOfLines={1} style={[styles.tileRef, { color: theme.textSecondary }]}>{refLabel}</Text>
+        ) : null}
+      </View>
+    </View>
+  );
+}
+
+// Animated progress bar (width animates on mount / when pct changes, per the animation standard).
+// Width is a layout prop, so useNativeDriver is false.
+function TileBar({ pct, theme }: { pct: number; theme: Theme }) {
+  const w = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(w, { toValue: pct, duration: 600, useNativeDriver: false }).start();
+  }, [pct]);
+  const width = w.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
+  return (
+    <View style={[styles.tileBarTrack, { backgroundColor: theme.bgInput }]}>
+      <Animated.View style={[styles.tileBarFill, { width, backgroundColor: theme.accentAmber }]} />
+    </View>
   );
 }
 
@@ -373,7 +547,7 @@ function PrayerCard({ theme }: { theme: Theme }) {
           ) : preview.length > 0 ? (
             <View style={{ marginTop: 6 }}>
               {preview.map(p => (
-                <View key={p.id} style={[styles.prayerPreviewBox, { backgroundColor: 'rgba(212,134,10,0.08)', borderColor: 'rgba(212,134,10,0.16)' }]}>
+                <View key={p.id} style={[styles.prayerPreviewBox, { backgroundColor: 'rgba(212,134,10,0.06)', borderColor: theme.borderCard, borderLeftColor: theme.accentAmber }]}>
                   <Text numberOfLines={1} style={[styles.prayerPreviewText, { color: theme.accentAmber }]}>{p.text}</Text>
                 </View>
               ))}
@@ -411,20 +585,40 @@ const styles = StyleSheet.create({
   bibleFirstSub:        { fontSize: 12, fontFamily: 'DMSans_400Regular', lineHeight: 18, marginTop: 4, marginBottom: 14 },
   bibleContinueLabel:   { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', marginBottom: 3 },
   bibleContinueRef:     { fontSize: 20, fontFamily: 'Lora_500Medium', letterSpacing: 0.3 },
-  bibleContinueBtn:     { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 10 },
-  bibleFindBtn:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderRadius: 10, paddingVertical: 12, minHeight: 44 },
+  bibleContinueBtn:     { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.14, shadowRadius: 5, elevation: 3 },
+  bibleFindBtn:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderRadius: 10, paddingVertical: 12, minHeight: 44, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.12, shadowRadius: 3, elevation: 2 },
   bibleFindBtnText:     { fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
   bibleBtnRow:          { flexDirection: 'row', gap: 10 },
-  bibleBtnPrimary:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderRadius: 8, paddingVertical: 12, minHeight: 44 },
+  bibleBtnPrimary:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderRadius: 8, paddingVertical: 12, minHeight: 44, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.12, shadowRadius: 3, elevation: 2 },
   bibleBtnPrimaryText:  { fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
-  bibleBtnSecondary:    { alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 8, paddingVertical: 12, minHeight: 44 },
+  bibleBtnSecondary:    { alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 8, paddingVertical: 12, minHeight: 44, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.12, shadowRadius: 3, elevation: 2 },
   bibleBtnSecondaryText:{ fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
   // Prayer preview card.
   prayerEmpty:        { fontSize: 13, fontFamily: 'DMSans_400Regular', lineHeight: 20, marginTop: 2, fontStyle: 'italic' },
-  prayerPreviewBox:   { borderRadius: 10, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 7 },
+  prayerPreviewBox:   { borderRadius: 10, borderWidth: 1, borderLeftWidth: 3, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 7, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.12, shadowRadius: 3, elevation: 2 },
   prayerPreviewText:  { fontSize: 15, fontFamily: 'Lora_500Medium', lineHeight: 22 },
   prayerPreviewMore:  { fontSize: 11, fontFamily: 'DMSans_600SemiBold', marginTop: 2, marginLeft: 2 },
-  // TEMP dev launcher styles (remove with the button above when the Plans page lands).
-  tempDevotionalBtn:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderStyle: 'dashed', borderRadius: 10, paddingVertical: 14, marginTop: 8, minHeight: 44 },
-  tempDevotionalText: { fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
+  // Bible and Plans card: the divider + the two active-plan / active-devotional columns.
+  hDivider:        { height: 1, marginVertical: 14 },
+  plansRow:        { flexDirection: 'row', alignItems: 'stretch' },
+  plansCol:        { flex: 1 },
+  vDivider:        { width: 1, marginHorizontal: 10 },
+  colLabel:        { fontSize: 9, letterSpacing: 2, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', marginBottom: 10 },
+  // Clean surface tile with a 3px amber left accent bar (the settings pattern), so amber reads as an
+  // accent instead of a fill. Name is Lora serif (the "set apart" font, matching prayers + the
+  // Continue Reading ref). Background / borders come from theme tokens (set inline per card).
+  tile:            { borderRadius: 10, borderWidth: 1, borderLeftWidth: 3, padding: 10, marginBottom: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.12, shadowRadius: 3, elevation: 2 },
+  tileTop:         { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
+  tileName:        { flex: 1, fontSize: 14, fontFamily: 'Lora_500Medium', lineHeight: 18 },
+  tileBarTrack:    { height: 5, borderRadius: 3, overflow: 'hidden' },
+  tileBarFill:     { height: 5, borderRadius: 3 },
+  tileCaptionRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 5, gap: 6 },
+  tileCaption:     { fontSize: 10, fontFamily: 'DMSans_700Bold' },
+  tileRef:         { flexShrink: 1, fontSize: 10, fontFamily: 'DMSans_600SemiBold' },
+  browseLink:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingVertical: 8, minHeight: 44 },
+  browseLinkText:  { fontSize: 12, fontFamily: 'DMSans_600SemiBold' },
+  emptyCol:        { alignItems: 'center', gap: 10, paddingVertical: 6 },
+  emptyColText:    { fontSize: 12, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', textAlign: 'center' },
+  emptyBrowseBtn:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 8, paddingHorizontal: 16, minHeight: 44 },
+  emptyBrowseText: { fontSize: 12, fontFamily: 'DMSans_600SemiBold' },
 });

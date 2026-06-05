@@ -60,6 +60,10 @@ export interface DevotionalProgress {
 
 export type DevotionalsStorage = Record<string, DevotionalProgress>; // keyed by devotional id
 
+// Cap on simultaneously-active devotionals, mirroring reading plans (MAX_ACTIVE_PLANS in
+// data/readingPlans.ts). Keeps the faith "Bible and Plans" card bounded so it never balloons.
+export const MAX_ACTIVE_DEVOTIONALS = 3;
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 export function formatDevotionalPassage(p: DevotionalPassage): string {

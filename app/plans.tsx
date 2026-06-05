@@ -8,10 +8,10 @@ import { useFocusEffect, useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import {
-  READING_PLANS, getPlanCompletion, getTodayReading, type ReadingPlansStorage,
+  READING_PLANS, getPlanCompletion, getTodayReading, MAX_ACTIVE_PLANS, type ReadingPlansStorage,
 } from '../data/readingPlans';
 import {
-  DEVOTIONALS, getDevotionalCompletion, type DevotionalsStorage,
+  DEVOTIONALS, getDevotionalCompletion, MAX_ACTIVE_DEVOTIONALS, type DevotionalsStorage,
 } from '../data/devotionals';
 import {
   loadReadingPlanProgress, enrollReadingPlan, dropReadingPlan,
@@ -76,6 +76,13 @@ export default function PlansScreen() {
   };
 
   const startReadingPlan = async (planId: string) => {
+    // Cap guard: block a new enrollment past MAX_ACTIVE_PLANS (mirrors the reader's plan browser).
+    // Counts from the freshest store, never deletes anything already active.
+    if (Object.keys(planStore).length >= MAX_ACTIVE_PLANS) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      showToast(`Max ${MAX_ACTIVE_PLANS} active plans. Drop one to add another.`, undefined, 'info');
+      return;
+    }
     const plan = READING_PLANS.find(p => p.id === planId);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const updated = await enrollReadingPlan(planId);
@@ -110,6 +117,13 @@ export default function PlansScreen() {
   };
 
   const startDevotional = async (devId: string) => {
+    // Cap guard: block a new enrollment past MAX_ACTIVE_DEVOTIONALS. Counts from the freshest
+    // store, never deletes anything already active.
+    if (Object.keys(devStore).length >= MAX_ACTIVE_DEVOTIONALS) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      showToast(`Max ${MAX_ACTIVE_DEVOTIONALS} active devotionals. Drop one to add another.`, undefined, 'info');
+      return;
+    }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const updated = await enrollDevotional(devId);
     setDevStore(updated);
@@ -141,6 +155,8 @@ export default function PlansScreen() {
   const availablePlans = READING_PLANS.filter(p => !planStore[p.id]);
   const activeDevs = DEVOTIONALS.filter(d => !!devStore[d.id]);
   const availableDevs = DEVOTIONALS.filter(d => !devStore[d.id]);
+  const plansAtLimit = activePlans.length >= MAX_ACTIVE_PLANS;
+  const devsAtLimit = activeDevs.length >= MAX_ACTIVE_DEVOTIONALS;
 
   const atmosphereColors: [string, string, string] = isDarkTheme
     ? ['rgba(212,134,10,0.20)', 'rgba(212,134,10,0.06)', 'transparent']
@@ -219,6 +235,11 @@ export default function PlansScreen() {
               <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>
                 {activePlans.length > 0 ? 'MORE PLANS' : 'CHOOSE A PLAN'}
               </Text>
+              {plansAtLimit && (
+                <Text style={[styles.capNote, { color: theme.textMuted }]}>
+                  Max {MAX_ACTIVE_PLANS} active plans. Drop one to add another.
+                </Text>
+              )}
               {availablePlans.map(plan => (
                 <PlanRow
                   key={plan.id}
@@ -230,6 +251,7 @@ export default function PlansScreen() {
                   progress={null}
                   primaryLabel="Start"
                   onPrimary={() => startReadingPlan(plan.id)}
+                  disabled={plansAtLimit}
                 />
               ))}
             </>
@@ -266,6 +288,11 @@ export default function PlansScreen() {
                   <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>
                     {activeDevs.length > 0 ? 'MORE DEVOTIONALS' : 'CHOOSE A DEVOTIONAL'}
                   </Text>
+                  {devsAtLimit && (
+                    <Text style={[styles.capNote, { color: theme.textMuted }]}>
+                      Max {MAX_ACTIVE_DEVOTIONALS} active devotionals. Drop one to add another.
+                    </Text>
+                  )}
                   {availableDevs.map(dev => (
                     <PlanRow
                       key={dev.id}
@@ -277,6 +304,7 @@ export default function PlansScreen() {
                       progress={null}
                       primaryLabel="Start"
                       onPrimary={() => startDevotional(dev.id)}
+                      disabled={devsAtLimit}
                     />
                   ))}
                 </>
@@ -301,7 +329,7 @@ export default function PlansScreen() {
 // gold icon badge, title, length, description, an animated progress bar when in progress, the
 // primary action (Start / Continue), and an optional drop control for active items.
 function PlanRow({
-  theme, icon, title, lengthLabel, description, progress, primaryLabel, onPrimary, onDrop,
+  theme, icon, title, lengthLabel, description, progress, primaryLabel, onPrimary, onDrop, disabled,
 }: {
   theme: Theme;
   icon: string;
@@ -312,6 +340,7 @@ function PlanRow({
   primaryLabel: string;
   onPrimary: () => void;
   onDrop?: () => void;
+  disabled?: boolean;
 }) {
   return (
     <View style={[styles.card, {
@@ -343,7 +372,7 @@ function PlanRow({
       )}
 
       <View style={styles.cardActions}>
-        <PressScale onPress={onPrimary} style={[styles.primaryBtn, { backgroundColor: `rgba(${GOLD_RGB},0.14)`, borderColor: `rgba(${GOLD_RGB},0.5)` }]}>
+        <PressScale onPress={onPrimary} style={[styles.primaryBtn, { backgroundColor: `rgba(${GOLD_RGB},0.14)`, borderColor: `rgba(${GOLD_RGB},0.5)`, opacity: disabled ? 0.4 : 1 }]}>
           <Text style={[styles.primaryBtnText, { color: theme.accentAmber }]}>{primaryLabel}</Text>
         </PressScale>
         {onDrop && (
@@ -419,6 +448,7 @@ const styles = StyleSheet.create({
   loading:      { flex: 1, alignItems: 'center', justifyContent: 'center' },
   intro:        { fontSize: 14, fontFamily: 'DMSans_500Medium', lineHeight: 20, marginTop: 8, marginBottom: 16 },
   sectionLabel: { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', marginBottom: 10, marginTop: 8, marginLeft: 2 },
+  capNote:      { fontSize: 12, fontFamily: 'DMSans_500Medium', fontStyle: 'italic', marginBottom: 10, marginLeft: 2 },
   card:         { borderRadius: 14, borderWidth: 0.5, borderTopWidth: 2.5, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.24, shadowRadius: 11, elevation: 5 },
   cardTop:      { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
   iconBadge:    { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },

@@ -138,6 +138,17 @@ export default function FaithScreen() {
         showsVerticalScrollIndicator={false}
       >
         {visibleCards.map(id => renderCard(id))}
+
+        {/* TEMP dev launcher into the devotional-day screen, so the content is testable before
+            the Plans page exists. REMOVE when the Plans page / Bible-and-Plans card sections land. */}
+        <TouchableOpacity
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/devotional', params: { id: 'rest_recovery_3' } }); }}
+          activeOpacity={0.85}
+          style={[styles.tempDevotionalBtn, { borderColor: 'rgba(212,134,10,0.4)' }]}
+        >
+          <Ionicons name="flask-outline" size={15} color={theme.accentAmber} />
+          <Text style={[styles.tempDevotionalText, { color: theme.accentAmber }]}>Devotional (test): Rest and Recovery</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       <CompanionFAB onPress={() => setChatOpen(true)} />
@@ -413,4 +424,7 @@ const styles = StyleSheet.create({
   prayerPreviewBox:   { borderRadius: 10, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 7 },
   prayerPreviewText:  { fontSize: 15, fontFamily: 'Lora_500Medium', lineHeight: 22 },
   prayerPreviewMore:  { fontSize: 11, fontFamily: 'DMSans_600SemiBold', marginTop: 2, marginLeft: 2 },
+  // TEMP dev launcher styles (remove with the button above when the Plans page lands).
+  tempDevotionalBtn:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1, borderStyle: 'dashed', borderRadius: 10, paddingVertical: 14, marginTop: 8, minHeight: 44 },
+  tempDevotionalText: { fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
 });

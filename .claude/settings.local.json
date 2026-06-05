@@ -55,7 +55,8 @@
       "Skill(claude-api)",
       "PowerShell(npm *)",
       "PowerShell(node -e \"require\\('./functions/lib/index.js'\\); console.log\\('MODULE LOADED OK'\\); process.exit\\(0\\)\")",
-      "PowerShell(node _redteam_crisis.cjs)"
+      "PowerShell(node _redteam_crisis.cjs)",
+      "PowerShell(Select-String *)"
     ]
   }
 }

@@ -5,6 +5,7 @@ import {
   DMSans_600SemiBold,
   DMSans_700Bold,
 } from '@expo-google-fonts/dm-sans';
+import { Lora_400Regular, Lora_500Medium } from '@expo-google-fonts/lora';
 import { DarkTheme, ThemeProvider as NavThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack, router } from 'expo-router';
@@ -130,6 +131,7 @@ function RootLayoutNav() {
         <Stack.Screen name="settings" options={{ headerShown: false }} />
         <Stack.Screen name="bible" options={{ headerShown: false }} />
         <Stack.Screen name="journal" options={{ headerShown: false }} />
+        <Stack.Screen name="prayer" options={{ headerShown: false }} />
         <Stack.Screen name="achievements" options={{ headerShown: false }} />
         <Stack.Screen name="head-to-head" options={{ headerShown: false, animation: 'fade' }} />
         <Stack.Screen name="day-summary" options={{ headerShown: false }} />
@@ -155,6 +157,8 @@ export default function RootLayout() {
     DMSans_600SemiBold,
     DMSans_700Bold,
     BebasNeue_400Regular,
+    Lora_400Regular,
+    Lora_500Medium,
   });
 
   if (!fontsLoaded) return null;

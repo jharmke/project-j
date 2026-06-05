@@ -1,6 +1,6 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState, type ReactNode } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -9,7 +9,9 @@ import * as Haptics from 'expo-haptics';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import CompanionFAB from '../../components/CompanionFAB';
 import CompanionChat from '../../components/CompanionChat';
+import AddPrayerModal from '../../components/AddPrayerModal';
 import { resolveDailyVerse, VERSES, type DailyVerse } from '../../data/verses';
+import { loadPrayers, getActive, type Prayer } from '../../utils/prayers';
 import { useTheme, type Theme } from '../../theme';
 
 /**
@@ -45,7 +47,7 @@ const DEFAULT_FAITH_VISIBLE = Object.fromEntries(
 const getDateKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 // Cards that actually have a renderer today. Once every card is built this guard goes away.
-const BUILT_CARDS: FaithCardId[] = ['votd', 'bible_plans'];
+const BUILT_CARDS: FaithCardId[] = ['votd', 'bible_plans', 'prayer'];
 
 export default function FaithScreen() {
   const { theme, themeId } = useTheme();
@@ -96,7 +98,9 @@ export default function FaithScreen() {
         return <VotdCard key={id} verse={dailyVerse} theme={theme} />;
       case 'bible_plans':
         return <BibleCard key={id} theme={theme} />;
-      // gratitude, prayer, journal: built in later B steps.
+      case 'prayer':
+        return <PrayerCard key={id} theme={theme} />;
+      // gratitude, journal: built in later B steps.
       default:
         return null;
     }
@@ -142,6 +146,25 @@ export default function FaithScreen() {
   );
 }
 
+// Shared press feel for the faith cards: scale to 0.97 on press in, back to 1.0 on release
+// (timing, per the project card-press standard). Each card fires its own haptic in onPress.
+function PressCard({ onPress, style, children }: { onPress: () => void; style: any; children: ReactNode }) {
+  const scale = useRef(new Animated.Value(1)).current;
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={onPress}
+        onPressIn={() => Animated.timing(scale, { toValue: 0.97, duration: 100, useNativeDriver: true }).start()}
+        onPressOut={() => Animated.timing(scale, { toValue: 1, duration: 150, useNativeDriver: true }).start()}
+        style={style}
+      >
+        {children}
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
+
 // Today's Message. Shows the SAME daily verse as the Home tab (shared rotation in
 // data/verses.ts) so they always match. Tapping opens the Bible reader at the passage.
 // The home-only extras (the reflection-prompt subtext Justin flagged, and the journal
@@ -149,8 +172,7 @@ export default function FaithScreen() {
 function VotdCard({ verse, theme }: { verse: DailyVerse | null; theme: Theme }) {
   if (!verse) return null;
   return (
-    <TouchableOpacity
-      activeOpacity={0.9}
+    <PressCard
       onPress={() => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         router.push({ pathname: '/bible', params: { verseRef: verse.reference, verseText: verse.text } });
@@ -167,7 +189,7 @@ function VotdCard({ verse, theme }: { verse: DailyVerse | null; theme: Theme }) 
       </View>
       <Text style={[styles.verseText, { color: theme.textSecondary }]}>"{verse.text}"</Text>
       <Text style={[styles.verseRef, { color: theme.textMuted }]}>{verse.reference}</Text>
-    </TouchableOpacity>
+    </PressCard>
   );
 }
 
@@ -176,8 +198,7 @@ function VotdCard({ verse, theme }: { verse: DailyVerse | null; theme: Theme }) 
 // label becomes "Bible and Plans."
 function BibleCard({ theme }: { theme: Theme }) {
   return (
-    <TouchableOpacity
-      activeOpacity={0.8}
+    <PressCard
       onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/bible'); }}
       style={[styles.card, { backgroundColor: theme.bgCard }]}
     >
@@ -192,7 +213,91 @@ function BibleCard({ theme }: { theme: Theme }) {
         </View>
         <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
       </View>
-    </TouchableOpacity>
+    </PressCard>
+  );
+}
+
+// Prayer preview card. A compact launcher into app/prayer.tsx (mirrors the Journal card
+// pattern): the answered count as a hero stat ONLY once a prayer is answered, the most recent
+// active prayers as read-only rows, a quick-add pop-up, and View all. The answer/manage actions
+// deliberately live on the full screen; the preview stays read-only plus quick-add. Reloads on
+// focus so adds/answers made on the full screen show up here when the user comes back.
+function PrayerCard({ theme }: { theme: Theme }) {
+  const [prayers, setPrayers] = useState<Prayer[]>([]);
+  const [addOpen, setAddOpen] = useState(false);
+  const scale = useRef(new Animated.Value(1)).current;
+
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true;
+      loadPrayers().then(list => { if (alive) setPrayers(list); }).catch(() => {});
+      return () => { alive = false; };
+    }, []),
+  );
+
+  const active = getActive(prayers);
+  const preview = active.slice(0, 3);
+  const nothing = prayers.length === 0;
+
+  const openScreen = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/prayer'); };
+
+  // The card body scales on press (project card-press standard) and navigates to the full
+  // screen. Preview rows are read-only here: answering/managing happens on the screen. The
+  // answered count is NOT shown on the card; it lives as a hero on the prayer screen instead.
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <View style={[styles.card, { backgroundColor: theme.bgCard }]}>
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={openScreen}
+          onPressIn={() => Animated.timing(scale, { toValue: 0.97, duration: 100, useNativeDriver: true }).start()}
+          onPressOut={() => Animated.timing(scale, { toValue: 1, duration: 150, useNativeDriver: true }).start()}
+        >
+          <View style={styles.cardLabelRow}>
+            <Ionicons name="hand-left" size={12} color={theme.accentAmber} />
+            <Text style={[styles.cardLabel, { color: theme.textMuted }]}>PRAYER</Text>
+          </View>
+
+          {nothing ? (
+            <Text style={[styles.prayerEmpty, { color: theme.textSecondary }]}>
+              Lift up what you're carrying. Add your first prayer.
+            </Text>
+          ) : preview.length > 0 ? (
+            <View style={{ marginTop: 6 }}>
+              {preview.map(p => (
+                <View key={p.id} style={[styles.prayerPreviewBox, { backgroundColor: 'rgba(212,134,10,0.08)', borderColor: 'rgba(212,134,10,0.16)' }]}>
+                  <Text numberOfLines={1} style={[styles.prayerPreviewText, { color: theme.accentAmber }]}>{p.text}</Text>
+                </View>
+              ))}
+              {active.length > preview.length && (
+                <Text style={[styles.prayerPreviewMore, { color: theme.textMuted }]}>+{active.length - preview.length} more</Text>
+              )}
+            </View>
+          ) : (
+            <Text style={[styles.prayerEmpty, { color: theme.textSecondary }]}>
+              Nothing on your heart right now. Praise God for the prayers He has answered.
+            </Text>
+          )}
+        </TouchableOpacity>
+
+        <View style={[styles.prayerActions, { borderTopColor: theme.borderCard }]}>
+          <TouchableOpacity
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setAddOpen(true); }}
+            hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}
+            style={[styles.prayerAddPill, { backgroundColor: 'rgba(212,134,10,0.15)', borderColor: 'rgba(212,134,10,0.3)' }]}
+          >
+            <Ionicons name="add" size={14} color={theme.accentAmber} />
+            <Text style={[styles.prayerAddText, { color: theme.accentAmber }]}>Add a prayer</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={openScreen} hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }} style={styles.prayerViewAll}>
+            <Text style={[styles.prayerViewAllText, { color: theme.textMuted }]}>View all</Text>
+            <Ionicons name="chevron-forward" size={14} color={theme.textMuted} />
+          </TouchableOpacity>
+        </View>
+
+        <AddPrayerModal visible={addOpen} onClose={() => setAddOpen(false)} onAdded={setPrayers} />
+      </View>
+    </Animated.View>
   );
 }
 
@@ -214,4 +319,14 @@ const styles = StyleSheet.create({
   bibleRow:      { flexDirection: 'row', alignItems: 'center' },
   bibleTitle:    { fontSize: 16, fontFamily: 'DMSans_600SemiBold' },
   bibleSub:      { fontSize: 12, fontFamily: 'DMSans_400Regular', marginTop: 2 },
+  // Prayer preview card.
+  prayerEmpty:        { fontSize: 13, fontFamily: 'DMSans_400Regular', lineHeight: 20, marginTop: 2, fontStyle: 'italic' },
+  prayerPreviewBox:   { borderRadius: 10, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 7 },
+  prayerPreviewText:  { fontSize: 15, fontFamily: 'Lora_500Medium', lineHeight: 22 },
+  prayerPreviewMore:  { fontSize: 11, fontFamily: 'DMSans_600SemiBold', marginTop: 2, marginLeft: 2 },
+  prayerActions:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 14, paddingTop: 12, borderTopWidth: 0.5 },
+  prayerAddPill:      { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 6 },
+  prayerAddText:      { fontSize: 12, fontFamily: 'DMSans_600SemiBold' },
+  prayerViewAll:      { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  prayerViewAllText:  { fontSize: 12, fontFamily: 'DMSans_600SemiBold' },
 });

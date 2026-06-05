@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
-  ActivityIndicator, Keyboard, ScrollView, StyleSheet,
+  ActivityIndicator, Animated, Keyboard, ScrollView, StyleSheet,
   Text, TextInput, TouchableOpacity, View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -13,12 +13,13 @@ import {
   DEVOTIONALS, formatDevotionalPassage, type Devotional, type DevotionalPassage,
 } from '../data/devotionals';
 import {
-  loadDevotionalProgress, saveDevotionalAnswer, markDevotionalDayComplete,
+  loadDevotionalProgress, saveDevotionalAnswer, saveDevotionalHaloThread, markDevotionalDayComplete,
   unmarkDevotionalDayComplete, getDevotionalEntry, getDevotionalProgress, getNextDay,
 } from '../utils/devotionals';
 import { useToast } from '../components/Toast';
+import CompanionChat, { MiniCross } from '../components/CompanionChat';
 import { useTheme } from '../theme';
-import type { DevotionalsStorage } from '../data/devotionals';
+import type { DevotionalsStorage, DevotionalHaloTurn } from '../data/devotionals';
 
 /**
  * Devotional day screen. The interactive half of Bucket C (distinct from a pure reading plan).
@@ -31,6 +32,8 @@ import type { DevotionalsStorage } from '../data/devotionals';
 
 const GOLD = '#d4860a';
 const GOLD_RGB = '212,134,10';
+const HALO_GOLD = '#e8a020';  // Halo's own identity color (matches the FAB + chat)
+const CROSS_DARK = '#2e1c03';
 
 // Fetch the passage text inline. Handles a verse range within a chapter and a span across
 // chapters; trims the first/last chapter to the verse bounds, keeps whole chapters between.
@@ -47,6 +50,30 @@ async function loadPassage(passage: DevotionalPassage): Promise<{ chapter: numbe
     segments.push({ chapter: ch, verses });
   }
   return segments;
+}
+
+// Map saved devotional turns <-> Halo's chat vocabulary (stored 'assistant' <-> chat 'halo').
+const toChatThread = (turns?: DevotionalHaloTurn[]) =>
+  (turns ?? []).map(t => ({ role: t.role === 'assistant' ? ('halo' as const) : ('user' as const), text: t.text }));
+const toStoredThread = (turns: { role: 'user' | 'halo'; text: string }[]): DevotionalHaloTurn[] =>
+  turns.map(t => ({ role: t.role === 'halo' ? ('assistant' as const) : ('user' as const), text: t.text }));
+
+// App-standard card press: scale to 0.97 on press in, back to 1.0 on release (timing, not spring).
+function PressScale({ onPress, style, children }: { onPress: () => void; style: any; children: ReactNode }) {
+  const scale = useRef(new Animated.Value(1)).current;
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={onPress}
+        onPressIn={() => Animated.timing(scale, { toValue: 0.97, duration: 100, useNativeDriver: true }).start()}
+        onPressOut={() => Animated.timing(scale, { toValue: 1, duration: 150, useNativeDriver: true }).start()}
+        style={style}
+      >
+        {children}
+      </TouchableOpacity>
+    </Animated.View>
+  );
 }
 
 export default function DevotionalScreen() {
@@ -66,6 +93,7 @@ export default function DevotionalScreen() {
   const [saving, setSaving] = useState(false);
   const [segments, setSegments] = useState<{ chapter: number; verses: Verse[] }[]>([]);
   const [verseLoading, setVerseLoading] = useState(true);
+  const [haloOpen, setHaloOpen] = useState(false);
 
   const seededDayRef = useRef<number | null>(null);
   const didAutoDayRef = useRef(false);
@@ -77,6 +105,11 @@ export default function DevotionalScreen() {
   const completed = !!entry?.completed;
   const dirty = answer.trim() !== (entry?.answer ?? '').trim();
   const canSave = dirty && !saving;
+
+  // Halo reflection saved to this day (only counts once a real user turn exists, so an unsent
+  // greeting never shows as a saved conversation).
+  const haloThread = entry?.haloThread;
+  const hasHaloThread = !!haloThread?.some(t => t.role === 'user');
 
   // Load progress on focus (cheap, keeps the screen fresh when returning from the reader).
   useFocusEffect(
@@ -157,6 +190,14 @@ export default function DevotionalScreen() {
         : { pathname: '/bible', params: { openBook: p.book, openChapter: String(p.startChapter) } },
     );
   };
+
+  const openHalo = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setHaloOpen(true); };
+
+  // Persist the live Halo conversation to this devotional day every time it changes, so it can be
+  // reopened and continued. Read-then-merge in the storage layer, never clobbers the typed answer.
+  const handleHaloThread = useCallback((turns: { role: 'user' | 'halo'; text: string }[]) => {
+    saveDevotionalHaloThread(id, day, toStoredThread(turns)).then(setStore).catch(() => {});
+  }, [id, day]);
 
   const atmosphereColors: [string, string, string] = isDarkTheme
     ? ['rgba(212,134,10,0.20)', 'rgba(212,134,10,0.06)', 'transparent']
@@ -295,6 +336,38 @@ export default function DevotionalScreen() {
                 </Text>
               )}
             </TouchableOpacity>
+
+            {/* Reflect with Halo: opens the companion seeded with this passage + question, saving
+                the conversation to this day so it can be reopened and continued. */}
+            {hasHaloThread ? (
+              <PressScale
+                onPress={openHalo}
+                style={[styles.haloRow, {
+                  backgroundColor: theme.bgCard,
+                  borderColor: `rgba(${GOLD_RGB},0.30)`,
+                  borderTopColor: `rgba(${GOLD_RGB},0.45)`,
+                }]}
+              >
+                <View style={[styles.haloBadge, { backgroundColor: HALO_GOLD }]}>
+                  <MiniCross size={15} color={CROSS_DARK} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.haloRowTitle, { color: theme.accentAmber }]}>Your reflection with Halo</Text>
+                  <Text numberOfLines={1} style={[styles.haloRowPreview, { color: theme.textSecondary }]}>Tap to continue your conversation</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
+              </PressScale>
+            ) : (
+              <PressScale
+                onPress={openHalo}
+                style={[styles.haloBtn, { backgroundColor: 'rgba(232,160,32,0.14)', borderColor: 'rgba(232,160,32,0.5)' }]}
+              >
+                <View style={[styles.haloBadge, { backgroundColor: HALO_GOLD }]}>
+                  <MiniCross size={15} color={CROSS_DARK} />
+                </View>
+                <Text style={[styles.haloBtnText, { color: theme.textPrimary }]}>Reflect on this with Halo</Text>
+              </PressScale>
+            )}
           </View>
 
           {/* Mark complete */}
@@ -338,6 +411,15 @@ export default function DevotionalScreen() {
             </TouchableOpacity>
           </View>
       </ScrollView>
+
+      <CompanionChat
+        visible={haloOpen}
+        onClose={() => setHaloOpen(false)}
+        threadKey={`${id}:${day}`}
+        seedContext={{ ref: formatDevotionalPassage(dayData.passage), note: dayData.question }}
+        initialThread={toChatThread(entry?.haloThread)}
+        onThreadChange={handleHaloThread}
+      />
     </LinearGradient>
   );
 }
@@ -366,6 +448,12 @@ const styles = StyleSheet.create({
   answerInput:     { minHeight: 110, borderRadius: 12, borderWidth: 1, padding: 14, fontSize: 15, fontFamily: 'DMSans_400Regular', lineHeight: 22, textAlignVertical: 'top' },
   saveBtn:         { marginTop: 12, height: 48, borderRadius: 12, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
   saveBtnText:     { fontSize: 15, fontFamily: 'DMSans_600SemiBold' },
+  haloBtn:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 12, height: 52, borderRadius: 12, borderWidth: 1 },
+  haloBtnText:     { fontSize: 14, fontFamily: 'DMSans_600SemiBold' },
+  haloBadge:       { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  haloRow:         { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 12, borderRadius: 12, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, minHeight: 56, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 3 },
+  haloRowTitle:    { fontSize: 14, fontFamily: 'DMSans_600SemiBold' },
+  haloRowPreview:  { fontSize: 12, fontFamily: 'DMSans_400Regular', marginTop: 2 },
   completeBtn:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 22, height: 52, borderRadius: 14, borderWidth: 1 },
   completeText:    { fontSize: 15, fontFamily: 'DMSans_600SemiBold' },
   navRow:          { flexDirection: 'row', justifyContent: 'space-between', marginTop: 24 },

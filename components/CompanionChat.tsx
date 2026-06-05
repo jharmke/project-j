@@ -42,6 +42,14 @@ const GREETINGS = [
 
 const pickGreeting = () => GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
 
+// Opener for a MANAGED conversation. A devotional (seedContext carries the day's question) gets a
+// pointed, warm opener that names the passage and poses the question; anything else gets a normal
+// greeting. The opener sits in history, so Halo itself is anchored to the devotional from message one.
+const openerFor = (ctx?: { ref: string; note?: string } | null): string =>
+  ctx?.note
+    ? `Let's reflect on ${ctx.ref} together.\n\n${ctx.note}\n\nShare whatever comes to mind, or ask me anything about the passage.`
+    : pickGreeting();
+
 // Local cache of today's message usage so the counter can show the moment Halo opens (the
 // client cannot read the server's ai_usage counter, which is locked down by the rules).
 // The date is the server's UTC day, so a stale cache self-expires at the daily reset.
@@ -119,8 +127,9 @@ async function buildVerifiedReply(reply: string): Promise<{ text: string; segmen
   }
 }
 
-// A small Latin cross, used in Halo's gold badge so it matches the FAB.
-function MiniCross({ size, color }: { size: number; color: string }) {
+// A small Latin cross, used in Halo's gold badge so it matches the FAB. Exported so other faith
+// surfaces (e.g. the devotional "Reflect with Halo" entry) can carry the same identity.
+export function MiniCross({ size, color }: { size: number; color: string }) {
   const bar = Math.max(2, Math.round(size * 0.18));
   const vH = Math.round(size * 0.74);
   const hW = Math.round(size * 0.52);
@@ -187,11 +196,18 @@ function TypingDots() {
 }
 
 export default function CompanionChat({
-  visible, onClose, seedContext,
+  visible, onClose, seedContext, threadKey, initialThread, onThreadChange,
 }: {
   visible: boolean;
   onClose: () => void;
-  seedContext?: { ref: string } | null;
+  seedContext?: { ref: string; note?: string } | null;
+  // Devotional integration (all optional, so existing callers are unchanged): threadKey marks a
+  // MANAGED conversation that re-seeds from initialThread on each open (instead of the in-memory
+  // persistence the FAB uses); initialThread resumes a saved conversation; onThreadChange reports
+  // the live turns so the parent can persist them (e.g. to a devotional day in pj_devotionals).
+  threadKey?: string;
+  initialThread?: { role: 'user' | 'halo'; text: string }[];
+  onThreadChange?: (turns: { role: 'user' | 'halo'; text: string }[]) => void;
 }) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -202,13 +218,14 @@ export default function CompanionChat({
   const [kb, setKb] = useState(0); // keyboard height when shown
   const [sending, setSending] = useState(false);
   const [tier, setTier] = useState<'rooted' | 'exploring'>('exploring');
-  const [attachedContext, setAttachedContext] = useState<{ ref: string } | null>(null); // verse brought from the Bible reader
+  const [attachedContext, setAttachedContext] = useState<{ ref: string; note?: string } | null>(null); // verse/passage brought in as context
   const [quota, setQuota] = useState<{ used: number; cap: number } | null>(null); // today's message usage, from the server
 
   const anim = useRef(new Animated.Value(0)).current; // 0 closed, 1 open
   const scrollRef = useRef<ScrollView>(null);
   const inputRef = useRef<TextInput>(null);
   const dragY = useSharedValue(0); // drag-to-dismiss offset (Reanimated)
+  const seededKeyRef = useRef<string | null>(null); // last managed threadKey seeded into messages
 
   // Faith tier drives Halo's posture (Rooted speaks as a fellow believer, Exploring is gentler).
   useEffect(() => {
@@ -238,11 +255,37 @@ export default function CompanionChat({
   useEffect(() => {
     if (visible) {
       dragY.value = 0; // reset any prior drag offset so every open starts at rest
-      setAttachedContext(seedContext ?? null); // attach the verse if opened from a verse, else clear
+      // Managed conversations (a devotional) carry their context in Halo's opener, not a chip, so
+      // the chip never reappears on reopen and nothing redundant gets re-injected. Unmanaged opens
+      // (the Bible verse banner) still get the dismissible "Discussing {ref}" chip.
+      setAttachedContext(threadKey != null ? null : (seedContext ?? null));
+      // Managed conversations (a devotional day) re-seed from the saved thread on each open, so
+      // reopening shows what was saved. Unmanaged callers (the FAB) keep their in-memory thread.
+      if (threadKey != null && seededKeyRef.current !== threadKey) {
+        seededKeyRef.current = threadKey;
+        setMessages(
+          initialThread && initialThread.length
+            ? initialThread.map(t => ({ role: t.role, text: t.text } as Msg))
+            : [{ role: 'halo', text: openerFor(seedContext) }],
+        );
+      }
       anim.setValue(0);
       Animated.timing(anim, { toValue: 1, duration: 220, useNativeDriver: false }).start();
+    } else {
+      seededKeyRef.current = null; // re-seed (picking up newly saved turns) on the next open
     }
   }, [visible]);
+
+  // Report the live conversation up so a managed parent can persist it (e.g. to a devotional day).
+  // Only once there is a real user turn, so an unsent greeting never saves an empty thread. No-op
+  // without onThreadChange, so unmanaged callers are unaffected.
+  useEffect(() => {
+    if (!onThreadChange) return;
+    const turns = messages
+      .filter(m => m.role === 'user' || m.role === 'halo')
+      .map(m => ({ role: m.role as 'user' | 'halo', text: m.text }));
+    if (turns.some(t => t.role === 'user')) onThreadChange(turns);
+  }, [messages]);
 
   useEffect(() => {
     const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -375,7 +418,9 @@ export default function CompanionChat({
     // the crisis screen (lament passages carry death language by nature).
     const ctx = attachedContext;
     const outbound = ctx
-      ? `For context, I'm reading ${ctx.ref} and would like to talk about it. ${text}`
+      ? ctx.note
+        ? `For context, I'm reading ${ctx.ref} as part of today's devotional. ${text}`
+        : `For context, I'm reading ${ctx.ref} and would like to talk about it. ${text}`
       : text;
 
     // History the model sees: prior real turns only (skip system notices and crisis cards).
@@ -599,7 +644,7 @@ export default function CompanionChat({
               <View style={[styles.contextChip, { backgroundColor: 'rgba(232,160,32,0.12)', borderColor: 'rgba(232,160,32,0.32)' }]}>
                 <MiniCross size={12} color={GOLD} />
                 <Text style={[styles.contextChipText, { color: theme.textSecondary }]} numberOfLines={1}>
-                  Discussing {attachedContext.ref}
+                  {attachedContext.note ? 'Reflecting on' : 'Discussing'} {attachedContext.ref}
                 </Text>
                 <Pressable onPress={() => setAttachedContext(null)} hitSlop={8} style={styles.contextChipClose}>
                   <Ionicons name="close" size={13} color={theme.textMuted} />

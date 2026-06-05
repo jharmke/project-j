@@ -139,15 +139,15 @@ export default function FaithScreen() {
       >
         {visibleCards.map(id => renderCard(id))}
 
-        {/* TEMP dev launcher into the devotional-day screen, so the content is testable before
-            the Plans page exists. REMOVE when the Plans page / Bible-and-Plans card sections land. */}
+        {/* TEMP dev launcher into the Plans hub, so plans + devotionals are testable before the
+            "Bible and Plans" card sections route to it. REMOVE when that card is finalized. */}
         <TouchableOpacity
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/devotional', params: { id: 'rest_recovery_3' } }); }}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/plans'); }}
           activeOpacity={0.85}
           style={[styles.tempDevotionalBtn, { borderColor: 'rgba(212,134,10,0.4)' }]}
         >
           <Ionicons name="flask-outline" size={15} color={theme.accentAmber} />
-          <Text style={[styles.tempDevotionalText, { color: theme.accentAmber }]}>Devotional (test): Rest and Recovery</Text>
+          <Text style={[styles.tempDevotionalText, { color: theme.accentAmber }]}>Plans (test)</Text>
         </TouchableOpacity>
       </ScrollView>
 

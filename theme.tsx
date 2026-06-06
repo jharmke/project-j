@@ -97,6 +97,7 @@ export interface Theme {
   bgCard: string;           // standard card background
   bgCardVerse: string;      // verse card background (special)
   bgCardFaith: string;      // faith tab card background (faint warm tint, faith tab only)
+  bgCardFaithHero: string;  // Faith Today home hub card (between bgCardFaith and bgCardVerse)
   bgTileFaith: string;      // faith inner tile/button fill (warm wash on light, solid warm-elevated on dark)
   bgTileFaithStrong: string; // faith inner hero fill (Continue Reading); a step stronger than bgTileFaith
   bgInput: string;          // text input background
@@ -183,6 +184,7 @@ const dark: Theme = {
   bgCard:           '#2a2a2e',
   bgCardVerse:      '#22223a',
   bgCardFaith:      '#2a2a2e',  // = bgCard: no tint on dark (warm-dark cards recede and look cheap; warmth lives in the gold edge + accents)
+  bgCardFaithHero:  '#262634',
   bgTileFaith:      '#34302a',  // dark: solid warm-elevated inner tile fill (lighter than the card so tiles float, not transparent)
   bgTileFaithStrong: '#3c372e', // dark: Continue Reading hero, a step lighter so it leads
   bgInput:          '#1f1f22',
@@ -259,6 +261,7 @@ const light: Theme = {
   bgCard:           'rgba(255,255,255,0.85)',
   bgCardVerse:      'rgba(255,251,240,0.72)',
   bgCardFaith:      'rgba(255,250,243,0.85)',
+  bgCardFaithHero:  'rgba(255,248,236,0.82)',
   bgTileFaith:      'rgba(212,134,10,0.06)',
   bgTileFaithStrong: 'rgba(212,134,10,0.11)',
   bgInput:          '#f5f5fa',
@@ -335,6 +338,7 @@ const slate: Theme = {
   bgCard:           'rgba(228,234,244,0.90)',
   bgCardVerse:      'rgba(226,232,244,0.90)',
   bgCardFaith:      'rgba(228,221,209,0.92)',
+  bgCardFaithHero:  'rgba(226,219,206,0.92)',
   bgTileFaith:      'rgba(212,134,10,0.06)',
   bgTileFaithStrong: 'rgba(212,134,10,0.11)',
   bgInput:          '#d0d8e4',
@@ -411,6 +415,7 @@ const warm: Theme = {
   bgCard:           '#fff4e4',
   bgCardVerse:      '#fff8e8',
   bgCardFaith:      '#fff1dd',
+  bgCardFaithHero:  '#ffeed6',
   bgTileFaith:      'rgba(212,134,10,0.06)',
   bgTileFaithStrong: 'rgba(212,134,10,0.11)',
   bgInput:          '#efe9dd',
@@ -487,6 +492,7 @@ const blush: Theme = {
   bgCard:           'rgba(253,238,245,0.95)',
   bgCardVerse:      'rgba(255,252,245,0.92)',
   bgCardFaith:      'rgba(253,240,241,0.95)',
+  bgCardFaithHero:  'rgba(253,242,238,0.94)',
   bgTileFaith:      'rgba(212,134,10,0.06)',
   bgTileFaithStrong: 'rgba(212,134,10,0.11)',
   bgInput:          '#fce8ed',

@@ -353,6 +353,14 @@ CARD LABEL: "FAITH TODAY".
 
 BUILD NOTES: the home Today's Message migration must respect the saved-home-untouched rule: this is a DEFAULT change only, existing saved homes (including Justin's) are not force-rewritten, the same mechanic used for the B3c gratitude migration. Confirm the default-swap at build so no existing user's home is rewritten.
 
+PAGE 1 ENHANCEMENT (planned, NOT built; logged 2026-06-06 so we do not forget): page 1 (the verse) carries natural dead space because the card height locks to the taller plans / prayer pages. The planned fill is a "Reflect with Halo" button at the bottom of page 1 that opens Halo seeded with the day's verse and SAVES the reflection to the journal (pj_bible_reflections). This IS the deferred VOTD-to-Halo-reflection flow (see SPEC_faith_ai.md 2026-06-04 note + the 2026-06-06 Faith Today reconciliation): it fills the space AND adds real function. Build it as its own step (needs the Halo seed + save-to-day wiring). INTERIM shipped 2026-06-06: the verse text was enlarged and set in the Lora serif (the "set apart" faith font) to anchor the page until the button lands.
+
+NEXT-THREAD POLISH (Faith Today card + faith-surface consistency, reported by Justin 2026-06-06, NOT yet done):
+1. STATE TITLE CONSISTENCY: the three page titles (Today's Message / Plans & Devotionals / Prayer) must read the SAME size + weight. Justin reports the Today's Message title looks bigger than the other two. In code all three use the same `title` style (fontSize 14) in components/FaithTodayCard.tsx, so the difference is likely the long label plus the enlarged Lora verse beneath it; verify and make them visually identical.
+2. FAITH-TAB VOTD CARD MATCH: now that the home Faith Today page 1 verse was enlarged + set in Lora serif, the FAITH-TAB "Today's Message" (VOTD) card should be updated to MATCH (same verse treatment / title / icon) so the home hub and the faith tab read consistently. Handle both surfaces together.
+3. ICON COLLISION: the home Faith Today page-1 "Today's Message" top-left icon (book-outline) is the same book glyph as the faith-tab "Bible and Plans" card icon (book). Pick DISTINCT icons so the daily verse/message and the Bible/plans surfaces do not both use a book.
+4. COLOR (optional): the Faith Today card now uses the bgCardFaithHero token (split between bgCardFaith and bgCardVerse). Justin is okay with it but wonders if it should go a touch darker; nudge the token deeper per theme if he confirms.
+
 ---
 
 ## Tier behavior summary

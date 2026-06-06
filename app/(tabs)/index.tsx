@@ -18,6 +18,7 @@ import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, weig
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { storageSet } from '../../utils/storage';
 import { VERSES, resolveDailyVerse } from '../../data/verses';
+import FaithTodayCard from '../../components/FaithTodayCard';
 import { loadCalorieTargets } from '../../utils/calorieTarget';
 import { useTheme } from '../../theme';
 import HeaderAvatar from '../../components/HeaderAvatar';
@@ -70,7 +71,7 @@ interface CardMeta {
 }
 
 const CARD_REGISTRY: CardMeta[] = [
-  { id: 'verse',          label: "Today's Message",   description: 'Scripture for the day',                  defaultVisible: true },
+  { id: 'verse',          label: 'Faith Today',        description: 'Verse, plans, and prayer hub',           defaultVisible: true },
   { id: 'smart_tip',      label: 'Smart Tip',          description: 'Your top coaching insight for today',    defaultVisible: true },
   { id: 'calories',       label: 'Calories',           description: 'Daily calorie intake & progress',        defaultVisible: true },
   { id: 'macros',         label: 'Macros',             description: 'Protein, carbs & fat breakdown',         defaultVisible: true },
@@ -1549,57 +1550,6 @@ export default function HomeScreen() {
   };
 
   // ─── Card Renderers ───────────────────────────────────────────────────────────
-  const renderVerseCard = () => {
-    const cardScale = new Animated.Value(1);
-    const onPressIn = () => Animated.timing(cardScale, { toValue: 0.97, duration: 100, useNativeDriver: true }).start();
-    const onPressOut = () => Animated.timing(cardScale, { toValue: 1, duration: 150, useNativeDriver: true }).start();
-
-    return (
-      <Animated.View style={{ transform: [{ scale: cardScale }] }}>
-        <TouchableOpacity
-          activeOpacity={0.99}
-          delayPressIn={0}
-          onPressIn={onPressIn}
-          onPressOut={onPressOut}
-          onPress={() => router.push({
-            pathname: '/bible',
-            params: {
-              verseRef: dailyVerse?.reference ?? '',
-              verseText: dailyVerse?.text ?? '',
-            },
-          })}
-          style={[styles.verseCard, { backgroundColor: theme.bgCardVerse, borderColor: theme.borderCardVerse,
-            shadowColor: '#d4860a', shadowOffset: { width: 0, height: 0 }, shadowOpacity: .85, shadowRadius: 8, elevation: 8 }]}
-        >
-          <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
-            <View style={{ flexDirection:'row', alignItems:'center' }}>
-              <Ionicons name="book-outline" size={11} color={theme.textMuted} />
-              <Text style={[styles.verseLabel, { marginLeft:6, marginBottom:0, color: theme.textMuted }]}>TODAY'S MESSAGE</Text>
-            </View>
-            <TouchableOpacity onPress={() => router.push('/journal')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Ionicons name="journal" size={16} color={theme.accentBlue} />
-            </TouchableOpacity>
-          </View>
-          <Text style={[styles.verseText, { color: theme.textSecondary }]}>"{dailyVerse?.text}"</Text>
-          <Text style={[styles.verseRef, { color: theme.textMuted }]}>{dailyVerse?.reference}</Text>
-          {dailyVerse && (() => {
-            const [y, m, d] = todayKey.split('-').map(Number);
-            const date = new Date(y, m - 1, d);
-            const dayOfYear = Math.floor((date.getTime() - new Date(y, 0, 1).getTime()) / 86400000);
-            const prompt = REFLECTION_PROMPTS[dayOfYear % REFLECTION_PROMPTS.length];
-            return (
-              <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 0.5, borderTopColor: theme.borderCardVerse }}>
-                <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', lineHeight: 16 }}>
-                  {prompt}
-                </Text>
-              </View>
-            );
-          })()}
-        </TouchableOpacity>
-      </Animated.View>
-    );
-  };
-
   const renderCaloriesCard = () => {
     const remaining = onPaceTarget - totalCals;
     const stats = [
@@ -2827,9 +2777,14 @@ export default function HomeScreen() {
 
   const renderCardById = (id: CardId) => {
     switch (id) {
-      case 'verse':
+      case 'verse': {
         if (faithJourney === 'notrightnow') return null;
-        return renderVerseCard();
+        const [vy, vm, vd] = todayKey.split('-').map(Number);
+        const vdate = new Date(vy, vm - 1, vd);
+        const vdoy = Math.floor((vdate.getTime() - new Date(vy, 0, 1).getTime()) / 86400000);
+        const vprompt = dailyVerse ? REFLECTION_PROMPTS[vdoy % REFLECTION_PROMPTS.length] : '';
+        return <FaithTodayCard verse={dailyVerse} reflectionPrompt={vprompt} theme={theme} />;
+      }
       case 'smart_tip': {
         const homeTip = homeTips[tipIndex] ?? null;
         if (!homeTip) return null;

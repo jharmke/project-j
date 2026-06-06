@@ -40,7 +40,6 @@ export default function PlansScreen() {
   const { showToast } = useToast();
   const params = useLocalSearchParams<{ tab?: string }>();
 
-  const isDarkTheme = themeId === 'dark';
   const [tab, setTab] = useState<Tab>(params.tab === 'reading' ? 'reading' : 'devotionals');
   const [planStore, setPlanStore] = useState<ReadingPlansStorage>({});
   const [devStore, setDevStore] = useState<DevotionalsStorage>({});
@@ -158,13 +157,8 @@ export default function PlansScreen() {
   const plansAtLimit = activePlans.length >= MAX_ACTIVE_PLANS;
   const devsAtLimit = activeDevs.length >= MAX_ACTIVE_DEVOTIONALS;
 
-  const atmosphereColors: [string, string, string] = isDarkTheme
-    ? ['rgba(212,134,10,0.20)', 'rgba(212,134,10,0.06)', 'transparent']
-    : ['rgba(232,160,32,0.30)', 'rgba(232,160,32,0.10)', 'transparent'];
-
   return (
     <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
-      <LinearGradient colors={atmosphereColors} style={styles.atmosphere} pointerEvents="none" />
 
       <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
         <TouchableOpacity
@@ -437,7 +431,6 @@ function PressScale({ onPress, style, children }: { onPress: () => void; style: 
 }
 
 const styles = StyleSheet.create({
-  atmosphere:   { position: 'absolute', top: 0, left: 0, right: 0, height: 420 },
   header:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5 },
   headerBtn:    { borderWidth: 1, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' },
   headerTitle:  { fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },

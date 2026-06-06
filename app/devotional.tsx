@@ -82,7 +82,6 @@ export default function DevotionalScreen() {
   const { showToast } = useToast();
   const params = useLocalSearchParams<{ id?: string; day?: string }>();
 
-  const isDarkTheme = themeId === 'dark';
   const id = params.id ?? '';
   const dev: Devotional | undefined = DEVOTIONALS.find(d => d.id === id);
 
@@ -199,9 +198,6 @@ export default function DevotionalScreen() {
     saveDevotionalHaloThread(id, day, toStoredThread(turns)).then(setStore).catch(() => {});
   }, [id, day]);
 
-  const atmosphereColors: [string, string, string] = isDarkTheme
-    ? ['rgba(212,134,10,0.20)', 'rgba(212,134,10,0.06)', 'transparent']
-    : ['rgba(232,160,32,0.30)', 'rgba(232,160,32,0.10)', 'transparent'];
 
   // Devotional or day not found: a clean error rather than a blank screen.
   if (!dev || !dayData) {
@@ -229,7 +225,6 @@ export default function DevotionalScreen() {
 
   return (
     <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
-      <LinearGradient colors={atmosphereColors} style={styles.atmosphere} pointerEvents="none" />
 
       {/* Header: back, devotional name, day count on the right. */}
       <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
@@ -425,7 +420,6 @@ export default function DevotionalScreen() {
 }
 
 const styles = StyleSheet.create({
-  atmosphere:      { position: 'absolute', top: 0, left: 0, right: 0, height: 420 },
   header:          { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5 },
   headerBtn:       { borderWidth: 1, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' },
   headerTitle:     { flex: 1, textAlign: 'center', fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, marginHorizontal: 8 },

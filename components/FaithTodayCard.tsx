@@ -167,7 +167,8 @@ export default function FaithTodayCard({ verse, reflectionPrompt, theme }: Props
   };
 
   const goVerse = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/bible', params: { verseRef: verse?.reference ?? '', verseText: verse?.text ?? '' } }); };
-  const goFaith = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/faith'); };
+  const goFaithPlans = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/faith', params: { scrollTo: 'bible_plans' } }); };
+  const goFaithPrayer = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/faith', params: { scrollTo: 'prayer' } }); };
   const goJournal = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); };
 
   const activePlans = READING_PLANS.filter(p => !!planStore[p.id]);
@@ -220,7 +221,7 @@ export default function FaithTodayCard({ verse, reflectionPrompt, theme }: Props
           </Slide>
 
           {/* Page 2: active reading plans + devotionals, two columns */}
-          <Slide width={width} minHeight={maxH} bg={theme.bgCardFaithHero} onPress={goFaith} onContentLayout={onContentLayout(1)}>
+          <Slide width={width} minHeight={maxH} bg={theme.bgCardFaithHero} onPress={goFaithPlans} onContentLayout={onContentLayout(1)}>
             <PageHeader
               title="Plans & Devotionals"
               icon={<Ionicons name="calendar-outline" size={14} color={theme.accentAmber} style={{ marginRight: 6 }} />}
@@ -242,7 +243,7 @@ export default function FaithTodayCard({ verse, reflectionPrompt, theme }: Props
           </Slide>
 
           {/* Page 3: active prayer preview */}
-          <Slide width={width} minHeight={maxH} bg={theme.bgCardFaithHero} onPress={goFaith} onContentLayout={onContentLayout(2)}>
+          <Slide width={width} minHeight={maxH} bg={theme.bgCardFaithHero} onPress={goFaithPrayer} onContentLayout={onContentLayout(2)}>
             <PageHeader
               title="Prayer"
               icon={<MaterialCommunityIcons name="hand-heart" size={14} color={theme.accentAmber} style={{ marginRight: 6 }} />}

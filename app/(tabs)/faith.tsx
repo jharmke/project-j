@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { LinearGradient } from 'expo-linear-gradient';
 import { Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect, router } from 'expo-router';
+import { useFocusEffect, router, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -58,9 +58,11 @@ const BUILT_CARDS: FaithCardId[] = ['votd', 'bible_plans', 'gratitude', 'prayer'
 export default function FaithScreen() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const { scrollTo } = useLocalSearchParams<{ scrollTo?: string }>();
   const [chatOpen, setChatOpen] = useState(false);
   const [styleMode, setStyleMode] = useState<'discipline' | 'balanced' | 'mindful'>('balanced');
   const scrollRef = useRef<ScrollView>(null);
+  const cardOffsets = useRef<Partial<Record<FaithCardId, number>>>({});
   const [cardOrder, setCardOrder] = useState<FaithCardId[]>(DEFAULT_FAITH_ORDER);
   const [cardVisible, setCardVisible] = useState<Record<FaithCardId, boolean>>(DEFAULT_FAITH_VISIBLE);
   const [dailyVerse, setDailyVerse] = useState<DailyVerse | null>(null);
@@ -96,6 +98,14 @@ export default function FaithScreen() {
       return () => { alive = false; };
     }, []),
   );
+
+  useEffect(() => {
+    if (!scrollTo) return;
+    setTimeout(() => {
+      const offset = cardOffsets.current[scrollTo as FaithCardId] ?? 0;
+      scrollRef.current?.scrollTo({ y: offset, animated: true });
+    }, 400);
+  }, [scrollTo]);
 
   const visibleCards = cardOrder.filter(id => cardVisible[id] && BUILT_CARDS.includes(id));
 
@@ -151,7 +161,11 @@ export default function FaithScreen() {
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: insets.bottom + 96 }}
         showsVerticalScrollIndicator={false}
       >
-        {visibleCards.map(id => renderCard(id))}
+        {visibleCards.map(id => (
+          <View key={id} onLayout={e => { cardOffsets.current[id] = e.nativeEvent.layout.y; }}>
+            {renderCard(id)}
+          </View>
+        ))}
       </ScrollView>
 
       <CompanionFAB onPress={() => setChatOpen(true)} />

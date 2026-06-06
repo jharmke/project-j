@@ -136,7 +136,7 @@ SLEEP COACH delivery quality (2026-06-04, gym note 7): the sleep card tip is the
 - 5.3 WEEKDAY-ONLY LOGGER. Logs Monday to Friday, drops weekends; blind spot exactly where the damage tends to happen.
 - 5.4 STRONG LOGGING STREAK (positive). Reinforce; also unlocks higher-confidence tips.
 - 5.5 BRAND NEW. Not enough history yet; encourage, set expectations, no hard diagnoses.
-- 5.6 LOGGING LAG. All or most food entries across multiple days have timestamps clustered within a small window at end of day, or most entries are logged 6 or more hours after meals would have occurred. Suggests estimation rather than real-time logging. Data may be less accurate than it appears. Framed as a data quality observation, never a behavior accusation: "logging as you go tends to give a clearer picture." [DATA: ready, entry timestamps stored]
+- 5.6 LOGGING LAG. Most food entries on a day are logged within a short window of each other (roughly 90 minutes or less), repeated across multiple days. This clustering pattern is the signal regardless of what time of day it occurs — a user logging 6 entries within 30 minutes at 7pm is just as likely logging from memory as one doing it at 11pm. Detection is based on entry clustering, not time of day. Avoids misfiring on night shift workers or anyone who genuinely logs in real time at unusual hours. Suggests estimation rather than real-time logging. Framed as a data quality observation, never a behavior accusation: "logging as you go tends to give a clearer picture." [DATA: ready, entry timestamps stored]
 - 5.7 BINARY LOGGING PATTERN. Days are either fully logged or completely absent with nothing in between. When life goes sideways the user does not log at all, so the bad days are invisible to the engine. Creates the illusion of a stronger average than reality. Brain flags that good days may be overrepresented in the data window. Pattern-based: requires enough days to establish the binary pattern clearly. [DATA: ready]
 - 5.8 INCONSISTENT WEIGH-IN CONDITIONS. Same-day weigh-in readings vary significantly (3 or more lbs between readings on the same day across multiple days) suggesting post-gym, post-meal, or variable time-of-day logging. The trend is harder to read through this noise. Encourages consistent morning weigh-ins without sounding prescriptive. [DATA: tentative, requires multiple same-day readings to detect]
 - 5.9 AGGRESSIVE GOAL SET. The implied daily deficit required to hit the user's target pace would put intake at or below BMR. Fires in the first 1 to 2 weeks only, before real trend data exists. Only escalates the flag if early metrics confirm the user is struggling (energy proxy via workout completion declining, weight dropping too fast). Framed as upfront expectation-setting: the user knows what they are signing up for and the plan adjusts if the data shows it is not working. Never fire this after week 2: at that point 1.2 or 1.3 handles the outcome. [DATA: ready]
@@ -271,7 +271,7 @@ Shared gates: minimum 7 logged days in the window before any 3.x fires. Excluded
 
 3.15: Needs 3+ weeks to confirm the weekly cycle. Brain names Thursday as the specific vulnerable day rather than a generic consistency note. Altitude vs 3.3: the damage point (Thursday vs weekend) determines which fires; do not stack both.
 
-3.16: Variety gate: roughly 70%+ of entries from 10 or fewer unique foods. Extended nutrition data gate applies. The connection is structural: the same foods producing the same gaps is the story.
+3.16: Nutritional gaps must be present first — that is the trigger. Food variety is the explanation for why the gaps keep happening, not a trigger on its own. A user eating the same 10 foods and nailing their nutrition does not fire this scenario. Variety gate: roughly 70%+ of entries from 10 or fewer unique foods, AND those foods are producing consistent nutritional gaps. Extended nutrition data gate applies. The connection is structural: the same foods producing the same gaps is the story.
 
 All thresholds above are directional starting values, flagged for post-launch tuning.
 
@@ -315,7 +315,7 @@ Family 5 is the data quality and confidence family. 5.1 and 5.5 are blockers —
 
 5.5: User has fewer than 14 days of total data. No hard diagnoses — only encouragement and realistic expectation-setting. Blocks the whole engine except onboarding-appropriate tips.
 
-5.6: Most food entries across multiple days are timestamped late at night or in a single late window, suggesting the user is logging from memory. Fires when this pattern shows up on 5 or more days. Framed as a data quality note, never an accusation.
+5.6: Most entries on a given day are logged within roughly 90 minutes of each other, repeated across 5 or more days. Detection is entry clustering, not time of day. Avoids misfiring on night shift workers or anyone logging in real time at unusual hours. Framed as a data quality note, never an accusation.
 
 5.7: Days are either fully logged with multiple entries or completely absent, rarely anything in between. Fires for erratic binary patterns not tied to the week structure. If the pattern IS weekday/weekend-specific, fire 5.3 instead.
 

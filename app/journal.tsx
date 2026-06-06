@@ -43,6 +43,12 @@ const CATEGORY_META: Record<Category, { label: string; icon: string; color: stri
   fitness:   { label: 'Fitness',   icon: 'barbell-outline',    color: '#06b6d4' },
 };
 
+// 'prayer' is RETIRED from creation and filtering: its own tracker now owns prayer (pj_prayers /
+// app/prayer.tsx). It stays in CATEGORY_META so any EXISTING prayer entry still renders; it is only
+// removed from the create pickers and the filter pills, so no NEW prayer entries can be made.
+const RETIRED_CATEGORIES: Category[] = ['prayer'];
+const isRetired = (c: Category) => RETIRED_CATEGORIES.includes(c);
+
 const STORAGE_KEY = 'pj_bible_reflections';
 
 function migrateEntry(raw: any): JournalEntry {
@@ -276,7 +282,7 @@ function SwipeableEntry({
                   {entry.category !== 'verse' && (
                     <View style={{ flexDirection: 'row', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
                       {(Object.keys(CATEGORY_META) as Category[])
-                        .filter(c => c !== 'verse')
+                        .filter(c => c !== 'verse' && !isRetired(c))
                         .map(cat => {
                           const m = CATEGORY_META[cat];
                           const active = editCategory === cat;
@@ -624,7 +630,7 @@ export default function JournalScreen() {
         >
           <Text style={[styles.filterPillText, { color: !filterCategory ? theme.accentBlue : theme.textMuted }]}>All</Text>
         </TouchableOpacity>
-        {(Object.keys(CATEGORY_META) as Category[]).map(cat => {
+        {(Object.keys(CATEGORY_META) as Category[]).filter(c => !isRetired(c)).map(cat => {
           const meta = CATEGORY_META[cat];
           const active = filterCategory === cat;
           return (
@@ -735,7 +741,7 @@ export default function JournalScreen() {
             <Text style={[styles.sheetTitle, { color: theme.textPrimary }]}>New Entry</Text>
             <Text style={[styles.sheetSubtitle, { color: theme.textDim }]}>What would you like to write about?</Text>
             <View style={{ gap: 10, marginTop: 8 }}>
-              {(Object.keys(CATEGORY_META) as Category[]).filter(c => c !== 'verse').map(cat => {
+              {(Object.keys(CATEGORY_META) as Category[]).filter(c => c !== 'verse' && !isRetired(c)).map(cat => {
                 const meta = CATEGORY_META[cat];
                 return (
                   <TouchableOpacity

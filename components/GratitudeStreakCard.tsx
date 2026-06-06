@@ -300,7 +300,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
           <Ionicons name="heart" size={11} color={t.textMuted} />
           <Text style={[styles.cardLabel, { color: t.textMuted }]}>Gratitude Streak</Text>
         </View>
-        <TouchableOpacity onPress={() => router.push('/journal')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <Ionicons name={faith ? 'journal' : 'book'} size={16} color={btnText} />
         </TouchableOpacity>
       </View>
@@ -435,7 +435,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
             <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
               <TouchableOpacity
                 style={[styles.actionBtn, { backgroundColor: t.bgInput, borderColor: t.borderInput, flex: 1 }]}
-                onPress={() => { setCardState('logged'); setInputText(''); }}
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCardState('logged'); setInputText(''); }}
               >
                 <Text style={{ fontFamily: 'DMSans_600SemiBold', fontSize: 12, color: t.textSecondary }}>Cancel</Text>
               </TouchableOpacity>

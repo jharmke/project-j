@@ -58,13 +58,15 @@ interface Props {
   todayKey: string;
   scrollRef: React.RefObject<any>;
   theme: any;
+  // 'home' (default) keeps the cool blue accent. 'faith' wears the warm gold faith-tab skin.
+  variant?: 'home' | 'faith';
 }
 
 type CardState = 'empty' | 'logged' | 'editing';
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, theme: t }: Props) {
+export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, theme: t, variant = 'home' }: Props) {
   const { showToast } = useToast();
   const inputRef = useRef<TextInput>(null);
   const cardRef = useRef<View>(null);
@@ -78,6 +80,18 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
 
   const saverCap = styleMode === 'discipline' ? 1 : styleMode === 'balanced' ? 2 : 0;
   const isMindful = styleMode === 'mindful';
+
+  // Faith-tab skin. The 'home' branch of every value is the exact current token, so the home
+  // card renders identically; only the faith variant swaps the cool blue accent for warm gold.
+  const faith = variant === 'faith';
+  const accent      = faith ? t.accentAmber : t.accentBlueRaw;          // hero, flame, week dots, watermark
+  const cardBorder  = faith ? 'rgba(212,134,10,0.22)' : t.borderCard;
+  const cardTop     = faith ? 'rgba(212,134,10,0.38)' : t.accentBlueRaw;
+  const btnBg       = faith ? 'rgba(212,134,10,0.10)' : t.accentBlueBg;
+  const btnBorder   = faith ? 'rgba(212,134,10,0.30)' : t.accentBlueBorder;
+  const btnText     = faith ? t.accentAmber : t.accentBlue;
+  const entryFill   = faith ? 'rgba(212,134,10,0.06)' : t.bgInput;
+  const entryBorder = faith ? t.borderCard : t.borderInput;
 
   useFocusEffect(useCallback(() => { loadData(); }, [todayKey]));
 
@@ -259,6 +273,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
   };
 
   const handleEdit = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setInputText(loggedEntry);
     setCardState('editing');
     setTimeout(() => inputRef.current?.focus(), 100);
@@ -276,8 +291,8 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
   const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
   return (
-    <View ref={cardRef} style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw, overflow: 'hidden' }]}>
-      <Ionicons name="heart" size={130} color={t.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
+    <View ref={cardRef} style={[styles.card, { backgroundColor: t.bgCard, borderColor: cardBorder, borderTopColor: cardTop, overflow: 'hidden' }]}>
+      <Ionicons name="heart" size={130} color={accent} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
 
       {/* Header */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -286,15 +301,15 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
           <Text style={[styles.cardLabel, { color: t.textMuted }]}>Gratitude Streak</Text>
         </View>
         <TouchableOpacity onPress={() => router.push('/journal')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Ionicons name="book" size={16} color={t.accentBlue} />
+          <Ionicons name={faith ? 'journal' : 'book'} size={16} color={btnText} />
         </TouchableOpacity>
       </View>
 
       {/* Streak hero + week dots */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Ionicons name="flame" size={22} color={t.accentBlueRaw} />
-          <Text style={[styles.heroNumber, { color: t.accentBlueRaw }]}>
+          <Ionicons name="flame" size={22} color={accent} />
+          <Text style={[styles.heroNumber, { color: accent }]}>
             {isMindful ? streak.totalDays : streak.currentStreak}
           </Text>
           <Text style={[styles.heroLabel, { color: t.textMuted }]}>
@@ -312,16 +327,16 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
                 <Text style={{
                   fontFamily: isToday ? 'DMSans_700Bold' : 'DMSans_400Regular',
                   fontSize: 8,
-                  color: isToday ? t.accentBlueRaw : t.textMuted,
+                  color: isToday ? accent : t.textMuted,
                   opacity: isFuture ? 0.35 : 1,
                 }}>
                   {lbl}
                 </Text>
                 <View style={{
                   width: 8, height: 8, borderRadius: 4,
-                  backgroundColor: logged ? t.accentBlueRaw : 'transparent',
+                  backgroundColor: logged ? accent : 'transparent',
                   borderWidth: logged ? 0 : 1.5,
-                  borderColor: logged ? undefined : isToday ? t.accentBlueRaw : t.textDim,
+                  borderColor: logged ? undefined : isToday ? accent : t.textDim,
                   opacity: logged ? 0.9 : isToday ? 0.65 : isFuture ? 0.2 : 0.3,
                 }} />
               </View>
@@ -369,7 +384,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
       {/* Logged state */}
       {cardState === 'logged' ? (
         <>
-          <View style={[styles.entryBox, { backgroundColor: t.bgInput, borderColor: t.borderInput }]}>
+          <View style={[styles.entryBox, { backgroundColor: entryFill, borderColor: entryBorder, borderLeftWidth: faith ? 3 : 1, borderLeftColor: faith ? accent : entryBorder }]}>
             <Text style={[styles.entryLabel, { color: t.textMuted }]}>Today's Entry</Text>
             <Text style={{ fontFamily: 'DMSans_400Regular', fontSize: 14, color: t.textPrimary, lineHeight: 20 }}>
               {loggedEntry}
@@ -377,19 +392,19 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
           </View>
           <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
             <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: t.accentBlueBg, borderColor: t.accentBlueBorder, flex: 1 }]}
+              style={[styles.actionBtn, { backgroundColor: btnBg, borderColor: btnBorder, flex: 1 }]}
               onPress={handleEdit}
               hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
             >
-              <Text style={{ fontFamily: 'DMSans_600SemiBold', fontSize: 12, color: t.accentBlue }}>Edit</Text>
+              <Text style={{ fontFamily: 'DMSans_600SemiBold', fontSize: 12, color: btnText }}>Edit</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.actionBtn, { backgroundColor: t.accentBlueBg, borderColor: t.accentBlueBorder, flex: 2 }]}
-              onPress={() => router.push('/journal')}
+              style={[styles.actionBtn, { backgroundColor: btnBg, borderColor: btnBorder, flex: 2 }]}
+              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); }}
               hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
             >
-              <Ionicons name="book-outline" size={12} color={t.accentBlue} style={{ marginRight: 4 }} />
-              <Text style={{ fontFamily: 'DMSans_600SemiBold', fontSize: 12, color: t.accentBlue }}>View in Journal</Text>
+              <Ionicons name={faith ? 'journal-outline' : 'book-outline'} size={12} color={btnText} style={{ marginRight: 4 }} />
+              <Text style={{ fontFamily: 'DMSans_600SemiBold', fontSize: 12, color: btnText }}>View in Journal</Text>
             </TouchableOpacity>
           </View>
         </>
@@ -426,28 +441,28 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.actionBtn, {
-                  backgroundColor: t.accentBlueBg,
-                  borderColor: t.accentBlueBorder,
+                  backgroundColor: btnBg,
+                  borderColor: btnBorder,
                   opacity: canSave ? 1 : 0.4,
                   flex: 2,
                 }]}
                 disabled={!canSave}
                 onPress={handleSave}
               >
-                <Text style={{ fontFamily: 'DMSans_600SemiBold', fontSize: 12, color: t.accentBlue }}>Save Changes</Text>
+                <Text style={{ fontFamily: 'DMSans_600SemiBold', fontSize: 12, color: btnText }}>Save Changes</Text>
               </TouchableOpacity>
             </View>
           ) : (
             <TouchableOpacity
               style={[styles.saveBtn, {
-                backgroundColor: t.accentBlueBg,
-                borderColor: t.accentBlueBorder,
+                backgroundColor: btnBg,
+                borderColor: btnBorder,
                 opacity: canSave ? 1 : 0.4,
               }]}
               disabled={!canSave}
               onPress={handleSave}
             >
-              <Text style={[styles.saveBtnText, { color: t.accentBlue }]}>Log Gratitude</Text>
+              <Text style={[styles.saveBtnText, { color: btnText }]}>Log Gratitude</Text>
             </TouchableOpacity>
           )}
         </>

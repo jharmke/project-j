@@ -1577,7 +1577,7 @@ export default function HomeScreen() {
               <Text style={[styles.verseLabel, { marginLeft:6, marginBottom:0, color: theme.textMuted }]}>TODAY'S MESSAGE</Text>
             </View>
             <TouchableOpacity onPress={() => router.push('/journal')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Ionicons name="book" size={16} color={theme.accentBlue} />
+              <Ionicons name="journal" size={16} color={theme.accentBlue} />
             </TouchableOpacity>
           </View>
           <Text style={[styles.verseText, { color: theme.textSecondary }]}>"{dailyVerse?.text}"</Text>
@@ -2463,7 +2463,7 @@ export default function HomeScreen() {
             <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Today's Thoughts</Text>
           </View>
           <TouchableOpacity onPress={() => router.push('/journal')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Ionicons name="book" size={16} color={theme.accentBlue} />
+            <Ionicons name="journal" size={16} color={theme.accentBlue} />
           </TouchableOpacity>
         </View>
         <TextInput ref={dailyNoteRef} style={[styles.notesInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} placeholder="How did today go? Energy, mood, wins..." placeholderTextColor={theme.textPlaceholder}

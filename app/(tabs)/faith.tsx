@@ -10,6 +10,7 @@ import HeaderAvatar from '../../components/HeaderAvatar';
 import CompanionFAB from '../../components/CompanionFAB';
 import CompanionChat from '../../components/CompanionChat';
 import BibleStartGuide from '../../components/BibleStartGuide';
+import GratitudeStreakCard from '../../components/GratitudeStreakCard';
 import { resolveDailyVerse, VERSES, type DailyVerse } from '../../data/verses';
 import { loadPrayers, getActive, type Prayer } from '../../utils/prayers';
 import {
@@ -55,12 +56,14 @@ const DEFAULT_FAITH_VISIBLE = Object.fromEntries(
 const getDateKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 // Cards that actually have a renderer today. Once every card is built this guard goes away.
-const BUILT_CARDS: FaithCardId[] = ['votd', 'bible_plans', 'prayer'];
+const BUILT_CARDS: FaithCardId[] = ['votd', 'bible_plans', 'gratitude', 'prayer'];
 
 export default function FaithScreen() {
   const { theme, themeId } = useTheme();
   const insets = useSafeAreaInsets();
   const [chatOpen, setChatOpen] = useState(false);
+  const [styleMode, setStyleMode] = useState<'discipline' | 'balanced' | 'mindful'>('balanced');
+  const scrollRef = useRef<ScrollView>(null);
   const [cardOrder, setCardOrder] = useState<FaithCardId[]>(DEFAULT_FAITH_ORDER);
   const [cardVisible, setCardVisible] = useState<Record<FaithCardId, boolean>>(DEFAULT_FAITH_VISIBLE);
   const [dailyVerse, setDailyVerse] = useState<DailyVerse | null>(null);
@@ -87,6 +90,9 @@ export default function FaithScreen() {
           if (parsed.faithCardVisible && typeof parsed.faithCardVisible === 'object') {
             setCardVisible({ ...DEFAULT_FAITH_VISIBLE, ...parsed.faithCardVisible });
           }
+          if (parsed.styleMode === 'discipline' || parsed.styleMode === 'balanced' || parsed.styleMode === 'mindful') {
+            setStyleMode(parsed.styleMode);
+          }
         })
         .catch(() => {});
       // Same verse as Home (shared rotation in data/verses.ts). Fall back to a random verse
@@ -106,9 +112,20 @@ export default function FaithScreen() {
         return <VotdCard key={id} verse={dailyVerse} theme={theme} />;
       case 'bible_plans':
         return <BibleCard key={id} theme={theme} />;
+      case 'gratitude':
+        return (
+          <GratitudeStreakCard
+            key={id}
+            variant="faith"
+            styleMode={styleMode}
+            todayKey={getDateKey(now)}
+            scrollRef={scrollRef}
+            theme={theme}
+          />
+        );
       case 'prayer':
         return <PrayerCard key={id} theme={theme} />;
-      // gratitude, journal: built in later B steps.
+      // journal: a header-icon door, not a card (B3 decision).
       default:
         return null;
     }
@@ -139,9 +156,18 @@ export default function FaithScreen() {
             </Text>
           </View>
         </View>
+        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+          <TouchableOpacity
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); }}
+            style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Ionicons name="journal" size={14} color={theme.accentBlue} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: insets.bottom + 96 }}
         showsVerticalScrollIndicator={false}
       >

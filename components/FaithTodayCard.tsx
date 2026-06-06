@@ -33,7 +33,7 @@ const AUTO_MS = 10000;
 const RESUME_MS = 10000;
 const PAGES = 3;
 
-type Props = { verse: DailyVerse | null; reflectionPrompt: string; theme: Theme };
+type Props = { verse: DailyVerse | null; theme: Theme };
 type RowItem = { id: string; icon: string; name: string; pct: number; nextRef: string };
 
 // Each page's own state title is the single card label (no separate "FAITH TODAY" line;
@@ -104,7 +104,7 @@ function Slide({ width, minHeight, bg, onPress, onContentLayout, children }: {
   );
 }
 
-export default function FaithTodayCard({ verse, reflectionPrompt, theme }: Props) {
+export default function FaithTodayCard({ verse, theme }: Props) {
   const [width, setWidth] = useState(0);
   const [page, setPage] = useState(0);
   const [maxH, setMaxH] = useState<number | undefined>(undefined);
@@ -170,6 +170,8 @@ export default function FaithTodayCard({ verse, reflectionPrompt, theme }: Props
   const goFaithPlans = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/faith', params: { scrollTo: 'bible_plans' } }); };
   const goFaithPrayer = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/faith', params: { scrollTo: 'prayer' } }); };
   const goJournal = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); };
+  const goReflectWithHalo = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/faith', params: { openHalo: String(Date.now()), haloVerseRef: verse?.reference ?? '', haloVerseText: verse?.text ?? '' } }); };
+  const goAskForPrayer = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/prayer', params: { autoOpenRequest: '1' } }); };
 
   const activePlans = READING_PLANS.filter(p => !!planStore[p.id]);
   const activeDevs = DEVOTIONALS.filter(d => !!devStore[d.id]);
@@ -213,11 +215,13 @@ export default function FaithTodayCard({ verse, reflectionPrompt, theme }: Props
             />
             <Text style={[styles.verseText, { color: theme.textSecondary }]}>"{verse?.text}"</Text>
             <Text style={[styles.verseRef, { color: theme.textMuted }]}>{verse?.reference}</Text>
-            {reflectionPrompt ? (
-              <View style={[styles.promptWrap, { borderTopColor: theme.borderCardVerse }]}>
-                <Text style={[styles.prompt, { color: theme.textMuted }]}>{reflectionPrompt}</Text>
-              </View>
-            ) : null}
+            <TouchableOpacity
+              onPress={goReflectWithHalo}
+              style={[styles.haloBtn, { backgroundColor: 'rgba(212,134,10,0.10)', borderColor: 'rgba(212,134,10,0.30)' }]}
+            >
+              <Ionicons name="sparkles" size={12} color={theme.accentAmber} />
+              <Text style={[styles.haloBtnText, { color: theme.accentAmber }]}>Reflect with Halo</Text>
+            </TouchableOpacity>
           </Slide>
 
           {/* Page 2: active reading plans + devotionals, two columns */}
@@ -267,6 +271,13 @@ export default function FaithTodayCard({ verse, reflectionPrompt, theme }: Props
                 <Text style={[styles.emptyHint, { color: theme.textMuted }]}>Tap to add a prayer on the Faith tab</Text>
               </View>
             )}
+            <TouchableOpacity
+              onPress={goAskForPrayer}
+              style={[styles.haloBtn, { backgroundColor: 'rgba(212,134,10,0.10)', borderColor: 'rgba(212,134,10,0.30)' }]}
+            >
+              <Ionicons name="people" size={12} color={theme.accentAmber} />
+              <Text style={[styles.haloBtnText, { color: theme.accentAmber }]}>Ask for prayer</Text>
+            </TouchableOpacity>
           </Slide>
         </ScrollView>
 
@@ -298,8 +309,8 @@ const styles = StyleSheet.create({
   title: { fontSize: 14, fontFamily: 'DMSans_700Bold' },
   verseText: { fontSize: 17, lineHeight: 27, marginBottom: 12, fontFamily: 'Lora_500Medium', textAlign: 'center' },
   verseRef: { fontSize: 9, fontFamily: 'DMSans_700Bold', textAlign: 'center', letterSpacing: 2, textTransform: 'uppercase' },
-  promptWrap: { marginTop: 10, paddingTop: 10, borderTopWidth: 0.5 },
-  prompt: { fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', lineHeight: 16 },
+  haloBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderRadius: 6, paddingVertical: 9, paddingHorizontal: 12, minHeight: 44, marginTop: 10 },
+  haloBtnText: { fontSize: 12, fontFamily: 'DMSans_600SemiBold' },
   cols: { flexDirection: 'row' },
   col: { flex: 1 },
   colLabel: { fontSize: 8, letterSpacing: 2, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', marginBottom: 8 },

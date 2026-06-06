@@ -96,20 +96,7 @@ const DEFAULT_VISIBLE: Record<CardId, boolean> = Object.fromEntries(
   CARD_REGISTRY.map(c => [c.id, c.defaultVisible])
 ) as Record<CardId, boolean>;
 
-const REFLECTION_PROMPTS: string[] = [
-  "What's one thing this brings to mind for you today?",
-  "How does this land for where you are right now?",
-  "What would it look like to carry this into today?",
-  "What do you want to remember from this?",
-  "Is there something here you've been needing to hear?",
-  "What's one word that comes to mind reading this?",
-  "Where do you need this today?",
-  "What would change if you believed this fully today?",
-  "How are you carrying this into your day?",
-  "What does this stir up for you?",
-  "Is this something you need to sit with longer?",
-  "What would acting on this look like today?",
-];
+
 
 // Mode-specific default card orders -- only applied on fresh install (no saved cardOrder)
 const DISCIPLINE_ORDER: CardId[] = [
@@ -2780,10 +2767,7 @@ export default function HomeScreen() {
       case 'verse': {
         if (faithJourney === 'notrightnow') return null;
         const [vy, vm, vd] = todayKey.split('-').map(Number);
-        const vdate = new Date(vy, vm - 1, vd);
-        const vdoy = Math.floor((vdate.getTime() - new Date(vy, 0, 1).getTime()) / 86400000);
-        const vprompt = dailyVerse ? REFLECTION_PROMPTS[vdoy % REFLECTION_PROMPTS.length] : '';
-        return <FaithTodayCard verse={dailyVerse} reflectionPrompt={vprompt} theme={theme} />;
+        return <FaithTodayCard verse={dailyVerse} theme={theme} />;
       }
       case 'smart_tip': {
         const homeTip = homeTips[tipIndex] ?? null;

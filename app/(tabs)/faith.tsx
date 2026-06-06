@@ -58,8 +58,9 @@ const BUILT_CARDS: FaithCardId[] = ['votd', 'bible_plans', 'gratitude', 'prayer'
 export default function FaithScreen() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
-  const { scrollTo } = useLocalSearchParams<{ scrollTo?: string }>();
+  const { scrollTo, openHalo, haloVerseRef, haloVerseText } = useLocalSearchParams<{ scrollTo?: string; openHalo?: string; haloVerseRef?: string; haloVerseText?: string }>();
   const [chatOpen, setChatOpen] = useState(false);
+  const [companionSeed, setCompanionSeed] = useState<{ ref: string; note?: string } | null>(null);
   const [styleMode, setStyleMode] = useState<'discipline' | 'balanced' | 'mindful'>('balanced');
   const scrollRef = useRef<ScrollView>(null);
   const cardOffsets = useRef<Partial<Record<FaithCardId, number>>>({});
@@ -107,12 +108,20 @@ export default function FaithScreen() {
     }, 400);
   }, [scrollTo]);
 
+  useEffect(() => {
+    if (!openHalo) return;
+    setTimeout(() => {
+      setCompanionSeed(haloVerseRef ? { ref: haloVerseRef, note: haloVerseText } : null);
+      setChatOpen(true);
+    }, 600);
+  }, [openHalo]);
+
   const visibleCards = cardOrder.filter(id => cardVisible[id] && BUILT_CARDS.includes(id));
 
   const renderCard = (id: FaithCardId) => {
     switch (id) {
       case 'votd':
-        return <VotdCard key={id} verse={dailyVerse} theme={theme} />;
+        return <VotdCard key={id} verse={dailyVerse} theme={theme} onReflect={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCompanionSeed(dailyVerse ? { ref: dailyVerse.reference } : null); setChatOpen(true); }} />;
       case 'bible_plans':
         return <BibleCard key={id} theme={theme} />;
       case 'gratitude':
@@ -168,8 +177,8 @@ export default function FaithScreen() {
         ))}
       </ScrollView>
 
-      <CompanionFAB onPress={() => setChatOpen(true)} />
-      <CompanionChat visible={chatOpen} onClose={() => setChatOpen(false)} />
+      <CompanionFAB onPress={() => { setCompanionSeed(null); setChatOpen(true); }} />
+      <CompanionChat visible={chatOpen} seedContext={companionSeed} onClose={() => { setChatOpen(false); setCompanionSeed(null); }} />
     </LinearGradient>
   );
 }
@@ -216,7 +225,7 @@ function PressButton({ onPress, style, wrapperStyle, children }: { onPress: () =
 // data/verses.ts) so they always match. Tapping opens the Bible reader at the passage.
 // The home-only extras (the reflection-prompt subtext Justin flagged, and the journal
 // shortcut) are intentionally left off here; the Halo-reflection flow is a later item.
-function VotdCard({ verse, theme }: { verse: DailyVerse | null; theme: Theme }) {
+function VotdCard({ verse, theme, onReflect }: { verse: DailyVerse | null; theme: Theme; onReflect?: () => void }) {
   if (!verse) return null;
   return (
     <PressCard
@@ -224,9 +233,8 @@ function VotdCard({ verse, theme }: { verse: DailyVerse | null; theme: Theme }) 
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         router.push({ pathname: '/bible', params: { verseRef: verse.reference, verseText: verse.text } });
       }}
-      style={[styles.verseCard, {
-        backgroundColor: theme.bgCardVerse,
-        borderColor: theme.borderCardVerse,
+      style={[styles.card, {
+        backgroundColor: theme.bgCardFaith,
         shadowColor: '#d4860a', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.85, shadowRadius: 8, elevation: 8,
       }]}
     >
@@ -236,6 +244,15 @@ function VotdCard({ verse, theme }: { verse: DailyVerse | null; theme: Theme }) 
       </View>
       <Text style={[styles.verseText, { color: theme.textSecondary }]}>"{verse.text}"</Text>
       <Text style={[styles.verseRef, { color: theme.textMuted }]}>{verse.reference}</Text>
+      {onReflect && (
+        <TouchableOpacity
+          onPress={onReflect}
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: 'rgba(212,134,10,0.10)', borderColor: 'rgba(212,134,10,0.30)', borderWidth: 1, borderRadius: 6, paddingVertical: 9, paddingHorizontal: 12, minHeight: 44, marginTop: 10 }}
+        >
+          <Ionicons name="sparkles" size={12} color={theme.accentAmber} />
+          <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: theme.accentAmber }}>Reflect with Halo</Text>
+        </TouchableOpacity>
+      )}
     </PressCard>
   );
 }

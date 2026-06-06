@@ -203,6 +203,16 @@ Note on accuracy: the placeholder version claimed the scale was stalled. That li
 - Milestones / progress-celebration family: cut. The achievements system already owns completed milestones.
 
 ## Open and next
+
+### PRE-BUILD SCOPING GATE (the can't-ship-without-it list, flagged 2026-06-06)
+Before ANY of the hybrid AI build steps below (engine handoff, the AI call, the cleanup tool, the wiring), these FIVE scoping gaps must be closed. They are currently scattered through the checkboxes below and through TRIGGER_LIBRARY.md; this is the consolidated gate so the build does not start on a half-scoped brain. PRIORITY item, run as a dedicated focused session AFTER the faith-tab work wraps (not bolted onto other work):
+1. SCENARIO FAMILIES not fleshed out. Every family exists as a name plus a brief description only; none has been taken to full scenario depth (trigger logic + verdict + facts). Family 1 (Effort vs Results) goes FIRST as the foundation. See the "Flesh out the families" checkbox below.
+2. VOICE EXAMPLES not written. We need real examples of AI output per coaching mode (Discipline / Balanced / Mindful) AND per faith tier before the system prompt can be written. See the "Write the Voice Examples" checkbox below.
+3. SYSTEM PROMPT / RULEBOOK not locked. The actual prompt the AI receives has not been written. See the "Lock the rulebook" checkbox below.
+4. QUESTION 2 never run. The Question 1 sharpening pass happened; the Question 2 pass (anything wrong, redundant, or off-base across the scenario library) was never done. See the "Question 1 then Question 2" checkbox below.
+5. SURFACES not fully locked. Sleep-card tips, the notifications daily digest, and per-macro Day Summary tips are captured as CANDIDATES but none is confirmed. Every surface must be locked before building. See the SURFACING + QUALITY CANDIDATES checkbox below.
+This gate does not replace the detail items below; it is the checklist that must read all-clear before the first line of hybrid-AI build code.
+
 - [~] Scenario Library expansion (this session): added macro gaps (2.7, 2.8), NEAT collapse (3.7), almost-a-streak nudge (6.4), goal ambition (7.5), IF timer/window scenarios (8.4, 8.5), new Family 10 Recovery / Readiness, new Family 11 Training Patterns, the staleness / flat-line guard, and data-readiness tags. More sharpening still welcome.
 - [x] FAITH INTEGRATION (resolved 2026-06-02): the Smart Coach STAYS SECULAR. Faith got its own dedicated track instead (the Faith AI companion + devotional plans, see SPEC_faith_ai.md), a far stronger home than faith-flavored tips. Justin's instinct that a verse bolted onto a protein tip felt forced was the deciding factor. The coach's rest-on-over-training (10.3) and grace-on-comeback (6.3) detections become CANDIDATE signals for the Faith AI's opt-in v2 context-awareness, NOT coach tips. Faith stays never paywalled (the Faith AI is compute-gated, not faith-gated).
 - [ ] THRESHOLD AUDIT: the TRIGGER_LIBRARY thresholds, windows, and percentages were written by an earlier thread and never sanity-validated. They are starting values for post-launch tuning regardless, but worth a dedicated sanity pass before relying on them.

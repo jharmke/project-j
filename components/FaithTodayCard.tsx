@@ -205,7 +205,7 @@ export default function FaithTodayCard({ verse, reflectionPrompt, theme }: Props
           <Slide width={width} minHeight={maxH} bg={theme.bgCardFaithHero} onPress={goVerse} onContentLayout={onContentLayout(0)}>
             <PageHeader
               title="Today's Message"
-              icon={<Ionicons name="book-outline" size={14} color={theme.accentAmber} style={{ marginRight: 6 }} />}
+              icon={<Ionicons name="sunny-outline" size={14} color={theme.accentAmber} style={{ marginRight: 6 }} />}
               theme={theme}
               withJournal
               onJournal={goJournal}

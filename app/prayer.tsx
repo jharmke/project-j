@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFocusEffect, router } from 'expo-router';
+import { useFocusEffect, router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import AddPrayerModal from '../components/AddPrayerModal';
@@ -40,9 +40,10 @@ const formatAnsweredDate = (ms: number) =>
   new Date(ms).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
 export default function PrayerScreen() {
-  const { theme, themeId } = useTheme();
+  const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const { showToast } = useToast();
+  const params = useLocalSearchParams();
 
   const [prayers, setPrayers] = useState<Prayer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,7 +55,13 @@ export default function PrayerScreen() {
   const [celebratingId, setCelebratingId] = useState<string | null>(null);
   const heroPop = useRef(new Animated.Value(1)).current;
 
-  const isDarkTheme = themeId === 'dark';
+  // Auto-open the prayer request modal when navigated here with autoOpenRequest=1
+  // (from the faith-tab Prayer card "Ask for prayer" button).
+  useEffect(() => {
+    if (params.autoOpenRequest === '1') {
+      setTimeout(() => setRequestOpen(true), 350);
+    }
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -129,15 +136,6 @@ export default function PrayerScreen() {
 
   return (
     <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
-      <LinearGradient
-        colors={
-          isDarkTheme
-            ? ['rgba(212,134,10,0.20)', 'rgba(212,134,10,0.06)', 'transparent']
-            : ['rgba(232,160,32,0.30)', 'rgba(232,160,32,0.10)', 'transparent']
-        }
-        style={styles.atmosphere}
-        pointerEvents="none"
-      />
 
       {/* Header: back, title, and the answered count as a hero stat on the right (only once any
           prayer is answered, so a list of all-ongoing prayers never reads as "0"). */}
@@ -149,14 +147,20 @@ export default function PrayerScreen() {
           <Ionicons name="chevron-back" size={14} color={theme.accentBlue} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>PRAYER</Text>
-        {answeredN > 0 ? (
-          <Animated.View style={[styles.heroBox, { transform: [{ scale: heroPop }] }]}>
-            <Text style={[styles.heroNum, { color: theme.accentAmber }]}>{answeredN}</Text>
-            <Text style={[styles.heroLabel, { color: theme.textMuted }]}>ANSWERED</Text>
-          </Animated.View>
-        ) : (
-          <View style={{ width: 32 }} />
-        )}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          {answeredN > 0 && (
+            <Animated.View style={[styles.heroBox, { transform: [{ scale: heroPop }] }]}>
+              <Text style={[styles.heroNum, { color: theme.accentAmber }]}>{answeredN}</Text>
+              <Text style={[styles.heroLabel, { color: theme.textMuted }]}>ANSWERED</Text>
+            </Animated.View>
+          )}
+          <TouchableOpacity
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRequestOpen(true); }}
+            style={[styles.headerBtn, { backgroundColor: 'rgba(212,134,10,0.10)', borderColor: 'rgba(212,134,10,0.30)' }]}
+          >
+            <Ionicons name="people" size={14} color={theme.accentAmber} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {loading ? (
@@ -223,7 +227,7 @@ export default function PrayerScreen() {
             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRequestOpen(true); }}
             activeOpacity={0.85}
             style={[styles.askRow, {
-              backgroundColor: theme.bgCard,
+              backgroundColor: theme.bgCardFaith,
               borderColor: `rgba(${GOLD_RGB},0.22)`,
               borderTopColor: `rgba(${GOLD_RGB},0.38)`,
               marginTop: nothing ? 24 : 8,
@@ -268,7 +272,7 @@ export default function PrayerScreen() {
         onEdit={(p) => { setActionFor(null); setEditPrayer(p); }}
         onDelete={handleDelete}
       />
-      <PrayerRequestModal visible={requestOpen} onClose={() => setRequestOpen(false)} />
+      <PrayerRequestModal visible={requestOpen} onClose={() => setRequestOpen(false)} variant="faith" />
     </LinearGradient>
   );
 }
@@ -319,7 +323,7 @@ function PrayerRow({
         onPress={onPress}
         onPressIn={() => Animated.timing(scale, { toValue: 0.98, duration: 100, useNativeDriver: true }).start()}
         onPressOut={() => Animated.timing(scale, { toValue: 1, duration: 150, useNativeDriver: true }).start()}
-        style={[styles.pageBox, { backgroundColor: theme.bgCard, borderColor: `rgba(${GOLD_RGB},0.28)`, borderTopColor: `rgba(${GOLD_RGB},0.45)` }]}
+        style={[styles.pageBox, { backgroundColor: theme.bgCardFaith, borderColor: `rgba(${GOLD_RGB},0.28)`, borderTopColor: `rgba(${GOLD_RGB},0.45)` }]}
       >
         <View style={{ flex: 1 }}>
           <Animated.Text style={[styles.pageText, { color: answered ? theme.textMuted : theme.accentAmber, opacity: textOpacity }]}>
@@ -345,7 +349,6 @@ function PrayerRow({
 }
 
 const styles = StyleSheet.create({
-  atmosphere:    { position: 'absolute', top: 0, left: 0, right: 0, height: 420 },
   header:        { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5 },
   headerBtn:     { borderWidth: 1, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' },
   headerTitle:   { fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },

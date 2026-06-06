@@ -15,14 +15,13 @@ import Reanimated, {
 } from 'react-native-reanimated';
 import {
   READING_PLANS, ReadingPlansStorage, formatDayReading,
-  getPlanCompletion, getTodayReading, MAX_ACTIVE_PLANS,
+  getPlanCompletion, getTodayReading,
 } from '../data/readingPlans';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ToastRenderer, useToast } from '../components/Toast';
 import { storageSet } from '../utils/storage';
 import { BIBLE_BOOKS, Book, Chapter, Verse, fetchChapter, parseReference } from '../data/bible-web';
 import { useTheme } from '../theme';
-import PrayerRequestModal from '../components/PrayerRequestModal';
 import CompanionFAB from '../components/CompanionFAB';
 import CompanionChat from '../components/CompanionChat';
 import { checkFaithAchievements, getCelebTier } from '../achievementData';
@@ -111,10 +110,7 @@ export default function BibleScreen() {
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
   const [showSpeedPicker, setShowSpeedPicker] = useState(false);
   const [autoScrollSpeed, setAutoScrollSpeed] = useState<ScrollSpeed>('medium');
-  const [showPrayerModal, setShowPrayerModal] = useState(false);
-
   const [planProgress, setPlanProgress] = useState<ReadingPlansStorage>({});
-  const [showPlanBrowserModal, setShowPlanBrowserModal] = useState(false);
 
   const animScrollRef = useAnimatedRef<ScrollView>();
   const verseYPositions = useRef<Record<number, number>>({});
@@ -250,7 +246,6 @@ export default function BibleScreen() {
     const planChapter = params.planNavChapter as string | undefined;
     const openBook = params.openBook as string | undefined;
     const openChapter = params.openChapter as string | undefined;
-    const openPlanBrowser = params.openPlanBrowser as string | undefined;
     if (ref) {
       setDailyVerseRef(ref);
       shouldScrollOnLoad.current = true;
@@ -265,8 +260,6 @@ export default function BibleScreen() {
     } else if (openBook && openChapter) {
       // "Continue reading" / "Where do I start" from the faith Bible card: open at a book + chapter.
       navigateToPlanPassage(openBook, parseInt(openChapter, 10));
-    } else if (openPlanBrowser === '1') {
-      setTimeout(() => setShowPlanBrowserModal(true), 350);
     }
   }, []);
 
@@ -475,46 +468,6 @@ export default function BibleScreen() {
       await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       showToast('Marked as unread', undefined, 'info');
     } catch (e) {}
-  };
-
-  const enrollPlan = async (planId: string) => {
-    try {
-      const raw = await AsyncStorage.getItem('pj_reading_plans');
-      const all: ReadingPlansStorage = raw ? JSON.parse(raw) : {};
-      if (all[planId]) return;
-      const today = new Date();
-      const startDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-      const updated = { ...all, [planId]: { startDate, completedDays: [], enrolledAt: Date.now() } };
-      await storageSet('pj_reading_plans', JSON.stringify(updated));
-      setPlanProgress(updated);
-      const plan = READING_PLANS.find(p => p.id === planId);
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      showToast(`Started: ${plan?.name}`, undefined, 'success');
-    } catch (e) {}
-  };
-
-  const dropPlan = async (planId: string) => {
-    const plan = READING_PLANS.find(p => p.id === planId);
-    Alert.alert(
-      'Drop Plan?',
-      `Remove "${plan?.name}"? Your progress will be lost.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Drop Plan', style: 'destructive',
-          onPress: async () => {
-            try {
-              const raw = await AsyncStorage.getItem('pj_reading_plans');
-              const all: ReadingPlansStorage = raw ? JSON.parse(raw) : {};
-              const { [planId]: _, ...rest } = all;
-              await storageSet('pj_reading_plans', JSON.stringify(rest));
-              setPlanProgress(rest);
-              showToast(`${plan?.shortName} removed`, undefined, 'success');
-            } catch (e) {}
-          },
-        },
-      ]
-    );
   };
 
   const openBookPicker = () => {
@@ -988,33 +941,21 @@ export default function BibleScreen() {
                   ))}
                 </View>
 
-                {/* Reading plans */}
+                {/* Plans */}
                 <TouchableOpacity
-                  onPress={() => { setShowSettingsModal(false); setTimeout(() => setShowPlanBrowserModal(true), 300); }}
+                  onPress={() => { setShowSettingsModal(false); router.push({ pathname: '/plans', params: { tab: 'reading' } }); }}
                   style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle, marginBottom: 16 }}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                     <Ionicons name="calendar-outline" size={16} color={theme.accentBlue} />
                     <View>
-                      <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary }}>Reading Plans</Text>
+                      <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary }}>Plans</Text>
                       {Object.keys(planProgress).length > 0 && (
                         <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textMuted }}>
                           {Object.keys(planProgress).length} active plan{Object.keys(planProgress).length !== 1 ? 's' : ''}
                         </Text>
                       )}
                     </View>
-                  </View>
-                  <Ionicons name="chevron-forward" size={15} color={theme.textMuted} />
-                </TouchableOpacity>
-
-                {/* Prayer request */}
-                <TouchableOpacity
-                  onPress={() => { setShowSettingsModal(false); setTimeout(() => setShowPrayerModal(true), 300); }}
-                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle, marginBottom: 16 }}
-                >
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Ionicons name="heart" size={15} color={theme.textSecondary} />
-                    <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary }}>Send a Prayer Request</Text>
                   </View>
                   <Ionicons name="chevron-forward" size={15} color={theme.textMuted} />
                 </TouchableOpacity>
@@ -1034,103 +975,6 @@ export default function BibleScreen() {
           </View>
         </Modal>
       )}
-
-      {/* Plan browser modal */}
-      {showPlanBrowserModal && (
-        <Modal transparent animationType="fade" visible={showPlanBrowserModal} onRequestClose={() => setShowPlanBrowserModal(false)}>
-          <ToastRenderer />
-          <TouchableOpacity style={[styles.overlay, { backgroundColor: theme.overlayBg }]} activeOpacity={1} onPress={() => setShowPlanBrowserModal(false)} />
-          <View style={[styles.overlay, { justifyContent: 'center', alignItems: 'center' }]} pointerEvents="box-none">
-            <View style={[styles.centeredModal, { backgroundColor: theme.bgSheet, borderColor: theme.borderCard }]}>
-              <TouchableOpacity onPress={() => setShowPlanBrowserModal(false)} style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 24, marginBottom: 4 }}>
-                <View style={[styles.sheetHandle, { backgroundColor: theme.sheetHandle }]} />
-              </TouchableOpacity>
-              <Text style={[styles.sheetTitle, { color: theme.accentBlue }]}>Reading Plans</Text>
-              {Object.keys(planProgress).length >= MAX_ACTIVE_PLANS && (
-                <View style={{ backgroundColor: theme.accentAmberBg || theme.bgInput, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 6, marginBottom: 12, borderWidth: 1, borderColor: theme.accentAmberBorder || theme.borderInput }}>
-                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.accentAmber || theme.textMuted }}>
-                    Max {MAX_ACTIVE_PLANS} active plans. Drop one to add another.
-                  </Text>
-                </View>
-              )}
-              <ScrollView showsVerticalScrollIndicator={false}>
-                {READING_PLANS.map((plan, idx) => {
-                  const prog = planProgress[plan.id];
-                  const isEnrolled = !!prog;
-                  const atLimit = !isEnrolled && Object.keys(planProgress).length >= MAX_ACTIVE_PLANS;
-                  const { completed, total, pct } = isEnrolled ? getPlanCompletion(plan, prog) : { completed: 0, total: plan.totalDays, pct: 0 };
-
-                  return (
-                    <View key={plan.id}>
-                      {idx > 0 && <View style={{ height: 0.5, backgroundColor: theme.borderSubtle, marginVertical: 12 }} />}
-                      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
-                        <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
-                          <Ionicons name={plan.icon as any} size={18} color={theme.accentBlue} />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
-                            <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: theme.textPrimary, flex: 1 }} numberOfLines={1}>
-                              {plan.name}
-                            </Text>
-                            <View style={{ backgroundColor: theme.bgInput, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, marginLeft: 6 }}>
-                              <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textDim, letterSpacing: 1 }}>
-                                {plan.totalDays} DAYS
-                              </Text>
-                            </View>
-                          </View>
-                          <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginBottom: 8, lineHeight: 17 }}>
-                            {plan.description}
-                          </Text>
-                          {isEnrolled ? (
-                            <>
-                              {/* Progress bar */}
-                              <View style={{ height: 3, borderRadius: 2, backgroundColor: theme.bgProgressTrack, marginBottom: 4, overflow: 'hidden' }}>
-                                <View style={{ height: 3, borderRadius: 2, width: pct > 0 ? `${Math.round(pct * 100)}%` as any : 2, backgroundColor: theme.accentBlueRaw }} />
-                              </View>
-                              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                                <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textMuted }}>
-                                  {completed}/{total} days complete
-                                </Text>
-                                <TouchableOpacity
-                                  onPress={() => dropPlan(plan.id)}
-                                  style={{ backgroundColor: 'rgba(204,51,51,0.12)', borderWidth: 1, borderColor: 'rgba(204,51,51,0.3)', borderRadius: 5, paddingHorizontal: 8, paddingVertical: 4 }}
-                                >
-                                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: theme.statusBad }}>Drop</Text>
-                                </TouchableOpacity>
-                              </View>
-                            </>
-                          ) : (
-                            <TouchableOpacity
-                              onPress={() => !atLimit && enrollPlan(plan.id)}
-                              style={{
-                                alignSelf: 'flex-start',
-                                backgroundColor: atLimit ? theme.bgInput : theme.accentBlueBg,
-                                borderWidth: 1,
-                                borderColor: atLimit ? theme.borderInput : theme.accentBlueBorder,
-                                borderRadius: 6,
-                                paddingHorizontal: 12,
-                                paddingVertical: 6,
-                                opacity: atLimit ? 0.5 : 1,
-                              }}
-                            >
-                              <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: atLimit ? theme.textDim : theme.accentBlue }}>
-                                {atLimit ? 'At plan limit' : 'Start Plan'}
-                              </Text>
-                            </TouchableOpacity>
-                          )}
-                        </View>
-                      </View>
-                    </View>
-                  );
-                })}
-                <View style={{ height: 16 }} />
-              </ScrollView>
-            </View>
-          </View>
-        </Modal>
-      )}
-
-      <PrayerRequestModal visible={showPrayerModal} onClose={() => setShowPrayerModal(false)} />
 
       {/* Halo, the faith companion: bottom-left so it never collides with the bottom-right
           auto-scroll FAB. Tier-gated inside the component (hidden for Not Right Now). */}

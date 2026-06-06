@@ -9,10 +9,12 @@ import { ToastRenderer, useToast } from './Toast';
 interface Props {
   visible: boolean;
   onClose: () => void;
+  variant?: 'faith';
 }
 
-export default function PrayerRequestModal({ visible, onClose }: Props) {
+export default function PrayerRequestModal({ visible, onClose, variant }: Props) {
   const { theme } = useTheme();
+  const faith = variant === 'faith';
   const { showToast } = useToast();
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
@@ -77,7 +79,7 @@ export default function PrayerRequestModal({ visible, onClose }: Props) {
             borderWidth: 0.5,
             borderColor: theme.borderCard,
             borderTopWidth: 1.5,
-            borderTopColor: theme.accentBlueRaw,
+            borderTopColor: faith ? theme.accentAmber : theme.accentBlueRaw,
             padding: 20,
             transform: [{ scale: scaleAnim }],
             opacity: opacityAnim,
@@ -92,8 +94,8 @@ export default function PrayerRequestModal({ visible, onClose }: Props) {
           </TouchableOpacity>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <Ionicons name="heart" size={15} color={theme.accentBlue} />
-            <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlue }}>
+            <Ionicons name="heart" size={15} color={faith ? theme.accentAmber : theme.accentBlue} />
+            <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: faith ? theme.accentAmber : theme.accentBlue }}>
               Send a Prayer Request
             </Text>
           </View>
@@ -137,16 +139,16 @@ export default function PrayerRequestModal({ visible, onClose }: Props) {
               style={{
                 flex: 2, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
                 borderWidth: 1, borderRadius: 8, paddingVertical: 12,
-                backgroundColor: canSend ? theme.accentBlueBg : theme.bgInput,
-                borderColor: canSend ? theme.accentBlueBorder : theme.borderInput,
+                backgroundColor: canSend ? (faith ? 'rgba(212,134,10,0.10)' : theme.accentBlueBg) : theme.bgInput,
+                borderColor: canSend ? (faith ? 'rgba(212,134,10,0.30)' : theme.accentBlueBorder) : theme.borderInput,
                 opacity: canSend ? 1 : 0.4,
               }}
             >
               {sending
-                ? <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlue }}>Sending...</Text>
+                ? <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: faith ? theme.accentAmber : theme.accentBlue }}>Sending...</Text>
                 : <>
-                    <Ionicons name="send" size={14} color={theme.accentBlue} />
-                    <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlue }}>Send</Text>
+                    <Ionicons name="send" size={14} color={faith ? theme.accentAmber : theme.accentBlue} />
+                    <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: faith ? theme.accentAmber : theme.accentBlue }}>Send</Text>
                   </>
               }
             </TouchableOpacity>

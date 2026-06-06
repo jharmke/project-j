@@ -298,7 +298,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
       {/* Header */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Ionicons name="heart" size={11} color={t.textMuted} />
+          <Ionicons name="heart" size={11} color={faith ? accent : t.textMuted} />
           <Text style={[styles.cardLabel, { color: t.textMuted }]}>Gratitude Streak</Text>
         </View>
         <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>

@@ -217,7 +217,7 @@ function VotdCard({ verse, theme }: { verse: DailyVerse | null; theme: Theme }) 
       }]}
     >
       <View style={styles.verseLabelRow}>
-        <Ionicons name="book-outline" size={11} color={theme.textMuted} />
+        <Ionicons name="sunny-outline" size={11} color={theme.textMuted} />
         <Text style={[styles.verseLabel, { color: theme.textMuted }]}>TODAY'S MESSAGE</Text>
       </View>
       <Text style={[styles.verseText, { color: theme.textSecondary }]}>"{verse.text}"</Text>
@@ -545,7 +545,7 @@ function PrayerCard({ theme }: { theme: Theme }) {
               <MaterialCommunityIcons name="hand-heart" size={13} color={theme.accentAmber} />
               <Text style={[styles.cardLabel, { color: theme.textMuted }]}>PRAYER</Text>
             </View>
-            <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
+            <Ionicons name="chevron-forward" size={16} color={theme.accentAmber} />
           </View>
 
           {nothing ? (
@@ -569,6 +569,13 @@ function PrayerCard({ theme }: { theme: Theme }) {
             </Text>
           )}
         </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/prayer', params: { autoOpenRequest: '1' } }); }}
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: 'rgba(212,134,10,0.10)', borderColor: 'rgba(212,134,10,0.30)', borderWidth: 1, borderRadius: 6, paddingVertical: 9, paddingHorizontal: 12, minHeight: 44, marginTop: 8 }}
+        >
+          <Ionicons name="people" size={12} color={theme.accentAmber} />
+          <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: theme.accentAmber }}>Ask for prayer</Text>
+        </TouchableOpacity>
       </View>
     </Animated.View>
   );
@@ -579,7 +586,7 @@ const styles = StyleSheet.create({
   verseCard:     { borderWidth: 2, borderRadius: 14, padding: 16, marginBottom: 12 },
   verseLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
   verseLabel:    { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold' },
-  verseText:     { fontSize: 14, fontStyle: 'italic', lineHeight: 24, marginBottom: 10, fontFamily: 'DMSans_400Regular', textAlign: 'center' },
+  verseText:     { fontSize: 14, lineHeight: 22, marginBottom: 10, fontFamily: 'Lora_500Medium', textAlign: 'center' },
   verseRef:      { fontSize: 9, fontFamily: 'DMSans_700Bold', textAlign: 'center', letterSpacing: 2, textTransform: 'uppercase' },
   header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 0.5, marginBottom: 16 },
   headerTitle: { fontSize: 32, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },

@@ -453,6 +453,74 @@ Note on accuracy: the placeholder version claimed the scale was stalled. That li
 
 ---
 
+## VOICE EXAMPLES (List 2)
+
+Gold-standard tips that teach the AI how to talk. Organized by coaching mode and tone. Each generation call shows the AI only the subset matching the user's mode. The library grows over time as real output is reviewed.
+
+Standing rules for every example:
+- No dashes of any kind (double or em)
+- No jargon or unexplained advanced metrics. Replace with plain language
+- Authoritative on the user's own data (state numbers as facts), probabilistic on causation
+- Credit before the gap on corrective tone
+- Two or more signals connected, never a bare single stat
+- 2 to 3 sentences minimum, no sentence fragments as standalone lines
+
+---
+
+### DISCIPLINE
+
+Direct, performance-focused. Numbers named explicitly. No softening. Still gives credit before the gap.
+
+**Positive**
+"Weight dropping at 1.4 lbs per week, right on target pace. Protein averaging 131g against a 122g floor, food logged on 13 of 14 days, sleep sitting at 84. The data is clean and the plan is working. If you want to widen the deficit without touching food, steps are the place. They've averaged 6,800 this window, down from your 9,600 baseline. Daily movement outside your workouts is a meaningful part of what you burn, and getting back to 9,600 adds roughly 200 calories to the deficit."
+
+**Corrective**
+"Workouts on track, water above goal. The math is not adding up on the scale side. You logged an 820-calorie deficit over 14 days. Expected loss at that pace: 2.3 lbs. Actual trend: flat. Two likely causes in order. First, logging consistency at 71 percent. Three unlogged days means the real deficit is almost certainly smaller than it looks. Second, sodium has been running above 4,000mg for five straight days, which pulls water in and makes the scale unreliable right now. Clean up the log for seven days, weigh in consistently, and the real picture will surface."
+
+**Care**
+"You are putting in real work and the scale is moving. At 2.1 lbs per week on a 195 lb frame, that pace is past the point where the loss is mostly fat. Above roughly 1 percent of bodyweight per week, sustained, muscle starts coming off alongside it. Protein averaging 74g against a 150g target compounds that risk directly. This pace is not something to push through. Bring intake up to at least 1,600 calories and get protein over 120. The work you're putting in builds and preserves muscle, and under-fueling at this pace erodes exactly what you're training to keep."
+
+**Educational**
+"Your weight jumped 1.8 lbs the morning after a day with 4,900mg of sodium, then dropped 1.6 lbs the following morning. That pattern has shown up three times in the last two weeks. High sodium causes your body to hold onto water temporarily, and the scale reads that as weight gain. It is not fat, and it reverses quickly. One salty day does not undo a week of solid work. The trend line across multiple weigh-ins is what matters, not a single reading the morning after."
+
+---
+
+### BALANCED
+
+Conversational, credits the work, clear about the gap and the lever. The reference example in this spec (Family 1.1 + 2.1, Justin's real data) is also a Balanced tip and should be treated as part of this set.
+
+**Positive**
+"Everything is clicking right now. Weight dropping at 1.5 lbs per week, protein averaging 128g and above your floor, food logged on 12 of 14 days. The habit is there and the numbers back it up. One thing worth pushing: your steps have averaged 7,400 lately, down from the 9,800 you were hitting a month ago. Getting back toward that baseline is an easy way to widen the margin without changing anything about how you're eating."
+
+**Corrective**
+"Weekday discipline is dialed in. 800-calorie deficit Monday through Friday, food logged consistently, sleep averaging 7 hours 40 minutes. The one thing dragging it down is the weekend. Saturday and Sunday together you're running close to a 300-calorie surplus, which brings the week to near maintenance despite feeling like you stayed on track. You don't need perfection on weekends. Just getting those two days from a surplus to roughly neutral saves the whole week's work."
+
+**Care**
+"The deficit is deeper than it looks on paper. Intake has averaged 1,190 calories over the last 11 days, and with your activity level your body is burning closer to 2,500 calories a day total. Weight is dropping at about 2.2 lbs per week, and at that pace over time the body tends to shed muscle alongside fat, especially with the training volume you're putting in. Getting intake up to around 1,500 keeps a real deficit in place while giving your body enough fuel to hold onto what you're building in the gym."
+
+**Educational**
+"This pattern has shown up 3 times over the last two weeks. After a rough night of sleep, the next day tends to have noticeably more food logged. That is not a willpower issue, it is a real biological response. Poor sleep raises the hormone that signals hunger and lowers the one that signals fullness, so your body is genuinely pushing harder for food the next day. You can't always control a bad night, but you can expect the hunger the next day and plan for it."
+
+---
+
+### MINDFUL
+
+Warm, observational. "We noticed" voice where natural. No judgment language, no scoring pressure, no net calories. Corrective tone only surfaces when growth areas are on.
+
+**Positive**
+"Something worth noticing this week. You logged food on 11 of the last 14 days, and on the days you did, your meals were spread through the day rather than loaded at the end. That kind of steady rhythm tends to make everything else feel more manageable. Sleep has been averaging 7 hours 20 minutes, which is sitting in a solid range. Whatever you're doing right now is working. Worth staying with."
+
+**Corrective (growth areas on only)**
+"We noticed protein has been averaging 74g over the last two weeks. With the amount of movement you've been putting in, the body tends to recover and feel stronger when that number is a bit higher. Nothing dramatic needs to change. Even adding one meal with a solid protein source a few days a week tends to shift the average meaningfully over time."
+
+**Care**
+"Something worth flagging. Intake has averaged 1,200 calories over the last 7 days, and with your activity level your body is burning considerably more than that each day. That kind of gap tends to show up over time as lower energy, harder recovery, and sleep that does not feel as restoring. Bringing intake up a bit tends to make everything else feel more manageable."
+
+**Educational**
+"We noticed a pattern worth sharing. On 3 nights over the last two weeks where sleep dropped under 6 hours, the next day had noticeably more food logged than your usual. That is not a discipline issue. Poor sleep affects the hormones that signal hunger and fullness, so the body genuinely pushes harder for food the next day. It is one of those things that is easier to work with once you know it is there."
+
+---
+
 ## Considered and cut (do not re-propose without a new reason)
 - Body recomposition (scale flat, body fat dropping): cut until the measurements system ships. No live body-fat source today.
 - Momentum / Streaks as a full family: cut. Overlaps the existing achievements and streak systems. ONLY survivor is the narrow 6.4 almost-a-streak nudge (1 to 2 days from a streak, forward-looking only).
@@ -464,7 +532,7 @@ Note on accuracy: the placeholder version claimed the scale was stalled. That li
 ### PRE-BUILD SCOPING GATE (the can't-ship-without-it list, flagged 2026-06-06)
 Before ANY of the hybrid AI build steps below (engine handoff, the AI call, the cleanup tool, the wiring), these FIVE scoping gaps must be closed. They are currently scattered through the checkboxes below and through TRIGGER_LIBRARY.md; this is the consolidated gate so the build does not start on a half-scoped brain. PRIORITY item, run as a dedicated focused session AFTER the faith-tab work wraps (not bolted onto other work):
 1. SCENARIO FAMILIES not fleshed out. Every family exists as a name plus a brief description only; none has been taken to full scenario depth (trigger logic + verdict + facts). Family 1 (Effort vs Results) goes FIRST as the foundation. See the "Flesh out the families" checkbox below.
-2. VOICE EXAMPLES not written. We need real examples of AI output per coaching mode (Discipline / Balanced / Mindful) AND per faith tier before the system prompt can be written. See the "Write the Voice Examples" checkbox below.
+2. VOICE EXAMPLES: locked 2026-06-06. See VOICE EXAMPLES section.
 3. SYSTEM PROMPT / RULEBOOK not locked. The actual prompt the AI receives has not been written. See the "Lock the rulebook" checkbox below.
 4. QUESTION 2 never run. The Question 1 sharpening pass happened; the Question 2 pass (anything wrong, redundant, or off-base across the scenario library) was never done. See the "Question 1 then Question 2" checkbox below.
 5. SURFACES not fully locked. Sleep-card tips, the notifications daily digest, and per-macro Day Summary tips are captured as CANDIDATES but none is confirmed. Every surface must be locked before building. See the SURFACING + QUALITY CANDIDATES checkbox below.
@@ -476,15 +544,15 @@ This gate does not replace the detail items below; it is the checklist that must
 - [x] Flesh out Family 1 to concept depth (trigger logic concepts, confidence gates, verdict direction, key edge cases). Locked 2026-06-06. See FAMILY 1: CONCEPT DEPTH section above.
 - [ ] Flesh out Families 2 through 11 to concept depth, one family at a time.
 - [ ] Finish Question 1 sharpening, then move to Question 2 (anything wrong / redundant / off-base).
-- [ ] Write the Voice Examples (List 2) organized by mode and tone
+- [x] Write the Voice Examples (List 2) organized by mode and tone. Locked 2026-06-06. 12 examples across Discipline, Balanced, and Mindful, each covering positive, corrective, care, and educational tones. Standing rules locked: no dashes, no jargon, exact numbers always, math must be accurate, workout references must include timeframe. See VOICE EXAMPLES section above.
 - [ ] Lock the rulebook (system prompt) text
 - [ ] Build the structured-packet handoff in the engine
 - [ ] Build the AI call, cleanup tool, and offline fallback
 - [ ] Wire into EvR and Day Summary
 - [ ] App Store: privacy disclosure for sending logged data to an AI service (update privacy.html before this ships)
 - [ ] SURFACING + QUALITY CANDIDATES (from Justin's 2026-06-03 gym notes; feed the open Question-1 surface discussion, none decided):
-  - DAY SUMMARY per-macro tip. When a macro is significantly off (Justin's example: protein 76g vs a ~150g target), the macro's own SECTION on the Day Summary should surface a meaningful, actionable smart tip, not just a passing mention in the headline copy. This is Family 2.1 (protein the one gap) delivered on the Day Summary surface. Low protein especially warrants real feedback, not a soft acknowledgment.
-  - EvR FEELS HIDDEN. Justin likes coaching living in EvR but it feels buried: the user must go into EvR AND generate a NEW report to see everything, too much friction for a flagship feature. Reinforces the spec's own "nearly invisible" lesson (see "Why we are rebuilding"). Visibility fix: make the latest coaching insight reachable without a manual report regeneration.
+  - DAY SUMMARY COACHING LINE (decided): Day Summary gets a coaching line using the same brain/voice/cleanup architecture as EvR, just scoped to a 1-day data window. Same system, narrower window, subset of scenarios. Scenarios that require multi-day trends do not fire on Day Summary. Scenarios that work on a single day fire fine: protein gap today, hydration short today, high sodium flagging tomorrow's weigh-in, incomplete log, IF window issues, sleep last night affecting hunger today, and positive reinforcement when a day is strong. The AI voices it the same way, shorter and more immediate. Example: "Protein landed at 74g today against a 150g target. On a training day that's the thing that matters most for recovery tonight." This replaces the older "per-macro only" framing: the tip is not limited to macros, it reads the whole day.
+  - EvR FEELS HIDDEN (decided): EvR is the deep read, not the only surface. Coaching surfaces on three levels: (1) Home tip card: headline insight every time the user opens the app, no navigation required, 14-day window. (2) Day Summary: 1-day window coaching line at the bottom of the day log review. (3) EvR: configurable deep read at 14/30/90 days for users who want the full picture. The 14-day window referenced throughout the spec is the brain's default for EvR and the home tip card. Day Summary uses a 1-day window. All three use the same brain/voice/cleanup architecture.
   - HOME SMART-TIP CARD treatment. The home smart-tip card feels hidden and not "smart" with just a top border; consider a tint / stronger card treatment so it reads as a premium flagship surface, not a footnote.
   - IF AUTO-START / NUDGE (automation, beyond a tip). A user setting to auto-start the fasting window after the first calories are logged, and/or reopen-or-nudge if food is logged after the window was manually closed. Cross-references scenarios 8.4 (timer not started) and 8.5 (eating past a closed window): those are coach TIPS, this is an ACTION/setting, likely a standalone IF feature that pairs with the tips. Decide whether the automation lives in IF settings vs the coach.
   - FIRST-WEEK SMART MOMENT (2026-06-04, gym note 11). After a user's first 7 days of data, surface a moment: "Here's what I noticed about your first week." Runs the Smart Coach engine on a SHORTER data window (7 days) and catches new users exactly when they first have enough data to get real value, reinforcing the habit before they churn. This is a retention/onboarding play as much as a coaching one. Surface TBD (a card, a notification, or a modal) and timing TBD, but the trigger is clear: day 7 of real data. Confidence handling matters here (ties to Family 5.5 BRAND NEW): a 7-day read is thinner than the normal window, so the moment should be encouraging and observational, not a hard diagnosis. If delivered as a notification it routes through the Smart system (see SPEC_notifications.md).
@@ -568,6 +636,7 @@ A new pj_ AsyncStorage key (for example pj_challenges) holding active and comple
 - 2026-06-06 (continued): Family 2 concept depth locked. Added 2.10 fat too high, 2.11 sugar too high, 2.12 sodium too high (chronic standalone) expanding Family 2 to cover both gaps and excesses. Family 2 total: 12 scenarios. Key decisions: extended nutrition calorie-weighted data gate (70 percent of logged calories must carry the nutrient), 2.3 step threshold at 50 to 60 percent of goal, 2.6 suppressed in default Mindful, 2.11 fixed sugar reference threshold framed observationally, 2.1 calorie-tension edge case flagged.
 - 2026-06-06 (continued): Families 8, 10, 11 concept depth locked. Family 9 (Safety) requires no concept depth — it is a set of override rules, not detectable scenarios. Family 8: shared IF-off gate locked, 8.1 vs 8.2 altitude rule (8.2 wins when inconsistency has a clear late-drift direction). Family 10: added 10.6 RECOVERY MARKERS IMPROVING (positive trend, distinct from 6.5 all-green), training load definition flagged for build-time formula decision, 10.4 wins over individual 10.1/10.2 when both spike simultaneously. Family 11: added 11.7 TRAINING CONSISTENCY STRONG (positive), 11.3 vs 11.5 altitude rule locked (11.5 wins when resistance specifically goes dark while cardio continues), 11.4 deload guard flagged as needing build-time intent-signal decision.
 - 2026-06-06 (continued): Families 5, 6, 7 concept depth locked. Family 5: two fixes locked (5.5 wins over 5.1 for new users, 5.3 wins over 5.7 for weekday/weekend binary pattern). Family 6: all positive scenarios locked, 6.4 kept as narrow forward-looking streak nudge distinct from achievements system. Family 7: 7.4 NEARING GOAL cut (redundant with 7.7, risks feeling deflating), 7.1 clarified to run the full 1.2 dig-deeper list not just 4 checks, 7.2 requires 14-day strong period and 7-day decline, 7.6 requires full-history check to confirm it is truly the first plateau.
+- 2026-06-06 (continued): Voice Examples (List 2) locked. 12 examples across Discipline, Balanced, and Mindful, covering positive, corrective, care, and educational tones. Standing voice rules locked: no dashes, no jargon or unexplained metrics, exact numbers always (never vague), math internally consistent using total daily burn not BMR alone, workout references always include timeframe, send finished work not drafts. Day Summary surface decision locked: same brain/voice architecture, 1-day window, subset of scenarios. EvR surfaces decision locked: home tip card (14-day, daily), Day Summary (1-day), EvR (configurable 14/30/90-day deep read).
 - 2026-06-06 (continued): Family 4 concept depth locked. Added 4.8 SLEEP IMPROVING TREND (positive, fires on the improvement itself, distinct from 4.5 which fires on consistently strong sleep). Family 4 total: 8 scenarios. Key decisions: 5-night minimum data gate, stage data required for 4.4, 4.1 needs confirmed sleep/overeating pairings not just averages, 4.3 and 4.7 altitude rule locked (4.7 wins when debt threshold is hit).
 - 2026-06-06 (continued): Family 3 concept depth locked. 3.10 CALORIE BANKING dropped (brain cannot reliably distinguish intentional banking from accidental low weekdays; covered by 3.3 framing). 3.14 MACRO RATIO DRIFT deferred to v2 (technically ambitious, correlation detection hard to build right, most users lack enough history). Family 3 active scenarios: 14. Key decisions: 7-day minimum window for pattern families, 3-instance pattern minimum, 3.7 uses personal step baseline not goal gap, 3.8 praise-the-low-day guard locked, 3.15 names Thursday as the specific decay point.
 - 2026-06-06: Scenario library v2. Added 22 new scenarios across all families (new totals: Family 1 has 8, Family 2 has 9, Family 3 has 16, Family 4 has 7, Family 5 has 10, Family 6 has 5, Family 7 has 7, Family 8 unchanged at 5, Family 9 unchanged, Family 10 unchanged at 5, Family 11 has 6). Library total: 78 scenarios. Key additions: Families 3 and 5 expanded most (behavioral patterns and data quality), Family 7 added first plateau and transition overdue, Family 11 added dynamic modality shift and session quality. Locked foundational principle 8: authoritative on data, humble on causation (two-mode voice rule, not a blanket hedge). Locked Family 1 concept depth: all 8 scenarios at trigger-logic-concept level including the 1.2 dig-deeper rule (TDEE recalc before refeed recommendation), the 1.1 brain-state pattern, and the 1.7 whoosh probabilistic framing. Question 2 pass and voice examples are next.

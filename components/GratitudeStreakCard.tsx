@@ -87,10 +87,11 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
   const accent      = faith ? t.accentAmber : t.accentBlueRaw;          // hero, flame, week dots, watermark
   const cardBorder  = faith ? 'rgba(212,134,10,0.22)' : t.borderCard;
   const cardTop     = faith ? 'rgba(212,134,10,0.38)' : t.accentBlueRaw;
+  const cardBg      = faith ? t.bgCardFaith : t.bgCard;                 // faint warm tint on the faith tab only
   const btnBg       = faith ? 'rgba(212,134,10,0.10)' : t.accentBlueBg;
   const btnBorder   = faith ? 'rgba(212,134,10,0.30)' : t.accentBlueBorder;
   const btnText     = faith ? t.accentAmber : t.accentBlue;
-  const entryFill   = faith ? 'rgba(212,134,10,0.06)' : t.bgInput;
+  const entryFill   = faith ? t.bgTileFaith : t.bgInput;
   const entryBorder = faith ? t.borderCard : t.borderInput;
 
   useFocusEffect(useCallback(() => { loadData(); }, [todayKey]));
@@ -291,7 +292,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
   const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
   return (
-    <View ref={cardRef} style={[styles.card, { backgroundColor: t.bgCard, borderColor: cardBorder, borderTopColor: cardTop, overflow: 'hidden' }]}>
+    <View ref={cardRef} style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder, borderTopColor: cardTop, overflow: 'hidden' }]}>
       <Ionicons name="heart" size={130} color={accent} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
 
       {/* Header */}

@@ -96,6 +96,9 @@ export interface Theme {
   bgPrimary: string;        // main screen background
   bgCard: string;           // standard card background
   bgCardVerse: string;      // verse card background (special)
+  bgCardFaith: string;      // faith tab card background (faint warm tint, faith tab only)
+  bgTileFaith: string;      // faith inner tile/button fill (warm wash on light, solid warm-elevated on dark)
+  bgTileFaithStrong: string; // faith inner hero fill (Continue Reading); a step stronger than bgTileFaith
   bgInput: string;          // text input background
   bgProgressTrack: string;  // progress bar track (empty portion)
   bgSheet: string;          // bottom sheet / modal background
@@ -179,6 +182,9 @@ const dark: Theme = {
   bgPrimary:        '#161619',
   bgCard:           '#2a2a2e',
   bgCardVerse:      '#22223a',
+  bgCardFaith:      '#2a2a2e',  // = bgCard: no tint on dark (warm-dark cards recede and look cheap; warmth lives in the gold edge + accents)
+  bgTileFaith:      '#34302a',  // dark: solid warm-elevated inner tile fill (lighter than the card so tiles float, not transparent)
+  bgTileFaithStrong: '#3c372e', // dark: Continue Reading hero, a step lighter so it leads
   bgInput:          '#1f1f22',
   bgProgressTrack:  '#242428',
   bgSheet:          '#1f1f22',
@@ -252,6 +258,9 @@ const light: Theme = {
   bgPrimary:        '#f0f0f5',
   bgCard:           'rgba(255,255,255,0.85)',
   bgCardVerse:      'rgba(255,251,240,0.72)',
+  bgCardFaith:      'rgba(255,250,243,0.85)',
+  bgTileFaith:      'rgba(212,134,10,0.06)',
+  bgTileFaithStrong: 'rgba(212,134,10,0.11)',
   bgInput:          '#f5f5fa',
   bgProgressTrack:  '#e4e4ee',
   bgSheet:          '#ffffff',
@@ -325,6 +334,9 @@ const slate: Theme = {
   bgPrimary:        '#bcc8d4',
   bgCard:           'rgba(228,234,244,0.90)',
   bgCardVerse:      'rgba(226,232,244,0.90)',
+  bgCardFaith:      'rgba(228,221,209,0.92)',
+  bgTileFaith:      'rgba(212,134,10,0.06)',
+  bgTileFaithStrong: 'rgba(212,134,10,0.11)',
   bgInput:          '#d0d8e4',
   bgProgressTrack:  '#bec8d4',
   bgSheet:          '#eef2f8',
@@ -398,6 +410,9 @@ const warm: Theme = {
   bgPrimary:        '#f3ece0',
   bgCard:           '#fff4e4',
   bgCardVerse:      '#fff8e8',
+  bgCardFaith:      '#fff1dd',
+  bgTileFaith:      'rgba(212,134,10,0.06)',
+  bgTileFaithStrong: 'rgba(212,134,10,0.11)',
   bgInput:          '#efe9dd',
   bgProgressTrack:  '#e4ddce',
   bgSheet:          '#fff8f0',
@@ -471,6 +486,9 @@ const blush: Theme = {
   bgPrimary:        '#f9dae5',
   bgCard:           'rgba(253,238,245,0.95)',
   bgCardVerse:      'rgba(255,252,245,0.92)',
+  bgCardFaith:      'rgba(253,240,241,0.95)',
+  bgTileFaith:      'rgba(212,134,10,0.06)',
+  bgTileFaithStrong: 'rgba(212,134,10,0.11)',
   bgInput:          '#fce8ed',
   bgProgressTrack:  '#f8d8e0',
   bgSheet:          '#ffffff',

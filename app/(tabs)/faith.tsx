@@ -4,7 +4,7 @@ import { Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View } from '
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import CompanionFAB from '../../components/CompanionFAB';
@@ -26,12 +26,9 @@ import { useTheme, type Theme } from '../../theme';
 /**
  * Faith tab. Its own card system (mirrors the home tab pattern but with its own
  * faithCardOrder / faithCardVisible keys in pj_settings, kept fully separate from the
- * home tab's cardOrder / cardVisible). A warm amber atmosphere is layered OVER the
- * active theme, never replacing it. Halo lives behind the bottom-left FAB.
- *
- * Cards arrive one build step at a time. B1: the framework + atmosphere + the Bible
- * card. Today's Message, Gratitude, Prayer, and Journal land in the following steps;
- * their renderCard cases return null until then.
+ * home tab's cardOrder / cardVisible). The tab uses the standard accent gradient like
+ * every other tab; the faith identity lives in the cards (faint gold edges), not a
+ * screen-wide warm wash. Halo lives behind the bottom-left FAB.
  */
 
 type FaithCardId = 'votd' | 'bible_plans' | 'gratitude' | 'prayer' | 'journal';
@@ -59,7 +56,7 @@ const getDateKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).p
 const BUILT_CARDS: FaithCardId[] = ['votd', 'bible_plans', 'gratitude', 'prayer'];
 
 export default function FaithScreen() {
-  const { theme, themeId } = useTheme();
+  const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const [chatOpen, setChatOpen] = useState(false);
   const [styleMode, setStyleMode] = useState<'discipline' | 'balanced' | 'mindful'>('balanced');
@@ -68,10 +65,6 @@ export default function FaithScreen() {
   const [cardVisible, setCardVisible] = useState<Record<FaithCardId, boolean>>(DEFAULT_FAITH_VISIBLE);
   const [dailyVerse, setDailyVerse] = useState<DailyVerse | null>(null);
   const now = new Date();
-
-  // Only the Dark theme has a truly dark background; the other four (Light, Slate, Warm,
-  // Blush) are light, where a strong amber wash would muddy, so they get a much fainter one.
-  const isDarkTheme = themeId === 'dark';
 
   // Load the faith tab's own layout, read-then-merge so a new card slots in and an unknown
   // saved id is dropped. Never touches the home tab's cardOrder / cardVisible.
@@ -133,19 +126,6 @@ export default function FaithScreen() {
 
   return (
     <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
-      {/* Amber atmosphere: a warm candlelight wash from the top, layered over the theme.
-          Dark uses a deeper amber; the light themes need a brighter, warmer gold at higher
-          opacity or it vanishes against a near-white background (a faint brown just muddies). */}
-      <LinearGradient
-        colors={
-          isDarkTheme
-            ? ['rgba(212,134,10,0.20)', 'rgba(212,134,10,0.06)', 'transparent']
-            : ['rgba(232,160,32,0.30)', 'rgba(232,160,32,0.10)', 'transparent']
-        }
-        style={styles.atmosphere}
-        pointerEvents="none"
-      />
-
       <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
           <HeaderAvatar />
@@ -319,7 +299,8 @@ function BibleCard({ theme }: { theme: Theme }) {
 
   return (
     <>
-      <View style={[styles.card, { backgroundColor: theme.bgCard }]}>
+      <View style={[styles.card, { backgroundColor: theme.bgCardFaith, overflow: 'hidden' }]}>
+        <Ionicons name="book" size={130} color={theme.accentAmber} style={styles.cardWatermark} pointerEvents="none" />
         <View style={styles.cardLabelRow}>
           <Ionicons name="book" size={12} color={theme.accentAmber} />
           <Text style={[styles.cardLabel, { color: theme.textMuted }]}>BIBLE AND PLANS</Text>
@@ -330,7 +311,7 @@ function BibleCard({ theme }: { theme: Theme }) {
           <>
             <PressButton
               onPress={() => openReader({ openBook: lastRead.book, openChapter: String(lastRead.chapter) })}
-              style={[styles.bibleContinueBtn, { backgroundColor: 'rgba(212,134,10,0.11)', borderColor: 'rgba(212,134,10,0.3)' }]}
+              style={[styles.bibleContinueBtn, { backgroundColor: theme.bgTileFaithStrong, borderColor: 'rgba(212,134,10,0.3)' }]}
             >
               <View style={{ flex: 1 }}>
                 <Text style={[styles.bibleContinueLabel, { color: theme.textMuted }]}>CONTINUE READING</Text>
@@ -340,7 +321,7 @@ function BibleCard({ theme }: { theme: Theme }) {
             </PressButton>
             <PressButton
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setGuideOpen(true); }}
-              style={[styles.bibleFindBtn, { backgroundColor: 'rgba(212,134,10,0.06)', borderColor: 'rgba(212,134,10,0.3)' }]}
+              style={[styles.bibleFindBtn, { backgroundColor: theme.bgTileFaith, borderColor: 'rgba(212,134,10,0.3)' }]}
             >
               <Ionicons name="compass-outline" size={15} color={theme.accentAmber} />
               <Text style={[styles.bibleFindBtnText, { color: theme.accentAmber }]}>Find something to read</Text>
@@ -356,7 +337,7 @@ function BibleCard({ theme }: { theme: Theme }) {
               <PressButton
                 wrapperStyle={{ flex: 1 }}
                 onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setGuideOpen(true); }}
-                style={[styles.bibleBtnPrimary, { backgroundColor: 'rgba(212,134,10,0.06)', borderColor: 'rgba(212,134,10,0.3)' }]}
+                style={[styles.bibleBtnPrimary, { backgroundColor: theme.bgTileFaith, borderColor: 'rgba(212,134,10,0.3)' }]}
               >
                 <Ionicons name="compass-outline" size={15} color={theme.accentAmber} />
                 <Text style={[styles.bibleBtnPrimaryText, { color: theme.accentAmber }]}>Where do I start?</Text>
@@ -364,7 +345,7 @@ function BibleCard({ theme }: { theme: Theme }) {
               <PressButton
                 wrapperStyle={{ flex: 1 }}
                 onPress={() => openReader({ openBook: 'John', openChapter: '1' })}
-                style={[styles.bibleBtnSecondary, { backgroundColor: 'rgba(212,134,10,0.06)', borderColor: 'rgba(212,134,10,0.3)' }]}
+                style={[styles.bibleBtnSecondary, { backgroundColor: theme.bgTileFaith, borderColor: 'rgba(212,134,10,0.3)' }]}
               >
                 <Text style={[styles.bibleBtnSecondaryText, { color: theme.accentAmber }]}>Open the Bible</Text>
               </PressButton>
@@ -455,7 +436,7 @@ function PlansColumn({ theme, label, emptyText, items, atCap, onBrowse }: {
           <Text style={[styles.emptyColText, { color: theme.textSecondary }]}>{emptyText}</Text>
           <PressButton
             onPress={onBrowse}
-            style={[styles.emptyBrowseBtn, { backgroundColor: 'rgba(212,134,10,0.08)', borderColor: 'rgba(212,134,10,0.4)' }]}
+            style={[styles.emptyBrowseBtn, { backgroundColor: theme.bgTileFaith, borderColor: 'rgba(212,134,10,0.4)' }]}
           >
             <Text style={[styles.emptyBrowseText, { color: theme.accentAmber }]}>Browse</Text>
           </PressButton>
@@ -466,7 +447,7 @@ function PlansColumn({ theme, label, emptyText, items, atCap, onBrowse }: {
             <PressCard
               key={it.id}
               onPress={it.onPress}
-              style={[styles.tile, { backgroundColor: 'rgba(212,134,10,0.06)', borderColor: theme.borderCard, borderLeftColor: theme.accentAmber }]}
+              style={[styles.tile, { backgroundColor: theme.bgTileFaith, borderColor: theme.borderCard, borderLeftColor: theme.accentAmber }]}
             >
               <View style={styles.tileTop}>
                 <Ionicons name={it.icon as any} size={14} color={theme.accentAmber} />
@@ -551,7 +532,8 @@ function PrayerCard({ theme }: { theme: Theme }) {
   // answered count is NOT shown on the card; it lives as a hero on the prayer screen instead.
   return (
     <Animated.View style={{ transform: [{ scale }] }}>
-      <View style={[styles.card, { backgroundColor: theme.bgCard }]}>
+      <View style={[styles.card, { backgroundColor: theme.bgCardFaith, overflow: 'hidden' }]}>
+        <MaterialCommunityIcons name="hand-heart" size={130} color={theme.accentAmber} style={styles.cardWatermark} pointerEvents="none" />
         <TouchableOpacity
           activeOpacity={0.9}
           onPress={openScreen}
@@ -560,7 +542,7 @@ function PrayerCard({ theme }: { theme: Theme }) {
         >
           <View style={[styles.cardLabelRow, { justifyContent: 'space-between' }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <Ionicons name="hand-left" size={12} color={theme.accentAmber} />
+              <MaterialCommunityIcons name="hand-heart" size={13} color={theme.accentAmber} />
               <Text style={[styles.cardLabel, { color: theme.textMuted }]}>PRAYER</Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
@@ -573,7 +555,7 @@ function PrayerCard({ theme }: { theme: Theme }) {
           ) : preview.length > 0 ? (
             <View style={{ marginTop: 6 }}>
               {preview.map(p => (
-                <View key={p.id} style={[styles.prayerPreviewBox, { backgroundColor: 'rgba(212,134,10,0.06)', borderColor: theme.borderCard, borderLeftColor: theme.accentAmber }]}>
+                <View key={p.id} style={[styles.prayerPreviewBox, { backgroundColor: theme.bgTileFaith, borderColor: theme.borderCard, borderLeftColor: theme.accentAmber }]}>
                   <Text numberOfLines={1} style={[styles.prayerPreviewText, { color: theme.accentAmber }]}>{p.text}</Text>
                 </View>
               ))}
@@ -593,7 +575,6 @@ function PrayerCard({ theme }: { theme: Theme }) {
 }
 
 const styles = StyleSheet.create({
-  atmosphere:  { position: 'absolute', top: 0, left: 0, right: 0, height: 420 },
   // Today's Message verse card (matches the Home tab's verse card look).
   verseCard:     { borderWidth: 2, borderRadius: 14, padding: 16, marginBottom: 12 },
   verseLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
@@ -603,8 +584,9 @@ const styles = StyleSheet.create({
   header:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 0.5, marginBottom: 16 },
   headerTitle: { fontSize: 32, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
   // Faith cards carry a faint warm gold edge (a softer cousin of the verse card) instead of
-  // the standard cool top border, so they belong to the amber atmosphere.
-  card:          { borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 0.5, borderColor: 'rgba(212,134,10,0.22)', borderTopColor: 'rgba(212,134,10,0.38)', shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.18, shadowRadius: 8, elevation: 4 },
+  // the standard cool top border; this is now the faith identity, since the screen wash is gone.
+  card:          { borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: 'rgba(212,134,10,0.22)', borderTopColor: 'rgba(212,134,10,0.38)', shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.18, shadowRadius: 8, elevation: 4 },
+  cardWatermark: { position: 'absolute', right: -24, bottom: -28, opacity: 0.10 },
   cardLabelRow:  { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 },
   cardLabel:     { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold' },
   bibleTitle:           { fontSize: 16, fontFamily: 'DMSans_600SemiBold' },

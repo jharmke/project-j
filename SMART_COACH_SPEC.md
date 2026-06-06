@@ -686,7 +686,7 @@ Before ANY of the hybrid AI build steps below (engine handoff, the AI call, the 
 1. SCENARIO FAMILIES not fleshed out. Every family exists as a name plus a brief description only; none has been taken to full scenario depth (trigger logic + verdict + facts). Family 1 (Effort vs Results) goes FIRST as the foundation. See the "Flesh out the families" checkbox below.
 2. VOICE EXAMPLES: locked 2026-06-06. See VOICE EXAMPLES section.
 3. SYSTEM PROMPT / RULEBOOK not locked. The actual prompt the AI receives has not been written. See the "Lock the rulebook" checkbox below.
-4. QUESTION 2 never run. The Question 1 sharpening pass happened; the Question 2 pass (anything wrong, redundant, or off-base across the scenario library) was never done. See the "Question 1 then Question 2" checkbox below.
+4. QUESTION 2: complete 2026-06-06. Findings: 5.6 detection logic fixed (clustering not time-of-day), 5.8 flagged low priority, 6.4 kept, 11.4 deferred to build, 3.16 sequencing clarified (nutritional gaps are the trigger, variety is the explanation).
 5. SURFACES not fully locked. Sleep-card tips, the notifications daily digest, and per-macro Day Summary tips are captured as CANDIDATES but none is confirmed. Every surface must be locked before building. See the SURFACING + QUALITY CANDIDATES checkbox below.
 This gate does not replace the detail items below; it is the checklist that must read all-clear before the first line of hybrid-AI build code.
 
@@ -695,7 +695,7 @@ This gate does not replace the detail items below; it is the checklist that must
 - [ ] THRESHOLD AUDIT: the TRIGGER_LIBRARY thresholds, windows, and percentages were written by an earlier thread and never sanity-validated. They are starting values for post-launch tuning regardless, but worth a dedicated sanity pass before relying on them.
 - [x] Flesh out Family 1 to concept depth (trigger logic concepts, confidence gates, verdict direction, key edge cases). Locked 2026-06-06. See FAMILY 1: CONCEPT DEPTH section above.
 - [ ] Flesh out Families 2 through 11 to concept depth, one family at a time.
-- [ ] Finish Question 1 sharpening, then move to Question 2 (anything wrong / redundant / off-base).
+- [x] Finish Question 1 sharpening, then move to Question 2 (anything wrong / redundant / off-base). Question 2 complete 2026-06-06.
 - [x] Write the Voice Examples (List 2) organized by mode and tone. Locked 2026-06-06. 12 examples across Discipline, Balanced, and Mindful, each covering positive, corrective, care, and educational tones. Standing rules locked: no dashes, no jargon, exact numbers always, math must be accurate, workout references must include timeframe. See VOICE EXAMPLES section above.
 - [ ] Lock the rulebook (system prompt) text
 - [ ] Build the structured-packet handoff in the engine

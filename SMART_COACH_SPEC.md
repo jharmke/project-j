@@ -109,11 +109,10 @@ Combinations that mean something neither signal does alone.
 - 3.7 NEAT COLLAPSE. Steps quietly trending down versus the user's own baseline over weeks (not a single low day). The body unconsciously conserves energy on a cut, which shrinks the deficit without the user noticing, and is a common hidden reason a cut stalls. The trend version of 2.3, and a prime suspect the brain narrows to inside 1.2. Frame as the invisible thing eating progress, nudge daily movement back toward baseline. [DATA: ready, steps stored]
 - 3.8 COMPENSATION / RESTRICTION REBOUND. A day well over intake (a high or binge day) followed by significant restriction the next day, read as a repeated swing, not a single one-off. The binge-restrict swing itself is the pattern, neither day alone. CRITICAL SAFETY: a naive read sees the restriction day as a large deficit and would praise it; never do that (ties to Family 9, never celebrate dangerous under-eating). Verdict is care-toned and observational: name the swing gently, point at evenness over compensation (steady intake beats a high day paid back by starving the next), never shame either day, never frame the low day as a win. This is binge-restrict territory and disordered-eating-adjacent, so it cross-references Family 9 for tone and defers to it when the restriction is severe. Mindful interaction needs care: in default Mindful (growth areas off) this corrective is suppressed by design (these users may be in ED recovery, and naming restriction can itself harm), surfacing only with growth areas on or in Discipline / Balanced, always in care tone; a genuine Family 9 danger threshold still overrides per the safety spine. (From Justin's gym notes.) [DATA: ready, daily intake stored per day]
 - 3.9 EATING LESS ON TRAINING DAYS. Calorie intake is consistently lower on days workouts are logged vs rest days. Counterintuitive and common. Training days are exactly when the body needs more fuel for recovery and muscle retention. Framed as an observation about the pattern, not a judgment call on any single day. [DATA: ready]
-- 3.10 CALORIE BANKING. Deliberate under-eating on weekdays to spend calories on weekends. Surface pattern resembles 3.3 weekend blowout but the cause is different: this is intentional. The bank math almost never works because weekday restriction leads to overcorrection and hunger makes weekend control harder. Different framing from 3.3: this is about the plan itself not adding up, not just a behavioral slip. [DATA: ready]
 - 3.11 HIGH DAY-TO-DAY CALORIE VARIANCE. Weekly average looks fine but individual days swing wildly (example: 600 one day, 2,800 the next, 900 after). Not a weekday/weekend pattern specifically, just erratic. This level of variance stresses hormones, wrecks satiety, and makes the engine's weekly averages misleading. The weekly average masks the chaos underneath. [DATA: ready]
 - 3.12 LATE-NIGHT EATING PATTERN, NON-IF. Consistently logging or eating after 9 to 10 PM regardless of whether IF is active. Late calorie loading impacts sleep quality and next-day hunger. Distinct from 8.2 (IF window creep) because it applies to all users. Pattern-based: requires multiple occurrences, not a single late entry. [DATA: ready]
 - 3.13 UNDER-LOGGING ON HIGH-CALORIE DAYS. Entry count drops on days where logged intake is high, repeated as a pattern across the window. Framed purely as a data quality observation: the picture is likely incomplete on the days that matter most. Never frames this as intentional or as a behavior accusation. Pattern-based: requires 4 or more occurrences to fire. [DATA: ready]
-- 3.14 MACRO RATIO DRIFT. Protein percentage of total intake has shifted significantly (example: was 28 percent 60 days ago, now 17 percent) and the shift correlates with something declining: adherence, weight trend, energy proxy via workout completion. Not fired in isolation. Large sustained shift only, not week-to-week fluctuation. Acknowledges it may be intentional; frames as an observation linked to the correlated signal. [DATA: ready]
+- 3.14 MACRO RATIO DRIFT [DEFERRED: v2]. Protein percentage of total intake has shifted significantly (example: was 28 percent 60 days ago, now 17 percent) and the shift correlates with something declining: adherence, weight trend, energy proxy via workout completion. Not fired in isolation. Large sustained shift only, not week-to-week fluctuation. Acknowledges it may be intentional; frames as an observation linked to the correlated signal. [DATA: ready]
 - 3.15 SUNDAY RESET PATTERN. Strong logging and adherence Monday through Wednesday, consistent decay by Thursday and Friday, reset the following Monday, repeated weekly. Not the same as weekend blowout because the damage point is Thursday night, not Saturday. Identifying the weekly decay point lets the brain give a specific and actionable callout rather than a generic consistency tip. Requires enough history for the weekly pattern to be clear. [DATA: ready]
 - 3.16 CONSISTENT FOOD PATTERN CAUSING NUTRITIONAL GAPS. Limited food variety across the window AND advanced nutrition markers (fiber, sodium, or extended fields) are routinely off because of it. The signal is the consistent nutritional gap; the food consistency is the explanation for why it keeps happening. Brain connects the dots rather than just naming the gap. Not about shaming food choices. [DATA: ready when extended nutrition is populated]
 - 3.17 WHOOSH EFFECT moved to Family 1 as 1.7.
@@ -127,6 +126,7 @@ Combinations that mean something neither signal does alone.
 - 4.5 SLEEP CARRYING EVERYTHING (positive). Strong sleep lining up with better adherence and recovery.
 - 4.6 SOCIAL JET LAG. Weekday sleep schedule and weekend sleep schedule are significantly different (example: bed at 11pm weekdays, 2am weekends, sleeping until 10am Saturday then forcing 7am Monday). Even if total hours are adequate, the circadian rhythm disruption takes 2 to 3 days to adjust and shows up as Monday-Tuesday performance drag and hunger that does not map cleanly to any single day's data. Distinct from 4.2 general inconsistent bedtime: this is specifically the weekday/weekend split pattern. [DATA: ready, bedtime/wake stored]
 - 4.7 SLEEP DEBT ACCUMULATION. Not just trending down (4.3) but cumulative hours under the sleep goal over the past 7 days add up to a meaningful deficit (roughly 6 or more hours short). The total debt across the week is the story, not any single bad night. Recovery is a multi-day process. [DATA: ready]
+- 4.8 SLEEP IMPROVING TREND. Sleep has been trending meaningfully upward over the window after a period of being low or declining. Different from 4.5 (which fires when sleep is already consistently strong): this fires on the improvement itself. A good retention and reinforcement moment — whatever changed is working. Positive framing with one note reinforcing the behavior producing the improvement. [DATA: ready]
 
 SLEEP COACH delivery quality (2026-06-04, gym note 7): the sleep card tip is the primary Family 4 surface, and today it fires the same generic lines repeatedly ("consistent bedtimes train your body"). The Family 4 version must REFERENCE THE USER'S ACTUAL DATA: their specific deep-sleep duration last night, their personal averages, their actual bedtime vs their best nights. Same hybrid brain/voice architecture as the rest of the coach (brain reads the real numbers, AI voices the observation). Internally this is the "Sleep Coach." It is delivered on the sleep card AND on the new sleep detail screen (see the roadmap sleep-detail item, which will get its own SPEC_sleep.md at build time). This is the quality bar for the existing roadmap item "SLEEP CARD TIPS LOW QUALITY."
 
@@ -153,7 +153,6 @@ SLEEP COACH delivery quality (2026-06-04, gym note 7): the sleep card tip is the
 - 7.1 PLATEAU AFTER A GOOD RUN. Was losing, now flat 10 plus days; adaptation, consider refeed, diet break, or TDEE recalc.
 - 7.2 SLIPPING. Adherence was strong, last few days declining; catch it before it becomes a pattern.
 - 7.3 STALE TARGETS. Weight changed enough that BMR and TDEE targets are likely off; suggest updating them.
-- 7.4 NEARING GOAL. Approaching goal weight; start the transition-to-maintenance conversation.
 - 7.5 GOAL AMBITION VS REALITY. The target rate and the body's actual sustained response disagree over a long enough window, AND adherence is genuinely solid (so this is never a "you are slacking" tip). Example: goal set to lose 1.5 a week, body responding like 0.75. Framed as a reality-check offer ("your body is tracking closer to a 0.75-a-week pace, want to set the target there so the app stops scoring you against a number you are already beating yourself up over"), never "you failed." Must NOT fire during week 1 (overlaps the honeymoon water-weight drop) and never on thin weigh-in data. Goal-aware: applies to cut, bulk, and maintain ambitions. [DATA: ready]
 - 7.6 FIRST PLATEAU. Specifically the first real stall after the initial weight loss phase. The honeymoon drop (water weight, glycogen) ends at roughly week 3 to 5 and a genuine plateau emerges for the first time. Distinguishable from 7.1 (which fires at any plateau) by being the first one. Requires specific framing: this is normal and expected, here is the biology in plain terms, here is what to look at first. Tone is educational, not alarming. The user who has never plateaued before needs a different conversation than someone who has been through cycles before. [DATA: ready]
 - 7.7 TRANSITION OVERDUE. User has hit or come within 2 to 3 lbs of goal weight for 10 or more days and is still running a meaningful deficit. Continuing to cut past goal carries real costs: muscle loss, hormonal strain, and rebound risk. Verdict: the work is done, the conversation shifts to maintenance. Tone is celebratory first, practical second. [DATA: ready]
@@ -172,6 +171,7 @@ Whoop / Oura territory. The recovery triad beyond sleep. Note: family numbers ar
 - 10.3 OVER-TRAINING / UNDER-RECOVERY. Training load up AND resting HR up AND sleep declining together: ease up, this is recovery debt, not a willpower problem. Care-adjacent ("back off"), never medical. Cross-references workout volume. This is the higher-resolution version of 3.5; when both match, fire the recovery story, not the bare multi-signal. [DATA: ready via restingHR + sleep + workout load]
 - 10.4 EARLY-ILLNESS FLAG. Resting HR and respiratory rate both spike together: possibly getting sick, rest and back off training. Never a diagnosis. [DATA: ready]
 - 10.5 HRV TREND. Heart-rate variability is the gold-standard recovery signal, but the app does not capture HRV today. [DATA: needs-build, new HealthKit permission + EAS build]
+- 10.6 RECOVERY MARKERS IMPROVING. Resting HR or respiratory rate has been elevated above the user's own baseline and is now trending meaningfully back down toward it. The upswing is worth catching before all markers are fully green (which is 6.5's territory). Positive framing, reinforces whatever the user changed. [DATA: ready]
 - Note: VO2 Max and cardio recovery (1-minute HR recovery) are fetched live but not saved per day. [DATA: needs-persistence] before they can trend.
 
 ## Family 11: Training Patterns (NEW this session; the app's workout data was unmined)
@@ -181,6 +181,7 @@ The first nine families barely touched workout data, which the app stores in dep
 - 11.3 CONSISTENCY SLIDING. Scheduled workouts increasingly skipped, or one modality going dark for 2 or more weeks. [DATA: ready, checks + Apple workouts]
 - 11.4 DELOAD RECOGNITION (guard-style). A planned lighter week is not falling off. Do not fire a failure tip on an intentional deload; ties to excluded days and needs a signal that the lighter week is intentional. [DATA: ready, needs intent signal]
 - 11.5 CARDIO SHIFT AT EXPENSE OF RESISTANCE. Dynamic version of 11.1: the user was doing both modalities, cardio volume has climbed, and resistance volume has dropped over the same window. On a cut this is the worst direction: cardio without resistance accelerates muscle loss. The trend matters as much as the current state. Requires enough history to establish the prior baseline of both modalities. [DATA: ready, workout type and frequency stored]
+- 11.7 TRAINING CONSISTENCY STRONG. Positive. User is hitting scheduled workouts at a high rate over the window. Reinforces the habit with one note about what to keep doing or a stretch goal. Never hollow — names the specific streak or rate. [DATA: ready]
 - 11.6 SESSION QUALITY DECLINING. The user's own baseline for workout sessions (average duration and calorie burn per session over the prior 30 days) is meaningfully exceeded on the downside: both duration AND calorie burn drop significantly (roughly 30 percent or more below baseline) AND effort score declines simultaneously. All three signals must align. If effort score is still high, the user is working hard in less time and no tip fires. Short workouts can be effective; this scenario only fires when the data suggests the sessions have genuinely deteriorated by the user's own standards. [DATA: ready for duration and burn; effort score stored]
 
 ## Goal modifier (applies across all families)
@@ -237,6 +238,182 @@ Positive and educational. Requires 3 to 4 confirmed pattern instances. Language 
 
 1.8 WEIGHT LOSS RATE DECELERATING
 Names the most likely cause (calories creep, NEAT drop, logging decline, or adaptation) specifically, not generically. Early warning tone, not alarm.
+
+---
+
+## FAMILY 3: CONCEPT DEPTH (locked 2026-06-06)
+
+Shared gates: minimum 7 logged days in the window before any 3.x fires. Excluded days stripped. Today excluded. Extended nutrition data gate (same 70% calorie-weighted rule as Family 2) applies wherever fiber, sodium, or sugar is a signal. Pattern minimum: at least 3 confirmed instances before firing unless a scenario specifies its own count. If a 3.x pattern fires, its component 2.x single-signal scenarios stay quiet for the same cycle.
+
+3.1: All three signals required (protein low, fiber low, sodium high). If any signal lacks data coverage, fall to individual 2.x scenarios for what IS visible.
+
+3.2: Fires on 3 of 4 signals (very low intake, low protein, high activity, poor or declining sleep). Very low intake means below BMR on average across the window. Family 9 overrides if intake is below BMR by roughly 30% for 5+ days alongside rapid weight loss.
+
+3.3: Needs 2 complete Sat/Sun pairs. Weekday average must be in meaningful deficit; weekend net brings the week to near maintenance or above. Brain states the math explicitly.
+
+3.4: The fiber gap is the explanation for the small consistent overage, not a separate finding. If protein is also low or sodium is also high, 3.1 is the better fit.
+
+3.5: Sleep must be trending DOWN, not just below goal. If resting HR is also elevated, fire 10.3 instead.
+
+3.6: Educational only, not corrective. 2 to 3 confirmed morning-after weight spikes following high-sodium days. Language always probabilistic.
+
+3.7: Baseline is the user's own step average from the 30 days before the active window. Fires when the current window is roughly 25% below that baseline. Needs at least 10 valid baseline days to establish the comparison. Altitude vs 2.3: 3.7 fires on personal decline below historical pace; 2.3 fires on goal gap. 3.7 wins if both match.
+
+3.8: High day is roughly 25%+ above target. Restriction day is below roughly 70% of target. 3+ confirmed pairs required. Brain explicitly verifies no praise-the-low-day framing is in the packet before handoff. Family 9 override if restriction days fall below BMR 4+ times. Mindful default suppressed unless growth areas on.
+
+3.9: Requires at least 5 logged training days and 5 logged rest days for the comparison. Does not fire if training-day intake is already at or above goal.
+
+3.11: Standard deviation of daily intake above roughly 25% of the user's daily calorie target. Scales with the individual, not a fixed number. Needs 7+ logged days. Excluded days stripped before computing variance.
+
+3.12: At least 150 cal after 9pm on 4+ nights in the window. If IF is enabled and the eating is inside the logged IF window, suppress and let 8.2 handle it.
+
+3.13: High calorie day = top quartile of the user's own intake distribution. Entry count drop = more than roughly 30% below the user's own logged-day average. Data quality framing only, never a behavior accusation.
+
+3.15: Needs 3+ weeks to confirm the weekly cycle. Brain names Thursday as the specific vulnerable day rather than a generic consistency note. Altitude vs 3.3: the damage point (Thursday vs weekend) determines which fires; do not stack both.
+
+3.16: Variety gate: roughly 70%+ of entries from 10 or fewer unique foods. Extended nutrition data gate applies. The connection is structural: the same foods producing the same gaps is the story.
+
+All thresholds above are directional starting values, flagged for post-launch tuning.
+
+---
+
+## FAMILY 4: CONCEPT DEPTH (locked 2026-06-06)
+
+Shared gates: all Family 4 scenarios require real sleep data from HealthKit. Missing sleep data is unknown, not bad sleep — never diagnose on it. Minimum 5 nights of sleep data in the window before any 4.x fires. Stage-specific scenarios (4.4) additionally require at least 4 nights with deep and REM breakdown data.
+
+4.1: Needs 2 to 3 confirmed pairings of a rough sleep night (below the user's own average score or under 6 hours) followed by a higher-intake day (roughly 15%+ above the user's intake average). Both sides of the pair need data. Educational framing connecting the ghrelin/leptin mechanism, not a scolding.
+
+4.2: Bedtime varies by more than roughly 45 minutes night to night across the window. Can fire even when total sleep hours look fine — timing chaos disrupts the body clock even when duration adds up.
+
+4.3: Sleep is not just low, it is getting worse across the window. Needs at least 5 data points to see the direction. If cumulative debt hits the 4.7 threshold, fire 4.7 instead. This one is the early warning before it gets that bad.
+
+4.4: Deep sleep consistently below roughly 15% of total sleep time. Requires HealthKit to be returning stage data — if Apple Watch is not tracking stages, this scenario does not fire. Brain names likely causes (late meals, alcohol, timing inconsistency) observationally, never as a diagnosis.
+
+4.5: Positive. Fires only when sleep is consistently strong AND at least one downstream signal is correlating positively: adherence up, workout completion up, or weight trend on pace. Sleep being good alone is not enough — needs the connection to actual results.
+
+4.6: Weekday bedtime and weekend bedtime differ by 2+ hours on average, confirmed across at least 2 weekends. Distinct from 4.2 general inconsistency — this is specifically the weekday/weekend schedule split. Brain names the Monday/Tuesday drag as the specific cost.
+
+4.7: Adds up total sleep hours missed against the user's sleep goal across the past 7 days. Cumulative deficit reaching roughly 6+ hours is the trigger. One bad night is not the story — a full week of under-sleeping stacking up is.
+
+4.8: Sleep average is trending meaningfully upward over the window after a period of being low or declining. Distinct from 4.5 (consistently strong): this fires on the improvement itself. Positive framing with one reinforcement note pointing at whatever behavior produced the change.
+
+---
+
+## FAMILY 5: CONCEPT DEPTH (locked 2026-06-06)
+
+Family 5 is the data quality and confidence family. 5.1 and 5.5 are blockers — when they fire, most other families stay quiet. The rest are observations that can layer alongside other tips or stand alone when data quality is the main story.
+
+5.1 vs 5.5 rule: 5.5 wins for anyone still in their first 14 days of data. 5.1 only fires for established users who had a sparse week. They never fire together.
+
+5.1: Established users only. Fewer than 5 logged days in the 14-day window. Brain honestly says it needs more data rather than faking a diagnosis. Blocks most other families.
+
+5.2: A logged day where total calories and entry count are both suspiciously low given the user's target — suggests only one or two meals were captured. Brain looks at both numbers together to distinguish "genuinely ate very little" from "only logged breakfast." Flags the data gap, never the person.
+
+5.3: Consistent pattern of logging Monday through Friday with gaps on Saturday and Sunday, confirmed across 2 to 3 weekends. The specific problem is that weekends are where calories tend to go off-track, so the engine is blind on the days that matter most. Altitude vs 5.7: if the binary pattern is specifically the weekday/weekend split, fire 5.3, not 5.7.
+
+5.4: Positive. User has logged 90%+ of days over the window or is on a meaningful consecutive streak. Reinforces the behavior and signals the engine's other diagnoses are now higher-confidence.
+
+5.5: User has fewer than 14 days of total data. No hard diagnoses — only encouragement and realistic expectation-setting. Blocks the whole engine except onboarding-appropriate tips.
+
+5.6: Most food entries across multiple days are timestamped late at night or in a single late window, suggesting the user is logging from memory. Fires when this pattern shows up on 5 or more days. Framed as a data quality note, never an accusation.
+
+5.7: Days are either fully logged with multiple entries or completely absent, rarely anything in between. Fires for erratic binary patterns not tied to the week structure. If the pattern IS weekday/weekend-specific, fire 5.3 instead.
+
+5.8: Same-day weigh-in readings vary 3+ lbs across multiple days. Real scenario but low-priority — requires multiple same-day weigh-ins which most users won't have. Encourages consistent morning weigh-ins without being prescriptive.
+
+5.9: Only fires in the first 1 to 2 weeks. The math to hit the user's target pace requires eating at or below BMR every day. Expectation-setting, not a failure flag. Escalates only if early data confirms struggle: workout completion dropping or weight falling too fast. After week 2, Family 1 takes over.
+
+5.10: Established loggers only (5+ days per week average). A significant workout in HealthKit with zero food logged that day, anomalous for this user. The tip invites logging, never assumes under-fueling.
+
+---
+
+## FAMILY 6: CONCEPT DEPTH (locked 2026-06-06)
+
+All Family 6 scenarios are positive. None of them fire hollow praise — every one either names specifically what is working or connects the positive to a real result.
+
+6.1: Fires when Family 1 is calibrated and no other family has a meaningful finding. Must name the specific metrics that are working, then give exactly one stretch goal. Generic "great job" is not acceptable output here.
+
+6.2: Needs enough personal history to compare two comparable windows. "Meaningfully better" means a clear gap across multiple signals, not a slight nudge in one metric. Catches momentum the user may not have noticed yet.
+
+6.3: Detects a logging gap of 5+ days followed by a confirmed return of 3+ days. Never dwells on the gap. Framing is always forward — the return is the story, not what happened before it.
+
+6.4: Fires only when the user is 1 to 2 days from their personal best streak for a specific metric (logging, protein, steps). Forward-looking only. Hard boundary with the achievements system: this scenario nudges toward a streak in reach, it never celebrates a completed one. That belongs to achievements.
+
+6.5: Requires all four signals simultaneously healthy: resting HR within the user's own baseline, respiratory rate normal, sleep trending up, steps consistent. If resting HR or respiratory rate data is absent from HealthKit, this scenario cannot fire. Not just absence of problems — all must be actively positive.
+
+---
+
+## FAMILY 7: CONCEPT DEPTH (locked 2026-06-06)
+
+7.1: Before naming adaptation the brain runs the full 1.2 dig-deeper list: logging consistency, burn accuracy, high sodium, weigh-in count, stale TDEE targets, NEAT collapsing via steps, sleep declining, small untracked items. Only after all of those are clean does it name adaptation and suggest a TDEE recalculation as the first lever. Refeed or diet break is never the first recommendation.
+
+7.2: Prior strong period must be at least 14 days. Decline must be at least 7 days to call it a real slide. One or two bad days is noise, not a pattern.
+
+7.3: Fires based on weight change from the user's last profile update, not a fixed threshold. The point is that targets set at a different bodyweight are now stale, not that any specific number was crossed.
+
+7.5: Must not fire in the first 6 weeks — not enough data to distinguish a real pace from honeymoon drop or normal variance. Adherence must be confirmed solid before firing, so it never sounds like "you're not losing because you're not trying." Framed as a reality-check offer, never a failure verdict.
+
+7.6: Brain must confirm this is the first plateau by checking full user history. If the user has plateaued before, fire 7.1 instead. This scenario only fires once — experienced users get 7.1, not another first-plateau explanation they have already heard.
+
+7.7: Fires when the user is within 2 to 3 lbs of goal weight for 10+ days and still running a meaningful deficit. Celebratory first, practical second. This is the right moment for the maintenance conversation — not earlier.
+
+Note: 7.4 NEARING GOAL was cut. 7.7 handles the goal-approaching story at the right moment. An earlier tip risks feeling deflating when the user wants to focus on finishing.
+
+---
+
+## FAMILY 8: CONCEPT DEPTH (locked 2026-06-06)
+
+Shared gate: the entire family only fires when IF is enabled in the user's settings. If IF is off, Family 8 stays quiet.
+
+8.1: Eating window start and end times vary by more than roughly 2 hours day to day across 5+ days of IF usage. If the inconsistency has a clear direction (window drifting later), fire 8.2 instead.
+
+8.2: The eating window is consistently starting or ending later than it used to across the window. Trend-based, not a single late day. Late window means late calories, which is where hidden intake tends to accumulate.
+
+8.3: Positive. Window start time is within roughly 1 hour of the same time across most days, confirmed over 5+ days. Reinforces the habit and signals IF data is trustworthy for other IF-related tips.
+
+8.4: Food entries exist but the IF timer was never started. Framed purely as a data gap — the brain cannot see the fasting window. Never framed as breaking the fast or a behavior failure.
+
+8.5: Food entries appear after the IF window was manually closed. Behavior slip and data hole at the same time. Surface gently, invite the log, never assume intentional cheating.
+
+---
+
+## FAMILY 10: CONCEPT DEPTH (locked 2026-06-06)
+
+Shared gates: all Family 10 scenarios require HealthKit resting HR and/or respiratory rate data. Missing data is unknown, not bad — never diagnose on absent readings. User's personal baseline is established from the prior 30 days of readings. Needs at least 7 days of baseline data before any 10.x fires.
+
+Training load definition (flagged for build): "training load is up" means total workout calorie burn across the window is meaningfully above the user's trailing 30-day average. Build team should confirm this formula or propose an alternative before coding 10.3.
+
+10.1: Resting HR has drifted roughly 5+ BPM above the user's own 30-day baseline across multiple days. Not a single high reading — a sustained elevation. Observational tone only, never states a cause as certain.
+
+10.2: Respiratory rate is above the user's own baseline across multiple days. Fires alone only when resting HR is NOT also spiking simultaneously — if both are elevated at the same time, 10.4 wins.
+
+10.3: All three signals required: training load above the user's baseline, resting HR above baseline, and sleep declining. Wins over 3.5 whenever resting HR data is available and confirms elevation. Care tone: recovery debt, not a willpower problem. Never "push through."
+
+10.4: Both resting HR and respiratory rate spike together — a sudden jump, not a gradual drift. The combination is the signal. Wins over 10.1 and 10.2 firing individually. Never a diagnosis — always framed as "this can sometimes mean your body is fighting something."
+
+10.5: Data-blocked. Does not fire. Needs a new EAS build with HRV HealthKit permission before concept depth can be written.
+
+10.6: Resting HR or respiratory rate has been elevated and is now trending meaningfully back toward the user's own baseline. Fires before all markers are fully green (that is 6.5's territory). Positive framing with one reinforcement note.
+
+---
+
+## FAMILY 11: CONCEPT DEPTH (locked 2026-06-06)
+
+Shared gates: requires workout data. If no workouts logged in the window, Family 11 stays quiet. Needs at least 3 workouts in the window and enough history (7+ days) to establish the user's own baseline. Apple workout type is the source for modality detection.
+
+11.1: One modality makes up 85%+ of sessions across the window. Current state, not a trend. Altitude vs 11.5: if the user was previously balanced and is now shifting, fire 11.5 — it's the more specific story.
+
+11.2: Both duration AND calorie burn drop below roughly 50% of the user's own per-session baseline simultaneously. A short but intense session can have low duration with normal calorie burn — that's fine, do not fire. Heart rate data per workout would sharpen this but is not captured yet.
+
+11.3: Scheduled workout frequency clearly declining across the window, or one modality has gone completely dark for 2+ weeks. Altitude vs 11.5: if resistance specifically has gone dark while cardio continues, fire 11.5 — it's the more specific story. 11.3 fires on general skipping across all modalities.
+
+11.4: Guard, not a tip. Prevents 11.2 and 11.3 from firing on an intentional deload. Intent signal is genuinely hard to detect — no UI exists for marking a deload. Pragmatic approach: if excluded days cover most of that week treat it as intentional. If no excluded days and volume just collapsed, allow 11.3 to fire. Needs a real decision at build time.
+
+11.5: Was doing both modalities regularly, cardio volume climbing and resistance dropping across the same window. Needs 30+ days of history to confirm the prior balanced baseline. On a cut this is the worst direction for muscle retention — framing names that specifically.
+
+11.6: All three signals must drop simultaneously: duration, calorie burn, and effort score all below roughly 30% of the user's own trailing 30-day per-session baseline. If effort score is still high, do not fire.
+
+11.7: Positive. User hitting 80%+ of scheduled workout days over the window. Names the specific rate or streak rather than generic praise. One stretch goal or reinforcement note.
 
 ---
 
@@ -388,6 +565,10 @@ A new pj_ AsyncStorage key (for example pj_challenges) holding active and comple
 - 2026-06-01: Scenario Library expanded (Question 1 pass with Justin). Added 2.7/2.8 macro gaps, 3.7 NEAT collapse, 6.4 almost-a-streak nudge (narrow), 7.5 goal ambition vs reality, 8.4/8.5 IF timer + closed-window scenarios, Family 10 Recovery / Readiness, Family 11 Training Patterns, the staleness / flat-line guard, and data-readiness tags ([DATA: ready / needs-persistence / needs-build]). Decisions: Sleep and Recovery stay separate families; body recomp, full Momentum/Streaks, Re-engagement, and Milestones cut (overlap achievements/streaks or data-blocked); faith integration reopened (candidate: non-EvR surface); flagged a TRIGGER_LIBRARY threshold sanity audit. Verified in code: per-workout heart rate and HRV are NOT captured (Training intensity + HRV scenarios are data-gated); resting HR, respiratory rate, blood oxygen, exercise minutes DO store per day. Next: keep sharpening Question 1 or move to Question 2, then start fleshing Family 1 and writing Voice Examples.
 - 2026-06-02: Added scenario 3.8 Compensation / Restriction Rebound to Family 3 (from Justin's gym notes): binge-restrict swing detection with mandatory Family 9 care framing and an explicit do-not-praise-the-low-day guard. From the same gym notes, two coaching-surface candidates were captured (not yet decided) for the reopened faith / surfaces question: sleep card tips fed by the coach (Family 4 delivery) and a notifications overhaul (one daily coach digest plus time-sensitive contextual triggers, replacing 11 uncoordinated pings). Both parked as surface candidates pending the Question 1 discussion. Roadmap gym-list batch logged in parallel.
 - 2026-06-03: From Justin's gym-notes batch (consolidated in the roadmap this session), four SURFACING/QUALITY candidates captured under "Open and next" for the still-open Question-1 surface discussion: (1) a per-macro actionable tip in the macro's own Day Summary section when a macro is significantly off (protein the headline example, = Family 2.1 on the Day Summary surface); (2) EvR feels hidden because it needs a manual new-report generation to see the coaching, friction on a flagship feature; (3) the home smart-tip card needs a tint / stronger treatment to read as "smart"; (4) an IF auto-start-window / nudge AUTOMATION (a setting plus action, distinct from the 8.4/8.5 coach tips). None decided; all feed the surfaces discussion. No scenario-library or rulebook changes this pass.
-- 2026-06-06 (continued): Family 2 concept depth locked. Added 2.10 fat too high, 2.11 sugar too high, 2.12 sodium too high (chronic standalone) expanding Family 2 to cover both gaps and excesses. Family 2 total: 12 scenarios. Key decisions: extended nutrition calorie-weighted data gate (70 percent of logged calories must carry the nutrient), 2.3 step threshold at 50 to 60 percent of goal, 2.6 suppressed in default Mindful, 2.11 fixed sugar reference threshold framed observationally, 2.1 calorie-tension edge case flagged. Family 3 concept depth is next.
+- 2026-06-06 (continued): Family 2 concept depth locked. Added 2.10 fat too high, 2.11 sugar too high, 2.12 sodium too high (chronic standalone) expanding Family 2 to cover both gaps and excesses. Family 2 total: 12 scenarios. Key decisions: extended nutrition calorie-weighted data gate (70 percent of logged calories must carry the nutrient), 2.3 step threshold at 50 to 60 percent of goal, 2.6 suppressed in default Mindful, 2.11 fixed sugar reference threshold framed observationally, 2.1 calorie-tension edge case flagged.
+- 2026-06-06 (continued): Families 8, 10, 11 concept depth locked. Family 9 (Safety) requires no concept depth — it is a set of override rules, not detectable scenarios. Family 8: shared IF-off gate locked, 8.1 vs 8.2 altitude rule (8.2 wins when inconsistency has a clear late-drift direction). Family 10: added 10.6 RECOVERY MARKERS IMPROVING (positive trend, distinct from 6.5 all-green), training load definition flagged for build-time formula decision, 10.4 wins over individual 10.1/10.2 when both spike simultaneously. Family 11: added 11.7 TRAINING CONSISTENCY STRONG (positive), 11.3 vs 11.5 altitude rule locked (11.5 wins when resistance specifically goes dark while cardio continues), 11.4 deload guard flagged as needing build-time intent-signal decision.
+- 2026-06-06 (continued): Families 5, 6, 7 concept depth locked. Family 5: two fixes locked (5.5 wins over 5.1 for new users, 5.3 wins over 5.7 for weekday/weekend binary pattern). Family 6: all positive scenarios locked, 6.4 kept as narrow forward-looking streak nudge distinct from achievements system. Family 7: 7.4 NEARING GOAL cut (redundant with 7.7, risks feeling deflating), 7.1 clarified to run the full 1.2 dig-deeper list not just 4 checks, 7.2 requires 14-day strong period and 7-day decline, 7.6 requires full-history check to confirm it is truly the first plateau.
+- 2026-06-06 (continued): Family 4 concept depth locked. Added 4.8 SLEEP IMPROVING TREND (positive, fires on the improvement itself, distinct from 4.5 which fires on consistently strong sleep). Family 4 total: 8 scenarios. Key decisions: 5-night minimum data gate, stage data required for 4.4, 4.1 needs confirmed sleep/overeating pairings not just averages, 4.3 and 4.7 altitude rule locked (4.7 wins when debt threshold is hit).
+- 2026-06-06 (continued): Family 3 concept depth locked. 3.10 CALORIE BANKING dropped (brain cannot reliably distinguish intentional banking from accidental low weekdays; covered by 3.3 framing). 3.14 MACRO RATIO DRIFT deferred to v2 (technically ambitious, correlation detection hard to build right, most users lack enough history). Family 3 active scenarios: 14. Key decisions: 7-day minimum window for pattern families, 3-instance pattern minimum, 3.7 uses personal step baseline not goal gap, 3.8 praise-the-low-day guard locked, 3.15 names Thursday as the specific decay point.
 - 2026-06-06: Scenario library v2. Added 22 new scenarios across all families (new totals: Family 1 has 8, Family 2 has 9, Family 3 has 16, Family 4 has 7, Family 5 has 10, Family 6 has 5, Family 7 has 7, Family 8 unchanged at 5, Family 9 unchanged, Family 10 unchanged at 5, Family 11 has 6). Library total: 78 scenarios. Key additions: Families 3 and 5 expanded most (behavioral patterns and data quality), Family 7 added first plateau and transition overdue, Family 11 added dynamic modality shift and session quality. Locked foundational principle 8: authoritative on data, humble on causation (two-mode voice rule, not a blanket hedge). Locked Family 1 concept depth: all 8 scenarios at trigger-logic-concept level including the 1.2 dig-deeper rule (TDEE recalc before refeed recommendation), the 1.1 brain-state pattern, and the 1.7 whoosh probabilistic framing. Question 2 pass and voice examples are next.
 - 2026-06-03: Scoped a new SHORT-TERM CHALLENGES / MISSIONS layer (full capture in the new section above), the action / commitment layer that closes the loop the Smart Tips open. Recommended (coach-driven) plus manual (user-created) creation. Reward decided: an in-the-moment completion celebration plus a tiered Challenges achievement track (1/5/10/25), no new currency. A special starter challenge unlocks the three non-default themes (Slate/Warm/Blush) at once and intros the customization + achievement systems, which resolves the long-open theme-unlock mapping (Light/Dark default, the other three earned, accents free and bundled, nothing paid). Mode rule: manual works in all modes, recommended is suppressed in default Mindful and gentle with growth areas on. Window shape (N-of-M vs streak) deferred to build. Cross-references the 6.4 almost-a-streak nudge and the IF auto-start idea so they are not double-built. Parked extensions: personal weekly/monthly challenges (natural extension) and community/social challenges (major future phase). Same session, the stale "paid themes" labels were wiped app-wide (CLAUDE.md, the duplicate instructions file, theme.tsx, roadmap). Status: scoping only, parked behind the Faith AI track.

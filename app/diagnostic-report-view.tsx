@@ -511,7 +511,34 @@ export default function DiagnosticReportViewScreen() {
               {report.sleep && <SleepCard f={report.sleep} isMindful={isMindful} theme={t} shadowStyle={shadowStyle} />}
 
               {/* AI Coach Insight card */}
-              {(coachLoading || !!coachCache) && (() => {
+              {TIPS_GATED ? (
+                <View style={{ marginBottom: 12 }}>
+                  <Text style={[styles.sectionLabel, { color: t.textMuted }]}>COACH INSIGHT</Text>
+                  <View style={[shadowStyle, {
+                    backgroundColor: t.bgCard, borderRadius: 14, borderWidth: 0.5,
+                    borderColor: t.borderCard, borderTopColor: 'rgba(255,255,255,0.1)',
+                    borderLeftWidth: 3, borderLeftColor: t.accentBlueRaw, padding: 16, paddingLeft: 15,
+                  }]}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Ionicons name="sparkles" size={13} color={t.accentBlueRaw} />
+                        <Text style={{ fontSize: 9, letterSpacing: 3, color: t.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>Coach Insight</Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Ionicons name="lock-closed" size={12} color={t.textMuted} />
+                        <View style={{ backgroundColor: t.accentBlueBg, borderWidth: 1, borderColor: t.accentBlueBorder, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
+                          <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: t.accentBlueRaw }}>PRO</Text>
+                        </View>
+                      </View>
+                    </View>
+                    <View style={{ gap: 6 }}>
+                      <View style={{ height: 10, backgroundColor: t.textMuted + '30', borderRadius: 4, width: '100%' }} />
+                      <View style={{ height: 10, backgroundColor: t.textMuted + '30', borderRadius: 4, width: '82%' }} />
+                      <View style={{ height: 10, backgroundColor: t.textMuted + '20', borderRadius: 4, width: '65%' }} />
+                    </View>
+                  </View>
+                </View>
+              ) : (coachLoading || !!coachCache) && (() => {
                 if (coachLoading && !coachCache) {
                   return (
                     <View style={{ marginBottom: 12 }}>

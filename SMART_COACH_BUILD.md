@@ -39,10 +39,13 @@ protein_under pattern threshold changed from 70% to 80% of goal, required days d
 - [x] Timeframe bug fixed across all 28 diagnosis strings in buildDiagnosisActionFacts: w7 rules now say "Over the last 7 days", w14 rules say "Over the last 14 days". Without this, the AI borrowed the surface window label (14/30/90) as the timeframe even when the brain only analyzed 7 days of data, producing contradictions like "over the last 30 days... 5 of 7 days."
 
 ### STILL OPEN:
-3. Free vs Pro gating: home all free, EvR/Weekly/Monthly Pro. Blur + chip for free users.
-4. Weekly Summary surface: layout not yet specced. Required before coaching placement.
-5. Monthly Summary surface: layout not yet specced. Required before coaching placement.
+4. Weekly Summary surface: SPEC COMPLETE (SPEC_weekly_summary.md). Build not started.
+5. Monthly Summary surface: spec session needed. Build after weekly.
 7. Level 2 full build: home slots 2+ (free, eager, 7-day), EvR domain cards (Pro, lazy). Rulebook written and locked in SMART_COACH_SPEC.md.
+
+### DONE THIS SESSION (2026-06-07 continued):
+- [x] Item 3: Free vs Pro gating UI. TIPS_GATED=false (TestFlight) controls blur/lock on EvR AI Coach Insight card. Locked state: card shell + sparkles + lock icon + PRO chip + skeleton bars. Home card untouched (always free). diagnostic-report-view.tsx.
+- [x] Item 4 spec: Weekly Summary spec locked in SPEC_weekly_summary.md. Sun-Sat weeks, Stats > Reports, Level 1 AI only, 7-day fixed range packet, Sunday morning generation, structured data sub-label format, Mindful handling, exclusion edge cases all locked.
 
 ## Home Card Visual Standard (LOCKED 2026-06-06)
 Header row: sparkles icon (size 12, accent) + "COACH INSIGHT" (fontSize 9, letterSpacing 3, accent, DMSans_700Bold, uppercase) + TooltipIcon -- all left side. Chip (INSIGHT/POSITIVE/URGENT) -- right side.

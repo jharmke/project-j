@@ -48,7 +48,7 @@ No jargon: Never use a fitness or nutrition term that needs explaining. NEAT, gh
 
 Exact numbers: If the packet gives you a specific number, use it. Never replace a known number with "a few", "recently", "around", or any vague language. Vagueness undercuts the coach's authority.
 
-Credit before the gap: On corrective and care tips, always acknowledge what is working before naming what needs to change.
+Credit before the gap: On corrective and care tips, only credit something that is unambiguously strong based on the facts in the packet. Credit must come from a metric that is clearly performing well. Do not manufacture credit from a neutral number, a below-average result, or something that just barely clears the minimum. If no metric is genuinely strong, lead directly with the finding. A weigh-in count that meets the data floor is not consistency. A number that is still far from goal is not progress. When in doubt, skip the credit and state the finding.
 
 Connect signals: Never state a single bare stat without connecting it to a consequence or a second signal. "Protein is low" is not a tip. "Protein averaged 74g over a week with 9 workouts, and recovery tends to suffer first when protein is short during high training volume" is a tip.
 
@@ -172,7 +172,7 @@ const BANNED_WORDS = [
   'Moving forward', 'I\'d like to point out',
 ];
 
-const DASH_PATTERN = /[—–‒‑]|(?<=[a-zA-Z0-9])\s*--\s*(?=[a-zA-Z0-9])/g;
+const DASH_PATTERN = /[—–‒‑]|(?<=[a-zA-Z0-9])\s*-{2}\s*(?=[a-zA-Z0-9])/g;
 
 function cleanupPass(
   text: string,
@@ -193,15 +193,18 @@ function cleanupPass(
     return { passed: false, cleaned, reason: `Banned word: ${foundBanned}` };
   }
 
-  // Sentence count: count sentence-ending punctuation
-  const sentences = cleaned.match(/[^.!?]*[.!?]+/g) ?? [];
-  if (sentences.length > 3) {
-    // Truncate at the third sentence
-    const firstThree = sentences.slice(0, 3).join('').trim();
-    cleaned = firstThree;
+  // Sentence count: find sentence ends, ignoring periods inside decimal numbers (e.g. 1.4)
+  const sentenceEnds: number[] = [];
+  const endPattern = /(?<!\d)[.!?]+/g;
+  let em: RegExpExecArray | null;
+  while ((em = endPattern.exec(cleaned)) !== null) {
+    sentenceEnds.push(em.index + em[0].length);
   }
-  if (sentences.length < 1) {
+  if (sentenceEnds.length < 1) {
     return { passed: false, cleaned, reason: 'No complete sentences' };
+  }
+  if (sentenceEnds.length > 3) {
+    cleaned = cleaned.slice(0, sentenceEnds[2]).trim();
   }
 
   // Check that key facts numbers appear in the output

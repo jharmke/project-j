@@ -867,8 +867,8 @@ function ruleWeightWrongDirection(w14: WindowDay[], ctx: EngineContext, store: S
   if (weighIns.length < 4) return null;
   const first = weighIns[0].weight!;
   const last = weighIns[weighIns.length - 1].weight!;
-  const span = weighIns.length;
-  const lbsPerWeek = ((last - first) / span) * 7;
+  const daySpan = Math.max(1, Math.round((new Date(weighIns[weighIns.length - 1].dateKey).getTime() - new Date(weighIns[0].dateKey).getTime()) / 86400000));
+  const lbsPerWeek = ((last - first) / daySpan) * 7;
   const isWrong = ctx.goalBucket === 'lose' ? lbsPerWeek > 0.5 : lbsPerWeek < -0.5;
   if (!isWrong) return null;
   return makeTip('weight_wrong_direction', 'pattern', false, `pattern_${ctx.goalBucket}`, ctx, store);
@@ -879,8 +879,8 @@ function ruleWeightOnTrack(w14: WindowDay[], ctx: EngineContext, store: SmartTip
   if (weighIns.length < 4) return null;
   const first = weighIns[0].weight!;
   const last = weighIns[weighIns.length - 1].weight!;
-  const span = weighIns.length;
-  const lbsPerWeek = ((last - first) / span) * 7;
+  const daySpan = Math.max(1, Math.round((new Date(weighIns[weighIns.length - 1].dateKey).getTime() - new Date(weighIns[0].dateKey).getTime()) / 86400000));
+  const lbsPerWeek = ((last - first) / daySpan) * 7;
   const paceRatePerWeek = Math.abs(GOAL_DEFICITS[ctx.weightGoal] ?? 0) / 3500;
 
   let onTrack = false;
@@ -1249,4 +1249,744 @@ export async function computeAndStoreSmartTips(): Promise<SmartTipsStore> {
 
   await saveSmartTipsStore(newStore);
   return newStore;
+}
+
+// ── Coach Packet System ───────────────────────────────────────────────────────
+// Selects ONE headline scenario via the priority spine, assembles a structured
+// packet for the AI call, and caches to pj_coach_tip (read-then-merge always).
+
+const COACH_TIP_KEY = 'pj_coach_tip';
+const COACH_LAST_RULE_KEY = 'pj_coach_last_rule';
+
+export interface CoachPacket {
+  scenario: string;
+  ruleId: string;
+  familyNum: number;
+  diagnosis: string;
+  action: string;
+  facts: Record<string, string | number>;
+  tone: 'positive' | 'corrective' | 'care' | 'educational';
+  careSeverity?: 'mild' | 'moderate' | 'strong';
+  mode: string;
+  goal: string;
+  surface: 'home' | 'day_summary' | 'evr';
+  windowDays: number;
+  ifActive: boolean;
+  previousTip: string;
+  faithTier: string;
+  computedDate: string;
+  fallbackTitle: string;
+  fallbackBody: string;
+}
+
+export interface CoachTipCache {
+  packet: CoachPacket;
+  aiBody: string | null;
+  aiGeneratedDate: string | null;
+  fallbackUsed: boolean;
+}
+
+export async function loadCoachTipCache(): Promise<CoachTipCache | null> {
+  try {
+    const raw = await AsyncStorage.getItem(COACH_TIP_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+async function saveCoachTipCache(cache: CoachTipCache): Promise<void> {
+  try {
+    await storageSet(COACH_TIP_KEY, JSON.stringify(cache));
+  } catch {}
+}
+
+const RULE_FAMILY: Record<string, number> = {
+  net_above_pace: 1, net_below_pace: 1, weight_plateau: 1,
+  weight_wrong_direction: 1, weight_on_track: 1,
+  protein_under: 2, water_under: 2, fiber_low: 2, sodium_high: 2,
+  sugar_high: 2, active_low: 2, steps_low: 2, workout_low: 2,
+  cross_protein_sleep: 3, cross_sodium_scale: 3, cross_high_burn_overeating: 3,
+  cross_sleep_intake: 3, cross_workout_intake: 3, cross_steps_sleep: 3,
+  cross_fiber_calorie: 3, weekend_spike: 3, cal_outlier_week: 3,
+  sleep_score_low: 4, sleep_duration_short: 4, sleep_bedtime_inconsistent: 4,
+  sleep_deep_low: 4,
+  log_consistency_low: 5, weight_infrequent: 5, activity_streak_low: 5,
+  cal_small_gap: 5,
+  protein_high: 6, water_high: 6, active_high: 6, steps_high: 6,
+  cal_goal_hit: 6, log_streak_strong: 6, if_consistent: 6, sleep_score_high: 6,
+  if_inconsistent: 7, if_late_close: 7,
+};
+
+const RULE_SCENARIO: Record<string, string> = {
+  net_above_pace: '1.1', net_below_pace: '1.2', weight_plateau: '1.3',
+  weight_wrong_direction: '1.4', weight_on_track: '1.5',
+  protein_under: '2.1', water_under: '2.2', fiber_low: '2.3',
+  sodium_high: '2.4', sugar_high: '2.5', active_low: '2.6',
+  steps_low: '2.7', workout_low: '2.8',
+  cross_protein_sleep: '3.1', cross_sodium_scale: '3.2',
+  cross_high_burn_overeating: '3.3', cross_sleep_intake: '3.4',
+  cross_workout_intake: '3.5', cross_steps_sleep: '3.6',
+  cross_fiber_calorie: '3.7', weekend_spike: '3.8', cal_outlier_week: '3.9',
+  sleep_score_low: '4.1', sleep_duration_short: '4.2',
+  sleep_bedtime_inconsistent: '4.3', sleep_deep_low: '4.4',
+  log_consistency_low: '5.1', weight_infrequent: '5.2',
+  activity_streak_low: '5.3', cal_small_gap: '5.4',
+  protein_high: '6.1', water_high: '6.2', active_high: '6.3',
+  steps_high: '6.4', cal_goal_hit: '6.5', log_streak_strong: '6.6',
+  if_consistent: '6.7', sleep_score_high: '6.8',
+  if_inconsistent: '7.1', if_late_close: '7.2',
+};
+
+const EDUCATIONAL_RULES = new Set([
+  'cross_sodium_scale', 'cross_protein_sleep', 'cross_steps_sleep',
+  'cross_fiber_calorie', 'cross_sleep_intake',
+]);
+
+function deriveTone(candidate: CandidateTip): 'positive' | 'corrective' | 'educational' {
+  if (candidate.positive) return 'positive';
+  if (EDUCATIONAL_RULES.has(candidate.ruleId)) return 'educational';
+  return 'corrective';
+}
+
+function buildDiagnosisActionFacts(
+  candidate: CandidateTip,
+  w7: WindowDay[],
+  w14: WindowDay[],
+  ctx: EngineContext,
+): { diagnosis: string; action: string; facts: Record<string, string | number> } {
+  const { ruleId } = candidate;
+  const foodDays7 = w7.filter(d => d.hasFoodData);
+  const burnAcc = ctx.burnAccuracyPct;
+
+  switch (ruleId) {
+    case 'net_above_pace': {
+      const over = foodDays7.filter(d => computeNet(d, burnAcc) > (ctx.paceTarget ?? 0) + 200);
+      const avgNet = over.length ? Math.round(avg(over.map(d => computeNet(d, burnAcc)))) : 0;
+      return {
+        diagnosis: `Net calories above ${ctx.paceLabel} target on ${over.length} of ${foodDays7.length} logged days`,
+        action: 'Trim 100 to 200 calories from the highest-calorie days to close the gap',
+        facts: { daysOver: over.length, avgNet, paceTarget: ctx.paceTarget ?? 0, goal: ctx.goalBucket },
+      };
+    }
+    case 'net_below_pace': {
+      const under = foodDays7.filter(d => computeNet(d, burnAcc) < (ctx.paceTarget ?? 0) - 200);
+      return {
+        diagnosis: `Net calories below ${ctx.paceLabel} target on ${under.length} of ${foodDays7.length} logged days`,
+        action: 'Increase daily intake to hit the surplus target consistently',
+        facts: { daysUnder: under.length, paceTarget: ctx.paceTarget ?? 0, goal: ctx.goalBucket },
+      };
+    }
+    case 'weight_plateau': {
+      const weighIns = w14.filter(d => d.weight !== null);
+      return {
+        diagnosis: `Scale has moved less than 0.5 lb over ${weighIns.length} weigh-ins despite a logged deficit`,
+        action: 'Check calorie logging accuracy or adjust the deficit by 100 to 150 calories',
+        facts: { weighIns: weighIns.length },
+      };
+    }
+    case 'weight_wrong_direction': {
+      const weighIns = w14.filter(d => d.weight !== null).sort((a, b) => a.dateKey < b.dateKey ? -1 : 1);
+      const first = weighIns[0]?.weight ?? 0;
+      const last = weighIns[weighIns.length - 1]?.weight ?? 0;
+      const change = Math.abs(last - first).toFixed(1);
+      return {
+        diagnosis: `Weight has moved ${change} lbs in the wrong direction over ${weighIns.length} weigh-ins in the last 14 days`,
+        action: 'Revisit calorie tracking accuracy and check that active calorie estimates are reasonable',
+        facts: { change, weighIns: weighIns.length, weighInRate: `${weighIns.length} of 14 days`, direction: ctx.goalBucket === 'gain' ? 'down' : 'up' },
+      };
+    }
+    case 'weight_on_track': {
+      const weighIns = w14.filter(d => d.weight !== null).sort((a, b) => a.dateKey < b.dateKey ? -1 : 1);
+      const first = weighIns[0]?.weight ?? 0;
+      const last = weighIns[weighIns.length - 1]?.weight ?? 0;
+      const change = Math.abs(last - first).toFixed(1);
+      return {
+        diagnosis: `Weight trending in the right direction, ${change} lbs over ${weighIns.length} weigh-ins`,
+        action: 'Maintain current approach',
+        facts: { change, weighIns: weighIns.length, goal: ctx.goalBucket },
+      };
+    }
+    case 'protein_under': {
+      const low = foodDays7.filter(d => d.protein < ctx.proteinGoalG * 0.7);
+      const avgP = low.length ? Math.round(avg(low.map(d => d.protein))) : 0;
+      return {
+        diagnosis: `Protein averaging ${avgP}g on ${low.length} of ${foodDays7.length} logged days, against a ${Math.round(ctx.proteinGoalG)}g goal`,
+        action: 'Add one high-protein meal or snack on training days',
+        facts: { avgProtein: avgP, goal: Math.round(ctx.proteinGoalG), daysLow: low.length },
+      };
+    }
+    case 'water_under': {
+      const low = w7.filter(d => d.isLoggedDay && d.waterLogged < ctx.waterGoal * 0.7);
+      const avgW = low.length ? Math.round(avg(low.map(d => d.waterLogged))) : 0;
+      return {
+        diagnosis: `Water intake averaging ${avgW} oz on low days, against a ${Math.round(ctx.waterGoal)} oz goal`,
+        action: 'Add one extra glass at morning, lunch, and dinner',
+        facts: { avgWater: avgW, goal: Math.round(ctx.waterGoal), daysLow: low.length },
+      };
+    }
+    case 'sodium_high': {
+      const high = foodDays7.filter(d => d.hasFoodData && d.sodium > 3450);
+      const avgS = high.length ? Math.round(avg(high.map(d => d.sodium))) : 0;
+      return {
+        diagnosis: `Sodium averaging ${avgS}mg on ${high.length} of ${foodDays7.length} logged days`,
+        action: 'Identify the highest-sodium meal each day and find a lower-sodium swap',
+        facts: { avgSodium: avgS, daysHigh: high.length },
+      };
+    }
+    case 'fiber_low': {
+      const low = foodDays7.filter(d => d.hasFoodData && d.fiber < ctx.fiberGoal * 0.4);
+      const avgF = low.length ? parseFloat((avg(low.map(d => d.fiber))).toFixed(1)) : 0;
+      return {
+        diagnosis: `Fiber averaging ${avgF}g on low days, well below the ${ctx.fiberGoal}g goal`,
+        action: 'Add one high-fiber food such as legumes, vegetables, or whole grains to at least one meal each day',
+        facts: { avgFiber: avgF, goal: ctx.fiberGoal, daysLow: low.length },
+      };
+    }
+    case 'sugar_high': {
+      const high = foodDays7.filter(d => d.hasFoodData && d.sugar > 75);
+      const avgSug = high.length ? parseFloat((avg(high.map(d => d.sugar))).toFixed(1)) : 0;
+      return {
+        diagnosis: `Sugar averaging ${avgSug}g on ${high.length} of ${foodDays7.length} logged days`,
+        action: 'Identify the primary sugar source and reduce frequency or portion',
+        facts: { avgSugar: avgSug, daysHigh: high.length },
+      };
+    }
+    case 'active_low': {
+      const low = w7.filter(d => d.rawActive * burnAcc / 100 < ctx.activeCalGoal * 0.6);
+      const adjActives = low.map(d => d.rawActive * burnAcc / 100);
+      const avgA = adjActives.length ? Math.round(avg(adjActives)) : 0;
+      return {
+        diagnosis: `Active calories averaging ${avgA} on low days, against a ${ctx.activeCalGoal} goal`,
+        action: 'Add 20 minutes of walking on the lowest-activity days',
+        facts: { avgActive: avgA, goal: ctx.activeCalGoal, daysLow: low.length },
+      };
+    }
+    case 'steps_low': {
+      const low = w7.filter(d => d.steps < ctx.stepGoal * 0.6);
+      const avgSt = low.length ? Math.round(avg(low.map(d => d.steps))) : 0;
+      return {
+        diagnosis: `Steps averaging ${avgSt.toLocaleString()} on ${low.length} of 7 days, against a ${ctx.stepGoal.toLocaleString()} goal`,
+        action: 'Break up long sits with short walks to accumulate steps throughout the day',
+        facts: { avgSteps: avgSt, goal: ctx.stepGoal, daysLow: low.length },
+      };
+    }
+    case 'workout_low': {
+      const scheduled = w7.filter(d => d.workoutScheduled);
+      const low = scheduled.filter(d => d.workoutTotal > 0 && d.workoutChecked / d.workoutTotal < 0.6);
+      return {
+        diagnosis: `Workout completion rate low on ${low.length} of ${scheduled.length} scheduled days`,
+        action: 'Identify what is cutting workouts short and remove that friction point',
+        facts: { daysLow: low.length, scheduledDays: scheduled.length },
+      };
+    }
+    case 'sleep_score_low': {
+      const poor = w7.filter(d => d.sleepScore !== null && d.sleepScore < 65);
+      const avgScore = poor.length ? Math.round(avg(poor.map(d => d.sleepScore!))) : 0;
+      return {
+        diagnosis: `Sleep score averaging ${avgScore} on ${poor.length} nights, below the 65 quality threshold`,
+        action: 'Prioritize a consistent bedtime to improve sleep architecture',
+        facts: { avgScore, daysLow: poor.length },
+      };
+    }
+    case 'sleep_duration_short': {
+      const short = w7.filter(d => d.sleepHours !== null && d.sleepHours < ctx.sleepGoal * 0.8);
+      const avgH = short.length ? (Math.round(avg(short.map(d => d.sleepHours!)) * 10) / 10).toFixed(1) : '0.0';
+      return {
+        diagnosis: `Sleep duration averaging ${avgH} hours on ${short.length} nights, against a ${ctx.sleepGoal}h goal`,
+        action: 'Move bedtime earlier by 30 minutes to reclaim the missing sleep',
+        facts: { avgHours: avgH, goal: ctx.sleepGoal, daysShort: short.length },
+      };
+    }
+    case 'sleep_bedtime_inconsistent': {
+      return {
+        diagnosis: 'Bedtime varying by more than 60 minutes across the last 7 nights',
+        action: 'Pick a consistent bedtime and hold it within 30 minutes on weekends too',
+        facts: {},
+      };
+    }
+    case 'sleep_deep_low': {
+      return {
+        diagnosis: 'Deep sleep percentage consistently below 15% over the last 7 nights',
+        action: 'Avoid alcohol and heavy meals within 3 hours of bedtime to protect deep sleep',
+        facts: {},
+      };
+    }
+    case 'activity_streak_low': {
+      return {
+        diagnosis: 'No meaningful activity logged for several consecutive days',
+        action: 'Start with a 10-minute walk today to break the inactivity streak',
+        facts: {},
+      };
+    }
+    case 'log_consistency_low': {
+      const logged = w7.filter(d => d.isLoggedDay).length;
+      return {
+        diagnosis: `Food logged on ${logged} of 7 days, making trends harder to read accurately`,
+        action: 'Log at least 5 days this week to give the coach enough data to work with',
+        facts: { loggedDays: logged },
+      };
+    }
+    case 'weight_infrequent': {
+      const weighIns = w14.filter(d => d.weight !== null);
+      return {
+        diagnosis: `Only ${weighIns.length} weigh-ins in the last 14 days, not enough for trend accuracy`,
+        action: 'Weigh in at least 3 to 4 times per week at the same time each morning',
+        facts: { weighIns: weighIns.length },
+      };
+    }
+    case 'cal_small_gap': {
+      const gapDays = foodDays7.filter(d => {
+        const net = computeNet(d, burnAcc);
+        const t = ctx.paceTarget ?? 0;
+        return net > t + 50 && net < t + 250;
+      });
+      const avgGap = gapDays.length
+        ? Math.round(avg(gapDays.map(d => computeNet(d, burnAcc) - (ctx.paceTarget ?? 0))))
+        : 0;
+      return {
+        diagnosis: `Net calories running ${avgGap} calories above target on ${gapDays.length} of ${foodDays7.length} logged days`,
+        action: 'Close the gap with one small swap per day, around 100 to 200 calories',
+        facts: { avgGap, daysOver: gapDays.length },
+      };
+    }
+    case 'weekend_spike': {
+      const wknd = w14.filter(d => d.isWeekend && d.hasFoodData);
+      const wkdy = w14.filter(d => !d.isWeekend && d.hasFoodData);
+      const wkndAvg = wknd.length ? Math.round(avg(wknd.map(d => d.consumed))) : 0;
+      const wkdyAvg = wkdy.length ? Math.round(avg(wkdy.map(d => d.consumed))) : 0;
+      const delta = wkndAvg - wkdyAvg;
+      return {
+        diagnosis: `Weekend calories averaging ${wkndAvg}, versus ${wkdyAvg} on weekdays, a ${delta}-calorie gap`,
+        action: 'Pick one weekend meal to anchor with a clear plan and let the rest stay flexible',
+        facts: { weekendAvg: wkndAvg, weekdayAvg: wkdyAvg, delta },
+      };
+    }
+    case 'cal_outlier_week': {
+      const outlier = foodDays7.filter(d => computeNet(d, burnAcc) > (ctx.paceTarget ?? 0) + 900);
+      const onTrack = foodDays7.filter(d => computeNet(d, burnAcc) <= (ctx.paceTarget ?? 0) + 100);
+      const outlierCal = outlier.length ? Math.round(avg(outlier.map(d => d.consumed))) : 0;
+      return {
+        diagnosis: `One high day at ${outlierCal} calories is the main outlier; ${onTrack.length} of ${foodDays7.length} days were on target`,
+        action: 'Identify what drove the high day and build a plan for that scenario next time',
+        facts: { outlierCal, onTrackDays: onTrack.length, totalDays: foodDays7.length },
+      };
+    }
+    case 'cross_sodium_scale': {
+      return {
+        diagnosis: 'Weight spikes of 1 to 2 lbs are appearing the morning after high-sodium days',
+        action: 'Expect the spike to clear within 24 to 48 hours as sodium returns to normal',
+        facts: {},
+      };
+    }
+    case 'cross_protein_sleep': {
+      return {
+        diagnosis: 'Sleep scores are averaging higher on days following strong protein intake',
+        action: 'Keep protein consistent to maintain the sleep quality pattern',
+        facts: {},
+      };
+    }
+    case 'cross_sleep_intake': {
+      const poorNights = w14.filter(d => d.sleepScore !== null && d.sleepScore < 60 && d.hasFoodData);
+      const goodNights = w14.filter(d => d.sleepScore !== null && d.sleepScore >= 80 && d.hasFoodData);
+      const poorNextCal = poorNights.length ? Math.round(avg(poorNights.map(d => d.consumed))) : 0;
+      const goodNextCal = goodNights.length ? Math.round(avg(goodNights.map(d => d.consumed))) : 0;
+      const delta = poorNextCal - goodNextCal;
+      return {
+        diagnosis: `After poor sleep, intake tends to run ${Math.abs(delta)} calories ${delta > 0 ? 'higher' : 'lower'} compared to well-rested days`,
+        action: 'Plan for extra hunger the day after a rough night rather than relying on willpower alone',
+        facts: { delta: Math.abs(delta), poorSleepCal: poorNextCal, goodSleepCal: goodNextCal },
+      };
+    }
+    case 'cross_workout_intake': {
+      const food14 = w14.filter(d => d.hasFoodData);
+      const wkDays = food14.filter(d => d.workoutChecked > 0);
+      const rstDays = food14.filter(d => d.workoutChecked === 0);
+      const wkAvg = wkDays.length ? Math.round(avg(wkDays.map(d => d.consumed))) : 0;
+      const rstAvg = rstDays.length ? Math.round(avg(rstDays.map(d => d.consumed))) : 0;
+      return {
+        diagnosis: `Intake is averaging ${rstAvg} on rest days versus ${wkAvg} on workout days, a ${rstAvg - wkAvg}-calorie gap`,
+        action: 'Anchor rest-day meals to reduce the spread between workout and non-workout intake',
+        facts: { workoutDayCal: wkAvg, restDayCal: rstAvg, delta: rstAvg - wkAvg },
+      };
+    }
+    case 'cross_high_burn_overeating': {
+      return {
+        diagnosis: 'High-burn days are correlating with higher intake, offsetting the calorie benefit of the extra activity',
+        action: 'Plan meals ahead on high-activity days to avoid reactive eating after big burns',
+        facts: {},
+      };
+    }
+    case 'cross_steps_sleep': {
+      return {
+        diagnosis: 'Sleep scores are averaging higher on days following strong step counts',
+        action: 'Use morning walks to anchor daily movement and protect sleep quality',
+        facts: {},
+      };
+    }
+    case 'cross_fiber_calorie': {
+      return {
+        diagnosis: 'Higher-fiber days are correlating with lower total calorie intake over the 14-day window',
+        action: 'Front-load fiber at breakfast and lunch to reduce overall intake naturally',
+        facts: {},
+      };
+    }
+    case 'protein_high': {
+      const high = foodDays7.filter(d => d.protein > ctx.proteinGoalG * 1.1);
+      const avgP = high.length ? Math.round(avg(high.map(d => d.protein))) : 0;
+      return {
+        diagnosis: `Protein averaging ${avgP}g on ${high.length} of ${foodDays7.length} logged days, consistently above the ${Math.round(ctx.proteinGoalG)}g goal`,
+        action: 'Maintain the current food pattern',
+        facts: { avgProtein: avgP, goal: Math.round(ctx.proteinGoalG), daysHigh: high.length },
+      };
+    }
+    case 'water_high': {
+      const hit = w7.filter(d => d.isLoggedDay && d.waterLogged >= ctx.waterGoal);
+      return {
+        diagnosis: `Hitting the ${Math.round(ctx.waterGoal)} oz water goal on ${hit.length} of 7 logged days`,
+        action: 'Keep the current hydration routine',
+        facts: { goal: Math.round(ctx.waterGoal), daysHit: hit.length },
+      };
+    }
+    case 'active_high': {
+      const hit = w7.filter(d => d.rawActive * burnAcc / 100 >= ctx.activeCalGoal);
+      return {
+        diagnosis: `Active calorie goal of ${ctx.activeCalGoal} hit on ${hit.length} of 7 days`,
+        action: 'Maintain the current activity level',
+        facts: { goal: ctx.activeCalGoal, daysHit: hit.length },
+      };
+    }
+    case 'steps_high': {
+      const hit = w7.filter(d => d.steps >= ctx.stepGoal);
+      return {
+        diagnosis: `Step goal of ${ctx.stepGoal.toLocaleString()} hit on ${hit.length} of 7 days`,
+        action: 'Maintain the current movement routine',
+        facts: { goal: ctx.stepGoal, daysHit: hit.length },
+      };
+    }
+    case 'cal_goal_hit': {
+      const hit = foodDays7.filter(d => {
+        const net = computeNet(d, burnAcc);
+        const t = ctx.paceTarget ?? 0;
+        if (t < 0) return net <= t + 150;
+        if (t > 0) return net >= t - 150;
+        return Math.abs(net) <= 150;
+      });
+      return {
+        diagnosis: `Calorie target hit on ${hit.length} of ${foodDays7.length} logged days`,
+        action: 'Keep the current approach',
+        facts: { daysHit: hit.length, totalLogged: foodDays7.length },
+      };
+    }
+    case 'log_streak_strong': {
+      const logged = w7.filter(d => d.isLoggedDay).length;
+      return {
+        diagnosis: `Food logged on ${logged} of the last 7 days, strong consistency`,
+        action: 'Maintain the logging habit',
+        facts: { loggedDays: logged },
+      };
+    }
+    case 'sleep_score_high': {
+      const high = w7.filter(d => d.sleepScore !== null && d.sleepScore! >= 85);
+      const avgScore = high.length ? Math.round(avg(high.map(d => d.sleepScore!))) : 0;
+      return {
+        diagnosis: `Sleep score averaging ${avgScore} on ${high.length} of 7 nights, consistently strong`,
+        action: 'Protect the current evening routine',
+        facts: { avgScore, daysHigh: high.length },
+      };
+    }
+    case 'if_consistent': {
+      const ifDays = w7.filter(d => d.ifStart !== null && d.ifEnd !== null && d.ifTargetHours !== null);
+      const onTarget = ifDays.filter(d => {
+        const hrs = (d.ifEnd! - d.ifStart!) / 3600000;
+        return Math.abs(hrs - d.ifTargetHours!) <= 0.5;
+      });
+      return {
+        diagnosis: `IF window on target on ${onTarget.length} of ${ifDays.length} tracked days`,
+        action: 'Keep the current fasting schedule',
+        facts: { daysOnTarget: onTarget.length, totalIF: ifDays.length },
+      };
+    }
+    case 'if_inconsistent': {
+      const ifDays = w7.filter(d => d.ifStart !== null && d.ifEnd !== null && d.ifTargetHours !== null);
+      const broken = ifDays.filter(d => {
+        const hrs = (d.ifEnd! - d.ifStart!) / 3600000;
+        return hrs < d.ifTargetHours! - 1;
+      });
+      return {
+        diagnosis: `IF window broken short on ${broken.length} of ${ifDays.length} tracked days`,
+        action: 'Identify the most common break point and build a strategy around it',
+        facts: { daysBroken: broken.length, totalIF: ifDays.length },
+      };
+    }
+    case 'if_late_close': {
+      const ifDays = w7.filter(d => d.ifStart !== null && d.ifEnd !== null && d.ifTargetHours !== null);
+      const late = ifDays.filter(d => {
+        const hrs = (d.ifEnd! - d.ifStart!) / 3600000;
+        return hrs - d.ifTargetHours! > 1.5;
+      });
+      const avgOver = late.length
+        ? (Math.round(avg(late.map(d => (d.ifEnd! - d.ifStart!) / 3600000 - d.ifTargetHours!)) * 10) / 10).toFixed(1)
+        : '0.0';
+      return {
+        diagnosis: `Eating window closing ${avgOver} hours past target on ${late.length} of ${ifDays.length} tracked days`,
+        action: 'Set an alert for 30 minutes before the window closes to prepare for the fast',
+        facts: { avgOverrun: avgOver, daysLate: late.length },
+      };
+    }
+    default: {
+      return {
+        diagnosis: candidate.body.slice(0, 120),
+        action: 'Stay consistent with the current approach',
+        facts: {},
+      };
+    }
+  }
+}
+
+interface Safety9Result {
+  scenario: string;
+  diagnosis: string;
+  action: string;
+  facts: Record<string, string | number>;
+  careSeverity: 'mild' | 'moderate' | 'strong';
+}
+
+function checkFamily9Safety(w7: WindowDay[], ctx: EngineContext): Safety9Result | null {
+  if (ctx.bmr <= 0) return null;
+
+  const foodDays = w7.filter(d => d.hasFoodData && d.bmr > 0);
+  if (foodDays.length >= 4) {
+    const veryLow = foodDays.filter(d => d.consumed < d.bmr * 0.7);
+    if (veryLow.length >= 3) {
+      const avgCal = Math.round(avg(veryLow.map(d => d.consumed)));
+      const avgBmr = Math.round(avg(veryLow.map(d => d.bmr)));
+      const severity: 'mild' | 'moderate' | 'strong' =
+        veryLow.length >= 6 ? 'strong' : veryLow.length >= 4 ? 'moderate' : 'mild';
+      return {
+        scenario: '9.1',
+        diagnosis: `Intake has averaged ${avgCal} calories over ${veryLow.length} logged days, significantly below the estimated BMR of ${avgBmr}`,
+        action: 'Bring intake closer to BMR to protect muscle mass and metabolic rate',
+        facts: { avgCal, avgBmr, daysLow: veryLow.length },
+        careSeverity: severity,
+      };
+    }
+  }
+
+  const weighIns = w7.filter(d => d.weight !== null).sort((a, b) => a.dateKey < b.dateKey ? -1 : 1);
+  if (weighIns.length >= 3) {
+    const startWeight = weighIns[0].weight!;
+    const endWeight = weighIns[weighIns.length - 1].weight!;
+    if (startWeight > 0 && endWeight < startWeight) {
+      // Use actual calendar days between first and last weigh-in.
+      // Require at least 5 days of span to avoid false alarms from normal daily fluctuation.
+      const firstDate = new Date(weighIns[0].dateKey);
+      const lastDate = new Date(weighIns[weighIns.length - 1].dateKey);
+      const daySpan = Math.round((lastDate.getTime() - firstDate.getTime()) / 86400000);
+      if (daySpan < 5) return null;
+      const weeklyRate = ((startWeight - endWeight) / daySpan) * 7;
+      const weeklyPct = weeklyRate / startWeight;
+      if (weeklyPct > 0.01) {
+        const severity: 'mild' | 'moderate' | 'strong' =
+          weeklyPct > 0.02 ? 'strong' : weeklyPct > 0.015 ? 'moderate' : 'mild';
+        return {
+          scenario: '9.2',
+          diagnosis: `Weight dropping at approximately ${(weeklyPct * 100).toFixed(1)}% per week on a ${Math.round(startWeight)} lb frame, past the safe pace of 1%`,
+          action: 'Increase intake by 150 to 200 calories per day to bring the rate of loss back to a healthy pace',
+          facts: {
+            weeklyRateLbs: weeklyRate.toFixed(1),
+            weeklyPct: (weeklyPct * 100).toFixed(1),
+            startWeight: Math.round(startWeight),
+          },
+          careSeverity: severity,
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
+function selectByPrioritySpine(candidates: CandidateTip[], _ctx: EngineContext, excludeRuleId?: string): CandidateTip | null {
+  if (candidates.length === 0) return null;
+  const TIER_RANK_SPINE: Record<SmartTipTier, number> = { urgent: 3, pattern: 2, insight: 1 };
+
+  const pick = (pool: CandidateTip[]): CandidateTip | null => {
+    const corrective = pool.filter(c => !c.positive);
+    const positive = pool.filter(c => c.positive);
+    const ranked = corrective.length > 0 ? corrective : positive;
+    return [...ranked].sort((a, b) => {
+      const famA = RULE_FAMILY[a.ruleId] ?? 99;
+      const famB = RULE_FAMILY[b.ruleId] ?? 99;
+      if (famA !== famB) return famA - famB;
+      return TIER_RANK_SPINE[b.tier] - TIER_RANK_SPINE[a.tier];
+    })[0] ?? null;
+  };
+
+  if (excludeRuleId) {
+    const without = candidates.filter(c => c.ruleId !== excludeRuleId);
+    if (without.length > 0) return pick(without);
+  }
+
+  return pick(candidates);
+}
+
+export async function computeCoachPacket(
+  surface: 'home' | 'day_summary' | 'evr' = 'home',
+  windowDays: number = 14,
+): Promise<CoachTipCache> {
+  const todayKey = todayDateKey();
+  const [existing, lastRuleRaw] = await Promise.all([
+    loadCoachTipCache(),
+    AsyncStorage.getItem(COACH_LAST_RULE_KEY),
+  ]);
+  const persistedLastRuleId: string | null = lastRuleRaw ? JSON.parse(lastRuleRaw).ruleId : null;
+
+  // Return cache if already computed today for this surface
+  if (
+    existing &&
+    existing.packet.computedDate === todayKey &&
+    existing.packet.surface === surface
+  ) {
+    return existing;
+  }
+
+  const [ctx, store, workoutRaw] = await Promise.all([
+    buildEngineContext(todayKey),
+    loadSmartTips(),
+    AsyncStorage.getItem('pj_workout_state').catch(() => null),
+  ]);
+
+  const tipStore: SmartTipsStore = store ?? {
+    activeTips: [], recentHistory: [], cooldowns: {},
+    variantHistory: {}, lastComputed: '', topicLedger: {},
+  };
+  const workoutState: any = workoutRaw ? JSON.parse(workoutRaw) : {};
+
+  const allDays = await loadWindowDays(todayKey, ctx, workoutState);
+  const w14 = allDays.slice(0, Math.min(windowDays, 14));
+  const w7 = allDays.slice(0, 7);
+  const w5 = allDays.slice(0, 5);
+
+  const loggedCount = loggedDaysInWindow(w7);
+
+  const previousTip = existing?.aiBody ?? existing?.packet.fallbackBody ?? 'none';
+
+  let faithTier = 'rooted';
+  try {
+    const s = await AsyncStorage.getItem('pj_settings');
+    if (s) { const parsed = JSON.parse(s); faithTier = parsed?.faithJourney ?? 'rooted'; }
+  } catch {}
+
+  let packet: CoachPacket;
+
+  const safety9 = checkFamily9Safety(w7, ctx);
+
+  if (safety9) {
+    packet = {
+      scenario: safety9.scenario,
+      ruleId: `safety_${safety9.scenario}`,
+      familyNum: 9,
+      diagnosis: safety9.diagnosis,
+      action: safety9.action,
+      facts: safety9.facts,
+      tone: 'care',
+      careSeverity: safety9.careSeverity,
+      mode: ctx.styleMode,
+      goal: ctx.goalBucket,
+      surface,
+      windowDays,
+      ifActive: ctx.ifEnabled,
+      previousTip,
+      faithTier,
+      computedDate: todayKey,
+      fallbackTitle: 'A Note on Your Pace',
+      fallbackBody: `Something worth flagging. ${safety9.diagnosis}. ${safety9.action}.`,
+    };
+  } else if (loggedCount < 4) {
+    packet = {
+      scenario: '5.5',
+      ruleId: 'log_consistency_low',
+      familyNum: 5,
+      diagnosis: `Only ${loggedCount} of 7 days have logged data, not enough for reliable trend analysis`,
+      action: 'Log food on at least 5 days this week to unlock full coaching insights',
+      facts: { loggedDays: loggedCount },
+      tone: 'corrective',
+      mode: ctx.styleMode,
+      goal: ctx.goalBucket,
+      surface,
+      windowDays,
+      ifActive: ctx.ifEnabled,
+      previousTip,
+      faithTier,
+      computedDate: todayKey,
+      fallbackTitle: 'Building Your Picture',
+      fallbackBody: `The coach has ${loggedCount} logged days to work with. Log food on 5 or more days this week to get a full read on what is working.`,
+    };
+  } else {
+    const rawCandidates = runAllRules(w7, w5, w14, ctx, tipStore);
+    const suppressed = applyMindfulSuppression(rawCandidates, ctx);
+    const lastRuleId = persistedLastRuleId ?? existing?.packet.ruleId;
+    const selected = selectByPrioritySpine(suppressed, ctx, lastRuleId);
+
+    if (!selected) {
+      packet = {
+        scenario: '6.0',
+        ruleId: 'cal_goal_hit',
+        familyNum: 6,
+        diagnosis: 'All tracked metrics are within range for the week',
+        action: 'Maintain the current approach',
+        facts: { loggedDays: loggedCount },
+        tone: 'positive',
+        mode: ctx.styleMode,
+        goal: ctx.goalBucket,
+        surface,
+        windowDays,
+        ifActive: ctx.ifEnabled,
+        previousTip,
+        faithTier,
+        computedDate: todayKey,
+        fallbackTitle: 'Looking Good',
+        fallbackBody: 'Everything is tracking in range this week. Keep the current approach going.',
+      };
+    } else {
+      const { diagnosis, action, facts } = buildDiagnosisActionFacts(selected, w7, w14, ctx);
+      const tone = deriveTone(selected);
+
+      packet = {
+        scenario: RULE_SCENARIO[selected.ruleId] ?? selected.ruleId,
+        ruleId: selected.ruleId,
+        familyNum: RULE_FAMILY[selected.ruleId] ?? 0,
+        diagnosis,
+        action,
+        facts,
+        tone,
+        mode: ctx.styleMode,
+        goal: ctx.goalBucket,
+        surface,
+        windowDays,
+        ifActive: ctx.ifEnabled,
+        previousTip,
+        faithTier,
+        computedDate: todayKey,
+        fallbackTitle: selected.title,
+        fallbackBody: selected.body,
+      };
+    }
+  }
+
+  // Read-then-merge: preserve AI output if scenario unchanged from prior run today
+  const sameScenario = existing?.packet.scenario === packet.scenario;
+  const cache: CoachTipCache = {
+    packet,
+    aiBody: (sameScenario && existing?.aiBody) ? existing.aiBody : null,
+    aiGeneratedDate: (sameScenario && existing?.aiGeneratedDate) ? existing.aiGeneratedDate : null,
+    fallbackUsed: false,
+  };
+
+  await Promise.all([
+    saveCoachTipCache(cache),
+    AsyncStorage.setItem(COACH_LAST_RULE_KEY, JSON.stringify({ ruleId: packet.ruleId })),
+  ]);
+  return cache;
 }

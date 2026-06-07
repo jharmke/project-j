@@ -1,6 +1,6 @@
 # Smart Coach Build State
 # Read this file at the start of every session working on this feature.
-# Last updated: 2026-06-06
+# Last updated: 2026-06-07
 
 ## Status
 - [x] Step 1: CoachPacket + computeCoachPacket() in smartTipsEngine.ts -- DONE
@@ -10,14 +10,29 @@
 - [x] Step 5: Wire EvR (app/diagnostic-report-view.tsx) -- DONE, has open bug (see below)
 - [x] Step 6: Update public/privacy.html with AI disclosure -- DONE
 
-## OPEN BUGS / NEXT WORK
-1. ~~Home card tip body: numberOfLines={3} cuts off long tips. Remove the clamp.~~ DONE 2026-06-06
-2. EvR Level 1 packet: needs its own separate packet. Level 1 brain is window-adaptive (14/30/90 days per user selection). EvR Level 1 brain receives home card scenario name as exclusion parameter, skips it, selects next highest-priority finding. Not built yet.
-3. Free vs Pro gating (DECIDED 2026-06-07): home card all 3 slots free (slot 1 Level 1, slots 2+ Level 2); Day Summary free; EvR coaching Pro; Weekly/Monthly Summary Pro. Free users in EvR see all data but coaching is locked. EvR Level 1 insight box: full blur with Pro chip. EvR Level 2 domain tips: subtle locked indicator with lock chip, not full blurred card. Not built yet.
-4. Weekly Summary surface: Level 1 + Level 2 coaching, Pro. Free users see blurred coaching cards (Level 1 full blur with Pro chip, Level 2 subtle lock indicator). Screen layout not yet specced: period analytics surface, not a Day Summary extension. Layout spec required before coaching placement can be built.
-5. Monthly Summary surface: same coaching model as Weekly Summary. Level 1 + Level 2, Pro. Free users see blurred cards. Layout not yet specced. Shares layout spec session with Weekly Summary.
-6. Dev Tools: add pj_coach_tip_day_* reset button so Justin can test fresh Day Summary tips.
-7. Level 2 (Focused Tips) fully surface-locked 2026-06-07: home card slots 2+ (free, eager, 7-day window); EvR domain cards (Pro, lazy, matches EvR selected duration); Weekly Summary (Pro, 7-day, computed at summary generation); Monthly Summary (Pro, 30-day, computed at summary generation). Day Summary stays Level 1 as built. Length rule: 1 to 3 sentences (same as Level 1; distinction is content not word count). Home card Level 2 metric exclusion: pass Level 1 primary metric as exclusion parameter so Level 2 slots surface different signals. Full Level 2 rulebook text: not yet written. Full detail in SMART_COACH_SPEC.md Level 2 section.
+## OPEN BUGS / NEXT WORK (priority order for next session)
+
+### BUG A: Home and EvR share pj_coach_last_rule -- BLOCKING scenario rotation
+Home and EvR write to the same pj_coach_last_rule key. EvR computes, saves water_high as last rule. Home then excludes water_high, falls back to weight_wrong_direction (only corrective). Fix: separate keys pj_coach_last_rule_home and pj_coach_last_rule_evr. computeCoachPacket takes a surface param and reads/writes the surface-specific key. This naturally resolves once Item 2 (EvR own packet) ships since they will be fully independent.
+
+### BUG B: protein_under threshold too conservative -- Family 2 barely ever fires
+Rule requires protein < 70% of proteinGoalG on 5+ of 7 days. If goal is 122g, threshold is 85g -- a user averaging 105g (14% below goal) never triggers it. Fix: lower pattern threshold from 70% to 85% of goal, and drop the required days from 5 to 4. Urgent path (< 50% of goal on 3+ of 5 days) is fine as-is.
+
+### DONE THIS SESSION (2026-06-07):
+- [x] Item 6: Dev Tools reset button for pj_coach_tip + all pj_coach_tip_day_* keys (settings.tsx)
+- [x] Truncation bug: cleanup pass was splitting on decimal periods (e.g. "1.4" -> "1." end of sentence). Fixed with (?<!\d) lookbehind in sentence detector (coachAI.ts)
+- [x] Credit-before-gap tightened: removed "always" mandate, AI must only credit genuinely strong data (coachAI.ts)
+- [x] weight_wrong_direction packet: added weighInRate ("X of 14 days") to facts so AI has accurate context
+- [x] DASH_PATTERN: replaced literal -- with -{2} to eliminate double-dash in source code (coachAI.ts)
+- [x] Scenario rotation: pj_coach_last_rule key added (survives cache resets), selectByPrioritySpine exclusion logic fixed (exclusion now happens before corrective/positive split, not after)
+- [x] lbsPerWeek rate bug: both ruleWeightWrongDirection and ruleWeightOnTrack were dividing by weigh-in COUNT instead of actual day SPAN between first and last weigh-in (smartTipsEngine.ts)
+
+### STILL OPEN:
+2. EvR Level 1 packet: own separate packet, window-adaptive (14/30/90), dedup vs home card scenario.
+3. Free vs Pro gating: home all free, EvR/Weekly/Monthly Pro. Blur + chip for free users.
+4. Weekly Summary surface: layout not yet specced. Required before coaching placement.
+5. Monthly Summary surface: layout not yet specced. Required before coaching placement.
+7. Level 2 full build: home slots 2+ (free, eager, 7-day), EvR domain cards (Pro, lazy). Rulebook written and locked in SMART_COACH_SPEC.md.
 
 ## Home Card Visual Standard (LOCKED 2026-06-06)
 Header row: sparkles icon (size 12, accent) + "COACH INSIGHT" (fontSize 9, letterSpacing 3, accent, DMSans_700Bold, uppercase) + TooltipIcon -- all left side. Chip (INSIGHT/POSITIVE/URGENT) -- right side.

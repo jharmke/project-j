@@ -3,7 +3,7 @@ import * as Haptics from 'expo-haptics';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ToastRenderer, useToast } from '../components/Toast';
 import TooltipIcon from '../components/TooltipIcon';
@@ -25,11 +25,13 @@ import {
 import {
   SmartTipsStore,
   StoredTip,
+  CoachTipCache,
   TIPS_GATED,
   computeAndStoreSmartTips,
   isCrossSignalRule,
   loadSmartTips,
 } from '../utils/smartTipsEngine';
+import { refreshCoachTip, resolveTipBody, resolveTipTitle } from '../utils/coachAI';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -363,6 +365,8 @@ export default function DiagnosticReportViewScreen() {
   const [showAllSuggestions, setShowAllSuggestions] = useState(false);
   const [notFound, setNotFound]   = useState(false);
   const [smartTips, setSmartTips] = useState<SmartTipsStore | null>(null);
+  const [coachCache, setCoachCache] = useState<CoachTipCache | null>(null);
+  const [coachLoading, setCoachLoading] = useState(false);
 
   const isMindful = styleMode === 'Mindful';
   const shadowStyle = { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 3 };
@@ -392,6 +396,9 @@ export default function DiagnosticReportViewScreen() {
         const stored = await loadSmartTips();
         if (stored) setSmartTips(stored);
         computeAndStoreSmartTips().then(fresh => setSmartTips(fresh)).catch(() => {});
+        // Load AI coach tip for EvR (14-day window)
+        setCoachLoading(true);
+        refreshCoachTip('evr', 14).then(cache => { setCoachCache(cache); setCoachLoading(false); }).catch(() => setCoachLoading(false));
       };
       load();
     }, [id, isTutorialMode])
@@ -494,6 +501,52 @@ export default function DiagnosticReportViewScreen() {
               {report.burnAccuracy && <BurnAccuracyCard f={report.burnAccuracy} isMindful={isMindful} theme={t} shadowStyle={shadowStyle} />}
               {report.macros && <MacroCard f={report.macros} isMindful={isMindful} theme={t} shadowStyle={shadowStyle} />}
               {report.sleep && <SleepCard f={report.sleep} isMindful={isMindful} theme={t} shadowStyle={shadowStyle} />}
+
+              {/* AI Coach Insight card */}
+              {(coachLoading || !!coachCache) && (() => {
+                if (coachLoading && !coachCache) {
+                  return (
+                    <View style={{ marginBottom: 12 }}>
+                      <Text style={[styles.sectionLabel, { color: t.textMuted }]}>COACH INSIGHT</Text>
+                      <View style={[shadowStyle, {
+                        backgroundColor: t.bgCard, borderRadius: 14, borderWidth: 0.5,
+                        borderColor: t.borderCard, borderTopColor: 'rgba(255,255,255,0.1)',
+                        borderLeftWidth: 3, borderLeftColor: t.accentBlueRaw, padding: 16, paddingLeft: 15,
+                      }]}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                          <ActivityIndicator size="small" color={t.accentBlueRaw} />
+                          <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: t.textMuted, fontStyle: 'italic' }}>Analyzing your data...</Text>
+                        </View>
+                      </View>
+                    </View>
+                  );
+                }
+                if (!coachCache) return null;
+                const body = resolveTipBody(coachCache);
+                const title = resolveTipTitle(coachCache);
+                const tone = coachCache.packet.tone;
+                const borderColor = tone === 'positive' ? t.statusGood : tone === 'care' ? t.statusBad : t.accentBlueRaw;
+                if (!body) return null;
+                return (
+                  <View style={{ marginBottom: 12 }}>
+                    <Text style={[styles.sectionLabel, { color: t.textMuted }]}>COACH INSIGHT</Text>
+                    <View style={[shadowStyle, {
+                      backgroundColor: t.bgCard, borderRadius: 14, borderWidth: 0.5,
+                      borderColor: t.borderCard, borderTopColor: 'rgba(255,255,255,0.1)',
+                      borderLeftWidth: 3, borderLeftColor: borderColor, padding: 16, paddingLeft: 15,
+                    }]}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                        <Ionicons name="sparkles" size={13} color={borderColor} />
+                        <Text style={{ fontSize: 9, letterSpacing: 3, color: t.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>
+                          {tone === 'positive' ? 'Positive' : tone === 'care' ? 'Heads Up' : tone === 'educational' ? 'Insight' : 'Focus Area'}
+                        </Text>
+                      </View>
+                      <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: t.textSecondary, lineHeight: 20, marginBottom: 8 }}>{title}</Text>
+                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: t.textSecondary, lineHeight: 20 }}>{body}</Text>
+                    </View>
+                  </View>
+                );
+              })()}
 
               {/* Smart Tips: cross-signal insight cards (gated) */}
               {(() => {

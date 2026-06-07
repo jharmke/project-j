@@ -12,11 +12,11 @@
 
 ## OPEN BUGS / NEXT WORK (priority order for next session)
 
-### BUG A: Home and EvR share pj_coach_last_rule -- BLOCKING scenario rotation
-Home and EvR write to the same pj_coach_last_rule key. EvR computes, saves water_high as last rule. Home then excludes water_high, falls back to weight_wrong_direction (only corrective). Fix: separate keys pj_coach_last_rule_home and pj_coach_last_rule_evr. computeCoachPacket takes a surface param and reads/writes the surface-specific key. This naturally resolves once Item 2 (EvR own packet) ships since they will be fully independent.
+### BUG A: FIXED 2026-06-07
+pj_coach_last_rule_home and pj_coach_last_rule_evr are now separate keys. computeCoachPacket computes the surface-specific key at runtime from the surface param.
 
-### BUG B: protein_under threshold too conservative -- Family 2 barely ever fires
-Rule requires protein < 70% of proteinGoalG on 5+ of 7 days. If goal is 122g, threshold is 85g -- a user averaging 105g (14% below goal) never triggers it. Fix: lower pattern threshold from 70% to 85% of goal, and drop the required days from 5 to 4. Urgent path (< 50% of goal on 3+ of 5 days) is fine as-is.
+### BUG B: FIXED 2026-06-07
+protein_under pattern threshold changed from 70% to 80% of goal, required days dropped from 5 to 4. Diagnosis builder updated to match. Urgent path unchanged.
 
 ### DONE THIS SESSION (2026-06-07):
 - [x] Item 6: Dev Tools reset button for pj_coach_tip + all pj_coach_tip_day_* keys (settings.tsx)
@@ -26,6 +26,13 @@ Rule requires protein < 70% of proteinGoalG on 5+ of 7 days. If goal is 122g, th
 - [x] DASH_PATTERN: replaced literal -- with -{2} to eliminate double-dash in source code (coachAI.ts)
 - [x] Scenario rotation: pj_coach_last_rule key added (survives cache resets), selectByPrioritySpine exclusion logic fixed (exclusion now happens before corrective/positive split, not after)
 - [x] lbsPerWeek rate bug: both ruleWeightWrongDirection and ruleWeightOnTrack were dividing by weigh-in COUNT instead of actual day SPAN between first and last weigh-in (smartTipsEngine.ts)
+
+### DONE THIS SESSION (continued):
+- [x] Swipeable home coach card: faith-card pattern. Horizontal pagingEnabled ScrollView, pages snap natively, dots bottom-right, auto-advances every 22s, pauses on drag resumes 10s after. Chevron button removed. Tap navigates to EvR.
+- [x] Home card height tracks content: animated height per page (220ms cubic ease). Re-animates when AI body loads async so "View in EvR" link is never clipped.
+- [x] Home card background: restored theme.bgCard + borderColor after paging refactor dropped them.
+- [x] EvR coach insight loading state: spinner + "Analyzing your data..." shows immediately while refreshCoachTip is in flight. Swaps to real insight on resolve.
+- [x] Protein diagnosis clarity: text now reads "fell short on N of M days, averaging Xg on those days" so users know the number is low-day average, not overall.
 
 ### STILL OPEN:
 2. EvR Level 1 packet: own separate packet, window-adaptive (14/30/90), dedup vs home card scenario.

@@ -571,8 +571,8 @@ function ruleProteinUnder(w7: WindowDay[], w5: WindowDay[], ctx: EngineContext, 
     return makeTip('protein_under', 'urgent', false, 'urgent', ctx, store, { goal: Math.round(proteinGoalG), days: urgentQual.length });
   }
 
-  const patternQual = w7.filter(d => d.hasFoodData && d.protein < proteinGoalG * 0.7);
-  if (patternQual.length >= 5 && meetsLoggingGate(w7, 6)) {
+  const patternQual = w7.filter(d => d.hasFoodData && d.protein < proteinGoalG * 0.8);
+  if (patternQual.length >= 4 && meetsLoggingGate(w7, 6)) {
     return makeTip('protein_under', 'pattern', false, 'pattern', ctx, store, { goal: Math.round(proteinGoalG), days: patternQual.length });
   }
 
@@ -1256,7 +1256,6 @@ export async function computeAndStoreSmartTips(): Promise<SmartTipsStore> {
 // packet for the AI call, and caches to pj_coach_tip (read-then-merge always).
 
 const COACH_TIP_KEY = 'pj_coach_tip';
-const COACH_LAST_RULE_KEY = 'pj_coach_last_rule';
 
 export interface CoachPacket {
   scenario: string;
@@ -1408,12 +1407,12 @@ function buildDiagnosisActionFacts(
       };
     }
     case 'protein_under': {
-      const low = foodDays7.filter(d => d.protein < ctx.proteinGoalG * 0.7);
-      const avgP = low.length ? Math.round(avg(low.map(d => d.protein))) : 0;
+      const low = foodDays7.filter(d => d.protein < ctx.proteinGoalG * 0.8);
+      const avgLow = low.length ? Math.round(avg(low.map(d => d.protein))) : 0;
       return {
-        diagnosis: `Protein averaging ${avgP}g on ${low.length} of ${foodDays7.length} logged days, against a ${Math.round(ctx.proteinGoalG)}g goal`,
+        diagnosis: `Protein fell short on ${low.length} of ${foodDays7.length} logged days, averaging ${avgLow}g on those days against a ${Math.round(ctx.proteinGoalG)}g goal`,
         action: 'Add one high-protein meal or snack on training days',
-        facts: { avgProtein: avgP, goal: Math.round(ctx.proteinGoalG), daysLow: low.length },
+        facts: { avgProteinOnLowDays: avgLow, goal: Math.round(ctx.proteinGoalG), daysLow: low.length },
       };
     }
     case 'water_under': {
@@ -1836,9 +1835,10 @@ export async function computeCoachPacket(
   windowDays: number = 14,
 ): Promise<CoachTipCache> {
   const todayKey = todayDateKey();
+  const coachLastRuleKey = `pj_coach_last_rule_${surface}`;
   const [existing, lastRuleRaw] = await Promise.all([
     loadCoachTipCache(),
-    AsyncStorage.getItem(COACH_LAST_RULE_KEY),
+    AsyncStorage.getItem(coachLastRuleKey),
   ]);
   const persistedLastRuleId: string | null = lastRuleRaw ? JSON.parse(lastRuleRaw).ruleId : null;
 
@@ -1986,7 +1986,7 @@ export async function computeCoachPacket(
 
   await Promise.all([
     saveCoachTipCache(cache),
-    AsyncStorage.setItem(COACH_LAST_RULE_KEY, JSON.stringify({ ruleId: packet.ruleId })),
+    AsyncStorage.setItem(coachLastRuleKey, JSON.stringify({ ruleId: packet.ruleId })),
   ]);
   return cache;
 }

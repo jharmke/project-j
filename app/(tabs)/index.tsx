@@ -5,7 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Animated, AppState, Dimensions, Easing, Keyboard, KeyboardAvoidingView, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { Animated, AppState, Dimensions, Easing, Keyboard, KeyboardAvoidingView, Modal, NativeScrollEvent, NativeSyntheticEvent, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import ReAnimated, { useAnimatedStyle, useAnimatedProps, useSharedValue, withTiming, withRepeat, withSequence, withDelay, cancelAnimation, Easing as ReAnimEasing } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -911,7 +911,17 @@ export default function HomeScreen() {
   const [homeTips, setHomeTips] = useState<StoredTip[]>([]);
   const [tipIndex, setTipIndex] = useState(0);
   const [coachCache, setCoachCache] = useState<CoachTipCache | null>(null);
-  const tipOpacity = useRef(new Animated.Value(1)).current;
+  const tipScrollRef = useRef<ScrollView>(null);
+  const tipCardWidthRef = useRef(0);
+  const tipDraggingRef = useRef(false);
+  const tipAutoRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const tipResumeRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const homeTipsLengthRef = useRef(0);
+  const tipIndexRef = useRef(0);
+  const pageHeightsRef = useRef<number[]>([]);
+  const cardHeightAnim = useRef(new Animated.Value(0)).current;
+  const [tipCardWidth, setTipCardWidth] = useState(0);
+  const [tipHeightReady, setTipHeightReady] = useState(false);
   const summaryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     const runScan = async () => {
@@ -957,21 +967,47 @@ export default function HomeScreen() {
     }).catch(() => {});
   }, []));
 
-  // ── Advance tip with fade animation ─────────────────────────────────────────
-  const advanceTip = useCallback(() => {
-    if (homeTips.length <= 1) return;
-    Animated.timing(tipOpacity, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
-      setTipIndex(i => (i + 1) % homeTips.length);
-      Animated.timing(tipOpacity, { toValue: 1, duration: 200, useNativeDriver: true }).start();
-    });
-  }, [homeTips.length, tipOpacity]);
+  // ── Keep refs in sync for auto-advance closure ──────────────────────────────
+  useEffect(() => { homeTipsLengthRef.current = homeTips.length; }, [homeTips.length]);
+  useEffect(() => { tipIndexRef.current = tipIndex; }, [tipIndex]);
 
-  // ── Cycle tips on a timer ────────────────────────────────────────────────────
+  // ── Auto-advance tip card every 22s (pause on drag, resume 10s after) ───────
+  const stopTipAuto = () => { if (tipAutoRef.current) { clearInterval(tipAutoRef.current); tipAutoRef.current = null; } };
+  const startTipAuto = useCallback(() => {
+    stopTipAuto();
+    tipAutoRef.current = setInterval(() => {
+      const w = tipCardWidthRef.current;
+      const len = homeTipsLengthRef.current;
+      if (!w || len <= 1) return;
+      const next = (tipIndexRef.current + 1) % len;
+      tipScrollRef.current?.scrollTo({ x: next * w, animated: true });
+    }, 22000);
+  }, []);
+
   useEffect(() => {
-    if (homeTips.length <= 1) return;
-    const timer = setInterval(advanceTip, 22000);
-    return () => clearInterval(timer);
-  }, [homeTips.length, advanceTip]);
+    startTipAuto();
+    return () => { stopTipAuto(); if (tipResumeRef.current) clearTimeout(tipResumeRef.current); };
+  }, [startTipAuto]);
+
+  const onTipScrollBeginDrag = () => {
+    tipDraggingRef.current = true;
+    stopTipAuto();
+    if (tipResumeRef.current) clearTimeout(tipResumeRef.current);
+  };
+  const onTipMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const w = tipCardWidthRef.current;
+    if (!w) return;
+    const p = Math.round(e.nativeEvent.contentOffset.x / w);
+    setTipIndex(p);
+    tipIndexRef.current = p;
+    const h = pageHeightsRef.current[p];
+    if (h) Animated.timing(cardHeightAnim, { toValue: h, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
+    if (tipDraggingRef.current) {
+      tipDraggingRef.current = false;
+      if (tipResumeRef.current) clearTimeout(tipResumeRef.current);
+      tipResumeRef.current = setTimeout(startTipAuto, 10000);
+    }
+  };
 
   // ── Persist HealthKit to storage ────────────────────────────────────────────
   useEffect(() => {
@@ -2776,64 +2812,83 @@ export default function HomeScreen() {
         return <FaithTodayCard verse={dailyVerse} theme={theme} />;
       }
       case 'smart_tip': {
-        const homeTip = homeTips[tipIndex] ?? null;
-        if (!homeTip && !coachCache) return null;
-        // First slot uses AI coach tip when available; subsequent slots use engine tips.
-        const isFirstSlot = tipIndex === 0;
-        const displayTitle = isFirstSlot && coachCache ? resolveTipTitle(coachCache) : (homeTip?.title ?? '');
-        const displayBody = isFirstSlot && coachCache ? resolveTipBody(coachCache) : (homeTip?.body ?? '');
-        const isPositive = isFirstSlot && coachCache ? coachCache.packet.tone === 'positive' : (homeTip?.positive ?? false);
-        const tierStr = isFirstSlot && coachCache ? (coachCache.packet.tone === 'care' ? 'urgent' : 'pattern') : (homeTip?.tier ?? 'insight');
-        const tipBorderColor = isPositive ? theme.statusGood : tierStr === 'urgent' ? theme.statusBad : theme.statusWarn;
-        const chipLabel = isPositive ? 'POSITIVE' : tierStr === 'urgent' ? 'URGENT' : 'INSIGHT';
-        const chipColor = isPositive ? theme.statusGood : tierStr === 'urgent' ? theme.statusBad : theme.statusWarn;
+        const pageCount = homeTips.length > 0 ? homeTips.length : (coachCache ? 1 : 0);
+        if (pageCount === 0) return null;
+        const page0Tip = homeTips[0] ?? null;
+        const page0Positive = coachCache ? coachCache.packet.tone === 'positive' : (page0Tip?.positive ?? false);
+        const page0Tier = coachCache ? (coachCache.packet.tone === 'care' ? 'urgent' : 'pattern') : (page0Tip?.tier ?? 'insight');
+        const page0BorderColor = page0Positive ? theme.statusGood : page0Tier === 'urgent' ? theme.statusBad : theme.statusWarn;
         const tipShadow = { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 3 };
-        const tipScale = new Animated.Value(1);
         return (
-          <Animated.View style={{ transform: [{ scale: tipScale }] }}>
-            <TouchableOpacity
-              activeOpacity={0.99}
-              onPressIn={() => Animated.timing(tipScale, { toValue: 0.97, duration: 100, useNativeDriver: true }).start()}
-              onPressOut={() => Animated.timing(tipScale, { toValue: 1, duration: 150, useNativeDriver: true }).start()}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/diagnostic-report'); }}
+          <Animated.View
+            style={[styles.card, { padding: 0, overflow: 'hidden', backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: page0BorderColor, ...tipShadow, ...(tipHeightReady ? { height: cardHeightAnim } : {}) }]}
+            onLayout={e => { const w = e.nativeEvent.layout.width; tipCardWidthRef.current = w; setTipCardWidth(w); }}
+          >
+            <ScrollView
+              ref={tipScrollRef}
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+              onScrollBeginDrag={onTipScrollBeginDrag}
+              onMomentumScrollEnd={onTipMomentumEnd}
             >
-              <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: tipBorderColor, ...tipShadow }]}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Ionicons name="sparkles" size={12} color={theme.accentBlueRaw} />
-                    <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, color: theme.accentBlueRaw, textTransform: 'uppercase' }}>Coach Insight</Text>
-                    <TooltipIcon tooltipKey="smart_tip" size={14} />
-                  </View>
-                  <View style={{ backgroundColor: chipColor + '22', borderWidth: 1, borderColor: chipColor + '55', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-                    <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: chipColor }}>{chipLabel}</Text>
-                  </View>
-                </View>
-                <Animated.View style={{ opacity: tipOpacity }}>
-                  <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: theme.textSecondary, lineHeight: 21, marginBottom: 6 }}>{displayTitle}</Text>
-                </Animated.View>
-                <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 20, marginBottom: 12 }}>{displayBody}</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlueRaw }}>View in Effort vs Results</Text>
-                    <Ionicons name="chevron-forward" size={12} color={theme.accentBlueRaw} />
-                  </View>
-                  {homeTips.length > 1 && (
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      {homeTips.map((_, i) => (
-                        <View key={i} style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: i === tipIndex ? theme.accentBlueRaw : theme.textMuted + '40' }} />
-                      ))}
-                      <TouchableOpacity
-                        onPress={(e) => { e.stopPropagation(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); advanceTip(); }}
-                        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                        style={{ padding: 4, marginLeft: 2 }}
-                      >
-                        <Ionicons name="chevron-forward" size={14} color={theme.accentBlueRaw} />
-                      </TouchableOpacity>
+              {Array.from({ length: pageCount }, (_, idx) => {
+                const homeTip = homeTips[idx] ?? null;
+                const isFirst = idx === 0;
+                const displayTitle = isFirst && coachCache ? resolveTipTitle(coachCache) : (homeTip?.title ?? '');
+                const displayBody = isFirst && coachCache ? resolveTipBody(coachCache) : (homeTip?.body ?? '');
+                const isPositive = isFirst && coachCache ? coachCache.packet.tone === 'positive' : (homeTip?.positive ?? false);
+                const tierStr = isFirst && coachCache ? (coachCache.packet.tone === 'care' ? 'urgent' : 'pattern') : (homeTip?.tier ?? 'insight');
+                const chipLabel = isPositive ? 'POSITIVE' : tierStr === 'urgent' ? 'URGENT' : 'INSIGHT';
+                const chipColor = isPositive ? theme.statusGood : tierStr === 'urgent' ? theme.statusBad : theme.statusWarn;
+                return (
+                  <TouchableOpacity
+                    key={idx}
+                    activeOpacity={0.92}
+                    style={{ width: tipCardWidth || undefined }}
+                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/diagnostic-report'); }}
+                  >
+                    <View
+                      style={{ padding: 16 }}
+                      onLayout={e => {
+                        const h = Math.ceil(e.nativeEvent.layout.height);
+                        pageHeightsRef.current[idx] = h;
+                        if (!tipHeightReady && idx === 0) {
+                          cardHeightAnim.setValue(h);
+                          setTipHeightReady(true);
+                        } else if (tipHeightReady && idx === tipIndexRef.current) {
+                          Animated.timing(cardHeightAnim, { toValue: h, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
+                        }
+                      }}
+                    >
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                          <Ionicons name="sparkles" size={12} color={theme.accentBlueRaw} />
+                          <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, color: theme.accentBlueRaw, textTransform: 'uppercase' }}>Coach Insight</Text>
+                          <TooltipIcon tooltipKey="smart_tip" size={14} />
+                        </View>
+                        <View style={{ backgroundColor: chipColor + '22', borderWidth: 1, borderColor: chipColor + '55', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                          <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: chipColor }}>{chipLabel}</Text>
+                        </View>
+                      </View>
+                      <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: theme.textSecondary, lineHeight: 21, marginBottom: 6 }}>{displayTitle}</Text>
+                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 20, marginBottom: 12 }}>{displayBody}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                        <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlueRaw }}>View in Effort vs Results</Text>
+                        <Ionicons name="chevron-forward" size={12} color={theme.accentBlueRaw} />
+                      </View>
                     </View>
-                  )}
-                </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+            {pageCount > 1 && (
+              <View style={{ position: 'absolute', bottom: 10, right: 12, flexDirection: 'row', alignItems: 'center', gap: 5 }} pointerEvents="none">
+                {Array.from({ length: pageCount }, (_, i) => (
+                  <View key={i} style={{ width: i === tipIndex ? 7 : 6, height: i === tipIndex ? 7 : 6, borderRadius: i === tipIndex ? 3.5 : 3, backgroundColor: i === tipIndex ? theme.accentBlueRaw : theme.textMuted + '40' }} />
+                ))}
               </View>
-            </TouchableOpacity>
+            )}
           </Animated.View>
         );
       }

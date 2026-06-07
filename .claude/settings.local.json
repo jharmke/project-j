@@ -57,7 +57,16 @@
       "PowerShell(node -e \"require\\('./functions/lib/index.js'\\); console.log\\('MODULE LOADED OK'\\); process.exit\\(0\\)\")",
       "PowerShell(node _redteam_crisis.cjs)",
       "PowerShell(Select-String *)",
-      "PowerShell(git status; \"----\"; git diff --cached --stat)"
+      "PowerShell(git status; \"----\"; git diff --cached --stat)",
+      "PowerShell(git add app/\\(tabs\\)/faith.tsx app/bible.tsx app/prayer.tsx components/FaithTodayCard.tsx components/GratitudeStreakCard.tsx components/PrayerRequestModal.tsx project_j_roadmap.md)",
+      "Bash(npx expo *)",
+      "Bash(node -e \"const p = require\\('./package.json'\\); console.log\\('@anthropic-ai/sdk' in p.dependencies ? 'INSTALLED: ' + p.dependencies['@anthropic-ai/sdk'] : 'NOT FOUND'\\)\")",
+      "Bash(Get-Content public/privacy.html)",
+      "Bash(Select-Object -First 40)",
+      "Bash(Out-String)",
+      "Bash(node -e \"const p = require\\('./package.json'\\); console.log\\('@anthropic-ai/sdk' in \\(p.dependencies || {}\\) ? 'STILL THERE' : 'REMOVED'\\)\")",
+      "PowerShell(git add app/\\(tabs\\)/index.tsx SMART_COACH_BUILD.md)",
+      "Bash(grep -n \"truncat\\\\|third.*period\\\\|sentence.*count\\\\|split.*\\\\\\\\.\\\\\\\\|period\" \"C:\\\\Users\\\\jthar\\\\ProjectJ\\\\utils\\\\coachAI.ts\")"
     ]
   }
 }

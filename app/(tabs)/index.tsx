@@ -44,7 +44,8 @@ import { useTutorial, isTutorialSeen } from '../../context/TutorialContext';
 import { useTutorialTarget } from '../../hooks/useTutorialTarget';
 import { showToolkit } from '../../components/ToolkitSheet';
 import ToggleSwitch from '../../components/ToggleSwitch';
-import { StoredTip, loadSmartTips } from '../../utils/smartTipsEngine';
+import { StoredTip, loadSmartTips, CoachTipCache } from '../../utils/smartTipsEngine';
+import { refreshCoachTip, resolveTipBody, resolveTipTitle } from '../../utils/coachAI';
 
 // ─── Card Registry ────────────────────────────────────────────────────────────
 export type CardId =
@@ -909,6 +910,7 @@ export default function HomeScreen() {
   const [dayScoreDisclaimer, setDayScoreDisclaimer] = useState<{ score: DayScore; dateKey: string } | null>(null);
   const [homeTips, setHomeTips] = useState<StoredTip[]>([]);
   const [tipIndex, setTipIndex] = useState(0);
+  const [coachCache, setCoachCache] = useState<CoachTipCache | null>(null);
   const tipOpacity = useRef(new Animated.Value(1)).current;
   const summaryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
@@ -941,13 +943,17 @@ export default function HomeScreen() {
     return () => { sub.remove(); if (summaryTimerRef.current) clearTimeout(summaryTimerRef.current); };
   }, []);
 
-  // ── Load Smart Tips for home card ───────────────────────────────────────────
+  // ── Load Smart Tips + AI coach tip for home card ────────────────────────────
   useFocusEffect(useCallback(() => {
     loadSmartTips().then(store => {
       const tips = store?.activeTips?.slice(0, 3) ?? [];
       setHomeTips(tips);
-      // Only reset index if current index is out of bounds for the new set
       setTipIndex(i => (i >= tips.length ? 0 : i));
+    });
+    // AI coach tip runs in parallel. Renders fallback from cache immediately,
+    // updates to AI body once the async generation completes.
+    refreshCoachTip('home', 14).then(cache => {
+      setCoachCache(cache);
     }).catch(() => {});
   }, []));
 
@@ -2771,10 +2777,16 @@ export default function HomeScreen() {
       }
       case 'smart_tip': {
         const homeTip = homeTips[tipIndex] ?? null;
-        if (!homeTip) return null;
-        const tipBorderColor = homeTip.positive ? theme.statusGood : homeTip.tier === 'urgent' ? theme.statusBad : theme.statusWarn;
-        const chipLabel = homeTip.positive ? 'POSITIVE' : homeTip.tier.toUpperCase();
-        const chipColor = homeTip.positive ? theme.statusGood : homeTip.tier === 'urgent' ? theme.statusBad : theme.statusWarn;
+        if (!homeTip && !coachCache) return null;
+        // First slot uses AI coach tip when available; subsequent slots use engine tips.
+        const isFirstSlot = tipIndex === 0;
+        const displayTitle = isFirstSlot && coachCache ? resolveTipTitle(coachCache) : (homeTip?.title ?? '');
+        const displayBody = isFirstSlot && coachCache ? resolveTipBody(coachCache) : (homeTip?.body ?? '');
+        const isPositive = isFirstSlot && coachCache ? coachCache.packet.tone === 'positive' : (homeTip?.positive ?? false);
+        const tierStr = isFirstSlot && coachCache ? (coachCache.packet.tone === 'care' ? 'urgent' : 'pattern') : (homeTip?.tier ?? 'insight');
+        const tipBorderColor = isPositive ? theme.statusGood : tierStr === 'urgent' ? theme.statusBad : theme.statusWarn;
+        const chipLabel = isPositive ? 'POSITIVE' : tierStr === 'urgent' ? 'URGENT' : 'INSIGHT';
+        const chipColor = isPositive ? theme.statusGood : tierStr === 'urgent' ? theme.statusBad : theme.statusWarn;
         const tipShadow = { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 3 };
         const tipScale = new Animated.Value(1);
         return (
@@ -2787,18 +2799,19 @@ export default function HomeScreen() {
             >
               <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: tipBorderColor, ...tipShadow }]}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Ionicons name="sparkles" size={12} color={theme.accentBlueRaw} />
+                    <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, color: theme.accentBlueRaw, textTransform: 'uppercase' }}>Coach Insight</Text>
+                    <TooltipIcon tooltipKey="smart_tip" size={14} />
+                  </View>
                   <View style={{ backgroundColor: chipColor + '22', borderWidth: 1, borderColor: chipColor + '55', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
                     <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: chipColor }}>{chipLabel}</Text>
                   </View>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                    <Text style={[styles.cardLabel, { color: theme.textMuted, marginBottom: 0 }]}>SMART TIPS</Text>
-                    <TooltipIcon tooltipKey="smart_tip" size={14} />
-                  </View>
                 </View>
                 <Animated.View style={{ opacity: tipOpacity }}>
-                  <Text style={{ fontSize: 15, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, lineHeight: 21, marginBottom: 6 }}>{homeTip.title}</Text>
-                  <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 18, marginBottom: 12 }} numberOfLines={3}>{homeTip.body}</Text>
+                  <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: theme.textSecondary, lineHeight: 21, marginBottom: 6 }}>{displayTitle}</Text>
                 </Animated.View>
+                <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 20, marginBottom: 12 }}>{displayBody}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                     <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlueRaw }}>View in Effort vs Results</Text>

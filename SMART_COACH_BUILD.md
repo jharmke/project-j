@@ -11,12 +11,19 @@
 - [x] Step 6: Update public/privacy.html with AI disclosure -- DONE
 
 ## OPEN BUGS / NEXT WORK
-1. Home card tip body: numberOfLines={3} cuts off long tips. Remove the clamp.
+1. ~~Home card tip body: numberOfLines={3} cuts off long tips. Remove the clamp.~~ DONE 2026-06-06
 2. EvR Coach Insight = Home card tip: both use the same pj_coach_tip packet. EvR needs its own packet (longer window, per-card lines) -- scope before building.
 3. Free vs Pro gating: not yet implemented. Home card is free. EvR coaching lines are Pro. Define and build.
 4. Weekly Summary surface: AI, week-scoped, Pro (free = last completed week). Not built yet.
 5. Monthly Summary surface: AI, month-scoped, Pro. Not built yet.
 6. Dev Tools: add pj_coach_tip_day_* reset button so Justin can test fresh Day Summary tips.
+
+## Home Card Visual Standard (LOCKED 2026-06-06)
+Header row: sparkles icon (size 12, accent) + "COACH INSIGHT" (fontSize 9, letterSpacing 3, accent, DMSans_700Bold, uppercase) + TooltipIcon -- all left side. Chip (INSIGHT/POSITIVE/URGENT) -- right side.
+Title: fontSize 15, DMSans_700Bold, textSecondary, lineHeight 21. Inside Animated.View for tip cross-fade.
+Body: fontSize 13, DMSans_400Regular, textSecondary, lineHeight 20. Outside Animated.View (avoid native-layer clip).
+Footer: "View in Effort vs Results" link left, pagination dots + next chevron right (when multiple tips).
+Card bg: bgCard, borderColor: borderCard, borderTopWidth 1.5 in tipBorderColor (tone-coded).
 
 ## Coach Insight Card Standard (LOCKED 2026-06-06)
 This is the visual standard for ALL AI coaching tip cards app-wide. Use it on every surface.

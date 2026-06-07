@@ -40,6 +40,8 @@ Bad: "You need to eat more protein." / "You should go to bed earlier."
 
 ## 2. TWO TIP TIERS (LOCKED)
 
+UPDATE: the Generic Tips / Smart Tips two-tier terminology below is superseded by the Level 1 / Level 2 architecture. Level 1 is the cross-signal synthesis tier (formerly "Smart Tips"). Level 2 is the single-metric focused tier (replaces and upgrades the old "Generic Tips" concept, now AI-voiced instead of canned copy). The free/gated logic in Section 3 is partially superseded; see SMART_COACH_BUILD.md open item 3 and SMART_COACH_SPEC.md Level 2 section for the current model. The conceptual distinction below (single-signal vs multi-signal, gated vs free) is preserved for historical context and cross-reference continuity.
+
 ### 2.1 Generic Tips
 
 - Real, useful, surface-level observations.
@@ -118,28 +120,29 @@ Pre-launch: gate on.
 
 ## 4. GENERATION ENGINE (LOCKED)
 
-**Decision: Hardcoded rules engine.**
+UPDATE: the original "hardcoded rules engine, no external API calls" decision is superseded by the hybrid AI architecture. Full spec in SMART_COACH_SPEC.md. Full build state in SMART_COACH_BUILD.md. The section below is preserved for historical context. The architecture summary and what is still accurate from the original decision are documented here.
 
-Every tip is driven by explicit trigger logic written in code. The rules detect the pattern, pre-written copy surfaces the tip. No external API calls, no AI generation at runtime.
+**Architecture: hybrid AI (brain + voice + cleanup)**
 
-**Why this approach:**
-- Zero per-call cost. No API cost per user.
-- Instant display. Tips are computed and cached, not generated on demand.
-- Deterministic. The same data always produces the same tip. No drift, no hallucination.
-- No App Store friction. No AI-generated health advice review risk.
-- Full control over language and tone.
+Three layers, two tiers (Level 1 and Level 2):
 
-**What "smart" means here:**
-The intelligence lives in the trigger logic, not the sentence. Cross-correlating sleep score against protein intake over a 7-day window IS the smart work. The rules engine does that math. The copy just delivers the finding in the right voice.
+1. BRAIN (deterministic code): loads the data window, computes every number, runs scenario detection, decides the verdict, assembles a structured packet. The brain never hallucinates because it never generates prose.
+2. VOICE (AI at runtime): receives the packet, writes 2 to 3 sentences in the user's coaching mode. Never computes, never decides truth. Only phrases what the brain decided.
+3. CLEANUP (deterministic): before display, verifies every number in the output against the packet, strips disallowed characters, enforces length cap and banned words. Falls back to a safe templated line if anything fails. The AI's raw output is never blindly trusted.
 
-**Copy standard:**
-Tip copy must be polished, varied, and human. Not lazy template strings. Every rule gets a pool of copy variants -- minimum 3 per tip, more for high-frequency tips. When a tip fires, a variant is selected (rotating or randomized, never the same one twice in a row). Data slots into the variant naturally. The result must feel like the app noticed something and wrote it fresh, not like a template with a number plugged in. Copy must match the coaching mode voice (see Section 8).
+**Level 1 (cross-signal synthesis):** brain sees the full data window, synthesizes across signals, produces one headline insight per surface. AI voices it. Canned fallback copy used when offline or API times out.
 
-**Caching rule:**
-Tips are computed once when new data warrants a recalculation, stored to AsyncStorage, and displayed instantly. Never recomputed on every render. Storage key: TBD in Section 11.
+**Level 2 (single-metric focused):** same three-layer architecture, single-metric scope. The old Smart Tips detection logic becomes the Level 2 brain. The old canned copy pool becomes the Level 2 fallback voice. Nothing from the original engine is wasted.
 
-**Rate limiting:**
-Free tier tip generation is subject to a soft rate limit (exact cap TBD). Invisible to real users -- only catches abuse. Transparency: if a user hits the cap, a clear honest message explains it rather than silently failing.
+**What is still accurate from the original decision:**
+- Caching rule: still applies. Tips are computed once per day, stored to AsyncStorage, displayed instantly. Never recomputed on every render. The AI call itself is gated to once per day via the cache: if aiGeneratedDate matches today, the API call is skipped.
+- Offline fallback: if the API call throws or times out (5 second timeout), the packet's fallbackBody (drawn from the old canned copy) is used. The tip card never shows blank.
+- The intelligence still lives in the detection logic: the brain does all the real analytical work. The AI only delivers that work in a polished voice.
+
+**Copy standard (still applies to fallback voice):**
+Fallback copy must be polished, varied, and human. Every rule gets a pool of copy variants, minimum 3 per rule, more for high-frequency rules. When the fallback is used, a variant is selected (rotating, never the same one twice in a row). Fallback copy must match the coaching mode voice (see Section 8).
+
+**Model and API:** claude-sonnet-4-6, raw fetch to api.anthropic.com/v1/messages, no streaming, 300 token ceiling. API key: EXPO_PUBLIC_ANTHROPIC_API_KEY. Full spec in SMART_COACH_BUILD.md.
 
 ---
 
@@ -459,11 +462,14 @@ SESSION 69 UPDATE: the EvR "full Smart Tips section" is superseded by the findin
 
 ### 10.2 Home card (LOCKED)
 
-One tip slot on the home screen, cycling.
-- Free users: 1 tip, does not cycle
-- Pro users: top 3 priority tips cycle on a timer
-- Urgency tier always wins the top slot
-- Tapping the card routes to EvR
+Three coaching slots on the home screen, all free. User navigates between slots via pagination dots and a next chevron in the card footer.
+
+- Slot 1 (Level 1): cross-signal synthesis tip. 14-day window. Free. Already built.
+- Slots 2+ (Level 2): single-metric focused tips. 7-day window. Free. Computed eager alongside Level 1 at app open so no loading state ever shows on the home card.
+- Level 2 metric exclusion (lock at build): when Level 1 fires a single-metric scenario (e.g., 2.1 protein is the one gap), Level 2 slots skip that metric and surface different signals. Pass the Level 1 primary metric to the Level 2 brain as an exclusion parameter. Same dedup pattern as the EvR Level 1 dedup rule.
+- Tapping "View in Effort vs Results" in the card footer auto-generates a 14-day EvR report and lands the user directly in the report. No setup page. Window is changeable from inside the report.
+
+UPDATE: the original "1 tip free, top 3 Pro cycling on a timer" model is superseded. All three slots are free. Navigation changed from auto-timer to user-initiated pagination. Surface assignments, compute timing, and free/Pro model are locked in SMART_COACH_SPEC.md (Level 2 section) and SMART_COACH_BUILD.md.
 
 ### 10.3 Day Summary full page (LOCKED)
 
@@ -795,3 +801,17 @@ Render-time, suppress before gate, per Section 15.7.
 
 - Six new card types to build (Extended Nutrition, Hydration, Activity, Weight Trend, IF, per-correlation insight cards).
 - The DiagnosticReport shape (utils/diagnosticReport.ts) currently has fixed fields (deficit, burnAccuracy, consistency, macros, sleep, correlations[], suggestions[]). It will need new finding types and the suggestions[] field retired. A build-session concern, flagged here so it is not a surprise.
+
+### 17.7 Domain card Level 2 coaching tips (LOCKED 2026-06-07)
+
+Each domain finding card in EvR includes a Level 2 coaching tip: a single-metric focused observation plus one consequence, voiced by AI. This is the "domain's coaching line" referenced in 17.1.
+
+**Compute:** Lazy. Triggered when the user navigates to EvR. Each domain card shows its own per-card internal loading state while its tip computes. No tip computes until the card is visible.
+
+**Window:** Matches the user-selected EvR duration (14, 30, or 90 days). The Level 2 brain receives only that domain's data for the selected window; no cross-signal data is included in the packet.
+
+**Gating:** Pro. Free users see a subtle locked indicator with a small lock chip inside the domain card where the coaching line would appear. Not a full blurred card. Minimal treatment that creates desire without stacking heavy lockouts across every domain card.
+
+**No card, no tip:** Domain cards render only when a finding exists (17.1). If a domain produced no finding for the selected window, its card does not render, so there is no locked tip to show.
+
+**Packet scope:** Single-metric. The Level 2 brain builds a packet containing only that domain's data. The AI cannot produce cross-signal synthesis because it never receives it. Full Level 2 packet format and rulebook in SMART_COACH_SPEC.md (Level 2 section).

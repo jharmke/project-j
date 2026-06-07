@@ -34,8 +34,11 @@ protein_under pattern threshold changed from 70% to 80% of goal, required days d
 - [x] EvR coach insight loading state: spinner + "Analyzing your data..." shows immediately while refreshCoachTip is in flight. Swaps to real insight on resolve.
 - [x] Protein diagnosis clarity: text now reads "fell short on N of M days, averaging Xg on those days" so users know the number is low-day average, not overall.
 
+### DONE THIS SESSION (continued):
+- [x] EvR Level 1 packet: own separate packet per window size (pj_coach_tip_evr_14/30/90), deduped against home card scenario, window-adaptive. Brain always analyzes most recent 14 days regardless of window (actionable coaching is current state). Expandability note: if 30/90-day-specific scenarios are added later (e.g. long-term plateau needing 3 months of weigh-ins), expand loadWindowDays to accept maxDays and pass windowDays into computeCoachPacketEvr.
+- [x] Timeframe bug fixed across all 28 diagnosis strings in buildDiagnosisActionFacts: w7 rules now say "Over the last 7 days", w14 rules say "Over the last 14 days". Without this, the AI borrowed the surface window label (14/30/90) as the timeframe even when the brain only analyzed 7 days of data, producing contradictions like "over the last 30 days... 5 of 7 days."
+
 ### STILL OPEN:
-2. EvR Level 1 packet: own separate packet, window-adaptive (14/30/90), dedup vs home card scenario.
 3. Free vs Pro gating: home all free, EvR/Weekly/Monthly Pro. Blur + chip for free users.
 4. Weekly Summary surface: layout not yet specced. Required before coaching placement.
 5. Monthly Summary surface: layout not yet specced. Required before coaching placement.

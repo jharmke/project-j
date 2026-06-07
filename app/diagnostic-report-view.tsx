@@ -29,9 +29,11 @@ import {
   TIPS_GATED,
   computeAndStoreSmartTips,
   isCrossSignalRule,
+  loadCoachTipCache,
+  loadCoachTipCacheEvr,
   loadSmartTips,
 } from '../utils/smartTipsEngine';
-import { refreshCoachTip, resolveTipBody, resolveTipTitle } from '../utils/coachAI';
+import { refreshCoachTipEvr, resolveTipBody, resolveTipTitle } from '../utils/coachAI';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -387,18 +389,24 @@ export default function DiagnosticReportViewScreen() {
         if (!id) { setNotFound(true); return; }
         const reports = await loadSavedReports();
         const found = reports.find(r => r.id === decodeURIComponent(id));
-        if (found) {
-          setReport(found);
-        } else {
-          setNotFound(true);
-        }
+        if (!found) { setNotFound(true); return; }
+        setReport(found);
         // Load stored Smart Tips for instant display, then refresh in background
         const stored = await loadSmartTips();
         if (stored) setSmartTips(stored);
         computeAndStoreSmartTips().then(fresh => setSmartTips(fresh)).catch(() => {});
-        // Load AI coach tip for EvR (14-day window)
-        setCoachLoading(true);
-        refreshCoachTip('evr', 14).then(cache => { setCoachCache(cache); setCoachLoading(false); }).catch(() => setCoachLoading(false));
+        // Load EvR coach tip: show cached instantly, then refresh in background.
+        // Home ruleId is passed so EvR never repeats the same scenario as the home card.
+        const windowDays = found.windowDays as 14 | 30 | 90;
+        const [cachedEvr, homeCache] = await Promise.all([
+          loadCoachTipCacheEvr(windowDays),
+          loadCoachTipCache(),
+        ]);
+        if (cachedEvr) { setCoachCache(cachedEvr); } else { setCoachLoading(true); }
+        const homeRuleId = homeCache?.packet.ruleId ?? null;
+        refreshCoachTipEvr(windowDays, homeRuleId)
+          .then(cache => { setCoachCache(cache); setCoachLoading(false); })
+          .catch(() => setCoachLoading(false));
       };
       load();
     }, [id, isTutorialMode])

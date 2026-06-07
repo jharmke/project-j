@@ -10,7 +10,9 @@ import {
   CoachPacket,
   CoachTipCache,
   computeCoachPacket,
+  computeCoachPacketEvr,
   loadCoachTipCache,
+  loadCoachTipCacheEvr,
 } from './smartTipsEngine';
 import { DayScore, DayScoreInput } from './dayScore';
 
@@ -259,6 +261,7 @@ async function callWithTimeout(
 
 export async function generateCoachTip(
   cache: CoachTipCache,
+  cacheKey: string = COACH_TIP_KEY,
 ): Promise<CoachTipCache> {
   const todayKey = new Date().toISOString().slice(0, 10);
 
@@ -311,7 +314,7 @@ export async function generateCoachTip(
   }
 
   try {
-    await storageSet(COACH_TIP_KEY, JSON.stringify(updatedCache));
+    await storageSet(cacheKey, JSON.stringify(updatedCache));
   } catch {}
 
   return updatedCache;
@@ -324,6 +327,17 @@ export async function refreshCoachTip(
 ): Promise<CoachTipCache> {
   const cache = await computeCoachPacket(surface, windowDays);
   return generateCoachTip(cache);
+}
+
+// EvR-specific refresh: computes its own packet (deduped from home), calls AI,
+// and saves to the window-specific EvR cache key. Never touches pj_coach_tip.
+export async function refreshCoachTipEvr(
+  windowDays: number,
+  homeRuleId: string | null,
+): Promise<CoachTipCache> {
+  const evrCacheKey = `pj_coach_tip_evr_${windowDays}`;
+  const cache = await computeCoachPacketEvr(windowDays, homeRuleId);
+  return generateCoachTip(cache, evrCacheKey);
 }
 
 // Return the best available tip body: AI if available, fallback otherwise.

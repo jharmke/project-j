@@ -1816,12 +1816,16 @@ export default function SettingsScreen() {
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              Alert.alert('Reset Coach Tip Cache', 'Clears all AI coaching tips (home card and all Day Summary tips) so they regenerate fresh. Your logged data is not affected.', [
+              Alert.alert('Reset Coach Tip Cache', 'Clears all AI coaching tips (home card, Day Summary, and all EvR window tips) so they regenerate fresh. Your logged data is not affected.', [
                 { text: 'Cancel', style: 'cancel' },
                 { text: 'Reset', style: 'destructive', onPress: async () => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                   const allKeys = await AsyncStorage.getAllKeys();
-                  const coachKeys = allKeys.filter(k => k === 'pj_coach_tip' || k.startsWith('pj_coach_tip_day_'));
+                  const coachKeys = allKeys.filter(k =>
+                    k === 'pj_coach_tip' ||
+                    k.startsWith('pj_coach_tip_day_') ||
+                    k.startsWith('pj_coach_tip_evr_')
+                  );
                   if (coachKeys.length > 0) await AsyncStorage.multiRemove(coachKeys);
                   Alert.alert('Done', `Coach tip cache cleared (${coachKeys.length} entries). Tips will regenerate on next open.`);
                 }},
@@ -1829,7 +1833,7 @@ export default function SettingsScreen() {
             }}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Reset Coach Tip Cache</Text>
-                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Clears home card and Day Summary AI tips. Forces fresh regeneration.</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Clears home card, Day Summary, and all EvR window tips. Forces fresh regeneration.</Text>
               </View>
               <Ionicons name="sparkles-outline" size={18} color={theme.accentRed} />
             </TouchableOpacity>

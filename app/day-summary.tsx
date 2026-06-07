@@ -26,9 +26,9 @@ import { ScoreRing } from '../components/DaySummaryModal';
 import { DayScore, DayScoreInput, scoreLabel, StyleMode, CATEGORY_WEIGHTS } from '../utils/dayScore';
 import { buildDayScoreInput, excludeDayFromAverages, ensureFreshDayScore } from '../utils/dayScoreStore';
 import { contextLine as computeContextLine, hadFaithEntryOn } from '../utils/daySummaryCopy';
-import { ensureDayTakeaway, resolveTakeawayBody, StoredDayTakeaway } from '../utils/dayTakeaway';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { useTutorial } from '../context/TutorialContext';
+import { refreshDayCoachTip, resolveTipBody } from '../utils/coachAI';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -49,9 +49,8 @@ export default function DaySummaryScreen() {
   const [input, setInput] = useState<DayScoreInput | null>(null);
   const [excluded, setExcluded] = useState(false);
   const [confirmingExclude, setConfirmingExclude] = useState(false);
-  const [takeaway, setTakeaway] = useState<StoredDayTakeaway | null>(null);
   const [contextLine, setContextLine] = useState('');
-  const [mindfulGrowthAreas, setMindfulGrowthAreas] = useState(false);
+  const [dayCoachBody, setDayCoachBody] = useState<string | null>(null);
   // The page renders in the user's CURRENT coaching mode (colors, celebration,
   // labels, copy), not the mode frozen into the score. The score NUMBER and
   // sub-scores stay frozen via the snapshot; only presentation follows current mode,
@@ -119,25 +118,29 @@ export default function DaySummaryScreen() {
         } catch {}
         setDisplayMode(currentMode);
 
-        // Context line + Day Takeaway (replaces win/coach lines per spec 7.1, 15.1)
+        // Context line
         if (sc) {
           const mindful = currentMode === 'mindful';
           setContextLine(await computeContextLine(date, sc.composite, mindful));
 
-          // Read goal from snapshot (frozen on the record), fall back to live profile
           let weightGoal = 'maintain';
-          let mindfulGrowthAreas = false;
           try {
             const raw2 = await AsyncStorage.getItem(`pj_${date}`);
             if (raw2) { const d = JSON.parse(raw2); weightGoal = d.goalSnapshot?.weightGoal ?? weightGoal; }
-            const sRaw = await AsyncStorage.getItem('pj_settings');
-            if (sRaw) { const s = JSON.parse(sRaw); mindfulGrowthAreas = s.mindfulGrowthAreas === true; setMindfulGrowthAreas(mindfulGrowthAreas); }
           } catch {}
 
-          const ta = await ensureDayTakeaway(date, sc, weightGoal, currentMode, mindfulGrowthAreas);
-          setTakeaway(ta);
+          // AI coaching tip for any scored day
+          if (inp) {
+            refreshDayCoachTip(date, sc, inp, currentMode, faithJourney, weightGoal)
+              .then(cache => {
+                const body = resolveTipBody(cache);
+                if (body) setDayCoachBody(body);
+              })
+              .catch(() => {});
+          }
         }
       } catch {}
+
       setLoading(false);
     })();
   }, [date]);
@@ -282,15 +285,33 @@ export default function DaySummaryScreen() {
           {!!contextLine && (
             <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', textAlign: 'center', marginTop: 8 }}>{contextLine}</Text>
           )}
-          {!!takeaway && (() => {
-            const body = resolveTakeawayBody(takeaway, isMindful, mindfulGrowthAreas);
-            return body ? (
-              <Text style={{ fontSize: 14, color: theme.accentBlue, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', textAlign: 'center', marginTop: 12, lineHeight: 20, paddingHorizontal: 12 }}>
-                {body}
-              </Text>
-            ) : null;
-          })()}
         </View>
+
+        {/* Coach insight card: accent-tinted, centered, italic — the standard for all AI coaching surfaces */}
+        {!!dayCoachBody && (
+          <View style={{
+            backgroundColor: `${accent}12`,
+            borderRadius: 12,
+            borderWidth: 1,
+            borderColor: `${accent}50`,
+            padding: 14,
+            marginBottom: 12,
+            alignItems: 'center',
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.08,
+            shadowRadius: 4,
+          }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 10 }}>
+              <Ionicons name="sparkles" size={12} color={accent} />
+              <Text style={{ fontSize: 9, letterSpacing: 3, color: accent, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>Coach Insight</Text>
+            </View>
+            <View style={{ width: '100%', height: 0.5, backgroundColor: `${accent}40`, marginBottom: 10 }} />
+            <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', lineHeight: 22, fontStyle: 'italic', textAlign: 'center' }}>
+              {dayCoachBody}
+            </Text>
+          </View>
+        )}
 
         {presentCats.length < 3 && (
           <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 2, marginBottom: 12, textAlign: 'center', fontStyle: 'italic' }}>

@@ -12,11 +12,12 @@
 
 ## OPEN BUGS / NEXT WORK
 1. ~~Home card tip body: numberOfLines={3} cuts off long tips. Remove the clamp.~~ DONE 2026-06-06
-2. EvR Coach Insight = Home card tip: both use the same pj_coach_tip packet. EvR needs its own packet (longer window, per-card lines) -- scope before building.
-3. Free vs Pro gating: not yet implemented. Home card is free. EvR coaching lines are Pro. Define and build.
-4. Weekly Summary surface: AI, week-scoped, Pro (free = last completed week). Not built yet.
-5. Monthly Summary surface: AI, month-scoped, Pro. Not built yet.
+2. EvR Level 1 packet: needs its own separate packet. Level 1 brain is window-adaptive (14/30/90 days per user selection). EvR Level 1 brain receives home card scenario name as exclusion parameter, skips it, selects next highest-priority finding. Not built yet.
+3. Free vs Pro gating (DECIDED 2026-06-07): home card all 3 slots free (slot 1 Level 1, slots 2+ Level 2); Day Summary free; EvR coaching Pro; Weekly/Monthly Summary Pro. Free users in EvR see all data but coaching is locked. EvR Level 1 insight box: full blur with Pro chip. EvR Level 2 domain tips: subtle locked indicator with lock chip, not full blurred card. Not built yet.
+4. Weekly Summary surface: Level 1 + Level 2 coaching, Pro. Free users see blurred coaching cards (Level 1 full blur with Pro chip, Level 2 subtle lock indicator). Screen layout not yet specced: period analytics surface, not a Day Summary extension. Layout spec required before coaching placement can be built.
+5. Monthly Summary surface: same coaching model as Weekly Summary. Level 1 + Level 2, Pro. Free users see blurred cards. Layout not yet specced. Shares layout spec session with Weekly Summary.
 6. Dev Tools: add pj_coach_tip_day_* reset button so Justin can test fresh Day Summary tips.
+7. Level 2 (Focused Tips) fully surface-locked 2026-06-07: home card slots 2+ (free, eager, 7-day window); EvR domain cards (Pro, lazy, matches EvR selected duration); Weekly Summary (Pro, 7-day, computed at summary generation); Monthly Summary (Pro, 30-day, computed at summary generation). Day Summary stays Level 1 as built. Length rule: 1 to 3 sentences (same as Level 1; distinction is content not word count). Home card Level 2 metric exclusion: pass Level 1 primary metric as exclusion parameter so Level 2 slots surface different signals. Full Level 2 rulebook text: not yet written. Full detail in SMART_COACH_SPEC.md Level 2 section.
 
 ## Home Card Visual Standard (LOCKED 2026-06-06)
 Header row: sparkles icon (size 12, accent) + "COACH INSIGHT" (fontSize 9, letterSpacing 3, accent, DMSans_700Bold, uppercase) + TooltipIcon -- all left side. Chip (INSIGHT/POSITIVE/URGENT) -- right side.
@@ -148,6 +149,9 @@ Home (surface: 'home', windowDays: 14):
   - Currently: loads loadSmartTips(), renders homeTip.title + homeTip.body
   - After: loads loadCoachTipCache(), renders packet.fallbackTitle + aiBody (or fallbackBody)
   - The tip card is case 'smart_tip' in the card registry
+  - Slot 1: Level 1, 14-day window, free
+  - Slots 2+: Level 2, eager compute alongside Level 1 at app open, free
+  - "View in EvR" link: auto-generates 14-day report on tap, no setup page
 
 Day Summary (surface: 'day_summary', windowDays: 1):
   - File: app/day-summary.tsx (393 lines)
@@ -161,6 +165,10 @@ EvR (surface: 'evr', windowDays: 14 | 30 | 90):
   - File: app/diagnostic-report-view.tsx
   - Currently: renders SmartTipCard with tip.title + tip.body
   - After: uses AI tip body when available, exposes window selector (14/30/90)
+  - Level 1 insight: own separate packet, window-adaptive (14/30/90 per user selection), Pro
+  - Level 1 dedup rule: brain receives home card scenario name as exclusion parameter, skips it, selects next highest-priority finding
+  - Level 2 domain card tips: per-card packets, lazy compute, Pro
+  - Free user treatment: Level 1 insight box full blur with Pro chip; Level 2 tips show subtle locked indicator with lock chip
 
 ## File Change List
 1. utils/smartTipsEngine.ts: Add CoachPacket, CoachTipCache interfaces,

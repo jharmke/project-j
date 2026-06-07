@@ -673,6 +673,128 @@ Warm, observational. "We noticed" voice where natural. No judgment language, no 
 
 ---
 
+## LEVEL 2: FOCUSED TIPS (Scoping checkpoint: 2026-06-07)
+
+Level 2 is the transformation of the old Smart Tips rules engine into a full hybrid AI coaching tier. It is not a new layer added alongside the old engine. Smart Tips becomes Level 2. The hardcoded-rules-with-canned-copy model is retired as the primary voice; its two components find new roles in the hybrid system.
+
+---
+
+### What Level 2 is
+
+Level 2 sees ONE metric's data and comments on that metric only. Level 1 sees everything and synthesizes across signals. The distinction is breadth vs depth, not window length.
+
+Level 2 is always observation plus consequence. Never a stat readback. The "so what" is non-negotiable.
+
+Gold standard Level 2 example:
+"Protein came in under 100g on 5 of the last 7 days. On the 2 days you cleared your goal, you averaged 148g, so the target is clearly within reach. On a cut, low protein is the first thing that tends to cost you muscle, not fat."
+
+This is NOT a Level 2 tip (stat readback, no consequence):
+"Your protein goal was missed 5 of the last 7 days."
+
+---
+
+### Architecture
+
+Same hybrid model as Level 1: brain builds a structured packet, AI voices it, deterministic cleanup runs before display.
+
+The packet scope enforces the single-metric boundary. The Level 2 brain only sends one metric's data. The AI cannot cross into Level 1 synthesis territory because it never sees cross-signal data in the packet.
+
+The old Smart Tips engine splits into two roles:
+1. Detection logic (trigger rules, threshold checks, scenario identification) becomes the Level 2 brain. Not thrown away.
+2. Canned copy becomes the Level 2 fallback voice when the AI call fails or times out. Same pattern as Level 1 packet.fallbackBody.
+
+AI is the primary voice. Old canned copy is the fallback. Nothing is wasted.
+
+---
+
+### Compute timing (locked 2026-06-07)
+
+Home card Level 2 slots (carousel slots 2+): eager. Computed at app open alongside Level 1 because they are immediately visible on the primary surface. A loading state on the home card is not acceptable.
+
+EvR domain card Level 2 tips: lazy. Computed when the user navigates to EvR. Each domain card shows its own per-card internal loading state.
+
+Day Summary: OPEN. Surface assignment is the current blocker. See open items below.
+
+---
+
+### Rulebook differences from Level 1 (locked 2026-06-07)
+
+These are the only differences from the Level 1 rulebook. Everything else carries forward unchanged.
+
+Length: 1 to 3 sentences. Same range as Level 1. The distinction between Level 1 and Level 2 is content (single metric vs cross-signal synthesis), not word count.
+Connect signals rule: one consequence only. No cross-metric synthesis.
+Math rule: dropped entirely. Level 2 never has intake plus burn plus weight trend together.
+Packet facts field: single metric data only. No cross-signal numbers.
+Packet scenario field: references a single-metric scenario, not a family-level scenario.
+Packet surface field: updated with Level 2 surface descriptions.
+Packet goal field: kept. Still relevant for protein and calorie tips.
+
+Carrying forward from Level 1 without change: all three coaching modes (Discipline, Balanced, Mindful), all other voice rules, all safety rules, no dashes, second person always, exact numbers, credit before gap, no preaching, no disclaimers, IF active field, previous tip field, faith tier field.
+
+Full Level 2 rulebook text (system prompt) has not been written yet. Needs a dedicated pass after open items are resolved.
+
+---
+
+### Surfaces (locked 2026-06-07)
+
+**Level 2 surfaces:**
+- Home card carousel slots 2+ (slot 1 is always Level 1). Free. Eager compute alongside Level 1 at app open. 7-day window.
+- EvR under each domain card. Pro. Lazy compute with per-card internal loading state. Window matches user-selected EvR duration (14/30/90 days).
+- Weekly Summary. Pro. Computed at summary generation time. 7-day window. Same Level 1 plus Level 2 structure as home card.
+- Monthly Summary. Pro. Computed at summary generation time. 30-day window. Same Level 1 plus Level 2 structure as home card.
+- Notifications: TBD.
+
+**Level 1 surfaces and windows:**
+Level 1 is fully window-adaptive. The window is a parameter the brain receives, not a constant.
+- Home card slot 1: 14-day window. Free. Already built.
+- Day Summary: 1-day window. Free. Already built. Stays Level 1. "Today is the noun" guardrail preserved. No changes to shipped code.
+- EvR insight box: window-adaptive (14/30/90 days per user selection). Pro. Not yet built as own packet.
+- Weekly Summary: 7-day window. Pro. Not built yet.
+- Monthly Summary: 30-day window. Pro. Not built yet.
+
+Level 1 format rule across all windows: always 2 to 3 sentences regardless of window length. Longer windows produce richer scenario detection and more specific data in the packet, not longer or differently formatted output. No bullets, headers, or paragraphs. The coaching layer is a synthesis headline; the domain cards provide the detailed breakdown.
+
+**EvR Level 1 deduplication rule (locked 2026-06-07):**
+The EvR Level 1 brain receives the home card tip's scenario name as an exclusion parameter and skips it, selecting the next highest-priority finding instead. Guarantees EvR Level 1 is always a different finding from the home card, not just a rephrasing of the same analysis.
+
+**EvR entry point (locked 2026-06-07):**
+The "View in Effort vs Results" link on the home card coaching tip auto-generates a 14-day report on tap and lands the user directly in the report. No setup page. User can change the window from inside the report.
+
+**Home card Level 2 metric exclusion rule (flagged 2026-06-07, lock at build):**
+When Level 1 fires a single-metric scenario (e.g. Family 2.1 protein is the one gap), Level 2 home card slots should skip that same metric and surface different signals. Level 2 must add new information, not restate at lower depth what Level 1 already covered. Build-time decision: pass the Level 1 primary metric to the Level 2 brain as an exclusion parameter, same pattern as the EvR Level 1 dedup rule.
+
+---
+
+### Free vs Pro model (locked 2026-06-07)
+
+Free surfaces: home card all 3 slots (Level 1 slot 1, Level 2 slots 2+), Day Summary.
+Pro surfaces: EvR (Level 1 insight + Level 2 domain tips), Weekly Summary, Monthly Summary.
+
+Free users in EvR: can generate reports and see all domain card data and scores. The coaching layer is locked.
+
+Lock treatment (two-tier):
+- EvR Level 1 insight box: full blur with Pro chip. Prominent upsell. Box shape and label visible, content blurred. Creates curiosity at the report's headline coaching element.
+- EvR Level 2 domain card tips: subtle locked indicator with a small lock chip. Not a full blurred card. Elegant and minimal. Creates desire without stacking identical heavy lockouts across every domain card.
+- Weekly Summary coaching: Level 1 full blur with Pro chip, Level 2 subtle lock indicator. Same two-tier treatment as EvR.
+- Monthly Summary coaching: same treatment as Weekly Summary.
+
+**Weekly and Monthly layout dependency (flagged 2026-06-07):**
+Weekly and Monthly summary screen layouts are not yet specced. The exact placement of coaching cards on those screens cannot be finalized until the layout exists. These surfaces should NOT mirror Day Summary. Day Summary is a single-day deep dive. Weekly and Monthly are period analytics surfaces, closer in spirit to EvR than to a day review: period score, domain averages and trends, goal comparison. A dedicated layout spec session is required before build. Coaching decisions are locked; visual placement within the screen is TBD.
+
+---
+
+### Open items (Level 2)
+
+1. ~~Day Summary surface assignment~~ RESOLVED 2026-06-07: stays Level 1, 1-day window, as currently built. No changes.
+2. ~~Data window~~ RESOLVED 2026-06-07: Level 2 is window-adaptive. Home card Level 2 slots use 7 days (matches gold standard example, more actionable for daily use, creates natural distinction from Level 1's 14-day view). All other surfaces inherit window from context: EvR uses user-selected duration (14/30/90), Weekly Summary 7 days, Monthly Summary 30 days.
+3. Full Level 2 rulebook text (system prompt): not yet written. Needs a dedicated pass after data window and remaining surface items are resolved.
+4. EvR domain card Level 2 tips confirmed as Level 2 surface (lazy compute, per-card loading, Pro). Not yet specced as a section in SPEC_smart_tips.md. New section needed before build.
+5. SPEC_smart_tips.md Section 10.2 (home card): slot 1 Level 1 free, slots 2+ Level 2 free. Update needed in that doc.
+6. SPEC_smart_tips.md general audit needed: Section 4 still describes a hardcoded rules engine with no API calls; two-tier Generic vs Smart predates Level 1/Level 2 distinction. Full audit before build.
+7. Weekly and Monthly summary screen layouts: not yet specced. Required before coaching card placement can be designed or built. Period analytics surfaces, not Day Summary extensions. Dedicated layout spec session needed.
+
+---
+
 ## Considered and cut (do not re-propose without a new reason)
 - Body recomposition (scale flat, body fat dropping): cut until the measurements system ships. No live body-fat source today.
 - Momentum / Streaks as a full family: cut. Overlaps the existing achievements and streak systems. ONLY survivor is the narrow 6.4 almost-a-streak nudge (1 to 2 days from a streak, forward-looking only).
@@ -794,3 +916,7 @@ A new pj_ AsyncStorage key (for example pj_challenges) holding active and comple
 - 2026-06-06: Scenario library v2. Added 22 new scenarios across all families (new totals: Family 1 has 8, Family 2 has 9, Family 3 has 16, Family 4 has 7, Family 5 has 10, Family 6 has 5, Family 7 has 7, Family 8 unchanged at 5, Family 9 unchanged, Family 10 unchanged at 5, Family 11 has 6). Library total: 78 scenarios. Key additions: Families 3 and 5 expanded most (behavioral patterns and data quality), Family 7 added first plateau and transition overdue, Family 11 added dynamic modality shift and session quality. Locked foundational principle 8: authoritative on data, humble on causation (two-mode voice rule, not a blanket hedge). Locked Family 1 concept depth: all 8 scenarios at trigger-logic-concept level including the 1.2 dig-deeper rule (TDEE recalc before refeed recommendation), the 1.1 brain-state pattern, and the 1.7 whoosh probabilistic framing. Question 2 pass and voice examples are next.
 - 2026-06-06 (continued): PRE-BUILD SCOPING GATE FULLY CLOSED. All five items complete. (1) All 11 scenario families at full concept depth. (2) Voice Examples (List 2) locked: 12 examples across Discipline, Balanced, Mindful, covering positive/corrective/care/educational tones, with standing voice rules. (3) Rulebook (system prompt) locked: job definition, coaching modes, voice rules, safety rules, packet format with full example, style examples guidance. (4) Question 2 pass complete: 5.6 detection fixed to clustering logic, 3.16 sequencing clarified, 6.4 kept, 11.4 deferred to build. (5) Surfaces locked: Home tip card (14-day), Day Summary (1-day, same architecture), EvR (14/30/90-day). Smart Coach is ready to build.
 - 2026-06-03: Scoped a new SHORT-TERM CHALLENGES / MISSIONS layer (full capture in the new section above), the action / commitment layer that closes the loop the Smart Tips open. Recommended (coach-driven) plus manual (user-created) creation. Reward decided: an in-the-moment completion celebration plus a tiered Challenges achievement track (1/5/10/25), no new currency. A special starter challenge unlocks the three non-default themes (Slate/Warm/Blush) at once and intros the customization + achievement systems, which resolves the long-open theme-unlock mapping (Light/Dark default, the other three earned, accents free and bundled, nothing paid). Mode rule: manual works in all modes, recommended is suppressed in default Mindful and gentle with growth areas on. Window shape (N-of-M vs streak) deferred to build. Cross-references the 6.4 almost-a-streak nudge and the IF auto-start idea so they are not double-built. Parked extensions: personal weekly/monthly challenges (natural extension) and community/social challenges (major future phase). Same session, the stale "paid themes" labels were wiped app-wide (CLAUDE.md, the duplicate instructions file, theme.tsx, roadmap). Status: scoping only, parked behind the Faith AI track.
+- 2026-06-07: LEVEL 2 (Focused Tips) scoped. Level 2 is the transformation of old Smart Tips into a hybrid AI tier using the same brain+AI+cleanup architecture as Level 1, scoped to a single metric per tip. Old Smart Tips detection logic becomes the Level 2 brain; old canned copy becomes the Level 2 fallback voice (same pattern as Level 1 fallbackBody). Compute timing locked: home card carousel slots 2+ compute eager alongside Level 1 at app open (immediately visible, no loading state acceptable on home); EvR domain card tips compute lazy with per-card internal loading states. Rulebook differences locked: 1-2 sentences (not 2-3), one consequence only with no cross-metric synthesis, math rule dropped entirely, packet facts limited to single metric data only. Surfaces partially locked: home card slots 2+ and EvR domain cards confirmed Level 2. Day Summary surface OPEN: gym notes assign Level 2 but conflicts with SPEC_smart_tips.md Section 15.1 "today is the noun" guardrail, and Day Summary is already built as Level 1 with a 1-day window. Explicit call needed before any Level 2 build begins. Other open items: Level 2 data window (7-14 days TBD), Level 2 rulebook text (not yet written), EvR domain card Level 2 section missing from SPEC_smart_tips.md, Section 10.2 home card slot distinction not yet updated, SPEC_smart_tips.md general audit needed (Section 4 describes hardcoded engine with no API calls; Generic vs Smart two-tier predates Level 1/Level 2 distinction). Full detail in Level 2 section above.
+- 2026-06-07 (continued): Weekly and Monthly free/Pro model finalized. Free users see blurred coaching cards on both surfaces (Level 1 full blur with Pro chip, Level 2 subtle lock indicator), same two-tier treatment as EvR. No-cards-at-all option considered and rejected: blurred cards at the weekly milestone moment are a higher-value upgrade prompt than showing nothing. Weekly and Monthly layout dependency flagged: screens not yet specced, must not mirror Day Summary, are period analytics surfaces closer to EvR in spirit. Coaching layer locked; visual card placement TBD at layout spec time.
+- 2026-06-07 (continued): Level 2 length rule corrected: 1 to 3 sentences (same range as Level 1; distinction is content not word count; gold standard example is 3 sentences and that is the right bar). Level 2 data window locked: window-adaptive across all surfaces. Home card Level 2 uses 7 days (more actionable for daily use, natural distinction from Level 1's 14-day view). EvR Level 2 uses user-selected duration. Weekly Summary Level 2 uses 7 days. Monthly Summary Level 2 uses 30 days. Weekly Summary and Monthly Summary confirmed as Level 1 plus Level 2 surfaces, same structure as home card. Home card Level 2 metric exclusion rule flagged for build: when Level 1 fires a single-metric scenario, Level 2 brain skips that metric and surfaces different signals (same dedup principle as EvR Level 1).
+- 2026-06-07 (continued): Surface assignments and free/Pro model locked. Day Summary confirmed Level 1 as built, no changes. Level 1 declared window-adaptive across all 6 surfaces: home fixed 14 days, Day Summary 1 day, EvR 14/30/90 per user selection, Weekly 7 days, Monthly 30 days. Level 1 format rule locked: always 2 to 3 sentences regardless of window; longer windows produce richer scenario content not longer output, no bullets or paragraphs ever. EvR Level 1 deduplication rule locked: brain skips the scenario already fired in the home card, selects next highest-priority finding. EvR entry point locked: "View in Effort vs Results" auto-generates 14-day report on tap, no setup page. Free/Pro model locked: home card all 3 slots free (Level 1 slot 1, Level 2 slots 2+), Day Summary free; EvR coaching Pro, Weekly Pro, Monthly Pro. Free EvR lock treatment: two-tier (Level 1 insight box full blur with Pro chip; Level 2 domain tips subtle locked indicator with lock chip, not full blurred card). Open items remaining: Level 2 data window (7-14 days TBD), Level 2 rulebook text, SPEC_smart_tips.md updates needed (Section 10.2, Section 4, new EvR domain card section).

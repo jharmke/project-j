@@ -441,6 +441,9 @@ export default function WeeklySummaryScreen() {
                 left={{ label: 'AVG FIBER', value: avgFiber !== null ? `${formatNumber(avgFiber)}g` : '--' }}
                 right={{ label: 'AVG SODIUM', value: avgSodium !== null ? `${formatNumber(avgSodium)}mg` : '--' }}
               />
+              <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 5, marginLeft: 2 }}>
+                Fiber and sodium only count foods with complete data
+              </Text>
             </View>
           </SectionCard>
 

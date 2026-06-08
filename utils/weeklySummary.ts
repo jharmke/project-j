@@ -251,8 +251,8 @@ export async function generateWeeklySummary(weekStart: string): Promise<WeeklySu
       proteinList.push(prot);
       carbsList.push(carbs);
       fatList.push(fat);
-      fiberList.push(fiber);
-      sodiumList.push(sodium);
+      if (fiber > 0) fiberList.push(fiber);
+      if (sodium > 0) sodiumList.push(sodium);
       daysLoggedNutrition++;
 
       // Net: consumed - active (with burn accuracy applied) - bmr

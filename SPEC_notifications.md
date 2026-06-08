@@ -1,135 +1,322 @@
-# Notifications: Living Spec (Smart/Manual System)
+# Notifications: Living Spec
 
-First checkpoint: 2026-06-04 (organized from Justin's gym notes + the roadmap's notification items)
+First checkpoint: 2026-06-04
+Last updated: 2026-06-08 (full redesign locked with Justin)
 
-Status: SCOPING. This is now the source of truth for the notification redesign. The shipped infrastructure is summarized below so the doc stands alone; the forward-looking design (Smart/Manual split, the personality fallback, the in-app page, summary routing) is what gets built next. No double dashes anywhere (project rule). No "Session NN" tags.
-
-This doc consolidates: roadmap "NOTIFICATIONS OVERHAUL" item, the two false-fire bugs, the "too many notifications, on by default" note, notification deep-linking, and "MODE NUDGE NOTIFICATIONS deferred to SOON." Those roadmap items now point here. The shipped [x] history stays in the roadmap as a record.
+Status: REDESIGN LOCKED. This is the source of truth for the notification overhaul. The shipped infrastructure is preserved below; everything from the settings UI down is new. No double dashes anywhere (project rule). No "Session NN" tags.
 
 ---
 
-## What exists today (shipped, verified in roadmap)
+## What exists today (infrastructure, do not rebuild, extend it)
 
-Real infrastructure is already live, do not rebuild it, extend it:
 - expo-notifications installed, APNs key generated via EAS, plugin configured in app.json.
-- services/notifications.ts: the notification service. Permission handling (one-shot iOS ask, never on cold launch), IF window scheduling (event-driven, cancels on last meal), the daily scheduler engine with all 10 notification types, mode-aware copy (Discipline/Balanced/Mindful) for every type, quiet hours enforcement, P1 (streak + IF window, never suppressed) / P2 (everything else, subject to spacing) priority tiers, auto-timing spacing, average bedtime calc from the last 7 days of sleepBedTime.
-- services/notificationScheduler.ts: reads all data from AsyncStorage, runs once per day (guarded by pj_notif_last_scheduled), triggers the permission ask when a streak hits 3+ days.
-- Settings > Notifications UI: master toggle, quiet hours, minimum spacing pills, per-type blocks with toggles + time pickers, faith-gated types (Morning Intention, Evening Gratitude, Prayer Check-In). Currently 3 accordions (Health & Habits / Fasting / Faith) with up to 11 individual toggles.
+- services/notifications.ts: permission handling (one-shot iOS ask, never on cold launch), IF window scheduling (event-driven, cancels on last meal), daily scheduler engine, mode-aware copy (Discipline/Balanced/Mindful), quiet hours enforcement, P1/P2 priority tiers, auto-timing spacing, average bedtime calc from last 7 days of sleepBedTime.
+- services/notificationScheduler.ts: reads all data from AsyncStorage, runs once per day (guarded by pj_notif_last_scheduled), triggers permission ask when a streak hits 3+ days.
 - Storage keys: pj_notification_settings, pj_notif_last_scheduled.
 
-The redesign below sits ON TOP of this. The scheduler/service stay; the coordination layer and the settings UX change.
+The redesign replaces the settings UX and coordination logic. The scheduler/service stay and are extended, not rewritten.
 
 ---
 
-## The core problem
+## What is killed
 
-Up to 11 independent notification types fire separately with no coordination, which feels spammy. Two things have to change: how notifications are CHOSEN (coordination), and how the user CONTROLS them (settings simplification). The Smart/Manual split is the frame for both.
-
----
-
-## 1. Smart vs Manual: the top-level toggle (gym note 2)
-
-A single top-level control at the top of notification settings: Smart mode or Manual mode.
-
-- MANUAL = the current granular system. All individual toggles, the user picks everything: which types fire, exact times, spacing. Nothing app-decided. This is what exists today, preserved for users who want full control.
-- SMART = an app-coordinated system that fires intelligently based on the user's data. The user does NOT pick individual messages. Instead the user sets:
-  - a FREQUENCY CEILING (how many notifications per day they are willing to receive),
-  - TIME WINDOWS (when they are open to being notified),
-  - SUBJECT PREFERENCES (which categories are fair game: nutrition, sleep, activity, faith, etc.).
-  - The app decides the actual content within those bounds.
-
-Key correction to the old "one daily digest" framing: SMART IS NOT CAPPED AT ONE PER DAY. The user controls how many they want and when. Smart coordinates and prioritizes; it does not force a single ping.
-
-Smart mode is where the Smart Coach hybrid engine plugs in as the content brain (see Relationship to Smart Coach). The deterministic brain decides WHAT matters today; the frequency ceiling and windows decide HOW MANY and WHEN.
-
-DEFAULTS (from the roadmap "too many notifications, on by default" note): flip the defaults toward fewer/off so a fresh install is not noisy. Decide the exact default state when refining this doc.
-
-MODE-AWARENESS (project hard rule): Smart notification tone and aggressiveness must respect the coaching mode (Discipline / Balanced / Mindful). Mindful especially: no corrective/growth-area pings, gentle framing only. Define fully at build.
+These types are removed entirely:
+- Morning Intention: killed. Feature does not exist.
+- Weekly Recap (old daily-scheduler type): killed. Replaced by Weekly Summary Ready below.
+- Achievement notification: killed. Achievements are computed in-app only, no background detection.
+- IF Window Open: killed. User manually starts the window.
+- Calorie goal hit: killed.
 
 ---
 
-## 2. Smart message logic: the "we miss you" fallback (gym note 3)
+## Notification types: final list
 
-When Smart mode wants to fire but there is nothing data-specific to say (no logs, no activity, early in streak building), it should NOT go silent and it should NOT fire a generic line. It fires a fun, direct, personality-filled message that sounds like the app talking to the user.
+### Priority system
 
-Voice target (warm, creative, not generic):
-- "Haven't seen you today. Don't let the day slip by."
-- "We miss you. Come back."
+**P1 - always fires, does NOT count against the daily cap:**
+- Streak Protection
+- IF Window Closing
 
-These fallback messages get a PS BLOCK appended with any urgent / time-sensitive items, for example:
-- IF window closing
-- streak ending tonight
-- water goal untouched by 8pm
+**Always fires, bypasses cap entirely:**
+- Weekly Summary Ready (fires once a week)
+- Monthly Summary Ready (fires once a month)
+- Re-engagement (hidden from settings, always-on)
 
-So the structure is: [personality line] + [optional PS: urgent items]. The personality line carries the warmth; the PS carries the utility.
+**P2 - competes for daily cap slots, in priority order:**
+1. Faith Reading
+2. Gratitude / Prayer (treated as a pair, one slot each)
+3. Water Pace
+4. Food Log Reminder
+5. Activity Reminder
+6. Daily Verse
+7. Weight Log Reminder
+8. IF Check-In
 
-This needs full speccing: lots of situations and variable combinations (which urgent items exist, how many to stack in the PS, how the personality line varies by time of day / streak state / how long since last open). The fallback voice should live in the same system as the rest of the app's personality so it reads cohesive.
-
-OPEN: deterministic micro-copy vs AI-phrased. Lean deterministic for the personality lines (a curated rotating set keyed by state) to avoid cost and keep them tight, same reasoning as the contextual-card-copy decision in the roadmap. Decide when refining.
-
----
-
-## 3. In-app notifications page (gym note 4)
-
-A dedicated in-app screen. iOS gives no native notification history, so we build our own. The page holds:
-- NOTIFICATION HISTORY: what fired and when (a scrollable log).
-- THE FULL NOTIFICATION SETTINGS: this is where the simplified Smart/Manual settings UX lives, moved/duplicated out of the buried Settings location.
-
-The settings UI gets simplified as part of the Smart/Manual split: today's 3 accordions with 11 toggles collapse to a small number of high-level controls (Smart mode: ceiling + windows + subjects; Manual mode: the granular toggles, shown only when Manual is selected).
-
-OPEN: history persistence (how many entries, how long retained, storage key). Decide at build. Likely a new pj_notification_log key, append-only, capped at N entries, read-then-merge.
+With a default cap of 5, users with a full P2 queue will rarely see Weight Log (7) or IF Check-In (8) unless higher-priority conditions are not met. This is acceptable. The most important things surface first.
 
 ---
 
-## 4. Summary-ready routing notifications (gym notes 5 + 13)
+### P1 types
 
-A simple, non-intrusive push when a weekly or monthly summary is ready: "Your weekly summary is ready." Tapping it opens directly INTO that summary. Same for monthly. This is a ROUTING notification, not a digest, it carries no content, it just gets the user to the summary screen.
+#### Streak Protection
+- Fires once per day, bedtime-aware. Default: 9pm until enough sleep history exists (7+ days of sleepBedTime). Then fires average-bedtime minus user-set offset (default 45 min, Advanced control: 30/45/60 min).
+- All active streaks that have not been completed today are BATCHED into one notification. Never multiple streak notifications.
+- Copy: if 1 streak: "[Name] streak - [X] days. Don't let it end tonight." If 2: "[Name] and [Name] streaks at risk tonight." If 3+: "[N] streaks at risk tonight. Tap to check."
+- Mindful default: suppress entirely. Streaks are informational only in Mindful.
+- Mindful growth areas ON: fires with "keep going" framing. Never uses "at risk." Example: "Your Gratitude streak continues today. One small action keeps it going."
+- Variations: 4-6 per mode. Deterministic rotation.
+- Deep link: Home tab.
+- Visible in settings: yes, standalone toggle above category pills (not under any category since streaks span fitness and faith).
 
-Notes 5 and 13 are the same feature: the notification experience and the summary screen must be DESIGNED TOGETHER so the tap-to-open flow is seamless. This pairs with the weekly/monthly summary work in the roadmap (Reports section, Day Summary / Weekly Summary / Effort vs Results) and the day-summary spec. Build the routing when the summaries exist.
-
-Depends on: notification deep linking (below) working, and the weekly/monthly summary screens existing.
-
----
-
-## 5. Notification deep linking (from roadmap, folded in)
-
-Today all notifications open the app to whatever was last open. Minimum bar: tap a notification, land on the correct tab. Bonus: auto-scroll/center to the relevant card within that tab. Applies to every notification type (streak protection, IF window closing, food log reminder, water pace, activity reminder, summary-ready, etc.). This is the mechanism the summary-routing notifications (section 4) depend on, so build it as the shared routing layer.
-
----
-
-## 6. Known bugs to fix in the overhaul (from roadmap)
-
-- FALSE FIRES (delete-the-app territory, worth a standalone fix before the full overhaul):
-  - 7pm "Food log reminder, you haven't logged anything today" fired after 3 meals + snacks were logged since 7:40am.
-  - 8pm "log gratitude" fired after gratitude was logged that morning.
-  - Root cause: trigger conditions are not reading current-day state. The Smart coordination layer must read live state before firing anything, which fixes this class of bug structurally, but the two specific false fires deserve a quick patch first.
+#### IF Window Closing
+- Event-driven. Fires X minutes before the eating window closes.
+- Lead time controlled in Advanced: 15 / 30 / 60 min. Default: 30 min.
+- Cancels and reschedules whenever the IF window is updated.
+- Mindful: fires. Informational, not corrective. Gentle copy variant.
+- Variations: 4-6 per mode.
+- Deep link: Home tab, IF card.
 
 ---
 
-## 7. Mode nudge notifications (from roadmap, folded in)
+### Always-on bypass types
 
-All three coaching tiers have mode nudge notifications specced in the onboarding/mode docs, deferred because they needed notification infrastructure first. The infrastructure now exists, so these can be scheduled as a notification subject under the Smart system. Fold them into the subject preferences (section 1) rather than as standalone toggles.
+#### Weekly Summary Ready
+- Fires Monday at 11am-12pm.
+- Cancel-on-action: when the app is opened on Monday before the notification fires, the scheduler cancels it (user already has access). If the app is not opened, notification fires.
+- Simple toggle in Summaries category: on/off only, no time control.
+- Deep link: Stats tab, directly to the weekly summary page (not just the tab).
+
+#### Monthly Summary Ready
+- Fires on the 1st of each month at 11am-12pm.
+- Same cancel-on-action logic as Weekly.
+- Same toggle in Summaries category.
+- Deep link: Stats tab, directly to the monthly summary page.
+
+#### Re-engagement
+- Hidden from settings. Always-on system behavior. Not user-controllable.
+- Fires 48 hours after last app open. If still no open after that, fires once per week.
+- Mindful copy: "No pressure. We're here when you're ready."
+- Discipline copy: "It has been a couple days. Get back on track."
+- Balanced copy: "It has been a couple days. Your streaks and goals are waiting."
+- Variations: 4-6 per mode.
+- Deep link: Home tab.
 
 ---
 
-## Relationship to the Smart Coach
+### P2 types (priority order)
 
-The Smart notification system is a DELIVERY SURFACE for the Smart Coach hybrid engine, the same way EvR, Day Summary, and the home card are surfaces. The roadmap is explicit: "Notification delivery is a second surface for the same coaching logic, so design it with the coach, not separately." The coach brain decides what is worth saying; this doc decides how it reaches the user (frequency, windows, subjects, routing, the personality fallback when the brain has nothing). Do not build a parallel content engine.
+#### 1. Faith Reading
+- Covers both devotionals (pj_devotionals) and reading plans (pj_reading_plans) in a single notification.
+- Only fires if user has at least one active devotional or reading plan with today's content not yet completed.
+- Smart content: if only one item pending, name it and the day. "Walk Through the Psalms - Day 3 is waiting." If multiple, count them. "2 devotionals and 1 reading plan have today's content ready."
+- Cancel-on-complete: when user marks a devotional day or reading plan day complete, cancel this notification if nothing else is still pending.
+- Faith-gated: Rooted and Exploring only. Does not fire for NRN.
+- Mindful: fires unchanged.
+- Variations: 4-6 per mode.
+- Deep link: Plans screen (app/plans.tsx).
 
-The faith-gated notification types (Morning Intention, Evening Gratitude, Prayer Check-In) stay faith-tier-aware and are NOT routed through Halo or the Smart Coach; they remain their own gentle scheduled pings, surfaced as a "faith" subject in Smart mode.
+#### 2. Gratitude
+- Fires if gratitude has not been logged today.
+- Cancel-on-action: when gratitude is logged, cancel immediately.
+- Mindful: fires. Very aligned with Mindful philosophy.
+- Gentle copy example: "Take a moment to log what you are grateful for today."
+- Variations: 4-6 per mode.
+- Deep link: Faith tab, auto-scroll to gratitude card.
+
+#### 2. Prayer Check-In
+- Fires at user-set time (Advanced). Default: night.
+- Skips if prayer has already been logged today.
+- Faith-gated: does not fire for NRN.
+- Mindful: fires. Gentle framing.
+- Variations: 4-6 per mode.
+- Deep link: prayer.tsx directly.
+
+#### 3. Water Pace
+- Water reminders are their own sub-system. User picks count: Off / 1 / 2 / 3 / 4 per day. Default: 3.
+- Water count is separate from and does NOT compete with the P2 daily cap. Water is utility, not coaching content.
+- The selected count is spaced evenly across waking hours (defined by quiet hours). Example: 3 reminders with quiet hours 10pm-7am = fires roughly 9am, 1pm, 5pm.
+- Each slot only fires if the user is 25% or more behind expected pace at that moment. Expected pace is linear from 6am to 10pm.
+- Cancel-on-goal: if water goal is hit, remaining slots are cancelled.
+- Mindful: fires. Hydration is not judgmental.
+- Variations: 4-6 per mode.
+- Deep link: Home tab, auto-scroll to water card. Fallback: Home tab if card not visible.
+
+#### 4. Food Log Reminder
+- Fires at 2pm if no food has been logged today. No time picker.
+- Mindful default: suppress.
+- Mindful growth areas ON: fires. Gentle copy: "Take a moment to check in with what you have eaten today."
+- Variations: 4-6 per mode.
+- Deep link: Log tab.
+
+#### 5. Activity Reminder
+- Fires at user-set time (Advanced time picker). No default bucket, user sets exact time.
+- Condition: no workout logged today AND steps below 75% of step goal.
+- Rationale for combined condition: some users are highly active at work or running errands without logging a workout. 75% step threshold accounts for this.
+- Mindful default: suppress.
+- Mindful growth areas ON: fires. Gentle copy: "How has your movement been today?"
+- Variations: 4-6 per mode.
+- Deep link: Workout tab.
+
+#### 6. Daily Verse
+- Fires randomly within 8-11am window each day.
+- Notification body: shows first line of today's verse.
+- Faith-gated: Rooted and Exploring only. Does not fire for NRN.
+- Mindful: fires unchanged.
+- Variations: 4-6 (different framing lines, same verse content).
+- Deep link: Bible screen, auto-scrolled to today's verse with it highlighted, exactly as if user tapped the Today's Message card on the Faith tab.
+
+#### 7. Weight Log Reminder
+- Fires in the morning on user-set frequency (Advanced: Daily / Every 3 days / Weekly).
+- Skips if weight has already been logged today.
+- Only fires if user has logged weight at least once before (shows intent to track).
+- Suppress in Mindful always, regardless of growth areas setting. Weight is de-emphasized in Mindful across the entire app.
+- Variations: 4-6 per mode (Discipline/Balanced only, no Mindful pool needed).
+- Deep link: Home tab, auto-scroll to weight card. Fallback: Home tab if card not visible.
+
+#### 8. IF Check-In
+- Fires if food has been logged today but the IF window has not been started.
+- INVESTIGATION NEEDED before building: condition logic may not be working correctly. Justin has not recalled receiving this notification despite meeting conditions. Audit the ifEnabled check in notificationScheduler.ts before building.
+- Mindful default: suppress.
+- Mindful growth areas ON: fires. Gentle copy.
+- Variations: 4-6 per mode.
+- Deep link: Home tab, IF card.
 
 ---
 
-## Open questions (refine when Justin is back)
+## Settings UI layout
 
-1. Smart mode default state on a fresh install: how many per day, which subjects on, which windows? (Roadmap says lean fewer/off.)
-2. The personality fallback line set: deterministic rotating copy vs AI-phrased. Lean deterministic.
-3. How many urgent items stack in the PS block, and their priority order.
-4. In-app notification history: retention, cap, storage shape.
-5. Where the simplified settings live: only on the new in-app page, or mirrored in Settings.
-6. Exact Mindful-mode behavior for Smart notifications (corrective pings suppressed, gentle framing).
+Screen renders top to bottom:
+
+**Enable Notifications** [master on/off toggle]
+
+**Quiet Hours** [tap to edit row, shows current range, e.g. "10:00 PM to 7:00 AM"]
+
+**Streak Protection** [on/off toggle, standalone, above categories]
+
+**How many per day**
+[3]  [5]  [All]  (pill selector, default: 5)
+Note: P1 and always-on types are not affected by this cap.
+
+**What can we notify you about?**
+[Fitness]  [Faith]  [Fasting]  [Summaries]
+Category pill toggles. All on by default.
+Faith pill: greyed out (not hidden) for NRN faith journey users. Faith-type notifications suppressed but the control is still visible.
+
+**Water reminders** (only visible when Fitness category is on)
+[Off]  [1]  [2]  [3]  [4]  per day  (default: 3)
+Note: water count bypasses the daily cap. It is utility, not coaching content.
+
+**Advanced** [collapsed by default, chevron to expand]
+- Activity reminder time: [time picker]
+- Weight log frequency: [Daily]  [Every 3 days]  [Weekly]
+- Prayer check-in time: [time picker]
+- IF window reminder: [15 min]  [30 min]  [60 min]  before close
+- Streak protection: [30]  [45]  [60]  min before bedtime
+
+---
+
+## Defaults (fresh install)
+
+- Master toggle: on
+- Quiet hours: 10pm to 7am
+- Daily cap: 5
+- All categories: on
+- Water count: 3
+- Streak protection: on
+- Activity reminder time: 5:00 PM
+- Weight log frequency: Every 3 days
+- Prayer check-in time: 9:00 PM
+- IF window reminder: 30 min
+- Streak protection offset: 45 min
+
+---
+
+## Deep linking (all types)
+
+Every notification taps into a specific destination. Generic "open to last screen" is not acceptable.
+
+| Type | Destination |
+|---|---|
+| Streak Protection | Home tab |
+| IF Window Closing | Home tab, IF card |
+| Weekly Summary Ready | Stats tab, weekly summary page directly |
+| Monthly Summary Ready | Stats tab, monthly summary page directly |
+| Re-engagement | Home tab |
+| Faith Reading | Plans screen (app/plans.tsx) |
+| Gratitude | Faith tab, auto-scroll to gratitude card |
+| Prayer | prayer.tsx directly |
+| Water Pace | Home tab, auto-scroll to water card (fallback: Home tab) |
+| Food Log | Log tab |
+| Activity | Workout tab |
+| Daily Verse | Bible screen, auto-scroll to today's verse (same as tapping Today's Message card) |
+| Weight Log | Home tab, auto-scroll to weight card (fallback: Home tab) |
+| IF Check-In | Home tab, IF card |
+
+---
+
+## Copy variations
+
+Every notification type must have 4-6 copy variations per coaching mode. Deterministic rotating pool: an index stored per type increments each time that type fires, cycles back to 0 at the end of the pool. No AI generation at runtime. All copy written once, pre-baked.
+
+Each type gets separate pools for Discipline, Balanced, and Mindful (where applicable). Weight log has no Mindful pool since it is suppressed. Types suppressed in default Mindful still need Mindful growth-areas-ON pools.
+
+Copy pass is its own build step. Do not write copy inline while building the scheduler logic.
+
+---
+
+## Mindful behavior (two states)
+
+Mindful has two states driven by mindfulGrowthAreas boolean in pj_settings (default false).
+
+| Type | Mindful default (growth areas OFF) | Mindful + growth areas ON |
+|---|---|---|
+| Food Log | Suppress | Fires, gentle copy |
+| Activity | Suppress | Fires, gentle copy |
+| Water | Fires | Fires |
+| Weight Log | Suppress always | Suppress always |
+| Streak Protection | Suppress | Fires, keep-going framing, never "at risk" |
+| IF Window Closing | Fires | Fires |
+| IF Check-In | Suppress | Fires, gentle copy |
+| Daily Verse | Fires | Fires |
+| Faith Reading | Fires | Fires |
+| Gratitude | Fires | Fires |
+| Prayer | Fires | Fires |
+| Summaries | Fires | Fires |
+| Re-engagement | Fires, gentlest copy | Fires |
+
+Confirmed gentle copy anchors (starting points for copy pass):
+- Food log (growth areas ON): "Take a moment to check in with what you have eaten today."
+- Activity (growth areas ON): "How has your movement been today?"
+- Streak protection (growth areas ON): "Your [name] streak continues today. One small action keeps it going."
+- Re-engagement (default): "No pressure. We are here when you are ready."
+
+---
+
+## Smart coaching scenarios (NOT this build, details NOT agreed on)
+
+A future layer where the notification content is cross-data-aware rather than single-signal. Examples discussed but not locked:
+- Big workout logged + calories significantly below target midday: refuel nudge
+- Calories already near daily target before dinner: watch-it nudge
+- Yesterday significantly over calories + today trending very low: compensation pattern warning
+- Protein tracking well below target despite calories being on track: macro nudge
+- Multi-day streak of hitting calorie goal: momentum acknowledgment
+
+Architecture intent: same deterministic brain as the Smart Coach (SMART_COACH_SPEC.md). Scenarios computed at app open, scheduled if condition met, fired within smart time windows baked into each scenario. No live AI call at notification fire time.
+
+This layer is NOT part of the current overhaul. Do not build piecemeal. Needs a dedicated design session before any code.
+
+---
+
+## Open items before build starts
+
+1. IF Check-In investigation: audit ifEnabled logic in notificationScheduler.ts. Justin has not recalled receiving this notification despite conditions being met. Resolve before building this type.
+2. Gentle copy (growth areas ON Mindful): the 4 anchors above are confirmed. Full copy pass for all Mindful growth-areas-ON types is a separate step after scheduler logic is built.
+3. Deep linking implementation: requires router.push with params for each destination. Faith tab scrollTo param pattern already exists (confirmed in faith.tsx). Bible screen verse-scroll behavior needs to match the Today's Message card tap path exactly.
+4. Weekly/monthly cancel-on-action: requires the weekly and monthly summary screens to fire a cancel when viewed. Confirm the exact screen/component that triggers this.
 
 ---
 
 ## Checkpoint log
-- 2026-06-04: Doc created from Justin's gym notes (Smart/Manual split, the we-miss-you fallback + PS block, the in-app notifications page, summary-ready routing) plus the roadmap's notification items (overhaul, false-fire bugs, defaults-to-fewer, deep linking, mode nudge notifications). Corrected the old "one daily digest" assumption: Smart is NOT capped at one per day, the user sets a frequency ceiling. Shipped infrastructure summarized so the doc stands alone. Roadmap items now point here. Next: refine the open questions with Justin.
+
+- 2026-06-04: Doc created from Justin's gym notes (Smart/Manual split, personality fallback, in-app page, summary routing) and roadmap notification items.
+- 2026-06-08: Full redesign locked with Justin. Smart/Manual split replaced with category-based settings + daily cap + priority system. 14 types finalized (2 killed, 4 new added). Settings UI fully specced. Deep linking table complete. Mindful two-state pass complete. Copy variation approach locked (deterministic rotation, 4-6 per type per mode). Smart coaching scenarios preserved as future layer, not this build, details not agreed on.

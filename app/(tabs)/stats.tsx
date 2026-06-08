@@ -1999,9 +1999,9 @@ export default function StatsScreen() {
                     </>
                   )}
                 </View>
+                {renderDayArchive()}
                 {renderWeeklyCard()}
                 {renderMonthlyCard()}
-                {renderDayArchive()}
               </CollapsibleSection>
               </View>
             );

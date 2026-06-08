@@ -164,12 +164,12 @@ function CalendarGrid({ days, isMindful, theme, onDayPress }: {
                   borderColor: hasScore ? scoreColor! : 'rgba(255,255,255,0.06)',
                   justifyContent: 'center',
                   alignItems: 'center',
+                  paddingVertical: 2,
                 }}>
-                  {hasScore ? (
-                    <Text style={{ fontSize: 11, fontFamily: 'BebasNeue_400Regular', color: scoreColor! }}>{cell.score}</Text>
-                  ) : (
-                    <Text style={{ fontSize: 9, fontFamily: 'DMSans_400Regular', color: theme.textDim }}>{dd}</Text>
+                  {hasScore && (
+                    <Text style={{ fontSize: 12, fontFamily: 'BebasNeue_400Regular', color: scoreColor!, lineHeight: 14 }}>{cell.score}</Text>
                   )}
+                  <Text style={{ fontSize: 8, fontFamily: 'DMSans_400Regular', color: hasScore ? scoreColor! + 'bb' : theme.textDim, lineHeight: 10 }}>{dd}</Text>
                 </View>
               </TouchableOpacity>
             );
@@ -285,7 +285,7 @@ export default function MonthlySummaryScreen() {
   } = data;
 
   const [y, m] = data.monthKey.split('-').map(Number);
-  const headerTitle = `${MONTHS_FULL[m - 1].toUpperCase()} ${y}`;
+  const monthYearLabel = `${MONTHS_FULL[m - 1]} ${y}`;
 
   const hasScore = avgComposite !== null && daysScored > 0;
   const heroColor = hasScore
@@ -314,11 +314,11 @@ export default function MonthlySummaryScreen() {
               <Ionicons name="chevron-back" size={22} color={accent} />
             </TouchableOpacity>
             <Text style={{ fontSize: 22, letterSpacing: 2, fontFamily: 'BebasNeue_400Regular', color: accent }}>
-              {headerTitle}
+              MONTHLY SUMMARY
             </Text>
           </View>
           <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginLeft: 34, marginTop: 2 }}>
-            Monthly Summary
+            {monthYearLabel}
           </Text>
         </View>
 

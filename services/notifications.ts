@@ -1001,6 +1001,15 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
       const fh = Math.floor(fireTotalMins / 60);
       const fm = fireTotalMins % 60;
       if (fh * 60 + fm <= nowMins) continue;
+
+      // Skip this slot if the user is already on pace (within 25% of expected at fire time).
+      // Expected pace is linear from wake to bedtime. Check is at schedule time using current water.
+      if (ctx.waterGoal > 0) {
+        const slotProgress = offsetMins / wakingTotal;
+        const expectedAtSlot = ctx.waterGoal * slotProgress;
+        if (ctx.todayWater >= expectedAtSlot * 0.75) continue;
+      }
+
       const fireDate = new Date();
       fireDate.setHours(fh, fm, 0, 0);
       const v = pickCopy('water', COPY_POOLS.water, m, growthOn, rotation);

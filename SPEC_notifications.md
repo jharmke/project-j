@@ -135,7 +135,7 @@ With a default cap of 5, users with a full P2 queue will rarely see Weight Log (
 - Water reminders are their own sub-system. User picks count: Off / 1 / 2 / 3 / 4 per day. Default: 3.
 - Water count is separate from and does NOT compete with the P2 daily cap. Water is utility, not coaching content.
 - The selected count is spaced evenly across waking hours (defined by quiet hours). Example: 3 reminders with quiet hours 10pm-7am = fires roughly 9am, 1pm, 5pm.
-- Each slot only fires if the user is 25% or more behind expected pace at that moment. Expected pace is linear from 6am to 10pm.
+- Each slot only fires if the user is 25% or more behind expected pace at that moment. Expected pace is linear from wake time to bedtime (quiet hours bounds). Check is at schedule time using current water as proxy. Cancel-on-goal cancels remaining slots when water goal is hit.
 - Cancel-on-goal: if water goal is hit, remaining slots are cancelled.
 - Mindful: fires. Hydration is not judgmental.
 - Variations: 4-6 per mode.

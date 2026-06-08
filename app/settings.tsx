@@ -364,6 +364,7 @@ export default function SettingsScreen() {
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
   const [showNetCarbs, setShowNetCarbs] = useState(false);
   const [styleMode, setStyleMode] = useState<'discipline' | 'balanced' | 'mindful'>('balanced');
+  const [mindfulGrowthAreas, setMindfulGrowthAreas] = useState(false);
   const [faithJourney, setFaithJourney] = useState<FaithJourney>('rooted');
   const [burnAccuracyPct, setBurnAccuracyPct] = useState(100);
   const [devCelebVisible, setDevCelebVisible] = useState(false);
@@ -508,6 +509,7 @@ export default function SettingsScreen() {
           if (data.hapticsEnabled !== undefined) setHapticsEnabled(data.hapticsEnabled);
           if (data.showNetCarbs !== undefined) setShowNetCarbs(data.showNetCarbs);
           if (data.styleMode) setStyleMode(data.styleMode);
+          if (data.mindfulGrowthAreas !== undefined) setMindfulGrowthAreas(data.mindfulGrowthAreas);
           if (data.faithJourney) setFaithJourney(data.faithJourney);
           if (data.burnAccuracyPct !== undefined) setBurnAccuracyPct(data.burnAccuracyPct);
           if (data.devForceSleepManual !== undefined) setDevForceSleepManual(data.devForceSleepManual);
@@ -828,7 +830,7 @@ export default function SettingsScreen() {
       <ScrollView ref={scrollViewRef} contentContainerStyle={styles.content} automaticallyAdjustKeyboardInsets={true} onScroll={e => { goalScrollOffset.current = e.nativeEvent.contentOffset.y; }} scrollEventThrottle={16}>
 
         {/* ── Appearance ── */}
-        <CollapsibleSection label="Appearance" subtitle="Theme · Accent · Haptics" defaultOpen={true} theme={theme}>
+        <CollapsibleSection label="Appearance" subtitle="Theme · Accent · Haptics" defaultOpen={false} theme={theme}>
           <View style={{ paddingHorizontal: 16, paddingBottom: 16, gap: 10 }}>
             {THEME_ORDER.map((id: ThemeId) => {
               const t = THEMES[id];
@@ -1210,6 +1212,19 @@ export default function SettingsScreen() {
               </TouchableOpacity>
             );
           })}
+
+          {styleMode === 'mindful' && (
+            <View style={[styles.row, { borderTopColor: theme.borderCard, justifyContent: 'space-between' }]}>
+              <View style={{ flex: 1, paddingRight: 12 }}>
+                <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Allow gentle coaching</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Show growth areas and soft nudges</Text>
+              </View>
+              <ToggleSwitch
+                value={mindfulGrowthAreas}
+                onValueChange={val => { setMindfulGrowthAreas(val); saveSetting('mindfulGrowthAreas', val); }}
+              />
+            </View>
+          )}
 
           <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 16, marginBottom: 8 }}>
             <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Faith Journey</Text>

@@ -94,7 +94,7 @@ With a default cap of 5, users with a full P2 queue will rarely see Weight Log (
 
 #### Re-engagement
 - Hidden from settings. Always-on system behavior. Not user-controllable.
-- Fires 48 hours after last app open. If still no open after that, fires once per week.
+- Fires at 48h, 96h, and 144h from last app open (3 fires). After that, weekly (pre-scheduled at 144h+7d and 144h+14d). All 5 cancelled and rescheduled fresh on every app open.
 - Mindful copy: "No pressure. We're here when you're ready."
 - Discipline copy: "It has been a couple days. Get back on track."
 - Balanced copy: "It has been a couple days. Your streaks and goals are waiting."
@@ -310,7 +310,7 @@ This layer is NOT part of the current overhaul. Do not build piecemeal. Needs a 
 ## Open items
 
 1. [x] IF Check-In investigation RESOLVED 2026-06-08: root cause was ifEnabled only checked today's key, but ifMethod is set only on the day the user taps a method pill, not carried forward. Fix: scheduler now looks back 7 days for any pj_${date} key that has ifMethod set.
-2. Copy variations pass: 4-6 variations per type per coaching mode, pre-baked, deterministic rotation. This is a dedicated pass AFTER logic is confirmed working. Do not write inline.
+2. [x] Copy variations pass SHIPPED 2026-06-08: COPY_POOLS in notifications.ts, 4-6 variations per type per mode, pickCopy helper, rotation persisted. All 14 types covered. Re-engagement chain updated to 3x48h then weekly. Future pass needed: add humorous/playful copy variations across all types.
 3. [x] Deep linking BUILT 2026-06-08: app/_layout.tsx has a Notifications.addNotificationResponseReceivedListener that reads data.route / data.params and calls router.push. Every notification type in services/notifications.ts has the data payload baked in per the deep-link table above.
 4. [x] Cancel-on-action BUILT 2026-06-08: weekly-summary.tsx calls cancelWeeklySummaryNotification on mount; monthly-summary.tsx calls cancelMonthlySummaryNotification on mount; devotional.tsx calls cancelFaithReadingNotification on mark-complete (not on unmark); bible.tsx calls cancelFaithReadingNotification in markPlanRead.
 

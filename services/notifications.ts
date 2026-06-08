@@ -271,6 +271,410 @@ export const getAverageBedtime = async (): Promise<string | null> => {
   return `${displayH}:${mn.toString().padStart(2, '0')} ${ampm}`;
 };
 
+// ── Copy Pools ────────────────────────────────────────────────────────────────
+
+interface CopyVariation { title: string; body: string; }
+
+interface ModePools {
+  discipline: CopyVariation[];
+  balanced: CopyVariation[];
+  mindful?: CopyVariation[];
+  mindfulGrowth?: CopyVariation[];
+}
+
+const COPY_POOLS: Record<string, ModePools> = {
+
+  // Placeholders: {NAME} streak name, {X} streak count
+  streak_single: {
+    discipline: [
+      { title: 'Streak At Risk', body: '{NAME} streak: {X} days. Don\'t let it end tonight.' },
+      { title: 'Protect Your Streak', body: '{X} days on {NAME}. Finish the day strong.' },
+      { title: 'Don\'t Break the Chain', body: '{NAME} is at {X} days. One action. Keep it alive.' },
+      { title: 'Streak Alert', body: '{NAME}: {X} days and counting. Don\'t stop now.' },
+    ],
+    balanced: [
+      { title: 'Streak At Risk', body: '{NAME} streak: {X} days. Don\'t let it end tonight.' },
+      { title: 'Keep It Going', body: '{X} days on {NAME}. You\'ve come this far.' },
+      { title: 'Tonight Matters', body: '{NAME} is at {X} days. One small action keeps it alive.' },
+      { title: 'Don\'t Lose It', body: '{NAME} streak at {X} days. Tap to check in.' },
+    ],
+    mindfulGrowth: [
+      { title: 'Keep Going', body: 'Your {NAME} streak continues today. One small action keeps it going.' },
+      { title: 'A Moment for {NAME}', body: 'Your {NAME} streak is still going. A small step today is enough.' },
+      { title: 'Still Going', body: '{X} days of {NAME}. No pressure, just a gentle reminder.' },
+      { title: 'One Step Today', body: 'Your {NAME} streak is at {X} days. You get to decide what counts today.' },
+    ],
+  },
+
+  // Placeholders: {N1} first streak name, {N2} second streak name
+  streak_double: {
+    discipline: [
+      { title: 'Streaks At Risk', body: '{N1} and {N2} streaks at risk tonight.' },
+      { title: 'Two Streaks Tonight', body: 'Don\'t drop {N1} or {N2} today.' },
+      { title: 'Protect Both', body: '{N1} and {N2}: both on the line tonight.' },
+      { title: 'Two to Defend', body: '{N1} and {N2} streaks. Lock them in before bed.' },
+    ],
+    balanced: [
+      { title: 'Two Streaks Tonight', body: '{N1} and {N2} streaks: don\'t let either slip.' },
+      { title: 'Keep Both Alive', body: '{N1} and {N2} are both still going. Check in tonight.' },
+      { title: 'Two Things Tonight', body: '{N1} and {N2} streaks. You\'ve got this.' },
+      { title: 'Streaks At Risk', body: '{N1} and {N2}: one action each keeps them alive.' },
+    ],
+    mindfulGrowth: [
+      { title: 'Two Streaks Today', body: 'Your {N1} and {N2} streaks continue today.' },
+      { title: 'Still Going', body: '{N1} and {N2}: both still alive. A small moment for each.' },
+      { title: 'Two Small Actions', body: 'Your {N1} and {N2} streaks are still here. No rush.' },
+      { title: 'Two Continuing', body: '{N1} and {N2} are both still going. You decide what counts.' },
+    ],
+  },
+
+  // Placeholder: {N} streak count
+  streak_multi: {
+    discipline: [
+      { title: 'Streaks At Risk Tonight', body: '{N} streaks at risk tonight. Tap to check.' },
+      { title: '{N} Streaks on the Line', body: 'Don\'t let tonight be the night they end.' },
+      { title: 'Multiple Streaks', body: '{N} active streaks. All at risk. Go.' },
+      { title: 'Defend Your Streaks', body: '{N} streaks tonight. Lock them in.' },
+    ],
+    balanced: [
+      { title: '{N} Streaks Tonight', body: '{N} streaks active tonight. Check in before bed.' },
+      { title: 'Streaks At Risk', body: '{N} streaks on the line. One action each.' },
+      { title: 'Keep Them Going', body: '{N} streaks still running. Don\'t let today be the gap.' },
+      { title: 'Multiple Streaks', body: '{N} streaks going. You\'ve kept them all this far.' },
+    ],
+    mindfulGrowth: [
+      { title: 'Your Streaks Continue', body: '{N} streaks going strong. One small action each keeps them alive.' },
+      { title: '{N} Things Still Going', body: 'No pressure. Each one just needs a small moment today.' },
+      { title: 'Still Here', body: '{N} streaks are still with you. You get to choose what counts.' },
+      { title: 'A Few Moments Today', body: '{N} streaks. A little goes a long way.' },
+    ],
+  },
+
+  // Placeholder: {N} lead-time minutes
+  if_window: {
+    discipline: [
+      { title: 'Eating Window Closing', body: '{N} minutes left in your eating window. Finish strong.' },
+      { title: 'Window Closing', body: '{N} min left. Get anything else in now.' },
+      { title: 'Last Call', body: 'Eating window closes in {N} minutes. Lock it in.' },
+      { title: 'Window Ending', body: '{N} minutes. Make your final call and close strong.' },
+      { title: 'Eating Window Alert', body: '{N} minutes until your window closes. Stay disciplined.' },
+    ],
+    balanced: [
+      { title: 'Eating Window Closing', body: '{N} minutes left in your eating window. Anything else you need?' },
+      { title: 'Almost Closed', body: '{N} min left in your eating window.' },
+      { title: 'Window Ending Soon', body: 'Your eating window closes in {N} minutes.' },
+      { title: 'Last {N} Minutes', body: 'Your window is almost closed for the day.' },
+      { title: 'Window Closing', body: '{N} minutes left. Wrap up when you are ready.' },
+    ],
+    mindful: [
+      { title: 'Eating Window Closing', body: '{N} minutes remaining in your eating window. Take your time.' },
+      { title: 'Window Ending', body: 'Your eating window closes in {N} minutes. No rush.' },
+      { title: 'Almost Done', body: '{N} more minutes in your window. Listen to what your body needs.' },
+      { title: 'Gentle Reminder', body: 'Your eating window is winding down. {N} minutes remaining.' },
+      { title: 'Window Closing Soon', body: '{N} minutes left. Close out when you feel ready.' },
+    ],
+  },
+
+  weekly_summary: {
+    discipline: [
+      { title: 'Weekly Summary Ready', body: 'Your weekly performance report is ready.' },
+      { title: 'Week in Review', body: 'See how you performed this week. Tap to review.' },
+      { title: 'Your Week, Reviewed', body: 'Weekly report is in. Time to assess.' },
+      { title: 'Weekly Report', body: 'This week\'s numbers are ready. Know where you stand.' },
+    ],
+    balanced: [
+      { title: 'Weekly Summary Ready', body: 'Your week is wrapped up. See how it went.' },
+      { title: 'Your Week Is Ready', body: 'Tap to see your weekly summary.' },
+      { title: 'Week Wrapped', body: 'Your weekly summary is ready to review.' },
+      { title: 'See Your Week', body: 'This week\'s summary is waiting for you.' },
+    ],
+    mindful: [
+      { title: 'Weekly Summary Ready', body: 'Your week is wrapped up. Tap to reflect on it.' },
+      { title: 'Your Week Is Ready', body: 'See what this week looked like. No judgment, just a look.' },
+      { title: 'Week in Review', body: 'Your weekly summary is here. A good time to pause and reflect.' },
+      { title: 'See Your Week', body: 'Your weekly summary is ready. Take a quiet look.' },
+    ],
+  },
+
+  monthly_summary: {
+    discipline: [
+      { title: 'Monthly Summary Ready', body: 'Your monthly performance report is ready.' },
+      { title: 'Month in Review', body: 'See how you performed this month. Tap to review.' },
+      { title: 'Monthly Report', body: 'This month\'s numbers are in. Know where you stand.' },
+      { title: 'Your Month, Reviewed', body: 'Monthly report ready. Assess and adjust.' },
+    ],
+    balanced: [
+      { title: 'Monthly Summary Ready', body: 'Your month is wrapped up. See how it went.' },
+      { title: 'Your Month Is Ready', body: 'Tap to see your monthly summary.' },
+      { title: 'Month Wrapped', body: 'Your monthly summary is ready to review.' },
+      { title: 'See Your Month', body: 'This month\'s summary is waiting for you.' },
+    ],
+    mindful: [
+      { title: 'Monthly Summary Ready', body: 'Your month is wrapped up. Tap to reflect on it.' },
+      { title: 'Your Month Is Ready', body: 'See what this month looked like. No judgment, just a look.' },
+      { title: 'Month in Review', body: 'Your monthly summary is here. A good moment to pause.' },
+      { title: 'See Your Month', body: 'Your monthly summary is ready. Take a quiet look.' },
+    ],
+  },
+
+  reengagement: {
+    discipline: [
+      { title: 'Where\'d You Go?', body: 'It\'s been a couple days. Get back on track today.' },
+      { title: 'Time to Return', body: 'You have been away for a few days. Let\'s get back at it.' },
+      { title: 'Pick It Back Up', body: 'A few days off. Today is the day to restart.' },
+      { title: 'Don\'t Fall Off', body: 'It\'s been a couple days. Don\'t let the gap get wider.' },
+      { title: 'Back to Work', body: 'A few days away. Your goals are still there. So are you.' },
+    ],
+    balanced: [
+      { title: 'We Miss You', body: 'It\'s been a couple days. Your streaks and goals are waiting.' },
+      { title: 'Come Back', body: 'It\'s been a few days. We saved your spot.' },
+      { title: 'Still Here', body: 'Your streaks and goals are ready when you are.' },
+      { title: 'Pick Up Where You Left Off', body: 'It\'s been a couple days. Everything is right where you left it.' },
+      { title: 'Check In', body: 'A few days off. Come back and see where you stand.' },
+    ],
+    mindful: [
+      { title: 'Come Back When Ready', body: 'No pressure. We are here when you are ready.' },
+      { title: 'Still Here', body: 'No rush. Your goals and streaks are waiting whenever you return.' },
+      { title: 'Whenever You Are Ready', body: 'We haven\'t seen you in a few days. No pressure at all.' },
+      { title: 'We Are Here', body: 'Take your time. We will be here when you want to check in.' },
+      { title: 'Just Checking In', body: 'It\'s been a few days. Come back whenever feels right.' },
+    ],
+  },
+
+  faith_reading: {
+    discipline: [
+      { title: 'Faith Content Ready', body: 'Your devotional or reading plan content is ready. Get in the Word.' },
+      { title: 'Reading Plan Waiting', body: 'Today\'s faith content is ready. Don\'t skip it.' },
+      { title: 'Get in the Word', body: 'You have devotional content waiting. Make time today.' },
+      { title: 'Daily Reading', body: 'Your reading plan content for today is ready.' },
+      { title: 'Faith Content', body: 'Devotional or reading plan content ready. Open and read.' },
+    ],
+    balanced: [
+      { title: 'Today\'s Reading Is Waiting', body: 'You have devotional or reading plan content for today. Take a few minutes.' },
+      { title: 'Reading Plan Ready', body: 'Your faith content for today is waiting.' },
+      { title: 'A Few Minutes in the Word', body: 'Today\'s devotional content is ready when you are.' },
+      { title: 'Faith Reading', body: 'Your reading plan has today\'s content ready.' },
+      { title: 'Today\'s Content', body: 'Devotional or reading plan content is waiting for you today.' },
+    ],
+    mindful: [
+      { title: 'Today\'s Reading', body: 'Your faith reading for today is here whenever you want it.' },
+      { title: 'A Quiet Moment', body: 'Your devotional content is ready. A good time to pause and read.' },
+      { title: 'Reading Plan', body: 'Today\'s reading is waiting. No rush.' },
+      { title: 'Faith Content Ready', body: 'Your reading plan content is here. Take it at your own pace.' },
+      { title: 'In the Word Today', body: 'Your devotional content is ready whenever you have a quiet moment.' },
+    ],
+  },
+
+  gratitude: {
+    discipline: [
+      { title: 'Log Your Gratitude', body: 'Log one thing you are grateful for today.' },
+      { title: 'Gratitude Check', body: 'You haven\'t logged gratitude yet. Do it now.' },
+      { title: 'Daily Gratitude', body: 'One gratitude entry. Make it count.' },
+      { title: 'Log Gratitude', body: 'Gratitude not logged today. Keep the streak alive.' },
+      { title: 'Gratitude: Logged?', body: 'You haven\'t logged today\'s gratitude. Tap to add it.' },
+    ],
+    balanced: [
+      { title: 'Gratitude Moment', body: 'Take a moment to log what you are grateful for today.' },
+      { title: 'Log Your Gratitude', body: 'A quick moment for gratitude today.' },
+      { title: 'Daily Gratitude', body: 'Your gratitude for today hasn\'t been logged yet.' },
+      { title: 'Grateful Today?', body: 'Tap to log what you are grateful for.' },
+      { title: 'Gratitude Check-In', body: 'A moment to reflect. What are you grateful for today?' },
+    ],
+    mindful: [
+      { title: 'Gratitude Moment', body: 'Take a quiet moment to notice what you are grateful for today.' },
+      { title: 'A Grateful Pause', body: 'Whenever you are ready, log one thing you are grateful for.' },
+      { title: 'Log Gratitude', body: 'A small moment of gratitude makes a difference. Tap when ready.' },
+      { title: 'What Are You Grateful For?', body: 'Take a moment to reflect. Log it when you are ready.' },
+      { title: 'Gratitude Today', body: 'A small pause to notice what is good. Tap to log it.' },
+    ],
+  },
+
+  prayer: {
+    discipline: [
+      { title: 'Prayer Check-In', body: 'Log your prayer for today.' },
+      { title: 'Prayer Log', body: 'You haven\'t logged your prayer today. Take a minute.' },
+      { title: 'Daily Prayer', body: 'Log your prayer before the day ends.' },
+      { title: 'Prayer Time', body: 'Your prayer hasn\'t been logged today. Keep the rhythm.' },
+      { title: 'Pray and Log', body: 'Take a moment to pray and log it for today.' },
+    ],
+    balanced: [
+      { title: 'Prayer Check-In', body: 'Don\'t forget your prayer check-in for today.' },
+      { title: 'Prayer Moment', body: 'A few minutes for prayer today.' },
+      { title: 'Daily Prayer', body: 'Your prayer check-in for today is waiting.' },
+      { title: 'Check In', body: 'Tap to log your prayer for today.' },
+      { title: 'Prayer Log', body: 'Your prayer for today hasn\'t been logged yet.' },
+    ],
+    mindful: [
+      { title: 'Prayer Moment', body: 'Take a quiet moment for prayer today.' },
+      { title: 'A Moment to Pray', body: 'Whenever you are ready, take a breath and pray.' },
+      { title: 'Prayer Time', body: 'A gentle reminder to spend a moment in prayer today.' },
+      { title: 'Quiet Prayer', body: 'Take a quiet moment whenever it feels right.' },
+      { title: 'A Moment with God', body: 'No agenda. Just a quiet moment to pray when you are ready.' },
+    ],
+  },
+
+  water: {
+    discipline: [
+      { title: 'Water Check', body: 'Stay on top of your hydration.' },
+      { title: 'Hydration Alert', body: 'You are behind on water. Drink now.' },
+      { title: 'Drink Water', body: 'You are falling behind your water pace. Catch up.' },
+      { title: 'Water Pace', body: 'Behind on hydration. Get a glass in.' },
+      { title: 'Hydration Check', body: 'Water pace is behind. Stay disciplined.' },
+    ],
+    balanced: [
+      { title: 'Hydration Reminder', body: 'Time for some water.' },
+      { title: 'Water Check', body: 'You are a bit behind on water today. Time to catch up.' },
+      { title: 'Drink Up', body: 'Your water pace is a little behind. Grab a glass.' },
+      { title: 'Hydration', body: 'Behind on water today. A glass or two will help.' },
+      { title: 'Water Reminder', body: 'You are behind on your water goal. Drink up.' },
+    ],
+    mindful: [
+      { title: 'Hydration Reminder', body: 'A good time to drink some water.' },
+      { title: 'Drink Some Water', body: 'Your body could use some hydration right now.' },
+      { title: 'Water Time', body: 'A gentle reminder to drink some water.' },
+      { title: 'Stay Hydrated', body: 'How is your water today? A glass would do you good.' },
+      { title: 'Hydration Check', body: 'Take a moment to drink some water. Your body will thank you.' },
+    ],
+  },
+
+  // No default mindful pool: suppressed unless growth areas ON
+  food_log: {
+    discipline: [
+      { title: 'Log Your Meals', body: 'Nothing logged today. Stay accountable.' },
+      { title: 'Food Log Empty', body: 'Nothing in your log yet. Tap to add a meal.' },
+      { title: 'Log Today\'s Food', body: 'No food logged today. Don\'t let the day slip.' },
+      { title: 'Meals Not Logged', body: 'Today\'s log is empty. Track your meals.' },
+    ],
+    balanced: [
+      { title: 'Food Log Reminder', body: 'You haven\'t logged anything today. Tap to add a meal.' },
+      { title: 'Nothing Logged Yet', body: 'Your food log is empty today. Tap to add a meal.' },
+      { title: 'Log Your Food', body: 'No meals logged yet today. A quick tap to add one.' },
+      { title: 'Food Log', body: 'Your log is empty. Tap to add what you\'ve eaten today.' },
+    ],
+    mindfulGrowth: [
+      { title: 'Check-In Time', body: 'Take a moment to check in with what you have eaten today.' },
+      { title: 'Food Check-In', body: 'A gentle reminder to log what you have eaten today.' },
+      { title: 'Mindful Logging', body: 'Whenever you are ready, take a moment to log your meals.' },
+      { title: 'A Moment to Log', body: 'How has your eating been today? Log it when you are ready.' },
+    ],
+  },
+
+  // No default mindful pool: suppressed unless growth areas ON
+  activity: {
+    discipline: [
+      { title: 'No Workout Logged', body: 'No workout logged today. Movement matters.' },
+      { title: 'Get Moving', body: 'No workout and steps are low. Move today.' },
+      { title: 'Activity Check', body: 'No workout logged and steps are behind. Get it done.' },
+      { title: 'Move Today', body: 'You haven\'t worked out and steps are low. Make it happen.' },
+    ],
+    balanced: [
+      { title: 'Activity Reminder', body: 'You haven\'t hit your activity goals today. Time to move.' },
+      { title: 'Move Today', body: 'No workout logged and steps are a bit low. Time to get moving.' },
+      { title: 'Activity Check-In', body: 'No workout yet today. Even a short one counts.' },
+      { title: 'Get Moving', body: 'Steps are low and no workout logged. How about some movement today?' },
+    ],
+    mindfulGrowth: [
+      { title: 'Movement Check', body: 'How has your movement been today?' },
+      { title: 'A Moment to Move', body: 'How has your body felt today? Any movement is worth something.' },
+      { title: 'Movement Today', body: 'A gentle nudge to move your body today. Whatever feels right.' },
+      { title: 'Check In with Movement', body: 'How has movement felt today? Even a short walk counts.' },
+    ],
+  },
+
+  // Placeholder: {VERSE} for verse text (body is always verse, title rotates)
+  daily_verse: {
+    discipline: [
+      { title: 'Today\'s Verse', body: '{VERSE}' },
+      { title: 'Word for Today', body: '{VERSE}' },
+      { title: 'Scripture Today', body: '{VERSE}' },
+      { title: 'Daily Verse', body: '{VERSE}' },
+    ],
+    balanced: [
+      { title: 'Today\'s Message', body: '{VERSE}' },
+      { title: 'A Word for Today', body: '{VERSE}' },
+      { title: 'Today\'s Verse', body: '{VERSE}' },
+      { title: 'Scripture', body: '{VERSE}' },
+    ],
+    mindful: [
+      { title: 'A Word for Today', body: '{VERSE}' },
+      { title: 'Today\'s Verse', body: '{VERSE}' },
+      { title: 'A Quiet Word', body: '{VERSE}' },
+      { title: 'Scripture Today', body: '{VERSE}' },
+    ],
+  },
+
+  // No mindful pool: suppressed in Mindful always
+  weight_log: {
+    discipline: [
+      { title: 'Log Your Weight', body: 'Track your weight to stay on top of your progress.' },
+      { title: 'Weight Check', body: 'Log your weight today. The data matters.' },
+      { title: 'Weight Log', body: 'Don\'t skip your weigh-in today.' },
+      { title: 'Weigh In', body: 'Log your weight to keep your trend accurate.' },
+    ],
+    balanced: [
+      { title: 'Weight Check', body: 'Don\'t forget to log your weight today.' },
+      { title: 'Weigh In', body: 'A quick weigh-in today keeps your data current.' },
+      { title: 'Weight Log', body: 'Your weight hasn\'t been logged today. Tap to add it.' },
+      { title: 'Log Your Weight', body: 'A moment to log your weight. Keeps your trends on track.' },
+    ],
+  },
+
+  // No default mindful pool: suppressed unless growth areas ON
+  if_checkin: {
+    discipline: [
+      { title: 'Did You Start Eating?', body: 'You have food logged but your IF window isn\'t started. Tap to update.' },
+      { title: 'IF Window Not Started', body: 'Food is logged but fasting window is open. Tap to start it.' },
+      { title: 'Start Your Window', body: 'You have calories logged. Did you mean to start your eating window?' },
+      { title: 'IF Check', body: 'Food logged, window not started. Tap to begin.' },
+    ],
+    balanced: [
+      { title: 'IF Check-In', body: 'You have food logged but your IF window isn\'t started. Tap to update.' },
+      { title: 'Eating Window', body: 'Looks like you\'ve eaten today but haven\'t started your window.' },
+      { title: 'Start Your IF Window', body: 'Food is logged for today. Tap to start your eating window.' },
+      { title: 'Window Not Started', body: 'You have food logged today. Want to open your eating window?' },
+    ],
+    mindfulGrowth: [
+      { title: 'Gentle Check-In', body: 'Noticing you have food logged today. Did you want to start your eating window?' },
+      { title: 'Eating Window', body: 'You have food logged. A good moment to check in on your eating window.' },
+      { title: 'IF Window', body: 'Food is logged today. Tap to start your window when it feels right.' },
+      { title: 'Check In', body: 'You\'ve eaten today. Want to open your fasting window when you are ready?' },
+    ],
+  },
+};
+
+// ── Copy Helpers ──────────────────────────────────────────────────────────────
+
+const getPool = (pools: ModePools, mode: StyleMode, growthOn: boolean): CopyVariation[] => {
+  if (mode === 'mindful') {
+    if (growthOn && pools.mindfulGrowth) return pools.mindfulGrowth;
+    if (pools.mindful) return pools.mindful;
+    return pools.balanced;
+  }
+  return mode === 'balanced' ? pools.balanced : pools.discipline;
+};
+
+// Picks from pool using rotation index, advances index in-place.
+const pickCopy = (
+  key: string,
+  pools: ModePools,
+  mode: StyleMode,
+  growthOn: boolean,
+  rotation: Record<string, number>,
+): CopyVariation => {
+  const pool = getPool(pools, mode, growthOn);
+  const idx = (rotation[key] ?? 0) % pool.length;
+  rotation[key] = (idx + 1) % pool.length;
+  return pool[idx];
+};
+
+const applyPlaceholders = (text: string, replacements: Record<string, string>): string => {
+  let result = text;
+  for (const [key, val] of Object.entries(replacements)) {
+    result = result.split(`{${key}}`).join(val);
+  }
+  return result;
+};
+
 // ── IF Window (event-driven) ──────────────────────────────────────────────────
 
 export const scheduleIFWindowNotifications = async (
@@ -293,19 +697,22 @@ export const scheduleIFWindowNotifications = async (
   const fireDate = new Date(fireAt);
   if (isInQuietHours(fireDate.getHours(), fireDate.getMinutes(), settings.quietStart, settings.quietEnd)) return;
 
-  const m = styleMode;
-  const title = m === 'discipline' ? 'Eating Window Closing' : m === 'mindful' ? 'Eating Window Closing' : 'Eating Window Closing';
-  const body = m === 'discipline'
-    ? `${mins} minutes left in your eating window. Finish strong.`
-    : m === 'mindful'
-    ? `${mins} minutes remaining in your eating window. Take your time.`
-    : `${mins} minutes left in your eating window. Anything else you need?`;
+  const rotation = { ...settings.copyRotation };
+  const v = pickCopy('if_window', COPY_POOLS.if_window, styleMode, false, rotation);
+  const N = String(mins);
 
   await Notifications.scheduleNotificationAsync({
     identifier: `pj_if_window_${mins}`,
-    content: { title, body, sound: true, data: { route: '/', params: { scrollTo: 'if' } } },
+    content: {
+      title: applyPlaceholders(v.title, { N }),
+      body: applyPlaceholders(v.body, { N }),
+      sound: true,
+      data: { route: '/', params: { scrollTo: 'if' } },
+    },
     trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: fireDate },
   });
+
+  await saveNotificationSettings({ ...settings, copyRotation: rotation });
 };
 
 export const cancelIFWindowNotifications = async () => {
@@ -360,7 +767,13 @@ const ALL_DAILY_IDS = [
   'pj_if_checkin',
   'pj_weekly_summary',
   'pj_monthly_summary',
+  // re-engagement chain (old single ID kept for backward compat cleanup)
   'pj_reengagement',
+  'pj_reengagement_1',
+  'pj_reengagement_2',
+  'pj_reengagement_3',
+  'pj_reengagement_w1',
+  'pj_reengagement_w2',
   'pj_water_1', 'pj_water_2', 'pj_water_3', 'pj_water_4',
   // old IDs cleanup
   'pj_morning_intention', 'pj_evening_gratitude', 'pj_weekly_recap', 'pj_prayer_checkin', 'pj_water_pace',
@@ -384,6 +797,9 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
   const m = ctx.styleMode;
   const isMindful = m === 'mindful';
   const growthOn = ctx.mindfulGrowthAreas;
+
+  // Mutable rotation object — saved back to settings at the end.
+  const rotation = { ...s.copyRotation };
 
   const scheduleOne = async (
     id: string,
@@ -427,23 +843,22 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
 
       let title: string;
       let body: string;
+
       if (atRisk.length === 1) {
         const { name, currentStreak } = atRisk[0];
-        title = isMindful ? 'Keep Going' : 'Streak At Risk';
-        body = isMindful
-          ? `Your ${name} streak continues today. One small action keeps it going.`
-          : `${name} streak: ${currentStreak} days. Don't let it end tonight.`;
+        const v = pickCopy('streak_single', COPY_POOLS.streak_single, m, growthOn, rotation);
+        title = applyPlaceholders(v.title, { NAME: name, X: String(currentStreak) });
+        body = applyPlaceholders(v.body, { NAME: name, X: String(currentStreak) });
       } else if (atRisk.length === 2) {
-        title = isMindful ? 'Two Streaks Today' : 'Streaks At Risk';
-        body = isMindful
-          ? `Your ${atRisk[0].name} and ${atRisk[1].name} streaks continue today.`
-          : `${atRisk[0].name} and ${atRisk[1].name} streaks at risk tonight.`;
+        const v = pickCopy('streak_double', COPY_POOLS.streak_double, m, growthOn, rotation);
+        title = applyPlaceholders(v.title, { N1: atRisk[0].name, N2: atRisk[1].name });
+        body = applyPlaceholders(v.body, { N1: atRisk[0].name, N2: atRisk[1].name });
       } else {
-        title = isMindful ? 'Your Streaks Continue' : 'Streaks At Risk Tonight';
-        body = isMindful
-          ? `${atRisk.length} streaks going strong. One small action each keeps them alive.`
-          : `${atRisk.length} streaks at risk tonight. Tap to check.`;
+        const v = pickCopy('streak_multi', COPY_POOLS.streak_multi, m, growthOn, rotation);
+        title = applyPlaceholders(v.title, { N: String(atRisk.length) });
+        body = applyPlaceholders(v.body, { N: String(atRisk.length) });
       }
+
       await scheduleOne('pj_streak', fireTimeStr, title, body, { route: '/' }, true);
     }
   }
@@ -454,71 +869,60 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
 
   // 1. Faith Reading
   if (s.categoryFaith && ctx.faithJourney !== 'notrightnow' && ctx.faithReadingPending) {
+    const v = pickCopy('faith_reading', COPY_POOLS.faith_reading, m, growthOn, rotation);
     candidates.push({
       id: 'pj_faith_reading',
       time: '08:30',
-      title: m === 'discipline' ? 'Faith Content Ready' : "Today's Reading Is Waiting",
-      body: m === 'discipline'
-        ? 'Your devotional or reading plan content is ready. Get in the Word.'
-        : "You have devotional or reading plan content for today. Take a few minutes.",
+      title: v.title,
+      body: v.body,
       data: { route: '/plans' },
     });
   }
 
   // 2a. Gratitude (fires in both Mindful states)
   if (s.categoryFaith && ctx.faithJourney !== 'notrightnow' && !ctx.gratitudeLoggedToday) {
+    const v = pickCopy('gratitude', COPY_POOLS.gratitude, m, growthOn, rotation);
     candidates.push({
       id: 'pj_gratitude',
       time: '19:00',
-      title: m === 'discipline' ? 'Log Your Gratitude' : 'Gratitude Moment',
-      body: m === 'discipline'
-        ? 'Log one thing you are grateful for today.'
-        : 'Take a moment to log what you are grateful for today.',
+      title: v.title,
+      body: v.body,
       data: { route: '/(tabs)/faith', params: { scrollTo: 'gratitude' } },
     });
   }
 
   // 2b. Prayer (fires in both Mindful states, Rooted only)
   if (s.categoryFaith && ctx.faithJourney === 'rooted' && !ctx.prayerLoggedToday) {
+    const v = pickCopy('prayer', COPY_POOLS.prayer, m, growthOn, rotation);
     candidates.push({
       id: 'pj_prayer',
       time: s.prayerTime,
-      title: m === 'mindful' ? 'Prayer Moment' : 'Prayer Check-In',
-      body: m === 'discipline'
-        ? 'Log your prayer for today.'
-        : m === 'mindful'
-        ? 'Take a quiet moment for prayer today.'
-        : "Don't forget your prayer check-in for today.",
+      title: v.title,
+      body: v.body,
       data: { route: '/prayer' },
     });
   }
 
   // 4. Food Log Reminder (fixed 2pm, suppressed in default Mindful)
   if (s.categoryFitness && ctx.todayFoodEntries === 0 && (!isMindful || growthOn)) {
+    const v = pickCopy('food_log', COPY_POOLS.food_log, m, growthOn, rotation);
     candidates.push({
       id: 'pj_food_log',
       time: '14:00',
-      title: m === 'discipline' ? 'Log Your Meals' : m === 'mindful' ? 'Check-In Time' : 'Food Log Reminder',
-      body: m === 'discipline'
-        ? 'Nothing logged today. Stay accountable.'
-        : m === 'mindful'
-        ? 'Take a moment to check in with what you have eaten today.'
-        : "You haven't logged anything today. Tap to add a meal.",
+      title: v.title,
+      body: v.body,
       data: { route: '/(tabs)/log' },
     });
   }
 
   // 5. Activity Reminder (no workout AND steps below 75% of goal)
   if (s.categoryFitness && !ctx.todayWorkoutLogged && ctx.todaySteps < ctx.stepGoal * 0.75 && (!isMindful || growthOn)) {
+    const v = pickCopy('activity', COPY_POOLS.activity, m, growthOn, rotation);
     candidates.push({
       id: 'pj_activity',
       time: s.activityTime,
-      title: m === 'discipline' ? 'No Workout Logged' : m === 'mindful' ? 'Movement Check' : 'Activity Reminder',
-      body: m === 'discipline'
-        ? 'No workout logged today. Movement matters.'
-        : m === 'mindful'
-        ? 'How has your movement been today?'
-        : "You haven't hit your activity goals today. Time to move.",
+      title: v.title,
+      body: v.body,
       data: { route: '/(tabs)/workout' },
     });
   }
@@ -530,11 +934,13 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
     const verseHour = 8 + Math.floor(verseOffsetMins / 60);
     const verseMin = verseOffsetMins % 60;
     const verseTime = `${verseHour.toString().padStart(2, '0')}:${verseMin.toString().padStart(2, '0')}`;
+    const verseBody = ctx.todayVerseText ? ctx.todayVerseText.slice(0, 120) : "Today's verse is ready. Open to read.";
+    const v = pickCopy('daily_verse', COPY_POOLS.daily_verse, m, growthOn, rotation);
     candidates.push({
       id: 'pj_daily_verse',
       time: verseTime,
-      title: m === 'discipline' ? "Today's Verse" : m === 'mindful' ? 'A Word for Today' : "Today's Message",
-      body: ctx.todayVerseText ? ctx.todayVerseText.slice(0, 120) : "Today's verse is ready. Open to read.",
+      title: v.title,
+      body: applyPlaceholders(v.body, { VERSE: verseBody }),
       data: { route: '/bible', params: { openTodayVerse: '1' } },
     });
   }
@@ -549,13 +955,12 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
       return false;
     })();
     if (shouldFire) {
+      const v = pickCopy('weight_log', COPY_POOLS.weight_log, m, growthOn, rotation);
       candidates.push({
         id: 'pj_weight_log',
         time: '07:30',
-        title: m === 'discipline' ? 'Log Your Weight' : 'Weight Check',
-        body: m === 'discipline'
-          ? 'Track your weight to stay on top of your progress.'
-          : "Don't forget to log your weight today.",
+        title: v.title,
+        body: v.body,
         data: { route: '/', params: { scrollTo: 'weight' } },
       });
     }
@@ -563,13 +968,12 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
 
   // 8. IF Check-In (food logged, IF enabled but not started, suppressed default Mindful)
   if (s.categoryFasting && ctx.ifEnabled && !ctx.ifStarted && ctx.todayFoodEntries > 0 && (!isMindful || growthOn)) {
+    const v = pickCopy('if_checkin', COPY_POOLS.if_checkin, m, growthOn, rotation);
     candidates.push({
       id: 'pj_if_checkin',
       time: '13:00',
-      title: isMindful ? 'Gentle Check-In' : 'Did You Start Eating?',
-      body: isMindful
-        ? 'Noticing you have food logged today. Did you want to start your eating window?'
-        : "You have food logged but your IF window isn't started. Tap to update.",
+      title: v.title,
+      body: v.body,
       data: { route: '/', params: { scrollTo: 'if' } },
     });
   }
@@ -599,11 +1003,12 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
       if (fh * 60 + fm <= nowMins) continue;
       const fireDate = new Date();
       fireDate.setHours(fh, fm, 0, 0);
+      const v = pickCopy('water', COPY_POOLS.water, m, growthOn, rotation);
       await Notifications.scheduleNotificationAsync({
         identifier: `pj_water_${i}`,
         content: {
-          title: m === 'discipline' ? 'Water Check' : 'Hydration Reminder',
-          body: m === 'discipline' ? 'Stay on top of your hydration.' : 'Time for some water.',
+          title: v.title,
+          body: v.body,
           sound: true,
           data: { route: '/', params: { scrollTo: 'water' } },
         },
@@ -620,11 +1025,12 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
     const fireDate = new Date();
     fireDate.setHours(fireHour, fireMin, 0, 0);
     if (fireDate > now) {
+      const v = pickCopy('weekly_summary', COPY_POOLS.weekly_summary, m, growthOn, rotation);
       await Notifications.scheduleNotificationAsync({
         identifier: 'pj_weekly_summary',
         content: {
-          title: 'Weekly Summary Ready',
-          body: m === 'discipline' ? 'Your weekly performance report is ready.' : 'Your week is wrapped up. See how it went.',
+          title: v.title,
+          body: v.body,
           sound: true,
           data: { route: '/weekly-summary' },
         },
@@ -641,11 +1047,12 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
     const fireDate = new Date();
     fireDate.setHours(fireHour, fireMin, 0, 0);
     if (fireDate > now) {
+      const v = pickCopy('monthly_summary', COPY_POOLS.monthly_summary, m, growthOn, rotation);
       await Notifications.scheduleNotificationAsync({
         identifier: 'pj_monthly_summary',
         content: {
-          title: 'Monthly Summary Ready',
-          body: m === 'discipline' ? 'Your monthly performance report is ready.' : 'Your month is wrapped up. See how it went.',
+          title: v.title,
+          body: v.body,
           sound: true,
           data: { route: '/monthly-summary' },
         },
@@ -654,22 +1061,38 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
     }
   }
 
-  // ── Always-on: Re-engagement (48h from now, resets each app open) ─────────
+  // ── Always-on: Re-engagement chain ───────────────────────────────────────
+  // First 3 fires at 48h / 96h / 144h from last app open.
+  // After that, weekly indefinitely (pre-scheduled 2 weeks out).
+  // All cancelled and rescheduled fresh on every app open.
   if (s.reengagementEnabled) {
-    const fireDate = new Date(Date.now() + 48 * 60 * 60 * 1000);
-    await Notifications.scheduleNotificationAsync({
-      identifier: 'pj_reengagement',
-      content: {
-        title: m === 'discipline' ? "Where'd You Go?" : m === 'mindful' ? 'Come Back When Ready' : 'We Miss You',
-        body: m === 'discipline'
-          ? "It's been a couple days. Get back on track today."
-          : m === 'mindful'
-          ? 'No pressure. We are here when you are ready.'
-          : "It's been a couple days. Your streaks and goals are waiting.",
-        sound: true,
-        data: { route: '/' },
-      },
-      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: fireDate },
-    });
+    const HOUR = 60 * 60 * 1000;
+    const reengagementFires = [
+      { id: 'pj_reengagement_1', delay: 48 * HOUR },
+      { id: 'pj_reengagement_2', delay: 96 * HOUR },
+      { id: 'pj_reengagement_3', delay: 144 * HOUR },
+      { id: 'pj_reengagement_w1', delay: 144 * HOUR + 7 * 24 * HOUR },
+      { id: 'pj_reengagement_w2', delay: 144 * HOUR + 14 * 24 * HOUR },
+    ];
+
+    for (const fire of reengagementFires) {
+      const v = pickCopy('reengagement', COPY_POOLS.reengagement, m, growthOn, rotation);
+      await Notifications.scheduleNotificationAsync({
+        identifier: fire.id,
+        content: {
+          title: v.title,
+          body: v.body,
+          sound: true,
+          data: { route: '/' },
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: new Date(Date.now() + fire.delay),
+        },
+      });
+    }
   }
+
+  // Persist updated rotation indices so pools advance on next schedule run.
+  await saveNotificationSettings({ ...s, copyRotation: rotation });
 };

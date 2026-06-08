@@ -173,6 +173,8 @@ DONE -- SHIPPED
 
 ACTIVE BUGS -- fix before anything else
 
+[ ] Score column vertical alignment -- score values in right column of weekly-summary.tsx and DaySummaryModal (day-detail) are not vertically centered. Regression. Fix before monthly ships since monthly inherits same component.
+
 [ ] TUTORIAL POLISH PASS -- dedicated session required. Confirmed good: spotlight animation quality, highlighting, interactive flows, app stability. Issues to fix as a batch:
   [ ] Spotlight transition lag -- NEEDS TESTFLIGHT VERIFICATION. Fix shipped 2026-05-26: for non-navigation steps, spotlight animation now starts simultaneously with bubble fade-out instead of after it, eliminating ~150ms dead time. Navigation steps unchanged (sequential required). TutorialOverlay.tsx. Cannot verify smoothness in dev build -- confirm on next TestFlight.
   [x] Auto-scroll to off-screen targets -- FIXED 2026-05-26. Added scrollToTop?: boolean to TutorialStep interface. manage_log TODAY'S TOTAL step gets scrollToTop:true -- doStepTransition detects flag, fires scrollTo({y:0, animated:false}) on all registered scroll views, waits 350ms (overlapping with bubble fade) before measuring. measureInWindow now returns valid coords since element is back in viewport. data/tutorials.ts + TutorialOverlay.tsx.

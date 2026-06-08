@@ -40,6 +40,7 @@ import {
 import { TUTORIALS } from '../data/tutorials';
 import { resetAllTutorials } from '../context/TutorialContext';
 import { generateWeeklySummary } from '../utils/weeklySummary';
+import { generateMonthlySummary } from '../utils/monthlySummary';
 
 type FaithJourney = 'rooted' | 'exploring' | 'notrightnow';
 
@@ -1889,6 +1890,50 @@ export default function SettingsScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Regenerate Weekly Summaries</Text>
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Clears and rebuilds all weekly summary snapshots. Use if a week shows wrong or missing data.</Text>
+              </View>
+              <Ionicons name="calendar-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Alert.alert('Regenerate Monthly Summaries', 'Clears all cached monthly summaries and rebuilds them from your logged data. Your logged data is not affected.', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Regenerate', style: 'destructive', onPress: async () => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                  const allKeys = await AsyncStorage.getAllKeys();
+                  const toRemove = allKeys.filter(k =>
+                    k.startsWith('pj_monthly_summary_') ||
+                    k.startsWith('pj_coach_tip_monthly_') ||
+                    k === 'pj_last_monthly_generated'
+                  );
+                  if (toRemove.length > 0) await AsyncStorage.multiRemove(toRemove);
+
+                  // Find all past calendar months that have day data
+                  const dayKeys = allKeys.filter(k => k.match(/^pj_\d{4}-\d{2}-\d{2}$/));
+                  const today = new Date();
+                  today.setDate(1); today.setHours(0, 0, 0, 0); // start of current month
+                  const monthKeys = new Set<string>();
+                  for (const key of dayKeys) {
+                    const dk = key.slice(3);
+                    const [y, m] = dk.split('-').map(Number);
+                    const monthStart = new Date(y, m - 1, 1);
+                    if (monthStart >= today) continue; // skip current open month
+                    monthKeys.add(`${y}-${String(m).padStart(2, '0')}`);
+                  }
+
+                  const mkArray = Array.from(monthKeys).sort();
+                  let count = 0;
+                  for (const mk of mkArray) {
+                    await generateMonthlySummary(mk);
+                    count++;
+                  }
+                  Alert.alert('Done', `Rebuilt ${count} monthly ${count === 1 ? 'summary' : 'summaries'} from your data.`);
+                }},
+              ]);
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Regenerate Monthly Summaries</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Clears and rebuilds all monthly summary snapshots. Use if a month shows wrong or missing data.</Text>
               </View>
               <Ionicons name="calendar-outline" size={18} color={theme.accentRed} />
             </TouchableOpacity>

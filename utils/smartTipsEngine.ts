@@ -2333,6 +2333,8 @@ export async function computeCoachPacket(
 
 const COACH_TIP_WEEKLY_KEY_PREFIX = 'pj_coach_tip_weekly_';
 const COACH_LAST_RULE_WEEKLY_KEY_PREFIX = 'pj_coach_last_rule_weekly_';
+const COACH_TIP_MONTHLY_KEY_PREFIX = 'pj_coach_tip_monthly_';
+const COACH_LAST_RULE_MONTHLY_KEY_PREFIX = 'pj_coach_last_rule_monthly_';
 
 export async function loadCoachTipCacheWeekly(weekStart: string): Promise<CoachTipCache | null> {
   try {
@@ -2481,6 +2483,181 @@ export async function computeCoachPacketWeekly(
         windowDays,
         startDate: weekStart,
         endDate: weekEnd,
+        ifActive: ctx.ifEnabled,
+        previousTip,
+        faithTier,
+        computedDate: todayKey,
+        fallbackTitle: selected.title,
+        fallbackBody: selected.body,
+      };
+    }
+  }
+
+  packet.daysLogged = density.daysLogged;
+  packet.daysWithNutritionData = density.daysWithNutritionData;
+  packet.daysWithActivityData = density.daysWithActivityData;
+  packet.daysWithSleepData = density.daysWithSleepData;
+
+  const cache: CoachTipCache = {
+    packet,
+    aiBody: null,
+    aiGeneratedDate: null,
+    fallbackUsed: false,
+  };
+
+  await Promise.all([
+    storageSet(cacheKey, JSON.stringify(cache)),
+    AsyncStorage.setItem(lastRuleKey, JSON.stringify({ ruleId: packet.ruleId })),
+  ]);
+  return cache;
+}
+
+export async function loadCoachTipCacheMonthly(monthKey: string): Promise<CoachTipCache | null> {
+  try {
+    const raw = await AsyncStorage.getItem(`${COACH_TIP_MONTHLY_KEY_PREFIX}${monthKey}`);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function computeCoachPacketMonthly(
+  monthStart: string,
+  monthEnd: string,
+  homeRuleId: string | null,
+): Promise<CoachTipCache> {
+  const monthKey = monthStart.slice(0, 7); // YYYY-MM
+  const cacheKey = `${COACH_TIP_MONTHLY_KEY_PREFIX}${monthKey}`;
+  const lastRuleKey = `${COACH_LAST_RULE_MONTHLY_KEY_PREFIX}${monthKey}`;
+
+  const [existing, lastRuleRaw] = await Promise.all([
+    loadCoachTipCacheMonthly(monthKey),
+    AsyncStorage.getItem(lastRuleKey),
+  ]);
+  const persistedLastRuleId: string | null = lastRuleRaw ? JSON.parse(lastRuleRaw).ruleId : null;
+
+  if (existing) return existing;
+
+  const todayKey = todayDateKey();
+  const [ctx, store, workoutRaw] = await Promise.all([
+    buildEngineContext(todayKey),
+    loadSmartTips(),
+    AsyncStorage.getItem('pj_workout_state').catch(() => null),
+  ]);
+
+  const tipStore: SmartTipsStore = store ?? {
+    activeTips: [], recentHistory: [], cooldowns: {},
+    variantHistory: {}, lastComputed: '', topicLedger: {},
+  };
+  const workoutState: any = workoutRaw ? JSON.parse(workoutRaw) : {};
+
+  const monthDays = await loadWindowDayRange(monthStart, monthEnd, ctx, workoutState);
+  const density = computeDensityFields(monthDays);
+  const windowDays = monthDays.length || 30;
+  const loggedCount = density.daysLogged;
+  const previousTip = 'none';
+
+  let faithTier = 'rooted';
+  try {
+    const s = await AsyncStorage.getItem('pj_settings');
+    if (s) { const parsed = JSON.parse(s); faithTier = parsed?.faithJourney ?? 'rooted'; }
+  } catch {}
+
+  let packet: CoachPacket;
+
+  const safety9 = checkFamily9Safety(monthDays, ctx);
+
+  if (safety9) {
+    packet = {
+      scenario: safety9.scenario,
+      ruleId: `safety_${safety9.scenario}`,
+      familyNum: 9,
+      diagnosis: safety9.diagnosis,
+      action: safety9.action,
+      facts: safety9.facts,
+      tone: 'care',
+      careSeverity: safety9.careSeverity,
+      mode: ctx.styleMode,
+      goal: ctx.goalBucket,
+      surface: 'monthly',
+      windowDays,
+      startDate: monthStart,
+      endDate: monthEnd,
+      ifActive: ctx.ifEnabled,
+      previousTip,
+      faithTier,
+      computedDate: todayKey,
+      fallbackTitle: 'A Note on Your Pace',
+      fallbackBody: `Something worth flagging. ${safety9.diagnosis}. ${safety9.action}.`,
+    };
+  } else if (loggedCount < 14) {
+    packet = {
+      scenario: '5.5',
+      ruleId: 'log_consistency_low_monthly',
+      familyNum: 5,
+      diagnosis: `Only ${loggedCount} of ${windowDays} days have logged data, not enough for reliable monthly trend analysis`,
+      action: 'Log food on at least 14 days next month to unlock a full monthly coaching insight',
+      facts: { loggedDays: loggedCount, windowDays },
+      tone: 'corrective',
+      mode: ctx.styleMode,
+      goal: ctx.goalBucket,
+      surface: 'monthly',
+      windowDays,
+      startDate: monthStart,
+      endDate: monthEnd,
+      ifActive: ctx.ifEnabled,
+      previousTip,
+      faithTier,
+      computedDate: todayKey,
+      fallbackTitle: 'Building Your Picture',
+      fallbackBody: `The coach has ${loggedCount} logged days to work with this month. Log food on 14 or more days to get a full monthly coaching insight.`,
+    };
+  } else {
+    const rawCandidates = runAllRules(monthDays, monthDays.slice(0, 5), monthDays, ctx, tipStore);
+    const suppressed = applyMindfulSuppression(rawCandidates, ctx);
+
+    const excludeIds = [homeRuleId, persistedLastRuleId].filter((id): id is string => !!id);
+    const selected = selectByPrioritySpine(suppressed, ctx, excludeIds);
+
+    if (!selected) {
+      packet = {
+        scenario: '6.0',
+        ruleId: 'cal_goal_hit',
+        familyNum: 6,
+        diagnosis: 'All tracked metrics are within range for the month',
+        action: 'Maintain the current approach',
+        facts: { loggedDays: loggedCount, windowDays },
+        tone: 'positive',
+        mode: ctx.styleMode,
+        goal: ctx.goalBucket,
+        surface: 'monthly',
+        windowDays,
+        startDate: monthStart,
+        endDate: monthEnd,
+        ifActive: ctx.ifEnabled,
+        previousTip,
+        faithTier,
+        computedDate: todayKey,
+        fallbackTitle: 'Strong Month',
+        fallbackBody: 'Everything tracked in range this month. Keep the current approach going.',
+      };
+    } else {
+      const { diagnosis, action, facts } = buildDiagnosisActionFacts(selected, monthDays, monthDays, ctx);
+      const tone = deriveTone(selected);
+      packet = {
+        scenario: RULE_SCENARIO[selected.ruleId] ?? selected.ruleId,
+        ruleId: selected.ruleId,
+        familyNum: RULE_FAMILY[selected.ruleId] ?? 0,
+        diagnosis,
+        action,
+        facts,
+        tone,
+        mode: ctx.styleMode,
+        goal: ctx.goalBucket,
+        surface: 'monthly',
+        windowDays,
+        startDate: monthStart,
+        endDate: monthEnd,
         ifActive: ctx.ifEnabled,
         previousTip,
         faithTier,

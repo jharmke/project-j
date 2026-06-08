@@ -12,9 +12,11 @@ import {
   computeCoachPacket,
   computeCoachPacketEvr,
   computeCoachPacketWeekly,
+  computeCoachPacketMonthly,
   loadCoachTipCache,
   loadCoachTipCacheEvr,
   loadCoachTipCacheWeekly,
+  loadCoachTipCacheMonthly,
 } from './smartTipsEngine';
 import { DayScore, DayScoreInput } from './dayScore';
 
@@ -382,6 +384,20 @@ export async function refreshCoachTipWeekly(
   if (existing?.aiBody && existing.aiGeneratedDate) return existing;
 
   const cache = await computeCoachPacketWeekly(weekStart, weekEnd, homeRuleId);
+  return generateCoachTip(cache, cacheKey);
+}
+
+export async function refreshCoachTipMonthly(
+  monthStart: string,
+  monthEnd: string,
+  homeRuleId: string | null,
+): Promise<CoachTipCache> {
+  const monthKey = monthStart.slice(0, 7);
+  const cacheKey = `pj_coach_tip_monthly_${monthKey}`;
+  const existing = await loadCoachTipCacheMonthly(monthKey);
+  if (existing?.aiBody && existing.aiGeneratedDate) return existing;
+
+  const cache = await computeCoachPacketMonthly(monthStart, monthEnd, homeRuleId);
   return generateCoachTip(cache, cacheKey);
 }
 

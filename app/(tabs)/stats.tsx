@@ -22,6 +22,8 @@ import { storageSet } from '../../utils/storage';
 import { calcSleepScore } from '../../utils/sleepScore';
 import { loadDayScoreArchive, findMostRecentTourDay, ArchiveWeek, ArchiveDay } from '../../utils/dayScoreStore';
 import { loadWeeklySummary, WeeklySummaryData } from '../../utils/weeklySummary';
+import { loadMonthlySummary, MonthlySummaryData } from '../../utils/monthlySummary';
+import { TIPS_GATED } from '../../utils/smartTipsEngine';
 import { archiveNav } from '../../utils/archiveNav';
 import { showToolkit } from '../../components/ToolkitSheet';
 import { useTutorial } from '../../context/TutorialContext';
@@ -263,6 +265,9 @@ export default function StatsScreen() {
   // Weekly Summaries card: loaded from storage, grouped by month.
   const [weeklySummaries, setWeeklySummaries] = useState<WeeklySummaryData[]>([]);
   const [expandedWeeklyMonths, setExpandedWeeklyMonths] = useState<Record<string, boolean>>({});
+  // Monthly Summaries card
+  const [monthlyCardOpen, setMonthlyCardOpen] = useState(true);
+  const [monthlySummaries, setMonthlySummaries] = useState<MonthlySummaryData[]>([]);
 
   const [creatorVisible, setCreatorVisible] = useState(false);
   const [creatorStep, setCreatorStep] = useState<1 | 2 | 3>(1);
@@ -878,7 +883,6 @@ export default function StatsScreen() {
 
   const loadWeeklySummaries = useCallback(async () => {
     try {
-      // Scan for all pj_weekly_summary_* keys and load them sorted newest first.
       const allKeys = await AsyncStorage.getAllKeys();
       const weeklyKeys = allKeys.filter(k => k.startsWith('pj_weekly_summary_')).sort().reverse();
       const summaries: WeeklySummaryData[] = [];
@@ -891,7 +895,21 @@ export default function StatsScreen() {
     } catch {}
   }, []);
 
-  useFocusEffect(useCallback(() => { loadArchive(); loadWeeklySummaries(); }, [loadArchive, loadWeeklySummaries]));
+  const loadMonthlySummaries = useCallback(async () => {
+    try {
+      const allKeys = await AsyncStorage.getAllKeys();
+      const monthlyKeys = allKeys.filter(k => k.startsWith('pj_monthly_summary_')).sort().reverse();
+      const summaries: MonthlySummaryData[] = [];
+      for (const key of monthlyKeys) {
+        const monthKey = key.replace('pj_monthly_summary_', '');
+        const data = await loadMonthlySummary(monthKey);
+        if (data) summaries.push(data);
+      }
+      setMonthlySummaries(summaries);
+    } catch {}
+  }, []);
+
+  useFocusEffect(useCallback(() => { loadArchive(); loadWeeklySummaries(); loadMonthlySummaries(); }, [loadArchive, loadWeeklySummaries, loadMonthlySummaries]));
 
   // VIEW FULL SUMMARY handoff from the morning pop-up: open Reports, expand
   // yesterday's week, and scroll to the Day Summaries archive.
@@ -1155,6 +1173,98 @@ export default function StatsScreen() {
                   );
                 })}
               </View>
+            );
+          })
+        ))}
+      </View>
+    );
+  };
+
+  const MONTH_LABELS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const monthLabel = (monthKey: string) => {
+    const [y, m] = monthKey.split('-').map(Number);
+    return `${MONTH_LABELS[m - 1]} ${y}`;
+  };
+
+  const renderMonthlyCard = () => {
+    if (TIPS_GATED) {
+      return (
+        <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, marginTop: 12 }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+            <Text style={[styles.cardLabel, { color: theme.textMuted }]}>MONTHLY SUMMARIES</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name="lock-closed" size={12} color={theme.textMuted} />
+              <View style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
+                <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.accentBlue }}>PRO</Text>
+              </View>
+            </View>
+          </View>
+          <View style={{ gap: 6, paddingBottom: 4 }}>
+            <View style={{ height: 10, backgroundColor: theme.textMuted + '30', borderRadius: 4, width: '100%' }} />
+            <View style={{ height: 10, backgroundColor: theme.textMuted + '30', borderRadius: 4, width: '75%' }} />
+            <View style={{ height: 10, backgroundColor: theme.textMuted + '20', borderRadius: 4, width: '55%' }} />
+          </View>
+        </View>
+      );
+    }
+
+    return (
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, marginTop: 12 }]}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setMonthlyCardOpen(o => !o); }}
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: monthlyCardOpen ? 8 : 0 }}
+        >
+          <Text style={[styles.cardLabel, { color: theme.textMuted }]}>MONTHLY SUMMARIES</Text>
+          <Ionicons name={monthlyCardOpen ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textMuted} />
+        </TouchableOpacity>
+
+        {monthlyCardOpen && (monthlySummaries.length === 0 ? (
+          <View style={{ paddingVertical: 20, alignItems: 'center', paddingHorizontal: 16 }}>
+            <Ionicons name="calendar-outline" size={28} color={theme.textDim} style={{ marginBottom: 8 }} />
+            <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', marginBottom: 4 }}>No monthly summaries yet</Text>
+            <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular', textAlign: 'center', lineHeight: 17 }}>
+              Your first monthly summary generates on the 1st of the month after a logged month.
+            </Text>
+          </View>
+        ) : (
+          monthlySummaries.map(s => {
+            const hasScore = s.avgComposite !== null && s.daysScored > 0;
+            const scoreColor = hasScore
+              ? (styleMode === 'Mindful' ? theme.accentBlue : s.avgComposite! >= 80 ? theme.statusGood : s.avgComposite! >= 60 ? theme.statusWarn : theme.statusBad)
+              : theme.textDim;
+            return (
+              <TouchableOpacity
+                key={s.monthKey}
+                activeOpacity={hasScore ? 0.6 : 1}
+                onPress={() => { if (hasScore) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/monthly-summary', params: { monthKey: s.monthKey } }); } }}
+                style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 11, paddingHorizontal: 4, borderTopWidth: 0.5, borderTopColor: theme.borderCard }}
+              >
+                <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>
+                  {monthLabel(s.monthKey)}
+                </Text>
+                {hasScore && (
+                  <Text style={{ fontSize: 22, lineHeight: 24, fontFamily: 'BebasNeue_400Regular', color: scoreColor, marginLeft: 8 }}>
+                    {Math.round(s.avgComposite!)}
+                  </Text>
+                )}
+                <View style={{ flex: 1 }} />
+                {hasScore ? (
+                  <>
+                    <View style={{ flexDirection: 'row', gap: 8, marginRight: 8 }}>
+                      {[['N', s.avgNutritionScore], ['A', s.avgActivityScore], ['R', s.avgSleepScore]].map(([lbl, val]) => (
+                        <View key={lbl as string} style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
+                          <Text style={{ fontSize: 8, color: theme.textMuted, fontFamily: 'DMSans_700Bold' }}>{lbl}</Text>
+                          <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' }}>{val !== null ? Math.round(val as number) : '–'}</Text>
+                        </View>
+                      ))}
+                    </View>
+                    <Ionicons name="chevron-forward" size={14} color={theme.textDim} />
+                  </>
+                ) : (
+                  <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>No scored days</Text>
+                )}
+              </TouchableOpacity>
             );
           })
         ))}
@@ -1890,6 +2000,7 @@ export default function StatsScreen() {
                   )}
                 </View>
                 {renderWeeklyCard()}
+                {renderMonthlyCard()}
                 {renderDayArchive()}
               </CollapsibleSection>
               </View>

@@ -10,6 +10,7 @@ import { ScoreRing } from '../components/DaySummaryModal';
 import DaySummaryModal from '../components/DaySummaryModal';
 import { scoreLabel, StyleMode, CAL_MAX, PROTEIN_MAX, WATER_MAX } from '../utils/dayScore';
 import { loadMonthlySummary, MonthlySummaryData, MonthDayEntry } from '../utils/monthlySummary';
+import { cancelMonthlySummaryNotification } from '../services/notifications';
 import { TIPS_GATED, CoachTipCache, loadCoachTipCache } from '../utils/smartTipsEngine';
 import { refreshCoachTipMonthly, resolveTipBody } from '../utils/coachAI';
 
@@ -211,6 +212,11 @@ export default function MonthlySummaryScreen() {
   const [prevData, setPrevData] = useState<MonthlySummaryData | null>(null);
 
   const shadowStyle = { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6 };
+
+  // Cancel the "Monthly Summary Ready" notification when the user views this screen
+  useEffect(() => {
+    cancelMonthlySummaryNotification().catch(() => {});
+  }, []);
 
   useEffect(() => {
     const load = async () => {

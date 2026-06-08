@@ -27,6 +27,7 @@ import CompanionChat from '../components/CompanionChat';
 import { checkFaithAchievements, getCelebTier } from '../achievementData';
 import { showAchievementToast } from '../components/AchievementToast';
 import { showCelebration } from '../components/CelebrationOverlay';
+import { cancelFaithReadingNotification } from '../services/notifications';
 
 interface BibleFavorite {
   ref: string;
@@ -457,6 +458,7 @@ export default function BibleScreen() {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       const plan = READING_PLANS.find(p => p.id === planId);
       showToast(`Day ${dayIndex + 1} marked complete`, plan?.shortName, 'success');
+      cancelFaithReadingNotification().catch(() => {});
       // Faith achievement check for bible reading days
       checkFaithAchievements('bible').then(unlocked => {
         unlocked.forEach(def => { showCelebration(getCelebTier(def), def.name, def); showAchievementToast(def); });

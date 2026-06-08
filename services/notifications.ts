@@ -13,19 +13,34 @@ export interface NotificationSettings {
   permissionAsked: boolean;
   quietStart: string;        // "22:00"
   quietEnd: string;          // "07:00"
-  minSpacingMins: number;    // 30 | 60 | 90
 
-  ifWindow: { enabled: boolean; reminders: string[] };         // minutes before close
-  ifCheckin: { enabled: boolean; time: string };
-  foodLog: { enabled: boolean; time: string };
-  waterPace: { enabled: boolean };
-  streakProtection: { enabled: boolean; minutesBefore: string };
-  activity: { enabled: boolean; time: string };
-  weeklyRecap: { enabled: boolean; time: string };
-  morningIntention: { enabled: boolean; time: string };
-  eveningGratitude: { enabled: boolean; time: string };
-  prayerCheckin: { enabled: boolean; time: string };
-  reengagement: { enabled: boolean };
+  // Standalone P1 toggle (spans fitness + faith, above category pills)
+  streakProtection: boolean;
+
+  // P2 daily cap for coaching content
+  dailyCap: 3 | 5 | 'all';
+
+  // Category toggles
+  categoryFitness: boolean;
+  categoryFaith: boolean;
+  categoryFasting: boolean;
+  categorySummaries: boolean;
+
+  // Water sub-system count (spaced evenly, not competing with P2 cap)
+  waterCount: 0 | 1 | 2 | 3 | 4;
+
+  // Advanced controls
+  activityTime: string;
+  weightFrequency: 'daily' | '3day' | 'weekly';
+  prayerTime: string;
+  ifLeadMins: 15 | 30 | 60;
+  streakOffsetMins: 30 | 45 | 60;
+
+  // Always-on hidden system behavior
+  reengagementEnabled: boolean;
+
+  // Copy rotation indices per type (increments on fire, cycles at pool end)
+  copyRotation: Record<string, number>;
 }
 
 export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
@@ -33,19 +48,43 @@ export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
   permissionAsked: false,
   quietStart: '22:00',
   quietEnd: '07:00',
-  minSpacingMins: 60,
-  ifWindow: { enabled: true, reminders: ['60'] },
-  ifCheckin: { enabled: true, time: '13:00' },
-  foodLog: { enabled: true, time: '19:00' },
-  waterPace: { enabled: true },
-  streakProtection: { enabled: true, minutesBefore: '45' },
-  activity: { enabled: true, time: '17:00' },
-  weeklyRecap: { enabled: true, time: '19:00' },
-  morningIntention: { enabled: true, time: '07:00' },
-  eveningGratitude: { enabled: true, time: '20:00' },
-  prayerCheckin: { enabled: true, time: '21:00' },
-  reengagement: { enabled: true },
+  streakProtection: true,
+  dailyCap: 5,
+  categoryFitness: true,
+  categoryFaith: true,
+  categoryFasting: true,
+  categorySummaries: true,
+  waterCount: 3,
+  activityTime: '17:00',
+  weightFrequency: '3day',
+  prayerTime: '21:00',
+  ifLeadMins: 30,
+  streakOffsetMins: 45,
+  reengagementEnabled: true,
+  copyRotation: {},
 };
+
+export interface SchedulerContext {
+  styleMode: StyleMode;
+  mindfulGrowthAreas: boolean;
+  faithJourney: FaithJourney;
+  todayFoodEntries: number;
+  todayWater: number;
+  waterGoal: number;
+  activeStreaks: Array<{ id: string; name: string; currentStreak: number }>;
+  todayWorkoutLogged: boolean;
+  todaySteps: number;
+  stepGoal: number;
+  ifEnabled: boolean;
+  ifStarted: boolean;
+  weightLoggedToday: boolean;
+  hasLoggedWeightBefore: boolean;
+  daysSinceLastWeight: number | null;
+  faithReadingPending: boolean;
+  gratitudeLoggedToday: boolean;
+  prayerLoggedToday: boolean;
+  todayVerseText: string | null;
+}
 
 // ── Storage ───────────────────────────────────────────────────────────────────
 
@@ -54,21 +93,57 @@ export const loadNotificationSettings = async (): Promise<NotificationSettings> 
     const raw = await AsyncStorage.getItem('pj_notification_settings');
     if (!raw) return { ...DEFAULT_NOTIFICATION_SETTINGS };
     const parsed = JSON.parse(raw);
-    // Deep merge per-section so new keys always have defaults
+
+    // Migrate old streakProtection shape { enabled, minutesBefore } -> boolean
+    let streakProtection: boolean = DEFAULT_NOTIFICATION_SETTINGS.streakProtection;
+    if (typeof parsed.streakProtection === 'boolean') {
+      streakProtection = parsed.streakProtection;
+    } else if (parsed.streakProtection?.enabled !== undefined) {
+      streakProtection = !!parsed.streakProtection.enabled;
+    }
+
+    // Migrate old minutesBefore string -> streakOffsetMins number
+    let streakOffsetMins: 30 | 45 | 60 = DEFAULT_NOTIFICATION_SETTINGS.streakOffsetMins;
+    if (parsed.streakOffsetMins === 30 || parsed.streakOffsetMins === 45 || parsed.streakOffsetMins === 60) {
+      streakOffsetMins = parsed.streakOffsetMins;
+    } else if (parsed.streakProtection?.minutesBefore) {
+      const mb = parseInt(parsed.streakProtection.minutesBefore);
+      if (mb === 30 || mb === 45 || mb === 60) streakOffsetMins = mb;
+    }
+
+    // Migrate old activity time
+    const activityTime: string = parsed.activityTime ?? parsed.activity?.time ?? DEFAULT_NOTIFICATION_SETTINGS.activityTime;
+    const prayerTime: string = parsed.prayerTime ?? parsed.prayerCheckin?.time ?? DEFAULT_NOTIFICATION_SETTINGS.prayerTime;
+
+    // Migrate old ifWindow leadMins
+    let ifLeadMins: 15 | 30 | 60 = DEFAULT_NOTIFICATION_SETTINGS.ifLeadMins;
+    if (parsed.ifLeadMins === 15 || parsed.ifLeadMins === 30 || parsed.ifLeadMins === 60) {
+      ifLeadMins = parsed.ifLeadMins;
+    } else if (Array.isArray(parsed.ifWindow?.reminders) && parsed.ifWindow.reminders.length > 0) {
+      const first = parseInt(parsed.ifWindow.reminders[0]);
+      if (first === 15 || first === 30 || first === 60) ifLeadMins = first;
+    }
+
     return {
       ...DEFAULT_NOTIFICATION_SETTINGS,
-      ...parsed,
-      ifWindow: { ...DEFAULT_NOTIFICATION_SETTINGS.ifWindow, ...parsed.ifWindow },
-      ifCheckin: { ...DEFAULT_NOTIFICATION_SETTINGS.ifCheckin, ...parsed.ifCheckin },
-      foodLog: { ...DEFAULT_NOTIFICATION_SETTINGS.foodLog, ...parsed.foodLog },
-      waterPace: { ...DEFAULT_NOTIFICATION_SETTINGS.waterPace, ...parsed.waterPace },
-      streakProtection: { ...DEFAULT_NOTIFICATION_SETTINGS.streakProtection, ...parsed.streakProtection },
-      activity: { ...DEFAULT_NOTIFICATION_SETTINGS.activity, ...parsed.activity },
-      weeklyRecap: { ...DEFAULT_NOTIFICATION_SETTINGS.weeklyRecap, ...parsed.weeklyRecap },
-      morningIntention: { ...DEFAULT_NOTIFICATION_SETTINGS.morningIntention, ...parsed.morningIntention },
-      eveningGratitude: { ...DEFAULT_NOTIFICATION_SETTINGS.eveningGratitude, ...parsed.eveningGratitude },
-      prayerCheckin: { ...DEFAULT_NOTIFICATION_SETTINGS.prayerCheckin, ...parsed.prayerCheckin },
-      reengagement: { ...DEFAULT_NOTIFICATION_SETTINGS.reengagement, ...parsed.reengagement },
+      masterEnabled: parsed.masterEnabled ?? DEFAULT_NOTIFICATION_SETTINGS.masterEnabled,
+      permissionAsked: parsed.permissionAsked ?? DEFAULT_NOTIFICATION_SETTINGS.permissionAsked,
+      quietStart: parsed.quietStart ?? DEFAULT_NOTIFICATION_SETTINGS.quietStart,
+      quietEnd: parsed.quietEnd ?? DEFAULT_NOTIFICATION_SETTINGS.quietEnd,
+      streakProtection,
+      dailyCap: ([3, 5, 'all'] as const).includes(parsed.dailyCap) ? parsed.dailyCap : DEFAULT_NOTIFICATION_SETTINGS.dailyCap,
+      categoryFitness: parsed.categoryFitness ?? DEFAULT_NOTIFICATION_SETTINGS.categoryFitness,
+      categoryFaith: parsed.categoryFaith ?? DEFAULT_NOTIFICATION_SETTINGS.categoryFaith,
+      categoryFasting: parsed.categoryFasting ?? DEFAULT_NOTIFICATION_SETTINGS.categoryFasting,
+      categorySummaries: parsed.categorySummaries ?? DEFAULT_NOTIFICATION_SETTINGS.categorySummaries,
+      waterCount: ([0, 1, 2, 3, 4] as const).includes(parsed.waterCount) ? parsed.waterCount : DEFAULT_NOTIFICATION_SETTINGS.waterCount,
+      activityTime,
+      weightFrequency: (['daily', '3day', 'weekly'] as const).includes(parsed.weightFrequency) ? parsed.weightFrequency : DEFAULT_NOTIFICATION_SETTINGS.weightFrequency,
+      prayerTime,
+      ifLeadMins,
+      streakOffsetMins,
+      reengagementEnabled: parsed.reengagementEnabled ?? DEFAULT_NOTIFICATION_SETTINGS.reengagementEnabled,
+      copyRotation: parsed.copyRotation ?? {},
     };
   } catch {
     return { ...DEFAULT_NOTIFICATION_SETTINGS };
@@ -97,12 +172,11 @@ export const getPermissionStatus = async (): Promise<'granted' | 'denied' | 'und
   return status as 'granted' | 'denied' | 'undetermined';
 };
 
-// Returns true if granted. Marks permissionAsked regardless of result.
 export const requestNotificationPermission = async (): Promise<boolean> => {
   if (Platform.OS !== 'ios') return false;
   const { status: existing } = await Notifications.getPermissionsAsync();
   if (existing === 'granted') return true;
-  if (existing === 'denied') return false; // one-shot used up
+  if (existing === 'denied') return false;
   const { status } = await Notifications.requestPermissionsAsync({
     ios: { allowAlert: true, allowBadge: true, allowSound: true },
   });
@@ -111,7 +185,6 @@ export const requestNotificationPermission = async (): Promise<boolean> => {
   return status === 'granted';
 };
 
-// Should we present the permission ask right now?
 export const shouldAskPermission = async (): Promise<boolean> => {
   const settings = await loadNotificationSettings();
   if (settings.permissionAsked) return false;
@@ -134,8 +207,8 @@ export const formatNotifTime = (t: string): string => {
   return `${h}:${m} ${ampm}`;
 };
 
-// "10:30 PM" or 24h string → total minutes (handles post-midnight as 24h+)
-const toNormalizedMins = (t: string): number | null => {
+// "10:30 PM" or 24h string -> total minutes (handles post-midnight as 24h+)
+export const toNormalizedMins = (t: string): number | null => {
   const ampmMatch = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
   if (ampmMatch) {
     let h = parseInt(ampmMatch[1]);
@@ -144,7 +217,7 @@ const toNormalizedMins = (t: string): number | null => {
     if (ampm === 'PM' && h !== 12) h += 12;
     if (ampm === 'AM' && h === 12) h = 0;
     const mins = h * 60 + m;
-    return h < 6 ? mins + 1440 : mins; // 1am = 25h, not 1h
+    return h < 6 ? mins + 1440 : mins;
   }
   const parts = t.split(':').map(Number);
   if (parts.length >= 2 && !isNaN(parts[0])) {
@@ -160,7 +233,7 @@ const isInQuietHours = (hour: number, minute: number, quietStart: string, quietE
   const mins = hour * 60 + minute;
   const startMins = sh * 60 + sm;
   const endMins = eh * 60 + em;
-  if (startMins > endMins) return mins >= startMins || mins < endMins; // spans midnight
+  if (startMins > endMins) return mins >= startMins || mins < endMins;
   return mins >= startMins && mins < endMins;
 };
 
@@ -198,99 +271,6 @@ export const getAverageBedtime = async (): Promise<string | null> => {
   return `${displayH}:${mn.toString().padStart(2, '0')} ${ampm}`;
 };
 
-// ── Mode-aware copy ───────────────────────────────────────────────────────────
-
-const copy = {
-  ifWindow: (mins: number, mode: StyleMode) => ({
-    title: 'Eating Window Closing',
-    body: mode === 'discipline'
-      ? `${mins} minutes left in your eating window. Finish strong.`
-      : mode === 'mindful'
-      ? `${mins} minutes remaining in your eating window. Take your time.`
-      : `${mins} minutes left in your eating window. Anything else you need?`,
-  }),
-  ifCheckin: (mode: StyleMode) => ({
-    title: mode === 'discipline' ? 'IF Window Check' : mode === 'mindful' ? 'Gentle Check-In' : 'Did You Start Eating?',
-    body: mode === 'discipline'
-      ? 'You have food logged but your IF window hasn\'t started. Log your fast start.'
-      : mode === 'mindful'
-      ? 'Noticing you have food logged today. Did you want to start your eating window?'
-      : 'You have food logged but your IF window isn\'t started. Tap to update.',
-  }),
-  foodLog: (mode: StyleMode) => ({
-    title: mode === 'discipline' ? 'Log Your Meals' : mode === 'mindful' ? 'Check-In Time' : 'Food Log Reminder',
-    body: mode === 'discipline'
-      ? 'Nothing logged today. Stay accountable.'
-      : mode === 'mindful'
-      ? 'Take a moment to log what you\'ve eaten today.'
-      : 'You haven\'t logged anything today. Tap to add a meal.',
-  }),
-  waterPace: (behind: number, mode: StyleMode) => ({
-    title: mode === 'discipline' ? 'Water Deficit' : mode === 'mindful' ? 'Hydration Nudge' : 'Water Check',
-    body: mode === 'discipline'
-      ? `You\'re ${behind}oz behind your water goal. Get it done.`
-      : mode === 'mindful'
-      ? 'A gentle reminder -- your body could use some water right now.'
-      : `You\'re about ${behind}oz behind your water pace for today.`,
-  }),
-  streakProtection: (name: string, mode: StyleMode) => ({
-    title: mode === 'discipline' ? 'Streak On The Line' : mode === 'mindful' ? 'Keep Your Streak' : 'Streak At Risk',
-    body: mode === 'discipline'
-      ? `Your ${name} streak is on the line. Don\'t break the chain.`
-      : mode === 'mindful'
-      ? `Your ${name} journey continues today. One small action keeps it going.`
-      : `Your ${name} streak is at risk. Log before midnight to keep it going.`,
-  }),
-  activity: (mode: StyleMode) => ({
-    title: mode === 'discipline' ? 'No Workout Logged' : mode === 'mindful' ? 'Movement Check' : 'Activity Reminder',
-    body: mode === 'discipline'
-      ? 'No workout logged today. Movement matters.'
-      : mode === 'mindful'
-      ? 'How\'s your movement today? Every step counts.'
-      : 'You haven\'t hit your activity goals yet today. Time to move.',
-  }),
-  weeklyRecap: (mode: StyleMode) => ({
-    title: mode === 'discipline' ? 'Weekly Report' : mode === 'mindful' ? 'Your Week' : 'Your Week in Review',
-    body: mode === 'discipline'
-      ? 'Your weekly performance summary is ready. Check your stats.'
-      : mode === 'mindful'
-      ? 'A moment to reflect on your week. Open to see how it went.'
-      : 'See how your week stacked up. Open to review your progress.',
-  }),
-  morningIntention: (mode: StyleMode) => ({
-    title: mode === 'discipline' ? 'Start With Purpose' : mode === 'mindful' ? 'Morning Reflection' : 'Good Morning',
-    body: mode === 'discipline'
-      ? 'Set your intention for today. Check your verse and start strong.'
-      : mode === 'mindful'
-      ? 'Begin today with a moment of reflection. Your daily verse is ready.'
-      : 'Start your day with intention. Today\'s message is waiting.',
-  }),
-  eveningGratitude: (mode: StyleMode) => ({
-    title: mode === 'discipline' ? 'Gratitude Log' : mode === 'mindful' ? 'Evening Reflection' : 'Evening Gratitude',
-    body: mode === 'discipline'
-      ? 'Log one thing you\'re grateful for today.'
-      : mode === 'mindful'
-      ? 'What was good about today? A moment of gratitude goes a long way.'
-      : 'Take 60 seconds to log what you\'re grateful for today.',
-  }),
-  prayerCheckin: (mode: StyleMode) => ({
-    title: mode === 'mindful' ? 'Prayer Moment' : 'Prayer Reminder',
-    body: mode === 'discipline'
-      ? 'Log your prayer for today.'
-      : mode === 'mindful'
-      ? 'Take a quiet moment for prayer today.'
-      : 'Don\'t forget your prayer check-in for today.',
-  }),
-  reengagement: (mode: StyleMode) => ({
-    title: mode === 'discipline' ? 'Where\'d You Go?' : mode === 'mindful' ? 'Come Back When Ready' : 'We Miss You',
-    body: mode === 'discipline'
-      ? 'It\'s been a couple days. Get back on track today.'
-      : mode === 'mindful'
-      ? 'No pressure -- just here when you\'re ready to check in.'
-      : 'It\'s been a couple days. Your streaks and goals are waiting.',
-  }),
-};
-
 // ── IF Window (event-driven) ──────────────────────────────────────────────────
 
 export const scheduleIFWindowNotifications = async (
@@ -298,7 +278,7 @@ export const scheduleIFWindowNotifications = async (
   settings: NotificationSettings,
   styleMode: StyleMode,
 ) => {
-  if (!settings.masterEnabled || !settings.ifWindow.enabled) return;
+  if (!settings.masterEnabled || !settings.categoryFasting) return;
   if (Platform.OS !== 'ios') return;
   const status = await getPermissionStatus();
   if (status !== 'granted') return;
@@ -306,21 +286,26 @@ export const scheduleIFWindowNotifications = async (
   await cancelIFWindowNotifications();
 
   const now = Date.now();
-  for (const reminderStr of settings.ifWindow.reminders) {
-    const mins = parseInt(reminderStr) || 60;
-    const fireAt = windowEnd - mins * 60 * 1000;
-    if (fireAt <= now) continue;
+  const mins = settings.ifLeadMins;
+  const fireAt = windowEnd - mins * 60 * 1000;
+  if (fireAt <= now) return;
 
-    const fireDate = new Date(fireAt);
-    if (isInQuietHours(fireDate.getHours(), fireDate.getMinutes(), settings.quietStart, settings.quietEnd)) continue;
+  const fireDate = new Date(fireAt);
+  if (isInQuietHours(fireDate.getHours(), fireDate.getMinutes(), settings.quietStart, settings.quietEnd)) return;
 
-    const { title, body } = copy.ifWindow(mins, styleMode);
-    await Notifications.scheduleNotificationAsync({
-      identifier: `pj_if_window_${mins}`,
-      content: { title, body, sound: true },
-      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: fireDate },
-    });
-  }
+  const m = styleMode;
+  const title = m === 'discipline' ? 'Eating Window Closing' : m === 'mindful' ? 'Eating Window Closing' : 'Eating Window Closing';
+  const body = m === 'discipline'
+    ? `${mins} minutes left in your eating window. Finish strong.`
+    : m === 'mindful'
+    ? `${mins} minutes remaining in your eating window. Take your time.`
+    : `${mins} minutes left in your eating window. Anything else you need?`;
+
+  await Notifications.scheduleNotificationAsync({
+    identifier: `pj_if_window_${mins}`,
+    content: { title, body, sound: true, data: { route: '/', params: { scrollTo: 'if' } } },
+    trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: fireDate },
+  });
 };
 
 export const cancelIFWindowNotifications = async () => {
@@ -330,47 +315,64 @@ export const cancelIFWindowNotifications = async () => {
   );
 };
 
+// ── Cancel functions ──────────────────────────────────────────────────────────
+
 export const cancelFoodLogNotification = () =>
   Notifications.cancelScheduledNotificationAsync('pj_food_log').catch(() => {});
 
-export const cancelWaterPaceNotification = () =>
-  Notifications.cancelScheduledNotificationAsync('pj_water_pace').catch(() => {});
+export const cancelWaterNotifications = () =>
+  Promise.all([1, 2, 3, 4].map(i =>
+    Notifications.cancelScheduledNotificationAsync(`pj_water_${i}`).catch(() => {})
+  ));
+
+// Backward-compat alias used in index.tsx and log.tsx
+export const cancelWaterPaceNotification = cancelWaterNotifications;
 
 export const cancelActivityNotification = () =>
   Notifications.cancelScheduledNotificationAsync('pj_activity').catch(() => {});
 
-export const cancelEveningGratitudeNotification = () =>
-  Notifications.cancelScheduledNotificationAsync('pj_evening_gratitude').catch(() => {});
+export const cancelGratitudeNotification = () =>
+  Notifications.cancelScheduledNotificationAsync('pj_gratitude').catch(() => {});
+
+// Backward-compat alias used in GratitudeStreakCard.tsx
+export const cancelEveningGratitudeNotification = cancelGratitudeNotification;
+
+export const cancelFaithReadingNotification = () =>
+  Notifications.cancelScheduledNotificationAsync('pj_faith_reading').catch(() => {});
+
+export const cancelWeeklySummaryNotification = () =>
+  Notifications.cancelScheduledNotificationAsync('pj_weekly_summary').catch(() => {});
+
+export const cancelMonthlySummaryNotification = () =>
+  Notifications.cancelScheduledNotificationAsync('pj_monthly_summary').catch(() => {});
 
 // ── Daily Scheduler ───────────────────────────────────────────────────────────
 
-export interface SchedulerContext {
-  styleMode: StyleMode;
-  faithJourney: FaithJourney;
-  todayFoodEntries: number;
-  todayWater: number;
-  waterGoal: number;
-  activeStreaks: Array<{ id: string; name: string; currentStreak: number }>;
-  todayWorkoutLogged: boolean;
-  todaySteps: number;
-  stepGoal: number;
-  ifEnabled: boolean;
-  ifStarted: boolean;
-}
-
-const DAILY_IDS = [
-  'pj_if_checkin', 'pj_food_log', 'pj_water_pace', 'pj_streak',
-  'pj_activity', 'pj_weekly_recap', 'pj_morning_intention',
-  'pj_evening_gratitude', 'pj_prayer_checkin', 'pj_reengagement',
+const ALL_DAILY_IDS = [
+  'pj_streak',
+  'pj_faith_reading',
+  'pj_gratitude',
+  'pj_prayer',
+  'pj_food_log',
+  'pj_activity',
+  'pj_daily_verse',
+  'pj_weight_log',
+  'pj_if_checkin',
+  'pj_weekly_summary',
+  'pj_monthly_summary',
+  'pj_reengagement',
+  'pj_water_1', 'pj_water_2', 'pj_water_3', 'pj_water_4',
+  // old IDs cleanup
+  'pj_morning_intention', 'pj_evening_gratitude', 'pj_weekly_recap', 'pj_prayer_checkin', 'pj_water_pace',
 ];
 
 const cancelAllDailyNotis = async () => {
-  await Promise.all(DAILY_IDS.map(id => Notifications.cancelScheduledNotificationAsync(id).catch(() => {})));
+  await Promise.all(ALL_DAILY_IDS.map(id => Notifications.cancelScheduledNotificationAsync(id).catch(() => {})));
 };
 
 export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
-  const settings = await loadNotificationSettings();
-  if (!settings.masterEnabled) { await cancelAllDailyNotis(); return; }
+  const s = await loadNotificationSettings();
+  if (!s.masterEnabled) { await cancelAllDailyNotis(); return; }
 
   const status = await getPermissionStatus();
   if (status !== 'granted') return;
@@ -380,75 +382,42 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
   const now = new Date();
   const nowMins = now.getHours() * 60 + now.getMinutes();
   const m = ctx.styleMode;
+  const isMindful = m === 'mindful';
+  const growthOn = ctx.mindfulGrowthAreas;
 
-  // Track auto-timed times for spacing (user-set times never blocked)
-  const autoTimes: number[] = [];
-
-  const schedule = async (
+  const scheduleOne = async (
     id: string,
     timeStr: string,
     title: string,
     body: string,
-    opts: { isP1?: boolean; isAutoTimed?: boolean } = {},
+    data: Record<string, any>,
+    isP1 = false,
   ) => {
     const { hour, minute } = parseTime(timeStr);
     const fireMins = hour * 60 + minute;
-    if (fireMins <= nowMins) return; // already passed
-
-    // P1: never blocked by quiet hours or spacing
-    if (!opts.isP1) {
-      if (isInQuietHours(hour, minute, settings.quietStart, settings.quietEnd)) return;
-      if (opts.isAutoTimed) {
-        const tooClose = autoTimes.some(t => Math.abs(t - fireMins) < settings.minSpacingMins);
-        if (tooClose) return;
-        autoTimes.push(fireMins);
-      }
-    }
-
+    if (fireMins <= nowMins) return false;
+    if (!isP1 && isInQuietHours(hour, minute, s.quietStart, s.quietEnd)) return false;
     const fireDate = new Date();
     fireDate.setHours(hour, minute, 0, 0);
     await Notifications.scheduleNotificationAsync({
       identifier: id,
-      content: { title, body, sound: true },
+      content: { title, body, sound: true, data },
       trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: fireDate },
     });
+    return true;
   };
 
-  // 1. IF check-in -- fires if IF enabled, not started, but food already logged
-  if (settings.ifCheckin.enabled && ctx.ifEnabled && !ctx.ifStarted && ctx.todayFoodEntries > 0) {
-    const { title, body } = copy.ifCheckin(m);
-    await schedule('pj_if_checkin', settings.ifCheckin.time, title, body);
-  }
-
-  // 2. Food log reminder -- fires if nothing logged yet
-  if (settings.foodLog.enabled && ctx.todayFoodEntries === 0) {
-    const { title, body } = copy.foodLog(m);
-    await schedule('pj_food_log', settings.foodLog.time, title, body);
-  }
-
-  // 3. Water pace -- auto-timed (noon), fires if 30%+ behind expected pace
-  if (settings.waterPace.enabled && ctx.waterGoal > 0) {
-    const hoursElapsed = Math.max(0, now.getHours() - 6);
-    const expectedPct = Math.min(1, hoursElapsed / 16);
-    const actualPct = ctx.todayWater / ctx.waterGoal;
-    const behind = Math.round((expectedPct - actualPct) * ctx.waterGoal);
-    if (behind >= Math.round(ctx.waterGoal * 0.3)) {
-      const { title, body } = copy.waterPace(behind, m);
-      await schedule('pj_water_pace', '12:00', title, body, { isAutoTimed: true });
-    }
-  }
-
-  // 4. Streak protection -- P1, bedtime-aware
-  if (settings.streakProtection.enabled) {
-    const atRisk = ctx.activeStreaks.filter(s => s.currentStreak > 0);
-    if (atRisk.length > 0) {
+  // ── P1: Streak Protection ─────────────────────────────────────────────────
+  if (s.streakProtection) {
+    const atRisk = ctx.activeStreaks.filter(streak => streak.currentStreak > 0);
+    const suppress = isMindful && !growthOn;
+    if (atRisk.length > 0 && !suppress) {
       const avgBedtime = await getAverageBedtime();
-      let fireTimeStr = '21:30';
-
+      let fireTimeStr = '21:00';
       if (avgBedtime) {
         const n = toNormalizedMins(avgBedtime);
         if (n !== null) {
-          const offset = parseInt(settings.streakProtection.minutesBefore) || 45;
+          const offset = s.streakOffsetMins;
           const adjusted = ((n - offset) % 1440 + 1440) % 1440;
           const fh = Math.floor(adjusted / 60);
           const fm = adjusted % 60;
@@ -456,52 +425,250 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
         }
       }
 
-      const streakName = atRisk.length === 1 ? atRisk[0].name : `${atRisk.length} streaks`;
-      const { title, body } = copy.streakProtection(streakName, m);
-      await schedule('pj_streak', fireTimeStr, title, body, { isP1: true });
+      let title: string;
+      let body: string;
+      if (atRisk.length === 1) {
+        const { name, currentStreak } = atRisk[0];
+        title = isMindful ? 'Keep Going' : 'Streak At Risk';
+        body = isMindful
+          ? `Your ${name} streak continues today. One small action keeps it going.`
+          : `${name} streak: ${currentStreak} days. Don't let it end tonight.`;
+      } else if (atRisk.length === 2) {
+        title = isMindful ? 'Two Streaks Today' : 'Streaks At Risk';
+        body = isMindful
+          ? `Your ${atRisk[0].name} and ${atRisk[1].name} streaks continue today.`
+          : `${atRisk[0].name} and ${atRisk[1].name} streaks at risk tonight.`;
+      } else {
+        title = isMindful ? 'Your Streaks Continue' : 'Streaks At Risk Tonight';
+        body = isMindful
+          ? `${atRisk.length} streaks going strong. One small action each keeps them alive.`
+          : `${atRisk.length} streaks at risk tonight. Tap to check.`;
+      }
+      await scheduleOne('pj_streak', fireTimeStr, title, body, { route: '/' }, true);
     }
   }
 
-  // 5. Activity reminder -- fires if no workout and steps below 80% of goal
-  if (settings.activity.enabled) {
-    const needsActivity = !ctx.todayWorkoutLogged || ctx.todaySteps < ctx.stepGoal * 0.8;
-    if (needsActivity) {
-      const { title, body } = copy.activity(m);
-      await schedule('pj_activity', settings.activity.time, title, body);
+  // ── P2: Build candidates in priority order ────────────────────────────────
+  type P2Item = { id: string; time: string; title: string; body: string; data: Record<string, any> };
+  const candidates: P2Item[] = [];
+
+  // 1. Faith Reading
+  if (s.categoryFaith && ctx.faithJourney !== 'notrightnow' && ctx.faithReadingPending) {
+    candidates.push({
+      id: 'pj_faith_reading',
+      time: '08:30',
+      title: m === 'discipline' ? 'Faith Content Ready' : "Today's Reading Is Waiting",
+      body: m === 'discipline'
+        ? 'Your devotional or reading plan content is ready. Get in the Word.'
+        : "You have devotional or reading plan content for today. Take a few minutes.",
+      data: { route: '/plans' },
+    });
+  }
+
+  // 2a. Gratitude (fires in both Mindful states)
+  if (s.categoryFaith && ctx.faithJourney !== 'notrightnow' && !ctx.gratitudeLoggedToday) {
+    candidates.push({
+      id: 'pj_gratitude',
+      time: '19:00',
+      title: m === 'discipline' ? 'Log Your Gratitude' : 'Gratitude Moment',
+      body: m === 'discipline'
+        ? 'Log one thing you are grateful for today.'
+        : 'Take a moment to log what you are grateful for today.',
+      data: { route: '/(tabs)/faith', params: { scrollTo: 'gratitude' } },
+    });
+  }
+
+  // 2b. Prayer (fires in both Mindful states, Rooted only)
+  if (s.categoryFaith && ctx.faithJourney === 'rooted' && !ctx.prayerLoggedToday) {
+    candidates.push({
+      id: 'pj_prayer',
+      time: s.prayerTime,
+      title: m === 'mindful' ? 'Prayer Moment' : 'Prayer Check-In',
+      body: m === 'discipline'
+        ? 'Log your prayer for today.'
+        : m === 'mindful'
+        ? 'Take a quiet moment for prayer today.'
+        : "Don't forget your prayer check-in for today.",
+      data: { route: '/prayer' },
+    });
+  }
+
+  // 4. Food Log Reminder (fixed 2pm, suppressed in default Mindful)
+  if (s.categoryFitness && ctx.todayFoodEntries === 0 && (!isMindful || growthOn)) {
+    candidates.push({
+      id: 'pj_food_log',
+      time: '14:00',
+      title: m === 'discipline' ? 'Log Your Meals' : m === 'mindful' ? 'Check-In Time' : 'Food Log Reminder',
+      body: m === 'discipline'
+        ? 'Nothing logged today. Stay accountable.'
+        : m === 'mindful'
+        ? 'Take a moment to check in with what you have eaten today.'
+        : "You haven't logged anything today. Tap to add a meal.",
+      data: { route: '/(tabs)/log' },
+    });
+  }
+
+  // 5. Activity Reminder (no workout AND steps below 75% of goal)
+  if (s.categoryFitness && !ctx.todayWorkoutLogged && ctx.todaySteps < ctx.stepGoal * 0.75 && (!isMindful || growthOn)) {
+    candidates.push({
+      id: 'pj_activity',
+      time: s.activityTime,
+      title: m === 'discipline' ? 'No Workout Logged' : m === 'mindful' ? 'Movement Check' : 'Activity Reminder',
+      body: m === 'discipline'
+        ? 'No workout logged today. Movement matters.'
+        : m === 'mindful'
+        ? 'How has your movement been today?'
+        : "You haven't hit your activity goals today. Time to move.",
+      data: { route: '/(tabs)/workout' },
+    });
+  }
+
+  // 6. Daily Verse (random 8-11am window, date-seeded for determinism)
+  if (s.categoryFaith && ctx.faithJourney !== 'notrightnow') {
+    const dateSeed = parseInt(now.toISOString().split('T')[0].replace(/-/g, '').slice(-4));
+    const verseOffsetMins = (dateSeed * 37) % 180;
+    const verseHour = 8 + Math.floor(verseOffsetMins / 60);
+    const verseMin = verseOffsetMins % 60;
+    const verseTime = `${verseHour.toString().padStart(2, '0')}:${verseMin.toString().padStart(2, '0')}`;
+    candidates.push({
+      id: 'pj_daily_verse',
+      time: verseTime,
+      title: m === 'discipline' ? "Today's Verse" : m === 'mindful' ? 'A Word for Today' : "Today's Message",
+      body: ctx.todayVerseText ? ctx.todayVerseText.slice(0, 120) : "Today's verse is ready. Open to read.",
+      data: { route: '/bible', params: { openTodayVerse: '1' } },
+    });
+  }
+
+  // 7. Weight Log Reminder (suppressed in Mindful always)
+  if (s.categoryFitness && !ctx.weightLoggedToday && ctx.hasLoggedWeightBefore && !isMindful) {
+    const shouldFire = (() => {
+      if (s.weightFrequency === 'daily') return true;
+      if (ctx.daysSinceLastWeight === null) return true;
+      if (s.weightFrequency === '3day') return ctx.daysSinceLastWeight >= 3;
+      if (s.weightFrequency === 'weekly') return ctx.daysSinceLastWeight >= 7;
+      return false;
+    })();
+    if (shouldFire) {
+      candidates.push({
+        id: 'pj_weight_log',
+        time: '07:30',
+        title: m === 'discipline' ? 'Log Your Weight' : 'Weight Check',
+        body: m === 'discipline'
+          ? 'Track your weight to stay on top of your progress.'
+          : "Don't forget to log your weight today.",
+        data: { route: '/', params: { scrollTo: 'weight' } },
+      });
     }
   }
 
-  // 6. Weekly recap -- Sunday only
-  if (settings.weeklyRecap.enabled && now.getDay() === 0) {
-    const { title, body } = copy.weeklyRecap(m);
-    await schedule('pj_weekly_recap', settings.weeklyRecap.time, title, body);
+  // 8. IF Check-In (food logged, IF enabled but not started, suppressed default Mindful)
+  if (s.categoryFasting && ctx.ifEnabled && !ctx.ifStarted && ctx.todayFoodEntries > 0 && (!isMindful || growthOn)) {
+    candidates.push({
+      id: 'pj_if_checkin',
+      time: '13:00',
+      title: isMindful ? 'Gentle Check-In' : 'Did You Start Eating?',
+      body: isMindful
+        ? 'Noticing you have food logged today. Did you want to start your eating window?'
+        : "You have food logged but your IF window isn't started. Tap to update.",
+      data: { route: '/', params: { scrollTo: 'if' } },
+    });
   }
 
-  // 7. Morning intention -- faith-gated
-  if (settings.morningIntention.enabled && ctx.faithJourney !== 'notrightnow') {
-    const { title, body } = copy.morningIntention(m);
-    await schedule('pj_morning_intention', settings.morningIntention.time, title, body);
+  // Apply daily cap and schedule P2
+  const capNum = s.dailyCap === 'all' ? candidates.length : s.dailyCap;
+  const toSchedule = candidates.slice(0, capNum);
+  for (const item of toSchedule) {
+    await scheduleOne(item.id, item.time, item.title, item.body, item.data);
   }
 
-  // 8. Evening gratitude -- faith-gated
-  if (settings.eveningGratitude.enabled && ctx.faithJourney !== 'notrightnow') {
-    const { title, body } = copy.eveningGratitude(m);
-    await schedule('pj_evening_gratitude', settings.eveningGratitude.time, title, body);
+  // ── Water sub-system (not in P2 cap, spaced evenly across waking hours) ───
+  if (s.categoryFitness && s.waterCount > 0) {
+    const { hour: quietEndH, minute: quietEndM } = parseTime(s.quietEnd);
+    const { hour: quietStartH, minute: quietStartM } = parseTime(s.quietStart);
+    const wakingStartMins = quietEndH * 60 + quietEndM;
+    const wakingEndMins = quietStartH * 60 + quietStartM;
+    const wakingTotal = wakingEndMins > wakingStartMins
+      ? wakingEndMins - wakingStartMins
+      : 1440 - wakingStartMins + wakingEndMins;
+
+    for (let i = 1; i <= s.waterCount; i++) {
+      const offsetMins = Math.round((i / (s.waterCount + 1)) * wakingTotal);
+      const fireTotalMins = (wakingStartMins + offsetMins) % 1440;
+      const fh = Math.floor(fireTotalMins / 60);
+      const fm = fireTotalMins % 60;
+      if (fh * 60 + fm <= nowMins) continue;
+      const fireDate = new Date();
+      fireDate.setHours(fh, fm, 0, 0);
+      await Notifications.scheduleNotificationAsync({
+        identifier: `pj_water_${i}`,
+        content: {
+          title: m === 'discipline' ? 'Water Check' : 'Hydration Reminder',
+          body: m === 'discipline' ? 'Stay on top of your hydration.' : 'Time for some water.',
+          sound: true,
+          data: { route: '/', params: { scrollTo: 'water' } },
+        },
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: fireDate },
+      });
+    }
   }
 
-  // 9. Prayer check-in -- Rooted only
-  if (settings.prayerCheckin.enabled && ctx.faithJourney === 'rooted') {
-    const { title, body } = copy.prayerCheckin(m);
-    await schedule('pj_prayer_checkin', settings.prayerCheckin.time, title, body);
+  // ── Always-on bypass: Weekly Summary (Monday) ─────────────────────────────
+  if (s.categorySummaries && now.getDay() === 1) {
+    const dateSeed = parseInt(now.toISOString().split('T')[0].replace(/-/g, '').slice(-4));
+    const fireMin = dateSeed % 60;
+    const fireHour = 11 + (dateSeed % 2);
+    const fireDate = new Date();
+    fireDate.setHours(fireHour, fireMin, 0, 0);
+    if (fireDate > now) {
+      await Notifications.scheduleNotificationAsync({
+        identifier: 'pj_weekly_summary',
+        content: {
+          title: 'Weekly Summary Ready',
+          body: m === 'discipline' ? 'Your weekly performance report is ready.' : 'Your week is wrapped up. See how it went.',
+          sound: true,
+          data: { route: '/weekly-summary' },
+        },
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: fireDate },
+      });
+    }
   }
 
-  // 10. Re-engagement -- always cancel + reschedule 48h from now (fires if app not opened)
-  if (settings.reengagement.enabled) {
-    const { title, body } = copy.reengagement(m);
+  // ── Always-on bypass: Monthly Summary (1st of month) ─────────────────────
+  if (s.categorySummaries && now.getDate() === 1) {
+    const dateSeed = parseInt(now.toISOString().split('T')[0].replace(/-/g, '').slice(-4));
+    const fireMin = (dateSeed + 17) % 60;
+    const fireHour = 11 + ((dateSeed + 1) % 2);
+    const fireDate = new Date();
+    fireDate.setHours(fireHour, fireMin, 0, 0);
+    if (fireDate > now) {
+      await Notifications.scheduleNotificationAsync({
+        identifier: 'pj_monthly_summary',
+        content: {
+          title: 'Monthly Summary Ready',
+          body: m === 'discipline' ? 'Your monthly performance report is ready.' : 'Your month is wrapped up. See how it went.',
+          sound: true,
+          data: { route: '/monthly-summary' },
+        },
+        trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: fireDate },
+      });
+    }
+  }
+
+  // ── Always-on: Re-engagement (48h from now, resets each app open) ─────────
+  if (s.reengagementEnabled) {
     const fireDate = new Date(Date.now() + 48 * 60 * 60 * 1000);
     await Notifications.scheduleNotificationAsync({
       identifier: 'pj_reengagement',
-      content: { title, body, sound: true },
+      content: {
+        title: m === 'discipline' ? "Where'd You Go?" : m === 'mindful' ? 'Come Back When Ready' : 'We Miss You',
+        body: m === 'discipline'
+          ? "It's been a couple days. Get back on track today."
+          : m === 'mindful'
+          ? 'No pressure. We are here when you are ready.'
+          : "It's been a couple days. Your streaks and goals are waiting.",
+        sound: true,
+        data: { route: '/' },
+      },
       trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: fireDate },
     });
   }

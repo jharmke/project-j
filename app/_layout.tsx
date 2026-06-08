@@ -16,6 +16,7 @@ import { AppState, LogBox } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { restoreIfFresh, uploadAllLocal } from '../services/syncService';
+import * as Notifications from 'expo-notifications';
 import { setupNotificationHandler } from '../services/notifications';
 import { runDailyNotificationScheduler } from '../services/notificationScheduler';
 import { AchievementToastProvider, AchievementToastRenderer } from '../components/AchievementToast';
@@ -69,6 +70,22 @@ function RootLayoutNav() {
       }
     });
     return () => subscription.remove();
+  }, []);
+
+  // Deep link handler: notification tap routes to the destination baked into data.route
+  useEffect(() => {
+    const sub = Notifications.addNotificationResponseReceivedListener(response => {
+      const data = response.notification.request.content.data as any;
+      if (!data?.route) return;
+      try {
+        if (data.params) {
+          router.push({ pathname: data.route, params: data.params });
+        } else {
+          router.push(data.route);
+        }
+      } catch {}
+    });
+    return () => sub.remove();
   }, []);
 
   useEffect(() => {

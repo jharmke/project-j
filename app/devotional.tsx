@@ -20,6 +20,7 @@ import { useToast } from '../components/Toast';
 import CompanionChat, { MiniCross } from '../components/CompanionChat';
 import { useTheme } from '../theme';
 import type { DevotionalsStorage, DevotionalHaloTurn } from '../data/devotionals';
+import { cancelFaithReadingNotification } from '../services/notifications';
 
 /**
  * Devotional day screen. The interactive half of Bucket C (distinct from a pure reading plan).
@@ -168,6 +169,9 @@ export default function DevotionalScreen() {
       : await markDevotionalDayComplete(id, day);
     setStore(updated);
     showToast(completed ? 'Marked not complete' : 'Day complete', undefined, completed ? 'info' : 'success');
+    if (!completed) {
+      cancelFaithReadingNotification().catch(() => {});
+    }
   };
 
   const goToDay = (next: number) => {

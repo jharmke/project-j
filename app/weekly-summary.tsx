@@ -15,6 +15,7 @@ import { ScoreRing } from '../components/DaySummaryModal';
 import DaySummaryModal from '../components/DaySummaryModal';
 import { scoreLabel, StyleMode, CAL_MAX, PROTEIN_MAX, WATER_MAX } from '../utils/dayScore';
 import { loadWeeklySummary, WeeklySummaryData } from '../utils/weeklySummary';
+import { cancelWeeklySummaryNotification } from '../services/notifications';
 import { TIPS_GATED, CoachTipCache, loadCoachTipCache } from '../utils/smartTipsEngine';
 import { refreshCoachTipWeekly, resolveTipBody } from '../utils/coachAI';
 
@@ -136,6 +137,11 @@ export default function WeeklySummaryScreen() {
   const [activeCalGoal, setActiveCalGoal] = useState<number>(500);
 
   const shadowStyle = { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6 };
+
+  // Cancel the "Weekly Summary Ready" notification when the user views this screen
+  useEffect(() => {
+    cancelWeeklySummaryNotification().catch(() => {});
+  }, []);
 
   useEffect(() => {
     const load = async () => {

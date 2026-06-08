@@ -307,12 +307,12 @@ This layer is NOT part of the current overhaul. Do not build piecemeal. Needs a 
 
 ---
 
-## Open items before build starts
+## Open items
 
-1. IF Check-In investigation: audit ifEnabled logic in notificationScheduler.ts. Justin has not recalled receiving this notification despite conditions being met. Resolve before building this type.
-2. Gentle copy (growth areas ON Mindful): the 4 anchors above are confirmed. Full copy pass for all Mindful growth-areas-ON types is a separate step after scheduler logic is built.
-3. Deep linking implementation: requires router.push with params for each destination. Faith tab scrollTo param pattern already exists (confirmed in faith.tsx). Bible screen verse-scroll behavior needs to match the Today's Message card tap path exactly.
-4. Weekly/monthly cancel-on-action: requires the weekly and monthly summary screens to fire a cancel when viewed. Confirm the exact screen/component that triggers this.
+1. [x] IF Check-In investigation RESOLVED 2026-06-08: root cause was ifEnabled only checked today's key, but ifMethod is set only on the day the user taps a method pill, not carried forward. Fix: scheduler now looks back 7 days for any pj_${date} key that has ifMethod set.
+2. Copy variations pass: 4-6 variations per type per coaching mode, pre-baked, deterministic rotation. This is a dedicated pass AFTER logic is confirmed working. Do not write inline.
+3. [x] Deep linking BUILT 2026-06-08: app/_layout.tsx has a Notifications.addNotificationResponseReceivedListener that reads data.route / data.params and calls router.push. Every notification type in services/notifications.ts has the data payload baked in per the deep-link table above.
+4. [x] Cancel-on-action BUILT 2026-06-08: weekly-summary.tsx calls cancelWeeklySummaryNotification on mount; monthly-summary.tsx calls cancelMonthlySummaryNotification on mount; devotional.tsx calls cancelFaithReadingNotification on mark-complete (not on unmark); bible.tsx calls cancelFaithReadingNotification in markPlanRead.
 
 ---
 
@@ -320,3 +320,4 @@ This layer is NOT part of the current overhaul. Do not build piecemeal. Needs a 
 
 - 2026-06-04: Doc created from Justin's gym notes (Smart/Manual split, personality fallback, in-app page, summary routing) and roadmap notification items.
 - 2026-06-08: Full redesign locked with Justin. Smart/Manual split replaced with category-based settings + daily cap + priority system. 14 types finalized (2 killed, 4 new added). Settings UI fully specced. Deep linking table complete. Mindful two-state pass complete. Copy variation approach locked (deterministic rotation, 4-6 per type per mode). Smart coaching scenarios preserved as future layer, not this build, details not agreed on.
+- 2026-06-08: Core build complete. services/notifications.ts and services/notificationScheduler.ts fully rewritten. Settings UI replaced (old 3-accordion/11-toggle structure gone, new spec-compliant design). Deep linking wired. Cancel-on-view (weekly/monthly) and cancel-on-complete (faith reading) hooked up. IF Check-In bug root-caused and fixed. REMAINING: copy variations pass only.

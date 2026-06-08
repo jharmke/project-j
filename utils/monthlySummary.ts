@@ -322,21 +322,20 @@ export async function generateMonthlySummary(monthKey: string): Promise<MonthlyS
 
     if (steps >= stepGoal) stepGoalDays++;
 
-    // Count real session totals: each checked exercise counts as one session
+    // Count real session totals: gate on checked exercises or cardioDone, not workoutScore
+    // (HealthKit-synced days can have checked exercises but workoutScore=0)
     const wPrograms = workoutState.programs || {};
     const wTemplate = workoutState.weeklyTemplate || {};
     const dayProgram = wPrograms[dk] || wTemplate[dayNameFromDateKey(dk)];
-    if ((dayScore.activityDetail?.workoutScore ?? 0) > 0) {
-      const exercises = Array.isArray(dayProgram?.exercises) ? dayProgram.exercises : [];
-      const dayChecks = (workoutState.checks || {})[dk] || {};
-      const cardioDone = (workoutState.cardioComplete || {})[dk] === true;
-      if (exercises.length > 0) {
-        const checked = exercises.filter((ex: any) => dayChecks[ex.id]);
-        totalCardioSessions += checked.filter((ex: any) => ex.isCardio).length;
-        totalLiftSessions += checked.filter((ex: any) => !ex.isCardio).length;
-      } else if (cardioDone) {
-        totalCardioSessions += 1;
-      }
+    const exercises = Array.isArray(dayProgram?.exercises) ? dayProgram.exercises : [];
+    const dayChecks = (workoutState.checks || {})[dk] || {};
+    const cardioDone = (workoutState.cardioComplete || {})[dk] === true;
+    const checkedExercises = exercises.filter((ex: any) => dayChecks[ex.id]);
+    if (checkedExercises.length > 0) {
+      totalCardioSessions += checkedExercises.filter((ex: any) => ex.isCardio).length;
+      totalLiftSessions += checkedExercises.filter((ex: any) => !ex.isCardio).length;
+    } else if (cardioDone) {
+      totalCardioSessions += 1;
     }
   }
 

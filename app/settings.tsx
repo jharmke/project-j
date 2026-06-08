@@ -1940,6 +1940,40 @@ export default function SettingsScreen() {
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Alert.alert('Fix Apple Workout Types', 'Scans all stored workouts and corrects isCardio flag for strength exercises (Traditional Strength Training, Functional Strength Training, Core Training). Run once, then regenerate monthly summaries.', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Fix', style: 'destructive', onPress: async () => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                  const LIFT_NAMES = new Set(['Traditional Strength Training', 'Functional Strength Training', 'Core Training']);
+                  const raw = await AsyncStorage.getItem('pj_workout_state');
+                  if (!raw) { Alert.alert('Done', 'No workout data found.'); return; }
+                  const state = JSON.parse(raw);
+                  let fixed = 0;
+                  const programs = state.programs || {};
+                  for (const dateKey of Object.keys(programs)) {
+                    const exercises = programs[dateKey]?.exercises;
+                    if (!Array.isArray(exercises)) continue;
+                    for (const ex of exercises) {
+                      if (ex.fromAppleHealth && LIFT_NAMES.has(ex.name) && ex.isCardio !== false) {
+                        ex.isCardio = false;
+                        fixed++;
+                      }
+                    }
+                  }
+                  await AsyncStorage.setItem('pj_workout_state', JSON.stringify(state));
+                  Alert.alert('Done', `Fixed ${fixed} exercise${fixed !== 1 ? 's' : ''}. Now run Regenerate Monthly Summaries to update counts.`);
+                }},
+              ]);
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Fix Apple Workout Types</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>One-time fix: corrects isCardio flag on Apple-synced strength exercises. Run before regenerating summaries.</Text>
+              </View>
+              <Ionicons name="barbell-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               Alert.alert('Clear Food History', 'This will remove all logged food entries from the last 90 days. Water, steps, sleep, and weight data will not be affected.', [
                 { text: 'Cancel', style: 'cancel' },
                 { text: 'Clear', style: 'destructive', onPress: async () => {

@@ -363,6 +363,8 @@ useEffect(() => {
     76: 'Fitness Gaming', 3000: 'Other',
   };
 
+  const APPLE_LIFT_TYPES = new Set([20, 50, 59]); // Functional Strength, Traditional Strength, Core Training
+
   setPrograms(prev => {
     const current: DayProgram = prev[todayKey] ? { ...prev[todayKey] } : { type: 'cardio', focus: 'Cardio', exercises: [] };
     const existingUUIDs = new Set(current.exercises.map((e: any) => e.appleHealthUUID).filter(Boolean));
@@ -381,7 +383,7 @@ useEffect(() => {
         reps: '',
         rest: '',
         note: '',
-        isCardio: true,
+        isCardio: !APPLE_LIFT_TYPES.has(w.workoutActivityType),
         duration: String(durationMin),
         distance: distanceMi ? String(distanceMi) : '',
         calories: String(calories),

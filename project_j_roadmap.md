@@ -174,6 +174,7 @@ DONE -- SHIPPED
 ACTIVE BUGS -- fix before anything else
 
 [ ] Score column vertical alignment -- score values in right column of weekly-summary.tsx and DaySummaryModal (day-detail) are not vertically centered. Regression. Fix before monthly ships since monthly inherits same component.
+[ ] Monthly Summary lift count always 0 -- migration tool fixed isCardio flag on 2 Apple-synced strength exercises, but lift count still 0 after regeneration. Root cause unknown: either (1) workoutScore gate (dayScore.activityDetail.workoutScore > 0) is 0 on strength-only days so those days are skipped entirely, or (2) exercise IDs in checks don't match programs. Cardio = 27 confirmed working via cardioComplete fallback path. Needs debug log or storage inspection on a specific day (e.g. 2026-05-09) to confirm which path fails. Do NOT guess -- diagnose first.
 
 [ ] TUTORIAL POLISH PASS -- dedicated session required. Confirmed good: spotlight animation quality, highlighting, interactive flows, app stability. Issues to fix as a batch:
   [ ] Spotlight transition lag -- NEEDS TESTFLIGHT VERIFICATION. Fix shipped 2026-05-26: for non-navigation steps, spotlight animation now starts simultaneously with bubble fade-out instead of after it, eliminating ~150ms dead time. Navigation steps unchanged (sequential required). TutorialOverlay.tsx. Cannot verify smoothness in dev build -- confirm on next TestFlight.

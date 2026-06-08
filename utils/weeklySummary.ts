@@ -109,6 +109,22 @@ function avgFloat(values: number[], decimals = 1): number | null {
   return Math.round((sum / values.length) * factor) / factor;
 }
 
+function advancedNutrient(entries: any[], nutrientName: string): number {
+  return entries.reduce((s: number, e: any) => {
+    const n = (e.foodNutrients as any[])?.find((fn: any) => fn.nutrientName === nutrientName);
+    if (!n) return s;
+    let scale: number;
+    if (e.fsId) {
+      scale = (e.calPer100g && e.calPer100g > 0) ? (e.cal / e.calPer100g) : 0;
+    } else {
+      const sg = e.servingGrams;
+      const servingCal = sg && (e.calPer100g ?? 0) > 0 ? (e.calPer100g ?? 0) * sg / 100 : 0;
+      scale = servingCal > 0 ? e.cal / servingCal : 0;
+    }
+    return s + (n.value || 0) * scale;
+  }, 0);
+}
+
 export async function loadWeeklySummary(weekStart: string): Promise<WeeklySummaryData | null> {
   try {
     const raw = await AsyncStorage.getItem(`${WEEKLY_SUMMARY_KEY_PREFIX}${weekStart}`);
@@ -245,8 +261,8 @@ export async function generateWeeklySummary(weekStart: string): Promise<WeeklySu
       const prot = Math.round(entries.reduce((s: number, e: any) => s + (e.protein || 0), 0));
       const carbs = Math.round(entries.reduce((s: number, e: any) => s + (e.carbs || 0), 0));
       const fat = Math.round(entries.reduce((s: number, e: any) => s + (e.fat || 0), 0));
-      const fiber = Math.round(entries.reduce((s: number, e: any) => s + (e.fiber || 0), 0));
-      const sodium = Math.round(entries.reduce((s: number, e: any) => s + (e.sodium || 0), 0));
+      const fiber = Math.round(advancedNutrient(entries, 'Fiber, total dietary'));
+      const sodium = Math.round(advancedNutrient(entries, 'Sodium, Na'));
       caloriesList.push(cal);
       proteinList.push(prot);
       carbsList.push(carbs);

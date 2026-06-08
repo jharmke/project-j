@@ -33,6 +33,7 @@ import { StatsCard, CardPeriod, DATA_KEY_META, DEFAULT_STATS_CARDS } from '../..
 import { TrendData, EMPTY_TREND_DATA, fetchTrendData } from '../../utils/statsData';
 import { calcSleepScore } from '../../utils/sleepScore';
 import { runDayScoreScan } from '../../utils/dayScoreStore';
+import { checkAndGenerateWeeklySummary } from '../../utils/weeklySummary';
 import { DayScore } from '../../utils/dayScore';
 import DaySummaryModal from '../../components/DaySummaryModal';
 import DayScoreDisclaimerModal from '../../components/DayScoreDisclaimerModal';
@@ -928,6 +929,8 @@ export default function HomeScreen() {
       try {
         const todayKey = getDateKey(new Date());
         const score = await runDayScoreScan(todayKey, new Date().toISOString());
+        // Weekly summary: fires Sunday morning alongside day summary (fire-and-forget).
+        checkAndGenerateWeeklySummary().catch(() => {});
         if (!score) return;                       // excluded / no data: no pop-up
         // Gate: only after 5am, and at most once per calendar day.
         if (new Date().getHours() < 5) return;
@@ -1011,7 +1014,7 @@ export default function HomeScreen() {
 
   // ── Persist HealthKit to storage ────────────────────────────────────────────
   useEffect(() => {
-    if (activeCalories > 0 || steps > 0 || sleepHours !== null || restingHR !== null || respiratoryRate !== null || bloodOxygen !== null || bodyFatPct !== null || exerciseMinutes !== null) {
+    if (activeCalories > 0 || steps > 0 || sleepHours !== null || restingHR !== null || respiratoryRate !== null || bloodOxygen !== null || bodyFatPct !== null || exerciseMinutes !== null || vo2Max !== null || cardioRecovery !== null) {
       AsyncStorage.getItem(`pj_${todayKey}`).then(saved => {
         const current = saved ? JSON.parse(saved) : {};
         storageSet(`pj_${todayKey}`, JSON.stringify({
@@ -1026,6 +1029,8 @@ export default function HomeScreen() {
           ...(bloodOxygen !== null ? { bloodOxygen } : {}),
           ...(bodyFatPct !== null ? { bodyFatPct } : {}),
           ...(exerciseMinutes !== null ? { exerciseMinutes } : {}),
+          ...(vo2Max !== null ? { vo2Max } : {}),
+          ...(cardioRecovery !== null ? { cardioRecovery } : {}),
         }));
       });
     }

@@ -39,6 +39,7 @@ import {
 } from '../services/notifications';
 import { TUTORIALS } from '../data/tutorials';
 import { resetAllTutorials } from '../context/TutorialContext';
+import { generateWeeklySummary } from '../utils/weeklySummary';
 
 type FaithJourney = 'rooted' | 'exploring' | 'notrightnow';
 
@@ -1824,7 +1825,9 @@ export default function SettingsScreen() {
                   const coachKeys = allKeys.filter(k =>
                     k === 'pj_coach_tip' ||
                     k.startsWith('pj_coach_tip_day_') ||
-                    k.startsWith('pj_coach_tip_evr_')
+                    k.startsWith('pj_coach_tip_evr_') ||
+                    k.startsWith('pj_coach_tip_weekly_') ||
+                    k.startsWith('pj_coach_last_rule_')
                   );
                   if (coachKeys.length > 0) await AsyncStorage.multiRemove(coachKeys);
                   Alert.alert('Done', `Coach tip cache cleared (${coachKeys.length} entries). Tips will regenerate on next open.`);
@@ -1833,9 +1836,61 @@ export default function SettingsScreen() {
             }}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Reset Coach Tip Cache</Text>
-                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Clears home card, Day Summary, and all EvR window tips. Forces fresh regeneration.</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Clears home card, Day Summary, EvR, and Weekly tip caches. Forces fresh regeneration.</Text>
               </View>
               <Ionicons name="sparkles-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              Alert.alert('Regenerate Weekly Summaries', 'Clears all cached weekly summaries and rebuilds them from your logged data. Your logged data is not affected.', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Regenerate', style: 'destructive', onPress: async () => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                  const allKeys = await AsyncStorage.getAllKeys();
+                  // Clear existing summaries, gate key, and weekly coach tips
+                  const toRemove = allKeys.filter(k =>
+                    k.startsWith('pj_weekly_summary_') ||
+                    k.startsWith('pj_coach_tip_weekly_') ||
+                    k === 'pj_last_weekly_generated'
+                  );
+                  if (toRemove.length > 0) await AsyncStorage.multiRemove(toRemove);
+
+                  // Find all past Sun-Sat weeks that have day data
+                  const dayKeys = allKeys.filter(k => k.match(/^pj_\d{4}-\d{2}-\d{2}$/));
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const weekStarts = new Set<string>();
+                  for (const key of dayKeys) {
+                    const dk = key.slice(3);
+                    const [y, m, d] = dk.split('-').map(Number);
+                    const dt = new Date(y, m - 1, d);
+                    if (dt >= today) continue;
+                    const dow = dt.getDay();
+                    const sun = new Date(dt);
+                    sun.setDate(dt.getDate() - dow);
+                    const weekEnd = new Date(sun);
+                    weekEnd.setDate(sun.getDate() + 6);
+                    if (weekEnd >= today) continue; // skip current open week
+                    const ws = `${sun.getFullYear()}-${String(sun.getMonth() + 1).padStart(2, '0')}-${String(sun.getDate()).padStart(2, '0')}`;
+                    weekStarts.add(ws);
+                  }
+
+                  const wsArray = Array.from(weekStarts).sort();
+                  let count = 0;
+                  for (const ws of wsArray) {
+                    await generateWeeklySummary(ws);
+                    count++;
+                  }
+                  Alert.alert('Done', `Rebuilt ${count} weekly ${count === 1 ? 'summary' : 'summaries'} from your data.`);
+                }},
+              ]);
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Regenerate Weekly Summaries</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Clears and rebuilds all weekly summary snapshots. Use if a week shows wrong or missing data.</Text>
+              </View>
+              <Ionicons name="calendar-outline" size={18} color={theme.accentRed} />
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {

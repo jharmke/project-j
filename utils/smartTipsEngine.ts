@@ -424,6 +424,142 @@ function meetsLoggingGate(days: WindowDay[], required: number): boolean {
   return loggedDaysInWindow(days) >= required;
 }
 
+interface DensityFields {
+  daysLogged: number;
+  daysWithNutritionData: number;
+  daysWithActivityData: number;
+  daysWithSleepData: number;
+}
+
+function computeDensityFields(days: WindowDay[]): DensityFields {
+  return {
+    daysLogged: days.filter(d => d.isLoggedDay).length,
+    daysWithNutritionData: days.filter(d => d.hasFoodData).length,
+    daysWithActivityData: days.filter(d => d.rawActive > 0 || d.steps > 0).length,
+    daysWithSleepData: days.filter(d => d.sleepHours !== null && d.sleepHours > 0).length,
+  };
+}
+
+// Loads all days in a fixed date range (startDate..endDate inclusive) using the
+// same WindowDay shape as loadWindowDays. Used by weekly and monthly packet builders.
+async function loadWindowDayRange(
+  startDate: string,
+  endDate: string,
+  ctx: EngineContext,
+  workoutState: any,
+): Promise<WindowDay[]> {
+  const [sy, sm, sd] = startDate.split('-').map(Number);
+  const [ey, em, ed] = endDate.split('-').map(Number);
+  const start = new Date(sy, sm - 1, sd);
+  const end = new Date(ey, em - 1, ed);
+
+  const keys: string[] = [];
+  for (const dt = new Date(start); dt <= end; dt.setDate(dt.getDate() + 1)) {
+    const dk = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+    keys.push(`pj_${dk}`);
+  }
+
+  let pairs: readonly [string, string | null][] = [];
+  try { pairs = await AsyncStorage.multiGet(keys); } catch { return []; }
+
+  const days: WindowDay[] = [];
+  for (const [fullKey, raw] of pairs) {
+    if (!raw) continue;
+    const dateKey = fullKey.slice(3);
+    let day: any;
+    try { day = JSON.parse(raw); } catch { continue; }
+
+    const entries: any[] = Array.isArray(day.entries) ? day.entries : [];
+    let consumed = 0, protein = 0, fat = 0, carbs = 0;
+    let fiber = 0, sodium = 0, sugar = 0;
+    let fiberEntries = 0, sodiumEntries = 0, sugarEntries = 0;
+
+    for (const e of entries) {
+      consumed += e.cal || 0;
+      protein += e.protein || 0;
+      fat += e.fat || 0;
+      carbs += e.carbs || 0;
+      const f = getEntryNutrient(e, 'Fiber, total dietary');
+      const s = getEntryNutrient(e, 'Sodium, Na');
+      const su = getEntryNutrient(e, 'Sugars, total');
+      fiber += f; sodium += s; sugar += su;
+      if (f > 0) fiberEntries++;
+      if (s > 0) sodiumEntries++;
+      if (su > 0) sugarEntries++;
+    }
+
+    const sleepHours: number | null = day.sleepOverride ?? day.sleepHours ?? null;
+    let sleepScore: number | null = null;
+    if (sleepHours) {
+      const result = calcSleepScore(
+        sleepHours, day.sleepStages ?? null, ctx.sleepGoal,
+        day.sleepFeelRating ?? null, !!day.sleepOverride, day.sleepConsistencyPts ?? 0,
+      );
+      sleepScore = result.score;
+    }
+
+    const deepSleepPct: number | null = (day.sleepStages?.deep != null)
+      ? day.sleepStages.deep : null;
+
+    const rawActive = day.activeCalories || day.caloriesBurned || 0;
+    const bmr: number = day.goalSnapshot?.bmr || ctx.bmr;
+
+    const dayName = dayNameFromKey(dateKey);
+    const template = workoutState.programs?.[dateKey] ?? workoutState.weeklyTemplate?.[dayName];
+    const dayType: string = template?.type ?? 'unassigned';
+    const workoutScheduled = dayType === 'lift' || dayType === 'cardio';
+    const exercises: any[] = Array.isArray(template?.exercises) ? template.exercises : [];
+    const checks = workoutState.checks?.[dateKey] ?? {};
+    const workoutChecked = exercises.filter((ex: any) => checks[ex.id]).length + (workoutState.cardioComplete?.[dateKey] ? 1 : 0);
+    const workoutTotal = exercises.length + (dayType === 'cardio' ? 1 : 0);
+
+    const ifStart = day.ifStart ? new Date(day.ifStart).getTime() : null;
+    const ifEnd = day.ifEnd ? new Date(day.ifEnd).getTime() : null;
+    const ifMethod = day.ifMethod ?? null;
+
+    const hasFoodData = entries.length > 0;
+    const hasManualSleep = !!day.sleepOverride;
+    const workoutLogged = workoutChecked > 0;
+    const isLoggedDay = hasFoodData || workoutLogged || hasManualSleep;
+
+    days.push({
+      dateKey,
+      consumed: Math.round(consumed),
+      protein: Math.round(protein * 10) / 10,
+      fat: Math.round(fat * 10) / 10,
+      carbs: Math.round(carbs * 10) / 10,
+      fiber: Math.round(fiber * 10) / 10,
+      sodium: Math.round(sodium),
+      sugar: Math.round(sugar * 10) / 10,
+      waterLogged: typeof day.water === 'number' ? day.water : 0,
+      rawActive,
+      steps: day.steps || 0,
+      weight: day.weight ?? null,
+      sleepScore,
+      sleepHours,
+      sleepBedTimeMin: parseBedTimeMin(day.sleepBedTime),
+      deepSleepPct,
+      bmr,
+      workoutChecked,
+      workoutTotal,
+      workoutScheduled,
+      ifStart,
+      ifEnd,
+      ifTargetHours: parseIfTargetHours(ifMethod),
+      isLoggedDay,
+      hasFoodData,
+      totalEntries: entries.length,
+      fiberEntries,
+      sodiumEntries,
+      sugarEntries,
+      hasManualSleep,
+      isWeekend: isWeekend(dateKey),
+    });
+  }
+
+  return days;
+}
+
 // ── Rule: pick body copy ──────────────────────────────────────────────────────
 
 function pickBody(
@@ -1268,14 +1404,21 @@ export interface CoachPacket {
   careSeverity?: 'mild' | 'moderate' | 'strong';
   mode: string;
   goal: string;
-  surface: 'home' | 'day_summary' | 'evr';
+  surface: 'home' | 'day_summary' | 'evr' | 'weekly' | 'monthly';
   windowDays: number;
+  startDate?: string;
+  endDate?: string;
   ifActive: boolean;
   previousTip: string;
   faithTier: string;
   computedDate: string;
   fallbackTitle: string;
   fallbackBody: string;
+  // Data density fields (multi-day surfaces: evr, weekly, monthly)
+  daysLogged?: number;
+  daysWithNutritionData?: number;
+  daysWithActivityData?: number;
+  daysWithSleepData?: number;
 }
 
 export interface CoachTipCache {
@@ -1366,6 +1509,7 @@ export async function computeCoachPacketEvr(
   const w5 = allDays.slice(0, 5);
 
   const loggedCount = loggedDaysInWindow(w7);
+  const evrDensity = computeDensityFields(w14);
   const previousTip = existing?.aiBody ?? existing?.packet.fallbackBody ?? 'none';
 
   let faithTier = 'rooted';
@@ -1471,6 +1615,11 @@ export async function computeCoachPacketEvr(
       };
     }
   }
+
+  packet.daysLogged = evrDensity.daysLogged;
+  packet.daysWithNutritionData = evrDensity.daysWithNutritionData;
+  packet.daysWithActivityData = evrDensity.daysWithActivityData;
+  packet.daysWithSleepData = evrDensity.daysWithSleepData;
 
   const sameScenario = existing?.packet.scenario === packet.scenario;
   const cache: CoachTipCache = {
@@ -2174,6 +2323,189 @@ export async function computeCoachPacket(
   await Promise.all([
     saveCoachTipCache(cache),
     AsyncStorage.setItem(coachLastRuleKey, JSON.stringify({ ruleId: packet.ruleId })),
+  ]);
+  return cache;
+}
+
+// ── Weekly packet builder ─────────────────────────────────────────────────────
+// Loads data for a fixed Sun-Sat week and builds a Coach packet for that week.
+// Generated once Sunday morning; never regenerated. Cache key is per-weekStart.
+
+const COACH_TIP_WEEKLY_KEY_PREFIX = 'pj_coach_tip_weekly_';
+const COACH_LAST_RULE_WEEKLY_KEY_PREFIX = 'pj_coach_last_rule_weekly_';
+
+export async function loadCoachTipCacheWeekly(weekStart: string): Promise<CoachTipCache | null> {
+  try {
+    const raw = await AsyncStorage.getItem(`${COACH_TIP_WEEKLY_KEY_PREFIX}${weekStart}`);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function computeCoachPacketWeekly(
+  weekStart: string,
+  weekEnd: string,
+  homeRuleId: string | null,
+): Promise<CoachTipCache> {
+  const cacheKey = `${COACH_TIP_WEEKLY_KEY_PREFIX}${weekStart}`;
+  const lastRuleKey = `${COACH_LAST_RULE_WEEKLY_KEY_PREFIX}${weekStart}`;
+
+  const [existing, lastRuleRaw] = await Promise.all([
+    loadCoachTipCacheWeekly(weekStart),
+    AsyncStorage.getItem(lastRuleKey),
+  ]);
+  const persistedLastRuleId: string | null = lastRuleRaw ? JSON.parse(lastRuleRaw).ruleId : null;
+
+  // Already computed: return as-is (generated once, never regenerated)
+  if (existing) return existing;
+
+  const todayKey = todayDateKey();
+  const [ctx, store, workoutRaw] = await Promise.all([
+    buildEngineContext(todayKey),
+    loadSmartTips(),
+    AsyncStorage.getItem('pj_workout_state').catch(() => null),
+  ]);
+
+  const tipStore: SmartTipsStore = store ?? {
+    activeTips: [], recentHistory: [], cooldowns: {},
+    variantHistory: {}, lastComputed: '', topicLedger: {},
+  };
+  const workoutState: any = workoutRaw ? JSON.parse(workoutRaw) : {};
+
+  const weekDays = await loadWindowDayRange(weekStart, weekEnd, ctx, workoutState);
+  const density = computeDensityFields(weekDays);
+  const windowDays = weekDays.length || 7;
+  const loggedCount = density.daysLogged;
+  const previousTip = 'none'; // Generated once; no prior tip to deduplicate against
+
+  let faithTier = 'rooted';
+  try {
+    const s = await AsyncStorage.getItem('pj_settings');
+    if (s) { const parsed = JSON.parse(s); faithTier = parsed?.faithJourney ?? 'rooted'; }
+  } catch {}
+
+  let packet: CoachPacket;
+
+  const safety9 = checkFamily9Safety(weekDays, ctx);
+
+  if (safety9) {
+    packet = {
+      scenario: safety9.scenario,
+      ruleId: `safety_${safety9.scenario}`,
+      familyNum: 9,
+      diagnosis: safety9.diagnosis,
+      action: safety9.action,
+      facts: safety9.facts,
+      tone: 'care',
+      careSeverity: safety9.careSeverity,
+      mode: ctx.styleMode,
+      goal: ctx.goalBucket,
+      surface: 'weekly',
+      windowDays,
+      startDate: weekStart,
+      endDate: weekEnd,
+      ifActive: ctx.ifEnabled,
+      previousTip,
+      faithTier,
+      computedDate: todayKey,
+      fallbackTitle: 'A Note on Your Pace',
+      fallbackBody: `Something worth flagging. ${safety9.diagnosis}. ${safety9.action}.`,
+    };
+  } else if (loggedCount < 4) {
+    packet = {
+      scenario: '5.5',
+      ruleId: 'log_consistency_low',
+      familyNum: 5,
+      diagnosis: `Only ${loggedCount} of ${windowDays} days have logged data, not enough for reliable trend analysis`,
+      action: 'Log food on at least 4 days next week to unlock a full coaching insight',
+      facts: { loggedDays: loggedCount, windowDays },
+      tone: 'corrective',
+      mode: ctx.styleMode,
+      goal: ctx.goalBucket,
+      surface: 'weekly',
+      windowDays,
+      startDate: weekStart,
+      endDate: weekEnd,
+      ifActive: ctx.ifEnabled,
+      previousTip,
+      faithTier,
+      computedDate: todayKey,
+      fallbackTitle: 'Building Your Picture',
+      fallbackBody: `The coach has ${loggedCount} logged days to work with for this week. Log food on 4 or more days to get a full weekly coaching insight.`,
+    };
+  } else {
+    const w5 = weekDays.slice(0, 5);
+    const rawCandidates = runAllRules(weekDays, w5, weekDays, ctx, tipStore);
+    const suppressed = applyMindfulSuppression(rawCandidates, ctx);
+
+    const excludeIds = [homeRuleId, persistedLastRuleId].filter((id): id is string => !!id);
+    const selected = selectByPrioritySpine(suppressed, ctx, excludeIds);
+
+    if (!selected) {
+      packet = {
+        scenario: '6.0',
+        ruleId: 'cal_goal_hit',
+        familyNum: 6,
+        diagnosis: 'All tracked metrics are within range for the week',
+        action: 'Maintain the current approach',
+        facts: { loggedDays: loggedCount, windowDays },
+        tone: 'positive',
+        mode: ctx.styleMode,
+        goal: ctx.goalBucket,
+        surface: 'weekly',
+        windowDays,
+        startDate: weekStart,
+        endDate: weekEnd,
+        ifActive: ctx.ifEnabled,
+        previousTip,
+        faithTier,
+        computedDate: todayKey,
+        fallbackTitle: 'Looking Good This Week',
+        fallbackBody: 'Everything tracked in range this week. Keep the current approach going.',
+      };
+    } else {
+      const { diagnosis, action, facts } = buildDiagnosisActionFacts(selected, weekDays, weekDays, ctx);
+      const tone = deriveTone(selected);
+      packet = {
+        scenario: RULE_SCENARIO[selected.ruleId] ?? selected.ruleId,
+        ruleId: selected.ruleId,
+        familyNum: RULE_FAMILY[selected.ruleId] ?? 0,
+        diagnosis,
+        action,
+        facts,
+        tone,
+        mode: ctx.styleMode,
+        goal: ctx.goalBucket,
+        surface: 'weekly',
+        windowDays,
+        startDate: weekStart,
+        endDate: weekEnd,
+        ifActive: ctx.ifEnabled,
+        previousTip,
+        faithTier,
+        computedDate: todayKey,
+        fallbackTitle: selected.title,
+        fallbackBody: selected.body,
+      };
+    }
+  }
+
+  packet.daysLogged = density.daysLogged;
+  packet.daysWithNutritionData = density.daysWithNutritionData;
+  packet.daysWithActivityData = density.daysWithActivityData;
+  packet.daysWithSleepData = density.daysWithSleepData;
+
+  const cache: CoachTipCache = {
+    packet,
+    aiBody: null,
+    aiGeneratedDate: null,
+    fallbackUsed: false,
+  };
+
+  await Promise.all([
+    storageSet(cacheKey, JSON.stringify(cache)),
+    AsyncStorage.setItem(lastRuleKey, JSON.stringify({ ruleId: packet.ruleId })),
   ]);
   return cache;
 }

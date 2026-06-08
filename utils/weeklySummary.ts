@@ -50,6 +50,11 @@ export interface WeeklySummaryData {
   avgCalorieScore: number | null;
   avgProteinScore: number | null;
   avgWaterScore: number | null;
+  avgCarbs: number | null;
+  avgFat: number | null;
+  avgFiber: number | null;
+  avgSodium: number | null;
+  daysCalorieGoalHit: number;
 
   // Activity
   avgActiveCalories: number | null;
@@ -59,10 +64,18 @@ export interface WeeklySummaryData {
   avgActiveCalScore: number | null;
   avgWorkoutScore: number | null;
   weekHadWorkouts: boolean;
+  stepGoalDays: number;
+  cardioDays: number;
+  liftDays: number;
 
   // Recovery (avgSleepScore is shared with score section above)
   avgSleepHours: number | null;
   avgSleepCategoryScore: number | null;
+  sleepGoal: number;
+  avgRestingHR: number | null;
+  avgRespiratoryRate: number | null;
+  weekVo2Max: number | null;
+  weekCardioRecovery: number | null;
 
   // Weight
   startWeight: number | null;
@@ -72,6 +85,11 @@ export interface WeeklySummaryData {
 }
 
 const DAY_LETTERS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const WEEK_DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+function dayNameFromDateKey(dk: string): string {
+  const [y, m, d] = dk.split('-').map(Number);
+  return WEEK_DAY_NAMES[new Date(y, m - 1, d).getDay()];
+}
 
 function dateKeyFromSunday(weekStart: string, offset: number): string {
   const [y, m, d] = weekStart.split('-').map(Number);
@@ -111,15 +129,18 @@ export async function generateWeeklySummary(weekStart: string): Promise<WeeklySu
   try { pairs = await AsyncStorage.multiGet(storageKeys); } catch { return null; }
 
   // Load profile/settings for goal references
-  let calTarget = 0, proteinGoal = 0, waterGoal = 0, weightGoal = 'maintain';
+  let calTarget = 0, proteinGoal = 0, waterGoal = 0, weightGoal = 'maintain', stepGoal = 10000, sleepGoal = 8;
   let bmr = 0;
+  let workoutState: any = {};
   try {
-    const [profRaw, setRaw] = await Promise.all([
+    const [profRaw, setRaw, workoutRaw] = await Promise.all([
       AsyncStorage.getItem('pj_profile'),
       AsyncStorage.getItem('pj_settings'),
+      AsyncStorage.getItem('pj_workout_state'),
     ]);
     const profile = profRaw ? JSON.parse(profRaw) : {};
     const settings = setRaw ? JSON.parse(setRaw) : {};
+    workoutState = workoutRaw ? JSON.parse(workoutRaw) : {};
     weightGoal = profile.weightGoal || 'maintain';
 
     // Use goalSnapshot from first scored day if available, else live values
@@ -136,6 +157,8 @@ export async function generateWeeklySummary(weekStart: string): Promise<WeeklySu
 
     if (settings.waterGoal) waterGoal = parseFloat(settings.waterGoal) || 0;
     else if (profile.waterGoal) waterGoal = parseFloat(profile.waterGoal) || 0;
+    if (profile.stepGoal) stepGoal = parseFloat(profile.stepGoal) || 10000;
+    if (profile.sleepGoal) sleepGoal = parseFloat(profile.sleepGoal) || 8;
   } catch {}
 
   // Parse each day
@@ -174,6 +197,18 @@ export async function generateWeeklySummary(weekStart: string): Promise<WeeklySu
 
   let daysLoggedNutrition = 0;
   let workoutDays = 0;
+  let stepGoalDays = 0;
+  let cardioDays = 0;
+  let liftDays = 0;
+  const restingHRList: number[] = [];
+  const respiratoryRateList: number[] = [];
+  let weekVo2Max: number | null = null;
+  let weekCardioRecovery: number | null = null;
+  const carbsList: number[] = [];
+  const fatList: number[] = [];
+  const fiberList: number[] = [];
+  const sodiumList: number[] = [];
+  let daysCalorieGoalHit = 0;
 
   for (let i = 0; i < 7; i++) {
     const dk = dateKeys[i];
@@ -203,17 +238,25 @@ export async function generateWeeklySummary(weekStart: string): Promise<WeeklySu
     if (dayScore.activityScore !== null) activityScores.push(dayScore.activityScore);
     if (dayScore.sleepScore !== null) sleepScores.push(dayScore.sleepScore);
 
+    const burnAccuracyPct = day.goalSnapshot?.burnAccuracyPct ?? 100;
     const entries: any[] = Array.isArray(day.entries) ? day.entries : [];
     if (entries.length > 0) {
       const cal = Math.round(entries.reduce((s: number, e: any) => s + (e.cal || 0), 0));
       const prot = Math.round(entries.reduce((s: number, e: any) => s + (e.protein || 0), 0));
+      const carbs = Math.round(entries.reduce((s: number, e: any) => s + (e.carbs || 0), 0));
+      const fat = Math.round(entries.reduce((s: number, e: any) => s + (e.fat || 0), 0));
+      const fiber = Math.round(entries.reduce((s: number, e: any) => s + (e.fiber || 0), 0));
+      const sodium = Math.round(entries.reduce((s: number, e: any) => s + (e.sodium || 0), 0));
       caloriesList.push(cal);
       proteinList.push(prot);
+      carbsList.push(carbs);
+      fatList.push(fat);
+      fiberList.push(fiber);
+      sodiumList.push(sodium);
       daysLoggedNutrition++;
 
       // Net: consumed - active (with burn accuracy applied) - bmr
       const dayBmr = day.goalSnapshot?.bmr || bmr;
-      const burnAccuracyPct = day.goalSnapshot?.burnAccuracyPct ?? 100;
       const active = Math.round((day.activeCalories || day.caloriesBurned || 0) * burnAccuracyPct / 100);
       if (dayBmr > 0) netList.push(cal - active - dayBmr);
     }
@@ -222,12 +265,14 @@ export async function generateWeeklySummary(weekStart: string): Promise<WeeklySu
       calScoreList.push(dayScore.nutritionDetail.calorieScore);
       protScoreList.push(dayScore.nutritionDetail.proteinScore);
       waterScoreList.push(dayScore.nutritionDetail.waterScore);
+      if (dayScore.nutritionDetail.calorieHit === true) daysCalorieGoalHit++;
     }
 
     const water = typeof day.water === 'number' ? day.water : 0;
     if (water > 0) waterList.push(water);
 
-    const activeCalories = day.activeCalories || day.caloriesBurned || 0;
+    const rawActive = day.activeCalories || day.caloriesBurned || 0;
+    const activeCalories = Math.round(rawActive * burnAccuracyPct / 100);
     if (activeCalories > 0) activeCaloriesList.push(activeCalories);
 
     const steps = day.steps || 0;
@@ -235,6 +280,11 @@ export async function generateWeeklySummary(weekStart: string): Promise<WeeklySu
 
     const exMin = day.exerciseMinutes;
     if (typeof exMin === 'number' && exMin > 0) exerciseMinutesList.push(exMin);
+
+    if (typeof day.restingHR === 'number' && day.restingHR > 0) restingHRList.push(day.restingHR);
+    if (typeof day.respiratoryRate === 'number' && day.respiratoryRate > 0) respiratoryRateList.push(day.respiratoryRate);
+    if (typeof day.vo2Max === 'number' && day.vo2Max > 0) weekVo2Max = day.vo2Max;
+    if (typeof day.cardioRecovery === 'number' && day.cardioRecovery > 0) weekCardioRecovery = day.cardioRecovery;
 
     if (dayScore.activityDetail) {
       if (typeof dayScore.activityDetail.activeCalScore === 'number') {
@@ -260,6 +310,16 @@ export async function generateWeeklySummary(weekStart: string): Promise<WeeklySu
       workoutDays++;
     } else if (activeCalories > 0) {
       workoutDays++;
+    }
+
+    if (steps >= stepGoal) stepGoalDays++;
+    const wPrograms = workoutState.programs || {};
+    const wTemplate = workoutState.weeklyTemplate || {};
+    const dayProgram = wPrograms[dk] || wTemplate[dayNameFromDateKey(dk)];
+    const dayType = dayProgram?.type || 'unassigned';
+    if ((dayScore.activityDetail?.workoutScore ?? 0) > 0) {
+      if (dayType === 'cardio') cardioDays++;
+      else if (dayType === 'lift') liftDays++;
     }
   }
 
@@ -300,6 +360,11 @@ export async function generateWeeklySummary(weekStart: string): Promise<WeeklySu
     avgCalorieScore: avg(calScoreList),
     avgProteinScore: avg(protScoreList),
     avgWaterScore: avg(waterScoreList),
+    avgCarbs: avg(carbsList),
+    avgFat: avg(fatList),
+    avgFiber: avg(fiberList),
+    avgSodium: avg(sodiumList),
+    daysCalorieGoalHit,
 
     avgActiveCalories: avg(activeCaloriesList),
     avgSteps: avg(stepsList),
@@ -308,9 +373,17 @@ export async function generateWeeklySummary(weekStart: string): Promise<WeeklySu
     avgActiveCalScore: avg(activeCalScoreList),
     avgWorkoutScore: avg(workoutScoreList),
     weekHadWorkouts,
+    stepGoalDays,
+    cardioDays,
+    liftDays,
 
     avgSleepHours: avgFloat(sleepHoursList),
     avgSleepCategoryScore: avg(sleepCategoryScoreList),
+    sleepGoal,
+    avgRestingHR: avg(restingHRList),
+    avgRespiratoryRate: avgFloat(respiratoryRateList),
+    weekVo2Max,
+    weekCardioRecovery,
 
     startWeight,
     endWeight,

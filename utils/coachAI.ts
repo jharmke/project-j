@@ -11,8 +11,10 @@ import {
   CoachTipCache,
   computeCoachPacket,
   computeCoachPacketEvr,
+  computeCoachPacketWeekly,
   loadCoachTipCache,
   loadCoachTipCacheEvr,
+  loadCoachTipCacheWeekly,
 } from './smartTipsEngine';
 import { DayScore, DayScoreInput } from './dayScore';
 
@@ -84,6 +86,16 @@ Care tone, not alarm: Concern is expressed as care. Never use fear or guilt. A c
 
 Never promise outcomes: Never guarantee a specific result. "This will cause X" is never acceptable. Use "this tends to", "this can help", "this often leads to." The coach observes and suggests. It never promises.
 
+Data coverage rules
+
+The packet will include data coverage fields: daysLogged, windowDays, daysWithNutritionData, daysWithActivityData, daysWithSleepData.
+
+When daysLogged is below 50% of windowDays, frame all insights as observations about the days the user did log. Use "in the days you logged" rather than "this week" or "this month." Do not make strong trend claims. Acknowledge the partial picture briefly without dwelling on it.
+
+When a specific category (nutrition, activity, or sleep) has fewer than 3 days of data in its category field, do not make confident claims about that category's trends or patterns. You may note the data is limited.
+
+Never praise a calorie deficit or low-intake pattern when daysWithNutritionData is below 60% of windowDays. Sparse nutrition data makes it impossible to distinguish a genuine deficit from an untracked pattern. If the diagnosis is about a deficit and nutrition coverage is low, either reframe as uncertainty or omit the praise.
+
 Style examples
 
 Before writing, read the examples listed below for your mode and tone. These are gold-standard tips that show you how to talk, not what to say. Do not repeat any sentence from the examples verbatim. Do not use the numbers from the examples. Each tip you write is original, grounded only in the packet you received.
@@ -146,10 +158,16 @@ function formatPacketMessage(packet: CoachPacket): string {
 
   const surfaceLabel =
     packet.surface === 'home' ? `Home tip card, ${packet.windowDays}-day window` :
-    packet.surface === 'day_summary' ? `Day Summary, ${packet.windowDays}-day window` :
+    packet.surface === 'day_summary' ? `Day Summary, single day` :
+    packet.surface === 'weekly' ? `Weekly Summary, ${packet.windowDays}-day window` :
+    packet.surface === 'monthly' ? `Monthly Summary, ${packet.windowDays}-day window` :
     `EvR deep read, ${packet.windowDays}-day window`;
 
   const careLine = packet.careSeverity ? `\nCare severity: ${packet.careSeverity}` : '';
+
+  const densityLine = (packet.daysLogged !== undefined && packet.windowDays > 1)
+    ? `\nData coverage: ${packet.daysLogged} of ${packet.windowDays} days logged. Nutrition: ${packet.daysWithNutritionData ?? 0} days. Activity: ${packet.daysWithActivityData ?? 0} days. Sleep: ${packet.daysWithSleepData ?? 0} days.`
+    : '';
 
   return `Scenario: ${packet.scenario}
 Diagnosis: ${packet.diagnosis}
@@ -158,7 +176,7 @@ Facts: ${factsStr || 'none'}
 Tone: ${packet.tone}${careLine}
 Mode: ${packet.mode}
 Goal: ${packet.goal}
-Surface: ${surfaceLabel}
+Surface: ${surfaceLabel}${densityLine}
 IF active: ${packet.ifActive ? 'yes' : 'no'}
 Previous tip: ${packet.previousTip}
 Faith tier: ${packet.faithTier}
@@ -349,6 +367,22 @@ export function resolveTipBody(cache: CoachTipCache): string {
 
 export function resolveTipTitle(cache: CoachTipCache): string {
   return cache.packet.fallbackTitle;
+}
+
+// Weekly-specific refresh: computes its own packet (fixed date range, deduped
+// from home), calls AI, and saves to the week-specific cache key.
+export async function refreshCoachTipWeekly(
+  weekStart: string,
+  weekEnd: string,
+  homeRuleId: string | null,
+): Promise<CoachTipCache> {
+  const cacheKey = `pj_coach_tip_weekly_${weekStart}`;
+  const existing = await loadCoachTipCacheWeekly(weekStart);
+  // Already has AI body: return cached (generated once, never regenerated)
+  if (existing?.aiBody && existing.aiGeneratedDate) return existing;
+
+  const cache = await computeCoachPacketWeekly(weekStart, weekEnd, homeRuleId);
+  return generateCoachTip(cache, cacheKey);
 }
 
 // ── Day Summary: per-day coaching tip ─────────────────────────────────────────

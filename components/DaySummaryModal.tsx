@@ -35,6 +35,7 @@ interface Props {
   onClose: () => void;        // clears the parent's daySummary state
   onViewSummary?: () => void; // morning pop-up: navigate to the archive. Omit in
                               // the archive itself (the button is then hidden).
+  hideExclude?: boolean;      // pass true when opening from Weekly/Monthly summary (frozen snapshot)
 }
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -108,7 +109,7 @@ export function ScoreRing({ value, color, theme, celebrate }: { value: number; c
   );
 }
 
-export default function DaySummaryModal({ score, dateKey, theme, styleMode, faithJourney, onClose, onViewSummary }: Props) {
+export default function DaySummaryModal({ score, dateKey, theme, styleMode, faithJourney, onClose, onViewSummary, hideExclude }: Props) {
   const { showToast } = useToast();
   const [hadFaith, setHadFaith] = useState(false);
   const [confirmingExclude, setConfirmingExclude] = useState(false);
@@ -279,8 +280,8 @@ export default function DaySummaryModal({ score, dateKey, theme, styleMode, fait
               For informational purposes only. Not medical advice.
             </Text>
 
-            {/* Exclude this day (inline confirm) */}
-            {confirmingExclude ? (
+            {/* Exclude this day (inline confirm) -- hidden when opened from a frozen snapshot (Weekly/Monthly) */}
+            {!hideExclude && confirmingExclude ? (
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 14, marginTop: 12, flexWrap: 'wrap' }}>
                 <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', textAlign: 'center' }}>Remove from your weekly average?</Text>
                 <TouchableOpacity onPress={() => setConfirmingExclude(false)} hitSlop={{ top: 10, bottom: 10, left: 8, right: 8 }}>
@@ -290,11 +291,11 @@ export default function DaySummaryModal({ score, dateKey, theme, styleMode, fait
                   <Text style={{ fontSize: 12, color: theme.statusBad, fontFamily: 'DMSans_600SemiBold' }}>Exclude</Text>
                 </TouchableOpacity>
               </View>
-            ) : (
+            ) : !hideExclude ? (
               <TouchableOpacity onPress={() => setConfirmingExclude(true)} hitSlop={{ top: 10, bottom: 10, left: 20, right: 20 }} style={{ alignItems: 'center', marginTop: 12 }}>
                 <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', textDecorationLine: 'underline' }}>Exclude this day</Text>
               </TouchableOpacity>
-            )}
+            ) : null}
           </View>
         </Reanimated.View>
       </View>

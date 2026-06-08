@@ -154,7 +154,7 @@ export default function DaySummaryScreen() {
       borderBottomWidth: 0.5, borderBottomColor: theme.borderCard,
       flexDirection: 'row', alignItems: 'center', gap: 10,
     }}>
-      <TouchableOpacity onPress={() => router.back()} style={{ padding: 4 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+      <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={{ padding: 4 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
         <Ionicons name="chevron-back" size={24} color={accent} />
       </TouchableOpacity>
       <Text style={{ fontSize: 24, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: accent, flex: 1 }}>DAY SUMMARY</Text>

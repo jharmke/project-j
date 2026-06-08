@@ -89,7 +89,7 @@ function StatRow({ label, value, sub, valueColor, labelColor, subNode }: { label
     <View style={{ paddingVertical: 8, borderTopWidth: 0.5, borderTopColor: theme.borderCard }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Text style={{ fontSize: 13, color: labelColor ?? theme.textSecondary, fontFamily: 'DMSans_600SemiBold' }}>{label}</Text>
-        <Text style={{ fontSize: 13, color: valueColor ?? theme.textPrimary, fontFamily: 'DMSans_600SemiBold' }}>{value}</Text>
+        <Text style={{ fontSize: 13, color: valueColor ?? theme.textPrimary, fontFamily: 'DMSans_600SemiBold', paddingLeft: 8 }}>{value}</Text>
       </View>
       {subNode ?? (!!sub && <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>{sub}</Text>)}
     </View>
@@ -98,7 +98,7 @@ function StatRow({ label, value, sub, valueColor, labelColor, subNode }: { label
 
 function SubBlock({ left, right }: {
   left: { label: string; value: string };
-  right: { label: string; value: string };
+  right?: { label: string; value: string };
 }) {
   const { theme } = useTheme();
   return (
@@ -107,10 +107,12 @@ function SubBlock({ left, right }: {
         <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 1.5 }}>{left.label}</Text>
         <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, marginTop: 1 }}>{left.value}</Text>
       </View>
-      <View style={{ flex: 1, alignItems: 'flex-start', paddingLeft: 2 }}>
-        <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 1.5 }}>{right.label}</Text>
-        <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, marginTop: 1 }}>{right.value}</Text>
-      </View>
+      {right && (
+        <View style={{ flex: 1, alignItems: 'flex-start', paddingLeft: 2 }}>
+          <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 1.5 }}>{right.label}</Text>
+          <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, marginTop: 1 }}>{right.value}</Text>
+        </View>
+      )}
     </View>
   );
 }
@@ -195,7 +197,7 @@ export default function WeeklySummaryScreen() {
         {/* Header */}
         <View style={{ paddingTop: insets.top + 12, paddingHorizontal: 20, marginBottom: 20 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <Ionicons name="chevron-back" size={22} color={accent} />
             </TouchableOpacity>
             <Text style={{ fontSize: 22, letterSpacing: 2, fontFamily: 'BebasNeue_400Regular', color: accent }}>WEEKLY SUMMARY</Text>
@@ -212,8 +214,11 @@ export default function WeeklySummaryScreen() {
 
   const { avgComposite, avgNutritionScore, avgActivityScore, avgSleepScore, daysScored, days,
     avgCalories, calTarget, avgNet, avgProtein, proteinGoal, avgWater, waterGoal, daysLoggedNutrition,
+    avgCarbs, avgFat, avgFiber, avgSodium, daysCalorieGoalHit,
     avgActiveCalories, avgSteps, workoutDays, avgExerciseMinutes, avgActiveCalScore, avgWorkoutScore, weekHadWorkouts,
-    avgSleepHours, avgSleepCategoryScore, startWeight, endWeight, weightChange, weightGoal,
+    stepGoalDays, cardioDays, liftDays,
+    avgSleepHours, avgSleepCategoryScore, sleepGoal, avgRestingHR, avgRespiratoryRate, weekVo2Max, weekCardioRecovery,
+    startWeight, endWeight, weightChange, weightGoal,
     avgCalorieScore, avgProteinScore, avgWaterScore } = data;
 
   const hasScore = avgComposite !== null && daysScored > 0;
@@ -241,7 +246,7 @@ export default function WeeklySummaryScreen() {
         {/* Header: WEEKLY SUMMARY in accent (matches DAY SUMMARY style), date range as subtitle */}
         <View style={{ paddingTop: insets.top + 12, paddingHorizontal: 20, marginBottom: 20 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <Ionicons name="chevron-back" size={22} color={accent} />
             </TouchableOpacity>
             <Text style={{ fontSize: 22, letterSpacing: 2, fontFamily: 'BebasNeue_400Regular', color: accent }}>
@@ -423,11 +428,20 @@ export default function WeeklySummaryScreen() {
                 />
               }
             />
-            <StatRow
-              label="Days logged"
-              labelColor={COLOR_NUTRITION}
-              value={`${daysLoggedNutrition} of 7 days`}
-            />
+            <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard, marginTop: 4, paddingTop: 4 }}>
+              <SubBlock
+                left={{ label: 'DAYS LOGGED', value: `${daysLoggedNutrition} of 7` }}
+                right={{ label: 'CAL GOAL DAYS', value: `${daysCalorieGoalHit} of 7` }}
+              />
+              <SubBlock
+                left={{ label: 'AVG CARBS', value: avgCarbs !== null ? `${formatNumber(avgCarbs)}g` : '--' }}
+                right={{ label: 'AVG FAT', value: avgFat !== null ? `${formatNumber(avgFat)}g` : '--' }}
+              />
+              <SubBlock
+                left={{ label: 'AVG FIBER', value: avgFiber !== null ? `${formatNumber(avgFiber)}g` : '--' }}
+                right={{ label: 'AVG SODIUM', value: avgSodium !== null ? `${formatNumber(avgSodium)}mg` : '--' }}
+              />
+            </View>
           </SectionCard>
 
           {/* Activity card */}
@@ -439,17 +453,32 @@ export default function WeeklySummaryScreen() {
               subNode={avgActiveCalScore != null && avgActiveCalories !== null ? (
                 <SubBlock
                   left={{ label: 'ACTIVE CAL AVG', value: `${formatNumber(avgActiveCalories)} kcal` }}
-                  right={{ label: 'ACTIVE DAYS', value: `${workoutDays} of 7` }}
                 />
               ) : undefined}
             />
             {weekHadWorkouts && avgWorkoutScore != null && (
-              <StatRow label="Workout" labelColor={COLOR_ACTIVITY} value={`${avgWorkoutScore} / 40`} />
+              <StatRow
+                label="Workout"
+                labelColor={COLOR_ACTIVITY}
+                value={`${avgWorkoutScore} / 40`}
+                subNode={
+                  <SubBlock
+                    left={{ label: 'DAYS ACTIVE', value: `${workoutDays} of 7` }}
+                    right={avgExerciseMinutes !== null ? { label: 'DAILY AVG', value: `${formatNumber(avgExerciseMinutes)} min` } : undefined}
+                  />
+                }
+              />
             )}
-            <StatRow label="Steps" labelColor={COLOR_ACTIVITY} value={avgSteps !== null ? `${formatNumber(avgSteps)}/day avg` : '--'} />
-            {avgExerciseMinutes !== null && (
-              <StatRow label="Exercise" labelColor={COLOR_ACTIVITY} value={`${formatNumber(avgExerciseMinutes)} min avg`} />
-            )}
+            <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard, marginTop: 4, paddingTop: 4 }}>
+              <SubBlock
+                left={{ label: 'STEPS AVG', value: avgSteps !== null ? `${formatNumber(avgSteps)}/day` : '--' }}
+                right={{ label: 'STEP GOAL', value: stepGoalDays != null ? `${stepGoalDays} of 7` : '--' }}
+              />
+              <SubBlock
+                left={{ label: 'CARDIO DAYS', value: cardioDays != null ? `${cardioDays}` : '--' }}
+                right={{ label: 'LIFT DAYS', value: liftDays != null ? `${liftDays}` : '--' }}
+              />
+            </View>
           </SectionCard>
 
           {/* Recovery card */}
@@ -458,8 +487,25 @@ export default function WeeklySummaryScreen() {
               label="Sleep"
               labelColor={COLOR_RECOVERY}
               value={avgSleepCategoryScore != null ? `${avgSleepCategoryScore} / 100` : (avgSleepScore != null ? `${formatNumber(avgSleepScore)} / 100` : '--')}
-              sub={avgSleepHours !== null ? `${formatHours(avgSleepHours)} avg per night` : undefined}
+              subNode={avgSleepHours !== null ? (
+                <SubBlock
+                  left={{ label: 'AVG PER NIGHT', value: formatHours(avgSleepHours) }}
+                  right={sleepGoal ? { label: 'SLEEP GOAL', value: formatHours(sleepGoal) } : undefined}
+                />
+              ) : undefined}
             />
+            {(avgRestingHR !== null || avgRespiratoryRate !== null || weekVo2Max !== null || weekCardioRecovery !== null) && (
+              <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard, marginTop: 4, paddingTop: 4 }}>
+                <SubBlock
+                  left={{ label: 'RESTING HR', value: avgRestingHR !== null ? `${avgRestingHR} bpm` : '--' }}
+                  right={{ label: 'RESP RATE', value: avgRespiratoryRate !== null ? `${avgRespiratoryRate}/min` : '--' }}
+                />
+                <SubBlock
+                  left={{ label: 'VO2 MAX', value: weekVo2Max !== null ? `${weekVo2Max}` : '--' }}
+                  right={{ label: 'CARDIO RECOVERY', value: weekCardioRecovery !== null ? `${weekCardioRecovery}` : '--' }}
+                />
+              </View>
+            )}
           </SectionCard>
 
           {/* Weight card (hidden in Mindful) -- same SectionCard treatment as other categories */}

@@ -14,7 +14,9 @@ export type StyleMode = 'discipline' | 'balanced' | 'mindful';
 export const CATEGORY_WEIGHTS = { nutrition: 0.40, activity: 0.35, sleep: 0.25 };
 
 // Nutrition sub-component max points (before renormalization over present subs).
-const CAL_MAX = 55, PROTEIN_MAX = 28, WATER_MAX = 17;
+export const CAL_MAX = 55;
+export const PROTEIN_MAX = 28;
+export const WATER_MAX = 17;
 
 // Calorie proximity denominator. A miss this many kcal past the hit boundary
 // scores 0 on the calorie sub. Tune after real-data testing (spec section 9.1).

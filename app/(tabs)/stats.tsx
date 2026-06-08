@@ -21,6 +21,7 @@ import TooltipIcon from '../../components/TooltipIcon';
 import { storageSet } from '../../utils/storage';
 import { calcSleepScore } from '../../utils/sleepScore';
 import { loadDayScoreArchive, findMostRecentTourDay, ArchiveWeek, ArchiveDay } from '../../utils/dayScoreStore';
+import { loadWeeklySummary, WeeklySummaryData } from '../../utils/weeklySummary';
 import { DayScore } from '../../utils/dayScore';
 import DaySummaryModal from '../../components/DaySummaryModal';
 import { archiveNav } from '../../utils/archiveNav';
@@ -259,6 +260,13 @@ export default function StatsScreen() {
   const [showArchiveCalendar, setShowArchiveCalendar] = useState(false);
   const [archiveCalMonth, setArchiveCalMonth] = useState(new Date().getMonth());
   const [archiveCalYear, setArchiveCalYear] = useState(new Date().getFullYear());
+  // Reports card collapse state (each card individually collapsible).
+  const [daySummariesOpen, setDaySummariesOpen] = useState(true);
+  const [evrCardOpen, setEvrCardOpen] = useState(true);
+  const [weeklyCardOpen, setWeeklyCardOpen] = useState(true);
+  // Weekly Summaries card: loaded from storage, grouped by month.
+  const [weeklySummaries, setWeeklySummaries] = useState<WeeklySummaryData[]>([]);
+  const [expandedWeeklyMonths, setExpandedWeeklyMonths] = useState<Record<string, boolean>>({});
 
   const [creatorVisible, setCreatorVisible] = useState(false);
   const [creatorStep, setCreatorStep] = useState<1 | 2 | 3>(1);
@@ -872,7 +880,22 @@ export default function StatsScreen() {
     setArchiveLoading(false);
   }, [styleMode]);
 
-  useFocusEffect(useCallback(() => { loadArchive(); }, [loadArchive]));
+  const loadWeeklySummaries = useCallback(async () => {
+    try {
+      // Scan for all pj_weekly_summary_* keys and load them sorted newest first.
+      const allKeys = await AsyncStorage.getAllKeys();
+      const weeklyKeys = allKeys.filter(k => k.startsWith('pj_weekly_summary_')).sort().reverse();
+      const summaries: WeeklySummaryData[] = [];
+      for (const key of weeklyKeys) {
+        const weekStart = key.replace('pj_weekly_summary_', '');
+        const data = await loadWeeklySummary(weekStart);
+        if (data) summaries.push(data);
+      }
+      setWeeklySummaries(summaries);
+    } catch {}
+  }, []);
+
+  useFocusEffect(useCallback(() => { loadArchive(); loadWeeklySummaries(); }, [loadArchive, loadWeeklySummaries]));
 
   // VIEW FULL SUMMARY handoff from the morning pop-up: open Reports, expand
   // yesterday's week, and scroll to the Day Summaries archive.
@@ -968,17 +991,24 @@ export default function StatsScreen() {
     const weeks = archiveWeeks.filter(w => w.loggedCount > 0);
     return (
       <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, marginTop: 12 }]}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setDaySummariesOpen(o => !o); }}
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: daySummariesOpen ? 10 : 0 }}
+        >
           <Text style={[styles.cardLabel, { color: theme.textMuted }]}>DAY SUMMARIES</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowArchiveCalendar(true); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Ionicons name="calendar" size={16} color={theme.accentBlueRaw} />
-            </TouchableOpacity>
+            {daySummariesOpen && (
+              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowArchiveCalendar(true); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name="calendar" size={16} color={theme.accentBlueRaw} />
+              </TouchableOpacity>
+            )}
             <TooltipIcon tooltipKey="day_score" />
+            <Ionicons name={daySummariesOpen ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textMuted} />
           </View>
-        </View>
+        </TouchableOpacity>
 
-        {archiveLoading ? (
+        {daySummariesOpen && (archiveLoading ? (
           <View style={{ paddingVertical: 24, alignItems: 'center' }}>
             <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>Loading your summaries…</Text>
           </View>
@@ -1017,7 +1047,121 @@ export default function StatsScreen() {
               </View>
             );
           })
-        )}
+        ))}
+      </View>
+    );
+  };
+
+  const WEEKLY_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const weeklyMonthLabel = (weekStart: string) => {
+    const [y, m] = weekStart.split('-').map(Number);
+    return `${WEEKLY_MONTHS[m - 1]} ${y}`;
+  };
+  const weeklyMonthKey = (weekStart: string) => weekStart.slice(0, 7);
+  const weeklyDateRange = (ws: string, we: string) => {
+    const [, sm, sd] = ws.split('-').map(Number);
+    const [, em, ed] = we.split('-').map(Number);
+    return sm === em
+      ? `${WEEKLY_MONTHS[sm - 1]} ${sd} - ${ed}`
+      : `${WEEKLY_MONTHS[sm - 1]} ${sd} - ${WEEKLY_MONTHS[em - 1]} ${ed}`;
+  };
+
+  const renderWeeklyCard = () => {
+    // Group summaries by month (YYYY-MM), newest first.
+    const groups: { monthKey: string; monthLabel: string; summaries: WeeklySummaryData[] }[] = [];
+    for (const s of weeklySummaries) {
+      const mk = weeklyMonthKey(s.weekStart);
+      const existing = groups.find(g => g.monthKey === mk);
+      if (existing) existing.summaries.push(s);
+      else groups.push({ monthKey: mk, monthLabel: weeklyMonthLabel(s.weekStart), summaries: [s] });
+    }
+
+    return (
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, marginTop: 12 }]}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setWeeklyCardOpen(o => !o); }}
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: weeklyCardOpen ? 8 : 0 }}
+        >
+          <Text style={[styles.cardLabel, { color: theme.textMuted }]}>WEEKLY SUMMARIES</Text>
+          <Ionicons name={weeklyCardOpen ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textMuted} />
+        </TouchableOpacity>
+
+        {weeklyCardOpen && (weeklySummaries.length === 0 ? (
+          <View style={{ paddingVertical: 20, alignItems: 'center', paddingHorizontal: 16 }}>
+            <Ionicons name="calendar-outline" size={28} color={theme.textDim} style={{ marginBottom: 8 }} />
+            <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', marginBottom: 4 }}>No weekly summaries yet</Text>
+            <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular', textAlign: 'center', lineHeight: 17 }}>
+              Your first weekly summary generates Sunday morning after a logged week.
+            </Text>
+          </View>
+        ) : (
+          groups.map(group => {
+            const monthOpen = expandedWeeklyMonths[group.monthKey] !== false;
+            const monthScored = group.summaries.filter(s => s.avgComposite !== null && s.daysScored > 0);
+            const monthAvg = monthScored.length > 0
+              ? Math.round(monthScored.reduce((sum, s) => sum + s.avgComposite!, 0) / monthScored.length)
+              : null;
+            const monthAvgColor = monthAvg !== null
+              ? (styleMode === 'Mindful' ? theme.accentBlue : monthAvg >= 80 ? theme.statusGood : monthAvg >= 60 ? theme.statusWarn : theme.statusBad)
+              : theme.textDim;
+            return (
+              <View key={group.monthKey} style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard }}>
+                <TouchableOpacity
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setExpandedWeeklyMonths(prev => ({ ...prev, [group.monthKey]: !monthOpen })); }}
+                  activeOpacity={0.6}
+                  style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 4 }}
+                >
+                  <Text style={{ flex: 1, fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold' }}>{group.monthLabel}</Text>
+                  {monthAvg !== null && (
+                    <Text style={{ fontSize: 26, lineHeight: 28, fontFamily: 'BebasNeue_400Regular', color: monthAvgColor, marginRight: 8 }}>{monthAvg}</Text>
+                  )}
+                  <Ionicons name={monthOpen ? 'chevron-up' : 'chevron-down'} size={14} color={theme.textDim} />
+                </TouchableOpacity>
+                {monthOpen && group.summaries.map(s => {
+                  const hasScore = s.avgComposite !== null && s.daysScored > 0;
+                  const scoreColor = hasScore
+                    ? (styleMode === 'Mindful' ? theme.accentBlue : s.avgComposite! >= 80 ? theme.statusGood : s.avgComposite! >= 60 ? theme.statusWarn : theme.statusBad)
+                    : theme.textDim;
+                  return (
+                    <TouchableOpacity
+                      key={s.weekStart}
+                      activeOpacity={hasScore ? 0.6 : 1}
+                      onPress={() => { if (hasScore) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/weekly-summary', params: { weekStart: s.weekStart } }); } }}
+                      style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 11, paddingHorizontal: 4, borderTopWidth: 0.5, borderTopColor: theme.borderCard }}
+                    >
+                      {/* Date + score on left (matches Day Summaries row layout) */}
+                      <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>
+                        {weeklyDateRange(s.weekStart, s.weekEnd)}
+                      </Text>
+                      {hasScore && (
+                        <Text style={{ fontSize: 22, lineHeight: 24, fontFamily: 'BebasNeue_400Regular', color: scoreColor, marginLeft: 8 }}>
+                          {Math.round(s.avgComposite!)}
+                        </Text>
+                      )}
+                      <View style={{ flex: 1 }} />
+                      {hasScore ? (
+                        <>
+                          <View style={{ flexDirection: 'row', gap: 8, marginRight: 8 }}>
+                            {[['N', s.avgNutritionScore], ['A', s.avgActivityScore], ['R', s.avgSleepScore]].map(([lbl, val]) => (
+                              <View key={lbl as string} style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
+                                <Text style={{ fontSize: 8, color: theme.textMuted, fontFamily: 'DMSans_700Bold' }}>{lbl}</Text>
+                                <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' }}>{val !== null ? Math.round(val as number) : '–'}</Text>
+                              </View>
+                            ))}
+                          </View>
+                          <Ionicons name="chevron-forward" size={14} color={theme.textDim} />
+                        </>
+                      ) : (
+                        <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>No scored days</Text>
+                      )}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            );
+          })
+        ))}
       </View>
     );
   };
@@ -1723,21 +1867,33 @@ export default function StatsScreen() {
               <View key={section.id} onLayout={e => { reportsLayoutY.current = e.nativeEvent.layout.y; }}>
               <CollapsibleSection label={section.label} subtitle="Effort vs. results analysis" defaultOpen={isFirst} theme={theme} first={isFirst} forceOpen={reportsSectionForceOpen}>
                 <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, overflow: 'hidden' }]}>
-                  <Ionicons name="analytics" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                    <Text style={[styles.cardLabel, { color: theme.textMuted }]}>EFFORT VS RESULTS</Text>
-                    <TooltipIcon tooltipKey="effort_vs_results" />
-                  </View>
-                  <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 20, marginBottom: 14 }}>
-                    Compare your logged data against your actual results. See what's working, what's not, and get specific suggestions.
-                  </Text>
+                  {evrCardOpen && <Ionicons name="analytics" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />}
                   <TouchableOpacity
-                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/diagnostic-report'); }}
-                    style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 8, paddingVertical: 12, alignItems: 'center' }}
+                    activeOpacity={0.7}
+                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setEvrCardOpen(o => !o); }}
+                    style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: evrCardOpen ? 8 : 0 }}
                   >
-                    <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: '#fff' }}>Open Analysis</Text>
+                    <Text style={[styles.cardLabel, { color: theme.textMuted }]}>EFFORT VS RESULTS</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                      <TooltipIcon tooltipKey="effort_vs_results" />
+                      <Ionicons name={evrCardOpen ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textMuted} />
+                    </View>
                   </TouchableOpacity>
+                  {evrCardOpen && (
+                    <>
+                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 20, marginBottom: 14 }}>
+                        Compare your logged data against your actual results. See what's working, what's not, and get specific suggestions.
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/diagnostic-report'); }}
+                        style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 8, paddingVertical: 12, alignItems: 'center' }}
+                      >
+                        <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: '#fff' }}>Open Analysis</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
                 </View>
+                {renderWeeklyCard()}
                 {renderDayArchive()}
               </CollapsibleSection>
               </View>

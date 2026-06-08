@@ -220,8 +220,8 @@ export default function DaySummaryScreen() {
   const catPct = (w: number) => Math.round((w / weightTotal) * 100);
 
   // ── Reusable bits ──
-  const SectionCard = ({ label, value, icon, weightPct, innerRef, children }: { label: string; value: number | null; icon: keyof typeof Ionicons.glyphMap; weightPct?: number | null; innerRef: React.RefObject<View>; children: React.ReactNode }) => {
-    const barC = value !== null ? tierColor(value) : theme.textDim;
+  const SectionCard = ({ label, value, icon, weightPct, innerRef, children, categoryColor }: { label: string; value: number | null; icon: keyof typeof Ionicons.glyphMap; weightPct?: number | null; innerRef: React.RefObject<View | null>; children: React.ReactNode; categoryColor: string }) => {
+    const barC = value !== null ? categoryColor : theme.textDim;
     return (
       <View ref={innerRef} collapsable={false} style={{
         backgroundColor: theme.bgCard, borderRadius: 14, borderWidth: 0.5, borderColor: theme.borderCard,
@@ -248,15 +248,16 @@ export default function DaySummaryScreen() {
   };
 
   // One sub-component row: name, the real numbers, and points earned.
-  const SubRow = ({ name, detail, pts }: { name: string; detail: string; pts?: string }) => (
-    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 7, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
-      <View style={{ flex: 1 }}>
-        <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' }}>{name}</Text>
-        <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 1 }}>{detail}</Text>
+  const SubRow = ({ name, detail, pts, subBlock, labelColor }: { name: string; detail?: string; pts?: string; subBlock?: React.ReactNode; labelColor?: string }) => (
+    <View style={{ paddingVertical: 7, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Text style={{ fontSize: 13, color: labelColor ?? theme.textSecondary, fontFamily: 'DMSans_600SemiBold', flex: 1 }}>{name}</Text>
+        {!!pts && (
+          <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' }}>{pts}</Text>
+        )}
       </View>
-      {!!pts && (
-        <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' }}>{pts}</Text>
-      )}
+      {!!detail && <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 1 }}>{detail}</Text>}
+      {subBlock}
     </View>
   );
 
@@ -321,25 +322,73 @@ export default function DaySummaryScreen() {
 
         {/* NUTRITION */}
         {score.nutritionScore !== null && nd ? (
-          <SectionCard label="Nutrition" icon="restaurant" value={score.nutritionScore} weightPct={catPct(CATEGORY_WEIGHTS.nutrition)} innerRef={nutritionRef}>
-            {(nd.calorieHit || nd.calorieScore > 0) && (
+          <SectionCard label="Nutrition" icon="restaurant" value={score.nutritionScore} weightPct={catPct(CATEGORY_WEIGHTS.nutrition)} innerRef={nutritionRef} categoryColor="#0d9268">
+            {(nd.calorieHit || nd.calorieScore > 0) && input && (
               <SubRow
                 name="Calories"
-                detail={nd.calorieHit
-                  ? `On target${net !== null ? ` · net ${net > 0 ? '+' : ''}${net} kcal` : ''}`
-                  : `Net ${net !== null ? `${net > 0 ? '+' : ''}${net}` : '--'} kcal vs ${input ? `${input.paceTarget > 0 ? '+' : ''}${input.paceTarget}` : '--'} pace`}
+                labelColor="#0d9268"
                 pts={`${Math.round(nd.calorieScore)} / 55`}
+                subBlock={
+                  <View style={{ flexDirection: 'row', marginTop: 6 }}>
+                    <View style={{ flex: 1, alignItems: 'flex-start', paddingLeft: 2 }}>
+                      <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 1.5 }}>EATEN</Text>
+                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, marginTop: 1 }}>{Math.round(input.consumed).toLocaleString()}</Text>
+                    </View>
+                    <View style={{ flex: 1, alignItems: 'flex-start', paddingLeft: 2 }}>
+                      <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 1.5 }}>
+                        {!isMindful && net !== null ? (net < 0 ? 'DEFICIT' : 'SURPLUS') : 'DAILY GOAL'}
+                      </Text>
+                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, marginTop: 1 }}>
+                        {!isMindful && net !== null
+                          ? Math.abs(net).toLocaleString()
+                          : Math.round(input.calTarget).toLocaleString()}
+                      </Text>
+                    </View>
+                  </View>
+                }
               />
             )}
             {nd.proteinScore > 0 && input && (
-              <SubRow name="Protein" detail={`${Math.round(input.actualProteinG)}g of ${Math.round(input.proteinGoalG)}g goal`} pts={`${Math.round(nd.proteinScore)} / 28`} />
+              <SubRow
+                name="Protein"
+                labelColor="#0d9268"
+                pts={`${Math.round(nd.proteinScore)} / 28`}
+                subBlock={
+                  <View style={{ flexDirection: 'row', marginTop: 6 }}>
+                    <View style={{ flex: 1, alignItems: 'flex-start', paddingLeft: 2 }}>
+                      <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 1.5 }}>EATEN</Text>
+                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, marginTop: 1 }}>{Math.round(input.actualProteinG)}g</Text>
+                    </View>
+                    <View style={{ flex: 1, alignItems: 'flex-start', paddingLeft: 2 }}>
+                      <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 1.5 }}>DAILY GOAL</Text>
+                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, marginTop: 1 }}>{Math.round(input.proteinGoalG)}g</Text>
+                    </View>
+                  </View>
+                }
+              />
             )}
             {nd.waterScore > 0 && input && (
-              <SubRow name="Water" detail={`${Math.round(input.waterLogged)}oz of ${Math.round(input.waterGoal)}oz goal`} pts={`${Math.round(nd.waterScore)} / 17`} />
+              <SubRow
+                name="Water"
+                labelColor="#0d9268"
+                pts={`${Math.round(nd.waterScore)} / 17`}
+                subBlock={
+                  <View style={{ flexDirection: 'row', marginTop: 6 }}>
+                    <View style={{ flex: 1, alignItems: 'flex-start', paddingLeft: 2 }}>
+                      <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 1.5 }}>LOGGED</Text>
+                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, marginTop: 1 }}>{Math.round(input.waterLogged)} oz</Text>
+                    </View>
+                    <View style={{ flex: 1, alignItems: 'flex-start', paddingLeft: 2 }}>
+                      <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 1.5 }}>DAILY GOAL</Text>
+                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, marginTop: 1 }}>{Math.round(input.waterGoal)} oz</Text>
+                    </View>
+                  </View>
+                }
+              />
             )}
           </SectionCard>
         ) : (
-          <SectionCard label="Nutrition" icon="restaurant" value={null} innerRef={nutritionRef}>
+          <SectionCard label="Nutrition" icon="restaurant" value={null} innerRef={nutritionRef} categoryColor="#0d9268">
             <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 4 }}>
               {dietExcluded || waterExcluded ? 'Nutrition was excluded for this day.' : 'No food logged this day.'}
             </Text>
@@ -348,20 +397,20 @@ export default function DaySummaryScreen() {
 
         {/* ACTIVITY */}
         {score.activityScore !== null && ad ? (
-          <SectionCard label="Activity" icon="barbell" value={score.activityScore} weightPct={catPct(CATEGORY_WEIGHTS.activity)} innerRef={activityRef}>
+          <SectionCard label="Activity" icon="barbell" value={score.activityScore} weightPct={catPct(CATEGORY_WEIGHTS.activity)} innerRef={activityRef} categoryColor="#d4860a">
             {ad.isMindfulPresence ? (
-              <SubRow name="Movement" detail={score.activityScore > 0 ? 'You moved your body today.' : 'A quiet day.'} />
+              <SubRow name="Movement" labelColor="#d4860a" detail={score.activityScore > 0 ? 'You moved your body today.' : 'A quiet day.'} />
             ) : ad.workoutScore !== null ? (
               <>
-                {input && <SubRow name="Active calories" detail={`${adjustedActive} of ${input.activeCalGoal} kcal goal`} pts={`${Math.round(ad.activeCalScore)} / 60`} />}
-                {input && <SubRow name="Workout" detail={input.workoutTotalCount > 0 ? `${input.workoutCompletedCount} of ${input.workoutTotalCount} exercises` : 'Cardio session complete'} pts={`${Math.round(ad.workoutScore)} / 40`} />}
+                {input && <SubRow name="Active calories" labelColor="#d4860a" detail={`${adjustedActive} of ${input.activeCalGoal} kcal goal`} pts={`${Math.round(ad.activeCalScore)} / 60`} />}
+                {input && <SubRow name="Workout" labelColor="#d4860a" detail={input.workoutTotalCount > 0 ? `${input.workoutCompletedCount} of ${input.workoutTotalCount} exercises` : 'Cardio session complete'} pts={`${Math.round(ad.workoutScore)} / 40`} />}
               </>
             ) : (
-              input && <SubRow name="Active calories" detail={`${adjustedActive} kcal${input.dayType === 'rest' ? ' · rest day floor applied' : ''}`} pts={`${Math.round(ad.activeCalScore)} / 100`} />
+              input && <SubRow name="Active calories" labelColor="#d4860a" detail={`${adjustedActive} kcal${input.dayType === 'rest' ? ' · rest day floor applied' : ''}`} pts={`${Math.round(ad.activeCalScore)} / 100`} />
             )}
           </SectionCard>
         ) : (
-          <SectionCard label="Activity" icon="barbell" value={null} innerRef={activityRef}>
+          <SectionCard label="Activity" icon="barbell" value={null} innerRef={activityRef} categoryColor="#d4860a">
             <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 4 }}>
               {exerciseExcluded ? 'Activity was excluded for this day.' : 'No activity data this day.'}
             </Text>
@@ -370,14 +419,14 @@ export default function DaySummaryScreen() {
 
         {/* RECOVERY */}
         {score.sleepScore !== null && sd ? (
-          <SectionCard label="Recovery" icon="heart" value={score.sleepScore} weightPct={catPct(CATEGORY_WEIGHTS.sleep)} innerRef={recoveryRef}>
-            <SubRow name="Sleep score" detail={`Raw ${Math.round(sd.rawSleepScore)} of 100`} pts={`${Math.round(sd.categoryScore)} / 100`} />
+          <SectionCard label="Recovery" icon="heart" value={score.sleepScore} weightPct={catPct(CATEGORY_WEIGHTS.sleep)} innerRef={recoveryRef} categoryColor="#9b7adb">
+            <SubRow name="Sleep score" labelColor="#9b7adb" detail={`Raw ${Math.round(sd.rawSleepScore)} of 100`} pts={`${Math.round(sd.categoryScore)} / 100`} />
             <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 8, lineHeight: 16, fontStyle: 'italic' }}>
               Logged sleep never scores below 50, so a rough night will not tank your day.
             </Text>
           </SectionCard>
         ) : (
-          <SectionCard label="Recovery" icon="heart" value={null} innerRef={recoveryRef}>
+          <SectionCard label="Recovery" icon="heart" value={null} innerRef={recoveryRef} categoryColor="#9b7adb">
             <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 4 }}>No sleep logged this day.</Text>
           </SectionCard>
         )}

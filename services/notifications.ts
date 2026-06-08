@@ -330,6 +330,18 @@ export const cancelIFWindowNotifications = async () => {
   );
 };
 
+export const cancelFoodLogNotification = () =>
+  Notifications.cancelScheduledNotificationAsync('pj_food_log').catch(() => {});
+
+export const cancelWaterPaceNotification = () =>
+  Notifications.cancelScheduledNotificationAsync('pj_water_pace').catch(() => {});
+
+export const cancelActivityNotification = () =>
+  Notifications.cancelScheduledNotificationAsync('pj_activity').catch(() => {});
+
+export const cancelEveningGratitudeNotification = () =>
+  Notifications.cancelScheduledNotificationAsync('pj_evening_gratitude').catch(() => {});
+
 // ── Daily Scheduler ───────────────────────────────────────────────────────────
 
 export interface SchedulerContext {

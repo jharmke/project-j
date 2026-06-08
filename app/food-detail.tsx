@@ -18,6 +18,7 @@ import { showAchievementToast } from '../components/AchievementToast';
 import { showCelebration } from '../components/CelebrationOverlay';
 import { saveToFirebase } from '../firebaseConfig';
 import { storageSet } from '../utils/storage';
+import { cancelFoodLogNotification } from '../services/notifications';
 import { useTheme } from '../theme';
 import { DEFAULT_MEAL_SLOTS, MealSlot, loadMealSlots } from '../utils/mealSlots';
 import { useTutorial } from '../context/TutorialContext';
@@ -800,6 +801,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
       await saveToFirebase(date, 'entries', entries);
       showToast(isEditing ? 'Entry updated' : 'Entry logged', `${calories} kcal · ${currentMeal}`, 'success');
       if (!isEditing) {
+        cancelFoodLogNotification();
         const store = await loadAchievements();
         const result = await checkAndUnlock('general_first_log', store);
         if (result.newlyUnlocked) {

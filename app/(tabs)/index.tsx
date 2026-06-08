@@ -17,6 +17,7 @@ import { showAchievementToast, showDailyGoalToast } from '../../components/Achie
 import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, weightEntryIsPlausible, getWeightMilestonesCrossed, isGoalWeightHit, handleDailyGoalHit, checkMomentumAchievements, checkSleepAchievements, getCelebTier } from '../../achievementData';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { storageSet } from '../../utils/storage';
+import { cancelWaterPaceNotification } from '../../services/notifications';
 import { VERSES, resolveDailyVerse } from '../../data/verses';
 import FaithTodayCard from '../../components/FaithTodayCard';
 import { loadCalorieTargets } from '../../utils/calorieTarget';
@@ -593,6 +594,7 @@ export default function HomeScreen() {
       showToast('Water removed', `-${Math.abs(deltaOz)} oz · ${newWater} oz total`, 'info');
     }
     if (deltaOz > 0 && newWater >= waterGoal && prev < waterGoal) {
+      cancelWaterPaceNotification();
       const { fired, count: hitCount } = await handleDailyGoalHit('water');
       if (fired) {
         showCelebration('small', 'WATER GOAL'); showDailyGoalToast('Water Goal', hitCount, 'water', '#3b82f6');

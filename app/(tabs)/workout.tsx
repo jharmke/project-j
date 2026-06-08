@@ -15,6 +15,7 @@ import { showAchievementToast } from '../../components/AchievementToast';
 import { showCelebration } from '../../components/CelebrationOverlay';
 import { checkWorkoutAchievements, getCelebTier } from '../../achievementData';
 import { storageSet } from '../../utils/storage';
+import { cancelActivityNotification } from '../../services/notifications';
 import { useTheme } from '../../theme';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import { useHealthKit } from '../../useHealthKit';
@@ -577,10 +578,12 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
   const toggleExercise = (id: string) => {
   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   const dayChecks = checks[activeDay] || {};
-  const newDayChecks = { ...dayChecks, [id]: !dayChecks[id] };
+  const nowChecked = !dayChecks[id];
+  const newDayChecks = { ...dayChecks, [id]: nowChecked };
   const newChecks = { ...checks, [activeDay]: newDayChecks };
   setChecks(newChecks);
   saveState(newChecks);
+  if (nowChecked && activeDay === todayKey) cancelActivityNotification();
 };
 
   const toggleCardio = (day: string) => {

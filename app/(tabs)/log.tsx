@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { storageSet } from '../../utils/storage';
+import { cancelWaterPaceNotification } from '../../services/notifications';
 import { loadCalorieTargets } from '../../utils/calorieTarget';
 import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, handleDailyGoalHit, getCelebTier } from '../../achievementData';
 import { showAchievementToast, showDailyGoalToast } from '../../components/AchievementToast';
@@ -946,6 +947,7 @@ export default function LogScreen() {
       showToast('Water removed', `-${Math.abs(oz)} oz · ${newWater} oz total`, 'info');
     }
     if (oz > 0 && newWater >= waterGoal && prev < waterGoal && activeDate === todayKey) {
+      cancelWaterPaceNotification();
       const { fired, count: hitCount } = await handleDailyGoalHit('water');
       if (fired) {
         showCelebration('small', 'WATER GOAL'); showDailyGoalToast('Water Goal', hitCount, 'water', '#3b82f6');

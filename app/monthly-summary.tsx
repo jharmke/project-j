@@ -45,6 +45,12 @@ function chunkArray<T>(arr: T[], size: number): T[][] {
   return result;
 }
 
+function getPrevMonthKey(mk: string): string {
+  const [y, mo] = mk.split('-').map(Number);
+  if (mo === 1) return `${y - 1}-12`;
+  return `${y}-${String(mo - 1).padStart(2, '0')}`;
+}
+
 function SectionCard({ label, icon, score, pct, borderColor, children }: {
   label: string; icon: string; score: number | null; pct: string;
   borderColor: string; children?: React.ReactNode;
@@ -76,15 +82,20 @@ function SectionCard({ label, icon, score, pct, borderColor, children }: {
   );
 }
 
-function StatRow({ label, value, sub, valueColor, labelColor, subNode }: {
-  label: string; value: string; sub?: string; valueColor?: string; labelColor?: string; subNode?: React.ReactNode;
+function StatRow({ label, value, sub, valueColor, labelColor, subNode, deltaStr, deltaColor }: {
+  label: string; value: string; sub?: string; valueColor?: string; labelColor?: string; subNode?: React.ReactNode; deltaStr?: string; deltaColor?: string;
 }) {
   const { theme } = useTheme();
   return (
     <View style={{ paddingVertical: 8, borderTopWidth: 0.5, borderTopColor: theme.borderCard }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
         <Text style={{ fontSize: 13, color: labelColor ?? theme.textSecondary, fontFamily: 'DMSans_600SemiBold' }}>{label}</Text>
-        <Text style={{ fontSize: 13, color: valueColor ?? theme.textPrimary, fontFamily: 'DMSans_600SemiBold', paddingLeft: 8 }}>{value}</Text>
+        <View style={{ alignItems: 'flex-end', paddingLeft: 8 }}>
+          <Text style={{ fontSize: 13, color: valueColor ?? theme.textPrimary, fontFamily: 'DMSans_600SemiBold' }}>{value}</Text>
+          {!!deltaStr && (
+            <Text style={{ fontSize: 10, color: deltaColor ?? theme.textDim, fontFamily: 'DMSans_600SemiBold', marginTop: 1 }}>{deltaStr}</Text>
+          )}
+        </View>
       </View>
       {subNode ?? (!!sub && <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>{sub}</Text>)}
     </View>
@@ -197,6 +208,7 @@ export default function MonthlySummaryScreen() {
   const [selectedDayScore, setSelectedDayScore] = useState<any | null>(null);
   const [dayModalVisible, setDayModalVisible] = useState(false);
   const [faithJourney, setFaithJourney] = useState<'rooted' | 'exploring' | 'notrightnow'>('rooted');
+  const [prevData, setPrevData] = useState<MonthlySummaryData | null>(null);
 
   const shadowStyle = { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6 };
 
@@ -204,12 +216,14 @@ export default function MonthlySummaryScreen() {
     const load = async () => {
       if (!monthKey) { setLoading(false); return; }
       try {
-        const [raw, setRaw, homeCache] = await Promise.all([
+        const [raw, setRaw, homeCache, prev] = await Promise.all([
           loadMonthlySummary(monthKey),
           AsyncStorage.getItem('pj_settings'),
           loadCoachTipCache(),
+          loadMonthlySummary(getPrevMonthKey(monthKey)),
         ]);
         setData(raw);
+        setPrevData(prev && prev.daysScored >= 7 ? prev : null);
         const settings = setRaw ? JSON.parse(setRaw) : {};
         const mode = (settings.styleMode ?? 'balanced') as StyleMode;
         setStyleMode(mode);
@@ -295,6 +309,22 @@ export default function MonthlySummaryScreen() {
   const coachBody = coachCache ? resolveTipBody(coachCache) : null;
   const coachTone = coachCache?.packet.tone ?? 'corrective';
   const coachBorderColor = coachTone === 'positive' ? theme.statusGood : coachTone === 'care' ? theme.statusBad : accent;
+
+  const fmtDelta = (curr: number | null, prev: number | null | undefined, unit: string, decimals = 0): string | undefined => {
+    if (!prevData || curr === null || prev == null) return undefined;
+    const factor = Math.pow(10, decimals);
+    const rounded = Math.round((curr - prev) * factor) / factor;
+    if (rounded === 0) return undefined;
+    const abs = Math.abs(rounded);
+    const sign = rounded > 0 ? '+' : '-';
+    const num = decimals > 0 ? abs.toFixed(decimals) : abs.toLocaleString();
+    return `${sign}${num}${unit}`;
+  };
+
+  const upColor = (curr: number | null, prev: number | null | undefined): string => {
+    if (!prevData || curr === null || prev == null || Math.abs(curr - prev) < 0.5) return theme.textDim;
+    return curr > prev ? theme.statusGood : theme.statusBad;
+  };
 
   const deltaColor = (() => {
     if (weightChange === null) return theme.textSecondary;
@@ -447,6 +477,8 @@ export default function MonthlySummaryScreen() {
               label="Calories"
               labelColor={COLOR_NUTRITION}
               value={avgCalorieScore != null ? `${avgCalorieScore} / ${CAL_MAX}` : '--'}
+              deltaStr={fmtDelta(avgCalories, prevData?.avgCalories, ' kcal')}
+              deltaColor={theme.textDim}
               subNode={
                 <SubBlock
                   left={{ label: 'CONSUMED AVG', value: avgCalories !== null ? formatNumber(avgCalories) : '--' }}
@@ -462,6 +494,8 @@ export default function MonthlySummaryScreen() {
               label="Protein"
               labelColor={COLOR_NUTRITION}
               value={avgProteinScore != null ? `${avgProteinScore} / ${PROTEIN_MAX}` : '--'}
+              deltaStr={fmtDelta(avgProtein, prevData?.avgProtein, 'g')}
+              deltaColor={upColor(avgProtein, prevData?.avgProtein)}
               subNode={
                 <SubBlock
                   left={{ label: 'CONSUMED AVG', value: avgProtein !== null ? `${formatNumber(avgProtein)}g` : '--' }}
@@ -473,6 +507,8 @@ export default function MonthlySummaryScreen() {
               label="Water"
               labelColor={COLOR_NUTRITION}
               value={avgWaterScore != null ? `${avgWaterScore} / ${WATER_MAX}` : '--'}
+              deltaStr={fmtDelta(avgWater, prevData?.avgWater, ' oz', 1)}
+              deltaColor={upColor(avgWater, prevData?.avgWater)}
               subNode={
                 <SubBlock
                   left={{ label: 'CONSUMED AVG', value: avgWater !== null ? `${avgWater} oz` : '--' }}
@@ -505,6 +541,8 @@ export default function MonthlySummaryScreen() {
               label="Active calories"
               labelColor={COLOR_ACTIVITY}
               value={avgActiveCalScore != null ? `${avgActiveCalScore} / ${monthHadWorkouts ? '60' : '100'}` : (avgActiveCalories !== null ? `${formatNumber(avgActiveCalories)} kcal avg` : '--')}
+              deltaStr={fmtDelta(avgActiveCalories, prevData?.avgActiveCalories, ' kcal')}
+              deltaColor={upColor(avgActiveCalories, prevData?.avgActiveCalories)}
               subNode={avgActiveCalScore != null && avgActiveCalories !== null ? (
                 <SubBlock
                   left={{ label: 'ACTIVE CAL AVG', value: `${formatNumber(avgActiveCalories)} kcal` }}
@@ -517,6 +555,8 @@ export default function MonthlySummaryScreen() {
                 label="Workout"
                 labelColor={COLOR_ACTIVITY}
                 value={`${avgWorkoutScore} / 40`}
+                deltaStr={fmtDelta(workoutDays, prevData?.workoutDays, ' days')}
+                deltaColor={upColor(workoutDays, prevData?.workoutDays)}
                 subNode={
                   <SubBlock
                     left={{ label: 'DAYS ACTIVE', value: `${workoutDays} of ${daysInMonth}` }}
@@ -543,6 +583,8 @@ export default function MonthlySummaryScreen() {
               label="Sleep"
               labelColor={COLOR_RECOVERY}
               value={avgSleepCategoryScore != null ? `${avgSleepCategoryScore} / 100` : (avgSleepScore != null ? `${formatNumber(avgSleepScore)} / 100` : '--')}
+              deltaStr={fmtDelta(avgSleepHours, prevData?.avgSleepHours, 'h', 1)}
+              deltaColor={upColor(avgSleepHours, prevData?.avgSleepHours)}
               subNode={avgSleepHours !== null ? (
                 <SubBlock
                   left={{ label: 'AVG PER NIGHT', value: formatHours(avgSleepHours) }}

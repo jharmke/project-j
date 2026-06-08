@@ -676,6 +676,9 @@ export default function HomeScreen() {
   const [totalSugarAlcohols, setTotalSugarAlcohols] = useState(0);
   const [showNetCarbs,   setShowNetCarbs]   = useState(false);
   const [showMacroGearSheet, setShowMacroGearSheet] = useState(false);
+  const macroSheetAnim = useRef(new Animated.Value(300)).current;
+  const openMacroSheet = () => { setShowMacroGearSheet(true); };
+  const closeMacroSheet = () => { Animated.timing(macroSheetAnim, { toValue: 300, duration: 200, useNativeDriver: true }).start(() => setShowMacroGearSheet(false)); };
   const [stepGoal,       setStepGoal]       = useState(10000);
   const [sleepGoal,      setSleepGoal]      = useState(7);
   const [activeCalGoal,  setActiveCalGoal]  = useState(500);
@@ -1696,7 +1699,7 @@ export default function HomeScreen() {
           </View>
           <View style={{ flexDirection:'row', alignItems:'center', gap:10 }}>
             <Text style={{ fontSize:9, color: theme.textDim, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase' }}>vs goal</Text>
-            <TouchableOpacity onPress={() => setShowMacroGearSheet(true)} hitSlop={{ top:8, bottom:8, left:8, right:8 }}>
+            <TouchableOpacity onPress={() => openMacroSheet()} hitSlop={{ top:8, bottom:8, left:8, right:8 }}>
               <Ionicons name="settings" size={16} color={theme.textMuted} />
             </TouchableOpacity>
           </View>
@@ -3596,10 +3599,11 @@ export default function HomeScreen() {
       />
 
       {/* ── Macro gear modal ── */}
-      <Modal visible={showMacroGearSheet} transparent animationType="slide" onRequestClose={() => setShowMacroGearSheet(false)}>
-        <TouchableOpacity style={{ flex:1, backgroundColor:'rgba(0,0,0,0.55)', justifyContent:'flex-end' }} activeOpacity={1} onPress={() => setShowMacroGearSheet(false)}>
+      <Modal visible={showMacroGearSheet} transparent animationType="none" onRequestClose={closeMacroSheet}
+        onShow={() => { macroSheetAnim.setValue(300); Animated.timing(macroSheetAnim, { toValue: 0, duration: 280, useNativeDriver: true }).start(); }}>
+        <TouchableOpacity style={{ flex:1, backgroundColor:'rgba(0,0,0,0.55)', justifyContent:'flex-end' }} activeOpacity={1} onPress={closeMacroSheet}>
           <TouchableOpacity activeOpacity={1} onPress={() => {}}>
-            <View style={{ backgroundColor: theme.bgSheet, borderTopLeftRadius:18, borderTopRightRadius:18, borderTopWidth:1.5, borderTopColor: theme.accentBlueRaw, borderLeftWidth:0.5, borderRightWidth:0.5, borderColor: theme.borderCard, paddingTop:12, paddingHorizontal:20, paddingBottom: insets.bottom + 20 }}>
+            <Animated.View style={[{ backgroundColor: theme.bgSheet, borderTopLeftRadius:18, borderTopRightRadius:18, borderTopWidth:1.5, borderTopColor: theme.accentBlueRaw, borderLeftWidth:0.5, borderRightWidth:0.5, borderColor: theme.borderCard, paddingTop:12, paddingHorizontal:20, paddingBottom: insets.bottom + 20 }, { transform: [{ translateY: macroSheetAnim }] }]}>
               <View style={{ width:36, height:4, borderRadius:2, backgroundColor: theme.sheetHandle, alignSelf:'center', marginBottom:18 }} />
               <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:3, textTransform:'uppercase', marginBottom:16 }}>Macro Display</Text>
               <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between' }}>
@@ -3616,7 +3620,7 @@ export default function HomeScreen() {
                   Tip: you can set a specific net carbs goal in Settings {'>'} Goals.
                 </Text>
               )}
-            </View>
+            </Animated.View>
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>

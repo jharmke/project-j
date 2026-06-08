@@ -483,7 +483,7 @@ export default function DiagnosticReportViewScreen() {
           </View>
 
           {/* Summary */}
-          <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw, ...shadowStyle }]}>
+          <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw, ...shadowStyle, overflow: 'hidden' }]}>
             <Ionicons name="analytics" size={130} color={t.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.08 }} />
             <Text style={[styles.cardLabel, { color: t.textMuted, marginBottom: 8 }]}>SUMMARY</Text>
             <Text style={{ fontSize: 14, fontFamily: 'DMSans_400Regular', color: t.textSecondary, lineHeight: 22 }}>

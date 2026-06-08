@@ -5,7 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Keyboard, KeyboardAvoidingView, Modal, PanResponder, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { Alert, Animated, AppState, Keyboard, KeyboardAvoidingView, Modal, PanResponder, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Reanimated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, runOnJS } from 'react-native-reanimated';
@@ -34,8 +34,10 @@ const makeId = () => Math.random().toString(36).substr(2, 9);
 function getTodayDay() {
   return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date().getDay()];
 }
-const today = new Date();
-const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+const getWorkoutDateKey = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
 
 const getEffortLabel = (score: number | null | undefined): string => {
   if (!score) return '';
@@ -61,9 +63,31 @@ export default function WorkoutScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   const { showToast } = useToast();
-  const [activeDay, setActiveDay] = useState(todayKey);
-  const activeDayRef = useRef(todayKey);
+  const [todayKey, setTodayKey] = useState(getWorkoutDateKey);
+  const [activeDay, setActiveDay] = useState(getWorkoutDateKey);
+  const activeDayRef = useRef(getWorkoutDateKey());
   useEffect(() => { activeDayRef.current = activeDay; }, [activeDay]);
+
+  // Midnight rollover: update todayKey + snap activeDay to today when app resumes across midnight
+  useEffect(() => {
+    const checkRollover = () => {
+      const newKey = getWorkoutDateKey();
+      setTodayKey(prev => {
+        if (prev !== newKey) {
+          setActiveDay(newKey);
+          return newKey;
+        }
+        return prev;
+      });
+    };
+    const sub = AppState.addEventListener('change', state => {
+      if (state === 'active') checkRollover();
+    });
+    const now = new Date();
+    const msUntilMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() - now.getTime();
+    const timer = setTimeout(checkRollover, msUntilMidnight);
+    return () => { sub.remove(); clearTimeout(timer); };
+  }, []);
   const [loaded, setLoaded] = useState(false);
   const [checks, setChecks] = useState<Record<string, Record<string, boolean>>>({});
 const [cardioComplete, setCardioComplete] = useState<Record<string, boolean>>({});

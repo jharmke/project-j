@@ -133,6 +133,7 @@ export default function WeeklySummaryScreen() {
   const [selectedDayScore, setSelectedDayScore] = useState<any | null>(null);
   const [dayModalVisible, setDayModalVisible] = useState(false);
   const [faithJourney, setFaithJourney] = useState<'rooted' | 'exploring' | 'notrightnow'>('rooted');
+  const [activeCalGoal, setActiveCalGoal] = useState<number>(500);
 
   const shadowStyle = { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6 };
 
@@ -140,17 +141,20 @@ export default function WeeklySummaryScreen() {
     const load = async () => {
       if (!weekStart) { setLoading(false); return; }
       try {
-        const [raw, setRaw, homeCache] = await Promise.all([
+        const [raw, setRaw, profRaw, homeCache] = await Promise.all([
           loadWeeklySummary(weekStart),
           AsyncStorage.getItem('pj_settings'),
+          AsyncStorage.getItem('pj_profile'),
           loadCoachTipCache(),
         ]);
         setData(raw);
         const settings = setRaw ? JSON.parse(setRaw) : {};
+        const profile = profRaw ? JSON.parse(profRaw) : {};
         const mode = (settings.styleMode ?? 'balanced') as StyleMode;
         setStyleMode(mode);
         setIsMindful(mode === 'mindful');
         setFaithJourney((settings.faithJourney ?? 'rooted') as 'rooted' | 'exploring' | 'notrightnow');
+        setActiveCalGoal(parseInt(profile.activeCalGoal) || 500);
 
         if (raw) {
           const weekEnd = raw.weekEnd;
@@ -456,6 +460,7 @@ export default function WeeklySummaryScreen() {
               subNode={avgActiveCalScore != null && avgActiveCalories !== null ? (
                 <SubBlock
                   left={{ label: 'ACTIVE CAL AVG', value: `${formatNumber(avgActiveCalories)} kcal` }}
+                  right={{ label: 'ACTIVE CAL GOAL', value: `${activeCalGoal.toLocaleString()} kcal` }}
                 />
               ) : undefined}
             />
@@ -478,8 +483,8 @@ export default function WeeklySummaryScreen() {
                 right={{ label: 'STEP GOAL', value: stepGoalDays != null ? `${stepGoalDays} of 7` : '--' }}
               />
               <SubBlock
-                left={{ label: 'CARDIO DAYS', value: cardioDays != null ? `${cardioDays}` : '--' }}
-                right={{ label: 'LIFT DAYS', value: liftDays != null ? `${liftDays}` : '--' }}
+                left={{ label: 'CARDIO', value: cardioDays != null ? `${cardioDays}` : '--' }}
+                right={{ label: 'LIFT', value: liftDays != null ? `${liftDays}` : '--' }}
               />
             </View>
           </SectionCard>

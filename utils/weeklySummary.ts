@@ -332,10 +332,17 @@ export async function generateWeeklySummary(weekStart: string): Promise<WeeklySu
     const wPrograms = workoutState.programs || {};
     const wTemplate = workoutState.weeklyTemplate || {};
     const dayProgram = wPrograms[dk] || wTemplate[dayNameFromDateKey(dk)];
-    const dayType = dayProgram?.type || 'unassigned';
     if ((dayScore.activityDetail?.workoutScore ?? 0) > 0) {
-      if (dayType === 'cardio') cardioDays++;
-      else if (dayType === 'lift') liftDays++;
+      const exercises = Array.isArray(dayProgram?.exercises) ? dayProgram.exercises : [];
+      const dayChecks = (workoutState.checks || {})[dk] || {};
+      const cardioDone = (workoutState.cardioComplete || {})[dk] === true;
+      if (exercises.length > 0) {
+        const checked = exercises.filter((ex: any) => dayChecks[ex.id]);
+        cardioDays += checked.filter((ex: any) => ex.isCardio).length;
+        liftDays += checked.filter((ex: any) => !ex.isCardio).length;
+      } else if (cardioDone) {
+        cardioDays += 1;
+      }
     }
   }
 

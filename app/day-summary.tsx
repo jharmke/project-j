@@ -58,6 +58,8 @@ export default function DaySummaryScreen() {
   const [displayMode, setDisplayMode] = useState<StyleMode>('balanced');
   const styleMode: StyleMode = displayMode;
   const isMindful = styleMode === 'mindful';
+  const [cardioExerciseCount, setCardioExerciseCount] = useState<number | null>(null);
+  const [liftExerciseCount, setLiftExerciseCount] = useState<number | null>(null);
 
   // Tutorial spotlight targets (the tour lives on this page, not the modal).
   const ringRef = useTutorialTarget('ds_ring');
@@ -102,6 +104,23 @@ export default function DaySummaryScreen() {
         setExcluded(ex === true || (ex && typeof ex === 'object' && !!(ex.diet && ex.water && ex.exercise)));
         const inp = await buildDayScoreInput(date, new Date().toISOString());
         setInput(inp);
+
+        // Per-exercise cardio/lift counts for the Activity card display.
+        try {
+          const wsRaw = await AsyncStorage.getItem('pj_workout_state');
+          if (wsRaw) {
+            const ws = JSON.parse(wsRaw);
+            const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const [dy, dm, dd] = date.split('-').map(Number);
+            const dayName = DAY_NAMES[new Date(dy, dm - 1, dd).getDay()];
+            const program = (ws.programs || {})[date] || (ws.weeklyTemplate || {})[dayName] || null;
+            const exercises = Array.isArray(program?.exercises) ? program.exercises : [];
+            const dayChecks = (ws.checks || {})[date] || {};
+            const checked = exercises.filter((ex: any) => dayChecks[ex.id]);
+            setCardioExerciseCount(checked.filter((ex: any) => ex.isCardio).length);
+            setLiftExerciseCount(checked.filter((ex: any) => !ex.isCardio).length);
+          }
+        } catch {}
 
         // Current coaching mode + faith journey from live settings. Display and
         // narrative follow CURRENT mode (not the score's frozen mode), so the page
@@ -246,6 +265,30 @@ export default function DaySummaryScreen() {
       </View>
     );
   };
+
+  function SubBlock({ left, right }: { left: { label: string; value: string }; right?: { label: string; value: string } }) {
+    return (
+      <View style={{ flexDirection: 'row', marginTop: 6 }}>
+        <View style={{ flex: 1, alignItems: 'flex-start', paddingLeft: 2 }}>
+          <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 1.5 }}>{left.label}</Text>
+          <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, marginTop: 1 }}>{left.value}</Text>
+        </View>
+        {right && (
+          <View style={{ flex: 1, alignItems: 'flex-start', paddingLeft: 2 }}>
+            <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 1.5 }}>{right.label}</Text>
+            <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, marginTop: 1 }}>{right.value}</Text>
+          </View>
+        )}
+      </View>
+    );
+  }
+
+  function formatSleepHours(h: number | null): string {
+    if (h === null) return '--';
+    const hrs = Math.floor(h);
+    const mins = Math.round((h - hrs) * 60);
+    return mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`;
+  }
 
   // One sub-component row: name, the real numbers, and points earned.
   const SubRow = ({ name, detail, pts, subBlock, labelColor }: { name: string; detail?: string; pts?: string; subBlock?: React.ReactNode; labelColor?: string }) => (
@@ -402,11 +445,65 @@ export default function DaySummaryScreen() {
               <SubRow name="Movement" labelColor="#d4860a" detail={score.activityScore > 0 ? 'You moved your body today.' : 'A quiet day.'} />
             ) : ad.workoutScore !== null ? (
               <>
-                {input && <SubRow name="Active calories" labelColor="#d4860a" detail={`${adjustedActive} of ${input.activeCalGoal} kcal goal`} pts={`${Math.round(ad.activeCalScore)} / 60`} />}
-                {input && <SubRow name="Workout" labelColor="#d4860a" detail={input.workoutTotalCount > 0 ? `${input.workoutCompletedCount} of ${input.workoutTotalCount} exercises` : 'Cardio session complete'} pts={`${Math.round(ad.workoutScore)} / 40`} />}
+                {input && (
+                  <SubRow
+                    name="Active calories"
+                    labelColor="#d4860a"
+                    pts={`${Math.round(ad.activeCalScore)} / 60`}
+                    subBlock={
+                      <SubBlock
+                        left={{ label: 'ACTIVE CALORIES', value: `${adjustedActive.toLocaleString()} kcal` }}
+                        right={{ label: 'ACTIVE CAL GOAL', value: `${input.activeCalGoal.toLocaleString()} kcal` }}
+                      />
+                    }
+                  />
+                )}
+                {input && (
+                  <SubRow
+                    name="Workout"
+                    labelColor="#d4860a"
+                    pts={`${Math.round(ad.workoutScore)} / 40`}
+                    subBlock={
+                      <SubBlock
+                        left={input.workoutTotalCount > 0
+                          ? { label: 'COMPLETED', value: `${input.workoutCompletedCount}` }
+                          : { label: 'CARDIO', value: 'Complete' }}
+                        right={input.dayData?.exerciseMinutes ? { label: 'ACTIVE MINS', value: `${input.dayData.exerciseMinutes} min` } : undefined}
+                      />
+                    }
+                  />
+                )}
               </>
             ) : (
-              input && <SubRow name="Active calories" labelColor="#d4860a" detail={`${adjustedActive} kcal${input.dayType === 'rest' ? ' · rest day floor applied' : ''}`} pts={`${Math.round(ad.activeCalScore)} / 100`} />
+              input && (
+                <SubRow
+                  name="Active calories"
+                  labelColor="#d4860a"
+                  pts={`${Math.round(ad.activeCalScore)} / 100`}
+                  subBlock={
+                    <SubBlock
+                      left={{ label: 'ACTIVE CALORIES', value: `${adjustedActive.toLocaleString()} kcal` }}
+                      right={{ label: 'ACTIVE CAL GOAL', value: `${input.activeCalGoal.toLocaleString()} kcal` }}
+                    />
+                  }
+                />
+              )
+            )}
+            {(cardioExerciseCount !== null || liftExerciseCount !== null) && (
+              <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard, marginTop: 4, paddingTop: 4 }}>
+                <SubBlock
+                  left={{ label: 'CARDIO', value: cardioExerciseCount !== null ? `${cardioExerciseCount} ${cardioExerciseCount === 1 ? 'workout' : 'workouts'}` : '--' }}
+                  right={{ label: 'LIFT', value: liftExerciseCount !== null ? `${liftExerciseCount} ${liftExerciseCount === 1 ? 'workout' : 'workouts'}` : '--' }}
+                />
+              </View>
+            )}
+            {input && input.steps > 0 && (
+              <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard, marginTop: 4, paddingTop: 4 }}>
+                <SubBlock
+                  left={{ label: 'STEPS', value: input.steps.toLocaleString() }}
+                  right={{ label: 'STEP GOAL', value: input.stepGoal > 0 ? input.stepGoal.toLocaleString() : '--' }}
+                />
+              </View>
             )}
           </SectionCard>
         ) : (
@@ -420,10 +517,29 @@ export default function DaySummaryScreen() {
         {/* RECOVERY */}
         {score.sleepScore !== null && sd ? (
           <SectionCard label="Recovery" icon="heart" value={score.sleepScore} weightPct={catPct(CATEGORY_WEIGHTS.sleep)} innerRef={recoveryRef} categoryColor="#9b7adb">
-            <SubRow name="Sleep score" labelColor="#9b7adb" detail={`Raw ${Math.round(sd.rawSleepScore)} of 100`} pts={`${Math.round(sd.categoryScore)} / 100`} />
-            <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 8, lineHeight: 16, fontStyle: 'italic' }}>
-              Logged sleep never scores below 50, so a rough night will not tank your day.
-            </Text>
+            <SubRow
+              name="Sleep"
+              labelColor="#9b7adb"
+              pts={`${Math.round(sd.categoryScore)} / 100`}
+              subBlock={input?.sleepHours != null ? (
+                <SubBlock
+                  left={{ label: 'SLEEP DURATION', value: formatSleepHours(input.sleepHours) }}
+                  right={input.sleepGoal ? { label: 'SLEEP GOAL', value: formatSleepHours(input.sleepGoal) } : undefined}
+                />
+              ) : undefined}
+            />
+            {(input?.dayData?.restingHR != null || input?.dayData?.respiratoryRate != null || input?.dayData?.vo2Max != null || input?.dayData?.cardioRecovery != null) && (
+              <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard, marginTop: 4, paddingTop: 4 }}>
+                <SubBlock
+                  left={{ label: 'RESTING HR', value: input?.dayData?.restingHR != null ? `${input.dayData.restingHR} bpm` : '--' }}
+                  right={{ label: 'RESP RATE', value: input?.dayData?.respiratoryRate != null ? `${input.dayData.respiratoryRate}/min` : '--' }}
+                />
+                <SubBlock
+                  left={{ label: 'VO2 MAX', value: input?.dayData?.vo2Max != null ? `${input.dayData.vo2Max}` : '--' }}
+                  right={{ label: 'CARDIO RECOVERY', value: input?.dayData?.cardioRecovery != null ? `${input.dayData.cardioRecovery}` : '--' }}
+                />
+              </View>
+            )}
           </SectionCard>
         ) : (
           <SectionCard label="Recovery" icon="heart" value={null} innerRef={recoveryRef} categoryColor="#9b7adb">

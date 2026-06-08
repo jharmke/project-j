@@ -22,8 +22,6 @@ import { storageSet } from '../../utils/storage';
 import { calcSleepScore } from '../../utils/sleepScore';
 import { loadDayScoreArchive, findMostRecentTourDay, ArchiveWeek, ArchiveDay } from '../../utils/dayScoreStore';
 import { loadWeeklySummary, WeeklySummaryData } from '../../utils/weeklySummary';
-import { DayScore } from '../../utils/dayScore';
-import DaySummaryModal from '../../components/DaySummaryModal';
 import { archiveNav } from '../../utils/archiveNav';
 import { showToolkit } from '../../components/ToolkitSheet';
 import { useTutorial } from '../../context/TutorialContext';
@@ -251,9 +249,7 @@ export default function StatsScreen() {
   const [archiveWeeks, setArchiveWeeks] = useState<ArchiveWeek[]>([]);
   const [archiveLoading, setArchiveLoading] = useState(true);
   const [expandedWeeks, setExpandedWeeks] = useState<Record<string, boolean>>({});
-  // Tapping a past day reopens that day's summary card (same modal as the morning pop-up).
-  const [archiveSummary, setArchiveSummary] = useState<{ score: DayScore; dateKey: string } | null>(null);
-  // VIEW FULL SUMMARY handoff: open the Reports section and scroll to the archive.
+// VIEW FULL SUMMARY handoff: open the Reports section and scroll to the archive.
   const [reportsSectionForceOpen, setReportsSectionForceOpen] = useState(false);
   const reportsLayoutY = useRef<number | null>(null);
   // Archive calendar picker: jump straight to a week.
@@ -2488,19 +2484,7 @@ export default function StatsScreen() {
         </Modal>
       )}
 
-      {/* Day summary card for a tapped archive day (same modal as the morning pop-up) */}
-      {archiveSummary && (
-        <DaySummaryModal
-          score={archiveSummary.score}
-          dateKey={archiveSummary.dateKey}
-          theme={theme}
-          styleMode={styleMode.toLowerCase() as 'discipline' | 'balanced' | 'mindful'}
-          faithJourney={faithJourney}
-          onClose={() => { setArchiveSummary(null); loadArchive(); }}
-        />
-      )}
-
-      {/* Archive calendar picker: jump to any scored day's week */}
+{/* Archive calendar picker: jump to any scored day's week */}
       {showArchiveCalendar && (() => {
         const now2 = new Date();
         const todayKey2 = `${now2.getFullYear()}-${String(now2.getMonth() + 1).padStart(2, '0')}-${String(now2.getDate()).padStart(2, '0')}`;

@@ -608,6 +608,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
   const editOverlayAnim = useRef(new Animated.Value(0)).current;
   const editCardAnim = useRef(new Animated.Value(0)).current;
   const mealDropdownAnim = useRef(new Animated.Value(0)).current;
+  const timePickerAnim = useRef(new Animated.Value(0)).current;
   const servingPickerAnim = useRef(new Animated.Value(0)).current;
 
   // When async My Foods lookup resolves, update servingCount to match the real base serving
@@ -877,6 +878,10 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
 
   const closeMealPicker = () => {
     Animated.timing(mealDropdownAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => setShowMealPicker(false));
+  };
+
+  const closeTimePicker = () => {
+    Animated.timing(timePickerAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => setShowTimePicker(false));
   };
 
   const closeEditFoodModal = () => {
@@ -1330,7 +1335,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           <Text style={styles.noDataText}>No detailed nutrition data. Calories will be logged as entered.</Text>
         )}
 {/* Timestamp */}
-        <TouchableOpacity style={styles.mealSelector} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowTimePicker(true); }}>
+        <TouchableOpacity style={styles.mealSelector} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); timePickerAnim.setValue(0); setShowTimePicker(true); }}>
           <Text style={styles.mealSelectorLabel}>Time logged</Text>
           <Text style={styles.mealSelectorValue}>
             {isEditing && date && (() => {
@@ -1346,27 +1351,38 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           </Text>
         </TouchableOpacity>
 
-        {showTimePicker && (
-          <View>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowTimePicker(false); }}>
-                <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium' }}>Cancel</Text>
+        <Modal
+          visible={showTimePicker}
+          transparent
+          animationType="none"
+          onShow={() => Animated.timing(timePickerAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start()}
+          onRequestClose={closeTimePicker}>
+          <Animated.View style={[styles.modalOverlay, { opacity: timePickerAnim }]}>
+            <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={closeTimePicker} />
+            <View style={styles.modal} pointerEvents="box-none">
+              <View style={{ width: 36, height: 4, backgroundColor: theme.borderCard, borderRadius: 2, alignSelf: 'center', marginBottom: 16 }} />
+              <Text style={styles.modalTitle}>Time logged</Text>
+              <View style={{ alignItems: 'center' }}>
+                <DateTimePicker
+                  mode="time"
+                  value={entryTime}
+                  display="spinner"
+                  textColor={theme.textPrimary}
+                  style={{ width: Dimensions.get('window').width - 48 }}
+                  onChange={(event, date) => {
+                    if (date) { Haptics.selectionAsync(); setEntryTime(date); setHasChanges(true); }
+                  }}
+                />
+              </View>
+              <TouchableOpacity style={{ padding: 16, alignItems: 'center', marginTop: 4 }} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeTimePicker(); }}>
+                <Text style={{ fontSize: 15, color: theme.accentGreen, fontFamily: 'DMSans_600SemiBold' }}>Confirm</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowTimePicker(false); }}>
-                <Text style={{ color: theme.accentGreen, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Confirm</Text>
+              <TouchableOpacity style={{ paddingBottom: 8, paddingTop: 4, alignItems: 'center' }} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeTimePicker(); }}>
+                <Text style={{ fontSize: 15, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>Cancel</Text>
               </TouchableOpacity>
             </View>
-            <DateTimePicker
-              mode="time"
-              value={entryTime}
-              display="spinner"
-              textColor={theme.textPrimary}
-              onChange={(event, date) => {
-                if (date) { setEntryTime(date); setHasChanges(true); }
-              }}
-            />
-          </View>
-        )}
+          </Animated.View>
+        </Modal>
 
        {/* Meal selector -- opens floating modal */}
 <TouchableOpacity
@@ -1406,7 +1422,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           {(currentMeal === slot.id || currentMeal === slot.name) && <Ionicons name="checkmark" size={16} color={theme.accentBlue} />}
         </TouchableOpacity>
       ))}
-      <TouchableOpacity style={{ padding: 16, alignItems: 'center', marginTop: 4 }} onPress={closeMealPicker}>
+      <TouchableOpacity style={{ padding: 16, alignItems: 'center', marginTop: 4 }} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeMealPicker(); }}>
         <Text style={{ fontSize: 15, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>Cancel</Text>
       </TouchableOpacity>
     </View>

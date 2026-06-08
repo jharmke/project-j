@@ -875,6 +875,10 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
     ]).start();
   };
 
+  const closeMealPicker = () => {
+    Animated.timing(mealDropdownAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => setShowMealPicker(false));
+  };
+
   const closeEditFoodModal = () => {
     Animated.parallel([
       Animated.timing(editOverlayAnim, { toValue: 0, duration: 150, useNativeDriver: true }),
@@ -1364,53 +1368,50 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           </View>
         )}
 
-       {/* Meal selector -- inline dropdown */}
+       {/* Meal selector -- opens floating modal */}
 <TouchableOpacity
   ref={mealSelectorRef as any}
   style={styles.mealSelector}
   onPress={() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (showMealPicker) {
-      Animated.timing(mealDropdownAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => setShowMealPicker(false));
-    } else {
-      mealDropdownAnim.setValue(0);
-      setShowMealPicker(true);
-      Animated.timing(mealDropdownAnim, { toValue: 1, duration: 180, useNativeDriver: true }).start();
-    }
+    mealDropdownAnim.setValue(0);
+    setShowMealPicker(true);
   }}>
   <Text style={styles.mealSelectorLabel}>Adding to</Text>
-  <Text style={styles.mealSelectorValue}>{mealSlots.find(s => s.id === currentMeal || s.name === currentMeal)?.name ?? currentMeal} {showMealPicker ? '▲' : '▼'}</Text>
+  <Text style={styles.mealSelectorValue}>{mealSlots.find(s => s.id === currentMeal || s.name === currentMeal)?.name ?? currentMeal} ▼</Text>
 </TouchableOpacity>
-{showMealPicker && (
-  <Animated.View style={{
-    opacity: mealDropdownAnim,
-    transform: [{ translateY: mealDropdownAnim.interpolate({ inputRange: [0, 1], outputRange: [-6, 0] }) }],
-    backgroundColor: theme.bgSheet,
-    borderWidth: 1,
-    borderColor: theme.borderCard,
-    borderTopWidth: 1.5,
-    borderTopColor: theme.accentBlueRaw,
-    borderRadius: 10,
-    overflow: 'hidden',
-    marginBottom: 10,
-    marginTop: -6,
-  }}>
-    {mealSlots.map((slot, i) => (
-      <TouchableOpacity
-        key={slot.id}
-        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: i < mealSlots.length - 1 ? 1 : 0, borderBottomColor: theme.borderSubtle }}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          setCurrentMeal(slot.id);
-          setHasChanges(true);
-          Animated.timing(mealDropdownAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => setShowMealPicker(false));
-        }}>
-        <Text style={{ fontSize: 15, color: (currentMeal === slot.id || currentMeal === slot.name) ? theme.accentBlue : theme.textSecondary, fontFamily: (currentMeal === slot.id || currentMeal === slot.name) ? 'DMSans_600SemiBold' : 'DMSans_400Regular' }}>{slot.name}</Text>
-        {(currentMeal === slot.id || currentMeal === slot.name) && <Ionicons name="checkmark" size={16} color={theme.accentBlue} />}
+
+<Modal
+  visible={showMealPicker}
+  transparent
+  animationType="none"
+  onShow={() => Animated.timing(mealDropdownAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start()}
+  onRequestClose={closeMealPicker}>
+  <Animated.View style={[styles.modalOverlay, { opacity: mealDropdownAnim }]}>
+    <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={closeMealPicker} />
+    <View style={styles.modal} pointerEvents="box-none">
+      <View style={{ width: 36, height: 4, backgroundColor: theme.borderCard, borderRadius: 2, alignSelf: 'center', marginBottom: 16 }} />
+      <Text style={styles.modalTitle}>Adding to</Text>
+      {mealSlots.map((slot) => (
+        <TouchableOpacity
+          key={slot.id}
+          style={[styles.mealOption, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setCurrentMeal(slot.id);
+            setHasChanges(true);
+            closeMealPicker();
+          }}>
+          <Text style={[styles.mealOptionText, (currentMeal === slot.id || currentMeal === slot.name) && { color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }]}>{slot.name}</Text>
+          {(currentMeal === slot.id || currentMeal === slot.name) && <Ionicons name="checkmark" size={16} color={theme.accentBlue} />}
+        </TouchableOpacity>
+      ))}
+      <TouchableOpacity style={{ padding: 16, alignItems: 'center', marginTop: 4 }} onPress={closeMealPicker}>
+        <Text style={{ fontSize: 15, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>Cancel</Text>
       </TouchableOpacity>
-    ))}
+    </View>
   </Animated.View>
-)}
+</Modal>
 
 <TouchableOpacity
   ref={saveButtonRef as any}

@@ -150,6 +150,14 @@ function normalizeFsServing(food: any): SearchResult | null {
   } catch { return null; }
 }
 
+function normalizeForMatch(s: string): string {
+  return s.toLowerCase().replace(/[-']/g, ' ').replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
+}
+
+function normalizeQueryForApi(q: string): string {
+  return q.replace(/-/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
 async function fetchFatSecretSearch(q: string): Promise<SearchResult[]> {
   try {
     const apiParams = {
@@ -871,8 +879,9 @@ const saveEditFood = async () => {
     setSearching(true);
 
     // My Foods match immediately -- no debounce needed
+    const nq = normalizeForMatch(query);
     const myFoodResults = myFoods
-      .filter(f => f.name.toLowerCase().includes(query.toLowerCase()))
+      .filter(f => normalizeForMatch(f.name).includes(nq))
       .map(f => ({
         description: f.name,
         brand: f.brand || null,
@@ -893,11 +902,12 @@ const saveEditFood = async () => {
       setSearching(true);
 
       try {
-        const fsResults = await fetchFatSecretSearch(query.trim());
+        const fsResults = await fetchFatSecretSearch(normalizeQueryForApi(query.trim()));
+        const matchingRecents = recentFoods.filter(r => normalizeForMatch(r.description).includes(nq));
 
         // Only apply if this is still the latest search
         if (thisSearchId === searchIdRef.current) {
-          setResults([...myFoodResults, ...fsResults]);
+          setResults([...matchingRecents, ...myFoodResults, ...fsResults]);
         }
       } catch (e) {
         console.log('Search error', e);
@@ -1607,10 +1617,10 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
             <TouchableOpacity style={[styles.resultItem, (item as any).isOverride && styles.resultItemSet]} onPress={() => openFoodDetail(item)}>
               <View style={styles.resultLeft}>
                 {/* Badges */}
-                {(item.isMyFood || item.isRecipe) && (
-                  <View style={item.isRecipe ? [styles.savedBadge, { backgroundColor: theme.accentGreenBg }] : styles.savedBadge}>
-                    <Text style={item.isRecipe ? [styles.savedBadgeText, { color: theme.accentGreen }] : styles.savedBadgeText}>
-                      {item.isRecipe ? 'RECIPE' : 'SAVED'}
+                {(item.isMyFood || item.isRecipe || (item.isRecent && query.trim())) && (
+                  <View style={item.isRecipe ? [styles.savedBadge, { backgroundColor: theme.accentGreenBg }] : item.isRecent && query.trim() ? [styles.savedBadge, { backgroundColor: theme.bgProgressTrack }] : styles.savedBadge}>
+                    <Text style={item.isRecipe ? [styles.savedBadgeText, { color: theme.accentGreen }] : item.isRecent && query.trim() ? [styles.savedBadgeText, { color: theme.textMuted }] : styles.savedBadgeText}>
+                      {item.isRecipe ? 'RECIPE' : item.isRecent && query.trim() ? 'RECENT' : 'SAVED'}
                     </Text>
                   </View>
                 )}

@@ -807,6 +807,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
   foodNutrients: baseNutrients,
   timestamp: entryTime.getTime(),
   fsId: food.fsId || null,
+  ...(food.type === 'supplement' ? { type: 'supplement' } : {}),
 };
       if (isEditing) {
         entries[parseInt(entryIndex)] = { ...entries[parseInt(entryIndex)], ...newEntry };

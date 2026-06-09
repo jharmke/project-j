@@ -2994,7 +2994,7 @@ export default function HomeScreen() {
         <View style={{ flexDirection:'row', alignItems:'center', gap:12, flex:1 }}>
           <HeaderAvatar />
           <View style={{ flex:1 }}>
-            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>
+            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={[styles.headerTitle, { color: theme.accentBlueRaw, fontSize: 28 }]}>
               {(() => { const h=new Date().getHours(); return h<12?'Good morning':h<17?'Good afternoon':'Good evening'; })()}
             </Text>
             <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', marginTop:1, letterSpacing:2, textTransform:'uppercase' }}>

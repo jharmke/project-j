@@ -165,7 +165,7 @@ export default function ProfileScreen() {
   const hasChangesRef = useRef(false);
 
   useEffect(() => {
-    const show = Keyboard.addListener('keyboardDidShow', e => { console.log('KB HEIGHT:', e.endCoordinates.height); setKeyboardHeight(e.endCoordinates.height); });
+    const show = Keyboard.addListener('keyboardDidShow', e => { setKeyboardHeight(e.endCoordinates.height); });
     const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardHeight(0));
     return () => { show.remove(); hide.remove(); };
   }, []);
@@ -292,9 +292,6 @@ export default function ProfileScreen() {
         hasChangesRef.current = true;
         setHasChanges(true);
         Animated.spring(floatAnim, { toValue: 1, useNativeDriver: true, tension: 65, friction: 11 }).start();
-        if (keyboardHeight > 0) {
-          scrollRef.current?.scrollTo({ y: scrollOffset.current + SAVE_BAR_HEIGHT, animated: true });
-        }
       } else if (!isDifferent && hasChanges) {
         hasChangesRef.current = false;
         setHasChanges(false);

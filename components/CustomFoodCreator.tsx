@@ -8,9 +8,7 @@ import {
   ActionSheetIOS,
   Animated,
   Image,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -68,10 +66,11 @@ interface CustomFoodCreatorProps {
     servingGrams?: number;
     servingLabel?: string;
     servingUnitType?: string;
+    type?: 'supplement' | 'food';
   };
 }
 
-const SERVING_UNITS = ['g', 'ml', 'fl oz', 'oz', 'container', 'serving', 'tbsp', 'tsp', 'cup'];
+const SERVING_UNITS = ['g', 'ml', 'fl oz', 'oz', 'container', 'serving', 'tbsp', 'tsp', 'cup', 'pill', 'capsule', 'tablet', 'softgel', 'gummy'];
 
 export default function CustomFoodCreator({ visible, onClose, onSaved, title, tutorialMode, prefill }: CustomFoodCreatorProps) {
   const { theme } = useTheme();
@@ -132,6 +131,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
   const [servingLabel, setServingLabel] = useState('');
   const [servingUnitType, setServingUnitType] = useState('g');
   const [additionalServings, setAdditionalServings] = useState<Array<{ id: string; label: string; grams: string }>>([]);
+  const [isSupplementType, setIsSupplementType] = useState(false);
   const [showOptional, setShowOptional] = useState(false);
   const optionalHeight = useRef(new Animated.Value(0)).current;
   const optionalMeasured = useRef(0);
@@ -203,6 +203,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
         setServingGrams(prefill.servingGrams?.toString() || '');
         setServingLabel(prefill.servingLabel || '');
         setServingUnitType(prefill.servingUnitType || 'g');
+        setIsSupplementType(prefill.type === 'supplement');
         const hasOptional = !!(prefill.protein || prefill.carbs || prefill.fat || prefill.fiber || prefill.sugar || prefill.sodium || prefill.servingGrams);
         if (hasOptional) {
           setShowOptional(true);
@@ -244,6 +245,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
     setMagnesium(''); setZinc(''); setCopper(''); setCaffeine('');
     setServingGrams(''); setServingLabel(''); setServingUnitType('g');
     setAdditionalServings([]);
+    setIsSupplementType(false);
     setPendingPhotoUri(null);
     setShowOptional(false);
     optionalHeight.setValue(0);
@@ -345,6 +347,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
         carbsPer100g: carbs ? Math.round((parseFloat(carbs) / grams) * 100 * 10) / 10 : 0,
         fatPer100g: fat ? Math.round((parseFloat(fat) / grams) * 100 * 10) / 10 : 0,
         isCustom: true,
+        type: isSupplementType ? 'supplement' : 'food',
         foodNutrients: [
           { nutrientName: 'Energy', unitName: 'KCAL', value: parseInt(calories) },
           { nutrientName: 'Protein', unitName: 'G', value: parseFloat(protein) || 0 },
@@ -412,13 +415,9 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
   // ── Shared card content (same JSX for both Modal and inline paths) ────────
   const cardContent = (
     <Animated.View ref={cardRef as any} style={[s.card, { transform: [{ scale: cardScale }] }]}>
+      <View style={{ height: 4, width: 40, backgroundColor: theme.borderCard, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 }} />
       <View style={s.header}>
         <Text style={s.title}>{title ? title.toUpperCase() : 'CREATE FOOD'}</Text>
-        {!tutorialMode && (
-          <TouchableOpacity onPress={handleClose} style={s.closeBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Ionicons name="close" size={20} color={theme.textMuted} />
-          </TouchableOpacity>
-        )}
       </View>
       <ScrollView
         ref={scrollViewRef}
@@ -426,8 +425,27 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
         contentContainerStyle={s.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        automaticallyAdjustKeyboardInsets={true}
       >
         <Text style={s.requiredNote}>* Required</Text>
+
+        {/* Type selector */}
+        <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
+          <TouchableOpacity
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setIsSupplementType(false); }}
+            style={{ flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: 10, borderWidth: 1.5, backgroundColor: !isSupplementType ? theme.accentBlueBg : theme.bgInput, borderColor: !isSupplementType ? theme.accentBlueBorder : theme.borderInput }}
+          >
+            <Ionicons name="nutrition" size={18} color={!isSupplementType ? theme.accentBlue : theme.textMuted} />
+            <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', marginTop: 4, color: !isSupplementType ? theme.accentBlue : theme.textMuted }}>Food</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setIsSupplementType(true); }}
+            style={{ flex: 1, alignItems: 'center', paddingVertical: 12, borderRadius: 10, borderWidth: 1.5, backgroundColor: isSupplementType ? theme.accentBlueBg : theme.bgInput, borderColor: isSupplementType ? theme.accentBlueBorder : theme.borderInput }}
+          >
+            <Ionicons name="medical" size={18} color={isSupplementType ? theme.accentBlue : theme.textMuted} />
+            <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', marginTop: 4, color: isSupplementType ? theme.accentBlue : theme.textMuted }}>Supplement</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Food Name */}
         <View style={s.fieldRow}>
@@ -503,7 +521,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
               {SERVING_UNITS.map(u => (
                 <TouchableOpacity
                   key={u}
-                  onPress={() => setServingUnitType(u)}
+                  onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setServingUnitType(u); }}
                   style={{
                     paddingHorizontal: 10, paddingVertical: 5,
                     borderRadius: 6, borderWidth: 1,
@@ -536,7 +554,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, marginTop: 4 }}>
               <Text style={[s.sectionLabel, { marginTop: 0, marginBottom: 0 }]}>Additional Servings</Text>
               <TouchableOpacity
-                onPress={() => setAdditionalServings(prev => [...prev, { id: `as_${Date.now()}`, label: '', grams: '' }])}
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setAdditionalServings(prev => [...prev, { id: `as_${Date.now()}`, label: '', grams: '' }]); }}
                 style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4 }}
               >
                 <Ionicons name="add" size={12} color={theme.accentBlue} />
@@ -587,7 +605,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
           <TouchableOpacity
             ref={optionalToggleRef as any}
             style={s.optionalToggle}
-            onPress={toggleOptional}
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); toggleOptional(); }}
           >
             <Text style={s.optionalToggleText}>Macros &amp; Extended Nutrition</Text>
             <Ionicons name={showOptional ? 'chevron-up' : 'chevron-down'} size={14} color={theme.accentBlue} />
@@ -805,12 +823,10 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
   // ── Normal Modal render ───────────────────────────────────────────────────
   return (
     <Modal visible={visible} transparent animationType="none" onRequestClose={handleClose}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <Animated.View style={[s.overlay, { opacity: overlayOpacity }]}>
-          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={handleClose} />
-          {cardContent}
-        </Animated.View>
-      </KeyboardAvoidingView>
+      <Animated.View style={[s.overlay, { opacity: overlayOpacity }]}>
+        <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleClose(); }} />
+        {cardContent}
+      </Animated.View>
     </Modal>
   );
 }
@@ -822,7 +838,8 @@ const styles = (theme: any) => StyleSheet.create({
     borderRadius: 20,
     borderWidth: 0.5,
     borderColor: theme.borderCard,
-    borderTopColor: theme.borderCardTop,
+    borderTopWidth: 1.5,
+    borderTopColor: theme.accentBlueRaw,
     width: '100%',
     height: 600,
     shadowColor: '#000',

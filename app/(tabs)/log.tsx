@@ -1426,7 +1426,10 @@ export default function LogScreen() {
                           const amountLabel = amountMatch ? amountMatch[1] : null;
                           return (
                             <>
-                              <Text style={[styles.foodEntryName, { color: theme.textPrimary }]} numberOfLines={1}>{foodName}{amountLabel ? ` · ${amountLabel}` : ''}</Text>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                                {(entry as any).type === 'supplement' && <Ionicons name="medical" size={11} color={theme.textMuted} />}
+                                <Text style={[styles.foodEntryName, { color: theme.textPrimary }]} numberOfLines={1}>{foodName}{amountLabel ? ` · ${amountLabel}` : ''}</Text>
+                              </View>
                               {(entry.protein !== undefined || entry.carbs !== undefined || entry.fat !== undefined) ? (
                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 3 }}>
                                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>

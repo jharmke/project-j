@@ -1674,6 +1674,11 @@ export default function StatsScreen() {
         </View>
         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
           <TouchableOpacity
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/achievements' as any); }}
+            style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="trophy" size={14} color={theme.accentBlue} />
+          </TouchableOpacity>
+          <TouchableOpacity
             onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); }}
             style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="journal" size={14} color={theme.accentBlue} />

@@ -42,6 +42,7 @@ interface MyFood {
   fsId?: string | null;
   brand?: string;
   isCustom?: boolean;
+  type?: 'supplement' | 'food';
 }
 
 interface SearchResult {
@@ -410,7 +411,7 @@ const filterDecimal = (v: string) => {
   return stripped.slice(0, dot + 1) + stripped.slice(dot + 1).replace(/\./g, '').slice(0, 1);
 };
 
-const EDIT_SERVING_UNITS = ['g', 'ml', 'fl oz', 'oz', 'container', 'serving', 'tbsp', 'tsp', 'cup'];
+const EDIT_SERVING_UNITS = ['g', 'ml', 'fl oz', 'oz', 'container', 'serving', 'tbsp', 'tsp', 'cup', 'pill', 'capsule', 'tablet', 'softgel', 'gummy'];
 
 const openEditModal = (food: any) => {
   setEditFoodData({
@@ -434,6 +435,20 @@ const openEditModal = (food: any) => {
     calcium: food.calcium?.toString() || '',
     iron: food.iron?.toString() || '',
     sugarAlcohols: food.sugarAlcohols?.toString() || '',
+    addedSugars: food.addedSugars?.toString() || '',
+    transFat: food.transFat?.toString() || '',
+    vitaminD: food.vitaminD?.toString() || '',
+    vitaminE: food.vitaminE?.toString() || '',
+    vitaminK: food.vitaminK?.toString() || '',
+    vitaminB6: food.vitaminB6?.toString() || '',
+    folate: food.folate?.toString() || '',
+    vitaminB12: food.vitaminB12?.toString() || '',
+    biotin: food.biotin?.toString() || '',
+    magnesium: food.magnesium?.toString() || '',
+    zinc: food.zinc?.toString() || '',
+    copper: food.copper?.toString() || '',
+    caffeine: food.caffeine?.toString() || '',
+    type: food.type || 'food',
     servingGrams: food.servingSize?.toString() || '100',
     servingUnitType: food.servingUnitType || 'g',
     servingLabel: food.servingUnit || '',
@@ -494,6 +509,20 @@ const saveEditFood = async () => {
         calcium: parseFloat(editFoodData.calcium) || 0,
         iron: parseFloat(editFoodData.iron) || 0,
         sugarAlcohols: parseFloat(editFoodData.sugarAlcohols) || 0,
+        addedSugars: parseFloat(editFoodData.addedSugars) || 0,
+        transFat: parseFloat(editFoodData.transFat) || 0,
+        vitaminD: parseFloat(editFoodData.vitaminD) || 0,
+        vitaminE: parseFloat(editFoodData.vitaminE) || 0,
+        vitaminK: parseFloat(editFoodData.vitaminK) || 0,
+        vitaminB6: parseFloat(editFoodData.vitaminB6) || 0,
+        folate: parseFloat(editFoodData.folate) || 0,
+        vitaminB12: parseFloat(editFoodData.vitaminB12) || 0,
+        biotin: parseFloat(editFoodData.biotin) || 0,
+        magnesium: parseFloat(editFoodData.magnesium) || 0,
+        zinc: parseFloat(editFoodData.zinc) || 0,
+        copper: parseFloat(editFoodData.copper) || 0,
+        caffeine: parseFloat(editFoodData.caffeine) || 0,
+        type: editFoodData.type || 'food',
         servingSize: servingGrams,
         servingUnitType,
         servingUnit: servingLabel,
@@ -862,6 +891,7 @@ const saveEditFood = async () => {
         brand: f.brand || null,
         isCustom: f.isCustom || true,
         servingSize: f.servingSize,
+        type: f.type || 'food',
         foodNutrients: [
           { nutrientName: 'Energy', unitName: 'KCAL', value: f.cal },
           { nutrientName: 'Protein', unitName: 'G', value: f.protein || 0 },
@@ -897,6 +927,7 @@ const saveEditFood = async () => {
       .map(f => ({
         description: f.name,
         brand: f.brand || null,
+        type: f.type || 'food',
         foodNutrients: [
           { nutrientName: 'Energy', unitName: 'KCAL', value: f.cal },
           { nutrientName: 'Protein', unitName: 'G', value: f.protein || 0 },
@@ -1596,27 +1627,51 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
             _pinnedBarcode: barcode,
             isPinned: true,
           }))) :
-          applySortToFoodItems(myFoods.map(f => ({
-            description: f.name,
-            brand: f.brand || null,
-            foodNutrients: [
-              { nutrientName: 'Energy', unitName: 'KCAL', value: f.cal },
-              { nutrientName: 'Protein', unitName: 'G', value: f.protein || 0 },
-              { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: f.carbs || 0 },
-              { nutrientName: 'Total lipid (fat)', unitName: 'G', value: f.fat || 0 },
-            ],
-            isMyFood: true,
-          servingSize: (f as any).servingSize || null,
-          servingUnit: (f as any).servingUnit || null,
-          isCustom: (f as any).isCustom || false,
-          })))
+          (() => {
+            const regularFoods = applySortToFoodItems(myFoods.filter(f => f.type !== 'supplement').map(f => ({
+              description: f.name, brand: f.brand || null,
+              foodNutrients: [
+                { nutrientName: 'Energy', unitName: 'KCAL', value: f.cal },
+                { nutrientName: 'Protein', unitName: 'G', value: f.protein || 0 },
+                { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: f.carbs || 0 },
+                { nutrientName: 'Total lipid (fat)', unitName: 'G', value: f.fat || 0 },
+              ],
+              isMyFood: true, servingSize: (f as any).servingSize || null,
+              servingUnit: (f as any).servingUnit || null, isCustom: (f as any).isCustom || false,
+              type: f.type || 'food',
+            })));
+            const supplements = applySortToFoodItems(myFoods.filter(f => f.type === 'supplement').map(f => ({
+              description: f.name, brand: f.brand || null,
+              foodNutrients: [
+                { nutrientName: 'Energy', unitName: 'KCAL', value: f.cal },
+                { nutrientName: 'Protein', unitName: 'G', value: f.protein || 0 },
+                { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: f.carbs || 0 },
+                { nutrientName: 'Total lipid (fat)', unitName: 'G', value: f.fat || 0 },
+              ],
+              isMyFood: true, servingSize: (f as any).servingSize || null,
+              servingUnit: (f as any).servingUnit || null, isCustom: (f as any).isCustom || false,
+              type: 'supplement' as const,
+            })));
+            if (supplements.length === 0) return regularFoods;
+            return [...regularFoods, { _isSuppDivider: true } as any, ...supplements];
+          })()
         }
         keyExtractor={(_, i) => i.toString()}
         renderItem={({ item, index }) => {
+          if ((item as any)._isSuppDivider) {
+            return (
+              <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 10, gap: 10 }}>
+                <View style={{ flex: 1, height: 0.5, backgroundColor: theme.borderCard }} />
+                <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, color: theme.textMuted, textTransform: 'uppercase' }}>Supplements</Text>
+                <View style={{ flex: 1, height: 0.5, backgroundColor: theme.borderCard }} />
+              </View>
+            );
+          }
           const macros = getMacros(item);
           const nameParts = item.description.split(' · ');
           const foodName = nameParts[0];
           const brandName = (item as any).brand || (nameParts.length > 1 ? nameParts.slice(1).join(' · ') : null);
+          const isSupplement = (item as any).type === 'supplement';
           return (
             <Animated.View
               ref={
@@ -1637,7 +1692,10 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                   </View>
                 )}
                 {/* Food name + brand */}
-                <Text style={styles.resultName} numberOfLines={1}>{foodName}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                  {isSupplement && <Ionicons name="medical" size={11} color={theme.textMuted} />}
+                  <Text style={styles.resultName} numberOfLines={1}>{foodName}</Text>
+                </View>
                 <Text style={[styles.resultBrand, !brandName && { color: theme.textDim }]} numberOfLines={1}>{brandName || 'Unbranded'}</Text>
                 {/* Macro strip */}
                 {macros && (
@@ -1912,7 +1970,24 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
             }}>
               <View style={{ height: 4, width: 40, backgroundColor: theme.borderCard, borderRadius: 2, alignSelf: 'center', marginTop: 12 }} />
               <Text style={{ fontSize: 16, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, textAlign: 'center', marginTop: 8, marginBottom: 4 }}>EDIT FOOD</Text>
-              <ScrollView style={{ maxHeight: 580 }} contentContainerStyle={{ padding: 16, paddingTop: 8 }} keyboardShouldPersistTaps="handled">
+              <ScrollView style={{ maxHeight: 600 }} contentContainerStyle={{ padding: 16, paddingTop: 8 }} keyboardShouldPersistTaps="handled">
+                {/* Type selector */}
+                <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
+                  <TouchableOpacity
+                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditFoodData((p: any) => p ? { ...p, type: 'food' } : null); }}
+                    style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, backgroundColor: editFoodData?.type !== 'supplement' ? theme.accentBlueBg : theme.bgInput, borderColor: editFoodData?.type !== 'supplement' ? theme.accentBlueBorder : theme.borderInput }}
+                  >
+                    <Ionicons name="nutrition" size={16} color={editFoodData?.type !== 'supplement' ? theme.accentBlue : theme.textMuted} />
+                    <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', marginTop: 3, color: editFoodData?.type !== 'supplement' ? theme.accentBlue : theme.textMuted }}>Food</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditFoodData((p: any) => p ? { ...p, type: 'supplement' } : null); }}
+                    style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 10, borderWidth: 1.5, backgroundColor: editFoodData?.type === 'supplement' ? theme.accentBlueBg : theme.bgInput, borderColor: editFoodData?.type === 'supplement' ? theme.accentBlueBorder : theme.borderInput }}
+                  >
+                    <Ionicons name="medical" size={16} color={editFoodData?.type === 'supplement' ? theme.accentBlue : theme.textMuted} />
+                    <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', marginTop: 3, color: editFoodData?.type === 'supplement' ? theme.accentBlue : theme.textMuted }}>Supplement</Text>
+                  </TouchableOpacity>
+                </View>
                 {/* Basic Info */}
                 <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Basic Info</Text>
                 {([
@@ -1967,7 +2042,13 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                   [{ label: 'SATURATED FAT (g)',     key: 'saturatedFat' },       { label: 'POLY FAT (g)',       key: 'polyunsaturatedFat' }],
                   [{ label: 'MONO FAT (g)',          key: 'monounsaturatedFat' }, { label: 'VITAMIN A (mcg)',    key: 'vitaminA' }],
                   [{ label: 'VITAMIN C (mg)',        key: 'vitaminC' },           { label: 'CALCIUM (mg)',       key: 'calcium' }],
-                  [{ label: 'IRON (mg)',             key: 'iron' },               null],
+                  [{ label: 'IRON (mg)',             key: 'iron' },               { label: 'ADDED SUGARS (g)',    key: 'addedSugars' }],
+                  [{ label: 'TRANS FAT (g)',        key: 'transFat' },           { label: 'VITAMIN D (mcg)',     key: 'vitaminD' }],
+                  [{ label: 'VITAMIN E (mg)',        key: 'vitaminE' },           { label: 'VITAMIN K (mcg)',     key: 'vitaminK' }],
+                  [{ label: 'VITAMIN B6 (mg)',       key: 'vitaminB6' },          { label: 'FOLATE (mcg)',        key: 'folate' }],
+                  [{ label: 'VITAMIN B12 (mcg)',     key: 'vitaminB12' },         { label: 'BIOTIN (mcg)',        key: 'biotin' }],
+                  [{ label: 'MAGNESIUM (mg)',        key: 'magnesium' },          { label: 'ZINC (mg)',           key: 'zinc' }],
+                  [{ label: 'COPPER (mg)',           key: 'copper' },             { label: 'CAFFEINE (mg)',       key: 'caffeine' }],
                 ].map((row, ri) => (
                   <View key={ri} style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
                     {row.map((f, fi) => f ? (

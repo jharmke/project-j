@@ -350,4 +350,106 @@ Existing `pj_my_foods` entries were saved before the new fields exist. When read
 - Stats graphs: specific nutrients (Vitamin D, sodium, fiber) could be graphable data keys in the future. Not in scope now -- flagged for SOON after this ships.
 - Weekly / Monthly summaries: no nutrition expansion planned. Summaries show calorie and macro totals only.
 - Diagnostic reports: reads from daily data, will auto-reflect new fields if we add them to the day aggregate. No dedicated UI change needed.
-- Supplements section (BACKLOG): the manual-entry approach for My Foods partially addresses the use case. Full Supplements feature remains in Backlog.
+
+---
+
+## 16. Supplement Tracking (SOON)
+
+Supplements are tagged custom foods, not a separate system. All nutrition fields stay -- supplements can and do have carbs, sugar, fat (e.g. gummy multivitamins). They count toward daily totals normally.
+
+### Data model change
+
+Add `type: 'supplement' | 'food'` to the MyFood interface. Default: `'food'`. Stored on the object in `pj_my_foods`. Backward compatible -- existing entries without the field read as `'food'`.
+
+### Create Food / Edit Food toggle
+
+Add a toggle at the top of CustomFoodCreator.tsx (and the Edit Food modal in food-detail.tsx and add-food.tsx). Label: "SUPPLEMENT" toggle using the existing ToggleSwitch component. When on, sets `type: 'supplement'`. No fields are removed -- all nutrition fields remain available since supplements can have any of them.
+
+### Serving unit additions
+
+Add supplement-appropriate units to the serving unit picker in CustomFoodCreator.tsx and edit modals. New units to add alongside existing (g, oz, ml, fl oz, cup, tbsp, tsp, serving):
+- **pill**
+- **capsule**
+- **tablet**
+- **softgel**
+- **gummy**
+
+These units map to `servingGrams: 0` (no gram equivalent) -- same pattern as "serving" unit. Calorie/nutrient values are per-unit as entered.
+
+### My Foods library (add-food.tsx)
+
+In the My Foods tab, supplements appear below all regular foods, separated by a section divider:
+- Divider: full-width row with "SUPPLEMENTS" label (cardLabel style: 9px, uppercase, letterSpacing 3, textMuted) + horizontal line on both sides
+- Supplements render below the divider in the same food row style as regular items, with a small pill icon (Ionicons `medical-outline`, size 12, textMuted) to the left of the food name
+- If no supplements exist, the divider does not render
+- Search filters across both sections simultaneously
+
+### Food log entry display (log.tsx)
+
+Logged supplement entries get a small pill icon (Ionicons `medical-outline`, size 12, textMuted) displayed inline before the entry name. No other visual change. Same tap behavior (opens food-detail).
+
+### No dedicated meal slot
+
+Supplements log to whatever meal slot the user selects -- no hardcoded "Supplements" slot. The pill icon is the only visual differentiator in the log.
+
+---
+
+## 17. %DV Entry in Create Food (SOON)
+
+Many nutrition labels (especially supplements) show only %DV for micronutrients without printing the actual mg/mcg amount. This system lets users enter either value and auto-fills the other.
+
+### FDA Daily Value reference table
+
+Baked into a constants file (e.g. `utils/nutrientDV.ts`). Fixed values, never changes at runtime. Used ONLY for %DV conversion math at input time -- completely separate from the user's personal nutrient goals.
+
+```typescript
+export const FDA_DAILY_VALUES: Record<string, number> = {
+  totalFat: 78,          // g
+  saturatedFat: 20,      // g
+  cholesterol: 300,      // mg
+  sodium: 2300,          // mg
+  totalCarbs: 275,       // g
+  fiber: 28,             // g
+  addedSugars: 50,       // g
+  vitaminD: 20,          // mcg
+  calcium: 1300,         // mg
+  iron: 18,              // mg
+  potassium: 4700,       // mg
+  vitaminA: 900,         // mcg
+  vitaminC: 90,          // mg
+  vitaminE: 15,          // mg
+  vitaminK: 120,         // mcg
+  vitaminB6: 1.7,        // mg
+  folate: 400,           // mcg
+  vitaminB12: 2.4,       // mcg
+  biotin: 30,            // mcg
+  magnesium: 420,        // mg
+  zinc: 11,              // mg
+  copper: 0.9,           // mg
+};
+// No DV: trans fat, polyunsaturated fat, monounsaturated fat, sugar, sugar alcohols, caffeine
+```
+
+### UI pattern in Create Food / Edit Food
+
+For every nutrient that has an FDA DV, the input row shows two fields side by side:
+
+```
+[ Vitamin C        ] [ 81    mg ] [ 90  % ]
+```
+
+- Left field (wider): actual amount in mg/mcg/g -- this is what gets stored
+- Right field (narrow, ~60px): %DV -- always shows the calculated percent
+- Both fields are editable and bidirectional:
+  - User types in the amount field: %DV field auto-calculates (`Math.round(value / DV * 100)`)
+  - User types in the %DV field: amount field auto-calculates (`Math.round(pct / 100 * DV * 10) / 10`)
+- Stored value is always the actual amount. %DV is display/entry convenience only.
+- Nutrients without an FDA DV (trans fat, poly fat, mono fat, sugar, sugar alcohols, caffeine) show only the amount field -- no %DV column.
+
+### No conflict with user goals
+
+The FDA DV table is math at input time only. Once a value is stored (e.g. 81mg vitamin C), the app compares it against the user's personal goal from `pj_settings.nutritionGoals`, which may be the Standard 90mg, a preset-adjusted value, or a custom override. The FDA DV played no role past the entry step.
+
+### Build note
+
+Add `FDA_DAILY_VALUES` to `utils/nutrientDV.ts`. Import in CustomFoodCreator.tsx and the edit food modals. The two-field input row is a small reusable component (e.g. `NutrientInputRow`) to avoid duplicating the bidirectional logic 20 times.

@@ -1302,35 +1302,40 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
         <Modal transparent animationType="fade" onRequestClose={() => setShowLabelModal(false)}>
           <TouchableOpacity style={{ ...StyleSheet.absoluteFillObject, backgroundColor: theme.overlayBg }} activeOpacity={1} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowLabelModal(false); }} />
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} pointerEvents="box-none">
-            <View style={{ backgroundColor: theme.bgCard, borderRadius: 12, padding: 20, width: '85%', borderWidth: 1, borderColor: theme.borderCard }}>
-              <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginBottom: 12 }}>EDIT DAY LABEL</Text>
-              <TextInput
-                style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, marginBottom: 16 }]}
-                value={labelInput}
-                onChangeText={setLabelInput}
-                placeholder="e.g. Push · Chest, Shoulders"
-                placeholderTextColor={theme.textPlaceholder}
-                autoFocus
-              />
-              <View style={{ flexDirection: 'row', gap: 8 }}>
-                <TouchableOpacity style={[styles.modalCancelBtn, { flex: 1, backgroundColor: theme.bgInput, borderColor: theme.borderInput }]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowLabelModal(false); }}>
-                  <Text style={[styles.modalCancelBtnText, { color: theme.textMuted }]}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.modalSaveBtn, { flex: 1, backgroundColor: theme.accentBlue }]} onPress={() => {
-                  triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
-                  const parts = labelInput.split('·').map(s => s.trim());
-                  const baseProgram = programs[activeDay] || weeklyTemplate[activeDayName];
-                  const newPrograms = {
-                    ...programs,
-                    [activeDay]: { ...baseProgram, customLabel: parts[0] || '', muscles: parts[1] || '' }
-                  };
-                  setPrograms({...newPrograms});
-                  setDayLabel(newPrograms[activeDay]?.customLabel || '');
-                  saveState(checks, cardioComplete, {...newPrograms}, workoutNotes, cardioLogs, weeklyTemplate);
-                  setShowLabelModal(false);
-                }}>
-                  <Text style={[styles.modalSaveBtnText, { color: theme.bgPrimary }]}>Save</Text>
-                </TouchableOpacity>
+            <View style={{ backgroundColor: theme.bgSheet, borderRadius: 16, width: '88%', borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 16, overflow: 'hidden' }}>
+              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowLabelModal(false); }} style={{ alignSelf: 'center', paddingTop: 12, paddingBottom: 4, paddingHorizontal: 20 }} hitSlop={{ top: 8, bottom: 8, left: 20, right: 20 }}>
+                <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
+              </TouchableOpacity>
+              <View style={{ padding: 20, paddingTop: 8 }}>
+                <Text style={{ color: theme.accentBlueRaw, fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, textAlign: 'center', marginBottom: 14 }}>EDIT DAY LABEL</Text>
+                <TextInput
+                  style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, marginBottom: 16 }]}
+                  value={labelInput}
+                  onChangeText={setLabelInput}
+                  placeholder="e.g. Push · Chest, Shoulders"
+                  placeholderTextColor={theme.textPlaceholder}
+                  autoFocus
+                />
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <TouchableOpacity style={[styles.modalCancelBtn, { flex: 1, backgroundColor: theme.bgInput, borderColor: theme.borderInput }]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowLabelModal(false); }}>
+                    <Text style={[styles.modalCancelBtnText, { color: theme.textMuted }]}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.modalSaveBtn, { flex: 1, backgroundColor: theme.accentBlue }]} onPress={() => {
+                    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+                    const parts = labelInput.split('·').map(s => s.trim());
+                    const baseProgram = programs[activeDay] || weeklyTemplate[activeDayName];
+                    const newPrograms = {
+                      ...programs,
+                      [activeDay]: { ...baseProgram, customLabel: parts[0] || '', muscles: parts[1] || '' }
+                    };
+                    setPrograms({...newPrograms});
+                    setDayLabel(newPrograms[activeDay]?.customLabel || '');
+                    saveState(checks, cardioComplete, {...newPrograms}, workoutNotes, cardioLogs, weeklyTemplate);
+                    setShowLabelModal(false);
+                  }}>
+                    <Text style={[styles.modalSaveBtnText, { color: theme.bgPrimary }]}>Save</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           </KeyboardAvoidingView>

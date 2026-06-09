@@ -817,7 +817,6 @@ export default function SettingsScreen() {
           <Ionicons name="arrow-back" size={22} color={theme.accentBlue} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={[styles.headerLabel, { color: theme.textMuted }]}>PROJECT J</Text>
           <TouchableOpacity onPress={() => {
             const next = devTapCount + 1;
             setDevTapCount(next);

@@ -408,11 +408,11 @@ export default function WeeklySummaryScreen() {
               value={avgCalorieScore != null ? `${avgCalorieScore} / ${CAL_MAX}` : '--'}
               subNode={
                 <SubBlock
-                  left={{ label: 'CONSUMED AVG', value: avgCalories !== null ? formatNumber(avgCalories) : '--' }}
+                  left={{ label: 'CONSUMED AVG', value: avgCalories !== null ? `${formatNumber(avgCalories)} kcal` : '--' }}
                   right={
                     !isMindful && avgNet !== null
-                      ? { label: avgNet < 0 ? 'DEFICIT' : 'SURPLUS', value: formatNumber(Math.abs(avgNet)) }
-                      : { label: 'DAILY GOAL', value: formatNumber(calTarget) }
+                      ? { label: avgNet < 0 ? 'DEFICIT' : 'SURPLUS', value: `${formatNumber(Math.abs(avgNet))} kcal` }
+                      : { label: 'DAILY GOAL', value: `${formatNumber(calTarget)} kcal` }
                   }
                 />
               }

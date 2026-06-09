@@ -685,6 +685,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
 };
 
   const saveNote = async () => {
+    Keyboard.dismiss();
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     const noteText = workoutNotes[activeDay]?.trim() || '';
     const isClearing = !noteText;
@@ -858,7 +859,6 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={[styles.container, { paddingTop: insets.top }]}>
         <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
@@ -883,7 +883,8 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
         ref={mainScrollRef}
         style={{ flex: 1 }}
         contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled">
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets={true}>
 
         <View ref={dayScrollerRef} collapsable={false} style={{ marginBottom: 16 }}>
         <ScrollView
@@ -1299,7 +1300,8 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
       {/* Label Modal */}
       {showLabelModal && (
         <Modal transparent animationType="fade" onRequestClose={() => setShowLabelModal(false)}>
-          <TouchableOpacity style={{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center' }} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowLabelModal(false); }}>
+          <TouchableOpacity style={{ ...StyleSheet.absoluteFillObject, backgroundColor: theme.overlayBg }} activeOpacity={1} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowLabelModal(false); }} />
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} pointerEvents="box-none">
             <View style={{ backgroundColor: theme.bgCard, borderRadius: 12, padding: 20, width: '85%', borderWidth: 1, borderColor: theme.borderCard }}>
               <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginBottom: 12 }}>EDIT DAY LABEL</Text>
               <TextInput
@@ -1331,7 +1333,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                 </TouchableOpacity>
               </View>
             </View>
-          </TouchableOpacity>
+          </KeyboardAvoidingView>
         </Modal>
       )}
 
@@ -1730,7 +1732,6 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
       )}
 
     </LinearGradient>
-    </KeyboardAvoidingView>
     </GestureHandlerRootView>
   );
 }

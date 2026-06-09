@@ -693,13 +693,13 @@ NOW -- Session 64 gym list (Justin, 2026-05-31)
 NOW: gym notes batch (2026-06-09, bugs + polish + haptics)
 
   BUGS / POLISH:
-  [ ] BUG: Status bar overlap -- app content rendering behind iPhone's native status bar (battery/time/signal). This is a SafeAreaView / useSafeAreaInsets issue, not a border. Every screen's top-level View or ScrollView must respect insets.top. Worth an app-wide audit since it affects all screens if the root layout is not handling it correctly. (NOW)
+  [~] BUG: Status bar overlap -- audit run 2026-06-09. All 36 screens already use insets.top. Bug likely stale or visual-test-only; no code fix needed. Monitor on TestFlight.
   [ ] BUG: Gratitude streak saver UX -- saver was consumed silently: count dropped from 2 to 1 with no warning or explanation. Functionally correct but the UX is vague. Needs either a pre-save warning ("You'll use a streak saver for missing yesterday") or a clear toast explaining what happened after the fact. Low complexity, high trust impact. (NOW)
-  [ ] BUG: "Project J" label still showing in Settings header -- was removed from the 5 tab headers during the faith structure work but Settings is a Stack screen and was not in scope. Needs an app-wide scan of ALL Stack screens for the same issue. (NOW)
-  [ ] POLISH: Summaries > Nutrition > Calories missing "kcal" unit label. Quick fix. (NOW)
-  [ ] BUG: Prayer card "Ask for Prayer" button overlapping carousel dot indicators. Button sitting too low. (NOW)
-  [ ] BUG: Workout tab -- Edit Day Label modal has black box appearing behind keyboard. Matches the pattern of KAV fixes already in roadmap. (NOW)
-  [ ] BUG: Workout tab -- Workout notes keyboard not auto-dismissing on save. (NOW)
+  [x] BUG: "Project J" label still showing in Settings header -- FIXED 2026-06-09. Removed headerLabel Text "PROJECT J" from settings.tsx. Stack screen audit confirmed this was the only remaining instance. settings.tsx.
+  [x] POLISH: Summaries > Nutrition > Calories missing "kcal" unit label -- FIXED 2026-06-09. CONSUMED AVG, DEFICIT/SURPLUS, and DAILY GOAL values in the Calories StatRow now include "kcal". weekly-summary.tsx + monthly-summary.tsx.
+  [x] BUG: Prayer card "Ask for Prayer" button overlapping carousel dot indicators -- FIXED 2026-06-09. haloBtn in FaithTodayCard.tsx had no marginBottom; dots are position absolute bottom: 10 so button overlapped them. Added marginBottom: 8 to haloBtn style (applies to Reflect with Halo page 1 and Ask for prayer page 3). FaithTodayCard.tsx.
+  [x] BUG: Workout tab -- Edit Day Label modal black box behind keyboard -- FIXED 2026-06-09. Outer KAV wrapping entire workout tab fired when modal TextInput got focus, shifting background content. Fix: removed outer KAV, added automaticallyAdjustKeyboardInsets to main ScrollView, restructured Label Modal with absolute overlay + KAV inside per CLAUDE.md pattern. workout.tsx.
+  [x] BUG: Workout tab -- Workout notes keyboard not dismissing on save -- FIXED 2026-06-09. Added Keyboard.dismiss() at top of saveNote(). workout.tsx.
 
   FAITH HUB HOME CARD (FaithTodayCard.tsx):
   [x] Faith hub home card amber glow restored -- SHIPPED 2026-06-09. glow style was using black shadow (#000, opacity 0.18). Updated to match faith tab VotdCard: shadowColor #d4860a, opacity 0.85, offset {0,0}, radius 8, elevation 8.

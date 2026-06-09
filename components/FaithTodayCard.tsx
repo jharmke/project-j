@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 14, fontFamily: 'DMSans_700Bold' },
   verseText: { fontSize: 17, lineHeight: 27, marginBottom: 12, fontFamily: 'Lora_500Medium', textAlign: 'center' },
   verseRef: { fontSize: 9, fontFamily: 'DMSans_700Bold', textAlign: 'center', letterSpacing: 2, textTransform: 'uppercase' },
-  haloBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderRadius: 6, paddingVertical: 9, paddingHorizontal: 12, minHeight: 44, marginTop: 10 },
+  haloBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderRadius: 6, paddingVertical: 9, paddingHorizontal: 12, minHeight: 44, marginTop: 10, marginBottom: 8 },
   haloBtnText: { fontSize: 12, fontFamily: 'DMSans_600SemiBold' },
   cols: { flexDirection: 'row' },
   col: { flex: 1 },

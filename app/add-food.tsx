@@ -1956,7 +1956,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
       <Modal visible={showEditMyFood} transparent animationType="none">
         <Animated.View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', opacity: editOverlayAnim }} />
         <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={closeEditModal} />
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} pointerEvents="box-none">
             <Animated.View style={{
               width: '92%',
               backgroundColor: theme.bgSheet,
@@ -1970,7 +1970,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
             }}>
               <View style={{ height: 4, width: 40, backgroundColor: theme.borderCard, borderRadius: 2, alignSelf: 'center', marginTop: 12 }} />
               <Text style={{ fontSize: 16, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, textAlign: 'center', marginTop: 8, marginBottom: 4 }}>EDIT FOOD</Text>
-              <ScrollView style={{ maxHeight: 600 }} contentContainerStyle={{ padding: 16, paddingTop: 8 }} keyboardShouldPersistTaps="handled">
+              <ScrollView style={{ maxHeight: 600 }} contentContainerStyle={{ padding: 16, paddingTop: 8 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets={true}>
                 {/* Type selector */}
                 <View style={{ flexDirection: 'row', gap: 10, marginBottom: 14 }}>
                   <TouchableOpacity
@@ -2032,39 +2032,63 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                     </View>
                   ))}
                 </View>
-                {/* Extended Nutrition -- 2 column pairs */}
-                <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
-                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Extended Nutrition</Text>
-                {[
-                  [{ label: 'FIBER (g)',            key: 'fiber' },              { label: 'SUGAR (g)',          key: 'sugar' }],
-                  [{ label: 'SUGAR ALCOHOLS (g)',    key: 'sugarAlcohols' },      { label: 'SODIUM (mg)',        key: 'sodium' }],
-                  [{ label: 'CHOLESTEROL (mg)',      key: 'cholesterol' },        { label: 'POTASSIUM (mg)',     key: 'potassium' }],
-                  [{ label: 'SATURATED FAT (g)',     key: 'saturatedFat' },       { label: 'POLY FAT (g)',       key: 'polyunsaturatedFat' }],
-                  [{ label: 'MONO FAT (g)',          key: 'monounsaturatedFat' }, { label: 'VITAMIN A (mcg)',    key: 'vitaminA' }],
-                  [{ label: 'VITAMIN C (mg)',        key: 'vitaminC' },           { label: 'CALCIUM (mg)',       key: 'calcium' }],
-                  [{ label: 'IRON (mg)',             key: 'iron' },               { label: 'ADDED SUGARS (g)',    key: 'addedSugars' }],
-                  [{ label: 'TRANS FAT (g)',        key: 'transFat' },           { label: 'VITAMIN D (mcg)',     key: 'vitaminD' }],
-                  [{ label: 'VITAMIN E (mg)',        key: 'vitaminE' },           { label: 'VITAMIN K (mcg)',     key: 'vitaminK' }],
-                  [{ label: 'VITAMIN B6 (mg)',       key: 'vitaminB6' },          { label: 'FOLATE (mcg)',        key: 'folate' }],
-                  [{ label: 'VITAMIN B12 (mcg)',     key: 'vitaminB12' },         { label: 'BIOTIN (mcg)',        key: 'biotin' }],
-                  [{ label: 'MAGNESIUM (mg)',        key: 'magnesium' },          { label: 'ZINC (mg)',           key: 'zinc' }],
-                  [{ label: 'COPPER (mg)',           key: 'copper' },             { label: 'CAFFEINE (mg)',       key: 'caffeine' }],
-                ].map((row, ri) => (
-                  <View key={ri} style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
-                    {row.map((f, fi) => f ? (
-                      <View key={f.key} style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, marginBottom: 4 }}>{f.label}</Text>
-                        <TextInput
-                          style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: 'DMSans_400Regular' }}
-                          value={editFoodData?.[f.key] || ''}
-                          onChangeText={v => setEditFoodData((p: any) => p ? { ...p, [f.key]: filterDecimal(v) } : null)}
-                          keyboardType="decimal-pad"
-                          placeholder="--"
-                          placeholderTextColor={theme.textDim}
-                          selectTextOnFocus
-                        />
+                {/* Extended Nutrition -- organized sections */}
+                {(
+                  [
+                    { header: 'Carbs & Sugars', prefix: 'cs', rows: [
+                      [{ label: 'FIBER (g)', key: 'fiber' }, { label: 'SUGAR (g)', key: 'sugar' }],
+                      [{ label: 'SUGAR ALCOHOLS (g)', key: 'sugarAlcohols' }, { label: 'ADDED SUGARS (g)', key: 'addedSugars' }],
+                    ]},
+                    { header: 'Fats', prefix: 'fa', rows: [
+                      [{ label: 'SATURATED FAT (g)', key: 'saturatedFat' }, { label: 'POLY FAT (g)', key: 'polyunsaturatedFat' }],
+                      [{ label: 'MONO FAT (g)', key: 'monounsaturatedFat' }, { label: 'TRANS FAT (g)', key: 'transFat' }],
+                    ]},
+                    { header: 'Other Nutrients', prefix: 'on', rows: [
+                      [{ label: 'SODIUM (mg)', key: 'sodium' }, { label: 'CHOLESTEROL (mg)', key: 'cholesterol' }],
+                      [{ label: 'POTASSIUM (mg)', key: 'potassium' }, null],
+                    ]},
+                    { header: 'Vitamins A & C', prefix: 'va', rows: [
+                      [{ label: 'VITAMIN A (mcg)', key: 'vitaminA' }, { label: 'VITAMIN C (mg)', key: 'vitaminC' }],
+                      [{ label: 'CALCIUM (mg)', key: 'calcium' }, { label: 'IRON (mg)', key: 'iron' }],
+                    ]},
+                    { header: 'Vitamins D, E, K', prefix: 'vd', rows: [
+                      [{ label: 'VITAMIN D (mcg)', key: 'vitaminD' }, { label: 'VITAMIN E (mg)', key: 'vitaminE' }],
+                      [{ label: 'VITAMIN K (mcg)', key: 'vitaminK' }, null],
+                    ]},
+                    { header: 'B Vitamins', prefix: 'bv', rows: [
+                      [{ label: 'B6 (mg)', key: 'vitaminB6' }, { label: 'FOLATE (mcg)', key: 'folate' }],
+                      [{ label: 'B12 (mcg)', key: 'vitaminB12' }, { label: 'BIOTIN (mcg)', key: 'biotin' }],
+                    ]},
+                    { header: 'Minerals', prefix: 'mn', rows: [
+                      [{ label: 'MAGNESIUM (mg)', key: 'magnesium' }, { label: 'ZINC (mg)', key: 'zinc' }],
+                      [{ label: 'COPPER (mg)', key: 'copper' }, null],
+                    ]},
+                    { header: 'Other', prefix: 'ot', rows: [
+                      [{ label: 'CAFFEINE (mg)', key: 'caffeine' }, null],
+                    ]},
+                  ] as { header: string; prefix: string; rows: (({ label: string; key: string } | null)[])[] }[]
+                ).map(section => (
+                  <View key={section.prefix}>
+                    <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
+                    <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>{section.header}</Text>
+                    {section.rows.map((row, ri) => (
+                      <View key={`${section.prefix}${ri}`} style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
+                        {row.map((f, fi) => f ? (
+                          <View key={f.key} style={{ flex: 1 }}>
+                            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, marginBottom: 4 }}>{f.label}</Text>
+                            <TextInput
+                              style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, paddingVertical: 10, paddingHorizontal: 8, fontSize: 14, fontFamily: 'DMSans_400Regular' }}
+                              value={editFoodData?.[f.key] || ''}
+                              onChangeText={v => setEditFoodData((p: any) => p ? { ...p, [f.key]: filterDecimal(v) } : null)}
+                              keyboardType="decimal-pad"
+                              placeholder="--"
+                              placeholderTextColor={theme.textDim}
+                              selectTextOnFocus
+                            />
+                          </View>
+                        ) : <View key={fi} style={{ flex: 1 }} />)}
                       </View>
-                    ) : <View key={fi} style={{ flex: 1 }} />)}
+                    ))}
                   </View>
                 ))}
                 {/* Serving */}
@@ -2170,7 +2194,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                 </TouchableOpacity>
               </View>
             </Animated.View>
-        </KeyboardAvoidingView>
+        </View>
       </Modal>
 
       {/* Camera */}

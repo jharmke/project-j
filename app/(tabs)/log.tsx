@@ -19,6 +19,7 @@ import { showAchievementToast, showDailyGoalToast } from '../../components/Achie
 import { showCelebration } from '../../components/CelebrationOverlay';
 import TooltipIcon from '../../components/TooltipIcon';
 import NutritionGearModal, { NUTRITION_PRESETS, NutritionGoals, NutritionPreset } from '../../components/NutritionGearModal';
+import NutrientDrilldownModal, { DrilldownItem } from '../../components/NutrientDrilldownModal';
 import { useTheme } from '../../theme';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import { useToast } from '../../components/Toast';
@@ -177,6 +178,8 @@ export default function LogScreen() {
   const [nutritionPreset, setNutritionPreset] = useState<NutritionPreset>('standard');
   const [nutritionGoals, setNutritionGoals] = useState<NutritionGoals>({ ...NUTRITION_PRESETS.standard });
   const [showNutritionGear, setShowNutritionGear] = useState(false);
+  const [showDrilldown, setShowDrilldown] = useState(false);
+  const [drilldownItem, setDrilldownItem] = useState<DrilldownItem | null>(null);
   const [caloriesBurned, setCaloriesBurned] = useState(0);
   const today = new Date();
   const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -1117,59 +1120,59 @@ export default function LogScreen() {
           {
             key: 'carbs', name: 'CARBS',
             items: [
-              { label: 'Total Carbs',  value: totalCarbs,        unit: 'g',  dir: 'neutral',   goal: null as number | null },
-              { label: 'Added Sugars', value: totalAddedSugars,  unit: 'g',  dir: 'want-less', goal: g.addedSugars },
-              { label: 'Fiber',        value: totalFiber,        unit: 'g',  dir: 'want-more', goal: g.fiber },
-              { label: 'Sugar',        value: totalSugar,        unit: 'g',  dir: 'want-less', goal: g.sugar },
-              { label: 'Sugar Alc.',   value: totalSugarAlcohols, unit: 'g', dir: 'neutral',   goal: null as number | null },
-              { label: 'Net Carbs',    value: totalNetCarbs,     unit: 'g',  dir: 'neutral',   goal: null as number | null },
+              { label: 'Total Carbs',  value: totalCarbs,         unit: 'g',  dir: 'neutral',   goal: null as number | null, directField: 'carbs' },
+              { label: 'Added Sugars', value: totalAddedSugars,   unit: 'g',  dir: 'want-less', goal: g.addedSugars,         nutrientKey: 'Added Sugars' },
+              { label: 'Fiber',        value: totalFiber,         unit: 'g',  dir: 'want-more', goal: g.fiber,               nutrientKey: 'Fiber, total dietary' },
+              { label: 'Sugar',        value: totalSugar,         unit: 'g',  dir: 'want-less', goal: g.sugar,               nutrientKey: 'Sugars, total including NLEA' },
+              { label: 'Sugar Alc.',   value: totalSugarAlcohols, unit: 'g',  dir: 'neutral',   goal: null as number | null, nutrientKey: 'Sugar Alcohols' },
+              { label: 'Net Carbs',    value: totalNetCarbs,      unit: 'g',  dir: 'neutral',   goal: null as number | null },
             ],
           },
           {
             key: 'fats', name: 'FATS',
             items: [
-              { label: 'Sat. Fat',   value: totalSatFat,   unit: 'g', dir: 'want-less', goal: g.saturatedFat },
-              { label: 'Trans Fat',  value: totalTransFat, unit: 'g', dir: 'want-less', goal: g.transFat },
-              { label: 'Poly Fat',   value: totalPolyFat,  unit: 'g', dir: 'neutral',   goal: null as number | null },
-              { label: 'Mono Fat',   value: totalMonoFat,  unit: 'g', dir: 'neutral',   goal: null as number | null },
+              { label: 'Sat. Fat',   value: totalSatFat,   unit: 'g', dir: 'want-less', goal: g.saturatedFat, nutrientKey: 'Fatty acids, total saturated' },
+              { label: 'Trans Fat',  value: totalTransFat, unit: 'g', dir: 'want-less', goal: g.transFat,     nutrientKey: 'Trans Fat' },
+              { label: 'Poly Fat',   value: totalPolyFat,  unit: 'g', dir: 'neutral',   goal: null as number | null, nutrientKey: 'Polyunsaturated Fat' },
+              { label: 'Mono Fat',   value: totalMonoFat,  unit: 'g', dir: 'neutral',   goal: null as number | null, nutrientKey: 'Monounsaturated Fat' },
             ],
           },
           {
             key: 'core', name: 'CORE',
             items: [
-              { label: 'Cholesterol', value: totalCholesterol, unit: 'mg', dir: 'want-less', goal: g.cholesterol },
-              { label: 'Sodium',      value: totalSodium,      unit: 'mg', dir: 'want-less', goal: g.sodium },
-              { label: 'Potassium',   value: totalPotassium,   unit: 'mg', dir: 'want-more', goal: g.potassium },
-              { label: 'Caffeine',    value: totalCaffeine,    unit: 'mg', dir: 'want-less', goal: g.caffeine },
+              { label: 'Cholesterol', value: totalCholesterol, unit: 'mg', dir: 'want-less', goal: g.cholesterol, nutrientKey: 'Cholesterol' },
+              { label: 'Sodium',      value: totalSodium,      unit: 'mg', dir: 'want-less', goal: g.sodium,      nutrientKey: 'Sodium, Na' },
+              { label: 'Potassium',   value: totalPotassium,   unit: 'mg', dir: 'want-more', goal: g.potassium,   nutrientKey: 'Potassium, K' },
+              { label: 'Caffeine',    value: totalCaffeine,    unit: 'mg', dir: 'want-less', goal: g.caffeine,    nutrientKey: 'Caffeine' },
             ],
           },
           {
             key: 'vitamins', name: 'VITAMINS',
             items: [
-              { label: 'Vitamin A', value: totalVitaminA, unit: 'mcg', dir: 'want-more', goal: g.vitaminA },
-              { label: 'Vitamin C', value: totalVitaminC, unit: 'mg',  dir: 'want-more', goal: g.vitaminC },
-              { label: 'Vitamin D', value: totalVitaminD, unit: 'mcg', dir: 'want-more', goal: g.vitaminD },
-              { label: 'Vitamin E', value: totalVitaminE, unit: 'mg',  dir: 'want-more', goal: g.vitaminE },
-              { label: 'Vitamin K', value: totalVitaminK, unit: 'mcg', dir: 'want-more', goal: g.vitaminK },
+              { label: 'Vitamin A', value: totalVitaminA, unit: 'mcg', dir: 'want-more', goal: g.vitaminA, nutrientKey: 'Vitamin A' },
+              { label: 'Vitamin C', value: totalVitaminC, unit: 'mg',  dir: 'want-more', goal: g.vitaminC, nutrientKey: 'Vitamin C' },
+              { label: 'Vitamin D', value: totalVitaminD, unit: 'mcg', dir: 'want-more', goal: g.vitaminD, nutrientKey: 'Vitamin D' },
+              { label: 'Vitamin E', value: totalVitaminE, unit: 'mg',  dir: 'want-more', goal: g.vitaminE, nutrientKey: 'Vitamin E' },
+              { label: 'Vitamin K', value: totalVitaminK, unit: 'mcg', dir: 'want-more', goal: g.vitaminK, nutrientKey: 'Vitamin K' },
             ],
           },
           {
             key: 'bvitamins', name: 'B VITAMINS',
             items: [
-              { label: 'B6',     value: totalVitaminB6,  unit: 'mg',  dir: 'want-more', goal: g.vitaminB6 },
-              { label: 'Folate', value: totalFolate,     unit: 'mcg', dir: 'want-more', goal: g.folate },
-              { label: 'B12',    value: totalVitaminB12, unit: 'mcg', dir: 'want-more', goal: g.vitaminB12 },
-              { label: 'Biotin', value: totalBiotin,     unit: 'mcg', dir: 'want-more', goal: g.biotin },
+              { label: 'B6',     value: totalVitaminB6,  unit: 'mg',  dir: 'want-more', goal: g.vitaminB6,  nutrientKey: 'Vitamin B6' },
+              { label: 'Folate', value: totalFolate,     unit: 'mcg', dir: 'want-more', goal: g.folate,     nutrientKey: 'Folate' },
+              { label: 'B12',    value: totalVitaminB12, unit: 'mcg', dir: 'want-more', goal: g.vitaminB12, nutrientKey: 'Vitamin B12' },
+              { label: 'Biotin', value: totalBiotin,     unit: 'mcg', dir: 'want-more', goal: g.biotin,     nutrientKey: 'Biotin' },
             ],
           },
           {
             key: 'minerals', name: 'MINERALS',
             items: [
-              { label: 'Calcium',   value: totalCalciumAdv, unit: 'mg', dir: 'want-more', goal: g.calcium },
-              { label: 'Iron',      value: totalIronAdv,    unit: 'mg', dir: 'want-more', goal: g.iron },
-              { label: 'Magnesium', value: totalMagnesium,  unit: 'mg', dir: 'want-more', goal: g.magnesium },
-              { label: 'Zinc',      value: totalZinc,       unit: 'mg', dir: 'want-more', goal: g.zinc },
-              { label: 'Copper',    value: totalCopper,     unit: 'mg', dir: 'want-more', goal: g.copper },
+              { label: 'Calcium',   value: totalCalciumAdv, unit: 'mg', dir: 'want-more', goal: g.calcium,   nutrientKey: 'Calcium, Ca' },
+              { label: 'Iron',      value: totalIronAdv,    unit: 'mg', dir: 'want-more', goal: g.iron,       nutrientKey: 'Iron, Fe' },
+              { label: 'Magnesium', value: totalMagnesium,  unit: 'mg', dir: 'want-more', goal: g.magnesium, nutrientKey: 'Magnesium, Mg' },
+              { label: 'Zinc',      value: totalZinc,       unit: 'mg', dir: 'want-more', goal: g.zinc,       nutrientKey: 'Zinc, Zn' },
+              { label: 'Copper',    value: totalCopper,     unit: 'mg', dir: 'want-more', goal: g.copper,     nutrientKey: 'Copper, Cu' },
             ],
           },
         ];
@@ -1238,7 +1241,16 @@ export default function LogScreen() {
                           <View style={{ flexDirection: 'row', gap: 8, paddingBottom: 8, paddingTop: 4 }}>
                             <View style={{ flex: 1, gap: 10 }}>
                               {leftCol.map(item => (
-                                <View key={item.label}>
+                                <TouchableOpacity
+                                  key={item.label}
+                                  onPress={() => {
+                                    if (!(item as any).nutrientKey && !(item as any).directField) return;
+                                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                    setDrilldownItem({ label: item.label, total: item.value, unit: item.unit, direction: item.dir as 'want-more' | 'want-less' | 'neutral', goal: item.goal, nutrientKey: (item as any).nutrientKey, directField: (item as any).directField });
+                                    setShowDrilldown(true);
+                                  }}
+                                  activeOpacity={(item as any).nutrientKey || (item as any).directField ? 0.65 : 1}
+                                >
                                   <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_500Medium', marginBottom: 1 }}>{item.label}</Text>
                                   <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 3, flexWrap: 'wrap' }}>
                                     <Text style={{ fontSize: 14, color: getColor(item.value, item.dir, item.goal), fontFamily: 'DMSans_700Bold' }}>{item.value}{item.unit}</Text>
@@ -1246,12 +1258,21 @@ export default function LogScreen() {
                                       <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold' }}>/ {item.goal}{item.unit}</Text>
                                     )}
                                   </View>
-                                </View>
+                                </TouchableOpacity>
                               ))}
                             </View>
                             <View style={{ flex: 1, gap: 10 }}>
                               {rightCol.map(item => (
-                                <View key={item.label}>
+                                <TouchableOpacity
+                                  key={item.label}
+                                  onPress={() => {
+                                    if (!(item as any).nutrientKey && !(item as any).directField) return;
+                                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                    setDrilldownItem({ label: item.label, total: item.value, unit: item.unit, direction: item.dir as 'want-more' | 'want-less' | 'neutral', goal: item.goal, nutrientKey: (item as any).nutrientKey, directField: (item as any).directField });
+                                    setShowDrilldown(true);
+                                  }}
+                                  activeOpacity={(item as any).nutrientKey || (item as any).directField ? 0.65 : 1}
+                                >
                                   <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_500Medium', marginBottom: 1 }}>{item.label}</Text>
                                   <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 3, flexWrap: 'wrap' }}>
                                     <Text style={{ fontSize: 14, color: getColor(item.value, item.dir, item.goal), fontFamily: 'DMSans_700Bold' }}>{item.value}{item.unit}</Text>
@@ -1259,7 +1280,7 @@ export default function LogScreen() {
                                       <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold' }}>/ {item.goal}{item.unit}</Text>
                                     )}
                                   </View>
-                                </View>
+                                </TouchableOpacity>
                               ))}
                             </View>
                           </View>
@@ -1279,6 +1300,12 @@ export default function LogScreen() {
         preset={nutritionPreset}
         goals={nutritionGoals}
         onSave={(p, g) => { setNutritionPreset(p); setNutritionGoals(g); }}
+      />
+      <NutrientDrilldownModal
+        visible={showDrilldown}
+        onClose={() => setShowDrilldown(false)}
+        item={drilldownItem}
+        entries={entries}
       />
 
       {/* Meal Sections */}

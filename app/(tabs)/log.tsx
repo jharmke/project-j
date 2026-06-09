@@ -18,6 +18,7 @@ import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, hand
 import { showAchievementToast, showDailyGoalToast } from '../../components/AchievementToast';
 import { showCelebration } from '../../components/CelebrationOverlay';
 import TooltipIcon from '../../components/TooltipIcon';
+import NutritionGearModal, { NUTRITION_PRESETS, NutritionGoals, NutritionPreset } from '../../components/NutritionGearModal';
 import { useTheme } from '../../theme';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import { useToast } from '../../components/Toast';
@@ -170,6 +171,12 @@ export default function LogScreen() {
   const [advancedExpanded, setAdvancedExpanded] = useState(false);
   const [advancedVisible, setAdvancedVisible] = useState(false);
   const advancedAnim = useRef(new Animated.Value(0)).current;
+  const [advGroupOpen, setAdvGroupOpen] = useState<Record<string, boolean>>({
+    carbs: true, fats: false, core: false, vitamins: false, bvitamins: false, minerals: false,
+  });
+  const [nutritionPreset, setNutritionPreset] = useState<NutritionPreset>('standard');
+  const [nutritionGoals, setNutritionGoals] = useState<NutritionGoals>({ ...NUTRITION_PRESETS.standard });
+  const [showNutritionGear, setShowNutritionGear] = useState(false);
   const [caloriesBurned, setCaloriesBurned] = useState(0);
   const today = new Date();
   const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -407,6 +414,24 @@ export default function LogScreen() {
   const totalMonoFat = getAdvancedNutrient('Monounsaturated Fat');
   const totalPotassium = Math.round(getAdvancedNutrient('Potassium, K'));
   const totalSugarAlcohols = getAdvancedNutrient('Sugar Alcohols');
+  const totalAddedSugars  = getAdvancedNutrient('Added Sugars');
+  const totalTransFat     = getAdvancedNutrient('Trans Fat');
+  const totalVitaminA     = Math.round(getAdvancedNutrient('Vitamin A'));
+  const totalVitaminC     = Math.round(getAdvancedNutrient('Vitamin C'));
+  const totalVitaminD     = getAdvancedNutrient('Vitamin D');
+  const totalCalciumAdv   = Math.round(getAdvancedNutrient('Calcium, Ca'));
+  const totalIronAdv      = getAdvancedNutrient('Iron, Fe');
+  const totalCaffeine     = getAdvancedNutrient('Caffeine');
+  const totalVitaminE     = getAdvancedNutrient('Vitamin E');
+  const totalVitaminK     = getAdvancedNutrient('Vitamin K');
+  const totalVitaminB6    = getAdvancedNutrient('Vitamin B6');
+  const totalFolate       = getAdvancedNutrient('Folate');
+  const totalVitaminB12   = getAdvancedNutrient('Vitamin B12');
+  const totalBiotin       = getAdvancedNutrient('Biotin');
+  const totalMagnesium    = getAdvancedNutrient('Magnesium, Mg');
+  const totalZinc         = getAdvancedNutrient('Zinc, Zn');
+  const totalCopper       = getAdvancedNutrient('Copper, Cu');
+  const totalNetCarbs     = Math.max(0, Math.round((totalCarbs - totalFiber - totalSugarAlcohols) * 10) / 10);
   const calDelta = Math.abs(totalCals - displayTarget);
   const calColor = styleMode === 'mindful'
     ? theme.textSecondary
@@ -627,6 +652,8 @@ export default function LogScreen() {
           if (d.showNetCarbs !== undefined) setShowNetCarbs(d.showNetCarbs);
           if (Array.isArray(d.mealSlots) && d.mealSlots.length > 0) setMealSlots(d.mealSlots);
           if (d.slotNameCache && typeof d.slotNameCache === 'object') setSlotNameCache(d.slotNameCache);
+          if (d.nutritionPreset) setNutritionPreset(d.nutritionPreset);
+          if (d.nutritionGoals) setNutritionGoals({ ...NUTRITION_PRESETS.standard, ...d.nutritionGoals });
         }
       });
       loadAchievements().then(store => setAchievementStore(store));
@@ -1077,54 +1104,182 @@ export default function LogScreen() {
       </View>
 
       {/* Advanced Nutrition Card */}
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
-        <TouchableOpacity
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleAdvanced(); }}
-          activeOpacity={0.7}
-          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={[styles.cardLabel, { color: theme.textMuted, marginBottom: 0 }]}>Advanced Nutrition</Text>
-            <TooltipIcon tooltipKey="advanced_nutrition" />
-          </View>
-          <View style={{ width: 28, height: 28, alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name={advancedExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={theme.textMuted} />
-          </View>
-        </TouchableOpacity>
-        {advancedVisible && (
-          <Animated.View style={{ opacity: advancedAnim }}>
-            {([
-              { label: 'Fiber',              value: totalFiber,          unit: 'g',  dv: 28,   color: '#6366f1' },
-              { label: 'Sugar',              value: totalSugar,          unit: 'g',  dv: 50,   color: '#ec4899' },
-              { label: 'Sugar Alcohols',     value: totalSugarAlcohols,  unit: 'g',  dv: null, color: '#a78bfa' },
-              { label: 'Sodium',             value: totalSodium,         unit: 'mg', dv: 2300, color: '#8b5cf6' },
-              { label: 'Cholesterol',        value: totalCholesterol,    unit: 'mg', dv: 300,  color: '#14b8a6' },
-              { label: 'Potassium',          value: totalPotassium,      unit: 'mg', dv: 4700, color: '#06b6d4' },
-              { label: 'Saturated Fat',      value: totalSatFat,         unit: 'g',  dv: 20,   color: '#f97316' },
-              { label: 'Polyunsaturated Fat',value: totalPolyFat,        unit: 'g',  dv: null, color: '#a83232' },
-              { label: 'Monounsaturated Fat',value: totalMonoFat,        unit: 'g',  dv: null, color: '#cc6633' },
-            ] as { label: string; value: number; unit: string; dv: number | null; color: string }[]).filter(n => n.value > 0).map(n => (
-              <View key={n.label} style={{ paddingVertical: 10, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>{n.label}</Text>
-                  <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' }}>
-                      {n.value}{n.unit}
-                    </Text>
-                    {n.dv != null && (
-                      <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>/ {n.dv}{n.unit} recommended</Text>
-                    )}
-                  </View>
-                </View>
-                {n.dv != null && (
-                  <View style={{ height: 4, borderRadius: 2, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
-                    <View style={{ height: '100%', borderRadius: 2, backgroundColor: n.color, width: `${Math.min(100, (n.value / n.dv) * 100)}%` }} />
-                  </View>
-                )}
+      {(() => {
+        const MUTED_GREEN = '#0d9268';
+        const MUTED_RED   = '#cc3333';
+        const getColor = (value: number, direction: string, goal: number | null): string => {
+          if (direction === 'neutral' || goal === null) return theme.accentBlue;
+          if (direction === 'want-more') return value >= goal ? MUTED_GREEN : theme.accentBlue;
+          return value > goal ? MUTED_RED : theme.accentBlue;
+        };
+        const g = nutritionGoals;
+        const advGroups = [
+          {
+            key: 'carbs', name: 'CARBS',
+            items: [
+              { label: 'Total Carbs',  value: totalCarbs,        unit: 'g',  dir: 'neutral',   goal: null as number | null },
+              { label: 'Added Sugars', value: totalAddedSugars,  unit: 'g',  dir: 'want-less', goal: g.addedSugars },
+              { label: 'Fiber',        value: totalFiber,        unit: 'g',  dir: 'want-more', goal: g.fiber },
+              { label: 'Sugar',        value: totalSugar,        unit: 'g',  dir: 'want-less', goal: g.sugar },
+              { label: 'Sugar Alc.',   value: totalSugarAlcohols, unit: 'g', dir: 'neutral',   goal: null as number | null },
+              { label: 'Net Carbs',    value: totalNetCarbs,     unit: 'g',  dir: 'neutral',   goal: null as number | null },
+            ],
+          },
+          {
+            key: 'fats', name: 'FATS',
+            items: [
+              { label: 'Sat. Fat',   value: totalSatFat,   unit: 'g', dir: 'want-less', goal: g.saturatedFat },
+              { label: 'Trans Fat',  value: totalTransFat, unit: 'g', dir: 'want-less', goal: g.transFat },
+              { label: 'Poly Fat',   value: totalPolyFat,  unit: 'g', dir: 'neutral',   goal: null as number | null },
+              { label: 'Mono Fat',   value: totalMonoFat,  unit: 'g', dir: 'neutral',   goal: null as number | null },
+            ],
+          },
+          {
+            key: 'core', name: 'CORE',
+            items: [
+              { label: 'Cholesterol', value: totalCholesterol, unit: 'mg', dir: 'want-less', goal: g.cholesterol },
+              { label: 'Sodium',      value: totalSodium,      unit: 'mg', dir: 'want-less', goal: g.sodium },
+              { label: 'Potassium',   value: totalPotassium,   unit: 'mg', dir: 'want-more', goal: g.potassium },
+              { label: 'Caffeine',    value: totalCaffeine,    unit: 'mg', dir: 'want-less', goal: g.caffeine },
+            ],
+          },
+          {
+            key: 'vitamins', name: 'VITAMINS',
+            items: [
+              { label: 'Vitamin A', value: totalVitaminA, unit: 'mcg', dir: 'want-more', goal: g.vitaminA },
+              { label: 'Vitamin C', value: totalVitaminC, unit: 'mg',  dir: 'want-more', goal: g.vitaminC },
+              { label: 'Vitamin D', value: totalVitaminD, unit: 'mcg', dir: 'want-more', goal: g.vitaminD },
+              { label: 'Vitamin E', value: totalVitaminE, unit: 'mg',  dir: 'want-more', goal: g.vitaminE },
+              { label: 'Vitamin K', value: totalVitaminK, unit: 'mcg', dir: 'want-more', goal: g.vitaminK },
+            ],
+          },
+          {
+            key: 'bvitamins', name: 'B VITAMINS',
+            items: [
+              { label: 'B6',     value: totalVitaminB6,  unit: 'mg',  dir: 'want-more', goal: g.vitaminB6 },
+              { label: 'Folate', value: totalFolate,     unit: 'mcg', dir: 'want-more', goal: g.folate },
+              { label: 'B12',    value: totalVitaminB12, unit: 'mcg', dir: 'want-more', goal: g.vitaminB12 },
+              { label: 'Biotin', value: totalBiotin,     unit: 'mcg', dir: 'want-more', goal: g.biotin },
+            ],
+          },
+          {
+            key: 'minerals', name: 'MINERALS',
+            items: [
+              { label: 'Calcium',   value: totalCalciumAdv, unit: 'mg', dir: 'want-more', goal: g.calcium },
+              { label: 'Iron',      value: totalIronAdv,    unit: 'mg', dir: 'want-more', goal: g.iron },
+              { label: 'Magnesium', value: totalMagnesium,  unit: 'mg', dir: 'want-more', goal: g.magnesium },
+              { label: 'Zinc',      value: totalZinc,       unit: 'mg', dir: 'want-more', goal: g.zinc },
+              { label: 'Copper',    value: totalCopper,     unit: 'mg', dir: 'want-more', goal: g.copper },
+            ],
+          },
+        ];
+        const allEmpty = advGroups.every(grp => grp.items.every(item => item.value === 0));
+        return (
+          <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2 }}>
+              <TouchableOpacity
+                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleAdvanced(); }}
+                activeOpacity={0.7}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}
+              >
+                <Text style={[styles.cardLabel, { color: theme.textMuted, marginBottom: 0 }]}>Advanced Nutrition</Text>
+                <TooltipIcon tooltipKey="advanced_nutrition" />
+              </TouchableOpacity>
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <TouchableOpacity
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowNutritionGear(true); }}
+                  style={{ width: 36, height: 32, alignItems: 'center', justifyContent: 'center' }}
+                  hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+                >
+                  <Ionicons name="settings" size={15} color={theme.textMuted} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleAdvanced(); }}
+                  style={{ width: 28, height: 32, alignItems: 'center', justifyContent: 'center' }}
+                >
+                  <Ionicons name={advancedExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={theme.textMuted} />
+                </TouchableOpacity>
               </View>
-            ))}
-          </Animated.View>
-        )}
-      </View>
+            </View>
+            {advancedVisible && (
+              <Animated.View style={{ opacity: advancedAnim }}>
+                {allEmpty ? (
+                  <Text style={{ color: theme.textDim, fontSize: 12, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', paddingVertical: 6 }}>Log food to see advanced nutrition data.</Text>
+                ) : (
+                  advGroups.map(grp => {
+                    const visible = grp.items.filter(item => item.value > 0);
+                    if (visible.length === 0) return null;
+                    const dvItems = visible.filter(item => item.goal !== null);
+                    const onTrack = dvItems.filter(item =>
+                      item.dir === 'want-more' ? item.value >= (item.goal as number) :
+                      item.dir === 'want-less' ? item.value <= (item.goal as number) : true
+                    ).length;
+                    const isOpen = advGroupOpen[grp.key];
+                    const half = Math.ceil(visible.length / 2);
+                    const leftCol = visible.slice(0, half);
+                    const rightCol = visible.slice(half);
+                    return (
+                      <View key={grp.key}>
+                        <TouchableOpacity
+                          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setAdvGroupOpen(prev => ({ ...prev, [grp.key]: !prev[grp.key] })); }}
+                          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 7, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}
+                        >
+                          <Text style={[styles.cardLabel, { color: theme.textMuted, marginBottom: 0, fontSize: 9 }]}>{grp.name}</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            {dvItems.length > 0 && (
+                              <View style={{ borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, backgroundColor: onTrack === dvItems.length ? 'rgba(13,146,104,0.15)' : theme.accentBlueBg }}>
+                                <Text style={{ fontSize: 10, fontFamily: 'DMSans_600SemiBold', color: onTrack === dvItems.length ? MUTED_GREEN : theme.accentBlue }}>{onTrack}/{dvItems.length}</Text>
+                              </View>
+                            )}
+                            <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={12} color={theme.textDim} />
+                          </View>
+                        </TouchableOpacity>
+                        {isOpen && (
+                          <View style={{ flexDirection: 'row', gap: 8, paddingBottom: 8, paddingTop: 4 }}>
+                            <View style={{ flex: 1, gap: 10 }}>
+                              {leftCol.map(item => (
+                                <View key={item.label}>
+                                  <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_500Medium', marginBottom: 1 }}>{item.label}</Text>
+                                  <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 3, flexWrap: 'wrap' }}>
+                                    <Text style={{ fontSize: 14, color: getColor(item.value, item.dir, item.goal), fontFamily: 'DMSans_700Bold' }}>{item.value}{item.unit}</Text>
+                                    {item.goal !== null && (
+                                      <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold' }}>/ {item.goal}{item.unit}</Text>
+                                    )}
+                                  </View>
+                                </View>
+                              ))}
+                            </View>
+                            <View style={{ flex: 1, gap: 10 }}>
+                              {rightCol.map(item => (
+                                <View key={item.label}>
+                                  <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_500Medium', marginBottom: 1 }}>{item.label}</Text>
+                                  <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 3, flexWrap: 'wrap' }}>
+                                    <Text style={{ fontSize: 14, color: getColor(item.value, item.dir, item.goal), fontFamily: 'DMSans_700Bold' }}>{item.value}{item.unit}</Text>
+                                    {item.goal !== null && (
+                                      <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold' }}>/ {item.goal}{item.unit}</Text>
+                                    )}
+                                  </View>
+                                </View>
+                              ))}
+                            </View>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })
+                )}
+              </Animated.View>
+            )}
+          </View>
+        );
+      })()}
+      <NutritionGearModal
+        visible={showNutritionGear}
+        onClose={() => setShowNutritionGear(false)}
+        preset={nutritionPreset}
+        goals={nutritionGoals}
+        onSave={(p, g) => { setNutritionPreset(p); setNutritionGoals(g); }}
+      />
 
       {/* Meal Sections */}
       {mealSlots.map((slot, mealIdx) => {

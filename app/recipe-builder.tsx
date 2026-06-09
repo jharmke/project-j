@@ -25,6 +25,23 @@ interface Ingredient {
   sodium?: number;
   cholesterol?: number;
   saturatedFat?: number;
+  polyunsaturatedFat?: number;
+  monounsaturatedFat?: number;
+  addedSugars?: number;
+  transFat?: number;
+  vitaminA?: number;
+  vitaminC?: number;
+  vitaminD?: number;
+  vitaminE?: number;
+  vitaminK?: number;
+  vitaminB6?: number;
+  folate?: number;
+  vitaminB12?: number;
+  biotin?: number;
+  magnesium?: number;
+  zinc?: number;
+  copper?: number;
+  caffeine?: number;
   amount: number;
   unit: string;
 }
@@ -46,6 +63,23 @@ interface Recipe {
   totalSodium?: number;
   totalCholesterol?: number;
   totalSaturatedFat?: number;
+  totalPolyFat?: number;
+  totalMonoFat?: number;
+  totalAddedSugars?: number;
+  totalTransFat?: number;
+  totalVitaminA?: number;
+  totalVitaminC?: number;
+  totalVitaminD?: number;
+  totalVitaminE?: number;
+  totalVitaminK?: number;
+  totalVitaminB6?: number;
+  totalFolate?: number;
+  totalVitaminB12?: number;
+  totalBiotin?: number;
+  totalMagnesium?: number;
+  totalZinc?: number;
+  totalCopper?: number;
+  totalCaffeine?: number;
   createdAt: number;
   defaultToWeight?: boolean;
 }
@@ -231,6 +265,23 @@ export default function RecipeBuilderScreen() {
       sodium: food.sodium || 0,
       cholesterol: food.cholesterol || 0,
       saturatedFat: food.saturatedFat || 0,
+      ...(food.polyunsaturatedFat  ? { polyunsaturatedFat:  food.polyunsaturatedFat  } : {}),
+      ...(food.monounsaturatedFat  ? { monounsaturatedFat:  food.monounsaturatedFat  } : {}),
+      ...(food.addedSugars         ? { addedSugars:         food.addedSugars         } : {}),
+      ...(food.transFat            ? { transFat:            food.transFat            } : {}),
+      ...(food.vitaminA            ? { vitaminA:            food.vitaminA            } : {}),
+      ...(food.vitaminC            ? { vitaminC:            food.vitaminC            } : {}),
+      ...(food.vitaminD            ? { vitaminD:            food.vitaminD            } : {}),
+      ...(food.vitaminE            ? { vitaminE:            food.vitaminE            } : {}),
+      ...(food.vitaminK            ? { vitaminK:            food.vitaminK            } : {}),
+      ...(food.vitaminB6           ? { vitaminB6:           food.vitaminB6           } : {}),
+      ...(food.folate              ? { folate:              food.folate              } : {}),
+      ...(food.vitaminB12          ? { vitaminB12:          food.vitaminB12          } : {}),
+      ...(food.biotin              ? { biotin:              food.biotin              } : {}),
+      ...(food.magnesium           ? { magnesium:           food.magnesium           } : {}),
+      ...(food.zinc                ? { zinc:                food.zinc                } : {}),
+      ...(food.copper              ? { copper:              food.copper              } : {}),
+      ...(food.caffeine            ? { caffeine:            food.caffeine            } : {}),
       amount: food.servingSize || 100,
       unit: food.servingUnit || 'g',
     };
@@ -261,6 +312,23 @@ export default function RecipeBuilderScreen() {
   const totalSodium = Math.round(ingredients.reduce((s, i) => s + (i.sodium || 0), 0));
   const totalCholesterol = Math.round(ingredients.reduce((s, i) => s + (i.cholesterol || 0), 0));
   const totalSaturatedFat = Math.round(ingredients.reduce((s, i) => s + (i.saturatedFat || 0), 0) * 10) / 10;
+  const totalPolyFat    = Math.round(ingredients.reduce((s, i) => s + (i.polyunsaturatedFat || 0), 0) * 10) / 10;
+  const totalMonoFat    = Math.round(ingredients.reduce((s, i) => s + (i.monounsaturatedFat || 0), 0) * 10) / 10;
+  const totalAddedSugars = Math.round(ingredients.reduce((s, i) => s + (i.addedSugars || 0), 0) * 10) / 10;
+  const totalTransFat   = Math.round(ingredients.reduce((s, i) => s + (i.transFat || 0), 0) * 10) / 10;
+  const totalVitaminA   = Math.round(ingredients.reduce((s, i) => s + (i.vitaminA || 0), 0));
+  const totalVitaminC   = Math.round(ingredients.reduce((s, i) => s + (i.vitaminC || 0), 0) * 10) / 10;
+  const totalVitaminD   = Math.round(ingredients.reduce((s, i) => s + (i.vitaminD || 0), 0) * 10) / 10;
+  const totalVitaminE   = Math.round(ingredients.reduce((s, i) => s + (i.vitaminE || 0), 0) * 10) / 10;
+  const totalVitaminK   = Math.round(ingredients.reduce((s, i) => s + (i.vitaminK || 0), 0));
+  const totalVitaminB6  = Math.round(ingredients.reduce((s, i) => s + (i.vitaminB6 || 0), 0) * 10) / 10;
+  const totalFolate     = Math.round(ingredients.reduce((s, i) => s + (i.folate || 0), 0));
+  const totalVitaminB12 = Math.round(ingredients.reduce((s, i) => s + (i.vitaminB12 || 0), 0) * 10) / 10;
+  const totalBiotin     = Math.round(ingredients.reduce((s, i) => s + (i.biotin || 0), 0));
+  const totalMagnesium  = Math.round(ingredients.reduce((s, i) => s + (i.magnesium || 0), 0));
+  const totalZinc       = Math.round(ingredients.reduce((s, i) => s + (i.zinc || 0), 0) * 10) / 10;
+  const totalCopper     = Math.round(ingredients.reduce((s, i) => s + (i.copper || 0), 0) * 10) / 10;
+  const totalCaffeine   = Math.round(ingredients.reduce((s, i) => s + (i.caffeine || 0), 0));
   const hasExtended = ingredients.some(i => (i.fiber || 0) + (i.sugar || 0) + (i.sodium || 0) + (i.cholesterol || 0) + (i.saturatedFat || 0) > 0);
 
   const servings = parseInt(servingCount) || 1;
@@ -298,6 +366,23 @@ export default function RecipeBuilderScreen() {
         totalSodium,
         totalCholesterol,
         totalSaturatedFat,
+        totalPolyFat,
+        totalMonoFat,
+        totalAddedSugars,
+        totalTransFat,
+        totalVitaminA,
+        totalVitaminC,
+        totalVitaminD,
+        totalVitaminE,
+        totalVitaminK,
+        totalVitaminB6,
+        totalFolate,
+        totalVitaminB12,
+        totalBiotin,
+        totalMagnesium,
+        totalZinc,
+        totalCopper,
+        totalCaffeine,
         createdAt: Date.now(),
         defaultToWeight,
       };

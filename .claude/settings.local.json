@@ -68,7 +68,13 @@
       "PowerShell(git add app/\\(tabs\\)/index.tsx SMART_COACH_BUILD.md)",
       "Bash(grep -n \"truncat\\\\|third.*period\\\\|sentence.*count\\\\|split.*\\\\\\\\.\\\\\\\\|period\" \"C:\\\\Users\\\\jthar\\\\ProjectJ\\\\utils\\\\coachAI.ts\")",
       "PowerShell(cd C:\\\\Users\\\\jthar\\\\ProjectJ; npx tsc --noEmit 2>&1 | Select-String \"diagnostic-report-view|smartTipsEngine|coachAI\" | ForEach-Object { $_.Line })",
-      "PowerShell(cd C:\\\\Users\\\\jthar\\\\ProjectJ; $out = npx tsc --noEmit 2>&1; $out | Where-Object { $_ -match \"diagnostic-report|smartTipsEngine|coachAI\" })"
+      "PowerShell(cd C:\\\\Users\\\\jthar\\\\ProjectJ; $out = npx tsc --noEmit 2>&1; $out | Where-Object { $_ -match \"diagnostic-report|smartTipsEngine|coachAI\" })",
+      "PowerShell(git add utils/weeklySummary.ts app/weekly-summary.tsx app/day-summary.tsx app/\\(tabs\\)/stats.tsx project_j_roadmap.md)",
+      "PowerShell(git add app/day-summary.tsx app/weekly-summary.tsx app/\\(tabs\\)/stats.tsx utils/weeklySummary.ts project_j_roadmap.md)",
+      "PowerShell(node fs_test.js)",
+      "PowerShell(node fs_test2.js)",
+      "PowerShell(node fs_test3.js)",
+      "PowerShell(cd C:\\\\Users\\\\jthar\\\\ProjectJ; git add app/\\(tabs\\)/log.tsx app/add-food.tsx app/day-detail.tsx app/food-detail.tsx app/recipe-builder.tsx app/recipe-log.tsx components/CustomFoodCreator.tsx components/NutritionGearModal.tsx project_j_roadmap.md tooltipRegistry.ts)"
     ]
   }
 }

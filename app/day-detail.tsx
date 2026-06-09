@@ -190,6 +190,19 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
   const totalIron           = getEntryNutrient('Iron, Fe');
   const totalSugarAlcohols  = getEntryNutrient('Sugar Alcohols');
   const totalNetCarbs = Math.max(0, Math.round((totalCarbs - totalFiber - totalSugarAlcohols) * 10) / 10);
+  const totalAddedSugars   = getEntryNutrient('Added Sugars');
+  const totalTransFat      = getEntryNutrient('Trans Fat');
+  const totalVitaminD      = getEntryNutrient('Vitamin D');
+  const totalVitaminE      = getEntryNutrient('Vitamin E');
+  const totalVitaminK      = Math.round(getEntryNutrient('Vitamin K', 1));
+  const totalVitaminB6     = getEntryNutrient('Vitamin B6');
+  const totalFolate        = Math.round(getEntryNutrient('Folate', 1));
+  const totalVitaminB12    = getEntryNutrient('Vitamin B12');
+  const totalBiotin        = Math.round(getEntryNutrient('Biotin', 1));
+  const totalMagnesium     = Math.round(getEntryNutrient('Magnesium, Mg', 1));
+  const totalZinc          = getEntryNutrient('Zinc, Zn');
+  const totalCopper        = getEntryNutrient('Copper, Cu');
+  const totalCaffeine      = Math.round(getEntryNutrient('Caffeine', 1));
 
   const sleepHours: number = data?.sleepOverride ?? data?.sleepHours ?? 0;
   const sleepStages: SleepStages | null = data?.sleepStages ?? null;
@@ -603,15 +616,17 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
               <View style={{ marginTop: 10 }}>
 
                 {/* Carb Breakdown */}
-                {totalFiber > 0 && (
+                {(totalFiber > 0 || totalAddedSugars > 0 || totalSugar > 0) && (
                   <View style={{ backgroundColor: theme.bgInset, borderRadius: 8, padding: 10, marginBottom: 12 }}>
                     <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Carb Breakdown</Text>
                     {[
-                      { label: 'Total Carbs',    value: `${totalCarbs}g`,          bold: false },
-                      { label: 'Fiber',           value: `${totalFiber}g`,          bold: false },
+                      { label: 'Total Carbs',    value: `${totalCarbs}g`,           bold: false },
+                      { label: 'Fiber',           value: `${totalFiber}g`,           bold: false },
+                      ...(totalAddedSugars > 0 ? [{ label: 'Added Sugars', value: `${totalAddedSugars}g`, bold: false }] : []),
+                      { label: 'Sugar',           value: `${totalSugar}g`,           bold: false },
                       ...(totalSugarAlcohols > 0 ? [{ label: 'Sugar Alcohols', value: `${totalSugarAlcohols}g`, bold: false }] : []),
-                      { label: 'Net Carbs',      value: `${totalNetCarbs}g`,       bold: true  },
-                    ].map((row, i, arr) => (
+                      { label: 'Net Carbs',       value: `${totalNetCarbs}g`,        bold: true  },
+                    ].filter(r => parseFloat(r.value) > 0 || r.bold).map((row, i, arr) => (
                       <View key={row.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: i < arr.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderSubtle }}>
                         <Text style={[styles.sectionLabel, row.bold && { fontFamily: 'DMSans_700Bold', color: theme.textPrimary }]}>{row.label}</Text>
                         <Text style={{ fontSize: 13, color: row.bold ? '#c47d1a' : theme.textMuted, fontFamily: row.bold ? 'DMSans_700Bold' : 'DMSans_600SemiBold' }}>{row.value}</Text>
@@ -621,13 +636,14 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                 )}
 
                 {/* Extended Fats */}
-                {(totalSatFat > 0 || totalPolyFat > 0 || totalMonoFat > 0) && (
+                {(totalSatFat > 0 || totalPolyFat > 0 || totalMonoFat > 0 || totalTransFat > 0) && (
                   <View style={{ backgroundColor: theme.bgInset, borderRadius: 8, padding: 10, marginBottom: 12 }}>
                     <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Extended Fats</Text>
                     {[
-                      { label: 'Saturated Fat',   value: totalSatFat,  unit: 'g' },
-                      { label: 'Polyunsaturated', value: totalPolyFat, unit: 'g' },
-                      { label: 'Monounsaturated', value: totalMonoFat, unit: 'g' },
+                      { label: 'Saturated Fat',   value: totalSatFat,   unit: 'g' },
+                      { label: 'Polyunsaturated', value: totalPolyFat,  unit: 'g' },
+                      { label: 'Monounsaturated', value: totalMonoFat,  unit: 'g' },
+                      { label: 'Trans Fat',        value: totalTransFat, unit: 'g' },
                     ].filter(n => n.value > 0).map((n, i, arr) => (
                       <View key={n.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: i < arr.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderSubtle }}>
                         <Text style={styles.sectionLabel}>{n.label}</Text>
@@ -638,14 +654,14 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                 )}
 
                 {/* Other Nutrients */}
-                {(totalSugar > 0 || totalCholesterol > 0 || totalSodium > 0 || totalPotassium > 0) && (
+                {(totalCholesterol > 0 || totalSodium > 0 || totalPotassium > 0 || totalCaffeine > 0) && (
                   <View style={{ backgroundColor: theme.bgInset, borderRadius: 8, padding: 10, marginBottom: 12 }}>
                     <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Other Nutrients</Text>
                     {[
-                      { label: 'Sugar',       value: totalSugar,       unit: 'g',  color: '#ec4899' },
                       { label: 'Cholesterol', value: totalCholesterol, unit: 'mg', color: theme.textSecondary },
                       { label: 'Sodium',      value: totalSodium,      unit: 'mg', color: '#8b5cf6' },
                       { label: 'Potassium',   value: totalPotassium,   unit: 'mg', color: '#06b6d4' },
+                      { label: 'Caffeine',    value: totalCaffeine,    unit: 'mg', color: theme.textSecondary },
                     ].filter(n => n.value > 0).map((n, i, arr) => (
                       <View key={n.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: i < arr.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderSubtle }}>
                         <Text style={styles.sectionLabel}>{n.label}</Text>
@@ -655,15 +671,53 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                   </View>
                 )}
 
-                {/* Vitamins & Minerals */}
-                {(totalVitaminA > 0 || totalVitaminC > 0 || totalCalcium > 0 || totalIron > 0) && (
-                  <View style={{ backgroundColor: theme.bgInset, borderRadius: 8, padding: 10, marginBottom: 4 }}>
-                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Vitamins & Minerals</Text>
+                {/* Vitamins */}
+                {(totalVitaminA > 0 || totalVitaminC > 0 || totalVitaminD > 0 || totalVitaminE > 0 || totalVitaminK > 0) && (
+                  <View style={{ backgroundColor: theme.bgInset, borderRadius: 8, padding: 10, marginBottom: 12 }}>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Vitamins</Text>
                     {[
                       { label: 'Vitamin A', value: totalVitaminA, unit: 'mcg' },
                       { label: 'Vitamin C', value: totalVitaminC, unit: 'mg'  },
-                      { label: 'Calcium',   value: totalCalcium,  unit: 'mg'  },
-                      { label: 'Iron',      value: totalIron,     unit: 'mg'  },
+                      { label: 'Vitamin D', value: totalVitaminD, unit: 'mcg' },
+                      { label: 'Vitamin E', value: totalVitaminE, unit: 'mg'  },
+                      { label: 'Vitamin K', value: totalVitaminK, unit: 'mcg' },
+                    ].filter(n => n.value > 0).map((n, i, arr) => (
+                      <View key={n.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: i < arr.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderSubtle }}>
+                        <Text style={styles.sectionLabel}>{n.label}</Text>
+                        <Text style={{ fontSize: 13, color: theme.accentGreen, fontFamily: 'DMSans_600SemiBold' }}>{n.value}{n.unit}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* B Vitamins */}
+                {(totalVitaminB6 > 0 || totalFolate > 0 || totalVitaminB12 > 0 || totalBiotin > 0) && (
+                  <View style={{ backgroundColor: theme.bgInset, borderRadius: 8, padding: 10, marginBottom: 12 }}>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>B Vitamins</Text>
+                    {[
+                      { label: 'Vitamin B6', value: totalVitaminB6,  unit: 'mg'  },
+                      { label: 'Folate',     value: totalFolate,     unit: 'mcg' },
+                      { label: 'Vitamin B12', value: totalVitaminB12, unit: 'mcg' },
+                      { label: 'Biotin',     value: totalBiotin,     unit: 'mcg' },
+                    ].filter(n => n.value > 0).map((n, i, arr) => (
+                      <View key={n.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: i < arr.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderSubtle }}>
+                        <Text style={styles.sectionLabel}>{n.label}</Text>
+                        <Text style={{ fontSize: 13, color: theme.accentGreen, fontFamily: 'DMSans_600SemiBold' }}>{n.value}{n.unit}</Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+
+                {/* Minerals */}
+                {(totalCalcium > 0 || totalIron > 0 || totalMagnesium > 0 || totalZinc > 0 || totalCopper > 0) && (
+                  <View style={{ backgroundColor: theme.bgInset, borderRadius: 8, padding: 10, marginBottom: 4 }}>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8 }}>Minerals</Text>
+                    {[
+                      { label: 'Calcium',   value: totalCalcium,   unit: 'mg' },
+                      { label: 'Iron',      value: totalIron,      unit: 'mg' },
+                      { label: 'Magnesium', value: totalMagnesium, unit: 'mg' },
+                      { label: 'Zinc',      value: totalZinc,      unit: 'mg' },
+                      { label: 'Copper',    value: totalCopper,    unit: 'mg' },
                     ].filter(n => n.value > 0).map((n, i, arr) => (
                       <View key={n.label} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 5, borderBottomWidth: i < arr.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderSubtle }}>
                         <Text style={styles.sectionLabel}>{n.label}</Text>

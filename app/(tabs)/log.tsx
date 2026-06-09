@@ -1193,7 +1193,7 @@ export default function LogScreen() {
                       ref={entry.tutorialEntry ? (tutorialEntryRef as any) : undefined}
                       key={i}
                       style={[styles.foodEntry, { backgroundColor: theme.accentBlueBg }]}
-                      onPress={() => { returningFromChild.current = true; router.push({
+                      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); returningFromChild.current = true; router.push({
                         pathname: '/food-detail',
                         params: {
                           foodJson: JSON.stringify({
@@ -1258,11 +1258,12 @@ export default function LogScreen() {
                         <TouchableOpacity
                           ref={entry.tutorialEntry ? (tutorialDeleteRef as any) : undefined}
                           onPress={() => {
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                             Alert.alert(
                               'Remove Entry',
                               `Remove ${entry.name} from your log?`,
                               [
-                                { text: 'Cancel', style: 'cancel' },
+                                { text: 'Cancel', style: 'cancel', onPress: () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light) },
                                 { text: 'Remove', style: 'destructive', onPress: () => {
                                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
                                   deleteEntry(entries.indexOf(entry));

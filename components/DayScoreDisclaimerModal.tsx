@@ -25,7 +25,7 @@ export default function DayScoreDisclaimerModal({ theme, onAcknowledge }: { them
   };
 
   const accept = () => {
-    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     overlay.value = withTiming(0, { duration: 140 });
     cardScale.value = withTiming(0.92, { duration: 140 }, (finished) => {
       if (finished) runOnJS(onAcknowledge)();

@@ -530,7 +530,7 @@ export default function CompanionChat({
             {/* Top strip: drag down to dismiss, tap the handle to close. */}
             <GestureDetector gesture={dragGesture}>
               <View>
-                <Pressable onPress={close} hitSlop={10} style={styles.handleWrap}>
+                <Pressable onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); close(); }} hitSlop={10} style={styles.handleWrap}>
                   <View style={[styles.handle, { backgroundColor: theme.textDim }]} />
                 </Pressable>
                 <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>

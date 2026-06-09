@@ -162,9 +162,11 @@ export default function DevotionalScreen() {
   };
 
   const handleComplete = async () => {
-    triggerHapticNotification(
-      completed ? Haptics.NotificationFeedbackType.Warning : Haptics.NotificationFeedbackType.Success,
-    );
+    if (completed) {
+      triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    } else {
+      triggerHapticNotification(Haptics.NotificationFeedbackType.Success);
+    }
     const updated = completed
       ? await unmarkDevotionalDayComplete(id, day)
       : await markDevotionalDayComplete(id, day);

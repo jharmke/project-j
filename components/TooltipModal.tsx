@@ -250,7 +250,7 @@ export default function TooltipModal({ tooltipKey, visible, onClose, hideTour }:
             {/* Got it button */}
             <Animated.View style={{ opacity: buttonOpacity, marginTop: def.tutorialId && !hideTour ? 10 : 20, alignSelf: 'stretch' }}>
               <TouchableOpacity
-                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); handleClose(); }}
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleClose(); }}
                 style={[styles.button, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
                 activeOpacity={0.8}
               >

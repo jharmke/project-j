@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { triggerHaptic, triggerHapticSelection } from '@/utils/haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActionSheetIOS, Alert, Animated, Dimensions, Image, KeyboardAvoidingView, Linking, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -1505,7 +1505,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                   textColor={theme.textPrimary}
                   style={{ width: Dimensions.get('window').width - 48 }}
                   onChange={(event, date) => {
-                    if (date) { triggerHapticSelection(); setEntryTime(date); setHasChanges(true); }
+                    if (date) { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEntryTime(date); setHasChanges(true); }
                   }}
                 />
               </View>

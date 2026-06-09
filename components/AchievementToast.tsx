@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { useEffect, useRef, useState } from 'react';
+import { triggerHapticNotification } from '@/utils/haptics';
 import { Animated, Dimensions, Easing, PanResponder, StyleSheet, Text, View } from 'react-native';
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Path, Stop } from 'react-native-svg';
 import { AchievementDef, AchievementDisplayTier } from '../achievementData';
@@ -257,6 +259,7 @@ function ToastCard({ def, onDone }: { def: AchievementDef; onDone: () => void })
   ).current;
 
   useEffect(() => {
+    triggerHapticNotification(Haptics.NotificationFeedbackType.Success);
     Animated.parallel([
       Animated.timing(cardOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
       Animated.spring(slideX, { toValue: 0, tension: 70, friction: 11, useNativeDriver: true }),

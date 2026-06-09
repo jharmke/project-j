@@ -1427,9 +1427,12 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
     const name = food.description;
     const cal = getCalories(food);
     const foodFsId = (food as any).fsId || null;
-    const isFav = favorites.some(f =>
-      foodFsId && f.fsId ? f.fsId === foodFsId : f.name === name
-    );
+    const isFav = favorites.some(f => {
+      const fFsId = (f as any).fsId;
+      if (foodFsId && fFsId) return fFsId === foodFsId;
+      if (foodFsId || fFsId) return false;
+      return f.name === name && !!(f as any).isMyFood === !!(food as any).isMyFood;
+    });
     if (isFav) {
       Alert.alert(
         'Remove from Favorites',
@@ -1467,9 +1470,12 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         return Math.round((n?.value || 0) * 10) / 10;
       };
       updated = [...favorites, {
+        id: Math.random().toString(36).slice(2) + Date.now().toString(36),
         name,
         cal,
         brand: (food as any).brand || null,
+        isMyFood: (food as any).isMyFood || false,
+        isCustom: (food as any).isCustom || false,
         protein: getN('Protein'),
         carbs: getN('Carbohydrate, by difference'),
         fat: getN('Total lipid (fat)'),
@@ -1619,7 +1625,8 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
       { nutrientName: 'Cholesterol', unitName: 'MG', value: f.cholesterol || 0 },
       { nutrientName: 'Fatty acids, total saturated', unitName: 'G', value: f.saturatedFat || 0 },
     ],
-    isMyFood: false,
+    isMyFood: (f as any).isMyFood || false,
+    isCustom: (f as any).isCustom || false,
     fsId: (f as any).fsId || null,
     type: f.type || 'food',
     brand: (f as any).brand || null,
@@ -1673,7 +1680,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         keyExtractor={(item, i) => {
           if ((item as any)._isSuppDivider) return 'supp-divider';
           if ((item as any).recipeData) return `recipe-${(item as any).recipeData.name || i}`;
-          return (item as any).fsId || (item as any).description || i.toString();
+          return (item as any).id || ((item as any).fsId ? `fs_${(item as any).fsId}` : `item_${i}`);
         }}
         renderItem={({ item, index }) => {
           if ((item as any)._isSuppDivider) {
@@ -1702,7 +1709,12 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
             <TouchableOpacity style={[styles.resultItem, (item as any).isOverride && styles.resultItemSet]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openFoodDetail(item); }}>
               <View style={styles.resultLeft}>
                 {/* Badges */}
-                {(item.isMyFood || item.isRecipe || (item.isRecent && query.trim())) && (
+                {activeTab === 'favorites' && !query.trim() && ((item as any).isMyFood || (item as any).isCustom) && (
+                  <View style={[styles.savedBadge, { backgroundColor: theme.accentGreenBg }]}>
+                    <Text style={[styles.savedBadgeText, { color: theme.accentGreen }]}>MY FOOD</Text>
+                  </View>
+                )}
+                {(item.isMyFood || item.isRecipe || (item.isRecent && query.trim())) && !(activeTab === 'favorites' && !query.trim()) && (
                   <View style={item.isRecipe ? [styles.savedBadge, { backgroundColor: theme.accentGreenBg }] : item.isRecent && query.trim() ? [styles.savedBadge, { backgroundColor: theme.bgProgressTrack }] : styles.savedBadge}>
                     <Text style={item.isRecipe ? [styles.savedBadgeText, { color: theme.accentGreen }] : item.isRecent && query.trim() ? [styles.savedBadgeText, { color: theme.textMuted }] : styles.savedBadgeText}>
                       {item.isRecipe ? 'RECIPE' : item.isRecent && query.trim() ? 'RECENT' : 'SAVED'}
@@ -1764,9 +1776,19 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                 ) : null}
                 <TouchableOpacity onPress={() => toggleFavorite(item)} style={styles.starBtn}>
                   <Ionicons
-                    name={favorites.some(f => (item as any).fsId && f.fsId ? f.fsId === (item as any).fsId : f.name === item.description) ? 'star' : 'star-outline'}
+                    name={favorites.some(f => {
+                      const iId = (item as any).fsId; const fId = (f as any).fsId;
+                      if (iId && fId) return fId === iId;
+                      if (iId || fId) return false;
+                      return f.name === item.description && !!(f as any).isMyFood === !!(item as any).isMyFood;
+                    }) ? 'star' : 'star-outline'}
                     size={16}
-                    color={favorites.some(f => (item as any).fsId && f.fsId ? f.fsId === (item as any).fsId : f.name === item.description) ? theme.accentAmber : theme.textDim}
+                    color={favorites.some(f => {
+                      const iId = (item as any).fsId; const fId = (f as any).fsId;
+                      if (iId && fId) return fId === iId;
+                      if (iId || fId) return false;
+                      return f.name === item.description && !!(f as any).isMyFood === !!(item as any).isMyFood;
+                    }) ? theme.accentAmber : theme.textDim}
                   />
                 </TouchableOpacity>
                 <View style={styles.calBlock}>

@@ -394,7 +394,7 @@ const isTutorialMode = tutorialMode === 'true';
       if (food?.fsId) {
         // Has fsId -- fetch servings directly
         servings = await fetchFatSecretServings(food.fsId).catch(() => []);
-      } else if (!food?.isCustom && food?.description) {
+      } else if (!food?.isCustom && !food?.isMyFood && !isEditing && food?.description) {
         // No fsId (stale entry) -- search by name and use top result's servings
         servings = await fetchFatSecretByName(food.description).catch(() => []);
       }
@@ -429,7 +429,9 @@ const isTutorialMode = tutorialMode === 'true';
         const saved = await AsyncStorage.getItem('pj_favorites');
         if (saved && food) {
           const favs = JSON.parse(saved);
-          setIsFav(favs.some((f: any) => f.name === food.description));
+          setIsFav(favs.some((f: any) =>
+            food.fsId ? f.fsId === food.fsId : (f.name === food.description && !f.fsId)
+          ));
         }
       } catch (e) {}
     };
@@ -538,7 +540,12 @@ const isTutorialMode = tutorialMode === 'true';
       const saved = await AsyncStorage.getItem('pj_favorites');
       let favs = saved ? JSON.parse(saved) : [];
       if (isFav) {
-        favs = favs.filter((f: any) => f.name !== food.description);
+        if (food.fsId) {
+          favs = favs.filter((f: any) => f.fsId !== food.fsId);
+        } else {
+          const idx = favs.findIndex((f: any) => f.name === food.description && !f.fsId);
+          if (idx !== -1) favs.splice(idx, 1);
+        }
         showToast('Removed from favorites', food.description, 'info');
       } else {
         // Use the first (label) serving for saved macros -- not the current text box amount.
@@ -568,7 +575,11 @@ const isTutorialMode = tutorialMode === 'true';
         };
         const labelCal = labelServing ? labelServing.calories : calories;
         favs.push({
+          id: Math.random().toString(36).slice(2) + Date.now().toString(36),
           name: food.description,
+          brand: food.brand || null,
+          isMyFood: food?.isMyFood || false,
+          isCustom: food?.isCustom || false,
           cal: labelCal,
           protein: getN('Protein'),
           carbs: getN('Carbohydrate, by difference'),
@@ -797,10 +808,10 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
   proteinPer100g,
   carbsPer100g,
   fatPer100g,
-  labelCal: defaultFsServing?.calories || selectedServing?.calories || effectiveServing?.calories || calPer100g,
-  labelProtein: defaultFsServing?.protein || selectedServing?.protein || effectiveServing?.protein || proteinPer100g,
-  labelCarbs: defaultFsServing?.carbs || selectedServing?.carbs || effectiveServing?.carbs || carbsPer100g,
-  labelFat: defaultFsServing?.fat || selectedServing?.fat || effectiveServing?.fat || fatPer100g,
+  labelCal: selectedServing?.calories || effectiveServing?.calories || defaultFsServing?.calories || calPer100g,
+  labelProtein: selectedServing?.protein || effectiveServing?.protein || defaultFsServing?.protein || proteinPer100g,
+  labelCarbs: selectedServing?.carbs || effectiveServing?.carbs || defaultFsServing?.carbs || carbsPer100g,
+  labelFat: selectedServing?.fat || effectiveServing?.fat || defaultFsServing?.fat || fatPer100g,
   loggedAmount: amount,
   loggedUnit: unit,
   servingGrams: effectiveServing?.grams,

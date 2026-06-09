@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Dimensions, Easing, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Dimensions, Easing, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle, Defs, Line, LinearGradient as SvgLinearGradient, Path, Polyline, Rect, Stop, Text as SvgText } from 'react-native-svg';
-import { CardPeriod, DATA_KEY_META, StatsCard } from '../statsCardRegistry';
+import { ADVANCED_NUTRIENTS, CardPeriod, DATA_KEY_META, NUTRIENT_CATEGORIES, StatsCard } from '../statsCardRegistry';
 import { TrendData } from '../utils/statsData';
 
 const CHART_WIDTH = Dimensions.get('window').width - 64;
@@ -912,7 +913,7 @@ function WorkoutFrequencyChart({ data, theme }: {
   );
 }
 
-export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal, sleepGoal, onPeriodChange, onEditPress, homeMode = false, showNetCarbs = false, editBtnRef }: {
+export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal, sleepGoal, onPeriodChange, onEditPress, onNutrientChange, homeMode = false, showNetCarbs = false, editBtnRef }: {
   card: StatsCard;
   cardTrendData: TrendData;
   theme: any;
@@ -921,11 +922,43 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
   sleepGoal: number;
   onPeriodChange?: (cardId: string, period: CardPeriod) => void;
   onEditPress?: (card: StatsCard) => void;
+  onNutrientChange?: (cardId: string, nutrientKey: string) => void;
   homeMode?: boolean;
   showNetCarbs?: boolean;
   editBtnRef?: React.RefObject<any>;
 }) {
   const shadow = { shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 12, elevation: 6 };
+  const [nutrientPickerVisible, setNutrientPickerVisible] = useState(false);
+  const pickerOverlayAnim = useRef(new Animated.Value(0)).current;
+  const pickerScaleAnim = useRef(new Animated.Value(0.92)).current;
+  const pickerOpacityAnim = useRef(new Animated.Value(0)).current;
+
+  const openNutrientPicker = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setNutrientPickerVisible(true);
+    pickerOverlayAnim.setValue(0);
+    pickerScaleAnim.setValue(0.92);
+    pickerOpacityAnim.setValue(0);
+    Animated.parallel([
+      Animated.timing(pickerOverlayAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
+      Animated.timing(pickerScaleAnim, { toValue: 1, duration: 180, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(pickerOpacityAnim, { toValue: 1, duration: 160, useNativeDriver: true }),
+    ]).start();
+  };
+
+  const closeNutrientPicker = () => {
+    Animated.parallel([
+      Animated.timing(pickerOverlayAnim, { toValue: 0, duration: 160, useNativeDriver: true }),
+      Animated.timing(pickerScaleAnim, { toValue: 0.92, duration: 140, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(pickerOpacityAnim, { toValue: 0, duration: 120, useNativeDriver: true }),
+    ]).start(() => setNutrientPickerVisible(false));
+  };
+
+  const selectNutrient = (key: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    closeNutrientPicker();
+    onNutrientChange?.(card.id, key);
+  };
 
   const getChart = () => {
     const ct = card.chartType;
@@ -1019,22 +1052,24 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
         return ct === 'bar'
           ? <GenericBarChart data={cardTrendData.effortScore} color={gc ?? '#f97316'} unit="" fmtY={v => `${Math.round(v)}`} startFromZero={false} theme={theme} />
           : <LineChart data={cardTrendData.effortScore} color={gc ?? '#f97316'} unit="" fmtY={v => `${Math.round(v)}`} gradientId={`ef_${card.id}`} theme={theme} />;
-      case 'fiber':
+      case 'advancedNutrition': {
+        const nk = card.nutrientKey;
+        const nutrientDef = nk ? ADVANCED_NUTRIENTS.find(n => n.key === nk) : null;
+        const data = nk ? (cardTrendData.nutrients?.[nk] ?? []) : [];
+        if (!nutrientDef || data.length === 0) return null;
+        const color = gc ?? nutrientDef.defaultColor;
+        const unit = nutrientDef.unit;
+        const isMg = unit === 'mg';
+        const fmtY = isMg
+          ? (v: number) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${Math.round(v)}`
+          : (v: number) => `${Math.round(v * 10) / 10}`;
+        const fmtFull = isMg
+          ? (v: number) => `${Math.round(v).toLocaleString()} mg`
+          : (v: number) => `${Math.round(v * 10) / 10} ${unit}`;
         return ct === 'bar'
-          ? <GenericBarChart data={cardTrendData.fiber} color={gc ?? '#10b981'} unit="g" fmtY={v => `${Math.round(v)}`} theme={theme} />
-          : <LineChart data={cardTrendData.fiber} color={gc ?? '#10b981'} unit="g" fmtY={v => `${Math.round(v)}`} gradientId={`fb_${card.id}`} theme={theme} />;
-      case 'sodium':
-        return ct === 'bar'
-          ? <GenericBarChart data={cardTrendData.sodium} color={gc ?? '#8b5cf6'} unit=" mg" fmtY={v => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${Math.round(v)}`} fmtFull={v => Math.round(v).toLocaleString()} theme={theme} />
-          : <LineChart data={cardTrendData.sodium} color={gc ?? '#8b5cf6'} unit=" mg" fmtY={v => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : `${Math.round(v)}`} fmtFull={v => `${Math.round(v).toLocaleString()} mg`} gradientId={`sod_${card.id}`} theme={theme} />;
-      case 'cholesterol':
-        return ct === 'bar'
-          ? <GenericBarChart data={cardTrendData.cholesterol} color={gc ?? '#14b8a6'} unit=" mg" fmtY={v => `${Math.round(v)}`} theme={theme} />
-          : <LineChart data={cardTrendData.cholesterol} color={gc ?? '#14b8a6'} unit=" mg" fmtY={v => `${Math.round(v)}`} gradientId={`cho_${card.id}`} theme={theme} />;
-      case 'saturatedFat':
-        return ct === 'bar'
-          ? <GenericBarChart data={cardTrendData.saturatedFat} color={gc ?? '#f97316'} unit="g" fmtY={v => `${Math.round(v)}`} theme={theme} />
-          : <LineChart data={cardTrendData.saturatedFat} color={gc ?? '#f97316'} unit="g" fmtY={v => `${Math.round(v)}`} gradientId={`sf_${card.id}`} theme={theme} />;
+          ? <GenericBarChart data={data} color={color} unit={` ${unit}`} fmtY={fmtY} fmtFull={fmtFull} theme={theme} />
+          : <LineChart data={data} color={color} unit={` ${unit}`} fmtY={fmtY} fmtFull={fmtFull} gradientId={`an_${card.id}`} theme={theme} />;
+      }
       default:
         return null;
     }
@@ -1152,37 +1187,33 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
         const highEffort = d.effortScore.filter(x => x.value >= 7).length;
         return [{ label: 'Avg Effort', value: `${avg} / 10` }, { label: 'High Effort Days', value: `${highEffort}` }];
       }
-      case 'fiber': {
-        if (d.fiber.length === 0) return undefined;
-        const avg = Math.round(d.fiber.reduce((s, x) => s + x.value, 0) / d.fiber.length * 10) / 10;
-        return [{ label: 'Avg / Day', value: `${avg}g` }, { label: 'Days Tracked', value: `${d.fiber.length}` }];
-      }
-      case 'sodium': {
-        if (d.sodium.length === 0) return undefined;
-        const avg = Math.round(d.sodium.reduce((s, x) => s + x.value, 0) / d.sodium.length);
-        return [{ label: 'Avg / Day', value: `${avg.toLocaleString()} mg` }, { label: 'Days Tracked', value: `${d.sodium.length}` }];
-      }
-      case 'cholesterol': {
-        if (d.cholesterol.length === 0) return undefined;
-        const avg = Math.round(d.cholesterol.reduce((s, x) => s + x.value, 0) / d.cholesterol.length);
-        return [{ label: 'Avg / Day', value: `${avg} mg` }, { label: 'Days Tracked', value: `${d.cholesterol.length}` }];
-      }
-      case 'saturatedFat': {
-        if (d.saturatedFat.length === 0) return undefined;
-        const avg = Math.round(d.saturatedFat.reduce((s, x) => s + x.value, 0) / d.saturatedFat.length * 10) / 10;
-        return [{ label: 'Avg / Day', value: `${avg}g` }, { label: 'Days Tracked', value: `${d.saturatedFat.length}` }];
+      case 'advancedNutrition': {
+        const nk = card.nutrientKey;
+        const nutrientDef = nk ? ADVANCED_NUTRIENTS.find(n => n.key === nk) : null;
+        const arr = nk ? (d.nutrients?.[nk] ?? []) : [];
+        if (!nutrientDef || arr.length === 0) return undefined;
+        const unit = nutrientDef.unit;
+        const avg = arr.reduce((s, x) => s + x.value, 0) / arr.length;
+        const fmtVal = unit === 'g'
+          ? `${Math.round(avg * 10) / 10}${unit}`
+          : `${Math.round(avg).toLocaleString()} ${unit}`;
+        return [{ label: 'Avg / Day', value: fmtVal }, { label: 'Days Tracked', value: `${arr.length}` }];
       }
       default: return undefined;
     }
   };
 
   const stats = getStats();
-  const iconName = card.dataKey ? DATA_KEY_META[card.dataKey].icon : 'analytics-outline';
+  const iconName = card.dataKey ? (DATA_KEY_META[card.dataKey]?.icon ?? 'analytics-outline') : 'analytics-outline';
 
   // Sample-size sublabel: how many data points this card is actually based on.
   // Uniform across every card so averages never hide their sample size.
   const sampleInfo = (() => {
     if (!card.dataKey) return null;
+    if (card.dataKey === 'advancedNutrition') {
+      const arr = card.nutrientKey ? (cardTrendData.nutrients?.[card.nutrientKey] ?? []) : [];
+      return arr.length > 0 ? { count: arr.length, noun: 'day' } : null;
+    }
     const arrByKey: Record<string, { date: string }[]> = {
       weight: cardTrendData.weight, calories: cardTrendData.cal, steps: cardTrendData.steps,
       activeCals: cardTrendData.activeCal, sleep: cardTrendData.sleep, macros: cardTrendData.macro,
@@ -1206,7 +1237,7 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
         <Text style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted, flex: 1, marginLeft: 6 }}>{card.label}</Text>
         <View style={{ flexDirection: 'row', gap: 4, marginRight: homeMode ? 0 : 8 }}>
           {([7, 30, 90] as CardPeriod[]).map(p => (
-            <TouchableOpacity key={p} onPress={() => onPeriodChange?.(card.id, p)}
+            <TouchableOpacity key={p} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPeriodChange?.(card.id, p); }}
               style={{ paddingHorizontal: 7, paddingVertical: 2, borderRadius: 5,
                 backgroundColor: card.period === p ? theme.accentBlueBg : 'transparent',
                 borderWidth: 1, borderColor: card.period === p ? theme.accentBlueBorder : theme.borderInput }}>
@@ -1217,11 +1248,70 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
           ))}
         </View>
         {!homeMode && (
-          <TouchableOpacity ref={editBtnRef} onPress={() => onEditPress?.(card)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <TouchableOpacity ref={editBtnRef} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onEditPress?.(card); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <Ionicons name="settings" size={16} color={theme.textMuted} />
           </TouchableOpacity>
         )}
       </View>
+
+      {card.dataKey === 'advancedNutrition' && (
+        <TouchableOpacity
+          onPress={openNutrientPicker}
+          style={{ alignSelf: 'flex-start', flexDirection: 'row', alignItems: 'center', gap: 4,
+            backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder,
+            borderRadius: 6, paddingHorizontal: 10, paddingVertical: 5, marginBottom: 10 }}>
+          <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlue }}>
+            {card.nutrientKey ? (ADVANCED_NUTRIENTS.find(n => n.key === card.nutrientKey)?.label ?? 'Select Nutrient') : 'Select Nutrient'}
+          </Text>
+          <Ionicons name="chevron-down" size={12} color={theme.accentBlue} />
+        </TouchableOpacity>
+      )}
+
+      <Modal visible={nutrientPickerVisible} transparent animationType="none" statusBarTranslucent onRequestClose={closeNutrientPicker}>
+        <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.6)', opacity: pickerOverlayAnim }]}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeNutrientPicker} />
+        </Animated.View>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }} pointerEvents="box-none">
+          <Animated.View style={{ transform: [{ scale: pickerScaleAnim }], opacity: pickerOpacityAnim,
+            width: '88%', maxHeight: '78%', backgroundColor: theme.bgSheet,
+            borderRadius: 16, borderWidth: 0.5, borderColor: theme.borderSheet,
+            shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20 }}>
+            <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderSubtle, alignSelf: 'center', marginTop: 10, marginBottom: 4 }} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle }}>
+              <Text style={{ flex: 1, fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted }}>NUTRIENT</Text>
+              <TouchableOpacity onPress={closeNutrientPicker} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <Ionicons name="close" size={20} color={theme.textMuted} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false}>
+              {NUTRIENT_CATEGORIES.map(cat => {
+                const items = ADVANCED_NUTRIENTS.filter(n => n.category === cat);
+                return (
+                  <View key={cat}>
+                    <Text style={{ fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold',
+                      color: theme.textMuted, marginTop: 14, marginBottom: 4, paddingHorizontal: 16 }}>{cat}</Text>
+                    {items.map(n => {
+                      const selected = card.nutrientKey === n.key;
+                      return (
+                        <TouchableOpacity key={n.key} onPress={() => selectNutrient(n.key)}
+                          style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 11,
+                            backgroundColor: selected ? theme.accentBlueBg : 'transparent' }}>
+                          <Text style={{ flex: 1, fontSize: 14, fontFamily: 'DMSans_400Regular',
+                            color: selected ? theme.accentBlue : theme.textPrimary }}>{n.label}</Text>
+                          <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginRight: selected ? 8 : 0 }}>{n.unit}</Text>
+                          {selected && <Ionicons name="checkmark" size={16} color={theme.accentBlue} />}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                );
+              })}
+              <View style={{ height: 16 }} />
+            </ScrollView>
+          </Animated.View>
+        </View>
+      </Modal>
+
       <View key={card.period}>{getChart()}</View>
       {stats && stats.length > 0 && (
         <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle, flexDirection: 'row' }}>
@@ -1241,7 +1331,7 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
       {(() => {
         const excMapping: Partial<Record<string, 'diet' | 'water' | 'exercise'>> = {
           calories: 'diet', macros: 'diet', netCalories: 'diet', fiber: 'diet',
-          sodium: 'diet', cholesterol: 'diet', saturatedFat: 'diet',
+          sodium: 'diet', cholesterol: 'diet', saturatedFat: 'diet', advancedNutrition: 'diet',
           water: 'water',
           activeCals: 'exercise', workoutFreq: 'exercise', exerciseMinutes: 'exercise', effortScore: 'exercise',
         };

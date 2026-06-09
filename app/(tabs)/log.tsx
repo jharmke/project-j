@@ -1135,12 +1135,10 @@ export default function LogScreen() {
           {
             key: 'carbs', name: 'CARBS',
             items: [
-              { label: 'Total Carbs',  value: totalCarbs,         unit: 'g',  dir: 'neutral',   goal: null as number | null, directField: 'carbs' },
               { label: 'Added Sugars', value: totalAddedSugars,   unit: 'g',  dir: 'want-less', goal: g.addedSugars,         nutrientKey: 'Added Sugars' },
               { label: 'Fiber',        value: totalFiber,         unit: 'g',  dir: 'want-more', goal: g.fiber,               nutrientKey: 'Fiber, total dietary' },
               { label: 'Sugar',        value: totalSugar,         unit: 'g',  dir: 'want-less', goal: g.sugar,               nutrientKey: 'Sugars, total including NLEA' },
               { label: 'Sugar Alc.',   value: totalSugarAlcohols, unit: 'g',  dir: 'neutral',   goal: null as number | null, nutrientKey: 'Sugar Alcohols' },
-              { label: 'Net Carbs',    value: totalNetCarbs,      unit: 'g',  dir: 'neutral',   goal: null as number | null },
             ],
           },
           {

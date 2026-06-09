@@ -5,7 +5,7 @@ export type StatsCardType = 'system' | 'graph';
 export type SystemCardKey = 'atAGlance' | 'trends' | 'records' | 'streaks' | 'calendar' | 'reports';
 export type DataKey =
   // Nutrition
-  'calories' | 'macros' | 'netCalories' | 'water' | 'fiber' | 'sodium' | 'cholesterol' | 'saturatedFat' |
+  'calories' | 'macros' | 'netCalories' | 'water' | 'advancedNutrition' |
   // Activity
   'steps' | 'activeCals' | 'workoutFreq' | 'exerciseMinutes' | 'effortScore' |
   // Body
@@ -26,6 +26,7 @@ export interface StatsCard {
   chartType?: ChartType;
   color?: string;
   macroColors?: { protein: string; carbs: string; fat: string };
+  nutrientKey?: string;
   // Shared
   period: CardPeriod;
   label: string;
@@ -55,6 +56,10 @@ export const DEFAULT_STATS_CARDS: StatsCard[] = [
   { id: 'sys_reports',  type: 'system', systemKey: 'reports',  label: 'Reports',  visible: true, order: 11, period: 30, placement: 'stats' },
 ];
 
+const LEGACY_NUTRITION_KEY_MAP: Record<string, string> = {
+  fiber: 'fiber', sodium: 'sodium', cholesterol: 'cholesterol', saturatedFat: 'saturatedFat',
+};
+
 // Merges saved cards with defaults -- adds any new defaults missing from saved state.
 // Never removes user-created cards. Preserves user order and visibility.
 export async function loadStatsCards(): Promise<StatsCard[]> {
@@ -62,7 +67,13 @@ export async function loadStatsCards(): Promise<StatsCard[]> {
     const saved = await AsyncStorage.getItem(STORAGE_KEY);
     if (!saved) return DEFAULT_STATS_CARDS;
     const parsed: StatsCard[] = JSON.parse(saved);
-    const merged = [...parsed];
+    const migrated = parsed.map(c => {
+      if (c.type === 'graph' && c.dataKey && LEGACY_NUTRITION_KEY_MAP[c.dataKey as string]) {
+        return { ...c, dataKey: 'advancedNutrition' as DataKey, nutrientKey: LEGACY_NUTRITION_KEY_MAP[c.dataKey as string] };
+      }
+      return c;
+    });
+    const merged = [...migrated];
     for (const def of DEFAULT_STATS_CARDS) {
       if (!merged.find(c => c.id === def.id)) {
         merged.push({ ...def, order: merged.length });
@@ -98,14 +109,11 @@ export type DataKeyCategory = typeof DATA_KEY_CATEGORIES[number];
 // Icon name for each data key -- used in creator grid and card headers
 export const DATA_KEY_META: Record<DataKey, { icon: string; label: string; description: string; category: DataKeyCategory }> = {
   // Nutrition
-  calories:      { icon: 'flame-outline',          label: 'Calories',          description: 'Daily calorie intake',                  category: 'Nutrition' },
-  macros:        { icon: 'nutrition-outline',       label: 'Macros',            description: 'Protein, carbs, fat breakdown',         category: 'Nutrition' },
-  netCalories:   { icon: 'swap-vertical-outline',   label: 'Net Calories',      description: 'Consumed minus active calories',        category: 'Nutrition' },
-  water:         { icon: 'water-outline',           label: 'Water',             description: 'Daily water intake (oz)',               category: 'Nutrition' },
-  fiber:         { icon: 'leaf-outline',            label: 'Fiber',             description: 'Daily fiber intake (g)',                category: 'Nutrition' },
-  sodium:        { icon: 'flask-outline',           label: 'Sodium',            description: 'Daily sodium intake (mg)',              category: 'Nutrition' },
-  cholesterol:   { icon: 'analytics-outline',       label: 'Cholesterol',       description: 'Daily cholesterol intake (mg)',         category: 'Nutrition' },
-  saturatedFat:  { icon: 'restaurant-outline',      label: 'Saturated Fat',     description: 'Daily saturated fat intake (g)',        category: 'Nutrition' },
+  calories:          { icon: 'flame-outline',        label: 'Calories',          description: 'Daily calorie intake',                  category: 'Nutrition' },
+  macros:            { icon: 'nutrition-outline',    label: 'Macros',            description: 'Protein, carbs, fat breakdown',         category: 'Nutrition' },
+  netCalories:       { icon: 'swap-vertical-outline',label: 'Net Calories',      description: 'Consumed minus active calories',        category: 'Nutrition' },
+  water:             { icon: 'water-outline',        label: 'Water',             description: 'Daily water intake (oz)',               category: 'Nutrition' },
+  advancedNutrition: { icon: 'analytics-outline',   label: 'Advanced Nutrition',description: 'Any tracked nutrient over time',        category: 'Nutrition' },
   // Activity
   steps:         { icon: 'footsteps-outline',       label: 'Steps',             description: 'Daily step count',                     category: 'Activity' },
   activeCals:    { icon: 'heart-outline',           label: 'Active Calories',   description: 'Active calories burned',               category: 'Activity' },
@@ -129,3 +137,49 @@ export function availableChartTypes(dataKey: DataKey): ChartType[] {
   if (dataKey === 'macros') return ['stackedBar'];
   return ['line', 'bar'];
 }
+
+export type NutrientCategory = 'Carbs' | 'Fats' | 'Core' | 'Vitamins' | 'Minerals';
+export const NUTRIENT_CATEGORIES: NutrientCategory[] = ['Carbs', 'Fats', 'Core', 'Vitamins', 'Minerals'];
+
+export interface AdvancedNutrient {
+  key: string;
+  nutrientName: string;
+  label: string;
+  unit: string;
+  category: NutrientCategory;
+  defaultColor: string;
+}
+
+export const ADVANCED_NUTRIENTS: AdvancedNutrient[] = [
+  // Carbs
+  { key: 'addedSugars',    nutrientName: 'Added Sugars',                      label: 'Added Sugars',    unit: 'g',   category: 'Carbs',    defaultColor: '#f59e0b' },
+  { key: 'fiber',          nutrientName: 'Fiber, total dietary',              label: 'Fiber',           unit: 'g',   category: 'Carbs',    defaultColor: '#10b981' },
+  { key: 'sugar',          nutrientName: 'Sugars, total including NLEA',      label: 'Sugar',           unit: 'g',   category: 'Carbs',    defaultColor: '#f97316' },
+  { key: 'sugarAlcohols',  nutrientName: 'Sugar Alcohols',                    label: 'Sugar Alcohols',  unit: 'g',   category: 'Carbs',    defaultColor: '#a78bfa' },
+  // Fats
+  { key: 'monoFat',        nutrientName: 'Monounsaturated Fat',               label: 'Mono Fat',        unit: 'g',   category: 'Fats',     defaultColor: '#06b6d4' },
+  { key: 'polyFat',        nutrientName: 'Polyunsaturated Fat',               label: 'Poly Fat',        unit: 'g',   category: 'Fats',     defaultColor: '#0ea5e9' },
+  { key: 'saturatedFat',   nutrientName: 'Fatty acids, total saturated',      label: 'Saturated Fat',   unit: 'g',   category: 'Fats',     defaultColor: '#ef4444' },
+  { key: 'transFat',       nutrientName: 'Trans Fat',                         label: 'Trans Fat',       unit: 'g',   category: 'Fats',     defaultColor: '#dc2626' },
+  // Core
+  { key: 'caffeine',       nutrientName: 'Caffeine',                          label: 'Caffeine',        unit: 'mg',  category: 'Core',     defaultColor: '#78716c' },
+  { key: 'cholesterol',    nutrientName: 'Cholesterol',                       label: 'Cholesterol',     unit: 'mg',  category: 'Core',     defaultColor: '#e879f9' },
+  { key: 'potassium',      nutrientName: 'Potassium, K',                      label: 'Potassium',       unit: 'mg',  category: 'Core',     defaultColor: '#84cc16' },
+  { key: 'sodium',         nutrientName: 'Sodium, Na',                        label: 'Sodium',          unit: 'mg',  category: 'Core',     defaultColor: '#f97316' },
+  // Vitamins
+  { key: 'biotin',         nutrientName: 'Biotin',                            label: 'Biotin',          unit: 'mcg', category: 'Vitamins', defaultColor: '#a3e635' },
+  { key: 'folate',         nutrientName: 'Folate',                            label: 'Folate',          unit: 'mcg', category: 'Vitamins', defaultColor: '#34d399' },
+  { key: 'vitaminA',       nutrientName: 'Vitamin A',                         label: 'Vitamin A',       unit: 'mcg', category: 'Vitamins', defaultColor: '#fbbf24' },
+  { key: 'vitaminB6',      nutrientName: 'Vitamin B6',                        label: 'Vitamin B6',      unit: 'mg',  category: 'Vitamins', defaultColor: '#60a5fa' },
+  { key: 'vitaminB12',     nutrientName: 'Vitamin B12',                       label: 'Vitamin B12',     unit: 'mcg', category: 'Vitamins', defaultColor: '#818cf8' },
+  { key: 'vitaminC',       nutrientName: 'Vitamin C',                         label: 'Vitamin C',       unit: 'mg',  category: 'Vitamins', defaultColor: '#fb923c' },
+  { key: 'vitaminD',       nutrientName: 'Vitamin D',                         label: 'Vitamin D',       unit: 'mcg', category: 'Vitamins', defaultColor: '#facc15' },
+  { key: 'vitaminE',       nutrientName: 'Vitamin E',                         label: 'Vitamin E',       unit: 'mg',  category: 'Vitamins', defaultColor: '#4ade80' },
+  { key: 'vitaminK',       nutrientName: 'Vitamin K',                         label: 'Vitamin K',       unit: 'mcg', category: 'Vitamins', defaultColor: '#2dd4bf' },
+  // Minerals
+  { key: 'calcium',        nutrientName: 'Calcium, Ca',                       label: 'Calcium',         unit: 'mg',  category: 'Minerals', defaultColor: '#94a3b8' },
+  { key: 'copper',         nutrientName: 'Copper, Cu',                        label: 'Copper',          unit: 'mg',  category: 'Minerals', defaultColor: '#b45309' },
+  { key: 'iron',           nutrientName: 'Iron, Fe',                          label: 'Iron',            unit: 'mg',  category: 'Minerals', defaultColor: '#b91c1c' },
+  { key: 'magnesium',      nutrientName: 'Magnesium, Mg',                     label: 'Magnesium',       unit: 'mg',  category: 'Minerals', defaultColor: '#0ea5e9' },
+  { key: 'zinc',           nutrientName: 'Zinc, Zn',                          label: 'Zinc',            unit: 'mg',  category: 'Minerals', defaultColor: '#7c3aed' },
+];

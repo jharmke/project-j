@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ADVANCED_NUTRIENTS } from '../statsCardRegistry';
 import { calcSleepScore } from './sleepScore';
 
 export type TrendData = {
@@ -25,6 +26,7 @@ export type TrendData = {
   sugarAlcohols: { date: string; value: number }[];
   effortScore: { date: string; value: number }[];
   excludedCounts: { diet: number; water: number; exercise: number };
+  nutrients: Record<string, { date: string; value: number }[]>;
 };
 
 export const EMPTY_TREND_DATA: TrendData = {
@@ -33,6 +35,7 @@ export const EMPTY_TREND_DATA: TrendData = {
   bodyFatPct: [], exerciseMinutes: [], fiber: [], sodium: [], cholesterol: [], saturatedFat: [],
   sugarAlcohols: [], effortScore: [],
   excludedCounts: { diet: 0, water: 0, exercise: 0 },
+  nutrients: {},
 };
 
 export const offsetToDateKey = (offset: number): string => {
@@ -173,6 +176,7 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
   const sfH: TrendData['saturatedFat'] = [];
   const saH: TrendData['sugarAlcohols'] = [];
   const esH: TrendData['effortScore'] = [];
+  const nutrientMap: Record<string, { date: string; value: number }[]> = {};
   let exDiet = 0, exWater = 0, exExercise = 0;
 
   // Net cal inputs: per-day BMR map + burn accuracy, read once up front.
@@ -222,6 +226,13 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
             if (choVal > 0) choH.push({ date: dateKey, value: choVal });
             if (sfVal > 0) sfH.push({ date: dateKey, value: sfVal });
             if (saVal > 0) saH.push({ date: dateKey, value: saVal });
+            for (const n of ADVANCED_NUTRIENTS) {
+              const val = getEntryNutrient(data.entries, n.nutrientName);
+              if (val > 0) {
+                if (!nutrientMap[n.key]) nutrientMap[n.key] = [];
+                nutrientMap[n.key].push({ date: dateKey, value: val });
+              }
+            }
           }
         }
         if (data.steps) sh.push({ date: dateKey, value: data.steps });
@@ -258,6 +269,7 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
     bloodOxygen: boH, bodyFatPct: bfH, exerciseMinutes: emH, effortScore: esH,
     fiber: fbH, sodium: sodH, cholesterol: choH, saturatedFat: sfH, sugarAlcohols: saH,
     excludedCounts: { diet: exDiet, water: exWater, exercise: exExercise },
+    nutrients: nutrientMap,
   };
 };
 

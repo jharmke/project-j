@@ -273,6 +273,7 @@ export default function StatsScreen() {
   const [creatorStep, setCreatorStep] = useState<1 | 2 | 3>(1);
   const [creatorDataKey, setCreatorDataKey] = useState<DataKey | null>(null);
   const [creatorChartType, setCreatorChartType] = useState<ChartType | null>(null);
+  const [creatorNutrientKey, setCreatorNutrientKey] = useState<string>('fiber');
   const creatorSheetAnim = useRef(new Animated.Value(0)).current;
   const creatorOverlayAnim = useRef(new Animated.Value(0)).current;
 
@@ -1435,6 +1436,12 @@ export default function StatsScreen() {
     loadAllCardData(updated, days);
   };
 
+  const handleNutrientChange = (cardId: string, nutrientKey: string) => {
+    const updated = statsCards.map(c => c.id === cardId ? { ...c, nutrientKey } : c);
+    setStatsCards(updated);
+    saveStatsCards(updated);
+  };
+
   const handleCardPeriodChange = async (cardId: string, period: CardPeriod) => {
     const updated = statsCards.map(c => c.id === cardId ? { ...c, period } : c);
     setStatsCards(updated);
@@ -1490,6 +1497,7 @@ export default function StatsScreen() {
     setCreatorStep(1);
     setCreatorDataKey(null);
     setCreatorChartType(null);
+    setCreatorNutrientKey('fiber');
     creatorSheetAnim.setValue(0);
     creatorOverlayAnim.setValue(0);
     setCreatorVisible(true);
@@ -1509,6 +1517,7 @@ export default function StatsScreen() {
       setCreatorVisible(false);
       setCreatorColor(undefined);
       setCreatorMacroColors({ protein: MACRO_PROTEIN, carbs: MACRO_CARBS, fat: MACRO_FAT });
+      setCreatorNutrientKey('fiber');
     });
   };
 
@@ -1595,6 +1604,7 @@ export default function StatsScreen() {
       placement: 'stats',
       color: isMacros ? undefined : creatorColor,
       macroColors: isMacros && hasMacroCustom ? { ...creatorMacroColors } : undefined,
+      nutrientKey: creatorDataKey === 'advancedNutrition' ? creatorNutrientKey : undefined,
     };
     const updated = [...statsCards, newCard];
     setStatsCards(updated);
@@ -1814,6 +1824,7 @@ export default function StatsScreen() {
                     sleepGoal={sleepGoal}
                     onPeriodChange={handleCardPeriodChange}
                     onEditPress={(card) => setEditCard(card)}
+                    onNutrientChange={handleNutrientChange}
                     showNetCarbs={showNetCarbs}
                     editBtnRef={isTutCard ? graphCreatorEditBtnRef : undefined}
                   />
@@ -2286,6 +2297,7 @@ export default function StatsScreen() {
                       card={{ id: 'creator_preview', type: 'graph', dataKey: creatorDataKey, chartType: creatorChartType, period: 7, label: DATA_KEY_META[creatorDataKey].label, visible: true, order: 0, placement: 'stats',
                         color: creatorColor,
                         macroColors: (creatorMacroColors.protein !== MACRO_PROTEIN || creatorMacroColors.carbs !== MACRO_CARBS || creatorMacroColors.fat !== MACRO_FAT) ? creatorMacroColors : undefined,
+                        nutrientKey: creatorDataKey === 'advancedNutrition' ? creatorNutrientKey : undefined,
                       }}
                       cardTrendData={trendDataMap['7'] ?? EMPTY_TREND_DATA}
                       theme={theme}
@@ -2294,6 +2306,7 @@ export default function StatsScreen() {
                       sleepGoal={sleepGoal}
                       onPeriodChange={() => {}}
                       onEditPress={() => {}}
+                      onNutrientChange={(_, key) => setCreatorNutrientKey(key)}
                     />
                   </View>
                   <TouchableOpacity
@@ -2483,6 +2496,7 @@ export default function StatsScreen() {
                     card={{ id: 'creator_preview', type: 'graph', dataKey: creatorDataKey, chartType: creatorChartType, period: 7, label: DATA_KEY_META[creatorDataKey].label, visible: true, order: 0, placement: 'stats',
                       color: creatorColor,
                       macroColors: (creatorMacroColors.protein !== MACRO_PROTEIN || creatorMacroColors.carbs !== MACRO_CARBS || creatorMacroColors.fat !== MACRO_FAT) ? creatorMacroColors : undefined,
+                      nutrientKey: creatorDataKey === 'advancedNutrition' ? creatorNutrientKey : undefined,
                     }}
                     cardTrendData={trendDataMap['7'] ?? EMPTY_TREND_DATA}
                     theme={theme}
@@ -2491,6 +2505,7 @@ export default function StatsScreen() {
                     sleepGoal={sleepGoal}
                     onPeriodChange={() => {}}
                     onEditPress={() => {}}
+                    onNutrientChange={(_, key) => setCreatorNutrientKey(key)}
                   />
                   <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); handleAddCard(); }}
                     style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 4 }}>

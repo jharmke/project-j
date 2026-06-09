@@ -700,6 +700,7 @@ NOW: gym notes batch (2026-06-09, bugs + polish + haptics)
   [x] BUG: Prayer card "Ask for Prayer" button overlapping carousel dot indicators -- FIXED 2026-06-09. haloBtn in FaithTodayCard.tsx had no marginBottom; dots are position absolute bottom: 10 so button overlapped them. Added marginBottom: 8 to haloBtn style (applies to Reflect with Halo page 1 and Ask for prayer page 3). FaithTodayCard.tsx.
   [x] BUG: Workout tab -- Edit Day Label modal black box behind keyboard -- FIXED 2026-06-09. Outer KAV wrapping entire workout tab fired when modal TextInput got focus, shifting background content. Fix: removed outer KAV, added automaticallyAdjustKeyboardInsets to main ScrollView, restructured Label Modal with absolute overlay + KAV inside per CLAUDE.md pattern. workout.tsx.
   [x] BUG: Workout tab -- Workout notes keyboard not dismissing on save -- FIXED 2026-06-09. Added Keyboard.dismiss() at top of saveNote(). workout.tsx.
+  [x] POLISH: Workout tab -- Edit Day Label modal chrome -- FIXED 2026-06-09. Modal was using bgCard with no handle, no accent border, plain textPrimary title. Updated to full standard: bgSheet background, tappable handle pill (closes modal + Light haptic), 1.5px accentBlueRaw top border, drop shadow, title centered in accentBlueRaw Bebas. workout.tsx.
 
   FAITH HUB HOME CARD (FaithTodayCard.tsx):
   [x] Faith hub home card amber glow restored -- SHIPPED 2026-06-09. glow style was using black shadow (#000, opacity 0.18). Updated to match faith tab VotdCard: shadowColor #d4860a, opacity 0.85, offset {0,0}, radius 8, elevation 8.

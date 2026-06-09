@@ -8,6 +8,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { THEMES, useTheme } from '../../theme';
 import { storageSet } from '../../utils/storage';
 
@@ -152,7 +153,7 @@ export default function AllSetScreen() {
   };
 
   const handlePrimary = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     Animated.sequence([
       Animated.timing(btnScale, { toValue: 0.97, duration: 80, useNativeDriver: true }),
       Animated.timing(btnScale, { toValue: 1.0,  duration: 80, useNativeDriver: true }),
@@ -160,7 +161,7 @@ export default function AllSetScreen() {
   };
 
   const handleSetItMyself = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     Animated.sequence([
       Animated.timing(secScale, { toValue: 0.97, duration: 80, useNativeDriver: true }),
       Animated.timing(secScale, { toValue: 1.0,  duration: 80, useNativeDriver: true }),

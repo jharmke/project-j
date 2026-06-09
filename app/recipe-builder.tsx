@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { useCallback, useRef, useEffect, useState } from 'react';
 import { Alert, Animated, Dimensions, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -296,7 +297,7 @@ export default function RecipeBuilderScreen() {
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Remove', style: 'destructive', onPress: () => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+          triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
           setIngredients(prev => prev.filter(i => i.id !== id));
         }},
       ]
@@ -347,7 +348,7 @@ export default function RecipeBuilderScreen() {
   const saveRecipe = async () => {
     if (!canSave) return;
     if (isTutorialMode) return; // blocked in tutorial -- saveTutorialRecipe action handles it
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const recipe: Recipe = {
         id: recipeId || makeId(),
@@ -407,7 +408,7 @@ export default function RecipeBuilderScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={styles.backBtn}>
           <Text style={styles.backBtnText}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{recipeId ? 'Edit Recipe' : 'New Recipe'}</Text>
@@ -446,11 +447,11 @@ export default function RecipeBuilderScreen() {
         <View ref={addRowRef} style={styles.addRow}>
           <TouchableOpacity
             style={styles.addIngredientBtn}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/add-food', params: { meal: 'recipe', date: 'recipe', recipeMode: 'true' } }); }}>
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/add-food', params: { meal: 'recipe', date: 'recipe', recipeMode: 'true' } }); }}>
             <Ionicons name="search" size={16} color={theme.accentBlue} />
             <Text style={styles.addIngredientText}>Search Food</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.addCustomBtn} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowCustomFoodModal(true); }}>
+          <TouchableOpacity style={styles.addCustomBtn} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowCustomFoodModal(true); }}>
             <Ionicons name="add" size={16} color={theme.accentBlue} />
             <Text style={styles.addCustomText}>Create</Text>
           </TouchableOpacity>
@@ -634,13 +635,13 @@ export default function RecipeBuilderScreen() {
             <View ref={unitBtnRef} collapsable={false}>
               <TouchableOpacity
                 style={styles.unitPickerBtn}
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); showWeightUnitDropdown ? closeWeightUnitDropdown() : openWeightUnitDropdown(); }}>
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); showWeightUnitDropdown ? closeWeightUnitDropdown() : openWeightUnitDropdown(); }}>
                 <Text style={styles.unitPickerBtnText}>{totalWeightUnit}</Text>
                 <Ionicons name={showWeightUnitDropdown ? 'chevron-up' : 'chevron-down'} size={12} color={theme.accentBlue} />
               </TouchableOpacity>
             </View>
           </View>
-          <TouchableOpacity style={styles.defaultWeightToggleRow} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setDefaultToWeight(v => !v); }} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.defaultWeightToggleRow} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setDefaultToWeight(v => !v); }} activeOpacity={0.7}>
             <View style={[styles.defaultWeightCheckbox, defaultToWeight && styles.defaultWeightCheckboxActive]}>
               {defaultToWeight && <Ionicons name="checkmark" size={12} color={theme.bgPrimary} />}
             </View>
@@ -665,7 +666,7 @@ export default function RecipeBuilderScreen() {
               <TouchableOpacity
                 key={u}
                 style={[styles.unitDropdownItem, i < WEIGHT_UNITS.length - 1 && { borderBottomWidth: 1, borderBottomColor: theme.borderSubtle }]}
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setTotalWeightUnit(u); closeWeightUnitDropdown(); }}>
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setTotalWeightUnit(u); closeWeightUnitDropdown(); }}>
                 <Text style={[styles.unitDropdownText, totalWeightUnit === u && { color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }]}>{u}</Text>
                 {totalWeightUnit === u && <Ionicons name="checkmark" size={12} color={theme.accentBlue} />}
               </TouchableOpacity>

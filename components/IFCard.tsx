@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import PressableButton from './PressableButton';
@@ -123,7 +124,7 @@ export function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen,
 
   const IFLinkBtn = ({ label, color, onPress, hapticLevel = 'light' }: { label: string; color: string; onPress: () => void; hapticLevel?: 'light' | 'heavy' }) => (
     <TouchableOpacity
-      onPress={() => { Haptics.impactAsync(hapticLevel === 'heavy' ? Haptics.ImpactFeedbackStyle.Heavy : Haptics.ImpactFeedbackStyle.Light); onPress(); }}
+      onPress={() => { triggerHaptic(hapticLevel === 'heavy' ? Haptics.ImpactFeedbackStyle.Heavy : Haptics.ImpactFeedbackStyle.Light); onPress(); }}
       style={{ backgroundColor: color + '18', borderWidth: 1, borderColor: color + '40', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 5 }}>
       <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color, letterSpacing: 0.5 }}>{label}</Text>
     </TouchableOpacity>
@@ -150,7 +151,7 @@ export function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen,
       {!readOnly && (
         <View style={{ flexDirection: 'row', gap: 5, marginBottom: 12, flexWrap: 'wrap' }}>
           {Object.keys(IF_METHODS).map(m => (
-            <TouchableOpacity key={m} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setIfMethod(m); }}
+            <TouchableOpacity key={m} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setIfMethod(m); }}
               style={{ paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, backgroundColor: ifMethod === m ? theme.accentBlueBg : theme.ifMethodBg, borderWidth: 1, borderColor: ifMethod === m ? theme.accentBlueBorder : theme.ifMethodBorder }}>
               <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: ifMethod === m ? theme.accentBlue : theme.ifMethodText }}>{m}</Text>
             </TouchableOpacity>
@@ -227,7 +228,7 @@ export function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen,
             <IFLinkBtn label="Edit Start" color={theme.textSecondary} onPress={() => setShowTimePicker(true)} />
             <TouchableOpacity
               activeOpacity={0.75}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onLastMeal(); }}
+              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); onLastMeal(); }}
               style={{ backgroundColor: theme.accentRed, borderRadius: 10, paddingHorizontal: 22, paddingVertical: 10 }}
             >
               <Text style={{ color: '#ffffff', fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 }}>LAST MEAL</Text>
@@ -238,10 +239,10 @@ export function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen,
           {showTimePicker && (
             <View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
-                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowTimePicker(false); }}>
+                <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowTimePicker(false); }}>
                   <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium' }}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowTimePicker(false); if (pickerTime) onConfirmStart(pickerTime); }}>
+                <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowTimePicker(false); if (pickerTime) onConfirmStart(pickerTime); }}>
                   <Text style={{ color: theme.accentGreen, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Confirm</Text>
                 </TouchableOpacity>
               </View>
@@ -288,10 +289,10 @@ export function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen,
           {showTimePicker && (
             <View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
-                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowTimePicker(false); }}>
+                <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowTimePicker(false); }}>
                   <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium' }}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowTimePicker(false); if (pickerTime) onConfirmStart(pickerTime); }}>
+                <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowTimePicker(false); if (pickerTime) onConfirmStart(pickerTime); }}>
                   <Text style={{ color: theme.accentGreen, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Confirm</Text>
                 </TouchableOpacity>
               </View>
@@ -301,10 +302,10 @@ export function IFCard({ theme, ifStart, ifEnd, ifMethod, ifCustomHours, isOpen,
           {showEndTimePicker && (
             <View>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 }}>
-                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowEndTimePicker(false); }}>
+                <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowEndTimePicker(false); }}>
                   <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium' }}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowEndTimePicker(false); if (pickerTime) onConfirmEnd(pickerTime); }}>
+                <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowEndTimePicker(false); if (pickerTime) onConfirmEnd(pickerTime); }}>
                   <Text style={{ color: theme.accentGreen, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Confirm</Text>
                 </TouchableOpacity>
               </View>

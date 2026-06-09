@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Text, TouchableOpacity } from 'react-native';
@@ -40,7 +41,7 @@ export default function HeaderAvatar({ inert = false }: { inert?: boolean }) {
 
   return (
     <TouchableOpacity
-      onPress={inert ? undefined : () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.navigate('/profile'); }}
+      onPress={inert ? undefined : () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.navigate('/profile'); }}
       disabled={inert}
       activeOpacity={inert ? 1 : 0.8}
       hitSlop={inert ? undefined : { top: 8, bottom: 8, left: 8, right: 8 }}

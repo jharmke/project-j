@@ -1,4 +1,5 @@
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -499,7 +500,7 @@ export default function TutorialOverlay() {
 
           {/* Next / Done */}
           <TouchableOpacity
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); advanceStep(); }}
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); advanceStep(); }}
             style={[
               styles.nextBtn,
               {

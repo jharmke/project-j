@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from 'react-native';
@@ -253,7 +254,7 @@ export default function MonthlySummaryScreen() {
   }, [monthKey]);
 
   const openDayModal = async (dateKey: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     try {
       const raw = await AsyncStorage.getItem(`pj_${dateKey}`);
       if (!raw) return;
@@ -278,7 +279,7 @@ export default function MonthlySummaryScreen() {
       <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
         <View style={{ paddingTop: insets.top + 12, paddingHorizontal: 20, marginBottom: 20 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <Ionicons name="chevron-back" size={22} color={accent} />
             </TouchableOpacity>
             <Text style={{ fontSize: 22, letterSpacing: 2, fontFamily: 'BebasNeue_400Regular', color: accent }}>MONTHLY SUMMARY</Text>
@@ -346,7 +347,7 @@ export default function MonthlySummaryScreen() {
         {/* Header */}
         <View style={{ paddingTop: insets.top + 12, paddingHorizontal: 20, marginBottom: 20 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <Ionicons name="chevron-back" size={22} color={accent} />
             </TouchableOpacity>
             <Text style={{ fontSize: 22, letterSpacing: 2, fontFamily: 'BebasNeue_400Regular', color: accent }}>
@@ -439,7 +440,7 @@ export default function MonthlySummaryScreen() {
                 {coachBody}
               </Text>
               <TouchableOpacity
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/diagnostic-report'); }}
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/diagnostic-report'); }}
                 style={{ marginTop: 12, alignSelf: 'flex-start' }}
               >
                 <Text style={{ fontSize: 11, color: accent, fontFamily: 'DMSans_600SemiBold' }}>View in Effort vs Results</Text>
@@ -451,7 +452,7 @@ export default function MonthlySummaryScreen() {
           <View style={[{ backgroundColor: theme.bgCard, borderRadius: 14, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: 'rgba(255,255,255,0.1)', padding: 14, marginBottom: 12 }, shadowStyle]}>
             <TouchableOpacity
               activeOpacity={0.7}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCalendarOpen(o => !o); }}
+              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setCalendarOpen(o => !o); }}
               style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: calendarOpen ? 12 : 0 }}
             >
               <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>Month at a Glance</Text>

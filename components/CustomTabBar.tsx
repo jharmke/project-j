@@ -2,7 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import * as Haptics from 'expo-haptics';
-import { useEffect, useRef, useState } from 'react';
+import { triggerHaptic } from '@/utils/haptics';
+import { useEffect, useState } from 'react';
 import { Dimensions, StyleSheet, TouchableOpacity, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -105,7 +106,6 @@ function FaithButton({ isFocused, scale, faithPulse, labelOpacity, labelTranslat
 export default function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
-  const hapticsEnabled = useRef(true);
   const [activeIndex, setActiveIndex] = useState(state.index);
   const [showFaith, setShowFaith] = useState(true); // faith on by default; corrected after settings load
   const pillX = useSharedValue(0);
@@ -122,7 +122,6 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
     AsyncStorage.getItem('pj_settings').then(saved => {
       if (saved) {
         const data = JSON.parse(saved);
-        if (data.hapticsEnabled !== undefined) hapticsEnabled.current = data.hapticsEnabled;
         setShowFaith(data.faithJourney !== 'notrightnow');
       } else {
         setShowFaith(true);
@@ -206,9 +205,7 @@ export default function CustomTabBar({ state, descriptors, navigation }: BottomT
     const routeIdx = state.routes.findIndex(r => r.name === tabName);
     if (routeIdx === -1) return;
 
-    if (hapticsEnabled.current) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
 
     // Press down
     scales[tabIdx].value = withSpring(0.85, { damping: 50, stiffness: 1500 });

@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -117,7 +118,7 @@ export default function DiagnosticReportScreen() {
   const selectedBlocked = isWindowBlocked(selectedWindow);
 
   const handleGenerate = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     setGenerating(true);
     try {
       const report = await generateDiagnosticReport(selectedWindow);
@@ -133,7 +134,7 @@ export default function DiagnosticReportScreen() {
   };
 
   const handleDelete = (report: DiagnosticReport) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
     Alert.alert(
       'Delete Report',
       'Remove this saved report? This cannot be undone.',
@@ -159,7 +160,7 @@ export default function DiagnosticReportScreen() {
 
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+        <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <Ionicons name="chevron-back" size={22} color={t.accentBlueRaw} />
           <Text style={[styles.backText, { color: t.accentBlueRaw }]}>Stats</Text>
         </TouchableOpacity>
@@ -184,7 +185,7 @@ export default function DiagnosticReportScreen() {
               <TouchableOpacity
                 key={w}
                 onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
                   setSelectedWindow(w);
                 }}
                 style={[styles.windowBtn, {
@@ -252,7 +253,7 @@ export default function DiagnosticReportScreen() {
                   key={r.id}
                   activeOpacity={0.75}
                   onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
                     router.push(`/diagnostic-report-view?id=${encodeURIComponent(r.id)}`);
                   }}
                   style={[styles.reportRow, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: isCurrent ? t.accentBlueRaw : t.borderCard, ...shadowStyle }]}

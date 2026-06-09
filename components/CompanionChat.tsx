@@ -9,6 +9,7 @@ import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, r
 import { GestureHandlerRootView, GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic, triggerHapticNotification } from '@/utils/haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { router } from 'expo-router';
@@ -302,7 +303,7 @@ export default function CompanionChat({
   }, []);
 
   const close = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     Keyboard.dismiss();
     Animated.timing(anim, { toValue: 0, duration: 180, useNativeDriver: false }).start(() => onClose());
   };
@@ -313,7 +314,7 @@ export default function CompanionChat({
     const { ref, realText } = seg;
     if (!ref.book) return;
     const refStr = `${ref.book} ${ref.chapter}:${ref.verseStart}${ref.verseEnd ? `-${ref.verseEnd}` : ''}`;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     Keyboard.dismiss();
     Animated.timing(anim, { toValue: 0, duration: 180, useNativeDriver: false }).start(() => {
       onClose();
@@ -326,7 +327,7 @@ export default function CompanionChat({
   // Share a reply via the native share sheet (which includes Copy on iOS), so copy + share
   // are one tap with no extra dependency. Shares the clean, verified text.
   const shareMessage = async (text: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     try {
       await Share.share({ message: text });
     } catch {}
@@ -348,7 +349,7 @@ export default function CompanionChat({
   const setFeedback = (index: number, value: 'up' | 'down') => {
     const cur = messages[index];
     if (!cur) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     const newVal = cur.feedback === value ? undefined : value;
     setMessages(prev => prev.map((m, k) => (k === index ? { ...m, feedback: newVal } : m)));
     if (!newVal) return; // toggled off
@@ -365,7 +366,7 @@ export default function CompanionChat({
   // The actual wipe: clears the thread back to a fresh greeting. Heavy haptic because it
   // is destructive (the in-memory conversation is gone).
   const resetChat = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
     Keyboard.dismiss();
     setInput('');
     setSending(false);
@@ -376,7 +377,7 @@ export default function CompanionChat({
     // Nothing to lose yet (only Halo's opening greeting, no typed text): just reset, no nag.
     const hasConversation = messages.length > 1 || input.trim().length > 0;
     if (!hasConversation) { resetChat(); return; }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     Alert.alert(
       'Start a new chat?',
       'This clears your current conversation with Halo.',
@@ -411,7 +412,7 @@ export default function CompanionChat({
   const send = async () => {
     const text = input.trim();
     if (!text || sending) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
 
     // If a verse is attached (brought from the Bible reader), send Halo the REFERENCE as
     // context. Only the reference travels, never the verse text, so scripture never enters
@@ -436,7 +437,7 @@ export default function CompanionChat({
     // Client-side crisis short-circuit (layer 1): never route a crisis to the AI; show
     // the vetted hardcoded response instantly, offline-safe.
     if (screenForCrisis(text).isCrisis) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      triggerHapticNotification(Haptics.NotificationFeedbackType.Warning);
       setMessages(prev => [...prev, { role: 'crisis', text: '' }]);
       return;
     }
@@ -456,7 +457,7 @@ export default function CompanionChat({
 
       if (data.crisis) {
         setSending(false);
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+        triggerHapticNotification(Haptics.NotificationFeedbackType.Warning);
         setMessages(prev => [...prev, { role: 'crisis', text: '' }]);
       } else if (data.ok && data.reply) {
         // Verify Scripture BEFORE rendering so nothing fabricated ever flashes. Typing dots
@@ -488,7 +489,7 @@ export default function CompanionChat({
   // a fast flick) it slides off and closes, otherwise it springs back. Only downward drags
   // engage, so taps on the handle / header buttons still work.
   const closeFromDrag = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     onClose();
   };
   const dragGesture = Gesture.Pan()

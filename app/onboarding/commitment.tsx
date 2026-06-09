@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { THEMES } from '../../theme';
 
@@ -47,7 +48,7 @@ function CommitmentRow({
   const handlePress = () => {
     if (confirmed) return;
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
 
     Animated.sequence([
       Animated.timing(scaleAnim, { toValue: 0.97, duration: 80, useNativeDriver: true }),
@@ -144,7 +145,7 @@ export default function CommitmentScreen() {
 
   const handleCommit = () => {
     if (!allConfirmed) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     Animated.sequence([
       Animated.timing(btnScale, { toValue: 0.97, duration: 80, useNativeDriver: true }),
       Animated.timing(btnScale, { toValue: 1.0,  duration: 80, useNativeDriver: true }),

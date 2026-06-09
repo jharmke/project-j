@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -560,7 +561,7 @@ export default function JournalScreen() {
   };
 
   const openCategorySheet = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     setShowCategorySheet(true);
     Animated.spring(categorySheetAnim, {
       toValue: 1, useNativeDriver: true, tension: 65, friction: 11,
@@ -605,7 +606,7 @@ export default function JournalScreen() {
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
         <TouchableOpacity
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
+          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
           style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
         >
           <Ionicons name="chevron-back" size={14} color={theme.accentBlue} />

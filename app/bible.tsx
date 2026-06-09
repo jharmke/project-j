@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic, triggerHapticNotification } from '@/utils/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -158,7 +159,7 @@ export default function BibleScreen() {
   };
 
   const startAutoScroll = (speed: ScrollSpeed) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     setAutoScrollSpeed(speed);
     setIsAutoScrolling(true);
     closeSpeedPicker();
@@ -319,21 +320,21 @@ export default function BibleScreen() {
   // Share the highlighted verse via the native sheet (which includes Copy on iOS).
   const shareVerse = () => {
     if (!highlightedVerseRef || !highlightedVerseText) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     Share.share({ message: `"${highlightedVerseText}" ${highlightedVerseRef} (KJV)` }).catch(() => {});
   };
 
   // Bring the highlighted verse to Halo: open the companion with the verse attached as context.
   const discussVerseWithHalo = () => {
     if (!highlightedVerseRef) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     setCompanionSeed({ ref: highlightedVerseRef });
     setCompanionOpen(true);
   };
 
   const toggleFavorite = async () => {
     if (!highlightedVerseRef || !highlightedVerseText || highlightedVerse === null) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     try {
       const raw = await AsyncStorage.getItem('pj_bible_favorites');
       const all: BibleFavorite[] = raw ? JSON.parse(raw) : [];
@@ -351,7 +352,7 @@ export default function BibleScreen() {
   };
 
   const removeFavorite = async (ref: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
     try {
       const raw = await AsyncStorage.getItem('pj_bible_favorites');
       const all: BibleFavorite[] = raw ? JSON.parse(raw) : [];
@@ -362,14 +363,14 @@ export default function BibleScreen() {
   };
 
   const navigateToFavorite = (fav: BibleFavorite) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     shouldScrollOnLoad.current = true;
     navigateToRef(fav.ref, fav.text);
     setShowFavoritesModal(false);
   };
 
   const toggleFavoritesSort = async (sort: 'book' | 'recent') => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     setFavoritesSort(sort);
     try {
       const raw = await AsyncStorage.getItem('pj_settings');
@@ -390,14 +391,14 @@ export default function BibleScreen() {
   });
 
   const openSettingsModal = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     setDraftTextSize(bibleTextSize);
     setDraftFontFamily(bibleFontFamily);
     setShowSettingsModal(true);
   };
 
   const saveSettings = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     setBibleTextSize(draftTextSize);
     setBibleFontFamily(draftFontFamily);
     try {
@@ -411,7 +412,7 @@ export default function BibleScreen() {
 
   const acknowledge = async () => {
     if (!highlightedVerseRef) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const raw = await AsyncStorage.getItem('pj_bible_reflections');
       const all = raw ? JSON.parse(raw) : [];
@@ -455,7 +456,7 @@ export default function BibleScreen() {
       const updated = { ...all, [planId]: { ...prog, completedDays: [...prog.completedDays, dayIndex] } };
       await storageSet('pj_reading_plans', JSON.stringify(updated));
       setPlanProgress(updated);
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      await triggerHapticNotification(Haptics.NotificationFeedbackType.Success);
       const plan = READING_PLANS.find(p => p.id === planId);
       showToast(`Day ${dayIndex + 1} marked complete`, plan?.shortName, 'success');
       cancelFaithReadingNotification().catch(() => {});
@@ -475,13 +476,13 @@ export default function BibleScreen() {
       const updated = { ...all, [planId]: { ...prog, completedDays: prog.completedDays.filter(d => d !== dayIndex) } };
       await storageSet('pj_reading_plans', JSON.stringify(updated));
       setPlanProgress(updated);
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      await triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
       showToast('Marked as unread', undefined, 'info');
     } catch (e) {}
   };
 
   const openBookPicker = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     setShowBookPicker(true);
     Animated.spring(bookSheetAnim, { toValue: 1, useNativeDriver: true, tension: 65, friction: 11 }).start();
   };
@@ -491,14 +492,14 @@ export default function BibleScreen() {
   };
 
   const selectBook = (book: Book) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     setSelectedBook(book); setSelectedChapter(book.chapters[0]);
     setHighlightedVerse(null); setHighlightedVerseRef(null); setHighlightedVerseText(null); setHighlightedVerseAcknowledged(false);
     closeBookPicker();
   };
 
   const selectChapter = (chapter: Chapter) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     setSelectedChapter(chapter);
     setHighlightedVerse(null); setHighlightedVerseRef(null); setHighlightedVerseText(null); setHighlightedVerseAcknowledged(false);
   };
@@ -516,7 +517,7 @@ export default function BibleScreen() {
 
       {/* Header */}
       <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
-        <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
+        <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
           <Ionicons name="chevron-back" size={14} color={theme.accentBlue} />
         </TouchableOpacity>
         <TouchableOpacity onPress={openBookPicker} style={styles.headerTitle}>
@@ -524,10 +525,10 @@ export default function BibleScreen() {
           <Ionicons name="chevron-down" size={14} color={theme.accentBlueRaw} />
         </TouchableOpacity>
         <View style={{ flexDirection: 'row', gap: 8 }}>
-          <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowFavoritesModal(true); }} style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
+          <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowFavoritesModal(true); }} style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
             <Ionicons name="star" size={14} color={theme.accentBlue} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); }} style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
+          <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); }} style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
             <Ionicons name="book" size={14} color={theme.accentBlue} />
           </TouchableOpacity>
           <TouchableOpacity onPress={openSettingsModal} style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
@@ -638,7 +639,7 @@ export default function BibleScreen() {
         }]}>
           <TouchableOpacity
             style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); highlightedVerseAcknowledged ? router.push({ pathname: '/journal', params: { expandDate: `${todayKey}_verse` } }) : setShowReflectionModal(true); }}
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); highlightedVerseAcknowledged ? router.push({ pathname: '/journal', params: { expandDate: `${todayKey}_verse` } }) : setShowReflectionModal(true); }}
           >
             <Ionicons
               name={highlightedVerseAcknowledged ? 'checkmark-circle-outline' : 'book-outline'}
@@ -765,7 +766,7 @@ export default function BibleScreen() {
       {/* Auto-scroll FAB */}
       <Animated.View style={{ position: 'absolute', bottom: 20 + insets.bottom, right: 20, transform: [{ scale: fabScale }] }}>
         <TouchableOpacity
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); if (isAutoScrolling) { stopAutoScroll(); } else if (showSpeedPicker) { closeSpeedPicker(); } else { openSpeedPicker(); } }}
+          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); if (isAutoScrolling) { stopAutoScroll(); } else if (showSpeedPicker) { closeSpeedPicker(); } else { openSpeedPicker(); } }}
           onPressIn={() => Animated.timing(fabScale, { toValue: 0.9, duration: 80, useNativeDriver: true }).start()}
           onPressOut={() => Animated.timing(fabScale, { toValue: 1, duration: 80, useNativeDriver: true }).start()}
           activeOpacity={1}
@@ -778,9 +779,9 @@ export default function BibleScreen() {
       {/* Book picker sheet */}
       {showBookPicker && (
         <Modal transparent animationType="none" visible={showBookPicker} onRequestClose={closeBookPicker}>
-          <TouchableOpacity style={[styles.overlay, { backgroundColor: theme.overlayBg }]} activeOpacity={1} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeBookPicker(); }} />
+          <TouchableOpacity style={[styles.overlay, { backgroundColor: theme.overlayBg }]} activeOpacity={1} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeBookPicker(); }} />
           <Animated.View style={[styles.bookSheet, { backgroundColor: theme.bgSheet, borderColor: theme.borderSheet, transform: [{ translateY: bookSheetTranslate }] }]}>
-            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeBookPicker(); }} style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 24, marginBottom: 8 }}>
+            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeBookPicker(); }} style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 24, marginBottom: 8 }}>
               <View style={[styles.sheetHandle, { backgroundColor: theme.sheetHandle }]} />
             </TouchableOpacity>
             <Text style={[styles.sheetTitle, { color: theme.textPrimary }]}>Books</Text>
@@ -823,7 +824,7 @@ export default function BibleScreen() {
           <ToastRenderer />
           <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={[styles.overlay, { backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center' }]}>
             <View style={[styles.centeredModal, { backgroundColor: theme.bgSheet, borderColor: theme.borderCard }]}>
-              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowReflectionModal(false); }} style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 24, marginBottom: 4 }}>
+              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowReflectionModal(false); }} style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 24, marginBottom: 4 }}>
                 <View style={[styles.sheetHandle, { backgroundColor: theme.sheetHandle }]} />
               </TouchableOpacity>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
@@ -844,7 +845,7 @@ export default function BibleScreen() {
                 onBlur={() => reflectionInputRef.current?.setNativeProps({ selection: { start: 0, end: 0 } })}
               />
               <View style={{ flexDirection: 'row', gap: 10, marginTop: 16 }}>
-                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowReflectionModal(false); }} style={[styles.modalBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }]}>
+                <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowReflectionModal(false); }} style={[styles.modalBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }]}>
                   <Text style={[styles.modalBtnText, { color: theme.textMuted }]}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={acknowledge} style={[styles.modalBtn, { backgroundColor: theme.accentGreenBg, borderColor: theme.accentGreenBorder, flex: 2 }]}>
@@ -861,10 +862,10 @@ export default function BibleScreen() {
       {showFavoritesModal && (
         <Modal transparent animationType="fade" visible={showFavoritesModal} onRequestClose={() => setShowFavoritesModal(false)}>
           <ToastRenderer />
-          <TouchableOpacity style={[styles.overlay, { backgroundColor: theme.overlayBg }]} activeOpacity={1} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowFavoritesModal(false); }} />
+          <TouchableOpacity style={[styles.overlay, { backgroundColor: theme.overlayBg }]} activeOpacity={1} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowFavoritesModal(false); }} />
           <View style={[styles.overlay, { justifyContent: 'center', alignItems: 'center' }]} pointerEvents="box-none">
             <View style={[styles.centeredModal, { backgroundColor: theme.bgSheet, borderColor: theme.borderCard }]}>
-              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowFavoritesModal(false); }} style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 24, marginBottom: 4 }}>
+              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowFavoritesModal(false); }} style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 24, marginBottom: 4 }}>
                 <View style={[styles.sheetHandle, { backgroundColor: theme.sheetHandle }]} />
               </TouchableOpacity>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -909,10 +910,10 @@ export default function BibleScreen() {
       {showSettingsModal && (
         <Modal transparent animationType="fade" visible={showSettingsModal} onRequestClose={() => setShowSettingsModal(false)}>
           <ToastRenderer />
-          <TouchableOpacity style={[styles.overlay, { backgroundColor: theme.overlayBg }]} activeOpacity={1} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowSettingsModal(false); }} />
+          <TouchableOpacity style={[styles.overlay, { backgroundColor: theme.overlayBg }]} activeOpacity={1} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowSettingsModal(false); }} />
           <View style={[styles.overlay, { justifyContent: 'center', alignItems: 'center' }]} pointerEvents="box-none">
             <View style={[styles.centeredModal, { backgroundColor: theme.bgSheet, borderColor: theme.borderCard }]}>
-              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowSettingsModal(false); }} style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 24, marginBottom: 4 }}>
+              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowSettingsModal(false); }} style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 24, marginBottom: 4 }}>
                 <View style={[styles.sheetHandle, { backgroundColor: theme.sheetHandle }]} />
               </TouchableOpacity>
               <Text style={[styles.sheetTitle, { color: theme.accentBlue }]}>Bible Settings</Text>
@@ -953,7 +954,7 @@ export default function BibleScreen() {
 
                 {/* Plans */}
                 <TouchableOpacity
-                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowSettingsModal(false); router.push({ pathname: '/plans', params: { tab: 'reading' } }); }}
+                  onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowSettingsModal(false); router.push({ pathname: '/plans', params: { tab: 'reading' } }); }}
                   style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle, marginBottom: 16 }}
                 >
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -972,7 +973,7 @@ export default function BibleScreen() {
 
                 {/* Buttons */}
                 <View style={{ flexDirection: 'row', gap: 10 }}>
-                  <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowSettingsModal(false); }} style={[styles.modalBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }]}>
+                  <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowSettingsModal(false); }} style={[styles.modalBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }]}>
                     <Text style={[styles.modalBtnText, { color: theme.textMuted }]}>Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={saveSettings} style={[styles.modalBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder, flex: 2 }]}>

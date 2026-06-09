@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -600,7 +601,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
 };
 
   const toggleExercise = (id: string) => {
-  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
   const dayChecks = checks[activeDay] || {};
   const nowChecked = !dayChecks[id];
   const newDayChecks = { ...dayChecks, [id]: nowChecked };
@@ -622,7 +623,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
 
   const saveExercise = () => {
   if (!form.name.trim()) return;
-  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
   const baseProgram = programs[modalDay] || weeklyTemplate[DATES.find(d => d.key === modalDay)?.dayName || 'Mon'] || BLANK_DAY;
   const newPrograms = { ...programs };
   if (editingExercise) {
@@ -665,7 +666,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
     {
       text: 'Remove', style: 'destructive',
       onPress: () => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+        triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
         const baseProgram = programs[day] || weeklyTemplate[DATES.find(d => d.key === day)?.dayName || 'Mon'] || BLANK_DAY;
         const newPrograms = { ...programs };
         newPrograms[day] = {
@@ -684,7 +685,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
 };
 
   const saveNote = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     const noteText = workoutNotes[activeDay]?.trim() || '';
     const isClearing = !noteText;
     const updatedNotes = { ...workoutNotes, [activeDay]: noteText };
@@ -719,7 +720,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
   };
 
   const toggleDayTag = (tagId: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     const baseProgram = programs[activeDay] || weeklyTemplate[activeDayName] || { type: 'unassigned' as const, focus: 'Unassigned', exercises: [] };
     const currentTags = baseProgram.tags || [];
     if (!currentTags.includes(tagId) && currentTags.length >= 6) {
@@ -746,7 +747,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
   };
 
   const openFabMenu = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     fabItem1Anim.setValue(0);
     fabItem2Anim.setValue(0);
     setShowFabMenu(true);
@@ -826,7 +827,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
 
   const handleLoadRoutine = async () => {
     if (!selectedRoutine || selectedLoadDays.length === 0) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const raw = await AsyncStorage.getItem('pj_workout_state');
       const state = raw ? JSON.parse(raw) : {};
@@ -870,10 +871,10 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
             </View>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/workout-library'); }} style={[styles.libraryBtn, { height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
+            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/workout-library'); }} style={[styles.libraryBtn, { height: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
               <Text style={[styles.libraryBtnText, { color: theme.accentBlue }]}>Library</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); showToolkit('workout'); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); showToolkit('workout'); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
               <Ionicons name="help-circle" size={22} color={theme.accentBlue} />
             </TouchableOpacity>
           </View>
@@ -901,7 +902,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                 style={[styles.dayTab, { backgroundColor: theme.bgCard, borderColor: theme.borderSubtle },
                   isActiveDayTab && { borderColor: c, backgroundColor: c + '18', borderWidth: 1.5 },
                   isToday && !isActiveDayTab && { borderColor: theme.textSecondary, borderWidth: 1.5 }]}
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setActiveDay(key); setCalBurnedSaved(!!cardioLogs[key]?.caloriesBurned); }}>
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setActiveDay(key); setCalBurnedSaved(!!cardioLogs[key]?.caloriesBurned); }}>
                 {(() => {
                   const dayTagObjs = getDayTagObjects(key);
                   const n = Math.min(dayTagObjs.length, 6);
@@ -1046,7 +1047,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                     </TouchableOpacity>
                     <View style={styles.exerciseInfo}>
                       <TouchableOpacity style={styles.exerciseNameRow} activeOpacity={0.7}
-                        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openInfoModal(ex.name); }}>
+                        onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openInfoModal(ex.name); }}>
                         <Text style={[styles.exerciseName, { color: theme.textSecondary }, isDone && [styles.exerciseNameDone, { color: theme.textDim }]]}>{ex.name}</Text>
                         {exerciseLibrary.find((e: any) => e.name === ex.name && (e.instructions?.length || e.primaryMuscles?.length)) ? (
                           <Ionicons name="information-circle-outline" size={14} color={theme.textDim} style={{ marginLeft: 4, marginTop: 1 }} />
@@ -1085,7 +1086,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                       <TouchableOpacity
                         style={{ padding: 10 }}
-                        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openEditModal(activeDay, ex); }}
+                        onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openEditModal(activeDay, ex); }}
                         hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
                         <Ionicons name="pencil" size={15} color={theme.textMuted} />
                       </TouchableOpacity>
@@ -1143,7 +1144,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                     <Animated.View key={n} style={{ flex: 1, transform: [{ scale: anim }] }}>
                       <TouchableOpacity
                         onPress={() => {
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
                           Animated.sequence([
                             Animated.timing(anim, { toValue: 1.08, duration: 70, useNativeDriver: true }),
                             Animated.spring(anim, { toValue: 1, useNativeDriver: true, friction: 5, tension: 150 }),
@@ -1181,7 +1182,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
         <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, marginTop: 12 }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Workout Notes</Text>
-            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <Ionicons name="book" size={16} color={theme.accentBlue} />
             </TouchableOpacity>
           </View>
@@ -1439,7 +1440,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                               <TouchableOpacity onPress={() => {
                                 Alert.alert('Delete Tag', `Delete "${t.label}"?`, [
                                   { text: 'Cancel', style: 'cancel' },
-                                  { text: 'Delete', style: 'destructive', onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); saveTags(tags.filter(x => x.id !== t.id)); } },
+                                  { text: 'Delete', style: 'destructive', onPress: () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy); saveTags(tags.filter(x => x.id !== t.id)); } },
                                 ]);
                               }} style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: theme.accentRedBorder, backgroundColor: theme.accentRedBg }}>
                                 <Text style={{ fontSize: 11, color: theme.accentRed, fontFamily: 'DMSans_600SemiBold' }}>Delete</Text>
@@ -1467,7 +1468,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                   />
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
                     {TAG_COLOR_PALETTE.map(c => (
-                      <TouchableOpacity key={c} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setTagColorInput(c); }}
+                      <TouchableOpacity key={c} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setTagColorInput(c); }}
                         style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: c, borderWidth: tagColorInput === c ? 3 : 0, borderColor: theme.textPrimary, alignItems: 'center', justifyContent: 'center' }}>
                         {tagColorInput === c && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: 'rgba(255,255,255,0.6)' }} />}
                       </TouchableOpacity>
@@ -1483,7 +1484,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                     <TouchableOpacity
                       onPress={() => {
                         if (!tagLabelInput.trim()) return;
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                        triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
                         if (editingTag) {
                           saveTags(tags.map(t => t.id === editingTag.id ? { ...t, label: tagLabelInput.trim(), color: tagColorInput } : t));
                           setEditingTag(null);
@@ -1524,12 +1525,12 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
           <Animated.View style={{ opacity: fabItem2Anim, transform: [{ translateY: fabItem2Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <TouchableOpacity
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openLoadRoutineModal(); }}
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openLoadRoutineModal(); }}
                 style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
                 <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Load Routine</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openLoadRoutineModal(); }}
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openLoadRoutineModal(); }}
                 style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
                 <Ionicons name="repeat" size={20} color="#ffffff" />
               </TouchableOpacity>
@@ -1540,12 +1541,12 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
           <Animated.View style={{ opacity: fabItem1Anim, transform: [{ translateY: fabItem1Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <TouchableOpacity
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); router.push({ pathname: '/workout-library', params: { selectMode: 'true', day: activeDay } }); }}
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); router.push({ pathname: '/workout-library', params: { selectMode: 'true', day: activeDay } }); }}
                 style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
                 <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Add Exercise</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); router.push({ pathname: '/workout-library', params: { selectMode: 'true', day: activeDay } }); }}
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); router.push({ pathname: '/workout-library', params: { selectMode: 'true', day: activeDay } }); }}
                 style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
                 <Ionicons name="barbell-outline" size={20} color="#ffffff" />
               </TouchableOpacity>
@@ -1621,10 +1622,10 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, marginTop: 8 }}>
                             <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>{weekLabel}</Text>
                             <View style={{ flexDirection: 'row', gap: 2 }}>
-                              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setLoadPickerWeekOffset(o => o - 1); }} disabled={loadPickerWeekOffset <= 0} style={{ padding: 6, opacity: loadPickerWeekOffset <= 0 ? 0.25 : 1 }}>
+                              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setLoadPickerWeekOffset(o => o - 1); }} disabled={loadPickerWeekOffset <= 0} style={{ padding: 6, opacity: loadPickerWeekOffset <= 0 ? 0.25 : 1 }}>
                                 <Ionicons name="chevron-back" size={18} color={theme.textMuted} />
                               </TouchableOpacity>
-                              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setLoadPickerWeekOffset(o => o + 1); }} style={{ padding: 6 }}>
+                              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setLoadPickerWeekOffset(o => o + 1); }} style={{ padding: 6 }}>
                                 <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
                               </TouchableOpacity>
                             </View>
@@ -1637,7 +1638,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                               return (
                                 <TouchableOpacity key={d.key}
                                   disabled={isPast}
-                                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setSelectedLoadDays(prev => prev.includes(d.key) ? prev.filter(k => k !== d.key) : [...prev, d.key]); }}
+                                  onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setSelectedLoadDays(prev => prev.includes(d.key) ? prev.filter(k => k !== d.key) : [...prev, d.key]); }}
                                   style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: isSel ? theme.accentBlue : theme.bgInset, borderWidth: 1, borderColor: isSel ? theme.accentBlue : isToday ? theme.textSecondary : theme.borderCard, opacity: isPast ? 0.25 : 1 }}>
                                   <Text style={{ fontSize: 10, fontFamily: 'DMSans_700Bold', color: isSel ? '#ffffff' : theme.textMuted, letterSpacing: 0.5 }}>{d.name.toUpperCase()}</Text>
                                   <Text style={{ fontSize: 9, fontFamily: 'DMSans_400Regular', color: isSel ? 'rgba(255,255,255,0.7)' : theme.textDim, marginTop: 2 }}>{d.label}</Text>

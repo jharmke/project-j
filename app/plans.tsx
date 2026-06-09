@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic, triggerHapticNotification } from '@/utils/haptics';
 import {
   READING_PLANS, getPlanCompletion, getTodayReading, MAX_ACTIVE_PLANS, type ReadingPlansStorage,
 } from '../data/readingPlans';
@@ -57,7 +58,7 @@ export default function PlansScreen() {
 
   const switchTab = (t: Tab) => {
     if (t === tab) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     setTab(t);
   };
 
@@ -70,7 +71,7 @@ export default function PlansScreen() {
     const passage = today === 'complete'
       ? plan.days[plan.totalDays - 1].passages[0]
       : today.day.passages[0];
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     router.push({ pathname: '/bible', params: { planNavBook: passage.book, planNavChapter: String(passage.startChapter) } });
   };
 
@@ -78,12 +79,12 @@ export default function PlansScreen() {
     // Cap guard: block a new enrollment past MAX_ACTIVE_PLANS (mirrors the reader's plan browser).
     // Counts from the freshest store, never deletes anything already active.
     if (Object.keys(planStore).length >= MAX_ACTIVE_PLANS) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      triggerHapticNotification(Haptics.NotificationFeedbackType.Warning);
       showToast(`Max ${MAX_ACTIVE_PLANS} active plans. Drop one to add another.`, undefined, 'info');
       return;
     }
     const plan = READING_PLANS.find(p => p.id === planId);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     const updated = await enrollReadingPlan(planId);
     setPlanStore(updated);
     showToast(`Started: ${plan?.shortName}`, undefined, 'success');
@@ -99,7 +100,7 @@ export default function PlansScreen() {
         {
           text: 'Drop Plan', style: 'destructive',
           onPress: async () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
             const updated = await dropReadingPlan(planId);
             setPlanStore(updated);
             showToast(`${plan?.shortName} dropped`, undefined, 'info');
@@ -111,7 +112,7 @@ export default function PlansScreen() {
 
   // ── Devotional actions ──────────────────────────────────────────────────────
   const openDevotional = (devId: string, day: number) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     router.push({ pathname: '/devotional', params: { id: devId, day: String(day) } });
   };
 
@@ -119,11 +120,11 @@ export default function PlansScreen() {
     // Cap guard: block a new enrollment past MAX_ACTIVE_DEVOTIONALS. Counts from the freshest
     // store, never deletes anything already active.
     if (Object.keys(devStore).length >= MAX_ACTIVE_DEVOTIONALS) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      triggerHapticNotification(Haptics.NotificationFeedbackType.Warning);
       showToast(`Max ${MAX_ACTIVE_DEVOTIONALS} active devotionals. Drop one to add another.`, undefined, 'info');
       return;
     }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     const updated = await enrollDevotional(devId);
     setDevStore(updated);
     openDevotional(devId, 1);
@@ -139,7 +140,7 @@ export default function PlansScreen() {
         {
           text: 'Drop', style: 'destructive',
           onPress: async () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
             const updated = await unenrollDevotional(devId);
             setDevStore(updated);
             showToast(`${dev?.shortName} dropped`, undefined, 'info');
@@ -162,7 +163,7 @@ export default function PlansScreen() {
 
       <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
         <TouchableOpacity
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
+          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
           style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
         >
           <Ionicons name="chevron-back" size={14} color={theme.accentBlue} />

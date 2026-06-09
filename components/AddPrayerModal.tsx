@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, KeyboardAvoidingView, Modal, Platform, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { addPrayer, updatePrayer, type Prayer } from '../utils/prayers';
 import { useTheme } from '../theme';
 import { ToastRenderer, useToast } from './Toast';
@@ -74,7 +75,7 @@ export default function AddPrayerModal({ visible, onClose, onAdded, editPrayer }
   const handleSave = async () => {
     console.log('[PRAYERMODAL] add onPress fired. canSave=', text.trim().length > 0 && !saving);
     if (!text.trim() || saving) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     setSaving(true);
     try {
       const updated = isEdit ? await updatePrayer(editPrayer!.id, text) : await addPrayer(text);
@@ -160,7 +161,7 @@ export default function AddPrayerModal({ visible, onClose, onAdded, editPrayer }
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <TouchableOpacity
               onPressIn={() => console.log('[PRAYERMODAL] cancel onPressIn')}
-              onPress={() => { console.log('[PRAYERMODAL] cancel onPress'); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); close(); }}
+              onPress={() => { console.log('[PRAYERMODAL] cancel onPress'); triggerHaptic(Haptics.ImpactFeedbackStyle.Light); close(); }}
               style={{ flex: 1, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 12, backgroundColor: theme.bgInput }}
             >
               <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted }}>Cancel</Text>

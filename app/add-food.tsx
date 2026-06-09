@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Camera, CameraView } from 'expo-camera';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic, triggerHapticNotification } from '@/utils/haptics';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { doc, getDoc } from 'firebase/firestore';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -551,7 +552,7 @@ const saveEditFood = async () => {
   };
 
   const toggleFabMenu = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     if (showFabMenu) closeFabMenu();
     else openFabMenu();
   };
@@ -682,7 +683,7 @@ const saveEditFood = async () => {
       await pinFoodToBarcode(lastScannedBarcode, item);
       setResults(prev => prev.map(r => r.description === item.description ? { ...r, isOverride: true } : r));
       setLastScannedBarcode(null);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      triggerHapticNotification(Haptics.NotificationFeedbackType.Success);
     } catch (e) {
       console.log('Save override error', e);
     }
@@ -1137,7 +1138,7 @@ const openFoodDetail = async (food: SearchResult) => {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
             const updated = recipes.filter((r: any) => r.id !== recipeId);
             setRecipes(updated);
             await storageSet('pj_recipes', JSON.stringify(updated));
@@ -1184,7 +1185,7 @@ const openFoodDetail = async (food: SearchResult) => {
 const handleBarcodeScan = async ({ data }: { data: string }) => {
     if (scanningRef.current === false) return;
     scanningRef.current = false;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     Animated.sequence([
       Animated.timing(scanFlash, { toValue: 1, duration: 60, useNativeDriver: true }),
       Animated.timing(scanFlash, { toValue: 0, duration: 300, useNativeDriver: true }),
@@ -1400,7 +1401,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Remove', style: 'destructive', onPress: async () => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
             const opacity = getFavOpacity(name);
             Animated.timing(opacity, { toValue: 0, duration: 250, useNativeDriver: true }).start(async () => {
               delete favoriteOpacities[name];
@@ -1417,7 +1418,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
       );
       return;
     }
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     showToast('Added to favorites', name, 'success');
     let updated;
     if (isFav) {
@@ -1454,7 +1455,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-  <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={styles.backBtn}>
+  <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={styles.backBtn}>
     <Text style={styles.backBtnText}>← Back</Text>
   </TouchableOpacity>
   <Text style={styles.headerTitle}>{meal === 'browse' ? 'Food Library' : `Add to ${getMealDisplayName(meal, mealSlots, slotNameCache)}`}</Text>
@@ -1502,27 +1503,27 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         <View ref={addFoodTabPillsRef} collapsable={false} style={styles.tabRow}>
           <TouchableOpacity
             style={[styles.tab, activeTab === 'recent' && styles.tabActive]}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setActiveTab('recent'); }}>
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setActiveTab('recent'); }}>
             <Text style={[styles.tabText, activeTab === 'recent' && styles.tabTextActive]}>Recent</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.tab, activeTab === 'myfoods' && styles.tabActive]}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setActiveTab('myfoods'); }}>
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setActiveTab('myfoods'); }}>
             <Text style={[styles.tabText, activeTab === 'myfoods' && styles.tabTextActive]}>My Foods</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.tab, activeTab === 'favorites' && styles.tabActive]}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setActiveTab('favorites'); }}>
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setActiveTab('favorites'); }}>
             <Text style={[styles.tabText, activeTab === 'favorites' && styles.tabTextActive]}>Favorites</Text>
           </TouchableOpacity>
           <TouchableOpacity
   style={[styles.tab, activeTab === 'recipes' && styles.tabActive]}
-  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setActiveTab('recipes'); }}>
+  onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setActiveTab('recipes'); }}>
   <Text style={[styles.tabText, activeTab === 'recipes' && styles.tabTextActive]}>Recipes</Text>
 </TouchableOpacity>
           <TouchableOpacity
             style={[styles.tab, activeTab === 'pinned' && styles.tabActive]}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setActiveTab('pinned'); }}>
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setActiveTab('pinned'); }}>
             <Text style={[styles.tabText, activeTab === 'pinned' && styles.tabTextActive]}>Set Foods</Text>
           </TouchableOpacity>
         </View>
@@ -1532,7 +1533,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
       {!query.trim() && activeTab !== 'recent' && (
         <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 14, paddingTop: 6, paddingBottom: 2 }}>
           <TouchableOpacity
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openSortModal(); }}
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openSortModal(); }}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8, backgroundColor: sortOption !== 'az' ? theme.accentBlueBg : 'transparent', borderWidth: 1, borderColor: sortOption !== 'az' ? theme.accentBlueBorder : 'transparent' }}>
             <Ionicons name="swap-vertical" size={13} color={sortOption !== 'az' ? theme.accentBlue : theme.textMuted} />
             <Text style={{ fontSize: 11, color: sortOption !== 'az' ? theme.accentBlue : theme.textMuted, fontFamily: 'DMSans_600SemiBold' }}>
@@ -1625,7 +1626,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                 undefined
               }
               style={{ opacity: activeTab === 'favorites' && !query.trim() ? getFavOpacity(item.description) : 1 }}>
-            <TouchableOpacity style={[styles.resultItem, (item as any).isOverride && styles.resultItemSet]} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openFoodDetail(item); }}>
+            <TouchableOpacity style={[styles.resultItem, (item as any).isOverride && styles.resultItemSet]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openFoodDetail(item); }}>
               <View style={styles.resultLeft}>
                 {/* Badges */}
                 {(item.isMyFood || item.isRecipe || (item.isRecent && query.trim())) && (
@@ -1700,7 +1701,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                   <>
                     <TouchableOpacity
                       onPress={() => {
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
                         const idx = myFoods.findIndex(f => f.name === item.description);
                         if (idx >= 0) openEditModal(myFoods[idx]);
                       }}
@@ -1715,7 +1716,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                 {item.isRecipe && activeTab === 'recipes' && (
                   <>
                     <TouchableOpacity
-                      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/recipe-builder', params: { recipeId: (item as any).recipeData?.id } }); }}
+                      onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/recipe-builder', params: { recipeId: (item as any).recipeData?.id } }); }}
                       style={{ marginLeft: 4, paddingHorizontal: 8, paddingVertical: 10 }}>
                       <Text style={{ fontSize: 12, color: theme.accentBlue, fontFamily: 'DMSans_500Medium' }}>Edit</Text>
                     </TouchableOpacity>
@@ -2167,13 +2168,13 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         <Reanimated.View style={[{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }, sortOverlayStyle]}>
           <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={closeSortModal} />
           <Reanimated.View style={[{ backgroundColor: theme.bgSheet, borderRadius: 18, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, width: '100%', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20 }, sortCardStyle]}>
-            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeSortModal(); }} style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }}>
+            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeSortModal(); }} style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }}>
               <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.textDim }} />
             </TouchableOpacity>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 8, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
               <Text style={{ color: theme.accentBlue, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>SORT</Text>
               {sortOption !== 'az' && (
-                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setSortOption('az'); }} style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: theme.accentRedBorder, backgroundColor: theme.accentRedBg }}>
+                <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setSortOption('az'); }} style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: theme.accentRedBorder, backgroundColor: theme.accentRedBg }}>
                   <Text style={{ color: theme.accentRed, fontSize: 11, fontFamily: 'DMSans_700Bold' }}>CLEAR</Text>
                 </TouchableOpacity>
               )}
@@ -2189,7 +2190,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                 ] as const).map(([val, label]) => (
                   <TouchableOpacity
                     key={val}
-                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setSortOption(val); }}
+                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setSortOption(val); }}
                     style={{ backgroundColor: sortOption === val ? theme.accentBlueBg : theme.bgInset, borderWidth: 1, borderColor: sortOption === val ? theme.accentBlueBorder : theme.borderCard, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 }}>
                     <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: sortOption === val ? theme.accentBlue : theme.textMuted }}>{label}</Text>
                   </TouchableOpacity>
@@ -2217,12 +2218,12 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
               <Animated.View style={{ opacity: fabItem2Anim, transform: [{ translateY: fabItem2Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                   <TouchableOpacity
-                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); router.push('/recipe-builder'); }}
+                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); router.push('/recipe-builder'); }}
                     style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
                     <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Create Recipe</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); router.push('/recipe-builder'); }}
+                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); router.push('/recipe-builder'); }}
                     style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
                     <Ionicons name="book-outline" size={20} color="#ffffff" />
                   </TouchableOpacity>
@@ -2233,12 +2234,12 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
               <Animated.View style={{ opacity: fabItem1Anim, transform: [{ translateY: fabItem1Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                   <TouchableOpacity
-                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); setShowCreateFood(true); }}
+                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); setShowCreateFood(true); }}
                     style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
                     <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Create Food</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); setShowCreateFood(true); }}
+                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); setShowCreateFood(true); }}
                     style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
                     <Ionicons name="restaurant-outline" size={20} color="#ffffff" />
                   </TouchableOpacity>

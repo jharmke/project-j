@@ -9,6 +9,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { useTheme, THEMES } from '../../theme';
 import { storageSet } from '../../utils/storage';
 
@@ -117,7 +118,7 @@ export default function AppleHealthScreen() {
 
   const handleConnect = async () => {
     if (connecting) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     Animated.sequence([
       Animated.timing(btnScale, { toValue: 0.97, duration: 80, useNativeDriver: true }),
       Animated.timing(btnScale, { toValue: 1.0,  duration: 80, useNativeDriver: true }),
@@ -147,7 +148,7 @@ export default function AppleHealthScreen() {
   };
 
   const handleSkip = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     await saveAndContinue(false);
   };
 

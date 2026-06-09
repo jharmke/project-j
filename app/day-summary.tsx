@@ -19,6 +19,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { useTheme } from '../theme';
 import TooltipIcon from '../components/TooltipIcon';
 import { useToast } from '../components/Toast';
@@ -81,7 +82,7 @@ export default function DaySummaryScreen() {
   // then back to wherever the user came from (the archive shows a dash).
   const handleExclude = async () => {
     if (!date) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
     await excludeDayFromAverages(date);
     showToast('Day excluded', 'Removed from your weekly average', 'success');
     router.back();
@@ -173,7 +174,7 @@ export default function DaySummaryScreen() {
       borderBottomWidth: 0.5, borderBottomColor: theme.borderCard,
       flexDirection: 'row', alignItems: 'center', gap: 10,
     }}>
-      <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={{ padding: 4 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+      <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={{ padding: 4 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
         <Ionicons name="chevron-back" size={24} color={accent} />
       </TouchableOpacity>
       <Text style={{ fontSize: 24, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: accent, flex: 1 }}>DAY SUMMARY</Text>

@@ -6,6 +6,7 @@ import { useFocusEffect, router, useLocalSearchParams } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import CompanionFAB from '../../components/CompanionFAB';
 import CompanionChat from '../../components/CompanionChat';
@@ -121,7 +122,7 @@ export default function FaithScreen() {
   const renderCard = (id: FaithCardId) => {
     switch (id) {
       case 'votd':
-        return <VotdCard key={id} verse={dailyVerse} theme={theme} onReflect={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCompanionSeed(dailyVerse ? { ref: dailyVerse.reference } : null); setChatOpen(true); }} />;
+        return <VotdCard key={id} verse={dailyVerse} theme={theme} onReflect={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setCompanionSeed(dailyVerse ? { ref: dailyVerse.reference } : null); setChatOpen(true); }} />;
       case 'bible_plans':
         return <BibleCard key={id} theme={theme} />;
       case 'gratitude':
@@ -157,7 +158,7 @@ export default function FaithScreen() {
         </View>
         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
           <TouchableOpacity
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); }}
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); }}
             style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}
           >
             <Ionicons name="journal" size={14} color={theme.accentBlue} />
@@ -230,7 +231,7 @@ function VotdCard({ verse, theme, onReflect }: { verse: DailyVerse | null; theme
   return (
     <PressCard
       onPress={() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
         router.push({ pathname: '/bible', params: { verseRef: verse.reference, verseText: verse.text } });
       }}
       style={[styles.card, {
@@ -294,7 +295,7 @@ function BibleCard({ theme }: { theme: Theme }) {
   );
 
   const openReader = (params?: Record<string, string>) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     router.push(params ? { pathname: '/bible', params } : '/bible');
   };
 
@@ -307,7 +308,7 @@ function BibleCard({ theme }: { theme: Theme }) {
     const passage = today === 'complete'
       ? plan.days[plan.totalDays - 1].passages[0]
       : today.day.passages[0];
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     router.push({ pathname: '/bible', params: { planNavBook: passage.book, planNavChapter: String(passage.startChapter) } });
   };
 
@@ -316,12 +317,12 @@ function BibleCard({ theme }: { theme: Theme }) {
     const dev = DEVOTIONALS.find(d => d.id === devId);
     if (!dev) return;
     const day = getNextDay(dev, getDevotionalProgress(devStore, devId));
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     router.push({ pathname: '/devotional', params: { id: devId, day: String(day) } });
   };
 
   const browse = (tab: 'reading' | 'devotionals') => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     router.push({ pathname: '/plans', params: { tab } });
   };
 
@@ -351,7 +352,7 @@ function BibleCard({ theme }: { theme: Theme }) {
               <Ionicons name="chevron-forward" size={18} color={theme.accentAmber} />
             </PressButton>
             <PressButton
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setGuideOpen(true); }}
+              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setGuideOpen(true); }}
               style={[styles.bibleFindBtn, { backgroundColor: theme.bgTileFaith, borderColor: 'rgba(212,134,10,0.3)' }]}
             >
               <Ionicons name="compass-outline" size={15} color={theme.accentAmber} />
@@ -367,7 +368,7 @@ function BibleCard({ theme }: { theme: Theme }) {
             <View style={styles.bibleBtnRow}>
               <PressButton
                 wrapperStyle={{ flex: 1 }}
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setGuideOpen(true); }}
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setGuideOpen(true); }}
                 style={[styles.bibleBtnPrimary, { backgroundColor: theme.bgTileFaith, borderColor: 'rgba(212,134,10,0.3)' }]}
               >
                 <Ionicons name="compass-outline" size={15} color={theme.accentAmber} />
@@ -556,7 +557,7 @@ function PrayerCard({ theme }: { theme: Theme }) {
   const preview = active.slice(0, 3);
   const nothing = prayers.length === 0;
 
-  const openScreen = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/prayer'); };
+  const openScreen = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/prayer'); };
 
   // The card body scales on press (project card-press standard) and navigates to the full
   // screen. Preview rows are read-only here: answering/managing happens on the screen. The
@@ -601,7 +602,7 @@ function PrayerCard({ theme }: { theme: Theme }) {
           )}
         </TouchableOpacity>
         <TouchableOpacity
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/prayer', params: { autoOpenRequest: '1' } }); }}
+          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/prayer', params: { autoOpenRequest: '1' } }); }}
           style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: 'rgba(212,134,10,0.10)', borderColor: 'rgba(212,134,10,0.30)', borderWidth: 1, borderRadius: 6, paddingVertical: 9, paddingHorizontal: 12, minHeight: 44, marginTop: 8 }}
         >
           <Ionicons name="people" size={12} color={theme.accentAmber} />

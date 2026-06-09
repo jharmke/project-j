@@ -9,6 +9,7 @@ import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, runOnJS } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 export default function DayScoreDisclaimerModal({ theme, onAcknowledge }: { theme: any; onAcknowledge: () => void }) {
   const overlay = useSharedValue(0);
@@ -24,7 +25,7 @@ export default function DayScoreDisclaimerModal({ theme, onAcknowledge }: { them
   };
 
   const accept = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     overlay.value = withTiming(0, { duration: 140 });
     cardScale.value = withTiming(0.92, { duration: 140 }, (finished) => {
       if (finished) runOnJS(onAcknowledge)();

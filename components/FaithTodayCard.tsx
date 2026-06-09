@@ -6,6 +6,7 @@ import {
 import { useFocusEffect, router } from 'expo-router';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { type DailyVerse } from '../data/verses';
 import { loadPrayers, getActive, type Prayer } from '../utils/prayers';
 import { READING_PLANS, getPlanCompletion, getTodayReading, type ReadingPlansStorage } from '../data/readingPlans';
@@ -166,12 +167,12 @@ export default function FaithTodayCard({ verse, theme }: Props) {
     }
   };
 
-  const goVerse = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/bible', params: { verseRef: verse?.reference ?? '', verseText: verse?.text ?? '' } }); };
-  const goFaithPlans = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/faith', params: { scrollTo: 'bible_plans' } }); };
-  const goFaithPrayer = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/faith', params: { scrollTo: 'prayer' } }); };
-  const goJournal = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); };
-  const goReflectWithHalo = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/faith', params: { openHalo: String(Date.now()), haloVerseRef: verse?.reference ?? '', haloVerseText: verse?.text ?? '' } }); };
-  const goAskForPrayer = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/prayer', params: { autoOpenRequest: '1' } }); };
+  const goVerse = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/bible', params: { verseRef: verse?.reference ?? '', verseText: verse?.text ?? '' } }); };
+  const goFaithPlans = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/faith', params: { scrollTo: 'bible_plans' } }); };
+  const goFaithPrayer = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/faith', params: { scrollTo: 'prayer' } }); };
+  const goJournal = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); };
+  const goReflectWithHalo = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/faith', params: { openHalo: String(Date.now()), haloVerseRef: verse?.reference ?? '', haloVerseText: verse?.text ?? '' } }); };
+  const goAskForPrayer = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/prayer', params: { autoOpenRequest: '1' } }); };
 
   const activePlans = READING_PLANS.filter(p => !!planStore[p.id]);
   const activeDevs = DEVOTIONALS.filter(d => !!devStore[d.id]);

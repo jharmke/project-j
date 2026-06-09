@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageSet } from '../utils/storage';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActionSheetIOS,
@@ -293,7 +294,7 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
     // In tutorial mode, don't write to storage -- just close the creator.
     if (tutorialMode) { handleClose(); return; }
     setSaving(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const saved = await AsyncStorage.getItem('pj_my_foods');
       const existing = saved ? JSON.parse(saved) : [];

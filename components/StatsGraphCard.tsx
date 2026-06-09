@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Dimensions, Easing, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Svg, { Circle, Defs, Line, LinearGradient as SvgLinearGradient, Path, Polyline, Rect, Stop, Text as SvgText } from 'react-native-svg';
@@ -934,7 +935,7 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
   const pickerOpacityAnim = useRef(new Animated.Value(0)).current;
 
   const openNutrientPicker = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     setNutrientPickerVisible(true);
     pickerOverlayAnim.setValue(0);
     pickerScaleAnim.setValue(0.92);
@@ -955,7 +956,7 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
   };
 
   const selectNutrient = (key: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     closeNutrientPicker();
     onNutrientChange?.(card.id, key);
   };
@@ -1237,7 +1238,7 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
         <Text style={{ fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted, flex: 1, marginLeft: 6 }}>{card.label}</Text>
         <View style={{ flexDirection: 'row', gap: 4, marginRight: homeMode ? 0 : 8 }}>
           {([7, 30, 90] as CardPeriod[]).map(p => (
-            <TouchableOpacity key={p} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPeriodChange?.(card.id, p); }}
+            <TouchableOpacity key={p} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); onPeriodChange?.(card.id, p); }}
               style={{ paddingHorizontal: 7, paddingVertical: 2, borderRadius: 5,
                 backgroundColor: card.period === p ? theme.accentBlueBg : 'transparent',
                 borderWidth: 1, borderColor: card.period === p ? theme.accentBlueBorder : theme.borderInput }}>
@@ -1248,7 +1249,7 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
           ))}
         </View>
         {!homeMode && (
-          <TouchableOpacity ref={editBtnRef} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onEditPress?.(card); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <TouchableOpacity ref={editBtnRef} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); onEditPress?.(card); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <Ionicons name="settings" size={16} color={theme.textMuted} />
           </TouchableOpacity>
         )}

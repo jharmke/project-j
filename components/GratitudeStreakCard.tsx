@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageSet } from '../utils/storage';
 import { cancelEveningGratitudeNotification } from '../services/notifications';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -217,7 +218,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
   const handleSave = async () => {
     const text = inputText.trim();
     if (!text) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
 
     try {
       const raw = await AsyncStorage.getItem('pj_bible_reflections');
@@ -276,7 +277,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
   };
 
   const handleEdit = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     setInputText(loggedEntry);
     setCardState('editing');
     setTimeout(() => inputRef.current?.focus(), 100);
@@ -303,7 +304,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
           <Ionicons name="heart" size={11} color={faith ? accent : t.textMuted} />
           <Text style={[styles.cardLabel, { color: t.textMuted }]}>Gratitude Streak</Text>
         </View>
-        <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <Ionicons name={faith ? 'journal' : 'book'} size={16} color={btnText} />
         </TouchableOpacity>
       </View>
@@ -403,7 +404,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.actionBtn, { backgroundColor: btnBg, borderColor: btnBorder, flex: 2 }]}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); }}
+              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); }}
               hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
             >
               <Ionicons name={faith ? 'journal-outline' : 'book-outline'} size={12} color={btnText} style={{ marginRight: 4 }} />
@@ -438,7 +439,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
             <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
               <TouchableOpacity
                 style={[styles.actionBtn, { backgroundColor: t.bgInput, borderColor: t.borderInput, flex: 1 }]}
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCardState('logged'); setInputText(''); }}
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setCardState('logged'); setInputText(''); }}
               >
                 <Text style={{ fontFamily: 'DMSans_600SemiBold', fontSize: 12, color: t.textSecondary }}>Cancel</Text>
               </TouchableOpacity>

@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { useEffect, useRef } from 'react';
 import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { TOOLTIP_REGISTRY, TooltipDefinition } from '../tooltipRegistry';
@@ -249,7 +250,7 @@ export default function TooltipModal({ tooltipKey, visible, onClose, hideTour }:
             {/* Got it button */}
             <Animated.View style={{ opacity: buttonOpacity, marginTop: def.tutorialId && !hideTour ? 10 : 20, alignSelf: 'stretch' }}>
               <TouchableOpacity
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); handleClose(); }}
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); handleClose(); }}
                 style={[styles.button, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
                 activeOpacity={0.8}
               >

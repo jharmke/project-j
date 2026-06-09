@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic, triggerHapticNotification } from '@/utils/haptics';
 import AddPrayerModal from '../components/AddPrayerModal';
 import PrayerActionModal from '../components/PrayerActionModal';
 import PrayerRequestModal from '../components/PrayerRequestModal';
@@ -82,7 +83,7 @@ export default function PrayerScreen() {
   // When that finishes (onCelebrationDone), the prayer actually moves to Answered and reflows away.
   const handleAnswer = (p: Prayer) => {
     setActionFor(null);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    triggerHapticNotification(Haptics.NotificationFeedbackType.Success);
     setCelebratingId(p.id);
   };
 
@@ -99,7 +100,7 @@ export default function PrayerScreen() {
 
   const handleUnanswer = async (p: Prayer) => {
     setActionFor(null);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     const updated = await unanswerPrayer(p.id);
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setPrayers(updated);
@@ -117,7 +118,7 @@ export default function PrayerScreen() {
           style: 'destructive',
           onPress: async () => {
             setActionFor(null);
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
             const updated = await deletePrayer(p.id);
             LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
             setPrayers(updated);
@@ -129,7 +130,7 @@ export default function PrayerScreen() {
   };
 
   const toggleAnswered = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setAnsweredOpen(o => !o);
   };
@@ -155,7 +156,7 @@ export default function PrayerScreen() {
             </Animated.View>
           )}
           <TouchableOpacity
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRequestOpen(true); }}
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setRequestOpen(true); }}
             style={[styles.headerBtn, { backgroundColor: 'rgba(212,134,10,0.10)', borderColor: 'rgba(212,134,10,0.30)' }]}
           >
             <Ionicons name="people" size={14} color={theme.accentAmber} />
@@ -192,7 +193,7 @@ export default function PrayerScreen() {
                       theme={theme}
                       celebrating={celebratingId === p.id}
                       onCelebrationDone={() => finishAnswer(p)}
-                      onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setActionFor(p); }}
+                      onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setActionFor(p); }}
                     />
                   ))}
                 </>
@@ -212,7 +213,7 @@ export default function PrayerScreen() {
                           key={p.id}
                           prayer={p}
                           theme={theme}
-                          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setActionFor(p); }}
+                          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setActionFor(p); }}
                         />
                       ))}
                     </>
@@ -224,7 +225,7 @@ export default function PrayerScreen() {
 
           {/* Ask us: opens the existing email PrayerRequestModal (a separate feature). */}
           <TouchableOpacity
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRequestOpen(true); }}
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setRequestOpen(true); }}
             activeOpacity={0.85}
             style={[styles.askRow, {
               backgroundColor: theme.bgCardFaith,
@@ -251,7 +252,7 @@ export default function PrayerScreen() {
       <View style={[styles.fab, { bottom: insets.bottom + 24 }]}>
         <TouchableOpacity
           activeOpacity={0.85}
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setAddOpen(true); }}
+          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); setAddOpen(true); }}
           style={[styles.fabBtn, { backgroundColor: GOLD }]}
         >
           <Ionicons name="add" size={28} color="#fff" />

@@ -1,6 +1,7 @@
-﻿import { Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -132,7 +133,7 @@ function CollapsibleSection({ label, subtitle, children, defaultOpen = true, the
 
   return (
     <View style={{ marginTop: first ? 4 : 20 }}>
-      <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggle(); }} activeOpacity={0.7}
+      <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); toggle(); }} activeOpacity={0.7}
         style={{ paddingVertical: 6, marginBottom: 10, minHeight: 44, justifyContent: 'center' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <Text style={{ fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.accentBlueRaw }}>
@@ -947,7 +948,7 @@ export default function StatsScreen() {
     : (v >= 80 ? theme.statusGood : v >= 60 ? theme.statusWarn : theme.statusBad);
 
   const toggleWeek = (key: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     LayoutAnimation.configureNext(LayoutAnimation.create(220, LayoutAnimation.Types.easeInEaseOut, LayoutAnimation.Properties.opacity));
     setExpandedWeeks(prev => ({ ...prev, [key]: !prev[key] }));
   };
@@ -961,7 +962,7 @@ export default function StatsScreen() {
 
   // Calendar picker: jump to the week containing a date (expand it, scroll there).
   const jumpToWeekForDate = (dateKey: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     const p = dateKey.split('-').map(Number);
     const dt = new Date(p[0], p[1] - 1, p[2]);
     dt.setDate(dt.getDate() - dt.getDay());
@@ -977,7 +978,7 @@ export default function StatsScreen() {
 
   const renderArchiveDayRow = (day: ArchiveDay) => {
     const sc = day.score;
-    const open = () => { if (sc && !day.excluded) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/day-summary', params: { date: day.dateKey } }); } };
+    const open = () => { if (sc && !day.excluded) { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/day-summary', params: { date: day.dateKey } }); } };
     return (
       <TouchableOpacity key={day.dateKey} activeOpacity={sc && !day.excluded ? 0.6 : 1} onPress={open}
         style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 4, borderTopWidth: 0.5, borderTopColor: theme.borderCard }}>
@@ -1008,13 +1009,13 @@ export default function StatsScreen() {
       <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, marginTop: 12 }]}>
         <TouchableOpacity
           activeOpacity={0.7}
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setDaySummariesOpen(o => !o); }}
+          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setDaySummariesOpen(o => !o); }}
           style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: daySummariesOpen ? 10 : 0 }}
         >
           <Text style={[styles.cardLabel, { color: theme.textMuted }]}>DAY SUMMARIES</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             {daySummariesOpen && (
-              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowArchiveCalendar(true); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowArchiveCalendar(true); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                 <Ionicons name="calendar" size={16} color={theme.accentBlueRaw} />
               </TouchableOpacity>
             )}
@@ -1095,7 +1096,7 @@ export default function StatsScreen() {
       <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, marginTop: 12 }]}>
         <TouchableOpacity
           activeOpacity={0.7}
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setWeeklyCardOpen(o => !o); }}
+          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setWeeklyCardOpen(o => !o); }}
           style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: weeklyCardOpen ? 8 : 0 }}
         >
           <Text style={[styles.cardLabel, { color: theme.textMuted }]}>WEEKLY SUMMARIES</Text>
@@ -1123,7 +1124,7 @@ export default function StatsScreen() {
             return (
               <View key={group.monthKey} style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard }}>
                 <TouchableOpacity
-                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setExpandedWeeklyMonths(prev => ({ ...prev, [group.monthKey]: !monthOpen })); }}
+                  onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setExpandedWeeklyMonths(prev => ({ ...prev, [group.monthKey]: !monthOpen })); }}
                   activeOpacity={0.6}
                   style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 4 }}
                 >
@@ -1142,7 +1143,7 @@ export default function StatsScreen() {
                     <TouchableOpacity
                       key={s.weekStart}
                       activeOpacity={hasScore ? 0.6 : 1}
-                      onPress={() => { if (hasScore) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/weekly-summary', params: { weekStart: s.weekStart } }); } }}
+                      onPress={() => { if (hasScore) { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/weekly-summary', params: { weekStart: s.weekStart } }); } }}
                       style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 11, paddingHorizontal: 4, borderTopWidth: 0.5, borderTopColor: theme.borderCard }}
                     >
                       {/* Date + score on left (matches Day Summaries row layout) */}
@@ -1213,7 +1214,7 @@ export default function StatsScreen() {
       <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, marginTop: 12 }]}>
         <TouchableOpacity
           activeOpacity={0.7}
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setMonthlyCardOpen(o => !o); }}
+          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setMonthlyCardOpen(o => !o); }}
           style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: monthlyCardOpen ? 8 : 0 }}
         >
           <Text style={[styles.cardLabel, { color: theme.textMuted }]}>MONTHLY SUMMARIES</Text>
@@ -1238,7 +1239,7 @@ export default function StatsScreen() {
               <TouchableOpacity
                 key={s.monthKey}
                 activeOpacity={hasScore ? 0.6 : 1}
-                onPress={() => { if (hasScore) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/monthly-summary', params: { monthKey: s.monthKey } }); } }}
+                onPress={() => { if (hasScore) { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/monthly-summary', params: { monthKey: s.monthKey } }); } }}
                 style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 11, paddingHorizontal: 4, borderTopWidth: 0.5, borderTopColor: theme.borderCard }}
               >
                 <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>
@@ -1673,16 +1674,16 @@ export default function StatsScreen() {
         </View>
         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
           <TouchableOpacity
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); }}
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); }}
             style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="journal" size={14} color={theme.accentBlue} />
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openEditSheet(); }}
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openEditSheet(); }}
             style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="grid" size={14} color={theme.accentBlue} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); showToolkit('stats'); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+          <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); showToolkit('stats'); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
             <Ionicons name="help-circle" size={22} color={theme.accentBlue} />
           </TouchableOpacity>
         </View>
@@ -1704,7 +1705,7 @@ export default function StatsScreen() {
             </View>
             <View style={{ flexDirection: 'row', gap: 6, marginBottom: 14 }}>
               {(['7', '30', '90', '180', 'ytd'] as const).map(p => (
-                <TouchableOpacity key={p} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setActivePeriod(p); }}
+                <TouchableOpacity key={p} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setActivePeriod(p); }}
                   style={{ flex: 1, paddingVertical: 6, borderRadius: 6, alignItems: 'center',
                     backgroundColor: activePeriod === p ? theme.accentBlueBg : theme.bgInput,
                     borderWidth: 1, borderColor: activePeriod === p ? theme.accentBlueBorder : theme.borderInput }}>
@@ -1795,7 +1796,7 @@ export default function StatsScreen() {
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <View style={{ flexDirection: 'row', gap: 6 }}>
               {(['7', '30', '90'] as const).map(p => (
-                <TouchableOpacity key={p} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleGlobalPeriodSync(p); }}
+                <TouchableOpacity key={p} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleGlobalPeriodSync(p); }}
                   style={{ paddingVertical: 7, paddingHorizontal: 18, borderRadius: 8,
                     backgroundColor: trendPeriod === p ? theme.accentBlueBg : theme.bgInput,
                     borderWidth: 1, borderColor: trendPeriod === p ? theme.accentBlueBorder : theme.borderInput }}>
@@ -1862,12 +1863,12 @@ export default function StatsScreen() {
                 <Text style={[styles.cardLabel, { color: theme.textMuted }]}>STREAKS</Text>
                 <TooltipIcon tooltipKey="streaks_card" />
               </View>
-              <TouchableOpacity ref={streakGearRef} collapsable={false} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openManageStreaks(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <TouchableOpacity ref={streakGearRef} collapsable={false} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openManageStreaks(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                 <Ionicons name="settings" size={16} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
             {liveStreaks.length === 0 ? (
-              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openManageStreaks(); }} style={{ alignItems: 'center', paddingVertical: 20 }}>
+              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openManageStreaks(); }} style={{ alignItems: 'center', paddingVertical: 20 }}>
                 <Ionicons name="flame-outline" size={32} color={theme.textDim} />
                 <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted, marginTop: 8 }}>No streaks added</Text>
                 <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginTop: 4 }}>Tap to set up your streaks</Text>
@@ -1893,7 +1894,7 @@ export default function StatsScreen() {
                             key={s.id}
                             ref={isFirstTile ? streakTileRef : undefined}
                             collapsable={false}
-                            onPress={isTappable ? () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); toggleManualCheckIn(s); } : undefined}
+                            onPress={isTappable ? () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); toggleManualCheckIn(s); } : undefined}
                             activeOpacity={isTappable ? 0.7 : 1}
                             style={{ alignItems: 'center', width: '33%' }}>
                             <Text style={{ fontSize: 28, marginBottom: 4 }}>{s.emoji}</Text>
@@ -1926,11 +1927,11 @@ export default function StatsScreen() {
               <CollapsibleSection key={section.id} label={section.label} subtitle="Day-by-day history" defaultOpen={isFirst} theme={theme} first={isFirst}>
                 <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); if (calendarMonth === 0) { setCalendarMonth(11); setCalendarYear(y => y - 1); } else setCalendarMonth(m => m - 1); }} style={{ padding: 8 }}>
+              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); if (calendarMonth === 0) { setCalendarMonth(11); setCalendarYear(y => y - 1); } else setCalendarMonth(m => m - 1); }} style={{ padding: 8 }}>
                 <Ionicons name="chevron-back" size={18} color={theme.accentBlue} />
               </TouchableOpacity>
               <Text style={[styles.cardLabel, { marginBottom: 0, color: theme.textMuted }]}>{MONTH_NAMES[month]} {year}</Text>
-              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); if (calendarMonth === 11) { setCalendarMonth(0); setCalendarYear(y => y + 1); } else setCalendarMonth(m => m + 1); }} style={{ padding: 8 }}>
+              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); if (calendarMonth === 11) { setCalendarMonth(0); setCalendarYear(y => y + 1); } else setCalendarMonth(m => m + 1); }} style={{ padding: 8 }}>
                 <Ionicons name="chevron-forward" size={18} color={theme.accentBlue} />
               </TouchableOpacity>
             </View>
@@ -1952,7 +1953,7 @@ export default function StatsScreen() {
                 return (
                   <TouchableOpacity key={day}
                     style={[styles.calDay, { backgroundColor: colors.bg }, isToday && [styles.calDayToday, { borderColor: theme.accentBlueBorder }]]}
-                    onPress={() => { if (dateKey <= today) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setDayDetailDate(dateKey); } }}>
+                    onPress={() => { if (dateKey <= today) { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setDayDetailDate(dateKey); } }}>
                     <Text style={[styles.calDayText, { color: colors.text }]}>{day}</Text>
                     {exDay && (
                       <View style={{ position: 'absolute', bottom: 2, left: 0, right: 0, flexDirection: 'row', gap: 2, justifyContent: 'center' }}>
@@ -1987,7 +1988,7 @@ export default function StatsScreen() {
                   {evrCardOpen && <Ionicons name="analytics" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />}
                   <TouchableOpacity
                     activeOpacity={0.7}
-                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setEvrCardOpen(o => !o); }}
+                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEvrCardOpen(o => !o); }}
                     style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: evrCardOpen ? 8 : 0 }}
                   >
                     <Text style={[styles.cardLabel, { color: theme.textMuted }]}>EFFORT VS RESULTS</Text>
@@ -2002,7 +2003,7 @@ export default function StatsScreen() {
                         Compare your logged data against your actual results. See what's working, what's not, and get specific suggestions.
                       </Text>
                       <TouchableOpacity
-                        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/diagnostic-report'); }}
+                        onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/diagnostic-report'); }}
                         style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 8, paddingVertical: 12, alignItems: 'center' }}
                       >
                         <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: '#fff' }}>Open Analysis</Text>
@@ -2044,7 +2045,7 @@ export default function StatsScreen() {
             flex: 1,
           }}>
             {/* Handle */}
-            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeEditSheet(); }} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 4, paddingHorizontal: 40 }}>
+            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeEditSheet(); }} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 4, paddingHorizontal: 40 }}>
               <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
             </TouchableOpacity>
 
@@ -2108,7 +2109,7 @@ export default function StatsScreen() {
                             <View style={{ backgroundColor: 'rgba(102,102,128,0.12)', borderWidth: 1, borderColor: 'rgba(102,102,128,0.2)', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
                               <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 1 }}>SECTION</Text>
                             </View>
-                            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleToggleCard(item.id); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleToggleCard(item.id); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                               <Ionicons name={item.visible ? 'eye' : 'eye-off-outline'} size={18} color={item.visible ? theme.accentBlue : theme.textDim} />
                             </TouchableOpacity>
                           </TouchableOpacity>
@@ -2137,10 +2138,10 @@ export default function StatsScreen() {
                       <View style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
                         <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 1 }}>{item.period}D</Text>
                       </View>
-                      <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleDeleteCard(item.id); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                      <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleDeleteCard(item.id); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                         <Ionicons name="trash-outline" size={17} color={theme.statusBad} />
                       </TouchableOpacity>
-                      <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleToggleCard(item.id); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                      <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleToggleCard(item.id); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                         <Ionicons name={item.visible ? 'eye' : 'eye-off-outline'} size={18} color={item.visible ? theme.accentBlue : theme.textDim} />
                       </TouchableOpacity>
                     </TouchableOpacity>
@@ -2187,7 +2188,7 @@ export default function StatsScreen() {
                             const meta = DATA_KEY_META[dk];
                             const sel = creatorDataKey === dk;
                             return (
-                              <TouchableOpacity key={dk} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleCreatorSelectDataKey(dk); }}
+                              <TouchableOpacity key={dk} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleCreatorSelectDataKey(dk); }}
                                 style={{ width: '47%', backgroundColor: sel ? theme.accentBlueBg : theme.bgCard,
                                   borderWidth: 1, borderColor: sel ? theme.accentBlueRaw : theme.borderCard,
                                   borderRadius: 12, padding: 14, alignItems: 'center', gap: 6 }}>
@@ -2214,7 +2215,7 @@ export default function StatsScreen() {
                   {availableChartTypes(creatorDataKey).map(ct => {
                     const sel = creatorChartType === ct;
                     return (
-                      <TouchableOpacity key={ct} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCreatorChartType(ct); setCreatorStep(3); }}
+                      <TouchableOpacity key={ct} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setCreatorChartType(ct); setCreatorStep(3); }}
                         style={{ flex: 1, backgroundColor: sel ? theme.accentBlueBg : theme.bgCard,
                           borderWidth: 1.5, borderColor: sel ? theme.accentBlueRaw : theme.borderCard,
                           borderRadius: 14, padding: 24, alignItems: 'center', gap: 10 }}>
@@ -2259,7 +2260,7 @@ export default function StatsScreen() {
                                     const blocked = usedColors.includes(sw);
                                     return (
                                       <TouchableOpacity key={sw} disabled={blocked}
-                                        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCreatorMacroColors(prev => ({ ...prev, [key]: sw })); }}
+                                        onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setCreatorMacroColors(prev => ({ ...prev, [key]: sw })); }}
                                         style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: sw,
                                           opacity: blocked ? 0.2 : 1,
                                           borderWidth: selected ? 2 : 0, borderColor: '#ffffff',
@@ -2280,7 +2281,7 @@ export default function StatsScreen() {
                             const selected = creatorColor === sw;
                             return (
                               <TouchableOpacity key={sw}
-                                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCreatorColor(selected ? undefined : sw); }}
+                                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setCreatorColor(selected ? undefined : sw); }}
                                 style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: sw,
                                   borderWidth: selected ? 2 : 0, borderColor: '#ffffff',
                                   alignItems: 'center', justifyContent: 'center' }}>
@@ -2312,7 +2313,7 @@ export default function StatsScreen() {
                   <TouchableOpacity
                     ref={graphCreatorSaveBtnRef}
                     collapsable={false}
-                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); handleAddCard(); }}
+                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); handleAddCard(); }}
                     style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 4 }}>
                     <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: '#fff', letterSpacing: 1.5 }}>ADD TO STATS</Text>
                   </TouchableOpacity>
@@ -2353,7 +2354,7 @@ export default function StatsScreen() {
             maxHeight: Dimensions.get('window').height * 0.85,
           }}>
             {/* Handle */}
-            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeCreatorModal(); }} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 4 }}>
+            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeCreatorModal(); }} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 4 }}>
               <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
             </TouchableOpacity>
 
@@ -2361,7 +2362,7 @@ export default function StatsScreen() {
               {/* Header row */}
               <View style={{ flexDirection: 'row', alignItems: 'center', paddingTop: 12, paddingBottom: 20 }}>
                 {creatorStep > 1 && (
-                  <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleCreatorBack(); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={{ marginRight: 12 }}>
+                  <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleCreatorBack(); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={{ marginRight: 12 }}>
                     <Ionicons name="chevron-back" size={20} color={theme.accentBlueRaw} />
                   </TouchableOpacity>
                 )}
@@ -2385,7 +2386,7 @@ export default function StatsScreen() {
                             const meta = DATA_KEY_META[dk];
                             const sel = creatorDataKey === dk;
                             return (
-                              <TouchableOpacity key={dk} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); handleCreatorSelectDataKey(dk); }}
+                              <TouchableOpacity key={dk} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleCreatorSelectDataKey(dk); }}
                                 style={{ width: '47%', backgroundColor: sel ? theme.accentBlueBg : theme.bgCard,
                                   borderWidth: 1, borderColor: sel ? theme.accentBlueRaw : theme.borderCard,
                                   borderRadius: 12, padding: 14, alignItems: 'center', gap: 6 }}>
@@ -2412,7 +2413,7 @@ export default function StatsScreen() {
                   {availableChartTypes(creatorDataKey).map(ct => {
                     const sel = creatorChartType === ct;
                     return (
-                      <TouchableOpacity key={ct} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCreatorChartType(ct); setCreatorStep(3); }}
+                      <TouchableOpacity key={ct} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setCreatorChartType(ct); setCreatorStep(3); }}
                         style={{ flex: 1, backgroundColor: sel ? theme.accentBlueBg : theme.bgCard,
                           borderWidth: 1.5, borderColor: sel ? theme.accentBlueRaw : theme.borderCard,
                           borderRadius: 14, padding: 24, alignItems: 'center', gap: 10 }}>
@@ -2458,7 +2459,7 @@ export default function StatsScreen() {
                                     const blocked = usedColors.includes(sw);
                                     return (
                                       <TouchableOpacity key={sw} disabled={blocked}
-                                        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCreatorMacroColors(prev => ({ ...prev, [key]: sw })); }}
+                                        onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setCreatorMacroColors(prev => ({ ...prev, [key]: sw })); }}
                                         style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: sw,
                                           opacity: blocked ? 0.2 : 1,
                                           borderWidth: selected ? 2 : 0, borderColor: '#ffffff',
@@ -2479,7 +2480,7 @@ export default function StatsScreen() {
                             const selected = creatorColor === sw;
                             return (
                               <TouchableOpacity key={sw}
-                                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCreatorColor(selected ? undefined : sw); }}
+                                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setCreatorColor(selected ? undefined : sw); }}
                                 style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: sw,
                                   borderWidth: selected ? 2 : 0, borderColor: '#ffffff',
                                   alignItems: 'center', justifyContent: 'center' }}>
@@ -2507,7 +2508,7 @@ export default function StatsScreen() {
                     onEditPress={() => {}}
                     onNutrientChange={(_, key) => setCreatorNutrientKey(key)}
                   />
-                  <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); handleAddCard(); }}
+                  <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); handleAddCard(); }}
                     style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 4 }}>
                     <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: '#fff', letterSpacing: 1.5 }}>ADD TO STATS</Text>
                   </TouchableOpacity>
@@ -2564,12 +2565,12 @@ export default function StatsScreen() {
           <Animated.View style={{ opacity: fabItem2Anim, transform: [{ translateY: fabItem2Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <TouchableOpacity
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); setTimeout(() => openCreatorModal(), 150); }}
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); setTimeout(() => openCreatorModal(), 150); }}
                 style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, shadowColor: theme.accentBlueRaw, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
                 <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Add Graph</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); setTimeout(() => openCreatorModal(), 150); }}
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); setTimeout(() => openCreatorModal(), 150); }}
                 style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlueRaw, alignItems: 'center', justifyContent: 'center', shadowColor: theme.accentBlueRaw, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
                 <Ionicons name="analytics-outline" size={20} color="#ffffff" />
               </TouchableOpacity>
@@ -2582,7 +2583,7 @@ export default function StatsScreen() {
       <View ref={fabRef} collapsable={false} style={{ position: 'absolute', bottom: 16, right: 20 }}>
       <Animated.View style={{ transform: [{ scale: fabScale }] }}>
         <TouchableOpacity
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); toggleFabMenu(); }}
+          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); toggleFabMenu(); }}
           onPressIn={() => Animated.timing(fabScale, { toValue: 0.9, duration: 80, useNativeDriver: true }).start()}
           onPressOut={() => Animated.timing(fabScale, { toValue: 1, duration: 80, useNativeDriver: true }).start()}
           activeOpacity={1}
@@ -2601,7 +2602,7 @@ export default function StatsScreen() {
           <Animated.View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', opacity: dayDetailAnim, justifyContent: 'center', alignItems: 'center' }}>
             <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={closeDayDetail} />
             <Animated.View style={{ width: '92%', height: '75%', borderRadius: 20, backgroundColor: theme.bgSheet, borderWidth: 0.5, borderColor: theme.borderSheet, overflow: 'hidden', opacity: dayDetailAnim }}>
-              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeDayDetail(); }} style={{ alignSelf: 'center', paddingVertical: 6, paddingHorizontal: 40 }}>
+              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeDayDetail(); }} style={{ alignSelf: 'center', paddingVertical: 6, paddingHorizontal: 40 }}>
                 <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle, marginTop: 12, marginBottom: 12 }} />
               </TouchableOpacity>
               <DayDetailContent date={dayDetailDate} onClose={closeDayDetail} />
@@ -2627,11 +2628,11 @@ export default function StatsScreen() {
                 <View style={{ backgroundColor: theme.bgSheet, borderRadius: 18, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, padding: 20 }}>
                   <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', textAlign: 'center', marginBottom: 10 }}>JUMP TO A DAY</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); prevMonth(); }} style={{ padding: 8 }}>
+                    <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); prevMonth(); }} style={{ padding: 8 }}>
                       <Ionicons name="chevron-back" size={18} color={theme.accentBlue} />
                     </TouchableOpacity>
                     <Text style={{ fontSize: 15, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold' }}>{ARCH_MONTHS[archiveCalMonth]} {archiveCalYear}</Text>
-                    <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); nextMonth(); }} disabled={isCurrentMonth} style={{ padding: 8, opacity: isCurrentMonth ? 0.25 : 1 }}>
+                    <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); nextMonth(); }} disabled={isCurrentMonth} style={{ padding: 8, opacity: isCurrentMonth ? 0.25 : 1 }}>
                       <Ionicons name="chevron-forward" size={18} color={theme.accentBlue} />
                     </TouchableOpacity>
                   </View>
@@ -2749,7 +2750,7 @@ export default function StatsScreen() {
             padding: 20,
             transform: [{ scale: manageStreaksAnim.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) }],
           }}>
-            <TouchableOpacity style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: theme.textMuted, opacity: 0.5, marginBottom: 16 }} activeOpacity={0.6} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeManageStreaks(); }} />
+            <TouchableOpacity style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: theme.textMuted, opacity: 0.5, marginBottom: 16 }} activeOpacity={0.6} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeManageStreaks(); }} />
             <Text style={{ fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw, marginBottom: 16 }}>MANAGE STREAKS</Text>
 
             <ScrollView showsVerticalScrollIndicator={false}>
@@ -2780,7 +2781,7 @@ export default function StatsScreen() {
                             <TouchableOpacity
                               onPress={() => Alert.alert('Remove Streak', `Remove "${item.label}" from your active streaks?`, [
                                 { text: 'Cancel', style: 'cancel' },
-                                { text: 'Remove', style: 'destructive', onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); removeStreak(item.id); } },
+                                { text: 'Remove', style: 'destructive', onPress: () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy); removeStreak(item.id); } },
                               ])}
                               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                               <Ionicons name="close-circle" size={20} color={theme.accentRed} />
@@ -2809,7 +2810,7 @@ export default function StatsScreen() {
                     {available.map(key => {
                       const meta = BUILTIN_STREAK_META[key];
                       return (
-                        <TouchableOpacity key={key} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); addBuiltinStreak(key); }}
+                        <TouchableOpacity key={key} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); addBuiltinStreak(key); }}
                           style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
                           <Text style={{ fontSize: 20, marginRight: 10 }}>{meta.emoji}</Text>
                           <View style={{ flex: 1 }}>
@@ -2826,7 +2827,7 @@ export default function StatsScreen() {
               })()}
 
               {/* Create custom */}
-              <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeManageStreaks(); setTimeout(openCreateCustom, 220); }}
+              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeManageStreaks(); setTimeout(openCreateCustom, 220); }}
                 style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
                   backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder,
                   borderRadius: 10, paddingVertical: 12, marginTop: 4, marginBottom: 8 }}>
@@ -2849,7 +2850,7 @@ export default function StatsScreen() {
               padding: 20,
               transform: [{ translateY: modalKeyboardOffset }],
             }}>
-                <TouchableOpacity style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: theme.textMuted, opacity: 0.5, marginBottom: 16 }} activeOpacity={0.6} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeCreateCustom(); }} />
+                <TouchableOpacity style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: theme.textMuted, opacity: 0.5, marginBottom: 16 }} activeOpacity={0.6} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeCreateCustom(); }} />
                 <Text style={{ fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw, marginBottom: 4 }}>CREATE CUSTOM STREAK</Text>
               <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginBottom: 20 }}>Manual check-in -- tap the tile each day to log it.</Text>
 
@@ -2874,12 +2875,12 @@ export default function StatsScreen() {
               />
 
               <View style={{ flexDirection: 'row', gap: 10 }}>
-                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeCreateCustom(); }}
+                <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeCreateCustom(); }}
                   style={{ backgroundColor: theme.bgInput, borderWidth: 0.5, borderColor: theme.borderInput, borderRadius: 10, padding: 14, width: 90, alignItems: 'center' }}>
                   <Text style={{ fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.textMuted }}>CANCEL</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); saveCustomStreak(); }}
+                  onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); saveCustomStreak(); }}
                   disabled={!customName.trim() || !customEmoji.trim()}
                   style={{ flex: 1, backgroundColor: customName.trim() && customEmoji.trim() ? theme.accentBlue : theme.bgInput, borderRadius: 10, padding: 14, alignItems: 'center',
                     borderWidth: customName.trim() && customEmoji.trim() ? 0 : 0.5, borderColor: theme.borderInput }}>

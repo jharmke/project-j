@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { useRef, useMemo } from 'react';
 import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../theme';
@@ -82,7 +83,7 @@ export default function NutrientDrilldownModal({ visible, onClose, item, entries
   };
 
   const closeWithHaptic = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     close();
   };
 
@@ -195,7 +196,7 @@ export default function NutrientDrilldownModal({ visible, onClose, item, entries
             {item?.hasNetToggle && (
               <View style={{ flexDirection: 'row', gap: 6, marginTop: 10 }}>
                 <TouchableOpacity
-                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setLocalNet(false); }}
+                  onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setLocalNet(false); }}
                   style={{
                     paddingHorizontal: 10, paddingVertical: 4, borderRadius: 4,
                     backgroundColor: !localNet ? theme.accentBlueBg : 'transparent',
@@ -206,7 +207,7 @@ export default function NutrientDrilldownModal({ visible, onClose, item, entries
                   <Text style={{ fontSize: 10, color: !localNet ? theme.accentBlue : theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5 }}>TOTAL</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setLocalNet(true); }}
+                  onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setLocalNet(true); }}
                   style={{
                     paddingHorizontal: 10, paddingVertical: 4, borderRadius: 4,
                     backgroundColor: localNet ? theme.accentBlueBg : 'transparent',

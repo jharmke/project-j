@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Modal, Text, TouchableOpacity, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { type Prayer } from '../utils/prayers';
 import { useTheme } from '../theme';
 
@@ -42,7 +43,7 @@ export default function PrayerActionModal({ prayer, onClose, onAnswer, onUnanswe
   };
 
   const close = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     Animated.parallel([
       Animated.timing(scaleAnim, { toValue: 0.92, duration: 140, useNativeDriver: true }),
       Animated.timing(opacityAnim, { toValue: 0, duration: 140, useNativeDriver: true }),

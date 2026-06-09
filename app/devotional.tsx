@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic, triggerHapticNotification } from '@/utils/haptics';
 import { fetchChapter, type Verse } from '../data/bible-web';
 import {
   DEVOTIONALS, formatDevotionalPassage, type Devotional, type DevotionalPassage,
@@ -152,7 +153,7 @@ export default function DevotionalScreen() {
   const handleSave = async () => {
     if (!canSave) return;
     Keyboard.dismiss();
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     setSaving(true);
     const updated = await saveDevotionalAnswer(id, day, answer);
     setStore(updated);
@@ -161,7 +162,7 @@ export default function DevotionalScreen() {
   };
 
   const handleComplete = async () => {
-    Haptics.notificationAsync(
+    triggerHapticNotification(
       completed ? Haptics.NotificationFeedbackType.Warning : Haptics.NotificationFeedbackType.Success,
     );
     const updated = completed
@@ -176,13 +177,13 @@ export default function DevotionalScreen() {
 
   const goToDay = (next: number) => {
     if (!dev || next < 1 || next > dev.totalDays) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     setDay(next);
   };
 
   const openInReader = () => {
     if (!dayData) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     const p = dayData.passage;
     // Pass the verse reference so the reader scrolls to and highlights the passage (the same path
     // Halo's verse links use), not just opens the chapter at the top. Whole-chapter passages with
@@ -194,7 +195,7 @@ export default function DevotionalScreen() {
     );
   };
 
-  const openHalo = () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setHaloOpen(true); };
+  const openHalo = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setHaloOpen(true); };
 
   // Persist the live Halo conversation to this devotional day every time it changes, so it can be
   // reopened and continued. Read-then-merge in the storage layer, never clobbers the typed answer.
@@ -209,7 +210,7 @@ export default function DevotionalScreen() {
       <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
         <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
           <TouchableOpacity
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
             style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
           >
             <Ionicons name="chevron-back" size={14} color={theme.accentBlue} />

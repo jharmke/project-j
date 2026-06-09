@@ -3,6 +3,7 @@ import { useRef } from 'react';
 import { Animated, Modal, Text, TouchableOpacity, View } from 'react-native';
 import { router } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { useTheme } from '../theme';
 
 /**
@@ -55,12 +56,12 @@ export default function BibleStartGuide({ visible, onClose }: Props) {
   };
 
   const close = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     fadeOut(onClose);
   };
 
   const pick = (s: Starter) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     fadeOut(() => {
       onClose();
       router.push({ pathname: '/bible', params: { openBook: s.book, openChapter: String(s.chapter) } });

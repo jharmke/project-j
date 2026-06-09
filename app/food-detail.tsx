@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic, triggerHapticSelection } from '@/utils/haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActionSheetIOS, Alert, Animated, Dimensions, Image, KeyboardAvoidingView, Linking, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -532,7 +533,7 @@ const isTutorialMode = tutorialMode === 'true';
       Animated.timing(starScale, { toValue: 1.4, duration: 120, useNativeDriver: true }),
       Animated.spring(starScale, { toValue: 1, useNativeDriver: true, friction: 4, tension: 200 }),
     ]).start();
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     try {
       const saved = await AsyncStorage.getItem('pj_favorites');
       let favs = saved ? JSON.parse(saved) : [];
@@ -730,7 +731,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
 
   const saveEntry = async () => {
     if (!calories && calories !== 0) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     try {
       if (isRecipeMode) {
         // Save as pending ingredient for recipe builder to pick up
@@ -923,7 +924,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
 
   const saveEditFoodFromDetail = async () => {
     if (!editFoodData || !editFoodData.name.trim() || !editFoodData.cal) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const saved = await AsyncStorage.getItem('pj_my_foods');
       const foods = saved ? JSON.parse(saved) : [];
@@ -1026,7 +1027,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
       await AsyncStorage.setItem(`pj_food_photo_${foodId}`, destUri);
       setPhotoUri(destUri);
       setShowPhotoFullscreen(false);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
       showToast('Photo saved', undefined, 'success');
     } catch (e: any) {
       showToast('Photo save failed', e?.message || 'Please try again', 'error');
@@ -1039,7 +1040,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Remove', style: 'destructive', onPress: async () => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+          triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
           try {
             const file = new FSFile(photoUri);
             if (file.exists) file.delete();
@@ -1059,7 +1060,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={styles.backBtn}>
           <Text style={styles.backBtnText}>← Back</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>
@@ -1069,14 +1070,14 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           {food?.isMyFood ? (
             <TouchableOpacity
               style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 }}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); openEditFoodModal(); }}>
+              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openEditFoodModal(); }}>
               <Text style={{ color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Edit</Text>
             </TouchableOpacity>
           ) : food?.fsId ? (
             <TouchableOpacity
               ref={ellipsisRef}
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
                 (ellipsisRef.current as any)?.measure((_x: number, _y: number, w: number, h: number, px: number, py: number) => {
                   const screenWidth = Dimensions.get('window').width;
                   setMenuPos({ top: py + h + 6, right: screenWidth - px - w });
@@ -1111,7 +1112,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           </View>
           {foodId && (
             <TouchableOpacity
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); photoUri ? setShowPhotoFullscreen(true) : handlePhotoAdd(); }}
+              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); photoUri ? setShowPhotoFullscreen(true) : handlePhotoAdd(); }}
               style={{ width: 64, height: 64 }}
               activeOpacity={0.8}>
               {photoUri ? (
@@ -1138,7 +1139,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           <TouchableOpacity
             ref={servingPickerRef as any}
             style={styles.servingPickerBtn}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowServingPicker(true); }}>
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowServingPicker(true); }}>
             <View>
               <Text style={styles.servingPickerLabel}>Serving Size</Text>
               <Text style={styles.servingPickerValue}>{selectedServing?.label || 'Select serving'}</Text>
@@ -1157,7 +1158,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <TouchableOpacity
                 onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
                   const next = Math.max(0.5, Math.round((servingCount - 1) * 2) / 2);
                   setServingCount(next);
                   setServingCountStr(next % 1 === 0 ? next.toString() : next.toFixed(1));
@@ -1191,7 +1192,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
               />
               <TouchableOpacity
                 onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
                   const next = Math.ceil(servingCount) + (Number.isInteger(servingCount) ? 1 : 0);
                   setServingCount(next);
                   setServingCountStr(next.toString());
@@ -1271,7 +1272,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
             if (rows.length === 0) return null;
             return (
               <View style={{ marginTop: 4 }}>
-                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setFatsOpen(o => !o); }} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: theme.borderSubtle }}>
+                <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setFatsOpen(o => !o); }} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: theme.borderSubtle }}>
                   <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>Extended Fats</Text>
                   <Ionicons name={fatsOpen ? 'chevron-up' : 'chevron-down'} size={13} color={theme.textDim} />
                 </TouchableOpacity>
@@ -1306,7 +1307,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
             ].filter(r => r.val !== null && r.val !== 0);
             return (
               <View style={{ marginTop: 4 }}>
-                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCarbsOpen(o => !o); }} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: theme.borderSubtle }}>
+                <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setCarbsOpen(o => !o); }} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: theme.borderSubtle }}>
                   <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>Carb Breakdown</Text>
                   <Ionicons name={carbsOpen ? 'chevron-up' : 'chevron-down'} size={13} color={theme.textDim} />
                 </TouchableOpacity>
@@ -1335,7 +1336,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
             if (rows.length === 0) return null;
             return (
               <View style={{ marginTop: 4 }}>
-                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setOtherOpen(o => !o); }} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: theme.borderSubtle }}>
+                <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setOtherOpen(o => !o); }} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: theme.borderSubtle }}>
                   <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>Other Nutrients</Text>
                   <Ionicons name={otherOpen ? 'chevron-up' : 'chevron-down'} size={13} color={theme.textDim} />
                 </TouchableOpacity>
@@ -1366,7 +1367,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
             if (rows.length === 0) return null;
             return (
               <View style={{ marginTop: 4 }}>
-                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setVitaminsOpen(o => !o); }} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: theme.borderSubtle }}>
+                <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setVitaminsOpen(o => !o); }} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: theme.borderSubtle }}>
                   <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>Vitamins</Text>
                   <Ionicons name={vitaminsOpen ? 'chevron-up' : 'chevron-down'} size={13} color={theme.textDim} />
                 </TouchableOpacity>
@@ -1395,7 +1396,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
             if (rows.length === 0) return null;
             return (
               <View style={{ marginTop: 4 }}>
-                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setBVitaminsOpen(o => !o); }} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: theme.borderSubtle }}>
+                <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setBVitaminsOpen(o => !o); }} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: theme.borderSubtle }}>
                   <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>B Vitamins</Text>
                   <Ionicons name={bVitaminsOpen ? 'chevron-up' : 'chevron-down'} size={13} color={theme.textDim} />
                 </TouchableOpacity>
@@ -1426,7 +1427,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
             if (rows.length === 0) return null;
             return (
               <View style={{ marginTop: 4 }}>
-                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setMineralsOpen(o => !o); }} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: theme.borderSubtle }}>
+                <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setMineralsOpen(o => !o); }} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8, borderTopWidth: 1, borderTopColor: theme.borderSubtle }}>
                   <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>Minerals</Text>
                   <Ionicons name={mineralsOpen ? 'chevron-up' : 'chevron-down'} size={13} color={theme.textDim} />
                 </TouchableOpacity>
@@ -1469,7 +1470,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           <Text style={styles.noDataText}>No detailed nutrition data. Calories will be logged as entered.</Text>
         )}
 {/* Timestamp */}
-        <TouchableOpacity style={styles.mealSelector} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); timePickerAnim.setValue(0); setShowTimePicker(true); }}>
+        <TouchableOpacity style={styles.mealSelector} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); timePickerAnim.setValue(0); setShowTimePicker(true); }}>
           <Text style={styles.mealSelectorLabel}>Time logged</Text>
           <Text style={styles.mealSelectorValue}>
             {isEditing && date && (() => {
@@ -1504,14 +1505,14 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                   textColor={theme.textPrimary}
                   style={{ width: Dimensions.get('window').width - 48 }}
                   onChange={(event, date) => {
-                    if (date) { Haptics.selectionAsync(); setEntryTime(date); setHasChanges(true); }
+                    if (date) { triggerHapticSelection(); setEntryTime(date); setHasChanges(true); }
                   }}
                 />
               </View>
-              <TouchableOpacity style={{ padding: 16, alignItems: 'center', marginTop: 4 }} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeTimePicker(); }}>
+              <TouchableOpacity style={{ padding: 16, alignItems: 'center', marginTop: 4 }} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeTimePicker(); }}>
                 <Text style={{ fontSize: 15, color: theme.accentGreen, fontFamily: 'DMSans_600SemiBold' }}>Confirm</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={{ paddingBottom: 8, paddingTop: 4, alignItems: 'center' }} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeTimePicker(); }}>
+              <TouchableOpacity style={{ paddingBottom: 8, paddingTop: 4, alignItems: 'center' }} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeTimePicker(); }}>
                 <Text style={{ fontSize: 15, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>Cancel</Text>
               </TouchableOpacity>
             </View>
@@ -1523,7 +1524,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
   ref={mealSelectorRef as any}
   style={styles.mealSelector}
   onPress={() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     mealDropdownAnim.setValue(0);
     setShowMealPicker(true);
   }}>
@@ -1547,7 +1548,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           key={slot.id}
           style={[styles.mealOption, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}
           onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
             setCurrentMeal(slot.id);
             setHasChanges(true);
             closeMealPicker();
@@ -1556,7 +1557,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           {(currentMeal === slot.id || currentMeal === slot.name) && <Ionicons name="checkmark" size={16} color={theme.accentBlue} />}
         </TouchableOpacity>
       ))}
-      <TouchableOpacity style={{ padding: 16, alignItems: 'center', marginTop: 4 }} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeMealPicker(); }}>
+      <TouchableOpacity style={{ padding: 16, alignItems: 'center', marginTop: 4 }} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeMealPicker(); }}>
         <Text style={{ fontSize: 15, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>Cancel</Text>
       </TouchableOpacity>
     </View>
@@ -1577,14 +1578,14 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           <TouchableOpacity
             style={styles.deleteBtn}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
               Alert.alert(
                 'Remove Entry',
                 'Remove this entry from your log?',
                 [
                   { text: 'Cancel', style: 'cancel' },
                   { text: 'Remove', style: 'destructive', onPress: async () => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
                     try {
                       const saved = await AsyncStorage.getItem(`pj_${date}`);
                       const current = saved ? JSON.parse(saved) : {};
@@ -1637,7 +1638,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
             transform: [{ translateY: menuAnim.interpolate({ inputRange: [0, 1], outputRange: [-8, 0] }) }],
           }}>
             <TouchableOpacity
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowEllipsisMenu(false); setTimeout(() => setShowSaveAsCopy(true), 50); }}
+              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowEllipsisMenu(false); setTimeout(() => setShowSaveAsCopy(true), 50); }}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 16, paddingVertical: 14 }}>
               <Ionicons name="copy-outline" size={17} color={theme.accentBlue} />
               <Text style={{ fontSize: 15, color: theme.textPrimary, fontFamily: 'DMSans_500Medium' }}>Save as Copy</Text>
@@ -1694,7 +1695,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                 key={i}
                 style={[styles.mealOption, selectedServing?.label === s.label && styles.mealOptionActive]}
                 onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
                   setSelectedServing(s);
                   setAmount(s.grams > 0 ? s.grams.toString() : '100');
                   setAmountChanged(true);
@@ -1980,7 +1981,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                 )}
               </ScrollView>
               <View style={{ flexDirection: 'row', gap: 10, padding: 16, paddingTop: 12 }}>
-                <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); closeEditFoodModal(); }} style={{ flex: 1, padding: 12, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, alignItems: 'center' }}>
+                <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeEditFoodModal(); }} style={{ flex: 1, padding: 12, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, alignItems: 'center' }}>
                   <Text style={{ color: theme.textMuted, fontFamily: 'DMSans_500Medium', fontSize: 14 }}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity

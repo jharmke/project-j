@@ -1,5 +1,5 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { Pressable } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
@@ -23,10 +23,7 @@ export default function PressableButton({ onPress, children, style, flex }: Prop
       style={{ flex: flex !== undefined ? flex : 1 }}
       onPressIn={() => {
         scale.value = withSpring(0.94, { damping: 15, stiffness: 300 });
-        AsyncStorage.getItem('pj_settings').then(saved => {
-          const enabled = saved ? (JSON.parse(saved).hapticsEnabled ?? true) : true;
-          if (enabled) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        });
+        triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
       }}
       onPressOut={() => { scale.value = withSpring(1, { damping: 15, stiffness: 300 }); }}
       onPress={onPress}>

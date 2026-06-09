@@ -15,6 +15,7 @@ import Reanimated, { useSharedValue, useAnimatedStyle, useAnimatedProps, withTim
 import Svg, { Circle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import TooltipIcon from './TooltipIcon';
 import { ToastRenderer, useToast } from './Toast';
 import { DayScore, scoreLabel } from '../utils/dayScore';
@@ -144,7 +145,7 @@ export default function DaySummaryModal({ score, dateKey, theme, styleMode, fait
   };
 
   const dismiss = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     overlay.value = withTiming(0, { duration: 140 });
     cardScale.value = withTiming(0.92, { duration: 140 }, (finished) => {
       if (finished) runOnJS(onClose)();
@@ -152,7 +153,7 @@ export default function DaySummaryModal({ score, dateKey, theme, styleMode, fait
   };
 
   const handleExclude = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
     await excludeDayFromAverages(dateKey);
     showToast('Day excluded', 'Removed from your weekly average', 'success');
     dismiss();
@@ -160,7 +161,7 @@ export default function DaySummaryModal({ score, dateKey, theme, styleMode, fait
 
   const handleViewSummary = () => {
     if (!onViewSummary) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     onViewSummary();
   };
 

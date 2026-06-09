@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { storageSet } from '../utils/storage';
@@ -170,18 +171,18 @@ export default function NutritionGearModal({ visible, onClose, preset, goals, on
   };
 
   const closeWithHaptic = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     close();
   };
 
   const applyPreset = (p: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     setLocalPreset(p as NutritionPreset);
     setLocalGoals({ ...NUTRITION_PRESETS[p] });
   };
 
   const unlockCustom = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     setLocalPreset('custom');
   };
 
@@ -194,7 +195,7 @@ export default function NutritionGearModal({ visible, onClose, preset, goals, on
   };
 
   const handleSave = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const saved = await AsyncStorage.getItem('pj_settings');
       const settings = saved ? JSON.parse(saved) : {};

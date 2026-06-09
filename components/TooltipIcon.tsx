@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, TouchableOpacity } from 'react-native';
 import { useTooltip } from '../useTooltip';
@@ -49,7 +50,7 @@ export default function TooltipIcon({ tooltipKey, size = 13, hideTour }: Props) 
   return (
     <>
       <TouchableOpacity
-        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setModalVisible(true); }}
+        onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setModalVisible(true); }}
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         activeOpacity={0.7}
       >

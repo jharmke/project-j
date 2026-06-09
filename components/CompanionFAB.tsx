@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // "Halo": the faith companion's floating button. Flat and iconographic: a gold disc
@@ -60,7 +61,7 @@ export default function CompanionFAB({ onPress, bottom = 18 }: { onPress?: () =>
   const glowOpacity = breath.interpolate({ inputRange: [0, 1], outputRange: [0.1, 0.34] });
 
   const handlePress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     onPress?.();
   };
   const pressIn  = () => Animated.timing(press, { toValue: 0.92, duration: 80,  useNativeDriver: true }).start();

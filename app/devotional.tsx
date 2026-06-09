@@ -209,7 +209,7 @@ export default function DevotionalScreen() {
       <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
         <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
             style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
           >
             <Ionicons name="chevron-back" size={14} color={theme.accentBlue} />

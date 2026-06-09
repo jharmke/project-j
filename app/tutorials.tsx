@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
@@ -98,7 +99,7 @@ export default function TutorialsScreen() {
       <View style={{ paddingTop: insets.top, paddingHorizontal: 16, paddingBottom: 12, backgroundColor: theme.bgPrimary }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, marginTop: 8 }}>
           <TouchableOpacity
-            onPress={() => router.back()}
+            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
             style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: 4 }}
             activeOpacity={0.7}
           >

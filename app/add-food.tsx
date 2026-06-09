@@ -1319,7 +1319,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
           const data = JSON.parse(saved);
           if (data.entries) {
             data.entries.reverse().forEach((e: any) => {
-              const dedupeKey = e.fsId || e.name.replace(/\s*\(.*?\)\s*$/, '');
+              const dedupeKey = e.fsId ? `fs_${e.fsId}` : `${e.name.replace(/\s*\(.*?\)\s*$/, '')}_${e.isMyFood ? 'mf' : 'ft'}`;
               if (!seen.has(dedupeKey)) {
                 seen.add(dedupeKey);
                 recent.push({ name: e.name, cal: e.labelCal || e.calPer100g || e.cal, protein: e.labelProtein ?? e.proteinPer100g ?? e.protein, carbs: e.labelCarbs ?? e.carbsPer100g ?? e.carbs, fat: e.labelFat ?? e.fatPer100g ?? e.fat, brand: e.brand || null, calPer100g: e.calPer100g, proteinPer100g: e.proteinPer100g, carbsPer100g: e.carbsPer100g, fatPer100g: e.fatPer100g, foodNutrients: e.foodNutrients, fsId: e.fsId || null });
@@ -1386,19 +1386,34 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
 
   const loadFavorites = async () => {
   try {
+    let favs: any[] = [];
     const saved = await AsyncStorage.getItem('pj_favorites');
     if (saved) {
-      setFavorites(JSON.parse(saved));
+      favs = JSON.parse(saved);
     } else {
       const userId = getUserId();
       const ref = doc(db, 'users', userId, 'days', 'my_foods');
       const snap = await getDoc(ref);
       if (snap.exists() && snap.data().favorites) {
-        const data = snap.data().favorites;
-        setFavorites(data);
-        await storageSet('pj_favorites', JSON.stringify(data));
+        favs = snap.data().favorites;
+        await storageSet('pj_favorites', JSON.stringify(favs));
       }
     }
+    const myFoodsRaw = await AsyncStorage.getItem('pj_my_foods');
+    const myFoodsByName: Record<string, MyFood> = {};
+    if (myFoodsRaw) {
+      (JSON.parse(myFoodsRaw) as MyFood[]).forEach(f => { myFoodsByName[f.name] = f; });
+    }
+    let changed = false;
+    const enriched = favs.map((fav: any) => {
+      if (fav.isMyFood || fav.fsId) return fav;
+      const match = myFoodsByName[fav.name];
+      if (!match) return fav;
+      changed = true;
+      return { ...fav, isMyFood: true, isCustom: match.isCustom ?? true, id: fav.id || match.id || (Math.random().toString(36).slice(2) + Date.now().toString(36)) };
+    });
+    if (changed) await storageSet('pj_favorites', JSON.stringify(enriched));
+    setFavorites(enriched);
   } catch (e) {
     console.log('Load favorites error', e);
   }

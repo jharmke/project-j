@@ -979,6 +979,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                 <TouchableOpacity
                   style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: theme.accentBlueBorder, backgroundColor: theme.accentBlueBg }}
                   onPress={() => {
+                    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
                     const currentTags = programs[activeDay]?.tags || weeklyTemplate[activeDayName]?.tags || [];
                     setTagModalInitialTags([...currentTags]);
                     setShowTagModal(true);
@@ -1001,6 +1002,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
           <>
             <View style={styles.progressRow}>
               <TouchableOpacity style={{ flex: 1 }} onPress={() => {
+                triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
                 setLabelInput(program?.customLabel || '');
                 setShowLabelModal(true);
               }}>
@@ -1297,7 +1299,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
       {/* Label Modal */}
       {showLabelModal && (
         <Modal transparent animationType="fade" onRequestClose={() => setShowLabelModal(false)}>
-          <TouchableOpacity style={{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center' }} onPress={() => setShowLabelModal(false)}>
+          <TouchableOpacity style={{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center' }} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowLabelModal(false); }}>
             <View style={{ backgroundColor: theme.bgCard, borderRadius: 12, padding: 20, width: '85%', borderWidth: 1, borderColor: theme.borderCard }}>
               <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginBottom: 12 }}>EDIT DAY LABEL</Text>
               <TextInput
@@ -1309,10 +1311,11 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                 autoFocus
               />
               <View style={{ flexDirection: 'row', gap: 8 }}>
-                <TouchableOpacity style={[styles.modalCancelBtn, { flex: 1, backgroundColor: theme.bgInput, borderColor: theme.borderInput }]} onPress={() => setShowLabelModal(false)}>
+                <TouchableOpacity style={[styles.modalCancelBtn, { flex: 1, backgroundColor: theme.bgInput, borderColor: theme.borderInput }]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowLabelModal(false); }}>
                   <Text style={[styles.modalCancelBtnText, { color: theme.textMuted }]}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.modalSaveBtn, { flex: 1, backgroundColor: theme.accentBlue }]} onPress={() => {
+                  triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
                   const parts = labelInput.split('·').map(s => s.trim());
                   const baseProgram = programs[activeDay] || weeklyTemplate[activeDayName];
                   const newPrograms = {
@@ -1335,7 +1338,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
       {/* Tag Assignment Modal */}
       {showTagModal && (
         <Modal transparent animationType="fade" onRequestClose={() => setShowTagModal(false)}>
-          <TouchableOpacity style={{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center' }} activeOpacity={1} onPress={() => setShowTagModal(false)}>
+          <TouchableOpacity style={{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center' }} activeOpacity={1} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowTagModal(false); }}>
             <TouchableOpacity activeOpacity={1} onPress={e => e.stopPropagation()}>
               <View style={{ backgroundColor: theme.bgSheet, borderRadius: 16, padding: 20, width: 320, borderWidth: 1, borderColor: theme.borderCard }}>
                 <Text style={{ color: theme.textPrimary, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, marginBottom: 4 }}>ASSIGN TAGS</Text>
@@ -1344,7 +1347,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                   {tags.map(t => {
                     const active = (programs[activeDay]?.tags || weeklyTemplate[activeDayName]?.tags || []).includes(t.id);
                     return (
-                      <TouchableOpacity key={t.id} onPress={() => toggleDayTag(t.id)}
+                      <TouchableOpacity key={t.id} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); toggleDayTag(t.id); }}
                         style={{ backgroundColor: active ? t.color + '99' : theme.bgInput, borderWidth: 1, borderColor: active ? t.color : theme.borderInput, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 }}>
                         <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: active ? '#ffffff' : theme.textMuted }}>{t.label}</Text>
                       </TouchableOpacity>
@@ -1357,6 +1360,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                   return hasChanged ? (
                     <TouchableOpacity
                       onPress={() => {
+                        triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
                         setShowTagModal(false);
                         showToast('Tags saved', undefined, 'success');
                       }}
@@ -1366,6 +1370,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                   ) : null;
                 })()}
                 <TouchableOpacity onPress={() => {
+  triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
   setShowTagModal(false);
   setEditingTag(null);
   setTagLabelInput('');
@@ -1388,7 +1393,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
         manageTagsAnim.value = withSpring(0, { damping: 80, stiffness: 600 });
       }}>
           <Animated.View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: theme.overlayBg, opacity: manageTagsOverlayAnim }}>
-            <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={closeManageTags} />
+            <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeManageTags(); }} />
           </Animated.View>
           <ToastRenderer />
           <View style={{ flex: 1, justifyContent: 'flex-end' }} pointerEvents="box-none">
@@ -1401,7 +1406,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
               paddingBottom: 40,
             }, manageTagsKeyboardStyle]}>
               <View style={{ maxHeight: '85%' }}>
-              <TouchableOpacity onPress={closeManageTags} {...manageTagsPanResponder.panHandlers} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 8 }}>
+              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeManageTags(); }} {...manageTagsPanResponder.panHandlers} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 8 }}>
                 <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
               </TouchableOpacity>
               <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
@@ -1431,13 +1436,14 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                               {t.locked && <Ionicons name="lock-closed" size={10} color="rgba(255,255,255,0.6)" />}
                             </View>
                             {!t.locked && (
-                              <TouchableOpacity onPress={() => { setEditingTag(t); setTagLabelInput(t.label); setTagColorInput(t.color); }}
+                              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditingTag(t); setTagLabelInput(t.label); setTagColorInput(t.color); }}
                                 style={{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: isBeingEdited ? theme.accentGreenBorder : theme.accentBlueBorder, backgroundColor: isBeingEdited ? theme.accentGreenBg : theme.accentBlueBg }}>
                                 <Text style={{ fontSize: 11, color: isBeingEdited ? theme.accentGreen : theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>{isBeingEdited ? 'Editing' : 'Edit'}</Text>
                               </TouchableOpacity>
                             )}
                             {!t.locked && (
                               <TouchableOpacity onPress={() => {
+                                triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
                                 Alert.alert('Delete Tag', `Delete "${t.label}"?`, [
                                   { text: 'Cancel', style: 'cancel' },
                                   { text: 'Delete', style: 'destructive', onPress: () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy); saveTags(tags.filter(x => x.id !== t.id)); } },
@@ -1476,7 +1482,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                   </View>
                   <View style={{ flexDirection: 'row', gap: 8 }}>
                     {editingTag && (
-                      <TouchableOpacity onPress={() => { setEditingTag(null); setTagLabelInput(''); setTagColorInput(TAG_COLOR_PALETTE[0]); }}
+                      <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditingTag(null); setTagLabelInput(''); setTagColorInput(TAG_COLOR_PALETTE[0]); }}
                         style={{ flex: 1, padding: 12, borderRadius: 8, borderWidth: 1, borderColor: theme.borderInput, backgroundColor: theme.bgInput, alignItems: 'center' }}>
                         <Text style={{ color: theme.textMuted, fontFamily: 'DMSans_600SemiBold', fontSize: 14 }}>Cancel</Text>
                       </TouchableOpacity>

@@ -247,7 +247,7 @@ function VotdCard({ verse, theme, onReflect }: { verse: DailyVerse | null; theme
       <Text style={[styles.verseRef, { color: theme.textMuted }]}>{verse.reference}</Text>
       {onReflect && (
         <TouchableOpacity
-          onPress={onReflect}
+          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); onReflect!(); }}
           style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: 'rgba(212,134,10,0.10)', borderColor: 'rgba(212,134,10,0.30)', borderWidth: 1, borderRadius: 6, paddingVertical: 9, paddingHorizontal: 12, minHeight: 44, marginTop: 10 }}
         >
           <Ionicons name="sparkles" size={12} color={theme.accentAmber} />

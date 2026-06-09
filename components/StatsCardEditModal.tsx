@@ -1,5 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useRef, useState } from 'react';
+import { triggerHaptic } from '@/utils/haptics';
 import { Alert, Animated, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { CardPeriod, ChartType, StatsCard } from '../statsCardRegistry';
 import { ToastRenderer, useToast } from './Toast';
@@ -77,6 +79,7 @@ export function StatsCardEditModal({ card, onClose, onSave, onDelete, theme }: P
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete', style: 'destructive', onPress: () => {
+          triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
           onDelete(card.id);
           handleClose();
           setTimeout(() => showToast('Graph deleted', undefined, 'success'), 300);
@@ -118,7 +121,7 @@ export function StatsCardEditModal({ card, onClose, onSave, onDelete, theme }: P
       <ToastRenderer />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <Animated.View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', opacity: overlayOpacity }}>
-          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={handleClose} />
+          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleClose(); }} />
           <Animated.View style={{
             backgroundColor: card ? theme.bgSheet : 'transparent',
             borderRadius: 20, borderWidth: 0.5, borderTopWidth: 1.5,
@@ -130,7 +133,7 @@ export function StatsCardEditModal({ card, onClose, onSave, onDelete, theme }: P
             {/* Header */}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 18, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
               <Text style={{ fontFamily: 'BebasNeue_400Regular', fontSize: 22, letterSpacing: 3, color: theme.accentBlueRaw }}>EDIT GRAPH</Text>
-              <TouchableOpacity onPress={handleClose} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleClose(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                 <Ionicons name="close" size={20} color={theme.textMuted} />
               </TouchableOpacity>
             </View>
@@ -152,7 +155,7 @@ export function StatsCardEditModal({ card, onClose, onSave, onDelete, theme }: P
                   <Text style={styles.sectionLabel(theme)}>Chart Type</Text>
                   <View style={{ flexDirection: 'row', gap: 8, marginBottom: 20 }}>
                     {(['line', 'bar'] as ChartType[]).map(ct => (
-                      <TouchableOpacity key={ct} onPress={() => setEditChartType(ct)}
+                      <TouchableOpacity key={ct} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditChartType(ct); }}
                         style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center',
                           backgroundColor: editChartType === ct ? theme.accentBlueBg : theme.bgInput,
                           borderWidth: 1, borderColor: editChartType === ct ? theme.accentBlueBorder : theme.borderInput }}>
@@ -169,7 +172,7 @@ export function StatsCardEditModal({ card, onClose, onSave, onDelete, theme }: P
               <Text style={styles.sectionLabel(theme)}>Timeframe</Text>
               <View style={{ flexDirection: 'row', gap: 8, marginBottom: 24 }}>
                 {([7, 30, 90] as CardPeriod[]).map(p => (
-                  <TouchableOpacity key={p} onPress={() => setEditPeriod(p)}
+                  <TouchableOpacity key={p} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditPeriod(p); }}
                     style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center',
                       backgroundColor: editPeriod === p ? theme.accentBlueBg : theme.bgInput,
                       borderWidth: 1, borderColor: editPeriod === p ? theme.accentBlueBorder : theme.borderInput }}>
@@ -205,7 +208,7 @@ export function StatsCardEditModal({ card, onClose, onSave, onDelete, theme }: P
                                 const blocked = usedColors.includes(sw);
                                 return (
                                   <TouchableOpacity key={sw} disabled={blocked}
-                                    onPress={() => setEditMacroColors(prev => ({ ...prev, [key]: sw }))}
+                                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditMacroColors(prev => ({ ...prev, [key]: sw })); }}
                                     style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: sw,
                                       opacity: blocked ? 0.2 : 1,
                                       borderWidth: selected ? 2 : 0, borderColor: '#ffffff',
@@ -226,7 +229,7 @@ export function StatsCardEditModal({ card, onClose, onSave, onDelete, theme }: P
                         const selected = editColor === sw;
                         return (
                           <TouchableOpacity key={sw}
-                            onPress={() => setEditColor(selected ? undefined : sw)}
+                            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditColor(selected ? undefined : sw); }}
                             style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: sw,
                               borderWidth: selected ? 2 : 0, borderColor: '#ffffff',
                               alignItems: 'center', justifyContent: 'center' }}>
@@ -240,14 +243,14 @@ export function StatsCardEditModal({ card, onClose, onSave, onDelete, theme }: P
               )}
 
               {/* Delete */}
-              <TouchableOpacity onPress={handleDelete} style={{ paddingVertical: 12, alignItems: 'center' }}>
+              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleDelete(); }} style={{ paddingVertical: 12, alignItems: 'center' }}>
                 <Text style={{ color: theme.accentRed, fontFamily: 'DMSans_600SemiBold', fontSize: 14 }}>Delete Graph</Text>
               </TouchableOpacity>
             </ScrollView>
 
             {/* Save bar */}
             <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard, paddingHorizontal: 20, paddingVertical: 14 }}>
-              <TouchableOpacity onPress={handleSave} disabled={noChange}
+              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); handleSave(); }} disabled={noChange}
                 style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 10, paddingVertical: 14, alignItems: 'center', opacity: noChange ? 0.4 : 1 }}>
                 <Text style={{ color: '#ffffff', fontFamily: 'BebasNeue_400Regular', fontSize: 18, letterSpacing: 2 }}>SAVE</Text>
               </TouchableOpacity>

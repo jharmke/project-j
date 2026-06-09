@@ -701,6 +701,8 @@ NOW: gym notes batch (2026-06-09, bugs + polish + haptics)
   [ ] BUG: Workout tab -- Workout notes keyboard not auto-dismissing on save. (NOW)
 
   HAPTICS:
+  [x] HAPTICS: hapticsEnabled setting now works app-wide -- SHIPPED 2026-06-09. Created utils/haptics.ts (triggerHaptic / triggerHapticNotification / triggerHapticSelection). All 53 files that called expo-haptics directly now route through the utility, which reads pj_settings.hapticsEnabled before firing. Previously the Settings toggle only gated the tab bar and PressableButton; the other ~300 call sites ignored it entirely. CustomTabBar simplified (removed hapticsEnabled useRef + AsyncStorage read, utility handles it). PressableButton simplified (removed manual check). haptic-tab simplified. Unused triggerHapticNotification/Selection imports trimmed from 51 files.
+  [x] HAPTICS POLISH -- SHIPPED 2026-06-09. AchievementToast: fires notificationAsync(Success) when toast slides in (was completely silent). TooltipModal "Got it": Medium to Light (dismiss, not a confirm). DayScoreDisclaimerModal "I understand": Medium to Light (same reason). Devotional un-completing: Warning notification to Light impact (Warning felt punitive for a toggle). Halo companion handle pill: added Light haptic on close tap (was silent). food-detail date picker: replaced one-off selectionAsync with impactAsync(Light) for consistency.
   [ ] HAPTICS AUDIT: Workout tab (workout.tsx) -- known gaps: edit label modal buttons, tags button, tags modal buttons, manage tags modal handle and save. Apply the Light/Medium/Heavy standard. (NOW per standing haptics audit rule)
 
   FEATURES (SOON -- buckets confirmed 2026-06-09):

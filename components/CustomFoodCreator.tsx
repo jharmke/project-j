@@ -415,7 +415,9 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
   // ── Shared card content (same JSX for both Modal and inline paths) ────────
   const cardContent = (
     <Animated.View ref={cardRef as any} style={[s.card, { transform: [{ scale: cardScale }] }]}>
-      <View style={{ height: 4, width: 40, backgroundColor: theme.borderCard, borderRadius: 2, alignSelf: 'center', marginTop: 12, marginBottom: 4 }} />
+      <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleClose(); }} style={{ alignSelf: 'center', paddingTop: 12, paddingBottom: 4, paddingHorizontal: 20 }} hitSlop={{ top: 8, bottom: 8, left: 20, right: 20 }}>
+        <View style={{ height: 4, width: 40, backgroundColor: theme.borderCard, borderRadius: 2 }} />
+      </TouchableOpacity>
       <View style={s.header}>
         <Text style={s.title}>{title ? title.toUpperCase() : 'CREATE FOOD'}</Text>
       </View>
@@ -720,7 +722,6 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
                   <TextInput style={s.input} placeholder="0" placeholderTextColor={theme.textPlaceholder} value={transFat} onChangeText={setTransFat} keyboardType="decimal-pad" />
                 </View>
               </View>
-              <Text style={[s.sectionLabel, { marginTop: 12 }]}>VITAMINS D, E, K</Text>
               <View style={{ flexDirection: 'row', gap: 10 }}>
                 <View style={[s.fieldRow, { flex: 1 }]}>
                   <Text style={s.fieldLabel}>Vitamin D <Text style={s.unitText}>mcg</Text></Text>

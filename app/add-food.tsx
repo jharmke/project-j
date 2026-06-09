@@ -1968,7 +1968,9 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
               shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 16,
               transform: [{ scale: editCardAnim.interpolate({ inputRange: [0, 1], outputRange: [0.88, 1] }) }],
             }}>
-              <View style={{ height: 4, width: 40, backgroundColor: theme.borderCard, borderRadius: 2, alignSelf: 'center', marginTop: 12 }} />
+              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeEditModal(); }} style={{ alignSelf: 'center', paddingTop: 12, paddingBottom: 4, paddingHorizontal: 20 }} hitSlop={{ top: 8, bottom: 8, left: 20, right: 20 }}>
+                <View style={{ height: 4, width: 40, backgroundColor: theme.borderCard, borderRadius: 2 }} />
+              </TouchableOpacity>
               <Text style={{ fontSize: 16, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, textAlign: 'center', marginTop: 8, marginBottom: 4 }}>EDIT FOOD</Text>
               <ScrollView style={{ maxHeight: 600 }} contentContainerStyle={{ padding: 16, paddingTop: 8 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets={true}>
                 {/* Type selector */}
@@ -2047,11 +2049,8 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                       [{ label: 'SODIUM (mg)', key: 'sodium' }, { label: 'CHOLESTEROL (mg)', key: 'cholesterol' }],
                       [{ label: 'POTASSIUM (mg)', key: 'potassium' }, null],
                     ]},
-                    { header: 'Vitamins A & C', prefix: 'va', rows: [
+                    { header: 'Vitamins', prefix: 'va', rows: [
                       [{ label: 'VITAMIN A (mcg)', key: 'vitaminA' }, { label: 'VITAMIN C (mg)', key: 'vitaminC' }],
-                      [{ label: 'CALCIUM (mg)', key: 'calcium' }, { label: 'IRON (mg)', key: 'iron' }],
-                    ]},
-                    { header: 'Vitamins D, E, K', prefix: 'vd', rows: [
                       [{ label: 'VITAMIN D (mcg)', key: 'vitaminD' }, { label: 'VITAMIN E (mg)', key: 'vitaminE' }],
                       [{ label: 'VITAMIN K (mcg)', key: 'vitaminK' }, null],
                     ]},
@@ -2060,6 +2059,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                       [{ label: 'B12 (mcg)', key: 'vitaminB12' }, { label: 'BIOTIN (mcg)', key: 'biotin' }],
                     ]},
                     { header: 'Minerals', prefix: 'mn', rows: [
+                      [{ label: 'CALCIUM (mg)', key: 'calcium' }, { label: 'IRON (mg)', key: 'iron' }],
                       [{ label: 'MAGNESIUM (mg)', key: 'magnesium' }, { label: 'ZINC (mg)', key: 'zinc' }],
                       [{ label: 'COPPER (mg)', key: 'copper' }, null],
                     ]},

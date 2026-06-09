@@ -1729,7 +1729,9 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
               shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.4, shadowRadius: 16,
               transform: [{ scale: editCardAnim.interpolate({ inputRange: [0, 1], outputRange: [0.88, 1] }) }],
             }}>
-              <View style={{ height: 4, width: 40, backgroundColor: theme.borderCard, borderRadius: 2, alignSelf: 'center', marginTop: 12 }} />
+              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeEditFoodModal(); }} style={{ alignSelf: 'center', paddingTop: 12, paddingBottom: 4, paddingHorizontal: 20 }} hitSlop={{ top: 8, bottom: 8, left: 20, right: 20 }}>
+                <View style={{ height: 4, width: 40, backgroundColor: theme.borderCard, borderRadius: 2 }} />
+              </TouchableOpacity>
               <Text style={{ fontSize: 16, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, textAlign: 'center', marginTop: 8, marginBottom: 4 }}>EDIT FOOD</Text>
               <ScrollView style={{ maxHeight: 580 }} contentContainerStyle={{ padding: 16, paddingTop: 8 }} keyboardDismissMode="on-drag" keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets={true}>
                 {/* Type selector */}
@@ -1801,10 +1803,9 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                   [{ label: 'SUGAR ALCOHOLS (g)',   key: 'sugarAlcohols' },     { label: 'SODIUM (mg)',        key: 'sodium' }],
                   [{ label: 'CHOLESTEROL (mg)',     key: 'cholesterol' },       { label: 'POTASSIUM (mg)',     key: 'potassium' }],
                   [{ label: 'SATURATED FAT (g)',    key: 'saturatedFat' },      { label: 'POLY FAT (g)',       key: 'polyunsaturatedFat' }],
-                  [{ label: 'MONO FAT (g)',         key: 'monounsaturatedFat' }, { label: 'VITAMIN A (mcg)',   key: 'vitaminA' }],
-                  [{ label: 'VITAMIN C (mg)',       key: 'vitaminC' },          { label: 'CALCIUM (mg)',       key: 'calcium' }],
-                  [{ label: 'IRON (mg)',            key: 'iron' },              { label: 'ADDED SUGARS (g)',    key: 'addedSugars' }],
-                  [{ label: 'TRANS FAT (g)',        key: 'transFat' },          { label: 'VITAMIN D (mcg)',     key: 'vitaminD' }],
+                  [{ label: 'MONO FAT (g)',         key: 'monounsaturatedFat' }, { label: 'CALCIUM (mg)',       key: 'calcium' }],
+                  [{ label: 'IRON (mg)',            key: 'iron' },              { label: 'ADDED SUGARS (g)',   key: 'addedSugars' }],
+                  [{ label: 'TRANS FAT (g)',        key: 'transFat' },          null],
                 ].map((row, ri) => (
                   <View key={ri} style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
                     {row.map((f, fi) => f ? (
@@ -1825,9 +1826,11 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                 ))}
                 {/* Vitamins D/E/K + B Vitamins + Minerals + Other */}
                 <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 4, marginBottom: 14 }} />
-                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Vitamins E, K</Text>
+                <Text style={{ fontSize: 9, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Vitamins</Text>
                 {[
-                  [{ label: 'VITAMIN E (mg)', key: 'vitaminE' }, { label: 'VITAMIN K (mcg)', key: 'vitaminK' }],
+                  [{ label: 'VITAMIN A (mcg)', key: 'vitaminA' }, { label: 'VITAMIN C (mg)', key: 'vitaminC' }],
+                  [{ label: 'VITAMIN D (mcg)', key: 'vitaminD' }, { label: 'VITAMIN E (mg)', key: 'vitaminE' }],
+                  [{ label: 'VITAMIN K (mcg)', key: 'vitaminK' }, null],
                 ].map((row, ri) => (
                   <View key={ri} style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
                     {row.map((f, fi) => f ? (

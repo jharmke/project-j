@@ -19,7 +19,7 @@ import { showAchievementToast, showDailyGoalToast } from '../../components/Achie
 import { showCelebration } from '../../components/CelebrationOverlay';
 import TooltipIcon from '../../components/TooltipIcon';
 import NutritionGearModal, { NUTRITION_PRESETS, NutritionGoals, NutritionPreset } from '../../components/NutritionGearModal';
-import NutrientDrilldownModal, { DrilldownItem } from '../../components/NutrientDrilldownModal';
+import NutrientDrilldownModal, { DrilldownItem, computeNetCarbsForEntry } from '../../components/NutrientDrilldownModal';
 import { useTheme } from '../../theme';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import { useToast } from '../../components/Toast';
@@ -59,7 +59,7 @@ interface FoodEntry {
 
 const AnimCircle = ReAnimated.createAnimatedComponent(Circle);
 
-function MacroStackedBar({ protein, carbs, fat, proteinGoal, carbsGoal, fatGoal, theme, showNetCarbs }: { protein: number; carbs: number; fat: number; proteinGoal: number; carbsGoal: number; fatGoal: number; theme: any; showNetCarbs?: boolean }) {
+function MacroStackedBar({ protein, carbs, fat, proteinGoal, carbsGoal, fatGoal, theme, showNetCarbs, onPressProtein, onPressCarbs, onPressFat }: { protein: number; carbs: number; fat: number; proteinGoal: number; carbsGoal: number; fatGoal: number; theme: any; showNetCarbs?: boolean; onPressProtein?: () => void; onPressCarbs?: () => void; onPressFat?: () => void }) {
   const proteinAnim = useSharedValue(0);
   const carbsAnim   = useSharedValue(0);
   const fatAnim     = useSharedValue(0);
@@ -82,27 +82,27 @@ function MacroStackedBar({ protein, carbs, fat, proteinGoal, carbsGoal, fatGoal,
 
   return (
     <View style={{ width: 140, paddingLeft: 22, justifyContent: 'center', gap: 12 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+      <TouchableOpacity onPress={onPressProtein} activeOpacity={onPressProtein ? 0.75 : 1} hitSlop={{ top: 6, bottom: 6, left: 12, right: 12 }} style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
         <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
           <ReAnimated.View style={[{ height: '100%', borderRadius: 3, backgroundColor: theme.macroProtein }, proteinStyle]} />
         </View>
         <Text style={{ fontSize: 11, color: theme.macroProtein, fontFamily: 'DMSans_700Bold', width: 12 }}>P</Text>
         <Text style={{ fontSize: 15, color: theme.macroProtein, fontFamily: 'DMSans_600SemiBold', width: 46, textAlign: 'right' }}>{Math.round(protein)}<Text style={{ fontSize: 10, color: theme.macroProtein }}>g</Text></Text>
-      </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={onPressCarbs} activeOpacity={onPressCarbs ? 0.75 : 1} hitSlop={{ top: 6, bottom: 6, left: 12, right: 12 }} style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
         <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
           <ReAnimated.View style={[{ height: '100%', borderRadius: 3, backgroundColor: theme.macroCarbs }, carbsStyle]} />
         </View>
         <Text style={{ fontSize: 11, color: theme.macroCarbs, fontFamily: 'DMSans_700Bold', width: 12 }}>C</Text>
         <Text style={{ fontSize: 15, color: theme.macroCarbs, fontFamily: 'DMSans_600SemiBold', width: 46, textAlign: 'right' }}>{Math.round(carbs)}<Text style={{ fontSize: 10, color: theme.macroCarbs }}>g</Text></Text>
-      </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+      </TouchableOpacity>
+      <TouchableOpacity onPress={onPressFat} activeOpacity={onPressFat ? 0.75 : 1} hitSlop={{ top: 6, bottom: 6, left: 12, right: 12 }} style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
         <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
           <ReAnimated.View style={[{ height: '100%', borderRadius: 3, backgroundColor: theme.macroFat }, fatStyle]} />
         </View>
         <Text style={{ fontSize: 11, color: theme.macroFat, fontFamily: 'DMSans_700Bold', width: 12 }}>F</Text>
         <Text style={{ fontSize: 15, color: theme.macroFat, fontFamily: 'DMSans_600SemiBold', width: 46, textAlign: 'right' }}>{Math.round(fat)}<Text style={{ fontSize: 10, color: theme.macroFat }}>g</Text></Text>
-      </View>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -1080,6 +1080,21 @@ export default function LogScreen() {
             fatGoal={macroGoals.fat}
             theme={theme}
             showNetCarbs={showNetCarbs}
+            onPressProtein={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setDrilldownItem({ label: 'Protein', total: totalProtein, unit: 'g', direction: 'want-more', goal: macroGoals.protein || null, directField: 'protein' });
+              setShowDrilldown(true);
+            }}
+            onPressCarbs={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setDrilldownItem({ label: 'Carbohydrates', total: totalCarbs, unit: 'g', direction: 'neutral', goal: macroGoals.carbs || null, directField: 'carbs', hasNetToggle: true, netTotal: totalNetCarbs, netComputeValue: computeNetCarbsForEntry });
+              setShowDrilldown(true);
+            }}
+            onPressFat={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setDrilldownItem({ label: 'Fat', total: totalFat, unit: 'g', direction: 'neutral', goal: macroGoals.fat || null, directField: 'fat' });
+              setShowDrilldown(true);
+            }}
           />
         </View>
         {/* Bottom stat strip -- full width, mirrors home Calories card. Hidden in Mindful. */}
@@ -1306,6 +1321,7 @@ export default function LogScreen() {
         onClose={() => setShowDrilldown(false)}
         item={drilldownItem}
         entries={entries}
+        defaultShowNet={showNetCarbs}
       />
 
       {/* Meal Sections */}

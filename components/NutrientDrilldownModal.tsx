@@ -1,7 +1,25 @@
+import { useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import { useRef, useMemo } from 'react';
 import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../theme';
+
+export function computeNetCarbsForEntry(e: any): number {
+  const carbs = e.carbs || 0;
+  let scale: number;
+  if (e.fsId) {
+    scale = (e.calPer100g && e.calPer100g > 0) ? (e.cal / e.calPer100g) : 0;
+  } else {
+    const sg = e.servingGrams;
+    const servingCal = sg && (e.calPer100g ?? 0) > 0 ? (e.calPer100g ?? 0) * sg / 100 : 0;
+    scale = servingCal > 0 ? e.cal / servingCal : 0;
+  }
+  const fiberN = e.foodNutrients?.find((fn: any) => fn.nutrientName === 'Fiber, total dietary');
+  const sacarN = e.foodNutrients?.find((fn: any) => fn.nutrientName === 'Sugar Alcohols');
+  const fiber = fiberN ? (fiberN.value || 0) * scale : 0;
+  const sa    = sacarN ? (sacarN.value || 0) * scale : 0;
+  return Math.max(0, Math.round((carbs - fiber - sa) * 10) / 10);
+}
 
 export interface DrilldownItem {
   label: string;
@@ -11,6 +29,10 @@ export interface DrilldownItem {
   goal: number | null;
   nutrientKey?: string;
   directField?: string;
+  computeValue?: (entry: any) => number;
+  hasNetToggle?: boolean;
+  netTotal?: number;
+  netComputeValue?: (entry: any) => number;
 }
 
 interface EntryContribution {
@@ -24,6 +46,7 @@ interface Props {
   onClose: () => void;
   item: DrilldownItem | null;
   entries: any[];
+  defaultShowNet?: boolean;
 }
 
 const MUTED_GREEN = '#0d9268';
@@ -35,12 +58,14 @@ function valueColor(value: number, direction: string, goal: number | null, accen
   return value > goal ? MUTED_RED : accentBlue;
 }
 
-export default function NutrientDrilldownModal({ visible, onClose, item, entries }: Props) {
+export default function NutrientDrilldownModal({ visible, onClose, item, entries, defaultShowNet }: Props) {
   const { theme } = useTheme();
   const scaleAnim   = useRef(new Animated.Value(0.92)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
+  const [localNet, setLocalNet] = useState(false);
 
   const open = () => {
+    setLocalNet(defaultShowNet ?? false);
     scaleAnim.setValue(0.92);
     opacityAnim.setValue(0);
     Animated.parallel([
@@ -65,10 +90,16 @@ export default function NutrientDrilldownModal({ visible, onClose, item, entries
     if (!item) return [];
     const results: { name: string; value: number }[] = [];
 
+    const computeFn = (item.hasNetToggle && localNet && item.netComputeValue)
+      ? item.netComputeValue
+      : item.computeValue ?? null;
+
     for (const e of entries) {
       let value = 0;
 
-      if (item.nutrientKey) {
+      if (computeFn) {
+        value = computeFn(e);
+      } else if (item.nutrientKey) {
         const n = e.foodNutrients?.find((fn: any) => fn.nutrientName === item.nutrientKey);
         if (!n) continue;
         let scale: number;
@@ -93,11 +124,14 @@ export default function NutrientDrilldownModal({ visible, onClose, item, entries
     results.sort((a, b) => b.value - a.value);
     const sum = results.reduce((s, r) => s + r.value, 0);
     return results.map(r => ({ ...r, pct: sum > 0 ? Math.round((r.value / sum) * 100) : 0 }));
-  }, [item, entries]);
+  }, [item, entries, localNet]);
 
-  const maxValue  = contributions.length > 0 ? contributions[0].value : 1;
-  const color     = item ? valueColor(item.total, item.direction, item.goal, theme.accentBlue) : theme.accentBlue;
-  const goalPct   = item?.goal ? Math.min((item.total / item.goal) * 100, 100) : 0;
+  const displayTotal = (item?.hasNetToggle && localNet && item?.netTotal !== undefined)
+    ? item.netTotal
+    : (item?.total ?? 0);
+  const maxValue = contributions.length > 0 ? contributions[0].value : 1;
+  const color    = item ? valueColor(displayTotal, item.direction, item.goal, theme.accentBlue) : theme.accentBlue;
+  const goalPct  = item?.goal ? Math.min((displayTotal / item.goal) * 100, 100) : 0;
 
   return (
     <Modal visible={visible} transparent animationType="none" onShow={open} onRequestClose={closeWithHaptic}>
@@ -142,7 +176,7 @@ export default function NutrientDrilldownModal({ visible, onClose, item, entries
             </Text>
             <View style={{ flexDirection: 'row', alignItems: 'baseline', flexWrap: 'wrap', gap: 6 }}>
               <Text style={{ fontSize: 28, color, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>
-                {item?.total ?? 0}{item?.unit ?? ''}
+                {displayTotal}{item?.unit ?? ''}
               </Text>
               <Text style={{ fontSize: 14, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold' }}>
                 {item?.label}
@@ -156,6 +190,32 @@ export default function NutrientDrilldownModal({ visible, onClose, item, entries
             {item?.goal !== null && item?.goal !== undefined && (
               <View style={{ height: 3, backgroundColor: theme.bgProgressTrack, borderRadius: 2, marginTop: 8, overflow: 'hidden' }}>
                 <View style={{ width: `${goalPct}%`, height: '100%', backgroundColor: color, borderRadius: 2 }} />
+              </View>
+            )}
+            {item?.hasNetToggle && (
+              <View style={{ flexDirection: 'row', gap: 6, marginTop: 10 }}>
+                <TouchableOpacity
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setLocalNet(false); }}
+                  style={{
+                    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 4,
+                    backgroundColor: !localNet ? theme.accentBlueBg : 'transparent',
+                    borderWidth: 1,
+                    borderColor: !localNet ? theme.accentBlueBorder : theme.borderCard,
+                  }}
+                >
+                  <Text style={{ fontSize: 10, color: !localNet ? theme.accentBlue : theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5 }}>TOTAL</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setLocalNet(true); }}
+                  style={{
+                    paddingHorizontal: 10, paddingVertical: 4, borderRadius: 4,
+                    backgroundColor: localNet ? theme.accentBlueBg : 'transparent',
+                    borderWidth: 1,
+                    borderColor: localNet ? theme.accentBlueBorder : theme.borderCard,
+                  }}
+                >
+                  <Text style={{ fontSize: 10, color: localNet ? theme.accentBlue : theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5 }}>NET</Text>
+                </TouchableOpacity>
               </View>
             )}
           </View>

@@ -49,6 +49,7 @@ import { showToolkit } from '../../components/ToolkitSheet';
 import ToggleSwitch from '../../components/ToggleSwitch';
 import { StoredTip, loadSmartTips, CoachTipCache } from '../../utils/smartTipsEngine';
 import { refreshCoachTip, resolveTipBody, resolveTipTitle } from '../../utils/coachAI';
+import NutrientDrilldownModal, { DrilldownItem, computeNetCarbsForEntry } from '../../components/NutrientDrilldownModal';
 
 // ─── Card Registry ────────────────────────────────────────────────────────────
 export type CardId =
@@ -675,6 +676,9 @@ export default function HomeScreen() {
   const [totalFiber,        setTotalFiber]        = useState(0);
   const [totalSugarAlcohols, setTotalSugarAlcohols] = useState(0);
   const [showNetCarbs,   setShowNetCarbs]   = useState(false);
+  const [todayEntries,   setTodayEntries]   = useState<any[]>([]);
+  const [showMacroDrilldown, setShowMacroDrilldown] = useState(false);
+  const [macroDrilldownItem, setMacroDrilldownItem] = useState<DrilldownItem | null>(null);
   const [showMacroGearSheet, setShowMacroGearSheet] = useState(false);
   const macroSheetAnim = useRef(new Animated.Value(300)).current;
   const openMacroSheet = () => { setShowMacroGearSheet(true); };
@@ -1270,6 +1274,7 @@ export default function HomeScreen() {
                 : (() => { const sc = e.servingGrams && (e.calPer100g ?? 0) > 0 ? (e.calPer100g ?? 0) * e.servingGrams / 100 : 0; return sc > 0 ? e.cal / sc : 0; })();
               return s + (n.value || 0) * scale;
             }, 0) * 10) / 10);
+            setTodayEntries(clean);
           }
           setCaloriesBurned(parseInt(data.caloriesBurned)||0);
           if (data.sleepOverride) setSleepOverride(data.sleepOverride);
@@ -1688,6 +1693,17 @@ export default function HomeScreen() {
       { label: showNetCarbs ? 'Net Carbs' : 'Carbs', val: showNetCarbs ? netCarbs : totalCarbs, goal: macroGoals.carbs, color: theme.macroCarbs },
       { label: 'Fat',                                val: totalFat,                  goal: macroGoals.fat,     color: theme.macroFat },
     ];
+    const openMacroDrilldown = (i: number) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      if (i === 0) {
+        setMacroDrilldownItem({ label: 'Protein', total: totalProtein, unit: 'g', direction: 'want-more', goal: macroGoals.protein || null, directField: 'protein' });
+      } else if (i === 2) {
+        setMacroDrilldownItem({ label: 'Fat', total: totalFat, unit: 'g', direction: 'neutral', goal: macroGoals.fat || null, directField: 'fat' });
+      } else {
+        setMacroDrilldownItem({ label: 'Carbohydrates', total: totalCarbs, unit: 'g', direction: 'neutral', goal: macroGoals.carbs || null, directField: 'carbs', hasNetToggle: true, netTotal: netCarbs, netComputeValue: computeNetCarbsForEntry });
+      }
+      setShowMacroDrilldown(true);
+    };
     return (
       <View ref={macrosCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
         <Ionicons name="nutrition" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
@@ -1711,20 +1727,22 @@ export default function HomeScreen() {
             const macroRef = [macrosProteinRef, macroCarbsRef, macroFatRef][i];
             return (
               <View key={m.label} ref={macroRef} collapsable={false}>
-                <View style={{ flexDirection:'row', alignItems:'baseline', justifyContent:'space-between', marginBottom:4 }}>
-                  <Text style={{ fontSize:11, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', flex:1 }}>{m.label}</Text>
-                  <View style={{ flexDirection:'row', alignItems:'baseline', gap:4, width:120, justifyContent:'flex-end' }}>
-                    <Text style={{ fontSize:20, color: over ? theme.macroOver : m.color, fontFamily:'BebasNeue_400Regular', letterSpacing:1, textAlign:'right' }}>{m.val}</Text>
-                    <Text style={{ fontSize:11, color: over ? theme.macroOver : m.color, fontFamily:'DMSans_500Medium' }}>g</Text>
-                    <Text style={{ fontSize:11, color: theme.textDim, fontFamily:'DMSans_500Medium' }}>/ {m.goal} g</Text>
+                <TouchableOpacity onPress={() => openMacroDrilldown(i)} activeOpacity={0.75} hitSlop={{ top: 4, bottom: 4 }}>
+                  <View style={{ flexDirection:'row', alignItems:'baseline', justifyContent:'space-between', marginBottom:4 }}>
+                    <Text style={{ fontSize:11, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', flex:1 }}>{m.label}</Text>
+                    <View style={{ flexDirection:'row', alignItems:'baseline', gap:4, width:120, justifyContent:'flex-end' }}>
+                      <Text style={{ fontSize:20, color: over ? theme.macroOver : m.color, fontFamily:'BebasNeue_400Regular', letterSpacing:1, textAlign:'right' }}>{m.val}</Text>
+                      <Text style={{ fontSize:11, color: over ? theme.macroOver : m.color, fontFamily:'DMSans_500Medium' }}>g</Text>
+                      <Text style={{ fontSize:11, color: theme.textDim, fontFamily:'DMSans_500Medium' }}>/ {m.goal} g</Text>
+                    </View>
                   </View>
-                </View>
-                <MacroBar val={m.val} goal={m.goal} color={over ? theme.macroOver : m.color} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} />
-                <Text style={{ fontSize:9, color: m.color, fontFamily:'DMSans_500Medium', letterSpacing:0.5, marginTop:3, opacity:0.7 }}>
-                  {m.val > m.goal
-                    ? `${Math.round(m.val - m.goal)} g over`
-                    : `${Math.round(m.goal - m.val)} g remaining`}
-                </Text>
+                  <MacroBar val={m.val} goal={m.goal} color={over ? theme.macroOver : m.color} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} />
+                  <Text style={{ fontSize:9, color: m.color, fontFamily:'DMSans_500Medium', letterSpacing:0.5, marginTop:3, opacity:0.7 }}>
+                    {m.val > m.goal
+                      ? `${Math.round(m.val - m.goal)} g over`
+                      : `${Math.round(m.goal - m.val)} g remaining`}
+                  </Text>
+                </TouchableOpacity>
               </View>
             );
           })}
@@ -3636,6 +3654,14 @@ export default function HomeScreen() {
           }}
         />
       )}
+
+      <NutrientDrilldownModal
+        visible={showMacroDrilldown}
+        onClose={() => setShowMacroDrilldown(false)}
+        item={macroDrilldownItem}
+        entries={todayEntries}
+        defaultShowNet={showNetCarbs}
+      />
 
       {/* Morning Day Summary pop-up (yesterday's Day Score) */}
       {daySummary && (

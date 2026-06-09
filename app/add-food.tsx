@@ -1328,11 +1328,15 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
           }
         }
       }
-      // Enrich brand from pj_my_foods for custom foods that predate brand being saved to diary entries
+      // Enrich brand + type from pj_my_foods for custom foods
       const savedFoods = await AsyncStorage.getItem('pj_my_foods');
       const myFoodsMap: Record<string, string> = {};
+      const myFoodsTypeMap: Record<string, 'supplement' | 'food'> = {};
       if (savedFoods) {
-        (JSON.parse(savedFoods) as MyFood[]).forEach(f => { if (f.brand) myFoodsMap[f.name] = f.brand; });
+        (JSON.parse(savedFoods) as MyFood[]).forEach(f => {
+          if (f.brand) myFoodsMap[f.name] = f.brand;
+          if (f.type === 'supplement') myFoodsTypeMap[f.name] = 'supplement';
+        });
       }
       const savedRecipesRaw = await AsyncStorage.getItem('pj_recipes');
       const recipeByName: Record<string, any> = {};
@@ -1372,6 +1376,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
           isMyFood: false,
           isRecent: true,
           fsId: f.fsId || null,
+          type: myFoodsTypeMap[stripped] || 'food',
         };
       }));
     } catch (e) {
@@ -1599,22 +1604,30 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
       <FlatList
         data={query.trim() ? results :
           activeTab === 'recent' ? recentFoods :
-          activeTab === 'favorites' ? applySortToFoodItems(favorites.map(f => ({
-  description: f.name,
-  foodNutrients: [
-    { nutrientName: 'Energy', unitName: 'KCAL', value: f.cal },
-    { nutrientName: 'Protein', unitName: 'G', value: f.protein || 0 },
-    { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: f.carbs || 0 },
-    { nutrientName: 'Total lipid (fat)', unitName: 'G', value: f.fat || 0 },
-    { nutrientName: 'Fiber, total dietary', unitName: 'G', value: f.fiber || 0 },
-    { nutrientName: 'Sugars, total including NLEA', unitName: 'G', value: f.sugar || 0 },
-    { nutrientName: 'Sodium, Na', unitName: 'MG', value: f.sodium || 0 },
-    { nutrientName: 'Cholesterol', unitName: 'MG', value: f.cholesterol || 0 },
-    { nutrientName: 'Fatty acids, total saturated', unitName: 'G', value: f.saturatedFat || 0 },
-  ],
-  isMyFood: false,
-  fsId: (f as any).fsId || null,
-}))) :
+          activeTab === 'favorites' ? (() => {
+  const mapFav = (f: MyFood) => ({
+    description: f.name,
+    foodNutrients: [
+      { nutrientName: 'Energy', unitName: 'KCAL', value: f.cal },
+      { nutrientName: 'Protein', unitName: 'G', value: f.protein || 0 },
+      { nutrientName: 'Carbohydrate, by difference', unitName: 'G', value: f.carbs || 0 },
+      { nutrientName: 'Total lipid (fat)', unitName: 'G', value: f.fat || 0 },
+      { nutrientName: 'Fiber, total dietary', unitName: 'G', value: f.fiber || 0 },
+      { nutrientName: 'Sugars, total including NLEA', unitName: 'G', value: f.sugar || 0 },
+      { nutrientName: 'Sodium, Na', unitName: 'MG', value: f.sodium || 0 },
+      { nutrientName: 'Cholesterol', unitName: 'MG', value: f.cholesterol || 0 },
+      { nutrientName: 'Fatty acids, total saturated', unitName: 'G', value: f.saturatedFat || 0 },
+    ],
+    isMyFood: false,
+    fsId: (f as any).fsId || null,
+    type: f.type || 'food',
+    brand: (f as any).brand || null,
+  });
+  const regularFavs = applySortToFoodItems(favorites.filter(f => f.type !== 'supplement').map(mapFav));
+  const suppFavs = applySortToFoodItems(favorites.filter(f => f.type === 'supplement').map(mapFav));
+  if (suppFavs.length === 0) return regularFavs;
+  return [...regularFavs, { _isSuppDivider: true } as any, ...suppFavs];
+})() :
           activeTab === 'recipes' ? applySortToFoodItems(recipes.map((r: any) => ({
             description: r.name,
             foodNutrients: [],
@@ -1656,7 +1669,11 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
             return [...regularFoods, { _isSuppDivider: true } as any, ...supplements];
           })()
         }
-        keyExtractor={(_, i) => i.toString()}
+        keyExtractor={(item, i) => {
+          if ((item as any)._isSuppDivider) return 'supp-divider';
+          if ((item as any).recipeData) return `recipe-${(item as any).recipeData.name || i}`;
+          return (item as any).fsId || (item as any).description || i.toString();
+        }}
         renderItem={({ item, index }) => {
           if ((item as any)._isSuppDivider) {
             return (

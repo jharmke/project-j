@@ -1763,7 +1763,7 @@ export default function HomeScreen() {
             <Text style={{ textTransform: 'none' }}>{water}oz / {waterGoal}oz</Text>
           </Text>
         </View>
-        <TouchableOpacity onPress={openWaterDetailModal} hitSlop={{ top:8, bottom:8, left:8, right:8 }}>
+        <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openWaterDetailModal(); }} hitSlop={{ top:8, bottom:8, left:8, right:8 }}>
           <Ionicons name="settings" size={16} color={theme.textMuted} />
         </TouchableOpacity>
       </View>
@@ -3102,7 +3102,7 @@ export default function HomeScreen() {
               pointerEvents="box-none">
             <Animated.View style={{ width:'92%', maxHeight:'82%', backgroundColor: theme.bgSheet, borderRadius:16, borderWidth:0.5, borderColor: theme.borderCard, borderTopWidth:1.5, borderTopColor: theme.accentBlueRaw, overflow:'hidden', transform:[{scale: cardScale}] }}>
               {/* Handle + header always visible above scroll */}
-              <TouchableOpacity onPress={closeWaterDetailModal} style={{ alignItems:'center', paddingTop:12, paddingBottom:8 }}>
+              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeWaterDetailModal(); }} style={{ alignItems:'center', paddingTop:12, paddingBottom:8 }}>
                 <View style={{ width:36, height:4, borderRadius:2, backgroundColor: theme.sheetHandle }} />
               </TouchableOpacity>
               <View style={{ paddingHorizontal:16, paddingBottom:12 }}>

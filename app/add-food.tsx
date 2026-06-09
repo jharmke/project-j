@@ -1479,6 +1479,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         cholesterol: getN('Cholesterol', 'MG'),
         saturatedFat: getN('Fatty acids, total saturated'),
         fsId: (food as any).fsId || null,
+        type: (food as any).type || 'food',
       }];
     }
     setFavorites(updated);

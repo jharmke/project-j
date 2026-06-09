@@ -700,6 +700,10 @@ NOW: gym notes batch (2026-06-09, bugs + polish + haptics)
   [ ] BUG: Workout tab -- Edit Day Label modal has black box appearing behind keyboard. Matches the pattern of KAV fixes already in roadmap. (NOW)
   [ ] BUG: Workout tab -- Workout notes keyboard not auto-dismissing on save. (NOW)
 
+  FAITH HUB HOME CARD (FaithTodayCard.tsx):
+  [x] Faith hub home card amber glow restored -- SHIPPED 2026-06-09. glow style was using black shadow (#000, opacity 0.18). Updated to match faith tab VotdCard: shadowColor #d4860a, opacity 0.85, offset {0,0}, radius 8, elevation 8.
+  [x] Faith hub home card hero watermark icons -- SHIPPED 2026-06-09. Page 1 (Today's Message): sunny icon. Page 2 (Plans): book icon. Page 3 (Prayer): hand-heart icon. Size 130, opacity 0.10, absolute bottom-right, overflow hidden. Matches faith tab card treatment exactly.
+
   HAPTICS:
   [x] HAPTICS: hapticsEnabled setting now works app-wide -- SHIPPED 2026-06-09. Created utils/haptics.ts (triggerHaptic / triggerHapticNotification / triggerHapticSelection). All 53 files that called expo-haptics directly now route through the utility, which reads pj_settings.hapticsEnabled before firing. Previously the Settings toggle only gated the tab bar and PressableButton; the other ~300 call sites ignored it entirely. CustomTabBar simplified (removed hapticsEnabled useRef + AsyncStorage read, utility handles it). PressableButton simplified (removed manual check). haptic-tab simplified. Unused triggerHapticNotification/Selection imports trimmed from 51 files.
   [x] HAPTICS POLISH -- SHIPPED 2026-06-09. AchievementToast: fires notificationAsync(Success) when toast slides in (was completely silent). TooltipModal "Got it": Medium to Light (dismiss, not a confirm). DayScoreDisclaimerModal "I understand": Medium to Light (same reason). Devotional un-completing: Warning notification to Light impact (Warning felt punitive for a toggle). Halo companion handle pill: added Light haptic on close tap (was silent). food-detail date picker: replaced one-off selectionAsync with impactAsync(Light) for consistency.

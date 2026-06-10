@@ -16,8 +16,38 @@
 - [ ] Donate/Support button -- post-TestFlight, no paywall. One-time StoreKit tip jar or Ko-fi link. Entry points TBD. Not urgent.
 - [ ] HR Zone Training -- dedicated session. 5-zone system (Zone 1-5), max HR (220-age default, user-settable), optional resting HR for Karvonen formula. Stats: time-in-zone stacked bar per session. Cardio exercises: zone target field. Workout tab: zone badge post-session. Mode-aware.
 
+### Stats / Graphs
+- [ ] Fitness Metrics as graphable keys -- VO2 Max, Resting HR, Resp Rate, Blood O2, Body Fat (and Cardio Recovery) as custom graph data keys. Graph infra already exists; add to DATA_KEY_META, statsCardRegistry, and fetchTrendData. Extension of existing system.
+- [ ] Trend indicators on stats -- Apple-style up/down arrow next to data values in graphs or At a Glance showing direction of change vs prior period.
+
+### Calorie / Goal Logic
+- [ ] Day Score bedtime backfill bug (low priority) -- backfill-only days (user never opened app) can score up to 10pts low on Recovery because sleepConsistencyPts defaults to 0 instead of being computed. Softened by 50pt floor. Fix: have the backfill scan compute + persist consistency for scored days. utils/dayScore.ts / utils/dayScoreStore.ts.
+- [ ] Burn accuracy freeze for streaks -- changing burn accuracy retroactively shifts calorie/net streaks and active-cal streaks (they recompute live using the current accuracy multiplier). Goal side is already frozen per-day via goalSnapshot. Freeze burnAccuracyPct per-day too so historical streaks stay locked to the accuracy in effect then. Justin confirmed this is the right call. utils/goalHit.ts / stats.tsx.
+
+### Coaching / AI
+- [ ] Caffeine tracking -- new field. Track caffeine intake, daily total surface, high-amount warnings + first-use disclaimer (including specific guidance for pregnant women per lower safe limit). Design decisions needed: dedicated quick-add vs food field, warning thresholds. Pairs with Advanced Nutrition expansion. Duty-of-care item.
+- [ ] Smart Coach Level 2 (Focused Tips) -- single-metric AI-voiced tips for home card slots 2+ and EvR domain cards. Open blocker: Day Summary surface assignment (spec and gym notes conflict on Level 1 vs Level 2). Explicit call needed before any build. See SMART_COACH_SPEC.md.
+- [ ] NEAT definition -- one tooltipRegistry.ts entry for Non-Exercise Activity Thermogenesis. No UI changes, shows up in Settings > Help automatically.
+
+### Mindful Mode
+- [ ] Mindful mode full app-wide audit -- inconsistent implementation across the app. Day Summary still needs its pass. Scope is app-wide: every screen, card, and copy string should be checked for correct Mindful behavior (no judgment language, no numbers on weight/score, no countdown, no net calories, no color coding). Dedicated session.
+
+### Settings / Help
+- [ ] Settings/Help: Coaching Style + Faith Journey in-depth explainers -- two-tier: (1) quick "what does this mean for me" blurb accessible from the setting row, (2) full article per topic in Settings > Help. Coaching Style covers what changes mode-to-mode. Faith Journey covers what each tier sees vs not. UI approach not decided.
+
+### Home / UX
+- [ ] Apple sync last sync time -- surface last HealthKit sync timestamp on cards showing synced data (steps, active cals) so user knows if watch data is stale. Placement TBD.
+- [ ] Water modal edit entries -- pencil icon to edit existing water log entries (time/amount). Verify delete confirmation exists before building.
+- [ ] Log tab date picker fade-in -- calendar picker was built and works, but pops in with no animation on open. Fade-out on close works. Needs matching fade-in. log.tsx.
+- [ ] Day detail BMR row -- add estimated BMR to calorie breakdown in day detail alongside Consumed / Burned / Running Net. Gives user the full daily calorie picture.
+- [ ] Primary button audit -- app-wide sweep: all primary CTAs to full accent fill, transparent bordered style demoted to secondary only (Edit, Cancel, filter pills).
+
+### Food / Log
+- [ ] %DV entry in Create Food -- bidirectional amount/%DV fields in Create Food and Edit Food for all nutrients that have an FDA DV. Typing either field auto-fills the other. FDA DV lookup table in utils/nutrientDV.ts. Nutrients without a DV show amount only. Likely also belongs in food detail screen. Full spec in SPEC_nutrition.md.
+- [ ] HealthKit weight auto-pull -- read Apple Health body mass (scales that sync to Health). Ghost value with HealthKit icon when no manual entry today; manual entry always wins. Design questions: effect on YvY and Head-to-Head when source differs day to day; whether it triggers weight achievements. Design discussion before building.
+
 ### Tutorials / Tooltips
-- [ ] TUTORIAL + TOOLTIP FULL AUDIT -- dedicated session required. Covers: spotlight lag (needs TestFlight verify), launch tab routing, stats + profile tutorials not interactive/polished, all content out of date (many features shipped since last audit), faith tab card moves (verse card now Faith Today, gratitude moved, prayer retired), tooltip copy accuracy pass across all screens.
+- [ ] TUTORIAL + TOOLTIP FULL AUDIT -- dedicated session required. Covers: spotlight lag (needs TestFlight verify), launch tab routing, stats + profile tutorials not interactive/polished, all content out of date (many features shipped since last audit), faith tab card moves (verse card now Faith Today, gratitude moved, prayer retired), tooltip copy accuracy pass across all screens. Also covers: tutorial return-nav (nearly every tutorial hardcodes its own return tab; launching from Settings > Help dumps user on feature tab instead of back to Settings -- needs framework fix to capture launch origin and restore it, touches ~20 tutorials, real regression risk); tutorial hidden-card guard (if home card is hidden and user starts its tutorial, refs are unregistered -- should detect this and show "Add [Card] from Edit Layout first"); tutorialOverrideState pattern (cards with multiple UI states need a tutorialOverrideState prop for forced-state tutorials without touching real data); 79 double-dash instances in data/tutorials.ts still to fix; interactive tutorial still needed for Log Today's Total card.
 - [ ] Sign-in logo entrance animation -- logo pops in instead of fading. Verify on TestFlight before investigating.
 
 ### Workout
@@ -54,6 +84,9 @@
 - [closed] Muscle Milk oz/mL potassium bug -- not reproducible in screenshots, extended nutrition fixes likely resolved it. Clone food serving unit bug tracked separately.
 - [closed] VOTD Reflect with Halo -- Reflect with Halo button already on Faith Today card page 1. Done.
 - [closed] Bible reader plan browser modal -- consolidated to /plans hub. Done.
+- [closed] Net carbs copy audit -- advanced_nutrition tooltip, day-detail formula, and daySummaryCopy.ts all verified correct (fiber + sugar alcohols everywhere). Done.
+- [closed] Faith AI + Devotional Plans -- app/devotional.tsx, app/plans.tsx, CompanionChat component, reading plans, and inline Halo all exist in code. Roadmap entry was just never marked. Done.
+- [closed] Settings Help aesthetics -- screenshot confirms clean section headers, accent left borders, clear hierarchy, good spacing. Done.
 
 ---
 

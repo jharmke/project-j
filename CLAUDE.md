@@ -32,7 +32,7 @@ Read project_j_roadmap.md at the start of every session before touching anything
 
 ## Communication Style
 - Straight talk. Dude/man/brother language fine. Humor encouraged
-- No double dash (--) anywhere: not in conversation, not in code comments, not in any user-facing string in the app. Use a colon, period, or reword. There are 100+ existing instances to clean up later, do not add more.
+- No double dash (--) in any user-facing string in the app. Internal docs, roadmap, spec files, code comments, and conversation are all fine. Use a colon, period, or reword in app strings. ~100 existing user-facing instances to clean up eventually.
 - No excessive apologies
 - Flag uncertainty explicitly every time
 - Push back on bad ideas directly -- don't hype something that won't work
@@ -68,20 +68,38 @@ app/(tabs)/workout.tsx -- Workout tab
 app/(tabs)/log.tsx -- Food log tab
 app/(tabs)/stats.tsx -- Stats tab
 app/(tabs)/profile.tsx -- Profile tab
+app/(tabs)/faith.tsx -- Faith tab
 app/(tabs)/_layout.tsx -- Tab layout (Tabs navigator + CustomTabBar)
 app/_layout.tsx -- Root layout (fonts, providers, Stack)
+app/sign-in.tsx -- Sign in / auth screen
 app/settings.tsx -- Settings screen
 app/add-food.tsx -- Add food screen
 app/food-detail.tsx -- Food detail screen
-app/edit-food.tsx -- Edit food screen
 app/recipe-builder.tsx -- Recipe builder
 app/recipe-log.tsx -- Recipe log
 app/workout-library.tsx -- Workout library
 app/day-detail.tsx -- Day detail screen
+app/day-summary.tsx -- Day summary screen
+app/weekly-summary.tsx -- Weekly summary screen
+app/monthly-summary.tsx -- Monthly summary screen
+app/diagnostic-report.tsx -- Effort vs Results diagnostic report
+app/diagnostic-report-view.tsx -- EvR report viewer
 app/bible.tsx -- Bible reader screen
 app/journal.tsx -- Journal/reflections screen
 app/achievements.tsx -- Achievement page
 app/head-to-head.tsx -- Head to Head drill-down screen
+app/prayer.tsx -- Prayer screen
+app/plans.tsx -- Reading plans hub
+app/devotional.tsx -- Devotional screen
+app/mission.tsx -- Mission screen
+app/tutorials.tsx -- Tutorials screen
+app/onboarding/profile-setup.tsx -- Onboarding screen 2: profile basics
+app/onboarding/style-survey.tsx -- Onboarding screen 3: style survey
+app/onboarding/your-style.tsx -- Onboarding screen 4: coaching mode selection
+app/onboarding/faith-journey.tsx -- Onboarding screen 5: faith journey tier
+app/onboarding/apple-health.tsx -- Onboarding screen 6: HealthKit opt-in
+app/onboarding/commitment.tsx -- Onboarding screen 7: commitment
+app/onboarding/all-set.tsx -- Onboarding final screen
 components/AchievementToast.tsx -- Video game style achievement notification, global emitter pattern
 components/CustomTabBar.tsx -- Full custom animated tab bar (TAB_BAR_HEIGHT = 64)
 components/PressableButton.tsx -- Animated spring button with haptics
@@ -89,11 +107,38 @@ components/Toast.tsx -- Toast system (ToastProvider, ToastItem, ToastRenderer, u
 components/TooltipModal.tsx -- Reusable (i) tooltip modal
 components/TooltipIcon.tsx -- Reusable (i) icon with pulse animation
 components/ToggleSwitch.tsx -- Custom sliding pill toggle, replaces RN Switch everywhere
+components/DaySummaryModal.tsx -- Modal version of day summary card
+components/DayScoreDisclaimerModal.tsx -- First-use Day Score disclaimer modal
+components/ToolkitSheet.tsx -- Toolkit and tutorial launcher sheet
+components/TutorialOverlay.tsx -- Tutorial spotlight overlay engine
+components/CustomFoodCreator.tsx -- Inline custom food creator component
+components/StatsGraphCard.tsx -- Stats tab graph card (add/edit/remove)
+components/StatsCardEditModal.tsx -- Stats card edit modal
+components/MuscleMap.tsx -- SVG muscle group visualization
+components/NutrientDrilldownModal.tsx -- Nutrient detail drill-down modal
+components/NutritionGearModal.tsx -- Nutrition display settings gear modal
+components/FaithTodayCard.tsx -- Faith Today home card
+components/GratitudeStreakCard.tsx -- Gratitude streak card
+components/PrayerRequestModal.tsx -- Prayer request submission modal (variant="faith" for amber scheme)
+components/PrayerActionModal.tsx -- Prayer action modal
+components/AddPrayerModal.tsx -- Add prayer entry modal
+components/CompanionFAB.tsx -- AI companion floating action button
+components/CompanionChat.tsx -- AI companion chat interface
+components/IFCard.tsx -- Intermittent fasting card
+components/HeaderAvatar.tsx -- Profile header avatar
+components/CelebrationOverlay.tsx -- Goal celebration overlay
+components/ReadingPlansCard.tsx -- Bible reading plans card
+components/EditSheetContext.tsx -- Edit sheet context provider
 data/bible-web.ts -- Full KJV Bible, all 66 books
 useHealthKit.ts -- HealthKit hook
 useTooltip.ts -- AsyncStorage-backed hook, returns seen + markSeen + reset per tooltip key
 tooltipRegistry.ts -- Central tooltip definitions. Settings > Help auto-populates from this.
 utils/mealSlots.ts -- Meal slot system (MealSlot interface, DEFAULT_MEAL_SLOTS, loadMealSlots, saveMealSlots, getMealDisplayName, findSlotForMeal)
+utils/dayScore.ts -- Day Score calculation (composite 0-100, three categories: Nutrition/Activity/Recovery)
+utils/sleepScore.ts -- Sleep score calculation
+utils/goalHit.ts -- Goal hit detection utilities
+utils/weeklySummary.ts -- Weekly summary computation
+utils/monthlySummary.ts -- Monthly summary computation
 firebaseConfig.ts, workoutData.ts, config.ts
 
 ## AsyncStorage Keys
@@ -101,12 +146,18 @@ pj_YYYY-MM-DD -- daily data (entries, water, weight, steps, activeCalories, calo
 pj_workout_state -- workout (checks, cardioComplete, programs, workoutNotes, cardioLogs, weeklyTemplate)
 pj_my_foods, pj_favorites, pj_recipes, pj_exercise_library
 pj_profile -- profile + waterPresets + waterGoal + stepGoal + sleepGoal
-pj_settings -- app settings including hapticsEnabled, cardOrder, cardVisible, theme, selectedAccent, workoutTags, mealSlots (MealSlot[] up to 8 custom meal categories with stable IDs), slotNameCache (Record of all slot names ever -- never shrinks, used to display deleted slot names in history)
+pj_settings -- app settings: hapticsEnabled, cardOrder, cardVisible, theme, selectedAccent, workoutTags, styleMode (coaching mode: Discipline/Balanced/Mindful), faithJourney (Rooted/Exploring/NotRightNow), fitnessGoal, macroPreset, healthkitConnected, bibleFontFamily, bibleTextSize, bibleScrollSpeed, mealSlots (MealSlot[] up to 8), slotNameCache (never shrinks)
 pj_bible_reflections -- all journal entries
 pj_verse_rotation -- shuffled verse rotation order and current index
 pj_bible_{BookName}_{chapterNum} -- cached KJV chapter verses
 pj_tooltip_{key} -- seen state per tooltip ('true' when dismissed). Reset via dev tools.
 pj_streaks -- universal streak data: { gratitude: { currentStreak, totalDays, lastLoggedDate }, savers: { count, earnBaselineStreak, earnBaselineIsActive } }
+pj_bible_favorites -- favorited Bible verses
+pj_barcode_overrides -- custom barcode-to-food mappings
+pj_onboarding_complete -- set after onboarding finishes
+pj_healthkit_skip -- set when user taps "Maybe later" on HealthKit opt-in
+pj_vs_streak -- YvY win/loss streak count
+pj_dayscore_disclaimer_seen -- first-use Day Score disclaimer seen state
 
 ## Design System
 Background: #0d0d0f
@@ -195,8 +246,7 @@ Any screen showing health data, metrics, scores, or recommendations needs:
 - Heavy: destructive actions like delete
 
 **Keyboard Avoiding**
-- Every screen/modal/sheet with text input wraps in KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}.
-- Exception: bottom sheets using Reanimated -- use Keyboard.addListener keyboardWillShow/Hide with keyboardOffset shared value instead.
+- Every screen/modal with text input wraps in KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}.
 
 **Multiline TextInput -- iOS select-all bug**
 - Every multiline TextInput with a value prop must have a ref and onBlur={() => ref.current?.setNativeProps({ selection: { start: 0, end: 0 } })}. Without this, iOS triggers select-all on every other focus. No exceptions for multiline inputs.
@@ -206,7 +256,7 @@ Any screen showing health data, metrics, scores, or recommendations needs:
 - Expand/collapse: never use maxHeight. Render off-screen, measure via onLayout, animate to exact pixel height. Two coordinated animations -- container height JS thread (useNativeDriver: false), content opacity/translateY native thread (useNativeDriver: true)
 - Easing.out(Easing.cubic) opening, Easing.in(Easing.cubic) closing
 - Card press: scale 0.97 pressIn, 1.0 pressOut, timing not spring
-- Sheet/modal slide-up: Reanimated useSharedValue + useAnimatedStyle + withSpring. Fire in Modal onShow callback. Sheet in View flex:1 justifyContent:flex-end, NOT position:absolute bottom:0
+- Modals: NO slide-up bottom sheets ever. All modals are centered floating cards. Animation: withSpring scale 0.85 to 1.0 + opacity 0 to 1, fired in Modal onShow callback. Include handle pill at top of card. See Modal + ScrollView Pattern below.
 
 **Dev Build Performance -- DO NOT CHASE**
 JS thread drops to ~20 FPS during navigation in dev build -- confirmed Metro overhead, not a code problem. UI thread holds 60 FPS consistently. Rules:

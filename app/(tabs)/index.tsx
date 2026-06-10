@@ -51,6 +51,7 @@ import ToggleSwitch from '../../components/ToggleSwitch';
 import { StoredTip, loadSmartTips, CoachTipCache } from '../../utils/smartTipsEngine';
 import { refreshCoachTip, resolveTipBody, resolveTipTitle } from '../../utils/coachAI';
 import NutrientDrilldownModal, { DrilldownItem, computeNetCarbsForEntry } from '../../components/NutrientDrilldownModal';
+import AnimatedNumber from '../../components/AnimatedNumber';
 
 // ─── Card Registry ────────────────────────────────────────────────────────────
 export type CardId =
@@ -1636,7 +1637,7 @@ export default function HomeScreen() {
         {/* Big number row */}
         <View style={styles.calRow}>
           <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
-            <Text style={[styles.calNumber, { color: styleMode === 'mindful' ? theme.textSecondary : calColor, opacity: 0.88 }]}>{totalCals}</Text>
+            <AnimatedNumber value={totalCals} style={[styles.calNumber, { color: styleMode === 'mindful' ? theme.textSecondary : calColor, opacity: 0.88 }]} />
           </View>
           <Text style={[styles.calTarget, { color: theme.textSecondary }]}>/ {styleMode === 'mindful' ? calTarget : onPaceTarget} kcal</Text>
         </View>
@@ -1732,7 +1733,7 @@ export default function HomeScreen() {
                   <View style={{ flexDirection:'row', alignItems:'baseline', justifyContent:'space-between', marginBottom:4 }}>
                     <Text style={{ fontSize:11, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', flex:1 }}>{m.label}</Text>
                     <View style={{ flexDirection:'row', alignItems:'baseline', gap:4, width:120, justifyContent:'flex-end' }}>
-                      <Text style={{ fontSize:20, color: over ? theme.macroOver : m.color, fontFamily:'BebasNeue_400Regular', letterSpacing:1, textAlign:'right' }}>{m.val}</Text>
+                      <AnimatedNumber value={m.val} style={{ fontSize:20, color: over ? theme.macroOver : m.color, fontFamily:'BebasNeue_400Regular', letterSpacing:1, textAlign:'right' }} decimals={0} />
                       <Text style={{ fontSize:11, color: over ? theme.macroOver : m.color, fontFamily:'DMSans_500Medium' }}>g</Text>
                       <Text style={{ fontSize:11, color: theme.textDim, fontFamily:'DMSans_500Medium' }}>/ {m.goal} g</Text>
                     </View>
@@ -1758,10 +1759,11 @@ export default function HomeScreen() {
       <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
         <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
           <Ionicons name="water-outline" size={11} color={theme.textMuted} />
-          <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>
-            {'Water · '}
-            <Text style={{ textTransform: 'none' }}>{water}oz / {waterGoal}oz</Text>
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={[styles.cardLabel, { marginBottom: 0, color: theme.textMuted }]}>Water · </Text>
+            <AnimatedNumber value={water} style={[styles.cardLabel, { marginBottom: 0, color: theme.textMuted, textTransform: 'none' }]} />
+            <Text style={[styles.cardLabel, { marginBottom: 0, color: theme.textMuted, textTransform: 'none' }]}>{`oz / ${waterGoal}oz`}</Text>
+          </View>
         </View>
         <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openWaterDetailModal(); }} hitSlop={{ top:8, bottom:8, left:8, right:8 }}>
           <Ionicons name="settings" size={16} color={theme.textMuted} />
@@ -1806,9 +1808,13 @@ export default function HomeScreen() {
       </View>
       <View style={styles.weightRow}>
         <View style={styles.weightStat}>
-          <Text style={[styles.weightVal, { color: styleMode === 'mindful' ? theme.textSecondary : weight ? theme.accentBlue : theme.textDim }]}>
-            {weight ? `${weight} lbs` : lastKnownWeight ? `${lastKnownWeight.val} lbs` : '--'}
-          </Text>
+          {weight ? (
+            <AnimatedNumber value={weight} style={[styles.weightVal, { color: styleMode === 'mindful' ? theme.textSecondary : theme.accentBlue }]} decimals={1} formatter={(n) => `${n.toFixed(1)} lbs`} />
+          ) : (
+            <Text style={[styles.weightVal, { color: styleMode === 'mindful' ? theme.textSecondary : theme.textDim }]}>
+              {lastKnownWeight ? `${lastKnownWeight.val} lbs` : '--'}
+            </Text>
+          )}
           <Text style={[styles.weightLbl, { color: theme.textMuted }]}>
             {weight ? 'Today' : lastKnownWeight ? `${lastKnownWeight.daysAgo}d ago` : 'Today'}
           </Text>
@@ -2022,7 +2028,7 @@ export default function HomeScreen() {
         </View>
         <View style={{ flexDirection:'row', alignItems:'baseline', gap:6, marginBottom:6 }}>
           <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
-            <Text style={{ fontSize:36, color:stepColor, fontFamily:'BebasNeue_400Regular', letterSpacing:1, opacity: 0.88 }}>{steps.toLocaleString()}</Text>
+            <AnimatedNumber value={steps} style={{ fontSize:36, color:stepColor, fontFamily:'BebasNeue_400Regular', letterSpacing:1, opacity: 0.88 }} formatter={(n) => n.toLocaleString()} />
           </View>
           <Text style={{ fontSize:13, color: theme.textMuted, fontFamily:'DMSans_400Regular' }}>/ {stepGoal.toLocaleString()} steps</Text>
         </View>

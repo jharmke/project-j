@@ -33,7 +33,6 @@
 
 ## HOME / UX
 
-- [HIGH] Number transitions -- all big numbers tick/roll to new value like a scoreboard on update. App-wide: calories, steps, weight, water, macros, streaks. Odometer feel, not a snap.
 - Primary button audit -- app-wide: all primary CTAs to full accent fill. Transparent bordered = secondary only (Edit, Cancel, filter pills).
 - Day detail BMR row -- add estimated BMR to calorie breakdown alongside Consumed / Burned / Net.
 - Exclusions polish -- first-use callout on calendar dot. Tooltip/help article explaining what exclusions are + effect on Day Score/EvR/streaks. Excluded list view (view + un-exclude all excluded dates). Three entry points: calendar dot, toolkit icon, Settings Help.
@@ -134,7 +133,7 @@
 
 ## ANIMATIONS
 
-- [HIGH] Number transitions -- all big numbers tick/roll like a scoreboard on update. Calories, steps, weight, water, macros, streaks. Odometer feel.
+- Number transitions -- AnimatedNumber component shipped. Home: calories, macros, steps, water, weight. Log tab: Today's Total calories + macro bars. Remaining: stats tab values, workout tab reps/sets.
 - Progress bar/ring/donut animation audit -- check which are already animated vs missing. Targets: calorie bar on load, macro bars on log entry, food log donut on load, water bar bounce on update, sleep donut on load.
 - Goal moment animations -- water goal hit (bar fills + pulse), step goal hit (steps flip green), calorie goal hit (color transition).
 - Achievement Toast phase 2 -- 12 badge animations: water (filling), steps (footprints), weight (scale needle), streak (flame), first workout (dumbbell), sleep (moon/ZZZ), calorie (plate clearing), IF (clock hands), Bible verse (page turn), journal saved (pen stroke), morning intention (sun rising), workout checked off (card pulse).

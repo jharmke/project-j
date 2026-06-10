@@ -30,6 +30,7 @@ import { useHealthKit } from '../../useHealthKit';
 import ReAnimated, { useAnimatedStyle, useSharedValue, withTiming, useAnimatedProps, withRepeat, cancelAnimation, Easing as ReAnimEasing } from 'react-native-reanimated';
 import { showToolkit } from '../../components/ToolkitSheet';
 import { IFCard, IF_METHODS } from '../../components/IFCard';
+import AnimatedNumber from '../../components/AnimatedNumber';
 import {
   scheduleIFWindowNotifications,
   cancelIFWindowNotifications,
@@ -89,21 +90,30 @@ function MacroStackedBar({ protein, carbs, fat, proteinGoal, carbsGoal, fatGoal,
           <ReAnimated.View style={[{ height: '100%', borderRadius: 3, backgroundColor: theme.macroProtein }, proteinStyle]} />
         </View>
         <Text style={{ fontSize: 11, color: theme.macroProtein, fontFamily: 'DMSans_700Bold', width: 12 }}>P</Text>
-        <Text style={{ fontSize: 15, color: theme.macroProtein, fontFamily: 'DMSans_600SemiBold', width: 46, textAlign: 'right' }}>{Math.round(protein)}<Text style={{ fontSize: 10, color: theme.macroProtein }}>g</Text></Text>
+        <View style={{ width: 46, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'flex-end' }}>
+          <AnimatedNumber value={protein} style={{ fontSize: 15, color: theme.macroProtein, fontFamily: 'DMSans_600SemiBold' }} duration={500} />
+          <Text style={{ fontSize: 10, color: theme.macroProtein }}>g</Text>
+        </View>
       </TouchableOpacity>
       <TouchableOpacity onPress={onPressCarbs} activeOpacity={onPressCarbs ? 0.75 : 1} hitSlop={{ top: 6, bottom: 6, left: 12, right: 12 }} style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
         <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
           <ReAnimated.View style={[{ height: '100%', borderRadius: 3, backgroundColor: theme.macroCarbs }, carbsStyle]} />
         </View>
         <Text style={{ fontSize: 11, color: theme.macroCarbs, fontFamily: 'DMSans_700Bold', width: 12 }}>C</Text>
-        <Text style={{ fontSize: 15, color: theme.macroCarbs, fontFamily: 'DMSans_600SemiBold', width: 46, textAlign: 'right' }}>{Math.round(carbs)}<Text style={{ fontSize: 10, color: theme.macroCarbs }}>g</Text></Text>
+        <View style={{ width: 46, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'flex-end' }}>
+          <AnimatedNumber value={carbs} style={{ fontSize: 15, color: theme.macroCarbs, fontFamily: 'DMSans_600SemiBold' }} duration={500} />
+          <Text style={{ fontSize: 10, color: theme.macroCarbs }}>g</Text>
+        </View>
       </TouchableOpacity>
       <TouchableOpacity onPress={onPressFat} activeOpacity={onPressFat ? 0.75 : 1} hitSlop={{ top: 6, bottom: 6, left: 12, right: 12 }} style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
         <View style={{ flex: 1, height: 6, borderRadius: 3, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
           <ReAnimated.View style={[{ height: '100%', borderRadius: 3, backgroundColor: theme.macroFat }, fatStyle]} />
         </View>
         <Text style={{ fontSize: 11, color: theme.macroFat, fontFamily: 'DMSans_700Bold', width: 12 }}>F</Text>
-        <Text style={{ fontSize: 15, color: theme.macroFat, fontFamily: 'DMSans_600SemiBold', width: 46, textAlign: 'right' }}>{Math.round(fat)}<Text style={{ fontSize: 10, color: theme.macroFat }}>g</Text></Text>
+        <View style={{ width: 46, flexDirection: 'row', alignItems: 'baseline', justifyContent: 'flex-end' }}>
+          <AnimatedNumber value={fat} style={{ fontSize: 15, color: theme.macroFat, fontFamily: 'DMSans_600SemiBold' }} duration={500} />
+          <Text style={{ fontSize: 10, color: theme.macroFat }}>g</Text>
+        </View>
       </TouchableOpacity>
     </View>
   );
@@ -1064,7 +1074,7 @@ export default function LogScreen() {
           <View style={{ flex: 1 }}>
             <View style={styles.calRow}>
               <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
-                <Text style={[styles.calNumber, { color: calColor, opacity: 0.88 }]}>{totalCals}</Text>
+                <AnimatedNumber value={totalCals} style={[styles.calNumber, { color: calColor, opacity: 0.88 }]} duration={500} />
               </View>
               <Text style={[styles.calTarget, { color: theme.textSecondary }]}>/ {displayTarget} kcal</Text>
             </View>

@@ -516,8 +516,8 @@ export default function WeeklySummaryScreen() {
                   right={{ label: 'RESP RATE', value: avgRespiratoryRate !== null ? `${avgRespiratoryRate}/min` : '--' }}
                 />
                 <SubBlock
-                  left={{ label: 'VO2 MAX', value: weekVo2Max !== null ? `${weekVo2Max}` : '--' }}
-                  right={{ label: 'CARDIO RECOVERY', value: weekCardioRecovery !== null ? `${weekCardioRecovery}` : '--' }}
+                  left={{ label: 'VO2 MAX', value: weekVo2Max !== null ? `${weekVo2Max} mL/kg/min` : '--' }}
+                  right={{ label: 'CARDIO RECOVERY', value: weekCardioRecovery !== null ? `${weekCardioRecovery} bpm` : '--' }}
                 />
               </View>
             )}

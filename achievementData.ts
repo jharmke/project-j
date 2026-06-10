@@ -934,7 +934,7 @@ export const ACHIEVEMENTS: AchievementDef[] = [
     id: 'faith_10_journal',
     name: 'Consistent Voice',
     criteria: 'Write 10 journal entries.',
-    description: 'Wrote 10 journal entries.',
+    description: "Ten times you came back to the page. Something's clicking.",
     category: 'journal',
     tier: 'medium',
     icon: 'book',

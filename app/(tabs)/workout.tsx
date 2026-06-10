@@ -1072,7 +1072,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                           <Text style={[styles.exerciseMeta, { color: theme.textMuted }]}>
                             {[
                               ex.duration ? (ex.fromAppleHealth ? ex.duration : `${ex.duration} min`) : null,
-                              ex.distance ? `${ex.distance} mi` : null,
+                              ex.distance ? `${parseFloat(ex.distance)} mi` : null,
                               ex.speed ? `${ex.speed} mph` : null,
                               ex.incline ? `${ex.incline}% incline` : null,
                               ex.hr ? `${ex.hr} bpm` : null,

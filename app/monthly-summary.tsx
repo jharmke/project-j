@@ -606,8 +606,8 @@ export default function MonthlySummaryScreen() {
                   right={{ label: 'RESP RATE', value: avgRespiratoryRate !== null ? `${avgRespiratoryRate}/min` : '--' }}
                 />
                 <SubBlock
-                  left={{ label: 'VO2 MAX', value: monthVo2Max !== null ? `${monthVo2Max}` : '--' }}
-                  right={{ label: 'CARDIO RECOVERY', value: monthCardioRecovery !== null ? `${monthCardioRecovery}` : '--' }}
+                  left={{ label: 'VO2 MAX', value: monthVo2Max !== null ? `${monthVo2Max} mL/kg/min` : '--' }}
+                  right={{ label: 'CARDIO RECOVERY', value: monthCardioRecovery !== null ? `${monthCardioRecovery} bpm` : '--' }}
                 />
               </View>
             )}

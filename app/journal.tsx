@@ -348,6 +348,7 @@ export default function JournalScreen() {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [filterCategory, setFilterCategory] = useState<Category | null>(null);
+  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
   const [editNotes, setEditNotes] = useState('');
@@ -593,6 +594,9 @@ export default function JournalScreen() {
   const filtered = filterCategory
     ? entries.filter(e => e.category === filterCategory)
     : entries;
+  const sorted = [...filtered].sort((a, b) =>
+    sortOrder === 'desc' ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date)
+  );
 
   const categorySheetTranslate = categorySheetAnim.interpolate({
     inputRange: [0, 1], outputRange: [600, 0],
@@ -612,15 +616,20 @@ export default function JournalScreen() {
           <Ionicons name="chevron-back" size={14} color={theme.accentBlue} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>JOURNAL</Text>
-        <View style={{ width: 32 }} />
+        <TouchableOpacity
+          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setSortOrder(p => p === 'desc' ? 'asc' : 'desc'); }}
+          style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+        >
+          <Ionicons name={sortOrder === 'desc' ? 'arrow-down' : 'arrow-up'} size={14} color={theme.accentBlue} />
+        </TouchableOpacity>
       </View>
 
       {/* Filter pills */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={{ maxHeight: 44, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}
-        contentContainerStyle={{ paddingHorizontal: 16, gap: 8, alignItems: 'center', paddingVertical: 8 }}
+        style={{ height: 48, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}
+        contentContainerStyle={{ paddingHorizontal: 16, gap: 8, alignItems: 'center', paddingVertical: 10 }}
       >
         <TouchableOpacity
           onPress={() => setFilterCategory(null)}
@@ -663,7 +672,7 @@ export default function JournalScreen() {
           Object.values(swipeResetRegistry.current).forEach(fn => fn());
         }}
       >
-        {filtered.length === 0 ? (
+        {sorted.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="journal-outline" size={40} color={theme.iconMuted} />
             <Text style={[styles.emptyTitle, { color: theme.textMuted }]}>
@@ -676,7 +685,7 @@ export default function JournalScreen() {
             </Text>
           </View>
         ) : (
-          filtered.map(entry => (
+          sorted.map(entry => (
             <View
               key={entry.id}
               onLayout={e => {

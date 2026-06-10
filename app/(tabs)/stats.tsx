@@ -4,7 +4,7 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Animated, Dimensions, Easing, Keyboard, LayoutAnimation, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
@@ -94,7 +94,7 @@ const MONTH_NAMES = ['January','February','March','April','May','June','July','A
 const RECORD_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
-type DayStatus = 'green' | 'yellow' | 'red' | 'future' | 'none';
+type DayStatus = 'green' | 'yellow' | 'red' | 'future' | 'none' | 'mindful';
 
 const fmtRecordDate = (dk: string | null) => {
   if (!dk) return null;
@@ -1617,14 +1617,22 @@ export default function StatsScreen() {
   // Derived from trendDataMap -- used for At a Glance weight change display
   const trendData = trendDataMap[trendPeriod] ?? EMPTY_TREND_DATA;
 
+  const dayScoreMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    archiveWeeks.forEach(w => w.days.forEach(d => {
+      if (d.score !== null) map[d.dateKey] = Math.round(d.score.composite);
+    }));
+    return map;
+  }, [archiveWeeks]);
+
   const getDayStatus = (day: number): DayStatus => {
     const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    if (dateKey > today) return 'future';
-    const calEntry = trendData.cal.find(c => c.date === dateKey);
-    if (!calEntry || !calTarget) return 'none';
-    const pct = (calEntry.cal / calTarget) * 100;
-    if (pct >= 80 && pct <= 106) return 'green';
-    if (pct >= 63 && pct <= 114) return 'yellow';
+    if (dateKey >= today) return 'future';
+    const composite = dayScoreMap[dateKey];
+    if (composite === undefined) return 'none';
+    if (styleMode === 'Mindful') return 'mindful';
+    if (composite >= 85) return 'green';
+    if (composite >= 70) return 'yellow';
     return 'red';
   };
 
@@ -1632,6 +1640,7 @@ export default function StatsScreen() {
     if (status === 'green') return { bg: 'rgba(16,185,129,0.25)', text: theme.statusGood };
     if (status === 'yellow') return { bg: 'rgba(245,158,11,0.25)', text: theme.statusWarn };
     if (status === 'red') return { bg: 'rgba(239,68,68,0.2)', text: theme.statusBad };
+    if (status === 'mindful') return { bg: theme.accentBlueBg, text: theme.accentBlue };
     return { bg: 'transparent', text: theme.textDim };
   };
 

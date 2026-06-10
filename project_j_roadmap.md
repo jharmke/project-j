@@ -33,7 +33,6 @@
 
 ## HOME / UX
 
-- [HIGH] Stats calendar polish -- remove On Target/Close/Off color grading on day tiles. Replace with Day Score tier colors (>=80 green, >=60 amber, else red). Today/future neutral. Mindful: neutral accent. stats.tsx.
 - [HIGH] Number transitions -- all big numbers tick/roll to new value like a scoreboard on update. App-wide: calories, steps, weight, water, macros, streaks. Odometer feel, not a snap.
 - Primary button audit -- app-wide: all primary CTAs to full accent fill. Transparent bordered = secondary only (Edit, Cancel, filter pills).
 - Day detail BMR row -- add estimated BMR to calorie breakdown alongside Consumed / Burned / Net.

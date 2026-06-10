@@ -77,7 +77,10 @@
       "PowerShell(cd C:\\\\Users\\\\jthar\\\\ProjectJ; git add app/\\(tabs\\)/log.tsx app/add-food.tsx app/day-detail.tsx app/food-detail.tsx app/recipe-builder.tsx app/recipe-log.tsx components/CustomFoodCreator.tsx components/NutritionGearModal.tsx project_j_roadmap.md tooltipRegistry.ts)",
       "PowerShell(git add app/\\(tabs\\)/faith.tsx app/\\(tabs\\)/index.tsx project_j_roadmap.md)",
       "PowerShell(git add app/\\(tabs\\)/index.tsx app/\\(tabs\\)/log.tsx app/add-food.tsx project_j_roadmap.md)",
-      "PowerShell(\\(Get-Content \"C:\\\\Users\\\\jthar\\\\ProjectJ\\\\project_j_roadmap.md\"\\).Count)"
+      "PowerShell(\\(Get-Content \"C:\\\\Users\\\\jthar\\\\ProjectJ\\\\project_j_roadmap.md\"\\).Count)",
+      "Bash(Get-Content \"C:\\\\Users\\\\jthar\\\\ProjectJ\\\\project_j_roadmap.md\")",
+      "Bash(Measure-Object -Line)",
+      "PowerShell(\\(Get-Content \"C:\\\\Users\\\\jthar\\\\ProjectJ\\\\project_j_roadmap.md\" | Measure-Object -Line\\).Lines)"
     ]
   }
 }

@@ -378,7 +378,7 @@ Primary test theme: Slate with yellow accent
 
 GitHub and Process
 GitHub repo: https://github.com/jharmke/project-j, branch: master
-Roadmap file lives in the project -- read it at the start of every session
+Roadmap file (project_j_roadmap.md) lives in the project -- read it at the start of every session. Parked/future items in project_j_backlog.md
 Commit after every gate-passing feature, not just end of session
 Start new threads when current one gets long -- cut sooner than feels natural, do not wait for lag
 New threads always inside the Claude Project

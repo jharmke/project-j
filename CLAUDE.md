@@ -21,10 +21,10 @@ Christian app by default. Faith features on for all users out of the box. Non-fa
 
 Branding: NOT marketed as a "Christian app." Positioned as intentional, encouraging, whole-person wellness. Chick-fil-A model -- user realizes organically.
 
-Read project_j_roadmap.md at the start of every session before touching anything.
+Read project_j_roadmap.md at the start of every session before touching anything. Parked/future items live in project_j_backlog.md -- read only when planning future sessions.
 
 ## Process
-- Read project_j_roadmap.md at session start, every session, no exceptions
+- Read project_j_roadmap.md at session start, every session, no exceptions. project_j_backlog.md is parked/future items -- read only when planning future sessions
 - After Justin states the task, restate it and wait for explicit go-ahead
 - Update the roadmap in real time the moment anything ships, a bug is found, or a decision is made. Never batch at end of session
 - After every completed feature, recommend a git commit

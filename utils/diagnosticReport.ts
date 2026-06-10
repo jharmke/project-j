@@ -104,7 +104,7 @@ export interface DiagnosticReport {
 export function minDaysForWindow(windowDays: ReportWindow): number {
   if (windowDays === 14) return 7;
   if (windowDays === 30) return 15;
-  return 30; // 90 days
+  return 60; // 90 days
 }
 
 // ── Storage ────────────────────────────────────────────────────────────────────

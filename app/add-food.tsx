@@ -1150,6 +1150,7 @@ const openFoodDetail = async (food: SearchResult) => {
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Delete', style: 'destructive', onPress: async () => {
+          triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
           const updated = myFoods.filter((_, i) => i !== idx);
           setMyFoods(updated);
           await storageSet('pj_my_foods', JSON.stringify(updated));
@@ -1821,7 +1822,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                       style={{ marginLeft: 4, paddingHorizontal: 8, paddingVertical: 10 }}>
                       <Text style={{ fontSize: 12, color: theme.accentBlue, fontFamily: 'DMSans_500Medium' }}>Edit</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => deleteMyFood(myFoods.findIndex(f => f.name === item.description))} style={styles.deleteBtn}>
+                    <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); deleteMyFood(myFoods.findIndex(f => f.name === item.description)); }} style={styles.deleteBtn}>
                       <Text style={styles.deleteBtnText}>×</Text>
                     </TouchableOpacity>
                   </>
@@ -1835,7 +1836,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                     </TouchableOpacity>
                     <TouchableOpacity
                       ref={(item as any).recipeData?.tutorialRecipe ? (tutorialRecipeDeleteRef as any) : undefined}
-                      onPress={() => deleteRecipe((item as any).recipeData?.id, item.description)}
+                      onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); deleteRecipe((item as any).recipeData?.id, item.description); }}
                       style={styles.deleteBtn}>
                       <Text style={styles.deleteBtnText}>×</Text>
                     </TouchableOpacity>

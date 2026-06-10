@@ -21,7 +21,7 @@ import { saveToFirebase } from '../firebaseConfig';
 import { storageSet } from '../utils/storage';
 import { cancelFoodLogNotification } from '../services/notifications';
 import { useTheme } from '../theme';
-import { DEFAULT_MEAL_SLOTS, MealSlot, loadMealSlots } from '../utils/mealSlots';
+import { DEFAULT_MEAL_SLOTS, MealSlot, loadMealSlots, getMealDisplayName } from '../utils/mealSlots';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { TUTORIAL_CHICKEN_BREAST } from '../data/tutorialFood';
@@ -623,8 +623,9 @@ const [showTimePicker, setShowTimePicker] = useState(false);
     const [showMealPicker, setShowMealPicker] = useState(false);
 const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_morning' : meal);
   const [mealSlots, setMealSlots] = useState<MealSlot[]>(DEFAULT_MEAL_SLOTS);
+  const [slotNameCache, setSlotNameCache] = useState<Record<string, string>>({});
   useEffect(() => {
-    loadMealSlots().then(({ mealSlots: slots }) => setMealSlots(slots));
+    loadMealSlots().then(({ mealSlots: slots, slotNameCache: cache }) => { setMealSlots(slots); setSlotNameCache(cache); });
   }, []);
   const [showEditFoodModal, setShowEditFoodModal] = useState(false);
   const [editFoodData, setEditFoodData] = useState<any>(null);
@@ -827,7 +828,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
       }
       await storageSet(`pj_${date}`, JSON.stringify({ ...current, entries }));
       await saveToFirebase(date, 'entries', entries);
-      showToast(isEditing ? 'Entry updated' : 'Entry logged', `${calories} kcal · ${mealSlots.find(s => s.id === currentMeal || s.name === currentMeal)?.name ?? currentMeal}`, 'success');
+      showToast(isEditing ? 'Entry updated' : 'Entry logged', `${calories} kcal · ${getMealDisplayName(currentMeal, mealSlots, slotNameCache)}`, 'success');
       if (!isEditing) {
         cancelFoodLogNotification();
         const store = await loadAchievements();
@@ -1543,7 +1544,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
     setShowMealPicker(true);
   }}>
   <Text style={styles.mealSelectorLabel}>Adding to</Text>
-  <Text style={styles.mealSelectorValue}>{mealSlots.find(s => s.id === currentMeal || s.name === currentMeal)?.name ?? currentMeal} ▼</Text>
+  <Text style={styles.mealSelectorValue}>{getMealDisplayName(currentMeal, mealSlots, slotNameCache)} ▼</Text>
 </TouchableOpacity>
 
 <Modal

@@ -33,6 +33,7 @@ import { IFCard, IF_METHODS } from '../../components/IFCard';
 import {
   scheduleIFWindowNotifications,
   cancelIFWindowNotifications,
+  cancelIfCheckInNotification,
   loadNotificationSettings,
   shouldAskPermission,
   requestNotificationPermission,
@@ -1564,6 +1565,7 @@ export default function LogScreen() {
             const notifSettings = await loadNotificationSettings();
             const sm: any = styleMode;
             scheduleIFWindowNotifications(wEnd, notifSettings, sm).catch(() => {});
+            cancelIfCheckInNotification();
             const ask = await shouldAskPermission();
             if (ask) requestNotificationPermission().catch(() => {});
           }}

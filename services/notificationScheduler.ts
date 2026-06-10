@@ -3,7 +3,8 @@ import { scheduleDailyNotifications, SchedulerContext, FaithJourney, StyleMode, 
 
 export const runDailyNotificationScheduler = async () => {
   try {
-    const todayKey = new Date().toISOString().split('T')[0];
+    const _now = new Date();
+    const todayKey = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}-${String(_now.getDate()).padStart(2, '0')}`;
 
     const lastRun = await AsyncStorage.getItem('pj_notif_last_scheduled');
     if (lastRun === todayKey) return;
@@ -124,9 +125,12 @@ export const runDailyNotificationScheduler = async () => {
       if (prayersRaw) {
         const prayers: any[] = JSON.parse(prayersRaw);
         prayerLoggedToday = prayers.some((p: any) => {
-          const created = p.createdAt ? p.createdAt.split('T')[0] : '';
-          const answered = p.answeredAt ? p.answeredAt.split('T')[0] : '';
-          return created === todayKey || answered === todayKey;
+          const toLocal = (ms: number | null) => {
+            if (!ms) return '';
+            const d = new Date(ms);
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+          };
+          return toLocal(p.createdAt) === todayKey || toLocal(p.answeredAt) === todayKey;
         });
       }
     } catch {}

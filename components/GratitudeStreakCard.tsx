@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageSet } from '../utils/storage';
-import { cancelEveningGratitudeNotification } from '../services/notifications';
+import { cancelEveningGratitudeNotification, rescheduleStreakProtection } from '../services/notifications';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { router, useFocusEffect } from 'expo-router';
@@ -262,7 +262,10 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
         setWeeklyLogs(prev => { const next = [...prev]; next[todayDow] = true; return next; });
       }
 
-      if (cardState !== 'editing') cancelEveningGratitudeNotification();
+      if (cardState !== 'editing') {
+        cancelEveningGratitudeNotification();
+        rescheduleStreakProtection().catch(() => {});
+      }
       if (graceUsed) {
         showToast(`Grace day saved your streak! ${updatedSavers.count} saver${updatedSavers.count !== 1 ? 's' : ''} left`, undefined, 'success');
       } else {

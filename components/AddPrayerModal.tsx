@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { addPrayer, updatePrayer, type Prayer } from '../utils/prayers';
+import { cancelPrayerNotification } from '../services/notifications';
 import { useTheme } from '../theme';
 import { ToastRenderer, useToast } from './Toast';
 
@@ -79,6 +80,7 @@ export default function AddPrayerModal({ visible, onClose, onAdded, editPrayer }
     setSaving(true);
     try {
       const updated = isEdit ? await updatePrayer(editPrayer!.id, text) : await addPrayer(text);
+      if (!isEdit) cancelPrayerNotification();
       showToast(isEdit ? 'Prayer updated' : 'Prayer added', undefined, 'success');
       onAdded?.(updated);
       close();

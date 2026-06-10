@@ -827,7 +827,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
       }
       await storageSet(`pj_${date}`, JSON.stringify({ ...current, entries }));
       await saveToFirebase(date, 'entries', entries);
-      showToast(isEditing ? 'Entry updated' : 'Entry logged', `${calories} kcal · ${currentMeal}`, 'success');
+      showToast(isEditing ? 'Entry updated' : 'Entry logged', `${calories} kcal · ${mealSlots.find(s => s.id === currentMeal || s.name === currentMeal)?.name ?? currentMeal}`, 'success');
       if (!isEditing) {
         cancelFoodLogNotification();
         const store = await loadAchievements();

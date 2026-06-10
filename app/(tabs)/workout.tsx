@@ -615,6 +615,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
     const newCardio = { ...cardioComplete, [day]: !cardioComplete[day] };
     setCardioComplete(newCardio);
     saveState(checks, newCardio);
+    if (newCardio[day] && day === todayKey) cancelActivityNotification();
   };
 
   const openAddModal = (day: string) => openAddExerciseModal(day, null);

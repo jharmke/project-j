@@ -753,6 +753,94 @@ export const cancelWeeklySummaryNotification = () =>
 export const cancelMonthlySummaryNotification = () =>
   Notifications.cancelScheduledNotificationAsync('pj_monthly_summary').catch(() => {});
 
+export const cancelPrayerNotification = () =>
+  Notifications.cancelScheduledNotificationAsync('pj_prayer').catch(() => {});
+
+export const cancelIfCheckInNotification = () =>
+  Notifications.cancelScheduledNotificationAsync('pj_if_checkin').catch(() => {});
+
+export const rescheduleStreakProtection = async (): Promise<void> => {
+  try {
+    const s = await loadNotificationSettings();
+    await Notifications.cancelScheduledNotificationAsync('pj_streak').catch(() => {});
+    if (!s.masterEnabled || !s.streakProtection) return;
+
+    const status = await getPermissionStatus();
+    if (status !== 'granted') return;
+
+    const settingsRaw = await AsyncStorage.getItem('pj_settings');
+    const appSettings = settingsRaw ? JSON.parse(settingsRaw) : {};
+    const m: StyleMode = appSettings.styleMode ?? 'balanced';
+    const growthOn: boolean = appSettings.mindfulGrowthAreas === true;
+    if (m === 'mindful' && !growthOn) return;
+
+    const now = new Date();
+    const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const nowMins = now.getHours() * 60 + now.getMinutes();
+
+    const pjStreaksRaw = await AsyncStorage.getItem('pj_streaks');
+    const pjStreaks = pjStreaksRaw ? JSON.parse(pjStreaksRaw) : {};
+
+    const atRisk: { id: string; name: string; currentStreak: number }[] = [];
+    const gratStreak = pjStreaks.gratitude?.currentStreak ?? 0;
+    const gratLast = pjStreaks.gratitude?.lastLoggedDate ?? '';
+    if (gratStreak > 0 && gratLast !== todayKey) {
+      atRisk.push({ id: 'gratitude', name: 'Gratitude', currentStreak: gratStreak });
+    }
+    const streakConfig: any[] = pjStreaks.config ?? [];
+    for (const item of streakConfig) {
+      const current = pjStreaks.streakCounts?.[item.id]?.current ?? 0;
+      const lastDate = pjStreaks.streakCounts?.[item.id]?.lastDate ?? '';
+      if (current > 0 && lastDate !== todayKey) {
+        atRisk.push({ id: item.id, name: item.label ?? item.name ?? 'Streak', currentStreak: current });
+      }
+    }
+    if (atRisk.length === 0) return;
+
+    const avgBedtime = await getAverageBedtime();
+    let fireTimeStr = '21:00';
+    if (avgBedtime) {
+      const n = toNormalizedMins(avgBedtime);
+      if (n !== null) {
+        const offset = s.streakOffsetMins;
+        const adjusted = ((n - offset) % 1440 + 1440) % 1440;
+        fireTimeStr = `${Math.floor(adjusted / 60).toString().padStart(2, '0')}:${(adjusted % 60).toString().padStart(2, '0')}`;
+      }
+    }
+
+    const { hour, minute } = parseTime(fireTimeStr);
+    if (hour * 60 + minute <= nowMins) return;
+
+    const rotation = { ...s.copyRotation };
+    let title: string;
+    let body: string;
+
+    if (atRisk.length === 1) {
+      const { name, currentStreak } = atRisk[0];
+      const v = pickCopy('streak_single', COPY_POOLS.streak_single, m, growthOn, rotation);
+      title = applyPlaceholders(v.title, { NAME: name, X: String(currentStreak) });
+      body = applyPlaceholders(v.body, { NAME: name, X: String(currentStreak) });
+    } else if (atRisk.length === 2) {
+      const v = pickCopy('streak_double', COPY_POOLS.streak_double, m, growthOn, rotation);
+      title = applyPlaceholders(v.title, { N1: atRisk[0].name, N2: atRisk[1].name });
+      body = applyPlaceholders(v.body, { N1: atRisk[0].name, N2: atRisk[1].name });
+    } else {
+      const v = pickCopy('streak_multi', COPY_POOLS.streak_multi, m, growthOn, rotation);
+      title = applyPlaceholders(v.title, { N: String(atRisk.length) });
+      body = applyPlaceholders(v.body, { N: String(atRisk.length) });
+    }
+
+    const fireDate = new Date();
+    fireDate.setHours(hour, minute, 0, 0);
+    await Notifications.scheduleNotificationAsync({
+      identifier: 'pj_streak',
+      content: { title, body, sound: true, data: { route: '/' } },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: fireDate },
+    });
+    await saveNotificationSettings({ ...s, copyRotation: rotation });
+  } catch {}
+};
+
 // ── Daily Scheduler ───────────────────────────────────────────────────────────
 
 const ALL_DAILY_IDS = [

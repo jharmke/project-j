@@ -832,9 +832,12 @@ export const rescheduleStreakProtection = async (): Promise<void> => {
 
     const fireDate = new Date();
     fireDate.setHours(hour, minute, 0, 0);
+    const streakRoute = atRisk.length === 1 && atRisk[0].id === 'gratitude'
+      ? { route: '/(tabs)/faith', params: { scrollTo: 'gratitude' } }
+      : { route: '/' };
     await Notifications.scheduleNotificationAsync({
       identifier: 'pj_streak',
-      content: { title, body, sound: true, data: { route: '/' } },
+      content: { title, body, sound: true, data: streakRoute },
       trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: fireDate },
     });
     await saveNotificationSettings({ ...s, copyRotation: rotation });
@@ -947,7 +950,10 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
         body = applyPlaceholders(v.body, { N: String(atRisk.length) });
       }
 
-      await scheduleOne('pj_streak', fireTimeStr, title, body, { route: '/' }, true);
+      const streakRoute = atRisk.length === 1 && atRisk[0].id === 'gratitude'
+        ? { route: '/(tabs)/faith', params: { scrollTo: 'gratitude' } }
+        : { route: '/' };
+      await scheduleOne('pj_streak', fireTimeStr, title, body, streakRoute, true);
     }
   }
 
@@ -1029,7 +1035,7 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
       time: verseTime,
       title: v.title,
       body: applyPlaceholders(v.body, { VERSE: verseBody }),
-      data: { route: '/bible', params: { openTodayVerse: '1' } },
+      data: { route: '/bible' },
     });
   }
 

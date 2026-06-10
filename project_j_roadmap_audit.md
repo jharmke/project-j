@@ -6,11 +6,16 @@
 ## OPEN (stays in active roadmap)
 
 ### Faith
+- [ ] Bible translation selector -- translation picker was planned for the Bible settings modal but never added. KJV is the only translation today. Future: translation selector in the gear modal (Bible screen). Dedicated session when ready.
 - [ ] Plans hub browsing -- category grouping first (wellness/body, heart/identity, peace/comfort, "Need a Word Right Now" single-day group). Filter chips at ~20 items. Search for large library. app/plans.tsx.
 - [ ] Bundle full KJV offline -- today fetches from GitHub (aruljohn/Bible-kjv), breaks offline. Bundle ~4MB public domain text into app. Removes reliability risk from Bible reader + makes Faith AI verse verification truly offline. data/bible-web.ts.
 - [ ] Faith AI verse-banner share tap-through -- tapping outside iOS share sheet in Bible reader passes through and highlights a random verse underneath. Cosmetic/low priority. app/bible.tsx.
 - [ ] Challenges/Missions layer -- opt-in time-boxed goals, smart triggers based on user patterns, mode-aware duration, progression from short to long. Coach-driven + manual challenges, tiered achievement track, completion celebration. Theme rewards: Slate/Warm/Blush unlock by completing short starter challenges (first win comes early). Custom challenges as sub-feature after base ships. Full spec in SMART_COACH_SPEC.md. Parked behind Faith AI track.
 - [ ] Theme unlock starter challenge -- code done (Slate/Warm/Blush unlock together). Specific challenge content/trigger still TBD.
+
+- [ ] Today's Message overhaul -- user-controlled pool: preset KJV verses + custom additions, static vs. cycle toggle, pool management in Settings (not on card face). NRN: card hidden by default, plain text only if manually added via Edit Layout. Rooted/Exploring keep gold border. Custom scripture picker: book > chapter > verse multi-select (up to 4 consecutive). Dedicated session.
+- [ ] Achievement toast remaining -- trigger context shown under achievement name in toast, wording update before App Store launch. AchievementToast.tsx.
+- [ ] Cycling Bible verses -- fine-print style, centered at bottom of Log tab and Workout tab only (Home excluded intentionally). Thematically relevant per tab: food/stewardship for Log, effort/perseverance for Workout. Rooted: always on. Exploring: optional. NRN: hidden.
 
 ### Faith / Support
 - [ ] Donate/Support button -- post-TestFlight, no paywall. One-time StoreKit tip jar or Ko-fi link. Entry points TBD. Not urgent.
@@ -19,6 +24,14 @@
 ### Stats / Graphs
 - [ ] Fitness Metrics as graphable keys -- VO2 Max, Resting HR, Resp Rate, Blood O2, Body Fat (and Cardio Recovery) as custom graph data keys. Graph infra already exists; add to DATA_KEY_META, statsCardRegistry, and fetchTrendData. Extension of existing system.
 - [ ] Trend indicators on stats -- Apple-style up/down arrow next to data values in graphs or At a Glance showing direction of change vs prior period.
+- [ ] Stats calendar polish -- remove legacy On Target/Close/Off color grading from day-by-day history tiles. Replace with Day Score tier colors (green >= 80, amber >= 60, red otherwise). Today + future tiles neutral. Mindful: neutral accent. Pulls composite from existing pj_ day record. stats.tsx.
+- [ ] Day Summaries archive layout -- collapsible week rows may get clunky at volume. Revisit once 8+ weeks of real history exist. Options: cap visible weeks + "show older," paginate by month, or more compact row design. Low priority.
+- [ ] Day Summary card enhancements -- remaining post-ship ideas (not locked): user-configurable surface time (fixed at 5am now), earlier-access home card (e.g. post-workout), richer multi-day context beyond trailing-week average. Design session before building any of these.
+- [ ] Exclusions polish -- first-use callout when user first sees a dot on the calendar. Dedicated tooltip/help article: what exclusions are, why to use them, effect on Day Score / summaries / EvR / streaks. Three entry points: calendar dot, toolkit icon, Settings Help. Also: excluded list view (dedicated view of all excluded dates with ability to un-exclude). (Absorbed backlog "Excluded dates" item.)
+
+### Health Data
+- [ ] HealthKit source detection -- read source identifier on HealthKit samples to show "via Garmin," "via Whoop," "via Oura" labels on sleep/HRV data. No direct integrations needed -- all sync to Apple Health natively, source passthrough is the architecture.
+- [ ] Food group pattern detection -- if user logs zero whole foods (fruits, veg, lean proteins) for X consecutive days, surface a gentle tip. Discipline: direct, Mindful: warm/observational, never judgmental.
 
 ### Calorie / Goal Logic
 - [ ] Day Score bedtime backfill bug (low priority) -- backfill-only days (user never opened app) can score up to 10pts low on Recovery because sleepConsistencyPts defaults to 0 instead of being computed. Softened by 50pt floor. Fix: have the backfill scan compute + persist consistency for scored days. utils/dayScore.ts / utils/dayScoreStore.ts.
@@ -38,8 +51,81 @@
 - [ ] Streak end warning visuals -- color shift on streak card to orange/red when within X hours of midnight and action not yet done. Optional pulse or warning icon. In-app only, no push dependency.
 - [ ] Edit Streak Count -- manual override with disclaimer ("Be truthful, this is for you"). Needed for users returning after a hiatus whose history scan shows 0. Design session before building.
 
+### BACKLOG (parked, not imminent)
+- [ ] Gratitude before meals -- one-tap give thanks before logging a meal. Unapologetically Christian. No spec yet.
+- [ ] Faith-based fasting -- spiritual fasting with prayer log, separate from 16:8 IF tracker. No spec yet.
+- [ ] Food health score -- per-item score based on how well it fits current goals at that moment.
+- [ ] "Why did you eat" / "How did it feel" / Hunger level -- quick tags on food entries (Hungry/Tired/Cravings/Bored/Social) + post-meal feel tags + 1-5 hunger scale before eating.
+- [ ] Protein timing badge -- hit protein within 2 hours post-workout, simple yes/no badge.
+- [ ] Time of day food heat map -- when during the day does the user tend to eat, visualized as a grid.
+- [ ] Energy level tracking -- user logs energy level, correlates with food choices.
+- [ ] Hydration timing insights -- not just how much water, but when. Pairs with existing water timestamps.
+- [ ] Per-metric sleep exclusion -- exclude sleep data without excluding the full day. Revisit during stats revamp.
+- [ ] Nap tracking -- Apple Health tracks naps separately on iOS 16+.
+- [ ] HIIT mode -- Tabata, standard intervals, custom. Workout tab feature.
+- [ ] Workout rest timer between sets.
+- [ ] Social and accountability partner -- lightweight, one person you share your daily score with. Not a full social feed. Build after core features + onboarding stable. Low priority.
+- [ ] Onboarding illustrations -- SVG illustrations, one per onboarding screen, theme-aware. Do after onboarding flow is fully functional.
+- [ ] Body progress photos + measurements -- full spec in SPEC_body_progress.md. Pose photos (Front/Side/Back), timelapse, side-by-side comparison, full circumference measurements (neck/chest/waist/hips/etc.), Navy method body fat %, all fields graphable. Blocked on Firebase Storage migration, illustration assets, timelapse tech spike. Parked session 64. (Absorbs backlog duplicates: body measurements tracking, progress photos, camera timelapse.)
+- [ ] Sleep detail page -- dedicated screen when Sleep card is tapped, real graph/breakdown instead of just the card. New screen, not a small add.
+- [ ] PDF export -- daily/weekly summaries as PDF (Pro feature). expo-print + expo-sharing, light-themed, toggleable sections. Build after Reports section ships.
+- [ ] Report templates / Report Card -- time-ranged data snapshot (7/30/90d): avg calories/macros, steps, sleep score, weight change, workouts logged, trend callouts in plain language. Shareable as screenshot via native share sheet. Nutrition/Workout/Sleep template variants. Pairs with PDF export. No code yet, vision only. (Merged from two roadmap entries.)
+- [ ] Premium / Pro system -- freemium: free tier good, Pro unlocks PDF, full EvR, full Smart Tips, extended history, non-standard/custom stats charts. $4.99/mo or $39.99/yr, RevenueCat, 7-day trial. Themes stay achievement-unlock only. Needs dedicated design + architecture session before any build.
+
+### Animation
+- [ ] Contextual Achievement Toast Animations phase 2 -- 12 badge animations, none built: water (filling badge), steps (footprints across toast), weight (scale needle swing), streak (flame growing), first workout (dumbbell), sleep goal (moon/stars/ZZZ), calorie goal (plate clearing), IF fast completion (clock hands), Bible verse read (page turn), journal saved (ink/pen stroke), morning intention (sun rising), workout checked off (card pulse/flash).
+- [ ] Number transitions (HIGH PRIORITY) -- all big numbers tick/roll to new value like a scoreboard on update. App-wide: calories, steps, weight, water, macros, streak counts. Odometer feel, not a snap.
+- [ ] Progress bar/ring/donut animation audit -- check which are already animated vs missing. Known targets: calorie bar on every load, macro bars on log entry, food log donut on load, water bar bounce on update, sleep donut on load.
+- [ ] Goal moment animations -- water goal hit (bar fills to accent + pulse), step goal hit (steps number flips green), calorie goal hit (number color transition).
+
+### Low Priority / Future
+- [ ] Weight trend sparkline -- small inline trend line next to weight number showing recent direction (up/down/flat) over ~7-14 days. No axes or labels, shape of trend only.
+- [ ] Language / internationalization -- LOW.
+- [ ] Apple Watch companion app -- LOW. V2 or later.
+- [ ] iOS home screen widget -- LOW.
+- [ ] Animated app icon -- iOS 18 feature. LOW.
+
+### Marketing
+- [ ] TikTok strategy -- anonymous account, interactive series format, crowd-sourced decisions, meme formats. Rebrand to app name when locked.
+- [ ] Side-by-side screen recordings vs MFP -- same task in both apps, no commentary, let the UI speak. MFP's UI is 2015-era, contrast sells itself.
+- [ ] Micro influencer outreach -- Christian fitness + faith-based wellness creators. Back pocket until product is polished and TestFlight-ready.
+
+### Onboarding
+- [ ] Weight projection graph -- profile page post-onboarding, near goal weight field. Onboarding version is built; profile page version is not.
+- [ ] Macro presets -- onboarding Screen 4 (Discipline/Balanced only, not Mindful). Also settable in Settings post-onboarding. Not yet built.
+- [ ] Progress bar on onboarding screens -- segmented step-progress indicator at top of screens 2-7 (not Welcome). Visual momentum. Not built.
+- [ ] Apple Health onboarding -- home banner for skippers. One-time dismissable banner on home for users who tapped "Maybe later" on the Apple Health screen. Not built.
+- [ ] Mindful onboarding -- projection graph + macro presets already gated off for Mindful (lines 672/762 your-style.tsx). Encouragement language + full Mindful-specific screen 4 copy still open per build status checklist.
+- [ ] Post-onboarding mode switch Acknowledgement Modal -- when user switches style in Settings: brief description, "Keep my layout" vs "Apply defaults" choice. Switching TO Discipline re-fires commitment screen. Not built.
+- [ ] Daily Intention card for Not Right Now users -- Today's Message morphs to Daily Intention mode for NRN: no verse, neutral styling, rotating prompts by style, user can add custom intentions. Low priority.
+- [ ] Firestore migration -- move primary data storage from AsyncStorage to Firestore. Big infrastructure item. Auth (Apple + Google sign-in) is already done.
+
+### App Infrastructure
+- [ ] State restoration on launch -- save active tab + scroll position, restore on cold launch. Top of backlog.
+- [ ] Tooltip pulse visibility awareness -- only pulse when card is actually visible in ScrollView viewport. Currently pulses on mount regardless. Complex, not blocking.
+- [ ] Offline first behavior -- app works fully offline, syncs when connection returns.
+- [ ] Daily summary push notification -- push version of the morning Day Summary pop-up (for users who don't open the app). NOT in the 14-type notifications spec yet -- separate item.
+- [ ] In-app review prompt -- prompt user to rate the app at the right moment.
+- [ ] Accessibility -- respect system Dynamic Type font sizes.
+- [ ] Notification center -- bell icon in profile header, badge on new notifications, real-time toasts for Health sync events. Part of notifications redesign.
+- [ ] Android -- React Native core reusable. HealthKit is iOS only; Android uses Health Connect. V2 after iOS is solid.
+
+### Visual Polish
+- [ ] Full theme audit -- all 5 themes x all accent options, every screen, before beta. Dedicated testing session.
+- [ ] Progress bar track color pass -- sweep progress bar track colors across all themes.
+
+### Journal
+- [ ] Journal icon on Stats tab header -- not present, routes to journal.tsx.
+- [ ] Date on journal entries tappable -- tapping entry date routes to that day's Day Detail. Not implemented.
+- [ ] Search within journal entries -- low priority.
+- [ ] Long text stress test -- verify 500-word entries format correctly. QA task.
+- [ ] Multiple entries same day -- verify prayer + gratitude logged same day display correctly. QA task.
+
 ### Settings / Help (cont.)
 - [ ] Resources and wellness links -- curated section (Settings > Help or dedicated screen) with recommended Christian books, health/wellness books, YouTube channels. Mostly static. Influencer outreach opportunity. Design session needed.
+- [ ] Tooltip audit pass -- sweep all cards app-wide, flag every card missing a (i) tooltip, build missing ones. Part of same dedicated session as tutorials.
+- [ ] Tooltip wording polish pass -- full copy pass after audit. Known issues: Active (Apple Health fallback language for non-watch users), Remaining (algorithm vs description), Net (explain running BMR first), Color Coding rewrite, em-dash sweep throughout. Standard: actually helpful, not just technically accurate.
+- [ ] Style/mode audit -- full pass across all three coaching modes: features that shouldn't show in Mindful but do, features that should be Discipline-only but aren't, defaults that feel wrong. Dedicated session.
 
 ### Mindful Mode
 - [ ] Mindful mode full app-wide audit -- inconsistent implementation across the app. Day Summary still needs its pass. Scope is app-wide: every screen, card, and copy string should be checked for correct Mindful behavior (no judgment language, no numbers on weight/score, no countdown, no net calories, no color coding). Dedicated session.
@@ -47,7 +133,13 @@
 ### Settings / Help
 - [ ] Settings/Help: Coaching Style + Faith Journey in-depth explainers -- two-tier: (1) quick "what does this mean for me" blurb accessible from the setting row, (2) full article per topic in Settings > Help. Coaching Style covers what changes mode-to-mode. Faith Journey covers what each tier sees vs not. UI approach not decided.
 
+### App Store
+- [ ] App Store Connect setup -- privacy label, age rating, URLs, description, screenshots, review notes. No code. Do after app name is locked.
+- [ ] Verification scan -- production build, device install, all flows confirmed before submitting.
+- [ ] App name + logo -- placeholder chrome crystal logo in place for TestFlight. Final name TBD (shortlist: Prevail, Steadfast, Worthy, Haven, Witness, Sown). Verify App Store + TikTok handle availability before committing. Bundle ID locked at com.jharmke.projectj after first release.
+
 ### Home / UX
+- [ ] Greeting area customization -- settings picker for top-left home header slot. Candidates: greeting text, streak badge, calorie summary line. App name + date always stay. Design session before building.
 - [ ] Apple sync last sync time -- surface last HealthKit sync timestamp on cards showing synced data (steps, active cals) so user knows if watch data is stale. Placement TBD.
 - [ ] Water modal edit entries -- pencil icon to edit existing water log entries (time/amount). Verify delete confirmation exists before building.
 - [ ] Log tab date picker fade-in -- calendar picker was built and works, but pops in with no animation on open. Fade-out on close works. Needs matching fade-in. log.tsx.
@@ -75,12 +167,12 @@
 - [ ] BUG: Rest day not overridden by Apple Health workout -- Apple Health workouts are imported and added to exercises correctly, but program.type stays 'rest', so isRest stays true and DraggableFlatList renders data={isRest ? [] : exercises} -- exercises silently hidden. Fix: flip program type off rest when Apple Health workouts are imported. workout.tsx lines ~366-400, ~996-1027.
 - [ ] YvY streak (vsStreak) -- badge renders but never calculated or written. pj_vs_streak is only ever read, never set. Always 0. Needs: calculate win/loss at end of day, persist streak count, reset on loss.
 - [ ] Workout tab muscle group breakdown -- session-level summary showing which muscle groups were trained across today's full workout. MuscleMap component exists for individual exercise detail only; aggregated session view on the workout tab itself is not built.
-- [ ] PR tracking + lifting stats -- log personal records per lift, track 1RM trend as graphable stat, surface PRs in EvR, volume-per-muscle-group in stats. Required before workout achievement PRs can ship. Planning session needed.
+- [ ] PR tracking + lifting stats -- log personal records per lift, track 1RM trend as graphable stat, surface PRs in EvR, volume-per-muscle-group in stats. Required before workout achievement PRs can ship. Also includes full set tracker with progressive overload logging. Planning session needed.
 - [ ] Daily exercise goal + active calorie goal progress display -- goals are settable in Settings and celebration fires on hit. Missing: home screen progress display (rings/bars). Design decision open: on Fitness Metrics card, dedicated Activity Rings card, or inline under Steps.
 - [ ] Onboarding to home transition -- guided first steps post-onboarding, no cold drop-off. Contextual prompts easing new users into core features. Dedicated planning session before building.
 - [ ] Feedback / bug reporting form -- in-app form in Settings: type (Bug/Suggestion/Other), description, optional screenshot. mailto deep link pre-fills subject + body to justin.harmke@gmail.com. Confirmation toast on send.
 - [ ] "You've grown" message -- coach message after key thresholds (weight milestones, streak lengths, logging consistency). Mode-aware tone. Ties to faith journey upgrade prompts. Design discussion before building.
-- [ ] Empty state illustrations -- replace icon + text empty states with SVG illustrations. Theme-aware colors, consistent style. App-wide.
+- [ ] Empty state illustrations -- replace icon + text empty states with SVG illustrations. Theme-aware colors, consistent style. App-wide. (Merged from visual polish section -- same item.)
 - [ ] MFP switcher experience -- first-impression UX for power users arriving from MyFitnessPal. Communicates superiority without saying a word.
 
 ### Food / Search
@@ -94,6 +186,36 @@
 ---
 
 ## CLOSED / ARCHIVE (not in active roadmap)
+
+- [cut] Reports tab + Summaries hub consolidation -- three separate inline cards (Day Summaries, Weekly Summaries, Monthly Summaries) + dedicated pages already live in Stats. Hub was a refactor to consolidate behind one toggle, not a missing feature. Current three-card layout is good enough.
+
+- [closed] Water log timestamps -- done. Each entry stores timestamp ISO string, displayed in water log modal. index.tsx line ~585.
+- [cut] Customized tip push notification system -- covered by SPEC_notifications.md (14 notification types specced including habit-based). Not a separate item.
+- [cut] App name + tagline finalization (backlog line 1505) -- duplicate of "App name + logo" already tracked in App Store section.
+- [closed] Mode recommendation screen -- fully built in your-style.tsx: ONELINER record, getOneliner(), recommended mode pre-selected, "RECOMMENDED" badge on card.
+- [closed] "You can always change this in Settings" messaging -- present at line 473 of your-style.tsx.
+- [closed] Firebase Auth -- Apple + Google sign-in live in sign-in.tsx. Firestore migration tracked separately as open item.
+- [cut] Theme monetization note (backlog line 1579) -- duplicate of "Theme unlock starter challenge" already in OPEN.
+- [cut] Stats premium tiers as standalone item -- merged into Premium/Pro system item as "non-standard/custom stats charts."
+- [cut] Pull weight from Apple Health (infrastructure line 1568) -- duplicate of "HealthKit weight auto-pull" already in audit under Food/Log.
+- [cut] Excluded dates (backlog line 1573) -- absorbed into Exclusions polish item; excluded list view detail preserved there.
+- [cut] Daily summary push notification weekly/monthly -- Weekly Summary Ready and Monthly Summary Ready are already in SPEC_notifications.md and built. Daily summary push (new item) tracked separately above.
+- [cut] Pastor/coach view -- too early, needs social infrastructure first and isn't well scoped.
+- [cut] Bible reading programs / Bible studies -- reading plans are done (app/plans.tsx). Not a separate item.
+- [cut] Today's Message management UI (backlog line 1562) -- pool management in Settings is already part of the Today's Message overhaul item tracked in OPEN.
+- [cut] Body measurements / progress photos / camera timelapse (backlog lines 1547-1549) -- absorbed into Body progress photos + measurements item in BACKLOG.
+- [closed] Apple Health badge on imported workouts -- done. workout.tsx line ~1059 renders "APPLE HEALTH" badge on fromAppleHealth exercises.
+- [cut] Sleep vs food correlation -- covered by EvR which already has sleep->next-day-cals and sleep->workout-rate correlations.
+- [cut] Weekly body stewardship reflection -- removed, too close to other faith prompts and not well defined enough to track.
+- [cut] App-wide color customization -- extending color picker to home progress bars is scope creep; current visual/theme state is good. Stats graph color picker already ships the core value.
+- [cut] Card background icon pattern (line 1480) -- pre-build note superseded by the shipped Card background hero icons ([x] line 1479). Same pattern, done.
+- [closed] Journal edit entry title -- editTitle state fully wired in journal.tsx, title is editable.
+- [closed] Shadow pass -- done, light themes have sufficient shadow depth.
+- [closed] Gradient pass -- done, gradient range acceptable on all light themes.
+- [cut] Rooted vs Exploring feel too similar -- real distinction already exists. Not tracking separately; if a specific tangible feature gap is identified it gets its own item.
+- [closed] Settings page overhaul Pass 2 -- goals in settings, profile cleanup done.
+- [closed] Faith/Bible Settings panel -- gear icon modal fully built: font size (S/M/L/XL), font family (DM Sans/Georgia/Palatino), auto-scroll speed, Reading Plans link. Translation selector tracked separately as its own open item.
+- [closed] Achievement page trophy hex cards -- sizes are consistent: regular achievement cards use size 72, daily goal cards use size 56. Two intentionally different card types, not a bug.
 
 ### Confirmed done this audit:
 - [archived] All [x] items lines 1-172 -- shipped features, all archived

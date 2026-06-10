@@ -7,10 +7,7 @@
 ## BUGS
 
 - [BUG] Rest day not overridden by Apple Health workout -- program.type stays 'rest' when Apple Health workouts import, so exercises are silently hidden. Fix: flip type off rest on import. workout.tsx ~366-400, ~996-1027.
-- [BUG] Clone food serving unit -- cloned foods only allow grams when adding a serving size. Should allow all units (ml, fl oz, oz, etc.) like original CustomFoodCreator. food-detail.tsx or CustomFoodCreator.tsx.
-- [BUG] Cloned food calorie mismatch -- serving size picker shows wrong calorie value on cloned My Foods; macro donut shows correct value. food-detail.tsx.
 - [BUG] YvY streak (vsStreak) always 0 -- badge renders but pj_vs_streak is never written. Needs: calculate win/loss at end of day, persist count, reset on loss.
-- [BUG] Log tab date picker fade-in missing -- calendar pops open with no animation. Fade-out works. Add matching fade-in. log.tsx.
 
 ---
 

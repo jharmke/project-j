@@ -289,7 +289,6 @@ export default function LogScreen() {
     setPickerMonth(parseInt(parts[1]) - 1);
     calFadeAnim.setValue(0);
     setCalPickerVisible(true);
-    Animated.timing(calFadeAnim, { toValue: 1, duration: 180, useNativeDriver: true }).start();
   };
   const closeCalPicker = () => {
     Animated.timing(calFadeAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => setCalPickerVisible(false));
@@ -1948,7 +1947,7 @@ export default function LogScreen() {
       );
     })()}
 
-      <Modal visible={calPickerVisible} transparent animationType="none" onRequestClose={closeCalPicker}>
+      <Modal visible={calPickerVisible} transparent animationType="none" onRequestClose={closeCalPicker} onShow={() => { Animated.timing(calFadeAnim, { toValue: 1, duration: 180, useNativeDriver: true }).start(); }}>
         <Animated.View style={{ flex: 1, opacity: calFadeAnim }}>
           <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)' }} onPress={closeCalPicker} activeOpacity={1} />
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', pointerEvents: 'box-none' }}>

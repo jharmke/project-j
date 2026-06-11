@@ -247,8 +247,6 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
 
   const openAddExerciseModal = (day: string, exercise: Exercise | null = null) => {
     addExerciseOverlayAnim.setValue(0);
-    addExerciseAnim.value = 800;
-    addExerciseKeyboardOffset.value = 0;
     setModalDay(day);
     setEditingExercise(exercise);
     if (exercise) {

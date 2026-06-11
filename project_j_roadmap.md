@@ -6,9 +6,10 @@
 
 ## BUGS
 
-- [BUG] Add/Edit Exercise modal crash (FOUND, not yet fixed) -- openAddExerciseModal (workout.tsx ~250-251) sets addExerciseAnim / addExerciseKeyboardOffset, which no longer exist (renamed to addExerciseScale / addExerciseKeyboardY in the scale-animation refactor). ReferenceError when tapping an exercise to edit (openEditModal, line 1104). Lines are dead resets; Modal onShow already resets correctly. Fix: delete the two lines. Confirmed by code, not yet device-verified.
+(none open)
 
 ### Fixed
+- [FIXED] Add/Edit Exercise modal crash -- openAddExerciseModal set addExerciseAnim / addExerciseKeyboardOffset, dead names left behind by the scale-animation refactor (bc9f7726). ReferenceError when tapping an exercise to edit. Deleted the two dead lines; Modal onShow already resets correctly. workout.tsx.
 - [FIXED] Rest day not overridden by Apple Health workout -- type stayed 'rest' on import so exercises were hidden. Now flips type off rest (to cardio) when a workout imports. workout.tsx import effect.
 - [FIXED] YvY streak (vsStreak) always 0 -- pj_vs_streak was read but never written. Now snapshots live result and settles into the streak at day rollover (win extends, loss resets, tie holds; Mindful excluded). index.tsx.
 

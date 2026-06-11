@@ -315,7 +315,12 @@ const isTutorialMode = tutorialMode === 'true';
   const servingPickerRef = useTutorialTarget('log_food_detail_serving');
   const mealSelectorRef = useTutorialTarget('log_food_detail_meal');
   const saveButtonRef = useTutorialTarget('log_save_btn');
-  const { registerTutorialAction, unregisterTutorialAction } = useTutorial();
+  const { registerTutorialAction, unregisterTutorialAction, registerScrollView, unregisterScrollView } = useTutorial();
+  const detailScrollRef = useRef<ScrollView>(null);
+  useEffect(() => {
+    registerScrollView('food_detail', detailScrollRef as any);
+    return () => unregisterScrollView('food_detail');
+  }, [registerScrollView, unregisterScrollView]);
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [showPhotoFullscreen, setShowPhotoFullscreen] = useState(false);
   const [foodStats, setFoodStats] = useState<{ count: number; lastDate: string | null; avgGrams: number } | null>(null);
@@ -1121,7 +1126,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} automaticallyAdjustKeyboardInsets keyboardDismissMode="on-drag">
+      <ScrollView ref={detailScrollRef} contentContainerStyle={styles.content} automaticallyAdjustKeyboardInsets keyboardDismissMode="on-drag">
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 20 }}>
           <View style={{ flex: 1, paddingRight: foodId ? 16 : 0 }}>
             {food?.aiEstimated && (

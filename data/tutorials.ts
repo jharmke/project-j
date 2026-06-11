@@ -593,7 +593,7 @@ export const TUTORIALS: Tutorial[] = [
   {
     id: 'log_food',
     name: 'Logging Food',
-    description: 'Walk through the full logging flow -- search, detail, log, and delete a real example entry.',
+    description: 'Walk through the full logging flow: search, detail, log, and delete a real example entry.',
     tab: 'log',
     steps: [
       {
@@ -602,7 +602,7 @@ export const TUTORIALS: Tutorial[] = [
         body: {
           discipline: 'Tap the + next to any meal section to open the food library. Every food you log starts here. We will walk through the full flow now.',
           balanced: 'Tap the + next to a meal to open the food library. We will walk through a live example so you can see the full flow.',
-          mindful: 'Tap the + on any meal to open the food library. We will walk through a real example together -- no pressure, just exploring.',
+          mindful: 'Tap the + on any meal to open the food library. We will walk through a real example together. No pressure, just exploring.',
         },
       },
       {
@@ -633,7 +633,7 @@ export const TUTORIALS: Tutorial[] = [
         body: {
           discipline: 'Amount field defaults to 100g. Type your actual gram weight for precision. Macros recalculate live. Accuracy here compounds over time.',
           balanced: 'The amount field lets you enter exactly how much you had. Macros update in real time as you type.',
-          mindful: 'You can type in how much you ate by weight. Everything recalculates as you adjust -- no pressure to be exact.',
+          mindful: 'You can type in how much you ate by weight. Everything recalculates as you adjust. No pressure to be exact.',
         },
       },
       {
@@ -649,7 +649,7 @@ export const TUTORIALS: Tutorial[] = [
         targetKey: 'log_food_detail_serving',
         title: 'SERVING PICKER',
         body: {
-          discipline: 'Tap the serving name to switch units. Match the label on your food. This example has 100g, 1 breast (172g), and 1 oz -- three real options.',
+          discipline: 'Tap the serving name to switch units. Match the label on your food. This example has 100g, 1 breast (172g), and 1 oz: three real options.',
           balanced: 'Tap the serving name to switch between different serving options. This food shows 100g, 1 breast, and 1 oz as examples.',
           mindful: 'Different serving sizes are available here. Pick whichever option matches what you actually had.',
         },
@@ -660,7 +660,7 @@ export const TUTORIALS: Tutorial[] = [
         body: {
           discipline: 'Assign this food to a meal slot. Meal-level totals only work when entries are correctly assigned. Lunch is selected by default.',
           balanced: 'Tap the meal selector to assign this to Morning, Lunch, Dinner, or Snacks. Keeps your log organized.',
-          mindful: 'Assign the food to whatever meal fits. This is just for your own organization -- no right or wrong answer.',
+          mindful: 'Assign the food to whatever meal fits. This is just for your own organization. No right or wrong answer.',
         },
       },
       {
@@ -668,9 +668,9 @@ export const TUTORIALS: Tutorial[] = [
         title: 'LOG IT',
         tutorialAction: 'saveTutorialEntry',
         body: {
-          discipline: 'Tap NEXT and we will log this entry for you as a live demo. It will appear in your log immediately -- and we will clean it up right after.',
+          discipline: 'Tap NEXT and we will log this entry for you as a live demo. It will appear in your log immediately, and we will clean it up right after.',
           balanced: 'Tap NEXT and we will add this example entry to your log so you can see how it looks. We will remove it at the end of the tour.',
-          mindful: 'Tap NEXT and we will add this example food to your log. Do not worry -- we will remove it once the tour is done.',
+          mindful: 'Tap NEXT and we will add this example food to your log. Do not worry, we will remove it once the tour is done.',
         },
       },
       {
@@ -679,7 +679,7 @@ export const TUTORIALS: Tutorial[] = [
         navigateTo: 'back_twice',
         navigateDelay: 600,
         body: {
-          discipline: 'Entry saved -- see how Today\'s Total updated instantly. Expand the Lunch section below to see the entry. Tap any entry to reopen and edit it.',
+          discipline: 'Entry saved. See how Today\'s Total updated instantly. Expand the Lunch section below to see the entry. Tap any entry to reopen and edit it.',
           balanced: 'Your food is in the log and Today\'s Total updated right away. Expand the Lunch section to see the entry. Tap it anytime to edit.',
           mindful: 'Your food is logged and your totals have updated. Expand the Lunch section to see it. You can tap any entry to make changes.',
         },
@@ -691,15 +691,15 @@ export const TUTORIALS: Tutorial[] = [
         body: {
           discipline: 'Tap the X on any entry to remove it. Totals recalculate immediately. Tap NEXT and we will remove this example entry now.',
           balanced: 'Tap the X on any food entry to remove it from your log. Tap NEXT and we will clean up this demo entry.',
-          mindful: 'Tap the X to remove an entry. Tap NEXT and we will remove this example -- no trace left behind.',
+          mindful: 'Tap the X to remove an entry. Tap NEXT and we will remove this example. No trace left behind.',
         },
       },
       {
         targetKey: 'none',
         title: 'QUICK TIPS',
         body: {
-          discipline: 'Demo entry removed. Recents tab: your last 20 logged foods, fastest re-log. Favorites tab: star any food for instant access.',
-          balanced: 'Done -- the demo entry has been removed. The Recents tab shows your last 20 logged foods. Star any food to save it in Favorites.',
+          discipline: 'Demo entry removed. Recents tab: your last 15 logged foods, fastest re-log. Favorites tab: star any food for instant access.',
+          balanced: 'Done. The demo entry has been removed. The Recents tab shows your last 15 logged foods. Star any food to save it in Favorites.',
           mindful: 'All cleaned up. The Recents and Favorites tabs make re-logging easier over time. Use whichever feels right.',
         },
       },
@@ -726,7 +726,7 @@ export const TUTORIALS: Tutorial[] = [
         targetKey: 'log_delete_btn',
         title: 'REMOVING AN ENTRY',
         body: {
-          discipline: 'Tap the X on an entry row to delete it. The macro totals recalculate immediately. No confirmation -- undo via re-logging.',
+          discipline: 'Tap the X on an entry row to delete it. The macro totals recalculate immediately. No confirmation needed; undo by re-logging.',
           balanced: 'Tap the X on any food entry to remove it from your log. Your totals update instantly.',
           mindful: 'Tap the X to remove an entry. If you change your mind, just log the food again.',
         },
@@ -737,16 +737,17 @@ export const TUTORIALS: Tutorial[] = [
         body: {
           discipline: 'Tap the date to jump to a specific day via the calendar. Arrow buttons step one day at a time. Log past days you forgot or plan meals ahead.',
           balanced: 'Use the date area at the top to navigate to different days. Tap the date to open a calendar and jump anywhere.',
-          mindful: 'You can log food for any day -- past or future. Tap the date to jump, or use the arrows to step one day at a time.',
+          mindful: 'You can log food for any day, past or future. Tap the date to jump, or use the arrows to step one day at a time.',
         },
       },
       {
         targetKey: 'log_meal_total',
+        scrollToTop: true,
         title: 'MEAL TOTALS',
         body: {
           discipline: 'Each meal slot shows its total calories when collapsed. Expand to see individual entries. Use this to balance meals strategically.',
           balanced: 'Each meal section shows its calorie total. Tap the header to expand or collapse the list of entries within it.',
-          mindful: 'Meal sections show their totals. Expand or collapse them by tapping the header -- whatever view makes sense to you.',
+          mindful: 'Meal sections show their totals. Expand or collapse them by tapping the header, whatever view makes sense to you.',
         },
       },
       {

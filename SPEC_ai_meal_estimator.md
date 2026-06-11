@@ -213,7 +213,7 @@ Nothing saves silently. The confirm tap is the explicit save action.
 
 ## Log entry indicator
 
-Any log entry created via the AI Meal Estimator gets a small visual tag. Leaning toward sparkle wand icon -- not locked yet, decide at build time. Options: sparkle icon (matches Coach Insight branding), "AI" text badge, wand icon. Whatever is chosen must be documented in this spec before build starts. The indicator is visible on the log entry row so the user knows at a glance which entries are estimates. It does not affect any downstream calculations (Day Score, EvR, etc.) -- entries are treated identically to manual entries in all math.
+Any log entry created via the AI Meal Estimator gets a small visual tag. **LOCKED at build time: the `sparkles` Ionicon**, tinted in the accent color, rendered on the log entry row. Chosen over the "AI" text badge and the wand icon because it matches the Coach Insight sparkle branding already used elsewhere in the app and reads as "smart/estimated" without looking like a system label. The indicator is visible on the log entry row so the user knows at a glance which entries are estimates. It does not affect any downstream calculations (Day Score, EvR, etc.) -- entries are treated identically to manual entries in all math.
 
 The entry's macro data is stored identically to a manual entry in `pj_YYYY-MM-DD`. The AI-estimated flag is an additional field on the entry object: `aiEstimated: true`.
 
@@ -296,17 +296,17 @@ No other new files required. Existing `utils/mealSlots.ts` used for meal slot ta
 
 ## Open questions (not blocking spec, decide before build)
 
-- Log tab card dismiss behavior: does it re-show daily, stay hidden until manually re-enabled, or some other logic?
-- Individual line item edit UI: inline expand vs small modal. Decide at build time based on list length.
-- Log entry indicator icon: sparkle icon, "AI" text badge, or wand icon. Decide and document in this spec before build starts.
-- CUSTOM label placement on edited rows: beneath or beside calorie value. Exact row layout TBD at build time.
-- Low-confidence flagged items row UI: exact design TBD at build time. Interaction requirement (three options per item, hard gate on Add to Log) is locked.
 - Pro upsell copy: TBD.
-- "Add to Log" vs "Confirm" vs "Save to Log": exact CTA copy TBD.
+- "Add to Log" vs "Confirm" vs "Save to Log": exact CTA copy TBD (current build: "Add to Log", "Record this meal" in Mindful).
 - Restaurant save fast follow-on: spec separately after MVP ships.
 
-Resolved:
-- Entry point priority: Add Food screen is primary. All three entry points confirmed (Add Food, log tab card, FAB).
+Resolved (build-time decisions, locked):
+- Entry point priority: Add Food screen is primary. The **FAB entry point is the existing Food Library expanding FAB** (in add-food.tsx browse mode) -- a third action item "AI Estimate" with the `sparkles` icon, alongside Create Recipe and Create Food. Launching from the FAB has no slot context, so it shows the date + slot picker. The log tab card is the slot-context-aware entry. All three entry points ship.
 - Meal slot targeting: estimator inherits date and slot context from entry point. Show pickers only when context is ambiguous (general entry point with no slot context).
 - Multiplier interaction with manual edits: edited values become new 1x baseline for that row. Original AI values are baseline for untouched rows.
 - Image compression: use expo-image-picker quality/resize options, target under 1MB, document final quality setting as named constant `IMAGE_QUALITY` in `services/aiMealEstimator.ts`.
+- Log tab card dismiss behavior: re-shows once daily (per-day dismissed flag).
+- Individual line item edit UI: inline expand on the row (no modal-in-modal).
+- Log entry indicator icon: `sparkles` Ionicon, accent-tinted. LOCKED.
+- CUSTOM label placement on edited rows: beneath the calorie value.
+- Low-confidence flagged row UI: estimate shown in muted text with three pill buttons (Confirm / Edit / Remove). Hard gate on Add to Log until all resolved. LOCKED.

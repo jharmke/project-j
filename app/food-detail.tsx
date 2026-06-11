@@ -1124,6 +1124,12 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
       <ScrollView contentContainerStyle={styles.content} automaticallyAdjustKeyboardInsets keyboardDismissMode="on-drag">
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 20 }}>
           <View style={{ flex: 1, paddingRight: foodId ? 16 : 0 }}>
+            {food?.aiEstimated && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 3, paddingHorizontal: 5, paddingVertical: 2, alignSelf: 'flex-start', marginBottom: 4 }}>
+                <Ionicons name="sparkles" size={8} color={theme.accentBlue} />
+                <Text style={{ fontSize: 8, color: theme.accentBlue, fontFamily: 'DMSans_700Bold' }}>AI ESTIMATE</Text>
+              </View>
+            )}
             {(food?.isMyFood || food?.isCustom) && (
               <View style={{ backgroundColor: theme.accentGreenBg, borderRadius: 3, paddingHorizontal: 5, paddingVertical: 1, alignSelf: 'flex-start', marginBottom: 4 }}>
                 <Text style={{ fontSize: 8, color: theme.accentGreen, fontFamily: 'DMSans_700Bold' }}>MY FOOD</Text>

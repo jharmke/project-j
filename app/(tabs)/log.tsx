@@ -1432,6 +1432,7 @@ export default function LogScreen() {
                             brand: (entry as any).brand || null,
                             servingGrams: (entry as any).servingGrams || undefined,
                             servingUnit: (entry as any).loggedUnit || undefined,
+                            aiEstimated: (entry as any).aiEstimated || false,
                           }),
                           meal: entry.meal,
                           date: activeDate,
@@ -1449,6 +1450,7 @@ export default function LogScreen() {
                           return (
                             <>
                               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                                {(entry as any).aiEstimated && <Ionicons name="sparkles" size={11} color={theme.accentBlueRaw} />}
                                 {(entry as any).type === 'supplement' && <Ionicons name="medical" size={11} color={theme.textMuted} />}
                                 <Text style={[styles.foodEntryName, { color: theme.textPrimary }]} numberOfLines={1}>{foodName}{amountLabel ? ` · ${amountLabel}` : ''}</Text>
                               </View>

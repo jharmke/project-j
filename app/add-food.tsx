@@ -396,6 +396,7 @@ const [showFabMenu, setShowFabMenu] = useState(false);
 const fabScale = useRef(new Animated.Value(1)).current;
 const fabItem1Anim = useRef(new Animated.Value(0)).current;
 const fabItem2Anim = useRef(new Animated.Value(0)).current;
+const fabItem3Anim = useRef(new Animated.Value(0)).current;
 const [mealSlots, setMealSlots] = useState<MealSlot[]>([]);
 const [slotNameCache, setSlotNameCache] = useState<Record<string, string>>({});
 const favoriteOpacities = useRef<Record<string, Animated.Value>>({}).current;
@@ -566,10 +567,12 @@ const saveEditFood = async () => {
   const openFabMenu = () => {
     fabItem1Anim.setValue(0);
     fabItem2Anim.setValue(0);
+    fabItem3Anim.setValue(0);
     setShowFabMenu(true);
     Animated.stagger(70, [
       Animated.spring(fabItem1Anim, { toValue: 1, useNativeDriver: true, friction: 7, tension: 120 }),
       Animated.spring(fabItem2Anim, { toValue: 1, useNativeDriver: true, friction: 7, tension: 120 }),
+      Animated.spring(fabItem3Anim, { toValue: 1, useNativeDriver: true, friction: 7, tension: 120 }),
     ]).start();
   };
 
@@ -577,6 +580,7 @@ const saveEditFood = async () => {
     Animated.parallel([
       Animated.timing(fabItem1Anim, { toValue: 0, duration: 130, useNativeDriver: true }),
       Animated.timing(fabItem2Anim, { toValue: 0, duration: 130, useNativeDriver: true }),
+      Animated.timing(fabItem3Anim, { toValue: 0, duration: 130, useNativeDriver: true }),
     ]).start(() => setShowFabMenu(false));
   };
 
@@ -1326,6 +1330,9 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
           const data = JSON.parse(saved);
           if (data.entries) {
             data.entries.reverse().forEach((e: any) => {
+              // AI Meal Estimator entries are one-off composites, not reusable foods.
+              // Keep them out of Recents so they never trigger a FatSecret name-match.
+              if (e.aiEstimated) return;
               const cleanName = e.name.replace(/\s*\(.*?\)\s*$/, '').split(' · ')[0].trim();
               const nameKey = `name_${cleanName}`;
               const dedupeKey = e.myFoodId ? `mf_${e.myFoodId}` : e.fsId ? `fs_${e.fsId}` : nameKey;
@@ -2389,7 +2396,23 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
 
           {showFabMenu && (
             <View style={{ position: 'absolute', bottom: 90 + insets.bottom, right: 20, alignItems: 'flex-end', gap: 12 }}>
-              {/* Create Recipe - top, animates second */}
+              {/* AI Estimate - top, animates third */}
+              <Animated.View style={{ opacity: fabItem3Anim, transform: [{ translateY: fabItem3Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <TouchableOpacity
+                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); router.push('/ai-meal-estimator'); }}
+                    style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                    <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>AI Estimate</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); closeFabMenu(); router.push('/ai-meal-estimator'); }}
+                    style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlue, alignItems: 'center', justifyContent: 'center', shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                    <Ionicons name="sparkles" size={20} color="#ffffff" />
+                  </TouchableOpacity>
+                </View>
+              </Animated.View>
+
+              {/* Create Recipe - middle, animates second */}
               <Animated.View style={{ opacity: fabItem2Anim, transform: [{ translateY: fabItem2Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                   <TouchableOpacity

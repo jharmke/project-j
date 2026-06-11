@@ -80,7 +80,9 @@
       "PowerShell(\\(Get-Content \"C:\\\\Users\\\\jthar\\\\ProjectJ\\\\project_j_roadmap.md\"\\).Count)",
       "Bash(Get-Content \"C:\\\\Users\\\\jthar\\\\ProjectJ\\\\project_j_roadmap.md\")",
       "Bash(Measure-Object -Line)",
-      "PowerShell(\\(Get-Content \"C:\\\\Users\\\\jthar\\\\ProjectJ\\\\project_j_roadmap.md\" | Measure-Object -Line\\).Lines)"
+      "PowerShell(\\(Get-Content \"C:\\\\Users\\\\jthar\\\\ProjectJ\\\\project_j_roadmap.md\" | Measure-Object -Line\\).Lines)",
+      "PowerShell(git add app/_layout.tsx app/\\(tabs\\)/index.tsx app/\\(tabs\\)/log.tsx services/notifications.ts SPEC_notifications.md project_j_roadmap.md)",
+      "PowerShell(git add SPEC_ai_meal_estimator.md app/\\(tabs\\)/log.tsx app/add-food.tsx app/food-detail.tsx project_j_roadmap.md)"
     ]
   }
 }

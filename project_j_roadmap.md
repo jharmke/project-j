@@ -108,7 +108,6 @@
 ## COACHING & AI
 
 - [HIGH] AI Meal Estimator -- spec locked 2026-06-10, updated 2026-06-11. Full spec in SPEC_ai_meal_estimator.md. Photo + text input, editable macro breakdown, portion multiplier, meal templates. Free: 3/month, Pro: 30/month. New screen: app/ai-meal-estimator.tsx + services/aiMealEstimator.ts. Fast follow-on: Restaurant save concept.
-- coachAI.ts Level 1 window-relative language rule -- add explicit rule to Level 1 coaching prompt: always use window-relative framing ("over the last X days", "in the past week", "in the last 7 days") and never count-relative framing ("across all X logged days", "every logged day", "all 7 days"). Count-relative reads as a retrospective period summary; this is a live rolling window and copy must feel like one. coachAI.ts.
 - Smart Coach Level 2 (Focused Tips) -- single-metric AI-voiced tips for home card slots 2+. Blocker: Day Summary surface assignment conflicts between spec and gym notes. Explicit call before any build. SMART_COACH_SPEC.md.
 - Caffeine tracking -- daily total, high-amount warnings, first-use disclaimer (includes pregnant women guidance). Design decisions needed: quick-add vs food field, thresholds. Duty-of-care item.
 - Food group pattern detection -- if user logs zero whole foods X consecutive days, surface gentle tip. Mode-aware.

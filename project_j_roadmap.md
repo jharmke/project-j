@@ -66,7 +66,7 @@
 
 - [HIGH] PR tracking + lifting stats -- log PRs per lift, 1RM trend as graphable stat, surface in EvR, volume per muscle group. Required before workout achievement PRs can ship. Planning session needed.
 - Workout tab FAB search keyboard dismiss -- no way to dismiss keyboard by tapping outside search bar. workout.tsx.
-- Load routine modal polish -- modal hangs off bottom of screen, needs maxHeight + ScrollView fix. Preset names use em-dash (Push — Standard etc.) which violates no-double-dash rule -- replace with colon or reword. Add description field, exercise preview, editable/deletable presets are bigger design items for a dedicated session.
+- Load routine modal polish -- maxHeight + scroll fix done, handle pill + no-X standard applied, exercise preview on select done. Editable/deletable presets are bigger design items for a dedicated session.
 - Editable workout note name -- workout notes default to "Workout Note." Should be editable.
 - Workout tab muscle group breakdown -- aggregated session-level muscle group summary. MuscleMap exists for individual exercises only.
 - Daily exercise goal + active calorie goal progress display -- goals settable + celebration fires, but home screen progress display (rings/bars) not built. Design decision needed: Fitness Metrics card, Activity Rings card, or under Steps.

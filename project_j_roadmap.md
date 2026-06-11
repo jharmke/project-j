@@ -8,8 +8,6 @@
 
 - [BUG] Rest day not overridden by Apple Health workout -- program.type stays 'rest' when Apple Health workouts import, so exercises are silently hidden. Fix: flip type off rest on import. workout.tsx ~366-400, ~996-1027.
 - [BUG] YvY streak (vsStreak) always 0 -- badge renders but pj_vs_streak is never written. Needs: calculate win/loss at end of day, persist count, reset on loss.
-- [BUG] Supplement icon missing from barcode scan results -- supplement entries (custom foods with supplement toggle on) show asterisk/snowflake icon in My Foods list but the same icon does not render when those entries surface in barcode scan results. Wire identical icon logic into the scan results row renderer. No data changes needed -- supplement flag already present on the entry object. add-food.tsx.
-- [BUG] Edit and X buttons on custom food rows in Favorites tab -- Favorites tab is for quick logging, not food management. Every Favorites row should show name, brand, macros, star, calories only regardless of source. MY FOOD badge stays. Remove Edit and X from custom food rows in Favorites tab only. My Foods tab behavior unchanged. add-food.tsx.
 - [BUG] Orphaned "g" label on Edit Entry serving size -- serving descriptor beneath "Servings" renders as bare "g" on certain food entries. Root cause: null or empty serving unit name on some FatSecret foods causes label to fall back to raw unit character with no descriptor. Add null/empty guard: show sensible fallback or hide label entirely when no unit name is present. Affects some entries but not others. food-detail.tsx.
 - MY FOOD badge missing from Food Detail and Edit Entry screens -- visual indicator only, not blocking logging. When a food is user-created, add the same badge shown on list rows to the food detail header and edit entry screen. add-food.tsx, food-detail.tsx.
 
@@ -67,9 +65,8 @@
 ## WORKOUT
 
 - [HIGH] PR tracking + lifting stats -- log PRs per lift, 1RM trend as graphable stat, surface in EvR, volume per muscle group. Required before workout achievement PRs can ship. Planning session needed.
-- Add Exercise modal keyboard bug -- keyboard covers Cancel/Add buttons. Fix: automaticallyAdjustKeyboardInsets on inner ScrollView. workout-library.tsx.
 - Workout tab FAB search keyboard dismiss -- no way to dismiss keyboard by tapping outside search bar. workout.tsx.
-- Load routine modal polish -- modal cuts off bottom. Add description field, exercise preview in load modal, preset routines editable/deletable.
+- Load routine modal polish -- modal hangs off bottom of screen, needs maxHeight + ScrollView fix. Preset names use em-dash (Push — Standard etc.) which violates no-double-dash rule -- replace with colon or reword. Add description field, exercise preview, editable/deletable presets are bigger design items for a dedicated session.
 - Editable workout note name -- workout notes default to "Workout Note." Should be editable.
 - Workout tab muscle group breakdown -- aggregated session-level muscle group summary. MuscleMap exists for individual exercises only.
 - Daily exercise goal + active calorie goal progress display -- goals settable + celebration fires, but home screen progress display (rings/bars) not built. Design decision needed: Fitness Metrics card, Activity Rings card, or under Steps.

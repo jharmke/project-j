@@ -3,7 +3,7 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Easing, FlatList, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, Dimensions, Easing, FlatList, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
@@ -1904,12 +1904,17 @@ export default function WorkoutLibraryScreen() {
   const [showDayPicker, setShowDayPicker] = useState(false);
   const [calMonth, setCalMonth] = useState(new Date().getMonth());
   const [calYear, setCalYear] = useState(new Date().getFullYear());
+  const detailScrollRef = useRef<ScrollView>(null);
+  useEffect(() => {
+    if (showDayPicker) setTimeout(() => detailScrollRef.current?.scrollToEnd({ animated: true }), 60);
+  }, [showDayPicker]);
 
   const addOverlay = useSharedValue(0);
   const addScale = useSharedValue(0.92);
   const addCardOpacity = useSharedValue(1);
+  const addKeyboardY = useSharedValue(0);
   const addOverlayStyle = useAnimatedStyle(() => ({ opacity: addOverlay.value }));
-  const addCardAnimStyle = useAnimatedStyle(() => ({ transform: [{ scale: addScale.value }], opacity: addCardOpacity.value }));
+  const addCardAnimStyle = useAnimatedStyle(() => ({ transform: [{ scale: addScale.value }, { translateY: addKeyboardY.value }], opacity: addCardOpacity.value }));
   const detailOverlay = useSharedValue(0);
   const detailCardOpacity = useSharedValue(1);
   const detailCardScale = useSharedValue(0.92);
@@ -2366,6 +2371,17 @@ export default function WorkoutLibraryScreen() {
       }
     });
   };
+
+  useEffect(() => {
+    if (!showAddModal) { addKeyboardY.value = 0; return; }
+    const show = Keyboard.addListener('keyboardWillShow', (e) => {
+      addKeyboardY.value = withTiming(-e.endCoordinates.height / 2, { duration: e.duration || 250 });
+    });
+    const hide = Keyboard.addListener('keyboardWillHide', (e) => {
+      addKeyboardY.value = withTiming(0, { duration: e.duration || 250 });
+    });
+    return () => { show.remove(); hide.remove(); };
+  }, [showAddModal]);
 
   const openAddModal = (ex: LibraryExercise | null = null) => {
     addOverlay.value = 0;
@@ -2843,12 +2859,12 @@ export default function WorkoutLibraryScreen() {
         <Reanimated.View style={[{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center' }, detailOverlayStyle]}>
           <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => closeDetailModal()} />
           {selectedEx ? (
-            <Reanimated.View style={[{ width: '90%', maxHeight: '88%' }, detailCardStyle]}>
-            <TouchableOpacity activeOpacity={1} style={{ backgroundColor: theme.bgSheet, borderRadius: 14, width: '100%', borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, overflow: 'hidden' }}>
+            <Reanimated.View style={[{ width: '90%' }, detailCardStyle]}>
+            <View style={{ backgroundColor: theme.bgSheet, borderRadius: 14, width: '100%', borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, overflow: 'hidden' }}>
               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeDetailModal(); }} style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 6 }}>
                 <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
               </TouchableOpacity>
-              <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}>
+              <ScrollView ref={detailScrollRef} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} style={{ maxHeight: Dimensions.get('window').height * 0.72 }} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}>
               <View style={[styles.typeBadge, selectedEx.type === 'cardio' && styles.typeBadgeCardio, { alignSelf: 'flex-start', marginBottom: 8 }]}>
                 <Text style={[styles.typeBadgeText, selectedEx.type === 'cardio' && { color: theme.accentAmber }]}>{selectedEx.type.toUpperCase()}</Text>
               </View>
@@ -2931,7 +2947,11 @@ export default function WorkoutLibraryScreen() {
                     for (let i = 0; i < firstDay; i++) cells.push(null);
                     for (let d = 1; d <= daysInMonth; d++) cells.push(d);
                     const rows = [];
-                    for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
+                    for (let i = 0; i < cells.length; i += 7) {
+                      const row = cells.slice(i, i + 7);
+                      while (row.length < 7) row.push(null);
+                      rows.push(row);
+                    }
                     return rows.map((row, ri) => (
                       <View key={ri} style={{ flexDirection: 'row', marginBottom: 4 }}>
                         {row.map((d, ci) => {
@@ -2974,7 +2994,7 @@ export default function WorkoutLibraryScreen() {
                 <Text style={{ color: theme.accentRed, fontFamily: 'DMSans_600SemiBold', fontSize: 13 }}>Remove from Library</Text>
               </TouchableOpacity>
               </ScrollView>
-            </TouchableOpacity>
+            </View>
             </Reanimated.View>
           ) : null}
         </Reanimated.View>

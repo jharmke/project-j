@@ -236,11 +236,13 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
   const manageTagsAnim = useSharedValue(600);
   const manageTagsOverlayAnim = useRef(new Animated.Value(0)).current;
 
-  const addExerciseAnim = useSharedValue(800);
+  const addExerciseScale = useSharedValue(0.85);
+  const addExerciseOpacity = useSharedValue(0);
   const addExerciseOverlayAnim = useRef(new Animated.Value(0)).current;
-  const addExerciseKeyboardOffset = useSharedValue(0);
+  const addExerciseKeyboardY = useSharedValue(0);
   const addExerciseKeyboardStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: addExerciseAnim.value - addExerciseKeyboardOffset.value }],
+    transform: [{ scale: addExerciseScale.value }, { translateY: addExerciseKeyboardY.value }],
+    opacity: addExerciseOpacity.value,
   }));
 
   const openAddExerciseModal = (day: string, exercise: Exercise | null = null) => {
@@ -276,10 +278,12 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
 
   const closeAddExerciseModal = () => {
     Keyboard.dismiss();
-    addExerciseKeyboardOffset.value = withTiming(0, { duration: 250 });
-    Animated.timing(addExerciseOverlayAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start();
-    addExerciseAnim.value = withTiming(800, { duration: 280 });
-    setTimeout(() => setShowAddModal(false), 300);
+    addExerciseKeyboardY.value = withTiming(0, { duration: 200 });
+    Animated.timing(addExerciseOverlayAnim, { toValue: 0, duration: 180, useNativeDriver: true }).start();
+    addExerciseScale.value = withTiming(0.85, { duration: 160 });
+    addExerciseOpacity.value = withTiming(0, { duration: 150 }, (finished) => {
+      if (finished) runOnJS(setShowAddModal)(false);
+    });
   };
   
 
@@ -306,11 +310,11 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
   useEffect(() => {
     const show = Keyboard.addListener('keyboardWillShow', e => {
       manageTagsKeyboardOffset.value = withTiming(e.endCoordinates.height, { duration: e.duration || 250 });
-      addExerciseKeyboardOffset.value = withTiming(e.endCoordinates.height, { duration: e.duration || 250 });
+      addExerciseKeyboardY.value = withTiming(-e.endCoordinates.height / 2, { duration: e.duration || 250 });
     });
     const hide = Keyboard.addListener('keyboardWillHide', e => {
       manageTagsKeyboardOffset.value = withTiming(0, { duration: e.duration || 250 });
-      addExerciseKeyboardOffset.value = withTiming(0, { duration: e.duration || 250 });
+      addExerciseKeyboardY.value = withTiming(0, { duration: e.duration || 250 });
     });
     return () => { show.remove(); hide.remove(); };
   }, []);
@@ -1220,80 +1224,81 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
 
       {/* Add/Edit Modal */}
       <Modal visible={showAddModal} transparent animationType="none" statusBarTranslucent hardwareAccelerated onShow={() => {
-        addExerciseAnim.value = 800;
+        addExerciseScale.value = 0.85;
+        addExerciseOpacity.value = 0;
+        addExerciseKeyboardY.value = 0;
         Animated.timing(addExerciseOverlayAnim, { toValue: 1, duration: 150, useNativeDriver: true }).start();
-        addExerciseAnim.value = withTiming(0, { duration: 280 });
+        addExerciseScale.value = withSpring(1, { damping: 24, stiffness: 320, overshootClamping: true });
+        addExerciseOpacity.value = withTiming(1, { duration: 150 });
       }}>
-        <Animated.View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: theme.overlayBg, opacity: addExerciseOverlayAnim }}>
-          <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={closeAddExerciseModal} />
-        </Animated.View>
-        <View style={{ flex: 1, justifyContent: 'flex-end' }} pointerEvents="box-none">
-          <Reanimated.View style={[{
-            backgroundColor: theme.bgSheet,
-            borderTopLeftRadius: 16,
-            borderTopRightRadius: 16,
-            borderTopWidth: 0.5,
-            borderColor: theme.borderCard,
-            padding: 24,
-          }, addExerciseKeyboardStyle]}>
-            <TouchableOpacity onPress={closeAddExerciseModal} style={{ alignItems: 'center', paddingBottom: 12 }}>
-              <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
-            </TouchableOpacity>
-            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-              <Text style={[styles.modalTitle, { color: theme.accentBlue }]}>{editingExercise ? 'EDIT EXERCISE' : 'ADD EXERCISE'}</Text>
-                <TextInput style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} placeholder="Exercise name" placeholderTextColor={theme.textPlaceholder} value={form.name} onChangeText={v => setForm(p => ({ ...p, name: v }))} />
-                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
-                  <TouchableOpacity
-                    style={[styles.modalCancelBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }, !form.isCardio && { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
-                    onPress={() => setForm(p => ({ ...p, isCardio: false }))}>
-                    <Text style={[styles.modalCancelBtnText, { color: theme.textMuted }, !form.isCardio && { color: theme.accentBlue }]}>Lift</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.modalCancelBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }, form.isCardio && { backgroundColor: 'rgba(245,158,11,0.15)', borderColor: 'rgba(245,158,11,0.3)' }]}
-                    onPress={() => setForm(p => ({ ...p, isCardio: true }))}>
-                    <Text style={[styles.modalCancelBtnText, { color: theme.textMuted }, form.isCardio && { color: theme.statusWarn }]}>Cardio</Text>
-                  </TouchableOpacity>
-                </View>
-                {form.isCardio ? (
-                  <>
-                    {[
-                      { label: 'Duration (min)', key: 'duration' },
-                      { label: 'Distance (miles)', key: 'distance' },
-                      { label: 'Speed (mph)', key: 'speed' },
-                      { label: 'Avg Incline (%)', key: 'incline' },
-                      { label: 'Resistance', key: 'resistance' },
-                      { label: 'Avg HR', key: 'hr' },
-                    ].map(field => (
-                      <View key={field.key} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{field.label}</Text>
-                        <TextInput
-                          style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, width: 100, textAlign: 'right', marginBottom: 0 }]}
-                          placeholder="--"
-                          placeholderTextColor={theme.textPlaceholder}
-                          keyboardType="decimal-pad"
-                          value={form[field.key as keyof typeof form] as string || ''}
-                          onChangeText={v => filterDecimal(v, s => setForm(p => ({ ...p, [field.key]: s })))}
-                        />
-                      </View>
-                    ))}
-                  </>
-                ) : (
-                  <View style={styles.modalRow}>
-                    <TextInput style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, flex: 1 }]} placeholder="Sets" placeholderTextColor={theme.textPlaceholder} keyboardType="number-pad" value={form.sets || ''} onChangeText={v => setForm(p => ({ ...p, sets: v.replace(/[^0-9]/g, '') }))} />
-                    <TextInput style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, flex: 1 }]} placeholder="Reps" placeholderTextColor={theme.textPlaceholder} keyboardType="number-pad" value={form.reps || ''} onChangeText={v => setForm(p => ({ ...p, reps: v.replace(/[^0-9]/g, '') }))} />
-                    <TextInput style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, flex: 1 }]} placeholder="Rest" placeholderTextColor={theme.textPlaceholder} keyboardType="number-pad" value={form.rest || ''} onChangeText={v => setForm(p => ({ ...p, rest: v.replace(/[^0-9]/g, '') }))} />
+        <Animated.View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: theme.overlayBg, opacity: addExerciseOverlayAnim }} pointerEvents="none" />
+        <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={closeAddExerciseModal} />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }} pointerEvents="box-none">
+          <Reanimated.View style={[{ width: '100%' }, addExerciseKeyboardStyle]} pointerEvents="box-none">
+            <View pointerEvents="auto" style={{ backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20, overflow: 'hidden' }}>
+              <TouchableOpacity onPress={closeAddExerciseModal} style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }}>
+                <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
+              </TouchableOpacity>
+              <View style={{ paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
+                <Text style={[styles.modalTitle, { color: theme.accentBlue }]}>{editingExercise ? 'EDIT EXERCISE' : 'ADD EXERCISE'}</Text>
+              </View>
+              <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+                <View style={{ padding: 20 }}>
+                  <TextInput style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} placeholder="Exercise name" placeholderTextColor={theme.textPlaceholder} value={form.name} onChangeText={v => setForm(p => ({ ...p, name: v }))} autoCapitalize="words" />
+                  <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
+                    <TouchableOpacity
+                      style={[styles.modalCancelBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }, !form.isCardio && { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+                      onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setForm(p => ({ ...p, isCardio: false })); }}>
+                      <Text style={[styles.modalCancelBtnText, { color: theme.textMuted }, !form.isCardio && { color: theme.accentBlue }]}>Lift</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.modalCancelBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }, form.isCardio && { backgroundColor: 'rgba(245,158,11,0.15)', borderColor: 'rgba(245,158,11,0.3)' }]}
+                      onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setForm(p => ({ ...p, isCardio: true })); }}>
+                      <Text style={[styles.modalCancelBtnText, { color: theme.textMuted }, form.isCardio && { color: theme.statusWarn }]}>Cardio</Text>
+                    </TouchableOpacity>
                   </View>
-                )}
-                <TextInput style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} placeholder="Note (optional)" placeholderTextColor={theme.textPlaceholder} value={form.note} onChangeText={v => setForm(p => ({ ...p, note: v }))} />
-                <View style={styles.modalBtns}>
-                  <TouchableOpacity style={[styles.modalCancelBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }]} onPress={closeAddExerciseModal}>
-                    <Text style={[styles.modalCancelBtnText, { color: theme.textMuted }]}>Cancel</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[styles.modalSaveBtn, { backgroundColor: theme.accentBlue, opacity: modalCanSave ? 1 : 0.35 }]} onPress={saveExercise} disabled={!modalCanSave}>
-                    <Text style={[styles.modalSaveBtnText, { color: '#ffffff' }]}>{editingExercise ? 'Save' : 'Add'}</Text>
-                  </TouchableOpacity>
+                  {form.isCardio ? (
+                    <>
+                      {[
+                        { label: 'Duration (min)', key: 'duration' },
+                        { label: 'Distance (miles)', key: 'distance' },
+                        { label: 'Speed (mph)', key: 'speed' },
+                        { label: 'Avg Incline (%)', key: 'incline' },
+                        { label: 'Resistance', key: 'resistance' },
+                        { label: 'Avg HR', key: 'hr' },
+                      ].map(field => (
+                        <View key={field.key} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{field.label}</Text>
+                          <TextInput
+                            style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, width: 100, textAlign: 'right', marginBottom: 0 }]}
+                            placeholder="0"
+                            placeholderTextColor={theme.textPlaceholder}
+                            keyboardType="decimal-pad"
+                            value={form[field.key as keyof typeof form] as string || ''}
+                            onChangeText={v => filterDecimal(v, s => setForm(p => ({ ...p, [field.key]: s })))}
+                          />
+                        </View>
+                      ))}
+                    </>
+                  ) : (
+                    <View style={styles.modalRow}>
+                      <TextInput style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, flex: 1 }]} placeholder="Sets" placeholderTextColor={theme.textPlaceholder} keyboardType="number-pad" value={form.sets || ''} onChangeText={v => setForm(p => ({ ...p, sets: v.replace(/[^0-9]/g, '') }))} />
+                      <TextInput style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, flex: 1 }]} placeholder="Reps" placeholderTextColor={theme.textPlaceholder} keyboardType="number-pad" value={form.reps || ''} onChangeText={v => setForm(p => ({ ...p, reps: v.replace(/[^0-9]/g, '') }))} />
+                      <TextInput style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, flex: 1 }]} placeholder="Rest" placeholderTextColor={theme.textPlaceholder} keyboardType="number-pad" value={form.rest || ''} onChangeText={v => setForm(p => ({ ...p, rest: v.replace(/[^0-9]/g, '') }))} />
+                    </View>
+                  )}
+                  <TextInput style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} placeholder="Note (optional)" placeholderTextColor={theme.textPlaceholder} value={form.note} onChangeText={v => setForm(p => ({ ...p, note: v }))} />
+                  <View style={styles.modalBtns}>
+                    <TouchableOpacity style={[styles.modalCancelBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeAddExerciseModal(); }}>
+                      <Text style={[styles.modalCancelBtnText, { color: theme.textMuted }]}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.modalSaveBtn, { backgroundColor: theme.accentBlue, opacity: modalCanSave ? 1 : 0.35 }]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); saveExercise(); }} disabled={!modalCanSave}>
+                      <Text style={[styles.modalSaveBtnText, { color: '#ffffff' }]}>{editingExercise ? 'Save' : 'Add'}</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </ScrollView>
+            </View>
           </Reanimated.View>
         </View>
       </Modal>

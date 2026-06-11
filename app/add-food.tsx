@@ -1057,12 +1057,14 @@ const openFoodDetail = async (food: SearchResult) => {
       return;
     }
 
-    const myFoodMatch = food.isMyFood
-      ? (myFoods.find(f => f.name === food.description) || (food as any).myFoodData || null)
+    const myFoodId = (food as any).id || (food as any).myFoodId || null;
+    const foodLookupName = (food.description || (food as any).name || '').replace(/\s*\(.*?\)\s*$/, '').split(' · ')[0].trim();
+    const myFoodMatch = (food.isMyFood || myFoodId)
+      ? (myFoods.find(f => myFoodId ? f.id === myFoodId : (foodLookupName && f.name === foodLookupName)) || (food as any).myFoodData || null)
       : null;
     let fsId: string | null = (food as any).fsId ?? null;
     const customServingSize = (food as any).servingSize;
-    const isCustomFood = !!(food as any).isCustom || !!(myFoodMatch as any)?.isCustom;
+    const isCustomFood = !!(food as any).isCustom || !!(myFoodMatch as any)?.isCustom || (!!myFoodMatch && !!myFoodId);
 
     // Resolve missing fsId for stale diary/recent entries logged before fsId was stored.
     // Order: favorites (in-memory, instant) -> myFoods (in-memory, instant) -> FatSecret name search (API).
@@ -1309,7 +1311,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
   const loadRecent = async () => {
     try {
       // Pull last 30 days of entries and get unique foods
-      const recent: {name: string, cal: number, protein?: number, carbs?: number, fat?: number, brand?: string, calPer100g?: number, proteinPer100g?: number, carbsPer100g?: number, fatPer100g?: number, foodNutrients?: any[], fsId?: string | null}[] = [];
+      const recent: {name: string, cal: number, protein?: number, carbs?: number, fat?: number, brand?: string, calPer100g?: number, proteinPer100g?: number, carbsPer100g?: number, fatPer100g?: number, foodNutrients?: any[], fsId?: string | null, myFoodId?: string | null, isMyFood?: boolean}[] = [];
       const seen = new Set<string>();
       for (let i = 0; i < 30; i++) {
         const d = new Date();
@@ -1320,10 +1322,13 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
           const data = JSON.parse(saved);
           if (data.entries) {
             data.entries.reverse().forEach((e: any) => {
-              const dedupeKey = e.fsId ? `fs_${e.fsId}` : `${e.name.replace(/\s*\(.*?\)\s*$/, '')}_${e.isMyFood ? 'mf' : 'ft'}`;
-              if (!seen.has(dedupeKey)) {
+              const cleanName = e.name.replace(/\s*\(.*?\)\s*$/, '').split(' · ')[0].trim();
+              const nameKey = `name_${cleanName}`;
+              const dedupeKey = e.myFoodId ? `mf_${e.myFoodId}` : e.fsId ? `fs_${e.fsId}` : nameKey;
+              if (!seen.has(dedupeKey) && !seen.has(nameKey)) {
                 seen.add(dedupeKey);
-                recent.push({ name: e.name, cal: e.labelCal || e.calPer100g || e.cal, protein: e.labelProtein ?? e.proteinPer100g ?? e.protein, carbs: e.labelCarbs ?? e.carbsPer100g ?? e.carbs, fat: e.labelFat ?? e.fatPer100g ?? e.fat, brand: e.brand || null, calPer100g: e.calPer100g, proteinPer100g: e.proteinPer100g, carbsPer100g: e.carbsPer100g, fatPer100g: e.fatPer100g, foodNutrients: e.foodNutrients, fsId: e.fsId || null });
+                seen.add(nameKey);
+                recent.push({ name: e.name, cal: e.labelCal || e.calPer100g || e.cal, protein: e.labelProtein ?? e.proteinPer100g ?? e.protein, carbs: e.labelCarbs ?? e.carbsPer100g ?? e.carbs, fat: e.labelFat ?? e.fatPer100g ?? e.fat, brand: e.brand || null, calPer100g: e.calPer100g, proteinPer100g: e.proteinPer100g, carbsPer100g: e.carbsPer100g, fatPer100g: e.fatPer100g, foodNutrients: e.foodNutrients, fsId: e.fsId || null, myFoodId: e.myFoodId || null, isMyFood: e.isMyFood || false });
               }
             });
           }
@@ -1811,7 +1816,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                   <Text style={styles.resultCal}>{getCalories(item)}</Text>
                   <Text style={styles.resultCalLabel}>kcal</Text>
                 </View>
-                {item.isMyFood && activeTab !== 'pinned' && (
+                {item.isMyFood && activeTab === 'myfoods' && (
                   <>
                     <TouchableOpacity
                       onPress={() => {
@@ -1913,7 +1918,10 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                       <View style={styles.savedBadge}>
                         <Text style={styles.savedBadgeText}>SAVED</Text>
                       </View>
-                      <Text style={styles.resultName} numberOfLines={2}>{f.name}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                        {f.type === 'supplement' && <Ionicons name="medical" size={11} color={theme.textMuted} />}
+                        <Text style={styles.resultName} numberOfLines={2}>{f.name}</Text>
+                      </View>
                       {f.brand ? <Text style={styles.resultBrand} numberOfLines={1}>{f.brand}</Text> : null}
                       {(f.protein != null || f.carbs != null || f.fat != null) && (
                         <View style={styles.macroStrip}>
@@ -1944,6 +1952,8 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                               { nutrientName: 'Total lipid (fat)', unitName: 'G', value: f.fat || 0 },
                             ],
                             isMyFood: true,
+                            id: f.id,
+                            type: f.type || 'food',
                           };
                           saveOverride(foodItem);
                           openFoodDetail(foodItem);

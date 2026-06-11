@@ -1,7 +1,7 @@
 # AI Meal Estimator: Spec
 
 Created: 2026-06-10
-Last updated: 2026-06-10 (initial spec locked with Justin)
+Last updated: 2026-06-11 (entry points confirmed; voice mic updated to custom in-field icon; food relevance pre-check added; confidence flagging and flagged section locked; multiplier/edit baseline behavior locked; date and slot inheritance locked; image compression strengthened)
 
 Status: SPEC LOCKED. Source of truth for the AI Meal Estimator feature. No double dashes anywhere. No "Session NN" tags.
 
@@ -29,13 +29,13 @@ When a user hits their limit, show a clear modal: "You have used all X AI estima
 
 ---
 
-## Entry points (TBD, final decision before build)
+## Entry points (confirmed)
 
-**Leading candidates:**
-1. **Log tab card** -- a small persistent card above or within the meal slot area. One prominent button with copy like "Eating out? AI can estimate your meal." Dismissable (state stored in `pj_settings` or per-day, TBD). Reappears after dismissal (does not permanently hide, behavior TBD).
-2. **Add Food screen** -- option alongside Search, Barcode Scan, My Foods, Recipes. Listed as "AI Estimate."
+Three confirmed entry points. All three ship.
 
-Both entry points should be present. FAB entry point is low priority and TBD.
+1. **Add Food screen (primary)** -- listed alongside Search, Barcode Scan, My Foods, Recipes as "AI Estimate." This is the primary and most prominently featured entry point.
+2. **Log tab card** -- a small persistent card above or within the meal slot area. Copy: "Eating out? AI can estimate your meal." Dismissable (state stored in `pj_settings` or per-day, TBD). Reappears after dismissal (does not permanently hide, behavior TBD).
+3. **FAB** -- confirmed entry point.
 
 ---
 
@@ -45,7 +45,7 @@ Both entry points should be present. FAB entry point is low priority and TBD.
 
 ### Photo field
 
-Optional. User can take a new photo (camera) or upload from camera roll. Both options available. Uses `expo-image-picker`. Compress image before sending (target under 1MB). Request camera and photo library permissions via standard Expo flow.
+Optional. User can take a new photo (camera) or upload from camera roll. Both options available. Uses `expo-image-picker`. Compress image before sending using expo-image-picker's built-in quality and resize options -- target under 1MB. Large images cost significantly more in Claude vision API token billing; compression at reasonable quality settings does not meaningfully reduce accuracy. Verify compression at build time by testing a handful of real meal photos and confirming the model still reads them correctly. Document the final quality setting in `services/aiMealEstimator.ts` as a named constant (e.g. `IMAGE_QUALITY`). Request camera and photo library permissions via standard Expo flow.
 
 Photo preview shown after selection with an X to remove. If user removes photo and has no text, submit button dims.
 
@@ -58,7 +58,7 @@ Placeholder text (visible only before typing, standard placeholder styling):
 
 Multiline TextInput. Apply the multiline iOS select-all bug fix: ref + `onBlur={() => ref.current?.setNativeProps({ selection: { start: 0, end: 0 } })}`.
 
-**Voice input:** No custom microphone UI. Below the text field on first use only, show a one-time hint: "Tip: tap the microphone on your keyboard to describe your meal hands-free." Stored per `pj_tooltip_ai_estimator_voice_hint` using the tooltip seen pattern.
+**Voice input:** Custom mic icon inside the text description field (right side, styled like a clear/action button inside the input). Tapping it triggers iOS speech-to-text dictation. More polished and more discoverable than pointing users to the system keyboard mic, which is buried and not obvious on all keyboards. The one-time tooltip hint is removed entirely. A toolkit is present on the estimator screen per standard app pattern.
 
 ### Submit button
 
@@ -81,13 +81,15 @@ Uses trained nutritional knowledge from model training data, not live USDA or Fa
 - System prompt establishes role: nutrition estimation assistant with deep food macro knowledge.
 - Instructs model to assume standard restaurant portions when size is unknown and flag every assumption it makes.
 - Instructs model to list probable hidden additions (cooking oils, butter, seasonings, sauces not visually obvious) as a separate output field rather than inflating line item numbers.
-- Instructs model to return "unknown" for genuinely indeterminate values rather than guessing confidently.
+- Instructs model to NOT silently return 0 or a confident-sounding number for items it genuinely cannot estimate. Each line item must include a `confidence` field: `"high"`, `"medium"`, or `"low"`. Items with `"low"` confidence are routed to the flagged section in the UI rather than the main results list -- the user must consciously resolve them before saving.
+- **Food relevance pre-check:** Before running the full estimation prompt, the model checks whether the submitted image contains identifiable food. If no food is detected, return `{ "no_food_detected": true }` as the entire response immediately. This call does NOT count against the user's monthly quota. Handle this flag before any estimation logic runs. Prevents hallucination on irrelevant images entirely.
 - Low temperature setting (0.2 or lower) for consistent, structured output.
 
 **Output schema (strict JSON, validated before display):**
 
 ```
 {
+  "no_food_detected": boolean,
   "meal_name_suggestion": string,
   "line_items": [
     {
@@ -98,7 +100,8 @@ Uses trained nutritional knowledge from model training data, not live USDA or Fa
       "protein_g": number,
       "carbs_g": number,
       "fat_g": number,
-      "assumption_note": string | null
+      "assumption_note": string | null,
+      "confidence": "high" | "medium" | "low"
     }
   ],
   "totals": {
@@ -111,6 +114,8 @@ Uses trained nutritional knowledge from model training data, not live USDA or Fa
   "input_quality": "photo_only" | "text_only" | "photo_and_text" | "photo_with_description"
 }
 ```
+
+`no_food_detected` is a top-level field. When `true`, all other fields may be absent -- always check this field first before processing anything else. Items with `"confidence": "low"` are routed to the flagged section (see Section 3 below), not the main results list.
 
 If the model returns malformed JSON or fails validation, show an error state (see Error States below). Never display raw or partially-parsed output.
 
@@ -145,15 +150,38 @@ Each hidden item as a bullet or row. Examples: "Cooking oil or butter used in pr
 
 These are plain text callouts only, no macro numbers assigned to them. They exist to prompt the user's awareness, not to inflate estimates. User can choose to manually edit line items upward if they think something significant was missed.
 
+### Section 3: Low-confidence items (flagged)
+
+Rendered only when any `line_items` have `"confidence": "low"`. This section is distinct from "Possibly Not Included" -- hidden items are additions the user may want to add; this section is for items the model attempted to estimate but had genuinely low confidence on.
+
+Label: "NEEDS YOUR REVIEW" (or similar -- exact copy TBD at build time, card label style: 9px, uppercase, letter-spacing 3).
+
+Each flagged item appears as a row the user must consciously interact with before the estimate can be saved. Per item, the user can:
+- **Confirm** -- accept the model's best guess as-is and move it to the main results list
+- **Edit** -- manually adjust the values, then confirm
+- **Remove** -- exclude the item from the estimate entirely
+
+The user cannot tap "Add to Log" until every flagged item has been resolved (confirmed, edited, or removed). "Add to Log" stays dim while any unresolved flagged items remain. This is a hard gate with no workaround.
+
+Once resolved, confirmed/edited items join the main line items list. Removed items disappear. The flagged section disappears entirely when all items are resolved.
+
+Exact row UI design TBD at build time. The interaction requirement (three options per item, hard gate) is locked.
+
 ### Portion multiplier
 
-A scrollable horizontal row of pill buttons above the line items. Values: 0.5x, 0.75x, 1x, 1.25x, 1.5x, 1.75x, 2x, 2.25x, 2.5x. Default selection: 1x (highlighted in accent color). Tapping any pill immediately recalculates all line item macros and the running total in real time. The multiplier scales the entire estimate proportionally. Individual line item editing still available independently.
+A scrollable horizontal row of pill buttons above the line items. Values: 0.5x, 0.75x, 1x, 1.25x, 1.5x, 1.75x, 2x, 2.25x, 2.5x. Default selection: 1x (highlighted in accent color). Tapping any pill immediately recalculates all line item macros and the running total in real time.
+
+**Scaling behavior (locked):**
+- The multiplier always scales from the original AI-generated values for untouched rows.
+- If a user manually edits a line item, that edited value becomes the new 1x baseline for that row. The multiplier then scales from the edited value, not the original AI value. Example: AI estimates pulled pork at 300 cal. User edits to 450 cal. At 1.5x the value shown is 675 cal (450 x 1.5), not 900 cal. This behavior is never explained to the user -- they just see consistent numbers.
+- **Untouched AI rows with a non-1x multiplier active:** show a small multiplier indicator (e.g. "1.5x") in textMuted color beneath or beside the calorie value on that row. Purely informational.
+- **Manually edited rows:** show a small "CUSTOM" label in card label style (9px, uppercase, letter-spacing 3, textMuted) beneath or beside the calorie value instead of the multiplier indicator. This distinguishes user-set values from AI-generated-but-scaled values at a glance. Exact CUSTOM label placement TBD at build time. The visual distinction between edited and scaled rows is locked.
 
 Label above the row: "PORTION SIZE" in card label style. Tooltip TBD: "(i) Scale the whole estimate up or down if the restaurant serves larger or smaller than standard portions."
 
 ### Editable line items
 
-Each line item displayed as a tappable row. Tapping opens an inline edit state or a small focused edit modal (design TBD at build time). Editable fields per item: name, portion description, calories, protein, fat, carbs. Running total at the bottom updates live as user edits. Individual edits override the multiplier proportionally (if user manually sets pulled pork to 400 cal, that value is locked; multiplier continues to scale the other items).
+Each line item displayed as a tappable row. Tapping opens an inline edit state or a small focused edit modal (design TBD at build time). Editable fields per item: name, portion description, calories, protein, fat, carbs. Running total at the bottom updates live as user edits. When a user manually edits a line item, that edited value becomes the new 1x baseline for that row -- the multiplier then scales from the corrected value, not the original AI value (see Portion multiplier scaling behavior above).
 
 ### Meal name field
 
@@ -171,8 +199,8 @@ Sticky or clearly visible total row showing combined cal / P / C / F across all 
 
 ## Confirm and save flow
 
-"Add to Log" button (full accent, active only when meal name is non-empty). Tapping it:
-1. Shows a brief confirm state: "Save this estimate to [meal slot]?" with a meal slot picker if the target slot is ambiguous. Uses `getMealDisplayName` from `utils/mealSlots.ts`.
+"Add to Log" button (full accent, active only when meal name is non-empty AND all low-confidence flagged items have been resolved). Tapping it:
+1. Shows a brief confirm state displaying the target date and meal slot clearly (e.g., "Save to Lunch on Tuesday, June 10?"). The estimator inherits the date and meal slot context from whichever entry point launched it -- if the user entered from a specific date and slot (e.g., tapped Add to Lunch on yesterday's date), those are pre-selected. Same pre-selection behavior as the current add-food flow. If launched from a general entry point (FAB, log tab card without slot context), show pickers for both date and slot. Uses `getMealDisplayName` from `utils/mealSlots.ts`.
 2. On confirm, writes to the daily `pj_YYYY-MM-DD` key under the appropriate meal slot, following the standard food entry format.
 3. Marks the entry as AI-estimated (see Log Entry Indicator below).
 4. Fires a toast: "[Meal name] added to [Meal Slot]" (success type).
@@ -185,7 +213,7 @@ Nothing saves silently. The confirm tap is the explicit save action.
 
 ## Log entry indicator
 
-Any log entry created via the AI Meal Estimator gets a small visual tag. Design TBD at build time (sparkle icon, "AI" badge, or wand icon alongside the entry). The indicator is visible in the log entry list so the user knows at a glance which entries are estimates. It does not affect any downstream calculations (Day Score, EvR, etc.) -- entries are treated identically to manual entries in all math.
+Any log entry created via the AI Meal Estimator gets a small visual tag. Leaning toward sparkle wand icon -- not locked yet, decide at build time. Options: sparkle icon (matches Coach Insight branding), "AI" text badge, wand icon. Whatever is chosen must be documented in this spec before build starts. The indicator is visible on the log entry row so the user knows at a glance which entries are estimates. It does not affect any downstream calculations (Day Score, EvR, etc.) -- entries are treated identically to manual entries in all math.
 
 The entry's macro data is stored identically to a manual entry in `pj_YYYY-MM-DD`. The AI-estimated flag is an additional field on the entry object: `aiEstimated: true`.
 
@@ -217,7 +245,7 @@ Every failure communicates clearly to the user. No silent errors.
 
 **Model returns malformed JSON:** Error state: "Something went wrong processing your meal. Try adding more description and resubmitting." Retry option (returns to input with data retained). Does not count as a use.
 
-**Image unrecognizable / no food detected:** Error state: "We couldn't identify food in that photo. Try a clearer photo or describe your meal in the text field." Does not count as a use.
+**No food detected (pre-check):** Before the full estimation prompt runs, the model checks for identifiable food in the image. If the model returns `no_food_detected: true`, show: "We couldn't find any food in that photo. Try a clearer photo or describe your meal in the text field." Does not count against quota. This fires before any estimation logic runs -- not a fallback from a failed estimation.
 
 **Quota exhausted:** Modal before the call is made (check quota before sending): "You've used all [X] estimates this month. Resets on [date]." Free users see Pro upsell. No call is made.
 
@@ -245,7 +273,6 @@ No direct faith interaction. Feature is available on all Faith Journey tiers (Ro
 
 - `pj_ai_estimator_quota` -- `{ month: "YYYY-MM", usesThisMonth: number }`. Checked before every call, incremented on confirmed save, reset when month changes.
 - `pj_ai_meal_templates` -- array of saved meal templates: `{ id: string, name: string, createdAt: string, lineItems: LineItem[], totals: MacroTotals }`.
-- `pj_tooltip_ai_estimator_voice_hint` -- seen state for the keyboard mic hint. Standard tooltip pattern.
 
 Existing keys touched: `pj_YYYY-MM-DD` daily data (adds `aiEstimated: true` field to affected food entries). No other existing keys modified.
 
@@ -269,12 +296,17 @@ No other new files required. Existing `utils/mealSlots.ts` used for meal slot ta
 
 ## Open questions (not blocking spec, decide before build)
 
-- Exact entry point priority: log tab card vs add-food screen as primary. Both ship but which is featured more prominently?
 - Log tab card dismiss behavior: does it re-show daily, stay hidden until manually re-enabled, or some other logic?
-- Meal slot targeting: if user enters from a specific meal slot context, pre-select that slot at save time. If entered from a general entry point, show picker.
 - Individual line item edit UI: inline expand vs small modal. Decide at build time based on list length.
-- Multiplier interaction with manual edits: locking behavior for manually-edited items needs a final decision at build time (described above is one approach).
+- Log entry indicator icon: sparkle icon, "AI" text badge, or wand icon. Decide and document in this spec before build starts.
+- CUSTOM label placement on edited rows: beneath or beside calorie value. Exact row layout TBD at build time.
+- Low-confidence flagged items row UI: exact design TBD at build time. Interaction requirement (three options per item, hard gate on Add to Log) is locked.
 - Pro upsell copy: TBD.
 - "Add to Log" vs "Confirm" vs "Save to Log": exact CTA copy TBD.
 - Restaurant save fast follow-on: spec separately after MVP ships.
-- Image compression target: 1MB suggested, verify against API input limits at build time.
+
+Resolved:
+- Entry point priority: Add Food screen is primary. All three entry points confirmed (Add Food, log tab card, FAB).
+- Meal slot targeting: estimator inherits date and slot context from entry point. Show pickers only when context is ambiguous (general entry point with no slot context).
+- Multiplier interaction with manual edits: edited values become new 1x baseline for that row. Original AI values are baseline for untouched rows.
+- Image compression: use expo-image-picker quality/resize options, target under 1MB, document final quality setting as named constant `IMAGE_QUALITY` in `services/aiMealEstimator.ts`.

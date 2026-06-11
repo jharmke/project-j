@@ -253,7 +253,7 @@ export default function FoodDetailScreen() {
 const isRecipeMode = recipeMode === 'true';
 const isTutorialMode = tutorialMode === 'true';
   const food = tutorialFood === 'chicken_breast' ? buildTutorialChickenFood() : (foodJson ? JSON.parse(foodJson) : null);
-  const foodId: string | null = food?.fsId || food?.myFoodData?.id || null;
+  const foodId: string | null = food?.myFoodData?.id || (food as any)?.myFoodId || food?.fsId || null;
   const fsServings: any[] = food?.fsServings || [];
   const myFoodAdditionalServings: Array<{ label: string; grams: number }> = food?.myFoodData?.additionalServings || [];
   const baseServingSize = food?.myFoodData?.servingSize || parseFloat(food?.existingAmount || '100') || 100;
@@ -354,7 +354,7 @@ const isTutorialMode = tutorialMode === 'true';
       fat: Math.round((food.existingFat || 0) * ratio * 10) / 10,
       grams: baseGrams,
       unit: food.servingUnitType || 'g',
-      label: food.servingUnit || `${baseGrams}${food.servingUnitType || 'g'}`,
+      label: (food.servingUnit && /\d/.test(food.servingUnit)) ? food.servingUnit : `${baseGrams}${food.servingUnitType || 'g'}`,
       fiber: 0, sugar: 0, sodium: 0, cholesterol: 0, saturatedFat: 0,
       polyunsaturatedFat: 0, monounsaturatedFat: 0, potassium: 0,
       vitaminA: 0, vitaminC: 0, calcium: 0, iron: 0, sugarAlcohols: 0,
@@ -417,7 +417,8 @@ const isTutorialMode = tutorialMode === 'true';
       AsyncStorage.getItem('pj_my_foods').then(saved => {
         if (!saved) return;
         const myFoods = JSON.parse(saved);
-        const match = myFoods.find((f: any) => f.name === food.description || (f.id && f.id === food.id));
+        const myFoodId = (food as any).myFoodId;
+        const match = myFoods.find((f: any) => myFoodId ? f.id === myFoodId : (f.name === food.description || (f.id && f.id === (food as any).id)));
         if (match?.servingSize > 0) setResolvedServingGrams(match.servingSize);
       }).catch(() => {});
     }
@@ -614,7 +615,7 @@ const [showTimePicker, setShowTimePicker] = useState(false);
   const [amountChanged, setAmountChanged] = useState(false);
   const [servingCountTouched, setServingCountTouched] = useState(false);
   const initialServingCount = resolvedServingGrams > 0 && food?.existingAmount
-    ? Math.max(1, Math.round(parseFloat(food.existingAmount) / resolvedServingGrams))
+    ? Math.max(1, parseFloat(food.existingAmount) / resolvedServingGrams)
     : 1;
   const [servingCount, setServingCount] = useState(initialServingCount);
   const [servingCountStr, setServingCountStr] = useState(initialServingCount.toString());
@@ -638,7 +639,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
   // When async My Foods lookup resolves, update servingCount to match the real base serving
   useEffect(() => {
     if (resolvedServingGrams > 0 && food?.existingAmount && !servingCountTouched) {
-      const count = Math.max(1, Math.round(parseFloat(food.existingAmount) / resolvedServingGrams));
+      const count = Math.max(1, parseFloat(food.existingAmount) / resolvedServingGrams);
       setServingCount(count);
     }
   }, [resolvedServingGrams]);
@@ -819,6 +820,9 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
   foodNutrients: baseNutrients,
   timestamp: entryTime.getTime(),
   fsId: food.fsId || null,
+  myFoodId: food.myFoodData?.id || (food as any)?.myFoodId || null,
+  isMyFood: !!(food.isMyFood || food.myFoodData || (food as any)?.myFoodId),
+  brand: food.brand || food.description?.split(' · ')[1] || null,
   ...(food.type === 'supplement' ? { type: 'supplement' } : {}),
 };
       if (isEditing) {
@@ -1120,9 +1124,9 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
       <ScrollView contentContainerStyle={styles.content} automaticallyAdjustKeyboardInsets keyboardDismissMode="on-drag">
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 20 }}>
           <View style={{ flex: 1, paddingRight: foodId ? 16 : 0 }}>
-            <Text style={[styles.foodName, { marginBottom: food.brand ? 4 : 0 }]}>{food.description}</Text>
-            {food.brand && (
-              <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>{food.brand}</Text>
+            <Text style={[styles.foodName, { marginBottom: (food.brand || food.description?.includes(' · ')) ? 4 : 0 }]}>{food.brand ? food.description : (food.description?.split(' · ')[0] ?? food.description)}</Text>
+            {(food.brand || food.description?.split(' · ')[1]) && (
+              <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>{food.brand || food.description?.split(' · ')[1]}</Text>
             )}
           </View>
           {foodId && (
@@ -1168,7 +1172,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           <View ref={stepperRowRef} style={[styles.amountRow, { marginBottom: 12 }]}>
             <View>
               <Text style={styles.amountLabel}>Servings</Text>
-              {effectiveServing.label ? <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>{effectiveServing.label}</Text> : null}
+              {effectiveServing.label && /\d/.test(effectiveServing.label) ? <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>{effectiveServing.label}</Text> : null}
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
               <TouchableOpacity
@@ -1249,7 +1253,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
         <View style={styles.nutritionCard}>
           <Text style={styles.nutritionTitle}>
             {'Nutrition for '}
-            <Text style={{ textTransform: 'none' }}>{amount}{unit}</Text>
+            <Text style={{ textTransform: 'none' }}>{amount}{effectiveServing?.unit || unit}</Text>
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 16 }}>
             <MacroDonut protein={protein} carbs={carbs} fat={fat} calories={calories} theme={theme} />

@@ -8,6 +8,10 @@
 
 - [BUG] Rest day not overridden by Apple Health workout -- program.type stays 'rest' when Apple Health workouts import, so exercises are silently hidden. Fix: flip type off rest on import. workout.tsx ~366-400, ~996-1027.
 - [BUG] YvY streak (vsStreak) always 0 -- badge renders but pj_vs_streak is never written. Needs: calculate win/loss at end of day, persist count, reset on loss.
+- [BUG] Supplement icon missing from barcode scan results -- supplement entries (custom foods with supplement toggle on) show asterisk/snowflake icon in My Foods list but the same icon does not render when those entries surface in barcode scan results. Wire identical icon logic into the scan results row renderer. No data changes needed -- supplement flag already present on the entry object. add-food.tsx.
+- [BUG] Edit and X buttons on custom food rows in Favorites tab -- Favorites tab is for quick logging, not food management. Every Favorites row should show name, brand, macros, star, calories only regardless of source. MY FOOD badge stays. Remove Edit and X from custom food rows in Favorites tab only. My Foods tab behavior unchanged. add-food.tsx.
+- [BUG] Orphaned "g" label on Edit Entry serving size -- serving descriptor beneath "Servings" renders as bare "g" on certain food entries. Root cause: null or empty serving unit name on some FatSecret foods causes label to fall back to raw unit character with no descriptor. Add null/empty guard: show sensible fallback or hide label entirely when no unit name is present. Affects some entries but not others. food-detail.tsx.
+- [BUG] Food identity resolution -- partially resolved 2026-06-11. Fixed: (1) fractional serving display (1.5 no longer rounds to 2), (2) photo ID priority flipped to prefer myFoodsID over fsId, (3) log entries now store fsId/myFoodId/isMyFood/brand fields, (4) Recents dedup cross-matches on cleaned name to prevent duplicates, (5) Recents name lookup now uses food.description || food.name with gram suffix stripped so custom foods found correctly via pj_my_foods. Remaining open items: MY FOOD badge missing from Food Detail and Edit Entry screens (visual only, not blocking logging). add-food.tsx, food-detail.tsx, log.tsx.
 
 ---
 
@@ -56,6 +60,7 @@
 - UNSET button on food detail -- unset barcode-linked food without navigating to Set Foods tab. Needs barcode context in route params.
 - SET banner tip -- "(i) Tap SET on the correct item" after barcode scan. On the fence, revisit.
 - Calorie target transparency -- (i) tooltip explaining how calorie recommendation was calculated (BMR, lifestyle factor, pace). settings.tsx.
+- Date targeting on food log entries -- currently no way to log a food entry to a date other than today from the standard add-food flow. Add date field to time/slot dropdowns for all food logging app-wide. Gap exposed by AI Meal Estimator date/slot targeting design. Separate from estimator build. add-food.tsx.
 
 ---
 
@@ -107,7 +112,8 @@
 
 ## COACHING & AI
 
-- [HIGH] AI Meal Estimator -- spec locked 2026-06-10. Full spec in SPEC_ai_meal_estimator.md. Photo + text input, editable macro breakdown, portion multiplier, meal templates. Free: 3/month, Pro: 30/month. New screen: app/ai-meal-estimator.tsx + services/aiMealEstimator.ts. Fast follow-on: Restaurant save concept.
+- [HIGH] AI Meal Estimator -- spec locked 2026-06-10, updated 2026-06-11. Full spec in SPEC_ai_meal_estimator.md. Photo + text input, editable macro breakdown, portion multiplier, meal templates. Free: 3/month, Pro: 30/month. New screen: app/ai-meal-estimator.tsx + services/aiMealEstimator.ts. Fast follow-on: Restaurant save concept.
+- coachAI.ts Level 1 window-relative language rule -- add explicit rule to Level 1 coaching prompt: always use window-relative framing ("over the last X days", "in the past week", "in the last 7 days") and never count-relative framing ("across all X logged days", "every logged day", "all 7 days"). Count-relative reads as a retrospective period summary; this is a live rolling window and copy must feel like one. coachAI.ts.
 - Smart Coach Level 2 (Focused Tips) -- single-metric AI-voiced tips for home card slots 2+. Blocker: Day Summary surface assignment conflicts between spec and gym notes. Explicit call before any build. SMART_COACH_SPEC.md.
 - Caffeine tracking -- daily total, high-amount warnings, first-use disclaimer (includes pregnant women guidance). Design decisions needed: quick-add vs food field, thresholds. Duty-of-care item.
 - Food group pattern detection -- if user logs zero whole foods X consecutive days, surface gentle tip. Mode-aware.

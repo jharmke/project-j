@@ -28,6 +28,11 @@ export const QUOTA_KEY = 'pj_ai_estimator_quota';
 export const FREE_LIMIT = 3;
 export const PRO_LIMIT = 30;
 
+// DEV testing: unlimited estimates in the dev build only. __DEV__ is false in
+// release/TestFlight builds, so the real FREE_LIMIT/PRO_LIMIT caps apply there
+// automatically -- this can never ship unlimited to real users.
+export const DEV_UNLIMITED_ESTIMATES = __DEV__;
+
 export interface QuotaState {
   month: string; // "YYYY-MM"
   usesThisMonth: number;
@@ -65,6 +70,7 @@ export async function loadQuota(): Promise<QuotaState> {
 }
 
 export function limitFor(isPro: boolean): number {
+  if (DEV_UNLIMITED_ESTIMATES) return 99999;
   return isPro ? PRO_LIMIT : FREE_LIMIT;
 }
 

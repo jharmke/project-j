@@ -1059,12 +1059,16 @@ const openFoodDetail = async (food: SearchResult) => {
 
     const myFoodId = (food as any).id || (food as any).myFoodId || null;
     const foodLookupName = (food.description || (food as any).name || '').replace(/\s*\(.*?\)\s*$/, '').split(' · ')[0].trim();
-    const myFoodMatch = (food.isMyFood || myFoodId)
-      ? (myFoods.find(f => myFoodId ? f.id === myFoodId : (foodLookupName && f.name === foodLookupName)) || (food as any).myFoodData || null)
-      : null;
+    // Always try custom-food name match regardless of isMyFood flag (handles old entries lacking the flag)
+    const customNameMatch: any = foodLookupName ? myFoods.find((f: any) => f.isCustom && f.name === foodLookupName) : null;
+    const myFoodMatch: any = (food.isMyFood || myFoodId)
+      ? (myFoods.find(f => myFoodId ? (f as any).id === myFoodId : (foodLookupName && f.name === foodLookupName)) || (food as any).myFoodData || null)
+      : (customNameMatch || null);
     let fsId: string | null = (food as any).fsId ?? null;
     const customServingSize = (food as any).servingSize;
-    const isCustomFood = !!(food as any).isCustom || !!(myFoodMatch as any)?.isCustom || (!!myFoodMatch && !!myFoodId);
+    const isCustomFood = !!(food as any).isCustom || !!(myFoodMatch as any)?.isCustom || food.isMyFood || (!!myFoodMatch && !!myFoodId);
+    // Custom foods must not fetch FatSecret servings or show the API badge
+    if (isCustomFood && myFoodMatch) fsId = null;
 
     // Resolve missing fsId for stale diary/recent entries logged before fsId was stored.
     // Order: favorites (in-memory, instant) -> myFoods (in-memory, instant) -> FatSecret name search (API).

@@ -433,7 +433,7 @@ export const TUTORIALS: Tutorial[] = [
         body: {
           discipline: 'Two taps, one daily cycle. The green button marks when you ate your first meal and opens your eating window. LAST MEAL closes it when you are done for the day. Everything in between is your window.',
           balanced: 'The cycle is two taps. Tap the green button when you eat your first meal to open your eating window. Tap LAST MEAL when you are done eating for the day to close it.',
-          mindful: 'The card tracks two moments each day -- when your eating window opens and when it closes. Tap the green button at your first meal. Tap LAST MEAL when you are done.',
+          mindful: 'The card tracks two moments each day: when your eating window opens and when it closes. Tap the green button at your first meal. Tap LAST MEAL when you are done.',
         },
       },
       {
@@ -441,9 +441,9 @@ export const TUTORIALS: Tutorial[] = [
         ifCardState: 'active',
         title: 'YOUR EATING WINDOW',
         body: {
-          discipline: 'Once you tap the green button, your eating window opens and the countdown starts. Eat your meals. The window closes when the timer hits zero or when you tap LAST MEAL -- whichever comes first.',
+          discipline: 'Once you tap the green button, your eating window opens and the countdown starts. Eat your meals. The window closes when the timer hits zero or when you tap LAST MEAL, whichever comes first.',
           balanced: 'Once your eating window is open, the countdown shows how much time remains. Eat normally during this window. Tap LAST MEAL when you are done eating for the day.',
-          mindful: 'Once your window opens, eat at your own pace. The countdown shows time remaining. Tap LAST MEAL when you are done -- no pressure to finish before the timer.',
+          mindful: 'Once your window opens, eat at your own pace. The countdown shows time remaining. Tap LAST MEAL when you are done. No pressure to finish before the timer.',
         },
       },
       {
@@ -451,9 +451,9 @@ export const TUTORIALS: Tutorial[] = [
         ifCardState: 'active',
         title: 'LAST MEAL',
         body: {
-          discipline: 'When you are done eating for the day, tap LAST MEAL. It logs the exact time your window closed and starts your next fast. Tap it at the right moment -- your window analytics depend on accuracy.',
+          discipline: 'When you are done eating for the day, tap LAST MEAL. It logs the exact time your window closed and starts your next fast. Tap it at the right moment. Your window analytics depend on accuracy.',
           balanced: 'When you are done with your last meal, tap LAST MEAL to close your eating window. The card records your window duration and resets for tomorrow.',
-          mindful: 'Tap LAST MEAL when eating feels complete for the day. There is no wrong answer -- you know your body. The card simply records when you said you were done.',
+          mindful: 'Tap LAST MEAL when eating feels complete for the day. There is no wrong answer. You know your body. The card simply records when you said you were done.',
         },
       },
       {
@@ -461,9 +461,9 @@ export const TUTORIALS: Tutorial[] = [
         ifCardState: 'eating',
         title: 'EDITING TIMES',
         body: {
-          discipline: 'Forgot to tap at the exact moment? Edit Start and Edit End let you correct your times after the fact. Accuracy here matters -- your window analytics depend on it.',
+          discipline: 'Forgot to tap at the exact moment? Edit Start and Edit End let you correct your times after the fact. Accuracy here matters. Your window analytics depend on it.',
           balanced: 'If you forgot to tap at the right moment, use Edit Start or Edit End to correct your times. The card updates your window duration automatically.',
-          mindful: 'Tapped at the wrong time? Edit Start and Edit End let you adjust anytime. No judgment -- just update it when you get a chance.',
+          mindful: 'Tapped at the wrong time? Edit Start and Edit End let you adjust anytime. No judgment. Just update it when you get a chance.',
         },
       },
     ],

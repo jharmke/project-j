@@ -854,9 +854,9 @@ export const TUTORIALS: Tutorial[] = [
         targetKey: 'create_food_card',
         title: 'THE CREATE FOOD FORM',
         body: {
-          discipline: 'Two required fields -- name and calories. Everything else (serving size, macros, extended nutrition) is optional but recommended. This demo has Protein Shake pre-filled so the Save button is already active.',
+          discipline: 'Two required fields: name and calories. Everything else (serving size, macros, extended nutrition) is optional but recommended. This demo has Protein Shake pre-filled so the Save button is already active.',
           balanced: 'Name and calories are the only required fields. Everything else is optional. We pre-filled a demo food so you can see the whole flow.',
-          mindful: 'Only name and calories are required. Fill in whatever feels useful and skip the rest -- the food saves either way.',
+          mindful: 'Only name and calories are required. Fill in whatever feels useful and skip the rest. The food saves either way.',
         },
       },
       {
@@ -864,9 +864,9 @@ export const TUTORIALS: Tutorial[] = [
         targetKey: 'create_food_name',
         title: 'FOOD NAME',
         body: {
-          discipline: 'Required. This is how the food shows in search and your log. Be specific -- "Protein Shake, Chocolate" beats "Shake." Demo has it pre-filled.',
+          discipline: 'Required. This is how the food shows in search and your log. Be specific: "Protein Shake, Chocolate" beats "Shake." Demo has it pre-filled.',
           balanced: 'The food name is searchable later, so be as descriptive as you want. Demo already has "Protein Shake" filled in.',
-          mindful: 'Use whatever name makes sense to you -- there is no wrong answer here.',
+          mindful: 'Use whatever name makes sense to you. There is no wrong answer here.',
         },
       },
       {
@@ -877,21 +877,24 @@ export const TUTORIALS: Tutorial[] = [
         tutorialAction: 'expandOptionalSection',
         title: 'CALORIES & SERVING SIZE',
         body: {
-          discipline: 'Required. Pull calories from the label. Serving size (right field) + unit pill sets what one serving weighs -- this makes per-gram math accurate when you adjust amounts later.',
+          discipline: 'Required. Pull calories from the label. Serving size (right field) + unit pill sets what one serving weighs, which makes per-gram math accurate when you adjust amounts later.',
           balanced: 'Enter calories from the label, then set the serving size to the right. Together they let the app scale correctly when you log a different amount.',
-          mindful: 'Calories from the label, serving size to the right. If you do not have the label, no stress -- just enter what you know.',
+          mindful: 'Calories from the label, serving size to the right. If you do not have the label, no stress. Just enter what you know.',
         },
       },
       {
-        // Step 4: spotlights the whole macros section (toggle + expanded fields).
-        // expandOptionalSection fired when NEXT was pressed on step 3, so the
-        // section is already open and the spotlight covers the full expanded area.
-        targetKey: 'create_food_macros_section',
+        // Step 4: the macros + extended section is taller than the viewport, so a
+        // spotlight cutout gets flagged off-screen and drops. noDimOverlay keeps every
+        // field bright (the tip copy references them, so they must stay visible). Anchor
+        // the bubble to the compact "Macros & Extended Nutrition" toggle so it auto-
+        // positions above the fields instead of covering them.
+        targetKey: 'create_food_optional',
+        noDimOverlay: true,
         title: 'MACROS & EXTENDED',
         body: {
-          discipline: 'Protein, carbs, fat, fiber, sodium, cholesterol, saturated fat -- all from the label. Skip any and they show as 0 in your log. Your macro bars will not reflect foods with missing macros.',
+          discipline: 'Protein, carbs, fat, fiber, sodium, cholesterol, saturated fat, all from the label. Skip any and they show as 0 in your log. Your macro bars will not reflect foods with missing macros.',
           balanced: 'These fields are all optional. Fill in what you have from the label. The more you enter, the more accurate your macro tracking.',
-          mindful: 'Add whatever macro info you have. If the label is not handy, skip it and save -- the food still logs correctly without them.',
+          mindful: 'Add whatever macro info you have. If the label is not handy, skip it and save. The food still logs correctly without them.',
         },
       },
       {
@@ -901,9 +904,9 @@ export const TUTORIALS: Tutorial[] = [
         tutorialAction: 'closeCreatorAfterTutorial',
         title: 'SAVE FOOD',
         body: {
-          discipline: 'Hit SAVE FOOD and it goes straight to My Foods -- no sync delay. Tap DONE to close this demo. In real use the food writes to your personal library permanently.',
-          balanced: 'Tap SAVE FOOD when ready. It shows up in My Foods right away. Tap DONE to close this demo -- nothing is actually saved since this is a walkthrough.',
-          mindful: 'When you are ready, tap SAVE FOOD. It goes straight to My Foods. Tap DONE to close -- we did not save anything real here.',
+          discipline: 'Hit SAVE FOOD and it goes straight to My Foods, no sync delay. Tap DONE to close this demo. In real use the food writes to your personal library permanently.',
+          balanced: 'Tap SAVE FOOD when ready. It shows up in My Foods right away. Tap DONE to close this demo. Nothing is actually saved since this is a walkthrough.',
+          mindful: 'When you are ready, tap SAVE FOOD. It goes straight to My Foods. Tap DONE to close. We did not save anything real here.',
         },
       },
     ],
@@ -958,7 +961,7 @@ export const TUTORIALS: Tutorial[] = [
         body: {
           discipline: 'The list tracks everything added. Each item shows its macros auto-calculated from the amount you set. Trash icon removes it. Accuracy here drives accuracy everywhere.',
           balanced: 'Your ingredients list shows each item with its nutrition contribution. Tap the trash icon to remove anything. What you put in here flows into your log.',
-          mindful: 'This is your ingredient list. Each item shows what it contributes. Nothing is permanent -- the trash icon removes any ingredient.',
+          mindful: 'This is your ingredient list. Each item shows what it contributes. Nothing is permanent. The trash icon removes any ingredient.',
         },
       },
       {
@@ -969,7 +972,7 @@ export const TUTORIALS: Tutorial[] = [
         body: {
           discipline: 'Each row shows the amount, calories, and P/C/F split. If the macros look wrong, remove and re-add with the correct gram weight.',
           balanced: 'Each ingredient shows its amount and nutrition contribution at a glance. The more accurate your amounts, the more accurate your log.',
-          mindful: 'Each ingredient row shows what it contributes. Do your best with amounts -- a reasonable estimate is always better than skipping the log.',
+          mindful: 'Each ingredient row shows what it contributes. Do your best with amounts. A reasonable estimate is always better than skipping the log.',
         },
       },
       {
@@ -979,8 +982,8 @@ export const TUTORIALS: Tutorial[] = [
         title: 'TOTAL NUTRITION',
         body: {
           discipline: 'This is the running total for the full batch. Every ingredient summed automatically. This number divided by your serving count gives you the per-serving values.',
-          balanced: 'Total Nutrition sums every ingredient automatically. You never calculate anything manually -- just add accurate ingredients and the math is done.',
-          mindful: 'This adds up everything in your recipe automatically. You do not have to do any math -- it all updates as you add ingredients.',
+          balanced: 'Total Nutrition sums every ingredient automatically. You never calculate anything manually. Just add accurate ingredients and the math is done.',
+          mindful: 'This adds up everything in your recipe automatically. You do not have to do any math. It all updates as you add ingredients.',
         },
       },
       {
@@ -991,7 +994,7 @@ export const TUTORIALS: Tutorial[] = [
         body: {
           discipline: 'Set the number of servings the batch makes. Per-serving nutrition divides automatically. This is what gets logged each time you pull this recipe.',
           balanced: 'Enter how many servings the recipe makes. The per-serving breakdown updates instantly. This is what gets logged when you use the recipe.',
-          mindful: 'Set how many portions this recipe makes. The per-serving numbers update right away. No pressure to be exact -- a good estimate is fine.',
+          mindful: 'Set how many portions this recipe makes. The per-serving numbers update right away. No pressure to be exact. A good estimate is fine.',
         },
       },
       {
@@ -1001,7 +1004,7 @@ export const TUTORIALS: Tutorial[] = [
         tutorialAction: 'saveTutorialRecipe',
         title: 'SAVE THE RECIPE',
         body: {
-          discipline: 'Tap DONE to save this demo recipe and see where it lives in your library. The real Save button works identically -- one tap, saved permanently.',
+          discipline: 'Tap DONE to save this demo recipe and see where it lives in your library. The real Save button works identically: one tap, saved permanently.',
           balanced: 'Tap DONE and we will save this demo recipe so you can see where it shows up. In real use, tap Save and the recipe goes straight to your library.',
           mindful: 'Tap DONE and we will save this demo so you can see where recipes live. In real use, tap Save whenever it feels ready.',
         },
@@ -1013,9 +1016,9 @@ export const TUTORIALS: Tutorial[] = [
         noTabBarOffset: true,
         title: 'THE RECIPES TAB',
         body: {
-          discipline: 'You are inside your food library -- the same screen you use to search foods. Recipes is one of five tabs here. Every recipe you save lands in this tab, always one tap from your log.',
-          balanced: 'This is your food library. Recipes is one of the tabs across the top -- it is where every saved recipe lives. The same place you come to search for foods when logging a meal.',
-          mindful: 'You are in your food library. See the tabs across the top -- Recipes is where all your saved recipes live. It is always here when you want to log a meal you have built.',
+          discipline: 'You are inside your food library, the same screen you use to search foods. Recipes is one of five tabs here. Every recipe you save lands in this tab, always one tap from your log.',
+          balanced: 'This is your food library. Recipes is one of the tabs across the top, where every saved recipe lives. The same place you come to search for foods when logging a meal.',
+          mindful: 'You are in your food library. See the tabs across the top. Recipes is where all your saved recipes live. It is always here when you want to log a meal you have built.',
         },
       },
       {
@@ -1025,8 +1028,8 @@ export const TUTORIALS: Tutorial[] = [
         tutorialAction: 'deleteTutorialRecipe',
         title: 'YOUR SAVED RECIPE',
         body: {
-          discipline: 'There is the demo recipe. Tap it to log a portion. The × removes a recipe permanently -- it will confirm before deleting. Tap DONE and we will clean this one up.',
-          balanced: 'Here is the recipe we just saved. Tap to log a portion anytime. Tap the × to delete a recipe -- it will ask first. Tap DONE and we will remove the demo.',
+          discipline: 'There is the demo recipe. Tap it to log a portion. The × removes a recipe permanently, and it will confirm before deleting. Tap DONE and we will clean this one up.',
+          balanced: 'Here is the recipe we just saved. Tap to log a portion anytime. Tap the × to delete a recipe. It will ask first. Tap DONE and we will remove the demo.',
           mindful: 'Here is the recipe we made together. Tap it to log whenever you are ready. The × removes a recipe if you need to. Tap DONE and we will clean this up.',
         },
       },

@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ActionSheetIOS,
   Animated,
+  Dimensions,
   Image,
   Modal,
   ScrollView,
@@ -159,6 +160,25 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
       Animated.timing(optionalHeight, { toValue: h, duration: 250, useNativeDriver: false }).start();
       // Wait for animation to complete before tutorial advances to macros step.
       await new Promise<void>(r => setTimeout(r, 280));
+      // Park the blue "Macros & Extended Nutrition" toggle in the lower-middle of the
+      // screen so the macros step's tip card lands up top, above the box, with the
+      // fields visible below it (the tip copy references those fields).
+      const sv = scrollViewRef.current as any;
+      const toggle = optionalToggleRef.current as any;
+      if (sv && toggle) {
+        await new Promise<void>(resolve => {
+          toggle.measureLayout(
+            sv,
+            (_x: number, y: number) => {
+              const SH = Dimensions.get('window').height;
+              sv.scrollTo({ y: Math.max(0, y - SH * 0.30), animated: true });
+              resolve();
+            },
+            () => resolve(),
+          );
+        });
+        await new Promise<void>(r => setTimeout(r, 350));
+      }
     };
     registerTutorialAction('expandOptionalSection', expandOptionalSection);
     return () => unregisterTutorialAction('expandOptionalSection');

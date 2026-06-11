@@ -1452,7 +1452,7 @@ export default function LogScreen() {
                               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                                 {(entry as any).aiEstimated && <Ionicons name="sparkles" size={11} color={theme.accentBlueRaw} />}
                                 {(entry as any).type === 'supplement' && <Ionicons name="medical" size={11} color={theme.textMuted} />}
-                                <Text style={[styles.foodEntryName, { color: theme.textPrimary }]} numberOfLines={1}>{foodName}{amountLabel ? ` · ${amountLabel}` : ''}</Text>
+                                <Text style={[styles.foodEntryName, { color: theme.textPrimary, flex: 1 }]} numberOfLines={1}>{foodName}{amountLabel ? ` · ${amountLabel}` : ''}</Text>
                               </View>
                               {(entry.protein !== undefined || entry.carbs !== undefined || entry.fat !== undefined) ? (
                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 3 }}>
@@ -1509,6 +1509,18 @@ export default function LogScreen() {
           </View>
         );
       })}
+
+      {/* AI Meal Estimator -- persistent entry point, always shown below the meals */}
+      <TouchableOpacity
+        style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 10 }}
+        onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); returningFromChild.current = true; router.push({ pathname: '/ai-meal-estimator', params: { date: activeDate } }); }}>
+        <Ionicons name="sparkles" size={20} color={theme.accentBlueRaw} />
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold' }}>Eating out? AI can estimate your meal.</Text>
+          <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 1 }}>Photo or description, no weighing needed</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
+      </TouchableOpacity>
 
       {/* Water Card */}
       <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>

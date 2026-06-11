@@ -14,6 +14,17 @@ export interface TooltipDefinition {
 
 export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
   {
+    key: 'ai_meal_estimator',
+    category: 'Nutrition',
+    title: 'AI Meal Estimator',
+    body: 'For meals you cannot log precisely, like a restaurant plate with no nutrition info, a home-cooked dish, or food someone else made, the AI Meal Estimator gives a close estimate from a photo, a text description, or both. It returns an editable breakdown of calories and macros per item. You review, adjust, and confirm before anything is logged.\n\nThis is a "pretty close" tool, not precise tracking. Portions are assumed when unknown, and accuracy depends on the detail you give. Adding a description gives a sharper result than a photo alone.\n\nFree members get 3 estimates a month, Pro members get 30. A use is only counted when a result is successfully shown to you. Estimates you generate are kept for the rest of the day, so you can reopen one if you lose the screen.',
+    definitions: [
+      { term: 'Possibly Not Included', explanation: 'Hidden additions the AI flags but does not add to the numbers, like cooking oils, butter, or sauces. They are there to prompt you, not to inflate the estimate. Edit an item up if you think something was missed.' },
+      { term: 'Needs Your Review', explanation: 'Items the AI was genuinely unsure about. You confirm, edit, or remove each one before the meal can be added to your log.' },
+      { term: 'Portion size', explanation: 'Scale the whole estimate up or down if the serving was larger or smaller than standard. You can also scale a single item from inside its edit panel.' },
+    ],
+  },
+  {
     key: 'day_score',
     tutorialId: 'day_score',
     category: 'Reports',

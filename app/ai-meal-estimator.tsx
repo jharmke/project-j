@@ -960,7 +960,7 @@ function CenteredModal({ visible, onClose, theme, children }: any) {
       <ToastRenderer />
       <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: theme.overlayBg }} activeOpacity={1} onPress={close} />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }} pointerEvents="box-none">
-        <Animated.View style={{ width: '100%', maxWidth: 420, backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueBorder, paddingHorizontal: 20, paddingTop: 10, paddingBottom: 20, transform: [{ scale }], opacity, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 14 }}>
+        <Animated.View style={{ width: '100%', maxWidth: 420, backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 2.5, borderTopColor: theme.accentBlueRaw, paddingHorizontal: 20, paddingTop: 10, paddingBottom: 20, transform: [{ scale }], opacity, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 14 }}>
           <TouchableOpacity onPress={close} hitSlop={{ top: 12, bottom: 12, left: 30, right: 30 }} style={{ alignSelf: 'center', paddingVertical: 4, marginBottom: 6 }}>
             <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
           </TouchableOpacity>

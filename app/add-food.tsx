@@ -1536,6 +1536,11 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
   <Text style={styles.headerTitle}>{meal === 'browse' ? 'Food Library' : `Add to ${getMealDisplayName(meal, mealSlots, slotNameCache)}`}</Text>
   <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
     <TouchableOpacity
+      onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/ai-meal-estimator', params: { meal, date } }); }}
+      style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, padding: 6, alignItems: 'center', justifyContent: 'center', width: 38, height: 38 }}>
+      <Ionicons name="sparkles" size={22} color={theme.accentBlue} />
+    </TouchableOpacity>
+    <TouchableOpacity
       ref={barcodeIconRef as any}
       onPress={startScan}
       style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, padding: 6, alignItems: 'center', justifyContent: 'center', width: 38, height: 38 }}>

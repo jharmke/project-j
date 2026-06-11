@@ -1666,7 +1666,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
             foodNutrients: [],
             isRecipe: true,
             recipeData: r,
-            cal: Math.round(r.totalCal / r.servingCount),
+            cal: r.servingCount > 0 ? Math.round(r.totalCal / r.servingCount) : r.totalCal,
           }))) :
           activeTab === 'pinned' ? applySortToFoodItems(Object.entries(barcodeOverrides).map(([barcode, item]: [string, any]) => ({
             ...resolveMyFoodOverride({ ...item, isOverride: true }),

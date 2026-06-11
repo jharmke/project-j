@@ -112,7 +112,7 @@ export default function RecipeBuilderScreen() {
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [totalWeight, setTotalWeight] = useState('');
   const [totalWeightUnit, setTotalWeightUnit] = useState('g');
-  const [servingCount, setServingCount] = useState('1');
+  const [servingCount, setServingCount] = useState('');
   const [servingName, setServingName] = useState('serving');
   const [defaultToWeight, setDefaultToWeight] = useState(false);
   const [showCustomFoodModal, setShowCustomFoodModal] = useState(false);
@@ -245,7 +245,7 @@ export default function RecipeBuilderScreen() {
           setIngredients(recipe.ingredients);
           setTotalWeight(recipe.totalWeight.toString());
           setTotalWeightUnit(recipe.totalWeightUnit);
-          setServingCount(recipe.servingCount.toString());
+          setServingCount(recipe.servingCount === 0 ? '' : recipe.servingCount.toString());
           setServingName(recipe.servingName);
           setDefaultToWeight(recipe.defaultToWeight || false);
         }
@@ -356,7 +356,7 @@ export default function RecipeBuilderScreen() {
         ingredients,
         totalWeight: parseFloat(totalWeight) || 0,
         totalWeightUnit,
-        servingCount: servings,
+        servingCount: parseInt(servingCount) || 0,
         servingName,
         totalCal,
         totalProtein,
@@ -470,16 +470,25 @@ export default function RecipeBuilderScreen() {
             ingredients.map((ing, idx) => (
               <View key={ing.id} ref={idx === 0 ? ingredientRowRef : null} style={[styles.ingredientRow, idx < ingredients.length - 1 && styles.ingredientBorder]}>
                 <View style={styles.ingredientLeft}>
-                  <Text style={styles.ingredientName} numberOfLines={1}>{ing.name}</Text>
-                  <View style={styles.ingredientMeta}>
-                    <Text style={styles.ingAmount} numberOfLines={1}>{ing.amount}{ing.unit}</Text>
-                    <Text style={styles.ingDot}>·</Text>
-                    <Text style={styles.ingCal}>{ing.cal} kcal</Text>
-                    <Text style={styles.ingDot}>·</Text>
-                    <Text style={[styles.ingMacro, { color: theme.macroProtein }]}>P {Number(ing.protein).toFixed(1)}g</Text>
-                    <Text style={[styles.ingMacro, { color: theme.macroCarbs }]}>C {Number(ing.carbs).toFixed(1)}g</Text>
-                    <Text style={[styles.ingMacro, { color: theme.macroFat }]}>F {Number(ing.fat).toFixed(1)}g</Text>
+                  <Text style={styles.ingredientName}>{ing.name} ({ing.amount}{ing.unit})</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 3 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: theme.macroProtein }} />
+                      <Text style={styles.ingMacro}>{Number(ing.protein).toFixed(1)}g</Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: theme.macroCarbs }} />
+                      <Text style={styles.ingMacro}>{Number(ing.carbs).toFixed(1)}g</Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: theme.macroFat }} />
+                      <Text style={styles.ingMacro}>{Number(ing.fat).toFixed(1)}g</Text>
+                    </View>
                   </View>
+                </View>
+                <View style={{ alignItems: 'flex-end', justifyContent: 'flex-start', marginRight: 12 }}>
+                  <Text style={{ fontSize: 18, color: theme.accentGreen, fontFamily: 'BebasNeue_400Regular' }}>{ing.cal}</Text>
+                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_400Regular', letterSpacing: 1 }}>kcal</Text>
                 </View>
                 <TouchableOpacity onPress={() => removeIngredient(ing.id)} style={styles.removeBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                   <Ionicons name="trash-outline" size={16} color={theme.accentRed || '#cc3333'} />
@@ -568,7 +577,7 @@ export default function RecipeBuilderScreen() {
             </View>
           </View>
 
-          {ingredients.length > 0 && servings > 0 && (
+          {ingredients.length > 0 && servingCount.trim() !== '' && servings > 0 && (
             <View style={styles.perServingCard}>
               <Text style={[styles.cardLabel, { color: theme.accentBlue, marginBottom: 12 }]}>Per {servingName}</Text>
               <View style={styles.macroRow}>
@@ -736,15 +745,11 @@ const useStyles = (theme: any) => StyleSheet.create({
   emptyState: { alignItems: 'center', paddingVertical: 20, gap: 6 },
   emptyTitle: { fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' },
   emptySubtitle: { fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', textAlign: 'center' },
-  ingredientRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12 },
+  ingredientRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 12 },
   ingredientBorder: { borderBottomWidth: 1, borderBottomColor: theme.borderSubtle },
   ingredientLeft: { flex: 1, marginRight: 12 },
-  ingredientName: { fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', marginBottom: 4 },
-  ingredientMeta: { flexDirection: 'row', alignItems: 'center' },
-  ingAmount: { width: 56, fontSize: 11, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' },
-  ingDot: { fontSize: 11, color: theme.textDim, marginHorizontal: 3 },
-  ingCal: { width: 60, fontSize: 11, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' },
-  ingMacro: { width: 50, fontSize: 11, fontFamily: 'DMSans_500Medium' },
+  ingredientName: { fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' },
+  ingMacro: { fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular' },
   removeBtn: { padding: 4 },
   macroRow: { flexDirection: 'row', alignItems: 'center' },
   macroStat: { flex: 1, alignItems: 'center' },

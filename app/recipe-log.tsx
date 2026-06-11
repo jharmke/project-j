@@ -17,7 +17,10 @@ export default function RecipeLogScreen() {
   const { recipeJson, meal, date } = useLocalSearchParams<{ recipeJson: string; meal: string; date: string }>();
 
   const recipe = recipeJson ? JSON.parse(recipeJson) : null;
-  const [logMode, setLogMode] = useState<'serving' | 'weight'>(recipe?.defaultToWeight && recipe?.totalWeight > 0 ? 'weight' : 'serving');
+  const isWholeBatch = (recipe?.servingCount ?? 1) === 0;
+  const [logMode, setLogMode] = useState<'serving' | 'weight'>(
+    isWholeBatch || (recipe?.defaultToWeight && recipe?.totalWeight > 0) ? 'weight' : 'serving'
+  );
   const [servingAmount, setServingAmount] = useState('1');
   const [weightAmount, setWeightAmount] = useState('');
   const [showMealPicker, setShowMealPicker] = useState(false);
@@ -43,10 +46,10 @@ export default function RecipeLogScreen() {
   if (!recipe) return null;
 
   const totalWeight = recipe.totalWeight || 0;
-  const servingCount = recipe.servingCount || 1;
+  const servingCount = recipe.servingCount || 0;
 
   const getMultiplier = () => {
-    if (logMode === 'serving') return parseFloat(servingAmount) / servingCount;
+    if (logMode === 'serving' && servingCount > 0) return parseFloat(servingAmount) / servingCount;
     if (!totalWeight) return 0;
     return parseFloat(weightAmount) / totalWeight;
   };
@@ -171,24 +174,32 @@ export default function RecipeLogScreen() {
         {/* Recipe Info */}
         <View style={styles.infoCard}>
           <Text style={styles.infoText}>
-            {recipe.servingCount} {recipe.servingName} total
+            {isWholeBatch ? 'Whole batch' : `${recipe.servingCount} ${recipe.servingName} total`}
             {totalWeight > 0 ? ` · ${totalWeight}${recipe.totalWeightUnit} total weight` : ''}
           </Text>
           <View style={styles.macroRow}>
             <View style={styles.macroStat}>
-              <Text style={[styles.macroVal, { color: theme.accentGreen }]}>{Math.round(recipe.totalCal / servingCount)}</Text>
-              <Text style={styles.macroLabel}>cal/{recipe.servingName}</Text>
+              <Text style={[styles.macroVal, { color: theme.accentGreen }]}>
+                {isWholeBatch ? Math.round(recipe.totalCal) : Math.round(recipe.totalCal / servingCount)}
+              </Text>
+              <Text style={styles.macroLabel}>{isWholeBatch ? 'total cal' : `cal/${recipe.servingName}`}</Text>
             </View>
             <View style={styles.macroStat}>
-              <Text style={[styles.macroVal, { color: theme.macroProtein }]}>{Math.round(recipe.totalProtein / servingCount * 10) / 10}<Text style={styles.macroUnit}>g</Text></Text>
+              <Text style={[styles.macroVal, { color: theme.macroProtein }]}>
+                {isWholeBatch ? Math.round(recipe.totalProtein * 10) / 10 : Math.round(recipe.totalProtein / servingCount * 10) / 10}<Text style={styles.macroUnit}>g</Text>
+              </Text>
               <Text style={styles.macroLabel}>protein</Text>
             </View>
             <View style={styles.macroStat}>
-              <Text style={[styles.macroVal, { color: theme.macroCarbs }]}>{Math.round(recipe.totalCarbs / servingCount * 10) / 10}<Text style={styles.macroUnit}>g</Text></Text>
+              <Text style={[styles.macroVal, { color: theme.macroCarbs }]}>
+                {isWholeBatch ? Math.round(recipe.totalCarbs * 10) / 10 : Math.round(recipe.totalCarbs / servingCount * 10) / 10}<Text style={styles.macroUnit}>g</Text>
+              </Text>
               <Text style={styles.macroLabel}>carbs</Text>
             </View>
             <View style={styles.macroStat}>
-              <Text style={[styles.macroVal, { color: theme.macroFat }]}>{Math.round(recipe.totalFat / servingCount * 10) / 10}<Text style={styles.macroUnit}>g</Text></Text>
+              <Text style={[styles.macroVal, { color: theme.macroFat }]}>
+                {isWholeBatch ? Math.round(recipe.totalFat * 10) / 10 : Math.round(recipe.totalFat / servingCount * 10) / 10}<Text style={styles.macroUnit}>g</Text>
+              </Text>
               <Text style={styles.macroLabel}>fat</Text>
             </View>
           </View>
@@ -200,32 +211,53 @@ export default function RecipeLogScreen() {
             <Text style={styles.sectionLabel}>Ingredients</Text>
             {recipe.ingredients.map((ing: any, i: number) => (
               <View key={i} style={styles.ingredientRow}>
-                <Text style={styles.ingredientName} numberOfLines={1}>{ing.name}</Text>
-                <Text style={styles.ingredientMeta}>{ing.amount}{ing.unit} · {ing.cal} kcal</Text>
+                <View style={{ flex: 1, marginRight: 12 }}>
+                  <Text style={styles.ingredientName}>{ing.name} ({ing.amount}{ing.unit})</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 3 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: theme.macroProtein }} />
+                      <Text style={styles.ingredientMacro}>{Number(ing.protein || 0).toFixed(1)}g</Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: theme.macroCarbs }} />
+                      <Text style={styles.ingredientMacro}>{Number(ing.carbs || 0).toFixed(1)}g</Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: theme.macroFat }} />
+                      <Text style={styles.ingredientMacro}>{Number(ing.fat || 0).toFixed(1)}g</Text>
+                    </View>
+                  </View>
+                </View>
+                <View style={{ alignItems: 'flex-end', justifyContent: 'flex-start' }}>
+                  <Text style={{ fontSize: 18, color: theme.accentGreen, fontFamily: 'BebasNeue_400Regular' }}>{ing.cal}</Text>
+                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_400Regular', letterSpacing: 1 }}>kcal</Text>
+                </View>
               </View>
             ))}
           </View>
         )}
 
-        {/* Log Mode Toggle */}
-        <View style={styles.toggleRow}>
-          <TouchableOpacity
-            style={[styles.toggleBtn, logMode === 'serving' && styles.toggleBtnActive]}
-            onPress={() => setLogMode('serving')}>
-            <Text style={[styles.toggleBtnText, logMode === 'serving' && { color: theme.accentBlue }]}>
-              By {recipe.servingName}
-            </Text>
-          </TouchableOpacity>
-          {totalWeight > 0 && (
+        {/* Log Mode Toggle -- hidden when whole batch (weight only) */}
+        {!isWholeBatch && (
+          <View style={styles.toggleRow}>
             <TouchableOpacity
-              style={[styles.toggleBtn, logMode === 'weight' && styles.toggleBtnActive]}
-              onPress={() => setLogMode('weight')}>
-              <Text style={[styles.toggleBtnText, logMode === 'weight' && { color: theme.accentBlue }]}>
-                By weight ({recipe.totalWeightUnit})
+              style={[styles.toggleBtn, logMode === 'serving' && styles.toggleBtnActive]}
+              onPress={() => setLogMode('serving')}>
+              <Text style={[styles.toggleBtnText, logMode === 'serving' && { color: theme.accentBlue }]}>
+                By {recipe.servingName}
               </Text>
             </TouchableOpacity>
-          )}
-        </View>
+            {totalWeight > 0 && (
+              <TouchableOpacity
+                style={[styles.toggleBtn, logMode === 'weight' && styles.toggleBtnActive]}
+                onPress={() => setLogMode('weight')}>
+                <Text style={[styles.toggleBtnText, logMode === 'weight' && { color: theme.accentBlue }]}>
+                  By weight ({recipe.totalWeightUnit})
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         {/* Amount Input */}
         <View style={styles.amountRow}>
@@ -315,7 +347,7 @@ const useStyles = (theme: any) => StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: theme.borderCard },
   backBtn: { padding: 4, width: 60 },
   backBtnText: { color: theme.accentBlue, fontSize: 14, fontFamily: 'DMSans_500Medium' },
-  headerTitle: { fontSize: 20, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, flex: 1, textAlign: 'center' },
+  headerTitle: { fontSize: 20, color: theme.textSecondary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, flex: 1, textAlign: 'center' },
   editBtn: { backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 },
   editBtnText: { color: theme.accentBlue, fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
   content: { padding: 16, paddingBottom: 80 },
@@ -328,9 +360,9 @@ const useStyles = (theme: any) => StyleSheet.create({
   macroLabel: { fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 2, textAlign: 'center' },
   section: { marginBottom: 16 },
   sectionLabel: { fontSize: 9, letterSpacing: 3, color: theme.textMuted, textTransform: 'uppercase', fontFamily: 'DMSans_500Medium', marginBottom: 8 },
-  ingredientRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: theme.borderSubtle },
-  ingredientName: { fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_400Regular', flex: 1, marginRight: 8 },
-  ingredientMeta: { fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' },
+  ingredientRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: theme.borderSubtle },
+  ingredientName: { fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_500Medium' },
+  ingredientMacro: { fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular' },
   toggleRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
   toggleBtn: { flex: 1, padding: 10, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 6, alignItems: 'center' },
   toggleBtnActive: { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder },

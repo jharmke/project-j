@@ -750,7 +750,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
         // Save as pending ingredient for recipe builder to pick up
         const ingredient = {
           id: Math.random().toString(36).substr(2, 9),
-          name: food.description,
+          name: food.brand ? `${food.description} · ${food.brand}` : (food.description?.split(' · ')[0] ?? food.description),
           cal: calories,
           protein,
           carbs,
@@ -1124,6 +1124,11 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
       <ScrollView contentContainerStyle={styles.content} automaticallyAdjustKeyboardInsets keyboardDismissMode="on-drag">
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 20 }}>
           <View style={{ flex: 1, paddingRight: foodId ? 16 : 0 }}>
+            {(food?.isMyFood || food?.isCustom) && (
+              <View style={{ backgroundColor: theme.accentGreenBg, borderRadius: 3, paddingHorizontal: 5, paddingVertical: 1, alignSelf: 'flex-start', marginBottom: 4 }}>
+                <Text style={{ fontSize: 8, color: theme.accentGreen, fontFamily: 'DMSans_700Bold' }}>MY FOOD</Text>
+              </View>
+            )}
             <Text style={[styles.foodName, { marginBottom: (food.brand || food.description?.includes(' · ')) ? 4 : 0 }]}>{food.brand ? food.description : (food.description?.split(' · ')[0] ?? food.description)}</Text>
             {(food.brand || food.description?.split(' · ')[1]) && (
               <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>{food.brand || food.description?.split(' · ')[1]}</Text>

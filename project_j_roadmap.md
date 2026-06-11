@@ -8,8 +8,6 @@
 
 - [BUG] Rest day not overridden by Apple Health workout -- program.type stays 'rest' when Apple Health workouts import, so exercises are silently hidden. Fix: flip type off rest on import. workout.tsx ~366-400, ~996-1027.
 - [BUG] YvY streak (vsStreak) always 0 -- badge renders but pj_vs_streak is never written. Needs: calculate win/loss at end of day, persist count, reset on loss.
-- [BUG] Orphaned "g" label on Edit Entry serving size -- serving descriptor beneath "Servings" renders as bare "g" on certain food entries. Root cause: null or empty serving unit name on some FatSecret foods causes label to fall back to raw unit character with no descriptor. Add null/empty guard: show sensible fallback or hide label entirely when no unit name is present. Affects some entries but not others. food-detail.tsx.
-- MY FOOD badge missing from Food Detail and Edit Entry screens -- visual indicator only, not blocking logging. When a food is user-created, add the same badge shown on list rows to the food detail header and edit entry screen. add-food.tsx, food-detail.tsx.
 
 ---
 

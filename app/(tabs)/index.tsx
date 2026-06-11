@@ -766,6 +766,8 @@ export default function HomeScreen() {
   const [ydWater,         setYdWater]         = useState<number|null>(null);
   const [ydActiveCalories,setYdActiveCalories]= useState<number|null>(null);
   const [vsStreak,        setVsStreak]        = useState(0);
+  // Latest "date|result" snapshot of the live YvY card, used to settle the streak at day rollover.
+  const [vsLiveKey,       setVsLiveKey]       = useState('');
 
   // Celebration state
   const [achievementStore,setAchievementStore]= useState<AchievementsStore>({});
@@ -2536,6 +2538,39 @@ export default function HomeScreen() {
     );
   };
 
+  // ── YvY streak settlement ──
+  // The live card stashes "date|result" into vsLiveKey. When a new day arrives, the
+  // previously tracked day is final, so fold its result into the streak: win extends,
+  // loss resets to 0, tie holds. Today's in-progress result never inflates the badge.
+  useEffect(() => {
+    if (!vsLiveKey) return;
+    const [date, result] = vsLiveKey.split('|');
+    if (!date || !result) return;
+    (async () => {
+      try {
+        const raw = await AsyncStorage.getItem('pj_vs_streak');
+        const data = raw ? JSON.parse(raw) : {};
+        let streak: number = data.streak || 0;
+        let settledDate: string | null = data.settledDate ?? null;
+        let trackingDate: string | null = data.trackingDate ?? null;
+        let liveResult: string | null = data.liveResult ?? null;
+
+        // New day: settle the previously tracked day (once) into the streak.
+        if (trackingDate && trackingDate !== date && trackingDate !== settledDate && liveResult) {
+          if (liveResult === 'win') streak += 1;
+          else if (liveResult === 'lose') streak = 0;
+          // tie: streak unchanged
+          settledDate = trackingDate;
+        }
+        trackingDate = date;
+        liveResult = result;
+
+        await AsyncStorage.setItem('pj_vs_streak', JSON.stringify({ streak, settledDate, trackingDate, liveResult }));
+        setVsStreak(streak);
+      } catch {}
+    })();
+  }, [vsLiveKey]);
+
   const renderVsYesterdayCard = () => {
     // ── Today's values ──
     const todayNet = totalCals - displayedBurned - runningBmr;
@@ -2718,6 +2753,13 @@ export default function HomeScreen() {
     const losses = results.filter(r => r === 'lose').length;
     const ties   = results.filter(r => r === 'tie').length;
     const overallResult: Result = wins > losses ? 'win' : losses > wins ? 'lose' : 'tie';
+
+    // Snapshot today's live result so the settle effect can fold it into the streak at rollover.
+    // Skip the tutorial demo and Mindful mode (no win/loss framing there).
+    if (!yvyTutorialDemo && !isMindful) {
+      const liveKey = `${todayKey}|${overallResult}`;
+      if (vsLiveKey !== liveKey) setVsLiveKey(liveKey);
+    }
 
     const motivationalLines: Record<Result, string[]> = {
       win:  ['You just raised the bar.', 'Today beats yesterday. Keep going.', "Standard's rising. Keep the intensity.", 'Better than yesterday. Build on it.'],

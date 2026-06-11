@@ -6,8 +6,11 @@
 
 ## BUGS
 
-- [BUG] Rest day not overridden by Apple Health workout -- program.type stays 'rest' when Apple Health workouts import, so exercises are silently hidden. Fix: flip type off rest on import. workout.tsx ~366-400, ~996-1027.
-- [BUG] YvY streak (vsStreak) always 0 -- badge renders but pj_vs_streak is never written. Needs: calculate win/loss at end of day, persist count, reset on loss.
+- [BUG] Add/Edit Exercise modal crash (FOUND, not yet fixed) -- openAddExerciseModal (workout.tsx ~250-251) sets addExerciseAnim / addExerciseKeyboardOffset, which no longer exist (renamed to addExerciseScale / addExerciseKeyboardY in the scale-animation refactor). ReferenceError when tapping an exercise to edit (openEditModal, line 1104). Lines are dead resets; Modal onShow already resets correctly. Fix: delete the two lines. Confirmed by code, not yet device-verified.
+
+### Fixed
+- [FIXED] Rest day not overridden by Apple Health workout -- type stayed 'rest' on import so exercises were hidden. Now flips type off rest (to cardio) when a workout imports. workout.tsx import effect.
+- [FIXED] YvY streak (vsStreak) always 0 -- pj_vs_streak was read but never written. Now snapshots live result and settles into the streak at day rollover (win extends, loss resets, tie holds; Mindful excluded). index.tsx.
 
 ---
 

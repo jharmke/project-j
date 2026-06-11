@@ -424,10 +424,16 @@ useEffect(() => {
     }
 
     if (newExercises.length === 0) return prev;
+    // An Apple Health workout landing on a rest day means it wasn't really a rest day.
+    // Flip off 'rest' so the imported exercises aren't silently hidden by the rest-day view.
+    const flippedType = current.type === 'rest' ? 'cardio' : current.type;
+    const flippedFocus = current.type === 'rest' ? 'Cardio' : current.focus;
     const updated = {
       ...prev,
       [todayKey]: {
         ...current,
+        type: flippedType,
+        focus: flippedFocus,
         exercises: [...current.exercises, ...newExercises],
       },
     };

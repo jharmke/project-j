@@ -238,19 +238,19 @@ Every notification taps into a specific destination. Generic "open to last scree
 | Type | Destination |
 |---|---|
 | Streak Protection | Home tab |
-| IF Window Closing | Home tab, IF card |
+| IF Window Closing | Log tab, auto-scroll to IF card |
 | Weekly Summary Ready | Stats tab, weekly summary page directly |
 | Monthly Summary Ready | Stats tab, monthly summary page directly |
 | Re-engagement | Home tab |
 | Faith Reading | Plans screen (app/plans.tsx) |
 | Gratitude | Faith tab, auto-scroll to gratitude card |
 | Prayer | prayer.tsx directly |
-| Water Pace | Home tab, auto-scroll to water card (fallback: Home tab) |
+| Water Pace | Home tab, auto-scroll to water card |
 | Food Log | Log tab |
 | Activity | Workout tab |
 | Daily Verse | Bible screen, auto-scroll to today's verse (same as tapping Today's Message card) |
-| Weight Log | Home tab, auto-scroll to weight card (fallback: Home tab) |
-| IF Check-In | Home tab, IF card |
+| Weight Log | Home tab, auto-scroll to weight card |
+| IF Check-In | Log tab, auto-scroll to IF card |
 
 ---
 
@@ -321,3 +321,4 @@ This layer is NOT part of the current overhaul. Do not build piecemeal. Needs a 
 - 2026-06-04: Doc created from Justin's gym notes (Smart/Manual split, personality fallback, in-app page, summary routing) and roadmap notification items.
 - 2026-06-08: Full redesign locked with Justin. Smart/Manual split replaced with category-based settings + daily cap + priority system. 14 types finalized (2 killed, 4 new added). Settings UI fully specced. Deep linking table complete. Mindful two-state pass complete. Copy variation approach locked (deterministic rotation, 4-6 per type per mode). Smart coaching scenarios preserved as future layer, not this build, details not agreed on.
 - 2026-06-08: Core build complete. services/notifications.ts and services/notificationScheduler.ts fully rewritten. Settings UI replaced (old 3-accordion/11-toggle structure gone, new spec-compliant design). Deep linking wired. Cancel-on-view (weekly/monthly) and cancel-on-complete (faith reading) hooked up. IF Check-In bug root-caused and fixed. REMAINING: copy variations pass only.
+- 2026-06-10: Live test (Justin). Three bugs found and fixed. (1) Water/weight/IF notifications routed correctly but home screen never read useLocalSearchParams or scrollTo param: added cardOffsets ref + onLayout on all visibleCards wrappers + scrollTo useEffect to index.tsx. (2) Activity notification used string-form router.push which failed silently (try/catch swallowed it): fixed _layout.tsx handler to always use object form. (3) IF notifications routed to home tab but IFCard lives on log tab: fixed route in notifications.ts (both IF Window Closing and IF Check-In), added ifCardOffset ref + scrollTo useEffect + onLayout wrapper to log.tsx. Deep link table below updated to reflect corrected IF route.

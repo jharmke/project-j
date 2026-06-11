@@ -81,7 +81,7 @@ function RootLayoutNav() {
         if (data.params) {
           router.push({ pathname: data.route, params: data.params });
         } else {
-          router.push(data.route);
+          router.push({ pathname: data.route });
         }
       } catch {}
     });

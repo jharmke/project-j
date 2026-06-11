@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Animated, Easing, Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
@@ -169,6 +169,8 @@ export default function LogScreen() {
   const tutorialEntryRegistered = useRef(false);
   const { registerTarget, unregisterTarget, registerTutorialAction, unregisterTutorialAction, registerScrollView, unregisterScrollView, activeState: tutorialActiveState } = useTutorial();
   const scrollRef = useRef<any>(null);
+  const ifCardOffset = useRef<number>(0);
+  const { scrollTo } = useLocalSearchParams<{ scrollTo?: string }>();
   const tutorialIfCardState = (tutorialActiveState?.tutorial.steps[tutorialActiveState.stepIndex] as any)?.ifCardState as
     'idle' | 'active' | 'eating' | undefined;
   const [loaded, setLoaded] = useState(false);
@@ -548,6 +550,13 @@ export default function LogScreen() {
     registerScrollView('log', scrollRef);
     return () => unregisterScrollView('log');
   }, []);
+
+  useEffect(() => {
+    if (scrollTo !== 'if') return;
+    setTimeout(() => {
+      scrollRef.current?.scrollTo({ y: Math.max(0, ifCardOffset.current - 16), animated: true });
+    }, 400);
+  }, [scrollTo]);
 
   // ── 1-second currentTime tick for IF countdown ────────────────────────────
   useEffect(() => {
@@ -1542,6 +1551,7 @@ export default function LogScreen() {
 
       {/* IF Card -- live today view */}
       {isToday && (
+        <View onLayout={(e) => { ifCardOffset.current = e.nativeEvent.layout.y; }}>
         <IFCard
           theme={theme}
           ifStart={ifStart}
@@ -1591,6 +1601,7 @@ export default function LogScreen() {
           onConfirmEnd={(t: Date) => { const now = new Date(); t.setFullYear(now.getFullYear(), now.getMonth(), now.getDate()); const ne = t.getTime(); setIfEnd(ne); saveToFirebase(todayKey, 'ifEnd', ne); }}
           tutorialOverrideState={tutorialIfCardState}
         />
+        </View>
       )}
 
       {/* IF Card -- read-only past day summary (only when both start + end logged) */}

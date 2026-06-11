@@ -707,7 +707,7 @@ export const scheduleIFWindowNotifications = async (
       title: applyPlaceholders(v.title, { N }),
       body: applyPlaceholders(v.body, { N }),
       sound: true,
-      data: { route: '/', params: { scrollTo: 'if' } },
+      data: { route: '/(tabs)/log', params: { scrollTo: 'if' } },
     },
     trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: fireDate },
   });
@@ -1068,7 +1068,7 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
       time: '13:00',
       title: v.title,
       body: v.body,
-      data: { route: '/', params: { scrollTo: 'if' } },
+      data: { route: '/(tabs)/log', params: { scrollTo: 'if' } },
     });
   }
 

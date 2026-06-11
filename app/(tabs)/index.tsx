@@ -4,7 +4,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, AppState, Dimensions, Easing, Keyboard, KeyboardAvoidingView, Modal, NativeScrollEvent, NativeSyntheticEvent, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
@@ -697,7 +697,16 @@ export default function HomeScreen() {
   const [goalWeight,     setGoalWeight]     = useState<number|null>(null);
   const [weightGoalPace, setWeightGoalPace] = useState<string>('lose_1');
   const scrollRef = useRef<any>(null);
+  const cardOffsets = useRef<Record<string, number>>({});
   const dailyNoteRef = useRef<any>(null);
+  const { scrollTo } = useLocalSearchParams<{ scrollTo?: string }>();
+  useEffect(() => {
+    if (!scrollTo) return;
+    setTimeout(() => {
+      const offset = cardOffsets.current[scrollTo] ?? 0;
+      scrollRef.current?.scrollTo({ y: Math.max(0, offset - 16), animated: true });
+    }, 400);
+  }, [scrollTo]);
   const dailyNoteCardRef = useRef<any>(null);
 
   // ── Register home ScrollView with tutorial system so off-screen targets can be scrolled into view ──
@@ -3294,7 +3303,7 @@ export default function HomeScreen() {
         }
       >
         {visibleCards.map((id) => (
-          <View key={id}>
+          <View key={id} onLayout={(e) => { cardOffsets.current[id] = e.nativeEvent.layout.y; }}>
             {renderCardById(id)}
           </View>
         ))}

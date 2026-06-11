@@ -164,7 +164,7 @@
 
 ## NOTIFICATIONS
 
-- Notifications spec build -- SPEC_notifications.md is the source of truth. 14 types, copy pools, deep linking all specced. Build in dedicated session.
+- Notifications spec build -- SPEC_notifications.md is the source of truth. 14 types, copy pools, deep linking all specced. Build in dedicated session. Deep linking bugs fixed 2026-06-10 (water/weight scroll, activity routing, IF tab mismatch).
 - Notification center -- bell icon in profile header, badge, real-time toasts for Health sync events.
 - Daily summary push notification -- push version of morning Day Summary pop-up. NOT in the 14-type spec yet; add before building.
 

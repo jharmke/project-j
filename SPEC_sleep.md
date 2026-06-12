@@ -248,7 +248,7 @@ General feel: data-dense but digestible. Clinical precision, not wellness-soft. 
 **Recovery Score hero (TBD)**
 - Large Bebas Neue score number, same treatment as Day Score
 - Number color reflects zone status (green/amber/red using existing muted system colors)
-- One-line readiness label in small uppercase DMSans -- exact copy TBD, something like "PRIMED" / "MAINTAINING" / "RECOVER" rather than generic Good/Fair/Poor
+- One-line readiness label in small uppercase DMSans -- LOCKED: three tiers, PRIMED (green) / STEADY (amber) / RECOVER (red), tied to the color zones below
 - No radial glow or tinted background -- skip the effect, score number is strong enough on its own and glow doesn't work across all themes
 
 **Signal component rows (TBD)**
@@ -265,10 +265,10 @@ General feel: data-dense but digestible. Clinical precision, not wellness-soft. 
 - Duration bars underneath in muted fill
 - Fully token-based, no hardcoded colors
 
-**Sleep stage stacked bars (TBD)**
-- Stage colors are fixed per stage, not accent-driven (same logic as macro colors)
-- Deep: muted green (#0d9268), REM: soft purple (TBD), Core: muted blue (TBD), Awake: muted red (#cc3333)
-- Exact color values to be confirmed in design session -- must work across all 5 themes
+**Sleep stage stacked bars (LOCKED 2026-06-12 -- CORRECTED)**
+- Stage colors REUSE the existing per-theme theme tokens the home SleepDonut already uses: sleepCore / sleepDeep / sleepRem. Do NOT invent fixed hexes -- the earlier "soft purple / muted blue" values in this spec were placeholder TBD guesses written before the theme system was checked; they conflicted with the live donut (Core=blue, Deep=purple, REM=green) and are dropped.
+- Awake: new per-theme token sleepAwake added to theme.tsx (muted red, tuned per theme). The donut never showed Awake; the Sleep Hub stage bars do.
+- Net rule: whatever colors the home donut shows, the Sleep Hub shows. Consistency by construction, theme-correct automatically.
 
 **General (TBD)**
 - All colors via theme tokens, never hardcoded hex
@@ -310,6 +310,18 @@ Proposed: Same pattern as rest of app.
 
 10. Historical handling (LOCKED 2026-06-12: FREEZE + GOING FORWARD): Recovery Score applies only from when its data (especially HRV) is available, going forward. Historical Day Scores keep their existing sleep-based recovery subscore -- no retroactive recompute. Mirrors the burnAccuracy / goalSnapshot freeze pattern; protects historical consistency.
 
+11. DESIGN SESSION LOCKS (LOCKED 2026-06-12): the remaining Section 6 TBDs closed so build can start.
+    - **Filename / route:** app/sleep.tsx (clean /sleep route). Home sleep card navigates here.
+    - **Sleep tab layout (top->bottom):** Sleep Score hero (score + grade, stage breakdown bar, bedtime/wake, duration vs goal) -> Sleep trend graph (7d default, 30d toggle) -> Sleep stage history stacked bars -> Sleep metrics panel (wake events, bedtime consistency, avg deep %, avg REM %) -> Sleep Coach tip -> Exclude day toggle (bottom).
+    - **Recovery tab layout (top->bottom):** Recovery Score hero (score + readiness label + 6 contributor rows w/ baseline deltas, SpO2 display row below) -> Recovery trend graph -> Key signals panel (HRV, RHR, resp rate, SpO2, prev-day active cal) -> Recovery Coach tip.
+    - **Stage colors:** REUSE existing per-theme tokens sleepCore/sleepDeep/sleepRem (same as home donut: Core=blue, Deep=purple, REM=green). Added new per-theme sleepAwake token (muted red) to theme.tsx. No fixed hexes -- the earlier fixed values were bogus placeholder TBDs and are dropped.
+    - **Readiness labels:** PRIMED / STEADY / RECOVER (3 tiers, tied to zones).
+    - **Baseline scaling curve (placeholder):** linear + clamped. Baseline = 75 pts, scales to 100 at a meaningful positive deviation, 0 at a meaningful negative one, per-signal window. Sigmoid is a post-data refinement.
+    - **Recovery color zones (placeholder):** green >= 70, amber 55-69, red < 55. Tune after first real data.
+    - **Mindful:** Section 7 confirmed as written. Tip shown, corrective observations suppressed unless "Include growth areas" on; score number always shown.
+    - **v1 scope:** Activity Balance (5%) dropped for v1; its weight folds into Previous Day Activity -> prevDayActivity * 0.17.
+    - **Build order:** Sleep tab first (data available today), Recovery tab second.
+
 ---
 
 ## 9. DEPENDENCIES
@@ -327,5 +339,6 @@ Proposed: Same pattern as rest of app.
 ## 10. ROADMAP STATUS
 
 - Promoted from Backlog to SOON during the gym thread
-- Full design session required before VS Claude build session
-- Build blocked on: HRV wiring (new EAS build)
+- Design session DONE 2026-06-12 (see Decisions Log #11). All Section 6 TBDs closed.
+- HRV wiring DONE + verified on device; EAS build LANDED.
+- BUILD IN PROGRESS: Sleep tab first, then Recovery tab.

@@ -151,6 +151,7 @@ export interface Theme {
   sleepCore: string;
   sleepDeep: string;
   sleepRem: string;
+  sleepAwake: string;       // awake periods (Sleep Hub stage bars; donut never showed this)
   sleepTrack: string;       // donut background ring
 
   // ── Workout day colors ───────────────────────────────────────────────────────
@@ -232,6 +233,7 @@ const dark: Theme = {
   sleepCore:        '#60a5fa',
   sleepDeep:        '#818cf8',
   sleepRem:         '#34d399',
+  sleepAwake:       '#c0504a',
   sleepTrack:       '#12121a',
 
   workoutPush:      '#3b82f6',
@@ -309,6 +311,7 @@ const light: Theme = {
   sleepCore:        '#3b82f6',
   sleepDeep:        '#a855f7',
   sleepRem:         '#10b981',
+  sleepAwake:       '#cc3333',
   sleepTrack:       '#e0e0ee',
 
   workoutPush:      '#2563eb',
@@ -386,6 +389,7 @@ const slate: Theme = {
   sleepCore:        '#4a7fa5',
   sleepDeep:        '#7060c0',
   sleepRem:         '#2a9d6e',
+  sleepAwake:       '#cc3333',
   sleepTrack:       '#d4d8de',
 
   workoutPush:      '#4a7fa5',
@@ -463,6 +467,7 @@ const warm: Theme = {
   sleepCore:        '#b87820',
   sleepDeep:        '#9060a0',
   sleepRem:         '#3a8a58',
+  sleepAwake:       '#c04020',
   sleepTrack:       '#e4ddce',
 
   workoutPush:      '#b87820',
@@ -540,6 +545,7 @@ const blush: Theme = {
   sleepCore:        '#d4607a',
   sleepDeep:        '#5b7fe8',
   sleepRem:         '#5cb87a',
+  sleepAwake:       '#d44040',
   sleepTrack:       '#f8d8e0',
 
   workoutPush:      '#d4607a',

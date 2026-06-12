@@ -113,7 +113,7 @@
 
 ## SLEEP
 
-- Sleep Hub + Recovery Score -- full build specced in SPEC_sleep.md. Two-tab destination screen (Sleep / Recovery), new baseline-relative Recovery Score (6-signal weighted formula), replaces the old recovery subscore app-wide. Promoted to SOON. HRV WIRING DONE + verified on device 2026-06-12 (62ms, SDNN most-recent; sleep-window scoping still TODO in the formula). EAS build LANDED 2026-06-12 (HRV permission confirmed, HealthKit write permissions added, speech/image/netinfo native modules installed). Only remaining blocker: design session (Section 6 TBDs: layout, stage colors, readiness labels, baseline scaling curve).
+- Sleep Hub + Recovery Score -- full build specced in SPEC_sleep.md. Two-tab destination screen (Sleep / Recovery), new baseline-relative Recovery Score (6-signal weighted formula), replaces the old recovery subscore app-wide. DESIGN SESSION DONE 2026-06-12 (Decisions Log #11): file app/sleep.tsx, layouts locked, stage colors (Deep #0d9268 / REM #7e6bb3 / Core #3d6e9e / Awake #cc3333), readiness labels PRIMED/STEADY/RECOVER, zones green>=70/amber55-69/red<55 (placeholder), linear baseline scaling (placeholder), Mindful confirmed, v1 drops Activity Balance (prevDayActivity*0.17). HRV WIRING DONE + verified on device 2026-06-12 (62ms, SDNN most-recent; sleep-window scoping still TODO in the formula). EAS build LANDED 2026-06-12. BUILD IN PROGRESS: Sleep tab first, then Recovery tab.
 - Sleep score stage weight tuning -- bump REM weight higher, soften deep sleep penalty. REM and Deep currently equal at 30pts each. utils/sleepScore.ts.
 - Sleep edit disclaimer -- show disclaimer when user opens manual sleep edit: "will overwrite Apple Health synced data."
 

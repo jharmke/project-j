@@ -222,8 +222,17 @@ function Hypnogram({ segments, theme }: { segments: SleepSeg[]; theme: any }) {
               <SvgText x={GUT - 6} y={laneY(stage) + laneH / 2 + 3} fill={theme.textMuted} fontSize={8} fontFamily="DMSans_600SemiBold" textAnchor="end">{laneLabel[stage]}</SvgText>
             </G>
           ))}
+          {segments.map((s, i) => {
+            if (i === 0) return null;
+            const prev = segments[i - 1];
+            if (prev.stage === s.stage) return null;
+            const x = toX(s.start);
+            const yA = laneY(prev.stage) + laneH / 2;
+            const yB = laneY(s.stage) + laneH / 2;
+            return <Line key={`c${i}`} x1={x} y1={Math.min(yA, yB)} x2={x} y2={Math.max(yA, yB)} stroke={theme.textMuted} strokeWidth={1.5} opacity={0.4} />;
+          })}
           {segments.map((s, i) => (
-            <Rect key={i} x={toX(s.start)} y={laneY(s.stage)} width={Math.max(1.5, toX(s.end) - toX(s.start))} height={laneH} fill={laneColor[s.stage]} rx={2} />
+            <Rect key={i} x={toX(s.start)} y={laneY(s.stage)} width={Math.max(1.5, toX(s.end) - toX(s.start))} height={laneH} fill={laneColor[s.stage]} rx={1} />
           ))}
           {cursor && <Line x1={cursor.x} y1={0} x2={cursor.x} y2={H} stroke={theme.textPrimary} strokeWidth={1} opacity={0.45} />}
         </Svg>
@@ -489,9 +498,6 @@ export default function SleepHub() {
       <View style={cardStyle}>
         <Text style={[cardLabel, { marginBottom: 14 }]}>Sleep Timeline</Text>
         <Hypnogram segments={segments} theme={theme} />
-        <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 10 }}>
-          Drag across the timeline to read each stage.
-        </Text>
       </View>
     );
   };
@@ -616,20 +622,20 @@ export default function SleepHub() {
       : { value: `${fmtMs(debtMs)} behind`, color: debtMs > sleepGoal * 3600000 ? theme.statusBad : theme.statusWarn, sub: `${n}d vs ${sleepGoal}h goal` };
 
     const row = (label: string, value: string, color: string, sub: string | null, isLast = false) => (
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 11, borderBottomWidth: isLast ? 0 : 0.5, borderBottomColor: theme.borderSubtle }}>
-        <Text style={{ fontSize: 12.5, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>{label}</Text>
-        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 7 }}>
-          {sub ? <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>{sub}</Text> : null}
-          <Text style={{ fontSize: 15, color, fontFamily: 'DMSans_700Bold' }}>{value}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: isLast ? 0 : 0.5, borderBottomColor: theme.borderSubtle }}>
+        <View>
+          <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>{label}</Text>
+          {sub ? <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>{sub}</Text> : null}
         </View>
+        <Text style={{ fontSize: 16, color, fontFamily: 'DMSans_700Bold' }}>{value}</Text>
       </View>
     );
 
     return (
       <View style={cardStyle}>
         <Text style={[cardLabel, { marginBottom: 4 }]}>Sleep Metrics</Text>
-        {row('Avg deep sleep', avgDeepPct !== null ? `${avgDeepPct}%` : '—', theme.sleepDeep, `${n}d`)}
-        {row('Avg REM sleep', avgRemPct !== null ? `${avgRemPct}%` : '—', theme.sleepRem, `${n}d`)}
+        {row('Avg deep sleep', avgDeepPct !== null ? `${avgDeepPct}%` : '—', theme.sleepDeep, `${n}-day average`)}
+        {row('Avg REM sleep', avgRemPct !== null ? `${avgRemPct}%` : '—', theme.sleepRem, `${n}-day average`)}
         {row('Bedtime consistency', consistency ? consistency.label : '—', consistency ? consistency.color : theme.textSecondary, consistency ? consistency.sub : null)}
         {row('Sleep debt', debt.value, debt.color, debt.sub)}
         {row('Wake events', String(last.awakeCount), last.awakeCount >= 4 ? theme.statusWarn : theme.textSecondary, 'last night', true)}

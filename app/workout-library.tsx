@@ -1845,12 +1845,18 @@ export default function WorkoutLibraryScreen() {
   const { showToast } = useToast();
 
   // ── Tutorial spotlight targets ─────────────────────────────────────────────
-  const { registerTutorialAction, unregisterTutorialAction } = useTutorial();
+  const { registerTutorialAction, unregisterTutorialAction, registerScrollView, unregisterScrollView } = useTutorial();
   const libSearchRef      = useTutorialTarget('workout_lib_search');
   const libExerciseRowRef = useTutorialTarget('workout_lib_exercise_row');
   const libFilterBtnRef   = useTutorialTarget('workout_lib_filter_btn');
   const libFabRef         = useTutorialTarget('workout_lib_fab');
   const libMuscleMapRef   = useTutorialTarget('workout_lib_muscle_map');
+  // Programs/Routines tour targets
+  const libTabsRef         = useTutorialTarget('workout_lib_tabs');
+  const libProgramCardRef  = useTutorialTarget('workout_lib_program_card');
+  const libLoadProgramRef  = useTutorialTarget('workout_lib_load_program');
+  const libMyRoutinesRef   = useTutorialTarget('workout_lib_my_routines');
+  const libRoutinePresetRef = useTutorialTarget('workout_lib_routine_preset_card');
   const [showTutorialDetail, setShowTutorialDetail] = useState(false);
   // Stable ref so tutorial actions always have latest library without re-registering on every load
   const libraryRef = useRef<LibraryExercise[]>([]);
@@ -1897,8 +1903,18 @@ export default function WorkoutLibraryScreen() {
   const myRoutinesChevron = useRef(new Animated.Value(1)).current;
   const presetsChevron = useRef(new Animated.Value(1)).current;
 
-  const { selectMode, day } = useLocalSearchParams<{ selectMode: string; day: string }>();
+  const { selectMode, day, tutorialTab } = useLocalSearchParams<{ selectMode: string; day: string; tutorialTab: string }>();
   const isSelectMode = selectMode === 'true';
+  // Programs/Routines tours deep-link straight to the right tab.
+  useEffect(() => {
+    if (tutorialTab === 'programs' || tutorialTab === 'routines') setActiveTab(tutorialTab);
+  }, [tutorialTab]);
+  // Register the Routines scroll view so the tour can scroll a preset card into view.
+  const libRoutinesScrollRef = useRef<ScrollView>(null);
+  useEffect(() => {
+    registerScrollView('workout_lib_routines', libRoutinesScrollRef);
+    return () => unregisterScrollView('workout_lib_routines');
+  }, [registerScrollView, unregisterScrollView]);
   const [selectedEx, setSelectedEx] = useState<LibraryExercise | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showDayPicker, setShowDayPicker] = useState(false);
@@ -2515,7 +2531,7 @@ export default function WorkoutLibraryScreen() {
         )}
       </View>
 
-      <View style={styles.tabRow}>
+      <View ref={libTabsRef} collapsable={false} style={styles.tabRow}>
         {(['all', 'favorites', 'programs', 'routines'] as const).map(tab => (
           <TouchableOpacity
             key={tab}
@@ -2618,9 +2634,9 @@ export default function WorkoutLibraryScreen() {
               <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular', marginTop: 6, textAlign: 'center' }}>Tap + to create your first program.</Text>
             </View>
           }
-          renderItem={({ item: program, drag, isActive }: RenderItemParams<CustomProgram>) => (
+          renderItem={({ item: program, getIndex, drag, isActive }: RenderItemParams<CustomProgram>) => (
             <ScaleDecorator>
-              <View style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderRadius: 12, padding: 16, marginHorizontal: 12, marginBottom: 12, opacity: isActive ? 0.95 : 1, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6 }}>
+              <View ref={getIndex() === 0 ? libProgramCardRef : undefined} collapsable={false} style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderRadius: 12, padding: 16, marginHorizontal: 12, marginBottom: 12, opacity: isActive ? 0.95 : 1, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
                   <Text style={{ color: theme.textSecondary, fontSize: 16, fontFamily: 'DMSans_700Bold', flex: 1, marginRight: 8 }}>{program.name}</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -2657,6 +2673,7 @@ export default function WorkoutLibraryScreen() {
                     );
                   })}
                 </View>
+                <View ref={getIndex() === 0 ? libLoadProgramRef : undefined} collapsable={false}>
                 <TouchableOpacity
                   onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); handleLoadProgram(program); }}
                   style={{ paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: activeProgramName === program.name ? theme.accentGreenBg : theme.accentBlueBg, borderWidth: 1, borderColor: activeProgramName === program.name ? theme.accentGreenBorder : theme.accentBlueBorder }}>
@@ -2664,15 +2681,18 @@ export default function WorkoutLibraryScreen() {
                     {activeProgramName === program.name ? 'ACTIVE' : 'LOAD PROGRAM'}
                   </Text>
                 </TouchableOpacity>
+                </View>
               </View>
             </ScaleDecorator>
           )}
         />
         </View>
       ) : (
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: 8, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
+        <ScrollView ref={libRoutinesScrollRef} style={{ flex: 1 }} contentContainerStyle={{ paddingTop: 8, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
           {/* My Routines section -- first */}
           <TouchableOpacity
+            ref={libMyRoutinesRef}
+            collapsable={false}
             onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); toggleMyRoutines(); }}
             style={{ flexDirection: 'row', alignItems: 'center', marginHorizontal: 12, marginBottom: 10, marginTop: 4, paddingVertical: 4 }}
             activeOpacity={0.7}>
@@ -2789,8 +2809,8 @@ export default function WorkoutLibraryScreen() {
                         if (presetsExpanded) presetsAnimHeight.setValue(h);
                       }
                     }}>
-                    {filtered.map(routine => (
-                      <View key={routine.id} style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderRadius: 12, padding: 16, marginHorizontal: 12, marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 5 }}>
+                    {filtered.map((routine, idx) => (
+                      <View key={routine.id} ref={idx === 0 ? libRoutinePresetRef : undefined} collapsable={false} style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderRadius: 12, padding: 16, marginHorizontal: 12, marginBottom: 10, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.10, shadowRadius: 5 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
                           <Text style={{ color: theme.textSecondary, fontSize: 15, fontFamily: 'DMSans_700Bold', flex: 1, marginRight: 8 }}>{routine.name}</Text>
                           <View style={{ backgroundColor: theme.bgInset, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 }}>

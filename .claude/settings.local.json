@@ -82,7 +82,16 @@
       "Bash(Measure-Object -Line)",
       "PowerShell(\\(Get-Content \"C:\\\\Users\\\\jthar\\\\ProjectJ\\\\project_j_roadmap.md\" | Measure-Object -Line\\).Lines)",
       "PowerShell(git add app/_layout.tsx app/\\(tabs\\)/index.tsx app/\\(tabs\\)/log.tsx services/notifications.ts SPEC_notifications.md project_j_roadmap.md)",
-      "PowerShell(git add SPEC_ai_meal_estimator.md app/\\(tabs\\)/log.tsx app/add-food.tsx app/food-detail.tsx project_j_roadmap.md)"
+      "PowerShell(git add SPEC_ai_meal_estimator.md app/\\(tabs\\)/log.tsx app/add-food.tsx app/food-detail.tsx project_j_roadmap.md)",
+      "Bash(awk 'NR>=594 && NR<=827 && / -- /' data/tutorials.ts)",
+      "Bash(awk 'NR>=594 && NR<=707 && / -- /' data/tutorials.ts)",
+      "Bash(awk 'NR>=697 && NR<=705' data/tutorials.ts)",
+      "Bash(awk 'NR>=830 && NR<=1034 && / -- /{printf \"%d: %s\\\\n\", NR, $0}' data/tutorials.ts)",
+      "Bash(awk 'NR>=534 && NR<=590 && / -- /{print NR\": \"$0}' data/tutorials.ts)",
+      "Bash(awk 'NR>=830 && NR<=1034 && / -- /' data/tutorials.ts)",
+      "Bash(awk 'NR>=830 && NR<=1034 && / -- /{print NR\": \"$0}' data/tutorials.ts)",
+      "Bash(awk '/const isOffScreen|function isOffScreen/,/^  }/' components/TutorialOverlay.tsx)",
+      "Bash(awk 'NR>=413 && NR<=470 && / -- /{print NR\": \"$0}' data/tutorials.ts)"
     ]
   }
 }

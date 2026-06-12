@@ -202,6 +202,69 @@ export function useHealthKit() {
     }
   };
 
+  // Per-night sleep history for the Sleep Hub trend + stage-history charts.
+  // Buckets raw HealthKit stage samples into nights keyed by wake-up day,
+  // matching the home card's "last night = today" convention (a segment that
+  // starts at/after 6pm belongs to the next morning's night).
+  const fetchSleepHistory = async (days: number): Promise<{
+    dateKey: string; coreMs: number; deepMs: number; remMs: number; awakeMs: number;
+    totalMs: number; bed: string | null; wake: string | null;
+  }[]> => {
+    try {
+      const now = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+      startDate.setHours(0, 0, 0, 0);
+
+      const samples = await queryCategorySamples(
+        'HKCategoryTypeIdentifierSleepAnalysis',
+        { limit: 5000, filter: { date: { startDate, endDate: now } } }
+      );
+      if (!samples || samples.length === 0) return [];
+
+      const nights: Record<string, { coreMs: number; deepMs: number; remMs: number; awakeMs: number; bed: number | null; wake: number | null }> = {};
+
+      for (const sample of samples) {
+        const start = new Date(sample.startDate);
+        const startMs = start.getTime();
+        const endMs = new Date(sample.endDate).getTime();
+        const dur = endMs - startMs;
+        if (dur <= 0) continue;
+
+        const wakeDay = new Date(start);
+        if (start.getHours() >= 18) wakeDay.setDate(wakeDay.getDate() + 1);
+        const key = `${wakeDay.getFullYear()}-${String(wakeDay.getMonth() + 1).padStart(2, '0')}-${String(wakeDay.getDate()).padStart(2, '0')}`;
+
+        if (!nights[key]) nights[key] = { coreMs: 0, deepMs: 0, remMs: 0, awakeMs: 0, bed: null, wake: null };
+        const n = nights[key];
+        if (sample.value === 3) n.coreMs += dur;
+        else if (sample.value === 4) n.deepMs += dur;
+        else if (sample.value === 5) n.remMs += dur;
+        else if (sample.value === 2) n.awakeMs += dur;
+        if ([3, 4, 5].includes(sample.value as number)) {
+          if (n.bed === null || startMs < n.bed) n.bed = startMs;
+          if (n.wake === null || endMs > n.wake) n.wake = endMs;
+        }
+      }
+
+      return Object.entries(nights)
+        .map(([dateKey, n]) => {
+          const totalMs = n.coreMs + n.deepMs + n.remMs;
+          return {
+            dateKey,
+            coreMs: n.coreMs, deepMs: n.deepMs, remMs: n.remMs, awakeMs: n.awakeMs, totalMs,
+            bed: n.bed !== null ? new Date(n.bed).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null,
+            wake: n.wake !== null ? new Date(n.wake).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null,
+          };
+        })
+        .filter(n => n.totalMs > 0)
+        .sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+    } catch (e) {
+      console.log('Sleep history fetch error', e);
+      return [];
+    }
+  };
+
   const fetchHistoricalWorkouts = async (days: number): Promise<any[]> => {
     try {
       const now = new Date();
@@ -263,5 +326,5 @@ export function useHealthKit() {
     }
   };
 
-  return { authorized, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, hrv, bodyFatPct, exerciseMinutes, appleWorkouts, fetchTodayData, fetchHistoricalWorkouts };
+  return { authorized, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, hrv, bodyFatPct, exerciseMinutes, appleWorkouts, fetchTodayData, fetchHistoricalWorkouts, fetchSleepHistory };
 }

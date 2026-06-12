@@ -12,8 +12,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Dimensions, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import ReAnimated, { useAnimatedProps, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
+import Svg, { Path } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SleepDonut from '../components/SleepDonut';
 import { triggerHaptic } from '../utils/haptics';
@@ -34,12 +36,69 @@ const fmtMs = (ms: number) => {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 };
 
+type SleepNight = {
+  dateKey: string; coreMs: number; deepMs: number; remMs: number; awakeMs: number;
+  totalMs: number; bed: string | null; wake: string | null;
+};
+
+const AnimPath = ReAnimated.createAnimatedComponent(Path);
+
+// Sleep Score trend line. Animates a left-to-right draw-in on each data change.
+function ScoreTrend({ scores, color }: { scores: number[]; color: string }) {
+  const W = Dimensions.get('window').width - 24 - 32; // screen minus card margins (24) and padding (32)
+  const H = 88;
+  const n = scores.length;
+  const { d, len } = useMemo(() => {
+    if (n === 0) return { d: '', len: 0 };
+    const pts = scores.map((s, i) => ({
+      x: n === 1 ? W / 2 : (i / (n - 1)) * W,
+      y: H - (Math.max(0, Math.min(100, s)) / 100) * (H - 8) - 4,
+    }));
+    let path = `M ${pts[0].x} ${pts[0].y}`;
+    let length = 0;
+    for (let i = 1; i < pts.length; i++) {
+      path += ` L ${pts[i].x} ${pts[i].y}`;
+      length += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+    }
+    return { d: path, len: length };
+  }, [scores]);
+
+  const prog = useSharedValue(0);
+  useEffect(() => { prog.value = 0; prog.value = withTiming(1, { duration: 900 }); }, [d]);
+  const animProps = useAnimatedProps(() => ({ strokeDashoffset: len * (1 - prog.value) }));
+
+  if (!d) return null;
+  return (
+    <Svg width={W} height={H}>
+      <AnimPath d={d} stroke={color} strokeWidth={2.5} fill="none" strokeLinecap="round" strokeLinejoin="round"
+        strokeDasharray={len} animatedProps={animProps} />
+    </Svg>
+  );
+}
+
+// One night's stacked stage bar. Grows up from zero, staggered by index.
+function NightBar({ segs, totalFrac, maxH, idx }: { segs: { color: string; ms: number }[]; totalFrac: number; maxH: number; idx: number }) {
+  const h = useSharedValue(0);
+  useEffect(() => { h.value = 0; h.value = withDelay(idx * 22, withTiming(Math.max(2, totalFrac * maxH), { duration: 500 })); }, [totalFrac, maxH]);
+  const style = useAnimatedStyle(() => ({ height: h.value }));
+  return (
+    <ReAnimated.View style={[{ width: '100%', borderRadius: 3, overflow: 'hidden', flexDirection: 'column' }, style]}>
+      {segs.filter(s => s.ms > 0).map((s, i) => (
+        <View key={i} style={{ flex: s.ms, backgroundColor: s.color }} />
+      ))}
+    </ReAnimated.View>
+  );
+}
+
 export default function SleepHub() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
-  const { sleepHours, sleepStages, sleepTimes, sleepAwakeMs } = useHealthKit();
+  const { sleepHours, sleepStages, sleepTimes, sleepAwakeMs, fetchSleepHistory } = useHealthKit();
 
   const [activeTab, setActiveTab] = useState<SleepTab>('sleep');
+  const [range, setRange] = useState<'7' | '30'>('7');
+  const [history, setHistory] = useState<SleepNight[]>([]);
+  const [loadingHist, setLoadingHist] = useState(true);
 
   // Day-stored sleep fields (mirror how the home card resolves the same number)
   const [sleepGoal, setSleepGoal] = useState(7);
@@ -52,6 +111,15 @@ export default function SleepHub() {
   // Bumped on focus so the donut re-animates each time the screen is entered.
   const [refreshKey, setRefreshKey] = useState(0);
   useFocusEffect(useCallback(() => { setRefreshKey(k => k + 1); }, []));
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoadingHist(true);
+    fetchSleepHistory(parseInt(range, 10))
+      .then(h => { if (!cancelled) { setHistory(h); setLoadingHist(false); } })
+      .catch(() => { if (!cancelled) setLoadingHist(false); });
+    return () => { cancelled = true; };
+  }, [range]);
 
   useEffect(() => {
     (async () => {
@@ -197,6 +265,105 @@ export default function SleepHub() {
     </View>
   );
 
+  const cardLabel = { fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' as const };
+
+  const rangeToggle = () => (
+    <View style={{ flexDirection: 'row', backgroundColor: theme.bgProgressTrack, borderRadius: 6, padding: 2 }}>
+      {(['7', '30'] as const).map(r => (
+        <TouchableOpacity key={r} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setRange(r); }}
+          style={{ paddingVertical: 4, paddingHorizontal: 10, borderRadius: 4, backgroundColor: range === r ? theme.bgCard : 'transparent' }}
+          hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
+          <Text style={{ fontSize: 11, color: range === r ? theme.textPrimary : theme.textMuted, fontFamily: range === r ? 'DMSans_700Bold' : 'DMSans_500Medium' }}>{r}D</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
+  const nightScores = useMemo(
+    () => history.map(nt => calcSleepScore(nt.totalMs / 3600000, { core: nt.coreMs, deep: nt.deepMs, rem: nt.remMs, totalMs: nt.totalMs }, sleepGoal).score ?? 0),
+    [history, sleepGoal],
+  );
+
+  const renderTrend = () => {
+    const avg = nightScores.length ? Math.round(nightScores.reduce((a, b) => a + b, 0) / nightScores.length) : null;
+    return (
+      <View style={cardStyle}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <Text style={cardLabel}>Sleep Score Trend</Text>
+          {rangeToggle()}
+        </View>
+        {loadingHist ? (
+          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 24, textAlign: 'center' }}>Loading…</Text>
+        ) : nightScores.length === 0 ? (
+          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 24, textAlign: 'center' }}>
+            No sleep history yet for this range. Stages sync from Apple Health.
+          </Text>
+        ) : (
+          <>
+            <ScoreTrend scores={nightScores} color={theme.accentBlueRaw} />
+            {avg !== null && (
+              <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium', marginTop: 8 }}>
+                {nightScores.length} {nightScores.length === 1 ? 'night' : 'nights'} · avg score {avg}
+              </Text>
+            )}
+          </>
+        )}
+      </View>
+    );
+  };
+
+  const renderStageHistory = () => {
+    const barAreaH = 110;
+    const withBars = history.map(nt => ({ ...nt, barMs: nt.totalMs + nt.awakeMs }));
+    const maxBar = withBars.reduce((m, n) => Math.max(m, n.barMs), 0);
+    const legend = [
+      { label: 'Core', color: theme.sleepCore },
+      { label: 'Deep', color: theme.sleepDeep },
+      { label: 'REM', color: theme.sleepRem },
+      { label: 'Awake', color: theme.sleepAwake },
+    ];
+    return (
+      <View style={cardStyle}>
+        <Text style={[cardLabel, { marginBottom: 12 }]}>Sleep Stages</Text>
+        {loadingHist ? (
+          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 24, textAlign: 'center' }}>Loading…</Text>
+        ) : withBars.length === 0 ? (
+          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 24, textAlign: 'center' }}>
+            No stage history yet for this range.
+          </Text>
+        ) : (
+          <>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: barAreaH, gap: range === '7' ? 8 : 3 }}>
+              {withBars.map((nt, i) => (
+                <View key={nt.dateKey} style={{ flex: 1, height: barAreaH, justifyContent: 'flex-end' }}>
+                  <NightBar
+                    idx={i}
+                    maxH={barAreaH}
+                    totalFrac={maxBar > 0 ? nt.barMs / maxBar : 0}
+                    segs={[
+                      { color: theme.sleepAwake, ms: nt.awakeMs },
+                      { color: theme.sleepRem, ms: nt.remMs },
+                      { color: theme.sleepCore, ms: nt.coreMs },
+                      { color: theme.sleepDeep, ms: nt.deepMs },
+                    ]}
+                  />
+                </View>
+              ))}
+            </View>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 14 }}>
+              {legend.map(l => (
+                <View key={l.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: l.color }} />
+                  <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold', letterSpacing: 0.5, textTransform: 'uppercase' }}>{l.label}</Text>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
+      </View>
+    );
+  };
+
   const tabBtn = (id: SleepTab, label: string) => {
     const active = activeTab === id;
     return (
@@ -242,7 +409,13 @@ export default function SleepHub() {
       </View>
 
       <ScrollView contentContainerStyle={{ paddingTop: 8, paddingBottom: insets.bottom + 32 }} showsVerticalScrollIndicator={false}>
-        {activeTab === 'sleep' ? renderHero() : renderRecoveryPlaceholder()}
+        {activeTab === 'sleep' ? (
+          <>
+            {renderHero()}
+            {renderTrend()}
+            {renderStageHistory()}
+          </>
+        ) : renderRecoveryPlaceholder()}
       </ScrollView>
     </LinearGradient>
   );

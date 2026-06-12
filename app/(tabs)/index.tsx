@@ -668,6 +668,7 @@ export default function HomeScreen() {
   const [sleepFeelRating,   setSleepFeelRating]     = useState<number|null>(null);
   const [sleepConsistencyPts, setSleepConsistencyPts] = useState(0);
   const sleepFeelAnims = useRef([...Array(10)].map(() => new Animated.Value(1))).current;
+  const sleepCardScale = useRef(new Animated.Value(1)).current;
   const [sleepManualCore,   setSleepManualCore]     = useState<string>('');
   const [sleepManualDeep,   setSleepManualDeep]     = useState<string>('');
   const [sleepManualRem,    setSleepManualRem]      = useState<string>('');
@@ -1992,9 +1993,14 @@ export default function HomeScreen() {
   const renderSleepCard = () => {
     const displaySleep = sleepOverride ?? sleepHours;
     return (
-      <View ref={sleepCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, overflow: 'hidden' }]}>
+      <Animated.View ref={sleepCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, overflow: 'hidden', transform: [{ scale: sleepCardScale }] }]}>
         <Ionicons name="moon" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
-        <TouchableOpacity activeOpacity={0.92} onPress={() => { if (editingSleep) return; triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/sleep'); }}>
+        <TouchableOpacity
+          activeOpacity={1}
+          onPress={() => { if (editingSleep) return; triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/sleep'); }}
+          onPressIn={() => { if (editingSleep) return; Animated.timing(sleepCardScale, { toValue: 0.97, duration: 100, useNativeDriver: true }).start(); }}
+          onPressOut={() => { Animated.timing(sleepCardScale, { toValue: 1, duration: 100, useNativeDriver: true }).start(); }}
+        >
         
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
@@ -2282,7 +2288,7 @@ export default function HomeScreen() {
           );
         })()}
         </TouchableOpacity>
-      </View>
+      </Animated.View>
     );
   };
 

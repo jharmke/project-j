@@ -61,7 +61,7 @@
 ## FOOD & LOG
 
 - Big 3 macro presets -- quick protein/carb/fat preset picker accessible from the macro gear icon (and/or Settings). Overlaps the Onboarding "Macro presets" item; this is the in-app gear-icon access angle. NutritionGearModal.tsx / settings.tsx.
-- HealthKit weight auto-pull -- read Apple Health body mass, ghost value with HK icon, manual entry always wins. Design discussion before building.
+- HealthKit weight auto-pull -- read Apple Health body mass, ghost value with HK icon, manual entry always wins. Design discussion before building. REQUIREMENT (locked): every pulled entry must show a source badge identifying the originating app/device, and each foreign entry must be individually deletable from within Project J. Manual entry always wins. This is the READ direction (reading weight IN from Apple) -- NOT the write-back build, which only pushes weight OUT.
 - %DV entry in Create Food -- bidirectional amount/%DV fields for all nutrients with FDA DV. Full spec in SPEC_nutrition.md.
 - Food search fuzzy matching -- My Foods, Recents, Recipes, Favorites use exact substring only. Add fuzzy/Levenshtein for local results. add-food.tsx.
 - UNSET button on food detail -- unset barcode-linked food without navigating to Set Foods tab. Needs barcode context in route params.

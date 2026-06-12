@@ -57,6 +57,18 @@ export function useHealthKit() {
             'HKQuantityTypeIdentifierBasalBodyTemperature',
             'HKCategoryTypeIdentifierAppleStandHour',
           ],
+          toShare: [
+            // Write-back permissions. Project J only writes data that originates
+            // in-app (manual weight, water, logged nutrition) and never reads any
+            // of these back from HealthKit -- read and write sets stay disjoint so
+            // no feedback loop is possible. Write logic ships later as pure JS.
+            'HKQuantityTypeIdentifierBodyMass',
+            'HKQuantityTypeIdentifierDietaryWater',
+            'HKQuantityTypeIdentifierDietaryEnergyConsumed',
+            'HKQuantityTypeIdentifierDietaryProtein',
+            'HKQuantityTypeIdentifierDietaryCarbohydrates',
+            'HKQuantityTypeIdentifierDietaryFatTotal',
+          ],
         });
 
         setAuthorized(true);

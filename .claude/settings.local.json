@@ -91,7 +91,9 @@
       "Bash(awk 'NR>=830 && NR<=1034 && / -- /' data/tutorials.ts)",
       "Bash(awk 'NR>=830 && NR<=1034 && / -- /{print NR\": \"$0}' data/tutorials.ts)",
       "Bash(awk '/const isOffScreen|function isOffScreen/,/^  }/' components/TutorialOverlay.tsx)",
-      "Bash(awk 'NR>=413 && NR<=470 && / -- /{print NR\": \"$0}' data/tutorials.ts)"
+      "Bash(awk 'NR>=413 && NR<=470 && / -- /{print NR\": \"$0}' data/tutorials.ts)",
+      "Bash(xargs grep -ln \"requestAuthorization\")",
+      "Bash(node *)"
     ]
   }
 }

@@ -272,6 +272,37 @@ export function useHealthKit() {
     }
   };
 
+  // Ordered stage segments for last night, for the Sleep Hub hypnogram (the night
+  // timeline). Same window as fetchTodayData's sleep pull.
+  const fetchLastNightSegments = async (): Promise<{ stage: 'awake' | 'core' | 'deep' | 'rem'; start: number; end: number }[]> => {
+    try {
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const sleepStart = new Date(startOfDay);
+      sleepStart.setDate(sleepStart.getDate() - 1);
+      sleepStart.setHours(18, 0, 0, 0);
+      const sleepEnd = new Date(startOfDay);
+      sleepEnd.setHours(12, 0, 0, 0);
+
+      const data = await queryCategorySamples(
+        'HKCategoryTypeIdentifierSleepAnalysis',
+        { limit: 1000, filter: { date: { startDate: sleepStart, endDate: sleepEnd } } }
+      );
+      const map: Record<number, 'awake' | 'core' | 'deep' | 'rem'> = { 2: 'awake', 3: 'core', 4: 'deep', 5: 'rem' };
+      const segs: { stage: 'awake' | 'core' | 'deep' | 'rem'; start: number; end: number }[] = [];
+      for (const s of data) {
+        const stage = map[s.value as number];
+        if (!stage) continue;
+        segs.push({ stage, start: new Date(s.startDate).getTime(), end: new Date(s.endDate).getTime() });
+      }
+      segs.sort((a, b) => a.start - b.start);
+      return segs;
+    } catch (e) {
+      console.log('Last night segments error', e);
+      return [];
+    }
+  };
+
   const fetchHistoricalWorkouts = async (days: number): Promise<any[]> => {
     try {
       const now = new Date();
@@ -333,5 +364,5 @@ export function useHealthKit() {
     }
   };
 
-  return { authorized, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, hrv, bodyFatPct, exerciseMinutes, appleWorkouts, fetchTodayData, fetchHistoricalWorkouts, fetchSleepHistory };
+  return { authorized, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, hrv, bodyFatPct, exerciseMinutes, appleWorkouts, fetchTodayData, fetchHistoricalWorkouts, fetchSleepHistory, fetchLastNightSegments };
 }

@@ -12,8 +12,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Dimensions, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Dimensions, PanResponder, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import ReAnimated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import Svg, { Circle, G, Line, Polyline, Rect, Text as SvgText } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -174,6 +174,75 @@ function StageHistoryChart({ nights, theme }: { nights: SleepNight[]; theme: any
   );
 }
 
+type SleepSeg = { stage: 'awake' | 'core' | 'deep' | 'rem'; start: number; end: number };
+
+// Hypnogram: last night's stage timeline (bedtime -> wake), four lanes (Awake top,
+// REM, Core, Deep bottom). Drag a finger across to read the stage + clock time.
+function Hypnogram({ segments, theme }: { segments: SleepSeg[]; theme: any }) {
+  const [cursor, setCursor] = useState<{ x: number; time: string; stage: string; color: string } | null>(null);
+  const slide = useSlideIn(`${segments.length}:${segments[0]?.start ?? 0}`);
+  const bed = segments[0].start;
+  const wake = segments[segments.length - 1].end;
+  const dur = Math.max(1, wake - bed);
+  const GUT = 40;
+  const plotW = CHART_W - GUT;
+  const laneH = 24, laneGap = 6;
+  const lanes: SleepSeg['stage'][] = ['awake', 'rem', 'core', 'deep'];
+  const laneLabel: Record<SleepSeg['stage'], string> = { awake: 'Awake', rem: 'REM', core: 'Core', deep: 'Deep' };
+  const laneColor: Record<SleepSeg['stage'], string> = { awake: theme.sleepAwake, rem: theme.sleepRem, core: theme.sleepCore, deep: theme.sleepDeep };
+  const H = lanes.length * laneH + (lanes.length - 1) * laneGap;
+  const toX = (ms: number) => GUT + ((ms - bed) / dur) * plotW;
+  const laneY = (stage: SleepSeg['stage']) => lanes.indexOf(stage) * (laneH + laneGap);
+  const fmtClock = (ms: number) => new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  const handle = (locX: number) => {
+    const x = Math.max(GUT, Math.min(CHART_W, locX));
+    const t = bed + ((x - GUT) / plotW) * dur;
+    let seg = segments.find(s => t >= s.start && t <= s.end);
+    if (!seg) seg = segments.reduce((best, s) => Math.abs((s.start + s.end) / 2 - t) < Math.abs((best.start + best.end) / 2 - t) ? s : best, segments[0]);
+    setCursor({ x, time: fmtClock(t), stage: laneLabel[seg.stage], color: laneColor[seg.stage] });
+  };
+
+  // Only claim horizontal drags so vertical page scroll still passes through.
+  const pan = useRef(PanResponder.create({
+    onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > Math.abs(g.dy) && Math.abs(g.dx) > 4,
+    onPanResponderGrant: e => handle(e.nativeEvent.locationX),
+    onPanResponderMove: e => handle(e.nativeEvent.locationX),
+    onPanResponderRelease: () => setCursor(null),
+    onPanResponderTerminate: () => setCursor(null),
+  })).current;
+
+  return (
+    <ReAnimated.View style={slide}>
+      <View {...pan.panHandlers}>
+        <Svg width={CHART_W} height={H}>
+          {lanes.map(stage => (
+            <G key={stage}>
+              <Rect x={GUT} y={laneY(stage)} width={plotW} height={laneH} fill={theme.bgInset} rx={4} />
+              <SvgText x={GUT - 6} y={laneY(stage) + laneH / 2 + 3} fill={theme.textMuted} fontSize={8} fontFamily="DMSans_600SemiBold" textAnchor="end">{laneLabel[stage]}</SvgText>
+            </G>
+          ))}
+          {segments.map((s, i) => (
+            <Rect key={i} x={toX(s.start)} y={laneY(s.stage)} width={Math.max(1.5, toX(s.end) - toX(s.start))} height={laneH} fill={laneColor[s.stage]} rx={2} />
+          ))}
+          {cursor && <Line x1={cursor.x} y1={0} x2={cursor.x} y2={H} stroke={theme.textPrimary} strokeWidth={1} opacity={0.45} />}
+        </Svg>
+      </View>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6, paddingLeft: GUT }}>
+        <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_500Medium' }}>{fmtClock(bed)}</Text>
+        <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_500Medium' }}>{fmtClock(wake)}</Text>
+      </View>
+      {cursor && (
+        <View style={{ position: 'absolute', top: 0, left: Math.max(0, Math.min(CHART_W - 96, cursor.x - 48)), backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderWidth: 0.5, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 6, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } }}>
+          <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: cursor.color }} />
+          <Text style={{ fontSize: 11, color: theme.textPrimary, fontFamily: 'DMSans_700Bold' }}>{cursor.stage}</Text>
+          <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>{cursor.time}</Text>
+        </View>
+      )}
+    </ReAnimated.View>
+  );
+}
+
 // Sleep Coach observation for the most recent night. Returns a kind so Mindful
 // mode (without "Allow gentle coaching") can suppress corrective tips and only
 // show positive/neutral summaries.
@@ -195,7 +264,7 @@ function sleepCoachTip(n: SleepNight, score: number, goalH: number, bedSd: numbe
 export default function SleepHub() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
-  const { sleepHours, sleepStages, sleepTimes, sleepAwakeMs, fetchSleepHistory } = useHealthKit();
+  const { sleepHours, sleepStages, sleepTimes, sleepAwakeMs, fetchSleepHistory, fetchLastNightSegments } = useHealthKit();
 
   const [activeTab, setActiveTab] = useState<SleepTab>('sleep');
   const [range, setRange] = useState<'7' | '30'>('7');
@@ -205,6 +274,7 @@ export default function SleepHub() {
   const [mindfulGrowth, setMindfulGrowth] = useState(false);
   const [excludedSet, setExcludedSet] = useState<Set<string>>(new Set());
   const [excludedToday, setExcludedToday] = useState(false);
+  const [segments, setSegments] = useState<SleepSeg[]>([]);
 
   // Day-stored sleep fields (mirror how the home card resolves the same number)
   const [sleepGoal, setSleepGoal] = useState(7);
@@ -217,6 +287,12 @@ export default function SleepHub() {
   // Bumped on focus so the donut re-animates each time the screen is entered.
   const [refreshKey, setRefreshKey] = useState(0);
   useFocusEffect(useCallback(() => { setRefreshKey(k => k + 1); }, []));
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchLastNightSegments().then(s => { if (!cancelled) setSegments(s); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -402,6 +478,19 @@ export default function SleepHub() {
         </View>
         <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 14, textAlign: 'center' }}>
           For informational purposes only. Not medical advice.
+        </Text>
+      </View>
+    );
+  };
+
+  const renderHypnogram = () => {
+    if (segments.length === 0) return null;
+    return (
+      <View style={cardStyle}>
+        <Text style={[cardLabel, { marginBottom: 14 }]}>Sleep Timeline</Text>
+        <Hypnogram segments={segments} theme={theme} />
+        <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 10 }}>
+          Drag across the timeline to read each stage.
         </Text>
       </View>
     );
@@ -634,6 +723,7 @@ export default function SleepHub() {
         {activeTab === 'sleep' ? (
           <>
             {renderHero()}
+            {renderHypnogram()}
             {renderTrend()}
             {renderStageHistory()}
             {renderMetrics()}

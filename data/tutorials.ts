@@ -56,16 +56,16 @@ export const TUTORIALS: Tutorial[] = [
         body: {
           discipline: 'Every tab has a ? icon in the top-right. That\'s your toolkit. Tap it for definitions, context, and guided tours specific to that tab.',
           balanced: 'See the ? icon up here? Every tab has one. Tap it anytime you want help with what you\'re looking at.',
-          mindful: 'That ? icon is always there when you need it. No pressure -- tap it whenever you\'re curious about something.',
+          mindful: 'That ? icon is always there when you need it. No pressure. Tap it whenever you\'re curious about something.',
         },
       },
       {
         targetKey: 'none',
         title: 'CARD HELP',
         body: {
-          discipline: 'Cards with an (i) icon have detailed definitions. Some also have guided tours -- look for the "Take a Tour" button inside the (i) modal.',
+          discipline: 'Cards with an (i) icon have detailed definitions. Some also have guided tours: look for the "Take a Tour" button inside the (i) modal.',
           balanced: 'Cards with a small (i) icon can explain themselves. Tap it for definitions and explanations. Some also offer a guided tour.',
-          mindful: 'Some cards have a small (i) icon. Tap it whenever a card feels confusing -- it explains what everything means at your own pace.',
+          mindful: 'Some cards have a small (i) icon. Tap it whenever a card feels confusing. It explains what everything means at your own pace.',
         },
       },
       {
@@ -93,18 +93,18 @@ export const TUTORIALS: Tutorial[] = [
         targetKey: 'none',
         title: 'YOUR SPACE',
         body: {
-          discipline: 'This is your space. No scores, no judgment -- just showing up. This app works for you, not the other way around.',
-          balanced: 'This is your space. No scores, no judgment -- just showing up. This app works for you, not the other way around.',
-          mindful: 'This is your space. No scores, no judgment -- just showing up. This app works for you, not the other way around.',
+          discipline: 'This is your space. No scores, no judgment, just showing up. This app works for you, not the other way around.',
+          balanced: 'This is your space. No scores, no judgment, just showing up. This app works for you, not the other way around.',
+          mindful: 'This is your space. No scores, no judgment, just showing up. This app works for you, not the other way around.',
         },
       },
       {
         targetKey: 'none',
         title: 'YOUR CARDS',
         body: {
-          discipline: 'These cards give you a gentle picture of your day. You don\'t have to track everything -- just what feels right for you.',
-          balanced: 'These cards give you a gentle picture of your day. You don\'t have to track everything -- just what feels right for you.',
-          mindful: 'These cards give you a gentle picture of your day. You don\'t have to track everything -- just what feels right for you.',
+          discipline: 'These cards give you a gentle picture of your day. You don\'t have to track everything, just what feels right for you.',
+          balanced: 'These cards give you a gentle picture of your day. You don\'t have to track everything, just what feels right for you.',
+          mindful: 'These cards give you a gentle picture of your day. You don\'t have to track everything, just what feels right for you.',
         },
       },
       {
@@ -112,9 +112,9 @@ export const TUTORIALS: Tutorial[] = [
         skipIfTargetMissing: true,
         title: 'WHEN YOU\'RE CURIOUS',
         body: {
-          discipline: 'The ? in each tab has guided tours for every feature. A good place to start is the Edit Layout tour -- it shows you how to remove any card you don\'t want.',
-          balanced: 'The ? in each tab has guided tours for every feature. A good place to start is the Edit Layout tour -- it shows you how to remove any card you don\'t want.',
-          mindful: 'The ? in each tab has guided tours for every feature. A good place to start is the Edit Layout tour -- it shows you how to remove any card you don\'t want.',
+          discipline: 'The ? in each tab has guided tours for every feature. A good place to start is the Edit Layout tour. It shows you how to remove any card you don\'t want.',
+          balanced: 'The ? in each tab has guided tours for every feature. A good place to start is the Edit Layout tour. It shows you how to remove any card you don\'t want.',
+          mindful: 'The ? in each tab has guided tours for every feature. A good place to start is the Edit Layout tour. It shows you how to remove any card you don\'t want.',
         },
       },
       {
@@ -153,9 +153,9 @@ export const TUTORIALS: Tutorial[] = [
         bubbleAtBottom: true,
         title: 'CARD ROWS',
         body: {
-          discipline: 'Each row is one home screen card -- name, description, and two controls. The badge on the left toggles visibility. The grip on the right reorders.',
+          discipline: 'Each row is one home screen card: name, description, and two controls. The badge on the left toggles visibility. The grip on the right reorders.',
           balanced: 'Each row here is a home screen card. It shows the name, a short description, and two controls. We\'ll walk through both.',
-          mindful: 'Take a look. Each row is one of your home screen cards -- a name, a description, and a couple of controls. We\'ll go through them together.',
+          mindful: 'Take a look. Each row is one of your home screen cards: a name, a description, and a couple of controls. We\'ll go through them together.',
         },
       },
       {
@@ -176,7 +176,7 @@ export const TUTORIALS: Tutorial[] = [
         body: {
           discipline: 'Tap this badge to toggle the card on or off. Red means it\'s showing, green means it\'s hidden. Zero effect on your data.',
           balanced: 'Tap this badge to hide or show the card. Hidden cards stay in the list but disappear from your home screen. Data is never affected.',
-          mindful: 'Tap this badge to hide or show the card. Nothing is deleted -- it steps back until you want it again.',
+          mindful: 'Tap this badge to hide or show the card. Nothing is deleted. It steps back until you want it again.',
         },
       },
       {
@@ -185,7 +185,7 @@ export const TUTORIALS: Tutorial[] = [
         bubbleAtBottom: true,
         title: 'ADD CARDS',
         body: {
-          discipline: 'Add Cards shows your custom Stats graphs -- pin any to the home screen. Hidden home cards also appear here so you can restore them.',
+          discipline: 'Add Cards shows your custom Stats graphs: pin any to the home screen. Hidden home cards also appear here so you can restore them.',
           balanced: 'Add Cards shows hidden home cards you can restore, plus custom Stats graphs you can pin to your home screen.',
           mindful: 'Add Cards is where hidden cards live and where you can pin Stats graphs to your home screen. Everything\'s here when you want it.',
         },
@@ -223,7 +223,7 @@ export const TUTORIALS: Tutorial[] = [
         title: 'ACTIVE',
         skipForModes: ['mindful'],
         body: {
-          discipline: 'Active calories come straight from Apple Health -- exercise, workouts, movement. These earn you more room in your daily budget.',
+          discipline: 'Active calories come straight from Apple Health: exercise, workouts, movement. These earn you more room in your daily budget.',
           balanced: 'Active calories are what you\'ve burned through movement today. They\'re pulled automatically from Apple Health.',
           mindful: 'Active shows movement tracked by your device. It\'s part of your day\'s picture, no more or less important than anything else.',
         },
@@ -242,9 +242,9 @@ export const TUTORIALS: Tutorial[] = [
         targetKey: 'cal_card_main',
         title: 'COLOR CODING',
         body: {
-          discipline: 'Green = on track (within ±50 cal). Amber = watch it (±51-149 cal). Red = off track (±150+ cal). Hit green consistently -- that\'s the standard.',
+          discipline: 'Green = on track (within ±50 cal). Amber = watch it (±51-149 cal). Red = off track (±150+ cal). Hit green consistently. That\'s the standard.',
           balanced: 'The color tells you how your day is trending. Green is great, amber is close, red means a bigger gap to close. It resets tomorrow.',
-          mindful: 'This card doesn\'t use color judgment for you. Numbers are just numbers -- what matters is how you feel and what works for your body.',
+          mindful: 'This card doesn\'t use color judgment for you. Numbers are just numbers. What matters is how you feel and what works for your body.',
         },
       },
     ],
@@ -262,7 +262,7 @@ export const TUTORIALS: Tutorial[] = [
         body: {
           discipline: 'Macros are the three fuels your body runs on. Calories tell you how much. Macros tell you what. Both matter.',
           balanced: 'Your macros card breaks your food down into the three key nutrients: protein, carbs, and fat.',
-          mindful: 'This card shows your three main nutrients. It\'s informational -- no target you have to hit perfectly.',
+          mindful: 'This card shows your three main nutrients. It\'s informational. No target you have to hit perfectly.',
         },
       },
       {
@@ -278,26 +278,26 @@ export const TUTORIALS: Tutorial[] = [
         targetKey: 'macros_carbs',
         title: 'CARBS',
         body: {
-          discipline: 'Carbs are your primary fuel. Time them around training for performance. If you\'ve enabled Net Carbs in Settings, this bar shows total carbs minus fiber and sugar alcohols -- the carbs that actually impact blood sugar.',
+          discipline: 'Carbs are your primary fuel. Time them around training for performance. If you\'ve enabled Net Carbs in Settings, this bar shows total carbs minus fiber and sugar alcohols: the carbs that actually impact blood sugar.',
           balanced: 'Carbs give you energy throughout the day. If you\'ve enabled Net Carbs in Settings, this bar shows net carbs (total carbs minus fiber and sugar alcohols) instead of total carbs.',
-          mindful: 'Carbs provide energy for your body and brain. If you\'ve turned on Net Carbs in Settings, your bar shows net carbs -- total carbs minus fiber and sugar alcohols.',
+          mindful: 'Carbs provide energy for your body and brain. If you\'ve turned on Net Carbs in Settings, your bar shows net carbs: total carbs minus fiber and sugar alcohols.',
         },
       },
       {
         targetKey: 'macros_fat',
         title: 'FAT',
         body: {
-          discipline: 'Fat supports hormones, brain function, and recovery. Don\'t slash it below 20% of total calories -- it will cost you long term.',
+          discipline: 'Fat supports hormones, brain function, and recovery. Don\'t slash it below 20% of total calories. It will cost you long term.',
           balanced: 'Dietary fat plays important roles in your body. Your goal sets a healthy daily target based on your calorie budget.',
-          mindful: 'Fat is essential -- your body needs it. Your bar tracks how much you\'ve logged today. Over or under is just information.',
+          mindful: 'Fat is essential. Your body needs it. Your bar tracks how much you\'ve logged today. Over or under is just information.',
         },
       },
       {
         targetKey: 'macros_card_main',
         title: 'READING THE BARS',
         body: {
-          discipline: 'Bar fills toward your goal. Over goal shows "Xg over" -- track it, it adds up. Log food accurately and let the bars guide you daily.',
-          balanced: 'Each bar fills as you log food. Colors are fixed -- green/amber/red represent protein/carbs/fat, not a grade on how you\'re doing.',
+          discipline: 'Bar fills toward your goal. Over goal shows "Xg over": track it, it adds up. Log food accurately and let the bars guide you daily.',
+          balanced: 'Each bar fills as you log food. Colors are fixed: green/amber/red represent protein/carbs/fat, not a grade on how you\'re doing.',
           mindful: 'The bars just show what you\'ve eaten. Whether you\'re over or under your goal is data, not a judgment on your day.',
         },
       },

@@ -302,6 +302,14 @@ Proposed: Same pattern as rest of app.
 
 6. Sleep Score stage weight tuning: not a priority. Good as-is. Worth a casual revisit after real usage data exists but not a blocker for anything.
 
+7. HRV canonical daily value (LOCKED 2026-06-12): one number per night = the average of all HRV (SDNN) samples inside the sleep window (Oura whole-night model). Computed once, stored per-day, reused on every surface so they always agree. Whoop's deep-sleep-weighted variant is a possible v2 refinement. Recovery Score compares last night's value to the user's 7-day rolling baseline. HRV query is wired + verified on device 2026-06-12 (currently a most-recent placeholder returning a single daytime/overnight sample; sleep-window averaging still to build).
+
+8. Where HRV surfaces (LOCKED 2026-06-12): (a) Recovery Score calculation (primary use); (b) Sleep Hub Recovery tab Key Signals panel (value + baseline delta + trend arrow); (c) Stats graph creator as a new "Sleep & Recovery" data key (joins the existing restingHR / respiratoryRate / bloodOxygen keys -- HRV and VO2 Max are the current gaps). Raw HRV does NOT appear in Day / Weekly / Monthly summaries or EvR -- those show the composite Recovery Score only, never the raw number.
+
+9. Summary-card transformation (LOCKED 2026-06-12): the current "Recovery" subscore is literally just the Sleep Score (dayScore.ts weights sleep: 0.25; the RHR/RespRate/VO2 shown on the cards are decoration, not scored). When Recovery Score ships, the 25% category becomes the new 6-signal Recovery Score, with Sleep Score demoted to one 22% input. Update Day Summary, Weekly Summary, Monthly Summary, EvR, and dayScore.ts. Recovery card headline becomes the Recovery Score plus a "View in Sleep Hub" link.
+
+10. Historical handling (LOCKED 2026-06-12: FREEZE + GOING FORWARD): Recovery Score applies only from when its data (especially HRV) is available, going forward. Historical Day Scores keep their existing sleep-based recovery subscore -- no retroactive recompute. Mirrors the burnAccuracy / goalSnapshot freeze pattern; protects historical consistency.
+
 ---
 
 ## 9. DEPENDENCIES

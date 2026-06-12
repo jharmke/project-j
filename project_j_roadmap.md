@@ -133,7 +133,10 @@
 
 ## TUTORIALS & TOOLTIPS
 
-- [HIGH] TUTORIAL + TOOLTIP FULL AUDIT -- dedicated session. Spotlight lag (TestFlight verify), return-nav framework fix (~20 tutorials hardcode return tab), hidden-card guard, tutorialOverrideState pattern, 79 double-dash instances in tutorials.ts, Log Today's Total interactive tutorial, all content out of date. data/tutorials.ts + tooltipRegistry.ts.
+- [HIGH] TUTORIAL + TOOLTIP FULL AUDIT -- in progress, tab by tab (batches of 3, device-tested each).
+  - DONE: return-nav framework fix (engine now auto-captures launch route, returns there on end/skip only if a step navigated away; explicit returnRoute still wins). GO_BACK error fixed (canGoBack guards on tutorial-action router.back calls in add-food/recipe-builder/workout-library).
+  - DONE: LOG TAB content audit -- all 7 tutorials (log_food, manage_log, barcode, create_food, recipes, log_edit_layout, if_card). Fixed: log_food steps 7/8 dead spotlight (food-detail ScrollView now registered), manage_log step 4 (scrollToTop), create_food macros step (noDimOverlay + scroll), recents count 20->15, ~43 double-dashes across all mode variants.
+  - REMAINING: Workout (4), Home (8), Stats (4), Faith (1) tab content audits. Spotlight lag (TestFlight verify). Hidden-card guard (home tab hideable cards). Log Today's Total interactive tutorial (separate build). Tooltip audit + wording passes. data/tutorials.ts + tooltipRegistry.ts.
 - Tooltip audit pass -- sweep all cards, flag every card missing a (i) tooltip, build missing ones.
 - Tooltip wording polish pass -- copy quality pass. Known issues: Active (Apple Health fallback language), Remaining (algorithm vs description), Net (explain BMR first), Color Coding rewrite, em-dash sweep.
 

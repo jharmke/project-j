@@ -123,7 +123,7 @@
     <header>
       <p class="wordmark">Project J</p>
       <h1>Privacy Policy</h1>
-      <p class="meta">Effective Date: May 20, 2026 &nbsp;|&nbsp; Last Updated: June 6, 2026</p>
+      <p class="meta">Effective Date: May 20, 2026 &nbsp;|&nbsp; Last Updated: June 12, 2026</p>
     </header>
 
     <section>
@@ -203,19 +203,35 @@
       <p>With your explicit permission through iOS, we read the following data from Apple HealthKit:</p>
       <ul>
         <li>Step count</li>
-        <li>Active energy burned</li>
+        <li>Walking and running distance</li>
+        <li>Active energy burned and resting (basal) energy burned</li>
+        <li>Flights climbed and stand hours</li>
+        <li>Exercise time and mindful minutes</li>
         <li>Sleep analysis (including sleep stages and times)</li>
+        <li>Heart rate (including readings during sleep and workouts)</li>
         <li>Resting heart rate</li>
         <li>Heart rate variability (HRV)</li>
         <li>Respiratory rate</li>
         <li>Blood oxygen saturation (SpO2)</li>
         <li>VO2 Max (cardio fitness)</li>
         <li>Cardio fitness recovery</li>
-        <li>Body fat percentage</li>
-        <li>Exercise time</li>
+        <li>Body weight, body fat percentage, and waist circumference</li>
+        <li>Basal body temperature</li>
         <li>Workout history (for import into the App)</li>
       </ul>
       <p>You control HealthKit permissions at any time through iOS Settings &gt; Privacy &amp; Security &gt; Health &gt; Project J.</p>
+
+      <p><strong>Health Data We Write to Apple HealthKit</strong></p>
+      <p>With your explicit permission, Project J can save data you log in the App back to Apple Health, so it stays in sync with your other apps and devices. We only ever write data that originates in the App from your own entries:</p>
+      <ul>
+        <li>Body weight you record</li>
+        <li>Water intake you log</li>
+        <li>Nutrition you log (energy consumed and the protein, carbohydrate, and fat macronutrients)</li>
+      </ul>
+      <p>We never write back data that was read from Apple Health, and we never modify or delete data written by other apps. You can turn write access on or off at any time through iOS Settings &gt; Privacy &amp; Security &gt; Health &gt; Project J.</p>
+
+      <p><strong>Microphone and Voice Input (Optional)</strong></p>
+      <p>Project J offers an optional voice dictation feature so you can speak a food or meal description instead of typing it. If you use this feature, the App requests microphone access and uses speech recognition to convert your speech into text. Depending on your device and iOS settings, speech recognition may be processed on your device or by Apple's speech recognition service. Audio is captured only while you are actively dictating, is used solely to fill in the text field you are editing, and is never stored or transmitted by us to our servers. The microphone is never accessed in the background or without your action.</p>
     </section>
 
     <section>
@@ -230,7 +246,7 @@
         <li><strong>HealthKit data is never sold</strong> to data brokers, insurers, employers, financial institutions, or any other entity.</li>
         <li><strong>HealthKit data is never used to determine insurance eligibility, employment status, or for any discriminatory purpose.</strong></li>
         <li>Health metrics read from HealthKit are displayed to you within the App and stored in your personal cloud account (Firebase Firestore), accessible only under your authenticated user ID.</li>
-        <li>The App is read-only with respect to HealthKit data — we do not write health data back to Apple Health.</li>
+        <li>When you grant write permission, the App writes only the data you log yourself — body weight, water intake, and nutrition — back to Apple Health, so it stays in sync across your apps. We never write back data read from Apple Health, never alter or delete data created by other apps, and writing is always under your control through iOS Settings.</li>
       </ul>
     </section>
 
@@ -247,6 +263,8 @@
         <li>To generate personalized reports and analysis within the App</li>
         <li>To personally receive and read prayer requests you voluntarily submit through the App</li>
         <li>To schedule local notifications on your device for reminders about goals, streaks, and fasting windows — all notifications are generated on-device and no notification content is transmitted to our servers</li>
+        <li>To write data you log in the App (body weight, water intake, and nutrition) back to Apple Health when you grant permission, so your entries stay in sync across your apps and devices</li>
+        <li>To let you dictate food and meal descriptions by voice using your device's microphone and speech recognition, when you choose to use that feature</li>
         <li>To generate personalized coaching tips using an AI service (Anthropic). When the Smart Coach feature runs, a summary of your recent health and fitness data (such as calorie totals, macronutrient averages, weight trend, sleep scores, and activity levels) is transmitted to Anthropic's API to generate a coaching observation. No personally identifying information such as your name, email, or account ID is included in this transmission. The data sent is limited to the aggregate metrics needed to generate the tip and is not used to train Anthropic's models.</li>
       </ul>
       <p>We do not use your information for advertising, behavioral profiling, or any purpose outside of operating the App's core features.</p>
@@ -294,7 +312,7 @@
         <li>Behavioral analytics, crash reports, or usage telemetry (no analytics SDK is used)</li>
         <li>Financial or payment information (the App is free)</li>
         <li>Contacts, calendar, or other device data</li>
-        <li>Photographs or camera captures beyond barcode scans (which are processed on-device and not transmitted)</li>
+        <li>Camera access is used for barcode scanning, which is processed on-device and not transmitted. The only images that leave your device are meal photos you deliberately attach to the AI Meal Estimator, which are sent to Anthropic solely to generate that estimate (see Section 5). We never access your camera or photos in the background or without your action.</li>
       </ul>
       <p><strong>We do not sell, rent, trade, or share your personal information with any third party for their own purposes.</strong></p>
     </section>
@@ -347,7 +365,7 @@
       <p>
         <strong>Justin Harmke</strong><br />
         Project J Developer<br />
-        <a href="mailto:jtharmke@gmail.com">jtharmke@gmail.com</a>
+        <a href="mailto:dev.harmke@gmail.com">dev.harmke@gmail.com</a>
       </p>
     </section>
 

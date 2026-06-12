@@ -246,6 +246,9 @@ export default function SleepHub() {
   }, [history]);
 
   const filteredHistory = useMemo(() => history.filter(n => !excludedSet.has(n.dateKey)), [history, excludedSet]);
+  // Only blank the cards on the very first load. On range switches we keep the
+  // existing charts mounted so the page doesn't collapse and jump to the top.
+  const firstLoad = loadingHist && history.length === 0;
 
   const toggleExclude = async (val: boolean) => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
@@ -301,6 +304,8 @@ export default function SleepHub() {
     borderWidth: 0.5,
     borderColor: theme.borderCard,
     borderTopColor: theme.borderCardTop,
+    borderLeftWidth: 3,
+    borderLeftColor: theme.accentBlueRaw,
     borderRadius: 14,
     padding: 16,
     marginHorizontal: 12,
@@ -312,6 +317,8 @@ export default function SleepHub() {
     elevation: 3,
   } as const;
 
+  // Mirrors the home Sleep card exactly: moon hero icon, 3-stage donut (Core/Deep/
+  // REM), awake shown as a text line (not a donut segment), same layout.
   const renderHero = () => {
     if (displaySleep === null || displaySleep <= 0) {
       return (
@@ -327,7 +334,6 @@ export default function SleepHub() {
 
     const hrs = Math.floor(displaySleep);
     const mins = Math.round((displaySleep - hrs) * 60);
-    const goalPct = sleepGoal > 0 ? Math.round((displaySleep / sleepGoal) * 100) : 0;
 
     const totalMs = sleepStages?.totalMs || displaySleep * 3600000;
     const coreMs = sleepStages?.core || 0;
@@ -342,25 +348,26 @@ export default function SleepHub() {
     const coreFrac = corePct * donutCirc, deepFrac = deepPct * donutCirc, remFrac = remPct * donutCirc;
     const gapFrac = 0.03 * donutCirc;
 
-    const legend: { label: string; color: string; val: number }[] = [
+    const legend = [
       { label: 'Core', color: theme.sleepCore, val: coreMs },
       { label: 'Deep', color: theme.sleepDeep, val: deepMs },
       { label: 'REM', color: theme.sleepRem, val: remMs },
     ];
-    if (sleepAwakeMs > 0) legend.push({ label: 'Awake', color: theme.sleepAwake, val: sleepAwakeMs });
 
     return (
-      <View style={cardStyle}>
-        <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 12 }}>
-          Sleep Score
-        </Text>
+      <View style={[cardStyle, { overflow: 'hidden' }]}>
+        <Ionicons name="moon" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+          <Ionicons name="moon-outline" size={11} color={theme.textMuted} />
+          <Text style={cardLabel}>Last Night</Text>
+        </View>
         <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
           <View style={{ flex: 1, paddingRight: 12 }}>
             <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
-              <Text style={{ fontSize: 44, color: scoreColor, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, opacity: 0.9 }}>{hrs}h {mins}m</Text>
+              <Text style={{ fontSize: 42, color: scoreColor, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, opacity: 0.9 }}>{hrs}h {mins}m</Text>
             </View>
             <Text style={{ fontSize: 9, color: scoreLabel ? scoreColor : theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>
-              {scoreLabel ? `${scoreLabel}${isManual ? ' · manual' : ''}` : isManual ? 'MANUAL' : 'HEALTHKIT'}
+              {scoreLabel ?? (isManual ? 'MANUAL' : 'HEALTHKIT')}
             </Text>
             {((storedBed && storedWake) || sleepTimes) && (
               <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_500Medium', marginBottom: sleepAwakeMs > 0 ? 4 : 10 }}>
@@ -370,11 +377,8 @@ export default function SleepHub() {
             {sleepAwakeMs > 0 && (
               <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginBottom: 10 }}>{fmtMs(sleepAwakeMs)} awake during night</Text>
             )}
-            <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium', marginBottom: 12 }}>
-              Goal {sleepGoal}h · {goalPct}%
-            </Text>
             {sleepStages && (
-              <View style={{ gap: 6 }}>
+              <View style={{ gap: 6, marginTop: 2 }}>
                 {legend.map(s => (
                   <View key={s.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                     <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: s.color }} />
@@ -436,25 +440,26 @@ export default function SleepHub() {
     const avg = nightScores.length ? Math.round(nightScores.reduce((a, b) => a + b, 0) / nightScores.length) : null;
     return (
       <View style={cardStyle}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-          <Text style={cardLabel}>Sleep Score Trend</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
+          <View>
+            <Text style={cardLabel}>Sleep Score Trend</Text>
+            {avg !== null && (
+              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 6 }}>
+                <Text style={{ fontSize: 24, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5 }}>{avg}</Text>
+                <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>avg over {nightScores.length} {nightScores.length === 1 ? 'night' : 'nights'}</Text>
+              </View>
+            )}
+          </View>
           {rangeToggle()}
         </View>
-        {loadingHist ? (
+        {nightScores.length > 0 ? (
+          <ScoreTrendChart nights={filteredHistory} scores={nightScores} color={theme.accentBlueRaw} theme={theme} />
+        ) : firstLoad ? (
           <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 24, textAlign: 'center' }}>Loading…</Text>
-        ) : nightScores.length === 0 ? (
+        ) : (
           <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 24, textAlign: 'center' }}>
             No sleep history yet for this range. Stages sync from Apple Health.
           </Text>
-        ) : (
-          <>
-            <ScoreTrendChart nights={filteredHistory} scores={nightScores} color={theme.accentBlueRaw} theme={theme} />
-            {avg !== null && (
-              <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium', marginTop: 8 }}>
-                {nightScores.length} {nightScores.length === 1 ? 'night' : 'nights'} · avg score {avg} · tap a point for that night
-              </Text>
-            )}
-          </>
         )}
       </View>
     );
@@ -470,13 +475,7 @@ export default function SleepHub() {
     return (
       <View style={cardStyle}>
         <Text style={[cardLabel, { marginBottom: 12 }]}>Sleep Stages</Text>
-        {loadingHist ? (
-          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 24, textAlign: 'center' }}>Loading…</Text>
-        ) : filteredHistory.length === 0 ? (
-          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 24, textAlign: 'center' }}>
-            No stage history yet for this range.
-          </Text>
-        ) : (
+        {filteredHistory.length > 0 ? (
           <>
             <StageHistoryChart nights={filteredHistory} theme={theme} />
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 12 }}>
@@ -488,60 +487,69 @@ export default function SleepHub() {
               ))}
             </View>
           </>
+        ) : firstLoad ? (
+          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 24, textAlign: 'center' }}>Loading…</Text>
+        ) : (
+          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 24, textAlign: 'center' }}>
+            No stage history yet for this range.
+          </Text>
         )}
       </View>
     );
   };
 
   const renderMetrics = () => {
-    if (loadingHist || filteredHistory.length === 0) return null;
+    if (filteredHistory.length === 0) return null;
 
     const last = filteredHistory[filteredHistory.length - 1];
-    const withStages = filteredHistory.filter(n => n.totalMs > 0);
-    const avgDeepPct = withStages.length ? Math.round(withStages.reduce((a, n) => a + n.deepMs / n.totalMs, 0) / withStages.length * 100) : null;
-    const avgRemPct = withStages.length ? Math.round(withStages.reduce((a, n) => a + n.remMs / n.totalMs, 0) / withStages.length * 100) : null;
+    const n = filteredHistory.length;
+    const withStages = filteredHistory.filter(nt => nt.totalMs > 0);
+    const avgDeepPct = withStages.length ? Math.round(withStages.reduce((a, nt) => a + nt.deepMs / nt.totalMs, 0) / withStages.length * 100) : null;
+    const avgRemPct = withStages.length ? Math.round(withStages.reduce((a, nt) => a + nt.remMs / nt.totalMs, 0) / withStages.length * 100) : null;
 
-    const beds = filteredHistory.map(n => n.bedMin).filter((b): b is number => b !== null);
+    const beds = filteredHistory.map(nt => nt.bedMin).filter((b): b is number => b !== null);
     let consistency: { label: string; sub: string; color: string } | null = null;
     if (beds.length >= 2) {
       const mean = beds.reduce((a, b) => a + b, 0) / beds.length;
       const sd = Math.round(Math.sqrt(beds.reduce((a, b) => a + (b - mean) ** 2, 0) / beds.length));
       consistency = {
         label: sd <= 30 ? 'Consistent' : sd <= 60 ? 'Mostly steady' : 'Variable',
-        sub: `± ${sd}m bedtime`,
+        sub: `± ${sd}m`,
         color: sd <= 30 ? theme.statusGood : sd <= 60 ? theme.statusWarn : theme.statusBad,
       };
     }
 
-    const wakeColor = last.awakeCount >= 4 ? theme.statusWarn : theme.textSecondary;
+    // Sleep debt: cumulative shortfall vs goal across the range.
+    const totalSleepMs = filteredHistory.reduce((a, nt) => a + nt.totalMs, 0);
+    const debtMs = sleepGoal * 3600000 * n - totalSleepMs;
+    const debt = debtMs <= 0
+      ? { value: 'On track', color: theme.statusGood, sub: `${n}d vs goal` }
+      : { value: `${fmtMs(debtMs)} behind`, color: debtMs > sleepGoal * 3600000 ? theme.statusBad : theme.statusWarn, sub: `${n}d vs ${sleepGoal}h goal` };
 
-    const tile = (label: string, value: string, color: string, sub: string, numeric = true) => (
-      <View style={{ flex: 1, backgroundColor: theme.bgInset, borderRadius: 10, borderWidth: 0.5, borderColor: theme.borderInset, padding: 12 }}>
-        <Text style={{ fontSize: 9, letterSpacing: 1.5, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 6 }}>{label}</Text>
-        {numeric
-          ? <Text style={{ fontSize: 24, color, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5 }}>{value}</Text>
-          : <Text style={{ fontSize: 15, color, fontFamily: 'DMSans_700Bold', letterSpacing: 0.3, marginVertical: 3 }}>{value}</Text>}
-        <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>{sub}</Text>
+    const row = (label: string, value: string, color: string, sub: string | null, isLast = false) => (
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 11, borderBottomWidth: isLast ? 0 : 0.5, borderBottomColor: theme.borderSubtle }}>
+        <Text style={{ fontSize: 12.5, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>{label}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 7 }}>
+          {sub ? <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>{sub}</Text> : null}
+          <Text style={{ fontSize: 15, color, fontFamily: 'DMSans_700Bold' }}>{value}</Text>
+        </View>
       </View>
     );
 
     return (
       <View style={cardStyle}>
-        <Text style={[cardLabel, { marginBottom: 12 }]}>Sleep Metrics</Text>
-        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
-          {tile('Wake Events', String(last.awakeCount), wakeColor, 'last night')}
-          {tile('Bedtime', consistency ? consistency.label : '—', consistency ? consistency.color : theme.textSecondary, consistency ? consistency.sub : `${range}d range`, false)}
-        </View>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          {tile('Avg Deep', avgDeepPct !== null ? `${avgDeepPct}%` : '—', theme.sleepDeep, `${range}d average`)}
-          {tile('Avg REM', avgRemPct !== null ? `${avgRemPct}%` : '—', theme.sleepRem, `${range}d average`)}
-        </View>
+        <Text style={[cardLabel, { marginBottom: 4 }]}>Sleep Metrics</Text>
+        {row('Avg deep sleep', avgDeepPct !== null ? `${avgDeepPct}%` : '—', theme.sleepDeep, `${n}d`)}
+        {row('Avg REM sleep', avgRemPct !== null ? `${avgRemPct}%` : '—', theme.sleepRem, `${n}d`)}
+        {row('Bedtime consistency', consistency ? consistency.label : '—', consistency ? consistency.color : theme.textSecondary, consistency ? consistency.sub : null)}
+        {row('Sleep debt', debt.value, debt.color, debt.sub)}
+        {row('Wake events', String(last.awakeCount), last.awakeCount >= 4 ? theme.statusWarn : theme.textSecondary, 'last night', true)}
       </View>
     );
   };
 
   const renderCoach = () => {
-    if (loadingHist || filteredHistory.length === 0) return null;
+    if (filteredHistory.length === 0) return null;
     const last = filteredHistory[filteredHistory.length - 1];
     const score = calcSleepScore(last.totalMs / 3600000, { core: last.coreMs, deep: last.deepMs, rem: last.remMs, totalMs: last.totalMs }, sleepGoal).score ?? 0;
     const beds = filteredHistory.map(n => n.bedMin).filter((b): b is number => b !== null);
@@ -554,24 +562,25 @@ export default function SleepHub() {
     const tip = sleepCoachTip(last, score, sleepGoal, bedSd, allowCorrective);
     return (
       <View style={cardStyle}>
-        <Text style={[cardLabel, { marginBottom: 10 }]}>Sleep Coach</Text>
-        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-start' }}>
-          <Ionicons name="bulb-outline" size={14} color={theme.accentBlueRaw} style={{ marginTop: 1 }} />
-          <Text style={{ flex: 1, fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_400Regular', lineHeight: 20 }}>{tip.text}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+          <Ionicons name="sparkles" size={11} color={theme.accentBlueRaw} />
+          <Text style={cardLabel}>Sleep Coach</Text>
+        </View>
+        <View style={{ flexDirection: 'row', gap: 10, padding: 12, borderRadius: 10, backgroundColor: theme.accentBlueBg }}>
+          <Ionicons name="bulb" size={16} color={theme.accentBlueRaw} style={{ marginTop: 1 }} />
+          <Text style={{ flex: 1, fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_500Medium', lineHeight: 20 }}>{tip.text}</Text>
         </View>
       </View>
     );
   };
 
+  // Quiet footnote-style utility, deliberately low emphasis.
   const renderExclude = () => (
-    <View style={cardStyle}>
+    <View style={[cardStyle, { paddingVertical: 12 }]}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <View style={{ flex: 1, paddingRight: 12 }}>
-          <Text style={{ fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_700Bold' }}>Exclude last night</Text>
-          <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 2, lineHeight: 16 }}>
-            Keeps an off night out of your sleep and recovery trends. Your data stays saved.
-          </Text>
-        </View>
+        <Text style={{ flex: 1, paddingRight: 12, fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_500Medium', lineHeight: 16 }}>
+          Exclude last night from your sleep and recovery trends
+        </Text>
         <ToggleSwitch value={excludedToday} onValueChange={toggleExclude} />
       </View>
     </View>

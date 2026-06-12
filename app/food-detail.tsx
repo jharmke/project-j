@@ -747,8 +747,11 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           ? Math.round(editRates.fat * grams * 10) / 10
           : calPer100g > 0 ? Math.round(fatPer100g * multiplier * 10) / 10 : (food.existingFat || 0);
 
+  const savingRef = useRef(false);
   const saveEntry = async () => {
     if (!calories && calories !== 0) return;
+    if (savingRef.current) return; // ignore repeat taps while a save is in flight
+    savingRef.current = true;
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     try {
       if (isRecipeMode) {
@@ -768,8 +771,8 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           fatPer100g,
         };
         await storageSet('pj_pending_ingredient', JSON.stringify(ingredient));
-        router.back();
-        router.back();
+        if (router.canGoBack()) router.back();
+        if (router.canGoBack()) router.back();
         return;
       }
 
@@ -836,7 +839,12 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
         entries.push(newEntry);
       }
       await storageSet(`pj_${date}`, JSON.stringify({ ...current, entries }));
-      await saveToFirebase(date, 'entries', entries);
+      // Fire-and-forget: the local write above already persisted the entry AND
+      // mirrored it to the cloud backup. This secondary write to the days
+      // collection must not block navigation -- awaiting it froze the screen
+      // ~800ms+ per log on WiFi (and several seconds on weak signal). It still
+      // runs and still saves; we just don't make the user wait on the ack.
+      saveToFirebase(date, 'entries', entries).catch(() => {});
       showToast(isEditing ? 'Entry updated' : 'Entry logged', `${calories} kcal · ${getMealDisplayName(currentMeal, mealSlots, slotNameCache)}`, 'success');
       if (!isEditing) {
         cancelFoodLogNotification();
@@ -857,10 +865,12 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           showAchievementToast(def);
         });
       }
-      router.back();
-      if (!isEditing) router.back();
+      if (router.canGoBack()) router.back();
+      if (!isEditing && router.canGoBack()) router.back();
     } catch (e) {
       console.log('Save error', e);
+    } finally {
+      savingRef.current = false;
     }
   };
 

@@ -265,7 +265,8 @@ export function useHealthKit() {
           };
         })
         .filter(n => n.totalMs > 0)
-        .sort((a, b) => a.dateKey.localeCompare(b.dateKey));
+        .sort((a, b) => a.dateKey.localeCompare(b.dateKey))
+        .slice(-days); // the lookback window can span days+1 calendar nights; keep exactly N
     } catch (e) {
       console.log('Sleep history fetch error', e);
       return [];

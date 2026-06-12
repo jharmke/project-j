@@ -451,19 +451,20 @@ export default function SleepHub() {
         <Text style={[cardLabel, { marginBottom: 14 }]}>Last Night</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <View style={{ flex: 1, alignItems: 'center' }}>
-            <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
-              <Text style={{ fontSize: 44, color: scoreColor, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, opacity: 0.9 }}>{hrs}h {mins}m</Text>
-            </View>
-            <Text style={{ fontSize: 9, color: scoreLabel ? scoreColor : theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginTop: 2 }}>
+            <Text style={{ fontSize: 38, color: scoreColor, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5, lineHeight: 44 }}>{hrs}h {mins}m</Text>
+            <Text style={{ fontSize: 9, color: scoreLabel ? scoreColor : theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginTop: 3 }}>
               {scoreLabel ?? (isManual ? 'MANUAL' : 'HEALTHKIT')}
             </Text>
           </View>
           {score !== null && (
-            <View style={{ flex: 1, alignItems: 'center' }}>
-              <Text style={{ fontSize: 50, color: scoreColor, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, lineHeight: 50 }}>{score}</Text>
-              <Text style={{ fontSize: 10, color: scoreColor, fontFamily: 'DMSans_700Bold', letterSpacing: 2, opacity: 0.65, marginTop: -2 }}>/100</Text>
-              <Text style={{ fontSize: 8, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 6 }}>Sleep Score</Text>
-            </View>
+            <>
+              <View style={{ width: 1, height: 52, backgroundColor: theme.borderSubtle }} />
+              <View style={{ flex: 1, alignItems: 'center' }}>
+                <Text style={{ fontSize: 46, color: scoreColor, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, lineHeight: 52 }}>{score}</Text>
+                <Text style={{ fontSize: 10, color: scoreColor, fontFamily: 'DMSans_700Bold', letterSpacing: 2, opacity: 0.65, marginTop: 1 }}>/100</Text>
+                <Text style={{ fontSize: 8, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 6 }}>Sleep Score</Text>
+              </View>
+            </>
           )}
         </View>
         <View style={{ alignItems: 'center', marginTop: 14 }}>
@@ -551,8 +552,8 @@ export default function SleepHub() {
     const map = new Map<string, number>();
     filteredHistory.forEach((nt, i) => map.set(nt.dateKey, nightScores[i]));
     manualNights.forEach(m => { if (!map.has(m.dateKey) && !excludedSet.has(m.dateKey)) map.set(m.dateKey, m.score); });
-    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([dateKey, score]) => ({ dateKey, score }));
-  }, [filteredHistory, nightScores, manualNights, excludedSet]);
+    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([dateKey, score]) => ({ dateKey, score })).slice(-parseInt(range, 10));
+  }, [filteredHistory, nightScores, manualNights, excludedSet, range]);
 
   const renderTrend = () => {
     const avg = trendData.length ? Math.round(trendData.reduce((a, d) => a + d.score, 0) / trendData.length) : null;

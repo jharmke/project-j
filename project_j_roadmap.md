@@ -6,7 +6,12 @@
 
 ## BUGS
 
-(none open)
+- [BUG] Daily Goals counters undercount + wrong "last hit" dates -- Achievements > Daily Goals shows Water 12x / Steps 4x / Active Cals 6x / Exercise 8x, but Justin hits exercise + active cal goals ~99% of days and counts 10-12 step-goal hits in the last 3-4 weeks. Two distinct failure modes: (1) counts far too low; (2) "last hit" wrong in BOTH directions -- Water shows "Last: Today" while only 42oz/100oz today (false positive), Steps shows "Last: Jun 10" despite hitting it 6/11 (false negative). Tracking/wiring is off. achievements.tsx + goal-hit detection (utils/goalHit.ts). Screenshot on file (IMG_8853).
+- [BUG] Notification "behind on water" math inverted -- water reminders said "behind" when Justin was ahead of pace (42oz logged vs 31oz expected; 72oz vs 54oz expected). The 1815 reminder correctly stayed silent, so it's threshold/comparison logic, not always-on. Inverted or mis-compared expected-pace calc. Notification engine.
+- [BUG] Notification activity check-in ignores cardio -- 1700 "activity check in" said "no workout yet today" after Justin logged 3 cardio workouts. Only checks strength/checks, not cardioLogs. (Deep link to Workout tab worked correctly.) Notification engine.
+- [BUG] Today's Verse notification opens Bible to Genesis 1, not the day's verse -- 0946 verse push ("we walk by faith, not by sight") opened the Bible reader to Genesis 1 instead of the actual verse. Two parts: (a) deep link should land on today's verse, (b) decide whether the notification body should contain the actual verse text. bible.tsx deep-link target + notification payload.
+- [BUG] YvY net calories comparison wrong + rounds numbers -- Justin was -738 net vs a -750 goal (dead on) yet YvY said the prior day won at -332. Win/compare logic isn't scoring against the goal correctly. Also: show full numbers, not "10.3k" (won 10,321 to 10,200, diff 121 steps -- needs exact values visible). index.tsx YvY card + head-to-head.tsx.
+- [BUG] Day Detail haptics missing -- no haptic feedback on Day Detail interactions. day-detail.tsx.
 
 ### Fixed
 - [FIXED] Add/Edit Exercise modal crash -- openAddExerciseModal set addExerciseAnim / addExerciseKeyboardOffset, dead names left behind by the scale-animation refactor (bc9f7726). ReferenceError when tapping an exercise to edit. Deleted the two dead lines; Modal onShow already resets correctly. workout.tsx.
@@ -54,6 +59,7 @@
 
 ## FOOD & LOG
 
+- Big 3 macro presets -- quick protein/carb/fat preset picker accessible from the macro gear icon (and/or Settings). Overlaps the Onboarding "Macro presets" item; this is the in-app gear-icon access angle. NutritionGearModal.tsx / settings.tsx.
 - HealthKit weight auto-pull -- read Apple Health body mass, ghost value with HK icon, manual entry always wins. Design discussion before building.
 - %DV entry in Create Food -- bidirectional amount/%DV fields for all nutrients with FDA DV. Full spec in SPEC_nutrition.md.
 - Food search fuzzy matching -- My Foods, Recents, Recipes, Favorites use exact substring only. Add fuzzy/Levenshtein for local results. add-food.tsx.
@@ -89,6 +95,7 @@
 
 ## FAITH
 
+- Home Faith Hub card top border feels off -- either wrap the border around the whole card or drop the top border. Visual polish. components/FaithTodayCard.tsx.
 - Today's Message overhaul -- user-controlled pool (preset KJV + custom), static vs cycle toggle, pool management in Settings, NRN card hidden by default, custom scripture picker (book > chapter > verse, up to 4). Dedicated session.
 - Cycling Bible verses -- fine-print at bottom of Log tab and Workout tab only. Rooted: on. Exploring: optional. NRN: hidden.
 - Plans hub browsing -- category grouping (wellness/body, heart/identity, peace/comfort, "Need a Word Right Now"). Filter chips, search. app/plans.tsx.
@@ -104,6 +111,7 @@
 
 ## SLEEP
 
+- Sleep Hub + Recovery Score -- full build specced in SPEC_sleep.md. Two-tab destination screen (Sleep / Recovery), new baseline-relative Recovery Score (6-signal weighted formula), replaces the old recovery subscore app-wide. Promoted to SOON. Build blocked on HRV wiring in useHealthKit.ts (new EAS build). Design session required before build.
 - Sleep score stage weight tuning -- bump REM weight higher, soften deep sleep penalty. REM and Deep currently equal at 30pts each. utils/sleepScore.ts.
 - Sleep edit disclaimer -- show disclaimer when user opens manual sleep edit: "will overwrite Apple Health synced data."
 
@@ -111,6 +119,8 @@
 
 ## COACHING & AI
 
+- Smart AI extra nutrients -- decision needed: should sodium / vitamins / micros feed into Smart AI tips, or stay display-only? Working line: showing micro values is fine, but PRESCRIPTIVE advice on them is the medical/legal risk. Discuss before any build.
+- AI Estimator label reading -- when the user photographs an actual labeled package (tub/box/bag) and gives a gram amount, the estimator should read the printed nutrition label instead of guessing. Justin shot his preworkout tub + stated grams and it still estimated. Ties to the unverified photo path. services/aiMealEstimator.ts.
 - AI Meal Estimator -- BUILT & SHIPPING (app/ai-meal-estimator.tsx + services/aiMealEstimator.ts). Photo+text input, editable breakdown, universal + per-item portion multipliers, low-confidence flagging with hard-gate, today's-estimates failsafe (pj_ai_estimator_today), quota (free 3 / Pro 30, counts when result shown). AI badge on log rows + Edit Entry, hidden from Recents. Entry points ALL DONE: Food Library FAB, add-food header AI icon (slot-aware), log tab card (persistent, shown below the meals). tooltipRegistry + privacy.html done. Pro tier (isPro) hardcoded false until monetization ships (single swap point in ai-meal-estimator.tsx). REMAINING: interactive tutorial (deferred to tutorial audit session per spec); Edit Entry "1g" cosmetic (separate item below); voice mic in the description field is a placeholder (focuses the field/raises keyboard only) -- true in-app dictation needs @react-native-voice/voice (native module, requires a rebuild), deferred. Meal Templates CUT (revisit later as "Save as Recipe"). Fast follow-on: Restaurant save concept.
 - AI estimate Edit Entry display -- aiEstimated composite entries show "Servings 1 / 1g / Amount (g)" oddly in food-detail (it treats them as gram-based foods). Cosmetic only: macros log correctly and Update Entry preserves them. Fix: food-detail should render aiEstimated entries as a fixed "1 serving = whole meal" with no serving-size selector. Deferred, do not forget.
 - AI Meal Estimator NOT YET VERIFIED ON DEVICE -- all testing so far was TEXT-ONLY. The entire PHOTO path is unexercised: camera capture, photo-library upload, image compression, the vision model actually reading a meal photo, the no-food detection (only fires with an image), and the photo_only / photo_and_text disclaimer variants. Also unverified: error states (network/malformed), quota-exhausted limit modal, Mindful-mode behavior (de-emphasized calories, "Record this meal", warmer disclaimer), and the full theme audit (only Light/cyan tested -- CLAUDE.md requires all 5 themes x accents before "done"). Verify these before TestFlight.

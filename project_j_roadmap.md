@@ -6,9 +6,10 @@
 
 ## BUGS
 
-(none open)
+- Food logging speed sweep (REMAINING) -- the awaited saveToFirebase blocking pattern still exists in other logging paths: food-detail.tsx line ~1639 (quick-add/edit path), add-food.tsx (several saveToFirebase awaits), ai-meal-estimator.tsx. Same fix: fire-and-forget the secondary days-collection write so navigation isn't blocked. The food-detail main saveEntry path is DONE (committed d0873d7). Sweep the rest one at a time.
 
 ### Fixed
+- [FIXED] Slow food logging (5-10s on add, double-logging on double-tap, GO_BACK error) -- the saveEntry handler in food-detail.tsx AWAITED saveToFirebase (a secondary Firestore write to the days collection) before navigating back; measured 793ms on WiFi, multiples on weak signal. Metro warm-up on the fresh build exaggerated it to 5-10s. Achievement scans were NOT the cause (momentum 35ms, nutrition 1ms -- gated/early-break). Fix: saveToFirebase now fire-and-forget (data still saves; local write + cloud-backup mirror already persisted it instantly); added savingRef in-flight guard (kills double-log); canGoBack guards on the double router.back (kills GO_BACK). Verified fast on device 2026-06-12. food-detail.tsx.
 - [FIXED] Add/Edit Exercise modal crash -- openAddExerciseModal set addExerciseAnim / addExerciseKeyboardOffset, dead names left behind by the scale-animation refactor (bc9f7726). ReferenceError when tapping an exercise to edit. Deleted the two dead lines; Modal onShow already resets correctly. workout.tsx.
 - [FIXED] Rest day not overridden by Apple Health workout -- type stayed 'rest' on import so exercises were hidden. Now flips type off rest (to cardio) when a workout imports. workout.tsx import effect.
 - [FIXED] YvY streak (vsStreak) always 0 -- pj_vs_streak was read but never written. Now snapshots live result and settles into the streak at day rollover (win extends, loss resets, tie holds; Mindful excluded). index.tsx.

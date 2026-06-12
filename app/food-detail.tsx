@@ -1636,9 +1636,9 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
                       const current = saved ? JSON.parse(saved) : {};
                       const entries = (current.entries || []).filter((_: any, i: number) => i !== parseInt(entryIndex));
                       await storageSet(`pj_${date}`, JSON.stringify({ ...current, entries }));
-                      await saveToFirebase(date, 'entries', entries);
+                      saveToFirebase(date, 'entries', entries).catch(() => {}); // fire-and-forget: don't block nav on the secondary write
                       showToast('Removed from log', undefined, 'success');
-                      router.back();
+                      if (router.canGoBack()) router.back();
                     } catch (e) {
                       console.log('Delete error', e);
                     }

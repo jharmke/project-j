@@ -451,7 +451,7 @@ export default function AIMealEstimatorScreen() {
       const entries = Array.isArray(current.entries) ? current.entries : [];
       entries.push(newEntry);
       await storageSet(`pj_${targetDate}`, JSON.stringify({ ...current, entries }));
-      await saveToFirebase(targetDate, 'entries', entries);
+      saveToFirebase(targetDate, 'entries', entries).catch(() => {}); // fire-and-forget: don't block nav on the secondary write
       triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
       showToast(
         `${mealName.trim()} ${mindful ? 'recorded' : 'added'}`,

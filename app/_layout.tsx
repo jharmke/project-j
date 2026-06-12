@@ -18,7 +18,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { restoreIfFresh, uploadAllLocal } from '../services/syncService';
 import * as Notifications from 'expo-notifications';
 import { setupNotificationHandler } from '../services/notifications';
-import { runDailyNotificationScheduler } from '../services/notificationScheduler';
+import { runDailyNotificationScheduler, refreshLiveNotifications } from '../services/notificationScheduler';
 import { AchievementToastProvider, AchievementToastRenderer } from '../components/AchievementToast';
 import { CelebrationRenderer } from '../components/CelebrationOverlay';
 import { ToastProvider } from '../components/Toast';
@@ -63,10 +63,13 @@ function RootLayoutNav() {
 
   // Flush all local data to Firestore whenever the app backgrounds.
   // Ensures today's data is in the cloud before a build switch wipes local storage.
+  // On foreground, refresh water + activity notifications with live data.
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextAppState => {
       if (nextAppState === 'background') {
         uploadAllLocal().catch(() => {});
+      } else if (nextAppState === 'active') {
+        refreshLiveNotifications().catch(() => {});
       }
     });
     return () => subscription.remove();

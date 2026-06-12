@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { scheduleDailyNotifications, SchedulerContext, FaithJourney, StyleMode, shouldAskPermission, requestNotificationPermission } from './notifications';
+import { scheduleDailyNotifications, SchedulerContext, FaithJourney, StyleMode, shouldAskPermission, requestNotificationPermission, scheduleWaterNotificationsNow, scheduleActivityNotificationNow } from './notifications';
 
 export const runDailyNotificationScheduler = async () => {
   try {
@@ -21,11 +21,15 @@ export const runDailyNotificationScheduler = async () => {
     const profile = profileRaw ? JSON.parse(profileRaw) : {};
     const waterGoal = parseFloat(profile.waterGoal) || 128;
     const stepGoal = parseInt(profile.stepGoal) || 10000;
+    const activeCalGoal = parseInt(profile.activeCalGoal) || 500;
+    const exerciseMinsGoal = parseInt(profile.exerciseMinsGoal) || 30;
 
     // ── Today's data ───────────────────────────────────────────────────────
     const todayRaw = await AsyncStorage.getItem(`pj_${todayKey}`);
     const today = todayRaw ? JSON.parse(todayRaw) : {};
     const todayWater = typeof today.water === 'number' ? today.water : 0;
+    const todayActiveCals = typeof today.activeCalories === 'number' ? today.activeCalories : 0;
+    const todayExerciseMins = typeof today.exerciseMinutes === 'number' ? today.exerciseMinutes : 0;
 
     // Count food entries across all stored meal keys
     let todayFoodEntries = 0;
@@ -174,6 +178,7 @@ export const runDailyNotificationScheduler = async () => {
 
     // ── Today's verse text ─────────────────────────────────────────────────
     let todayVerseText: string | null = null;
+    let todayVerseRef: string | null = null;
     try {
       const versesRaw = await AsyncStorage.getItem('pj_verse_rotation');
       if (versesRaw) {
@@ -183,7 +188,7 @@ export const runDailyNotificationScheduler = async () => {
         if (order.length > 0) {
           const { VERSES } = require('../data/verses');
           const verse = VERSES[order[idx % order.length]];
-          if (verse?.text) todayVerseText = verse.text;
+          if (verse?.text) { todayVerseText = verse.text; todayVerseRef = verse.reference ?? null; }
         }
       }
     } catch {}
@@ -209,6 +214,11 @@ export const runDailyNotificationScheduler = async () => {
       gratitudeLoggedToday,
       prayerLoggedToday,
       todayVerseText,
+      todayVerseRef,
+      activeCalGoal,
+      exerciseMinsGoal,
+      todayActiveCals,
+      todayExerciseMins,
     };
 
     await scheduleDailyNotifications(ctx);
@@ -222,5 +232,34 @@ export const runDailyNotificationScheduler = async () => {
     }
   } catch (e) {
     console.log('[notificationScheduler] error:', e);
+  }
+};
+
+export const refreshLiveNotifications = async () => {
+  try {
+    const _now = new Date();
+    const todayKey = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}-${String(_now.getDate()).padStart(2, '0')}`;
+
+    const settingsRaw = await AsyncStorage.getItem('pj_settings');
+    const settings = settingsRaw ? JSON.parse(settingsRaw) : {};
+    const styleMode: StyleMode = settings.styleMode ?? 'balanced';
+    const mindfulGrowthAreas: boolean = settings.mindfulGrowthAreas === true;
+
+    const profileRaw = await AsyncStorage.getItem('pj_profile');
+    const profile = profileRaw ? JSON.parse(profileRaw) : {};
+    const waterGoal = parseFloat(profile.waterGoal) || 128;
+    const activeCalGoal = parseInt(profile.activeCalGoal) || 500;
+    const exerciseMinsGoal = parseInt(profile.exerciseMinsGoal) || 30;
+
+    const todayRaw = await AsyncStorage.getItem(`pj_${todayKey}`);
+    const today = todayRaw ? JSON.parse(todayRaw) : {};
+    const todayWater = typeof today.water === 'number' ? today.water : 0;
+    const todayActiveCals = typeof today.activeCalories === 'number' ? today.activeCalories : 0;
+    const todayExerciseMins = typeof today.exerciseMinutes === 'number' ? today.exerciseMinutes : 0;
+
+    await scheduleWaterNotificationsNow(todayWater, waterGoal, styleMode, mindfulGrowthAreas);
+    await scheduleActivityNotificationNow(todayActiveCals, activeCalGoal, todayExerciseMins, exerciseMinsGoal, styleMode, mindfulGrowthAreas);
+  } catch (e) {
+    console.log('[notificationScheduler] refresh error:', e);
   }
 };

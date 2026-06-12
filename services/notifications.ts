@@ -84,6 +84,11 @@ export interface SchedulerContext {
   gratitudeLoggedToday: boolean;
   prayerLoggedToday: boolean;
   todayVerseText: string | null;
+  todayVerseRef: string | null;
+  activeCalGoal: number;
+  exerciseMinsGoal: number;
+  todayActiveCals: number;
+  todayExerciseMins: number;
 }
 
 // ── Storage ───────────────────────────────────────────────────────────────────
@@ -562,16 +567,16 @@ const COPY_POOLS: Record<string, ModePools> = {
   // No default mindful pool: suppressed unless growth areas ON
   activity: {
     discipline: [
-      { title: 'No Workout Logged', body: 'No workout logged today. Movement matters.' },
-      { title: 'Get Moving', body: 'No workout and steps are low. Move today.' },
-      { title: 'Activity Check', body: 'No workout logged and steps are behind. Get it done.' },
-      { title: 'Move Today', body: 'You haven\'t worked out and steps are low. Make it happen.' },
+      { title: 'Activity Goals Open', body: 'Activity goals not hit yet. Make it happen today.' },
+      { title: 'Get Moving', body: 'Your activity goals are still open. Move today.' },
+      { title: 'Activity Check', body: 'Active cals and exercise goals still open. Finish strong.' },
+      { title: 'Move Today', body: 'Activity goals not closed yet. Get it done.' },
     ],
     balanced: [
-      { title: 'Activity Reminder', body: 'You haven\'t hit your activity goals today. Time to move.' },
-      { title: 'Move Today', body: 'No workout logged and steps are a bit low. Time to get moving.' },
-      { title: 'Activity Check-In', body: 'No workout yet today. Even a short one counts.' },
-      { title: 'Get Moving', body: 'Steps are low and no workout logged. How about some movement today?' },
+      { title: 'Activity Reminder', body: 'Your activity goals aren\'t there yet. Time to move.' },
+      { title: 'Move Today', body: 'Still some room to hit your activity goals today.' },
+      { title: 'Activity Check-In', body: 'Activity goals still open. Even a short session counts.' },
+      { title: 'Get Moving', body: 'Your active cal and exercise goals are still open today.' },
     ],
     mindfulGrowth: [
       { title: 'Movement Check', body: 'How has your movement been today?' },
@@ -1009,8 +1014,8 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
     });
   }
 
-  // 5. Activity Reminder (no workout AND steps below 75% of goal)
-  if (s.categoryFitness && !ctx.todayWorkoutLogged && ctx.todaySteps < ctx.stepGoal * 0.75 && (!isMindful || growthOn)) {
+  // 5. Activity Reminder (both active-cal goal and exercise-mins goal not yet hit)
+  if (s.categoryFitness && !(ctx.todayActiveCals >= ctx.activeCalGoal && ctx.todayExerciseMins >= ctx.exerciseMinsGoal) && (!isMindful || growthOn)) {
     const v = pickCopy('activity', COPY_POOLS.activity, m, growthOn, rotation);
     candidates.push({
       id: 'pj_activity',
@@ -1035,7 +1040,7 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
       time: verseTime,
       title: v.title,
       body: applyPlaceholders(v.body, { VERSE: verseBody }),
-      data: { route: '/bible' },
+      data: ctx.todayVerseRef ? { route: '/bible', params: { verseRef: ctx.todayVerseRef } } : { route: '/bible' },
     });
   }
 
@@ -1197,5 +1202,94 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
   }
 
   // Persist updated rotation indices so pools advance on next schedule run.
+  await saveNotificationSettings({ ...s, copyRotation: rotation });
+};
+
+// ── Live-refresh helpers (called on every app foreground) ─────────────────────
+
+export const scheduleWaterNotificationsNow = async (
+  todayWater: number,
+  waterGoal: number,
+  styleMode: StyleMode,
+  mindfulGrowthAreas: boolean,
+) => {
+  await cancelWaterNotifications();
+  const s = await loadNotificationSettings();
+  if (!s.masterEnabled || !s.categoryFitness || s.waterCount <= 0) return;
+  const status = await getPermissionStatus();
+  if (status !== 'granted') return;
+
+  const now = new Date();
+  const nowMins = now.getHours() * 60 + now.getMinutes();
+  const rotation = { ...s.copyRotation };
+
+  const { hour: quietEndH, minute: quietEndM } = parseTime(s.quietEnd);
+  const { hour: quietStartH, minute: quietStartM } = parseTime(s.quietStart);
+  const wakingStartMins = quietEndH * 60 + quietEndM;
+  const wakingEndMins = quietStartH * 60 + quietStartM;
+  const wakingTotal = wakingEndMins > wakingStartMins
+    ? wakingEndMins - wakingStartMins
+    : 1440 - wakingStartMins + wakingEndMins;
+
+  for (let i = 1; i <= s.waterCount; i++) {
+    const offsetMins = Math.round((i / (s.waterCount + 1)) * wakingTotal);
+    const fireTotalMins = (wakingStartMins + offsetMins) % 1440;
+    const fh = Math.floor(fireTotalMins / 60);
+    const fm = fireTotalMins % 60;
+    if (fh * 60 + fm <= nowMins) continue;
+
+    if (waterGoal > 0) {
+      const slotProgress = offsetMins / wakingTotal;
+      const expectedAtSlot = waterGoal * slotProgress;
+      if (todayWater >= expectedAtSlot * 0.75) continue;
+    }
+
+    const fireDate = new Date();
+    fireDate.setHours(fh, fm, 0, 0);
+    const v = pickCopy('water', COPY_POOLS.water, styleMode, mindfulGrowthAreas, rotation);
+    await Notifications.scheduleNotificationAsync({
+      identifier: `pj_water_${i}`,
+      content: { title: v.title, body: v.body, sound: true, data: { route: '/', params: { scrollTo: 'water' } } },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: fireDate },
+    });
+  }
+
+  await saveNotificationSettings({ ...s, copyRotation: rotation });
+};
+
+export const scheduleActivityNotificationNow = async (
+  todayActiveCals: number,
+  activeCalGoal: number,
+  todayExerciseMins: number,
+  exerciseMinsGoal: number,
+  styleMode: StyleMode,
+  mindfulGrowthAreas: boolean,
+) => {
+  await cancelActivityNotification();
+  const s = await loadNotificationSettings();
+  if (!s.masterEnabled || !s.categoryFitness) return;
+  const isMindful = styleMode === 'mindful';
+  if (isMindful && !mindfulGrowthAreas) return;
+  const status = await getPermissionStatus();
+  if (status !== 'granted') return;
+
+  const bothGoalsHit = todayActiveCals >= activeCalGoal && todayExerciseMins >= exerciseMinsGoal;
+  if (bothGoalsHit) return;
+
+  const now = new Date();
+  const { hour: actH, minute: actM } = parseTime(s.activityTime);
+  if (actH * 60 + actM <= now.getHours() * 60 + now.getMinutes()) return;
+
+  const fireDate = new Date();
+  fireDate.setHours(actH, actM, 0, 0);
+  const rotation = { ...s.copyRotation };
+  const v = pickCopy('activity', COPY_POOLS.activity, styleMode, mindfulGrowthAreas, rotation);
+
+  await Notifications.scheduleNotificationAsync({
+    identifier: 'pj_activity',
+    content: { title: v.title, body: v.body, sound: true, data: { route: '/(tabs)/workout' } },
+    trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: fireDate },
+  });
+
   await saveNotificationSettings({ ...s, copyRotation: rotation });
 };

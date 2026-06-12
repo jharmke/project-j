@@ -14,8 +14,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Dimensions, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import ReAnimated, { useAnimatedProps, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
-import Svg, { Path } from 'react-native-svg';
+import ReAnimated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Svg, { Circle, G, Line, Polyline, Rect, Text as SvgText } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SleepDonut from '../components/SleepDonut';
 import { triggerHaptic } from '../utils/haptics';
@@ -41,51 +41,133 @@ type SleepNight = {
   totalMs: number; bed: string | null; wake: string | null; awakeCount: number; bedMin: number | null;
 };
 
-const AnimPath = ReAnimated.createAnimatedComponent(Path);
+// ─── Chart layout (matches the StatsGraphCard pattern: y-axis ticks, x-axis
+// dates, tap-a-point callout pill) ───────────────────────────────────────────
+const CHART_W = Dimensions.get('window').width - 24 - 32; // screen minus card margins (24) and padding (32)
+const CHART_H = 150;
+const C_TOP = 12, C_BOTTOM = 18, C_LEFT = 28, C_RIGHT = 8;
+const PLOT_W = CHART_W - C_LEFT - C_RIGHT;
+const PLOT_H = CHART_H - C_TOP - C_BOTTOM;
 
-// Sleep Score trend line. Animates a left-to-right draw-in on each data change.
-function ScoreTrend({ scores, color }: { scores: number[]; color: string }) {
-  const W = Dimensions.get('window').width - 24 - 32; // screen minus card margins (24) and padding (32)
-  const H = 88;
-  const n = scores.length;
-  const { d, len } = useMemo(() => {
-    if (n === 0) return { d: '', len: 0 };
-    const pts = scores.map((s, i) => ({
-      x: n === 1 ? W / 2 : (i / (n - 1)) * W,
-      y: H - (Math.max(0, Math.min(100, s)) / 100) * (H - 8) - 4,
-    }));
-    let path = `M ${pts[0].x} ${pts[0].y}`;
-    let length = 0;
-    for (let i = 1; i < pts.length; i++) {
-      path += ` L ${pts[i].x} ${pts[i].y}`;
-      length += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
-    }
-    return { d: path, len: length };
-  }, [scores]);
+type Callout = { x: number; y: number; label1: string; label2: string } | null;
 
-  const prog = useSharedValue(0);
-  useEffect(() => { prog.value = 0; prog.value = withTiming(1, { duration: 900 }); }, [d]);
-  const animProps = useAnimatedProps(() => ({ strokeDashoffset: len * (1 - prog.value) }));
+const fmtDay = (dateKey: string) => {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString([], { month: 'short', day: 'numeric' });
+};
 
-  if (!d) return null;
+function useSlideIn(dep: string) {
+  const t = useSharedValue(0);
+  useEffect(() => { t.value = 0; t.value = withTiming(1, { duration: 600 }); }, [dep]);
+  return useAnimatedStyle(() => ({ opacity: t.value, transform: [{ translateY: (1 - t.value) * 12 }] }));
+}
+
+function CalloutPill({ callout, theme, clear }: { callout: NonNullable<Callout>; theme: any; clear: () => void }) {
+  const w = Math.max(callout.label1.length, callout.label2.length) * 6 + 16;
+  const h = 32;
+  const x = Math.min(Math.max(callout.x - w / 2, C_LEFT), CHART_W - C_RIGHT - w);
+  const y = Math.max(0, callout.y - h - 8);
   return (
-    <Svg width={W} height={H}>
-      <AnimPath d={d} stroke={color} strokeWidth={2.5} fill="none" strokeLinecap="round" strokeLinejoin="round"
-        strokeDasharray={len} animatedProps={animProps} />
-    </Svg>
+    <>
+      <Rect x={x} y={y} width={w} height={h} fill={theme.bgCard} stroke={theme.borderCard} strokeWidth={0.5} rx={6} onPress={clear} />
+      <SvgText x={x + w / 2} y={y + 12} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">{callout.label1}</SvgText>
+      <SvgText x={x + w / 2} y={y + 26} fill={theme.textPrimary} fontSize={10} fontFamily="DMSans_700Bold" textAnchor="middle">{callout.label2}</SvgText>
+    </>
   );
 }
 
-// One night's stacked stage bar. Grows up from zero, staggered by index.
-function NightBar({ segs, totalFrac, maxH, idx }: { segs: { color: string; ms: number }[]; totalFrac: number; maxH: number; idx: number }) {
-  const h = useSharedValue(0);
-  useEffect(() => { h.value = 0; h.value = withDelay(idx * 22, withTiming(Math.max(2, totalFrac * maxH), { duration: 500 })); }, [totalFrac, maxH]);
-  const style = useAnimatedStyle(() => ({ height: h.value }));
+// Sleep Score trend line: y-axis 0-100, x-axis dates, tap a point for that night.
+function ScoreTrendChart({ nights, scores, color, theme }: { nights: SleepNight[]; scores: number[]; color: string; theme: any }) {
+  const [callout, setCallout] = useState<Callout>(null);
+  const slide = useSlideIn(`${scores.length}:${nights[0]?.dateKey ?? ''}`);
+  const n = scores.length;
+  if (n === 0) return null;
+  const ticks = [0, 25, 50, 75, 100];
+  const toX = (i: number) => C_LEFT + (n === 1 ? PLOT_W / 2 : (i / (n - 1)) * PLOT_W);
+  const toY = (v: number) => C_TOP + (1 - Math.max(0, Math.min(100, v)) / 100) * PLOT_H;
+  const pts = scores.map((s, i) => `${toX(i)},${toY(s)}`).join(' ');
+  const midIdx = Math.floor(n / 2);
   return (
-    <ReAnimated.View style={[{ width: '100%', borderRadius: 3, overflow: 'hidden', flexDirection: 'column' }, style]}>
-      {segs.filter(s => s.ms > 0).map((s, i) => (
-        <View key={i} style={{ flex: s.ms, backgroundColor: s.color }} />
-      ))}
+    <ReAnimated.View style={slide}>
+      <Svg width={CHART_W} height={CHART_H}>
+        <Rect x={0} y={0} width={CHART_W} height={CHART_H} fill="transparent" onPress={() => setCallout(null)} />
+        {ticks.map(t => (
+          <Line key={`g${t}`} x1={C_LEFT} y1={toY(t)} x2={C_LEFT + PLOT_W} y2={toY(t)} stroke={theme.borderSubtle} strokeWidth={1} />
+        ))}
+        {ticks.map(t => (
+          <SvgText key={`y${t}`} x={C_LEFT - 5} y={toY(t) + 3} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">{t}</SvgText>
+        ))}
+        <Polyline points={pts} fill="none" stroke={color} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
+        {scores.map((s, i) => <Circle key={`d${i}`} cx={toX(i)} cy={toY(s)} r={3} fill={color} />)}
+        <SvgText x={C_LEFT} y={CHART_H - 4} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium">{fmtDay(nights[0].dateKey)}</SvgText>
+        {n > 3 && <SvgText x={toX(midIdx)} y={CHART_H - 4} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">{fmtDay(nights[midIdx].dateKey)}</SvgText>}
+        <SvgText x={C_LEFT + PLOT_W} y={CHART_H - 4} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">{fmtDay(nights[n - 1].dateKey)}</SvgText>
+        {scores.map((s, i) => (
+          <Circle key={`t${i}`} cx={toX(i)} cy={toY(s)} r={16} fill="transparent"
+            onPress={() => setCallout(prev => prev?.label1 === fmtDay(nights[i].dateKey) ? null : { x: toX(i), y: toY(s), label1: fmtDay(nights[i].dateKey), label2: `Score ${s}` })} />
+        ))}
+        {callout && <CalloutPill callout={callout} theme={theme} clear={() => setCallout(null)} />}
+      </Svg>
+    </ReAnimated.View>
+  );
+}
+
+// Per-night stacked stage bars: y-axis hours, x-axis dates, tap a bar for totals.
+function StageHistoryChart({ nights, theme }: { nights: SleepNight[]; theme: any }) {
+  const [callout, setCallout] = useState<Callout>(null);
+  const slide = useSlideIn(`${nights.length}:${nights[0]?.dateKey ?? ''}`);
+  const n = nights.length;
+  if (n === 0) return null;
+  const barMs = nights.map(nt => nt.totalMs + nt.awakeMs);
+  const maxMs = Math.max(...barMs, 1);
+  const maxH = Math.max(1, Math.ceil(maxMs / 3600000));
+  const step = maxH <= 4 ? 1 : maxH <= 9 ? 2 : 3;
+  const ticks: number[] = [];
+  for (let h = 0; h <= maxH; h += step) ticks.push(h);
+  if (ticks[ticks.length - 1] !== maxH) ticks.push(maxH);
+  const tickMaxMs = maxH * 3600000;
+  const toY = (ms: number) => C_TOP + (1 - ms / tickMaxMs) * PLOT_H;
+  const slot = PLOT_W / n;
+  const BAR_W = Math.min(28, slot - 4);
+  const midIdx = Math.floor(n / 2);
+  return (
+    <ReAnimated.View style={slide}>
+      <Svg width={CHART_W} height={CHART_H}>
+        <Rect x={0} y={0} width={CHART_W} height={CHART_H} fill="transparent" onPress={() => setCallout(null)} />
+        {ticks.map(h => (
+          <Line key={`g${h}`} x1={C_LEFT} y1={toY(h * 3600000)} x2={C_LEFT + PLOT_W} y2={toY(h * 3600000)} stroke={theme.borderSubtle} strokeWidth={1} />
+        ))}
+        {ticks.map(h => (
+          <SvgText key={`y${h}`} x={C_LEFT - 5} y={toY(h * 3600000) + 3} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">{h}h</SvgText>
+        ))}
+        {nights.map((nt, i) => {
+          const x = C_LEFT + i * slot + (slot - BAR_W) / 2;
+          const segs = [
+            { c: theme.sleepDeep, ms: nt.deepMs },
+            { c: theme.sleepCore, ms: nt.coreMs },
+            { c: theme.sleepRem, ms: nt.remMs },
+            { c: theme.sleepAwake, ms: nt.awakeMs },
+          ];
+          let acc = 0;
+          return (
+            <G key={nt.dateKey}>
+              {segs.map((s, si) => {
+                if (s.ms <= 0) return null;
+                const segH = (s.ms / tickMaxMs) * PLOT_H;
+                const y = C_TOP + PLOT_H - ((acc + s.ms) / tickMaxMs) * PLOT_H;
+                acc += s.ms;
+                return <Rect key={si} x={x} y={y} width={BAR_W} height={segH} fill={s.c} rx={si === segs.length - 1 ? 2 : 0} />;
+              })}
+              <Rect x={x} y={C_TOP} width={BAR_W} height={PLOT_H} fill="transparent"
+                onPress={() => setCallout(prev => prev?.label1 === fmtDay(nt.dateKey) ? null : { x: x + BAR_W / 2, y: toY(barMs[i]), label1: fmtDay(nt.dateKey), label2: `${fmtMs(nt.totalMs)} sleep` })} />
+            </G>
+          );
+        })}
+        <SvgText x={C_LEFT + slot / 2} y={CHART_H - 4} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">{fmtDay(nights[0].dateKey)}</SvgText>
+        {n > 3 && <SvgText x={C_LEFT + midIdx * slot + slot / 2} y={CHART_H - 4} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">{fmtDay(nights[midIdx].dateKey)}</SvgText>}
+        <SvgText x={C_LEFT + (n - 1) * slot + slot / 2} y={CHART_H - 4} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">{fmtDay(nights[n - 1].dateKey)}</SvgText>
+        {callout && <CalloutPill callout={callout} theme={theme} clear={() => setCallout(null)} />}
+      </Svg>
     </ReAnimated.View>
   );
 }
@@ -300,10 +382,10 @@ export default function SleepHub() {
           </Text>
         ) : (
           <>
-            <ScoreTrend scores={nightScores} color={theme.accentBlueRaw} />
+            <ScoreTrendChart nights={history} scores={nightScores} color={theme.accentBlueRaw} theme={theme} />
             {avg !== null && (
               <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium', marginTop: 8 }}>
-                {nightScores.length} {nightScores.length === 1 ? 'night' : 'nights'} · avg score {avg}
+                {nightScores.length} {nightScores.length === 1 ? 'night' : 'nights'} · avg score {avg} · tap a point for that night
               </Text>
             )}
           </>
@@ -313,9 +395,6 @@ export default function SleepHub() {
   };
 
   const renderStageHistory = () => {
-    const barAreaH = 110;
-    const withBars = history.map(nt => ({ ...nt, barMs: nt.totalMs + nt.awakeMs }));
-    const maxBar = withBars.reduce((m, n) => Math.max(m, n.barMs), 0);
     const legend = [
       { label: 'Core', color: theme.sleepCore },
       { label: 'Deep', color: theme.sleepDeep },
@@ -327,30 +406,14 @@ export default function SleepHub() {
         <Text style={[cardLabel, { marginBottom: 12 }]}>Sleep Stages</Text>
         {loadingHist ? (
           <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 24, textAlign: 'center' }}>Loading…</Text>
-        ) : withBars.length === 0 ? (
+        ) : history.length === 0 ? (
           <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 24, textAlign: 'center' }}>
             No stage history yet for this range.
           </Text>
         ) : (
           <>
-            <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: barAreaH, gap: range === '7' ? 8 : 3 }}>
-              {withBars.map((nt, i) => (
-                <View key={nt.dateKey} style={{ flex: 1, height: barAreaH, justifyContent: 'flex-end' }}>
-                  <NightBar
-                    idx={i}
-                    maxH={barAreaH}
-                    totalFrac={maxBar > 0 ? nt.barMs / maxBar : 0}
-                    segs={[
-                      { color: theme.sleepAwake, ms: nt.awakeMs },
-                      { color: theme.sleepRem, ms: nt.remMs },
-                      { color: theme.sleepCore, ms: nt.coreMs },
-                      { color: theme.sleepDeep, ms: nt.deepMs },
-                    ]}
-                  />
-                </View>
-              ))}
-            </View>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 14 }}>
+            <StageHistoryChart nights={history} theme={theme} />
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 12 }}>
               {legend.map(l => (
                 <View key={l.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
                   <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: l.color }} />
@@ -373,21 +436,26 @@ export default function SleepHub() {
     const avgRemPct = withStages.length ? Math.round(withStages.reduce((a, n) => a + n.remMs / n.totalMs, 0) / withStages.length * 100) : null;
 
     const beds = history.map(n => n.bedMin).filter((b): b is number => b !== null);
-    let consistency: { label: string; sub: string } | null = null;
+    let consistency: { label: string; sub: string; color: string } | null = null;
     if (beds.length >= 2) {
       const mean = beds.reduce((a, b) => a + b, 0) / beds.length;
       const sd = Math.round(Math.sqrt(beds.reduce((a, b) => a + (b - mean) ** 2, 0) / beds.length));
       consistency = {
         label: sd <= 30 ? 'Consistent' : sd <= 60 ? 'Mostly steady' : 'Variable',
         sub: `± ${sd}m bedtime`,
+        color: sd <= 30 ? theme.statusGood : sd <= 60 ? theme.statusWarn : theme.statusBad,
       };
     }
 
-    const tile = (label: string, value: string, sub?: string) => (
+    const wakeColor = last.awakeCount >= 4 ? theme.statusWarn : theme.textSecondary;
+
+    const tile = (label: string, value: string, color: string, sub: string, numeric = true) => (
       <View style={{ flex: 1, backgroundColor: theme.bgInset, borderRadius: 10, borderWidth: 0.5, borderColor: theme.borderInset, padding: 12 }}>
         <Text style={{ fontSize: 9, letterSpacing: 1.5, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 6 }}>{label}</Text>
-        <Text style={{ fontSize: 22, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5 }}>{value}</Text>
-        {sub ? <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>{sub}</Text> : null}
+        {numeric
+          ? <Text style={{ fontSize: 24, color, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5 }}>{value}</Text>
+          : <Text style={{ fontSize: 15, color, fontFamily: 'DMSans_700Bold', letterSpacing: 0.3, marginVertical: 3 }}>{value}</Text>}
+        <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>{sub}</Text>
       </View>
     );
 
@@ -395,12 +463,12 @@ export default function SleepHub() {
       <View style={cardStyle}>
         <Text style={[cardLabel, { marginBottom: 12 }]}>Sleep Metrics</Text>
         <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
-          {tile('Wake Events', last.awakeCount > 0 ? String(last.awakeCount) : '0', 'last night')}
-          {tile('Bedtime', consistency ? consistency.label : '—', consistency ? consistency.sub : `${range}d range`)}
+          {tile('Wake Events', String(last.awakeCount), wakeColor, 'last night')}
+          {tile('Bedtime', consistency ? consistency.label : '—', consistency ? consistency.color : theme.textSecondary, consistency ? consistency.sub : `${range}d range`, false)}
         </View>
         <View style={{ flexDirection: 'row', gap: 8 }}>
-          {tile('Avg Deep', avgDeepPct !== null ? `${avgDeepPct}%` : '—', `${range}d average`)}
-          {tile('Avg REM', avgRemPct !== null ? `${avgRemPct}%` : '—', `${range}d average`)}
+          {tile('Avg Deep', avgDeepPct !== null ? `${avgDeepPct}%` : '—', theme.sleepDeep, `${range}d average`)}
+          {tile('Avg REM', avgRemPct !== null ? `${avgRemPct}%` : '—', theme.sleepRem, `${range}d average`)}
         </View>
       </View>
     );

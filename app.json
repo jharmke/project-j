@@ -95,7 +95,8 @@
           "microphonePermission": "Project J uses your microphone so you can dictate food and meal descriptions by voice.",
           "speechRecognitionPermission": "Project J uses speech recognition to turn your dictation into text when logging meals."
         }
-      ]
+      ],
+      "./plugins/withModularHeaders"
     ],
     "experiments": {
       "typedRoutes": true,

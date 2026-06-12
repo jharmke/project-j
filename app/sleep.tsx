@@ -18,6 +18,7 @@ import ReAnimated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-
 import Svg, { Circle, G, Line, Polyline, Rect, Text as SvgText } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ToggleSwitch from '../components/ToggleSwitch';
+import TooltipIcon from '../components/TooltipIcon';
 import { triggerHaptic } from '../utils/haptics';
 import { storageSet } from '../utils/storage';
 import { calcSleepScore } from '../utils/sleepScore';
@@ -755,7 +756,9 @@ export default function SleepHub() {
           <Ionicons name="chevron-back" size={16} color={theme.accentBlue} />
         </TouchableOpacity>
         <Text style={{ fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw }}>SLEEP & RECOVERY</Text>
-        <View style={{ width: 36 }} />
+        <View style={{ width: 36, alignItems: 'flex-end', justifyContent: 'center' }}>
+          <TooltipIcon tooltipKey="sleep_hub" size={20} />
+        </View>
       </View>
 
       {/* Tab pill selector */}

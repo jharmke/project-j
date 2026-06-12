@@ -1345,6 +1345,15 @@ export default function StatsScreen() {
     registerTutorialAction('injectTutorialGraph', async () => {
       const tutId = 'tutorial_graph_calories';
       tutorialGraphIdRef.current = tutId;
+      // The demo graph and the creator's live preview both read trendDataMap['7'].
+      // If the user's active period isn't 7, that series was never loaded, so both
+      // render empty. Load it before the tour shows them. (Mirrors openCreatorModal.)
+      if (!trendDataMap['7']) {
+        let workoutState: any = {};
+        try { const ws = await AsyncStorage.getItem('pj_workout_state'); if (ws) workoutState = JSON.parse(ws); } catch {}
+        const data = await fetchTrendData(7, workoutState, sleepGoal);
+        setTrendDataMap(prev => ({ ...prev, '7': data }));
+      }
       const tutCard: StatsCard = {
         id: tutId,
         type: 'graph',

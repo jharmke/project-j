@@ -1322,7 +1322,7 @@ export const TUTORIALS: Tutorial[] = [
   {
     id: 'graph_creator',
     name: 'Graph Creator',
-    description: 'Build custom graphs for 19 data types, choose your chart style and color, and add them to your Stats page or pin them to your home screen.',
+    description: 'Build custom graphs for 17 data types, choose your chart style and color, and add them to your Stats page or pin them to your home screen.',
     tab: 'stats',
     preAction: 'injectTutorialGraph',
     steps: [
@@ -1331,7 +1331,7 @@ export const TUTORIALS: Tutorial[] = [
         tutorialAction: 'openGraphCreatorTutorial',
         title: 'ADDING A GRAPH',
         body: {
-          discipline: 'Tap the + FAB to open the Graph Creator. 19 data types across 4 categories. Build exactly what you want to track.',
+          discipline: 'Tap the + FAB to open the Graph Creator. 17 data types across 4 categories. Build exactly what you want to track.',
           balanced: 'Tap the + FAB and choose "Add Graph." You\'ll pick a data type, chart style, and color.',
           mindful: 'Tap the + button and choose "Add Graph." Pick what you want to see and the app builds the chart for you.',
         },
@@ -1343,8 +1343,8 @@ export const TUTORIALS: Tutorial[] = [
         bubbleAtBottom: true,
         title: 'CHOOSE YOUR DATA',
         body: {
-          discipline: '19 data types across 4 categories: Nutrition (calories, macros, fiber, sodium), Activity (steps, active cals, effort), Body (weight, body fat), Sleep & Recovery (score, hours).',
-          balanced: 'Pick what you want to graph. Options include calories, macros, steps, weight, sleep, and more -- organized by category.',
+          discipline: '17 data types across 4 categories: Nutrition (calories, macros, fiber, sodium), Activity (steps, active cals, effort), Body (weight, body fat), Sleep & Recovery (score, hours).',
+          balanced: 'Pick what you want to graph. Options include calories, macros, steps, weight, sleep, and more, organized by category.',
           mindful: 'Choose from the available data types. Pick whatever feels interesting or useful to see over time.',
         },
       },
@@ -1355,7 +1355,7 @@ export const TUTORIALS: Tutorial[] = [
         body: {
           discipline: 'Line charts show trend and direction over time. Bar charts show daily volume at a glance. Line for weight trend, bar for calorie adherence.',
           balanced: 'Pick the chart style that helps you read your data most clearly. Line for trend direction, bar for daily totals.',
-          mindful: 'Line or bar -- pick whichever helps you digest the information best. You can always change it later.',
+          mindful: 'Line or bar: pick whichever helps you digest the information best. You can always change it later.',
         },
       },
       {
@@ -1364,7 +1364,7 @@ export const TUTORIALS: Tutorial[] = [
         body: {
           discipline: 'Color is visual separation. Use different colors for different metrics so you can scan your stats page instantly.',
           balanced: 'Color-code your graphs to tell them apart at a glance. 8 curated options to choose from.',
-          mindful: 'Pick a color that resonates with you. This is your space -- make it feel right.',
+          mindful: 'Pick a color that resonates with you. This is your space. Make it feel right.',
         },
       },
       {
@@ -1383,7 +1383,7 @@ export const TUTORIALS: Tutorial[] = [
         body: {
           discipline: 'Tap ADD TO STATS and your graph appears in the Trends section immediately. Pin it to your home screen via Edit Layout.',
           balanced: 'Tap ADD TO STATS and your graph shows up in the Trends section. You can pin any graph to your home screen from Edit Layout.',
-          mindful: 'Tap ADD TO STATS and the graph appears. It\'s there when you want it -- no pressure to check it daily.',
+          mindful: 'Tap ADD TO STATS and the graph appears. It\'s there when you want it. No pressure to check it daily.',
         },
       },
       {
@@ -1421,7 +1421,7 @@ export const TUTORIALS: Tutorial[] = [
         body: {
           discipline: 'Streaks track consecutive days of a specific habit. Auto-tracked habits check themselves daily. Manual tiles require a check-in tap.',
           balanced: 'Streaks show how many consecutive days you\'ve hit a specific goal. Some track automatically, some require a daily tap.',
-          mindful: 'Streaks count consecutive days of a habit. They\'re a gentle way to see momentum build -- not a pressure system.',
+          mindful: 'Streaks count consecutive days of a habit. They\'re a gentle way to see momentum build, not a pressure system.',
         },
       },
       {
@@ -1447,7 +1447,7 @@ export const TUTORIALS: Tutorial[] = [
         targetKey: 'stats_streak_manage_panel',
         title: 'MANAGE PANEL',
         body: {
-          discipline: 'Active streaks are at the top. Below are 14 preset habits ready to add -- nutrition, fitness, sleep, and faith. Tap any to activate it.',
+          discipline: 'Active streaks are at the top. Below are 14 preset habits ready to add: nutrition, fitness, sleep, and faith. Tap any to activate it.',
           balanced: 'Your active streaks appear at the top. Below that are preset streaks you can add with a tap. Drag to reorder active ones.',
           mindful: 'This panel shows what\'s active and what\'s available. Add the ones that fit your life and leave the rest.',
         },
@@ -1478,9 +1478,9 @@ export const TUTORIALS: Tutorial[] = [
         navigateDelay: 900,
         title: 'EFFORT VS RESULTS',
         body: {
-          discipline: 'This is a backward-looking analysis engine. It scans your logged data and finds patterns that explain your actual outcomes -- not averages, real patterns.',
+          discipline: 'This is a backward-looking analysis engine. It scans your logged data and finds patterns that explain your actual outcomes. Not averages, real patterns.',
           balanced: 'Effort vs Results analyzes your logged data and surfaces what\'s actually affecting your results. It needs enough logged days to find real signals.',
-          mindful: 'Effort vs Results is an analysis tool. It looks at your data and surfaces observations -- not conclusions, just patterns to consider.',
+          mindful: 'Effort vs Results is an analysis tool. It looks at your data and surfaces observations, not conclusions, just patterns to consider.',
         },
       },
       {
@@ -1510,27 +1510,29 @@ export const TUTORIALS: Tutorial[] = [
         title: 'YOUR FINDINGS',
         noTabBarOffset: true,
         body: {
-          discipline: 'Each card grades a key area -- Logging Consistency, Calorie Deficit, Burn Accuracy, Macros, and Sleep -- against your actual data, not a generic standard.',
+          discipline: 'Each card grades a key area (Logging Consistency, Calorie Deficit, Burn Accuracy, Macros, and Sleep) against your actual data, not a generic standard.',
           balanced: 'Each card covers a key area: consistency, calories, macros, sleep, and burn accuracy. Status indicators show where you\'re on track and where to focus.',
-          mindful: 'These cards share what the data shows for each area. Read them as observations -- not grades. Take what\'s useful to you.',
+          mindful: 'These cards share what the data shows for each area. Read them as observations, not grades. Take what\'s useful to you.',
         },
       },
       {
         targetKey: 'evr_correlations',
+        skipIfTargetMissing: true,
         title: 'PATTERNS IN YOUR DATA',
         noTabBarOffset: true,
         body: {
-          discipline: '9 correlation patterns analyzed: sleep-to-intake, burn days, weekday/weekend, water-to-cals, and more. These are the patterns that explain plateaus.',
-          balanced: 'The patterns section shows how different habits connect -- things like sleep affecting next-day eating, or high burn days affecting appetite.',
-          mindful: 'Patterns show how different habits connect. These are just observations -- interesting to notice, not rules to follow.',
+          discipline: 'Correlation patterns across your data: sleep-to-intake, burn days, weekday/weekend, water-to-cals, and more. These are the patterns that explain plateaus.',
+          balanced: 'The patterns section shows how different habits connect: things like sleep affecting next-day eating, or high burn days affecting appetite.',
+          mindful: 'Patterns show how different habits connect. These are just observations, interesting to notice, not rules to follow.',
         },
       },
       {
         targetKey: 'evr_suggestions',
+        skipIfTargetMissing: true,
         title: 'YOUR SUGGESTIONS',
         noTabBarOffset: true,
         body: {
-          discipline: 'Ranked action items derived from your findings. These are specific to your data -- not generic advice. Start with rank 1 and build from there.',
+          discipline: 'Ranked action items derived from your findings. These are specific to your data, not generic advice. Start with rank 1 and build from there.',
           balanced: 'Suggestions are ranked by impact based on your specific findings. They tell you the most effective place to focus your effort.',
           mindful: 'These are observations reframed as gentle next steps. You decide what fits your life right now.',
         },
@@ -1607,7 +1609,7 @@ export const TUTORIALS: Tutorial[] = [
   {
     id: 'day_score',
     name: 'Day Summary',
-    description: 'How your morning 0-100 Day Score works across Nutrition, Activity, and Recovery -- and why a bad night never tanks it.',
+    description: 'How your morning 0-100 Day Score works across Nutrition, Activity, and Recovery, and why a bad night never tanks it.',
     tab: 'stats',
     // Opens the full Day Summary page on your most recent full day so the tour
     // can point at the real ring and cards. Aborts with a toast if you have no
@@ -1623,8 +1625,8 @@ export const TUTORIALS: Tutorial[] = [
         highlightPadding: 6,
         noTabBarOffset: true,
         body: {
-          discipline: 'This is your Day Score: a 0-100 grade for the day before, built from three weighted areas -- Nutrition 40%, Activity 35%, Recovery 25%. Today is never scored while it is still in progress.',
-          balanced: 'This is your Day Score: a score out of 100 for the day before. It comes from three areas -- Nutrition (40%), Activity (35%), and Recovery (25%).',
+          discipline: 'This is your Day Score: a 0-100 grade for the day before, built from three weighted areas: Nutrition 40%, Activity 35%, Recovery 25%. Today is never scored while it is still in progress.',
+          balanced: 'This is your Day Score: a score out of 100 for the day before. It comes from three areas: Nutrition (40%), Activity (35%), and Recovery (25%).',
           mindful: 'This is your Day Score: a gentle read on the day before, drawn from nutrition, activity, and recovery. A reflection, not a verdict.',
         },
       },
@@ -1633,9 +1635,9 @@ export const TUTORIALS: Tutorial[] = [
         title: 'NUTRITION',
         noTabBarOffset: true,
         body: {
-          discipline: 'Calories, protein, and water. Scoring is proximity-based -- get close to a goal and you earn most of the points, no all-or-nothing cliffs. Skip an area and it drops out so the rest rebalance.',
-          balanced: 'Calories, protein, and water. You do not have to be perfect -- getting close to a goal earns most of the points. Anything you did not log simply drops out and the rest adjust.',
-          mindful: 'Calories, protein, and water. Getting close counts -- there is no pass or fail. Anything you did not track steps aside, so you are never measured against blanks.',
+          discipline: 'Calories, protein, and water. Scoring is proximity-based: get close to a goal and you earn most of the points, no all-or-nothing cliffs. Skip an area and it drops out so the rest rebalance.',
+          balanced: 'Calories, protein, and water. You do not have to be perfect. Getting close to a goal earns most of the points. Anything you did not log simply drops out and the rest adjust.',
+          mindful: 'Calories, protein, and water. Getting close counts. There is no pass or fail. Anything you did not track steps aside, so you are never measured against blanks.',
         },
       },
       {
@@ -1643,9 +1645,9 @@ export const TUTORIALS: Tutorial[] = [
         title: 'ACTIVITY',
         noTabBarOffset: true,
         body: {
-          discipline: 'Active calories plus your workout. On a rest day, tag it as Rest so it is not dinged for having no workout -- your movement still earns credit.',
+          discipline: 'Active calories plus your workout. On a rest day, tag it as Rest so it is not dinged for having no workout. Your movement still earns credit.',
           balanced: 'Active calories and your workout. Taking a rest day? Tag it as Rest so the score does not expect a workout. Your movement that day still counts.',
-          mindful: 'Active calories and movement. A rest day is good -- tag it as Rest so the day is not measured against a workout you intentionally set aside.',
+          mindful: 'Active calories and movement. A rest day is good. Tag it as Rest so the day is not measured against a workout you intentionally set aside.',
         },
       },
       {
@@ -1653,9 +1655,9 @@ export const TUTORIALS: Tutorial[] = [
         title: 'RECOVERY',
         noTabBarOffset: true,
         body: {
-          discipline: 'Built from your sleep. Any night you log earns a floor, so a rough night will not tank your day -- this is why Recovery can read higher than your raw sleep score.',
-          balanced: 'Built from your sleep, but any night you log earns a minimum -- so one rough night will not crater your score. That is why Recovery can read a little higher than your raw sleep score.',
-          mindful: 'Built from your sleep, and a night you log always counts for something. A hard night is never held against you -- resting still matters.',
+          discipline: 'Built from your sleep. Any night you log earns a floor, so a rough night will not tank your day. This is why Recovery can read higher than your raw sleep score.',
+          balanced: 'Built from your sleep, but any night you log earns a minimum, so one rough night will not crater your score. That is why Recovery can read a little higher than your raw sleep score.',
+          mindful: 'Built from your sleep, and a night you log always counts for something. A hard night is never held against you. Resting still matters.',
         },
       },
       {

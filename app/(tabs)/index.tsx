@@ -52,6 +52,7 @@ import { StoredTip, loadSmartTips, CoachTipCache } from '../../utils/smartTipsEn
 import { refreshCoachTip, resolveTipBody, resolveTipTitle } from '../../utils/coachAI';
 import NutrientDrilldownModal, { DrilldownItem, computeNetCarbsForEntry } from '../../components/NutrientDrilldownModal';
 import AnimatedNumber from '../../components/AnimatedNumber';
+import SleepDonut from '../../components/SleepDonut';
 
 // ─── Card Registry ────────────────────────────────────────────────────────────
 export type CardId =
@@ -342,76 +343,7 @@ function ScoreRing({ score, scoreColor, trackColor, donutSize, donutStroke, donu
   );
 }
 
-function SleepDonut({ coreFrac, deepFrac, remFrac, donutCirc, donutSize, donutStroke, donutRadius, coreColor, deepColor, remColor, trackColor, gapFrac, refreshKey, score, scoreColor, shimmer }: {
-  coreFrac: number; deepFrac: number; remFrac: number; donutCirc: number;
-  donutSize: number; donutStroke: number; donutRadius: number;
-  coreColor: string; deepColor: string; remColor: string; trackColor: string; gapFrac: number; refreshKey?: number;
-  score: number; scoreColor: string; shimmer?: boolean;
-}) {
-  const coreAnim = useSharedValue(0);
-  const deepAnim = useSharedValue(0);
-  const remAnim  = useSharedValue(0);
-  const shimmerScale = useSharedValue(1);
-
-  useEffect(() => {
-    coreAnim.value = 0;
-    deepAnim.value = 0;
-    remAnim.value  = 0;
-    setTimeout(() => {
-      coreAnim.value = withTiming(Math.max(0, coreFrac - gapFrac), { duration: 800 });
-    }, 200);
-    setTimeout(() => {
-      deepAnim.value = withTiming(Math.max(0, deepFrac - gapFrac), { duration: 700 });
-    }, 900);
-    setTimeout(() => {
-      remAnim.value = withTiming(Math.max(0, remFrac - gapFrac), { duration: 600 });
-    }, 1500);
-  }, [coreFrac, deepFrac, remFrac, refreshKey]);
-
-  useEffect(() => {
-    if (shimmer) {
-      shimmerScale.value = withRepeat(
-        withSequence(
-          withTiming(1.08, { duration: 200, easing: ReAnimEasing.out(ReAnimEasing.cubic) }),
-          withTiming(1.0,  { duration: 350, easing: ReAnimEasing.in(ReAnimEasing.cubic) }),
-          withDelay(2800, withTiming(1.0, { duration: 1 })),
-        ),
-        -1,
-        false,
-      );
-    } else {
-      cancelAnimation(shimmerScale);
-      shimmerScale.value = 1;
-    }
-  }, [shimmer]);
-
-  const coreStyle = useAnimatedStyle(() => ({ strokeDasharray: `${coreAnim.value} ${donutCirc}` } as any));
-  const deepStyle = useAnimatedStyle(() => ({ strokeDasharray: `${deepAnim.value} ${donutCirc}` } as any));
-  const remStyle  = useAnimatedStyle(() => ({ strokeDasharray: `${remAnim.value} ${donutCirc}`  } as any));
-  const shimmerCenterStyle = useAnimatedStyle(() => ({ transform: [{ scale: shimmerScale.value }] }));
-
-  return (
-    <View>
-      <Svg width={donutSize} height={donutSize}>
-        <Circle cx={donutSize/2} cy={donutSize/2} r={donutRadius} stroke={trackColor} strokeWidth={donutStroke} fill="none" />
-        <AnimCircle cx={donutSize/2} cy={donutSize/2} r={donutRadius} stroke={coreColor} strokeWidth={donutStroke} fill="none"
-          animatedProps={coreStyle} strokeDashoffset={0} strokeLinecap="butt" rotation="-90" origin={`${donutSize/2},${donutSize/2}`} />
-        <AnimCircle cx={donutSize/2} cy={donutSize/2} r={donutRadius} stroke={deepColor} strokeWidth={donutStroke} fill="none"
-          animatedProps={deepStyle} strokeDashoffset={-(coreFrac)} strokeLinecap="butt" rotation="-90" origin={`${donutSize/2},${donutSize/2}`} />
-        <AnimCircle cx={donutSize/2} cy={donutSize/2} r={donutRadius} stroke={remColor} strokeWidth={donutStroke} fill="none"
-          animatedProps={remStyle} strokeDashoffset={-(coreFrac+deepFrac)} strokeLinecap="butt" rotation="-90" origin={`${donutSize/2},${donutSize/2}`} />
-      </Svg>
-      <View style={{ position:'absolute', top:0, left:0, width:donutSize, height:donutSize, alignItems:'center', justifyContent:'center' }}>
-        <ReAnimated.View style={[{ alignItems: 'center' }, shimmerCenterStyle]}>
-          <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
-            <Text style={{ fontSize: 36, fontFamily: 'BebasNeue_400Regular', color: scoreColor, letterSpacing: 1, lineHeight: 38, opacity: 0.88 }}>{score}</Text>
-          </View>
-          <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: scoreColor, textTransform: 'uppercase', opacity: 0.7 }}>/100</Text>
-        </ReAnimated.View>
-      </View>
-    </View>
-  );
-}
+// SleepDonut extracted to components/SleepDonut.tsx (shared with the Sleep Hub hero).
 
 function AnimatedProgressBar({ pct, color, trackColor, refreshKey, ready, overGoal }: { pct: number; color: string; trackColor?: string; refreshKey?: number; ready?: boolean; overGoal?: boolean }) {
   const width = useSharedValue(0);
@@ -2069,9 +2001,14 @@ export default function HomeScreen() {
             <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Sleep Last Night</Text>
             <TooltipIcon tooltipKey="sleep_score" />
           </View>
-          <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditingSleep(!editingSleep); }} hitSlop={{ top:8, bottom:8, left:8, right:8 }}>
-            <Ionicons name="settings" size={16} color={theme.textMuted} />
-          </TouchableOpacity>
+          <View style={{ flexDirection:'row', alignItems:'center', gap:14 }}>
+            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditingSleep(!editingSleep); }} hitSlop={{ top:8, bottom:8, left:8, right:8 }}>
+              <Ionicons name="settings" size={16} color={theme.textMuted} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/sleep'); }} hitSlop={{ top:8, bottom:8, left:8, right:8 }}>
+              <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
+            </TouchableOpacity>
+          </View>
         </View>
         
         {editingSleep && (

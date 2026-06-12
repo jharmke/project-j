@@ -274,6 +274,7 @@ export default function SleepHub() {
   const [excludedSet, setExcludedSet] = useState<Set<string>>(new Set());
   const [excludedToday, setExcludedToday] = useState(false);
   const [segments, setSegments] = useState<SleepSeg[]>([]);
+  const [manualNights, setManualNights] = useState<{ dateKey: string; score: number }[]>([]);
 
   // Day-stored sleep fields (mirror how the home card resolves the same number)
   const [sleepGoal, setSleepGoal] = useState(7);
@@ -319,6 +320,32 @@ export default function SleepHub() {
     })();
     return () => { cancelled = true; };
   }, [history]);
+
+  // Manual sleep nights (logged by hand on the home card, no Apple Health stages)
+  // so the score trend works for users without a watch. Feel-based scores.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const days = parseInt(range, 10);
+      const out: { dateKey: string; score: number }[] = [];
+      const base = new Date();
+      for (let i = 0; i < days; i++) {
+        const d = new Date(base);
+        d.setDate(d.getDate() - i);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        try {
+          const raw = await AsyncStorage.getItem(`pj_${key}`);
+          if (!raw) continue;
+          const data = JSON.parse(raw);
+          if (!data.sleepOverride) continue;
+          const { score: ms } = calcSleepScore(data.sleepOverride, null, sleepGoal, data.sleepFeelRating ?? null, true, data.sleepConsistencyPts ?? 0);
+          if (ms !== null) out.push({ dateKey: key, score: ms });
+        } catch {}
+      }
+      if (!cancelled) setManualNights(out);
+    })();
+    return () => { cancelled = true; };
+  }, [range, sleepGoal]);
 
   const filteredHistory = useMemo(() => history.filter(n => !excludedSet.has(n.dateKey)), [history, excludedSet]);
   // Only blank the cards on the very first load. On range switches we keep the
@@ -421,44 +448,48 @@ export default function SleepHub() {
 
     return (
       <View style={cardStyle}>
-        <Text style={[cardLabel, { marginBottom: 12 }]}>Last Night</Text>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <View style={{ flex: 1, paddingRight: 12 }}>
+        <Text style={[cardLabel, { marginBottom: 14 }]}>Last Night</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={{ flex: 1, alignItems: 'center' }}>
             <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
-              <Text style={{ fontSize: 42, color: scoreColor, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, opacity: 0.9 }}>{hrs}h {mins}m</Text>
+              <Text style={{ fontSize: 44, color: scoreColor, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, opacity: 0.9 }}>{hrs}h {mins}m</Text>
             </View>
-            <Text style={{ fontSize: 9, color: scoreLabel ? scoreColor : theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>
+            <Text style={{ fontSize: 9, color: scoreLabel ? scoreColor : theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginTop: 2 }}>
               {scoreLabel ?? (isManual ? 'MANUAL' : 'HEALTHKIT')}
             </Text>
-            {((storedBed && storedWake) || sleepTimes) && (
-              <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_500Medium', marginBottom: sleepAwakeMs > 0 ? 4 : 10 }}>
-                {storedBed || sleepTimes?.bed} → {storedWake || sleepTimes?.wake}
-              </Text>
-            )}
-            {sleepAwakeMs > 0 && (
-              <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginBottom: 10 }}>{fmtMs(sleepAwakeMs)} awake during night</Text>
-            )}
-            {sleepStages && (
-              <View style={{ gap: 6, marginTop: 2 }}>
-                {legend.map(s => (
-                  <View key={s.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: s.color }} />
-                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase', width: 42 }}>{s.label}</Text>
-                    <Text style={{ fontSize: 11, color: s.color, fontFamily: 'DMSans_600SemiBold' }}>{fmtMs(s.val)}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
           </View>
           {score !== null && (
-            <View style={{ alignItems: 'center', paddingTop: 2, minWidth: 78 }}>
+            <View style={{ flex: 1, alignItems: 'center' }}>
               <Text style={{ fontSize: 50, color: scoreColor, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, lineHeight: 50 }}>{score}</Text>
               <Text style={{ fontSize: 10, color: scoreColor, fontFamily: 'DMSans_700Bold', letterSpacing: 2, opacity: 0.65, marginTop: -2 }}>/100</Text>
               <Text style={{ fontSize: 8, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 6 }}>Sleep Score</Text>
             </View>
           )}
         </View>
-        <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 14, textAlign: 'center' }}>
+        <View style={{ alignItems: 'center', marginTop: 14 }}>
+          {((storedBed && storedWake) || sleepTimes) && (
+            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>
+              {storedBed || sleepTimes?.bed} → {storedWake || sleepTimes?.wake}
+            </Text>
+          )}
+          {sleepAwakeMs > 0 && (
+            <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 3 }}>{fmtMs(sleepAwakeMs)} awake during night</Text>
+          )}
+        </View>
+        {sleepStages && (
+          <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginTop: 16, paddingHorizontal: 8 }}>
+            {legend.map(s => (
+              <View key={s.label} style={{ alignItems: 'center' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 4 }}>
+                  <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: s.color }} />
+                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' }}>{s.label}</Text>
+                </View>
+                <Text style={{ fontSize: 14, color: s.color, fontFamily: 'DMSans_700Bold' }}>{fmtMs(s.val)}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+        <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 16, textAlign: 'center' }}>
           For informational purposes only. Not medical advice.
         </Text>
       </View>
@@ -466,7 +497,17 @@ export default function SleepHub() {
   };
 
   const renderHypnogram = () => {
-    if (segments.length === 0) return null;
+    if (segments.length === 0) {
+      if (!displaySleep || displaySleep <= 0) return null;
+      return (
+        <View style={cardStyle}>
+          <Text style={[cardLabel, { marginBottom: 10 }]}>Sleep Timeline</Text>
+          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 16, textAlign: 'center', lineHeight: 18 }}>
+            The night timeline needs Apple Health stage data.
+          </Text>
+        </View>
+      );
+    }
     return (
       <View style={cardStyle}>
         <Text style={[cardLabel, { marginBottom: 14 }]}>Sleep Timeline</Text>
@@ -504,8 +545,17 @@ export default function SleepHub() {
     [filteredHistory, sleepGoal],
   );
 
+  // Trend points = Apple Health stage nights + manual nights (HealthKit wins on a
+  // shared date), excluded days dropped, sorted by date.
+  const trendData = useMemo(() => {
+    const map = new Map<string, number>();
+    filteredHistory.forEach((nt, i) => map.set(nt.dateKey, nightScores[i]));
+    manualNights.forEach(m => { if (!map.has(m.dateKey) && !excludedSet.has(m.dateKey)) map.set(m.dateKey, m.score); });
+    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([dateKey, score]) => ({ dateKey, score }));
+  }, [filteredHistory, nightScores, manualNights, excludedSet]);
+
   const renderTrend = () => {
-    const avg = nightScores.length ? Math.round(nightScores.reduce((a, b) => a + b, 0) / nightScores.length) : null;
+    const avg = trendData.length ? Math.round(trendData.reduce((a, d) => a + d.score, 0) / trendData.length) : null;
     return (
       <View style={cardStyle}>
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
@@ -514,19 +564,19 @@ export default function SleepHub() {
             {avg !== null && (
               <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 6 }}>
                 <Text style={{ fontSize: 24, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5 }}>{avg}</Text>
-                <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>avg over {nightScores.length} {nightScores.length === 1 ? 'night' : 'nights'}</Text>
+                <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>avg over {trendData.length} {trendData.length === 1 ? 'night' : 'nights'}</Text>
               </View>
             )}
           </View>
           {rangeToggle()}
         </View>
-        {nightScores.length > 0 ? (
-          <ScoreTrendChart nights={filteredHistory} scores={nightScores} color={theme.accentBlueRaw} theme={theme} />
+        {trendData.length > 0 ? (
+          <ScoreTrendChart nights={trendData as unknown as SleepNight[]} scores={trendData.map(d => d.score)} color={theme.accentBlueRaw} theme={theme} />
         ) : firstLoad ? (
           <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 24, textAlign: 'center' }}>Loading…</Text>
         ) : (
           <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 24, textAlign: 'center' }}>
-            No sleep history yet for this range. Stages sync from Apple Health.
+            No sleep logged in this range yet.
           </Text>
         )}
       </View>
@@ -558,8 +608,8 @@ export default function SleepHub() {
         ) : firstLoad ? (
           <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 24, textAlign: 'center' }}>Loading…</Text>
         ) : (
-          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 24, textAlign: 'center' }}>
-            No stage history yet for this range.
+          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 24, textAlign: 'center', lineHeight: 18 }}>
+            Sleep stages need Apple Health. Your manual sleep still counts toward your score and trend.
           </Text>
         )}
       </View>

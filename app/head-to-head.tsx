@@ -377,8 +377,9 @@ export default function HeadToHeadScreen() {
       format: v => `${v > 0 ? '+' : ''}${Math.round(v).toLocaleString()}`,
       unit: 'kcal',
       winCondition: (a, b) => {
-        const aDiff = Math.abs(a - calTarget);
-        const bDiff = Math.abs(b - calTarget);
+        const paceTarget = GOAL_DEFICITS[weightGoalPace] ?? -500;
+        const aDiff = Math.abs(a - paceTarget);
+        const bDiff = Math.abs(b - paceTarget);
         if (Math.abs(aDiff - bDiff) < 25) return 'tie';
         return aDiff < bDiff ? 'win' : 'lose';
       },
@@ -390,7 +391,7 @@ export default function HeadToHeadScreen() {
       icon: 'footsteps',
       valA: snapA.steps,
       valB: snapB.steps,
-      format: v => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : Math.round(v).toString(),
+      format: v => Math.round(v).toLocaleString(),
       unit: 'steps',
       winCondition: (a, b) => a === b ? 'tie' : a > b ? 'win' : 'lose',
     },

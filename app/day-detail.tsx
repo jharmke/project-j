@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
@@ -222,16 +223,19 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
   const donecount = exercises.filter((ex: any) => daychecks[ex.id]).length;
 
   const navPrev = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const d = new Date(currentDate + 'T12:00:00'); d.setDate(d.getDate() - 1);
     setCurrentDate(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
   };
   const navNext = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const d = new Date(currentDate + 'T12:00:00'); d.setDate(d.getDate() + 1);
     const next = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     if (next <= todayKey) setCurrentDate(next);
   };
 
   const openCalPicker = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const parts = currentDate.split('-');
     setPickerYear(parseInt(parts[0]));
     setPickerMonth(parseInt(parts[1]) - 1);
@@ -243,13 +247,15 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
     Animated.timing(calFadeAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => setCalPickerVisible(false));
   };
   const calPickerSelect = (dk: string) => {
-    if (dk <= todayKey) { setCurrentDate(dk); closeCalPicker(); }
+    if (dk <= todayKey) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCurrentDate(dk); closeCalPicker(); }
   };
   const calPickerPrev = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (pickerMonth === 0) { setPickerMonth(11); setPickerYear(y => y - 1); }
     else setPickerMonth(m => m - 1);
   };
   const calPickerNext = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const nm = pickerMonth === 11 ? 0 : pickerMonth + 1;
     const ny = pickerMonth === 11 ? pickerYear + 1 : pickerYear;
     if (`${ny}-${String(nm + 1).padStart(2, '0')}-01` <= todayKey) { setPickerMonth(nm); setPickerYear(ny); }
@@ -425,7 +431,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
         {sleepHours > 0 && (
           <View style={styles.card}>
             <Ionicons name="moon" size={130} color={theme.accentBlueRaw} style={styles.heroIcon} />
-            <TouchableOpacity onPress={() => setSleepOpen(!sleepOpen)} style={styles.cardRow} activeOpacity={0.7}>
+            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setSleepOpen(!sleepOpen); }} style={styles.cardRow} activeOpacity={0.7}>
               <Text style={[styles.cardLabel, { marginBottom: 0 }]}>Sleep</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 {sleepScore !== null && (
@@ -493,7 +499,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
         {/* Workout */}
         <View style={styles.card}>
           <Ionicons name="barbell" size={130} color={theme.accentBlueRaw} style={styles.heroIcon} />
-          <TouchableOpacity onPress={() => setWorkoutOpen(!workoutOpen)} style={styles.cardRow} activeOpacity={0.7}>
+          <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setWorkoutOpen(!workoutOpen); }} style={styles.cardRow} activeOpacity={0.7}>
             <Text style={[styles.cardLabel, { marginBottom: 0 }]}>
               {dayprogram ? `Workout · ${donecount}/${exercises.length}` : 'Workout'}
             </Text>
@@ -561,7 +567,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
         {/* Meals */}
         <View style={styles.card}>
           <Ionicons name="restaurant" size={130} color={theme.accentBlueRaw} style={styles.heroIcon} />
-          <TouchableOpacity onPress={() => setMealsOpen(!mealsOpen)} style={styles.cardRow} activeOpacity={0.7}>
+          <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setMealsOpen(!mealsOpen); }} style={styles.cardRow} activeOpacity={0.7}>
             <Text style={[styles.cardLabel, { marginBottom: 0 }]}>Meals · {totalCals} kcal</Text>
             <Ionicons name={mealsOpen ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textDim} />
           </TouchableOpacity>
@@ -608,7 +614,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
         {(totalFiber > 0 || totalSodium > 0 || totalSugar > 0 || totalSatFat > 0 || totalPolyFat > 0 || totalMonoFat > 0 || totalCholesterol > 0 || totalPotassium > 0 || totalSugarAlcohols > 0 || totalVitaminA > 0 || totalVitaminC > 0 || totalCalcium > 0 || totalIron > 0) && (
           <View style={styles.card}>
             <Ionicons name="leaf" size={130} color={theme.accentBlueRaw} style={styles.heroIcon} />
-            <TouchableOpacity onPress={() => setAdvNutritionOpen(!advNutritionOpen)} style={styles.cardRow} activeOpacity={0.7}>
+            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setAdvNutritionOpen(!advNutritionOpen); }} style={styles.cardRow} activeOpacity={0.7}>
               <Text style={[styles.cardLabel, { marginBottom: 0 }]}>Advanced Nutrition</Text>
               <Ionicons name={advNutritionOpen ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textDim} />
             </TouchableOpacity>

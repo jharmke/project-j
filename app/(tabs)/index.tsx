@@ -1059,7 +1059,9 @@ export default function HomeScreen() {
       });
     }
     if (loaded) {
-      if (prevStepsRef.current !== null && steps > 0 && steps >= stepGoal && stepGoal > 0 && prevStepsRef.current < stepGoal) {
+      const stepsCrossed = prevStepsRef.current !== null && prevStepsRef.current < stepGoal;
+      const stepsFirstAboveGoal = prevStepsRef.current === null && steps >= stepGoal;
+      if (steps > 0 && stepGoal > 0 && steps >= stepGoal && (stepsCrossed || stepsFirstAboveGoal)) {
         handleDailyGoalHit('steps').then(({ fired, count: hitCount }) => {
           if (fired) {
             showCelebration('small', 'STEP GOAL'); showDailyGoalToast('Step Goal', hitCount, 'footsteps', '#10b981');
@@ -1081,13 +1083,17 @@ export default function HomeScreen() {
       prevStepsRef.current = steps;
       const adjustedActiveCals = Math.round(activeCalories * burnAccuracyPct / 100);
       const prevAdjustedActiveCals = prevActiveCalRef.current !== null ? Math.round(prevActiveCalRef.current * burnAccuracyPct / 100) : null;
-      if (prevAdjustedActiveCals !== null && adjustedActiveCals > 0 && activeCalGoal > 0 && adjustedActiveCals >= activeCalGoal && prevAdjustedActiveCals < activeCalGoal) {
+      const calsCrossed = prevAdjustedActiveCals !== null && prevAdjustedActiveCals < activeCalGoal;
+      const calsFirstAboveGoal = prevActiveCalRef.current === null && adjustedActiveCals >= activeCalGoal;
+      if (adjustedActiveCals > 0 && activeCalGoal > 0 && adjustedActiveCals >= activeCalGoal && (calsCrossed || calsFirstAboveGoal)) {
         handleDailyGoalHit('activeCals').then(({ fired, count: hitCount }) => {
           if (fired) { showCelebration('small', 'ACTIVE CALS'); showDailyGoalToast('Active Cal Goal', hitCount, 'flame', '#f97316'); }
         });
       }
       prevActiveCalRef.current = activeCalories;
-      if (prevExerciseMinsRef.current !== null && exerciseMinutes !== null && exerciseMinsGoal > 0 && exerciseMinutes >= exerciseMinsGoal && prevExerciseMinsRef.current < exerciseMinsGoal) {
+      const exerciseCrossed = prevExerciseMinsRef.current !== null && prevExerciseMinsRef.current < exerciseMinsGoal;
+      const exerciseFirstAboveGoal = prevExerciseMinsRef.current === null && exerciseMinutes !== null && exerciseMinutes >= exerciseMinsGoal;
+      if (exerciseMinutes !== null && exerciseMinsGoal > 0 && exerciseMinutes >= exerciseMinsGoal && (exerciseCrossed || exerciseFirstAboveGoal)) {
         handleDailyGoalHit('exerciseMins').then(({ fired, count: hitCount }) => {
           if (fired) { showCelebration('small', 'EXERCISE GOAL'); showDailyGoalToast('Exercise Goal', hitCount, 'bicycle', '#8b5cf6'); }
         });

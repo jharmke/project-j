@@ -622,7 +622,7 @@ const saveEditFood = async () => {
           }
         }
       } catch {}
-      router.back();
+      if (router.canGoBack()) router.back();
     });
     return () => {
       unregisterTutorialAction('deleteTutorialRecipe');
@@ -845,7 +845,7 @@ const saveEditFood = async () => {
         const saved = await AsyncStorage.getItem('pj_barcode_overrides');
         setBarcodeOverrides(saved ? JSON.parse(saved) : {});
       } catch {}
-      router.back();
+      if (router.canGoBack()) router.back();
     };
     registerTutorialAction('clearTutorialScanState', clearTutorialScanState);
     return () => unregisterTutorialAction('clearTutorialScanState');
@@ -868,7 +868,7 @@ const saveEditFood = async () => {
       setShowCreateFood(false);
       setIsTutorialCreateMode(false);
       await new Promise<void>(r => setTimeout(r, 150));
-      router.back();
+      if (router.canGoBack()) router.back();
     };
     registerTutorialAction('closeCreatorAfterTutorial', closeCreatorAfterTutorial);
     return () => unregisterTutorialAction('closeCreatorAfterTutorial');

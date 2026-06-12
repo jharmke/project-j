@@ -206,10 +206,10 @@ export default function RecipeBuilderScreen() {
       } catch {}
       // Pop recipe-builder out of the nav stack so the user never lands back here
       // after the tutorial ends. Step 8's navigateTo fires after this resolves.
-      router.back();
+      if (router.canGoBack()) router.back();
     });
     registerTutorialAction('closeRecipeTutorial', async () => {
-      router.back();
+      if (router.canGoBack()) router.back();
     });
     return () => {
       unregisterScrollView('recipe_builder_scroll');

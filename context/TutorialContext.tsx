@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageSet } from '../utils/storage';
-import { router } from 'expo-router';
+import { router, usePathname } from 'expo-router';
 import React, { createContext, useCallback, useContext, useRef, useState } from 'react';
 import { View } from 'react-native';
 import type { Tutorial, TutorialStep as TutorialStepData } from '../data/tutorials';
@@ -43,6 +43,9 @@ export interface ActiveTutorialState {
   stepIndex: number;
   styleMode: string;
   returnRoute?: string;
+  /** Route the tour was launched from. On end/skip we return here if a step
+   *  navigated the user away (e.g. log_food, barcode). Captured at start time. */
+  launchRoute?: string;
 }
 
 export interface TutorialContextType {
@@ -67,6 +70,11 @@ const TutorialContext = createContext<TutorialContextType | null>(null);
 export function TutorialProvider({ children }: { children: React.ReactNode }) {
   const [activeState, setActiveStateReact] = useState<ActiveTutorialState | null>(null);
   const activeStateRef = useRef<ActiveTutorialState | null>(null);
+  // Track the current route so we can capture a tour's launch origin and detect
+  // whether a step navigated the user away by end/skip time.
+  const pathname = usePathname();
+  const pathnameRef = useRef(pathname);
+  pathnameRef.current = pathname;
   const refs = useRef<Record<string, React.RefObject<View | null>>>({});
   const actions = useRef<Record<string, () => Promise<void | boolean>>>({});
   const scrollViewRefs = useRef<Record<string, React.RefObject<any>>>({});
@@ -119,9 +127,9 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     const tutorial = TUTORIALS.find(t => t.id === resolvedId);
     if (!tutorial) return;
 
-    // Launchers that pass no returnRoute (e.g. the (i) modal's Take a Tour) fall
-    // back to the tutorial's own returnRoute. Lets a tour that navigates away
-    // (preAction pushes a page) always clean up after itself.
+    // Explicit returnRoute from the launcher wins, else the tutorial's own
+    // hardcoded returnRoute. If neither is set, finishNavigation falls back to the
+    // captured launchRoute so any tour that navigates away returns to its origin.
     const effectiveReturn = returnRoute ?? (tutorial as any).returnRoute;
 
     let styleMode = 'balanced';
@@ -149,8 +157,20 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
 
     const firstStep = findNextValidStep(0, tutorial.steps, styleMode, refs.current);
     if (firstStep >= tutorial.steps.length) return;
-    setActiveState({ tutorial, stepIndex: firstStep, styleMode, returnRoute: effectiveReturn });
+    setActiveState({ tutorial, stepIndex: firstStep, styleMode, returnRoute: effectiveReturn, launchRoute: pathnameRef.current });
   }, [setActiveState]);
+
+  // Shared end/skip navigation. An explicit returnRoute (caller- or tutorial-set)
+  // always wins. Otherwise we return to the tour's launch origin, but only if a
+  // step navigated us away -- tours that stayed on their launch screen do nothing,
+  // so we never fire an unnecessary navigation that resets scroll or flashes.
+  const finishNavigation = useCallback((prev: ActiveTutorialState) => {
+    const explicit = prev.returnRoute;
+    if (explicit === 'back') { setTimeout(() => router.back(), 300); return; }
+    if (explicit) { setTimeout(() => { if (pathnameRef.current !== explicit) router.push(explicit as any); }, 300); return; }
+    const origin = prev.launchRoute;
+    if (origin) setTimeout(() => { if (pathnameRef.current !== origin) router.push(origin as any); }, 300);
+  }, []);
 
   const advanceStep = useCallback(async () => {
     const prev = activeStateRef.current;
@@ -168,19 +188,16 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     const next = findNextValidStep(prev.stepIndex + 1, prev.tutorial.steps, prev.styleMode, refs.current);
     if (next >= prev.tutorial.steps.length) {
       markTutorialSeen(prev.tutorial.id);
-      const returnRoute = prev.returnRoute;
       setActiveState(null);
-      if (returnRoute === 'back') setTimeout(() => router.back(), 300);
-      else if (returnRoute) setTimeout(() => router.push(returnRoute as any), 300);
+      finishNavigation(prev);
     } else {
       setActiveState({ ...prev, stepIndex: next });
     }
-  }, [setActiveState]);
+  }, [setActiveState, finishNavigation]);
 
   const skipTutorial = useCallback(() => {
     const prev = activeStateRef.current;
     if (prev) markTutorialSeen(prev.tutorial.id);
-    const returnRoute = prev?.returnRoute;
     try { actions.current['deleteTutorialEntry']?.(); } catch {}
     try { actions.current['deleteTutorialExercise']?.(); } catch {}
     try { actions.current['clearTutorialScanState']?.(); } catch {}
@@ -192,9 +209,8 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     try { actions.current['closeGraphCreatorTutorial']?.(); } catch {}
     try { actions.current['deleteTutorialGraph']?.(); } catch {}
     setActiveState(null);
-    if (returnRoute === 'back') setTimeout(() => router.back(), 300);
-    else if (returnRoute) setTimeout(() => router.push(returnRoute as any), 300);
-  }, [setActiveState]);
+    if (prev) finishNavigation(prev);
+  }, [setActiveState, finishNavigation]);
 
   return (
     <TutorialContext.Provider value={{

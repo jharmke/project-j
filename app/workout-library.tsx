@@ -1991,7 +1991,7 @@ export default function WorkoutLibraryScreen() {
 
     registerTutorialAction('closeExerciseLibraryTutorial', async () => {
       setShowTutorialDetail(false);
-      router.back();
+      if (router.canGoBack()) router.back();
     });
 
     return () => {

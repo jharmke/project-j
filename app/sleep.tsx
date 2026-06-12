@@ -18,7 +18,9 @@ import ReAnimated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-
 import Svg, { Circle, G, Line, Polyline, Rect, Text as SvgText } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import SleepDonut from '../components/SleepDonut';
+import ToggleSwitch from '../components/ToggleSwitch';
 import { triggerHaptic } from '../utils/haptics';
+import { storageSet } from '../utils/storage';
 import { calcSleepScore } from '../utils/sleepScore';
 import { useHealthKit } from '../useHealthKit';
 import { useTheme } from '../theme';
@@ -172,6 +174,24 @@ function StageHistoryChart({ nights, theme }: { nights: SleepNight[]; theme: any
   );
 }
 
+// Sleep Coach observation for the most recent night. Returns a kind so Mindful
+// mode (without "Allow gentle coaching") can suppress corrective tips and only
+// show positive/neutral summaries.
+function sleepCoachTip(n: SleepNight, score: number, goalH: number, bedSd: number | null, allowCorrective: boolean): { text: string; kind: 'positive' | 'neutral' | 'corrective' } {
+  const total = n.totalMs;
+  const deepPct = total > 0 ? Math.round((n.deepMs / total) * 100) : 0;
+  const remPct = total > 0 ? Math.round((n.remMs / total) * 100) : 0;
+  const dur = fmtMs(total);
+  if (allowCorrective) {
+    if (deepPct < 13) return { text: `Deep sleep landed at ${deepPct}% last night (${dur} total). Deep is when your body physically repairs. A cooler, darker room and no heavy meals within 3 hours of bed push it up.`, kind: 'corrective' };
+    if (remPct < 15) return { text: `REM came in low at ${remPct}%. REM supports memory and mood, and most of it happens in your last cycles. A steady wake time and skipping late alcohol protect it.`, kind: 'corrective' };
+    if (total / 3600000 < goalH * 0.85) return { text: `You slept ${dur} against your ${goalH}h goal. Even 30 minutes earlier tonight compounds fast.`, kind: 'corrective' };
+    if (bedSd !== null && bedSd > 60) return { text: `Your bedtime swung about ${bedSd} minutes across this stretch. A steadier schedule trains your body to reach deep sleep sooner.`, kind: 'corrective' };
+  }
+  if (score >= 85) return { text: `Strong night: ${dur} with healthy deep (${deepPct}%) and REM (${remPct}%). Same bedtime tonight keeps it going.`, kind: 'positive' };
+  return { text: `You logged ${dur} last night, ${deepPct}% deep and ${remPct}% REM.`, kind: 'neutral' };
+}
+
 export default function SleepHub() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -181,6 +201,10 @@ export default function SleepHub() {
   const [range, setRange] = useState<'7' | '30'>('7');
   const [history, setHistory] = useState<SleepNight[]>([]);
   const [loadingHist, setLoadingHist] = useState(true);
+  const [styleMode, setStyleMode] = useState<'discipline' | 'balanced' | 'mindful'>('balanced');
+  const [mindfulGrowth, setMindfulGrowth] = useState(false);
+  const [excludedSet, setExcludedSet] = useState<Set<string>>(new Set());
+  const [excludedToday, setExcludedToday] = useState(false);
 
   // Day-stored sleep fields (mirror how the home card resolves the same number)
   const [sleepGoal, setSleepGoal] = useState(7);
@@ -203,6 +227,42 @@ export default function SleepHub() {
     return () => { cancelled = true; };
   }, [range]);
 
+  // Load per-day exclusion flags for the nights in range (+ today) so excluded
+  // nights drop out of trends on both tabs. Excluded days keep their saved data.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const keys = Array.from(new Set<string>([todayKey(), ...history.map(n => n.dateKey)]));
+      const ex = new Set<string>();
+      for (const dk of keys) {
+        try {
+          const raw = await AsyncStorage.getItem(`pj_${dk}`);
+          if (raw && JSON.parse(raw).excluded) ex.add(dk);
+        } catch {}
+      }
+      if (!cancelled) { setExcludedSet(ex); setExcludedToday(ex.has(todayKey())); }
+    })();
+    return () => { cancelled = true; };
+  }, [history]);
+
+  const filteredHistory = useMemo(() => history.filter(n => !excludedSet.has(n.dateKey)), [history, excludedSet]);
+
+  const toggleExclude = async (val: boolean) => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    setExcludedToday(val);
+    setExcludedSet(prev => {
+      const s = new Set(prev);
+      if (val) s.add(todayKey()); else s.delete(todayKey());
+      return s;
+    });
+    try {
+      const k = `pj_${todayKey()}`;
+      const raw = await AsyncStorage.getItem(k);
+      const cur = raw ? JSON.parse(raw) : {};
+      await storageSet(k, JSON.stringify({ ...cur, excluded: val }));
+    } catch {}
+  };
+
   useEffect(() => {
     (async () => {
       try {
@@ -219,6 +279,12 @@ export default function SleepHub() {
         if (prof) {
           const p = JSON.parse(prof);
           if (p.sleepGoal && parseFloat(p.sleepGoal) > 0) setSleepGoal(parseFloat(p.sleepGoal));
+        }
+        const settings = await AsyncStorage.getItem('pj_settings');
+        if (settings) {
+          const s = JSON.parse(settings);
+          if (s.styleMode) setStyleMode(s.styleMode);
+          if (typeof s.mindfulGrowthAreas === 'boolean') setMindfulGrowth(s.mindfulGrowthAreas);
         }
       } catch {}
     })();
@@ -362,8 +428,8 @@ export default function SleepHub() {
   );
 
   const nightScores = useMemo(
-    () => history.map(nt => calcSleepScore(nt.totalMs / 3600000, { core: nt.coreMs, deep: nt.deepMs, rem: nt.remMs, totalMs: nt.totalMs }, sleepGoal).score ?? 0),
-    [history, sleepGoal],
+    () => filteredHistory.map(nt => calcSleepScore(nt.totalMs / 3600000, { core: nt.coreMs, deep: nt.deepMs, rem: nt.remMs, totalMs: nt.totalMs }, sleepGoal).score ?? 0),
+    [filteredHistory, sleepGoal],
   );
 
   const renderTrend = () => {
@@ -382,7 +448,7 @@ export default function SleepHub() {
           </Text>
         ) : (
           <>
-            <ScoreTrendChart nights={history} scores={nightScores} color={theme.accentBlueRaw} theme={theme} />
+            <ScoreTrendChart nights={filteredHistory} scores={nightScores} color={theme.accentBlueRaw} theme={theme} />
             {avg !== null && (
               <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium', marginTop: 8 }}>
                 {nightScores.length} {nightScores.length === 1 ? 'night' : 'nights'} · avg score {avg} · tap a point for that night
@@ -406,13 +472,13 @@ export default function SleepHub() {
         <Text style={[cardLabel, { marginBottom: 12 }]}>Sleep Stages</Text>
         {loadingHist ? (
           <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 24, textAlign: 'center' }}>Loading…</Text>
-        ) : history.length === 0 ? (
+        ) : filteredHistory.length === 0 ? (
           <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 24, textAlign: 'center' }}>
             No stage history yet for this range.
           </Text>
         ) : (
           <>
-            <StageHistoryChart nights={history} theme={theme} />
+            <StageHistoryChart nights={filteredHistory} theme={theme} />
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 12 }}>
               {legend.map(l => (
                 <View key={l.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
@@ -428,14 +494,14 @@ export default function SleepHub() {
   };
 
   const renderMetrics = () => {
-    if (loadingHist || history.length === 0) return null;
+    if (loadingHist || filteredHistory.length === 0) return null;
 
-    const last = history[history.length - 1];
-    const withStages = history.filter(n => n.totalMs > 0);
+    const last = filteredHistory[filteredHistory.length - 1];
+    const withStages = filteredHistory.filter(n => n.totalMs > 0);
     const avgDeepPct = withStages.length ? Math.round(withStages.reduce((a, n) => a + n.deepMs / n.totalMs, 0) / withStages.length * 100) : null;
     const avgRemPct = withStages.length ? Math.round(withStages.reduce((a, n) => a + n.remMs / n.totalMs, 0) / withStages.length * 100) : null;
 
-    const beds = history.map(n => n.bedMin).filter((b): b is number => b !== null);
+    const beds = filteredHistory.map(n => n.bedMin).filter((b): b is number => b !== null);
     let consistency: { label: string; sub: string; color: string } | null = null;
     if (beds.length >= 2) {
       const mean = beds.reduce((a, b) => a + b, 0) / beds.length;
@@ -473,6 +539,43 @@ export default function SleepHub() {
       </View>
     );
   };
+
+  const renderCoach = () => {
+    if (loadingHist || filteredHistory.length === 0) return null;
+    const last = filteredHistory[filteredHistory.length - 1];
+    const score = calcSleepScore(last.totalMs / 3600000, { core: last.coreMs, deep: last.deepMs, rem: last.remMs, totalMs: last.totalMs }, sleepGoal).score ?? 0;
+    const beds = filteredHistory.map(n => n.bedMin).filter((b): b is number => b !== null);
+    let bedSd: number | null = null;
+    if (beds.length >= 2) {
+      const m = beds.reduce((a, b) => a + b, 0) / beds.length;
+      bedSd = Math.round(Math.sqrt(beds.reduce((a, b) => a + (b - m) ** 2, 0) / beds.length));
+    }
+    const allowCorrective = !(styleMode === 'mindful' && !mindfulGrowth);
+    const tip = sleepCoachTip(last, score, sleepGoal, bedSd, allowCorrective);
+    return (
+      <View style={cardStyle}>
+        <Text style={[cardLabel, { marginBottom: 10 }]}>Sleep Coach</Text>
+        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-start' }}>
+          <Ionicons name="bulb-outline" size={14} color={theme.accentBlueRaw} style={{ marginTop: 1 }} />
+          <Text style={{ flex: 1, fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_400Regular', lineHeight: 20 }}>{tip.text}</Text>
+        </View>
+      </View>
+    );
+  };
+
+  const renderExclude = () => (
+    <View style={cardStyle}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <View style={{ flex: 1, paddingRight: 12 }}>
+          <Text style={{ fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_700Bold' }}>Exclude last night</Text>
+          <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 2, lineHeight: 16 }}>
+            Keeps an off night out of your sleep and recovery trends. Your data stays saved.
+          </Text>
+        </View>
+        <ToggleSwitch value={excludedToday} onValueChange={toggleExclude} />
+      </View>
+    </View>
+  );
 
   const tabBtn = (id: SleepTab, label: string) => {
     const active = activeTab === id;
@@ -525,6 +628,8 @@ export default function SleepHub() {
             {renderTrend()}
             {renderStageHistory()}
             {renderMetrics()}
+            {renderCoach()}
+            {renderExclude()}
           </>
         ) : renderRecoveryPlaceholder()}
       </ScrollView>

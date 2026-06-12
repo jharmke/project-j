@@ -115,11 +115,11 @@ function ScoreTrendChart({ nights, scores, color, theme }: { nights: SleepNight[
 
 // Per-night stacked stage bars: y-axis hours, x-axis dates, tap a bar for totals.
 function StageHistoryChart({ nights, theme }: { nights: SleepNight[]; theme: any }) {
-  const [callout, setCallout] = useState<Callout>(null);
+  const [sel, setSel] = useState<number | null>(null);
   const slide = useSlideIn(`${nights.length}:${nights[0]?.dateKey ?? ''}`);
   const n = nights.length;
   if (n === 0) return null;
-  const barMs = nights.map(nt => nt.totalMs + nt.awakeMs);
+  const barMs = nights.map(nt => nt.totalMs); // sleep only; awake lives in metrics
   const maxMs = Math.max(...barMs, 1);
   const maxH = Math.max(1, Math.ceil(maxMs / 3600000));
   const step = maxH <= 4 ? 1 : maxH <= 9 ? 2 : 3;
@@ -130,45 +130,70 @@ function StageHistoryChart({ nights, theme }: { nights: SleepNight[]; theme: any
   const toY = (ms: number) => C_TOP + (1 - ms / tickMaxMs) * PLOT_H;
   const slot = PLOT_W / n;
   const BAR_W = Math.min(28, slot - 4);
+  const barX = (i: number) => C_LEFT + i * slot + (slot - BAR_W) / 2;
   const midIdx = Math.floor(n / 2);
   return (
     <ReAnimated.View style={slide}>
-      <Svg width={CHART_W} height={CHART_H}>
-        <Rect x={0} y={0} width={CHART_W} height={CHART_H} fill="transparent" onPress={() => setCallout(null)} />
-        {ticks.map(h => (
-          <Line key={`g${h}`} x1={C_LEFT} y1={toY(h * 3600000)} x2={C_LEFT + PLOT_W} y2={toY(h * 3600000)} stroke={theme.borderSubtle} strokeWidth={1} />
-        ))}
-        {ticks.map(h => (
-          <SvgText key={`y${h}`} x={C_LEFT - 5} y={toY(h * 3600000) + 3} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">{h}h</SvgText>
-        ))}
-        {nights.map((nt, i) => {
-          const x = C_LEFT + i * slot + (slot - BAR_W) / 2;
-          const segs = [
-            { c: theme.sleepDeep, ms: nt.deepMs },
-            { c: theme.sleepCore, ms: nt.coreMs },
-            { c: theme.sleepRem, ms: nt.remMs },
-            { c: theme.sleepAwake, ms: nt.awakeMs },
+      <View>
+        <Svg width={CHART_W} height={CHART_H}>
+          <Rect x={0} y={0} width={CHART_W} height={CHART_H} fill="transparent" onPress={() => setSel(null)} />
+          {ticks.map(h => (
+            <Line key={`g${h}`} x1={C_LEFT} y1={toY(h * 3600000)} x2={C_LEFT + PLOT_W} y2={toY(h * 3600000)} stroke={theme.borderSubtle} strokeWidth={1} />
+          ))}
+          {ticks.map(h => (
+            <SvgText key={`y${h}`} x={C_LEFT - 5} y={toY(h * 3600000) + 3} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">{h}h</SvgText>
+          ))}
+          {nights.map((nt, i) => {
+            const x = barX(i);
+            const segs = [
+              { c: theme.sleepDeep, ms: nt.deepMs },
+              { c: theme.sleepCore, ms: nt.coreMs },
+              { c: theme.sleepRem, ms: nt.remMs },
+            ];
+            let acc = 0;
+            return (
+              <G key={nt.dateKey}>
+                {segs.map((s, si) => {
+                  if (s.ms <= 0) return null;
+                  const segH = (s.ms / tickMaxMs) * PLOT_H;
+                  const y = C_TOP + PLOT_H - ((acc + s.ms) / tickMaxMs) * PLOT_H;
+                  acc += s.ms;
+                  return <Rect key={si} x={x} y={y} width={BAR_W} height={segH} fill={s.c} rx={si === segs.length - 1 ? 2 : 0} opacity={sel === null || sel === i ? 1 : 0.45} />;
+                })}
+                <Rect x={x} y={C_TOP} width={BAR_W} height={PLOT_H} fill="transparent"
+                  onPress={() => setSel(prev => prev === i ? null : i)} />
+              </G>
+            );
+          })}
+          <SvgText x={C_LEFT + slot / 2} y={CHART_H - 4} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">{fmtDay(nights[0].dateKey)}</SvgText>
+          {n > 3 && <SvgText x={C_LEFT + midIdx * slot + slot / 2} y={CHART_H - 4} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">{fmtDay(nights[midIdx].dateKey)}</SvgText>}
+          <SvgText x={C_LEFT + (n - 1) * slot + slot / 2} y={CHART_H - 4} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">{fmtDay(nights[n - 1].dateKey)}</SvgText>
+        </Svg>
+        {sel !== null && (() => {
+          const nt = nights[sel];
+          const W = 134;
+          const left = Math.max(0, Math.min(CHART_W - W, barX(sel) + BAR_W / 2 - W / 2));
+          const rows = [
+            { label: 'Core', color: theme.sleepCore, ms: nt.coreMs },
+            { label: 'Deep', color: theme.sleepDeep, ms: nt.deepMs },
+            { label: 'REM', color: theme.sleepRem, ms: nt.remMs },
           ];
-          let acc = 0;
           return (
-            <G key={nt.dateKey}>
-              {segs.map((s, si) => {
-                if (s.ms <= 0) return null;
-                const segH = (s.ms / tickMaxMs) * PLOT_H;
-                const y = C_TOP + PLOT_H - ((acc + s.ms) / tickMaxMs) * PLOT_H;
-                acc += s.ms;
-                return <Rect key={si} x={x} y={y} width={BAR_W} height={segH} fill={s.c} rx={si === segs.length - 1 ? 2 : 0} />;
-              })}
-              <Rect x={x} y={C_TOP} width={BAR_W} height={PLOT_H} fill="transparent"
-                onPress={() => setCallout(prev => prev?.label1 === fmtDay(nt.dateKey) ? null : { x: x + BAR_W / 2, y: toY(barMs[i]), label1: fmtDay(nt.dateKey), label2: `${fmtMs(nt.totalMs)} sleep` })} />
-            </G>
+            <View style={{ position: 'absolute', top: 0, left, width: W, backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderWidth: 0.5, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 4 }}>
+              <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 0.5, marginBottom: 6 }}>{fmtDay(nt.dateKey)}</Text>
+              {rows.map(r => (
+                <View key={r.label} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                    <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: r.color }} />
+                    <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 0.5, textTransform: 'uppercase' }}>{r.label}</Text>
+                  </View>
+                  <Text style={{ fontSize: 11, color: r.color, fontFamily: 'DMSans_700Bold' }}>{fmtMs(r.ms)}</Text>
+                </View>
+              ))}
+            </View>
           );
-        })}
-        <SvgText x={C_LEFT + slot / 2} y={CHART_H - 4} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">{fmtDay(nights[0].dateKey)}</SvgText>
-        {n > 3 && <SvgText x={C_LEFT + midIdx * slot + slot / 2} y={CHART_H - 4} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">{fmtDay(nights[midIdx].dateKey)}</SvgText>}
-        <SvgText x={C_LEFT + (n - 1) * slot + slot / 2} y={CHART_H - 4} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">{fmtDay(nights[n - 1].dateKey)}</SvgText>
-        {callout && <CalloutPill callout={callout} theme={theme} clear={() => setCallout(null)} />}
-      </Svg>
+        })()}
+      </View>
     </ReAnimated.View>
   );
 }
@@ -177,7 +202,7 @@ type SleepSeg = { stage: 'awake' | 'core' | 'deep' | 'rem'; start: number; end: 
 
 // Hypnogram: last night's stage timeline (bedtime -> wake), four lanes (Awake top,
 // REM, Core, Deep bottom). Drag a finger across to read the stage + clock time.
-function Hypnogram({ segments, theme }: { segments: SleepSeg[]; theme: any }) {
+function Hypnogram({ segments, theme, hideAxis }: { segments: SleepSeg[]; theme: any; hideAxis?: boolean }) {
   const [cursor, setCursor] = useState<{ x: number; time: string; stage: string; color: string } | null>(null);
   const slide = useSlideIn(`${segments.length}:${segments[0]?.start ?? 0}`);
   const bed = segments[0].start;
@@ -227,10 +252,12 @@ function Hypnogram({ segments, theme }: { segments: SleepSeg[]; theme: any }) {
           {cursor && <Line x1={cursor.x} y1={0} x2={cursor.x} y2={H} stroke={theme.textPrimary} strokeWidth={1} opacity={0.45} />}
         </Svg>
       </View>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6, paddingLeft: GUT }}>
-        <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_500Medium' }}>{fmtClock(bed)}</Text>
-        <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_500Medium' }}>{fmtClock(wake)}</Text>
-      </View>
+      {!hideAxis && (
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6, paddingLeft: GUT }}>
+          <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_500Medium' }}>{fmtClock(bed)}</Text>
+          <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_500Medium' }}>{fmtClock(wake)}</Text>
+        </View>
+      )}
       {cursor && (
         <View style={{ position: 'absolute', top: 0, left: Math.max(0, Math.min(CHART_W - 96, cursor.x - 48)), backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderWidth: 0.5, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 6, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } }}>
           <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: cursor.color }} />
@@ -461,12 +488,16 @@ export default function SleepHub() {
               <View style={{ width: 1, height: 52, backgroundColor: theme.borderSubtle }} />
               <View style={{ flex: 1, alignItems: 'center' }}>
                 <Text style={{ fontSize: 46, color: scoreColor, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, lineHeight: 52 }}>{score}</Text>
-                <Text style={{ fontSize: 10, color: scoreColor, fontFamily: 'DMSans_700Bold', letterSpacing: 2, opacity: 0.65, marginTop: 1 }}>/100</Text>
-                <Text style={{ fontSize: 8, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 6 }}>Sleep Score</Text>
+                <Text style={{ fontSize: 8, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 4 }}>Sleep Score</Text>
               </View>
             </>
           )}
         </View>
+        {segments.length > 0 && (
+          <View style={{ marginTop: 16 }}>
+            <Hypnogram segments={segments} theme={theme} hideAxis />
+          </View>
+        )}
         <View style={{ alignItems: 'center', marginTop: 14 }}>
           {((storedBed && storedWake) || sleepTimes) && (
             <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>
@@ -493,26 +524,6 @@ export default function SleepHub() {
         <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 16, textAlign: 'center' }}>
           For informational purposes only. Not medical advice.
         </Text>
-      </View>
-    );
-  };
-
-  const renderHypnogram = () => {
-    if (segments.length === 0) {
-      if (!displaySleep || displaySleep <= 0) return null;
-      return (
-        <View style={cardStyle}>
-          <Text style={[cardLabel, { marginBottom: 10 }]}>Sleep Timeline</Text>
-          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 16, textAlign: 'center', lineHeight: 18 }}>
-            The night timeline needs Apple Health stage data.
-          </Text>
-        </View>
-      );
-    }
-    return (
-      <View style={cardStyle}>
-        <Text style={[cardLabel, { marginBottom: 14 }]}>Sleep Timeline</Text>
-        <Hypnogram segments={segments} theme={theme} />
       </View>
     );
   };
@@ -589,7 +600,6 @@ export default function SleepHub() {
       { label: 'Core', color: theme.sleepCore },
       { label: 'Deep', color: theme.sleepDeep },
       { label: 'REM', color: theme.sleepRem },
-      { label: 'Awake', color: theme.sleepAwake },
     ];
     return (
       <View style={cardStyle}>
@@ -667,7 +677,7 @@ export default function SleepHub() {
         {row('Avg REM sleep', avgRemPct !== null ? `${avgRemPct}%` : '—', remColor, 'Healthy 20 to 25%')}
         {row('Bedtime consistency', consistency ? consistency.label : '—', consistency ? consistency.color : theme.textSecondary, consistency ? consistency.sub : null)}
         {row('Sleep debt', debt.value, debt.color, debt.sub)}
-        {row('Wake events', String(last.awakeCount), last.awakeCount >= 4 ? theme.statusWarn : theme.textSecondary, 'Last night', true)}
+        {row('Wake events', String(last.awakeCount), last.awakeCount >= 4 ? theme.statusWarn : theme.textSecondary, last.awakeMs > 0 ? `${fmtMs(last.awakeMs)} awake last night` : 'Last night', true)}
       </View>
     );
   };
@@ -758,7 +768,6 @@ export default function SleepHub() {
         {activeTab === 'sleep' ? (
           <>
             {renderHero()}
-            {renderHypnogram()}
             {renderTrend()}
             {renderStageHistory()}
             {renderMetrics()}

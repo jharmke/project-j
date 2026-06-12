@@ -1994,6 +1994,7 @@ export default function HomeScreen() {
     return (
       <View ref={sleepCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, overflow: 'hidden' }]}>
         <Ionicons name="moon" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
+        <TouchableOpacity activeOpacity={0.92} onPress={() => { if (editingSleep) return; triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/sleep'); }}>
         
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
@@ -2280,6 +2281,7 @@ export default function HomeScreen() {
             </View>
           );
         })()}
+        </TouchableOpacity>
       </View>
     );
   };

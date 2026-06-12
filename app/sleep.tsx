@@ -231,7 +231,7 @@ export default function SleepHub() {
         >
           <Ionicons name="chevron-back" size={16} color={theme.accentBlue} />
         </TouchableOpacity>
-        <Text style={{ fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw }}>SLEEP</Text>
+        <Text style={{ fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw }}>SLEEP & RECOVERY</Text>
         <View style={{ width: 36 }} />
       </View>
 

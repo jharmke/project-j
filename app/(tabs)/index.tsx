@@ -3328,7 +3328,7 @@ export default function HomeScreen() {
               overflow: 'hidden',
               opacity: dayDetailAnim,
             }}>
-              <TouchableOpacity onPress={closeDayDetail} style={{ alignSelf: 'center', paddingVertical: 6, paddingHorizontal: 40 }}>
+              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeDayDetail(); }} style={{ alignSelf: 'center', paddingVertical: 6, paddingHorizontal: 40 }}>
                 <View style={[styles.editSheetHandle, { backgroundColor: theme.sheetHandle }]} />
               </TouchableOpacity>
               <DayDetailContent date={dayDetailDate} onClose={closeDayDetail} todayBurned={displayedBurned} />

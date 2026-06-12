@@ -23,6 +23,7 @@ export function useHealthKit() {
   const [restingHR, setRestingHR] = useState<number | null>(null);
   const [respiratoryRate, setRespiratoryRate] = useState<number | null>(null);
   const [bloodOxygen, setBloodOxygen] = useState<number | null>(null);
+  const [hrv, setHrv] = useState<number | null>(null);
   const [bodyFatPct, setBodyFatPct] = useState<number | null>(null);
   const [exerciseMinutes, setExerciseMinutes] = useState<number | null>(null);
   const [appleWorkouts, setAppleWorkouts] = useState<readonly any[]>([]);
@@ -164,6 +165,11 @@ export function useHealthKit() {
       const respData = await getMostRecentQuantitySample('HKQuantityTypeIdentifierRespiratoryRate');
       if (respData) setRespiratoryRate(Math.round((respData.quantity as number) * 10) / 10);
 
+      // HRV (SDNN, ms) -- most recent. First wiring for Recovery Score; the formula
+      // will later scope this to the overnight sleep window.
+      const hrvData = await getMostRecentQuantitySample('HKQuantityTypeIdentifierHeartRateVariabilitySDNN');
+      if (hrvData) setHrv(Math.round((hrvData.quantity as number) * 10) / 10);
+
       // Blood oxygen -- most recent
       const spo2Data = await getMostRecentQuantitySample('HKQuantityTypeIdentifierOxygenSaturation');
       if (spo2Data) setBloodOxygen(Math.round((spo2Data.quantity as number) * 1000) / 10);
@@ -257,5 +263,5 @@ export function useHealthKit() {
     }
   };
 
-  return { authorized, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, bodyFatPct, exerciseMinutes, appleWorkouts, fetchTodayData, fetchHistoricalWorkouts };
+  return { authorized, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, hrv, bodyFatPct, exerciseMinutes, appleWorkouts, fetchTodayData, fetchHistoricalWorkouts };
 }

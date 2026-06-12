@@ -38,7 +38,7 @@ const fmtMs = (ms: number) => {
 
 type SleepNight = {
   dateKey: string; coreMs: number; deepMs: number; remMs: number; awakeMs: number;
-  totalMs: number; bed: string | null; wake: string | null;
+  totalMs: number; bed: string | null; wake: string | null; awakeCount: number; bedMin: number | null;
 };
 
 const AnimPath = ReAnimated.createAnimatedComponent(Path);
@@ -364,6 +364,48 @@ export default function SleepHub() {
     );
   };
 
+  const renderMetrics = () => {
+    if (loadingHist || history.length === 0) return null;
+
+    const last = history[history.length - 1];
+    const withStages = history.filter(n => n.totalMs > 0);
+    const avgDeepPct = withStages.length ? Math.round(withStages.reduce((a, n) => a + n.deepMs / n.totalMs, 0) / withStages.length * 100) : null;
+    const avgRemPct = withStages.length ? Math.round(withStages.reduce((a, n) => a + n.remMs / n.totalMs, 0) / withStages.length * 100) : null;
+
+    const beds = history.map(n => n.bedMin).filter((b): b is number => b !== null);
+    let consistency: { label: string; sub: string } | null = null;
+    if (beds.length >= 2) {
+      const mean = beds.reduce((a, b) => a + b, 0) / beds.length;
+      const sd = Math.round(Math.sqrt(beds.reduce((a, b) => a + (b - mean) ** 2, 0) / beds.length));
+      consistency = {
+        label: sd <= 30 ? 'Consistent' : sd <= 60 ? 'Mostly steady' : 'Variable',
+        sub: `± ${sd}m bedtime`,
+      };
+    }
+
+    const tile = (label: string, value: string, sub?: string) => (
+      <View style={{ flex: 1, backgroundColor: theme.bgInset, borderRadius: 10, borderWidth: 0.5, borderColor: theme.borderInset, padding: 12 }}>
+        <Text style={{ fontSize: 9, letterSpacing: 1.5, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 6 }}>{label}</Text>
+        <Text style={{ fontSize: 22, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5 }}>{value}</Text>
+        {sub ? <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>{sub}</Text> : null}
+      </View>
+    );
+
+    return (
+      <View style={cardStyle}>
+        <Text style={[cardLabel, { marginBottom: 12 }]}>Sleep Metrics</Text>
+        <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+          {tile('Wake Events', last.awakeCount > 0 ? String(last.awakeCount) : '0', 'last night')}
+          {tile('Bedtime', consistency ? consistency.label : '—', consistency ? consistency.sub : `${range}d range`)}
+        </View>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {tile('Avg Deep', avgDeepPct !== null ? `${avgDeepPct}%` : '—', `${range}d average`)}
+          {tile('Avg REM', avgRemPct !== null ? `${avgRemPct}%` : '—', `${range}d average`)}
+        </View>
+      </View>
+    );
+  };
+
   const tabBtn = (id: SleepTab, label: string) => {
     const active = activeTab === id;
     return (
@@ -414,6 +456,7 @@ export default function SleepHub() {
             {renderHero()}
             {renderTrend()}
             {renderStageHistory()}
+            {renderMetrics()}
           </>
         ) : renderRecoveryPlaceholder()}
       </ScrollView>

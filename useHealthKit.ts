@@ -208,7 +208,7 @@ export function useHealthKit() {
   // starts at/after 6pm belongs to the next morning's night).
   const fetchSleepHistory = async (days: number): Promise<{
     dateKey: string; coreMs: number; deepMs: number; remMs: number; awakeMs: number;
-    totalMs: number; bed: string | null; wake: string | null;
+    totalMs: number; bed: string | null; wake: string | null; awakeCount: number; bedMin: number | null;
   }[]> => {
     try {
       const now = new Date();
@@ -222,7 +222,7 @@ export function useHealthKit() {
       );
       if (!samples || samples.length === 0) return [];
 
-      const nights: Record<string, { coreMs: number; deepMs: number; remMs: number; awakeMs: number; bed: number | null; wake: number | null }> = {};
+      const nights: Record<string, { coreMs: number; deepMs: number; remMs: number; awakeMs: number; bed: number | null; wake: number | null; awakeCount: number }> = {};
 
       for (const sample of samples) {
         const start = new Date(sample.startDate);
@@ -235,12 +235,12 @@ export function useHealthKit() {
         if (start.getHours() >= 18) wakeDay.setDate(wakeDay.getDate() + 1);
         const key = `${wakeDay.getFullYear()}-${String(wakeDay.getMonth() + 1).padStart(2, '0')}-${String(wakeDay.getDate()).padStart(2, '0')}`;
 
-        if (!nights[key]) nights[key] = { coreMs: 0, deepMs: 0, remMs: 0, awakeMs: 0, bed: null, wake: null };
+        if (!nights[key]) nights[key] = { coreMs: 0, deepMs: 0, remMs: 0, awakeMs: 0, bed: null, wake: null, awakeCount: 0 };
         const n = nights[key];
         if (sample.value === 3) n.coreMs += dur;
         else if (sample.value === 4) n.deepMs += dur;
         else if (sample.value === 5) n.remMs += dur;
-        else if (sample.value === 2) n.awakeMs += dur;
+        else if (sample.value === 2) { n.awakeMs += dur; n.awakeCount += 1; }
         if ([3, 4, 5].includes(sample.value as number)) {
           if (n.bed === null || startMs < n.bed) n.bed = startMs;
           if (n.wake === null || endMs > n.wake) n.wake = endMs;
@@ -250,11 +250,18 @@ export function useHealthKit() {
       return Object.entries(nights)
         .map(([dateKey, n]) => {
           const totalMs = n.coreMs + n.deepMs + n.remMs;
+          const bd = n.bed !== null ? new Date(n.bed) : null;
+          // Minutes-of-day, shifted so after-midnight bedtimes (AM) sit continuously
+          // after evening ones for a clean consistency (std-dev) calculation.
+          let bedMin: number | null = null;
+          if (bd) { bedMin = bd.getHours() * 60 + bd.getMinutes(); if (bedMin < 12 * 60) bedMin += 24 * 60; }
           return {
             dateKey,
             coreMs: n.coreMs, deepMs: n.deepMs, remMs: n.remMs, awakeMs: n.awakeMs, totalMs,
             bed: n.bed !== null ? new Date(n.bed).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null,
             wake: n.wake !== null ? new Date(n.wake).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null,
+            awakeCount: n.awakeCount,
+            bedMin,
           };
         })
         .filter(n => n.totalMs > 0)

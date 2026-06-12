@@ -17,7 +17,6 @@ import { Dimensions, PanResponder, ScrollView, Text, TouchableOpacity, View } fr
 import ReAnimated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import Svg, { Circle, G, Line, Polyline, Rect, Text as SvgText } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import SleepDonut from '../components/SleepDonut';
 import ToggleSwitch from '../components/ToggleSwitch';
 import { triggerHaptic } from '../utils/haptics';
 import { storageSet } from '../utils/storage';
@@ -186,7 +185,7 @@ function Hypnogram({ segments, theme }: { segments: SleepSeg[]; theme: any }) {
   const dur = Math.max(1, wake - bed);
   const GUT = 40;
   const plotW = CHART_W - GUT;
-  const laneH = 24, laneGap = 6;
+  const laneH = 22, laneGap = 3;
   const lanes: SleepSeg['stage'][] = ['awake', 'rem', 'core', 'deep'];
   const laneLabel: Record<SleepSeg['stage'], string> = { awake: 'Awake', rem: 'REM', core: 'Core', deep: 'Deep' };
   const laneColor: Record<SleepSeg['stage'], string> = { awake: theme.sleepAwake, rem: theme.sleepRem, core: theme.sleepCore, deep: theme.sleepDeep };
@@ -222,17 +221,8 @@ function Hypnogram({ segments, theme }: { segments: SleepSeg[]; theme: any }) {
               <SvgText x={GUT - 6} y={laneY(stage) + laneH / 2 + 3} fill={theme.textMuted} fontSize={8} fontFamily="DMSans_600SemiBold" textAnchor="end">{laneLabel[stage]}</SvgText>
             </G>
           ))}
-          {segments.map((s, i) => {
-            if (i === 0) return null;
-            const prev = segments[i - 1];
-            if (prev.stage === s.stage) return null;
-            const x = toX(s.start);
-            const yA = laneY(prev.stage) + laneH / 2;
-            const yB = laneY(s.stage) + laneH / 2;
-            return <Line key={`c${i}`} x1={x} y1={Math.min(yA, yB)} x2={x} y2={Math.max(yA, yB)} stroke={theme.textMuted} strokeWidth={1.5} opacity={0.4} />;
-          })}
           {segments.map((s, i) => (
-            <Rect key={i} x={toX(s.start)} y={laneY(s.stage)} width={Math.max(1.5, toX(s.end) - toX(s.start))} height={laneH} fill={laneColor[s.stage]} rx={1} />
+            <Rect key={i} x={toX(s.start)} y={laneY(s.stage)} width={Math.max(3, toX(s.end) - toX(s.start))} height={laneH} fill={laneColor[s.stage]} rx={3} />
           ))}
           {cursor && <Line x1={cursor.x} y1={0} x2={cursor.x} y2={H} stroke={theme.textPrimary} strokeWidth={1} opacity={0.45} />}
         </Svg>
@@ -402,8 +392,8 @@ export default function SleepHub() {
     elevation: 3,
   } as const;
 
-  // Mirrors the home Sleep card exactly: moon hero icon, 3-stage donut (Core/Deep/
-  // REM), awake shown as a text line (not a donut segment), same layout.
+  // No donut (the hypnogram below is the stage visual). Duration on the left, the
+  // Sleep Score as a compact number on the right, stage durations as text.
   const renderHero = () => {
     if (displaySleep === null || displaySleep <= 0) {
       return (
@@ -419,19 +409,9 @@ export default function SleepHub() {
 
     const hrs = Math.floor(displaySleep);
     const mins = Math.round((displaySleep - hrs) * 60);
-
-    const totalMs = sleepStages?.totalMs || displaySleep * 3600000;
     const coreMs = sleepStages?.core || 0;
     const deepMs = sleepStages?.deep || 0;
     const remMs = sleepStages?.rem || 0;
-    const corePct = totalMs > 0 ? coreMs / totalMs : 0;
-    const deepPct = totalMs > 0 ? deepMs / totalMs : 0;
-    const remPct = totalMs > 0 ? remMs / totalMs : 0;
-
-    const donutSize = 140, donutStroke = 16, donutRadius = (donutSize - donutStroke) / 2;
-    const donutCirc = 2 * Math.PI * donutRadius;
-    const coreFrac = corePct * donutCirc, deepFrac = deepPct * donutCirc, remFrac = remPct * donutCirc;
-    const gapFrac = 0.03 * donutCirc;
 
     const legend = [
       { label: 'Core', color: theme.sleepCore, val: coreMs },
@@ -440,13 +420,9 @@ export default function SleepHub() {
     ];
 
     return (
-      <View style={[cardStyle, { overflow: 'hidden' }]}>
-        <Ionicons name="moon" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-          <Ionicons name="moon-outline" size={11} color={theme.textMuted} />
-          <Text style={cardLabel}>Last Night</Text>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+      <View style={cardStyle}>
+        <Text style={[cardLabel, { marginBottom: 12 }]}>Last Night</Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <View style={{ flex: 1, paddingRight: 12 }}>
             <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
               <Text style={{ fontSize: 42, color: scoreColor, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, opacity: 0.9 }}>{hrs}h {mins}m</Text>
@@ -474,15 +450,12 @@ export default function SleepHub() {
               </View>
             )}
           </View>
-          {sleepStages && score !== null && (
-            <SleepDonut
-              coreFrac={coreFrac} deepFrac={deepFrac} remFrac={remFrac}
-              donutCirc={donutCirc} donutSize={donutSize} donutStroke={donutStroke} donutRadius={donutRadius}
-              coreColor={theme.sleepCore} deepColor={theme.sleepDeep} remColor={theme.sleepRem}
-              trackColor={theme.sleepTrack} gapFrac={gapFrac} refreshKey={refreshKey}
-              score={score} scoreColor={scoreColor}
-              shimmer={score >= 85}
-            />
+          {score !== null && (
+            <View style={{ alignItems: 'center', paddingTop: 2, minWidth: 78 }}>
+              <Text style={{ fontSize: 50, color: scoreColor, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, lineHeight: 50 }}>{score}</Text>
+              <Text style={{ fontSize: 10, color: scoreColor, fontFamily: 'DMSans_700Bold', letterSpacing: 2, opacity: 0.65, marginTop: -2 }}>/100</Text>
+              <Text style={{ fontSize: 8, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 6 }}>Sleep Score</Text>
+            </View>
           )}
         </View>
         <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 14, textAlign: 'center' }}>
@@ -631,14 +604,19 @@ export default function SleepHub() {
       </View>
     );
 
+    // Healthy reference ranges so the numbers mean something (deep ~13-23% of
+    // total sleep, REM ~20-25%). Value colors green when in range, amber when low.
+    const deepColor = avgDeepPct === null ? theme.textSecondary : avgDeepPct >= 13 ? theme.statusGood : theme.statusWarn;
+    const remColor = avgRemPct === null ? theme.textSecondary : avgRemPct >= 18 ? theme.statusGood : theme.statusWarn;
+
     return (
       <View style={cardStyle}>
         <Text style={[cardLabel, { marginBottom: 4 }]}>Sleep Metrics</Text>
-        {row('Avg deep sleep', avgDeepPct !== null ? `${avgDeepPct}%` : '—', theme.sleepDeep, `${n}-day average`)}
-        {row('Avg REM sleep', avgRemPct !== null ? `${avgRemPct}%` : '—', theme.sleepRem, `${n}-day average`)}
+        {row('Avg deep sleep', avgDeepPct !== null ? `${avgDeepPct}%` : '—', deepColor, 'Healthy 13 to 23%')}
+        {row('Avg REM sleep', avgRemPct !== null ? `${avgRemPct}%` : '—', remColor, 'Healthy 20 to 25%')}
         {row('Bedtime consistency', consistency ? consistency.label : '—', consistency ? consistency.color : theme.textSecondary, consistency ? consistency.sub : null)}
         {row('Sleep debt', debt.value, debt.color, debt.sub)}
-        {row('Wake events', String(last.awakeCount), last.awakeCount >= 4 ? theme.statusWarn : theme.textSecondary, 'last night', true)}
+        {row('Wake events', String(last.awakeCount), last.awakeCount >= 4 ? theme.statusWarn : theme.textSecondary, 'Last night', true)}
       </View>
     );
   };

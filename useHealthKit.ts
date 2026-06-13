@@ -304,6 +304,112 @@ export function useHealthKit() {
     }
   };
 
+  // All signals needed by calcRecoveryScore: today's values + 7-day rolling
+  // baselines for each signal. HRV is the sleep-window average (spec Decision #7).
+  const fetchRecoverySignals = async (): Promise<{
+    todayHRV: number | null; hrvBaseline: number | null;
+    todayRHR: number | null; rhrBaseline: number | null;
+    todayResp: number | null; respBaseline: number | null;
+    todaySpO2: number | null;
+    yesterdayActiveCal: number | null; activCalBaseline: number | null;
+  }> => {
+    const empty = { todayHRV: null, hrvBaseline: null, todayRHR: null, rhrBaseline: null, todayResp: null, respBaseline: null, todaySpO2: null, yesterdayActiveCal: null, activCalBaseline: null };
+    try {
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+      // Sleep window (yesterday 6pm → today noon) for the HRV average
+      const sleepStart = new Date(startOfDay);
+      sleepStart.setDate(sleepStart.getDate() - 1);
+      sleepStart.setHours(18, 0, 0, 0);
+      const sleepEnd = new Date(startOfDay);
+      sleepEnd.setHours(12, 0, 0, 0);
+
+      // HRV: average SDNN during sleep window (canonical daily value per spec Decision #7)
+      const hrvSleep = await queryStatisticsForQuantity(
+        'HKQuantityTypeIdentifierHeartRateVariabilitySDNN',
+        ['discreteAverage'],
+        { filter: { date: { startDate: sleepStart, endDate: sleepEnd } } }
+      );
+      const todayHRV = hrvSleep?.averageQuantity?.quantity
+        ? Math.round(hrvSleep.averageQuantity.quantity * 10) / 10
+        : null;
+
+      // HRV baseline: 7-day average prior to this sleep window
+      const baselineStart = new Date(sleepStart);
+      baselineStart.setDate(baselineStart.getDate() - 7);
+      const hrvBase = await queryStatisticsForQuantity(
+        'HKQuantityTypeIdentifierHeartRateVariabilitySDNN',
+        ['discreteAverage'],
+        { filter: { date: { startDate: baselineStart, endDate: sleepStart } } }
+      );
+      const hrvBaseline = hrvBase?.averageQuantity?.quantity
+        ? Math.round(hrvBase.averageQuantity.quantity * 10) / 10
+        : null;
+
+      // RHR: most recent
+      const rhrData = await getMostRecentQuantitySample('HKQuantityTypeIdentifierRestingHeartRate');
+      const todayRHR = rhrData ? Math.round(rhrData.quantity as number) : null;
+
+      // RHR baseline: 7-day average
+      const rhrBase = await queryStatisticsForQuantity(
+        'HKQuantityTypeIdentifierRestingHeartRate',
+        ['discreteAverage'],
+        { filter: { date: { startDate: new Date(startOfDay.getTime() - 7 * 86400000), endDate: startOfDay } } }
+      );
+      const rhrBaseline = rhrBase?.averageQuantity?.quantity
+        ? Math.round(rhrBase.averageQuantity.quantity)
+        : null;
+
+      // Resp rate: most recent
+      const respData = await getMostRecentQuantitySample('HKQuantityTypeIdentifierRespiratoryRate');
+      const todayResp = respData ? Math.round((respData.quantity as number) * 10) / 10 : null;
+
+      // Resp baseline: 7-day average
+      const respBase = await queryStatisticsForQuantity(
+        'HKQuantityTypeIdentifierRespiratoryRate',
+        ['discreteAverage'],
+        { filter: { date: { startDate: new Date(startOfDay.getTime() - 7 * 86400000), endDate: startOfDay } } }
+      );
+      const respBaseline = respBase?.averageQuantity?.quantity
+        ? Math.round(respBase.averageQuantity.quantity * 10) / 10
+        : null;
+
+      // SpO2: most recent (display only, not in formula)
+      const spo2Data = await getMostRecentQuantitySample('HKQuantityTypeIdentifierOxygenSaturation');
+      const todaySpO2 = spo2Data ? Math.round((spo2Data.quantity as number) * 1000) / 10 : null;
+
+      // Yesterday's active calories
+      const yestStart = new Date(startOfDay);
+      yestStart.setDate(yestStart.getDate() - 1);
+      const yestCal = await queryStatisticsForQuantity(
+        'HKQuantityTypeIdentifierActiveEnergyBurned',
+        ['cumulativeSum'],
+        { filter: { date: { startDate: yestStart, endDate: startOfDay } } }
+      );
+      const yesterdayActiveCal = yestCal?.sumQuantity?.quantity
+        ? Math.round(yestCal.sumQuantity.quantity)
+        : null;
+
+      // 7-day average daily active calories (past 7 complete days)
+      const weekAgo = new Date(startOfDay);
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      const weekCal = await queryStatisticsForQuantity(
+        'HKQuantityTypeIdentifierActiveEnergyBurned',
+        ['cumulativeSum'],
+        { filter: { date: { startDate: weekAgo, endDate: startOfDay } } }
+      );
+      const activCalBaseline = weekCal?.sumQuantity?.quantity
+        ? Math.round(weekCal.sumQuantity.quantity / 7)
+        : null;
+
+      return { todayHRV, hrvBaseline, todayRHR, rhrBaseline, todayResp, respBaseline, todaySpO2, yesterdayActiveCal, activCalBaseline };
+    } catch (e) {
+      console.log('Recovery signals fetch error', e);
+      return empty;
+    }
+  };
+
   const fetchHistoricalWorkouts = async (days: number): Promise<any[]> => {
     try {
       const now = new Date();
@@ -365,5 +471,5 @@ export function useHealthKit() {
     }
   };
 
-  return { authorized, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, hrv, bodyFatPct, exerciseMinutes, appleWorkouts, fetchTodayData, fetchHistoricalWorkouts, fetchSleepHistory, fetchLastNightSegments };
+  return { authorized, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, hrv, bodyFatPct, exerciseMinutes, appleWorkouts, fetchTodayData, fetchHistoricalWorkouts, fetchSleepHistory, fetchLastNightSegments, fetchRecoverySignals };
 }

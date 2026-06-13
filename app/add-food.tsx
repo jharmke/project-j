@@ -158,35 +158,60 @@ function normalizeForMatch(s: string): string {
 }
 
 function normalizeQueryForApi(q: string): string {
-  return q.replace(/-/g, ' ').replace(/\s+/g, ' ').trim();
+  return q
+    .replace(/[‘’‚‛]/g, '') // strip iOS curly apostrophes
+    .replace(/'/g, '')                           // strip straight apostrophes
+    .replace(/-/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+async function callFatSecretApi(q: string): Promise<SearchResult[]> {
+  const apiParams = {
+    method: 'foods.search',
+    search_expression: q,
+    max_results: '20',
+    format: 'json',
+  };
+  const oauth = buildOAuthParams();
+  const allParams = { ...oauth, ...apiParams };
+  const sig = signRequest('POST', FS_BASE, allParams);
+  const finalParams = { ...allParams, oauth_signature: sig };
+  const body = Object.keys(finalParams).sort().map(k =>
+    `${encodeURIComponent(k)}=${encodeURIComponent((finalParams as Record<string, string>)[k])}`
+  ).join('&');
+  const res = await fetch(FS_BASE, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body,
+  });
+  const data = await res.json();
+  const foods = data?.foods?.food;
+  if (!foods) return [];
+  const arr = Array.isArray(foods) ? foods : [foods];
+  return arr.map(normalizeFsSearchResult);
 }
 
 async function fetchFatSecretSearch(q: string): Promise<SearchResult[]> {
   try {
-    const apiParams = {
-      method: 'foods.search',
-      search_expression: q,
-      max_results: '20',
-      format: 'json',
-    };
-    const oauth = buildOAuthParams();
-    const allParams = { ...oauth, ...apiParams };
-    const sig = signRequest('POST', FS_BASE, allParams);
-    const finalParams = { ...allParams, oauth_signature: sig };
-    const body = Object.keys(finalParams).sort().map(k =>
-      `${encodeURIComponent(k)}=${encodeURIComponent((finalParams as Record<string, string>)[k])}`
-    ).join('&');
-    const res = await fetch(FS_BASE, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body,
-    });
-    const data = await res.json();
-    
-    const foods = data?.foods?.food;
-    if (!foods) return [];
-    const arr = Array.isArray(foods) ? foods : [foods];
-    return arr.map(normalizeFsSearchResult);
+    const words = q.trim().split(' ');
+    const last = words[words.length - 1];
+    const pluralQ = last && last.length >= 5 && !last.endsWith('s')
+      ? [...words.slice(0, -1), last + 's'].join(' ')
+      : null;
+
+    const [primary, secondary] = await Promise.all([
+      callFatSecretApi(q),
+      pluralQ ? callFatSecretApi(pluralQ) : Promise.resolve([] as SearchResult[]),
+    ]);
+
+    const seen = new Set<string>();
+    const merged: SearchResult[] = [];
+    for (const r of [...secondary, ...primary]) {
+      const key = (r as any).fsId ?? r.description;
+      if (!seen.has(key)) { seen.add(key); merged.push(r); }
+    }
+    return merged;
   } catch (e) {
     console.log('FatSecret search error', e);
     return [];

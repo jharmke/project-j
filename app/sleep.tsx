@@ -22,6 +22,7 @@ import TooltipIcon from '../components/TooltipIcon';
 import { triggerHaptic } from '../utils/haptics';
 import { storageSet } from '../utils/storage';
 import { calcSleepScore } from '../utils/sleepScore';
+import { calcRecoveryScore, RecoveryComponent, RecoveryResult } from '../utils/recoveryScore';
 import { useHealthKit } from '../useHealthKit';
 import { useTheme } from '../theme';
 
@@ -270,6 +271,43 @@ function Hypnogram({ segments, theme, hideAxis }: { segments: SleepSeg[]; theme:
   );
 }
 
+// Recovery Score trend: same structure as ScoreTrendChart but typed for
+// { dateKey, score } arrays (no SleepNight fields needed).
+function RecoveryTrendChart({ data, color, theme }: { data: { dateKey: string; score: number }[]; color: string; theme: any }) {
+  const [callout, setCallout] = useState<Callout>(null);
+  const slide = useSlideIn(`rec:${data.length}:${data[0]?.dateKey ?? ''}`);
+  const n = data.length;
+  if (n === 0) return null;
+  const ticks = [0, 25, 50, 75, 100];
+  const toX = (i: number) => C_LEFT + (n === 1 ? PLOT_W / 2 : (i / (n - 1)) * PLOT_W);
+  const toY = (v: number) => C_TOP + (1 - Math.max(0, Math.min(100, v)) / 100) * PLOT_H;
+  const pts = data.map((d, i) => `${toX(i)},${toY(d.score)}`).join(' ');
+  const midIdx = Math.floor(n / 2);
+  return (
+    <ReAnimated.View style={slide}>
+      <Svg width={CHART_W} height={CHART_H}>
+        <Rect x={0} y={0} width={CHART_W} height={CHART_H} fill="transparent" onPress={() => setCallout(null)} />
+        {ticks.map(t => (
+          <Line key={`rg${t}`} x1={C_LEFT} y1={toY(t)} x2={C_LEFT + PLOT_W} y2={toY(t)} stroke={theme.borderSubtle} strokeWidth={1} />
+        ))}
+        {ticks.map(t => (
+          <SvgText key={`ry${t}`} x={C_LEFT - 5} y={toY(t) + 3} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">{t}</SvgText>
+        ))}
+        <Polyline points={pts} fill="none" stroke={color} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
+        {data.map((d, i) => <Circle key={`rd${i}`} cx={toX(i)} cy={toY(d.score)} r={3} fill={color} />)}
+        <SvgText x={C_LEFT} y={CHART_H - 4} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium">{fmtDay(data[0].dateKey)}</SvgText>
+        {n > 3 && <SvgText x={toX(midIdx)} y={CHART_H - 4} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">{fmtDay(data[midIdx].dateKey)}</SvgText>}
+        <SvgText x={C_LEFT + PLOT_W} y={CHART_H - 4} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">{fmtDay(data[n - 1].dateKey)}</SvgText>
+        {data.map((d, i) => (
+          <Circle key={`rt${i}`} cx={toX(i)} cy={toY(d.score)} r={16} fill="transparent"
+            onPress={() => setCallout(prev => prev?.label1 === fmtDay(d.dateKey) ? null : { x: toX(i), y: toY(d.score), label1: fmtDay(d.dateKey), label2: `Recovery ${d.score}` })} />
+        ))}
+        {callout && <CalloutPill callout={callout} theme={theme} clear={() => setCallout(null)} />}
+      </Svg>
+    </ReAnimated.View>
+  );
+}
+
 // Sleep Coach observation for the most recent night. Returns a kind so Mindful
 // mode (without "Allow gentle coaching") can suppress corrective tips and only
 // show positive/neutral summaries.
@@ -288,10 +326,33 @@ function sleepCoachTip(n: SleepNight, score: number, goalH: number, bedSd: numbe
   return { text: `You logged ${dur} last night, ${deepPct}% deep and ${remPct}% REM.`, kind: 'neutral' };
 }
 
+function recoveryCoachTip(result: RecoveryResult, styleMode: string, mindfulGrowth: boolean): { text: string; kind: 'positive' | 'neutral' | 'corrective' } {
+  if (result.score === null) return { text: 'Log sleep and connect Apple Health to see your daily recovery score.', kind: 'neutral' };
+  const score = result.score;
+
+  if (result.hrv && !result.hrv.isPositive && !(styleMode === 'mindful' && !mindfulGrowth)) {
+    return { text: `HRV came in at ${result.hrv.value} last night, ${result.hrv.delta} vs your baseline. Suppressed HRV signals the nervous system is still processing yesterday's load. A lighter session today pays back faster than pushing through.`, kind: 'corrective' };
+  }
+  if (result.rhr && !result.rhr.isPositive && !(styleMode === 'mindful' && !mindfulGrowth)) {
+    return { text: `Resting HR is elevated at ${result.rhr.value} (${result.rhr.delta} vs baseline). Classic recovery debt signal. It can mean accumulated strain, stress, or early illness onset. Prioritize sleep and easy movement today.`, kind: 'corrective' };
+  }
+  if (result.resp && !result.resp.isPositive && result.resp.score < 55 && !(styleMode === 'mindful' && !mindfulGrowth)) {
+    return { text: `Respiratory rate is running high at ${result.resp.value}, ${result.resp.delta} above baseline. Elevated overnight breathing often leads how you feel by a day or two. Worth watching.`, kind: 'corrective' };
+  }
+  if (score >= 80) {
+    const htext = result.hrv ? ` HRV at ${result.hrv.value}${result.hrv.delta ? ` (${result.hrv.delta})` : ''}.` : '';
+    return { text: `Strong recovery:${htext} Signals point to full readiness. Match today's effort to that.`, kind: 'positive' };
+  }
+  if (score >= 70) {
+    return { text: `Solid recovery at ${score}. You are in the ready zone. Train or rest based on your plan, not the number.`, kind: 'positive' };
+  }
+  return { text: `Recovery sitting at ${score}. Not an alarm, but signals suggest moderate readiness today. Useful training is still possible, just be honest about your top end.`, kind: 'neutral' };
+}
+
 export default function SleepHub() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
-  const { sleepHours, sleepStages, sleepTimes, sleepAwakeMs, fetchSleepHistory, fetchLastNightSegments } = useHealthKit();
+  const { sleepHours, sleepStages, sleepTimes, sleepAwakeMs, fetchSleepHistory, fetchLastNightSegments, fetchRecoverySignals } = useHealthKit();
 
   const [activeTab, setActiveTab] = useState<SleepTab>('sleep');
   const [range, setRange] = useState<'7' | '30'>('7');
@@ -311,6 +372,17 @@ export default function SleepHub() {
   const [sleepConsistencyPts, setSleepConsistencyPts] = useState(0);
   const [storedBed, setStoredBed] = useState<string | null>(null);
   const [storedWake, setStoredWake] = useState<string | null>(null);
+
+  type RecoverySignals = {
+    todayHRV: number | null; hrvBaseline: number | null;
+    todayRHR: number | null; rhrBaseline: number | null;
+    todayResp: number | null; respBaseline: number | null;
+    todaySpO2: number | null;
+    yesterdayActiveCal: number | null; activCalBaseline: number | null;
+  };
+  const [recoverySignals, setRecoverySignals] = useState<RecoverySignals | null>(null);
+  const [loadingRecovery, setLoadingRecovery] = useState(true);
+  const [recoveryTrend, setRecoveryTrend] = useState<{ dateKey: string; score: number }[]>([]);
 
   // Bumped on focus so the donut re-animates each time the screen is entered.
   const [refreshKey, setRefreshKey] = useState(0);
@@ -375,10 +447,74 @@ export default function SleepHub() {
     return () => { cancelled = true; };
   }, [range, sleepGoal]);
 
+  // Recovery signals: load once on mount.
+  useEffect(() => {
+    let cancelled = false;
+    setLoadingRecovery(true);
+    fetchRecoverySignals()
+      .then(s => { if (!cancelled) { setRecoverySignals(s); setLoadingRecovery(false); } })
+      .catch(() => { if (!cancelled) setLoadingRecovery(false); });
+    return () => { cancelled = true; };
+  }, []);
+
   const filteredHistory = useMemo(() => history.filter(n => !excludedSet.has(n.dateKey)), [history, excludedSet]);
   // Only blank the cards on the very first load. On range switches we keep the
   // existing charts mounted so the page doesn't collapse and jump to the top.
   const firstLoad = loadingHist && history.length === 0;
+
+  // Recovery Score computed from live signals + today's sleep score.
+  const recoveryResult = useMemo(() => {
+    if (recoverySignals === null) return null;
+    return calcRecoveryScore({
+      sleepScore: score,
+      todayHRV: recoverySignals.todayHRV,
+      hrvBaseline: recoverySignals.hrvBaseline,
+      todayRHR: recoverySignals.todayRHR,
+      rhrBaseline: recoverySignals.rhrBaseline,
+      yesterdayActiveCal: recoverySignals.yesterdayActiveCal,
+      activCalBaseline: recoverySignals.activCalBaseline,
+      todayResp: recoverySignals.todayResp,
+      respBaseline: recoverySignals.respBaseline,
+    });
+  }, [recoverySignals, score]);
+
+  // Persist today's Recovery Score to pj_<date> so the trend accumulates over time.
+  useEffect(() => {
+    if (!recoveryResult || recoveryResult.score === null) return;
+    const sc = recoveryResult.score;
+    (async () => {
+      try {
+        const k = `pj_${todayKey()}`;
+        const raw = await AsyncStorage.getItem(k);
+        const cur = raw ? JSON.parse(raw) : {};
+        if (cur.recoveryScore !== sc) await storageSet(k, JSON.stringify({ ...cur, recoveryScore: sc }));
+      } catch {}
+    })();
+  }, [recoveryResult]);
+
+  // Load historical Recovery Scores from pj_<date> for the trend chart.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const days = parseInt(range, 10);
+      const out: { dateKey: string; score: number }[] = [];
+      const base = new Date();
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(base);
+        d.setDate(d.getDate() - i);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        if (excludedSet.has(key)) continue;
+        try {
+          const raw = await AsyncStorage.getItem(`pj_${key}`);
+          if (!raw) continue;
+          const data = JSON.parse(raw);
+          if (typeof data.recoveryScore === 'number') out.push({ dateKey: key, score: data.recoveryScore });
+        } catch {}
+      }
+      if (!cancelled) setRecoveryTrend(out);
+    })();
+    return () => { cancelled = true; };
+  }, [range, excludedSet]);
 
   const toggleExclude = async (val: boolean) => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
@@ -529,15 +665,181 @@ export default function SleepHub() {
     );
   };
 
-  const renderRecoveryPlaceholder = () => (
-    <View style={[cardStyle, { alignItems: 'center', paddingVertical: 32 }]}>
-      <Ionicons name="pulse-outline" size={34} color={theme.iconMuted} />
-      <Text style={{ fontSize: 15, color: theme.textPrimary, fontFamily: 'DMSans_700Bold', marginTop: 10 }}>Recovery Score</Text>
-      <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 6, textAlign: 'center', lineHeight: 18 }}>
-        How ready your body is to perform today, built from HRV, resting heart rate, sleep, and yesterday's strain. Landing in an upcoming build.
-      </Text>
-    </View>
-  );
+  const renderRecovery = () => {
+    const recColor = recoveryResult?.zoneColor === 'good' ? theme.statusGood : recoveryResult?.zoneColor === 'warn' ? theme.statusWarn : theme.statusBad;
+    const rowColor = (sc: number) => sc >= 75 ? theme.statusGood : sc >= 55 ? theme.statusWarn : theme.statusBad;
+
+    // Hero card
+    const heroCard = () => {
+      if (loadingRecovery && recoveryResult === null) {
+        return (
+          <View style={[cardStyle, { alignItems: 'center', paddingVertical: 32 }]}>
+            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Loading recovery data...</Text>
+          </View>
+        );
+      }
+      if (recoveryResult === null || recoveryResult.score === null) {
+        return (
+          <View style={[cardStyle, { alignItems: 'center', paddingVertical: 28 }]}>
+            <Ionicons name="pulse-outline" size={34} color={theme.iconMuted} />
+            <Text style={{ fontSize: 14, color: theme.textPrimary, fontFamily: 'DMSans_700Bold', marginTop: 10 }}>Recovery data unavailable</Text>
+            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 4, textAlign: 'center', lineHeight: 18 }}>
+              Connect Apple Health and log sleep to see your Recovery Score.
+            </Text>
+          </View>
+        );
+      }
+
+      const rows: { key: string; comp: RecoveryComponent | null }[] = [
+        { key: 'HRV', comp: recoveryResult.hrv },
+        { key: 'Sleep Score', comp: recoveryResult.sleep },
+        { key: 'Resting HR', comp: recoveryResult.rhr },
+        { key: 'Prev. Activity', comp: recoveryResult.activity },
+        { key: 'Resp. Rate', comp: recoveryResult.resp },
+      ].filter(r => r.comp !== null);
+
+      return (
+        <View style={cardStyle}>
+          <Text style={[cardLabel, { marginBottom: 14 }]}>Today's Recovery</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18, marginBottom: 18 }}>
+            <Text style={{ fontSize: 72, color: recColor, fontFamily: 'BebasNeue_400Regular', lineHeight: 78 }}>{recoveryResult.score}</Text>
+            <View>
+              <Text style={{ fontSize: 20, color: recColor, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 }}>{recoveryResult.label}</Text>
+              {recoveryResult.isLimitedData && (
+                <View style={{ marginTop: 5, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, alignSelf: 'flex-start' }}>
+                  <Text style={{ fontSize: 9, color: theme.accentBlueRaw, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' }}>Limited data</Text>
+                </View>
+              )}
+            </View>
+          </View>
+
+          <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
+            {rows.map(({ key, comp }, idx) => {
+              if (!comp) return null;
+              const rc = rowColor(comp.score);
+              const isLast = idx === rows.length - 1;
+              return (
+                <View key={key} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: isLast ? 0 : 0.5, borderBottomColor: theme.borderSubtle }}>
+                  <View style={{ width: 3, height: 28, borderRadius: 2, backgroundColor: rc, marginRight: 12 }} />
+                  <Text style={{ flex: 1, fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>{key}</Text>
+                  <View style={{ alignItems: 'flex-end' }}>
+                    <Text style={{ fontSize: 14, color: rc, fontFamily: 'DMSans_700Bold' }}>{comp.value}</Text>
+                    {comp.delta && (
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 1 }}>
+                        <Ionicons name={comp.isPositive ? 'arrow-up' : 'arrow-down'} size={9} color={comp.isPositive ? theme.statusGood : theme.statusBad} />
+                        <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>{comp.delta}</Text>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+
+          {recoverySignals?.todaySpO2 !== null && recoverySignals?.todaySpO2 !== undefined && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', paddingTop: 10, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle, marginTop: 2 }}>
+              <View style={{ width: 3, height: 28, borderRadius: 2, backgroundColor: theme.textDim, marginRight: 12 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>Blood Oxygen (SpO2)</Text>
+                <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 1 }}>Informational only</Text>
+              </View>
+              <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_700Bold' }}>{recoverySignals.todaySpO2}%</Text>
+            </View>
+          )}
+
+          <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 14, textAlign: 'center' }}>
+            For informational purposes only. Not medical advice.
+          </Text>
+        </View>
+      );
+    };
+
+    // Trend card
+    const trendCard = () => {
+      const avg = recoveryTrend.length ? Math.round(recoveryTrend.reduce((a, d) => a + d.score, 0) / recoveryTrend.length) : null;
+      return (
+        <View style={cardStyle}>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
+            <View>
+              <Text style={cardLabel}>Recovery Trend</Text>
+              {avg !== null && (
+                <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 6 }}>
+                  <Text style={{ fontSize: 24, color: theme.statusGood, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5 }}>{avg}</Text>
+                  <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>avg over {recoveryTrend.length} {recoveryTrend.length === 1 ? 'day' : 'days'}</Text>
+                </View>
+              )}
+            </View>
+            {rangeToggle()}
+          </View>
+          {recoveryTrend.length > 0 ? (
+            <RecoveryTrendChart data={recoveryTrend} color={theme.statusGood} theme={theme} />
+          ) : (
+            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 24, textAlign: 'center', lineHeight: 18 }}>
+              Your recovery trend builds over time. Today's score is the first data point.
+            </Text>
+          )}
+        </View>
+      );
+    };
+
+    // Key signals panel
+    const signalsCard = () => {
+      if (!recoverySignals) return null;
+      const { todayHRV, hrvBaseline, todayRHR, rhrBaseline, todayResp, respBaseline, todaySpO2, yesterdayActiveCal, activCalBaseline } = recoverySignals;
+      const anySignal = todayHRV !== null || todayRHR !== null || todayResp !== null || todaySpO2 !== null || yesterdayActiveCal !== null;
+      if (!anySignal) return null;
+
+      const sigRow = (label: string, value: string | null, sub: string | null, isLast = false) =>
+        value === null ? null : (
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: isLast ? 0 : 0.5, borderBottomColor: theme.borderSubtle }}>
+            <View>
+              <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>{label}</Text>
+              {sub ? <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>{sub}</Text> : null}
+            </View>
+            <Text style={{ fontSize: 16, color: theme.textPrimary, fontFamily: 'DMSans_700Bold' }}>{value}</Text>
+          </View>
+        );
+
+      return (
+        <View style={cardStyle}>
+          <Text style={[cardLabel, { marginBottom: 4 }]}>Key Signals</Text>
+          {sigRow('HRV (overnight)', todayHRV !== null ? `${Math.round(todayHRV * 10) / 10}ms` : null, hrvBaseline !== null ? `7d avg: ${Math.round(hrvBaseline * 10) / 10}ms` : null)}
+          {sigRow('Resting HR', todayRHR !== null ? `${todayRHR} bpm` : null, rhrBaseline !== null ? `7d avg: ${rhrBaseline} bpm` : null)}
+          {sigRow('Resp. Rate', todayResp !== null ? `${todayResp} brpm` : null, respBaseline !== null ? `7d avg: ${respBaseline} brpm` : null)}
+          {sigRow('Blood Oxygen', todaySpO2 !== null ? `${todaySpO2}%` : null, 'Informational only')}
+          {sigRow('Prev. Day Activity', yesterdayActiveCal !== null ? `${yesterdayActiveCal} kcal` : null, activCalBaseline !== null ? `7d avg: ${activCalBaseline} kcal` : null, true)}
+        </View>
+      );
+    };
+
+    // Recovery coach tip
+    const coachCard = () => {
+      if (!recoveryResult) return null;
+      const tip = recoveryCoachTip(recoveryResult, styleMode, mindfulGrowth);
+      if (styleMode === 'mindful' && !mindfulGrowth && tip.kind === 'corrective') return null;
+      return (
+        <View style={cardStyle}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+            <Ionicons name="sparkles" size={11} color={theme.statusGood} />
+            <Text style={cardLabel}>Recovery Coach</Text>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 10, padding: 12, borderRadius: 10, backgroundColor: theme.accentBlueBg }}>
+            <Ionicons name="bulb" size={16} color={theme.accentBlueRaw} style={{ marginTop: 1 }} />
+            <Text style={{ flex: 1, fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_500Medium', lineHeight: 20 }}>{tip.text}</Text>
+          </View>
+        </View>
+      );
+    };
+
+    return (
+      <>
+        {heroCard()}
+        {trendCard()}
+        {signalsCard()}
+        {coachCard()}
+      </>
+    );
+  };
 
   const cardLabel = { fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' as const };
 
@@ -777,7 +1079,7 @@ export default function SleepHub() {
             {renderCoach()}
             {renderExclude()}
           </>
-        ) : renderRecoveryPlaceholder()}
+        ) : renderRecovery()}
       </ScrollView>
     </LinearGradient>
   );

@@ -15,7 +15,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Dimensions, PanResponder, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import ReAnimated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import Svg, { Circle, G, Line, Polyline, Rect, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Defs, G, Line, LinearGradient as SvgLinearGradient, Polyline, Rect, Stop, Text as SvgText } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ToggleSwitch from '../components/ToggleSwitch';
 import TooltipIcon from '../components/TooltipIcon';
@@ -123,11 +123,11 @@ function StageHistoryChart({ nights, theme }: { nights: SleepNight[]; theme: any
   if (n === 0) return null;
   const barMs = nights.map(nt => nt.totalMs); // sleep only; awake lives in metrics
   const maxMs = Math.max(...barMs, 1);
-  const maxH = Math.max(1, Math.ceil(maxMs / 3600000));
-  const step = maxH <= 4 ? 1 : maxH <= 9 ? 2 : 3;
+  const rawMaxH = Math.max(1, Math.ceil(maxMs / 3600000));
+  const step = rawMaxH <= 4 ? 1 : rawMaxH <= 9 ? 2 : 3;
+  const maxH = Math.ceil(rawMaxH / step) * step;
   const ticks: number[] = [];
   for (let h = 0; h <= maxH; h += step) ticks.push(h);
-  if (ticks[ticks.length - 1] !== maxH) ticks.push(maxH);
   const tickMaxMs = maxH * 3600000;
   const toY = (ms: number) => C_TOP + (1 - ms / tickMaxMs) * PLOT_H;
   const slot = PLOT_W / n;
@@ -143,7 +143,7 @@ function StageHistoryChart({ nights, theme }: { nights: SleepNight[]; theme: any
             <Line key={`g${h}`} x1={C_LEFT} y1={toY(h * 3600000)} x2={C_LEFT + PLOT_W} y2={toY(h * 3600000)} stroke={theme.borderSubtle} strokeWidth={1} />
           ))}
           {ticks.map(h => (
-            <SvgText key={`y${h}`} x={C_LEFT - 5} y={toY(h * 3600000) + 3} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">{h}h</SvgText>
+            <SvgText key={`y${h}`} x={C_LEFT - 5} y={toY(h * 3600000) + 3} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">{`${h}h`}</SvgText>
           ))}
           {nights.map((nt, i) => {
             const x = barX(i);
@@ -173,26 +173,35 @@ function StageHistoryChart({ nights, theme }: { nights: SleepNight[]; theme: any
         </Svg>
         {sel !== null && (() => {
           const nt = nights[sel];
-          const W = 134;
+          const W = 154;
           const left = Math.max(0, Math.min(CHART_W - W, barX(sel) + BAR_W / 2 - W / 2));
           const rows = [
             { label: 'Core', color: theme.sleepCore, ms: nt.coreMs },
             { label: 'Deep', color: theme.sleepDeep, ms: nt.deepMs },
             { label: 'REM', color: theme.sleepRem, ms: nt.remMs },
+            ...(nt.awakeMs > 0 ? [{ label: 'Awake', color: theme.sleepAwake, ms: nt.awakeMs }] : []),
           ];
           return (
-            <View style={{ position: 'absolute', top: 0, left, width: W, backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderWidth: 0.5, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 4 }}>
-              <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 0.5, marginBottom: 6 }}>{fmtDay(nt.dateKey)}</Text>
-              {rows.map(r => (
-                <View key={r.label} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                    <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: r.color }} />
-                    <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 0.5, textTransform: 'uppercase' }}>{r.label}</Text>
+            <TouchableOpacity activeOpacity={1} onPress={() => setSel(null)} style={{ position: 'absolute', top: 0, left, width: W }}>
+              <View style={{ backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderWidth: 0.5, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 8, shadowColor: '#000', shadowOpacity: 0.18, shadowRadius: 6, shadowOffset: { width: 0, height: 2 }, elevation: 4 }}>
+                <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 0.5, marginBottom: 6 }}>{fmtDay(nt.dateKey)}</Text>
+                <View style={{ height: 0.5, backgroundColor: theme.borderCard, marginBottom: 6 }} />
+                {rows.map(r => (
+                  <View key={r.label} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                      <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: r.color }} />
+                      <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 0.5, textTransform: 'uppercase' }}>{r.label}</Text>
+                    </View>
+                    <Text style={{ fontSize: 11, color: r.color, fontFamily: 'DMSans_700Bold' }}>{fmtMs(r.ms)}</Text>
                   </View>
-                  <Text style={{ fontSize: 11, color: r.color, fontFamily: 'DMSans_700Bold' }}>{fmtMs(r.ms)}</Text>
+                ))}
+                <View style={{ height: 0.5, backgroundColor: theme.borderCard, marginTop: 2, marginBottom: 6 }} />
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 0.5, textTransform: 'uppercase' }}>Duration</Text>
+                  <Text style={{ fontSize: 11, color: theme.textPrimary, fontFamily: 'DMSans_700Bold' }}>{fmtMs(nt.totalMs)}</Text>
                 </View>
-              ))}
-            </View>
+              </View>
+            </TouchableOpacity>
           );
         })()}
       </View>
@@ -245,7 +254,7 @@ function Hypnogram({ segments, theme, hideAxis }: { segments: SleepSeg[]; theme:
           {lanes.map(stage => (
             <G key={stage}>
               <Rect x={GUT} y={laneY(stage)} width={plotW} height={laneH} fill={theme.bgInset} rx={4} />
-              <SvgText x={GUT - 6} y={laneY(stage) + laneH / 2 + 3} fill={theme.textMuted} fontSize={8} fontFamily="DMSans_600SemiBold" textAnchor="end">{laneLabel[stage]}</SvgText>
+              <SvgText x={GUT - 6} y={laneY(stage) + laneH / 2 + 3} fill={laneColor[stage]} fontSize={8} fontFamily="DMSans_600SemiBold" textAnchor="end">{laneLabel[stage]}</SvgText>
             </G>
           ))}
           {segments.map((s, i) => (
@@ -608,6 +617,7 @@ export default function SleepHub() {
       { label: 'Core', color: theme.sleepCore, val: coreMs },
       { label: 'Deep', color: theme.sleepDeep, val: deepMs },
       { label: 'REM', color: theme.sleepRem, val: remMs },
+      ...(sleepAwakeMs > 0 ? [{ label: 'Awake', color: theme.sleepAwake, val: sleepAwakeMs }] : []),
     ];
 
     return (
@@ -624,7 +634,7 @@ export default function SleepHub() {
             <>
               <View style={{ width: 1, height: 52, backgroundColor: theme.borderSubtle }} />
               <View style={{ flex: 1, alignItems: 'center' }}>
-                <Text style={{ fontSize: 46, color: scoreColor, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, lineHeight: 52 }}>{score}</Text>
+                <Text style={{ fontSize: 38, color: scoreColor, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, lineHeight: 44 }}>{score}</Text>
                 <Text style={{ fontSize: 8, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 4 }}>Sleep Score</Text>
               </View>
             </>
@@ -640,9 +650,6 @@ export default function SleepHub() {
             <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>
               {storedBed || sleepTimes?.bed} → {storedWake || sleepTimes?.wake}
             </Text>
-          )}
-          {sleepAwakeMs > 0 && (
-            <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 3 }}>{fmtMs(sleepAwakeMs)} awake during night</Text>
           )}
         </View>
         {sleepStages && (
@@ -918,6 +925,7 @@ export default function SleepHub() {
                 </View>
               ))}
             </View>
+            <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginTop: 10 }}>Apple Health data only. Manual sleep nights not included.</Text>
           </>
         ) : firstLoad ? (
           <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 24, textAlign: 'center' }}>Loading…</Text>
@@ -944,9 +952,13 @@ export default function SleepHub() {
     if (beds.length >= 2) {
       const mean = beds.reduce((a, b) => a + b, 0) / beds.length;
       const sd = Math.round(Math.sqrt(beds.reduce((a, b) => a + (b - mean) ** 2, 0) / beds.length));
+      const avgBedH = Math.floor(mean / 60) % 24;
+      const avgBedM = Math.round(mean % 60);
+      const avgBedDate = new Date(); avgBedDate.setHours(avgBedH, avgBedM, 0, 0);
+      const avgBedStr = avgBedDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
       consistency = {
         label: sd <= 30 ? 'Consistent' : sd <= 60 ? 'Mostly steady' : 'Variable',
-        sub: `± ${sd}m`,
+        sub: `±${sd}m from ${avgBedStr}`,
         color: sd <= 30 ? theme.statusGood : sd <= 60 ? theme.statusWarn : theme.statusBad,
       };
     }
@@ -978,12 +990,36 @@ export default function SleepHub() {
         <Text style={[cardLabel, { marginBottom: 4 }]}>Sleep Metrics</Text>
         {row('Avg deep sleep', avgDeepPct !== null ? `${avgDeepPct}%` : '—', deepColor, 'Healthy 13 to 23%')}
         {row('Avg REM sleep', avgRemPct !== null ? `${avgRemPct}%` : '—', remColor, 'Healthy 20 to 25%')}
-        {row('Bedtime consistency', consistency ? consistency.label : '—', consistency ? consistency.color : theme.textSecondary, consistency ? consistency.sub : null)}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle }}>
+          <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>Bedtime consistency</Text>
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text style={{ fontSize: 16, color: consistency ? consistency.color : theme.textSecondary, fontFamily: 'DMSans_700Bold' }}>{consistency ? consistency.label : '—'}</Text>
+            {consistency && <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>{consistency.sub}</Text>}
+          </View>
+        </View>
         {row('Sleep debt', debt.value, debt.color, debt.sub)}
-        {row('Wake events', String(last.awakeCount), last.awakeCount >= 4 ? theme.statusWarn : theme.textSecondary, last.awakeMs > 0 ? `${fmtMs(last.awakeMs)} awake last night` : 'Last night', true)}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle }}>
+          <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>Wake events</Text>
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text style={{ fontSize: 16, color: last.awakeCount >= 4 ? theme.statusWarn : theme.textSecondary, fontFamily: 'DMSans_700Bold' }}>{last.awakeCount}</Text>
+            {last.awakeMs > 0 && <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>{fmtMs(last.awakeMs)} awake</Text>}
+          </View>
+        </View>
       </View>
     );
   };
+
+  const renderExclude = () => (
+    <View style={cardStyle}>
+      <Text style={[cardLabel, { marginBottom: 12 }]}>Options</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Text style={{ flex: 1, paddingRight: 12, fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>
+          Exclude last night from sleep and recovery trends
+        </Text>
+        <ToggleSwitch value={excludedToday} onValueChange={toggleExclude} />
+      </View>
+    </View>
+  );
 
   const renderCoach = () => {
     if (filteredHistory.length === 0) return null;
@@ -1011,17 +1047,6 @@ export default function SleepHub() {
     );
   };
 
-  // Quiet footnote-style utility, deliberately low emphasis.
-  const renderExclude = () => (
-    <View style={[cardStyle, { paddingVertical: 12 }]}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Text style={{ flex: 1, paddingRight: 12, fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_500Medium', lineHeight: 16 }}>
-          Exclude last night from your sleep and recovery trends
-        </Text>
-        <ToggleSwitch value={excludedToday} onValueChange={toggleExclude} />
-      </View>
-    </View>
-  );
 
   const tabBtn = (id: SleepTab, label: string) => {
     const active = activeTab === id;

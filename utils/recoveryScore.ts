@@ -98,8 +98,10 @@ export function calcRecoveryScore(input: RecoveryInput): RecoveryResult {
   const totalW = entries.reduce((s, [, w]) => s + w, 0);
   const totalScore = Math.round(entries.reduce((s, [v, w]) => s + v * w, 0) / totalW);
 
-  const label: 'PRIMED' | 'STEADY' | 'RECOVER' = totalScore >= 70 ? 'PRIMED' : totalScore >= 55 ? 'STEADY' : 'RECOVER';
-  const zoneColor: 'good' | 'warn' | 'bad' = totalScore >= 70 ? 'good' : totalScore >= 55 ? 'warn' : 'bad';
+  // Zones calibrated 2026-06-14 from 30d of real data: PRIMED reserved for genuinely
+  // strong 80+ days; a normal ~70-79 day reads STEADY, not top-tier. (Was 70 / 55.)
+  const label: 'PRIMED' | 'STEADY' | 'RECOVER' = totalScore >= 80 ? 'PRIMED' : totalScore >= 60 ? 'STEADY' : 'RECOVER';
+  const zoneColor: 'good' | 'warn' | 'bad' = totalScore >= 80 ? 'good' : totalScore >= 60 ? 'warn' : 'bad';
 
   const hrv: RecoveryComponent | null = hasHRV ? {
     value: `${Math.round(todayHRV! * 10) / 10}ms`,

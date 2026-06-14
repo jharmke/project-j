@@ -317,7 +317,7 @@ Proposed: Same pattern as rest of app.
     - **Stage colors:** REUSE existing per-theme tokens sleepCore/sleepDeep/sleepRem (same as home donut: Core=blue, Deep=purple, REM=green). Added new per-theme sleepAwake token (muted red) to theme.tsx. No fixed hexes -- the earlier fixed values were bogus placeholder TBDs and are dropped.
     - **Readiness labels:** PRIMED / STEADY / RECOVER (3 tiers, tied to zones).
     - **Baseline scaling curve (placeholder):** linear + clamped. Baseline = 75 pts, scales to 100 at a meaningful positive deviation, 0 at a meaningful negative one, per-signal window. Sigmoid is a post-data refinement.
-    - **Recovery color zones (placeholder):** green >= 70, amber 55-69, red < 55. Tune after first real data.
+    - **Recovery color zones (CALIBRATED 2026-06-14 from 30d real data):** PRIMED/green >= 80, STEADY/amber 60-79, RECOVER/red < 60. (Was placeholder 70 / 55-69 / 55 -- bumped because a normal ~76 day was reading top-tier PRIMED, which oversold it; PRIMED now reserved for genuinely strong 80+ days. recoveryScore.ts + the recoveryCoachTip positive band aligned to the 60 floor.) Fixed cutoffs for v1; personalized/percentile zones are a possible later upgrade.
     - **Mindful:** Section 7 confirmed as written. Tip shown, corrective observations suppressed unless "Include growth areas" on; score number always shown.
     - **v1 scope:** Activity Balance (5%) dropped for v1; its weight folds into Previous Day Activity -> prevDayActivity * 0.17.
     - **Build order:** Sleep tab first (data available today), Recovery tab second.

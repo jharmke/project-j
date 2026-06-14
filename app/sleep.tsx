@@ -405,7 +405,7 @@ function recoveryCoachTip(result: RecoveryResult, styleMode: string, mindfulGrow
     const htext = result.hrv ? ` HRV at ${result.hrv.value}${result.hrv.delta ? ` (${result.hrv.delta})` : ''}.` : '';
     return { text: `Strong recovery:${htext} Signals point to full readiness. Match today's effort to that.`, kind: 'positive' };
   }
-  if (score >= 70) {
+  if (score >= 60) {
     return { text: `Solid recovery at ${score}. You are in the ready zone. Train or rest based on your plan, not the number.`, kind: 'positive' };
   }
   return { text: `Recovery sitting at ${score}. Not an alarm, but signals suggest moderate readiness today. Useful training is still possible, just be honest about your top end.`, kind: 'neutral' };

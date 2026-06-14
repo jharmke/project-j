@@ -59,12 +59,18 @@ export function calcRecoveryScore(input: RecoveryInput): RecoveryResult {
   const { sleepScore, todayHRV, hrvBaseline, todayRHR, rhrBaseline,
     yesterdayActiveCal, activCalBaseline, todayResp, respBaseline } = input;
 
-  if (sleepScore === null) return NULL_RESULT;
+  // Every signal must be a real, finite number to count. A NaN (e.g. a bad
+  // sleep-stage read) is treated as missing, never multiplied into the score.
+  const hasSleep = sleepScore !== null && Number.isFinite(sleepScore);
+  const hasHRV = todayHRV !== null && hrvBaseline !== null && Number.isFinite(todayHRV) && Number.isFinite(hrvBaseline);
+  const hasRHR = todayRHR !== null && rhrBaseline !== null && Number.isFinite(todayRHR) && Number.isFinite(rhrBaseline);
+  const hasResp = todayResp !== null && respBaseline !== null && Number.isFinite(todayResp) && Number.isFinite(respBaseline);
+  const hasActivity = yesterdayActiveCal !== null && activCalBaseline !== null && Number.isFinite(yesterdayActiveCal) && Number.isFinite(activCalBaseline);
 
-  const hasHRV = todayHRV !== null && hrvBaseline !== null;
-  const hasRHR = todayRHR !== null && rhrBaseline !== null;
-  const hasResp = todayResp !== null && respBaseline !== null;
-  const hasActivity = yesterdayActiveCal !== null && activCalBaseline !== null;
+  // Minimum-data gate: need at least one trustworthy primary signal (sleep, HRV,
+  // or RHR). Resp / activity alone are too weak to anchor a credible score.
+  if (!hasSleep && !hasHRV && !hasRHR) return NULL_RESULT;
+
   const isLimitedData = !hasHRV;
 
   const sc_hrv = hasHRV ? compScore(todayHRV!, hrvBaseline!, true, 0.3) : null;
@@ -72,22 +78,25 @@ export function calcRecoveryScore(input: RecoveryInput): RecoveryResult {
   const sc_resp = hasResp ? compScore(todayResp!, respBaseline!, false, 0.2) : null;
   const sc_act = hasActivity ? actScore(yesterdayActiveCal!, activCalBaseline!) : null;
 
-  let totalScore: number;
+  // Each present signal contributes its weight; the total is normalized by the
+  // weights actually used, so a missing input (including sleep) redistributes
+  // proportionally across the rest instead of poisoning the score.
+  const entries: [number, number][] = [];
   if (isLimitedData) {
-    // 3-signal fallback (spec Section 5.5): Sleep 40%, RHR 40%, Resp 20%.
-    let sum = sleepScore * 0.40, w = 0.40;
-    if (sc_rhr !== null) { sum += sc_rhr * 0.40; w += 0.40; }
-    if (sc_resp !== null) { sum += sc_resp * 0.20; w += 0.20; }
-    totalScore = Math.round(sum / w);
+    // No HRV: reweighted fallback (spec Section 5.5) Sleep 40 / RHR 40 / Resp 20.
+    if (hasSleep) entries.push([sleepScore!, 0.40]);
+    if (sc_rhr !== null) entries.push([sc_rhr, 0.40]);
+    if (sc_resp !== null) entries.push([sc_resp, 0.20]);
   } else {
     // Full v1 formula. Activity Balance (5%) folded into prevDayActivity: 0.17.
-    const entries: [number, number][] = [[sc_hrv!, 0.35], [sleepScore, 0.22]];
+    entries.push([sc_hrv!, 0.35]);
+    if (hasSleep) entries.push([sleepScore!, 0.22]);
     if (sc_rhr !== null) entries.push([sc_rhr, 0.18]);
     if (sc_act !== null) entries.push([sc_act, 0.17]);
     if (sc_resp !== null) entries.push([sc_resp, 0.08]);
-    const totalW = entries.reduce((s, [, w]) => s + w, 0);
-    totalScore = Math.round(entries.reduce((s, [v, w]) => s + v * w, 0) / totalW);
   }
+  const totalW = entries.reduce((s, [, w]) => s + w, 0);
+  const totalScore = Math.round(entries.reduce((s, [v, w]) => s + v * w, 0) / totalW);
 
   const label: 'PRIMED' | 'STEADY' | 'RECOVER' = totalScore >= 70 ? 'PRIMED' : totalScore >= 55 ? 'STEADY' : 'RECOVER';
   const zoneColor: 'good' | 'warn' | 'bad' = totalScore >= 70 ? 'good' : totalScore >= 55 ? 'warn' : 'bad';
@@ -99,12 +108,12 @@ export function calcRecoveryScore(input: RecoveryInput): RecoveryResult {
     isPositive: todayHRV! >= hrvBaseline!,
   } : null;
 
-  const sleep: RecoveryComponent = {
-    value: String(Math.round(sleepScore)),
-    score: sleepScore,
+  const sleep: RecoveryComponent | null = hasSleep ? {
+    value: String(Math.round(sleepScore!)),
+    score: sleepScore!,
     delta: null,
     isPositive: null,
-  };
+  } : null;
 
   const rhr: RecoveryComponent | null = hasRHR ? {
     value: `${Math.round(todayRHR!)} bpm`,

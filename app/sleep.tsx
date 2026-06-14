@@ -561,6 +561,14 @@ export default function SleepHub() {
   // existing charts mounted so the page doesn't collapse and jump to the top.
   const firstLoad = loadingHist && history.length === 0;
 
+  // Today's sleep score, resolved the same way the home card does. Computed here,
+  // ABOVE the Recovery memo, so the memo actually sees it -- sleep feeds Recovery
+  // at 22% weight. (Declared lower previously, which made the memo read it as
+  // undefined and silently drop sleep from every recovery score.)
+  const displaySleep = sleepOverride ?? sleepHours;
+  const isManual = !!sleepOverride;
+  const { score } = calcSleepScore(displaySleep, sleepStages, sleepGoal, sleepFeelRating, isManual, sleepConsistencyPts);
+
   // Recovery Score computed from live signals + today's sleep score.
   const recoveryResult = useMemo(() => {
     if (recoverySignals === null) return null;
@@ -658,9 +666,6 @@ export default function SleepHub() {
     })();
   }, []);
 
-  const displaySleep = sleepOverride ?? sleepHours;
-  const isManual = !!sleepOverride;
-  const { score } = calcSleepScore(displaySleep, sleepStages, sleepGoal, sleepFeelRating, isManual, sleepConsistencyPts);
   const scoreColor = score !== null ? (score >= 85 ? theme.statusGood : score >= 70 ? theme.statusWarn : theme.statusBad) : theme.textDim;
   const scoreLabel = score !== null ? (score >= 85 ? 'Well Rested' : score >= 70 ? 'Could Be Better' : 'Poor Sleep') : null;
 

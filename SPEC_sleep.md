@@ -399,3 +399,25 @@ Separate but shipped in the same pass. The Sleep Score Trend chart currently har
 
 ### 11.8 Mindful
 Metrics panel is factual data, shown in all modes. No corrective language lives here (the coach tip owns that). No Mindful-specific changes needed.
+
+## 12. RECOVERY HOME CARD (PROPOSED 2026-06-14 -- design not yet locked)
+
+Idea raised by Justin: the home screen has a Sleep card but no Recovery presence. Add a Recovery home card so the daily Recovery Score surfaces without opening the hub, and keep it visually/conceptually paired with the Sleep card.
+
+### 12.1 Core concept
+- Same card chrome/treatment as the home Sleep card (so they read as a matched pair).
+- Single card SLOT that cycles between a Sleep face and a Recovery face on a timed auto-scroll (e.g. every N seconds), so both are always represented without taking two card slots. The two stay "linked up" -- one home tile, two faces.
+- Manual swipe between faces should also work; auto-cycle pauses on manual interaction (standard carousel behavior).
+- Tapping either face routes into the Sleep & Recovery hub on the matching tab (Sleep face -> Sleep tab, Recovery face -> Recovery tab).
+
+### 12.2 Open decisions (NOT locked -- design session needed)
+- Auto-cycle interval + whether it's user-configurable.
+- Whether it's one combined tile (carousel) or two separate stacked cards the user can reorder. Justin's lean: one linked tile that scrolls.
+- Recovery face contents: score + label + 1-2 top drivers? Or just score + readiness word to stay light?
+- Card-order / visibility integration with the existing home edit-layout system (pj_settings cardOrder / cardVisible).
+- Empty/limited states: no HRV yet, no recovery score yet (first day), manual-only sleep users.
+- Mindful behavior: Recovery Score still shown (per Decision in Section 7), but readiness framing/coach language softened; confirm at build time.
+- Accessibility: an auto-scrolling tile must not trap focus or fight the page scroll (mirror the hypnogram pan-vs-scroll lesson).
+
+### 12.3 Status
+Parked at top of roadmap as a [HIGH] follow-up. Build only after the Recovery tab itself is polished (trend auto-scale, baseline-labeled deltas + universal range toggle, burn-accuracy fix).

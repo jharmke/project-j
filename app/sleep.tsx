@@ -13,7 +13,7 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Dimensions, PanResponder, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Dimensions, PanResponder, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import ReAnimated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import Svg, { Circle, Defs, G, Line, LinearGradient as SvgLinearGradient, Polyline, Rect, Stop, Text as SvgText } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -332,9 +332,17 @@ function RecoveryTrendChart({ data, color, theme }: { data: { dateKey: string; s
   const slide = useSlideIn(`rec:${data.length}:${data[0]?.dateKey ?? ''}`);
   const n = data.length;
   if (n === 0) return null;
-  const ticks = [0, 25, 50, 75, 100];
+  // Auto-scale the y-axis to the data (mirrors ScoreTrendChart) so the line fills
+  // the card instead of hugging a fixed 0-100 axis.
+  const scores = data.map(d => d.score);
+  const dataMin = Math.min(...scores);
+  const dataMax = Math.max(...scores);
+  const ticks = niceYTicks(dataMin, dataMax, 4);
+  const tickMin = ticks[0];
+  const tickMax = ticks[ticks.length - 1] || tickMin + 1;
+  const span = (tickMax - tickMin) || 1;
   const toX = (i: number) => C_LEFT + (n === 1 ? PLOT_W / 2 : (i / (n - 1)) * PLOT_W);
-  const toY = (v: number) => C_TOP + (1 - Math.max(0, Math.min(100, v)) / 100) * PLOT_H;
+  const toY = (v: number) => C_TOP + (1 - (clamp(v, tickMin, tickMax) - tickMin) / span) * PLOT_H;
   const pts = data.map((d, i) => `${toX(i)},${toY(d.score)}`).join(' ');
   const midIdx = Math.floor(n / 2);
   return (
@@ -441,7 +449,10 @@ export default function SleepHub() {
   };
   const [recoverySignals, setRecoverySignals] = useState<RecoverySignals | null>(null);
   const [loadingRecovery, setLoadingRecovery] = useState(true);
+  const [burnAccuracyPct, setBurnAccuracyPct] = useState(100);
   const [recoveryTrend, setRecoveryTrend] = useState<{ dateKey: string; score: number }[]>([]);
+  const [backfilling, setBackfilling] = useState<string | null>(null);
+  const [trendReload, setTrendReload] = useState(0);
 
   // Bumped on focus so the donut re-animates each time the screen is entered.
   const [refreshKey, setRefreshKey] = useState(0);
@@ -526,11 +537,16 @@ export default function SleepHub() {
     return () => { cancelled = true; };
   }, [range, sleepGoal]);
 
-  // Recovery signals: load once on mount.
+  // Recovery signals: load once with a FIXED 7-day baseline. Today's Recovery is a
+  // STABLE number -- it always compares today against the same yardstick. The
+  // viewing-range toggle moves the trend chart's history only, NOT today's score
+  // (letting the toggle change the baseline window made the hero wobble on a mere
+  // view change, and left today's point computed by a different rule than the
+  // 7d-baseline backfilled history -- both wrong).
   useEffect(() => {
     let cancelled = false;
     setLoadingRecovery(true);
-    fetchRecoverySignals()
+    fetchRecoverySignals(7)
       .then(s => { if (!cancelled) { setRecoverySignals(s); setLoadingRecovery(false); } })
       .catch(() => { if (!cancelled) setLoadingRecovery(false); });
     return () => { cancelled = true; };
@@ -569,21 +585,35 @@ export default function SleepHub() {
   const isManual = !!sleepOverride;
   const { score } = calcSleepScore(displaySleep, sleepStages, sleepGoal, sleepFeelRating, isManual, sleepConsistencyPts);
 
+  // Burn-accuracy-adjusted signals: scale the activity numbers by the user's
+  // burnAccuracyPct so Recovery shows the same adjusted active calories as the
+  // rest of the app. Scaling today AND the baseline by the same factor leaves the
+  // recovery sub-score unchanged -- it only corrects the displayed kcal + delta.
+  const adjustedSignals = useMemo(() => {
+    if (!recoverySignals) return null;
+    const k = burnAccuracyPct / 100;
+    return {
+      ...recoverySignals,
+      yesterdayActiveCal: recoverySignals.yesterdayActiveCal !== null ? Math.round(recoverySignals.yesterdayActiveCal * k) : null,
+      activCalBaseline: recoverySignals.activCalBaseline !== null ? Math.round(recoverySignals.activCalBaseline * k) : null,
+    };
+  }, [recoverySignals, burnAccuracyPct]);
+
   // Recovery Score computed from live signals + today's sleep score.
   const recoveryResult = useMemo(() => {
-    if (recoverySignals === null) return null;
+    if (adjustedSignals === null) return null;
     return calcRecoveryScore({
       sleepScore: score,
-      todayHRV: recoverySignals.todayHRV,
-      hrvBaseline: recoverySignals.hrvBaseline,
-      todayRHR: recoverySignals.todayRHR,
-      rhrBaseline: recoverySignals.rhrBaseline,
-      yesterdayActiveCal: recoverySignals.yesterdayActiveCal,
-      activCalBaseline: recoverySignals.activCalBaseline,
-      todayResp: recoverySignals.todayResp,
-      respBaseline: recoverySignals.respBaseline,
+      todayHRV: adjustedSignals.todayHRV,
+      hrvBaseline: adjustedSignals.hrvBaseline,
+      todayRHR: adjustedSignals.todayRHR,
+      rhrBaseline: adjustedSignals.rhrBaseline,
+      yesterdayActiveCal: adjustedSignals.yesterdayActiveCal,
+      activCalBaseline: adjustedSignals.activCalBaseline,
+      todayResp: adjustedSignals.todayResp,
+      respBaseline: adjustedSignals.respBaseline,
     });
-  }, [recoverySignals, score]);
+  }, [adjustedSignals, score]);
 
   // Persist today's Recovery Score to pj_<date> so the trend accumulates over time.
   useEffect(() => {
@@ -621,7 +651,67 @@ export default function SleepHub() {
       if (!cancelled) setRecoveryTrend(out);
     })();
     return () => { cancelled = true; };
-  }, [range, excludedSet]);
+  }, [range, excludedSet, trendReload]);
+
+  // Dev: backfill REAL recovery history. Triggered by the Settings dev tool
+  // (pj_dev_backfill_recovery). For each of the last 30 days it recomputes the
+  // genuine recovery score from that day's real Apple Health signals + that
+  // night's real sleep score, then read-then-merges it into pj_<date> (never
+  // overwrites the day). Days with no watch data are skipped (honest gaps).
+  // Burn accuracy is intentionally NOT applied: scaling activity + its baseline
+  // by the same factor leaves the recovery score unchanged, and only the score
+  // is stored here.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        if ((await AsyncStorage.getItem('pj_dev_backfill_recovery')) !== '1') return;
+        await AsyncStorage.removeItem('pj_dev_backfill_recovery'); // consume once
+        setBackfilling('Backfilling your recovery history...');
+
+        // Real sleep score per night (HealthKit stages), keyed by wake-day.
+        const nights = await fetchSleepHistory(30);
+        const sleepByDate: Record<string, number | null> = {};
+        for (const nt of nights) {
+          sleepByDate[nt.dateKey] = calcSleepScore(nt.totalMs / 3600000, { core: nt.coreMs, deep: nt.deepMs, rem: nt.remMs, totalMs: nt.totalMs }, sleepGoal).score;
+        }
+
+        let written = 0;
+        const today = new Date();
+        for (let i = 1; i <= 30; i++) {
+          if (cancelled) return;
+          const d = new Date(today);
+          d.setDate(d.getDate() - i);
+          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+          setBackfilling(`Backfilling recovery... day ${i} of 30`);
+          const sig = await fetchRecoverySignals(7, d);
+          const res = calcRecoveryScore({
+            sleepScore: sleepByDate[key] ?? null,
+            todayHRV: sig.todayHRV, hrvBaseline: sig.hrvBaseline,
+            todayRHR: sig.todayRHR, rhrBaseline: sig.rhrBaseline,
+            yesterdayActiveCal: sig.yesterdayActiveCal, activCalBaseline: sig.activCalBaseline,
+            todayResp: sig.todayResp, respBaseline: sig.respBaseline,
+          });
+          if (res.score === null) continue; // no data that day -> honest gap, no write
+          const k = `pj_${key}`;
+          const raw = await AsyncStorage.getItem(k);
+          const cur = raw ? JSON.parse(raw) : {};
+          if (cur.recoveryScore !== res.score) {
+            await storageSet(k, JSON.stringify({ ...cur, recoveryScore: res.score }));
+          }
+          written++;
+        }
+        if (!cancelled) {
+          setBackfilling(null);
+          setTrendReload(n => n + 1);
+          Alert.alert('Recovery History Backfilled', `Filled in ${written} day${written === 1 ? '' : 's'} of real recovery scores from your Apple Health history.`);
+        }
+      } catch {
+        if (!cancelled) setBackfilling(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   const toggleExclude = async (val: boolean) => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
@@ -661,6 +751,7 @@ export default function SleepHub() {
           const s = JSON.parse(settings);
           if (s.styleMode) setStyleMode(s.styleMode);
           if (typeof s.mindfulGrowthAreas === 'boolean') setMindfulGrowth(s.mindfulGrowthAreas);
+          if (typeof s.burnAccuracyPct === 'number') setBurnAccuracyPct(s.burnAccuracyPct);
         }
       } catch {}
     })();
@@ -815,6 +906,9 @@ export default function SleepHub() {
             </View>
           </View>
 
+          <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', textAlign: 'right', marginBottom: 4 }}>
+            Change vs your 7-day baseline
+          </Text>
           <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
             {rows.map(({ key, comp }, idx) => {
               if (!comp) return null;
@@ -838,14 +932,14 @@ export default function SleepHub() {
             })}
           </View>
 
-          {recoverySignals?.todaySpO2 !== null && recoverySignals?.todaySpO2 !== undefined && (
+          {adjustedSignals?.todaySpO2 !== null && adjustedSignals?.todaySpO2 !== undefined && (
             <View style={{ flexDirection: 'row', alignItems: 'center', paddingTop: 10, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle, marginTop: 2 }}>
               <View style={{ width: 3, height: 28, borderRadius: 2, backgroundColor: theme.textDim, marginRight: 12 }} />
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>Blood Oxygen (SpO2)</Text>
                 <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 1 }}>Informational only</Text>
               </View>
-              <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_700Bold' }}>{recoverySignals.todaySpO2}%</Text>
+              <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_700Bold' }}>{adjustedSignals.todaySpO2}%</Text>
             </View>
           )}
 
@@ -871,7 +965,6 @@ export default function SleepHub() {
                 </View>
               )}
             </View>
-            {rangeToggle()}
           </View>
           {recoveryTrend.length > 0 ? (
             <RecoveryTrendChart data={recoveryTrend} color={theme.statusGood} theme={theme} />
@@ -886,8 +979,8 @@ export default function SleepHub() {
 
     // Key signals panel
     const signalsCard = () => {
-      if (!recoverySignals) return null;
-      const { todayHRV, hrvBaseline, todayRHR, rhrBaseline, todayResp, respBaseline, todaySpO2, yesterdayActiveCal, activCalBaseline } = recoverySignals;
+      if (!adjustedSignals) return null;
+      const { todayHRV, hrvBaseline, todayRHR, rhrBaseline, todayResp, respBaseline, todaySpO2, yesterdayActiveCal, activCalBaseline } = adjustedSignals;
       const anySignal = todayHRV !== null || todayRHR !== null || todayResp !== null || todaySpO2 !== null || yesterdayActiveCal !== null;
       if (!anySignal) return null;
 
@@ -1205,7 +1298,7 @@ export default function SleepHub() {
           shadowRadius: 3,
         }}
       >
-        <Text style={{ fontSize: 12, color: active ? theme.textPrimary : theme.textMuted, fontFamily: active ? 'DMSans_700Bold' : 'DMSans_500Medium' }}>{label}</Text>
+        <Text style={{ fontSize: 12, color: active ? theme.accentBlueRaw : theme.textMuted, fontFamily: active ? 'DMSans_700Bold' : 'DMSans_500Medium' }}>{label}</Text>
       </TouchableOpacity>
     );
   };
@@ -1233,13 +1326,17 @@ export default function SleepHub() {
         {tabBtn('recovery', 'Recovery')}
       </View>
 
-      {/* Universal range control (Sleep tab): always reachable, sets every card. Each
-          card also has its own toggle bound to the same range, so changing it anywhere
-          keeps the whole tab in sync without scrolling to the top. */}
-      {activeTab === 'sleep' && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 12, marginTop: 8, marginBottom: 2 }}>
-          <Text style={cardLabel}>Viewing Range</Text>
-          {rangeToggle()}
+      {/* Universal range control: pinned in the fixed header on BOTH tabs so it never
+          scrolls away. Drives every card AND the recovery baseline window (7d/30d). */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 12, marginTop: 8, marginBottom: 2 }}>
+        <Text style={cardLabel}>Viewing Range</Text>
+        {rangeToggle()}
+      </View>
+
+      {backfilling && (
+        <View style={{ marginHorizontal: 12, marginTop: 6, padding: 10, borderRadius: 8, backgroundColor: theme.accentBlueBg, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <ActivityIndicator size="small" color={theme.accentBlueRaw} />
+          <Text style={{ fontSize: 12, color: theme.accentBlueRaw, fontFamily: 'DMSans_600SemiBold' }}>{backfilling}</Text>
         </View>
       )}
 

@@ -304,9 +304,12 @@ export function useHealthKit() {
     }
   };
 
-  // All signals needed by calcRecoveryScore: today's values + 7-day rolling
-  // baselines for each signal. HRV is the sleep-window average (spec Decision #7).
-  const fetchRecoverySignals = async (): Promise<{
+  // All signals needed by calcRecoveryScore for a given day: that day's values +
+  // N-day rolling baselines (baselineDays, default 7). HRV is the sleep-window
+  // average (spec Decision #7). Pass anchorDate to compute a PAST day (recovery
+  // history backfill) -- when given, RHR/resp/SpO2 are read as that day's average
+  // instead of "most recent" so each historical day gets its own real value.
+  const fetchRecoverySignals = async (baselineDays = 7, anchorDate?: Date): Promise<{
     todayHRV: number | null; hrvBaseline: number | null;
     todayRHR: number | null; rhrBaseline: number | null;
     todayResp: number | null; respBaseline: number | null;
@@ -315,7 +318,8 @@ export function useHealthKit() {
   }> => {
     const empty = { todayHRV: null, hrvBaseline: null, todayRHR: null, rhrBaseline: null, todayResp: null, respBaseline: null, todaySpO2: null, yesterdayActiveCal: null, activCalBaseline: null };
     try {
-      const now = new Date();
+      const now = anchorDate ? new Date(anchorDate) : new Date();
+      const isHistorical = !!anchorDate;
       const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
       // Sleep window (yesterday 6pm → today noon) for the HRV average
@@ -335,9 +339,9 @@ export function useHealthKit() {
         ? Math.round(hrvSleep.averageQuantity.quantity * 10) / 10
         : null;
 
-      // HRV baseline: 7-day average prior to this sleep window
+      // HRV baseline: N-day average prior to this sleep window
       const baselineStart = new Date(sleepStart);
-      baselineStart.setDate(baselineStart.getDate() - 7);
+      baselineStart.setDate(baselineStart.getDate() - baselineDays);
       const hrvBase = await queryStatisticsForQuantity(
         'HKQuantityTypeIdentifierHeartRateVariabilitySDNN',
         ['discreteAverage'],
@@ -347,37 +351,71 @@ export function useHealthKit() {
         ? Math.round(hrvBase.averageQuantity.quantity * 10) / 10
         : null;
 
-      // RHR: most recent
-      const rhrData = await getMostRecentQuantitySample('HKQuantityTypeIdentifierRestingHeartRate');
-      const todayRHR = rhrData ? Math.round(rhrData.quantity as number) : null;
+      // Day end (midnight after startOfDay) for date-scoped historical day averages.
+      const dayEnd = new Date(startOfDay);
+      dayEnd.setDate(dayEnd.getDate() + 1);
 
-      // RHR baseline: 7-day average
+      // RHR: most recent for today; that day's average for a historical backfill.
+      let todayRHR: number | null;
+      if (isHistorical) {
+        const rhrDay = await queryStatisticsForQuantity(
+          'HKQuantityTypeIdentifierRestingHeartRate',
+          ['discreteAverage'],
+          { filter: { date: { startDate: startOfDay, endDate: dayEnd } } }
+        );
+        todayRHR = rhrDay?.averageQuantity?.quantity ? Math.round(rhrDay.averageQuantity.quantity) : null;
+      } else {
+        const rhrData = await getMostRecentQuantitySample('HKQuantityTypeIdentifierRestingHeartRate');
+        todayRHR = rhrData ? Math.round(rhrData.quantity as number) : null;
+      }
+
+      // RHR baseline: N-day average
       const rhrBase = await queryStatisticsForQuantity(
         'HKQuantityTypeIdentifierRestingHeartRate',
         ['discreteAverage'],
-        { filter: { date: { startDate: new Date(startOfDay.getTime() - 7 * 86400000), endDate: startOfDay } } }
+        { filter: { date: { startDate: new Date(startOfDay.getTime() - baselineDays * 86400000), endDate: startOfDay } } }
       );
       const rhrBaseline = rhrBase?.averageQuantity?.quantity
         ? Math.round(rhrBase.averageQuantity.quantity)
         : null;
 
-      // Resp rate: most recent
-      const respData = await getMostRecentQuantitySample('HKQuantityTypeIdentifierRespiratoryRate');
-      const todayResp = respData ? Math.round((respData.quantity as number) * 10) / 10 : null;
+      // Resp rate: most recent for today; sleep-window average for a backfill day.
+      let todayResp: number | null;
+      if (isHistorical) {
+        const respDay = await queryStatisticsForQuantity(
+          'HKQuantityTypeIdentifierRespiratoryRate',
+          ['discreteAverage'],
+          { filter: { date: { startDate: sleepStart, endDate: sleepEnd } } }
+        );
+        todayResp = respDay?.averageQuantity?.quantity ? Math.round(respDay.averageQuantity.quantity * 10) / 10 : null;
+      } else {
+        const respData = await getMostRecentQuantitySample('HKQuantityTypeIdentifierRespiratoryRate');
+        todayResp = respData ? Math.round((respData.quantity as number) * 10) / 10 : null;
+      }
 
-      // Resp baseline: 7-day average
+      // Resp baseline: N-day average
       const respBase = await queryStatisticsForQuantity(
         'HKQuantityTypeIdentifierRespiratoryRate',
         ['discreteAverage'],
-        { filter: { date: { startDate: new Date(startOfDay.getTime() - 7 * 86400000), endDate: startOfDay } } }
+        { filter: { date: { startDate: new Date(startOfDay.getTime() - baselineDays * 86400000), endDate: startOfDay } } }
       );
       const respBaseline = respBase?.averageQuantity?.quantity
         ? Math.round(respBase.averageQuantity.quantity * 10) / 10
         : null;
 
-      // SpO2: most recent (display only, not in formula)
-      const spo2Data = await getMostRecentQuantitySample('HKQuantityTypeIdentifierOxygenSaturation');
-      const todaySpO2 = spo2Data ? Math.round((spo2Data.quantity as number) * 1000) / 10 : null;
+      // SpO2: most recent for today; sleep-window average for a backfill day (display only).
+      let todaySpO2: number | null;
+      if (isHistorical) {
+        const spo2Day = await queryStatisticsForQuantity(
+          'HKQuantityTypeIdentifierOxygenSaturation',
+          ['discreteAverage'],
+          { filter: { date: { startDate: sleepStart, endDate: sleepEnd } } }
+        );
+        todaySpO2 = spo2Day?.averageQuantity?.quantity ? Math.round(spo2Day.averageQuantity.quantity * 1000) / 10 : null;
+      } else {
+        const spo2Data = await getMostRecentQuantitySample('HKQuantityTypeIdentifierOxygenSaturation');
+        todaySpO2 = spo2Data ? Math.round((spo2Data.quantity as number) * 1000) / 10 : null;
+      }
 
       // Yesterday's active calories
       const yestStart = new Date(startOfDay);
@@ -391,16 +429,16 @@ export function useHealthKit() {
         ? Math.round(yestCal.sumQuantity.quantity)
         : null;
 
-      // 7-day average daily active calories (past 7 complete days)
-      const weekAgo = new Date(startOfDay);
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      const weekCal = await queryStatisticsForQuantity(
+      // N-day average daily active calories (past N complete days)
+      const baseStart = new Date(startOfDay);
+      baseStart.setDate(baseStart.getDate() - baselineDays);
+      const baseCal = await queryStatisticsForQuantity(
         'HKQuantityTypeIdentifierActiveEnergyBurned',
         ['cumulativeSum'],
-        { filter: { date: { startDate: weekAgo, endDate: startOfDay } } }
+        { filter: { date: { startDate: baseStart, endDate: startOfDay } } }
       );
-      const activCalBaseline = weekCal?.sumQuantity?.quantity
-        ? Math.round(weekCal.sumQuantity.quantity / 7)
+      const activCalBaseline = baseCal?.sumQuantity?.quantity
+        ? Math.round(baseCal.sumQuantity.quantity / baselineDays)
         : null;
 
       return { todayHRV, hrvBaseline, todayRHR, rhrBaseline, todayResp, respBaseline, todaySpO2, yesterdayActiveCal, activCalBaseline };

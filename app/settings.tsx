@@ -2032,6 +2032,24 @@ export default function SettingsScreen() {
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
               triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              Alert.alert('Backfill Recovery History', 'Recompute your real Recovery Score for the last 30 days from your Apple Health history (HRV, sleep, resting HR, resp rate, activity) and fill in the Recovery trend. Read-then-merges into each day, never overwrites. Days with no watch data are skipped.', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Backfill', onPress: async () => {
+                  triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
+                  await AsyncStorage.setItem('pj_dev_backfill_recovery', '1');
+                  Alert.alert('Ready', 'Open Sleep & Recovery, then the Recovery tab, to run the backfill. It takes a few seconds.');
+                }},
+              ]);
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Backfill Recovery History</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Recomputes 30 days of real Recovery Scores from Apple Health on next Recovery tab open.</Text>
+              </View>
+              <Ionicons name="pulse-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
               Alert.alert('Force Restore from Firestore', 'This wipes all local pj_* data and pulls everything from your cloud backup. Use only if your data is missing after signing in.', [
                 { text: 'Cancel', style: 'cancel' },
                 { text: 'Restore', style: 'destructive', onPress: async () => {

@@ -254,81 +254,6 @@ function StageHistoryChart({ nights, theme }: { nights: SleepNight[]; theme: any
   );
 }
 
-// Small centered label under a bar, positioned over a given fraction (0..1).
-function BarTickLabel({ frac, text, theme }: { frac: number; text: string; theme: any }) {
-  return (
-    <View style={{ position: 'absolute', left: `${clamp(frac, 0, 1) * 100}%`, top: 0 }}>
-      <View style={{ marginLeft: -50, width: 100, alignItems: 'center' }}>
-        <Text numberOfLines={1} style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_500Medium' }}>{text}</Text>
-      </View>
-    </View>
-  );
-}
-
-// Diverging bar for the Sleep Metrics panel: a center reference hash (your
-// baseline / your goal / your average) with a solid fill that grows OUT from the
-// center -- right when you're above it, left when below. Color carries good/bad.
-// End + center labels give it a real axis so the bar isn't vague. Grows on mount.
-function DivergingBar({ valueFrac, color, leftLabel, centerLabel, rightLabel, theme }:
-  { valueFrac: number; color: string; leftLabel?: string; centerLabel?: string; rightLabel?: string; theme: any }) {
-  const vf = clamp(valueFrac, 0, 1);
-  const t = useSharedValue(0);
-  useEffect(() => { t.value = 0; t.value = withTiming(1, { duration: 700 }); }, [vf]);
-  const fillA = useAnimatedStyle(() => {
-    const w = Math.abs(vf - 0.5) * t.value;
-    const l = vf >= 0.5 ? 0.5 : 0.5 - w;
-    return { left: `${l * 100}%`, width: `${w * 100}%` };
-  });
-  const H = 8;
-  const hasLabels = !!(leftLabel || centerLabel || rightLabel);
-  return (
-    <View>
-      <View style={{ height: H, borderRadius: H / 2, backgroundColor: theme.textDim + '2E', justifyContent: 'center' }}>
-        <View style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, borderRadius: H / 2, overflow: 'hidden' }}>
-          <ReAnimated.View style={[{ position: 'absolute', top: 0, bottom: 0, backgroundColor: color }, fillA]} />
-        </View>
-        <View style={{ position: 'absolute', left: '50%', top: -3, bottom: -3, width: 2, marginLeft: -1, borderRadius: 1, backgroundColor: theme.textPrimary }} />
-      </View>
-      {hasLabels && (
-        <View style={{ height: 13, marginTop: 4 }}>
-          {leftLabel ? <Text style={{ position: 'absolute', left: 0, fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>{leftLabel}</Text> : null}
-          {centerLabel ? <BarTickLabel frac={0.5} text={centerLabel} theme={theme} /> : null}
-          {rightLabel ? <Text style={{ position: 'absolute', right: 0, fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>{rightLabel}</Text> : null}
-        </View>
-      )}
-    </View>
-  );
-}
-
-// Bedtime bar: matches the rest of the card's visual language. Neutral track,
-// hash ticks at your early/late bedtime ends (10th-90th pct of your last 30
-// nights), and a dot at your typical time -- LABELED "Baseline H:MM PM" under the
-// dot, exactly like Deep's "Baseline 12%". So it's clear what the time means, and
-// the early/late end labels give the axis real clock anchors.
-function BedtimeBar({ loMin, hiMin, typicalMin, color, theme }:
-  { loMin: number; hiMin: number; typicalMin: number; color: string; theme: any }) {
-  const span = (hiMin - loMin) || 1;
-  const tyF = clamp((typicalMin - loMin) / span, 0, 1);
-  const t = useSharedValue(0);
-  useEffect(() => { t.value = 0; t.value = withTiming(1, { duration: 700 }); }, [loMin, hiMin, typicalMin]);
-  const dotA = useAnimatedStyle(() => ({ left: `${tyF * t.value * 100}%` }));
-  const H = 8;
-  return (
-    <View>
-      <View style={{ height: H, borderRadius: H / 2, backgroundColor: theme.textDim + '2E', justifyContent: 'center' }}>
-        <View style={{ position: 'absolute', left: 0, top: -3, bottom: -3, width: 2, borderRadius: 1, backgroundColor: theme.textDim }} />
-        <View style={{ position: 'absolute', right: 0, top: -3, bottom: -3, width: 2, borderRadius: 1, backgroundColor: theme.textDim }} />
-        <ReAnimated.View style={[{ position: 'absolute', top: -1, width: 10, height: 10, borderRadius: 5, marginLeft: -5, backgroundColor: color, borderWidth: 1.5, borderColor: theme.bgCard }, dotA]} />
-      </View>
-      <View style={{ height: 13, marginTop: 4 }}>
-        <Text style={{ position: 'absolute', left: 0, fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>{fmtBedMin(loMin)}</Text>
-        <BarTickLabel frac={tyF} text={`Baseline ${fmtBedMin(typicalMin)}`} theme={theme} />
-        <Text style={{ position: 'absolute', right: 0, fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>{fmtBedMin(hiMin)}</Text>
-      </View>
-    </View>
-  );
-}
-
 type SleepSeg = { stage: 'awake' | 'core' | 'deep' | 'rem'; start: number; end: number };
 
 // Hypnogram: last night's stage timeline (bedtime -> wake), four lanes (Awake top,
@@ -1055,7 +980,6 @@ export default function SleepHub() {
               </View>
             )}
           </View>
-          {rangeToggle()}
         </View>
         {trendData.length > 0 ? (
           <ScoreTrendChart nights={trendData as unknown as SleepNight[]} scores={trendData.map(d => d.score)} color={theme.accentBlueRaw} theme={theme} />
@@ -1123,116 +1047,87 @@ export default function SleepHub() {
     const debtMs = goalMs * n - totalSleepMs;
 
     const good = theme.statusGood, warn = theme.statusWarn, bad = theme.statusBad;
+    const neutral = theme.textMuted;
 
-    // Every bar is a diverging bar (center reference, fill out left/right) except
-    // bedtime, which is a clock-window bar. Labels give each bar a real axis.
-    type RowBar =
-      | { kind: 'div'; valueFrac: number; color: string; leftLabel?: string; centerLabel?: string; rightLabel?: string }
-      | { kind: 'bed'; loMin: number; hiMin: number; typicalMin: number; color: string }
-      | null;
-    type RowCfg = { icon: any; label: string; value: string; valueColor: string; caption?: string; captionColor?: string; captionAlign?: 'left' | 'center'; bar: RowBar };
+    // Inline comparison rows (no bars): big colored value on the right, a small
+    // qualifier next to it, one muted subtext line below. The qualifier is NEUTRAL
+    // for the stage "vs norm" deltas so a down-arrow never fights a green value, and
+    // COLORED where the qualifier itself is the judgment (bedtime / balance / wakes).
+    type RowCfg = { icon: any; label: string; value: string; valueColor: string; delta?: string; deltaColor?: string; caption?: string };
     const rows: RowCfg[] = [];
 
-    // Stage-% rows (Avg deep / Avg REM, averaged over the viewed range -- NOT last
-    // night, which is what the Sleep Score up top reflects). Diverging bar centered
-    // on your personal baseline (fixed +/-10pp window). COLOR is driven by the
-    // medical healthy range, not baseline direction: in range = green, too low OR
-    // too high = amber, with a caption that says why.
-    const stageRow = (icon: string, label: string, val: number | null, base: number | null, healthyLo: number, healthyHi: number) => {
-      if (val === null) {
-        rows.push({ icon, label, value: '—', valueColor: theme.textSecondary, caption: 'No stage data', captionColor: theme.textDim, bar: null });
-        return;
-      }
+    // Avg deep / Avg REM over the viewed range (NOT last night). COLOR by medical
+    // healthy range: below = amber, in OR above = green (above is not a problem).
+    // The "vs norm" delta is neutral grey so its arrow can't contradict the color.
+    const stageRow = (icon: string, label: string, val: number | null, base: number | null, lo: number, hi: number) => {
+      if (val === null) { rows.push({ icon, label, value: '—', valueColor: theme.textSecondary, caption: 'No stage data yet' }); return; }
       const vr = Math.round(val);
-      const inRange = val >= healthyLo && val <= healthyHi;
-      const color = inRange ? good : warn;
-      const caption = inRange ? undefined : (val < healthyLo ? `Below healthy range (${healthyLo} to ${healthyHi}%)` : `Above healthy range (${healthyLo} to ${healthyHi}%)`);
+      const color = val < lo ? warn : good;
+      const caption = val < lo ? `Below healthy range (${lo} to ${hi}%)`
+        : val > hi ? `Above healthy range (${lo} to ${hi}%)`
+        : `In healthy range (${lo} to ${hi}%)`;
+      let delta: string | undefined;
       if (base !== null) {
-        const b = Math.round(base);
-        rows.push({
-          icon, label, value: `${vr}%`, valueColor: color, caption, captionColor: theme.textDim,
-          bar: { kind: 'div', valueFrac: 0.5 + (val - base) / 20, color, leftLabel: `${Math.max(0, b - 10)}%`, centerLabel: `Baseline ${b}%`, rightLabel: `${b + 10}%` },
-        });
-      } else {
-        const mid = (healthyLo + healthyHi) / 2;
-        rows.push({
-          icon, label, value: `${vr}%`, valueColor: color, caption, captionColor: theme.textDim,
-          bar: { kind: 'div', valueFrac: 0.5 + (val - mid) / 20, color, centerLabel: `Healthy ${healthyLo} to ${healthyHi}%` },
-        });
+        const diff = vr - Math.round(base);
+        delta = diff === 0 ? '= norm' : diff > 0 ? `↑ ${diff}% norm` : `↓ ${-diff}% norm`;
       }
+      rows.push({ icon, label, value: `${vr}%`, valueColor: color, delta, deltaColor: neutral, caption });
     };
-
     stageRow('moon', 'Avg deep sleep', avgDeepPct, baseline30?.deepPct ?? null, 13, 23);
     stageRow('pulse', 'Avg REM sleep', avgRemPct, baseline30?.remPct ?? null, 20, 25);
 
-    // Bedtime: range bar spanning your actual bedtime range (10th-90th pct over your
-    // last 30 nights), dot at your typical time. Falls back to the viewed range if
-    // no 30d baseline yet.
+    // Bedtime: typical time, colored by how tightly your bedtimes cluster over the
+    // baseline window (std dev). The qualifier word IS the judgment, so it matches
+    // the value color. Subtext = your 10th-90th percentile range.
     const sortedRangeBeds = [...beds].sort((a, b) => a - b);
     const rPct = (p: number) => sortedRangeBeds.length ? sortedRangeBeds[clamp(Math.round((p / 100) * (sortedRangeBeds.length - 1)), 0, sortedRangeBeds.length - 1)] : null;
     const bedLo = baseline30?.bedLo ?? rPct(10);
     const bedMid = baseline30?.bedMid ?? rPct(50);
     const bedHi = baseline30?.bedHi ?? rPct(90);
     const bedSpread = baseline30?.bedSd ?? bedSd;
-    if (bedLo === null || bedMid === null || bedHi === null || bedLo === bedHi) {
-      rows.push({ icon: 'time', label: 'Bedtime', value: bedMid !== null ? fmtBedMin(bedMid) : '—', valueColor: theme.textPrimary, caption: 'Need 2+ nights', captionColor: theme.textDim, bar: null });
+    if (bedMid === null) {
+      rows.push({ icon: 'time', label: 'Bedtime', value: '—', valueColor: theme.textSecondary, caption: 'Need 2+ nights' });
     } else {
-      const color = bedSpread === null ? good : bedSpread <= 30 ? good : bedSpread <= 60 ? warn : bad;
-      const word = bedSpread === null ? 'Your range' : bedSpread <= 30 ? 'Consistent' : bedSpread <= 60 ? 'Mostly steady' : 'Variable';
-      rows.push({
-        icon: 'time', label: 'Bedtime', value: fmtBedMin(bedMid), valueColor: color, caption: word, captionColor: color,
-        bar: { kind: 'bed', loMin: bedLo, hiMin: bedHi, typicalMin: bedMid, color },
-      });
+      const color = (bedSpread === null || bedSpread <= 60) ? good : warn;
+      const word = bedSpread === null ? undefined : bedSpread <= 30 ? 'Consistent' : bedSpread <= 60 ? 'Mostly steady' : 'Variable';
+      const caption = (bedLo !== null && bedHi !== null && bedLo !== bedHi) ? `Range ${fmtBedMin(bedLo)} to ${fmtBedMin(bedHi)}` : undefined;
+      rows.push({ icon: 'time', label: 'Bedtime', value: fmtBedMin(bedMid), valueColor: color, delta: word, deltaColor: color, caption });
     }
 
-    // Sleep balance: diverging bar centered on your goal (0). Right = surplus
-    // (green), left = deficit (red). Axis auto-scales symmetrically to the gap.
-    const avgShortMs = debtMs / n;
-    let balColor: string, balValue: string;
-    if (Math.abs(debtMs) < 60000) { balColor = good; balValue = 'On goal'; }
-    else if (debtMs > 0) { balColor = avgShortMs > goalMs / 2 ? bad : warn; balValue = `${fmtMs(debtMs)} deficit`; }
-    else { balColor = good; balValue = `${fmtMs(-debtMs)} surplus`; }
-    const balHours = Math.max(1, Math.ceil(Math.abs(debtMs) / 3600000));
-    rows.push({
-      icon: 'bed', label: 'Sleep balance', value: balValue, valueColor: balColor, caption: `Last ${n} nights`, captionColor: theme.textDim,
-      bar: { kind: 'div', valueFrac: 0.5 + (-debtMs) / (2 * balHours * 3600000), color: balColor, leftLabel: `-${balHours}h`, centerLabel: 'Goal', rightLabel: `+${balHours}h` },
-    });
+    // Sleep balance: surplus (green) / deficit (red) / on goal, vs your goal across
+    // the viewed range. Magnitude is the value, the word carries the same color.
+    let balValue: string, balColor: string, balWord: string | undefined;
+    if (Math.abs(debtMs) < 60000) { balValue = 'On goal'; balColor = good; balWord = undefined; }
+    else if (debtMs > 0) { balValue = `-${fmtMs(debtMs)}`; balColor = bad; balWord = 'Deficit'; }
+    else { balValue = `+${fmtMs(-debtMs)}`; balColor = good; balWord = 'Surplus'; }
+    rows.push({ icon: 'bed', label: 'Sleep balance', value: balValue, valueColor: balColor, delta: balWord, deltaColor: balColor, caption: `Goal ${sleepGoal}h · Past ${n} nights` });
 
-    // Wake events: diverging bar centered on your average count. Right = more wakes
-    // (worse), left = fewer (better). Color carries good/bad.
+    // Wake events last night vs your norm: at/below = green, up to 2x norm = amber,
+    // above 2x = red. The "above norm" qualifier carries the value color.
     const wakeVal = last.awakeCount;
-    const awakeStr = last.awakeMs > 0 ? `${fmtMs(last.awakeMs)} awake` : undefined;
-    if (baseline30) {
-      const base = Math.round(baseline30.wake);
-      const W = Math.max(base, 4);
-      const color = wakeVal <= base + 1 ? good : wakeVal <= base + 3 ? warn : bad;
-      rows.push({
-        icon: 'eye', label: 'Wake events', value: `${wakeVal}`, valueColor: color, caption: awakeStr, captionColor: theme.textDim, captionAlign: 'center',
-        bar: { kind: 'div', valueFrac: 0.5 + (wakeVal - base) / (2 * W), color, leftLabel: `${Math.max(0, base - W)}`, centerLabel: `Avg ${base}`, rightLabel: `${base + W}` },
-      });
-    } else {
-      const color = wakeVal <= 2 ? good : wakeVal <= 4 ? warn : bad;
-      rows.push({
-        icon: 'eye', label: 'Wake events', value: `${wakeVal}`, valueColor: color, caption: awakeStr, captionColor: theme.textDim, captionAlign: 'center',
-        bar: { kind: 'div', valueFrac: 0.5 + (wakeVal - 3) / 8, color, leftLabel: '0', centerLabel: 'Avg ~3', rightLabel: '7' },
-      });
-    }
+    const wakeBase = baseline30 ? Math.round(baseline30.wake) : 3;
+    const wakeColor = wakeVal <= wakeBase ? good : wakeVal <= wakeBase * 2 ? warn : bad;
+    const over = wakeVal - wakeBase;
+    const wakeWord = over > 0 ? `↑ ${over} above norm` : over < 0 ? `↓ ${-over} below norm` : 'on your norm';
+    const awakeStr = last.awakeMs > 0 ? `${fmtMs(last.awakeMs)} awake · ` : '';
+    rows.push({ icon: 'eye', label: 'Wake events', value: `${wakeVal}`, valueColor: wakeColor, delta: wakeWord, deltaColor: neutral, caption: `${awakeStr}Norm ${wakeBase}` });
 
     return (
       <View style={cardStyle}>
         <Text style={[cardLabel, { marginBottom: 4 }]}>Sleep Metrics</Text>
         {rows.map((r, i) => (
           <View key={r.label} style={{ paddingVertical: 12, borderBottomWidth: i === rows.length - 1 ? 0 : 0.5, borderBottomColor: theme.borderSubtle }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: r.bar ? 10 : 0 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 }}>
                 <Ionicons name={r.icon} size={14} color={theme.textMuted} />
                 <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>{r.label}</Text>
               </View>
-              <Text style={{ fontSize: 15, color: r.valueColor, fontFamily: 'DMSans_700Bold' }}>{r.value}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, flexShrink: 0 }}>
+                <Text style={{ fontSize: 17, color: r.valueColor, fontFamily: 'DMSans_700Bold' }}>{r.value}</Text>
+                {r.delta ? <Text style={{ fontSize: 11, color: r.deltaColor, fontFamily: 'DMSans_600SemiBold' }}>{r.delta}</Text> : null}
+              </View>
             </View>
-            {r.bar?.kind === 'div' ? <DivergingBar valueFrac={r.bar.valueFrac} color={r.bar.color} leftLabel={r.bar.leftLabel} centerLabel={r.bar.centerLabel} rightLabel={r.bar.rightLabel} theme={theme} /> : null}
-            {r.bar?.kind === 'bed' ? <BedtimeBar loMin={r.bar.loMin} hiMin={r.bar.hiMin} typicalMin={r.bar.typicalMin} color={r.bar.color} theme={theme} /> : null}
-            {r.caption ? <Text style={{ fontSize: 10, color: r.captionColor, fontFamily: 'DMSans_500Medium', marginTop: r.bar ? 6 : 2, textAlign: r.captionAlign === 'center' ? 'center' : 'left' }}>{r.caption}</Text> : null}
+            {r.caption ? <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 3 }}>{r.caption}</Text> : null}
           </View>
         ))}
       </View>
@@ -1325,6 +1220,16 @@ export default function SleepHub() {
         {tabBtn('sleep', 'Sleep')}
         {tabBtn('recovery', 'Recovery')}
       </View>
+
+      {/* Universal range control (Sleep tab): always reachable, sets every card. Each
+          card also has its own toggle bound to the same range, so changing it anywhere
+          keeps the whole tab in sync without scrolling to the top. */}
+      {activeTab === 'sleep' && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 12, marginTop: 8, marginBottom: 2 }}>
+          <Text style={cardLabel}>Viewing Range</Text>
+          {rangeToggle()}
+        </View>
+      )}
 
       <ScrollView contentContainerStyle={{ paddingTop: 8, paddingBottom: insets.bottom + 32 }} showsVerticalScrollIndicator={false}>
         {activeTab === 'sleep' ? (

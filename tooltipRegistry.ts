@@ -75,7 +75,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
       { term: 'Deep sleep', explanation: 'The most physically restorative stage, when your body repairs. A healthy night is roughly 13 to 23 percent of total sleep. Cooler, darker rooms and avoiding late heavy meals help.' },
       { term: 'REM sleep', explanation: 'Dream sleep, important for memory and mood. Roughly 20 to 25 percent of total is healthy. Most of it happens in your later cycles, so a steady wake time protects it.' },
       { term: 'Sleep timeline', explanation: 'The shape of your night from bedtime to wake. Higher bands are lighter stages, lower bands are deeper. Drag a finger across to read the stage and time at any point.' },
-      { term: 'Sleep debt', explanation: 'How far your recent sleep sits below your goal, added up across the range. On track means you are at or above your goal.' },
+      { term: 'Sleep balance', explanation: 'Your total sleep across the range versus your goal. A surplus means you came out above your goal overall; a deficit means below. On goal means right at it.' },
       { term: 'Bedtime consistency', explanation: 'How steady your bedtime is from night to night. A steadier schedule helps you fall into deep sleep faster.' },
       { term: 'Sleep Coach', explanation: 'A short, plain-English read on your recent sleep. It looks across your last several nights, picks the one thing most worth knowing, and explains what it means and what helps. It focuses on sleep only.' },
     ],

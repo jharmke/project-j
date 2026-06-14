@@ -1030,7 +1030,6 @@ export default function SleepHub() {
   const renderMetrics = () => {
     if (filteredHistory.length === 0) return null;
 
-    const last = filteredHistory[filteredHistory.length - 1];
     const n = filteredHistory.length;
     const withStages = filteredHistory.filter(nt => nt.totalMs > 0);
     const avgDeepPct = withStages.length ? withStages.reduce((a, nt) => a + nt.deepMs / nt.totalMs, 0) / withStages.length * 100 : null;
@@ -1102,15 +1101,23 @@ export default function SleepHub() {
     else { balValue = `+${fmtMs(-debtMs)}`; balColor = good; balWord = 'Surplus'; }
     rows.push({ icon: 'bed', label: 'Sleep balance', value: balValue, valueColor: balColor, delta: balWord, deltaColor: balColor, caption: `Goal ${sleepGoal}h · Past ${n} nights` });
 
-    // Wake events last night vs your norm: at/below = green, up to 2x norm = amber,
-    // above 2x = red. The "above norm" qualifier carries the value color.
-    const wakeVal = last.awakeCount;
-    const wakeBase = baseline30 ? Math.round(baseline30.wake) : 3;
-    const wakeColor = wakeVal <= wakeBase ? good : wakeVal <= wakeBase * 2 ? warn : bad;
-    const over = wakeVal - wakeBase;
-    const wakeWord = over > 0 ? `↑ ${over} above norm` : over < 0 ? `↓ ${-over} below norm` : 'on your norm';
-    const awakeStr = last.awakeMs > 0 ? `${fmtMs(last.awakeMs)} awake · ` : '';
-    rows.push({ icon: 'eye', label: 'Wake events', value: `${wakeVal}`, valueColor: wakeColor, delta: wakeWord, deltaColor: neutral, caption: `${awakeStr}Norm ${wakeBase}` });
+    // Avg wake events over the range vs your norm, consistent with the rows above
+    // (last night's count + awake time live on the Last Night card). At/below norm =
+    // green, up to 2x = amber, above 2x = red. Colored word-badge, no fussy decimal.
+    if (withStages.length === 0) {
+      rows.push({ icon: 'eye', label: 'Avg wake events', value: '—', valueColor: theme.textSecondary, caption: 'No stage data yet' });
+    } else {
+      const avgWake = withStages.reduce((a, nt) => a + nt.awakeCount, 0) / withStages.length;
+      const avgAwakeMs = withStages.reduce((a, nt) => a + nt.awakeMs, 0) / withStages.length;
+      const wakeBase = baseline30 ? Math.round(baseline30.wake) : 3;
+      const r1 = Math.round(avgWake * 10) / 10;
+      const valStr = Number.isInteger(r1) ? `${r1}` : r1.toFixed(1);
+      // Color is the verdict (at/below norm green, up to 2x amber, above 2x red).
+      // "events" unit fills the right column; avg awake duration is the subtext.
+      const wakeColor = avgWake <= wakeBase ? good : avgWake <= wakeBase * 2 ? warn : bad;
+      const awakeCap = avgAwakeMs > 0 ? `${fmtMs(Math.round(avgAwakeMs))} awake` : undefined;
+      rows.push({ icon: 'eye', label: 'Avg wake events', value: valStr, valueColor: wakeColor, delta: 'events', deltaColor: neutral, caption: awakeCap });
+    }
 
     return (
       <View style={cardStyle}>

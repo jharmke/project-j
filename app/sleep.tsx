@@ -15,7 +15,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, PanResponder, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import ReAnimated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import Svg, { Circle, Defs, G, Line, LinearGradient as SvgLinearGradient, Polyline, Rect, Stop, Text as SvgText } from 'react-native-svg';
+import Svg, { Circle, Defs, G, Line, LinearGradient as SvgLinearGradient, Path, Polyline, Rect, Stop, Text as SvgText } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ToggleSwitch from '../components/ToggleSwitch';
 import TooltipIcon from '../components/TooltipIcon';
@@ -118,7 +118,7 @@ const fmtBedMin = (min: number) => {
 
 // Sleep Score trend line: y-axis auto-scales to the data min/max, x-axis dates,
 // tap a point for that night.
-function ScoreTrendChart({ nights, scores, color, theme }: { nights: SleepNight[]; scores: number[]; color: string; theme: any }) {
+function ScoreTrendChart({ nights, scores, theme }: { nights: SleepNight[]; scores: number[]; theme: any }) {
   const [callout, setCallout] = useState<Callout>(null);
   const slide = useSlideIn(`${scores.length}:${nights[0]?.dateKey ?? ''}`);
   const n = scores.length;
@@ -135,9 +135,21 @@ function ScoreTrendChart({ nights, scores, color, theme }: { nights: SleepNight[
   const toY = (v: number) => C_TOP + (1 - (clamp(v, tickMin, tickMax) - tickMin) / span) * PLOT_H;
   const pts = scores.map((s, i) => `${toX(i)},${toY(s)}`).join(' ');
   const midIdx = Math.floor(n / 2);
+  // App line-graph standard: neutral high-contrast line + score-tier-colored dots
+  // (sleep bands: >=85 green / >=70 amber / else red) + neutral gradient fade.
+  const lineColor = theme.textPrimary;
+  const baseY = C_TOP + PLOT_H;
+  const areaPath = `M ${toX(0)},${toY(scores[0])} ` + scores.slice(1).map((s, i) => `L ${toX(i + 1)},${toY(s)}`).join(' ') + ` L ${toX(n - 1)},${baseY} L ${toX(0)},${baseY} Z`;
+  const dotColor = (s: number) => s >= 85 ? theme.statusGood : s >= 70 ? theme.statusWarn : theme.statusBad;
   return (
     <ReAnimated.View style={slide}>
       <Svg width={CHART_W} height={CHART_H}>
+        <Defs>
+          <SvgLinearGradient id="sleepTrendFill" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={lineColor} stopOpacity={0.2} />
+            <Stop offset="1" stopColor={lineColor} stopOpacity={0} />
+          </SvgLinearGradient>
+        </Defs>
         <Rect x={0} y={0} width={CHART_W} height={CHART_H} fill="transparent" onPress={() => setCallout(null)} />
         {ticks.map(t => (
           <Line key={`g${t}`} x1={C_LEFT} y1={toY(t)} x2={C_LEFT + PLOT_W} y2={toY(t)} stroke={theme.borderSubtle} strokeWidth={1} />
@@ -145,8 +157,9 @@ function ScoreTrendChart({ nights, scores, color, theme }: { nights: SleepNight[
         {ticks.map(t => (
           <SvgText key={`y${t}`} x={C_LEFT - 5} y={toY(t) + 3} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">{t}</SvgText>
         ))}
-        <Polyline points={pts} fill="none" stroke={color} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
-        {scores.map((s, i) => <Circle key={`d${i}`} cx={toX(i)} cy={toY(s)} r={3} fill={color} />)}
+        <Path d={areaPath} fill="url(#sleepTrendFill)" />
+        <Polyline points={pts} fill="none" stroke={lineColor} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
+        {scores.map((s, i) => <Circle key={`d${i}`} cx={toX(i)} cy={toY(s)} r={3.5} fill={dotColor(s)} />)}
         <SvgText x={C_LEFT} y={CHART_H - 4} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium">{fmtDay(nights[0].dateKey)}</SvgText>
         {n > 3 && <SvgText x={toX(midIdx)} y={CHART_H - 4} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">{fmtDay(nights[midIdx].dateKey)}</SvgText>}
         <SvgText x={C_LEFT + PLOT_W} y={CHART_H - 4} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">{fmtDay(nights[n - 1].dateKey)}</SvgText>
@@ -327,7 +340,7 @@ function Hypnogram({ segments, theme, hideAxis }: { segments: SleepSeg[]; theme:
 
 // Recovery Score trend: same structure as ScoreTrendChart but typed for
 // { dateKey, score } arrays (no SleepNight fields needed).
-function RecoveryTrendChart({ data, color, theme }: { data: { dateKey: string; score: number }[]; color: string; theme: any }) {
+function RecoveryTrendChart({ data, theme }: { data: { dateKey: string; score: number }[]; theme: any }) {
   const [callout, setCallout] = useState<Callout>(null);
   const slide = useSlideIn(`rec:${data.length}:${data[0]?.dateKey ?? ''}`);
   const n = data.length;
@@ -345,9 +358,21 @@ function RecoveryTrendChart({ data, color, theme }: { data: { dateKey: string; s
   const toY = (v: number) => C_TOP + (1 - (clamp(v, tickMin, tickMax) - tickMin) / span) * PLOT_H;
   const pts = data.map((d, i) => `${toX(i)},${toY(d.score)}`).join(' ');
   const midIdx = Math.floor(n / 2);
+  // App line-graph standard: neutral high-contrast line + recovery-tier-colored dots
+  // (>=80 PRIMED green / >=60 STEADY amber / else RECOVER red) + neutral gradient fade.
+  const lineColor = theme.textPrimary;
+  const baseY = C_TOP + PLOT_H;
+  const areaPath = `M ${toX(0)},${toY(scores[0])} ` + scores.slice(1).map((s, i) => `L ${toX(i + 1)},${toY(s)}`).join(' ') + ` L ${toX(n - 1)},${baseY} L ${toX(0)},${baseY} Z`;
+  const dotColor = (s: number) => s >= 80 ? theme.statusGood : s >= 60 ? theme.statusWarn : theme.statusBad;
   return (
     <ReAnimated.View style={slide}>
       <Svg width={CHART_W} height={CHART_H}>
+        <Defs>
+          <SvgLinearGradient id="recTrendFill" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={lineColor} stopOpacity={0.2} />
+            <Stop offset="1" stopColor={lineColor} stopOpacity={0} />
+          </SvgLinearGradient>
+        </Defs>
         <Rect x={0} y={0} width={CHART_W} height={CHART_H} fill="transparent" onPress={() => setCallout(null)} />
         {ticks.map(t => (
           <Line key={`rg${t}`} x1={C_LEFT} y1={toY(t)} x2={C_LEFT + PLOT_W} y2={toY(t)} stroke={theme.borderSubtle} strokeWidth={1} />
@@ -355,8 +380,9 @@ function RecoveryTrendChart({ data, color, theme }: { data: { dateKey: string; s
         {ticks.map(t => (
           <SvgText key={`ry${t}`} x={C_LEFT - 5} y={toY(t) + 3} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">{t}</SvgText>
         ))}
-        <Polyline points={pts} fill="none" stroke={color} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
-        {data.map((d, i) => <Circle key={`rd${i}`} cx={toX(i)} cy={toY(d.score)} r={3} fill={color} />)}
+        <Path d={areaPath} fill="url(#recTrendFill)" />
+        <Polyline points={pts} fill="none" stroke={lineColor} strokeWidth={2.5} strokeLinejoin="round" strokeLinecap="round" />
+        {data.map((d, i) => <Circle key={`rd${i}`} cx={toX(i)} cy={toY(d.score)} r={3.5} fill={dotColor(d.score)} />)}
         <SvgText x={C_LEFT} y={CHART_H - 4} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium">{fmtDay(data[0].dateKey)}</SvgText>
         {n > 3 && <SvgText x={toX(midIdx)} y={CHART_H - 4} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">{fmtDay(data[midIdx].dateKey)}</SvgText>}
         <SvgText x={C_LEFT + PLOT_W} y={CHART_H - 4} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">{fmtDay(data[n - 1].dateKey)}</SvgText>
@@ -967,7 +993,7 @@ export default function SleepHub() {
             </View>
           </View>
           {recoveryTrend.length > 0 ? (
-            <RecoveryTrendChart data={recoveryTrend} color={theme.statusGood} theme={theme} />
+            <RecoveryTrendChart data={recoveryTrend} theme={theme} />
           ) : (
             <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 24, textAlign: 'center', lineHeight: 18 }}>
               Your recovery trend builds over time. Today's score is the first data point.
@@ -1080,7 +1106,7 @@ export default function SleepHub() {
           </View>
         </View>
         {trendData.length > 0 ? (
-          <ScoreTrendChart nights={trendData as unknown as SleepNight[]} scores={trendData.map(d => d.score)} color={theme.accentBlueRaw} theme={theme} />
+          <ScoreTrendChart nights={trendData as unknown as SleepNight[]} scores={trendData.map(d => d.score)} theme={theme} />
         ) : firstLoad ? (
           <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 24, textAlign: 'center' }}>Loading…</Text>
         ) : (

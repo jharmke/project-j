@@ -48,8 +48,8 @@ import { useTutorial, isTutorialSeen } from '../../context/TutorialContext';
 import { useTutorialTarget } from '../../hooks/useTutorialTarget';
 import { showToolkit } from '../../components/ToolkitSheet';
 import ToggleSwitch from '../../components/ToggleSwitch';
-import { StoredTip, loadSmartTips, CoachTipCache } from '../../utils/smartTipsEngine';
-import { refreshCoachTip, resolveTipBody, resolveTipTitle } from '../../utils/coachAI';
+import { StoredTip, loadSmartTips, CoachTipCache, loadCoachTipCacheSleep } from '../../utils/smartTipsEngine';
+import { refreshCoachTip, resolveTipBody, resolveTipTitle, refreshCoachTipSleep } from '../../utils/coachAI';
 import NutrientDrilldownModal, { DrilldownItem, computeNetCarbsForEntry } from '../../components/NutrientDrilldownModal';
 import AnimatedNumber from '../../components/AnimatedNumber';
 import SleepDonut from '../../components/SleepDonut';
@@ -871,6 +871,8 @@ export default function HomeScreen() {
   const [homeTips, setHomeTips] = useState<StoredTip[]>([]);
   const [tipIndex, setTipIndex] = useState(0);
   const [coachCache, setCoachCache] = useState<CoachTipCache | null>(null);
+  // Sleep Coach tip for the home sleep card (condensed; full read on the Sleep Hub).
+  const [sleepCoachCache, setSleepCoachCache] = useState<CoachTipCache | null>(null);
   const tipScrollRef = useRef<ScrollView>(null);
   const tipCardWidthRef = useRef(0);
   const tipDraggingRef = useRef(false);
@@ -978,6 +980,9 @@ export default function HomeScreen() {
     refreshCoachTip('home', 14).then(cache => {
       setCoachCache(cache);
     }).catch(() => {});
+    // Sleep Coach for the home sleep card: cached body instantly, AI body when ready.
+    loadCoachTipCacheSleep().then(c => { if (c) setSleepCoachCache(c); }).catch(() => {});
+    refreshCoachTipSleep(14).then(c => setSleepCoachCache(c)).catch(() => {});
   }, []));
 
   // ── Keep refs in sync for auto-advance closure ──────────────────────────────
@@ -2184,7 +2189,10 @@ export default function HomeScreen() {
           const donutCirc=2*Math.PI*donutRadius;
           const coreFrac=corePct*donutCirc, deepFrac=deepPct*donutCirc, remFrac=remPct*donutCirc;
           const gapFrac=0.03*donutCirc;
-          const tip = score !== null ? getSleepTip(score, displaySleep, sleepStages, sleepGoal, todayKey) : null;
+          // AI Sleep Coach headline (clamped to 2 lines below, full read in the Sleep
+          // Hub); falls back to the static tip before the coach loads or when offline.
+          const aiSleepTip = sleepCoachCache ? resolveTipBody(sleepCoachCache) : null;
+          const tip = aiSleepTip ?? (score !== null ? getSleepTip(score, displaySleep, sleepStages, sleepGoal, todayKey) : null);
 
           const FEEL_DESCRIPTORS: Record<number, string> = {
             1: 'Rough night', 2: 'Very poor', 3: 'Poor sleep', 4: 'Below average',
@@ -2332,8 +2340,14 @@ export default function HomeScreen() {
                 <View style={{ marginTop:10, paddingTop:10, borderTopWidth:0.5, borderTopColor:theme.borderSubtle }}>
                   <View style={{ flexDirection:'row', alignItems:'flex-start', gap:6 }}>
                     <Ionicons name="bulb-outline" size={11} color={theme.textMuted} style={{ marginTop:2 }} />
-                    <Text style={{ fontSize:11, color:theme.textMuted, fontFamily:'DMSans_400Regular', fontStyle:'italic', flex:1, lineHeight:17 }}>{tip}</Text>
+                    <Text numberOfLines={aiSleepTip ? 2 : undefined} style={{ fontSize:11, color:theme.textMuted, fontFamily:'DMSans_400Regular', fontStyle:'italic', flex:1, lineHeight:17 }}>{tip}</Text>
                   </View>
+                  {aiSleepTip && (
+                    <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'flex-end', marginTop:6 }}>
+                      <Text style={{ fontSize:10, color:theme.accentBlue, fontFamily:'DMSans_600SemiBold' }}>Sleep Hub</Text>
+                      <Ionicons name="chevron-forward" size={11} color={theme.accentBlue} style={{ marginLeft:1 }} />
+                    </View>
+                  )}
                 </View>
               )}
               <Text style={{ fontSize:10, color:theme.textDim, fontFamily:'DMSans_400Regular', textAlign:'center', marginTop:8, fontStyle:'italic' }}>For informational purposes only. Not medical advice.</Text>

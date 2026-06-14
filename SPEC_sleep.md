@@ -421,3 +421,45 @@ Idea raised by Justin: the home screen has a Sleep card but no Recovery presence
 
 ### 12.3 Status
 Parked at top of roadmap as a [HIGH] follow-up. Build only after the Recovery tab itself is polished (trend auto-scale, baseline-labeled deltas + universal range toggle, burn-accuracy fix).
+
+## 13. METRIC DRILL-DOWN (PROPOSED 2026-06-14 -- design draft, decisions NOT locked)
+
+### 13.1 The problem it solves
+Justin's reaction to the polished Recovery tab: "why is my score low? what are the main culprits? how do I fix it? In the current state I have no idea." The tab shows values + color-coded deltas but never SYNTHESIZES them into "here's what's hurting you and what to do." The drill-down turns a wall of numbers into something that coaches. Justin's framing: "a built-in toolkit without the actual toolkit" -- education and history right where the number lives.
+
+### 13.2 Core concept -- ONE shared system, both tabs
+Tap any metric (a Recovery hero contributor row, a Recovery Key Signals row, or a Sleep metric row) to open a focused drill-down for that single datapoint. The SAME component + a per-metric content registry serve BOTH tabs -- do not build it twice. Priority: Recovery first (it is barer and needs it most -- Justin confirmed), Sleep second (it already shows healthy ranges, the hypnogram, and a coach inline, so it gains less but should stay consistent).
+
+Prior art to model on: components/NutrientDrilldownModal.tsx (the existing "tap a value -> focused detail" pattern). Reuse its feel so this reads native, not bolted on.
+
+### 13.3 What a drill-down contains (per metric)
+1. Header: metric name + current value + status word/color (vs baseline or vs healthy range, whichever the metric uses).
+2. Mini history graph: that metric's own last 7/30 days, reusing the existing trend-chart components (auto-scaled y-axis, tap-a-point callouts).
+3. "What it is": plain-English one-liner.
+4. "How it's calculated / where it comes from": e.g. HRV = average SDNN during the overnight sleep window; Sleep Score = duration + deep + REM points.
+5. "What it affects": why it matters for recovery/readiness (or sleep quality).
+6. "How to improve it": behavioral, actionable tips. THIS is the coaching payload -- the main value.
+7. Reference line: your baseline / the healthy range for that metric.
+8. Micro disclaimer: "For informational purposes only. Not medical advice." (health-data standard).
+
+### 13.4 Metric registry
+Central config (mirrors tooltipRegistry.ts / statsCardRegistry pattern): metric key -> { title, unit, definition, calculation, affects, improveTips, dataKey (for history fetch), reference (baseline vs healthy range), medicalSensitive: bool }. One place for all copy, covers Recovery + Sleep metric sets. Keep in sync with tooltipRegistry + data/tutorials.ts on any behavior change (CLAUDE rule).
+
+### 13.5 History data source
+Each metric needs a daily series. Sleep metrics: fetchSleepHistory already returns per-night stage data. Recovery signals: add a light fetchSignalHistory(dataType, days) doing ONE HealthKit statistics-collection query bucketed daily per metric -- much cheaper than looping the full fetchRecoverySignals per day (which the backfill uses). Decision pending (13.8).
+
+### 13.6 Mode awareness (Mindful) -- REQUIRED at build
+Definitions, calculation, history, and "what it affects" show in all modes (factual). The "how to improve" tips are prescriptive/corrective -> soften or suppress in Mindful (unless mindfulGrowthAreas on), same pattern as the coach tips. Define exact Mindful copy at build time.
+
+### 13.7 Medical / legal guardrails
+"How to improve" and "what it affects" stay BEHAVIORAL (sleep hygiene, training load, hydration, schedule), never clinical. SpO2 and resp rate are informational-only signals -- their drill-downs explain what the number is but must NOT prescribe medical action. Mirrors the locked "show values fine, prescriptive medical advice is the risk" line.
+
+### 13.8 Decisions -- LOCKED 2026-06-14
+- FORMAT: centered scrollable modal (matches app standard + NutrientDrilldownModal prior art). GATE: everything must fit comfortably and the aesthetic must be CPP-clean -- if the graph + sections feel cramped in a modal on device, that is a FAIL; revisit as a full page rather than ship a crowded modal.
+- GRAPH RANGE: the mini history graph follows the UNIVERSAL 7d/30d toggle (no own control).
+- V1 SCOPE: Recovery metrics first. Sleep metrics are a fast follow once the pattern is proven on device.
+- IMPROVE TIPS: curated STATIC copy for v1 (no live AI call), but "as smart as possible" -- deterministically SELECTED from the metric's current state/trend (mirror the Smart Coach deterministic-brain approach: pick the relevant tip based on the user's real value vs baseline/range/trend, reference their actual number where it helps). Generic one-size-fits-all copy is the lazy version to avoid. AI-voiced layer is a later upgrade.
+- SpO2: gets a drill-down. Show as much real information as we have (definition, history, what it indicates) but do NOT force prescriptive/medical content -- informational only.
+
+### 13.9 Status
+Decisions locked 2026-06-14. Spec ready to build. Recovery-tab metrics first. Sits beside (not behind): optional quick threshold calibration (PRIMED/STEADY/RECOVER cutoffs are placeholders; 30 days of real backfilled data now exist to tune them to Justin's distribution).

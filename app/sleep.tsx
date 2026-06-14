@@ -79,15 +79,58 @@ function CalloutPill({ callout, theme, clear }: { callout: NonNullable<Callout>;
   );
 }
 
-// Sleep Score trend line: y-axis 0-100, x-axis dates, tap a point for that night.
+const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+
+// Nice-number y-axis ticks (mirrors the Stats graph-creator niceYTicks). Lets a
+// chart auto-scale to its data's min/max instead of a fixed 0-100, so the line
+// fills the card and the variation is actually readable.
+function niceYTicks(minVal: number, maxVal: number, targetCount = 4): number[] {
+  const range = (maxVal - minVal) || 1;
+  const roughStep = range / (targetCount - 1);
+  const pow = Math.pow(10, Math.floor(Math.log10(roughStep)));
+  const niceSteps = [1, 2, 2.5, 5, 10];
+  const niceStep = niceSteps.reduce((best, s) => {
+    const step = s * pow;
+    return Math.abs(step - roughStep) < Math.abs(best - roughStep) ? step : best;
+  }, Infinity);
+  const start = Math.floor(minVal / niceStep) * niceStep;
+  const ticks: number[] = [];
+  let t = start;
+  while (t <= maxVal + niceStep * 0.1 && ticks.length <= targetCount + 1) {
+    ticks.push(Math.round(t * 10000) / 10000);
+    t += niceStep;
+  }
+  if (ticks.length > 0 && ticks[ticks.length - 1] < maxVal) {
+    ticks.push(Math.round((ticks[ticks.length - 1] + niceStep) * 10000) / 10000);
+  }
+  return ticks;
+}
+
+// Minutes-of-day (possibly >1440 from the after-midnight shift) -> "9:33 PM".
+const fmtBedMin = (min: number) => {
+  const mm = ((Math.round(min) % 1440) + 1440) % 1440;
+  const d = new Date();
+  d.setHours(Math.floor(mm / 60), mm % 60, 0, 0);
+  return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+};
+
+// Sleep Score trend line: y-axis auto-scales to the data min/max, x-axis dates,
+// tap a point for that night.
 function ScoreTrendChart({ nights, scores, color, theme }: { nights: SleepNight[]; scores: number[]; color: string; theme: any }) {
   const [callout, setCallout] = useState<Callout>(null);
   const slide = useSlideIn(`${scores.length}:${nights[0]?.dateKey ?? ''}`);
   const n = scores.length;
   if (n === 0) return null;
-  const ticks = [0, 25, 50, 75, 100];
+  // Auto-scale the y-axis to the data (like the Stats graph creator) so the line
+  // fills the card instead of hugging the floor of a fixed 0-100 axis.
+  const dataMin = Math.min(...scores);
+  const dataMax = Math.max(...scores);
+  const ticks = niceYTicks(dataMin, dataMax, 4);
+  const tickMin = ticks[0];
+  const tickMax = ticks[ticks.length - 1] || tickMin + 1;
+  const span = (tickMax - tickMin) || 1;
   const toX = (i: number) => C_LEFT + (n === 1 ? PLOT_W / 2 : (i / (n - 1)) * PLOT_W);
-  const toY = (v: number) => C_TOP + (1 - Math.max(0, Math.min(100, v)) / 100) * PLOT_H;
+  const toY = (v: number) => C_TOP + (1 - (clamp(v, tickMin, tickMax) - tickMin) / span) * PLOT_H;
   const pts = scores.map((s, i) => `${toX(i)},${toY(s)}`).join(' ');
   const midIdx = Math.floor(n / 2);
   return (
@@ -206,6 +249,81 @@ function StageHistoryChart({ nights, theme }: { nights: SleepNight[]; theme: any
         })()}
       </View>
     </ReAnimated.View>
+  );
+}
+
+// Small centered label under a bar, positioned over a given fraction (0..1).
+function BarTickLabel({ frac, text, theme }: { frac: number; text: string; theme: any }) {
+  return (
+    <View style={{ position: 'absolute', left: `${clamp(frac, 0, 1) * 100}%`, top: 0 }}>
+      <View style={{ marginLeft: -50, width: 100, alignItems: 'center' }}>
+        <Text numberOfLines={1} style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_500Medium' }}>{text}</Text>
+      </View>
+    </View>
+  );
+}
+
+// Diverging bar for the Sleep Metrics panel: a center reference hash (your
+// baseline / your goal / your average) with a solid fill that grows OUT from the
+// center -- right when you're above it, left when below. Color carries good/bad.
+// End + center labels give it a real axis so the bar isn't vague. Grows on mount.
+function DivergingBar({ valueFrac, color, leftLabel, centerLabel, rightLabel, theme }:
+  { valueFrac: number; color: string; leftLabel?: string; centerLabel?: string; rightLabel?: string; theme: any }) {
+  const vf = clamp(valueFrac, 0, 1);
+  const t = useSharedValue(0);
+  useEffect(() => { t.value = 0; t.value = withTiming(1, { duration: 700 }); }, [vf]);
+  const fillA = useAnimatedStyle(() => {
+    const w = Math.abs(vf - 0.5) * t.value;
+    const l = vf >= 0.5 ? 0.5 : 0.5 - w;
+    return { left: `${l * 100}%`, width: `${w * 100}%` };
+  });
+  const H = 8;
+  const hasLabels = !!(leftLabel || centerLabel || rightLabel);
+  return (
+    <View>
+      <View style={{ height: H, borderRadius: H / 2, backgroundColor: theme.textDim + '2E', justifyContent: 'center' }}>
+        <View style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, borderRadius: H / 2, overflow: 'hidden' }}>
+          <ReAnimated.View style={[{ position: 'absolute', top: 0, bottom: 0, backgroundColor: color }, fillA]} />
+        </View>
+        <View style={{ position: 'absolute', left: '50%', top: -3, bottom: -3, width: 2, marginLeft: -1, borderRadius: 1, backgroundColor: theme.textPrimary }} />
+      </View>
+      {hasLabels && (
+        <View style={{ height: 13, marginTop: 4 }}>
+          {leftLabel ? <Text style={{ position: 'absolute', left: 0, fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>{leftLabel}</Text> : null}
+          {centerLabel ? <BarTickLabel frac={0.5} text={centerLabel} theme={theme} /> : null}
+          {rightLabel ? <Text style={{ position: 'absolute', right: 0, fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>{rightLabel}</Text> : null}
+        </View>
+      )}
+    </View>
+  );
+}
+
+// Bedtime bar: matches the rest of the card's visual language. Neutral track,
+// hash ticks at your early/late bedtime ends (10th-90th pct of your last 30
+// nights), and a dot at your typical time -- LABELED "Baseline H:MM PM" under the
+// dot, exactly like Deep's "Baseline 12%". So it's clear what the time means, and
+// the early/late end labels give the axis real clock anchors.
+function BedtimeBar({ loMin, hiMin, typicalMin, color, theme }:
+  { loMin: number; hiMin: number; typicalMin: number; color: string; theme: any }) {
+  const span = (hiMin - loMin) || 1;
+  const tyF = clamp((typicalMin - loMin) / span, 0, 1);
+  const t = useSharedValue(0);
+  useEffect(() => { t.value = 0; t.value = withTiming(1, { duration: 700 }); }, [loMin, hiMin, typicalMin]);
+  const dotA = useAnimatedStyle(() => ({ left: `${tyF * t.value * 100}%` }));
+  const H = 8;
+  return (
+    <View>
+      <View style={{ height: H, borderRadius: H / 2, backgroundColor: theme.textDim + '2E', justifyContent: 'center' }}>
+        <View style={{ position: 'absolute', left: 0, top: -3, bottom: -3, width: 2, borderRadius: 1, backgroundColor: theme.textDim }} />
+        <View style={{ position: 'absolute', right: 0, top: -3, bottom: -3, width: 2, borderRadius: 1, backgroundColor: theme.textDim }} />
+        <ReAnimated.View style={[{ position: 'absolute', top: -1, width: 10, height: 10, borderRadius: 5, marginLeft: -5, backgroundColor: color, borderWidth: 1.5, borderColor: theme.bgCard }, dotA]} />
+      </View>
+      <View style={{ height: 13, marginTop: 4 }}>
+        <Text style={{ position: 'absolute', left: 0, fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>{fmtBedMin(loMin)}</Text>
+        <BarTickLabel frac={tyF} text={`Baseline ${fmtBedMin(typicalMin)}`} theme={theme} />
+        <Text style={{ position: 'absolute', right: 0, fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>{fmtBedMin(hiMin)}</Text>
+      </View>
+    </View>
   );
 }
 
@@ -366,6 +484,11 @@ export default function SleepHub() {
   const [activeTab, setActiveTab] = useState<SleepTab>('sleep');
   const [range, setRange] = useState<'7' | '30'>('7');
   const [history, setHistory] = useState<SleepNight[]>([]);
+  // Always-30-night set powering the PERSONAL BASELINES (avg deep/REM/bedtime/wake).
+  // Separate from `history` so the range-driven chart fetch stays untouched. The
+  // 7D/30D toggle only changes what the charts/metric values DISPLAY; the baseline
+  // is always your last 30 nights. (SPEC_sleep.md Section 11.)
+  const [history30, setHistory30] = useState<SleepNight[]>([]);
   const [loadingHist, setLoadingHist] = useState(true);
   const [styleMode, setStyleMode] = useState<'discipline' | 'balanced' | 'mindful'>('balanced');
   const [mindfulGrowth, setMindfulGrowth] = useState(false);
@@ -412,12 +535,21 @@ export default function SleepHub() {
     return () => { cancelled = true; };
   }, [range]);
 
+  // Baseline set: always the last 30 nights, fetched once on mount.
+  useEffect(() => {
+    let cancelled = false;
+    fetchSleepHistory(30)
+      .then(h => { if (!cancelled) setHistory30(h); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
   // Load per-day exclusion flags for the nights in range (+ today) so excluded
   // nights drop out of trends on both tabs. Excluded days keep their saved data.
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const keys = Array.from(new Set<string>([todayKey(), ...history.map(n => n.dateKey)]));
+      const keys = Array.from(new Set<string>([todayKey(), ...history.map(n => n.dateKey), ...history30.map(n => n.dateKey)]));
       const ex = new Set<string>();
       for (const dk of keys) {
         try {
@@ -428,7 +560,7 @@ export default function SleepHub() {
       if (!cancelled) { setExcludedSet(ex); setExcludedToday(ex.has(todayKey())); }
     })();
     return () => { cancelled = true; };
-  }, [history]);
+  }, [history, history30]);
 
   // Manual sleep nights (logged by hand on the home card, no Apple Health stages)
   // so the score trend works for users without a watch. Feel-based scores.
@@ -467,6 +599,26 @@ export default function SleepHub() {
   }, []);
 
   const filteredHistory = useMemo(() => history.filter(n => !excludedSet.has(n.dateKey)), [history, excludedSet]);
+
+  // Personal 30-day baselines (excludes removed). Needs >= 7 stage nights, else
+  // null and the metrics rows fall back to static healthy-range references.
+  const baseline30 = useMemo(() => {
+    const nights = history30.filter(n => !excludedSet.has(n.dateKey) && n.totalMs > 0);
+    if (nights.length < 7) return null;
+    const deepPct = nights.reduce((a, n) => a + n.deepMs / n.totalMs, 0) / nights.length * 100;
+    const remPct = nights.reduce((a, n) => a + n.remMs / n.totalMs, 0) / nights.length * 100;
+    const beds = nights.map(n => n.bedMin).filter((b): b is number => b !== null);
+    const bedMin = beds.length ? beds.reduce((a, b) => a + b, 0) / beds.length : null;
+    const bedSd = beds.length >= 2 && bedMin !== null
+      ? Math.round(Math.sqrt(beds.reduce((a, b) => a + (b - bedMin) ** 2, 0) / beds.length)) : null;
+    // Bedtime range = 10th-90th percentile of your nights (trims the odd 2 AM
+    // night so it doesn't blow the window open). bedMid = your typical (median).
+    const sortedBeds = [...beds].sort((a, b) => a - b);
+    const pct = (p: number) => sortedBeds.length ? sortedBeds[clamp(Math.round((p / 100) * (sortedBeds.length - 1)), 0, sortedBeds.length - 1)] : null;
+    const bedLo = pct(10), bedMid = pct(50), bedHi = pct(90);
+    const wake = nights.reduce((a, n) => a + n.awakeCount, 0) / nights.length;
+    return { deepPct, remPct, bedMin, bedSd, bedLo, bedMid, bedHi, wake, count: nights.length };
+  }, [history30, excludedSet]);
   // Only blank the cards on the very first load. On range switches we keep the
   // existing charts mounted so the page doesn't collapse and jump to the top.
   const firstLoad = loadingHist && history.length === 0;
@@ -944,67 +1096,132 @@ export default function SleepHub() {
     const last = filteredHistory[filteredHistory.length - 1];
     const n = filteredHistory.length;
     const withStages = filteredHistory.filter(nt => nt.totalMs > 0);
-    const avgDeepPct = withStages.length ? Math.round(withStages.reduce((a, nt) => a + nt.deepMs / nt.totalMs, 0) / withStages.length * 100) : null;
-    const avgRemPct = withStages.length ? Math.round(withStages.reduce((a, nt) => a + nt.remMs / nt.totalMs, 0) / withStages.length * 100) : null;
+    const avgDeepPct = withStages.length ? withStages.reduce((a, nt) => a + nt.deepMs / nt.totalMs, 0) / withStages.length * 100 : null;
+    const avgRemPct = withStages.length ? withStages.reduce((a, nt) => a + nt.remMs / nt.totalMs, 0) / withStages.length * 100 : null;
 
     const beds = filteredHistory.map(nt => nt.bedMin).filter((b): b is number => b !== null);
-    let consistency: { label: string; sub: string; color: string } | null = null;
-    if (beds.length >= 2) {
-      const mean = beds.reduce((a, b) => a + b, 0) / beds.length;
-      const sd = Math.round(Math.sqrt(beds.reduce((a, b) => a + (b - mean) ** 2, 0) / beds.length));
-      const avgBedH = Math.floor(mean / 60) % 24;
-      const avgBedM = Math.round(mean % 60);
-      const avgBedDate = new Date(); avgBedDate.setHours(avgBedH, avgBedM, 0, 0);
-      const avgBedStr = avgBedDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-      consistency = {
-        label: sd <= 30 ? 'Consistent' : sd <= 60 ? 'Mostly steady' : 'Variable',
-        sub: `±${sd}m from ${avgBedStr}`,
-        color: sd <= 30 ? theme.statusGood : sd <= 60 ? theme.statusWarn : theme.statusBad,
-      };
+    const bedMean = beds.length ? beds.reduce((a, b) => a + b, 0) / beds.length : null;
+    const bedSd = beds.length >= 2 && bedMean !== null
+      ? Math.round(Math.sqrt(beds.reduce((a, b) => a + (b - bedMean) ** 2, 0) / beds.length)) : null;
+
+    // Sleep debt: cumulative shortfall vs goal across the viewed range.
+    const goalMs = sleepGoal * 3600000;
+    const totalSleepMs = filteredHistory.reduce((a, nt) => a + nt.totalMs, 0);
+    const debtMs = goalMs * n - totalSleepMs;
+
+    const good = theme.statusGood, warn = theme.statusWarn, bad = theme.statusBad;
+
+    // Every bar is a diverging bar (center reference, fill out left/right) except
+    // bedtime, which is a clock-window bar. Labels give each bar a real axis.
+    type RowBar =
+      | { kind: 'div'; valueFrac: number; color: string; leftLabel?: string; centerLabel?: string; rightLabel?: string }
+      | { kind: 'bed'; loMin: number; hiMin: number; typicalMin: number; color: string }
+      | null;
+    type RowCfg = { icon: any; label: string; value: string; valueColor: string; caption?: string; captionColor?: string; captionAlign?: 'left' | 'center'; bar: RowBar };
+    const rows: RowCfg[] = [];
+
+    // Stage-% rows (Avg deep / Avg REM, averaged over the viewed range -- NOT last
+    // night, which is what the Sleep Score up top reflects). Diverging bar centered
+    // on your personal baseline (fixed +/-10pp window). COLOR is driven by the
+    // medical healthy range, not baseline direction: in range = green, too low OR
+    // too high = amber, with a caption that says why.
+    const stageRow = (icon: string, label: string, val: number | null, base: number | null, healthyLo: number, healthyHi: number) => {
+      if (val === null) {
+        rows.push({ icon, label, value: '—', valueColor: theme.textSecondary, caption: 'No stage data', captionColor: theme.textDim, bar: null });
+        return;
+      }
+      const vr = Math.round(val);
+      const inRange = val >= healthyLo && val <= healthyHi;
+      const color = inRange ? good : warn;
+      const caption = inRange ? undefined : (val < healthyLo ? `Below healthy range (${healthyLo} to ${healthyHi}%)` : `Above healthy range (${healthyLo} to ${healthyHi}%)`);
+      if (base !== null) {
+        const b = Math.round(base);
+        rows.push({
+          icon, label, value: `${vr}%`, valueColor: color, caption, captionColor: theme.textDim,
+          bar: { kind: 'div', valueFrac: 0.5 + (val - base) / 20, color, leftLabel: `${Math.max(0, b - 10)}%`, centerLabel: `Baseline ${b}%`, rightLabel: `${b + 10}%` },
+        });
+      } else {
+        const mid = (healthyLo + healthyHi) / 2;
+        rows.push({
+          icon, label, value: `${vr}%`, valueColor: color, caption, captionColor: theme.textDim,
+          bar: { kind: 'div', valueFrac: 0.5 + (val - mid) / 20, color, centerLabel: `Healthy ${healthyLo} to ${healthyHi}%` },
+        });
+      }
+    };
+
+    stageRow('moon', 'Avg deep sleep', avgDeepPct, baseline30?.deepPct ?? null, 13, 23);
+    stageRow('pulse', 'Avg REM sleep', avgRemPct, baseline30?.remPct ?? null, 20, 25);
+
+    // Bedtime: range bar spanning your actual bedtime range (10th-90th pct over your
+    // last 30 nights), dot at your typical time. Falls back to the viewed range if
+    // no 30d baseline yet.
+    const sortedRangeBeds = [...beds].sort((a, b) => a - b);
+    const rPct = (p: number) => sortedRangeBeds.length ? sortedRangeBeds[clamp(Math.round((p / 100) * (sortedRangeBeds.length - 1)), 0, sortedRangeBeds.length - 1)] : null;
+    const bedLo = baseline30?.bedLo ?? rPct(10);
+    const bedMid = baseline30?.bedMid ?? rPct(50);
+    const bedHi = baseline30?.bedHi ?? rPct(90);
+    const bedSpread = baseline30?.bedSd ?? bedSd;
+    if (bedLo === null || bedMid === null || bedHi === null || bedLo === bedHi) {
+      rows.push({ icon: 'time', label: 'Bedtime', value: bedMid !== null ? fmtBedMin(bedMid) : '—', valueColor: theme.textPrimary, caption: 'Need 2+ nights', captionColor: theme.textDim, bar: null });
+    } else {
+      const color = bedSpread === null ? good : bedSpread <= 30 ? good : bedSpread <= 60 ? warn : bad;
+      const word = bedSpread === null ? 'Your range' : bedSpread <= 30 ? 'Consistent' : bedSpread <= 60 ? 'Mostly steady' : 'Variable';
+      rows.push({
+        icon: 'time', label: 'Bedtime', value: fmtBedMin(bedMid), valueColor: color, caption: word, captionColor: color,
+        bar: { kind: 'bed', loMin: bedLo, hiMin: bedHi, typicalMin: bedMid, color },
+      });
     }
 
-    // Sleep debt: cumulative shortfall vs goal across the range.
-    const totalSleepMs = filteredHistory.reduce((a, nt) => a + nt.totalMs, 0);
-    const debtMs = sleepGoal * 3600000 * n - totalSleepMs;
-    const debt = debtMs <= 0
-      ? { value: 'On track', color: theme.statusGood, sub: `${n}d vs goal` }
-      : { value: `${fmtMs(debtMs)} behind`, color: debtMs > sleepGoal * 3600000 ? theme.statusBad : theme.statusWarn, sub: `${n}d vs ${sleepGoal}h goal` };
+    // Sleep balance: diverging bar centered on your goal (0). Right = surplus
+    // (green), left = deficit (red). Axis auto-scales symmetrically to the gap.
+    const avgShortMs = debtMs / n;
+    let balColor: string, balValue: string;
+    if (Math.abs(debtMs) < 60000) { balColor = good; balValue = 'On goal'; }
+    else if (debtMs > 0) { balColor = avgShortMs > goalMs / 2 ? bad : warn; balValue = `${fmtMs(debtMs)} deficit`; }
+    else { balColor = good; balValue = `${fmtMs(-debtMs)} surplus`; }
+    const balHours = Math.max(1, Math.ceil(Math.abs(debtMs) / 3600000));
+    rows.push({
+      icon: 'bed', label: 'Sleep balance', value: balValue, valueColor: balColor, caption: `Last ${n} nights`, captionColor: theme.textDim,
+      bar: { kind: 'div', valueFrac: 0.5 + (-debtMs) / (2 * balHours * 3600000), color: balColor, leftLabel: `-${balHours}h`, centerLabel: 'Goal', rightLabel: `+${balHours}h` },
+    });
 
-    const row = (label: string, value: string, color: string, sub: string | null, isLast = false) => (
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: isLast ? 0 : 0.5, borderBottomColor: theme.borderSubtle }}>
-        <View>
-          <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>{label}</Text>
-          {sub ? <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>{sub}</Text> : null}
-        </View>
-        <Text style={{ fontSize: 16, color, fontFamily: 'DMSans_700Bold' }}>{value}</Text>
-      </View>
-    );
-
-    // Healthy reference ranges so the numbers mean something (deep ~13-23% of
-    // total sleep, REM ~20-25%). Value colors green when in range, amber when low.
-    const deepColor = avgDeepPct === null ? theme.textSecondary : avgDeepPct >= 13 ? theme.statusGood : theme.statusWarn;
-    const remColor = avgRemPct === null ? theme.textSecondary : avgRemPct >= 18 ? theme.statusGood : theme.statusWarn;
+    // Wake events: diverging bar centered on your average count. Right = more wakes
+    // (worse), left = fewer (better). Color carries good/bad.
+    const wakeVal = last.awakeCount;
+    const awakeStr = last.awakeMs > 0 ? `${fmtMs(last.awakeMs)} awake` : undefined;
+    if (baseline30) {
+      const base = Math.round(baseline30.wake);
+      const W = Math.max(base, 4);
+      const color = wakeVal <= base + 1 ? good : wakeVal <= base + 3 ? warn : bad;
+      rows.push({
+        icon: 'eye', label: 'Wake events', value: `${wakeVal}`, valueColor: color, caption: awakeStr, captionColor: theme.textDim, captionAlign: 'center',
+        bar: { kind: 'div', valueFrac: 0.5 + (wakeVal - base) / (2 * W), color, leftLabel: `${Math.max(0, base - W)}`, centerLabel: `Avg ${base}`, rightLabel: `${base + W}` },
+      });
+    } else {
+      const color = wakeVal <= 2 ? good : wakeVal <= 4 ? warn : bad;
+      rows.push({
+        icon: 'eye', label: 'Wake events', value: `${wakeVal}`, valueColor: color, caption: awakeStr, captionColor: theme.textDim, captionAlign: 'center',
+        bar: { kind: 'div', valueFrac: 0.5 + (wakeVal - 3) / 8, color, leftLabel: '0', centerLabel: 'Avg ~3', rightLabel: '7' },
+      });
+    }
 
     return (
       <View style={cardStyle}>
         <Text style={[cardLabel, { marginBottom: 4 }]}>Sleep Metrics</Text>
-        {row('Avg deep sleep', avgDeepPct !== null ? `${avgDeepPct}%` : '—', deepColor, 'Healthy 13 to 23%')}
-        {row('Avg REM sleep', avgRemPct !== null ? `${avgRemPct}%` : '—', remColor, 'Healthy 20 to 25%')}
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle }}>
-          <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>Bedtime consistency</Text>
-          <View style={{ alignItems: 'flex-end' }}>
-            <Text style={{ fontSize: 16, color: consistency ? consistency.color : theme.textSecondary, fontFamily: 'DMSans_700Bold' }}>{consistency ? consistency.label : '—'}</Text>
-            {consistency && <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>{consistency.sub}</Text>}
+        {rows.map((r, i) => (
+          <View key={r.label} style={{ paddingVertical: 12, borderBottomWidth: i === rows.length - 1 ? 0 : 0.5, borderBottomColor: theme.borderSubtle }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: r.bar ? 10 : 0 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <Ionicons name={r.icon} size={14} color={theme.textMuted} />
+                <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>{r.label}</Text>
+              </View>
+              <Text style={{ fontSize: 15, color: r.valueColor, fontFamily: 'DMSans_700Bold' }}>{r.value}</Text>
+            </View>
+            {r.bar?.kind === 'div' ? <DivergingBar valueFrac={r.bar.valueFrac} color={r.bar.color} leftLabel={r.bar.leftLabel} centerLabel={r.bar.centerLabel} rightLabel={r.bar.rightLabel} theme={theme} /> : null}
+            {r.bar?.kind === 'bed' ? <BedtimeBar loMin={r.bar.loMin} hiMin={r.bar.hiMin} typicalMin={r.bar.typicalMin} color={r.bar.color} theme={theme} /> : null}
+            {r.caption ? <Text style={{ fontSize: 10, color: r.captionColor, fontFamily: 'DMSans_500Medium', marginTop: r.bar ? 6 : 2, textAlign: r.captionAlign === 'center' ? 'center' : 'left' }}>{r.caption}</Text> : null}
           </View>
-        </View>
-        {row('Sleep debt', debt.value, debt.color, debt.sub)}
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle }}>
-          <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>Wake events</Text>
-          <View style={{ alignItems: 'flex-end' }}>
-            <Text style={{ fontSize: 16, color: last.awakeCount >= 4 ? theme.statusWarn : theme.textSecondary, fontFamily: 'DMSans_700Bold' }}>{last.awakeCount}</Text>
-            {last.awakeMs > 0 && <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>{fmtMs(last.awakeMs)} awake</Text>}
-          </View>
-        </View>
+        ))}
       </View>
     );
   };

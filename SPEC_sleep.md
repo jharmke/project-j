@@ -342,3 +342,60 @@ Proposed: Same pattern as rest of app.
 - Design session DONE 2026-06-12 (see Decisions Log #11). All Section 6 TBDs closed.
 - HRV wiring DONE + verified on device; EAS build LANDED.
 - BUILD IN PROGRESS: Sleep tab first, then Recovery tab.
+
+---
+
+## 11. SLEEP METRICS BASELINES + PREMIUM CARD (LOCKED 2026-06-13)
+
+Design session for the Sleep Metrics panel rebuild. Replaces the static "Healthy 13 to 23%" population reference subs with the user's own rolling baselines, and rebuilds the panel as a premium Oura/Whoop-style card with per-row indicator bars.
+
+### 11.1 Baseline model -- DECISIONS LOCKED
+- **Baseline window = the user's last 30 synced HealthKit nights, always.** The 7D / 30D toggle is a VIEWING window for the charts and the displayed metric values only. It does NOT change the baseline. The baseline is always your last 30 days. (Justin: "still be able to see 7d or 30d or whatever window, but the baseline we compare it to is 30 days. The 7d option isn't for comparing, it's for seeing the data visually.")
+- Three baselines computed from those 30 nights (excluded nights removed first): avg deep %, avg REM %, avg bedtime (minutes-of-day), plus avg wake events.
+- **Data gate:** baselines require >= 7 stage nights in the 30d window. Below that, rows fall back to the old static healthy-range reference ("Healthy 13 to 23%", "Healthy 20 to 25%") so nothing is ever blank or misleading.
+- Computed fresh on load from a dedicated 30-night fetch. No AsyncStorage writes, no second source of truth. Pure JS, no rebuild.
+- Implementation note: a separate `fetchSleepHistory(30)` call backs the baseline so the existing range-driven chart fetch is left untouched (no risk to the trend/stage charts). Excludes are loaded for the 30d set too.
+
+### 11.2 The word "baseline" is shown
+Each Deep/REM row sub reads `baseline 20%` so the user knows exactly what the comparison is. Not a hidden mechanic.
+
+### 11.3 Premium card -- DIVERGING BARS (LOCKED 2026-06-13, after device iteration)
+The first attempt (dot-on-zone tracks, then plain left-fill bars) read as vague pastel sliders -- a marker on a track with no axis means nothing. Final design, locked after several device passes: **every bar is a DIVERGING bar with a labeled axis**, except bedtime which is a clock-window bar. One consistent visual language across the whole card.
+
+Each row: small Ionicon left, value right (colored by status), the bar under it, then `left / center / right` axis labels under the bar (this is the "more hashes / numbers on the bar" Justin asked for -- a real axis, not a lone unlabeled tick).
+
+**Diverging bar** (deep, REM, sleep balance, wake events): a center reference hash (your baseline / your goal / your average). The fill grows OUT from the center -- right when you're above the reference, left when below. Color carries good/bad. Axis labeled at both ends + the center.
+
+| Row | Center reference | Right side | Left side | Window |
+|-----|-----------------|-----------|-----------|--------|
+| Avg deep sleep | your baseline deep % | above baseline | below baseline | fixed +/-10pp, pegs past it |
+| Avg REM sleep | your baseline REM % | above | below | fixed +/-10pp |
+| Sleep balance | goal (0) | surplus (green) | deficit (red) | symmetric +/-X h, auto-scaled to the gap |
+| Wake events | your avg wake count | more wakes (worse) | fewer (better) | base +/- max(base,4). NOTE: good side is LEFT here (fewer is better) -- color still carries meaning |
+
+NOTE on deep/REM: the bar POSITION shows you vs your baseline, but the COLOR is driven by the healthy range (see 11.4), not the baseline direction. So you can sit a touch left of your baseline tick and still be green (in healthy range), or right of it and amber (too high). Position and color answer different questions and that's intentional.
+
+NOTE on timeframe: the deep/REM rows are **averages over the viewed range**, hence the "Avg" label -- NOT last night. The Sleep Score hero at the top of the screen is LAST NIGHT. They can legitimately disagree (last night 95 / 16% deep, while your weekly avg deep is 12% and low). Dropping "Avg" in an earlier build made this look like a bug; the label is load-bearing, keep it.
+
+**Bedtime** = range bar: the bar spans your **actual bedtime range, 10th-90th percentile** of your last 30 nights (percentile, not raw min/max, so one 2 AM night doesn't blow it open). Left end = your early bedtime, right end = your late one (both labeled with real clock times), dot = your typical (median) -- the dot's offset shows whether you skew early or late within your range. Colored by consistency (SD). Value = typical bedtime; caption = `Consistent` / `Mostly steady` / `Variable`. Tradeoff accepted: when the ends ARE your real times, the bar reads "full," so consistency comes through the colored word + how close the two end-times are, not bar width. Always uses 30d data, independent of the 7/30 toggle.
+
+### 11.4 Color logic (placeholder thresholds, tune after real data)
+- **Deep / REM:** driven by the MEDICAL healthy range (deep 13-23%, REM 20-25%). In range = green; below range (too little) OR above range (too much) = amber, with a caption saying which (`Below healthy 13 to 23%` / `Above healthy 13 to 23%`). The personal baseline is the bar's center reference only -- it does NOT drive color. (The earlier baseline-direction coloring had no upper guardrail, so an abnormally high 30% deep would have read green just for being above baseline -- wrong.)
+- **Bedtime:** green if spread (SD) <= 30m; amber <= 60m; red above.
+- **Sleep balance:** green if surplus or on goal; deficit amber if avg nightly shortfall < half the goal, red above.
+- **Wake events:** green if count <= avg + 1; amber <= avg + 3; red above. Fallback (no baseline): centered on ~3, 0-2 green / 3-4 amber / 5+ red.
+
+### 11.5 Copy / layout cleanups
+- Killed jargon `±14m from 9:33 PM` -- the clock-window band carries consistency visually.
+- Sleep debt -> renamed **Sleep balance**; value always a real number, both directions: `2h 10m surplus` (green) / `3h 15m deficit` (red) / `On goal`. No more bare "Caught up"/"On track".
+- No right-column sub-values: every secondary number lives UNDER its bar (axis labels) or as one small left caption. The right side of each row is the single headline value only.
+- Capitalization rule: standalone labels capitalized (`Baseline`, `Consistent`, `On goal`, `Avg 3`, `Goal`); trailing descriptors after a number stay lowercase (`2h 10m surplus`, `8m awake`).
+
+### 11.6 Bars animate
+Per the animation standard, each bar's marker/fill/band animates into position on screen entry (Reanimated, keyed to focus refresh).
+
+### 11.7 Related: Sleep Score Trend y-axis auto-scale (LOCKED 2026-06-13)
+Separate but shipped in the same pass. The Sleep Score Trend chart currently hardcodes a 0-100 y-axis, so the line looks flat. Match the Stats graph-creator behavior: auto-scale the y-axis to the data's min/max (via the same `niceYTicks` nice-number algorithm), so the line fills the card and variation is readable. Sleep Score Trend first; Recovery trend chart can follow if it lands.
+
+### 11.8 Mindful
+Metrics panel is factual data, shown in all modes. No corrective language lives here (the coach tip owns that). No Mindful-specific changes needed.

@@ -77,6 +77,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
       { term: 'Sleep timeline', explanation: 'The shape of your night from bedtime to wake. Higher bands are lighter stages, lower bands are deeper. Drag a finger across to read the stage and time at any point.' },
       { term: 'Sleep debt', explanation: 'How far your recent sleep sits below your goal, added up across the range. On track means you are at or above your goal.' },
       { term: 'Bedtime consistency', explanation: 'How steady your bedtime is from night to night. A steadier schedule helps you fall into deep sleep faster.' },
+      { term: 'Sleep Coach', explanation: 'A short, plain-English read on your recent sleep. It looks across your last several nights, picks the one thing most worth knowing, and explains what it means and what helps. It focuses on sleep only.' },
     ],
   },
   {

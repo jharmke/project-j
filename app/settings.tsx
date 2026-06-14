@@ -2014,6 +2014,24 @@ export default function SettingsScreen() {
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
               triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              Alert.alert('Replay Sleep Coach', "Clear today's Sleep Coach tip so it recomputes with fresh data the next time you open the Sleep Hub?", [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Replay', onPress: async () => {
+                  triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
+                  await AsyncStorage.multiRemove(['pj_coach_tip_sleep', 'pj_coach_last_rule_sleep']);
+                  Alert.alert('Done', 'Open the Sleep Hub to regenerate the Sleep Coach tip.');
+                }},
+              ]);
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Replay Sleep Coach</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Regenerates the Sleep Hub coach tip on next open.</Text>
+              </View>
+              <Ionicons name="moon-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
               Alert.alert('Force Restore from Firestore', 'This wipes all local pj_* data and pulls everything from your cloud backup. Use only if your data is missing after signing in.', [
                 { text: 'Cancel', style: 'cancel' },
                 { text: 'Restore', style: 'destructive', onPress: async () => {

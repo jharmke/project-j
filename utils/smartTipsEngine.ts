@@ -263,9 +263,13 @@ async function loadWindowDays(
   todayKey: string,
   ctx: EngineContext,
   workoutState: any,
+  startOffset: number = 1,
 ): Promise<WindowDay[]> {
+  // Default startOffset 1 = yesterday back (today's food/activity is incomplete at
+  // app open, so the general coaches exclude it). The Sleep Coach passes 0 to
+  // INCLUDE last night, whose sleep is complete and is the whole point of the hub.
   const keys: string[] = [];
-  for (let i = 1; i <= WINDOW_SIZE; i++) keys.push(`pj_${keyForOffset(todayKey, i)}`);
+  for (let i = startOffset; i < startOffset + WINDOW_SIZE; i++) keys.push(`pj_${keyForOffset(todayKey, i)}`);
 
   let pairs: readonly [string, string | null][] = [];
   try { pairs = await AsyncStorage.multiGet(keys); } catch { return []; }
@@ -1404,7 +1408,7 @@ export interface CoachPacket {
   careSeverity?: 'mild' | 'moderate' | 'strong';
   mode: string;
   goal: string;
-  surface: 'home' | 'day_summary' | 'evr' | 'weekly' | 'monthly';
+  surface: 'home' | 'day_summary' | 'evr' | 'weekly' | 'monthly' | 'sleep';
   windowDays: number;
   startDate?: string;
   endDate?: string;
@@ -1468,6 +1472,24 @@ async function saveCoachTipCacheEvr(windowDays: number, cache: CoachTipCache): P
   try {
     const key = COACH_TIP_EVR_KEYS[windowDays] ?? COACH_TIP_EVR_KEYS[14];
     await storageSet(key, JSON.stringify(cache));
+  } catch {}
+}
+
+// Sleep Coach (Sleep Hub) has its own cache key, independent of the home tip.
+const COACH_TIP_SLEEP_KEY = 'pj_coach_tip_sleep';
+
+export async function loadCoachTipCacheSleep(): Promise<CoachTipCache | null> {
+  try {
+    const raw = await AsyncStorage.getItem(COACH_TIP_SLEEP_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+async function saveCoachTipCacheSleep(cache: CoachTipCache): Promise<void> {
+  try {
+    await storageSet(COACH_TIP_SLEEP_KEY, JSON.stringify(cache));
   } catch {}
 }
 
@@ -2323,6 +2345,147 @@ export async function computeCoachPacket(
   await Promise.all([
     saveCoachTipCache(cache),
     AsyncStorage.setItem(coachLastRuleKey, JSON.stringify({ ruleId: packet.ruleId })),
+  ]);
+  return cache;
+}
+
+// ── Sleep Coach: Level 1 scoped to sleep ──────────────────────────────────────
+// Same brain + AI + cleanup pipeline as the home coach, but candidate findings are
+// restricted to the sleep rule set so the headline is always about sleep. Powers
+// the Sleep Hub "Sleep Coach" card. No Family 9 (calorie-safety) branch and no food
+// logging gate; gates on sleep nights instead. Recovery (HRV/RHR) is a future surface.
+const SLEEP_COACH_RULE_IDS = new Set([
+  'sleep_score_low', 'sleep_duration_short', 'sleep_bedtime_inconsistent',
+  'sleep_deep_low', 'sleep_score_high', 'cross_protein_sleep', 'cross_steps_sleep',
+]);
+
+export async function computeCoachPacketSleep(
+  windowDays: number = 14,
+): Promise<CoachTipCache> {
+  const todayKey = todayDateKey();
+  const sleepLastRuleKey = 'pj_coach_last_rule_sleep';
+  const [existing, lastRuleRaw] = await Promise.all([
+    loadCoachTipCacheSleep(),
+    AsyncStorage.getItem(sleepLastRuleKey),
+  ]);
+  const persistedLastRuleId: string | null = lastRuleRaw ? JSON.parse(lastRuleRaw).ruleId : null;
+
+  if (existing && existing.packet.computedDate === todayKey && existing.packet.surface === 'sleep') {
+    return existing;
+  }
+
+  const [ctx, store, workoutRaw] = await Promise.all([
+    buildEngineContext(todayKey),
+    loadSmartTips(),
+    AsyncStorage.getItem('pj_workout_state').catch(() => null),
+  ]);
+
+  const tipStore: SmartTipsStore = store ?? {
+    activeTips: [], recentHistory: [], cooldowns: {},
+    variantHistory: {}, lastComputed: '', topicLedger: {},
+  };
+  const workoutState: any = workoutRaw ? JSON.parse(workoutRaw) : {};
+
+  // startOffset 0: include last night, so the coach analyzes the same recent nights
+  // the Sleep Hub shows (not the window ending yesterday).
+  const allDays = await loadWindowDays(todayKey, ctx, workoutState, 0);
+  const w14 = allDays.slice(0, 14);
+  const w7 = allDays.slice(0, 7);
+  const w5 = allDays.slice(0, 5);
+
+  const sleepNights = w7.filter(d => d.sleepHours !== null && d.sleepHours > 0).length;
+  const previousTip = existing?.aiBody ?? existing?.packet.fallbackBody ?? 'none';
+
+  let faithTier = 'rooted';
+  try {
+    const s = await AsyncStorage.getItem('pj_settings');
+    if (s) { const parsed = JSON.parse(s); faithTier = parsed?.faithJourney ?? 'rooted'; }
+  } catch {}
+
+  let packet: CoachPacket;
+
+  if (sleepNights < 3) {
+    packet = {
+      scenario: 'sleep_data_low',
+      ruleId: 'sleep_data_low',
+      familyNum: 5,
+      diagnosis: `Only ${sleepNights} of the last 7 nights have sleep data, not enough for reliable sleep coaching`,
+      action: 'Log or sync a few more nights to unlock sleep insights',
+      facts: { sleepNights },
+      tone: 'corrective',
+      mode: ctx.styleMode,
+      goal: ctx.goalBucket,
+      surface: 'sleep',
+      windowDays,
+      ifActive: ctx.ifEnabled,
+      previousTip,
+      faithTier,
+      computedDate: todayKey,
+      fallbackTitle: 'Building Your Sleep Picture',
+      fallbackBody: `The coach has ${sleepNights} of 7 nights to work with. Track or sync a few more nights to get a full read on your sleep.`,
+    };
+  } else {
+    const rawCandidates = runAllRules(w7, w5, w14, ctx, tipStore);
+    const suppressed = applyMindfulSuppression(rawCandidates, ctx);
+    const sleepCandidates = suppressed.filter(c => SLEEP_COACH_RULE_IDS.has(c.ruleId));
+    const selected = selectByPrioritySpine(sleepCandidates, ctx, persistedLastRuleId ? [persistedLastRuleId] : []);
+
+    if (!selected) {
+      packet = {
+        scenario: 'sleep_steady',
+        ruleId: 'sleep_steady',
+        familyNum: 6,
+        diagnosis: 'Sleep is tracking in a healthy range across the week',
+        action: 'Keep the current sleep routine going',
+        facts: { sleepNights },
+        tone: 'positive',
+        mode: ctx.styleMode,
+        goal: ctx.goalBucket,
+        surface: 'sleep',
+        windowDays,
+        ifActive: ctx.ifEnabled,
+        previousTip,
+        faithTier,
+        computedDate: todayKey,
+        fallbackTitle: 'Sleep Looking Good',
+        fallbackBody: 'Your sleep is tracking in a healthy range this week. Keep the routine that is working.',
+      };
+    } else {
+      const { diagnosis, action, facts } = buildDiagnosisActionFacts(selected, w7, w14, ctx);
+      const tone = deriveTone(selected);
+      packet = {
+        scenario: RULE_SCENARIO[selected.ruleId] ?? selected.ruleId,
+        ruleId: selected.ruleId,
+        familyNum: RULE_FAMILY[selected.ruleId] ?? 0,
+        diagnosis,
+        action,
+        facts,
+        tone,
+        mode: ctx.styleMode,
+        goal: ctx.goalBucket,
+        surface: 'sleep',
+        windowDays,
+        ifActive: ctx.ifEnabled,
+        previousTip,
+        faithTier,
+        computedDate: todayKey,
+        fallbackTitle: selected.title,
+        fallbackBody: selected.body,
+      };
+    }
+  }
+
+  const sameScenario = existing?.packet.scenario === packet.scenario;
+  const cache: CoachTipCache = {
+    packet,
+    aiBody: (sameScenario && existing?.aiBody) ? existing.aiBody : null,
+    aiGeneratedDate: (sameScenario && existing?.aiGeneratedDate) ? existing.aiGeneratedDate : null,
+    fallbackUsed: false,
+  };
+
+  await Promise.all([
+    saveCoachTipCacheSleep(cache),
+    AsyncStorage.setItem(sleepLastRuleKey, JSON.stringify({ ruleId: packet.ruleId })),
   ]);
   return cache;
 }

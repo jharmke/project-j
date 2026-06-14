@@ -25,6 +25,8 @@ import { calcSleepScore } from '../utils/sleepScore';
 import { calcRecoveryScore, RecoveryComponent, RecoveryResult } from '../utils/recoveryScore';
 import { useHealthKit } from '../useHealthKit';
 import { useTheme } from '../theme';
+import { refreshCoachTipSleep, resolveTipBody } from '../utils/coachAI';
+import { loadCoachTipCacheSleep, CoachTipCache } from '../utils/smartTipsEngine';
 
 type SleepTab = 'sleep' | 'recovery';
 
@@ -519,6 +521,17 @@ export default function SleepHub() {
   // Bumped on focus so the donut re-animates each time the screen is entered.
   const [refreshKey, setRefreshKey] = useState(0);
   useFocusEffect(useCallback(() => { setRefreshKey(k => k + 1); }, []));
+
+  // Sleep Coach (Level 1, sleep-scoped). Shows the cached tip instantly, then the
+  // AI-voiced version once it returns. Both are computed/cached once per day in the
+  // engine, so this is at most one AI call a day. Falls back to templated copy.
+  const [sleepCoachCache, setSleepCoachCache] = useState<CoachTipCache | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    loadCoachTipCacheSleep().then(c => { if (!cancelled && c) setSleepCoachCache(c); }).catch(() => {});
+    refreshCoachTipSleep(14).then(c => { if (!cancelled) setSleepCoachCache(c); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -1249,7 +1262,9 @@ export default function SleepHub() {
       bedSd = Math.round(Math.sqrt(beds.reduce((a, b) => a + (b - m) ** 2, 0) / beds.length));
     }
     const allowCorrective = !(styleMode === 'mindful' && !mindfulGrowth);
-    const tip = sleepCoachTip(last, score, sleepGoal, bedSd, allowCorrective);
+    // AI-voiced sleep tip when ready; deterministic observation as the instant fallback.
+    const deterministic = sleepCoachTip(last, score, sleepGoal, bedSd, allowCorrective);
+    const body = sleepCoachCache ? resolveTipBody(sleepCoachCache) : deterministic.text;
     return (
       <View style={cardStyle}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
@@ -1258,7 +1273,7 @@ export default function SleepHub() {
         </View>
         <View style={{ flexDirection: 'row', gap: 10, padding: 12, borderRadius: 10, backgroundColor: theme.accentBlueBg }}>
           <Ionicons name="bulb" size={16} color={theme.accentBlueRaw} style={{ marginTop: 1 }} />
-          <Text style={{ flex: 1, fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_500Medium', lineHeight: 20 }}>{tip.text}</Text>
+          <Text style={{ flex: 1, fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_500Medium', lineHeight: 20 }}>{body}</Text>
         </View>
       </View>
     );

@@ -13,10 +13,12 @@ import {
   computeCoachPacketEvr,
   computeCoachPacketWeekly,
   computeCoachPacketMonthly,
+  computeCoachPacketSleep,
   loadCoachTipCache,
   loadCoachTipCacheEvr,
   loadCoachTipCacheWeekly,
   loadCoachTipCacheMonthly,
+  loadCoachTipCacheSleep,
 } from './smartTipsEngine';
 import { DayScore, DayScoreInput } from './dayScore';
 
@@ -169,6 +171,7 @@ function formatPacketMessage(packet: CoachPacket): string {
     packet.surface === 'day_summary' ? `Day Summary, single day` :
     packet.surface === 'weekly' ? `Weekly Summary, ${packet.windowDays}-day window` :
     packet.surface === 'monthly' ? `Monthly Summary, ${packet.windowDays}-day window` :
+    packet.surface === 'sleep' ? `Sleep Hub coach card, sleep only, ${packet.windowDays}-day window` :
     `EvR deep read, ${packet.windowDays}-day window`;
 
   const careLine = packet.careSeverity ? `\nCare severity: ${packet.careSeverity}` : '';
@@ -366,6 +369,15 @@ export async function refreshCoachTipEvr(
   const evrCacheKey = `pj_coach_tip_evr_${windowDays}`;
   const cache = await computeCoachPacketEvr(windowDays, homeRuleId);
   return generateCoachTip(cache, evrCacheKey);
+}
+
+// Sleep Hub coach: computes the sleep-scoped packet, calls AI, saves to the sleep
+// cache key. Never touches pj_coach_tip (the home tip). Lazy: called when the hub opens.
+export async function refreshCoachTipSleep(
+  windowDays: number = 14,
+): Promise<CoachTipCache> {
+  const cache = await computeCoachPacketSleep(windowDays);
+  return generateCoachTip(cache, 'pj_coach_tip_sleep');
 }
 
 // Return the best available tip body: AI if available, fallback otherwise.

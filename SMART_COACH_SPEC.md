@@ -751,6 +751,7 @@ Level 1 is fully window-adaptive. The window is a parameter the brain receives, 
 - EvR insight box: window-adaptive (14/30/90 days per user selection). Pro. Not yet built as own packet.
 - Weekly Summary: 7-day window. Pro. Not built yet.
 - Monthly Summary: 30-day window. Pro. Not built yet.
+- Sleep Hub Sleep Coach card: 14-day window. Free. BUILT 2026-06-14. Scoped variant: same brain/AI/cleanup pipeline, but candidate findings are filtered to the sleep rule set (sleep_score_low, sleep_duration_short, sleep_bedtime_inconsistent, sleep_deep_low, sleep_score_high, plus the sleep-headline cross rules cross_protein_sleep and cross_steps_sleep) so the headline is always sleep. No Family 9 (calorie-safety) branch; gates on sleep nights (>=3) not food logging; positive "sleep steady" fallback when no finding fires. computeCoachPacketSleep + refreshCoachTipSleep, cache key pj_coach_tip_sleep. Recovery (HRV/RHR/resp/SpO2) is a FUTURE sibling surface: the engine does not yet ingest those signals, so the Recovery Coach card stays a deterministic placeholder until they are fed into buildEngineContext + new recovery rules are written.
 
 Level 1 format rule across all windows: always 2 to 3 sentences regardless of window length. Longer windows produce richer scenario detection and more specific data in the packet, not longer or differently formatted output. No bullets, headers, or paragraphs. The coaching layer is a synthesis headline; the domain cards provide the detailed breakdown.
 

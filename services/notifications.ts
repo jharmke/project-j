@@ -1125,8 +1125,8 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
     }
   }
 
-  // ── Always-on bypass: Weekly Summary (Monday) ─────────────────────────────
-  if (s.categorySummaries && now.getDay() === 1) {
+  // ── Always-on bypass: Weekly Summary (Sunday) ─────────────────────────────
+  if (s.categorySummaries && now.getDay() === 0) {
     const dateSeed = parseInt(now.toISOString().split('T')[0].replace(/-/g, '').slice(-4));
     const fireMin = dateSeed % 60;
     const fireHour = 11 + (dateSeed % 2);

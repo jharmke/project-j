@@ -264,10 +264,10 @@ export default function DaySummaryModal({ score, dateKey, theme, styleMode, fait
             {/* Divider */}
             <View style={{ height: 0.5, backgroundColor: theme.borderCard, marginTop: 20, marginBottom: 16 }} />
 
-            {/* VIEW HISTORY (morning pop-up only; hidden when already in the archive) */}
+            {/* FULL BREAKDOWN (morning pop-up only; hidden when already in the archive) */}
             {onViewSummary && (
               <TouchableOpacity onPress={handleViewSummary} style={{ paddingVertical: 13, borderRadius: 10, alignItems: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
-                <Text style={{ color: theme.accentBlue, fontSize: 13, letterSpacing: 1, fontFamily: 'DMSans_600SemiBold' }}>VIEW HISTORY</Text>
+                <Text style={{ color: theme.accentBlue, fontSize: 13, letterSpacing: 1, fontFamily: 'DMSans_600SemiBold' }}>FULL BREAKDOWN</Text>
               </TouchableOpacity>
             )}
 

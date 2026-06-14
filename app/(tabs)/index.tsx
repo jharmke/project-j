@@ -3681,7 +3681,7 @@ export default function HomeScreen() {
           styleMode={styleMode}
           faithJourney={faithJourney}
           onClose={() => setDaySummary(null)}
-          onViewSummary={() => { setDaySummary(null); archiveNav.pending = true; router.push('/(tabs)/stats'); }}
+          onViewSummary={() => { setDaySummary(null); router.push({ pathname: '/day-summary', params: { date: daySummary.dateKey } }); }}
         />
       )}
 

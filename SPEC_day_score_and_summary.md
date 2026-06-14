@@ -275,7 +275,7 @@ Contents top to bottom:
 6. One auto-generated win line: e.g. "You crushed your water goal" -- pulled from the highest-scoring sub-component. Accent colored, DMSans_600SemiBold.
 7. One coaching note if relevant: e.g. "Protein was your gap -- aim for Xg more today." Only fires if a sub-component scored below 60% of its max. Muted color, smaller text. If nothing scored below 60%, this line is hidden.
 8. Divider
-9. "VIEW FULL SUMMARY" button -- routes to the Stats archive, auto-scrolled to and expanded for yesterday's entry. Standard interactive blue button style.
+9. "FULL BREAKDOWN" button -- routes to that day's dedicated full-summary page (/day-summary?date=). Standard interactive blue button style. (Was "VIEW HISTORY" routing to the Stats archive; renamed + rerouted 2026-06-14.)
 10. Small muted text link at bottom: "Exclude this day" -- see Section 3.5.
 
 Mindful mode copy differences:
@@ -293,7 +293,7 @@ Faith Journey copy differences (Rooted and Exploring only, NOT for Not Right Now
 
 - Drag handle down: dismiss
 - Tap handle: dismiss
-- Tap "VIEW FULL SUMMARY": navigate and dismiss
+- Tap "FULL BREAKDOWN": navigate to the dedicated day page and dismiss
 - Tap "Exclude this day": see Section 3.5
 - NO tap-outside-to-dismiss (prevents accidental dismissal while reading)
 - NO auto-dismiss timer
@@ -316,6 +316,26 @@ An interactive tutorial for the Day Summary pop-up is REQUIRED before App Store 
 - Mention the sleep floor rule in plain English ("We don't punish you for a bad night -- showing up and tracking still counts")
 
 Tutorial fires on first ever pop-up appearance (or can be triggered from Settings > Tutorials). Toolkit/Help article also required covering the same content.
+
+### 3.7 Summary pop-up precedence (Day / Weekly / Monthly)
+
+ADDED 2026-06-14. There are three "summary ready" pop-ups: Day (every morning, yesterday), Weekly (Sundays, the closed Sun-Sat week), Monthly (the 1st, the closed calendar month). On any given app open AT MOST ONE fires, highest tier wins:
+
+1. 1st of the month -> Monthly (suppresses Weekly + Day)
+2. else Sunday -> Weekly (suppresses Day)
+3. else -> Day
+
+Single decision point in index.tsx runScan. All three share the `pj_last_summary_shown` (YYYY-MM-DD) gate, so once any summary shows for the day the lower tiers stay suppressed that day (the "overtake" rule). Weekly/Monthly only fire when their period actually has data (avgComposite non-null, daysScored > 0); otherwise the Day pop-up shows as normal.
+
+Weekly/Monthly pop-up = components/SummaryReadyModal.tsx (tier="week"|"month"). Mirrors the Day modal (reuses the exported ScoreRing): avg composite ring, three category-average pills (Nutrition/Activity/Recovery), one context line ("X of N days logged"), a period-aware encouragement line + optional coach note, then FULL BREAKDOWN + GOT IT. NO exclude action (frozen aggregates). FULL BREAKDOWN routes to /weekly-summary?weekStart= or /monthly-summary?monthKey=. When the pop-up shows it fires cancelWeeklySummaryNotification / cancelMonthlySummaryNotification so the matching push does not also arrive ("saw it in-app -> no redundant push").
+
+Disclaimer: Weekly/Monthly skip the first-use Day Score disclaimer modal (they carry the inline micro disclaimer; by the time a week/month closes the user has seen the day disclaimer). Tooltip: reuses the day_score tooltip for now; dedicated weekly/monthly tooltip copy is a deferred item.
+
+Encouragement copy (utils/daySummaryCopy.ts periodSummaryLines): 4 score bands (elite 90+/strong 80-89/solid 60-79/building <60) x 3-4 pooled variations, mode-aware (Mindful softer, no elite tier), {p} expands to week/month. Line picked deterministically by a hash of the period key (stable per period, varies across periods, no stored rotation). Coach note fires only when a category averages under 60 (weakest wins). Faith framing intentionally omitted this pass. FIRST-PASS COPY, flagged to revisit/customize.
+
+Related push fix (2026-06-14): the Weekly/Monthly PUSH notifications now carry params (weekStart / monthKey) so a tap lands on the populated screen (previously routed param-less to a blank screen). services/notifications.ts.
+
+Dev tools: Settings > dev tools "Replay Weekly Summary" / "Replay Monthly Summary" set pj_dev_force_summary; runScan consumes it on next open, bypasses the day/date + time + once-per-day gates, loads-or-generates the last closed period, shows the pop-up (testable any day).
 
 ---
 

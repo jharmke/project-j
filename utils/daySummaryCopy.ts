@@ -116,6 +116,104 @@ export async function hadFaithEntryOn(dateKey: string): Promise<boolean> {
   }
 }
 
+// ── Weekly / Monthly summary lines ───────────────────────────────────────────
+// Period-aware encouragement + optional coach note for the Weekly/Monthly
+// "summary ready" pop-ups. Keyed off the period's avg composite + weakest
+// category (periods do not carry the day-level sub-scores winAndCoachLines uses).
+// A line is picked deterministically from the pool by a hash of the period key,
+// so each week/month gets a stable-but-varied line with no stored rotation state.
+// {p} expands to "week" or "month". NOTE: first-pass copy, flagged in the roadmap
+// to revisit and customize further.
+type PeriodTier = 'week' | 'month';
+
+const PERIOD_WIN_STD: Record<string, string[]> = {
+  elite: [
+    'Outstanding {p}. You showed up day after day.',
+    'Elite {p}. Almost nothing slipped.',
+    'You were locked in all {p}. Excellent work.',
+    'Almost a perfect {p}. This is what consistency looks like.',
+  ],
+  strong: [
+    "Strong {p}. That's real consistency.",
+    'Great {p}. The work is showing.',
+    'You stacked good days all {p}. Well done.',
+  ],
+  solid: [
+    'Solid {p}. The habits are taking hold.',
+    'Good {p} overall. Build on it.',
+    'Steady progress this {p}. Keep going.',
+  ],
+  building: [
+    'A rough stretch, but every {p} is a fresh start.',
+    'Off {p}. It happens. Reset and go again.',
+    'Tough {p}, but you still showed up. That counts.',
+  ],
+};
+
+const PERIOD_WIN_MINDFUL: Record<string, string[]> = {
+  strong: ['A strong, steady {p}.', 'A grounded, consistent {p}.'],
+  solid: ['A steady {p}.', 'A balanced {p} overall.'],
+  building: ['A gentle {p}.', "A quieter {p}. That's okay."],
+};
+
+const PERIOD_COACH_STD: Record<string, string[]> = {
+  nutrition: ['Nutrition has the most room to grow.', 'Nutrition is the area to tighten up.'],
+  activity: ['Activity is the area to push next {p}.', 'More movement is the focus next {p}.'],
+  recovery: ['Recovery is worth protecting.', 'Sleep is the area to prioritize next {p}.'],
+};
+
+const PERIOD_COACH_MINDFUL: Record<string, string[]> = {
+  nutrition: ['Nutrition is one area to ease into.', 'Nutrition is one place to gently focus.'],
+  activity: ['Some more movement might feel good.', 'A bit more movement could feel good.'],
+  recovery: ['Rest is one area to lean into.', 'More rest is one area to lean into.'],
+};
+
+function hashStr(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+export function periodSummaryLines(
+  tier: PeriodTier,
+  avgComposite: number,
+  avgNutrition: number | null,
+  avgActivity: number | null,
+  avgSleep: number | null,
+  isMindful: boolean,
+  periodKey: string,
+): { winLine: string; coachLine: string } {
+  const p = tier === 'week' ? 'week' : 'month';
+  const seed = hashStr(periodKey);
+
+  let band: string;
+  if (avgComposite >= 90) band = 'elite';
+  else if (avgComposite >= 80) band = 'strong';
+  else if (avgComposite >= 60) band = 'solid';
+  else band = 'building';
+
+  // Mindful has no separate elite tier; fold it into strong.
+  const winPool = isMindful
+    ? PERIOD_WIN_MINDFUL[band === 'elite' ? 'strong' : band]
+    : PERIOD_WIN_STD[band];
+  const winLine = winPool[seed % winPool.length].replace(/\{p\}/g, p);
+
+  // Coach line: weakest category, only if it averaged under 60.
+  const cats = [
+    { key: 'nutrition', val: avgNutrition },
+    { key: 'activity', val: avgActivity },
+    { key: 'recovery', val: avgSleep },
+  ].filter(c => c.val !== null) as { key: string; val: number }[];
+  const weakest = cats.filter(c => c.val < 60).sort((a, b) => a.val - b.val)[0];
+  let coachLine = '';
+  if (weakest) {
+    const pool = (isMindful ? PERIOD_COACH_MINDFUL : PERIOD_COACH_STD)[weakest.key];
+    coachLine = pool[seed % pool.length].replace(/\{p\}/g, p);
+  }
+
+  return { winLine, coachLine };
+}
+
 // Context line under the hero: gives the score a story. Mindful stays neutral
 // and comparison-free; other modes compare to the trailing week.
 export async function contextLine(dateKey: string, composite: number, isMindful: boolean): Promise<string> {

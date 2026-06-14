@@ -2,6 +2,8 @@ import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import { storageSet } from '../utils/storage';
+import { getLastClosedWeekStart } from '../utils/weeklySummary';
+import { getLastClosedMonth } from '../utils/monthlySummary';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -1140,7 +1142,7 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
           title: v.title,
           body: v.body,
           sound: true,
-          data: { route: '/weekly-summary' },
+          data: { route: '/weekly-summary', params: { weekStart: getLastClosedWeekStart() } },
         },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: fireDate },
       });
@@ -1162,7 +1164,7 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
           title: v.title,
           body: v.body,
           sound: true,
-          data: { route: '/monthly-summary' },
+          data: { route: '/monthly-summary', params: { monthKey: getLastClosedMonth() } },
         },
         trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: fireDate },
       });

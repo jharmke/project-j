@@ -18,7 +18,7 @@ import { showAchievementToast, showDailyGoalToast } from '../../components/Achie
 import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, weightEntryIsPlausible, getWeightMilestonesCrossed, isGoalWeightHit, handleDailyGoalHit, checkMomentumAchievements, checkSleepAchievements, getCelebTier } from '../../achievementData';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { storageSet } from '../../utils/storage';
-import { cancelWaterPaceNotification } from '../../services/notifications';
+import { cancelWaterPaceNotification, cancelWeeklySummaryNotification, cancelMonthlySummaryNotification } from '../../services/notifications';
 import { VERSES, resolveDailyVerse } from '../../data/verses';
 import FaithTodayCard from '../../components/FaithTodayCard';
 import { loadCalorieTargets } from '../../utils/calorieTarget';
@@ -35,12 +35,12 @@ import { StatsCard, CardPeriod, DATA_KEY_META, DEFAULT_STATS_CARDS } from '../..
 import { TrendData, EMPTY_TREND_DATA, fetchTrendData } from '../../utils/statsData';
 import { calcSleepScore } from '../../utils/sleepScore';
 import { runDayScoreScan } from '../../utils/dayScoreStore';
-import { checkAndGenerateWeeklySummary } from '../../utils/weeklySummary';
-import { checkAndGenerateMonthly } from '../../utils/monthlySummary';
+import { checkAndGenerateWeeklySummary, getLastClosedWeekStart, loadWeeklySummary, generateWeeklySummary, WeeklySummaryData } from '../../utils/weeklySummary';
+import { checkAndGenerateMonthly, getLastClosedMonth, loadMonthlySummary, generateMonthlySummary, MonthlySummaryData } from '../../utils/monthlySummary';
 import { DayScore } from '../../utils/dayScore';
 import DaySummaryModal from '../../components/DaySummaryModal';
+import SummaryReadyModal from '../../components/SummaryReadyModal';
 import DayScoreDisclaimerModal from '../../components/DayScoreDisclaimerModal';
-import { archiveNav } from '../../utils/archiveNav';
 import { StatsGraphCard } from '../../components/StatsGraphCard';
 import { StatsCardEditModal } from '../../components/StatsCardEditModal';
 import { saveStatsCards } from '../../statsCardRegistry';
@@ -865,6 +865,9 @@ export default function HomeScreen() {
   // shows; on acknowledge it hands off to daySummary.
   const [daySummary, setDaySummary] = useState<{ score: DayScore; dateKey: string } | null>(null);
   const [dayScoreDisclaimer, setDayScoreDisclaimer] = useState<{ score: DayScore; dateKey: string } | null>(null);
+  // Weekly / monthly "summary ready" pop-ups (last closed period). Precedence in runScan.
+  const [weekSummary, setWeekSummary] = useState<WeeklySummaryData | null>(null);
+  const [monthSummary, setMonthSummary] = useState<MonthlySummaryData | null>(null);
   const [homeTips, setHomeTips] = useState<StoredTip[]>([]);
   const [tipIndex, setTipIndex] = useState(0);
   const [coachCache, setCoachCache] = useState<CoachTipCache | null>(null);
@@ -883,28 +886,78 @@ export default function HomeScreen() {
   useEffect(() => {
     const runScan = async () => {
       try {
-        const todayKey = getDateKey(new Date());
+        const now = new Date();
+        const todayKey = getDateKey(now);
         const score = await runDayScoreScan(todayKey, new Date().toISOString());
-        // Weekly + monthly summaries: fire-and-forget alongside day summary scan.
-        checkAndGenerateWeeklySummary().catch(() => {});
-        checkAndGenerateMonthly().catch(() => {});
-        if (!score) return;                       // excluded / no data: no pop-up
-        // Gate: only after 5am, and at most once per calendar day.
-        if (new Date().getHours() < 5) return;
+        // Generate weekly/monthly summaries (each self-gated to Sunday / the 1st).
+        await checkAndGenerateWeeklySummary().catch(() => {});
+        await checkAndGenerateMonthly().catch(() => {});
+
+        // Dev: forced summary replay (Settings > dev tools). Bypasses the
+        // day/date + time + once-per-day gates so a tester can see the pop-up on
+        // any day; generates the period on demand if it was not built yet.
+        const forced = await AsyncStorage.getItem('pj_dev_force_summary');
+        if (forced === 'week' || forced === 'month') {
+          await AsyncStorage.removeItem('pj_dev_force_summary');
+          if (forced === 'month') {
+            const mk = getLastClosedMonth();
+            const md = (await loadMonthlySummary(mk)) ?? (await generateMonthlySummary(mk));
+            if (md) setMonthSummary(md);
+          } else {
+            const ws = getLastClosedWeekStart();
+            const wd = (await loadWeeklySummary(ws)) ?? (await generateWeeklySummary(ws));
+            if (wd) setWeekSummary(wd);
+          }
+          return;
+        }
+
+        // Gate: only after 5am, and at most ONE summary pop-up per calendar day.
+        if (now.getHours() < 5) return;
         const lastShown = await AsyncStorage.getItem('pj_last_summary_shown');
         if (lastShown === todayKey) return;
         if (summaryTimerRef.current) return;      // a show is already pending
-        const y = new Date(); y.setDate(y.getDate() - 1);
-        const yKey = getDateKey(y);
+
+        // Tier precedence: 1st of month -> Monthly, else Sunday -> Weekly, else Day.
+        // Only the highest tier fires; stamping the shared once-per-day gate keeps
+        // the lower tiers suppressed for the rest of the day (the "overtake" rule).
+        type Pending =
+          | { kind: 'day'; score: DayScore; dateKey: string }
+          | { kind: 'week'; data: WeeklySummaryData }
+          | { kind: 'month'; data: MonthlySummaryData };
+        let pending: Pending | null = null;
+
+        if (now.getDate() === 1) {
+          const m = await loadMonthlySummary(getLastClosedMonth());
+          if (m && m.avgComposite !== null && m.daysScored > 0) pending = { kind: 'month', data: m };
+        }
+        if (!pending && now.getDay() === 0) {
+          const w = await loadWeeklySummary(getLastClosedWeekStart());
+          if (w && w.avgComposite !== null && w.daysScored > 0) pending = { kind: 'week', data: w };
+        }
+        if (!pending) {
+          if (!score) return;                     // day: excluded / no data, no pop-up
+          const y = new Date(); y.setDate(y.getDate() - 1);
+          pending = { kind: 'day', score, dateKey: getDateKey(y) };
+        }
+        const p = pending!;
+
         // Brief delay so the home screen paints first; stamp the gate only when
-        // the modal actually shows (a kill during the delay won't burn the day).
+        // a modal actually shows (a kill during the delay won't burn the day).
         summaryTimerRef.current = setTimeout(async () => {
           summaryTimerRef.current = null;
           await storageSet('pj_last_summary_shown', todayKey);
-          // First ever score: show the one-time disclaimer gate first.
-          const seen = await AsyncStorage.getItem('pj_dayscore_disclaimer_seen');
-          if (seen === 'true') setDaySummary({ score, dateKey: yKey });
-          else setDayScoreDisclaimer({ score, dateKey: yKey });
+          if (p.kind === 'month') {
+            cancelMonthlySummaryNotification().catch(() => {}); // saw it in-app -> no redundant push
+            setMonthSummary(p.data);
+          } else if (p.kind === 'week') {
+            cancelWeeklySummaryNotification().catch(() => {});
+            setWeekSummary(p.data);
+          } else {
+            // First ever score: show the one-time disclaimer gate first.
+            const seen = await AsyncStorage.getItem('pj_dayscore_disclaimer_seen');
+            if (seen === 'true') setDaySummary({ score: p.score, dateKey: p.dateKey });
+            else setDayScoreDisclaimer({ score: p.score, dateKey: p.dateKey });
+          }
         }, 800);
       } catch (e) { console.log('[DayScore] scan error', e); }
     };
@@ -3682,6 +3735,44 @@ export default function HomeScreen() {
           faithJourney={faithJourney}
           onClose={() => setDaySummary(null)}
           onViewSummary={() => { setDaySummary(null); router.push({ pathname: '/day-summary', params: { date: daySummary.dateKey } }); }}
+        />
+      )}
+
+      {/* Weekly summary pop-up (last closed week, Sunday) */}
+      {weekSummary && (
+        <SummaryReadyModal
+          tier="week"
+          avgComposite={weekSummary.avgComposite}
+          avgNutritionScore={weekSummary.avgNutritionScore}
+          avgActivityScore={weekSummary.avgActivityScore}
+          avgSleepScore={weekSummary.avgSleepScore}
+          daysScored={weekSummary.daysScored}
+          totalDays={7}
+          rangeStart={weekSummary.weekStart}
+          rangeEnd={weekSummary.weekEnd}
+          theme={theme}
+          styleMode={styleMode}
+          onClose={() => setWeekSummary(null)}
+          onViewBreakdown={() => { const ws = weekSummary.weekStart; setWeekSummary(null); router.push({ pathname: '/weekly-summary', params: { weekStart: ws } }); }}
+        />
+      )}
+
+      {/* Monthly summary pop-up (last closed month, 1st) */}
+      {monthSummary && (
+        <SummaryReadyModal
+          tier="month"
+          avgComposite={monthSummary.avgComposite}
+          avgNutritionScore={monthSummary.avgNutritionScore}
+          avgActivityScore={monthSummary.avgActivityScore}
+          avgSleepScore={monthSummary.avgSleepScore}
+          daysScored={monthSummary.daysScored}
+          totalDays={Number(monthSummary.monthEnd.split('-')[2])}
+          rangeStart={monthSummary.monthStart}
+          rangeEnd={monthSummary.monthEnd}
+          theme={theme}
+          styleMode={styleMode}
+          onClose={() => setMonthSummary(null)}
+          onViewBreakdown={() => { const mk = monthSummary.monthStart.slice(0, 7); setMonthSummary(null); router.push({ pathname: '/monthly-summary', params: { monthKey: mk } }); }}
         />
       )}
 

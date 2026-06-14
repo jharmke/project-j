@@ -1978,6 +1978,42 @@ export default function SettingsScreen() {
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
               triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              Alert.alert('Replay Weekly Summary', 'Force the weekly summary pop-up to fire on next app open (any day, last closed week)?', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Replay', onPress: async () => {
+                  triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
+                  await AsyncStorage.setItem('pj_dev_force_summary', 'week');
+                  Alert.alert('Done', 'Close the app fully and reopen it to see the weekly pop-up.');
+                }},
+              ]);
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Replay Weekly Summary</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Forces the weekly pop-up on next app open (any day).</Text>
+              </View>
+              <Ionicons name="calendar-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              Alert.alert('Replay Monthly Summary', 'Force the monthly summary pop-up to fire on next app open (any day, last closed month)?', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Replay', onPress: async () => {
+                  triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
+                  await AsyncStorage.setItem('pj_dev_force_summary', 'month');
+                  Alert.alert('Done', 'Close the app fully and reopen it to see the monthly pop-up.');
+                }},
+              ]);
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Replay Monthly Summary</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Forces the monthly pop-up on next app open (any day).</Text>
+              </View>
+              <Ionicons name="calendar-number-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
               Alert.alert('Force Restore from Firestore', 'This wipes all local pj_* data and pulls everything from your cloud backup. Use only if your data is missing after signing in.', [
                 { text: 'Cancel', style: 'cancel' },
                 { text: 'Restore', style: 'destructive', onPress: async () => {

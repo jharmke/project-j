@@ -4,9 +4,9 @@ import Constants from 'expo-constants';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, Dimensions, Easing, Keyboard, KeyboardAvoidingView, Linking, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, Dimensions, Easing, InteractionManager, Keyboard, KeyboardAvoidingView, Linking, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ACCENT_PALETTES, THEME_ORDER, ThemeId, THEMES, useTheme } from '../theme';
 import { useHealthKit } from '../useHealthKit';
@@ -189,12 +189,14 @@ function CollapsibleSection({
   defaultOpen = false,
   children,
   theme,
+  rootRef,
 }: {
   label: string;
   subtitle?: string;
   defaultOpen?: boolean;
   children: React.ReactNode;
   theme: any;
+  rootRef?: any;
 }) {
   const [open, setOpen] = useState(defaultOpen);
   const [visible, setVisible] = useState(defaultOpen);
@@ -261,7 +263,7 @@ function CollapsibleSection({
   };
 
   return (
-    <View style={[styles.section, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
+    <View ref={rootRef} style={[styles.section, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
       {/* Ghost: renders children off-screen to measure natural height for first open */}
       {measuring && (
         <View
@@ -381,6 +383,25 @@ export default function SettingsScreen() {
   const [showPrayerModal, setShowPrayerModal] = useState(false);
   const scrollViewRef = useRef<any>(null);
   const quietHoursRowRef = useRef<any>(null);
+  const { section: deepLinkSection } = useLocalSearchParams<{ section?: string }>();
+  const macrosRef = useRef<any>(null);
+  // Deep link from the macro modal's "Fine-tune in Settings > Goals" pointer: open the
+  // Goals section (via defaultOpen below) and scroll straight to the Macros block. Wait
+  // for the nav transition to finish, then measure the Macros row's real position
+  // relative to the scroll view (measureLayout is reliable regardless of timing).
+  useEffect(() => {
+    if (deepLinkSection !== 'goals') return;
+    const task = InteractionManager.runAfterInteractions(() => {
+      setTimeout(() => {
+        macrosRef.current?.measureLayout?.(
+          scrollViewRef.current,
+          (_x: number, y: number) => scrollViewRef.current?.scrollTo({ y: Math.max(0, y - 16), animated: true }),
+          () => {},
+        );
+      }, 150);
+    });
+    return () => task.cancel();
+  }, [deepLinkSection]);
   const { fetchHistoricalWorkouts, authorized } = useHealthKit();
 
   // ── Notification settings state ───────────────────────────────────────────
@@ -904,7 +925,7 @@ export default function SettingsScreen() {
         </CollapsibleSection>
 
         {/* ── Goals ── */}
-        <CollapsibleSection label="Goals" subtitle="Fitness · Nutrition" defaultOpen={false} theme={theme}>
+        <CollapsibleSection label="Goals" subtitle="Fitness · Nutrition" defaultOpen={deepLinkSection === 'goals'} theme={theme}>
           <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
 
             {/* FITNESS GOALS */}
@@ -1016,7 +1037,7 @@ export default function SettingsScreen() {
               </View>
             )}
 
-            <View style={{ height: 1, backgroundColor: theme.borderCard, marginVertical: 16 }} />
+            <View ref={macrosRef} style={{ height: 1, backgroundColor: theme.borderCard, marginVertical: 16 }} />
 
             {/* Macros */}
             <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Macros</Text>

@@ -12,7 +12,7 @@ import ReAnimated, { useAnimatedStyle, useAnimatedProps, useSharedValue, withTim
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import PressableButton from '../../components/PressableButton';
-import { useToast } from '../../components/Toast';
+import { useToast, ToastRenderer } from '../../components/Toast';
 import { showCelebration } from '../../components/CelebrationOverlay';
 import { showAchievementToast, showDailyGoalToast } from '../../components/AchievementToast';
 import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, weightEntryIsPlausible, getWeightMilestonesCrossed, isGoalWeightHit, handleDailyGoalHit, checkMomentumAchievements, checkSleepAchievements, getCelebTier } from '../../achievementData';
@@ -614,9 +614,58 @@ export default function HomeScreen() {
   const [showMacroDrilldown, setShowMacroDrilldown] = useState(false);
   const [macroDrilldownItem, setMacroDrilldownItem] = useState<DrilldownItem | null>(null);
   const [showMacroGearSheet, setShowMacroGearSheet] = useState(false);
-  const macroSheetAnim = useRef(new Animated.Value(300)).current;
-  const openMacroSheet = () => { setShowMacroGearSheet(true); };
-  const closeMacroSheet = () => { Animated.timing(macroSheetAnim, { toValue: 300, duration: 200, useNativeDriver: true }).start(() => setShowMacroGearSheet(false)); };
+  const macroScaleAnim   = useRef(new Animated.Value(0.92)).current;
+  const macroOpacityAnim = useRef(new Animated.Value(0)).current;
+  const [macroPreset, setMacroPreset] = useState<string | null>(null);
+  const MACRO_PRESETS: Record<string, { label: string; p: number; c: number; f: number; icon: any }> = {
+    high_protein: { label: 'High Protein', p: 35, c: 35, f: 30, icon: 'barbell' },
+    balanced:     { label: 'Balanced',     p: 30, c: 40, f: 30, icon: 'pie-chart' },
+    low_carb:     { label: 'Low Carb',     p: 35, c: 25, f: 40, icon: 'leaf' },
+    performance:  { label: 'Performance',  p: 25, c: 50, f: 25, icon: 'flash' },
+  };
+  const openMacroSheet = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowMacroGearSheet(true); };
+  const openMacroSheetAnim = () => {
+    macroScaleAnim.setValue(0.92);
+    macroOpacityAnim.setValue(0);
+    Animated.parallel([
+      Animated.spring(macroScaleAnim,   { toValue: 1, useNativeDriver: true, damping: 22, stiffness: 300 }),
+      Animated.timing(macroOpacityAnim, { toValue: 1, duration: 150, useNativeDriver: true }),
+    ]).start();
+  };
+  const closeMacroSheet = () => {
+    Animated.parallel([
+      Animated.timing(macroScaleAnim,   { toValue: 0.94, duration: 160, useNativeDriver: true }),
+      Animated.timing(macroOpacityAnim, { toValue: 0,    duration: 140, useNativeDriver: true }),
+    ]).start(() => setShowMacroGearSheet(false));
+  };
+  const closeMacroSheetWithHaptic = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeMacroSheet(); };
+  const applyMacroPreset = async (key: string) => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    const preset = MACRO_PRESETS[key];
+    if (!preset) return;
+    setMacroPreset(key);
+    // Recompute the on-screen gram goals immediately from the current calorie target.
+    if (calTarget > 0) {
+      setMacroGoals({
+        protein: Math.round((preset.p / 100) * calTarget / 4),
+        carbs:   Math.round((preset.c / 100) * calTarget / 4),
+        fat:     Math.round((preset.f / 100) * calTarget / 9),
+      });
+    }
+    // Persist the ratio to the profile (read-then-merge, never wipe) + the chosen
+    // preset key to settings, mirroring onboarding.
+    try {
+      const rawP = await AsyncStorage.getItem('pj_profile');
+      const prof = rawP ? JSON.parse(rawP) : {};
+      await storageSet('pj_profile', JSON.stringify({ ...prof, macroMode: 'ratio', macroProteinPct: String(preset.p), macroCarbsPct: String(preset.c), macroFatPct: String(preset.f) }));
+      const rawS = await AsyncStorage.getItem('pj_settings');
+      const sett = rawS ? JSON.parse(rawS) : {};
+      await storageSet('pj_settings', JSON.stringify({ ...sett, macroPreset: key }));
+      showToast('Macro goals updated', preset.label, 'success');
+    } catch {
+      showToast('Save failed', 'Please try again', 'error');
+    }
+  };
   const [stepGoal,       setStepGoal]       = useState(10000);
   const [sleepGoal,      setSleepGoal]      = useState(7);
   const [activeCalGoal,  setActiveCalGoal]  = useState(500);
@@ -1440,6 +1489,17 @@ export default function HomeScreen() {
               carbs:   Math.round((0.40 * kcalTarget) / 4),
               fat:     Math.round((0.25 * kcalTarget) / 9),
             });
+          }
+          // Highlight the active preset in the macro modal: a ratio profile whose
+          // pcts match a preset shows it selected; anything else reads as Custom.
+          if (p.macroMode !== 'fixed' && p.macroProteinPct && p.macroCarbsPct && p.macroFatPct) {
+            const match = Object.entries(MACRO_PRESETS).find(([, pr]) =>
+              String(pr.p) === String(p.macroProteinPct) &&
+              String(pr.c) === String(p.macroCarbsPct) &&
+              String(pr.f) === String(p.macroFatPct));
+            setMacroPreset(match ? match[0] : null);
+          } else {
+            setMacroPreset(null);
           }
 
           if (p.sex) setProfileSex(p.sex === 'male' ? 'male' : 'female');
@@ -3693,13 +3753,65 @@ export default function HomeScreen() {
       />
 
       {/* ── Macro gear modal ── */}
-      <Modal visible={showMacroGearSheet} transparent animationType="none" onRequestClose={closeMacroSheet}
-        onShow={() => { macroSheetAnim.setValue(300); Animated.timing(macroSheetAnim, { toValue: 0, duration: 280, useNativeDriver: true }).start(); }}>
-        <TouchableOpacity style={{ flex:1, backgroundColor:'rgba(0,0,0,0.55)', justifyContent:'flex-end' }} activeOpacity={1} onPress={closeMacroSheet}>
-          <TouchableOpacity activeOpacity={1} onPress={() => {}}>
-            <Animated.View style={[{ backgroundColor: theme.bgSheet, borderTopLeftRadius:18, borderTopRightRadius:18, borderTopWidth:1.5, borderTopColor: theme.accentBlueRaw, borderLeftWidth:0.5, borderRightWidth:0.5, borderColor: theme.borderCard, paddingTop:12, paddingHorizontal:20, paddingBottom: insets.bottom + 20 }, { transform: [{ translateY: macroSheetAnim }] }]}>
-              <View style={{ width:36, height:4, borderRadius:2, backgroundColor: theme.sheetHandle, alignSelf:'center', marginBottom:18 }} />
-              <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:3, textTransform:'uppercase', marginBottom:16 }}>Macro Display</Text>
+      <Modal visible={showMacroGearSheet} transparent animationType="none" onShow={openMacroSheetAnim} onRequestClose={closeMacroSheetWithHaptic}>
+        <ToastRenderer />
+        <View style={{ flex:1, justifyContent:'center', alignItems:'center' }}>
+          <Animated.View style={[StyleSheet.absoluteFillObject, { backgroundColor:'rgba(0,0,0,0.55)', opacity: macroOpacityAnim }]} pointerEvents="none" />
+          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={closeMacroSheetWithHaptic} />
+          <Animated.View style={{
+            width:'86%', maxHeight:'78%',
+            backgroundColor: theme.bgSheet,
+            borderRadius:20, borderWidth:0.5, borderColor: theme.borderCard,
+            borderTopWidth:4, borderTopColor: theme.accentBlueRaw,
+            shadowColor:'#000', shadowOffset:{ width:0, height:10 }, shadowOpacity:0.45, shadowRadius:28, elevation:24,
+            overflow:'hidden',
+            transform:[{ scale: macroScaleAnim }], opacity: macroOpacityAnim,
+          }}>
+            {/* Handle */}
+            <TouchableOpacity onPress={closeMacroSheetWithHaptic} style={{ alignItems:'center', paddingTop:12, paddingBottom:6 }} hitSlop={{ top:12, bottom:12, left:60, right:60 }}>
+              <View style={{ width:36, height:4, borderRadius:2, backgroundColor: theme.borderCard }} />
+            </TouchableOpacity>
+            {/* Header */}
+            <View style={{ paddingHorizontal:20, paddingBottom:14, paddingTop:6, borderBottomWidth:0.5, borderBottomColor: theme.borderCard }}>
+              <Text style={{ fontSize:18, color: theme.accentBlue, fontFamily:'BebasNeue_400Regular', letterSpacing:2 }}>MACROS</Text>
+            </View>
+            <ScrollView contentContainerStyle={{ padding:20, paddingBottom:26 }} showsVerticalScrollIndicator={false}>
+              {/* Macro goal presets -- hidden in Mindful */}
+              {styleMode !== 'mindful' && (
+                <>
+                  <Text style={{ fontSize:9, letterSpacing:3, textTransform:'uppercase', color: theme.textMuted, fontFamily:'DMSans_700Bold', marginBottom:4 }}>Macro Goals</Text>
+                  <Text style={{ fontSize:11, color: theme.textDim, fontFamily:'DMSans_400Regular', marginBottom:12, lineHeight:16 }}>Sets your protein, carb, and fat targets automatically.</Text>
+                  <View style={{ flexDirection:'row', flexWrap:'wrap', gap:8 }}>
+                    {Object.entries(MACRO_PRESETS).map(([key, pr]) => {
+                      const active = macroPreset === key;
+                      return (
+                        <TouchableOpacity key={key} onPress={() => applyMacroPreset(key)} activeOpacity={0.85}
+                          style={{ width:'47%', paddingVertical:14, paddingHorizontal:10, borderRadius:12,
+                            borderWidth: active ? 1.5 : 1,
+                            backgroundColor: active ? theme.accentBlueBg : theme.bgCard,
+                            borderColor: active ? theme.accentBlueBorder : theme.borderCard, alignItems:'center', gap:4 }}>
+                          <Ionicons name={pr.icon} size={22} color={active ? theme.accentBlue : theme.textMuted} />
+                          <Text style={{ fontSize:14, fontFamily:'DMSans_700Bold', color: active ? theme.accentBlue : theme.textSecondary }}>{pr.label}</Text>
+                          <Text style={{ fontSize:11, fontFamily:'DMSans_400Regular', color: theme.textDim }}>{pr.p}P · {pr.c}C · {pr.f}F</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                  {macroPreset === null && (
+                    <Text style={{ fontSize:11, color: theme.textDim, fontFamily:'DMSans_400Regular', marginTop:10 }}>Custom goals set. Pick a preset to replace them.</Text>
+                  )}
+                  <TouchableOpacity
+                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeMacroSheet(); router.push({ pathname: '/settings', params: { section: 'goals' } }); }}
+                    hitSlop={{ top:8, bottom:8, left:8, right:8 }}
+                    style={{ flexDirection:'row', alignItems:'center', gap:5, marginTop:12 }}>
+                    <Ionicons name="options" size={13} color={theme.accentBlue} />
+                    <Text style={{ fontSize:12, color: theme.accentBlue, fontFamily:'DMSans_600SemiBold' }}>Need exact numbers? Fine-tune in Settings {'>'} Goals</Text>
+                  </TouchableOpacity>
+                  <View style={{ height:0.5, backgroundColor: theme.borderCard, marginTop:16, marginBottom:16 }} />
+                </>
+              )}
+              {/* Net Carbs display */}
+              <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:3, textTransform:'uppercase', marginBottom:14 }}>Macro Display</Text>
               <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between' }}>
                 <View style={{ flex:1, paddingRight:12 }}>
                   <Text style={{ fontSize:15, color: theme.textPrimary, fontFamily:'DMSans_600SemiBold', marginBottom:3 }}>Net Carbs</Text>
@@ -3714,9 +3826,9 @@ export default function HomeScreen() {
                   Tip: you can set a specific net carbs goal in Settings {'>'} Goals.
                 </Text>
               )}
-            </Animated.View>
-          </TouchableOpacity>
-        </TouchableOpacity>
+            </ScrollView>
+          </Animated.View>
+        </View>
       </Modal>
 
       {/* First-use disclaimer gate, shown before the very first Day Summary */}

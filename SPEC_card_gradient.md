@@ -64,7 +64,15 @@ Card elevation/shadow was tried bumped (offset 4 / opacity 0.18 / radius 10 / el
 - Plain/accent wash: `[accent, accent+'40', accent+'00']`, `locations [0, 0.04, 1]`, height 64.
 - Scored/status wash: `[status, status+'2E', status+'00']`, `locations [0, 0.06, 1]`, height 64.
 
-## ROLLOUT PROGRESS (2026-06-14, mid-rollout, PAUSED)
+## DECISION 2026-06-15: PULLED BACK TO SCORED-ONLY
+After seeing the wash on every card app-wide, Justin called it: in a card-heavy app the universal wash reads as wallpaper and kills hierarchy. The wash works because it's SELECTIVE and meaningful (status color on hero/scored cards). So we pulled it back to SCORED CARDS ONLY:
+- KEEPING the wash: Recovery hero (status), Sleep Score hero (status), day-summary category cards (category color), DaySummaryModal (composite status). These are the cards that earn the color.
+- REMOVED the wash everywhere else: reverted index/stats/log/workout/faith/day-detail to their pre-session look (their original accent/gold card edges restored, no wash); stripped the accent washes from the Sleep/Recovery hub's non-score cards (Recovery Trend/Key Signals/Coach, Sleep Trend/Stages/Metrics/Options/Coach, empty states) so the whole hub is neutral except the 2 scored heroes.
+- `components/GradientCard.tsx` (CardWash + GradientCard) stays as the reusable primitive for any card we decide later deserves the treatment.
+- NOTE: the Recovery tab's 3 non-score cards (Trend/Key Signals/Coach) LOST their accent wash in this pullback even though they were part of the original approved Recovery reference. Easy to add back if Justin wants them.
+- NEXT (Justin, "go through later"): decide case-by-case which specific pages/cards (if any) get the treatment back. The 2026-06-14 change requests below (coach-insight score color, stats records/trends, home faith hub, faith gratitude + Today's Message unify) are now OPTIONAL "candidates to add" rather than fixes, since those cards no longer carry a wash. The small/collapsed-card ugliness is MOOT for now (those cards lost the wash) but remains the gating issue IF we ever reintroduce the wash on smaller cards.
+
+## ROLLOUT PROGRESS (2026-06-14, mid-rollout, PAUSED) -- superseded by the 2026-06-15 pullback above; kept for history
 Approach taken: `components/GradientCard.tsx` holds `CardWash` (the single source of truth for the gradient recipe) + `GradientCard`. Cards are converted by INJECTING `<CardWash />` as a direct child (CardWash is position:absolute so order doesn't matter) rather than swapping wrappers -- safest, zero layout drift, and any future visual tuning is a one-file fix in CardWash. Old colored card edges (accent left border AND accent top border `borderTopColor: theme.accentBlueRaw` + `borderTopWidth: 1.5`) are neutralized to `theme.borderCardTop` as each file is converted. `overflow:'hidden'` and per-card shadows are left alone.
 
 ### DONE (compiles clean, zero new type errors vs the 16 pre-existing baseline)

@@ -12,7 +12,6 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Reanimated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, runOnJS } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ToastRenderer, useToast } from '../../components/Toast';
-import { CardWash } from '../../components/GradientCard';
 import { showAchievementToast } from '../../components/AchievementToast';
 import { showCelebration } from '../../components/CelebrationOverlay';
 import { checkWorkoutAchievements, getCelebTier } from '../../achievementData';
@@ -1004,8 +1003,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
         </View>
 
         {isRest ? (
-          <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, alignItems: 'center', paddingVertical: 32, overflow: 'hidden' }]}>
-            <CardWash />
+          <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, alignItems: 'center', paddingVertical: 32, overflow: 'hidden' }]}>
             <Ionicons name="moon" size={36} color={theme.textMuted} />
             <Text style={{ color: theme.textPrimary, fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginTop: 12 }}>REST DAY</Text>
             <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular', marginTop: 8, textAlign: 'center' }}>Recovery is part of the program. Rest well.</Text>
@@ -1125,8 +1123,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
         />
 
         {!isRest && exercises.length === 0 && (
-          <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, alignItems: 'center', paddingVertical: 28, marginBottom: 12 }]}>
-            <CardWash />
+          <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, alignItems: 'center', paddingVertical: 28, marginBottom: 12 }]}>
             <Ionicons name="barbell-outline" size={32} color={theme.textDim} />
             <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'DMSans_600SemiBold', marginTop: 10 }}>No exercises yet</Text>
             <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular', marginTop: 4, textAlign: 'center', paddingHorizontal: 24, marginBottom: 20 }}>
@@ -1147,8 +1144,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
           </View>
         )}
 
-        <View ref={effortCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, marginTop: 12 }]}>
-          <CardWash />
+        <View ref={effortCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, marginTop: 12 }]}>
           <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Today's Effort</Text>
           <View style={{ flexDirection: 'column', gap: 8, marginTop: 12 }}>
             {[[1,2,3,4,5],[6,7,8,9,10]].map((row, ri) => (
@@ -1196,8 +1192,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
           </Animated.View>
         </View>
 
-        <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, marginTop: 12 }]}>
-          <CardWash />
+        <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, marginTop: 12 }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Workout Notes</Text>
             <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>

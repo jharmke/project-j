@@ -8,7 +8,6 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import HeaderAvatar from '../../components/HeaderAvatar';
-import { CardWash } from '../../components/GradientCard';
 import CompanionFAB from '../../components/CompanionFAB';
 import CompanionChat from '../../components/CompanionChat';
 import BibleStartGuide from '../../components/BibleStartGuide';
@@ -240,7 +239,6 @@ function VotdCard({ verse, theme, onReflect }: { verse: DailyVerse | null; theme
         shadowColor: '#d4860a', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.85, shadowRadius: 8, elevation: 8,
       }]}
     >
-      <CardWash color={theme.accentAmber} />
       <View style={styles.verseLabelRow}>
         <Ionicons name="sunny-outline" size={11} color={theme.textMuted} />
         <Text style={[styles.verseLabel, { color: theme.textMuted }]}>TODAY'S MESSAGE</Text>
@@ -334,7 +332,6 @@ function BibleCard({ theme }: { theme: Theme }) {
   return (
     <>
       <View style={[styles.card, { backgroundColor: theme.bgCardFaith, overflow: 'hidden' }]}>
-        <CardWash color={theme.accentAmber} />
         <Ionicons name="book" size={130} color={theme.accentAmber} style={styles.cardWatermark} pointerEvents="none" />
         <View style={styles.cardLabelRow}>
           <Ionicons name="book" size={12} color={theme.accentAmber} />
@@ -568,7 +565,6 @@ function PrayerCard({ theme }: { theme: Theme }) {
   return (
     <Animated.View style={{ transform: [{ scale }] }}>
       <View style={[styles.card, { backgroundColor: theme.bgCardFaith, overflow: 'hidden' }]}>
-        <CardWash color={theme.accentAmber} />
         <MaterialCommunityIcons name="hand-heart" size={130} color={theme.accentAmber} style={styles.cardWatermark} pointerEvents="none" />
         <TouchableOpacity
           activeOpacity={0.9}
@@ -628,7 +624,7 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 32, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 },
   // Faith cards carry a faint warm gold edge (a softer cousin of the verse card) instead of
   // the standard cool top border; this is now the faith identity, since the screen wash is gone.
-  card:          { borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 0.5, borderColor: 'rgba(212,134,10,0.22)', shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.18, shadowRadius: 8, elevation: 4 },
+  card:          { borderRadius: 14, padding: 16, marginBottom: 12, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: 'rgba(212,134,10,0.22)', borderTopColor: 'rgba(212,134,10,0.38)', shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.18, shadowRadius: 8, elevation: 4 },
   cardWatermark: { position: 'absolute', right: -24, bottom: -28, opacity: 0.10 },
   cardLabelRow:  { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 12 },
   cardLabel:     { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold' },

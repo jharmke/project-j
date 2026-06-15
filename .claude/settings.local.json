@@ -95,7 +95,8 @@
       "Bash(xargs grep -ln \"requestAuthorization\")",
       "Bash(node *)",
       "Bash(grep -viE \"\\\\.tsx?$\")",
-      "PowerShell(npx tsc --noEmit 2>&1 | Select-String -Pattern \"error TS\" | ForEach-Object { \\($_ -split \"\\\\\\(\"\\)[0] } | Sort-Object -Unique)"
+      "PowerShell(npx tsc --noEmit 2>&1 | Select-String -Pattern \"error TS\" | ForEach-Object { \\($_ -split \"\\\\\\(\"\\)[0] } | Sort-Object -Unique)",
+      "PowerShell($out = npx tsc --noEmit 2>&1; $mine = $out | Select-String -Pattern \"sleep\\\\.tsx|recoveryScore\\\\.ts|useHealthKit\\\\.ts|coachAI\\\\.ts|smartTipsEngine\\\\.ts\"; if \\($mine\\) { Write-Output \"ERRORS IN TOUCHED FILES:\"; $mine } else { Write-Output \"No errors in touched files. Total project errors:\"; \\($out | Select-String -Pattern \"error TS\"\\).Count })"
     ]
   }
 }

@@ -35,7 +35,7 @@ export const METRIC_DRILLDOWNS: Record<string, MetricDrilldownContent> = {
   rhr: {
     title: "Resting Heart Rate",
     definition: "Resting heart rate is how many times your heart beats per minute when you are fully at rest. Lower generally points to a fitter, more recovered heart.",
-    calculation: "Your watch records it through the day and overnight. We take your day's resting value and compare it to your 7-day baseline.",
+    calculation: "Your watch records it through the day and overnight. For your recovery read we take your overnight average across the same sleep window your HRV uses and compare it to your 7-day baseline, so daytime activity doesn't skew it.",
     affects: "An elevated resting heart rate is a classic recovery-debt signal. It tends to climb with accumulated training strain, poor sleep, stress, dehydration, or the early onset of illness.",
     improve: (isGood) => isGood
       ? ["Your resting HR is at or below your baseline, a good recovery sign. Carry on with your plan."]

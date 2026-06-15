@@ -40,6 +40,17 @@ const NULL_RESULT: RecoveryResult = {
   isLimitedData: true,
 };
 
+// Label + zone color for a recovery score. Single source of truth so a frozen/
+// reused score (morning snapshot) derives the same label and color as a live one.
+export function recoveryZone(score: number): {
+  label: 'PRIMED' | 'STEADY' | 'RECOVER';
+  zoneColor: 'good' | 'warn' | 'bad';
+} {
+  const label = score >= 80 ? 'PRIMED' : score >= 60 ? 'STEADY' : 'RECOVER';
+  const zoneColor = score >= 80 ? 'good' : score >= 60 ? 'warn' : 'bad';
+  return { label, zoneColor };
+}
+
 // Linear component score. Baseline = 75 pts.
 // higherIsBetter: HRV = true; RHR, resp rate = false.
 // maxDev: fractional deviation for full ±25 pt swing from neutral.
@@ -67,9 +78,11 @@ export function calcRecoveryScore(input: RecoveryInput): RecoveryResult {
   const hasResp = todayResp !== null && respBaseline !== null && Number.isFinite(todayResp) && Number.isFinite(respBaseline);
   const hasActivity = yesterdayActiveCal !== null && activCalBaseline !== null && Number.isFinite(yesterdayActiveCal) && Number.isFinite(activCalBaseline);
 
-  // Minimum-data gate: need at least one trustworthy primary signal (sleep, HRV,
-  // or RHR). Resp / activity alone are too weak to anchor a credible score.
-  if (!hasSleep && !hasHRV && !hasRHR) return NULL_RESULT;
+  // Minimum-data gate: Recovery is a physiological readout (Whoop/Oura model), so
+  // it requires a real overnight signal (HRV or resting HR). A manually-typed sleep
+  // duration alone never manufactures a score; it voids to the empty state. Sleep
+  // still counts as a weighted input whenever overnight physiology is present.
+  if (!hasHRV && !hasRHR) return NULL_RESULT;
 
   const isLimitedData = !hasHRV;
 
@@ -100,8 +113,7 @@ export function calcRecoveryScore(input: RecoveryInput): RecoveryResult {
 
   // Zones calibrated 2026-06-14 from 30d of real data: PRIMED reserved for genuinely
   // strong 80+ days; a normal ~70-79 day reads STEADY, not top-tier. (Was 70 / 55.)
-  const label: 'PRIMED' | 'STEADY' | 'RECOVER' = totalScore >= 80 ? 'PRIMED' : totalScore >= 60 ? 'STEADY' : 'RECOVER';
-  const zoneColor: 'good' | 'warn' | 'bad' = totalScore >= 80 ? 'good' : totalScore >= 60 ? 'warn' : 'bad';
+  const { label, zoneColor } = recoveryZone(totalScore);
 
   const hrv: RecoveryComponent | null = hasHRV ? {
     value: `${Math.round(todayHRV! * 10) / 10}ms`,

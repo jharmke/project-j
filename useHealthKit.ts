@@ -365,8 +365,14 @@ export function useHealthKit() {
         );
         todayRHR = rhrDay?.averageQuantity?.quantity ? Math.round(rhrDay.averageQuantity.quantity) : null;
       } else {
-        const rhrData = await getMostRecentQuantitySample('HKQuantityTypeIdentifierRestingHeartRate');
-        todayRHR = rhrData ? Math.round(rhrData.quantity as number) : null;
+        // Morning snapshot: overnight sleep-window average (matches HRV) so daytime
+        // readings can't drift the recovery score as the day goes on.
+        const rhrSleep = await queryStatisticsForQuantity(
+          'HKQuantityTypeIdentifierRestingHeartRate',
+          ['discreteAverage'],
+          { filter: { date: { startDate: sleepStart, endDate: sleepEnd } } }
+        );
+        todayRHR = rhrSleep?.averageQuantity?.quantity ? Math.round(rhrSleep.averageQuantity.quantity) : null;
       }
 
       // RHR baseline: N-day average
@@ -389,8 +395,13 @@ export function useHealthKit() {
         );
         todayResp = respDay?.averageQuantity?.quantity ? Math.round(respDay.averageQuantity.quantity * 10) / 10 : null;
       } else {
-        const respData = await getMostRecentQuantitySample('HKQuantityTypeIdentifierRespiratoryRate');
-        todayResp = respData ? Math.round((respData.quantity as number) * 10) / 10 : null;
+        // Morning snapshot: overnight sleep-window average (matches the backfill branch).
+        const respSleep = await queryStatisticsForQuantity(
+          'HKQuantityTypeIdentifierRespiratoryRate',
+          ['discreteAverage'],
+          { filter: { date: { startDate: sleepStart, endDate: sleepEnd } } }
+        );
+        todayResp = respSleep?.averageQuantity?.quantity ? Math.round(respSleep.averageQuantity.quantity * 10) / 10 : null;
       }
 
       // Resp baseline: N-day average

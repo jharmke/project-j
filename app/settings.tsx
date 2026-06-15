@@ -2050,6 +2050,35 @@ export default function SettingsScreen() {
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
               triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              Alert.alert("Reset Today's Recovery Score", "Clears only today's locked Recovery Score so it recomputes fresh on next Recovery tab open. Use this to test the morning-snapshot freeze. Nothing else in today's data is touched.", [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Reset', style: 'destructive', onPress: async () => {
+                  triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
+                  try {
+                    const d = new Date();
+                    const k = `pj_${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    const raw = await AsyncStorage.getItem(k);
+                    if (raw) {
+                      const cur = JSON.parse(raw);
+                      delete cur.recoveryScore;
+                      await AsyncStorage.setItem(k, JSON.stringify(cur));
+                    }
+                    Alert.alert('Done', "Today's Recovery Score cleared. Open Sleep & Recovery, then the Recovery tab, and it will recompute and lock fresh.");
+                  } catch {
+                    Alert.alert('Error', "Could not reset today's Recovery Score.");
+                  }
+                }},
+              ]);
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Reset Today's Recovery Score</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Clears today's locked score so it recomputes fresh on next Recovery tab open.</Text>
+              </View>
+              <Ionicons name="refresh-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
               Alert.alert('Force Restore from Firestore', 'This wipes all local pj_* data and pulls everything from your cloud backup. Use only if your data is missing after signing in.', [
                 { text: 'Cancel', style: 'cancel' },
                 { text: 'Restore', style: 'destructive', onPress: async () => {

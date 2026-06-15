@@ -22,7 +22,7 @@ import TooltipIcon from '../components/TooltipIcon';
 import { triggerHaptic } from '../utils/haptics';
 import { storageSet } from '../utils/storage';
 import { calcSleepScore } from '../utils/sleepScore';
-import { calcRecoveryScore, RecoveryComponent, RecoveryResult } from '../utils/recoveryScore';
+import { calcRecoveryScore, recoveryZone, RecoveryComponent, RecoveryResult } from '../utils/recoveryScore';
 import MetricDrilldownModal, { MetricDrilldownData } from '../components/MetricDrilldownModal';
 import { CardWash } from '../components/GradientCard';
 import { METRIC_DRILLDOWNS } from '../data/metricDrilldowns';
@@ -464,6 +464,9 @@ export default function SleepHub() {
   // Day-stored sleep fields (mirror how the home card resolves the same number)
   const [sleepGoal, setSleepGoal] = useState(7);
   const [sleepOverride, setSleepOverride] = useState<number | null>(null);
+  // Frozen morning recovery snapshot: today's score locks on first compute and
+  // is reused all day so late watch syncs can't wobble the headline.
+  const [frozenScore, setFrozenScore] = useState<number | null>(null);
   const [sleepFeelRating, setSleepFeelRating] = useState<number | null>(null);
   const [sleepConsistencyPts, setSleepConsistencyPts] = useState(0);
   const [storedBed, setStoredBed] = useState<string | null>(null);
@@ -660,6 +663,9 @@ export default function SleepHub() {
   }, [adjustedSignals, score]);
 
   // Persist today's Recovery Score to pj_<date> so the trend accumulates over time.
+  // Morning-snapshot freeze: the FIRST score computed today is stored and never
+  // overwritten, so late watch syncs (HRV filling in, daytime readings) can't move
+  // it. If today's score already exists, reuse it; otherwise write it once.
   useEffect(() => {
     if (!recoveryResult || recoveryResult.score === null) return;
     const sc = recoveryResult.score;
@@ -668,7 +674,12 @@ export default function SleepHub() {
         const k = `pj_${todayKey()}`;
         const raw = await AsyncStorage.getItem(k);
         const cur = raw ? JSON.parse(raw) : {};
-        if (cur.recoveryScore !== sc) await storageSet(k, JSON.stringify({ ...cur, recoveryScore: sc }));
+        if (typeof cur.recoveryScore === 'number') {
+          setFrozenScore(cur.recoveryScore);
+        } else {
+          await storageSet(k, JSON.stringify({ ...cur, recoveryScore: sc }));
+          setFrozenScore(sc);
+        }
       } catch {}
     })();
   }, [recoveryResult]);
@@ -784,6 +795,7 @@ export default function SleepHub() {
           if (typeof d.sleepConsistencyPts === 'number') setSleepConsistencyPts(d.sleepConsistencyPts);
           if (d.sleepBedTime) setStoredBed(d.sleepBedTime);
           if (d.sleepWakeTime) setStoredWake(d.sleepWakeTime);
+          if (typeof d.recoveryScore === 'number') setFrozenScore(d.recoveryScore);
         }
         const prof = await AsyncStorage.getItem('pj_profile');
         if (prof) {
@@ -904,7 +916,11 @@ export default function SleepHub() {
   };
 
   const renderRecovery = () => {
-    const recColor = recoveryResult?.zoneColor === 'good' ? theme.statusGood : recoveryResult?.zoneColor === 'warn' ? theme.statusWarn : theme.statusBad;
+    // Headline shows the frozen morning score when locked; falls back to the live
+    // score before the day's first compute persists. Label + color follow it.
+    const heroScore = frozenScore ?? recoveryResult?.score ?? null;
+    const heroZoneInfo = heroScore !== null ? recoveryZone(heroScore) : null;
+    const recColor = heroZoneInfo?.zoneColor === 'good' ? theme.statusGood : heroZoneInfo?.zoneColor === 'warn' ? theme.statusWarn : theme.statusBad;
     const rowColor = (sc: number) => sc >= 75 ? theme.statusGood : sc >= 55 ? theme.statusWarn : theme.statusBad;
 
     // Hero card
@@ -922,7 +938,7 @@ export default function SleepHub() {
             <Ionicons name="pulse-outline" size={34} color={theme.iconMuted} />
             <Text style={{ fontSize: 14, color: theme.textPrimary, fontFamily: 'DMSans_700Bold', marginTop: 10 }}>Recovery data unavailable</Text>
             <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 4, textAlign: 'center', lineHeight: 18 }}>
-              Connect Apple Health and log sleep to see your Recovery Score.
+              Recovery needs overnight heart data from your Apple Watch. Wear it overnight to see your Recovery Score.
             </Text>
           </View>
         );
@@ -941,9 +957,9 @@ export default function SleepHub() {
           <CardWash color={recColor} scored />
           <Text style={[cardLabel, { marginBottom: 14 }]}>Today's Recovery</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18, marginBottom: 18 }}>
-            <Text style={{ fontSize: 72, color: recColor, fontFamily: 'BebasNeue_400Regular', lineHeight: 78 }}>{recoveryResult.score}</Text>
+            <Text style={{ fontSize: 72, color: recColor, fontFamily: 'BebasNeue_400Regular', lineHeight: 78 }}>{heroScore}</Text>
             <View>
-              <Text style={{ fontSize: 20, color: recColor, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 }}>{recoveryResult.label}</Text>
+              <Text style={{ fontSize: 20, color: recColor, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 }}>{heroZoneInfo?.label}</Text>
               {recoveryResult.isLimitedData && (
                 <View style={{ marginTop: 5, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, alignSelf: 'flex-start' }}>
                   <Text style={{ fontSize: 9, color: theme.accentBlueRaw, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' }}>Limited data</Text>

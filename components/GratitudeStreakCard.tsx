@@ -8,6 +8,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useToast } from './Toast';
+import { CardWash } from './GradientCard';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -299,6 +300,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
 
   return (
     <View ref={cardRef} style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder, borderTopColor: cardTop, overflow: 'hidden' }]}>
+      <CardWash color={t.accentAmber} radius={14} scored />
       <Ionicons name="heart" size={130} color={accent} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
 
       {/* Header */}

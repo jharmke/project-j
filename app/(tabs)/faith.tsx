@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
+import { CardWash } from '../../components/GradientCard';
 import { Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, router, useLocalSearchParams } from 'expo-router';
@@ -239,6 +240,7 @@ function VotdCard({ verse, theme, onReflect }: { verse: DailyVerse | null; theme
         shadowColor: '#d4860a', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.85, shadowRadius: 8, elevation: 8,
       }]}
     >
+      <CardWash color={theme.accentAmber} radius={14} scored />
       <View style={styles.verseLabelRow}>
         <Ionicons name="sunny-outline" size={11} color={theme.textMuted} />
         <Text style={[styles.verseLabel, { color: theme.textMuted }]}>TODAY'S MESSAGE</Text>
@@ -332,6 +334,7 @@ function BibleCard({ theme }: { theme: Theme }) {
   return (
     <>
       <View style={[styles.card, { backgroundColor: theme.bgCardFaith, overflow: 'hidden' }]}>
+        <CardWash color={theme.accentAmber} radius={14} scored />
         <Ionicons name="book" size={130} color={theme.accentAmber} style={styles.cardWatermark} pointerEvents="none" />
         <View style={styles.cardLabelRow}>
           <Ionicons name="book" size={12} color={theme.accentAmber} />
@@ -565,6 +568,7 @@ function PrayerCard({ theme }: { theme: Theme }) {
   return (
     <Animated.View style={{ transform: [{ scale }] }}>
       <View style={[styles.card, { backgroundColor: theme.bgCardFaith, overflow: 'hidden' }]}>
+        <CardWash color={theme.accentAmber} radius={14} scored />
         <MaterialCommunityIcons name="hand-heart" size={130} color={theme.accentAmber} style={styles.cardWatermark} pointerEvents="none" />
         <TouchableOpacity
           activeOpacity={0.9}

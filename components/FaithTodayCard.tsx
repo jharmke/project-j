@@ -13,7 +13,8 @@ import { READING_PLANS, getPlanCompletion, getTodayReading, type ReadingPlansSto
 import { DEVOTIONALS, getDevotionalCompletion, type DevotionalsStorage } from '../data/devotionals';
 import { loadReadingPlanProgress } from '../utils/readingPlansProgress';
 import { loadDevotionalProgress, getDevotionalProgress, getNextDay } from '../utils/devotionals';
-import { type Theme } from '../theme';
+import { useTheme, type Theme } from '../theme';
+import { CardWash } from './GradientCard';
 
 /**
  * Faith Today: the home tab's faith hub card (same slot 1 as the old Today's Message verse
@@ -90,6 +91,7 @@ function Slide({ width, minHeight, bg, onPress, onContentLayout, watermark, chil
   onContentLayout: (e: LayoutChangeEvent) => void; watermark?: ReactNode; children: ReactNode;
 }) {
   const s = useRef(new Animated.Value(1)).current;
+  const { theme } = useTheme();
   return (
     <TouchableOpacity
       activeOpacity={0.99}
@@ -99,6 +101,7 @@ function Slide({ width, minHeight, bg, onPress, onContentLayout, watermark, chil
       style={{ width: width || undefined }}
     >
       <Animated.View style={[styles.page, { minHeight, backgroundColor: bg, transform: [{ scale: s }] }]}>
+        <CardWash color={theme.accentAmber} radius={14} scored />
         {watermark}
         <View onLayout={onContentLayout} style={styles.pageContent}>{children}</View>
       </Animated.View>
@@ -196,7 +199,7 @@ export default function FaithTodayCard({ verse, theme }: Props) {
 
   return (
     <View style={styles.glow}>
-      <View style={[styles.clip, { borderColor: theme.borderCard, borderTopColor: theme.accentAmber }]}>
+      <View style={[styles.clip, { borderColor: theme.borderCard, borderTopColor: 'rgba(212,134,10,0.38)' }]}>
         <ScrollView
           ref={scrollRef}
           horizontal
@@ -207,7 +210,7 @@ export default function FaithTodayCard({ verse, theme }: Props) {
           onMomentumScrollEnd={onMomentumEnd}
         >
           {/* Page 1: the verse (Today's Message) */}
-          <Slide width={width} minHeight={maxH} bg={theme.bgCardFaithHero} onPress={goVerse} onContentLayout={onContentLayout(0)}
+          <Slide width={width} minHeight={maxH} bg={theme.bgCardFaith} onPress={goVerse} onContentLayout={onContentLayout(0)}
             watermark={<Ionicons name="sunny" size={130} color={theme.accentAmber} style={styles.watermark} pointerEvents="none" />}>
             <PageHeader
               title="Today's Message"
@@ -228,7 +231,7 @@ export default function FaithTodayCard({ verse, theme }: Props) {
           </Slide>
 
           {/* Page 2: active reading plans + devotionals, two columns */}
-          <Slide width={width} minHeight={maxH} bg={theme.bgCardFaithHero} onPress={goFaithPlans} onContentLayout={onContentLayout(1)}
+          <Slide width={width} minHeight={maxH} bg={theme.bgCardFaith} onPress={goFaithPlans} onContentLayout={onContentLayout(1)}
             watermark={<Ionicons name="book" size={130} color={theme.accentAmber} style={styles.watermark} pointerEvents="none" />}>
             <PageHeader
               title="Plans & Devotionals"
@@ -251,7 +254,7 @@ export default function FaithTodayCard({ verse, theme }: Props) {
           </Slide>
 
           {/* Page 3: active prayer preview */}
-          <Slide width={width} minHeight={maxH} bg={theme.bgCardFaithHero} onPress={goFaithPrayer} onContentLayout={onContentLayout(2)}
+          <Slide width={width} minHeight={maxH} bg={theme.bgCardFaith} onPress={goFaithPrayer} onContentLayout={onContentLayout(2)}
             watermark={<MaterialCommunityIcons name="hand-heart" size={130} color={theme.accentAmber} style={styles.watermark} pointerEvents="none" />}>
             <PageHeader
               title="Prayer"

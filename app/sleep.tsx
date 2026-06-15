@@ -620,6 +620,89 @@ export default function SleepHub() {
     const wake = nights.reduce((a, n) => a + n.awakeCount, 0) / nights.length;
     return { deepPct, remPct, bedMin, bedSd, bedLo, bedMid, bedHi, wake, count: nights.length };
   }, [history30, excludedSet]);
+
+  // Sleep Metrics rows computed once so the card AND the metric drill-down read the
+  // SAME numbers (mirrors recoveryResult). Display is identical to before; each row
+  // also carries drill metadata (dkey/isGood/reference) for the drill-down modal.
+  // A row with value '—' (no data) is not interactive.
+  type SleepMetricRow = {
+    icon: any; label: string; value: string; valueColor: string;
+    delta?: string; deltaColor?: string; caption?: string;
+    dkey: string; isGood: boolean | null; reference: string | null;
+  };
+  const sleepMetricRows = useMemo<SleepMetricRow[]>(() => {
+    if (filteredHistory.length === 0) return [];
+    const n = filteredHistory.length;
+    const withStages = filteredHistory.filter(nt => nt.totalMs > 0);
+    const avgDeepPct = withStages.length ? withStages.reduce((a, nt) => a + nt.deepMs / nt.totalMs, 0) / withStages.length * 100 : null;
+    const avgRemPct = withStages.length ? withStages.reduce((a, nt) => a + nt.remMs / nt.totalMs, 0) / withStages.length * 100 : null;
+
+    const beds = filteredHistory.map(nt => nt.bedMin).filter((b): b is number => b !== null);
+    const bedMean = beds.length ? beds.reduce((a, b) => a + b, 0) / beds.length : null;
+    const bedSd = beds.length >= 2 && bedMean !== null
+      ? Math.round(Math.sqrt(beds.reduce((a, b) => a + (b - bedMean) ** 2, 0) / beds.length)) : null;
+
+    const goalMs = sleepGoal * 3600000;
+    const totalSleepMs = filteredHistory.reduce((a, nt) => a + nt.totalMs, 0);
+    const debtMs = goalMs * n - totalSleepMs;
+
+    const good = theme.statusGood, warn = theme.statusWarn, bad = theme.statusBad;
+    const neutral = theme.textMuted;
+    const rows: SleepMetricRow[] = [];
+
+    const stageRow = (icon: string, label: string, dkey: string, val: number | null, base: number | null, lo: number, hi: number) => {
+      if (val === null) { rows.push({ icon, label, value: '—', valueColor: theme.textSecondary, caption: 'No stage data yet', dkey, isGood: null, reference: `Healthy range: ${lo} to ${hi}%` }); return; }
+      const vr = Math.round(val);
+      const color = val < lo ? warn : good;
+      const caption = val < lo ? `Below healthy range (${lo} to ${hi}%)`
+        : val > hi ? `Above healthy range (${lo} to ${hi}%)`
+        : `In healthy range (${lo} to ${hi}%)`;
+      let delta: string | undefined;
+      if (base !== null) {
+        const diff = vr - Math.round(base);
+        delta = diff === 0 ? '= norm' : diff > 0 ? `↑ ${diff}% norm` : `↓ ${-diff}% norm`;
+      }
+      rows.push({ icon, label, value: `${vr}%`, valueColor: color, delta, deltaColor: neutral, caption, dkey, isGood: val >= lo, reference: `Healthy range: ${lo} to ${hi}%` });
+    };
+    stageRow('moon', 'Avg deep sleep', 'deep', avgDeepPct, baseline30?.deepPct ?? null, 13, 23);
+    stageRow('pulse', 'Avg REM sleep', 'rem', avgRemPct, baseline30?.remPct ?? null, 20, 25);
+
+    const sortedRangeBeds = [...beds].sort((a, b) => a - b);
+    const rPct = (p: number) => sortedRangeBeds.length ? sortedRangeBeds[clamp(Math.round((p / 100) * (sortedRangeBeds.length - 1)), 0, sortedRangeBeds.length - 1)] : null;
+    const bedLo = baseline30?.bedLo ?? rPct(10);
+    const bedMid = baseline30?.bedMid ?? rPct(50);
+    const bedHi = baseline30?.bedHi ?? rPct(90);
+    const bedSpread = baseline30?.bedSd ?? bedSd;
+    if (bedMid === null) {
+      rows.push({ icon: 'time', label: 'Bedtime', value: '—', valueColor: theme.textSecondary, caption: 'Need 2+ nights', dkey: 'bedtime', isGood: null, reference: null });
+    } else {
+      const color = (bedSpread === null || bedSpread <= 60) ? good : warn;
+      const word = bedSpread === null ? undefined : bedSpread <= 30 ? 'Consistent' : bedSpread <= 60 ? 'Mostly steady' : 'Variable';
+      const caption = (bedLo !== null && bedHi !== null && bedLo !== bedHi) ? `Range ${fmtBedMin(bedLo)} to ${fmtBedMin(bedHi)}` : undefined;
+      const reference = (bedLo !== null && bedHi !== null && bedLo !== bedHi) ? `Typical ${fmtBedMin(bedMid)}, range ${fmtBedMin(bedLo)} to ${fmtBedMin(bedHi)}` : `Typical ${fmtBedMin(bedMid)}`;
+      rows.push({ icon: 'time', label: 'Bedtime', value: fmtBedMin(bedMid), valueColor: color, delta: word, deltaColor: color, caption, dkey: 'bedtime', isGood: (bedSpread === null || bedSpread <= 60), reference });
+    }
+
+    let balValue: string, balColor: string, balWord: string | undefined;
+    if (Math.abs(debtMs) < 60000) { balValue = 'On goal'; balColor = good; balWord = undefined; }
+    else if (debtMs > 0) { balValue = `-${fmtMs(debtMs)}`; balColor = bad; balWord = 'Deficit'; }
+    else { balValue = `+${fmtMs(-debtMs)}`; balColor = good; balWord = 'Surplus'; }
+    rows.push({ icon: 'bed', label: 'Sleep balance', value: balValue, valueColor: balColor, delta: balWord, deltaColor: balColor, caption: `Goal ${sleepGoal}h · Past ${n} nights`, dkey: 'sleepBalance', isGood: debtMs < 60000, reference: `Goal ${sleepGoal}h per night` });
+
+    if (withStages.length === 0) {
+      rows.push({ icon: 'eye', label: 'Avg wake events', value: '—', valueColor: theme.textSecondary, caption: 'No stage data yet', dkey: 'wakeEvents', isGood: null, reference: null });
+    } else {
+      const avgWake = withStages.reduce((a, nt) => a + nt.awakeCount, 0) / withStages.length;
+      const avgAwakeMs = withStages.reduce((a, nt) => a + nt.awakeMs, 0) / withStages.length;
+      const wakeBase = baseline30 ? Math.round(baseline30.wake) : 3;
+      const r1 = Math.round(avgWake * 10) / 10;
+      const valStr = Number.isInteger(r1) ? `${r1}` : r1.toFixed(1);
+      const wakeColor = avgWake <= wakeBase ? good : avgWake <= wakeBase * 2 ? warn : bad;
+      const awakeCap = avgAwakeMs > 0 ? `${fmtMs(Math.round(avgAwakeMs))} awake` : undefined;
+      rows.push({ icon: 'eye', label: 'Avg wake events', value: valStr, valueColor: wakeColor, delta: 'events', deltaColor: neutral, caption: awakeCap, dkey: 'wakeEvents', isGood: avgWake <= wakeBase, reference: `Your norm: about ${wakeBase} per night` });
+    }
+    return rows;
+  }, [filteredHistory, baseline30, sleepGoal, theme]);
   // Only blank the cards on the very first load. On range switches we keep the
   // existing charts mounted so the page doesn't collapse and jump to the top.
   const firstLoad = loadingHist && history.length === 0;
@@ -1203,114 +1286,37 @@ export default function SleepHub() {
 
   const renderMetrics = () => {
     if (filteredHistory.length === 0) return null;
-
-    const n = filteredHistory.length;
-    const withStages = filteredHistory.filter(nt => nt.totalMs > 0);
-    const avgDeepPct = withStages.length ? withStages.reduce((a, nt) => a + nt.deepMs / nt.totalMs, 0) / withStages.length * 100 : null;
-    const avgRemPct = withStages.length ? withStages.reduce((a, nt) => a + nt.remMs / nt.totalMs, 0) / withStages.length * 100 : null;
-
-    const beds = filteredHistory.map(nt => nt.bedMin).filter((b): b is number => b !== null);
-    const bedMean = beds.length ? beds.reduce((a, b) => a + b, 0) / beds.length : null;
-    const bedSd = beds.length >= 2 && bedMean !== null
-      ? Math.round(Math.sqrt(beds.reduce((a, b) => a + (b - bedMean) ** 2, 0) / beds.length)) : null;
-
-    // Sleep debt: cumulative shortfall vs goal across the viewed range.
-    const goalMs = sleepGoal * 3600000;
-    const totalSleepMs = filteredHistory.reduce((a, nt) => a + nt.totalMs, 0);
-    const debtMs = goalMs * n - totalSleepMs;
-
-    const good = theme.statusGood, warn = theme.statusWarn, bad = theme.statusBad;
-    const neutral = theme.textMuted;
-
-    // Inline comparison rows (no bars): big colored value on the right, a small
-    // qualifier next to it, one muted subtext line below. The qualifier is NEUTRAL
-    // for the stage "vs norm" deltas so a down-arrow never fights a green value, and
-    // COLORED where the qualifier itself is the judgment (bedtime / balance / wakes).
-    type RowCfg = { icon: any; label: string; value: string; valueColor: string; delta?: string; deltaColor?: string; caption?: string };
-    const rows: RowCfg[] = [];
-
-    // Avg deep / Avg REM over the viewed range (NOT last night). COLOR by medical
-    // healthy range: below = amber, in OR above = green (above is not a problem).
-    // The "vs norm" delta is neutral grey so its arrow can't contradict the color.
-    const stageRow = (icon: string, label: string, val: number | null, base: number | null, lo: number, hi: number) => {
-      if (val === null) { rows.push({ icon, label, value: '—', valueColor: theme.textSecondary, caption: 'No stage data yet' }); return; }
-      const vr = Math.round(val);
-      const color = val < lo ? warn : good;
-      const caption = val < lo ? `Below healthy range (${lo} to ${hi}%)`
-        : val > hi ? `Above healthy range (${lo} to ${hi}%)`
-        : `In healthy range (${lo} to ${hi}%)`;
-      let delta: string | undefined;
-      if (base !== null) {
-        const diff = vr - Math.round(base);
-        delta = diff === 0 ? '= norm' : diff > 0 ? `↑ ${diff}% norm` : `↓ ${-diff}% norm`;
-      }
-      rows.push({ icon, label, value: `${vr}%`, valueColor: color, delta, deltaColor: neutral, caption });
-    };
-    stageRow('moon', 'Avg deep sleep', avgDeepPct, baseline30?.deepPct ?? null, 13, 23);
-    stageRow('pulse', 'Avg REM sleep', avgRemPct, baseline30?.remPct ?? null, 20, 25);
-
-    // Bedtime: typical time, colored by how tightly your bedtimes cluster over the
-    // baseline window (std dev). The qualifier word IS the judgment, so it matches
-    // the value color. Subtext = your 10th-90th percentile range.
-    const sortedRangeBeds = [...beds].sort((a, b) => a - b);
-    const rPct = (p: number) => sortedRangeBeds.length ? sortedRangeBeds[clamp(Math.round((p / 100) * (sortedRangeBeds.length - 1)), 0, sortedRangeBeds.length - 1)] : null;
-    const bedLo = baseline30?.bedLo ?? rPct(10);
-    const bedMid = baseline30?.bedMid ?? rPct(50);
-    const bedHi = baseline30?.bedHi ?? rPct(90);
-    const bedSpread = baseline30?.bedSd ?? bedSd;
-    if (bedMid === null) {
-      rows.push({ icon: 'time', label: 'Bedtime', value: '—', valueColor: theme.textSecondary, caption: 'Need 2+ nights' });
-    } else {
-      const color = (bedSpread === null || bedSpread <= 60) ? good : warn;
-      const word = bedSpread === null ? undefined : bedSpread <= 30 ? 'Consistent' : bedSpread <= 60 ? 'Mostly steady' : 'Variable';
-      const caption = (bedLo !== null && bedHi !== null && bedLo !== bedHi) ? `Range ${fmtBedMin(bedLo)} to ${fmtBedMin(bedHi)}` : undefined;
-      rows.push({ icon: 'time', label: 'Bedtime', value: fmtBedMin(bedMid), valueColor: color, delta: word, deltaColor: color, caption });
-    }
-
-    // Sleep balance: surplus (green) / deficit (red) / on goal, vs your goal across
-    // the viewed range. Magnitude is the value, the word carries the same color.
-    let balValue: string, balColor: string, balWord: string | undefined;
-    if (Math.abs(debtMs) < 60000) { balValue = 'On goal'; balColor = good; balWord = undefined; }
-    else if (debtMs > 0) { balValue = `-${fmtMs(debtMs)}`; balColor = bad; balWord = 'Deficit'; }
-    else { balValue = `+${fmtMs(-debtMs)}`; balColor = good; balWord = 'Surplus'; }
-    rows.push({ icon: 'bed', label: 'Sleep balance', value: balValue, valueColor: balColor, delta: balWord, deltaColor: balColor, caption: `Goal ${sleepGoal}h · Past ${n} nights` });
-
-    // Avg wake events over the range vs your norm, consistent with the rows above
-    // (last night's count + awake time live on the Last Night card). At/below norm =
-    // green, up to 2x = amber, above 2x = red. Colored word-badge, no fussy decimal.
-    if (withStages.length === 0) {
-      rows.push({ icon: 'eye', label: 'Avg wake events', value: '—', valueColor: theme.textSecondary, caption: 'No stage data yet' });
-    } else {
-      const avgWake = withStages.reduce((a, nt) => a + nt.awakeCount, 0) / withStages.length;
-      const avgAwakeMs = withStages.reduce((a, nt) => a + nt.awakeMs, 0) / withStages.length;
-      const wakeBase = baseline30 ? Math.round(baseline30.wake) : 3;
-      const r1 = Math.round(avgWake * 10) / 10;
-      const valStr = Number.isInteger(r1) ? `${r1}` : r1.toFixed(1);
-      // Color is the verdict (at/below norm green, up to 2x amber, above 2x red).
-      // "events" unit fills the right column; avg awake duration is the subtext.
-      const wakeColor = avgWake <= wakeBase ? good : avgWake <= wakeBase * 2 ? warn : bad;
-      const awakeCap = avgAwakeMs > 0 ? `${fmtMs(Math.round(avgAwakeMs))} awake` : undefined;
-      rows.push({ icon: 'eye', label: 'Avg wake events', value: valStr, valueColor: wakeColor, delta: 'events', deltaColor: neutral, caption: awakeCap });
-    }
-
     return (
       <View style={cardStyle}>
         <Text style={[cardLabel, { marginBottom: 4 }]}>Sleep Metrics</Text>
-        {rows.map((r, i) => (
-          <View key={r.label} style={{ paddingVertical: 12, borderBottomWidth: i === rows.length - 1 ? 0 : 0.5, borderBottomColor: theme.borderSubtle }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 }}>
-                <Ionicons name={r.icon} size={14} color={theme.textMuted} />
-                <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>{r.label}</Text>
+        {sleepMetricRows.map((r, i) => {
+          const isLast = i === sleepMetricRows.length - 1;
+          const tappable = r.value !== '—';
+          const rowStyle = { paddingVertical: 12, borderBottomWidth: isLast ? 0 : 0.5, borderBottomColor: theme.borderSubtle } as const;
+          const inner = (
+            <>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 }}>
+                  <Ionicons name={r.icon} size={14} color={theme.textMuted} />
+                  <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>{r.label}</Text>
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6 }}>
+                    <Text style={{ fontSize: 17, color: r.valueColor, fontFamily: 'DMSans_700Bold' }}>{r.value}</Text>
+                    {r.delta ? <Text style={{ fontSize: 11, color: r.deltaColor, fontFamily: 'DMSans_600SemiBold' }}>{r.delta}</Text> : null}
+                  </View>
+                  {tappable ? <Ionicons name="chevron-forward" size={14} color={theme.textDim} /> : null}
+                </View>
               </View>
-              <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, flexShrink: 0 }}>
-                <Text style={{ fontSize: 17, color: r.valueColor, fontFamily: 'DMSans_700Bold' }}>{r.value}</Text>
-                {r.delta ? <Text style={{ fontSize: 11, color: r.deltaColor, fontFamily: 'DMSans_600SemiBold' }}>{r.delta}</Text> : null}
-              </View>
-            </View>
-            {r.caption ? <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 3 }}>{r.caption}</Text> : null}
-          </View>
-        ))}
+              {r.caption ? <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 3 }}>{r.caption}</Text> : null}
+            </>
+          );
+          return tappable ? (
+            <TouchableOpacity key={r.label} activeOpacity={0.6} onPress={() => openDrill(r.dkey)} style={rowStyle}>{inner}</TouchableOpacity>
+          ) : (
+            <View key={r.label} style={rowStyle}>{inner}</View>
+          );
+        })}
       </View>
     );
   };
@@ -1384,7 +1390,23 @@ export default function SleepHub() {
   const openDrill = (key: string) => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setDrillKey(key); };
   const buildDrill = (key: string): MetricDrilldownData | null => {
     const content = METRIC_DRILLDOWNS[key];
-    if (!content || !recoveryResult) return null;
+    if (!content) return null;
+    const statusWordFor = (g: boolean | null) => g === null ? 'Informational' : g ? 'In a healthy range' : 'Worth watching';
+
+    // Sleep-tab metric rows: read the live value/standing from the shared memo, so
+    // these drills work even with no recovery data (e.g. a watchless day).
+    const sleepRow = sleepMetricRows.find(r => r.dkey === key && r.value !== '—');
+    if (sleepRow) {
+      return {
+        title: content.title, value: sleepRow.value, statusWord: statusWordFor(sleepRow.isGood),
+        statusColor: sleepRow.valueColor, reference: sleepRow.reference,
+        definition: content.definition, calculation: content.calculation, affects: content.affects,
+        tips: content.improve(sleepRow.isGood), informationalOnly: content.informationalOnly, disclaimer: content.disclaimer,
+      };
+    }
+
+    // Recovery-tab signals: need the live recovery result.
+    if (!recoveryResult) return null;
     const rc = (sc: number) => sc >= 75 ? theme.statusGood : sc >= 55 ? theme.statusWarn : theme.statusBad;
     const sig = adjustedSignals;
     let value = '', reference: string | null = null, statusColor: string = theme.textSecondary;

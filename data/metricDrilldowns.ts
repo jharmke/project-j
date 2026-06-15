@@ -80,4 +80,66 @@ export const METRIC_DRILLDOWNS: Record<string, MetricDrilldownContent> = {
     informationalOnly: true,
     disclaimer: "This is informational only and not a medical measurement. If you have ongoing concerns about your blood oxygen, talk to a doctor.",
   },
+
+  // Sleep tab metrics (Sleep Metrics card rows).
+  deep: {
+    title: "Deep Sleep",
+    definition: "Deep sleep is the most physically restorative stage, when your body repairs muscle, strengthens the immune system, and releases most of its growth hormone. A healthy night spends roughly 13 to 23 percent here.",
+    calculation: "We average the deep-sleep share of each night across the range you are viewing, then compare it to the healthy range and your personal norm.",
+    affects: "Deep sleep is where most physical recovery happens. Consistently low deep sleep tends to show up as feeling unrested even after enough hours in bed.",
+    improve: (isGood) => isGood
+      ? ["Your deep sleep is sitting in a healthy range. Whatever your evening routine looks like, it is working for this stage."]
+      : [
+          "Your deep sleep is running below the healthy range. A cooler, darker room and avoiding alcohol or big meals within three hours of bed tend to protect it.",
+          "Deep sleep loads into the earlier part of the night, so an earlier, steadier bedtime usually buys you more of it.",
+        ],
+  },
+  rem: {
+    title: "REM Sleep",
+    definition: "REM is the dreaming stage that supports memory, learning, and emotional reset. A healthy night spends roughly 20 to 25 percent here.",
+    calculation: "We average the REM share of each night across the range you are viewing, then compare it to the healthy range and your personal norm.",
+    affects: "REM is where your brain processes the day and steadies your mood. Short REM tends to show up as feeling foggy or on edge, and it is often the first stage cut when a night runs short.",
+    improve: (isGood) => isGood
+      ? ["Your REM is in a healthy range. Protecting your total sleep time is the simplest way to keep it there, since REM stacks up in the later hours."]
+      : [
+          "Your REM is below the healthy range. Most REM happens in the back half of the night, so the biggest lever is simply sleeping longer. An earlier bedtime usually adds REM, not just hours.",
+          "Alcohol and late screens both suppress REM, so easing off those close to bed tends to help.",
+        ],
+  },
+  bedtime: {
+    title: "Bedtime Consistency",
+    definition: "This is your typical bedtime and how tightly your nights cluster around it. Your body runs on an internal clock, and a steady bedtime is one of the strongest signals you can give it.",
+    calculation: "We take your typical bedtime across your nights and measure how much it varies. Tightly clustered nights read as consistent; a wide spread reads as variable.",
+    affects: "A consistent bedtime helps you fall asleep faster and lifts quality across every sleep stage. Swinging bedtimes act a bit like jet lag, even when the total hours are the same.",
+    improve: (isGood) => isGood
+      ? ["Your bedtimes are clustering tightly. That consistency is doing quiet work for every other sleep number."]
+      : [
+          "Your bedtimes are swinging more than an hour. Picking one target time and holding it within thirty minutes, weekends included, is usually the highest-leverage sleep change you can make.",
+          "If a hard cutoff feels tough, anchor your wake time first. A steady morning tends to pull bedtime into line over a week or two.",
+        ],
+  },
+  sleepBalance: {
+    title: "Sleep Balance",
+    definition: "Sleep balance is how your actual sleep stacks up against your goal across the range you are viewing. A surplus means you are banking enough; a deficit means you are running short.",
+    calculation: "We add up your sleep across the range and compare it to your goal for those nights, then show the running surplus or deficit.",
+    affects: "Short-term sleep debt is real and it accumulates. A growing deficit tends to drag down energy, recovery, and mood before you consciously notice it.",
+    improve: (isGood) => isGood
+      ? ["You are at or above your goal across the range. That cushion is exactly what supports steady energy and recovery."]
+      : [
+          "You are carrying a sleep deficit across the range. You do not need to repay it all at once. Even an extra thirty minutes a night chips away at it without disrupting your rhythm.",
+          "Protecting bedtime is more reliable than sleeping in, since a later wake time tends to push the next bedtime back too.",
+        ],
+  },
+  wakeEvents: {
+    title: "Wake Events",
+    definition: "This is how many times you briefly woke during the night, averaged across the range. A few brief awakenings are completely normal and most people never remember them.",
+    calculation: "We average the number of awakenings your watch detected per night across the range, and compare it to your personal norm.",
+    affects: "Frequent awakenings fragment sleep and eat into the deep and REM stages, so a night can look long on paper but still leave you unrested.",
+    improve: (isGood) => isGood
+      ? ["Your awakenings are in line with your norm. Nothing to act on here."]
+      : [
+          "Your awakenings are running above your norm. A cooler room, easing off fluids and alcohol before bed, and keeping the room dark all tend to reduce them.",
+          "If a high number keeps showing up, caffeine timing and a warm or noisy room are the usual culprits worth ruling out first.",
+        ],
+  },
 };

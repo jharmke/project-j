@@ -113,7 +113,7 @@ export default function RecipeBuilderScreen() {
   const [totalWeight, setTotalWeight] = useState('');
   const [totalWeightUnit, setTotalWeightUnit] = useState('g');
   const [servingCount, setServingCount] = useState('');
-  const [servingName, setServingName] = useState('serving');
+  const [servingName, setServingName] = useState('');
   const [defaultToWeight, setDefaultToWeight] = useState(false);
   const [showCustomFoodModal, setShowCustomFoodModal] = useState(false);
   const [showWeightUnitDropdown, setShowWeightUnitDropdown] = useState(false);
@@ -357,7 +357,7 @@ export default function RecipeBuilderScreen() {
         totalWeight: parseFloat(totalWeight) || 0,
         totalWeightUnit,
         servingCount: parseInt(servingCount) || 0,
-        servingName,
+        servingName: servingName.trim() || 'serving',
         totalCal,
         totalProtein,
         totalCarbs,
@@ -579,7 +579,7 @@ export default function RecipeBuilderScreen() {
 
           {ingredients.length > 0 && servingCount.trim() !== '' && servings > 0 && (
             <View style={styles.perServingCard}>
-              <Text style={[styles.cardLabel, { color: theme.accentBlue, marginBottom: 12 }]}>Per {servingName}</Text>
+              <Text style={[styles.cardLabel, { color: theme.accentBlue, marginBottom: 12 }]}>Per {servingName.trim() || 'serving'}</Text>
               <View style={styles.macroRow}>
                 <View style={styles.macroStat}>
                   <Text style={[styles.macroVal, { color: theme.textSecondary }]}>{calPerServing}</Text>

@@ -548,6 +548,7 @@ export default function SleepHub() {
   const [backfilling, setBackfilling] = useState<string | null>(null);
   const [trendReload, setTrendReload] = useState(0);
   const [drillKey, setDrillKey] = useState<string | null>(null);
+  const [drillHistory, setDrillHistory] = useState<{ dateKey: string; value: number; label: string }[] | null>(null);
 
   // Bumped on focus so the donut re-animates each time the screen is entered.
   const [refreshKey, setRefreshKey] = useState(0);
@@ -1566,7 +1567,78 @@ export default function SleepHub() {
       tips: content.improve(isGood), informationalOnly: content.informationalOnly, disclaimer: content.disclaimer,
     };
   };
-  const drillData = drillKey ? buildDrill(drillKey) : null;
+  // Slice 2: per-metric history series for the drill-down mini-graph, over the
+  // current 7D/30D range. Recovery signals + activity come from local pj_<date>
+  // storage (the freeze + backfill already persist them); sleepScore from the
+  // in-memory sleep history. Returns null for keys not wired yet (Sleep-tab metrics
+  // are the fast-follow) so those just show no chart rather than a false empty state.
+  const buildMetricHistory = async (key: string, days: number): Promise<{ dateKey: string; value: number; label: string }[] | null> => {
+    if (key === 'sleepScore') {
+      return filteredHistory.map(nt => {
+        const sc = calcSleepScore(nt.totalMs / 3600000, { core: nt.coreMs, deep: nt.deepMs, rem: nt.remMs, totalMs: nt.totalMs }, sleepGoal).score ?? 0;
+        return { dateKey: nt.dateKey, value: sc, label: `${sc}` };
+      });
+    }
+    if (!['hrv', 'rhr', 'resp', 'spo2', 'activity'].includes(key)) return null;
+    const k = burnAccuracyPct / 100;
+    const out: { dateKey: string; value: number; label: string }[] = [];
+    const base = new Date();
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(base);
+      d.setDate(d.getDate() - i);
+      const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      if (excludedSet.has(dateKey)) continue;
+      try {
+        const raw = await AsyncStorage.getItem(`pj_${dateKey}`);
+        if (!raw) continue;
+        const data = JSON.parse(raw);
+        const sig = data.recoverySignals;
+        let v: number | null = null, label = '';
+        if (key === 'hrv' && sig && typeof sig.hrv === 'number') { v = Math.round(sig.hrv * 10) / 10; label = `${v}ms`; }
+        else if (key === 'rhr' && sig && typeof sig.rhr === 'number') { v = Math.round(sig.rhr); label = `${v} bpm`; }
+        else if (key === 'resp' && sig && typeof sig.resp === 'number') { v = Math.round(sig.resp * 10) / 10; label = `${v.toFixed(1)} brpm`; }
+        else if (key === 'spo2' && sig && typeof sig.spo2 === 'number') { v = Math.round(sig.spo2); label = `${v}%`; }
+        else if (key === 'activity' && typeof data.activeCalories === 'number') { v = Math.round(data.activeCalories * k); label = `${v} kcal`; }
+        if (v !== null) out.push({ dateKey, value: v, label });
+      } catch {}
+    }
+    // Today's heart-signal point can be missing from storage if today's score was
+    // frozen before per-night signals were persisted. Fall back to the live values
+    // the hero shows so the graph stays continuous and matches the hero.
+    const tk = `${base.getFullYear()}-${String(base.getMonth() + 1).padStart(2, '0')}-${String(base.getDate()).padStart(2, '0')}`;
+    if (!excludedSet.has(tk) && !out.some(p => p.dateKey === tk)) {
+      const s = adjustedSignals;
+      let v: number | null = null, label = '';
+      if (s) {
+        if (key === 'hrv' && s.todayHRV != null) { v = Math.round(s.todayHRV * 10) / 10; label = `${v}ms`; }
+        else if (key === 'rhr' && s.todayRHR != null) { v = Math.round(s.todayRHR); label = `${v} bpm`; }
+        else if (key === 'resp' && s.todayResp != null) { v = Math.round(s.todayResp * 10) / 10; label = `${v.toFixed(1)} brpm`; }
+        else if (key === 'spo2' && s.todaySpO2 != null) { v = Math.round(s.todaySpO2); label = `${v}%`; }
+      }
+      if (v !== null) out.push({ dateKey: tk, value: v, label });
+    }
+    return out;
+  };
+
+  useEffect(() => {
+    if (!drillKey) { setDrillHistory(null); return; }
+    let cancelled = false;
+    setDrillHistory(null);
+    (async () => {
+      const series = await buildMetricHistory(drillKey, parseInt(range, 10));
+      if (!cancelled) setDrillHistory(series);
+    })();
+    return () => { cancelled = true; };
+  }, [drillKey, range, filteredHistory, excludedSet, burnAccuracyPct, sleepGoal]);
+
+  const drillData = (() => {
+    if (!drillKey) return null;
+    const d = buildDrill(drillKey);
+    if (!d) return null;
+    // Mindful (growth-off) neutralizes the chart color to accent, matching the hero.
+    const chartColor = (styleMode === 'mindful' && !mindfulGrowth) ? theme.accentBlueRaw : undefined;
+    return { ...d, history: drillHistory ?? undefined, chartColor };
+  })();
 
   return (
     <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>

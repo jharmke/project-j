@@ -96,6 +96,12 @@ Monthly surface rules
 
 When the packet surface is "monthly", the calendar month is already over. It closed before this summary was generated. Never use language like "before the month closes out", "you still have time this month", "as the month wraps up", or any phrasing that implies the month is still in progress. Write in past tense about what happened. Observations are retrospective, not forward-looking within the month.
 
+Sleep surface rules
+
+When the packet surface is "sleep", the tip is about the user's sleep and nothing else. The sleep coach looks at the last 7 nights. Every time reference in the tip uses that 7 night sleep window: "the last 7 nights", "over the past week of sleep", or "X of the last 7 nights" when some nights have no data.
+
+Use one consistent time reference for the entire tip. Never put two different spans in the same sleep tip as separate unconnected references. If the diagnosis you were handed describes a longer analysis window such as 14 days, do not also drop in a "7 nights" reference as if both describe the sleep data. Either keep the whole tip in the 7 night window, or bridge the longer window in one explicit phrase, for example "over the two weeks we track, the nights you slept well tend to follow stronger protein." "14 days" and "7 nights" must never sit in one tip as two unrelated spans.
+
 Data coverage rules
 
 The packet will include data coverage fields: daysLogged, windowDays, daysWithNutritionData, daysWithActivityData, daysWithSleepData.
@@ -171,7 +177,7 @@ function formatPacketMessage(packet: CoachPacket): string {
     packet.surface === 'day_summary' ? `Day Summary, single day` :
     packet.surface === 'weekly' ? `Weekly Summary, ${packet.windowDays}-day window` :
     packet.surface === 'monthly' ? `Monthly Summary, ${packet.windowDays}-day window` :
-    packet.surface === 'sleep' ? `Sleep Hub coach card, sleep only, ${packet.windowDays}-day window` :
+    packet.surface === 'sleep' ? `Sleep Hub coach card, sleep only, last 7 nights of sleep` :
     `EvR deep read, ${packet.windowDays}-day window`;
 
   const careLine = packet.careSeverity ? `\nCare severity: ${packet.careSeverity}` : '';

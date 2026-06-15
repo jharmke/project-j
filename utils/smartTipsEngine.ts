@@ -1938,7 +1938,7 @@ function buildDiagnosisActionFacts(
     }
     case 'cross_protein_sleep': {
       return {
-        diagnosis: 'Over the last 14 days, sleep scores are averaging higher on days following strong protein intake',
+        diagnosis: 'Over the two weeks we track, on the nights with sleep data your sleep scores are averaging higher after days with strong protein intake',
         action: 'Keep protein consistent to maintain the sleep quality pattern',
         facts: {},
       };
@@ -1976,7 +1976,7 @@ function buildDiagnosisActionFacts(
     }
     case 'cross_steps_sleep': {
       return {
-        diagnosis: 'Over the last 14 days, sleep scores are averaging higher on days following strong step counts',
+        diagnosis: 'Over the two weeks we track, on the nights with sleep data your sleep scores are averaging higher after days with strong step counts',
         action: 'Use morning walks to anchor daily movement and protect sleep quality',
         facts: {},
       };

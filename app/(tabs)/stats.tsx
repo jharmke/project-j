@@ -2773,7 +2773,7 @@ export default function StatsScreen() {
             padding: 20,
             transform: [{ scale: manageStreaksAnim.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) }],
           }}>
-            <TouchableOpacity style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: theme.textMuted, opacity: 0.5, marginBottom: 16 }} activeOpacity={0.6} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeManageStreaks(); }} />
+            <TouchableOpacity style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: theme.textMuted, opacity: 0.5, marginBottom: 16 }} activeOpacity={0.6} hitSlop={{ top: 16, bottom: 16, left: 40, right: 40 }} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeManageStreaks(); }} />
             <Text style={{ fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw, marginBottom: 16 }}>MANAGE STREAKS</Text>
 
             <ScrollView showsVerticalScrollIndicator={false}>
@@ -2873,7 +2873,7 @@ export default function StatsScreen() {
               padding: 20,
               transform: [{ translateY: modalKeyboardOffset }],
             }}>
-                <TouchableOpacity style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: theme.textMuted, opacity: 0.5, marginBottom: 16 }} activeOpacity={0.6} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeCreateCustom(); }} />
+                <TouchableOpacity style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: theme.textMuted, opacity: 0.5, marginBottom: 16 }} activeOpacity={0.6} hitSlop={{ top: 16, bottom: 16, left: 40, right: 40 }} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeCreateCustom(); }} />
                 <Text style={{ fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw, marginBottom: 4 }}>CREATE CUSTOM STREAK</Text>
               <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginBottom: 20 }}>Manual check-in -- tap the tile each day to log it.</Text>
 

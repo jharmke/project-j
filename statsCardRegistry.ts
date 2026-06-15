@@ -73,8 +73,10 @@ export async function loadStatsCards(): Promise<StatsCard[]> {
       }
       return c;
     });
+    const removed = await getRemovedDefaultIds();
     const merged = [...migrated];
     for (const def of DEFAULT_STATS_CARDS) {
+      if (removed.includes(def.id)) continue;
       if (!merged.find(c => c.id === def.id)) {
         merged.push({ ...def, order: merged.length });
       }
@@ -85,11 +87,30 @@ export async function loadStatsCards(): Promise<StatsCard[]> {
   }
 }
 
+// Default cards the user has explicitly deleted. Without this, loadStatsCards
+// re-adds any missing default on every load, so a deleted default (e.g. the
+// Calories graph) respawns at the bottom of the list forever. New defaults added
+// in future updates still appear, since only ids the user actually removed are skipped.
+const REMOVED_DEFAULTS_KEY = 'pj_stats_removed_defaults';
+
+export async function getRemovedDefaultIds(): Promise<string[]> {
+  try {
+    const raw = await AsyncStorage.getItem(REMOVED_DEFAULTS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
 export async function saveStatsCards(cards: StatsCard[]): Promise<void> {
   try {
     // Normalize order to sequential integers before saving
     const ordered = cards.map((c, i) => ({ ...c, order: i }));
     await storageSet(STORAGE_KEY, JSON.stringify(ordered));
+    // Any default card absent from the saved list was deliberately removed by the
+    // user. Persist that so loadStatsCards doesn't respawn it. This covers every
+    // delete path, since they all save through here.
+    const presentIds = new Set(ordered.map(c => c.id));
+    const removed = DEFAULT_STATS_CARDS.filter(d => !presentIds.has(d.id)).map(d => d.id);
+    await storageSet(REMOVED_DEFAULTS_KEY, JSON.stringify(removed));
   } catch {}
 }
 

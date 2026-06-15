@@ -53,6 +53,7 @@ import { refreshCoachTip, resolveTipBody, resolveTipTitle, refreshCoachTipSleep 
 import NutrientDrilldownModal, { DrilldownItem, computeNetCarbsForEntry } from '../../components/NutrientDrilldownModal';
 import AnimatedNumber from '../../components/AnimatedNumber';
 import SleepDonut from '../../components/SleepDonut';
+import { CardWash } from '../../components/GradientCard';
 
 // ─── Card Registry ────────────────────────────────────────────────────────────
 export type CardId =
@@ -1628,7 +1629,8 @@ export default function HomeScreen() {
     const nudgeText = MINDFUL_NUDGES[new Date().getDate() % MINDFUL_NUDGES.length];
 
     return (
-      <View ref={calCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, overflow: 'hidden' }]}>
+      <View ref={calCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, borderTopWidth: 1.5, overflow: 'hidden' }]}>
+        <CardWash />
         <Ionicons name="flame" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
         <View style={{ flexDirection:'row', alignItems:'flex-start', justifyContent:'space-between', marginBottom:4 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
@@ -1715,7 +1717,8 @@ export default function HomeScreen() {
       setShowMacroDrilldown(true);
     };
     return (
-      <View ref={macrosCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
+      <View ref={macrosCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, overflow: 'hidden' }]}>
+        <CardWash />
         <Ionicons name="nutrition" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
@@ -1762,7 +1765,8 @@ export default function HomeScreen() {
   };
 
   const renderWaterCard = () => (
-    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
+    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, overflow: 'hidden' }]}>
+        <CardWash />
         <Ionicons name="water" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
       <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
         <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
@@ -1808,7 +1812,8 @@ export default function HomeScreen() {
   );
 
   const renderWeightCard = () => (
-    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, overflow: 'hidden' }]}>
+    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, borderTopWidth: 1.5, overflow: 'hidden' }]}>
+        <CardWash />
         <Ionicons name="body" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
       <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:10 }}>
         <Ionicons name="trending-down-outline" size={11} color={theme.textMuted} />
@@ -1914,7 +1919,8 @@ export default function HomeScreen() {
         onPressIn={onPressIn}
         onPressOut={onPressOut}
         onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/(tabs)/workout'); }}
-        style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, padding: 16, overflow: 'hidden' }]}>
+        style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, padding: 16, overflow: 'hidden' }]}>
+        <CardWash />
         <Ionicons name="barbell" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
         <View style={{ marginBottom: 12 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:8 }}>
@@ -2022,7 +2028,8 @@ export default function HomeScreen() {
     const pct = stepGoal > 0 ? steps / stepGoal : 0;
     const stepColor = pct >= 1 ? theme.statusGood : theme.accentBlue;
     return (
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, overflow: 'hidden' }]}>
+        <CardWash />
         {/* Background accent icon */}
         <Ionicons
           name="footsteps"
@@ -2051,7 +2058,8 @@ export default function HomeScreen() {
   const renderSleepCard = () => {
     const displaySleep = sleepOverride ?? sleepHours;
     return (
-      <Animated.View ref={sleepCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, overflow: 'hidden', transform: [{ scale: sleepCardScale }] }]}>
+      <Animated.View ref={sleepCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, borderTopWidth: 1.5, overflow: 'hidden', transform: [{ scale: sleepCardScale }] }]}>
+        <CardWash />
         <Ionicons name="moon" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
         <TouchableOpacity
           activeOpacity={1}
@@ -2426,7 +2434,8 @@ export default function HomeScreen() {
     const unitStyle = { fontSize: 8, color: theme.textDim, fontFamily: 'DMSans_400Regular' as const, marginTop: 1, textAlign: 'center' as const };
 
     return (
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, overflow: 'hidden' }]}>
+        <CardWash />
         <Ionicons name="fitness" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
         <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:10 }}>
           <Ionicons name="heart-outline" size={11} color={theme.textMuted} />
@@ -2500,7 +2509,8 @@ export default function HomeScreen() {
     const noteIsDirty = noteCurrentText !== noteLastSaved;
     const isClearing = noteIsDirty && !noteCurrentText && !!noteLastSaved;
     return (
-      <View ref={dailyNoteCardRef} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
+      <View ref={dailyNoteCardRef} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, overflow: 'hidden' }]}>
+        <CardWash />
         <Ionicons name="create" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
@@ -2808,7 +2818,8 @@ export default function HomeScreen() {
     const displayMetrics = yvyTutorialDemo ? selected : (isMindful ? mindfulSelected : selected);
 
     return (
-      <View ref={yvyCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
+      <View ref={yvyCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, overflow: 'hidden' }]}>
+        <CardWash />
         <Ionicons name="trophy" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
         {/* Header */}
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
@@ -3016,7 +3027,8 @@ export default function HomeScreen() {
       case 'vs_yesterday': {
         const cardContent = renderVsYesterdayCard();
         if (!cardContent) return (
-          <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
+          <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.borderCardTop, overflow: 'hidden' }]}>
+            <CardWash />
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 }}>
               <Ionicons name="git-compare-outline" size={11} color={theme.textMuted} />
               <Text style={[styles.cardLabel, { marginBottom: 0, color: theme.textMuted }]}>You vs Yesterday</Text>
@@ -3175,7 +3187,7 @@ export default function HomeScreen() {
               behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
               style={{ flex:1, justifyContent:'center', alignItems:'center' }}
               pointerEvents="box-none">
-            <Animated.View style={{ width:'92%', maxHeight:'82%', backgroundColor: theme.bgSheet, borderRadius:16, borderWidth:0.5, borderColor: theme.borderCard, borderTopWidth:1.5, borderTopColor: theme.accentBlueRaw, overflow:'hidden', transform:[{scale: cardScale}] }}>
+            <Animated.View style={{ width:'92%', maxHeight:'82%', backgroundColor: theme.bgSheet, borderRadius:16, borderWidth:0.5, borderColor: theme.borderCard, borderTopWidth:1.5, borderTopColor: theme.borderCardTop, overflow:'hidden', transform:[{scale: cardScale}] }}>
               {/* Handle + header always visible above scroll */}
               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeWaterDetailModal(); }} style={{ alignItems:'center', paddingTop:12, paddingBottom:8 }}>
                 <View style={{ width:36, height:4, borderRadius:2, backgroundColor: theme.sheetHandle }} />
@@ -3393,7 +3405,7 @@ export default function HomeScreen() {
            the drag handle and eye toggle without being behind the Modal layer ── */}
       {editTutorialMode && cardOrder.length > 0 && (
         <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' }]}>
-          <View style={[styles.editSheet, { backgroundColor: theme.bgSheet, borderColor: theme.borderSheet, borderWidth: 0.5, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw }]}>
+          <View style={[styles.editSheet, { backgroundColor: theme.bgSheet, borderColor: theme.borderSheet, borderWidth: 0.5, borderTopWidth: 1.5, borderTopColor: theme.borderCardTop }]}>
             {/* Handle bar */}
             <View style={{ alignSelf: 'center', paddingVertical: 10, paddingHorizontal: 40 }}>
               <View style={[styles.editSheetHandle, { backgroundColor: theme.sheetHandle }]} />
@@ -3518,7 +3530,7 @@ export default function HomeScreen() {
               backgroundColor: theme.bgSheet,
               borderColor: theme.borderSheet,
               borderTopWidth: 1.5,
-              borderTopColor: theme.accentBlueRaw,
+              borderTopColor: theme.borderCardTop,
               opacity: editSheetAnim,
             }]}>
             <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); exitEditMode(); }} style={{ alignSelf:'center', paddingVertical:10, paddingHorizontal:40 }}>
@@ -3697,7 +3709,7 @@ export default function HomeScreen() {
         onShow={() => { macroSheetAnim.setValue(300); Animated.timing(macroSheetAnim, { toValue: 0, duration: 280, useNativeDriver: true }).start(); }}>
         <TouchableOpacity style={{ flex:1, backgroundColor:'rgba(0,0,0,0.55)', justifyContent:'flex-end' }} activeOpacity={1} onPress={closeMacroSheet}>
           <TouchableOpacity activeOpacity={1} onPress={() => {}}>
-            <Animated.View style={[{ backgroundColor: theme.bgSheet, borderTopLeftRadius:18, borderTopRightRadius:18, borderTopWidth:1.5, borderTopColor: theme.accentBlueRaw, borderLeftWidth:0.5, borderRightWidth:0.5, borderColor: theme.borderCard, paddingTop:12, paddingHorizontal:20, paddingBottom: insets.bottom + 20 }, { transform: [{ translateY: macroSheetAnim }] }]}>
+            <Animated.View style={[{ backgroundColor: theme.bgSheet, borderTopLeftRadius:18, borderTopRightRadius:18, borderTopWidth:1.5, borderTopColor: theme.borderCardTop, borderLeftWidth:0.5, borderRightWidth:0.5, borderColor: theme.borderCard, paddingTop:12, paddingHorizontal:20, paddingBottom: insets.bottom + 20 }, { transform: [{ translateY: macroSheetAnim }] }]}>
               <View style={{ width:36, height:4, borderRadius:2, backgroundColor: theme.sheetHandle, alignSelf:'center', marginBottom:18 }} />
               <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:3, textTransform:'uppercase', marginBottom:16 }}>Macro Display</Text>
               <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between' }}>

@@ -94,7 +94,8 @@
       "Bash(awk 'NR>=413 && NR<=470 && / -- /{print NR\": \"$0}' data/tutorials.ts)",
       "Bash(xargs grep -ln \"requestAuthorization\")",
       "Bash(node *)",
-      "Bash(grep -viE \"\\\\.tsx?$\")"
+      "Bash(grep -viE \"\\\\.tsx?$\")",
+      "PowerShell(npx tsc --noEmit 2>&1 | Select-String -Pattern \"error TS\" | ForEach-Object { \\($_ -split \"\\\\\\(\"\\)[0] } | Sort-Object -Unique)"
     ]
   }
 }

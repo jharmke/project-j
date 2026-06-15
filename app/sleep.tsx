@@ -24,6 +24,7 @@ import { storageSet } from '../utils/storage';
 import { calcSleepScore } from '../utils/sleepScore';
 import { calcRecoveryScore, RecoveryComponent, RecoveryResult } from '../utils/recoveryScore';
 import MetricDrilldownModal, { MetricDrilldownData } from '../components/MetricDrilldownModal';
+import { CardWash } from '../components/GradientCard';
 import { METRIC_DRILLDOWNS } from '../data/metricDrilldowns';
 import { useHealthKit } from '../useHealthKit';
 import { useTheme } from '../theme';
@@ -794,8 +795,8 @@ export default function SleepHub() {
     borderWidth: 0.5,
     borderColor: theme.borderCard,
     borderTopColor: theme.borderCardTop,
-    borderLeftWidth: 3,
-    borderLeftColor: theme.accentBlueRaw,
+    borderLeftWidth: 0.5,
+    borderLeftColor: theme.borderCard,
     borderRadius: 14,
     padding: 16,
     marginHorizontal: 12,
@@ -813,6 +814,7 @@ export default function SleepHub() {
     if (displaySleep === null || displaySleep <= 0) {
       return (
         <View style={[cardStyle, { alignItems: 'center', paddingVertical: 28 }]}>
+          <CardWash />
           <Ionicons name="moon-outline" size={34} color={theme.iconMuted} />
           <Text style={{ fontSize: 14, color: theme.textPrimary, fontFamily: 'DMSans_700Bold', marginTop: 10 }}>No sleep logged last night</Text>
           <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 4, textAlign: 'center' }}>
@@ -837,6 +839,7 @@ export default function SleepHub() {
 
     return (
       <View style={cardStyle}>
+        <CardWash color={score !== null ? scoreColor : undefined} scored={score !== null} />
         <Text style={[cardLabel, { marginBottom: 14 }]}>Last Night</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <View style={{ flex: 1, alignItems: 'center' }}>
@@ -896,6 +899,7 @@ export default function SleepHub() {
       if (loadingRecovery && recoveryResult === null) {
         return (
           <View style={[cardStyle, { alignItems: 'center', paddingVertical: 32 }]}>
+            <CardWash />
             <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Loading recovery data...</Text>
           </View>
         );
@@ -903,6 +907,7 @@ export default function SleepHub() {
       if (recoveryResult === null || recoveryResult.score === null) {
         return (
           <View style={[cardStyle, { alignItems: 'center', paddingVertical: 28 }]}>
+            <CardWash />
             <Ionicons name="pulse-outline" size={34} color={theme.iconMuted} />
             <Text style={{ fontSize: 14, color: theme.textPrimary, fontFamily: 'DMSans_700Bold', marginTop: 10 }}>Recovery data unavailable</Text>
             <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 4, textAlign: 'center', lineHeight: 18 }}>
@@ -922,7 +927,7 @@ export default function SleepHub() {
 
       return (
         <View style={[cardStyle, { borderLeftWidth: 0.5, borderLeftColor: theme.borderCard }]}>
-          <LinearGradient colors={[recColor, recColor + '2E', recColor + '00']} locations={[0, 0.06, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 64, borderTopLeftRadius: 14, borderTopRightRadius: 14 }} pointerEvents="none" />
+          <CardWash color={recColor} scored />
           <Text style={[cardLabel, { marginBottom: 14 }]}>Today's Recovery</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18, marginBottom: 18 }}>
             <Text style={{ fontSize: 72, color: recColor, fontFamily: 'BebasNeue_400Regular', lineHeight: 78 }}>{recoveryResult.score}</Text>
@@ -987,7 +992,7 @@ export default function SleepHub() {
       const avg = recoveryTrend.length ? Math.round(recoveryTrend.reduce((a, d) => a + d.score, 0) / recoveryTrend.length) : null;
       return (
         <View style={[cardStyle, { borderLeftWidth: 0.5, borderLeftColor: theme.borderCard }]}>
-          <LinearGradient colors={[theme.accentBlueRaw, theme.accentBlueRaw + '40', theme.accentBlueRaw + '00']} locations={[0, 0.04, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 64, borderTopLeftRadius: 14, borderTopRightRadius: 14 }} pointerEvents="none" />
+          <CardWash />
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
             <View>
               <Text style={cardLabel}>Recovery Trend</Text>
@@ -1031,7 +1036,7 @@ export default function SleepHub() {
 
       return (
         <View style={[cardStyle, { borderLeftWidth: 0.5, borderLeftColor: theme.borderCard }]}>
-          <LinearGradient colors={[theme.accentBlueRaw, theme.accentBlueRaw + '40', theme.accentBlueRaw + '00']} locations={[0, 0.04, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 64, borderTopLeftRadius: 14, borderTopRightRadius: 14 }} pointerEvents="none" />
+          <CardWash />
           <Text style={[cardLabel, { marginBottom: 4 }]}>Key Signals</Text>
           {sigRow('HRV (overnight)', todayHRV !== null ? `${Math.round(todayHRV * 10) / 10}ms` : null, hrvBaseline !== null ? `7d avg: ${Math.round(hrvBaseline * 10) / 10}ms` : null, 'hrv')}
           {sigRow('Resting HR', todayRHR !== null ? `${todayRHR} bpm` : null, rhrBaseline !== null ? `7d avg: ${rhrBaseline} bpm` : null, 'rhr')}
@@ -1049,7 +1054,7 @@ export default function SleepHub() {
       if (styleMode === 'mindful' && !mindfulGrowth && tip.kind === 'corrective') return null;
       return (
         <View style={[cardStyle, { borderLeftWidth: 0.5, borderLeftColor: theme.borderCard }]}>
-          <LinearGradient colors={[theme.accentBlueRaw, theme.accentBlueRaw + '40', theme.accentBlueRaw + '00']} locations={[0, 0.04, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 64, borderTopLeftRadius: 14, borderTopRightRadius: 14 }} pointerEvents="none" />
+          <CardWash />
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
             <Ionicons name="sparkles" size={11} color={theme.statusGood} />
             <Text style={cardLabel}>Recovery Coach</Text>
@@ -1104,6 +1109,7 @@ export default function SleepHub() {
     const avg = trendData.length ? Math.round(trendData.reduce((a, d) => a + d.score, 0) / trendData.length) : null;
     return (
       <View style={cardStyle}>
+        <CardWash />
         <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
           <View>
             <Text style={cardLabel}>Sleep Score Trend</Text>
@@ -1136,6 +1142,7 @@ export default function SleepHub() {
     ];
     return (
       <View style={cardStyle}>
+        <CardWash />
         <Text style={[cardLabel, { marginBottom: 12 }]}>Sleep Stages</Text>
         {filteredHistory.length > 0 ? (
           <>
@@ -1255,6 +1262,7 @@ export default function SleepHub() {
 
     return (
       <View style={cardStyle}>
+        <CardWash />
         <Text style={[cardLabel, { marginBottom: 4 }]}>Sleep Metrics</Text>
         {rows.map((r, i) => (
           <View key={r.label} style={{ paddingVertical: 12, borderBottomWidth: i === rows.length - 1 ? 0 : 0.5, borderBottomColor: theme.borderSubtle }}>
@@ -1277,6 +1285,7 @@ export default function SleepHub() {
 
   const renderExclude = () => (
     <View style={cardStyle}>
+      <CardWash />
       <Text style={[cardLabel, { marginBottom: 12 }]}>Options</Text>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Text style={{ flex: 1, paddingRight: 12, fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>
@@ -1303,6 +1312,7 @@ export default function SleepHub() {
     const body = sleepCoachCache ? resolveTipBody(sleepCoachCache) : deterministic.text;
     return (
       <View style={cardStyle}>
+        <CardWash />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
           <Ionicons name="sparkles" size={11} color={theme.accentBlueRaw} />
           <Text style={cardLabel}>Sleep Coach</Text>

@@ -24,6 +24,7 @@ import { useTheme } from '../theme';
 import TooltipIcon from '../components/TooltipIcon';
 import { useToast } from '../components/Toast';
 import { ScoreRing } from '../components/DaySummaryModal';
+import { CardWash } from '../components/GradientCard';
 import { DayScore, DayScoreInput, scoreLabel, StyleMode, CATEGORY_WEIGHTS } from '../utils/dayScore';
 import { buildDayScoreInput, excludeDayFromAverages, ensureFreshDayScore } from '../utils/dayScoreStore';
 import { contextLine as computeContextLine, hadFaithEntryOn } from '../utils/daySummaryCopy';
@@ -245,9 +246,10 @@ export default function DaySummaryScreen() {
     return (
       <View ref={innerRef} collapsable={false} style={{
         backgroundColor: theme.bgCard, borderRadius: 14, borderWidth: 0.5, borderColor: theme.borderCard,
-        borderTopColor: 'rgba(255,255,255,0.1)', borderLeftWidth: 3, borderLeftColor: barC,
-        padding: 16, paddingLeft: 15, marginBottom: 12,
+        borderTopColor: theme.borderCardTop, borderLeftWidth: 0.5, borderLeftColor: theme.borderCard,
+        padding: 16, marginBottom: 12,
       }}>
+        <CardWash color={value !== null ? categoryColor : undefined} scored={value !== null} />
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
             <Ionicons name={icon} size={17} color={barC} />

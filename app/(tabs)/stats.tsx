@@ -12,6 +12,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { DayDetailContent } from '../day-detail';
 import { useTheme } from '../../theme';
 import HeaderAvatar from '../../components/HeaderAvatar';
+import { CardWash } from '../../components/GradientCard';
 import { CardPeriod, ChartType, DATA_KEY_CATEGORIES, DATA_KEY_META, DataKey, DEFAULT_STATS_CARDS, StatsCard, availableChartTypes, generateCardId, loadStatsCards, saveStatsCards } from '../../statsCardRegistry';
 import { ToastRenderer, useToast } from '../../components/Toast';
 import { EMPTY_TREND_DATA, TrendData, fetchTrendData as fetchTrendDataUtil, offsetToDateKey, computeDayNet, buildDailyBmrMap } from '../../utils/statsData';
@@ -1006,7 +1007,8 @@ export default function StatsScreen() {
   const renderDayArchive = () => {
     const weeks = archiveWeeks.filter(w => w.loggedCount > 0);
     return (
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, marginTop: 12 }]}>
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, ...shadowStyle, marginTop: 12 }]}>
+        <CardWash />
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setDaySummariesOpen(o => !o); }}
@@ -1093,7 +1095,8 @@ export default function StatsScreen() {
     }
 
     return (
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, marginTop: 12 }]}>
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, ...shadowStyle, marginTop: 12 }]}>
+        <CardWash />
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setWeeklyCardOpen(o => !o); }}
@@ -1191,7 +1194,8 @@ export default function StatsScreen() {
   const renderMonthlyCard = () => {
     if (TIPS_GATED) {
       return (
-        <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, marginTop: 12 }]}>
+        <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, ...shadowStyle, marginTop: 12 }]}>
+        <CardWash />
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
             <Text style={[styles.cardLabel, { color: theme.textMuted }]}>MONTHLY SUMMARIES</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -1211,7 +1215,8 @@ export default function StatsScreen() {
     }
 
     return (
-      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, marginTop: 12 }]}>
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, ...shadowStyle, marginTop: 12 }]}>
+        <CardWash />
         <TouchableOpacity
           activeOpacity={0.7}
           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setMonthlyCardOpen(o => !o); }}
@@ -1659,7 +1664,7 @@ export default function StatsScreen() {
     icon: string, label: string, value: number | null, unit: string,
     color: string, date: string | null, fmt: (v: number) => string,
   }) => (
-    <View style={[{ flex: 1, backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, borderRadius: 14, padding: 14, alignItems: 'center' }, shadowStyle]}>
+    <View style={[{ flex: 1, backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.borderCardTop, borderRadius: 14, padding: 14, alignItems: 'center' }, shadowStyle]}>
       <Ionicons name={icon as any} size={18} color={color} style={{ marginBottom: 4 }} />
       <Text style={{ fontSize: 26, color, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0, opacity: 0.88 }}>
         {value !== null ? fmt(value) : '--'}
@@ -1722,7 +1727,8 @@ export default function StatsScreen() {
             const isFirst = idx === 0;
             if (section.systemKey === 'atAGlance') return (
               <CollapsibleSection key={section.id} label={section.label} subtitle="Averages across your logged days" defaultOpen={isFirst} theme={theme} first={isFirst}>
-          <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
+          <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, ...shadowStyle }]}>
+          <CardWash />
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 12 }}>
               <TooltipIcon tooltipKey="at_a_glance" />
             </View>
@@ -1879,7 +1885,8 @@ export default function StatsScreen() {
             );
             if (section.systemKey === 'streaks') return (
               <CollapsibleSection key={section.id} label={section.label} subtitle="Consistency tracking" defaultOpen={isFirst} theme={theme} first={isFirst} forceOpen={streaksSectionForceOpen}>
-          <View ref={streaksSectionRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle }]}>
+          <View ref={streaksSectionRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, ...shadowStyle }]}>
+            <CardWash />
             {/* Card header row -- (i) inline with label, gear on right */}
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: liveStreaks.length > 0 ? 16 : 0 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -1948,7 +1955,8 @@ export default function StatsScreen() {
             );
             if (section.systemKey === 'calendar') return (
               <CollapsibleSection key={section.id} label={section.label} subtitle="Day-by-day history" defaultOpen={isFirst} theme={theme} first={isFirst}>
-                <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
+                <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
+            <CardWash />
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); if (calendarMonth === 0) { setCalendarMonth(11); setCalendarYear(y => y - 1); } else setCalendarMonth(m => m - 1); }} style={{ padding: 8 }}>
                 <Ionicons name="chevron-back" size={18} color={theme.accentBlue} />
@@ -2007,7 +2015,8 @@ export default function StatsScreen() {
             if (section.systemKey === 'reports') return (
               <View key={section.id} onLayout={e => { reportsLayoutY.current = e.nativeEvent.layout.y; }}>
               <CollapsibleSection label={section.label} subtitle="Effort vs. results analysis" defaultOpen={isFirst} theme={theme} first={isFirst} forceOpen={reportsSectionForceOpen}>
-                <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, overflow: 'hidden' }]}>
+                <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, ...shadowStyle, overflow: 'hidden' }]}>
+                  <CardWash />
                   {evrCardOpen && <Ionicons name="analytics" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />}
                   <TouchableOpacity
                     activeOpacity={0.7}
@@ -2061,7 +2070,7 @@ export default function StatsScreen() {
             backgroundColor: theme.bgSheet,
             borderRadius: 20,
             borderTopWidth: 1.5,
-            borderTopColor: theme.accentBlueRaw,
+            borderTopColor: theme.borderCardTop,
             borderWidth: 0.5,
             borderColor: theme.borderSheet,
             overflow: 'hidden',
@@ -2648,7 +2657,7 @@ export default function StatsScreen() {
           <Modal transparent animationType="fade" onRequestClose={() => setShowArchiveCalendar(false)}>
             <TouchableOpacity style={{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center' }} activeOpacity={1} onPress={() => setShowArchiveCalendar(false)}>
               <TouchableOpacity activeOpacity={1} onPress={() => {}} style={{ width: '88%', maxWidth: 380 }}>
-                <View style={{ backgroundColor: theme.bgSheet, borderRadius: 18, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, padding: 20 }}>
+                <View style={{ backgroundColor: theme.bgSheet, borderRadius: 18, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, padding: 20 }}>
                   <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', textAlign: 'center', marginBottom: 10 }}>JUMP TO A DAY</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                     <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); prevMonth(); }} style={{ padding: 8 }}>
@@ -2696,7 +2705,7 @@ export default function StatsScreen() {
         <View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' }]}>
           <View ref={streakManagePanelRef} collapsable={false} style={{
             width: '92%', maxHeight: '72%', borderRadius: 16, backgroundColor: theme.bgSheet,
-            borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderSheet, borderTopColor: theme.accentBlueRaw,
+            borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderSheet, borderTopColor: theme.borderCardTop,
             padding: 20,
           }}>
             <Text style={{ fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw, marginBottom: 16 }}>MANAGE STREAKS</Text>
@@ -2769,7 +2778,7 @@ export default function StatsScreen() {
           <TouchableOpacity style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} activeOpacity={1} onPress={closeManageStreaks} />
           <Animated.View style={{
             width: '92%', maxHeight: '72%', borderRadius: 16, backgroundColor: theme.bgSheet,
-            borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderSheet, borderTopColor: theme.accentBlueRaw,
+            borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderSheet, borderTopColor: theme.borderCardTop,
             padding: 20,
             transform: [{ scale: manageStreaksAnim.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) }],
           }}>
@@ -2869,7 +2878,7 @@ export default function StatsScreen() {
           <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <Animated.View style={{
               width: '88%', borderRadius: 16, backgroundColor: theme.bgSheet,
-              borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderSheet, borderTopColor: theme.accentBlueRaw,
+              borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderSheet, borderTopColor: theme.borderCardTop,
               padding: 20,
               transform: [{ translateY: modalKeyboardOffset }],
             }}>

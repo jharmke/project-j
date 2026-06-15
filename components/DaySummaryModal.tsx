@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import TooltipIcon from './TooltipIcon';
+import { CardWash } from './GradientCard';
 import { ToastRenderer, useToast } from './Toast';
 import { DayScore, scoreLabel } from '../utils/dayScore';
 import { excludeDayFromAverages } from '../utils/dayScoreStore';
@@ -195,9 +196,8 @@ export default function DaySummaryModal({ score, dateKey, theme, styleMode, fait
             backgroundColor: theme.bgSheet,
             borderRadius: 18,
             borderWidth: 0.5,
-            borderTopWidth: 1.5,
             borderColor: theme.borderCard,
-            borderTopColor: theme.accentBlueRaw,
+            borderTopColor: theme.borderCardTop,
             paddingHorizontal: 24,
             paddingTop: 12,
             paddingBottom: 22,
@@ -206,6 +206,7 @@ export default function DaySummaryModal({ score, dateKey, theme, styleMode, fait
             shadowOpacity: 0.3,
             shadowRadius: 16,
           }}>
+            <CardWash color={heroColor} scored radius={18} />
             {/* Handle pill (tap to dismiss) */}
             <TouchableOpacity onPress={dismiss} hitSlop={{ top: 10, bottom: 10, left: 40, right: 40 }} style={{ alignItems: 'center', paddingBottom: 14 }}>
               <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />

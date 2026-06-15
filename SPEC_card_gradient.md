@@ -63,3 +63,45 @@ Card elevation/shadow was tried bumped (offset 4 / opacity 0.18 / radius 10 / el
 - Card radius: 14. Shadow (current, pre-TestFlight-tuning): `shadowOffset {0,2}`, `shadowOpacity 0.12`, `shadowRadius 6`, `elevation 3`.
 - Plain/accent wash: `[accent, accent+'40', accent+'00']`, `locations [0, 0.04, 1]`, height 64.
 - Scored/status wash: `[status, status+'2E', status+'00']`, `locations [0, 0.06, 1]`, height 64.
+
+## ROLLOUT PROGRESS (2026-06-14, mid-rollout, PAUSED)
+Approach taken: `components/GradientCard.tsx` holds `CardWash` (the single source of truth for the gradient recipe) + `GradientCard`. Cards are converted by INJECTING `<CardWash />` as a direct child (CardWash is position:absolute so order doesn't matter) rather than swapping wrappers -- safest, zero layout drift, and any future visual tuning is a one-file fix in CardWash. Old colored card edges (accent left border AND accent top border `borderTopColor: theme.accentBlueRaw` + `borderTopWidth: 1.5`) are neutralized to `theme.borderCardTop` as each file is converted. `overflow:'hidden'` and per-card shadows are left alone.
+
+### DONE (compiles clean, zero new type errors vs the 16 pre-existing baseline)
+- `components/GradientCard.tsx` (new): `CardWash` + `GradientCard`.
+- `app/sleep.tsx` -- Sleep AND Recovery hubs. Recovery refactored from inline gradients to `CardWash`. Sleep Score hero = scored (accent fallback when no score).
+- `app/(tabs)/index.tsx` -- all Home feed cards. The special animated/paged smart-tip card was LEFT AS-IS (semantic per-page colored top border + animated height).
+- `app/(tabs)/stats.tsx` -- all content cards (streaks, calendar, EvR, graph cards).
+- `app/(tabs)/log.tsx` -- Today's Total, Advanced Nutrition, meal rows, Water. (NOTE: meal rows + collapsed Advanced Nutrition flagged bad below -- to be reverted/fixed.)
+- `app/(tabs)/workout.tsx` -- 4 content cards (2 empty states, Today's Effort, Workout Notes).
+- `app/(tabs)/faith.tsx` -- all 3 cards AMBER (incl. the verse/Today's Message card). Baked 1.5px gold top border removed from `styles.card`.
+- `app/day-detail.tsx` -- all 8 `styles.card` cards.
+- `app/day-summary.tsx` -- category `SectionCard`s, scored by category color (composite is a ring, no card).
+- `components/DaySummaryModal.tsx` -- scored by composite color (radius 18).
+- `app/(tabs)/profile.tsx` -- no content cards, nothing to do.
+
+### NOT DONE (pick up here)
+- `app/weekly-summary.tsx`, `app/monthly-summary.tsx` -- SummaryCard (category, scored) + 4 coach-card states. Read but NOT edited.
+- Remaining screens: settings, add-food, food-detail, recipe-builder, recipe-log, achievements, journal, bible, plans, devotional, mission, head-to-head, diagnostic-report(-view), ai-meal-estimator, prayer, definitions, tutorials.
+- Remaining components: FaithTodayCard, GratitudeStreakCard, ReadingPlansCard, IFCard, StatsGraphCard, CustomFoodCreator, BibleStartGuide, CompanionChat, and any others rendering content cards.
+
+## JUSTIN CHANGE REQUESTS (2026-06-14 device review) -- ACTION NEXT SESSION
+
+1. **SMALL / COLLAPSED CARDS LOOK BAD -- TOP PRIORITY, AUDIT ALL.** The fixed 64px wash overwhelms short cards: on a collapsed/short card the wash is most or all of the card height, so it reads as a full color FILL instead of a subtle top accent. Confirmed bad on: collapsed Advanced Nutrition (log), collapsed day-detail sections. AUDIT every collapsible/small card app-wide. Pick a fix that keeps the crisp top edge (gradient first color stop -- never reintroduce `borderTopWidth`) but makes the fade proportional or suppressed on short cards. Options to weigh: (a) scale `CardWash` height to a fraction of the card's measured height, (b) cap/shrink height under a threshold, (c) suppress the wash entirely while collapsed / below a height threshold. This is the gating issue before finishing the rollout.
+
+2. **LOG meal-time cards: REMOVE the gradient.** All mealtime / meal-slot cards (Morning/Lunch/Dinner/Snacks/Supplements). They're small list rows; the wash looks bad. Revert the `CardWash` added to `styles.mealRow` in `app/(tabs)/log.tsx`.
+
+3. **Advanced Nutrition card (log) collapsed looks bad** -- instance of #1.
+
+4. **Coach Insight HOME card: make it STATUS/SCORE colored, not amber.** It's currently amber because of its content. Confirm the capability to drive its wash by a score/status color and wire it. (This is the home Coach Insight card; verify which component/file renders it.)
+
+5. **STATS: Records cards should get the wash; Trends graph cards should too.** Confirm these were covered by the stats.tsx pass or add them (graph cards may render via `components/StatsGraphCard.tsx`).
+
+6. **HOME: Faith hub card (`FaithTodayCard`) should get the wash.**
+
+7. **FAITH: Gratitude card (`GratitudeStreakCard`) needs the wash.** ALSO: unify the "Today's Message" (verse) card with the other faith tab cards -- give it the SAME background as the rest of the faith cards and the same format, with the gradient like the others (drop its distinct verse-card treatment so it matches).
+
+8. **DAY DETAIL: collapsed small cards look bad** -- instance of #1.
+
+### Design note for the small-card fix (root cause)
+`CardWash` height is a fixed 64px regardless of card height. Tall card = top accent (good). Short/collapsed card = near-full fill (bad). The fix lives in ONE place (`components/GradientCard.tsx` -> `CardWash`), so once we settle the approach it propagates everywhere automatically.

@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
+import { CardWash } from '../components/GradientCard';
 import { storageSet } from '../utils/storage';
 import { DEFAULT_MEAL_SLOTS, MealSlot, findSlotForMeal, loadMealSlots, getMealDisplayName } from '../utils/mealSlots';
 import { calcSleepScore } from '../utils/sleepScore';
@@ -379,6 +380,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
 
         {/* Day at a Glance */}
         <View style={styles.card}>
+          <CardWash />
           <Ionicons name="flame" size={130} color={theme.accentBlueRaw} style={styles.heroIcon} />
           <Text style={styles.cardLabel}>Day at a Glance</Text>
           <View style={styles.statRow}>
@@ -430,6 +432,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
         {/* Sleep */}
         {sleepHours > 0 && (
           <View style={styles.card}>
+          <CardWash />
             <Ionicons name="moon" size={130} color={theme.accentBlueRaw} style={styles.heroIcon} />
             <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setSleepOpen(!sleepOpen); }} style={styles.cardRow} activeOpacity={0.7}>
               <Text style={[styles.cardLabel, { marginBottom: 0 }]}>Sleep</Text>
@@ -498,6 +501,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
 
         {/* Workout */}
         <View style={styles.card}>
+          <CardWash />
           <Ionicons name="barbell" size={130} color={theme.accentBlueRaw} style={styles.heroIcon} />
           <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setWorkoutOpen(!workoutOpen); }} style={styles.cardRow} activeOpacity={0.7}>
             <Text style={[styles.cardLabel, { marginBottom: 0 }]}>
@@ -566,6 +570,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
 
         {/* Meals */}
         <View style={styles.card}>
+          <CardWash />
           <Ionicons name="restaurant" size={130} color={theme.accentBlueRaw} style={styles.heroIcon} />
           <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setMealsOpen(!mealsOpen); }} style={styles.cardRow} activeOpacity={0.7}>
             <Text style={[styles.cardLabel, { marginBottom: 0 }]}>Meals · {totalCals} kcal</Text>
@@ -613,6 +618,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
         {/* Advanced Nutrition */}
         {(totalFiber > 0 || totalSodium > 0 || totalSugar > 0 || totalSatFat > 0 || totalPolyFat > 0 || totalMonoFat > 0 || totalCholesterol > 0 || totalPotassium > 0 || totalSugarAlcohols > 0 || totalVitaminA > 0 || totalVitaminC > 0 || totalCalcium > 0 || totalIron > 0) && (
           <View style={styles.card}>
+          <CardWash />
             <Ionicons name="leaf" size={130} color={theme.accentBlueRaw} style={styles.heroIcon} />
             <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setAdvNutritionOpen(!advNutritionOpen); }} style={styles.cardRow} activeOpacity={0.7}>
               <Text style={[styles.cardLabel, { marginBottom: 0 }]}>Advanced Nutrition</Text>
@@ -741,6 +747,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
         {/* Journal */}
         {journalEntries.length > 0 && (
           <View style={styles.card}>
+          <CardWash />
             <Ionicons name="book" size={130} color={theme.accentBlueRaw} style={styles.heroIcon} />
             <Text style={styles.cardLabel}>Journal</Text>
             {journalEntries.map((entry, i) => {
@@ -770,6 +777,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
         {/* Daily Note */}
         {!!data?.dailyNote && (
           <View style={styles.card}>
+          <CardWash />
             <Ionicons name="create" size={130} color={theme.accentBlueRaw} style={styles.heroIcon} />
             <Text style={styles.cardLabel}>Daily Note</Text>
             <Text style={styles.noteText}>{data.dailyNote}</Text>
@@ -778,6 +786,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
 
         {/* Exclude from Stats */}
         <View style={styles.card}>
+          <CardWash />
           <Text style={styles.cardLabel}>Exclude from Stats</Text>
           <Text style={styles.excludeSubtitle}>Excluded days are skipped in averages</Text>
           <View style={{ flexDirection: 'row', gap: 8 }}>
@@ -817,8 +826,8 @@ const useStyles = (theme: any, themeId: string) => {
       backgroundColor: theme.bgCard,
       borderWidth: 0.5,
       borderColor: theme.borderCard,
-      borderTopWidth: 1.5,
-      borderTopColor: theme.accentBlueRaw,
+      borderTopWidth: 0.5,
+      borderTopColor: theme.borderCardTop,
       borderRadius: 14,
       padding: 16,
       marginBottom: 12,

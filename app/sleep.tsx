@@ -760,7 +760,14 @@ export default function SleepHub() {
         if (typeof cur.recoveryScore === 'number') {
           setFrozenScore(cur.recoveryScore);
         } else {
-          await storageSet(k, JSON.stringify({ ...cur, recoveryScore: sc }));
+          // Freeze the day's overnight signals alongside the score (one value per
+          // night, Whoop/Oura style). Feeds the Recovery Coach pattern rules and the
+          // Slice 2 drill-down graphs. Read-then-merge; written once with the score.
+          const sig = adjustedSignals;
+          const recoverySignals = sig ? {
+            hrv: sig.todayHRV, rhr: sig.todayRHR, resp: sig.todayResp, spo2: sig.todaySpO2,
+          } : undefined;
+          await storageSet(k, JSON.stringify({ ...cur, recoveryScore: sc, ...(recoverySignals ? { recoverySignals } : {}) }));
           setFrozenScore(sc);
         }
       } catch {}
@@ -834,8 +841,11 @@ export default function SleepHub() {
           const k = `pj_${key}`;
           const raw = await AsyncStorage.getItem(k);
           const cur = raw ? JSON.parse(raw) : {};
-          if (cur.recoveryScore !== res.score) {
-            await storageSet(k, JSON.stringify({ ...cur, recoveryScore: res.score }));
+          if (cur.recoveryScore !== res.score || !cur.recoverySignals) {
+            // Persist that day's overnight signals too (one value per night) so the
+            // Recovery Coach + Slice 2 graphs have real history immediately.
+            const recoverySignals = { hrv: sig.todayHRV, rhr: sig.todayRHR, resp: sig.todayResp, spo2: sig.todaySpO2 };
+            await storageSet(k, JSON.stringify({ ...cur, recoveryScore: res.score, recoverySignals }));
           }
           written++;
         }

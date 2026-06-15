@@ -42,6 +42,7 @@
 ## SLEEP
 
 - Sleep detail page -- dedicated screen when Sleep card is tapped, real graph/breakdown. New screen, not a small add.
+- HRV (and other metrics) normative-context graphic -- Justin liked the LOOK of an age/gender HRV reference table (a clean banded table: age range x sex x value). Idea: show "is my number typical for my age/sex" context inside the metric drill-down. PINNED 2026-06-14, HOLD. Two real blockers to solve first: (1) the reference table Justin shared is RMSSD / ln(RMSSD) based, but our HRV metric is SDNN -- different scale, does NOT map; we would need SDNN-specific age/sex norms (noisier, less standardized). (2) Philosophy: our recovery model is deliberately baseline-relative (you vs your own normal), so a population chart slightly cuts against that message -- would need careful "context only, your trend matters more" framing. Revisit as a drill-down enhancement once good SDNN norms are sourced.
 
 ---
 

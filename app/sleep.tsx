@@ -23,6 +23,8 @@ import { triggerHaptic } from '../utils/haptics';
 import { storageSet } from '../utils/storage';
 import { calcSleepScore } from '../utils/sleepScore';
 import { calcRecoveryScore, RecoveryComponent, RecoveryResult } from '../utils/recoveryScore';
+import MetricDrilldownModal, { MetricDrilldownData } from '../components/MetricDrilldownModal';
+import { METRIC_DRILLDOWNS } from '../data/metricDrilldowns';
 import { useHealthKit } from '../useHealthKit';
 import { useTheme } from '../theme';
 import { refreshCoachTipSleep, resolveTipBody } from '../utils/coachAI';
@@ -479,6 +481,7 @@ export default function SleepHub() {
   const [recoveryTrend, setRecoveryTrend] = useState<{ dateKey: string; score: number }[]>([]);
   const [backfilling, setBackfilling] = useState<string | null>(null);
   const [trendReload, setTrendReload] = useState(0);
+  const [drillKey, setDrillKey] = useState<string | null>(null);
 
   // Bumped on focus so the donut re-animates each time the screen is entered.
   const [refreshKey, setRefreshKey] = useState(0);
@@ -909,12 +912,12 @@ export default function SleepHub() {
         );
       }
 
-      const rows: { key: string; comp: RecoveryComponent | null }[] = [
-        { key: 'HRV', comp: recoveryResult.hrv },
-        { key: 'Sleep Score', comp: recoveryResult.sleep },
-        { key: 'Resting HR', comp: recoveryResult.rhr },
-        { key: 'Prev. Activity', comp: recoveryResult.activity },
-        { key: 'Resp. Rate', comp: recoveryResult.resp },
+      const rows: { key: string; dkey: string; comp: RecoveryComponent | null }[] = [
+        { key: 'HRV', dkey: 'hrv', comp: recoveryResult.hrv },
+        { key: 'Sleep Score', dkey: 'sleepScore', comp: recoveryResult.sleep },
+        { key: 'Resting HR', dkey: 'rhr', comp: recoveryResult.rhr },
+        { key: 'Prev. Activity', dkey: 'activity', comp: recoveryResult.activity },
+        { key: 'Resp. Rate', dkey: 'resp', comp: recoveryResult.resp },
       ].filter(r => r.comp !== null);
 
       return (
@@ -936,12 +939,12 @@ export default function SleepHub() {
             Change vs your 7-day baseline
           </Text>
           <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
-            {rows.map(({ key, comp }, idx) => {
+            {rows.map(({ key, dkey, comp }, idx) => {
               if (!comp) return null;
               const rc = rowColor(comp.score);
               const isLast = idx === rows.length - 1;
               return (
-                <View key={key} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: isLast ? 0 : 0.5, borderBottomColor: theme.borderSubtle }}>
+                <TouchableOpacity key={key} activeOpacity={0.6} onPress={() => openDrill(dkey)} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: isLast ? 0 : 0.5, borderBottomColor: theme.borderSubtle }}>
                   <View style={{ width: 3, height: 28, borderRadius: 2, backgroundColor: rc, marginRight: 12 }} />
                   <Text style={{ flex: 1, fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>{key}</Text>
                   <View style={{ alignItems: 'flex-end' }}>
@@ -953,20 +956,22 @@ export default function SleepHub() {
                       </View>
                     )}
                   </View>
-                </View>
+                  <Ionicons name="chevron-forward" size={14} color={theme.textDim} style={{ marginLeft: 8 }} />
+                </TouchableOpacity>
               );
             })}
           </View>
 
           {adjustedSignals?.todaySpO2 !== null && adjustedSignals?.todaySpO2 !== undefined && (
-            <View style={{ flexDirection: 'row', alignItems: 'center', paddingTop: 10, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle, marginTop: 2 }}>
-              <View style={{ width: 3, height: 28, borderRadius: 2, backgroundColor: theme.textDim, marginRight: 12 }} />
+            <TouchableOpacity activeOpacity={0.6} onPress={() => openDrill('spo2')} style={{ flexDirection: 'row', alignItems: 'center', paddingTop: 10, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle, marginTop: 2 }}>
+              <View style={{ width: 3, height: 28, borderRadius: 2, backgroundColor: adjustedSignals.todaySpO2 >= 95 ? theme.statusGood : theme.statusWarn, marginRight: 12 }} />
               <View style={{ flex: 1 }}>
                 <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>Blood Oxygen (SpO2)</Text>
                 <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 1 }}>Informational only</Text>
               </View>
-              <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_700Bold' }}>{adjustedSignals.todaySpO2}%</Text>
-            </View>
+              <Text style={{ fontSize: 14, color: adjustedSignals.todaySpO2 >= 95 ? theme.statusGood : theme.statusWarn, fontFamily: 'DMSans_700Bold' }}>{adjustedSignals.todaySpO2}%</Text>
+              <Ionicons name="chevron-forward" size={14} color={theme.textDim} style={{ marginLeft: 8 }} />
+            </TouchableOpacity>
           )}
 
           <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 14, textAlign: 'center' }}>
@@ -1010,25 +1015,26 @@ export default function SleepHub() {
       const anySignal = todayHRV !== null || todayRHR !== null || todayResp !== null || todaySpO2 !== null || yesterdayActiveCal !== null;
       if (!anySignal) return null;
 
-      const sigRow = (label: string, value: string | null, sub: string | null, isLast = false) =>
+      const sigRow = (label: string, value: string | null, sub: string | null, dkey: string, isLast = false) =>
         value === null ? null : (
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: isLast ? 0 : 0.5, borderBottomColor: theme.borderSubtle }}>
-            <View>
+          <TouchableOpacity activeOpacity={0.6} onPress={() => openDrill(dkey)} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: isLast ? 0 : 0.5, borderBottomColor: theme.borderSubtle }}>
+            <View style={{ flex: 1 }}>
               <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>{label}</Text>
               {sub ? <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>{sub}</Text> : null}
             </View>
             <Text style={{ fontSize: 16, color: theme.textPrimary, fontFamily: 'DMSans_700Bold' }}>{value}</Text>
-          </View>
+            <Ionicons name="chevron-forward" size={14} color={theme.textDim} style={{ marginLeft: 8 }} />
+          </TouchableOpacity>
         );
 
       return (
         <View style={cardStyle}>
           <Text style={[cardLabel, { marginBottom: 4 }]}>Key Signals</Text>
-          {sigRow('HRV (overnight)', todayHRV !== null ? `${Math.round(todayHRV * 10) / 10}ms` : null, hrvBaseline !== null ? `7d avg: ${Math.round(hrvBaseline * 10) / 10}ms` : null)}
-          {sigRow('Resting HR', todayRHR !== null ? `${todayRHR} bpm` : null, rhrBaseline !== null ? `7d avg: ${rhrBaseline} bpm` : null)}
-          {sigRow('Resp. Rate', todayResp !== null ? `${todayResp} brpm` : null, respBaseline !== null ? `7d avg: ${respBaseline} brpm` : null)}
-          {sigRow('Blood Oxygen', todaySpO2 !== null ? `${todaySpO2}%` : null, 'Informational only')}
-          {sigRow('Prev. Day Activity', yesterdayActiveCal !== null ? `${yesterdayActiveCal} kcal` : null, activCalBaseline !== null ? `7d avg: ${activCalBaseline} kcal` : null, true)}
+          {sigRow('HRV (overnight)', todayHRV !== null ? `${Math.round(todayHRV * 10) / 10}ms` : null, hrvBaseline !== null ? `7d avg: ${Math.round(hrvBaseline * 10) / 10}ms` : null, 'hrv')}
+          {sigRow('Resting HR', todayRHR !== null ? `${todayRHR} bpm` : null, rhrBaseline !== null ? `7d avg: ${rhrBaseline} bpm` : null, 'rhr')}
+          {sigRow('Resp. Rate', todayResp !== null ? `${todayResp} brpm` : null, respBaseline !== null ? `7d avg: ${respBaseline} brpm` : null, 'resp')}
+          {sigRow('Blood Oxygen', todaySpO2 !== null ? `${todaySpO2}%` : null, 'Informational only', 'spo2')}
+          {sigRow('Prev. Day Activity', yesterdayActiveCal !== null ? `${yesterdayActiveCal} kcal` : null, activCalBaseline !== null ? `7d avg: ${activCalBaseline} kcal` : null, 'activity', true)}
         </View>
       );
     };
@@ -1329,6 +1335,47 @@ export default function SleepHub() {
     );
   };
 
+  // Assemble a metric drill-down from the registry content + the user's live
+  // standing, so the improve tips reflect their REAL state (SPEC_sleep 13).
+  const openDrill = (key: string) => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setDrillKey(key); };
+  const buildDrill = (key: string): MetricDrilldownData | null => {
+    const content = METRIC_DRILLDOWNS[key];
+    if (!content || !recoveryResult) return null;
+    const rc = (sc: number) => sc >= 75 ? theme.statusGood : sc >= 55 ? theme.statusWarn : theme.statusBad;
+    const sig = adjustedSignals;
+    let value = '', reference: string | null = null, statusColor: string = theme.textSecondary;
+    let isGood: boolean | null = null;
+    if (key === 'hrv' && recoveryResult.hrv) {
+      const c = recoveryResult.hrv; value = c.value; isGood = c.isPositive; statusColor = rc(c.score);
+      reference = sig?.hrvBaseline != null ? `7-day baseline: ${Math.round(sig.hrvBaseline * 10) / 10}ms` : null;
+    } else if (key === 'rhr' && recoveryResult.rhr) {
+      const c = recoveryResult.rhr; value = c.value; isGood = c.isPositive; statusColor = rc(c.score);
+      reference = sig?.rhrBaseline != null ? `7-day baseline: ${sig.rhrBaseline} bpm` : null;
+    } else if (key === 'resp' && recoveryResult.resp) {
+      const c = recoveryResult.resp; value = c.value; isGood = c.isPositive; statusColor = rc(c.score);
+      reference = sig?.respBaseline != null ? `7-day baseline: ${sig.respBaseline} brpm` : null;
+    } else if (key === 'activity' && recoveryResult.activity) {
+      const c = recoveryResult.activity; value = c.value; isGood = c.isPositive; statusColor = rc(c.score);
+      reference = sig?.activCalBaseline != null ? `7-day baseline: ${sig.activCalBaseline} kcal` : null;
+    } else if (key === 'sleepScore' && recoveryResult.sleep) {
+      const c = recoveryResult.sleep; value = c.value; isGood = c.score >= 70; statusColor = rc(c.score);
+      reference = 'Out of 100';
+    } else if (key === 'spo2' && sig?.todaySpO2 != null) {
+      value = `${sig.todaySpO2}%`; isGood = null;
+      statusColor = sig.todaySpO2 >= 95 ? theme.statusGood : theme.statusWarn;
+      reference = 'Healthy range: 95 to 100%';
+    } else {
+      return null;
+    }
+    const statusWord = isGood === null ? 'Informational' : isGood ? 'In a healthy range' : 'Worth watching';
+    return {
+      title: content.title, value, statusWord, statusColor, reference,
+      definition: content.definition, calculation: content.calculation, affects: content.affects,
+      tips: content.improve(isGood), informationalOnly: content.informationalOnly, disclaimer: content.disclaimer,
+    };
+  };
+  const drillData = drillKey ? buildDrill(drillKey) : null;
+
   return (
     <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
       {/* Header */}
@@ -1378,6 +1425,8 @@ export default function SleepHub() {
           </>
         ) : renderRecovery()}
       </ScrollView>
+
+      <MetricDrilldownModal visible={drillKey !== null} data={drillData} onClose={() => setDrillKey(null)} />
     </LinearGradient>
   );
 }

@@ -98,7 +98,9 @@
       "PowerShell(npx tsc --noEmit 2>&1 | Select-String -Pattern \"error TS\" | ForEach-Object { \\($_ -split \"\\\\\\(\"\\)[0] } | Sort-Object -Unique)",
       "PowerShell($out = npx tsc --noEmit 2>&1; $mine = $out | Select-String -Pattern \"sleep\\\\.tsx|recoveryScore\\\\.ts|useHealthKit\\\\.ts|coachAI\\\\.ts|smartTipsEngine\\\\.ts\"; if \\($mine\\) { Write-Output \"ERRORS IN TOUCHED FILES:\"; $mine } else { Write-Output \"No errors in touched files. Total project errors:\"; \\($out | Select-String -Pattern \"error TS\"\\).Count })",
       "PowerShell($out = npx tsc --noEmit 2>&1; $mine = $out | Select-String -Pattern \"sleep\\\\.tsx|settings\\\\.tsx|smartTipsEngine\\\\.ts|coachAI\\\\.ts\"; if \\($mine\\) { Write-Output \"ERRORS:\"; $mine } else { Write-Output \"all four touched files clean. project error count:\"; \\($out | Select-String -Pattern 'error TS'\\).Count })",
-      "PowerShell(npx tsc --noEmit 2>&1 | Select-Object -First 40)"
+      "PowerShell(npx tsc --noEmit 2>&1 | Select-Object -First 40)",
+      "PowerShell(Select-String -Path \"C:\\\\Users\\\\jthar\\\\ProjectJ\\\\utils\\\\smartTipsEngine.ts\" -Pattern \"computeCoachPacketRecovery|future surface|computeCoachPacketEvr|recoveryScore\" | Select-Object LineNumber, Line | Format-Table -AutoSize -Wrap; \"----- coachAI -----\"; Select-String -Path \"C:\\\\Users\\\\jthar\\\\ProjectJ\\\\utils\\\\coachAI.ts\" -Pattern \"refreshCoachTipRecovery|surface === 'recovery'|'recovery'\" | Select-Object LineNumber, Line | Format-Table -AutoSize -Wrap)",
+      "PowerShell(\"=== WEEKLY StatRows ===\"; Select-String -Path \"app\\\\weekly-summary.tsx\" -Pattern \"StatRow label\" | ForEach-Object { \\($_.Line -replace '\\\\s+',' '\\).Trim\\(\\) } | Select-Object -First 40; \"=== MONTHLY ===\"; Select-String -Path \"app\\\\monthly-summary.tsx\" -Pattern \"SectionCard label|StatRow label\" | ForEach-Object { \\($_.Line -replace '\\\\s+',' '\\).Trim\\(\\) } | Select-Object -First 40)"
     ]
   }
 }

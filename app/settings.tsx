@@ -2032,6 +2032,24 @@ export default function SettingsScreen() {
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
               triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              Alert.alert('Replay Recovery Coach', "Clear today's Recovery Coach tip so it recomputes with fresh data the next time you open the Recovery tab?", [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Replay', onPress: async () => {
+                  triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
+                  await AsyncStorage.multiRemove(['pj_coach_tip_recovery', 'pj_coach_last_rule_recovery']);
+                  Alert.alert('Done', 'Open the Recovery tab to regenerate the Recovery Coach tip.');
+                }},
+              ]);
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Replay Recovery Coach</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Regenerates the Recovery tab coach tip on next open.</Text>
+              </View>
+              <Ionicons name="pulse-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
               Alert.alert('Backfill Recovery History', 'Recompute your real Recovery Score for the last 30 days from your Apple Health history (HRV, sleep, resting HR, resp rate, activity) and fill in the Recovery trend. Read-then-merges into each day, never overwrites. Days with no watch data are skipped.', [
                 { text: 'Cancel', style: 'cancel' },
                 { text: 'Backfill', onPress: async () => {

@@ -90,6 +90,11 @@ interface WindowDay {
   sugarEntries: number;
   hasManualSleep: boolean;
   isWeekend: boolean;
+  // Recovery: the frozen daily score + that night's overnight signals (persisted with
+  // the morning snapshot). Null when no watch data that day. Used by the Recovery Coach.
+  recoveryScore: number | null;
+  recoverySignals: { hrv: number | null; rhr: number | null; resp: number | null; spo2: number | null } | null;
+  excluded: boolean;
 }
 
 interface EngineContext {
@@ -366,6 +371,14 @@ async function loadWindowDays(
       sugarEntries,
       hasManualSleep,
       isWeekend: isWeekend(dateKey),
+      recoveryScore: (typeof day.recoveryScore === 'number' && Number.isFinite(day.recoveryScore)) ? day.recoveryScore : null,
+      recoverySignals: (day.recoverySignals && typeof day.recoverySignals === 'object') ? {
+        hrv: typeof day.recoverySignals.hrv === 'number' ? day.recoverySignals.hrv : null,
+        rhr: typeof day.recoverySignals.rhr === 'number' ? day.recoverySignals.rhr : null,
+        resp: typeof day.recoverySignals.resp === 'number' ? day.recoverySignals.resp : null,
+        spo2: typeof day.recoverySignals.spo2 === 'number' ? day.recoverySignals.spo2 : null,
+      } : null,
+      excluded: !!day.excluded,
     });
   }
 
@@ -558,6 +571,14 @@ async function loadWindowDayRange(
       sugarEntries,
       hasManualSleep,
       isWeekend: isWeekend(dateKey),
+      recoveryScore: (typeof day.recoveryScore === 'number' && Number.isFinite(day.recoveryScore)) ? day.recoveryScore : null,
+      recoverySignals: (day.recoverySignals && typeof day.recoverySignals === 'object') ? {
+        hrv: typeof day.recoverySignals.hrv === 'number' ? day.recoverySignals.hrv : null,
+        rhr: typeof day.recoverySignals.rhr === 'number' ? day.recoverySignals.rhr : null,
+        resp: typeof day.recoverySignals.resp === 'number' ? day.recoverySignals.resp : null,
+        spo2: typeof day.recoverySignals.spo2 === 'number' ? day.recoverySignals.spo2 : null,
+      } : null,
+      excluded: !!day.excluded,
     });
   }
 
@@ -1408,7 +1429,7 @@ export interface CoachPacket {
   careSeverity?: 'mild' | 'moderate' | 'strong';
   mode: string;
   goal: string;
-  surface: 'home' | 'day_summary' | 'evr' | 'weekly' | 'monthly' | 'sleep';
+  surface: 'home' | 'day_summary' | 'evr' | 'weekly' | 'monthly' | 'sleep' | 'recovery';
   windowDays: number;
   startDate?: string;
   endDate?: string;
@@ -2486,6 +2507,334 @@ export async function computeCoachPacketSleep(
   await Promise.all([
     saveCoachTipCacheSleep(cache),
     AsyncStorage.setItem(sleepLastRuleKey, JSON.stringify({ ruleId: packet.ruleId })),
+  ]);
+  return cache;
+}
+
+// ── Recovery Coach (Recovery tab) ─────────────────────────────────────────────
+// Pattern-detection coach: correlates the daily recovery score against the user's
+// own logged sleep / training load / bedtime over the window and surfaces the
+// dominant lever. Hybrid: this brain decides the verdict, coachAI.ts voices it.
+// Behavioral, never clinical. STRICT: prefers the honest "no clear cause" answer
+// over a shaky pattern. Spec: SPEC_recovery_coach.md.
+
+const COACH_TIP_RECOVERY_KEY = 'pj_coach_tip_recovery';
+const COACH_LAST_RULE_RECOVERY_KEY = 'pj_coach_last_rule_recovery';
+
+export async function loadCoachTipCacheRecovery(): Promise<CoachTipCache | null> {
+  try {
+    const raw = await AsyncStorage.getItem(COACH_TIP_RECOVERY_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+async function saveCoachTipCacheRecovery(cache: CoachTipCache): Promise<void> {
+  try { await storageSet(COACH_TIP_RECOVERY_KEY, JSON.stringify(cache)); } catch {}
+}
+
+// Today's live snapshot passed in from the hub (RecoveryResult-shaped). Lets the
+// snapshot floor (R8) cite the real HRV/RHR/resp standing without a baseline store.
+export type RecoveryLiveToday = {
+  score: number | null;
+  hrv: { value: string; delta: string | null; isPositive: boolean | null } | null;
+  rhr: { value: string; delta: string | null; isPositive: boolean | null } | null;
+  resp: { value: string; delta: string | null; isPositive: boolean | null } | null;
+} | null;
+
+// Strict thresholds (tune with real data; SPEC_recovery_coach.md).
+const REC_MIN_PATTERN_DAYS = 10;   // below this: snapshot only, no pattern claims
+const REC_MIN_PAIRS = 3;           // min days in each bucket for a split comparison
+const REC_ACUTE_DROP = 12;         // pts below recent norm = acute drop (R0)
+const REC_PATTERN_DELTA = 6;       // pts separation to claim a behavioral pattern
+const REC_LOW_MEAN = 70;           // window mean below this = under-recovery (R3)
+const REC_STRONG_MEAN = 80;        // window mean at/above + stable = strong (R7)
+const REC_BEDTIME_SD = 60;         // bedtime std-dev (min) above this = inconsistent (R4)
+
+type RecFinding = {
+  ruleId: string; scenario: string; familyNum: number;
+  tone: 'positive' | 'corrective' | 'educational';
+  diagnosis: string; action: string; facts: Record<string, string | number>;
+  fallbackTitle: string; fallbackBody: string;
+};
+
+const recAvg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+const recStd = (xs: number[]) => {
+  const m = recAvg(xs);
+  return Math.sqrt(xs.reduce((a, b) => a + (b - m) ** 2, 0) / xs.length);
+};
+
+// Snapshot floor (R8): describe today's state from the live signals. building=true
+// appends the honest "still building" note when under the pattern-data threshold.
+function recSnapshotFinding(score: number, live: RecoveryLiveToday, n: number, building: boolean): RecFinding {
+  const note = building ? ` Still building your recovery picture (${n} of 14 nights).` : '';
+  if (live?.hrv && live.hrv.isPositive === false) {
+    return {
+      ruleId: 'rec_snapshot_hrv', scenario: 'rec_snapshot_hrv', familyNum: 4, tone: 'corrective',
+      diagnosis: `HRV came in at ${live.hrv.value}${live.hrv.delta ? `, ${live.hrv.delta} vs your baseline` : ''}, below your norm, with recovery at ${score}.${note}`,
+      action: 'Keep today on the easier side and protect tonight\'s sleep',
+      facts: { score },
+      fallbackTitle: 'Recovery Worth Watching',
+      fallbackBody: `Recovery is ${score} today with HRV below your norm. Keep today easier and protect tonight's sleep.${note}`,
+    };
+  }
+  if (live?.rhr && live.rhr.isPositive === false) {
+    return {
+      ruleId: 'rec_snapshot_rhr', scenario: 'rec_snapshot_rhr', familyNum: 4, tone: 'corrective',
+      diagnosis: `Resting heart rate is elevated at ${live.rhr.value}${live.rhr.delta ? ` (${live.rhr.delta} vs baseline)` : ''}, with recovery at ${score}.${note}`,
+      action: 'Treat today as a lighter day, hydrate well, and protect tonight\'s sleep',
+      facts: { score },
+      fallbackTitle: 'Recovery Worth Watching',
+      fallbackBody: `Recovery is ${score} today with resting heart rate up versus your norm. Take it a little easier today.${note}`,
+    };
+  }
+  if (score >= 80) {
+    return {
+      ruleId: 'rec_snapshot_strong', scenario: 'rec_strong', familyNum: 6, tone: 'positive',
+      diagnosis: `Recovery is strong at ${score} today, signals point to full readiness.${note}`,
+      action: 'Match today\'s effort to that readiness',
+      facts: { score },
+      fallbackTitle: 'Recovered and Ready',
+      fallbackBody: `Recovery is strong at ${score} today. Signals point to full readiness, so match your effort to it.${note}`,
+    };
+  }
+  if (score >= 60) {
+    return {
+      ruleId: 'rec_snapshot_steady', scenario: 'rec_steady', familyNum: 6, tone: 'positive',
+      diagnosis: `Recovery is at ${score} today, in the ready zone.${note}`,
+      action: 'Train or rest based on your plan, not the number',
+      facts: { score },
+      fallbackTitle: 'Steady Recovery',
+      fallbackBody: `Recovery is at ${score}, in the ready zone. Train or rest based on your plan, not the number.${note}`,
+    };
+  }
+  return {
+    ruleId: 'rec_snapshot_low', scenario: 'rec_moderate', familyNum: 4, tone: 'corrective',
+    diagnosis: `Recovery is sitting at ${score} today, signals suggest moderate readiness.${note}`,
+    action: 'Useful training is still possible, just be honest about your top end',
+    facts: { score },
+    fallbackTitle: 'Moderate Readiness',
+    fallbackBody: `Recovery is at ${score} today. Not an alarm, but signals suggest moderate readiness. Train if you like, just be honest about your top end.${note}`,
+  };
+}
+
+// The recovery brain. Returns the single highest-priority finding for the window.
+function buildRecoveryFinding(days: WindowDay[], live: RecoveryLiveToday, sleepGoal: number): RecFinding | null {
+  const recDays = days.filter(d => d.recoveryScore !== null && !d.excluded); // most-recent-first
+  if (recDays.length === 0) return null;
+  const scores = recDays.map(d => d.recoveryScore as number);
+  const n = recDays.length;
+  const todayScore = scores[0];
+
+  const byDate: Record<string, WindowDay> = {};
+  for (const d of days) byDate[d.dateKey] = d;
+  const prevOf = (d: WindowDay): WindowDay | null => byDate[keyForOffset(d.dateKey, 1)] ?? null;
+
+  // R0 ACUTE DROP (same-day). Needs a few prior days to define a norm.
+  const prior = scores.slice(1, 9);
+  if (prior.length >= 4) {
+    const norm = recAvg(prior);
+    if (todayScore <= norm - REC_ACUTE_DROP) {
+      const drop = Math.round(norm - todayScore);
+      return {
+        ruleId: 'rec_acute_drop', scenario: 'rec_acute_drop', familyNum: 0, tone: 'corrective',
+        diagnosis: `Today's recovery is ${todayScore}, down ${drop} from your recent average of ${Math.round(norm)}`,
+        action: 'Treat today as an easy day and see how you bounce back tomorrow',
+        facts: { today: todayScore, recentAvg: Math.round(norm), drop },
+        fallbackTitle: 'Recovery Dropped Today',
+        fallbackBody: `Recovery is ${todayScore} today, down ${drop} from your recent average. A rough night, a hard day, alcohol, or early illness can all do this. Keep today easy and see how you bounce back.`,
+      };
+    }
+  }
+
+  // Below the pattern-data threshold: snapshot only, no pattern claims.
+  if (n < REC_MIN_PATTERN_DAYS) return recSnapshotFinding(todayScore, live, n, true);
+
+  const mean = recAvg(scores);
+  const sd = recStd(scores);
+
+  // R1 training load drags next-day recovery: split recDays by PRIOR day's load.
+  const actives = days.map(d => d.rawActive).filter(a => a > 0).sort((a, b) => a - b);
+  const highCut = actives.length >= 3 ? actives[Math.floor(actives.length * 0.66)] : Infinity;
+  const afterHigh: number[] = [], afterLow: number[] = [];
+  for (const d of recDays) {
+    const p = prevOf(d);
+    if (!p || p.rawActive <= 0) continue;
+    (p.rawActive >= highCut ? afterHigh : afterLow).push(d.recoveryScore as number);
+  }
+  const r1Delta = (afterHigh.length >= REC_MIN_PAIRS && afterLow.length >= REC_MIN_PAIRS)
+    ? recAvg(afterLow) - recAvg(afterHigh) : 0; // positive = recovery lower after hard days
+
+  // R2 recovery tracks sleep: split by short vs adequate sleep nights.
+  const shortS: number[] = [], okS: number[] = [];
+  for (const d of recDays) {
+    if (d.sleepHours === null) continue;
+    (d.sleepHours < sleepGoal * 0.9 ? shortS : okS).push(d.recoveryScore as number);
+  }
+  const r2Delta = (shortS.length >= REC_MIN_PAIRS && okS.length >= REC_MIN_PAIRS)
+    ? recAvg(okS) - recAvg(shortS) : 0; // positive = recovery lower on short nights
+
+  // Pick the stronger of the two behavioral drivers if either clears the bar.
+  if (r1Delta >= REC_PATTERN_DELTA || r2Delta >= REC_PATTERN_DELTA) {
+    if (r2Delta >= r1Delta) {
+      const d = Math.round(r2Delta);
+      return {
+        ruleId: 'rec_tracks_sleep', scenario: 'rec_tracks_sleep', familyNum: 3, tone: 'educational',
+        diagnosis: `Over the last ${n} days, your recovery averages about ${d} points lower after nights under ${sleepGoal} hours than after fuller nights`,
+        action: 'Treat sleep as your main recovery lever right now, not training volume',
+        facts: { delta: d, days: n },
+        fallbackTitle: 'Sleep Is Your Lever',
+        fallbackBody: `Your lowest recovery days are following your shortest nights, not your hardest workouts. Sleep, not the gym, looks like your main lever right now.`,
+      };
+    }
+    const d = Math.round(r1Delta);
+    return {
+      ruleId: 'rec_load_drag', scenario: 'rec_load_drag', familyNum: 3, tone: 'educational',
+      diagnosis: `Over the last ${n} days, your recovery averages about ${d} points lower the day after your highest-effort days`,
+      action: 'Protect an easy or deload day after hard sessions so your body absorbs the work',
+      facts: { delta: d, days: n },
+      fallbackTitle: 'Recover From Your Hard Days',
+      fallbackBody: `Your recovery dips the day after your hardest days. The fix usually is not training harder, it is protecting an easy day so your body absorbs the work.`,
+    };
+  }
+
+  // R3 sustained under-recovery: persistently low + steady + training present.
+  const trainingDays = recDays.filter(d => d.rawActive > 0 || d.workoutChecked > 0).length;
+  if (mean < REC_LOW_MEAN && sd < 12 && trainingDays >= n * 0.5) {
+    return {
+      ruleId: 'rec_sustained_low', scenario: 'rec_sustained_low', familyNum: 4, tone: 'corrective',
+      diagnosis: `Recovery has averaged ${Math.round(mean)} across the last ${n} days while training stayed steady`,
+      action: 'Take a genuinely lighter week and let recovery catch up before pushing again',
+      facts: { mean: Math.round(mean), days: n },
+      fallbackTitle: 'Time for a Lighter Week',
+      fallbackBody: `Recovery has run below par for most of the last ${n} days while your training held steady. That pattern usually means a lighter week, not more effort, is what moves it.`,
+    };
+  }
+
+  // R4 bedtime inconsistency dragging recovery.
+  const beds = recDays.map(d => d.sleepBedTimeMin).filter((b): b is number => b !== null);
+  if (beds.length >= REC_MIN_PAIRS * 2) {
+    const bsd = recStd(beds);
+    if (bsd > REC_BEDTIME_SD && mean < 75) {
+      return {
+        ruleId: 'rec_bedtime', scenario: 'rec_bedtime', familyNum: 4, tone: 'corrective',
+        diagnosis: `Your bedtime has been swinging by over an hour across the last ${n} days, and recovery has averaged ${Math.round(mean)}`,
+        action: 'Anchor one bedtime and hold it within thirty minutes, weekends included',
+        facts: { mean: Math.round(mean), days: n },
+        fallbackTitle: 'Steady Your Bedtime',
+        fallbackBody: `Your bedtimes are swinging, and recovery tends to follow. Anchoring one bedtime is often the quietest fix for the score.`,
+      };
+    }
+  }
+
+  // R7 strong & stable (positive).
+  if (mean >= REC_STRONG_MEAN && sd < 10) {
+    return {
+      ruleId: 'rec_strong_stable', scenario: 'rec_strong', familyNum: 6, tone: 'positive',
+      diagnosis: `Recovery has held strong and steady, averaging ${Math.round(mean)} across the last ${n} days`,
+      action: 'Protect the sleep and easy days that got you here',
+      facts: { mean: Math.round(mean), days: n },
+      fallbackTitle: 'Recovery Dialed In',
+      fallbackBody: `Recovery is holding strong and steady. Whatever the current rhythm is, it is working, protect the sleep and easy days that got you here.`,
+    };
+  }
+
+  // R9 honest no-cause: stuck-ish but nothing in logged data explains it.
+  if (mean < 75) {
+    return {
+      ruleId: 'rec_no_cause', scenario: 'rec_no_cause', familyNum: 4, tone: 'educational',
+      diagnosis: `Recovery has averaged ${Math.round(mean)} across the last ${n} days, but nothing in your logged sleep, training, or bedtime clearly explains it`,
+      action: 'This may simply be your baseline, or something not tracked like stress, caffeine, or alcohol',
+      facts: { mean: Math.round(mean), days: n },
+      fallbackTitle: 'No Clear Culprit',
+      fallbackBody: `Recovery has sat around ${Math.round(mean)} lately, but nothing in your logged sleep, training, or routine is clearly dragging it. It may just be your baseline, or something we do not track like stress, caffeine, or alcohol.`,
+    };
+  }
+
+  // Otherwise: snapshot floor (today's state).
+  return recSnapshotFinding(todayScore, live, n, false);
+}
+
+export async function computeCoachPacketRecovery(
+  live: RecoveryLiveToday,
+  windowDays: number = 14,
+): Promise<CoachTipCache> {
+  const todayKey = todayDateKey();
+  const [existing, ctx, store, workoutRaw] = await Promise.all([
+    loadCoachTipCacheRecovery(),
+    buildEngineContext(todayKey),
+    loadSmartTips(),
+    AsyncStorage.getItem('pj_workout_state').catch(() => null),
+  ]);
+
+  if (existing && existing.packet.computedDate === todayKey && existing.packet.surface === 'recovery') {
+    return existing;
+  }
+
+  const workoutState: any = workoutRaw ? JSON.parse(workoutRaw) : {};
+  const allDays = await loadWindowDays(todayKey, ctx, workoutState, 0); // include today
+  const previousTip = existing?.aiBody ?? existing?.packet.fallbackBody ?? 'none';
+
+  let faithTier = 'rooted';
+  try {
+    const s = await AsyncStorage.getItem('pj_settings');
+    if (s) { const parsed = JSON.parse(s); faithTier = parsed?.faithJourney ?? 'rooted'; }
+  } catch {}
+
+  let finding = buildRecoveryFinding(allDays, live, ctx.sleepGoal);
+  if (!finding) {
+    finding = {
+      ruleId: 'rec_no_data', scenario: 'rec_no_data', familyNum: 5, tone: 'corrective',
+      diagnosis: 'Not enough recovery data yet to coach on',
+      action: 'Wear a watch overnight and let it sync to build your recovery picture',
+      facts: {},
+      fallbackTitle: 'Building Your Recovery Picture',
+      fallbackBody: 'Once a few nights of overnight heart data sync, the coach can start reading your recovery.',
+    };
+  }
+
+  // Mindful (no growth areas): suppress corrective coaching, fall to a gentle read.
+  if (ctx.isMindful && !ctx.mindfulGrowthAreas && finding.tone === 'corrective') {
+    const sc = live?.score ?? finding.facts.score ?? 0;
+    finding = {
+      ruleId: 'rec_mindful_neutral', scenario: 'rec_steady', familyNum: 6, tone: 'positive',
+      diagnosis: `Recovery is at ${sc} today`,
+      action: 'Notice how you feel and let that guide today',
+      facts: { score: sc },
+      fallbackTitle: 'Recovery Today',
+      fallbackBody: `Recovery is sitting at ${sc} today. Let how you feel guide your effort.`,
+    };
+  }
+
+  const packet: CoachPacket = {
+    scenario: finding.scenario,
+    ruleId: finding.ruleId,
+    familyNum: finding.familyNum,
+    diagnosis: finding.diagnosis,
+    action: finding.action,
+    facts: finding.facts,
+    tone: finding.tone,
+    mode: ctx.styleMode,
+    goal: ctx.goalBucket,
+    surface: 'recovery',
+    windowDays,
+    ifActive: ctx.ifEnabled,
+    previousTip,
+    faithTier,
+    computedDate: todayKey,
+    fallbackTitle: finding.fallbackTitle,
+    fallbackBody: finding.fallbackBody,
+  };
+
+  const sameScenario = existing?.packet.scenario === packet.scenario;
+  const cache: CoachTipCache = {
+    packet,
+    aiBody: (sameScenario && existing?.aiBody) ? existing.aiBody : null,
+    aiGeneratedDate: (sameScenario && existing?.aiGeneratedDate) ? existing.aiGeneratedDate : null,
+    fallbackUsed: false,
+  };
+
+  await Promise.all([
+    saveCoachTipCacheRecovery(cache),
+    AsyncStorage.setItem(COACH_LAST_RULE_RECOVERY_KEY, JSON.stringify({ ruleId: packet.ruleId })),
   ]);
   return cache;
 }

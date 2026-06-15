@@ -28,8 +28,8 @@ import { CardWash } from '../components/GradientCard';
 import { METRIC_DRILLDOWNS } from '../data/metricDrilldowns';
 import { useHealthKit } from '../useHealthKit';
 import { useTheme } from '../theme';
-import { refreshCoachTipSleep, resolveTipBody } from '../utils/coachAI';
-import { loadCoachTipCacheSleep, CoachTipCache } from '../utils/smartTipsEngine';
+import { refreshCoachTipSleep, refreshCoachTipRecovery, resolveTipBody } from '../utils/coachAI';
+import { loadCoachTipCacheSleep, loadCoachTipCacheRecovery, CoachTipCache } from '../utils/smartTipsEngine';
 
 type SleepTab = 'sleep' | 'recovery';
 
@@ -507,6 +507,12 @@ export default function SleepHub() {
     return () => { cancelled = true; };
   }, []);
 
+  // Recovery Coach (pattern detection, recovery-scoped). Lazy on Recovery tab open;
+  // passes today's live snapshot so the brain can cite the real signal standing.
+  // Effect lives lower (after recoveryResult is declared). Cached once/day in engine.
+  const [recoveryCoachCache, setRecoveryCoachCache] = useState<CoachTipCache | null>(null);
+  const recoveryCoachComputedRef = useRef(false);
+
   useEffect(() => {
     let cancelled = false;
     fetchLastNightSegments().then(s => { if (!cancelled) setSegments(s); }).catch(() => {});
@@ -773,6 +779,26 @@ export default function SleepHub() {
       } catch {}
     })();
   }, [recoveryResult]);
+
+  // Recovery Coach: compute lazily when the Recovery tab is open and a score exists.
+  // Passes today's live snapshot (RecoveryResult-shaped) so the brain can cite the
+  // real HRV/RHR standing. Engine caches once/day, so this is at most one AI call.
+  useEffect(() => {
+    if (activeTab !== 'recovery') return;
+    if (!recoveryResult || recoveryResult.score === null) return;
+    if (recoveryCoachComputedRef.current) return;
+    recoveryCoachComputedRef.current = true;
+    let cancelled = false;
+    const live = {
+      score: recoveryResult.score,
+      hrv: recoveryResult.hrv ? { value: recoveryResult.hrv.value, delta: recoveryResult.hrv.delta, isPositive: recoveryResult.hrv.isPositive } : null,
+      rhr: recoveryResult.rhr ? { value: recoveryResult.rhr.value, delta: recoveryResult.rhr.delta, isPositive: recoveryResult.rhr.isPositive } : null,
+      resp: recoveryResult.resp ? { value: recoveryResult.resp.value, delta: recoveryResult.resp.delta, isPositive: recoveryResult.resp.isPositive } : null,
+    };
+    loadCoachTipCacheRecovery().then(c => { if (!cancelled && c) setRecoveryCoachCache(c); }).catch(() => {});
+    refreshCoachTipRecovery(live, 14).then(c => { if (!cancelled) setRecoveryCoachCache(c); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [activeTab, recoveryResult]);
 
   // Load historical Recovery Scores from pj_<date> for the trend chart.
   useEffect(() => {
@@ -1176,11 +1202,16 @@ export default function SleepHub() {
       );
     };
 
-    // Recovery coach tip
+    // Recovery coach tip. AI-voiced (pattern detection) when ready, with the
+    // deterministic recoveryCoachTip as the instant/offline fallback. The engine
+    // already neutralizes the AI path for Mindful; the deterministic fallback is
+    // not, so we hide the card only when it would be corrective and no cache exists.
     const coachCard = () => {
       if (!recoveryResult) return null;
-      const tip = recoveryCoachTip(recoveryResult, styleMode, mindfulGrowth);
-      if (styleMode === 'mindful' && !mindfulGrowth && tip.kind === 'corrective') return null;
+      const det = recoveryCoachTip(recoveryResult, styleMode, mindfulGrowth);
+      const cacheBody = recoveryCoachCache ? resolveTipBody(recoveryCoachCache) : null;
+      if (styleMode === 'mindful' && !mindfulGrowth && det.kind === 'corrective' && !cacheBody) return null;
+      const body = cacheBody ?? det.text;
       return (
         <View style={[cardStyle, { borderLeftWidth: 0.5, borderLeftColor: theme.borderCard }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
@@ -1189,7 +1220,7 @@ export default function SleepHub() {
           </View>
           <View style={{ flexDirection: 'row', gap: 10, padding: 12, borderRadius: 10, backgroundColor: theme.accentBlueBg }}>
             <Ionicons name="bulb" size={16} color={theme.accentBlueRaw} style={{ marginTop: 1 }} />
-            <Text style={{ flex: 1, fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_500Medium', lineHeight: 20 }}>{tip.text}</Text>
+            <Text style={{ flex: 1, fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_500Medium', lineHeight: 20 }}>{body}</Text>
           </View>
         </View>
       );

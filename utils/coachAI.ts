@@ -14,11 +14,14 @@ import {
   computeCoachPacketWeekly,
   computeCoachPacketMonthly,
   computeCoachPacketSleep,
+  computeCoachPacketRecovery,
+  RecoveryLiveToday,
   loadCoachTipCache,
   loadCoachTipCacheEvr,
   loadCoachTipCacheWeekly,
   loadCoachTipCacheMonthly,
   loadCoachTipCacheSleep,
+  loadCoachTipCacheRecovery,
 } from './smartTipsEngine';
 import { DayScore, DayScoreInput } from './dayScore';
 
@@ -102,6 +105,18 @@ When the packet surface is "sleep", the tip is about the user's sleep and nothin
 
 Use one consistent time reference for the entire tip. Never put two different spans in the same sleep tip as separate unconnected references. If the diagnosis you were handed describes a longer analysis window such as 14 days, do not also drop in a "7 nights" reference as if both describe the sleep data. Either keep the whole tip in the 7 night window, or bridge the longer window in one explicit phrase, for example "over the two weeks we track, the nights you slept well tend to follow stronger protein." "14 days" and "7 nights" must never sit in one tip as two unrelated spans.
 
+Recovery surface rules
+
+When the packet surface is "recovery", the tip is about the user's recovery and nothing else. The brain has already found the pattern; you only phrase it.
+
+Recovery is a physiological readout, but you NEVER speak clinically. Never name or imply a medical condition. Never explain a mechanism with a clinical term. Stay in plain, behavioral language: sleep, training load, easy days, deload, bedtime, hydration. HRV, resting heart rate, and respiratory rate may be stated as plain observations when the packet gives them ("your HRV came in below your usual"), but never interpreted as a diagnosis.
+
+Honesty over invention. If the packet's diagnosis says nothing in the logged data explains the recovery, say exactly that. Do NOT invent a cause. "Nothing in your sleep or training clearly explains this, it may simply be your baseline" is a correct, valuable tip. Never manufacture a reason the packet did not give you.
+
+One window per tip. Use the window the packet states (e.g. "over the last 14 days" or "today") and stay consistent. An acute same-day finding is about TODAY; a pattern finding is about the window. Do not mix the two spans in one tip.
+
+Action lane. Recovery actions are behavioral: protect an easy or deload day, prioritize sleep, steady your bedtime, keep today light. Never prescribe anything clinical, never promise a number will rise.
+
 Data coverage rules
 
 The packet will include data coverage fields: daysLogged, windowDays, daysWithNutritionData, daysWithActivityData, daysWithSleepData.
@@ -178,6 +193,7 @@ function formatPacketMessage(packet: CoachPacket): string {
     packet.surface === 'weekly' ? `Weekly Summary, ${packet.windowDays}-day window` :
     packet.surface === 'monthly' ? `Monthly Summary, ${packet.windowDays}-day window` :
     packet.surface === 'sleep' ? `Sleep Hub coach card, sleep only, last 7 nights of sleep` :
+    packet.surface === 'recovery' ? `Recovery tab coach card, recovery only, rolling ${packet.windowDays}-day window` :
     `EvR deep read, ${packet.windowDays}-day window`;
 
   const careLine = packet.careSeverity ? `\nCare severity: ${packet.careSeverity}` : '';
@@ -384,6 +400,17 @@ export async function refreshCoachTipSleep(
 ): Promise<CoachTipCache> {
   const cache = await computeCoachPacketSleep(windowDays);
   return generateCoachTip(cache, 'pj_coach_tip_sleep');
+}
+
+// Recovery tab coach: computes the recovery-scoped packet (pattern detection over
+// the window) from the live snapshot + stored recovery history, calls AI, saves to
+// the recovery cache key. Never touches the home or sleep tips. Lazy on hub open.
+export async function refreshCoachTipRecovery(
+  live: RecoveryLiveToday,
+  windowDays: number = 14,
+): Promise<CoachTipCache> {
+  const cache = await computeCoachPacketRecovery(live, windowDays);
+  return generateCoachTip(cache, 'pj_coach_tip_recovery');
 }
 
 // Return the best available tip body: AI if available, fallback otherwise.

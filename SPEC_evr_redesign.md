@@ -1,6 +1,17 @@
 # SPEC: Effort vs Results Redesign
 
-Status: DIRECTION LOCKED (design session 2026-06-15). Build not started. Free/Pro parked. App-wide ranking scope recommended but needs final confirmation + a surface-by-surface dig before build.
+## RESUME HERE (handoff 2026-06-15)
+
+Fresh session picking this up: read project_j_roadmap.md first (per CLAUDE.md), then this whole file. State of the redesign:
+
+- **SHIPPED, do NOT redo:**
+  - Recovery wired into the EvR coach (commit 4456016): rec_load_drag / rec_tracks_sleep / rec_sustained_low in utils/smartTipsEngine.ts.
+  - Anti-weight-monopoly "headline topic fatigue" on ALL multi-topic coaching surfaces: home (track 1a, commit d1d8d25) + EvR/weekly/monthly (track 1b, commit b109c15). Lives in utils/smartTipsEngine.ts as headlineTopic() + the optional recentTopics param on selectByPrioritySpine, wired into computeCoachPacket('home'), computeCoachPacketEvr, computeCoachPacketWeekly, computeCoachPacketMonthly. Each has its own additive pj_coach_topic_hist_* key. Scoped sleep/recovery coaches are intentionally exempt (single-domain).
+- **NEXT = TRACK 2: the EvR surface rebuild** in app/diagnostic-report-view.tsx. Turn the report from a scorecard into the diagnostic feed below: EvR-styled diagnostic headline + a relevance-ranked, relevant-only card feed where each card = claim + pointed proof + lever (Sections 3, 4, 6). This is UI work AND the deferred strength-weighted relevance rewrite (Section 10 item 2), done together with proof-data per card rather than bolted onto the live spine.
+- **STILL OPEN:** app-wide vs EvR-only ranking scope (Justin leaned everywhere; 1a/1b already applied the fatigue everywhere, so effectively settled); ranking weight tuning; Free/Pro rework (parked, Section 10 item 3); which existing finding cards survive as diagnoses (Section 9).
+- **DECISIONS LOCKED:** Sections 2 through 9. Key ones: EvR explains results good AND bad; positives count as diagnoses so there is no empty state; per-pattern auto windows, no 14/30/90 selector; never invent a problem.
+
+Status: PARTIALLY BUILT. Engine anti-monopoly done (tracks 1a + 1b). EvR surface rebuild (track 2) not started. Free/Pro parked.
 
 This supersedes the old EvR report model (the configurable-window scorecard with fixed finding cards). The Level 1 / Level 2 smart coaching engine stays; what changes is what EvR IS and how findings get ranked.
 

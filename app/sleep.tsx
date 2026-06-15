@@ -984,7 +984,7 @@ export default function SleepHub() {
                     <Text style={{ fontSize: 14, color: rc, fontFamily: 'DMSans_700Bold' }}>{comp.value}</Text>
                     {comp.delta && (
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 1 }}>
-                        <Ionicons name={comp.isPositive ? 'arrow-up' : 'arrow-down'} size={9} color={comp.isPositive ? theme.statusGood : theme.statusBad} />
+                        <Ionicons name={comp.delta.startsWith('-') ? 'arrow-down' : 'arrow-up'} size={9} color={comp.isPositive ? theme.statusGood : theme.statusBad} />
                         <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>{comp.delta}</Text>
                       </View>
                     )}

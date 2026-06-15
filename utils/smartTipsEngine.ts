@@ -324,7 +324,12 @@ async function loadWindowDays(
     const dayName = dayNameFromKey(dateKey);
     const template = workoutState.programs?.[dateKey] ?? workoutState.weeklyTemplate?.[dayName];
     const dayType: string = template?.type ?? 'unassigned';
-    const workoutScheduled = dayType === 'lift' || dayType === 'cardio';
+    // Lift-only: the completion-rate / "ended short" rule (ruleWorkoutLow) is the ONLY
+    // consumer of workoutScheduled. Cardio days (incl. auto-synced Apple Health cardio,
+    // which logs but never sets the manual cardioComplete flag) were being read as 0%
+    // complete, firing a false "scheduled sessions ended short" insight. Cardio is
+    // binary, not a completion rate, so only planned lift sessions count here.
+    const workoutScheduled = dayType === 'lift';
     const exercises: any[] = Array.isArray(template?.exercises) ? template.exercises : [];
     const checks = workoutState.checks?.[dateKey] ?? {};
     const workoutChecked = exercises.filter((ex: any) => checks[ex.id]).length + (workoutState.cardioComplete?.[dateKey] ? 1 : 0);
@@ -524,7 +529,12 @@ async function loadWindowDayRange(
     const dayName = dayNameFromKey(dateKey);
     const template = workoutState.programs?.[dateKey] ?? workoutState.weeklyTemplate?.[dayName];
     const dayType: string = template?.type ?? 'unassigned';
-    const workoutScheduled = dayType === 'lift' || dayType === 'cardio';
+    // Lift-only: the completion-rate / "ended short" rule (ruleWorkoutLow) is the ONLY
+    // consumer of workoutScheduled. Cardio days (incl. auto-synced Apple Health cardio,
+    // which logs but never sets the manual cardioComplete flag) were being read as 0%
+    // complete, firing a false "scheduled sessions ended short" insight. Cardio is
+    // binary, not a completion rate, so only planned lift sessions count here.
+    const workoutScheduled = dayType === 'lift';
     const exercises: any[] = Array.isArray(template?.exercises) ? template.exercises : [];
     const checks = workoutState.checks?.[dateKey] ?? {};
     const workoutChecked = exercises.filter((ex: any) => checks[ex.id]).length + (workoutState.cardioComplete?.[dateKey] ? 1 : 0);

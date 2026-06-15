@@ -30,6 +30,7 @@
 
 - HIIT mode -- Tabata, standard intervals, custom.
 - Workout rest timer between sets.
+- Offline / non-Apple internal workout tracker (Justin 2026-06-15) -- an in-app live workout tracker for users WITHOUT a watch / not syncing from Apple Health: start/stop session timer, log sets/reps/cardio duration live, save the session to history. Gives watchless users a real way to capture workouts instead of relying on Apple Health import. Whole new subsystem -- backlog, needs a design session before any build.
 
 ---
 

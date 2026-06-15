@@ -11,7 +11,7 @@ Commits: c26fbc0 (hero redesign), 16a5da1 (Slice 2 recovery graphs), d756b4a (Sl
 
 ## OPEN / NEXT (priority order)
 1. **[FIXED 2026-06-15, DEVICE-VERIFIED] Bedtime drill-down y-axis labels clipped on the LEFT.** MiniMetricChart PAD_L is now dynamic: sized to the widest formatted tick label (maxTickChars * 4.3 + 6, floored at 32) so wide clock-time/hours labels get the gutter they need while numeric metrics stay pixel-identical at 32. Reordered so ticks/fmtTick compute before PAD_L. components/MetricDrilldownModal.tsx MiniMetricChart. (Initial pass over-reserved the gutter; tightened the per-char estimate after device check.)
-2. **Device verify Slice 2** both tabs (run "Backfill Recovery History" dev tool first so recovery signal graphs have depth). Theme audit (all 5). Mindful verify.
+2. **[DONE 2026-06-15, DEVICE-VERIFIED] Slice 2 verified** both tabs (Backfill Recovery History run earlier; graphs have depth). Theme audit across all 5 themes confirmed clean. Mindful verify confirmed (growth-off neutralizes chart to accent). Slice 2 fully shipped + verified.
 3. **[BUG, pre-existing] Recovery tab "Text strings must be rendered within a <Text>"** on 30D view -- NOT in the hero (range-independent); likely the Trend card or a 30D path. Never located. Needs repro + hunt. (roadmap BUGS section)
 4. Parked formula question: activity is two-sided (any deviation from norm drags recovery, so a lighter day reads as a mild drag, not a win). Debatable for recovery; changing it shifts everyone's scores -> deliberate decision later.
 

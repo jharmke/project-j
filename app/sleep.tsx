@@ -921,7 +921,8 @@ export default function SleepHub() {
       ].filter(r => r.comp !== null);
 
       return (
-        <View style={cardStyle}>
+        <View style={[cardStyle, { borderLeftWidth: 0.5, borderLeftColor: theme.borderCard }]}>
+          <LinearGradient colors={[recColor, recColor + '2E', recColor + '00']} locations={[0, 0.06, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 64, borderTopLeftRadius: 14, borderTopRightRadius: 14 }} pointerEvents="none" />
           <Text style={[cardLabel, { marginBottom: 14 }]}>Today's Recovery</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18, marginBottom: 18 }}>
             <Text style={{ fontSize: 72, color: recColor, fontFamily: 'BebasNeue_400Regular', lineHeight: 78 }}>{recoveryResult.score}</Text>
@@ -985,7 +986,8 @@ export default function SleepHub() {
     const trendCard = () => {
       const avg = recoveryTrend.length ? Math.round(recoveryTrend.reduce((a, d) => a + d.score, 0) / recoveryTrend.length) : null;
       return (
-        <View style={cardStyle}>
+        <View style={[cardStyle, { borderLeftWidth: 0.5, borderLeftColor: theme.borderCard }]}>
+          <LinearGradient colors={[theme.accentBlueRaw, theme.accentBlueRaw + '40', theme.accentBlueRaw + '00']} locations={[0, 0.04, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 64, borderTopLeftRadius: 14, borderTopRightRadius: 14 }} pointerEvents="none" />
           <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
             <View>
               <Text style={cardLabel}>Recovery Trend</Text>
@@ -1028,7 +1030,8 @@ export default function SleepHub() {
         );
 
       return (
-        <View style={cardStyle}>
+        <View style={[cardStyle, { borderLeftWidth: 0.5, borderLeftColor: theme.borderCard }]}>
+          <LinearGradient colors={[theme.accentBlueRaw, theme.accentBlueRaw + '40', theme.accentBlueRaw + '00']} locations={[0, 0.04, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 64, borderTopLeftRadius: 14, borderTopRightRadius: 14 }} pointerEvents="none" />
           <Text style={[cardLabel, { marginBottom: 4 }]}>Key Signals</Text>
           {sigRow('HRV (overnight)', todayHRV !== null ? `${Math.round(todayHRV * 10) / 10}ms` : null, hrvBaseline !== null ? `7d avg: ${Math.round(hrvBaseline * 10) / 10}ms` : null, 'hrv')}
           {sigRow('Resting HR', todayRHR !== null ? `${todayRHR} bpm` : null, rhrBaseline !== null ? `7d avg: ${rhrBaseline} bpm` : null, 'rhr')}
@@ -1045,7 +1048,8 @@ export default function SleepHub() {
       const tip = recoveryCoachTip(recoveryResult, styleMode, mindfulGrowth);
       if (styleMode === 'mindful' && !mindfulGrowth && tip.kind === 'corrective') return null;
       return (
-        <View style={cardStyle}>
+        <View style={[cardStyle, { borderLeftWidth: 0.5, borderLeftColor: theme.borderCard }]}>
+          <LinearGradient colors={[theme.accentBlueRaw, theme.accentBlueRaw + '40', theme.accentBlueRaw + '00']} locations={[0, 0.04, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 64, borderTopLeftRadius: 14, borderTopRightRadius: 14 }} pointerEvents="none" />
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
             <Ionicons name="sparkles" size={11} color={theme.statusGood} />
             <Text style={cardLabel}>Recovery Coach</Text>

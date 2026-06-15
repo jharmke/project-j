@@ -713,7 +713,7 @@ Home card Level 2 slots (carousel slots 2+): eager. Computed at app open alongsi
 
 EvR domain card Level 2 tips: lazy. Computed when the user navigates to EvR. Each domain card shows its own per-card internal loading state.
 
-Day Summary: OPEN. Surface assignment is the current blocker. See open items below.
+Day Summary: RESOLVED 2026-06-07 (see Open Items #1). Stays Level 1, 1-day window, as currently built. No changes.
 
 ---
 

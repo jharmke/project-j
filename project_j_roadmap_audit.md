@@ -39,7 +39,7 @@
 
 ### Coaching / AI
 - [ ] Caffeine tracking -- new field. Track caffeine intake, daily total surface, high-amount warnings + first-use disclaimer (including specific guidance for pregnant women per lower safe limit). Design decisions needed: dedicated quick-add vs food field, warning thresholds. Pairs with Advanced Nutrition expansion. Duty-of-care item.
-- [ ] Smart Coach Level 2 (Focused Tips) -- single-metric AI-voiced tips for home card slots 2+ and EvR domain cards. Open blocker: Day Summary surface assignment (spec and gym notes conflict on Level 1 vs Level 2). Explicit call needed before any build. See SMART_COACH_SPEC.md.
+- [ ] Smart Coach Level 2 (Focused Tips) -- single-metric AI-voiced tips for home card slots 2+ and EvR domain cards. Day Summary blocker RESOLVED 2026-06-15 (stays Level 1, no changes -- SMART_COACH_SPEC.md Open Items #1). EvR Level 2 unblocked and fully specced. Only open dependency is Weekly/Monthly summary screen layouts (not EvR). See SMART_COACH_SPEC.md.
 - [ ] NEAT definition -- one tooltipRegistry.ts entry for Non-Exercise Activity Thermogenesis. No UI changes, shows up in Settings > Help automatically.
 
 ### Sleep

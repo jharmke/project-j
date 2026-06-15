@@ -1521,7 +1521,7 @@ export const TUTORIALS: Tutorial[] = [
         title: 'PATTERNS IN YOUR DATA',
         noTabBarOffset: true,
         body: {
-          discipline: 'Correlation patterns across your data: sleep-to-intake, burn days, weekday/weekend, water-to-cals, and more. These are the patterns that explain plateaus.',
+          discipline: 'Correlation patterns across your data: sleep-to-intake, recovery-to-training, burn days, weekday/weekend, water-to-cals, and more. These are the patterns that explain plateaus.',
           balanced: 'The patterns section shows how different habits connect: things like sleep affecting next-day eating, or high burn days affecting appetite.',
           mindful: 'Patterns show how different habits connect. These are just observations, interesting to notice, not rules to follow.',
         },

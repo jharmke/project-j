@@ -770,6 +770,59 @@ export const RULE_COPY: Record<string, RuleCopy> = {
       'There is a pattern: days with more fiber feel more settled around hunger. Your data reflects something nutritionists have known for a long time.',
     ],
   },
+
+  // ── RECOVERY (cross-signal, graduated from the Recovery coach) ───────────────
+
+  rec_load_drag: {
+    title: 'Recover From Your Hard Days',
+    positive: false,
+    db: {
+      insight_all: [
+        'Your recovery runs about {delta} points lower the day after your hardest training days. The fix usually is not training harder, it is protecting an easy day so your body absorbs the work.',
+        'There is a clear pattern: recovery dips around {delta} points the day after your highest-effort days. Hard work only pays off if you let your body catch up after it.',
+        'Recovery averages {delta} points lower following your biggest training days. An easy or deload day after hard sessions is what turns that effort into progress.',
+      ],
+    },
+    mindful: [
+      'We noticed recovery tends to be a little lower the day after your hardest sessions. That is your body asking for an easier day. Worth listening to.',
+      'There is a gentle pattern here: big effort days are followed by lower recovery. Giving yourself room to rest after them is a kindness your body appreciates.',
+      'After your hardest days, recovery tends to dip. That is completely normal. An easy day afterward lets the work settle in.',
+    ],
+  },
+
+  rec_tracks_sleep: {
+    title: 'Sleep Is Your Lever',
+    positive: false,
+    db: {
+      insight_all: [
+        'Your recovery averages about {delta} points lower after short nights than after fuller ones. Your lowest recovery days are following your shortest sleep, not your hardest workouts. Sleep looks like your main lever right now.',
+        'There is a real connection in your data: recovery drops around {delta} points after nights under your sleep goal. The gym is not what is holding your recovery back, sleep is.',
+        'Recovery runs {delta} points lower on the days after short sleep. If you want to move the number, sleep is the place to start, not training volume.',
+      ],
+    },
+    mindful: [
+      'We noticed recovery tends to be better after fuller nights of sleep. Rest seems to be doing more for you than anything happening in the gym.',
+      'There is a beautiful pattern here: the nights you sleep more are followed by better recovery. Sleep is quietly doing a lot of work.',
+      'Your recovery and your sleep seem closely connected. Fuller nights, better recovery. It is worth paying attention to.',
+    ],
+  },
+
+  rec_sustained_low: {
+    title: 'Time for a Lighter Week',
+    positive: false,
+    db: {
+      pattern: [
+        'Recovery has averaged {mean} across the recent stretch while your training held steady. That pattern usually means a lighter week, not more effort, is what moves it.',
+        'Your recovery has run below par for most of the recent window while training stayed constant. When recovery stalls like this, backing off is what lets it climb.',
+        'Recovery has settled around {mean} lately even though training has not eased up. A genuinely lighter week is often what breaks that holding pattern.',
+      ],
+    },
+    mindful: [
+      'Recovery has been sitting on the lower side for a while now, even as you have kept training. Your body might be asking for a lighter week.',
+      'We noticed recovery has held low through a steady stretch of training. Sometimes the most productive thing is to ease off and let it catch up.',
+      'There is a pattern of lower recovery alongside steady training lately. A softer week could be exactly what helps it recover.',
+    ],
+  },
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

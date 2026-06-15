@@ -1261,6 +1261,82 @@ function ruleCrossFiberCalorie(w14: WindowDay[], ctx: EngineContext, store: Smar
   return makeTip('cross_fiber_calorie', 'insight', true, 'insight_all', ctx, store, { delta });
 }
 
+// ── RECOVERY (graduated from the Recovery coach into EvR as cross-signal) ──────
+// These mirror R1/R2/R3 of buildRecoveryFinding but run as standard EvR
+// candidates. The hub Recovery coach is untouched; this only makes recovery
+// eligible to win an EvR insight. Snapshot/acute/no-cause rules stay hub-only.
+
+function recEvrDays(w14: WindowDay[]): WindowDay[] {
+  return w14.filter(d => d.recoveryScore !== null && !d.excluded);
+}
+
+// R1: next-day recovery drags after the highest-effort days.
+function computeRecLoadDrag(w14: WindowDay[]): { delta: number; n: number } | null {
+  const recDays = recEvrDays(w14);
+  if (recDays.length < REC_MIN_PATTERN_DAYS) return null;
+  const dayMap = buildDayMap(w14);
+  const actives = w14.map(d => d.rawActive).filter(a => a > 0).sort((a, b) => a - b);
+  if (actives.length < 3) return null;
+  const highCut = actives[Math.floor(actives.length * 0.66)];
+  const afterHigh: number[] = [], afterLow: number[] = [];
+  for (const d of recDays) {
+    const p = dayMap.get(keyForOffset(d.dateKey, 1)); // prior day's load
+    if (!p || p.rawActive <= 0) continue;
+    (p.rawActive >= highCut ? afterHigh : afterLow).push(d.recoveryScore as number);
+  }
+  if (afterHigh.length < REC_MIN_PAIRS || afterLow.length < REC_MIN_PAIRS) return null;
+  const delta = Math.round(avg(afterLow) - avg(afterHigh)); // positive = lower after hard days
+  if (delta < REC_PATTERN_DELTA) return null;
+  return { delta, n: recDays.length };
+}
+
+// R2: recovery tracks sleep (lower after short nights).
+function computeRecTracksSleep(w14: WindowDay[], sleepGoal: number): { delta: number; n: number } | null {
+  const recDays = recEvrDays(w14);
+  if (recDays.length < REC_MIN_PATTERN_DAYS) return null;
+  const shortS: number[] = [], okS: number[] = [];
+  for (const d of recDays) {
+    if (d.sleepHours === null) continue;
+    (d.sleepHours < sleepGoal * 0.9 ? shortS : okS).push(d.recoveryScore as number);
+  }
+  if (shortS.length < REC_MIN_PAIRS || okS.length < REC_MIN_PAIRS) return null;
+  const delta = Math.round(avg(okS) - avg(shortS)); // positive = lower after short nights
+  if (delta < REC_PATTERN_DELTA) return null;
+  return { delta, n: recDays.length };
+}
+
+// R3: sustained under-recovery while training holds steady.
+function computeRecSustainedLow(w14: WindowDay[]): { mean: number; n: number } | null {
+  const recDays = recEvrDays(w14);
+  if (recDays.length < REC_MIN_PATTERN_DAYS) return null;
+  const scores = recDays.map(d => d.recoveryScore as number);
+  const mean = avg(scores);
+  const sd = stdDev(scores);
+  const trainingDays = recDays.filter(d => d.rawActive > 0 || d.workoutChecked > 0).length;
+  if (mean < REC_LOW_MEAN && sd < 12 && trainingDays >= recDays.length * 0.5) {
+    return { mean: Math.round(mean), n: recDays.length };
+  }
+  return null;
+}
+
+function ruleRecLoadDrag(w14: WindowDay[], ctx: EngineContext, store: SmartTipsStore): CandidateTip | null {
+  const r = computeRecLoadDrag(w14);
+  if (!r) return null;
+  return makeTip('rec_load_drag', 'insight', false, 'insight_all', ctx, store, { delta: r.delta });
+}
+
+function ruleRecTracksSleep(w14: WindowDay[], ctx: EngineContext, store: SmartTipsStore): CandidateTip | null {
+  const r = computeRecTracksSleep(w14, ctx.sleepGoal);
+  if (!r) return null;
+  return makeTip('rec_tracks_sleep', 'insight', false, 'insight_all', ctx, store, { delta: r.delta });
+}
+
+function ruleRecSustainedLow(w14: WindowDay[], ctx: EngineContext, store: SmartTipsStore): CandidateTip | null {
+  const r = computeRecSustainedLow(w14);
+  if (!r) return null;
+  return makeTip('rec_sustained_low', 'pattern', false, 'pattern', ctx, store, { mean: r.mean });
+}
+
 // ── Run all rules ─────────────────────────────────────────────────────────────
 
 function runAllRules(
@@ -1311,6 +1387,9 @@ function runAllRules(
   push(ruleCrossWorkoutIntake(w14, ctx, store));
   push(ruleCrossStepsSleep(w14, ctx, store));
   push(ruleCrossFiberCalorie(w14, ctx, store));
+  push(ruleRecLoadDrag(w14, ctx, store));
+  push(ruleRecTracksSleep(w14, ctx, store));
+  push(ruleRecSustainedLow(w14, ctx, store));
 
   return candidates;
 }
@@ -1697,6 +1776,7 @@ const RULE_FAMILY: Record<string, number> = {
   cross_protein_sleep: 3, cross_sodium_scale: 3, cross_high_burn_overeating: 3,
   cross_sleep_intake: 3, cross_workout_intake: 3, cross_steps_sleep: 3,
   cross_fiber_calorie: 3, weekend_spike: 3, cal_outlier_week: 3,
+  rec_load_drag: 3, rec_tracks_sleep: 3, rec_sustained_low: 3,
   sleep_score_low: 4, sleep_duration_short: 4, sleep_bedtime_inconsistent: 4,
   sleep_deep_low: 4,
   log_consistency_low: 5, weight_infrequent: 5, activity_streak_low: 5,
@@ -1716,6 +1796,7 @@ const RULE_SCENARIO: Record<string, string> = {
   cross_high_burn_overeating: '3.3', cross_sleep_intake: '3.4',
   cross_workout_intake: '3.5', cross_steps_sleep: '3.6',
   cross_fiber_calorie: '3.7', weekend_spike: '3.8', cal_outlier_week: '3.9',
+  rec_load_drag: '3.10', rec_tracks_sleep: '3.11', rec_sustained_low: '3.12',
   sleep_score_low: '4.1', sleep_duration_short: '4.2',
   sleep_bedtime_inconsistent: '4.3', sleep_deep_low: '4.4',
   log_consistency_low: '5.1', weight_infrequent: '5.2',
@@ -1729,6 +1810,7 @@ const RULE_SCENARIO: Record<string, string> = {
 const EDUCATIONAL_RULES = new Set([
   'cross_sodium_scale', 'cross_protein_sleep', 'cross_steps_sleep',
   'cross_fiber_calorie', 'cross_sleep_intake',
+  'rec_load_drag', 'rec_tracks_sleep',
 ]);
 
 function deriveTone(candidate: CandidateTip): 'positive' | 'corrective' | 'educational' {
@@ -2003,6 +2085,36 @@ function buildDiagnosisActionFacts(
         diagnosis: 'Over the last 14 days, high-burn days are correlating with higher intake, offsetting the calorie benefit of the extra activity',
         action: 'Plan meals ahead on high-activity days to avoid reactive eating after big burns',
         facts: {},
+      };
+    }
+    case 'rec_load_drag': {
+      const r = computeRecLoadDrag(w14);
+      const n = r?.n ?? recEvrDays(w14).length;
+      const delta = r?.delta ?? 0;
+      return {
+        diagnosis: `Over the last ${n} days, your recovery averages about ${delta} points lower the day after your highest-effort days`,
+        action: 'Protect an easy or deload day after hard sessions so your body absorbs the work',
+        facts: { delta, days: n },
+      };
+    }
+    case 'rec_tracks_sleep': {
+      const r = computeRecTracksSleep(w14, ctx.sleepGoal);
+      const n = r?.n ?? recEvrDays(w14).length;
+      const delta = r?.delta ?? 0;
+      return {
+        diagnosis: `Over the last ${n} days, your recovery averages about ${delta} points lower after nights under ${Math.round(ctx.sleepGoal)} hours than after fuller nights`,
+        action: 'Treat sleep as your main recovery lever right now, not training volume',
+        facts: { delta, days: n },
+      };
+    }
+    case 'rec_sustained_low': {
+      const r = computeRecSustainedLow(w14);
+      const n = r?.n ?? recEvrDays(w14).length;
+      const mean = r?.mean ?? 0;
+      return {
+        diagnosis: `Recovery has averaged ${mean} across the last ${n} days while training stayed steady`,
+        action: 'Take a genuinely lighter week and let recovery catch up before pushing again',
+        facts: { mean, days: n },
       };
     }
     case 'cross_steps_sleep': {

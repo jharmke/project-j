@@ -311,7 +311,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     key: 'smart_tip',
     category: 'Reports',
     title: 'Smart Tip',
-    body: 'Smart Tips are pattern-based coaching observations drawn from your logged data over the past 7 to 14 days. They read your patterns across protein, hydration, sleep, and activity, then surface the one finding most relevant to you right now.\n\nThe tip here is your highest-priority observation today. Tap the card to open Effort vs Results and see the full picture behind it.\n\nTips update once per day as your data changes. The more consistently you log, the more accurate and specific the tips become.',
+    body: 'Smart Tips are pattern-based coaching observations drawn from your logged data over the past 7 to 14 days. They read your patterns across protein, hydration, sleep, activity, and recovery, then surface the one finding most relevant to you right now.\n\nThe tip here is your highest-priority observation today. Tap the card to open Effort vs Results and see the full picture behind it.\n\nTips update once per day as your data changes. The more consistently you log, the more accurate and specific the tips become.',
     definitions: [
       {
         term: 'Pattern tips',

@@ -1579,6 +1579,20 @@ export default function SleepHub() {
         return { dateKey: nt.dateKey, value: sc, label: `${sc}` };
       });
     }
+    // Sleep-tab metrics: per-night from the in-memory sleep history (HealthKit
+    // stage nights, already range-scoped + exclude-filtered).
+    if (['deep', 'rem', 'bedtime', 'sleepBalance', 'wakeEvents'].includes(key)) {
+      const sleepOut: { dateKey: string; value: number; label: string }[] = [];
+      for (const nt of filteredHistory) {
+        if (nt.totalMs <= 0) continue;
+        if (key === 'deep') { const v = Math.round((nt.deepMs / nt.totalMs) * 100); sleepOut.push({ dateKey: nt.dateKey, value: v, label: `${v}%` }); }
+        else if (key === 'rem') { const v = Math.round((nt.remMs / nt.totalMs) * 100); sleepOut.push({ dateKey: nt.dateKey, value: v, label: `${v}%` }); }
+        else if (key === 'bedtime') { if (nt.bedMin != null) sleepOut.push({ dateKey: nt.dateKey, value: nt.bedMin, label: fmtBedMin(nt.bedMin) }); }
+        else if (key === 'sleepBalance') { sleepOut.push({ dateKey: nt.dateKey, value: Math.round((nt.totalMs / 3600000) * 10) / 10, label: fmtMs(nt.totalMs) }); }
+        else if (key === 'wakeEvents') { sleepOut.push({ dateKey: nt.dateKey, value: nt.awakeCount, label: `${nt.awakeCount}` }); }
+      }
+      return sleepOut;
+    }
     if (!['hrv', 'rhr', 'resp', 'spo2', 'activity'].includes(key)) return null;
     const k = burnAccuracyPct / 100;
     const out: { dateKey: string; value: number; label: string }[] = [];
@@ -1637,7 +1651,11 @@ export default function SleepHub() {
     if (!d) return null;
     // Mindful (growth-off) neutralizes the chart color to accent, matching the hero.
     const chartColor = (styleMode === 'mindful' && !mindfulGrowth) ? theme.accentBlueRaw : undefined;
-    return { ...d, history: drillHistory ?? undefined, chartColor };
+    // Bedtime plots clock times; sleep balance plots hours. Both need custom y labels.
+    const chartValueFormat = drillKey === 'bedtime' ? fmtBedMin
+      : drillKey === 'sleepBalance' ? (v: number) => `${Number.isInteger(v) ? v : v.toFixed(1)}h`
+      : undefined;
+    return { ...d, history: drillHistory ?? undefined, chartColor, chartValueFormat };
   })();
 
   return (

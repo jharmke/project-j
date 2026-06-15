@@ -29,6 +29,9 @@ export interface MetricDrilldownData {
   // color (Mindful neutralizes to accent).
   history?: { dateKey: string; value: number; label: string }[];
   chartColor?: string;
+  // Optional y-axis tick formatter (e.g. clock time for bedtime, hours for sleep
+  // balance). Defaults to a plain numeric format.
+  chartValueFormat?: (v: number) => string;
 }
 
 function fmtDay(dateKey: string): string {
@@ -64,7 +67,7 @@ function niceYTicks(minVal: number, maxVal: number, targetCount = 3): number[] {
 // fill + line + dots (selected/latest emphasized), tap a point to read its value
 // in the header line. Mirrors the hub trend charts; width measured via onLayout
 // since the modal width is dynamic.
-function MiniMetricChart({ points, color, theme }: { points: { dateKey: string; value: number; label: string }[]; color: string; theme: any }) {
+function MiniMetricChart({ points, color, theme, formatTick }: { points: { dateKey: string; value: number; label: string }[]; color: string; theme: any; formatTick?: (v: number) => string }) {
   const [w, setW] = useState(0);
   const [sel, setSel] = useState<number | null>(null);
   const n = points.length;
@@ -80,7 +83,7 @@ function MiniMetricChart({ points, color, theme }: { points: { dateKey: string; 
   const span = (tickMax - tickMin) || 1;
   const toX = (i: number) => PAD_L + (n === 1 ? plotW / 2 : (i / (n - 1)) * plotW);
   const toY = (v: number) => PAD_T + (1 - (Math.max(tickMin, Math.min(tickMax, v)) - tickMin) / span) * plotH;
-  const fmtTick = (v: number) => Number.isInteger(v) ? `${v}` : v.toFixed(1);
+  const fmtTick = formatTick ?? ((v: number) => Number.isInteger(v) ? `${v}` : v.toFixed(1));
   const linePts = points.map((p, i) => `${toX(i)},${toY(p.value)}`).join(' ');
   const areaPath = `M ${toX(0)},${toY(vals[0])} ` + vals.slice(1).map((v, i) => `L ${toX(i + 1)},${toY(v)}`).join(' ') + ` L ${toX(n - 1)},${PAD_T + plotH} L ${toX(0)},${PAD_T + plotH} Z`;
   const selIdx = sel ?? n - 1;
@@ -236,7 +239,7 @@ export default function MetricDrilldownModal({ visible, onClose, data }: Props) 
               <>
                 {data.history && data.history.length >= 2 ? (
                   <View style={{ marginBottom: 12 }}>
-                    <MiniMetricChart points={data.history} color={data.chartColor ?? data.statusColor} theme={theme} />
+                    <MiniMetricChart points={data.history} color={data.chartColor ?? data.statusColor} theme={theme} formatTick={data.chartValueFormat} />
                   </View>
                 ) : data.history ? (
                   <View style={{ marginBottom: 12, paddingVertical: 14, alignItems: 'center' }}>

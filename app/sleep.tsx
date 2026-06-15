@@ -813,7 +813,8 @@ export default function SleepHub() {
   const renderHero = () => {
     if (displaySleep === null || displaySleep <= 0) {
       return (
-        <View style={[cardStyle, { alignItems: 'center', paddingVertical: 28 }]}>          <Ionicons name="moon-outline" size={34} color={theme.iconMuted} />
+        <View style={[cardStyle, { alignItems: 'center', paddingVertical: 28 }]}>
+          <Ionicons name="moon-outline" size={34} color={theme.iconMuted} />
           <Text style={{ fontSize: 14, color: theme.textPrimary, fontFamily: 'DMSans_700Bold', marginTop: 10 }}>No sleep logged last night</Text>
           <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 4, textAlign: 'center' }}>
             Sleep syncs from Apple Health, or you can log it by hand on the home Sleep card.
@@ -896,13 +897,15 @@ export default function SleepHub() {
     const heroCard = () => {
       if (loadingRecovery && recoveryResult === null) {
         return (
-          <View style={[cardStyle, { alignItems: 'center', paddingVertical: 32 }]}>            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Loading recovery data...</Text>
+          <View style={[cardStyle, { alignItems: 'center', paddingVertical: 32 }]}>
+            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Loading recovery data...</Text>
           </View>
         );
       }
       if (recoveryResult === null || recoveryResult.score === null) {
         return (
-          <View style={[cardStyle, { alignItems: 'center', paddingVertical: 28 }]}>            <Ionicons name="pulse-outline" size={34} color={theme.iconMuted} />
+          <View style={[cardStyle, { alignItems: 'center', paddingVertical: 28 }]}>
+            <Ionicons name="pulse-outline" size={34} color={theme.iconMuted} />
             <Text style={{ fontSize: 14, color: theme.textPrimary, fontFamily: 'DMSans_700Bold', marginTop: 10 }}>Recovery data unavailable</Text>
             <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 4, textAlign: 'center', lineHeight: 18 }}>
               Connect Apple Health and log sleep to see your Recovery Score.
@@ -985,7 +988,8 @@ export default function SleepHub() {
     const trendCard = () => {
       const avg = recoveryTrend.length ? Math.round(recoveryTrend.reduce((a, d) => a + d.score, 0) / recoveryTrend.length) : null;
       return (
-        <View style={[cardStyle, { borderLeftWidth: 0.5, borderLeftColor: theme.borderCard }]}>          <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
+        <View style={[cardStyle, { borderLeftWidth: 0.5, borderLeftColor: theme.borderCard }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
             <View>
               <Text style={cardLabel}>Recovery Trend</Text>
               {avg !== null && (
@@ -1027,7 +1031,8 @@ export default function SleepHub() {
         );
 
       return (
-        <View style={[cardStyle, { borderLeftWidth: 0.5, borderLeftColor: theme.borderCard }]}>          <Text style={[cardLabel, { marginBottom: 4 }]}>Key Signals</Text>
+        <View style={[cardStyle, { borderLeftWidth: 0.5, borderLeftColor: theme.borderCard }]}>
+          <Text style={[cardLabel, { marginBottom: 4 }]}>Key Signals</Text>
           {sigRow('HRV (overnight)', todayHRV !== null ? `${Math.round(todayHRV * 10) / 10}ms` : null, hrvBaseline !== null ? `7d avg: ${Math.round(hrvBaseline * 10) / 10}ms` : null, 'hrv')}
           {sigRow('Resting HR', todayRHR !== null ? `${todayRHR} bpm` : null, rhrBaseline !== null ? `7d avg: ${rhrBaseline} bpm` : null, 'rhr')}
           {sigRow('Resp. Rate', todayResp !== null ? `${todayResp} brpm` : null, respBaseline !== null ? `7d avg: ${respBaseline} brpm` : null, 'resp')}
@@ -1043,7 +1048,8 @@ export default function SleepHub() {
       const tip = recoveryCoachTip(recoveryResult, styleMode, mindfulGrowth);
       if (styleMode === 'mindful' && !mindfulGrowth && tip.kind === 'corrective') return null;
       return (
-        <View style={[cardStyle, { borderLeftWidth: 0.5, borderLeftColor: theme.borderCard }]}>          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+        <View style={[cardStyle, { borderLeftWidth: 0.5, borderLeftColor: theme.borderCard }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
             <Ionicons name="sparkles" size={11} color={theme.statusGood} />
             <Text style={cardLabel}>Recovery Coach</Text>
           </View>
@@ -1096,7 +1102,8 @@ export default function SleepHub() {
   const renderTrend = () => {
     const avg = trendData.length ? Math.round(trendData.reduce((a, d) => a + d.score, 0) / trendData.length) : null;
     return (
-      <View style={cardStyle}>        <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
+      <View style={cardStyle}>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
           <View>
             <Text style={cardLabel}>Sleep Score Trend</Text>
             {avg !== null && (
@@ -1127,7 +1134,8 @@ export default function SleepHub() {
       { label: 'REM', color: theme.sleepRem },
     ];
     return (
-      <View style={cardStyle}>        <Text style={[cardLabel, { marginBottom: 12 }]}>Sleep Stages</Text>
+      <View style={cardStyle}>
+        <Text style={[cardLabel, { marginBottom: 12 }]}>Sleep Stages</Text>
         {filteredHistory.length > 0 ? (
           <>
             <StageHistoryChart nights={filteredHistory} theme={theme} />
@@ -1245,7 +1253,8 @@ export default function SleepHub() {
     }
 
     return (
-      <View style={cardStyle}>        <Text style={[cardLabel, { marginBottom: 4 }]}>Sleep Metrics</Text>
+      <View style={cardStyle}>
+        <Text style={[cardLabel, { marginBottom: 4 }]}>Sleep Metrics</Text>
         {rows.map((r, i) => (
           <View key={r.label} style={{ paddingVertical: 12, borderBottomWidth: i === rows.length - 1 ? 0 : 0.5, borderBottomColor: theme.borderSubtle }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -1266,7 +1275,8 @@ export default function SleepHub() {
   };
 
   const renderExclude = () => (
-    <View style={cardStyle}>      <Text style={[cardLabel, { marginBottom: 12 }]}>Options</Text>
+    <View style={cardStyle}>
+      <Text style={[cardLabel, { marginBottom: 12 }]}>Options</Text>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Text style={{ flex: 1, paddingRight: 12, fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>
           Exclude last night from sleep and recovery trends
@@ -1291,7 +1301,8 @@ export default function SleepHub() {
     const deterministic = sleepCoachTip(last, score, sleepGoal, bedSd, allowCorrective);
     const body = sleepCoachCache ? resolveTipBody(sleepCoachCache) : deterministic.text;
     return (
-      <View style={cardStyle}>        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+      <View style={cardStyle}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
           <Ionicons name="sparkles" size={11} color={theme.accentBlueRaw} />
           <Text style={cardLabel}>Sleep Coach</Text>
         </View>

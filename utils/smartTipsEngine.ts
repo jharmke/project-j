@@ -2307,20 +2307,51 @@ function checkFamily9Safety(w7: WindowDay[], ctx: EngineContext): Safety9Result 
   return null;
 }
 
-function selectByPrioritySpine(candidates: CandidateTip[], _ctx: EngineContext, excludeRuleIds: string[] = []): CandidateTip | null {
+// Coarse headline topic for anti-repeat rotation. The net/weight/cal rules all
+// read as one "weight" story to the user, so they share a bucket; everything
+// else uses its own rule prefix. Used only to rotate the daily headline.
+function headlineTopic(ruleId: string): string {
+  const t = ruleId.split('_')[0];
+  if (t === 'net' || t === 'cal' || t === 'weight') return 'weight';
+  return t;
+}
+
+// recentTopics: most-recent-first list of headline topics led on prior computes.
+// Empty (the default) = NO fatigue, byte-identical to the old family/tier spine,
+// so every caller that does not pass it is completely unaffected.
+function selectByPrioritySpine(
+  candidates: CandidateTip[],
+  _ctx: EngineContext,
+  excludeRuleIds: string[] = [],
+  recentTopics: string[] = [],
+): CandidateTip | null {
   if (candidates.length === 0) return null;
   const TIER_RANK_SPINE: Record<SmartTipTier, number> = { urgent: 3, pattern: 2, insight: 1 };
+  const FATIGUE_BY_RECENCY = [2.0, 1.2, 0.6]; // penalty if this topic led 1/2/3 computes ago
+
+  const fatiguePenalty = (ruleId: string): number => {
+    if (recentTopics.length === 0) return 0;
+    const topic = headlineTopic(ruleId);
+    let penalty = 0;
+    for (let i = 0; i < recentTopics.length && i < FATIGUE_BY_RECENCY.length; i++) {
+      if (recentTopics[i] === topic) penalty = Math.max(penalty, FATIGUE_BY_RECENCY[i]);
+    }
+    return penalty;
+  };
+
+  // Lower score wins. family (1..7) dominates; tier breaks ties within a family
+  // (urgent best, +0.1/0.2 never crosses a family); fatigue pushes a recently-led
+  // topic down by up to ~2 families so the headline rotates instead of repeating.
+  const score = (c: CandidateTip): number =>
+    (RULE_FAMILY[c.ruleId] ?? 99)
+    + (3 - TIER_RANK_SPINE[c.tier]) * 0.1
+    + fatiguePenalty(c.ruleId);
 
   const pick = (pool: CandidateTip[]): CandidateTip | null => {
     const corrective = pool.filter(c => !c.positive);
     const positive = pool.filter(c => c.positive);
     const ranked = corrective.length > 0 ? corrective : positive;
-    return [...ranked].sort((a, b) => {
-      const famA = RULE_FAMILY[a.ruleId] ?? 99;
-      const famB = RULE_FAMILY[b.ruleId] ?? 99;
-      if (famA !== famB) return famA - famB;
-      return TIER_RANK_SPINE[b.tier] - TIER_RANK_SPINE[a.tier];
-    })[0] ?? null;
+    return [...ranked].sort((a, b) => score(a) - score(b))[0] ?? null;
   };
 
   if (excludeRuleIds.length > 0) {
@@ -2337,11 +2368,18 @@ export async function computeCoachPacket(
 ): Promise<CoachTipCache> {
   const todayKey = todayDateKey();
   const coachLastRuleKey = `pj_coach_last_rule_${surface}`;
-  const [existing, lastRuleRaw] = await Promise.all([
+  const coachTopicHistKey = `pj_coach_topic_hist_${surface}`;
+  const [existing, lastRuleRaw, topicHistRaw] = await Promise.all([
     loadCoachTipCache(),
     AsyncStorage.getItem(coachLastRuleKey),
+    AsyncStorage.getItem(coachTopicHistKey),
   ]);
   const persistedLastRuleId: string | null = lastRuleRaw ? JSON.parse(lastRuleRaw).ruleId : null;
+  // Headline-topic rotation history (NEW key, additive). Home only for now;
+  // every other surface passes [] below so its ranking is unchanged.
+  let recentTopicHist: string[] = [];
+  try { recentTopicHist = topicHistRaw ? (JSON.parse(topicHistRaw) || []) : []; } catch { recentTopicHist = []; }
+  const recentTopics = surface === 'home' ? recentTopicHist : [];
 
   // Return cache if already computed today for this surface
   if (
@@ -2428,7 +2466,7 @@ export async function computeCoachPacket(
     const rawCandidates = runAllRules(w7, w5, w14, ctx, tipStore);
     const suppressed = applyMindfulSuppression(rawCandidates, ctx);
     const lastRuleId = persistedLastRuleId ?? existing?.packet.ruleId;
-    const selected = selectByPrioritySpine(suppressed, ctx, lastRuleId ? [lastRuleId] : []);
+    const selected = selectByPrioritySpine(suppressed, ctx, lastRuleId ? [lastRuleId] : [], recentTopics);
 
     if (!selected) {
       packet = {
@@ -2485,10 +2523,15 @@ export async function computeCoachPacket(
     fallbackUsed: false,
   };
 
-  await Promise.all([
+  const savePromises = [
     saveCoachTipCache(cache),
     AsyncStorage.setItem(coachLastRuleKey, JSON.stringify({ ruleId: packet.ruleId })),
-  ]);
+  ];
+  if (surface === 'home') {
+    const newHist = [headlineTopic(packet.ruleId), ...recentTopicHist].slice(0, 3);
+    savePromises.push(AsyncStorage.setItem(coachTopicHistKey, JSON.stringify(newHist)));
+  }
+  await Promise.all(savePromises);
   return cache;
 }
 

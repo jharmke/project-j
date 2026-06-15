@@ -1021,7 +1021,7 @@ export default function SleepHub() {
             <Ionicons name="pulse-outline" size={34} color={theme.iconMuted} />
             <Text style={{ fontSize: 14, color: theme.textPrimary, fontFamily: 'DMSans_700Bold', marginTop: 10 }}>Recovery data unavailable</Text>
             <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 4, textAlign: 'center', lineHeight: 18 }}>
-              Recovery needs overnight heart data from your Apple Watch. Wear it overnight to see your Recovery Score.
+              Recovery needs overnight heart data synced to Apple Health. Wear a watch overnight and let it sync to see your Recovery Score.
             </Text>
           </View>
         );

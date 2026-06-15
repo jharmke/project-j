@@ -14,7 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, PanResponder, ScrollView, Text, TouchableOpacity, View } from 'react-native';
-import ReAnimated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import ReAnimated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import Svg, { Circle, Defs, G, Line, LinearGradient as SvgLinearGradient, Path, Polyline, Rect, Stop, Text as SvgText } from 'react-native-svg';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ToggleSwitch from '../components/ToggleSwitch';
@@ -24,6 +24,7 @@ import { storageSet } from '../utils/storage';
 import { calcSleepScore } from '../utils/sleepScore';
 import { calcRecoveryScore, recoveryZone, RecoveryComponent, RecoveryResult } from '../utils/recoveryScore';
 import MetricDrilldownModal, { MetricDrilldownData } from '../components/MetricDrilldownModal';
+import { ScoreRing } from '../components/DaySummaryModal';
 import { CardWash } from '../components/GradientCard';
 import { METRIC_DRILLDOWNS } from '../data/metricDrilldowns';
 import { useHealthKit } from '../useHealthKit';
@@ -43,6 +44,63 @@ const fmtMs = (ms: number) => {
   const m = Math.round((ms % 3600000) / 60000);
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 };
+
+// Divergent signal bar for the Recovery hero. Center = the user's baseline; the
+// fill grows RIGHT (green) when the signal is HELPING recovery and LEFT (amber/
+// red) when it is DRAGGING. Magnitude is the component sub-score's distance from
+// the neutral 75 baseline over a symmetric +/-25 window, so all five signals read
+// consistently, including the composite sleep score and the two-sided activity
+// score (which only ever sits center or drags left, by design).
+function DivergentBar({ score, theme, tone }: { score: number; theme: any; tone?: string }) {
+  const [trackW, setTrackW] = useState(0);
+  const half = trackW / 2;
+  const helping = score >= 75;
+  const frac = Math.max(0, Math.min(1, Math.abs(score - 75) / 25));
+  // tone overrides the good/bad color with one flat color (Mindful observational mode).
+  const color = tone ?? (score >= 75 ? theme.statusGood : score >= 55 ? theme.statusWarn : theme.statusBad);
+  const w = useSharedValue(0);
+  useEffect(() => {
+    w.value = withTiming(frac * half, { duration: 600, easing: Easing.out(Easing.cubic) });
+  }, [frac, half]);
+  const fillStyle = useAnimatedStyle(() => ({ width: w.value }));
+  return (
+    <View onLayout={e => setTrackW(e.nativeEvent.layout.width)} style={{ height: 8, borderRadius: 4, backgroundColor: theme.bgProgressTrack, justifyContent: 'center', overflow: 'hidden' }}>
+      <View style={{ position: 'absolute', left: '50%', width: 1, top: 1, bottom: 1, marginLeft: -0.5, backgroundColor: theme.borderSubtle }} />
+      <ReAnimated.View
+        style={[
+          { position: 'absolute', height: 8, backgroundColor: color },
+          helping
+            ? { left: '50%', borderTopRightRadius: 4, borderBottomRightRadius: 4 }
+            : { right: '50%', borderTopLeftRadius: 4, borderBottomLeftRadius: 4 },
+          fillStyle,
+        ]}
+      />
+    </View>
+  );
+}
+
+// Range bar for SpO2 and other ABSOLUTE-range metrics (not baseline-relative, so a
+// divergent bar would be dishonest). The track spans lo..hi, the fill grows from
+// the left to the value and is colored by the healthy threshold (green at/above,
+// amber below); a faint tick marks where the healthy zone begins.
+function RangeBar({ value, theme, lo = 90, hi = 100, threshold = 95 }: { value: number; theme: any; lo?: number; hi?: number; threshold?: number }) {
+  const clamp = (n: number) => Math.max(0, Math.min(1, n));
+  const frac = clamp((value - lo) / (hi - lo));
+  const tickPos = clamp((threshold - lo) / (hi - lo));
+  const color = value >= threshold ? theme.statusGood : theme.statusWarn;
+  const [trackW, setTrackW] = useState(0);
+  const w = useSharedValue(0);
+  useEffect(() => {
+    w.value = withTiming(frac * trackW, { duration: 600, easing: Easing.out(Easing.cubic) });
+  }, [frac, trackW]);
+  const fillStyle = useAnimatedStyle(() => ({ width: w.value }));
+  return (
+    <View onLayout={e => setTrackW(e.nativeEvent.layout.width)} style={{ height: 8, borderRadius: 4, backgroundColor: theme.bgProgressTrack, justifyContent: 'center', overflow: 'hidden' }}>
+      <ReAnimated.View style={[{ position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 4, backgroundColor: color }, fillStyle]} />
+      <View style={{ position: 'absolute', left: `${tickPos * 100}%`, top: 0, bottom: 0, width: 1, backgroundColor: theme.textDim, opacity: 0.5 }} />
+    </View>
+  );
+}
 
 type SleepNight = {
   dateKey: string; coreMs: number; deepMs: number; remMs: number; awakeMs: number;
@@ -484,7 +542,6 @@ export default function SleepHub() {
   // hero SCORE uses recoverySignals (fixed 7d, frozen below) so it never moves on
   // a view toggle; this one re-fetches on 7D/30D so the "Nd avg" sublabels follow
   // the selected window. Today's values are window-independent, so only baselines differ.
-  const [rangeBaselineSignals, setRangeBaselineSignals] = useState<RecoverySignals | null>(null);
   const [loadingRecovery, setLoadingRecovery] = useState(true);
   const [burnAccuracyPct, setBurnAccuracyPct] = useState(100);
   const [recoveryTrend, setRecoveryTrend] = useState<{ dateKey: string; score: number }[]>([]);
@@ -595,15 +652,6 @@ export default function SleepHub() {
       .catch(() => { if (!cancelled) setLoadingRecovery(false); });
     return () => { cancelled = true; };
   }, []);
-
-  // Key Signals baselines follow the 7D/30D toggle (the score above stays frozen).
-  useEffect(() => {
-    let cancelled = false;
-    fetchRecoverySignals(parseInt(range, 10))
-      .then(s => { if (!cancelled) setRangeBaselineSignals(s); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [range]);
 
   const filteredHistory = useMemo(() => history.filter(n => !excludedSet.has(n.dateKey)), [history, excludedSet]);
 
@@ -1071,58 +1119,133 @@ export default function SleepHub() {
         { key: 'Resp. Rate', dkey: 'resp', comp: recoveryResult.resp },
       ].filter(r => r.comp !== null);
 
+      // Baseline value per signal (the frozen 7-day baseline the deltas/bars compare
+      // against), shown as subtext under each row label so the hero is self-contained
+      // (absorbs the old Key Signals card's job). Sleep Score has no baseline.
+      const baselineSub = (dkey: string): string | null => {
+        const s = adjustedSignals;
+        if (!s) return null;
+        switch (dkey) {
+          case 'hrv': return s.hrvBaseline != null ? `Base ${Math.round(s.hrvBaseline * 10) / 10}ms` : null;
+          case 'rhr': return s.rhrBaseline != null ? `Base ${Math.round(s.rhrBaseline)} bpm` : null;
+          case 'resp': return s.respBaseline != null ? `Base ${(Math.round(s.respBaseline * 10) / 10).toFixed(1)} brpm` : null;
+          case 'activity': return s.activCalBaseline != null ? `Base ${Math.round(s.activCalBaseline)} kcal` : null;
+          default: return null;
+        }
+      };
+
+      // Mindful with growth areas OFF: observational, no score number, no judgment
+      // color. Accent (not dead grey) keeps it alive; single-tone divergent bars show
+      // where each signal sits vs the baseline as observation, not a verdict. Mindful
+      // users with growth areas ON fall through to the FULL hero below (they opted into
+      // coaching, so they get the donut + bars like everyone else).
+      if (styleMode === 'mindful' && !mindfulGrowth) {
+        const mindfulWord = heroZoneInfo?.zoneColor === 'good' ? 'Recovered' : heroZoneInfo?.zoneColor === 'warn' ? 'Steady' : 'Take it easy';
+        const mindfulLine = heroZoneInfo?.zoneColor === 'good'
+          ? 'Your body looks recovered today.'
+          : heroZoneInfo?.zoneColor === 'warn'
+          ? 'Your body is holding steady today.'
+          : 'Your body is asking for an easier day.';
+        return (
+          <View style={[cardStyle, { borderLeftWidth: 0.5, borderLeftColor: theme.borderCard }]}>
+            <Text style={[cardLabel, { marginBottom: 14 }]}>Today's Recovery</Text>
+            <View style={{ alignItems: 'center', marginBottom: 16 }}>
+              <Ionicons name="contrast" size={30} color={theme.accentBlueRaw} />
+              <Text style={{ fontSize: 26, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, marginTop: 8 }}>{mindfulWord}</Text>
+              <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 4, textAlign: 'center' }}>{mindfulLine}</Text>
+            </View>
+            <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginBottom: 10 }}>
+              Where each signal sits next to your 7-day baseline.
+            </Text>
+            <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
+              {rows.map(({ key, dkey, comp }, idx) => {
+                if (!comp) return null;
+                const isLast = idx === rows.length - 1;
+                const bSub = baselineSub(dkey);
+                return (
+                  <TouchableOpacity key={key} activeOpacity={0.6} onPress={() => openDrill(dkey)} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 11, borderBottomWidth: isLast ? 0 : 0.5, borderBottomColor: theme.borderSubtle }}>
+                    <View style={{ width: 88 }}>
+                      <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }} numberOfLines={1}>{key}</Text>
+                      {bSub ? <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 1 }} numberOfLines={1}>{bSub}</Text> : null}
+                    </View>
+                    <View style={{ flex: 1, marginHorizontal: 10 }}>
+                      <DivergentBar score={comp.score} theme={theme} tone={theme.accentBlueRaw} />
+                    </View>
+                    <View style={{ width: 78, alignItems: 'flex-end' }}>
+                      <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_700Bold' }}>{comp.value}</Text>
+                      {comp.delta ? <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_500Medium', marginTop: 1 }}>{comp.delta}</Text> : null}
+                    </View>
+                    <Ionicons name="chevron-forward" size={14} color={theme.textDim} style={{ marginLeft: 6 }} />
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 14, textAlign: 'center' }}>
+              For informational purposes only. Not medical advice.
+            </Text>
+          </View>
+        );
+      }
+
       return (
         <View style={[cardStyle, { borderLeftWidth: 0.5, borderLeftColor: theme.borderCard }]}>
           <CardWash color={recColor} scored />
           <Text style={[cardLabel, { marginBottom: 14 }]}>Today's Recovery</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18, marginBottom: 18 }}>
-            <Text style={{ fontSize: 72, color: recColor, fontFamily: 'BebasNeue_400Regular', lineHeight: 78 }}>{heroScore}</Text>
-            <View>
-              <Text style={{ fontSize: 20, color: recColor, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 }}>{heroZoneInfo?.label}</Text>
+          <View style={{ alignItems: 'center', marginBottom: 16 }}>
+            <ScoreRing value={heroScore ?? recoveryResult.score} color={recColor} theme={theme} celebrate="none" />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
+              <Text style={{ fontSize: 22, color: recColor, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2 }}>{heroZoneInfo?.label}</Text>
               {recoveryResult.isLimitedData && (
-                <View style={{ marginTop: 5, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, alignSelf: 'flex-start' }}>
+                <View style={{ paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
                   <Text style={{ fontSize: 9, color: theme.accentBlueRaw, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' }}>Limited data</Text>
                 </View>
               )}
             </View>
           </View>
 
-          <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', textAlign: 'right', marginBottom: 4 }}>
-            Change vs your 7-day baseline
+          <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginBottom: 10 }}>
+            Each bar shows today vs your 7-day baseline. Right is helping, left is dragging.
           </Text>
           <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
             {rows.map(({ key, dkey, comp }, idx) => {
               if (!comp) return null;
               const rc = rowColor(comp.score);
               const isLast = idx === rows.length - 1;
+              const bSub = baselineSub(dkey);
               return (
-                <TouchableOpacity key={key} activeOpacity={0.6} onPress={() => openDrill(dkey)} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: isLast ? 0 : 0.5, borderBottomColor: theme.borderSubtle }}>
-                  <View style={{ width: 3, height: 28, borderRadius: 2, backgroundColor: rc, marginRight: 12 }} />
-                  <Text style={{ flex: 1, fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>{key}</Text>
-                  <View style={{ alignItems: 'flex-end' }}>
+                <TouchableOpacity key={key} activeOpacity={0.6} onPress={() => openDrill(dkey)} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 11, borderBottomWidth: isLast ? 0 : 0.5, borderBottomColor: theme.borderSubtle }}>
+                  <View style={{ width: 88 }}>
+                    <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }} numberOfLines={1}>{key}</Text>
+                    {bSub ? <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 1 }} numberOfLines={1}>{bSub}</Text> : null}
+                  </View>
+                  <View style={{ flex: 1, marginHorizontal: 10 }}>
+                    <DivergentBar score={comp.score} theme={theme} />
+                  </View>
+                  <View style={{ width: 78, alignItems: 'flex-end' }}>
                     <Text style={{ fontSize: 14, color: rc, fontFamily: 'DMSans_700Bold' }}>{comp.value}</Text>
                     {comp.delta && (
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 1 }}>
-                        <Ionicons name={comp.delta.startsWith('-') ? 'arrow-down' : 'arrow-up'} size={9} color={comp.isPositive ? theme.statusGood : theme.statusBad} />
-                        <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>{comp.delta}</Text>
-                      </View>
+                      <Text style={{ fontSize: 10, color: rc, fontFamily: 'DMSans_500Medium', marginTop: 1 }}>{comp.delta}</Text>
                     )}
                   </View>
-                  <Ionicons name="chevron-forward" size={14} color={theme.textDim} style={{ marginLeft: 8 }} />
+                  <Ionicons name="chevron-forward" size={14} color={theme.textDim} style={{ marginLeft: 6 }} />
                 </TouchableOpacity>
               );
             })}
           </View>
 
           {adjustedSignals?.todaySpO2 !== null && adjustedSignals?.todaySpO2 !== undefined && (
-            <TouchableOpacity activeOpacity={0.6} onPress={() => openDrill('spo2')} style={{ flexDirection: 'row', alignItems: 'center', paddingTop: 10, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle, marginTop: 2 }}>
-              <View style={{ width: 3, height: 28, borderRadius: 2, backgroundColor: adjustedSignals.todaySpO2 >= 95 ? theme.statusGood : theme.statusWarn, marginRight: 12 }} />
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>Blood Oxygen (SpO2)</Text>
-                <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 1 }}>Informational only</Text>
+            <TouchableOpacity activeOpacity={0.6} onPress={() => openDrill('spo2')} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 11, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
+              <View style={{ width: 88 }}>
+                <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }} numberOfLines={1}>Blood Oxygen</Text>
+                <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 1 }}>Informational</Text>
               </View>
-              <Text style={{ fontSize: 14, color: adjustedSignals.todaySpO2 >= 95 ? theme.statusGood : theme.statusWarn, fontFamily: 'DMSans_700Bold' }}>{adjustedSignals.todaySpO2}%</Text>
-              <Ionicons name="chevron-forward" size={14} color={theme.textDim} style={{ marginLeft: 8 }} />
+              <View style={{ flex: 1, marginHorizontal: 10 }}>
+                <RangeBar value={adjustedSignals.todaySpO2} theme={theme} />
+              </View>
+              <View style={{ width: 78, alignItems: 'flex-end' }}>
+                <Text style={{ fontSize: 14, color: adjustedSignals.todaySpO2 >= 95 ? theme.statusGood : theme.statusWarn, fontFamily: 'DMSans_700Bold' }}>{adjustedSignals.todaySpO2}%</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={14} color={theme.textDim} style={{ marginLeft: 6 }} />
             </TouchableOpacity>
           )}
 
@@ -1160,47 +1283,10 @@ export default function SleepHub() {
       );
     };
 
-    // Key signals panel
-    const signalsCard = () => {
-      if (!adjustedSignals) return null;
-      const { todayHRV, hrvBaseline, todayRHR, rhrBaseline, todayResp, respBaseline, todaySpO2, yesterdayActiveCal, activCalBaseline } = adjustedSignals;
-      const anySignal = todayHRV !== null || todayRHR !== null || todayResp !== null || todaySpO2 !== null || yesterdayActiveCal !== null;
-      if (!anySignal) return null;
-
-      // Baselines follow the selected range; today's values stay frozen. Fall back
-      // to the frozen 7d baselines until the range fetch lands. Activity baseline
-      // gets the same burn-accuracy scaling as the displayed kcal.
-      const rb = rangeBaselineSignals;
-      const k = burnAccuracyPct / 100;
-      const hrvBase = rb?.hrvBaseline ?? hrvBaseline;
-      const rhrBase = rb?.rhrBaseline ?? rhrBaseline;
-      const respBase = rb?.respBaseline ?? respBaseline;
-      const activBase = rb?.activCalBaseline != null ? Math.round(rb.activCalBaseline * k) : activCalBaseline;
-      const avgLabel = `${range}d avg`;
-
-      const sigRow = (label: string, value: string | null, sub: string | null, dkey: string, isLast = false) =>
-        value === null ? null : (
-          <TouchableOpacity activeOpacity={0.6} onPress={() => openDrill(dkey)} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: isLast ? 0 : 0.5, borderBottomColor: theme.borderSubtle }}>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>{label}</Text>
-              {sub ? <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>{sub}</Text> : null}
-            </View>
-            <Text style={{ fontSize: 16, color: theme.textPrimary, fontFamily: 'DMSans_700Bold' }}>{value}</Text>
-            <Ionicons name="chevron-forward" size={14} color={theme.textDim} style={{ marginLeft: 8 }} />
-          </TouchableOpacity>
-        );
-
-      return (
-        <View style={[cardStyle, { borderLeftWidth: 0.5, borderLeftColor: theme.borderCard }]}>
-          <Text style={[cardLabel, { marginBottom: 4 }]}>Key Signals</Text>
-          {sigRow('HRV (overnight)', todayHRV !== null ? `${Math.round(todayHRV * 10) / 10}ms` : null, hrvBase !== null ? `${avgLabel}: ${Math.round(hrvBase * 10) / 10}ms` : null, 'hrv')}
-          {sigRow('Resting HR', todayRHR !== null ? `${todayRHR} bpm` : null, rhrBase !== null ? `${avgLabel}: ${rhrBase} bpm` : null, 'rhr')}
-          {sigRow('Resp. Rate', todayResp !== null ? `${todayResp} brpm` : null, respBase !== null ? `${avgLabel}: ${respBase} brpm` : null, 'resp')}
-          {sigRow('Blood Oxygen', todaySpO2 !== null ? `${todaySpO2}%` : null, 'Informational only', 'spo2')}
-          {sigRow('Prev. Day Activity', yesterdayActiveCal !== null ? `${yesterdayActiveCal} kcal` : null, activBase !== null ? `${avgLabel}: ${activBase} kcal` : null, 'activity', true)}
-        </View>
-      );
-    };
+    // Key Signals card RETIRED 2026-06-15: the hero now shows every signal with its
+    // baseline subtext + the same drill-downs, so the separate card was a near-duplicate.
+    // Per-window viewing lives in the drill-down (Slice 2 mini-graphs); the 30D toggle
+    // now drives the Trend chart only.
 
     // Recovery coach tip. AI-voiced (pattern detection) when ready, with the
     // deterministic recoveryCoachTip as the instant/offline fallback. The engine
@@ -1230,7 +1316,6 @@ export default function SleepHub() {
       <>
         {heroCard()}
         {trendCard()}
-        {signalsCard()}
         {coachCard()}
       </>
     );

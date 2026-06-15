@@ -118,7 +118,7 @@ export function calcRecoveryScore(input: RecoveryInput): RecoveryResult {
   const hrv: RecoveryComponent | null = hasHRV ? {
     value: `${Math.round(todayHRV! * 10) / 10}ms`,
     score: sc_hrv!,
-    delta: `${todayHRV! >= hrvBaseline! ? '+' : ''}${Math.round(todayHRV! - hrvBaseline!)}ms`,
+    delta: `${todayHRV! >= hrvBaseline! ? '+' : ''}${(Math.round((todayHRV! - hrvBaseline!) * 10) / 10).toFixed(1)}ms`,
     isPositive: todayHRV! >= hrvBaseline!,
   } : null;
 

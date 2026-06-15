@@ -71,9 +71,7 @@ function MiniMetricChart({ points, color, theme, formatTick }: { points: { dateK
   const [w, setW] = useState(0);
   const [sel, setSel] = useState<number | null>(null);
   const n = points.length;
-  const H = 116, PAD_L = 32, PAD_R = 10, PAD_T = 10, PAD_B = 20;
-  const plotW = Math.max(1, w - PAD_L - PAD_R);
-  const plotH = H - PAD_T - PAD_B;
+  const H = 116, PAD_R = 10, PAD_T = 10, PAD_B = 20;
   const vals = points.map(p => p.value);
   let dmin = Math.min(...vals), dmax = Math.max(...vals);
   if (dmin === dmax) { dmin -= 1; dmax += 1; }
@@ -81,9 +79,15 @@ function MiniMetricChart({ points, color, theme, formatTick }: { points: { dateK
   const tickMin = ticks[0];
   const tickMax = ticks[ticks.length - 1] || tickMin + 1;
   const span = (tickMax - tickMin) || 1;
+  const fmtTick = formatTick ?? ((v: number) => Number.isInteger(v) ? `${v}` : v.toFixed(1));
+  // Left gutter sizes to the widest y-axis label so wide ticks (clock time like
+  // "9:40 PM", hours) don't clip past the left edge. Numeric metrics keep ~32.
+  const maxTickChars = Math.max(...ticks.map(t => fmtTick(t).length));
+  const PAD_L = Math.max(32, Math.ceil(maxTickChars * 4.3) + 6);
+  const plotW = Math.max(1, w - PAD_L - PAD_R);
+  const plotH = H - PAD_T - PAD_B;
   const toX = (i: number) => PAD_L + (n === 1 ? plotW / 2 : (i / (n - 1)) * plotW);
   const toY = (v: number) => PAD_T + (1 - (Math.max(tickMin, Math.min(tickMax, v)) - tickMin) / span) * plotH;
-  const fmtTick = formatTick ?? ((v: number) => Number.isInteger(v) ? `${v}` : v.toFixed(1));
   const linePts = points.map((p, i) => `${toX(i)},${toY(p.value)}`).join(' ');
   const areaPath = `M ${toX(0)},${toY(vals[0])} ` + vals.slice(1).map((v, i) => `L ${toX(i + 1)},${toY(v)}`).join(' ') + ` L ${toX(n - 1)},${PAD_T + plotH} L ${toX(0)},${PAD_T + plotH} Z`;
   const selIdx = sel ?? n - 1;

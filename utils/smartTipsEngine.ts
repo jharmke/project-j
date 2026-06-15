@@ -1612,12 +1612,16 @@ export async function computeCoachPacketEvr(
 ): Promise<CoachTipCache> {
   const todayKey = todayDateKey();
   const evrLastRuleKey = `pj_coach_last_rule_evr_${windowDays}`;
+  const evrTopicHistKey = 'pj_coach_topic_hist_evr'; // shared across windows: user sees one story
 
-  const [existing, lastRuleRaw] = await Promise.all([
+  const [existing, lastRuleRaw, topicHistRaw] = await Promise.all([
     loadCoachTipCacheEvr(windowDays),
     AsyncStorage.getItem(evrLastRuleKey),
+    AsyncStorage.getItem(evrTopicHistKey),
   ]);
   const persistedLastRuleId: string | null = lastRuleRaw ? JSON.parse(lastRuleRaw).ruleId : null;
+  let recentTopics: string[] = [];
+  try { recentTopics = topicHistRaw ? (JSON.parse(topicHistRaw) || []) : []; } catch { recentTopics = []; }
 
   if (existing && existing.packet.computedDate === todayKey && existing.packet.windowDays === windowDays) {
     return existing;
@@ -1701,7 +1705,7 @@ export async function computeCoachPacketEvr(
 
     // Exclude home's current scenario and EvR's own prior scenario to avoid repeating either
     const excludeIds = [homeRuleId, persistedLastRuleId].filter((id): id is string => !!id);
-    const selected = selectByPrioritySpine(suppressed, ctx, excludeIds);
+    const selected = selectByPrioritySpine(suppressed, ctx, excludeIds, recentTopics);
 
     if (!selected) {
       packet = {
@@ -1764,6 +1768,7 @@ export async function computeCoachPacketEvr(
   await Promise.all([
     saveCoachTipCacheEvr(windowDays, cache),
     AsyncStorage.setItem(evrLastRuleKey, JSON.stringify({ ruleId: packet.ruleId })),
+    AsyncStorage.setItem(evrTopicHistKey, JSON.stringify([headlineTopic(packet.ruleId), ...recentTopics].slice(0, 3))),
   ]);
   return cache;
 }
@@ -3029,12 +3034,16 @@ export async function computeCoachPacketWeekly(
 ): Promise<CoachTipCache> {
   const cacheKey = `${COACH_TIP_WEEKLY_KEY_PREFIX}${weekStart}`;
   const lastRuleKey = `${COACH_LAST_RULE_WEEKLY_KEY_PREFIX}${weekStart}`;
+  const weeklyTopicHistKey = 'pj_coach_topic_hist_weekly'; // last 3 weeks' headline topics
 
-  const [existing, lastRuleRaw] = await Promise.all([
+  const [existing, lastRuleRaw, topicHistRaw] = await Promise.all([
     loadCoachTipCacheWeekly(weekStart),
     AsyncStorage.getItem(lastRuleKey),
+    AsyncStorage.getItem(weeklyTopicHistKey),
   ]);
   const persistedLastRuleId: string | null = lastRuleRaw ? JSON.parse(lastRuleRaw).ruleId : null;
+  let recentTopics: string[] = [];
+  try { recentTopics = topicHistRaw ? (JSON.parse(topicHistRaw) || []) : []; } catch { recentTopics = []; }
 
   // Already computed: return as-is (generated once, never regenerated)
   if (existing) return existing;
@@ -3119,7 +3128,7 @@ export async function computeCoachPacketWeekly(
     const suppressed = applyMindfulSuppression(rawCandidates, ctx);
 
     const excludeIds = [homeRuleId, persistedLastRuleId].filter((id): id is string => !!id);
-    const selected = selectByPrioritySpine(suppressed, ctx, excludeIds);
+    const selected = selectByPrioritySpine(suppressed, ctx, excludeIds, recentTopics);
 
     if (!selected) {
       packet = {
@@ -3185,6 +3194,7 @@ export async function computeCoachPacketWeekly(
   await Promise.all([
     storageSet(cacheKey, JSON.stringify(cache)),
     AsyncStorage.setItem(lastRuleKey, JSON.stringify({ ruleId: packet.ruleId })),
+    AsyncStorage.setItem(weeklyTopicHistKey, JSON.stringify([headlineTopic(packet.ruleId), ...recentTopics].slice(0, 3))),
   ]);
   return cache;
 }
@@ -3206,12 +3216,16 @@ export async function computeCoachPacketMonthly(
   const monthKey = monthStart.slice(0, 7); // YYYY-MM
   const cacheKey = `${COACH_TIP_MONTHLY_KEY_PREFIX}${monthKey}`;
   const lastRuleKey = `${COACH_LAST_RULE_MONTHLY_KEY_PREFIX}${monthKey}`;
+  const monthlyTopicHistKey = 'pj_coach_topic_hist_monthly'; // last 3 months' headline topics
 
-  const [existing, lastRuleRaw] = await Promise.all([
+  const [existing, lastRuleRaw, topicHistRaw] = await Promise.all([
     loadCoachTipCacheMonthly(monthKey),
     AsyncStorage.getItem(lastRuleKey),
+    AsyncStorage.getItem(monthlyTopicHistKey),
   ]);
   const persistedLastRuleId: string | null = lastRuleRaw ? JSON.parse(lastRuleRaw).ruleId : null;
+  let recentTopics: string[] = [];
+  try { recentTopics = topicHistRaw ? (JSON.parse(topicHistRaw) || []) : []; } catch { recentTopics = []; }
 
   if (existing) return existing;
 
@@ -3294,7 +3308,7 @@ export async function computeCoachPacketMonthly(
     const suppressed = applyMindfulSuppression(rawCandidates, ctx);
 
     const excludeIds = [homeRuleId, persistedLastRuleId].filter((id): id is string => !!id);
-    const selected = selectByPrioritySpine(suppressed, ctx, excludeIds);
+    const selected = selectByPrioritySpine(suppressed, ctx, excludeIds, recentTopics);
 
     if (!selected) {
       packet = {
@@ -3360,6 +3374,7 @@ export async function computeCoachPacketMonthly(
   await Promise.all([
     storageSet(cacheKey, JSON.stringify(cache)),
     AsyncStorage.setItem(lastRuleKey, JSON.stringify({ ruleId: packet.ruleId })),
+    AsyncStorage.setItem(monthlyTopicHistKey, JSON.stringify([headlineTopic(packet.ruleId), ...recentTopics].slice(0, 3))),
   ]);
   return cache;
 }

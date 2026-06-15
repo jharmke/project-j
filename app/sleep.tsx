@@ -477,6 +477,11 @@ export default function SleepHub() {
     yesterdayActiveCal: number | null; activCalBaseline: number | null;
   };
   const [recoverySignals, setRecoverySignals] = useState<RecoverySignals | null>(null);
+  // Separate, range-driven signals JUST for the Key Signals card baselines. The
+  // hero SCORE uses recoverySignals (fixed 7d, frozen below) so it never moves on
+  // a view toggle; this one re-fetches on 7D/30D so the "Nd avg" sublabels follow
+  // the selected window. Today's values are window-independent, so only baselines differ.
+  const [rangeBaselineSignals, setRangeBaselineSignals] = useState<RecoverySignals | null>(null);
   const [loadingRecovery, setLoadingRecovery] = useState(true);
   const [burnAccuracyPct, setBurnAccuracyPct] = useState(100);
   const [recoveryTrend, setRecoveryTrend] = useState<{ dateKey: string; score: number }[]>([]);
@@ -581,6 +586,15 @@ export default function SleepHub() {
       .catch(() => { if (!cancelled) setLoadingRecovery(false); });
     return () => { cancelled = true; };
   }, []);
+
+  // Key Signals baselines follow the 7D/30D toggle (the score above stays frozen).
+  useEffect(() => {
+    let cancelled = false;
+    fetchRecoverySignals(parseInt(range, 10))
+      .then(s => { if (!cancelled) setRangeBaselineSignals(s); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [range]);
 
   const filteredHistory = useMemo(() => history.filter(n => !excludedSet.has(n.dateKey)), [history, excludedSet]);
 
@@ -1018,6 +1032,17 @@ export default function SleepHub() {
       const anySignal = todayHRV !== null || todayRHR !== null || todayResp !== null || todaySpO2 !== null || yesterdayActiveCal !== null;
       if (!anySignal) return null;
 
+      // Baselines follow the selected range; today's values stay frozen. Fall back
+      // to the frozen 7d baselines until the range fetch lands. Activity baseline
+      // gets the same burn-accuracy scaling as the displayed kcal.
+      const rb = rangeBaselineSignals;
+      const k = burnAccuracyPct / 100;
+      const hrvBase = rb?.hrvBaseline ?? hrvBaseline;
+      const rhrBase = rb?.rhrBaseline ?? rhrBaseline;
+      const respBase = rb?.respBaseline ?? respBaseline;
+      const activBase = rb?.activCalBaseline != null ? Math.round(rb.activCalBaseline * k) : activCalBaseline;
+      const avgLabel = `${range}d avg`;
+
       const sigRow = (label: string, value: string | null, sub: string | null, dkey: string, isLast = false) =>
         value === null ? null : (
           <TouchableOpacity activeOpacity={0.6} onPress={() => openDrill(dkey)} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: isLast ? 0 : 0.5, borderBottomColor: theme.borderSubtle }}>
@@ -1033,11 +1058,11 @@ export default function SleepHub() {
       return (
         <View style={[cardStyle, { borderLeftWidth: 0.5, borderLeftColor: theme.borderCard }]}>
           <Text style={[cardLabel, { marginBottom: 4 }]}>Key Signals</Text>
-          {sigRow('HRV (overnight)', todayHRV !== null ? `${Math.round(todayHRV * 10) / 10}ms` : null, hrvBaseline !== null ? `7d avg: ${Math.round(hrvBaseline * 10) / 10}ms` : null, 'hrv')}
-          {sigRow('Resting HR', todayRHR !== null ? `${todayRHR} bpm` : null, rhrBaseline !== null ? `7d avg: ${rhrBaseline} bpm` : null, 'rhr')}
-          {sigRow('Resp. Rate', todayResp !== null ? `${todayResp} brpm` : null, respBaseline !== null ? `7d avg: ${respBaseline} brpm` : null, 'resp')}
+          {sigRow('HRV (overnight)', todayHRV !== null ? `${Math.round(todayHRV * 10) / 10}ms` : null, hrvBase !== null ? `${avgLabel}: ${Math.round(hrvBase * 10) / 10}ms` : null, 'hrv')}
+          {sigRow('Resting HR', todayRHR !== null ? `${todayRHR} bpm` : null, rhrBase !== null ? `${avgLabel}: ${rhrBase} bpm` : null, 'rhr')}
+          {sigRow('Resp. Rate', todayResp !== null ? `${todayResp} brpm` : null, respBase !== null ? `${avgLabel}: ${respBase} brpm` : null, 'resp')}
           {sigRow('Blood Oxygen', todaySpO2 !== null ? `${todaySpO2}%` : null, 'Informational only', 'spo2')}
-          {sigRow('Prev. Day Activity', yesterdayActiveCal !== null ? `${yesterdayActiveCal} kcal` : null, activCalBaseline !== null ? `7d avg: ${activCalBaseline} kcal` : null, 'activity', true)}
+          {sigRow('Prev. Day Activity', yesterdayActiveCal !== null ? `${yesterdayActiveCal} kcal` : null, activBase !== null ? `${avgLabel}: ${activBase} kcal` : null, 'activity', true)}
         </View>
       );
     };

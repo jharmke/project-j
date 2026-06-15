@@ -899,13 +899,37 @@ const saveEditFood = async () => {
     return () => unregisterTutorialAction('closeCreatorAfterTutorial');
   }, []);
 
+  // Backfill: ensure every My Foods entry has a stable unique id so duplicate names
+  // resolve to the exact tapped/edited/deleted entry. ADDITIVE ONLY -- it adds an id
+  // where one is missing and preserves every other field; it never alters or removes
+  // anything. Returns the (possibly) updated list + whether anything changed.
+  const ensureMyFoodIds = (foods: any[]): { foods: any[]; changed: boolean } => {
+    let changed = false;
+    const out = (Array.isArray(foods) ? foods : []).map((f: any, i: number) => {
+      if (f && !f.id) {
+        changed = true;
+        return { ...f, id: `mf_${Date.now().toString(36)}${i}${Math.random().toString(36).slice(2, 6)}` };
+      }
+      return f;
+    });
+    return { foods: out, changed };
+  };
+
   const loadMyFoods = async () => {
     try {
       const saved = await AsyncStorage.getItem('pj_my_foods');
-      if (saved) setMyFoods(JSON.parse(saved));
-      else {
+      const source = saved ? JSON.parse(saved) : null;
+      if (source) {
+        const { foods, changed } = ensureMyFoodIds(source);
+        setMyFoods(foods);
+        if (changed) await storageSet('pj_my_foods', JSON.stringify(foods));
+      } else {
         const cloud = await loadFromFirebase('my_foods');
-        if (cloud && cloud.foods) setMyFoods(cloud.foods);
+        if (cloud && cloud.foods) {
+          const { foods, changed } = ensureMyFoodIds(cloud.foods);
+          setMyFoods(foods);
+          if (changed) await storageSet('pj_my_foods', JSON.stringify(foods));
+        }
       }
     } catch (e) {
       console.log('Load error', e);
@@ -916,6 +940,7 @@ const saveEditFood = async () => {
     const filtered = myFoods
       .filter(f => !q || f.name.toLowerCase().includes(q.toLowerCase()))
       .map(f => ({
+        id: (f as any).id,
         description: f.name,
         brand: f.brand || null,
         isCustom: f.isCustom || true,
@@ -954,6 +979,7 @@ const saveEditFood = async () => {
     const myFoodResults = myFoods
       .filter(f => normalizeForMatch(f.name).includes(nq))
       .map(f => ({
+        id: (f as any).id,
         description: f.name,
         brand: f.brand || null,
         type: f.type || 'food',
@@ -1088,8 +1114,13 @@ const openFoodDetail = async (food: SearchResult) => {
 
     const myFoodId = (food as any).id || (food as any).myFoodId || null;
     const foodLookupName = (food.description || (food as any).name || '').replace(/\s*\(.*?\)\s*$/, '').split(' · ')[0].trim();
-    // Always try custom-food name match regardless of isMyFood flag (handles old entries lacking the flag)
-    const customNameMatch: any = foodLookupName ? myFoods.find((f: any) => f.isCustom && f.name === foodLookupName) : null;
+    // Recover a custom food by name for old entries lacking the isMyFood flag -- but
+    // NOT for genuine FatSecret database results (fsId present). Without the fsId guard,
+    // tapping a real database item (e.g. "Broccoli Florets · Kroger") gets hijacked by a
+    // same-named custom food (e.g. the Great Value one) and opens the wrong food.
+    const customNameMatch: any = (foodLookupName && !(food as any).fsId)
+      ? myFoods.find((f: any) => f.isCustom && f.name === foodLookupName)
+      : null;
     const myFoodMatch: any = (food.isMyFood || myFoodId)
       ? (myFoods.find(f => myFoodId ? (f as any).id === myFoodId : (foodLookupName && f.name === foodLookupName)) || (food as any).myFoodData || null)
       : (customNameMatch || null);
@@ -1862,13 +1893,13 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                     <TouchableOpacity
                       onPress={() => {
                         triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-                        const idx = myFoods.findIndex(f => f.name === item.description);
+                        const idx = myFoods.findIndex(f => (item as any).id ? (f as any).id === (item as any).id : f.name === item.description);
                         if (idx >= 0) openEditModal(myFoods[idx]);
                       }}
                       style={{ marginLeft: 4, paddingHorizontal: 8, paddingVertical: 10 }}>
                       <Text style={{ fontSize: 12, color: theme.accentBlue, fontFamily: 'DMSans_500Medium' }}>Edit</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); deleteMyFood(myFoods.findIndex(f => f.name === item.description)); }} style={styles.deleteBtn}>
+                    <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); deleteMyFood(myFoods.findIndex(f => (item as any).id ? (f as any).id === (item as any).id : f.name === item.description)); }} style={styles.deleteBtn}>
                       <Text style={styles.deleteBtnText}>×</Text>
                     </TouchableOpacity>
                   </>

@@ -23,7 +23,7 @@ import { storageSet } from '../utils/storage';
 import { generateDiagnosticReport, ReportWindow } from '../utils/diagnosticReport';
 import { dumpDayScoreWithRecovery } from '../utils/dayScoreStore';
 import { voiceDiagnosticCards, getLastVoiceDebug } from '../utils/coachAI';
-import { dumpHomeCoachCandidates } from '../utils/smartTipsEngine';
+import { dumpHomeCoachCandidates, dumpEvrRecoveryDebug } from '../utils/smartTipsEngine';
 import { TOOLTIP_REGISTRY } from '../tooltipRegistry';
 import TooltipModal from '../components/TooltipModal';
 import TooltipIcon from '../components/TooltipIcon';
@@ -1835,7 +1835,13 @@ export default function SettingsScreen() {
                         `${i + 1}. [${c.strength} ${c.positive ? 'POS' : c.tone.toUpperCase()}] ${c.claim}\n   ${c.proof}\n${c.insight ? `   ${c.insight}\n` : ''}   → ${c.lever}\n   (${c.window})`
                       ).join('\n\n');
                       const header = voicedAny ? '(AI voiced)' : `(fallback: ${debug ?? 'unknown'})`;
-                      Alert.alert(`EvR (${w}d) — ${cards.length} cards ${header}`, body);
+                      const rec = await dumpEvrRecoveryDebug();
+                      const recFooter =
+                        `\n\nRECOVERY CHECK (14d window, fixed):\n` +
+                        `recovery days: ${rec.recDaysInWindow}/${rec.minNeeded} needed${rec.recDaysInWindow < rec.minNeeded ? ' -> rules CANNOT fire' : ' -> rules can evaluate'}\n` +
+                        `mean recovery: ${rec.meanRecovery ?? 'none'} (sustained_low fires only if <${rec.sustainedLowFloor})\n` +
+                        `findings fired: ${rec.findings.length ? rec.findings.map(f => f.id).join(', ') : 'none (no pattern present)'}`;
+                      Alert.alert(`EvR (${w}d) — ${cards.length} cards ${header}`, body + recFooter);
                     } catch (e) {
                       Alert.alert('Error', 'Could not generate the card feed. Check the logs.');
                     }

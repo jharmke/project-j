@@ -1337,6 +1337,80 @@ function ruleRecSustainedLow(w14: WindowDay[], ctx: EngineContext, store: SmartT
   return makeTip('rec_sustained_low', 'pattern', false, 'pattern', ctx, store, { mean: r.mean });
 }
 
+// EvR card port (2026-06-16): expose the three recovery EvR patterns as card-ready findings
+// so the diagnostic card engine (utils/diagnosticReport.ts) can render them without
+// duplicating the math. Reuses the exact computeRec* helpers + REC constants. Loads its own
+// fixed 14-day window -- these patterns are 14d by nature, independent of the EvR report
+// window (this IS the per-pattern-window model). All three are correctives (never positive).
+export interface EvrRecoveryFinding {
+  id: 'rec_load_drag' | 'rec_tracks_sleep' | 'rec_sustained_low';
+  delta?: number;   // load_drag / tracks_sleep: recovery pts lower after hard days / short nights
+  mean?: number;    // sustained_low: window mean recovery score
+  n: number;        // recovery-equipped days in the window
+  strength: number; // 0-100, first-pass (tuned live during the EvR build per decision 2)
+}
+
+export async function computeEvrRecoveryFindings(todayKey?: string): Promise<EvrRecoveryFinding[]> {
+  const tk = todayKey ?? todayDateKey();
+  const ctx = await buildEngineContext(tk);
+  let workoutState: any = {};
+  try { const r = await AsyncStorage.getItem('pj_workout_state'); workoutState = r ? JSON.parse(r) : {}; } catch {}
+  const allDays = await loadWindowDays(tk, ctx, workoutState);
+  const w14 = allDays.slice(0, 14);
+
+  const clamp = (v: number) => Math.max(0, Math.min(100, Math.round(v)));
+  const out: EvrRecoveryFinding[] = [];
+
+  const load = computeRecLoadDrag(w14);
+  if (load) out.push({
+    id: 'rec_load_drag', delta: load.delta, n: load.n,
+    strength: clamp(46 + (load.delta / REC_PATTERN_DELTA - 1) * 30),
+  });
+
+  const tracks = computeRecTracksSleep(w14, ctx.sleepGoal);
+  if (tracks) out.push({
+    id: 'rec_tracks_sleep', delta: tracks.delta, n: tracks.n,
+    strength: clamp(46 + (tracks.delta / REC_PATTERN_DELTA - 1) * 30),
+  });
+
+  const sustained = computeRecSustainedLow(w14);
+  if (sustained) out.push({
+    id: 'rec_sustained_low', mean: sustained.mean, n: sustained.n,
+    strength: clamp(58 + (REC_LOW_MEAN - sustained.mean) * 1.5),
+  });
+
+  return out;
+}
+
+// DEV diagnostic for the recovery port: shows whether the rec_* rules can even evaluate
+// (enough recovery days) and the window mean, so a no-card result can be read as
+// "wired, no pattern" vs "broken". Read-only.
+export async function dumpEvrRecoveryDebug(todayKey?: string): Promise<{
+  recDaysInWindow: number;
+  minNeeded: number;
+  meanRecovery: number | null;
+  sustainedLowFloor: number;
+  findings: EvrRecoveryFinding[];
+}> {
+  const tk = todayKey ?? todayDateKey();
+  const ctx = await buildEngineContext(tk);
+  let workoutState: any = {};
+  try { const r = await AsyncStorage.getItem('pj_workout_state'); workoutState = r ? JSON.parse(r) : {}; } catch {}
+  const allDays = await loadWindowDays(tk, ctx, workoutState);
+  const w14 = allDays.slice(0, 14);
+  const recDays = recEvrDays(w14);
+  const scores = recDays.map(d => d.recoveryScore as number);
+  const meanRecovery = scores.length ? Math.round(avg(scores)) : null;
+  const findings = await computeEvrRecoveryFindings(tk);
+  return {
+    recDaysInWindow: recDays.length,
+    minNeeded: REC_MIN_PATTERN_DAYS,
+    meanRecovery,
+    sustainedLowFloor: REC_LOW_MEAN,
+    findings,
+  };
+}
+
 // ── Run all rules ─────────────────────────────────────────────────────────────
 
 function runAllRules(

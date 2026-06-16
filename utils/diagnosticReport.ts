@@ -3,6 +3,7 @@ import { storageSet } from './storage';
 import { offsetToDateKey } from './statsData';
 import { calcSleepScore } from './sleepScore';
 import { loadCalorieTargets } from './calorieTarget';
+import { computeEvrRecoveryFindings, EvrRecoveryFinding } from './smartTipsEngine';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -229,11 +230,15 @@ function buildDiagnosticCards(
   sleepFinding: SleepFinding | null,
   consistency: ConsistencyFinding,
   correlations: Correlation[],
+  recoveryFindings: EvrRecoveryFinding[],
 ): DiagnosticCard[] {
   const cards: DiagnosticCard[] = [];
   const win = `Over ${windowDays} days`;
 
   // ── Deficit: predicted vs actual results ──
+  // Tracks whether results are LAGGING the logged deficit; the burn-accuracy card gates
+  // on this (decision 2026-06-16) so it only fires when it actually explains a mismatch.
+  let deficitLagging = false;
   if (deficitFinding && deficitFinding.hasWeightData && deficitFinding.actualChangeLbs !== null) {
     const gap = deficitFinding.gapLbs ?? 0;
     const lose = deficitFinding.goalDirection === 'lose';
@@ -249,6 +254,7 @@ function buildDiagnosticCards(
       });
     } else {
       const fellShort = lose ? gap > 0 : gap < 0;
+      deficitLagging = fellShort;
       cards.push({
         id: 'deficit',
         claim: fellShort ? `Your results are lagging what your logging predicts.` : `You are moving faster than your logging predicts.`,
@@ -264,8 +270,9 @@ function buildDiagnosticCards(
     }
   }
 
-  // ── Burn accuracy ──
-  if (burnAccuracyFinding && burnAccuracyFinding.isFlagged) {
+  // ── Burn accuracy ── (decision 2026-06-16: only when it is EXPLAINING a deficit-vs-
+  // results mismatch, i.e. results lagging; never a standalone readout)
+  if (burnAccuracyFinding && burnAccuracyFinding.isFlagged && deficitLagging) {
     const gapBump = deficitFinding?.gapLbs != null && deficitFinding.gapLbs > 0.5 ? 15 : 0;
     cards.push({
       id: 'burn_accuracy',
@@ -319,7 +326,10 @@ function buildDiagnosticCards(
       proof: `${consistency.loggedDays} of ${consistency.totalDays} days logged`,
       lever: `Keep it up. The more you log, the sharper every pattern here gets.`,
       window: win,
-      strength: clampStrength(20 + Math.min(8, (consistency.rate - 0.85) * 50)),
+      // Lowest-strength positive by decision (2026-06-16): a clean log is reassuring but a
+      // low-value lead, so it sits under every other positive and the positives cap drops it
+      // first. Back-pat positives must always score below result-explaining ones.
+      strength: clampStrength(10 + Math.min(6, (consistency.rate - 0.85) * 40)),
       tone: 'positive', positive: true,
     });
   } else if (consistency.status !== 'good' && consistency.loggedDays > 0) {
@@ -371,6 +381,36 @@ function buildDiagnosticCards(
     });
   }
 
+  // ── Recovery (ported 2026-06-16 from the hub coach's rec_* rules). These were only ever
+  // in the OLD EvR coach pool; the new card engine never had them, so without this port
+  // recovery findings vanish from EvR. All three are correctives with a 14-day per-pattern
+  // window. load_drag / tracks_sleep are educational in voice, sustained_low is a real "back
+  // off" corrective. Mindful softening is handled by voiceDiagnosticCards + the feed-wide
+  // Mindful pass (track 2 step 3); not special-cased here. ──
+  for (const r of recoveryFindings) {
+    let claim = '', proof = '', lever = '';
+    if (r.id === 'rec_load_drag') {
+      claim = `Your recovery dips after your hardest training days.`;
+      proof = `Recovery runs ${r.delta} pts lower the day after high-load days`;
+      lever = `Treat the day after a hard session as a real recovery day: lighter training, earlier night.`;
+    } else if (r.id === 'rec_tracks_sleep') {
+      claim = `Your recovery follows your sleep.`;
+      proof = `Recovery runs ${r.delta} pts lower after your short nights`;
+      lever = `Sleep is your strongest recovery lever right now. Protect the short nights first.`;
+    } else {
+      claim = `You have been under-recovered while training has held steady.`;
+      proof = `Recovery averaging ${r.mean} over ${r.n} days`;
+      lever = `A lighter week is worth considering. Sustained low recovery is recovery debt, not weakness.`;
+    }
+    cards.push({
+      id: r.id, claim, proof, lever,
+      window: `Last 14 days`,
+      strength: r.strength,
+      tone: r.strength >= 75 ? 'factor' : 'attention',
+      positive: false,
+    });
+  }
+
   // ── Correlations that carry card fields ──
   for (const c of correlations) {
     if (c.claim && c.proof && c.lever && c.strength != null) {
@@ -387,7 +427,22 @@ function buildDiagnosticCards(
 
   // Strength desc; on a tie, corrective (positive=false) ranks above positive.
   cards.sort((a, b) => (b.strength - a.strength) || (Number(a.positive) - Number(b.positive)));
-  return cards.slice(0, 6);
+  // Cap positives at 3 (decision 2026-06-16) so a good week stays a diagnosis feed, not a
+  // trophy case; correctives are never capped. Total feed still capped at 6. Because the
+  // list is already strength-sorted, this keeps the 3 highest-strength positives and drops
+  // the rest (back-pats, which carry the lowest strength, fall out first).
+  const MAX_POSITIVES = 3;
+  const out: DiagnosticCard[] = [];
+  let posCount = 0;
+  for (const c of cards) {
+    if (c.positive) {
+      if (posCount >= MAX_POSITIVES) continue;
+      posCount++;
+    }
+    out.push(c);
+    if (out.length >= 6) break;
+  }
+  return out;
 }
 
 // ── Main generation function ───────────────────────────────────────────────────
@@ -957,7 +1012,10 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
     summary = `Your data from the past ${windowDays} days is analyzed below. The more consistently you log, the more accurate these findings become.`;
   }
 
-  const cards = buildDiagnosticCards(windowDays, deficitFinding, burnAccuracyFinding, macroFinding, sleepFinding, consistency, correlations);
+  // Recovery findings (rec_load_drag / tracks_sleep / sustained_low) come from the hub
+  // coach's exact math via a fixed 14-day window, independent of this report's window.
+  const recoveryFindings = await computeEvrRecoveryFindings();
+  const cards = buildDiagnosticCards(windowDays, deficitFinding, burnAccuracyFinding, macroFinding, sleepFinding, consistency, correlations, recoveryFindings);
 
   return {
     id: Date.now().toString(),

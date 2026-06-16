@@ -111,6 +111,7 @@
 - Trend indicators -- Apple-style up/down arrow on graph values or At a Glance showing change vs prior period.
 - Day Score bedtime backfill bug -- backfill-only days score up to 10pts low on Recovery (sleepConsistencyPts defaults 0). Softened by 50pt floor. Fix in utils/dayScore.ts.
 - EvR refinement pass -- correlations need to be genuinely smart. Hard to test without sufficient data. Revisit alongside Smart Tips.
+- [NEXT UP, after EvR surface] Wire the real Recovery Score into Day Score + summaries. Today the Day Score's third category (25% weight) is computed from the SLEEP score ONLY (dayScore.ts, calcSleepScore floored at 50); it has ZERO awareness of the standalone Recovery Score (the HRV/RHR readiness number on the Recovery tab). That is why a Day Summary can read "Recovery 92" while the Recovery tab shows 75: the summary's third category is sleep-driven and is likely just mis-LABELED "Recovery" in the UI. Task: blend or replace that category with the real Recovery Score going forward, fix the label, keep sleep as an input, and NEVER rewrite past days (honor the recovery morning-freeze design). Also covers weekly/monthly summaries + Stats. Detail: SPEC_recovery_coach.md "Future expansion" + the Recovery-in-summaries note in the SLEEP section. Sequenced AFTER the EvR surface rebuild (track 2 step 2) completes. (Surfaced by Justin 2026-06-16 from a real Day Summary.)
 
 ---
 

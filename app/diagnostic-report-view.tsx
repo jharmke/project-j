@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
@@ -321,7 +321,12 @@ function DiagnosticFeedCard({ card, theme, shadowStyle, isMindful }: { card: Dia
     }]}>
       {completed && <CardWash color={accent} scored radius={14} />}
       {completed && (
-        <Ionicons name="nutrition" size={86} color={accent} style={{ position: 'absolute', right: 8, bottom: 6, opacity: 0.07 }} />
+        // Clip the watermark into the bottom-right corner via an inner overflow:hidden
+        // layer (NOT on the card itself -- that would kill the shadow). Bleeds past the
+        // corner so it reads as a tucked watermark, not a floating glyph.
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 14, overflow: 'hidden' }} pointerEvents="none">
+          <MaterialCommunityIcons name="food-drumstick" size={128} color={accent} style={{ position: 'absolute', right: -18, bottom: -20, opacity: 0.07 }} />
+        </View>
       )}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <Text style={[styles.cardLabel, { color: t.textMuted }]}>{(card.window || '').toUpperCase()}</Text>

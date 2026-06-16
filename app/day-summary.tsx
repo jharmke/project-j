@@ -538,8 +538,8 @@ export default function DaySummaryScreen() {
                   right={{ label: 'RESP RATE', value: input?.dayData?.respiratoryRate != null ? `${input.dayData.respiratoryRate}/min` : '--' }}
                 />
                 <SubBlock
-                  left={{ label: 'VO2 MAX', value: input?.dayData?.vo2Max != null ? `${input.dayData.vo2Max}` : '--' }}
-                  right={{ label: 'CARDIO RECOVERY', value: input?.dayData?.cardioRecovery != null ? `${input.dayData.cardioRecovery}` : '--' }}
+                  left={{ label: 'VO2 MAX', value: input?.dayData?.vo2Max != null ? `${input.dayData.vo2Max} mL/kg/min` : '--' }}
+                  right={{ label: 'CARDIO RECOVERY', value: input?.dayData?.cardioRecovery != null ? `${input.dayData.cardioRecovery} bpm` : '--' }}
                 />
               </View>
             )}

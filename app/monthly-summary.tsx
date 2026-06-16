@@ -9,6 +9,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
 import { ScoreRing } from '../components/DaySummaryModal';
 import DaySummaryModal from '../components/DaySummaryModal';
+import TooltipIcon from '../components/TooltipIcon';
+import { CardWash } from '../components/GradientCard';
 import { scoreLabel, StyleMode, CAL_MAX, PROTEIN_MAX, WATER_MAX } from '../utils/dayScore';
 import { loadMonthlySummary, MonthlySummaryData, MonthDayEntry } from '../utils/monthlySummary';
 import { cancelMonthlySummaryNotification } from '../services/notifications';
@@ -63,10 +65,11 @@ function SectionCard({ label, icon, score, pct, borderColor, children }: {
   return (
     <View style={[{
       backgroundColor: theme.bgCard, borderRadius: 14, borderWidth: 0.5,
-      borderColor: theme.borderCard, borderTopColor: 'rgba(255,255,255,0.1)',
-      borderLeftWidth: 3, borderLeftColor: barC,
-      padding: 16, paddingLeft: 15, marginBottom: 12,
+      borderColor: theme.borderCard, borderTopColor: theme.borderCardTop,
+      borderLeftWidth: 0.5, borderLeftColor: theme.borderCard,
+      padding: 16, marginBottom: 12,
     }, shadowStyle]}>
+      <CardWash color={borderColor} scored={score !== null} />
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 6 }}>
         <Ionicons name={icon as any} size={14} color={barC} />
         <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', flex: 1 }}>{label}</Text>
@@ -277,12 +280,15 @@ export default function MonthlySummaryScreen() {
   if (!data) {
     return (
       <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
-        <View style={{ paddingTop: insets.top + 12, paddingHorizontal: 20, marginBottom: 20 }}>
+        <View style={{ paddingTop: insets.top + 12, paddingHorizontal: 20, paddingBottom: 12, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <Ionicons name="chevron-back" size={22} color={accent} />
             </TouchableOpacity>
-            <Text style={{ fontSize: 22, letterSpacing: 2, fontFamily: 'BebasNeue_400Regular', color: accent }}>MONTHLY SUMMARY</Text>
+            <Text style={{ fontSize: 22, letterSpacing: 2, fontFamily: 'BebasNeue_400Regular', color: accent, flex: 1 }}>MONTHLY SUMMARY</Text>
+            <View style={{ transform: [{ translateY: -1 }] }}>
+              <TooltipIcon tooltipKey="day_score" size={18} />
+            </View>
           </View>
         </View>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 }}>
@@ -342,22 +348,24 @@ export default function MonthlySummaryScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
-      <ScrollView contentContainerStyle={{ paddingBottom: insets.bottom + 24 }} showsVerticalScrollIndicator={false}>
-
-        {/* Header */}
-        <View style={{ paddingTop: insets.top + 12, paddingHorizontal: 20, marginBottom: 20 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Ionicons name="chevron-back" size={22} color={accent} />
-            </TouchableOpacity>
-            <Text style={{ fontSize: 22, letterSpacing: 2, fontFamily: 'BebasNeue_400Regular', color: accent }}>
-              MONTHLY SUMMARY
-            </Text>
-          </View>
-          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginLeft: 34, marginTop: 2 }}>
-            {monthYearLabel}
+      {/* Pinned header (matches DAY SUMMARY: fixed above the ScrollView with a bottom border so it stays put on scroll) */}
+      <View style={{ paddingTop: insets.top + 12, paddingHorizontal: 20, paddingBottom: 12, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="chevron-back" size={22} color={accent} />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 22, letterSpacing: 2, fontFamily: 'BebasNeue_400Regular', color: accent, flex: 1 }}>
+            MONTHLY SUMMARY
           </Text>
+          <View style={{ transform: [{ translateY: -1 }] }}>
+            <TooltipIcon tooltipKey="day_score" size={18} />
+          </View>
         </View>
+        <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginLeft: 34, marginTop: 2 }}>
+          {monthYearLabel}
+        </Text>
+      </View>
+      <ScrollView contentContainerStyle={{ paddingTop: 16, paddingBottom: insets.bottom + 24 }} showsVerticalScrollIndicator={false}>
 
         <View style={{ paddingHorizontal: 20 }}>
 
@@ -378,9 +386,8 @@ export default function MonthlySummaryScreen() {
           {/* Coach Insight card */}
           {TIPS_GATED ? (
             <View style={[shadowStyle, {
-              backgroundColor: theme.bgCard, borderRadius: 14, borderWidth: 0.5,
-              borderColor: theme.borderCard, borderTopColor: 'rgba(255,255,255,0.1)',
-              borderLeftWidth: 3, borderLeftColor: accent, padding: 16, paddingLeft: 15, marginBottom: 12,
+              backgroundColor: `${accent}12`, borderRadius: 12, borderWidth: 1,
+              borderColor: `${accent}50`, padding: 14, marginBottom: 12,
             }]}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -402,9 +409,8 @@ export default function MonthlySummaryScreen() {
             </View>
           ) : daysScored < 14 ? (
             <View style={[shadowStyle, {
-              backgroundColor: theme.bgCard, borderRadius: 14, borderWidth: 0.5,
-              borderColor: theme.borderCard, borderTopColor: 'rgba(255,255,255,0.1)',
-              padding: 16, marginBottom: 12,
+              backgroundColor: `${accent}12`, borderRadius: 12, borderWidth: 1,
+              borderColor: `${accent}50`, padding: 14, marginBottom: 12,
             }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                 <Ionicons name="information-circle-outline" size={14} color={theme.textMuted} />
@@ -416,9 +422,8 @@ export default function MonthlySummaryScreen() {
             </View>
           ) : (coachLoading && !coachCache) ? (
             <View style={[shadowStyle, {
-              backgroundColor: theme.bgCard, borderRadius: 14, borderWidth: 0.5,
-              borderColor: theme.borderCard, borderTopColor: 'rgba(255,255,255,0.1)',
-              borderLeftWidth: 3, borderLeftColor: accent, padding: 16, paddingLeft: 15, marginBottom: 12,
+              backgroundColor: `${accent}12`, borderRadius: 12, borderWidth: 1,
+              borderColor: `${accent}50`, padding: 14, marginBottom: 12,
             }]}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                 <ActivityIndicator size="small" color={accent} />
@@ -427,21 +432,20 @@ export default function MonthlySummaryScreen() {
             </View>
           ) : coachBody ? (
             <View style={[shadowStyle, {
-              backgroundColor: theme.bgCard, borderRadius: 14, borderWidth: 0.5,
-              borderColor: theme.borderCard, borderTopColor: 'rgba(255,255,255,0.1)',
-              borderLeftWidth: 3, borderLeftColor: coachBorderColor, padding: 16, paddingLeft: 15, marginBottom: 12,
+              backgroundColor: `${accent}12`, borderRadius: 12, borderWidth: 1,
+              borderColor: `${accent}50`, padding: 14, marginBottom: 12, alignItems: 'center',
             }]}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-                <Ionicons name="sparkles" size={13} color={accent} />
-                <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', flex: 1 }}>Coach Insight</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 10 }}>
+                <Ionicons name="sparkles" size={12} color={accent} />
+                <Text style={{ fontSize: 9, letterSpacing: 3, color: accent, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>Coach Insight</Text>
               </View>
-              <View style={{ width: '100%', height: 0.5, backgroundColor: `${accent}30`, marginBottom: 10 }} />
-              <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', lineHeight: 22, fontStyle: 'italic' }}>
+              <View style={{ width: '100%', height: 0.5, backgroundColor: `${accent}40`, marginBottom: 10 }} />
+              <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', lineHeight: 22, fontStyle: 'italic', textAlign: 'center' }}>
                 {coachBody}
               </Text>
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/diagnostic-report'); }}
-                style={{ marginTop: 12, alignSelf: 'flex-start' }}
+                style={{ marginTop: 12, alignSelf: 'center' }}
               >
                 <Text style={{ fontSize: 11, color: accent, fontFamily: 'DMSans_600SemiBold' }}>View in Effort vs Results</Text>
               </TouchableOpacity>
@@ -449,7 +453,8 @@ export default function MonthlySummaryScreen() {
           ) : null}
 
           {/* Month at a Glance card */}
-          <View style={[{ backgroundColor: theme.bgCard, borderRadius: 14, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: 'rgba(255,255,255,0.1)', padding: 14, marginBottom: 12 }, shadowStyle]}>
+          <View style={[{ backgroundColor: theme.bgCard, borderRadius: 14, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, padding: 14, marginBottom: 12 }, shadowStyle]}>
+            <CardWash color={hasScore ? heroColor : undefined} scored={hasScore} />
             <TouchableOpacity
               activeOpacity={0.7}
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setCalendarOpen(o => !o); }}

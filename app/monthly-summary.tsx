@@ -306,7 +306,7 @@ export default function MonthlySummaryScreen() {
     avgCarbs, avgFat, avgFiber, avgSodium, daysCalorieGoalHit,
     avgActiveCalories, activeCalGoal, avgSteps, workoutDays, avgExerciseMinutes,
     avgActiveCalScore, avgWorkoutScore, monthHadWorkouts, stepGoalDays, totalCardioSessions, totalLiftSessions,
-    avgSleepHours, avgSleepCategoryScore, sleepGoal, avgRestingHR, avgRespiratoryRate, monthVo2Max, monthCardioRecovery,
+    avgRecoveryScore, avgHRV, avgSleepHours, avgSleepCategoryScore, sleepGoal, avgRestingHR, avgRespiratoryRate, avgPrevActivity, avgBloodOxygen, monthVo2Max, monthCardioRecovery,
     startWeight, endWeight, weightChange, weightGoal,
     avgCalorieScore, avgProteinScore, avgWaterScore,
   } = data;
@@ -484,7 +484,7 @@ export default function MonthlySummaryScreen() {
           </View>
 
           {/* Nutrition card */}
-          <SectionCard label="Nutrition" icon="restaurant" score={avgNutritionScore} pct="40% OF SCORE" borderColor={COLOR_NUTRITION}>
+          <SectionCard label="Nutrition" icon="restaurant" score={avgNutritionScore} pct="35% OF SCORE" borderColor={COLOR_NUTRITION}>
             <StatRow
               label="Calories"
               labelColor={COLOR_NUTRITION}
@@ -547,8 +547,49 @@ export default function MonthlySummaryScreen() {
             </View>
           </SectionCard>
 
+          {/* Recovery card -- headline is the avg real Recovery Score (raw sleep on fallback) */}
+          <SectionCard label="Recovery" icon="heart" score={avgRecoveryScore} pct="35% OF SCORE" borderColor={COLOR_RECOVERY}>
+            {avgHRV !== null && (
+              <StatRow
+                label="HRV"
+                labelColor={COLOR_RECOVERY}
+                value={`${avgHRV} ms`}
+                deltaStr={fmtDelta(avgHRV, prevData?.avgHRV, ' ms', 1)}
+                deltaColor={upColor(avgHRV, prevData?.avgHRV)}
+              />
+            )}
+            <StatRow
+              label="Sleep"
+              labelColor={COLOR_RECOVERY}
+              value={avgSleepScore != null ? `${formatNumber(avgSleepScore)} / 100` : '--'}
+              deltaStr={fmtDelta(avgSleepHours, prevData?.avgSleepHours, 'h', 1)}
+              deltaColor={upColor(avgSleepHours, prevData?.avgSleepHours)}
+              subNode={avgSleepHours !== null ? (
+                <SubBlock
+                  left={{ label: 'AVG PER NIGHT', value: formatHours(avgSleepHours) }}
+                  right={sleepGoal ? { label: 'SLEEP GOAL', value: formatHours(sleepGoal) } : undefined}
+                />
+              ) : undefined}
+            />
+            <StatRow label="Resting HR" labelColor={COLOR_RECOVERY} value={avgRestingHR !== null ? `${avgRestingHR} bpm` : '--'} />
+            <StatRow label="Resp Rate" labelColor={COLOR_RECOVERY} value={avgRespiratoryRate !== null ? `${avgRespiratoryRate}/min` : '--'} />
+            <StatRow label="Prev. Activity" labelColor={COLOR_RECOVERY} value={avgPrevActivity !== null ? `${formatNumber(avgPrevActivity)} kcal` : '--'} />
+            {(monthVo2Max !== null || monthCardioRecovery !== null || avgBloodOxygen !== null) && (
+              <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard, marginTop: 4, paddingTop: 8 }}>
+                <Text style={{ fontSize: 8, letterSpacing: 1.5, color: theme.textMuted, fontFamily: 'DMSans_700Bold', marginBottom: 2 }}>INFORMATIONAL</Text>
+                <SubBlock
+                  left={{ label: 'VO2 MAX', value: monthVo2Max !== null ? `${monthVo2Max} mL/kg/min` : '--' }}
+                  right={{ label: 'CARDIO RECOVERY', value: monthCardioRecovery !== null ? `${monthCardioRecovery} bpm` : '--' }}
+                />
+                {avgBloodOxygen !== null && (
+                  <SubBlock left={{ label: 'BLOOD OXYGEN', value: `${avgBloodOxygen}%` }} />
+                )}
+              </View>
+            )}
+          </SectionCard>
+
           {/* Activity card */}
-          <SectionCard label="Activity" icon="barbell" score={avgActivityScore} pct="35% OF SCORE" borderColor={COLOR_ACTIVITY}>
+          <SectionCard label="Activity" icon="barbell" score={avgActivityScore} pct="30% OF SCORE" borderColor={COLOR_ACTIVITY}>
             <StatRow
               label="Active calories"
               labelColor={COLOR_ACTIVITY}
@@ -587,35 +628,6 @@ export default function MonthlySummaryScreen() {
                 right={{ label: 'LIFT', value: `${totalLiftSessions}` }}
               />
             </View>
-          </SectionCard>
-
-          {/* Recovery card */}
-          <SectionCard label="Recovery" icon="heart" score={avgSleepScore} pct="25% OF SCORE" borderColor={COLOR_RECOVERY}>
-            <StatRow
-              label="Sleep"
-              labelColor={COLOR_RECOVERY}
-              value={avgSleepCategoryScore != null ? `${avgSleepCategoryScore} / 100` : (avgSleepScore != null ? `${formatNumber(avgSleepScore)} / 100` : '--')}
-              deltaStr={fmtDelta(avgSleepHours, prevData?.avgSleepHours, 'h', 1)}
-              deltaColor={upColor(avgSleepHours, prevData?.avgSleepHours)}
-              subNode={avgSleepHours !== null ? (
-                <SubBlock
-                  left={{ label: 'AVG PER NIGHT', value: formatHours(avgSleepHours) }}
-                  right={sleepGoal ? { label: 'SLEEP GOAL', value: formatHours(sleepGoal) } : undefined}
-                />
-              ) : undefined}
-            />
-            {(avgRestingHR !== null || avgRespiratoryRate !== null || monthVo2Max !== null || monthCardioRecovery !== null) && (
-              <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard, marginTop: 4, paddingTop: 4 }}>
-                <SubBlock
-                  left={{ label: 'RESTING HR', value: avgRestingHR !== null ? `${avgRestingHR} bpm` : '--' }}
-                  right={{ label: 'RESP RATE', value: avgRespiratoryRate !== null ? `${avgRespiratoryRate}/min` : '--' }}
-                />
-                <SubBlock
-                  left={{ label: 'VO2 MAX', value: monthVo2Max !== null ? `${monthVo2Max} mL/kg/min` : '--' }}
-                  right={{ label: 'CARDIO RECOVERY', value: monthCardioRecovery !== null ? `${monthCardioRecovery} bpm` : '--' }}
-                />
-              </View>
-            )}
           </SectionCard>
 
           {/* Weight card (hidden in Mindful) */}

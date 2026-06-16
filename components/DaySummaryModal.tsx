@@ -171,8 +171,8 @@ export default function DaySummaryModal({ score, dateKey, theme, styleMode, fait
 
   const pills: { label: string; val: number | null; icon: keyof typeof Ionicons.glyphMap }[] = [
     { label: 'NUTRITION', val: score.nutritionScore, icon: 'restaurant' },
+    { label: 'RECOVERY', val: score.recoveryCategoryScore ?? score.sleepScore, icon: 'heart' },
     { label: 'ACTIVITY', val: score.activityScore, icon: 'barbell' },
-    { label: 'RECOVERY', val: score.sleepScore, icon: 'heart' },
   ];
   // Bar color: tier-graded in Discipline/Balanced, neutral accent in Mindful
   // (no color judgment), dim when the category has no data.

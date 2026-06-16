@@ -989,7 +989,7 @@ export default function StatsScreen() {
           <>
             <Text style={{ width: 34, fontSize: 20, lineHeight: 22, fontFamily: 'BebasNeue_400Regular', color: archTierColor(sc.composite) }}>{Math.round(sc.composite)}</Text>
             <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
-              {[['N', sc.nutritionScore], ['A', sc.activityScore], ['R', sc.sleepScore]].map(([lbl, val]) => (
+              {[['N', sc.nutritionScore], ['R', sc.recoveryCategoryScore ?? sc.sleepScore], ['A', sc.activityScore]].map(([lbl, val]) => (
                 <View key={lbl as string} style={{ flexDirection: 'row', alignItems: 'baseline', gap: 2 }}>
                   <Text style={{ fontSize: 8, color: theme.textMuted, fontFamily: 'DMSans_700Bold' }}>{lbl}</Text>
                   <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' }}>{val !== null ? Math.round(val as number) : '–'}</Text>

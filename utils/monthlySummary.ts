@@ -65,11 +65,15 @@ export interface MonthlySummaryData {
   totalLiftSessions: number;
 
   // Recovery
+  avgRecoveryScore: number | null;       // avg real third-category value (recovery, or raw sleep on fallback) -- the card headline
+  avgHRV: number | null;                 // avg overnight HRV (recovery factor)
   avgSleepHours: number | null;
   avgSleepCategoryScore: number | null;
   sleepGoal: number;
   avgRestingHR: number | null;
   avgRespiratoryRate: number | null;
+  avgPrevActivity: number | null;        // avg prior-day active calories (recovery factor)
+  avgBloodOxygen: number | null;         // avg overnight SpO2 (informational)
   monthVo2Max: number | null;
   monthCardioRecovery: number | null;
 
@@ -214,8 +218,25 @@ export async function generateMonthlySummary(monthKey: string): Promise<MonthlyS
   const sleepCategoryScoreList: number[] = [];
   const restingHRList: number[] = [];
   const respiratoryRateList: number[] = [];
+  const recoveryScoreList: number[] = [];
+  const hrvList: number[] = [];
+  const spo2List: number[] = [];
+  const prevActivityList: number[] = [];
   let monthVo2Max: number | null = null;
   let monthCardioRecovery: number | null = null;
+
+  // Active calories of the day BEFORE the month starts, so day 1 has a prior-day
+  // activity value for the recovery "Prev. Activity" factor. Raw (not burn-adjusted),
+  // matching recoveryScore.ts. Other days read their prior day from dayMap.
+  let dayBeforeMonthKey = '';
+  let dayBeforeMonthActive = 0;
+  try {
+    const [fy, fm, fd] = dateKeys[0].split('-').map(Number);
+    const bdt = new Date(fy, fm - 1, fd - 1);
+    dayBeforeMonthKey = `${bdt.getFullYear()}-${String(bdt.getMonth() + 1).padStart(2, '0')}-${String(bdt.getDate()).padStart(2, '0')}`;
+    const r = await AsyncStorage.getItem(`pj_${dayBeforeMonthKey}`);
+    if (r) { const d = JSON.parse(r); dayBeforeMonthActive = d.activeCalories || d.caloriesBurned || 0; }
+  } catch {}
 
   const weightEntries: { dateKey: string; weight: number }[] = [];
 
@@ -294,6 +315,19 @@ export async function generateMonthlySummary(monthKey: string): Promise<MonthlyS
     if (typeof day.respiratoryRate === 'number' && day.respiratoryRate > 0) respiratoryRateList.push(day.respiratoryRate);
     if (typeof day.vo2Max === 'number' && day.vo2Max > 0) monthVo2Max = day.vo2Max;
     if (typeof day.cardioRecovery === 'number' && day.cardioRecovery > 0) monthCardioRecovery = day.cardioRecovery;
+
+    // Recovery factors: the real third-category value + overnight HRV / SpO2 + prior-day load.
+    if (typeof dayScore.recoveryCategoryScore === 'number') recoveryScoreList.push(dayScore.recoveryCategoryScore);
+    const rsig = day.recoverySignals;
+    if (rsig && typeof rsig.hrv === 'number' && rsig.hrv > 0) hrvList.push(rsig.hrv);
+    if (rsig && typeof rsig.spo2 === 'number' && rsig.spo2 > 0) spo2List.push(rsig.spo2);
+    const [ppy, ppm, ppd] = dk.split('-').map(Number);
+    const pdt = new Date(ppy, ppm - 1, ppd - 1);
+    const prevKey = `${pdt.getFullYear()}-${String(pdt.getMonth() + 1).padStart(2, '0')}-${String(pdt.getDate()).padStart(2, '0')}`;
+    const prevActiveRaw = dayMap[prevKey]
+      ? (dayMap[prevKey].activeCalories ?? dayMap[prevKey].caloriesBurned ?? 0)
+      : (prevKey === dayBeforeMonthKey ? dayBeforeMonthActive : 0);
+    if (prevActiveRaw > 0) prevActivityList.push(Math.round(prevActiveRaw));
 
     if (dayScore.activityDetail) {
       if (typeof dayScore.activityDetail.activeCalScore === 'number') {
@@ -395,11 +429,15 @@ export async function generateMonthlySummary(monthKey: string): Promise<MonthlyS
     totalCardioSessions,
     totalLiftSessions,
 
+    avgRecoveryScore: avg(recoveryScoreList),
+    avgHRV: avgFloat(hrvList),
     avgSleepHours: avgFloat(sleepHoursList),
     avgSleepCategoryScore: avg(sleepCategoryScoreList),
     sleepGoal,
     avgRestingHR: avg(restingHRList),
     avgRespiratoryRate: avgFloat(respiratoryRateList),
+    avgPrevActivity: avg(prevActivityList),
+    avgBloodOxygen: avg(spo2List),
     monthVo2Max,
     monthCardioRecovery,
 

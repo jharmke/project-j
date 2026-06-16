@@ -29,19 +29,19 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     tutorialId: 'day_score',
     category: 'Reports',
     title: 'Day Summary',
-    body: 'Each morning you get a single 0-100 score for the day before -- a snapshot of how the day went across three areas. It is weighted Nutrition 40%, Activity 35%, Recovery 25%. Any area with no logged data drops out and the rest re-balance, so you are only ever graded on what you actually tracked.\n\nScoring is proximity-based, not pass/fail: getting close to a goal earns most of the points. Today is never scored while it is still in progress -- the score only appears the morning after.',
+    body: 'Each morning you get a single 0-100 score for the day before -- a snapshot of how the day went across three areas. It is weighted Nutrition 35%, Recovery 35%, Activity 30%. Any area with no logged data drops out and the rest re-balance, so you are only ever graded on what you actually tracked.\n\nScoring is proximity-based, not pass/fail: getting close to a goal earns most of the points. Today is never scored while it is still in progress -- the score only appears the morning after.',
     definitions: [
       {
-        term: 'Nutrition (40%)',
+        term: 'Nutrition (35%)',
         explanation: 'Calories vs your target, protein vs your goal, and water vs your goal. No calorie goal set yet? Nutrition scores on protein and water until you set one.',
       },
       {
-        term: 'Activity (35%)',
-        explanation: 'Active calories vs your goal, plus workout completion on training days. Tag a day as Rest and it will not be dinged for having no workout -- your movement still earns credit.',
+        term: 'Recovery (35%)',
+        explanation: 'Your real Recovery Score for the night: overnight HRV, sleep, resting heart rate, the prior day\'s activity, and breathing rate, each compared to your own baseline. It needs overnight heart data from your Apple Watch. On a night the watch was off, Recovery falls back to your sleep score so the day can still be scored. (VO2 Max, Cardio Recovery, and Blood Oxygen are shown for context but do not feed the score.)',
       },
       {
-        term: 'Recovery (25%)',
-        explanation: 'Built from your sleep: duration, how you felt, and bedtime consistency. A logged night always earns a floor, so one rough night never tanks your whole day. This is why Recovery can read higher than your raw Sleep score -- it is forgiving on purpose.',
+        term: 'Activity (30%)',
+        explanation: 'Active calories vs your goal, plus workout completion on training days. Tag a day as Rest and it will not be dinged for having no workout -- your movement still earns credit.',
       },
       {
         term: 'Excluding a day',

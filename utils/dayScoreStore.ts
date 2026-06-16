@@ -19,8 +19,11 @@ import { computeDayScore, scoreLabel, DayScore, DayScoreInput, DayType, StyleMod
 const SCAN_GATE_KEY = 'pj_last_dayscore_scan';
 const ARCHIVE_WINDOW_DAYS = 90;
 // Bump when the scoring logic changes so stored scores recompute once. v2 added
-// per-category (diet/water/exercise) exclusion handling.
-const DAYSCORE_VERSION = 2;
+// per-category (diet/water/exercise) exclusion handling. v3 replaced the composite's
+// third category with the real Recovery Score when present (sleep is the fallback).
+// v4 rebalanced weights to Nutrition 35 / Activity 30 / Recovery 35 and dropped the
+// sleep floor (the third-category fallback is now the raw sleep score).
+const DAYSCORE_VERSION = 4;
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function dayNameFromKey(dateKey: string): string {
@@ -122,6 +125,13 @@ export async function buildDayScoreInput(dateKey: string, computedAt: string): P
   const sleepIsManual = !!day.sleepOverride;
   const sleepConsistencyPts = day.sleepConsistencyPts ?? 0;
 
+  // Recovery: the day's frozen Recovery Score (morning snapshot), read LIVE from the
+  // record. Measured per-day data, NOT a goal, so it is never frozen into goalSnapshot.
+  // Null when the night voided (manual/watch-off, no real overnight HRV/RHR) -> the
+  // dayScore third-category ladder falls back to the sleep score, byte-identical to pre-#6.
+  const recoveryScore = (typeof day.recoveryScore === 'number' && Number.isFinite(day.recoveryScore))
+    ? day.recoveryScore : null;
+
   // Per-category exclusions: diet drops calorie + protein, water drops the water
   // sub, exercise drops Activity. A fully-excluded day (all three) is handled by
   // isDayExcluded above (no score at all).
@@ -168,6 +178,7 @@ export async function buildDayScoreInput(dateKey: string, computedAt: string): P
     sleepFeelRating,
     sleepIsManual,
     sleepConsistencyPts,
+    recoveryScore,
   };
 }
 
@@ -207,6 +218,7 @@ function dataSigFromInput(input: DayScoreInput): string {
     input.sleepFeelRating ?? '',
     input.sleepIsManual ? 1 : 0,
     input.sleepConsistencyPts,
+    input.recoveryScore ?? '',
     input.dietExcluded ? 1 : 0,
     input.waterExcluded ? 1 : 0,
     input.exerciseExcluded ? 1 : 0,
@@ -443,7 +455,10 @@ export async function dumpDayScoreWithRecovery(todayKey: string, windowDays: num
 
     const input = await buildDayScoreInput(dateKey, nowISO);
     if (!input) continue;
-    const oldScore = computeDayScore(input);
+    // Force the "old" (pre-#6) composite to be sleep-driven by explicitly nulling
+    // recoveryScore, so this stays a true old-vs-new comparison even now that
+    // buildDayScoreInput sets recoveryScore live (#6). "new" uses the real value.
+    const oldScore = computeDayScore({ ...input, recoveryScore: null });
     if (!oldScore) continue;
 
     const recVal = typeof day.recoveryScore === 'number' && Number.isFinite(day.recoveryScore)

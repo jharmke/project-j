@@ -11,7 +11,13 @@ export type DayType = 'lift' | 'cardio' | 'rest' | 'unassigned';
 export type StyleMode = 'discipline' | 'balanced' | 'mindful';
 
 // Composite category weights. Renormalized over present categories only.
-export const CATEGORY_WEIGHTS = { nutrition: 0.40, activity: 0.35, sleep: 0.25 };
+// The `sleep` key is the THIRD (Recovery) category -- kept named `sleep` to avoid
+// churn across callers, but it carries the real Recovery Score (sleep is its
+// fallback). Rebalanced 2026-06-16: Recovery raised to 0.35 (it's now a full
+// physiological readout, not a sleep proxy) and Activity lowered to 0.30 (activity
+// is already partly counted inside recovery's prev-day load, so it no longer
+// outweighs recovery). Nutrition stays the top controllable lever at 0.35.
+export const CATEGORY_WEIGHTS = { nutrition: 0.35, activity: 0.30, sleep: 0.35 };
 
 // Nutrition sub-component max points (before renormalization over present subs).
 export const CAL_MAX = 55;
@@ -30,9 +36,6 @@ const REST_ACTIVITY_FLOOR = 50;
 
 // Mindful "moved" step floor: steps at or above this fraction of goal counts.
 const MINDFUL_STEP_FLOOR = 0.60;
-
-// Sleep floor: any logged night earns at least this on the sleep category.
-const SLEEP_FLOOR = 50;
 
 export interface DayScoreInput {
   excluded: boolean;
@@ -318,16 +321,20 @@ function activityScore(input: DayScoreInput): { score: number; detail: NonNullab
   };
 }
 
-// Sleep category (0 to 100). Null when no sleep was logged. Floor rule applied:
-// any logged night earns at least SLEEP_FLOOR, the rest scales with raw score.
+// Sleep category (0 to 100). Null when no sleep was logged. No floor: the category
+// IS the raw sleep score, so "sleep" reads identically on the Sleep tab, the Day
+// Score, and the recovery factor (the old SLEEP_FLOOR scaled low nights up into a
+// 50-100 band, which made a raw 83 display as 92; dropped 2026-06-16 for honesty
+// and consistency). This category is only used in the composite as the third-category
+// FALLBACK (watch-off nights with no Recovery Score); recovery-equipped days use the
+// real Recovery Score instead.
 function sleepScoreCategory(input: DayScoreInput): { score: number; detail: NonNullable<DayScore['sleepDetail']> } | null {
   const raw = calcSleepScore(
     input.sleepHours, input.sleepStages, input.sleepGoal,
     input.sleepFeelRating, input.sleepIsManual, input.sleepConsistencyPts,
   ).score;
   if (raw === null) return null;
-  const categoryScore = SLEEP_FLOOR + (raw / 100) * (100 - SLEEP_FLOOR);
-  return { score: categoryScore, detail: { rawSleepScore: raw, categoryScore: round1(categoryScore) } };
+  return { score: raw, detail: { rawSleepScore: raw, categoryScore: round1(raw) } };
 }
 
 // Compute the completed-day composite. Returns null when the day is excluded or

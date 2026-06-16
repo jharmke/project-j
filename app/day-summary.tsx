@@ -62,6 +62,10 @@ export default function DaySummaryScreen() {
   const isMindful = styleMode === 'mindful';
   const [cardioExerciseCount, setCardioExerciseCount] = useState<number | null>(null);
   const [liftExerciseCount, setLiftExerciseCount] = useState<number | null>(null);
+  // Prior-day active calories: the Recovery Score's "previous-day activity" input
+  // (17% of the formula) is yesterday's training load, which is not stored on this
+  // day's record, so the Recovery card loads it from the previous day to show it.
+  const [prevActiveCal, setPrevActiveCal] = useState<number | null>(null);
 
   // Tutorial spotlight targets (the tour lives on this page, not the modal).
   const ringRef = useTutorialTarget('ds_ring');
@@ -106,6 +110,19 @@ export default function DaySummaryScreen() {
         setExcluded(ex === true || (ex && typeof ex === 'object' && !!(ex.diet && ex.water && ex.exercise)));
         const inp = await buildDayScoreInput(date, new Date().toISOString());
         setInput(inp);
+
+        // Prior-day active calories for the Recovery card's "Prev. Activity" factor
+        // (recovery uses yesterday's load, raw, matching recoveryScore.ts).
+        try {
+          const [py, pm, pd] = date.split('-').map(Number);
+          const prevDt = new Date(py, pm - 1, pd);
+          prevDt.setDate(prevDt.getDate() - 1);
+          const prevKey = `${prevDt.getFullYear()}-${String(prevDt.getMonth() + 1).padStart(2, '0')}-${String(prevDt.getDate()).padStart(2, '0')}`;
+          const prevRaw = await AsyncStorage.getItem(`pj_${prevKey}`);
+          const prevDay = prevRaw ? JSON.parse(prevRaw) : null;
+          const pac = prevDay ? (prevDay.activeCalories ?? prevDay.caloriesBurned ?? null) : null;
+          setPrevActiveCal(typeof pac === 'number' ? pac : null);
+        } catch {}
 
         // Per-exercise cardio/lift counts for the Activity card display.
         try {
@@ -236,7 +253,7 @@ export default function DaySummaryScreen() {
   const presentCats: { name: string; score: number; weight: number }[] = [];
   if (score.nutritionScore !== null) presentCats.push({ name: 'Nutrition', score: score.nutritionScore, weight: CATEGORY_WEIGHTS.nutrition });
   if (score.activityScore !== null) presentCats.push({ name: 'Activity', score: score.activityScore, weight: CATEGORY_WEIGHTS.activity });
-  if (score.sleepScore !== null) presentCats.push({ name: 'Recovery', score: score.sleepScore, weight: CATEGORY_WEIGHTS.sleep });
+  if (score.recoveryCategoryScore != null) presentCats.push({ name: 'Recovery', score: score.recoveryCategoryScore, weight: CATEGORY_WEIGHTS.sleep });
   const weightTotal = presentCats.reduce((s, c) => s + c.weight, 0) || 1;
   const catPct = (w: number) => Math.round((w / weightTotal) * 100);
 
@@ -310,6 +327,17 @@ export default function DaySummaryScreen() {
   const nd = score.nutritionDetail;
   const ad = score.activityDetail;
   const sd = score.sleepDetail;
+
+  // Recovery factors: the real overnight signals that feed the Recovery Score
+  // (HRV 35 / Sleep 22 / Resting HR 18 / Prev. Activity 17 / Resp 8). Read from the
+  // day's stored recoverySignals, falling back to the top-level fields. VO2 / Cardio
+  // Recovery / Blood Oxygen are informational extras (not part of the formula).
+  const rsig = (input?.dayData?.recoverySignals && typeof input.dayData.recoverySignals === 'object') ? input.dayData.recoverySignals : {};
+  const recoHrv = typeof rsig.hrv === 'number' ? rsig.hrv : (typeof input?.dayData?.hrv === 'number' ? input.dayData.hrv : null);
+  const recoRhr = typeof rsig.rhr === 'number' ? rsig.rhr : (typeof input?.dayData?.restingHR === 'number' ? input.dayData.restingHR : null);
+  const recoResp = typeof rsig.resp === 'number' ? rsig.resp : (typeof input?.dayData?.respiratoryRate === 'number' ? input.dayData.respiratoryRate : null);
+  const recoSpo2 = typeof rsig.spo2 === 'number' ? rsig.spo2 : (typeof input?.dayData?.bloodOxygen === 'number' ? input.dayData.bloodOxygen : null);
+  const isRecoverySource = score.recoveryCategorySource === 'recovery';
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
@@ -441,6 +469,64 @@ export default function DaySummaryScreen() {
           </SectionCard>
         )}
 
+        {/* RECOVERY -- headline is the real Recovery Score (sleep is the fallback). */}
+        {score.recoveryCategoryScore != null ? (
+          <SectionCard label="Recovery" icon="heart" value={score.recoveryCategoryScore} weightPct={catPct(CATEGORY_WEIGHTS.sleep)} innerRef={recoveryRef} categoryColor="#9b7adb">
+            {isRecoverySource ? (
+              <>
+                {recoHrv != null && (
+                  <SubRow name="HRV" labelColor="#9b7adb" pts={`${Math.round(recoHrv * 10) / 10} ms`} />
+                )}
+                {sd && (
+                  <SubRow
+                    name="Sleep"
+                    labelColor="#9b7adb"
+                    pts={`${Math.round(sd.rawSleepScore)} / 100`}
+                    subBlock={input?.sleepHours != null ? (
+                      <SubBlock
+                        left={{ label: 'SLEEP DURATION', value: formatSleepHours(input.sleepHours) }}
+                        right={input.sleepGoal ? { label: 'SLEEP GOAL', value: formatSleepHours(input.sleepGoal) } : undefined}
+                      />
+                    ) : undefined}
+                  />
+                )}
+                <SubRow name="Resting HR" labelColor="#9b7adb" pts={recoRhr != null ? `${Math.round(recoRhr)} bpm` : '--'} />
+                <SubRow name="Resp Rate" labelColor="#9b7adb" pts={recoResp != null ? `${Math.round(recoResp * 10) / 10}/min` : '--'} />
+                <SubRow name="Prev. Activity" labelColor="#9b7adb" pts={prevActiveCal != null ? `${Math.round(prevActiveCal)} kcal` : '--'} />
+              </>
+            ) : (
+              <SubRow
+                name="Sleep"
+                labelColor="#9b7adb"
+                pts={`${sd ? Math.round(sd.rawSleepScore) : Math.round(score.recoveryCategoryScore)} / 100`}
+                detail="Recovery needs overnight watch data. Using your sleep score for this day."
+                subBlock={input?.sleepHours != null ? (
+                  <SubBlock
+                    left={{ label: 'SLEEP DURATION', value: formatSleepHours(input.sleepHours) }}
+                    right={input.sleepGoal ? { label: 'SLEEP GOAL', value: formatSleepHours(input.sleepGoal) } : undefined}
+                  />
+                ) : undefined}
+              />
+            )}
+            {(input?.dayData?.vo2Max != null || input?.dayData?.cardioRecovery != null || recoSpo2 != null) && (
+              <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard, marginTop: 4, paddingTop: 8 }}>
+                <Text style={{ fontSize: 8, letterSpacing: 1.5, color: theme.textMuted, fontFamily: 'DMSans_700Bold', marginBottom: 2 }}>INFORMATIONAL</Text>
+                <SubBlock
+                  left={{ label: 'VO2 MAX', value: input?.dayData?.vo2Max != null ? `${input.dayData.vo2Max} mL/kg/min` : '--' }}
+                  right={{ label: 'CARDIO RECOVERY', value: input?.dayData?.cardioRecovery != null ? `${input.dayData.cardioRecovery} bpm` : '--' }}
+                />
+                {recoSpo2 != null && (
+                  <SubBlock left={{ label: 'BLOOD OXYGEN', value: `${Math.round(recoSpo2)}%` }} />
+                )}
+              </View>
+            )}
+          </SectionCard>
+        ) : (
+          <SectionCard label="Recovery" icon="heart" value={null} innerRef={recoveryRef} categoryColor="#9b7adb">
+            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 4 }}>No recovery or sleep data this day.</Text>
+          </SectionCard>
+        )}
+
         {/* ACTIVITY */}
         {score.activityScore !== null && ad ? (
           <SectionCard label="Activity" icon="barbell" value={score.activityScore} weightPct={catPct(CATEGORY_WEIGHTS.activity)} innerRef={activityRef} categoryColor="#d4860a">
@@ -514,39 +600,6 @@ export default function DaySummaryScreen() {
             <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 4 }}>
               {exerciseExcluded ? 'Activity was excluded for this day.' : 'No activity data this day.'}
             </Text>
-          </SectionCard>
-        )}
-
-        {/* RECOVERY */}
-        {score.sleepScore !== null && sd ? (
-          <SectionCard label="Recovery" icon="heart" value={score.sleepScore} weightPct={catPct(CATEGORY_WEIGHTS.sleep)} innerRef={recoveryRef} categoryColor="#9b7adb">
-            <SubRow
-              name="Sleep"
-              labelColor="#9b7adb"
-              pts={`${Math.round(sd.categoryScore)} / 100`}
-              subBlock={input?.sleepHours != null ? (
-                <SubBlock
-                  left={{ label: 'SLEEP DURATION', value: formatSleepHours(input.sleepHours) }}
-                  right={input.sleepGoal ? { label: 'SLEEP GOAL', value: formatSleepHours(input.sleepGoal) } : undefined}
-                />
-              ) : undefined}
-            />
-            {(input?.dayData?.restingHR != null || input?.dayData?.respiratoryRate != null || input?.dayData?.vo2Max != null || input?.dayData?.cardioRecovery != null) && (
-              <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard, marginTop: 4, paddingTop: 4 }}>
-                <SubBlock
-                  left={{ label: 'RESTING HR', value: input?.dayData?.restingHR != null ? `${input.dayData.restingHR} bpm` : '--' }}
-                  right={{ label: 'RESP RATE', value: input?.dayData?.respiratoryRate != null ? `${input.dayData.respiratoryRate}/min` : '--' }}
-                />
-                <SubBlock
-                  left={{ label: 'VO2 MAX', value: input?.dayData?.vo2Max != null ? `${input.dayData.vo2Max} mL/kg/min` : '--' }}
-                  right={{ label: 'CARDIO RECOVERY', value: input?.dayData?.cardioRecovery != null ? `${input.dayData.cardioRecovery} bpm` : '--' }}
-                />
-              </View>
-            )}
-          </SectionCard>
-        ) : (
-          <SectionCard label="Recovery" icon="heart" value={null} innerRef={recoveryRef} categoryColor="#9b7adb">
-            <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 4 }}>No sleep logged this day.</Text>
           </SectionCard>
         )}
 

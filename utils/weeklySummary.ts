@@ -69,11 +69,15 @@ export interface WeeklySummaryData {
   liftDays: number;
 
   // Recovery (avgSleepScore is shared with score section above)
+  avgRecoveryScore: number | null;       // avg real third-category value (recovery, or raw sleep on fallback) -- the card headline
+  avgHRV: number | null;                 // avg overnight HRV (recovery factor)
   avgSleepHours: number | null;
   avgSleepCategoryScore: number | null;
   sleepGoal: number;
   avgRestingHR: number | null;
   avgRespiratoryRate: number | null;
+  avgPrevActivity: number | null;        // avg prior-day active calories (recovery factor)
+  avgBloodOxygen: number | null;         // avg overnight SpO2 (informational)
   weekVo2Max: number | null;
   weekCardioRecovery: number | null;
 
@@ -218,8 +222,22 @@ export async function generateWeeklySummary(weekStart: string): Promise<WeeklySu
   let liftDays = 0;
   const restingHRList: number[] = [];
   const respiratoryRateList: number[] = [];
+  const recoveryScoreList: number[] = [];
+  const hrvList: number[] = [];
+  const spo2List: number[] = [];
+  const prevActivityList: number[] = [];
   let weekVo2Max: number | null = null;
   let weekCardioRecovery: number | null = null;
+
+  // Active calories of the day BEFORE the week starts (Saturday), so day 0 (Sunday)
+  // has a prior-day activity value for the recovery "Prev. Activity" factor. Raw (not
+  // burn-adjusted), matching recoveryScore.ts. Days 1-6 read their prior day from dayMap.
+  let prevDayBeforeWeekActive = 0;
+  try {
+    const beforeKey = dateKeyFromSunday(weekStart, -1);
+    const r = await AsyncStorage.getItem(`pj_${beforeKey}`);
+    if (r) { const d = JSON.parse(r); prevDayBeforeWeekActive = d.activeCalories || d.caloriesBurned || 0; }
+  } catch {}
   const carbsList: number[] = [];
   const fatList: number[] = [];
   const fiberList: number[] = [];
@@ -301,6 +319,16 @@ export async function generateWeeklySummary(weekStart: string): Promise<WeeklySu
     if (typeof day.respiratoryRate === 'number' && day.respiratoryRate > 0) respiratoryRateList.push(day.respiratoryRate);
     if (typeof day.vo2Max === 'number' && day.vo2Max > 0) weekVo2Max = day.vo2Max;
     if (typeof day.cardioRecovery === 'number' && day.cardioRecovery > 0) weekCardioRecovery = day.cardioRecovery;
+
+    // Recovery factors: the real third-category value + overnight HRV / SpO2 + prior-day load.
+    if (typeof dayScore.recoveryCategoryScore === 'number') recoveryScoreList.push(dayScore.recoveryCategoryScore);
+    const rsig = day.recoverySignals;
+    if (rsig && typeof rsig.hrv === 'number' && rsig.hrv > 0) hrvList.push(rsig.hrv);
+    if (rsig && typeof rsig.spo2 === 'number' && rsig.spo2 > 0) spo2List.push(rsig.spo2);
+    const prevActiveRaw = i > 0
+      ? (dayMap[dateKeys[i - 1]]?.activeCalories ?? dayMap[dateKeys[i - 1]]?.caloriesBurned ?? 0)
+      : prevDayBeforeWeekActive;
+    if (prevActiveRaw > 0) prevActivityList.push(Math.round(prevActiveRaw));
 
     if (dayScore.activityDetail) {
       if (typeof dayScore.activityDetail.activeCalScore === 'number') {
@@ -400,11 +428,15 @@ export async function generateWeeklySummary(weekStart: string): Promise<WeeklySu
     cardioDays,
     liftDays,
 
+    avgRecoveryScore: avg(recoveryScoreList),
+    avgHRV: avgFloat(hrvList),
     avgSleepHours: avgFloat(sleepHoursList),
     avgSleepCategoryScore: avg(sleepCategoryScoreList),
     sleepGoal,
     avgRestingHR: avg(restingHRList),
     avgRespiratoryRate: avgFloat(respiratoryRateList),
+    avgPrevActivity: avg(prevActivityList),
+    avgBloodOxygen: avg(spo2List),
     weekVo2Max,
     weekCardioRecovery,
 

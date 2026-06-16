@@ -235,7 +235,7 @@ export default function WeeklySummaryScreen() {
     avgCarbs, avgFat, avgFiber, avgSodium, daysCalorieGoalHit,
     avgActiveCalories, avgSteps, workoutDays, avgExerciseMinutes, avgActiveCalScore, avgWorkoutScore, weekHadWorkouts,
     stepGoalDays, cardioDays, liftDays,
-    avgSleepHours, avgSleepCategoryScore, sleepGoal, avgRestingHR, avgRespiratoryRate, weekVo2Max, weekCardioRecovery,
+    avgRecoveryScore, avgHRV, avgSleepHours, avgSleepCategoryScore, sleepGoal, avgRestingHR, avgRespiratoryRate, avgPrevActivity, avgBloodOxygen, weekVo2Max, weekCardioRecovery,
     startWeight, endWeight, weightChange, weightGoal,
     avgCalorieScore, avgProteinScore, avgWaterScore } = data;
 
@@ -419,7 +419,7 @@ export default function WeeklySummaryScreen() {
           </View>
 
           {/* Nutrition card */}
-          <SectionCard label="Nutrition" icon="restaurant" score={avgNutritionScore} pct="40% OF SCORE" borderColor={COLOR_NUTRITION}>
+          <SectionCard label="Nutrition" icon="restaurant" score={avgNutritionScore} pct="35% OF SCORE" borderColor={COLOR_NUTRITION}>
             <StatRow
               label="Calories"
               labelColor={COLOR_NUTRITION}
@@ -476,8 +476,41 @@ export default function WeeklySummaryScreen() {
             </View>
           </SectionCard>
 
+          {/* Recovery card -- headline is the avg real Recovery Score (raw sleep on fallback) */}
+          <SectionCard label="Recovery" icon="heart" score={avgRecoveryScore} pct="35% OF SCORE" borderColor={COLOR_RECOVERY}>
+            {avgHRV !== null && (
+              <StatRow label="HRV" labelColor={COLOR_RECOVERY} value={`${avgHRV} ms`} />
+            )}
+            <StatRow
+              label="Sleep"
+              labelColor={COLOR_RECOVERY}
+              value={avgSleepScore != null ? `${formatNumber(avgSleepScore)} / 100` : '--'}
+              subNode={avgSleepHours !== null ? (
+                <SubBlock
+                  left={{ label: 'AVG PER NIGHT', value: formatHours(avgSleepHours) }}
+                  right={sleepGoal ? { label: 'SLEEP GOAL', value: formatHours(sleepGoal) } : undefined}
+                />
+              ) : undefined}
+            />
+            <StatRow label="Resting HR" labelColor={COLOR_RECOVERY} value={avgRestingHR !== null ? `${avgRestingHR} bpm` : '--'} />
+            <StatRow label="Resp Rate" labelColor={COLOR_RECOVERY} value={avgRespiratoryRate !== null ? `${avgRespiratoryRate}/min` : '--'} />
+            <StatRow label="Prev. Activity" labelColor={COLOR_RECOVERY} value={avgPrevActivity !== null ? `${formatNumber(avgPrevActivity)} kcal` : '--'} />
+            {(weekVo2Max !== null || weekCardioRecovery !== null || avgBloodOxygen !== null) && (
+              <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard, marginTop: 4, paddingTop: 8 }}>
+                <Text style={{ fontSize: 8, letterSpacing: 1.5, color: theme.textMuted, fontFamily: 'DMSans_700Bold', marginBottom: 2 }}>INFORMATIONAL</Text>
+                <SubBlock
+                  left={{ label: 'VO2 MAX', value: weekVo2Max !== null ? `${weekVo2Max} mL/kg/min` : '--' }}
+                  right={{ label: 'CARDIO RECOVERY', value: weekCardioRecovery !== null ? `${weekCardioRecovery} bpm` : '--' }}
+                />
+                {avgBloodOxygen !== null && (
+                  <SubBlock left={{ label: 'BLOOD OXYGEN', value: `${avgBloodOxygen}%` }} />
+                )}
+              </View>
+            )}
+          </SectionCard>
+
           {/* Activity card */}
-          <SectionCard label="Activity" icon="barbell" score={avgActivityScore} pct="35% OF SCORE" borderColor={COLOR_ACTIVITY}>
+          <SectionCard label="Activity" icon="barbell" score={avgActivityScore} pct="30% OF SCORE" borderColor={COLOR_ACTIVITY}>
             <StatRow
               label="Active calories"
               labelColor={COLOR_ACTIVITY}
@@ -512,33 +545,6 @@ export default function WeeklySummaryScreen() {
                 right={{ label: 'LIFT', value: liftDays != null ? `${liftDays}` : '--' }}
               />
             </View>
-          </SectionCard>
-
-          {/* Recovery card */}
-          <SectionCard label="Recovery" icon="heart" score={avgSleepScore} pct="25% OF SCORE" borderColor={COLOR_RECOVERY}>
-            <StatRow
-              label="Sleep"
-              labelColor={COLOR_RECOVERY}
-              value={avgSleepCategoryScore != null ? `${avgSleepCategoryScore} / 100` : (avgSleepScore != null ? `${formatNumber(avgSleepScore)} / 100` : '--')}
-              subNode={avgSleepHours !== null ? (
-                <SubBlock
-                  left={{ label: 'AVG PER NIGHT', value: formatHours(avgSleepHours) }}
-                  right={sleepGoal ? { label: 'SLEEP GOAL', value: formatHours(sleepGoal) } : undefined}
-                />
-              ) : undefined}
-            />
-            {(avgRestingHR !== null || avgRespiratoryRate !== null || weekVo2Max !== null || weekCardioRecovery !== null) && (
-              <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard, marginTop: 4, paddingTop: 4 }}>
-                <SubBlock
-                  left={{ label: 'RESTING HR', value: avgRestingHR !== null ? `${avgRestingHR} bpm` : '--' }}
-                  right={{ label: 'RESP RATE', value: avgRespiratoryRate !== null ? `${avgRespiratoryRate}/min` : '--' }}
-                />
-                <SubBlock
-                  left={{ label: 'VO2 MAX', value: weekVo2Max !== null ? `${weekVo2Max} mL/kg/min` : '--' }}
-                  right={{ label: 'CARDIO RECOVERY', value: weekCardioRecovery !== null ? `${weekCardioRecovery} bpm` : '--' }}
-                />
-              </View>
-            )}
           </SectionCard>
 
           {/* Weight card (hidden in Mindful) -- same SectionCard treatment as other categories */}

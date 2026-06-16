@@ -29,6 +29,7 @@ interface Props {
   avgNutritionScore: number | null;
   avgActivityScore: number | null;
   avgSleepScore: number | null;
+  avgRecoveryScore?: number | null;   // real third-category avg; falls back to avgSleepScore for pre-v4 snapshots
   daysScored: number;
   totalDays: number;          // 7 for a week, days-in-month for a month
   rangeStart: string;         // YYYY-MM-DD
@@ -58,9 +59,11 @@ function PillBar({ value, color, progress }: { value: number | null; color: stri
 }
 
 export default function SummaryReadyModal({
-  tier, avgComposite, avgNutritionScore, avgActivityScore, avgSleepScore,
+  tier, avgComposite, avgNutritionScore, avgActivityScore, avgSleepScore, avgRecoveryScore,
   daysScored, totalDays, rangeStart, rangeEnd, theme, styleMode, onClose, onViewBreakdown,
 }: Props) {
+  // The real third-category (recovery) average; old snapshots only have avgSleepScore.
+  const avgRecovery = avgRecoveryScore ?? avgSleepScore;
   const overlay = useSharedValue(0);
   const cardScale = useSharedValue(0.92);
   const barProgress = useSharedValue(0);
@@ -107,13 +110,13 @@ export default function SummaryReadyModal({
 
   // Encouraging line + optional coach note, period-aware and varied by period.
   const { winLine, coachLine } = periodSummaryLines(
-    tier, composite, avgNutritionScore, avgActivityScore, avgSleepScore, isMindful, rangeStart,
+    tier, composite, avgNutritionScore, avgActivityScore, avgRecovery, isMindful, rangeStart,
   );
 
   const pills: { label: string; val: number | null; icon: keyof typeof Ionicons.glyphMap }[] = [
     { label: 'NUTRITION', val: avgNutritionScore, icon: 'restaurant' },
+    { label: 'RECOVERY', val: avgRecovery, icon: 'heart' },
     { label: 'ACTIVITY', val: avgActivityScore, icon: 'barbell' },
-    { label: 'RECOVERY', val: avgSleepScore, icon: 'heart' },
   ];
 
   return (

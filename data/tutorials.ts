@@ -1625,9 +1625,9 @@ export const TUTORIALS: Tutorial[] = [
         highlightPadding: 6,
         noTabBarOffset: true,
         body: {
-          discipline: 'This is your Day Score: a 0-100 grade for the day before, built from three weighted areas: Nutrition 40%, Activity 35%, Recovery 25%. Today is never scored while it is still in progress.',
-          balanced: 'This is your Day Score: a score out of 100 for the day before. It comes from three areas: Nutrition (40%), Activity (35%), and Recovery (25%).',
-          mindful: 'This is your Day Score: a gentle read on the day before, drawn from nutrition, activity, and recovery. A reflection, not a verdict.',
+          discipline: 'This is your Day Score: a 0-100 grade for the day before, built from three weighted areas: Nutrition 35%, Recovery 35%, Activity 30%. Today is never scored while it is still in progress.',
+          balanced: 'This is your Day Score: a score out of 100 for the day before. It comes from three areas: Nutrition (35%), Recovery (35%), and Activity (30%).',
+          mindful: 'This is your Day Score: a gentle read on the day before, drawn from nutrition, recovery, and activity. A reflection, not a verdict.',
         },
       },
       {
@@ -1641,6 +1641,16 @@ export const TUTORIALS: Tutorial[] = [
         },
       },
       {
+        targetKey: 'ds_recovery',
+        title: 'RECOVERY',
+        noTabBarOffset: true,
+        body: {
+          discipline: 'Your real Recovery Score for the night: overnight HRV, sleep, resting heart rate, the prior day\'s activity, and breathing, each vs your own baseline. It needs overnight heart data from your watch; on a watch-off night it falls back to your sleep score.',
+          balanced: 'Your Recovery Score for the night, built from overnight HRV, sleep, resting heart rate, the day before\'s activity, and breathing, each compared to your own baseline. It needs overnight heart data from your watch; on a night the watch was off, it uses your sleep score instead.',
+          mindful: 'A gentle read on how rested you are, drawn from your overnight heart data and sleep. On a night without watch data, it leans on your sleep. Resting still matters.',
+        },
+      },
+      {
         targetKey: 'ds_activity',
         title: 'ACTIVITY',
         noTabBarOffset: true,
@@ -1648,16 +1658,6 @@ export const TUTORIALS: Tutorial[] = [
           discipline: 'Active calories plus your workout. On a rest day, tag it as Rest so it is not dinged for having no workout. Your movement still earns credit.',
           balanced: 'Active calories and your workout. Taking a rest day? Tag it as Rest so the score does not expect a workout. Your movement that day still counts.',
           mindful: 'Active calories and movement. A rest day is good. Tag it as Rest so the day is not measured against a workout you intentionally set aside.',
-        },
-      },
-      {
-        targetKey: 'ds_recovery',
-        title: 'RECOVERY',
-        noTabBarOffset: true,
-        body: {
-          discipline: 'Built from your sleep. Any night you log earns a floor, so a rough night will not tank your day. This is why Recovery can read higher than your raw sleep score.',
-          balanced: 'Built from your sleep, but any night you log earns a minimum, so one rough night will not crater your score. That is why Recovery can read a little higher than your raw sleep score.',
-          mindful: 'Built from your sleep, and a night you log always counts for something. A hard night is never held against you. Resting still matters.',
         },
       },
       {

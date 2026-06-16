@@ -3872,6 +3872,7 @@ export default function HomeScreen() {
           avgNutritionScore={weekSummary.avgNutritionScore}
           avgActivityScore={weekSummary.avgActivityScore}
           avgSleepScore={weekSummary.avgSleepScore}
+          avgRecoveryScore={weekSummary.avgRecoveryScore}
           daysScored={weekSummary.daysScored}
           totalDays={7}
           rangeStart={weekSummary.weekStart}
@@ -3891,6 +3892,7 @@ export default function HomeScreen() {
           avgNutritionScore={monthSummary.avgNutritionScore}
           avgActivityScore={monthSummary.avgActivityScore}
           avgSleepScore={monthSummary.avgSleepScore}
+          avgRecoveryScore={monthSummary.avgRecoveryScore}
           daysScored={monthSummary.daysScored}
           totalDays={Number(monthSummary.monthEnd.split('-')[2])}
           rangeStart={monthSummary.monthStart}

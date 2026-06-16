@@ -1878,7 +1878,8 @@ export default function SettingsScreen() {
                       ].join('\n');
                       const recRows = res.rows.filter(r => r.hasRecovery);
                       const lines = recRows.map(r =>
-                        `${r.dayName} ${md(r.dateKey)}  ${r.oldComposite}→${r.newComposite}  Δ${sgn(r.delta)}   3rd ${r.oldThird ?? '-'}→${r.newThird ?? '-'}`
+                        `${r.dayName} ${md(r.dateKey)}  ${r.oldComposite}→${r.newComposite}  Δ${sgn(r.delta)}   3rd ${r.oldThird ?? '-'}→${r.newThird ?? '-'}` +
+                        `\n   hrv ${r.hrv ?? 'NONE'} | rhr ${r.rhr ?? 'NONE'}${r.sleepManual ? ' | manual sleep' : ''}`
                       ).join('\n');
                       const fallback = res.scoredCount - res.recoveryCount;
                       const tail = fallback > 0 ? `\n\n+ ${fallback} sleep-fallback day${fallback === 1 ? '' : 's'} (unchanged)` : '';

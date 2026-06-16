@@ -410,6 +410,12 @@ export interface RecoveryDumpRow {
   oldThird: number | null;       // sleep-driven third-category value (floored)
   newThird: number | null;       // recovery-driven third-category value (no floor)
   source: 'recovery' | 'sleep' | 'none';
+  // The stored overnight signals behind the recovery score, so we can SEE whether a
+  // score is built on real physiology (legit) or is a ghost from before the Option B
+  // gate. Pulled from pj_<date>.recoverySignals; null when absent.
+  hrv: number | null;
+  rhr: number | null;
+  sleepManual: boolean;          // the night's sleep was hand-entered (no HK stages)
 }
 
 export interface RecoveryDumpResult {
@@ -447,6 +453,7 @@ export async function dumpDayScoreWithRecovery(todayKey: string, windowDays: num
       : oldScore;
     const newComposite = newScore ? newScore.composite : oldScore.composite;
 
+    const rsig = (day.recoverySignals && typeof day.recoverySignals === 'object') ? day.recoverySignals : {};
     rows.push({
       dateKey,
       dayName: dayNameFromKey(dateKey),
@@ -457,6 +464,9 @@ export async function dumpDayScoreWithRecovery(todayKey: string, windowDays: num
       oldThird: oldScore.recoveryCategoryScore ?? null,
       newThird: newScore?.recoveryCategoryScore ?? null,
       source: recVal !== null ? 'recovery' : (oldScore.recoveryCategorySource ?? 'none'),
+      hrv: typeof rsig.hrv === 'number' && Number.isFinite(rsig.hrv) ? Math.round(rsig.hrv * 10) / 10 : null,
+      rhr: typeof rsig.rhr === 'number' && Number.isFinite(rsig.rhr) ? Math.round(rsig.rhr) : null,
+      sleepManual: input.sleepIsManual,
     });
   }
 

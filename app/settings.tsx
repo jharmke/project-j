@@ -404,7 +404,7 @@ export default function SettingsScreen() {
     });
     return () => task.cancel();
   }, [deepLinkSection]);
-  const { fetchHistoricalWorkouts, authorized } = useHealthKit();
+  const { fetchHistoricalWorkouts, authorized, fetchOvernightRHR } = useHealthKit();
 
   // ── Notification settings state ───────────────────────────────────────────
   const [notifSettings, setNotifSettings] = useState<NotificationSettings>(DEFAULT_NOTIFICATION_SETTINGS);
@@ -1822,6 +1822,34 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Runs the new diagnostic feed on your real data. Shows ranked claim/proof/lever as plain text.</Text>
               </View>
               <Ionicons name="list-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              try {
+                const r = await fetchOvernightRHR();
+                const body =
+                  `Overnight RHR (robust low): ${r.rhr ?? 'none'} bpm\n` +
+                  `Apple RHR (current): ${r.appleRHR ?? 'none'} bpm\n` +
+                  `   ^ ours should land right around Apple's\n\n` +
+                  `Reference:\n` +
+                  `  asleep 5th percentile: ${r.asleepP5 ?? '-'} bpm\n` +
+                  `  deep-only avg (old method): ${r.deepMean ?? '-'} bpm\n` +
+                  `  raw lowest beat all night: ${r.nightMin ?? '-'} bpm (artifact check)\n\n` +
+                  `Asleep samples: ${r.asleepCount} (of ${r.nightSampleCount} all night)\n` +
+                  `RHR from lowest ${r.rhrCount} asleep beats\n` +
+                  `Asleep minutes: ${r.asleepMinutes}\n` +
+                  `Source: ${r.fallbackUsed}`;
+                Alert.alert('Last Night RHR', body);
+              } catch {
+                Alert.alert('Error', 'Could not read heart-rate data. Check the logs.');
+              }
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Dump RHR (deep sleep vs Apple)</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Last night: our overnight deep-sleep RHR vs Apple's daytime value. Read-only, nothing saved.</Text>
+              </View>
+              <Ionicons name="heart-outline" size={18} color={theme.accentRed} />
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {

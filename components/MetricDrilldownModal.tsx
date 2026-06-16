@@ -28,6 +28,7 @@ export interface MetricDrilldownData {
   // graph, following the universal 7D/30D range. chartColor overrides the status
   // color (Mindful neutralizes to accent).
   history?: { dateKey: string; value: number; label: string }[];
+  rangeDays?: number;   // total nights in the selected range, for the "X of Y" caption
   chartColor?: string;
   // Optional y-axis tick formatter (e.g. clock time for bedtime, hours for sleep
   // balance). Defaults to a plain numeric format.
@@ -244,6 +245,11 @@ export default function MetricDrilldownModal({ visible, onClose, data }: Props) 
                 {data.history && data.history.length >= 2 ? (
                   <View style={{ marginBottom: 12 }}>
                     <MiniMetricChart points={data.history} color={data.chartColor ?? data.statusColor} theme={theme} formatTick={data.chartValueFormat} />
+                    {data.rangeDays && data.rangeDays > data.history.length && (
+                      <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginTop: 6 }}>
+                        {data.history.length} of {data.rangeDays} nights tracked · {data.rangeDays - data.history.length} without data
+                      </Text>
+                    )}
                   </View>
                 ) : data.history ? (
                   <View style={{ marginBottom: 12, paddingVertical: 14, alignItems: 'center' }}>

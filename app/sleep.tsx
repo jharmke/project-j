@@ -912,16 +912,28 @@ export default function SleepHub() {
             yesterdayActiveCal: sig.yesterdayActiveCal, activCalBaseline: sig.activCalBaseline,
             todayResp: sig.todayResp, respBaseline: sig.respBaseline,
           });
-          if (res.score === null) continue; // no data that day -> honest gap, no write
           const k = `pj_${key}`;
           const raw = await AsyncStorage.getItem(k);
           const cur = raw ? JSON.parse(raw) : {};
-          if (cur.recoveryScore !== res.score || !cur.recoverySignals) {
-            // Persist that day's overnight signals too (one value per night) so the
-            // Recovery Coach + Slice 2 graphs have real history immediately.
-            const recoverySignals = { hrv: sig.todayHRV, rhr: sig.todayRHR, resp: sig.todayResp, spo2: sig.todaySpO2 };
-            await storageSet(k, JSON.stringify({ ...cur, recoveryScore: res.score, recoverySignals }));
+          if (res.score === null) {
+            // No overnight data this night (manual/watchless): clear any stale top-level
+            // restingHR (an old Apple daytime value) so the stats graph + summaries gap
+            // here, consistent with the recovery charts. Honest gap, never a fake number.
+            // Read-then-merge: only the restingHR field is removed, all else untouched.
+            if (cur.restingHR !== undefined) { delete cur.restingHR; await storageSet(k, JSON.stringify(cur)); }
+            continue;
           }
+          // Write the recovery score + overnight signals. For the top-level restingHR:
+          // write our overnight value when we have one; if there's no overnight RHR this
+          // night (e.g. manual sleep with the watch still worn, so HRV gives a score but
+          // no sleep stages means no resting floor), CLEAR any stale Apple value so the
+          // stats graph gaps here too. Real elevated-RHR nights have a non-null value and
+          // are kept; only genuinely-uncomputable nights are cleared.
+          const recoverySignals = { hrv: sig.todayHRV, rhr: sig.todayRHR, resp: sig.todayResp, spo2: sig.todaySpO2 };
+          const merged: any = { ...cur, recoveryScore: res.score, recoverySignals };
+          if (sig.todayRHR !== null) merged.restingHR = sig.todayRHR;
+          else delete merged.restingHR;
+          await storageSet(k, JSON.stringify(merged));
           written++;
         }
         if (!cancelled) {
@@ -1655,7 +1667,7 @@ export default function SleepHub() {
     const chartValueFormat = drillKey === 'bedtime' ? fmtBedMin
       : drillKey === 'sleepBalance' ? (v: number) => `${Number.isInteger(v) ? v : v.toFixed(1)}h`
       : undefined;
-    return { ...d, history: drillHistory ?? undefined, chartColor, chartValueFormat };
+    return { ...d, history: drillHistory ?? undefined, chartColor, chartValueFormat, rangeDays: parseInt(range, 10) };
   })();
 
   return (

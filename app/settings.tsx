@@ -1841,7 +1841,15 @@ export default function SettingsScreen() {
                         `recovery days: ${rec.recDaysInWindow}/${rec.minNeeded} needed${rec.recDaysInWindow < rec.minNeeded ? ' -> rules CANNOT fire' : ' -> rules can evaluate'}\n` +
                         `mean recovery: ${rec.meanRecovery ?? 'none'} (sustained_low fires only if <${rec.sustainedLowFloor})\n` +
                         `findings fired: ${rec.findings.length ? rec.findings.map(f => f.id).join(', ') : 'none (no pattern present)'}`;
-                      Alert.alert(`EvR (${w}d) — ${cards.length} cards ${header}`, body + recFooter);
+                      const m = report.momentumDebug;
+                      const momFooter = m
+                        ? `\n\nMOMENTUM CHECK (big-day snowball, 30d, vs per-day goal incl. active cal):\n` +
+                          `over-target days w/ a logged next day: ${m.overDays} (need 5)\n` +
+                          `of those, next day ran high: ${m.ranHigh}${m.ratio !== null ? ` (${Math.round(m.ratio * 100)}%, need 60%)` : ''}\n` +
+                          `trimmed avg overage next day: ${m.overage !== null ? `${m.overage >= 0 ? '+' : ''}${m.overage} cal` : 'n/a'}\n` +
+                          `card: ${m.fired ? 'FIRES' : 'does not fire'}`
+                        : `\n\nMOMENTUM CHECK: no calorie target set.`;
+                      Alert.alert(`EvR (${w}d) — ${cards.length} cards ${header}`, body + recFooter + momFooter);
                     } catch (e) {
                       Alert.alert('Error', 'Could not generate the card feed. Check the logs.');
                     }

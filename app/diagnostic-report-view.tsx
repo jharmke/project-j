@@ -316,6 +316,9 @@ function StatBar({ metric, accent, theme, positive }: { metric: NonNullable<Diag
   }, [fill, fillB]);
 
   const numStyle = { fontSize: 32, fontFamily: 'BebasNeue_400Regular' as const, letterSpacing: 0.5, lineHeight: 34 };
+  // Unit (G, LB...) -- BebasNeue like the number (stays capitalized), just smaller so it
+  // reads as a unit, not part of the value.
+  const unitStyle = { fontSize: 13, fontFamily: 'BebasNeue_400Regular' as const };
   const labelStyle = { fontSize: 9, letterSpacing: 2, fontFamily: 'DMSans_700Bold' as const, color: t.textMuted, textTransform: 'uppercase' as const, marginTop: 2 };
   const barTrack = { height: 8, borderRadius: 4, backgroundColor: accent + '22', overflow: 'hidden' as const };
   const widthOf = (a: Animated.Value) => a.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
@@ -344,11 +347,11 @@ function StatBar({ metric, accent, theme, positive }: { metric: NonNullable<Diag
       <View style={{ marginBottom: 12 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 12 }}>
           <View>
-            <Text style={[numStyle, { color: t.textSecondary }]}>{fmt(metric.value)}<Text style={{ fontSize: 16 }}>{unit}</Text></Text>
+            <Text style={[numStyle, { color: t.textSecondary }]}>{fmt(metric.value)}<Text style={unitStyle}>{unit}</Text></Text>
             <Text style={labelStyle}>{metric.primaryLabel}</Text>
           </View>
           <View style={{ alignItems: 'flex-end' }}>
-            <Text style={[numStyle, { color: accent }]}>{fmt(metric.target)}<Text style={{ fontSize: 16 }}>{unit}</Text></Text>
+            <Text style={[numStyle, { color: accent }]}>{fmt(metric.target)}<Text style={unitStyle}>{unit}</Text></Text>
             <Text style={[labelStyle, { textAlign: 'right' }]}>{metric.secondaryLabel}</Text>
           </View>
         </View>
@@ -365,17 +368,37 @@ function StatBar({ metric, accent, theme, positive }: { metric: NonNullable<Diag
     );
   }
 
+  // ── dots: a frequency row -- `target` dots, first `value` filled. The proof is "X of Y"
+  // (how often the pattern hit), not a magnitude, so one outlier can't skew it. ──
+  if (kind === 'dots') {
+    const total = Math.max(0, Math.round(metric.target));
+    const filled = Math.max(0, Math.min(total, Math.round(metric.value)));
+    return (
+      <View style={{ marginBottom: 12 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginBottom: 10 }}>
+          {Array.from({ length: total }).map((_, i) => (
+            <View key={i} style={{ width: 13, height: 13, borderRadius: 6.5, backgroundColor: i < filled ? accent : 'transparent', borderWidth: i < filled ? 0 : 1.5, borderColor: accent + '55' }} />
+          ))}
+        </View>
+        <Text style={labelStyle}>{metric.primaryLabel}</Text>
+        {!!metric.caption && (
+          <Text style={{ marginTop: 4, fontSize: 12, fontFamily: 'DMSans_700Bold', color: accent }}>{metric.caption}</Text>
+        )}
+      </View>
+    );
+  }
+
   // ── compare: two numbers, two stacked bars (A accent, B secondary) ──
   if (kind === 'compare') {
     return (
       <View style={{ marginBottom: 12 }}>
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginBottom: 10 }}>
           <View style={{ marginRight: 28 }}>
-            <Text style={[numStyle, { color: accent }]}>{fmt(metric.value)}<Text style={{ fontSize: 16 }}>{unit}</Text></Text>
+            <Text style={[numStyle, { color: accent }]}>{fmt(metric.value)}<Text style={unitStyle}>{unit}</Text></Text>
             <Text style={labelStyle}>{metric.primaryLabel}</Text>
           </View>
           <View>
-            <Text style={[numStyle, { color: t.textSecondary }]}>{fmt(metric.target)}<Text style={{ fontSize: 16 }}>{unit}</Text></Text>
+            <Text style={[numStyle, { color: t.textSecondary }]}>{fmt(metric.target)}<Text style={unitStyle}>{unit}</Text></Text>
             <Text style={labelStyle}>{metric.secondaryLabel}</Text>
           </View>
         </View>
@@ -395,7 +418,7 @@ function StatBar({ metric, accent, theme, positive }: { metric: NonNullable<Diag
       <View style={{ marginBottom: 12 }}>
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginBottom: 10 }}>
           <View>
-            <Text style={[numStyle, { color: accent }]}>{fmt(metric.value)}<Text style={{ fontSize: 16 }}>{unit}</Text></Text>
+            <Text style={[numStyle, { color: accent }]}>{fmt(metric.value)}<Text style={unitStyle}>{unit}</Text></Text>
             <Text style={labelStyle}>{metric.primaryLabel}</Text>
           </View>
           {!!metric.caption && (
@@ -430,11 +453,11 @@ function StatBar({ metric, accent, theme, positive }: { metric: NonNullable<Diag
       <View style={{ marginBottom: 12 }}>
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginBottom: 12 }}>
           <View style={{ marginRight: 28 }}>
-            <Text style={[numStyle, { color: accent }]}>{fmt(metric.value)}<Text style={{ fontSize: 16 }}>{unit}</Text></Text>
+            <Text style={[numStyle, { color: accent }]}>{fmt(metric.value)}<Text style={unitStyle}>{unit}</Text></Text>
             <Text style={labelStyle}>{metric.primaryLabel}</Text>
           </View>
           <View>
-            <Text style={[numStyle, { color: t.textSecondary }]}>{lo}-{hi}<Text style={{ fontSize: 16 }}>{unit}</Text></Text>
+            <Text style={[numStyle, { color: t.textSecondary }]}>{lo}-{hi}<Text style={unitStyle}>{unit}</Text></Text>
             <Text style={labelStyle}>TARGET RANGE</Text>
           </View>
           {pill && (
@@ -463,17 +486,16 @@ function StatBar({ metric, accent, theme, positive }: { metric: NonNullable<Diag
   }
 
   // ── target: value vs goal, optional pill, one bar ──
-  const secondaryNum = `${fmt(metric.target)}${unit}`;
   const secondaryCap = metric.secondaryLabel;
   return (
     <View style={{ marginBottom: 12 }}>
       <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginBottom: 10 }}>
         <View style={{ marginRight: 28 }}>
-          <Text style={[numStyle, { color: accent }]}>{fmt(metric.value)}<Text style={{ fontSize: 16 }}>{unit}</Text></Text>
+          <Text style={[numStyle, { color: accent }]}>{fmt(metric.value)}<Text style={unitStyle}>{unit}</Text></Text>
           <Text style={labelStyle}>{metric.primaryLabel}</Text>
         </View>
         <View>
-          <Text style={[numStyle, { color: t.textSecondary }]}>{secondaryNum}</Text>
+          <Text style={[numStyle, { color: t.textSecondary }]}>{fmt(metric.target)}<Text style={unitStyle}>{unit}</Text></Text>
           <Text style={labelStyle}>{secondaryCap}</Text>
         </View>
         {pill && (

@@ -78,6 +78,7 @@ export interface Correlation {
   strength?: number;      // 0-100, effect size relative to the pattern's floor
   positive?: boolean;     // true = a "why it's working" story
   windowLabel?: string;   // overrides the default "Last N days"
+  metric?: DiagnosticCard['metric']; // optional structured proof (e.g. a frequency dot row)
 }
 
 export interface CorrelationsFinding {
@@ -106,7 +107,7 @@ export interface DiagnosticCard {
     //  score   -> single 0-100 number, NO delta, second number is a caption (sleep, recovery mean)
     //  range   -> value vs a [min,max] band, "in range" when inside, short/over only when outside (fiber)
     //  compare -> two bars A vs B, no goal/delta (deficit predicted-vs-actual, recovery easy-vs-hard)
-    kind?: 'target' | 'score' | 'range' | 'compare' | 'goalbar';
+    kind?: 'target' | 'score' | 'range' | 'compare' | 'goalbar' | 'dots';
     value: number;          // current value (compare: the A / first bar)
     target: number;         // target: goal | score: bar max (100) | range: bar max | compare: the B / second bar
     unit?: string;          // 'g', '%', 'lb', etc.
@@ -142,6 +143,8 @@ export interface DiagnosticReport {
   cards: DiagnosticCard[];
   insufficientData: boolean;
   minLoggedDays: number;
+  // Read-only dev diagnostic (Dump EvR Cards): the snowball-card fire math. Optional/transient.
+  momentumDebug?: { overDays: number; ranHigh: number; ratio: number | null; overage: number | null; fired: boolean } | null;
 }
 
 // ── Threshold ──────────────────────────────────────────────────────────────────
@@ -465,6 +468,7 @@ function buildDiagnosticCards(
         strength: c.strength,
         tone: positive ? 'positive' : (c.strength >= 75 ? 'factor' : 'attention'),
         positive,
+        metric: c.metric,
       });
     }
   }
@@ -981,30 +985,47 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
     }
   }
 
-  // 9. Post-surplus day → next-day intake
-  if (loggedDayData.length >= 7 && calTarget > 0) {
-    const surplusNext: number[] = [], deficitNext: number[] = [];
-    for (let i = 0; i < days.length - 1; i++) {
-      if (days[i].calories < 400 || days[i + 1].calories < 400) continue;
-      if (days[i].calories > calTarget * 1.1) surplusNext.push(days[i + 1].calories);
-      else if (days[i].calories < calTarget * 0.9) deficitNext.push(days[i + 1].calories);
+  // Read-only diagnostic for the Dump EvR Cards dev tool: why the snowball card did/didn't fire.
+  let momentumDebug: { overDays: number; ranHigh: number; ratio: number | null; overage: number | null; fired: boolean } | null = null;
+  // 9. Big day -> next-day snowball (frequency-led, skew-proof). Own ~30d window, independent
+  // of the report window. "Over target" / "ran high" are judged against each day's FINAL goal
+  // = base target + that day's active calories (burn-accuracy adjusted), so high-burn days are
+  // not falsely flagged. The signal is FREQUENCY (how many big days snowballed), NOT a fragile
+  // small-sample average; a trimmed-mean overage (single biggest next-day dropped) rides along
+  // as secondary context only.
+  if (calTarget > 0) {
+    const recent = days.slice(-30); // chronological oldest -> newest
+    const goalFor = (d: typeof days[number]) => calTarget + d.activeCalories * (burnAccuracyPct / 100);
+    let overWithNext = 0, ranHigh = 0;
+    const overages: number[] = [];
+    for (let i = 0; i < recent.length - 1; i++) {
+      const day = recent[i], next = recent[i + 1];
+      if (day.excluded || day.calories < 400) continue;          // need a real logged day
+      if (day.calories <= goalFor(day) * 1.1) continue;          // not an over-target day
+      if (next.excluded || next.calories < 400) continue;        // can't judge an unlogged next day
+      overWithNext++;
+      overages.push(Math.round(next.calories - goalFor(next)));
+      if (next.calories > goalFor(next) * 1.1) ranHigh++;
     }
-    if (surplusNext.length >= 3 && deficitNext.length >= 3) {
-      const surplusNextAvg = Math.round(avg(surplusNext));
-      const deficitNextAvg = Math.round(avg(deficitNext));
-      const delta = surplusNextAvg - deficitNextAvg;
-      if (delta >= 150) {
-        correlations.push({
-          id: 'surplus_nextday',
-          headline: `After going over your target, you ate ${delta} more the next day too`,
-          detail: `Days after exceeding your calorie target, you averaged ${surplusNextAvg.toLocaleString()} cal vs ${deficitNextAvg.toLocaleString()} cal after on-target days. Surpluses don't tend to self-correct -- they compound.`,
-          claim: `Overshooting one day pulls the next day up too.`,
-          proof: `After over-target days: +${delta} cal the next day`,
-          lever: `Treat a big day as done. Reset the next morning instead of drifting.`,
-          strength: corrStrength(delta, 150),
-          positive: false,
-        });
-      }
+    const sorted = [...overages].sort((a, b) => a - b);
+    const trimmed = sorted.length > 2 ? sorted.slice(0, -1) : sorted; // drop the single biggest
+    const overage = trimmed.length ? Math.round(trimmed.reduce((s, v) => s + v, 0) / trimmed.length) : null;
+    const ratio = overWithNext > 0 ? ranHigh / overWithNext : null;
+    const fired = overWithNext >= 5 && (ratio ?? 0) >= 0.6;
+    momentumDebug = { overDays: overWithNext, ranHigh, ratio, overage, fired };
+    if (fired && overage !== null) {
+      correlations.push({
+        id: 'surplus_nextday',
+        headline: `${ranHigh} of ${overWithNext} big days rolled into another high day`,
+        detail: `Across your last 30 days, ${ranHigh} of ${overWithNext} over-target days were followed by another day over goal${overage > 0 ? ` (about +${overage} cal the next day on average)` : ''}. Big days tend not to self-correct.`,
+        claim: `Your big days are snowballing into the next one.`,
+        proof: `${ranHigh} of ${overWithNext} big days were followed by another high day`,
+        lever: `Treat a big day as done and reset the next morning instead of carrying it forward.`,
+        windowLabel: 'Last 30 days',
+        strength: corrStrength(ranHigh / overWithNext, 0.6),
+        positive: false,
+        metric: { kind: 'dots', value: ranHigh, target: overWithNext, primaryLabel: `${ranHigh} OF ${overWithNext} BIG DAYS RAN HIGH`, secondaryLabel: '', caption: overage > 0 ? `+${overage} CAL THE NEXT DAY ON AVERAGE` : undefined },
+      });
     }
   }
 
@@ -1071,5 +1092,6 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
     suggestions,
     cards,
     insufficientData: false, minLoggedDays: loggedDays,
+    momentumDebug,
   };
 }

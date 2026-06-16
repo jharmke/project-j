@@ -832,11 +832,11 @@ export default function DiagnosticReportViewScreen() {
             <TooltipIcon tooltipKey="effort_vs_results" size={18} />
           </View>
 
-          {/* Window + date range pill */}
+          {/* "As of" stamp -- no single window now; each card states its own timeframe */}
           <View style={{ alignItems: 'flex-start', marginBottom: 16 }}>
             <View style={{ backgroundColor: t.accentBlueBg, borderWidth: 1, borderColor: t.accentBlueBorder, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 5 }}>
               <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: t.accentBlueRaw }}>
-                {windowLabel(report.windowDays)}  ·  {fmtDate(report.dateRangeStart)} – {fmtDateFull(report.dateRangeEnd)}
+                AS OF {fmtDateFull(report.generatedAt.slice(0, 10))}
               </Text>
             </View>
           </View>

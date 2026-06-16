@@ -77,15 +77,17 @@ export default function DiagnosticReportScreen() {
   const { showToast } = useToast();
 
   const { registerScrollView, unregisterScrollView } = useTutorial();
-  const windowPickerRef = useTutorialTarget('evr_window_picker');
   const generateBtnRef  = useTutorialTarget('evr_generate_btn');
   const scrollRef = useRef<any>(null);
 
-  const [savedReports, setSavedReports]     = useState<DiagnosticReport[]>([]);
-  const [selectedWindow, setSelectedWindow] = useState<ReportWindow>(30);
-  const [generating, setGenerating]         = useState(false);
-  const [initialized, setInitialized]       = useState(false);
-  const [loggedDayCounts, setLoggedDayCounts] = useState<Record<number, number>>({});
+  // Per-pattern windows: there is no window picker. The report blocks only if there is barely
+  // anything to analyze; otherwise each finding uses its own lookback internally.
+  const MIN_LOGGED = 7;
+
+  const [savedReports, setSavedReports] = useState<DiagnosticReport[]>([]);
+  const [generating, setGenerating]     = useState(false);
+  const [initialized, setInitialized]   = useState(false);
+  const [totalLogged, setTotalLogged]   = useState(0);
 
   const shadowStyle = { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 3 };
 
@@ -100,28 +102,20 @@ export default function DiagnosticReportScreen() {
       const load = async () => {
         const reports = await loadSavedReports();
         setSavedReports(reports);
-        const [c14, c30, c90] = await Promise.all([
-          countLoggedDaysInWindow(14),
-          countLoggedDaysInWindow(30),
-          countLoggedDaysInWindow(90),
-        ]);
-        setLoggedDayCounts({ 14: c14, 30: c30, 90: c90 });
+        setTotalLogged(await countLoggedDaysInWindow(90));
         setInitialized(true);
       };
       load();
     }, [])
   );
 
-  const isWindowBlocked = (w: ReportWindow): boolean =>
-    initialized && loggedDayCounts[w] !== undefined && loggedDayCounts[w] < minDaysForWindow(w);
-
-  const selectedBlocked = isWindowBlocked(selectedWindow);
+  const blocked = initialized && totalLogged < MIN_LOGGED;
 
   const handleGenerate = async () => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     setGenerating(true);
     try {
-      const report = await generateDiagnosticReport(selectedWindow);
+      const report = await generateDiagnosticReport();
       await saveReport(report);
       const updated = await loadSavedReports();
       setSavedReports(updated);
@@ -174,56 +168,19 @@ export default function DiagnosticReportScreen() {
           <TooltipIcon tooltipKey="effort_vs_results" size={18} />
         </View>
 
-        {/* Window picker */}
-        <View ref={windowPickerRef} collapsable={false} style={{ flexDirection: 'row', gap: 8 }}>
-          {([14, 30, 90] as ReportWindow[]).map(w => {
-            const count   = loggedDayCounts[w];
-            const needed  = minDaysForWindow(w);
-            const blocked = isWindowBlocked(w);
-            const active  = selectedWindow === w;
-            return (
-              <TouchableOpacity
-                key={w}
-                onPress={() => {
-                  triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-                  setSelectedWindow(w);
-                }}
-                style={[styles.windowBtn, {
-                  backgroundColor: active ? t.accentBlueBg : t.bgCard,
-                  borderColor: active ? t.accentBlueBorder : t.borderCard,
-                  opacity: blocked && !active ? 0.55 : 1,
-                }]}
-              >
-                <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: active ? t.accentBlueRaw : t.textMuted }}>
-                  {w === 14 ? '14 days' : w === 30 ? '30 days' : '90 days'}
-                </Text>
-                {initialized && count !== undefined && blocked && (
-                  <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: blocked ? t.statusWarn : t.textMuted, marginTop: 2 }}>
-                    {count} / {needed} logged
-                  </Text>
-                )}
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {/* Date range pill */}
-        <View style={{ alignItems: 'center', marginTop: 6, marginBottom: 12 }}>
-          <View style={{ backgroundColor: t.accentBlueBg, borderWidth: 1, borderColor: t.accentBlueBorder, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 5 }}>
-            <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: t.accentBlueRaw }}>
-              {windowDateRange(selectedWindow)}
-            </Text>
-          </View>
-        </View>
+        {/* Intro line (replaces the window picker -- each pattern uses its own timeframe) */}
+        <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: t.textSecondary, lineHeight: 20, marginBottom: 14 }}>
+          A diagnostic read of your recent data. Each pattern is measured over the timeframe that fits it, so there's no window to pick.
+        </Text>
 
         {/* Generate button */}
         <TouchableOpacity
           ref={generateBtnRef}
           onPress={handleGenerate}
-          disabled={!initialized || generating || selectedBlocked}
+          disabled={!initialized || generating || blocked}
           style={[styles.generateBtn, {
             backgroundColor: t.accentBlueRaw,
-            opacity: !initialized ? 0.4 : generating ? 0.7 : selectedBlocked ? 0.4 : 1,
+            opacity: !initialized ? 0.4 : generating ? 0.7 : blocked ? 0.4 : 1,
           }]}
         >
           {generating ? (
@@ -233,7 +190,7 @@ export default function DiagnosticReportScreen() {
             </View>
           ) : (
             <Text style={styles.generateBtnText}>
-              {selectedBlocked ? `Need ${minDaysForWindow(selectedWindow)} logged days` : 'Generate Analysis'}
+              {blocked ? `Need ${MIN_LOGGED} logged days` : 'Generate Analysis'}
             </Text>
           )}
         </TouchableOpacity>
@@ -242,12 +199,8 @@ export default function DiagnosticReportScreen() {
         {savedReports.length > 0 && (
           <View style={{ marginTop: 8 }}>
             <Text style={[styles.sectionLabel, { color: t.textMuted }]}>SAVED REPORTS</Text>
-            {(() => {
-              // Most recent report id per window duration
-              const currentPerWindow = new Map<ReportWindow, string>();
-              savedReports.forEach(r => { if (!currentPerWindow.has(r.windowDays)) currentPerWindow.set(r.windowDays, r.id); });
-              return savedReports.map(r => {
-              const isCurrent = currentPerWindow.get(r.windowDays) === r.id;
+            {savedReports.map((r, idx) => {
+              const isCurrent = idx === 0; // most recent is the live one
               return (
                 <TouchableOpacity
                   key={r.id}
@@ -270,7 +223,7 @@ export default function DiagnosticReportScreen() {
                       </Text>
                     </View>
                     <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: t.textMuted }}>
-                      {r.windowDays}-day window{r.insufficientData ? '  ·  Insufficient data' : `  ·  ${r.minLoggedDays} days logged`}
+                      {r.insufficientData ? 'Insufficient data' : `${r.minLoggedDays} days logged`}
                     </Text>
                   </View>
                   <TouchableOpacity
@@ -282,18 +235,17 @@ export default function DiagnosticReportScreen() {
                   </TouchableOpacity>
                 </TouchableOpacity>
               );
-            });
-            })()}
+            })}
           </View>
         )}
 
         {/* Empty state when no reports and not blocked */}
-        {savedReports.length === 0 && initialized && !selectedBlocked && (
+        {savedReports.length === 0 && initialized && !blocked && (
           <View style={[styles.emptyCard, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw, ...shadowStyle }]}>
             <Ionicons name="analytics-outline" size={48} color={t.textMuted} style={{ marginBottom: 14 }} />
             <Text style={[styles.emptyTitle, { color: t.textPrimary }]}>No Reports Yet</Text>
             <Text style={[styles.emptyBody, { color: t.textSecondary }]}>
-              Select a window and tap Generate to see what your logged data says about your results.
+              Tap Generate to see what your logged data says about your results.
             </Text>
             <Text style={[styles.emptyHint, { color: t.textMuted }]}>
               More data means more accurate findings.
@@ -302,15 +254,15 @@ export default function DiagnosticReportScreen() {
         )}
 
         {/* Blocked empty state */}
-        {savedReports.length === 0 && initialized && selectedBlocked && (
+        {savedReports.length === 0 && initialized && blocked && (
           <View style={[styles.emptyCard, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw, ...shadowStyle }]}>
             <Ionicons name="calendar-outline" size={48} color={t.textMuted} style={{ marginBottom: 14 }} />
             <Text style={[styles.emptyTitle, { color: t.textPrimary }]}>Not Enough Data Yet</Text>
             <Text style={[styles.emptyBody, { color: t.textSecondary }]}>
-              {`You have ${loggedDayCounts[selectedWindow] ?? 0} of ${minDaysForWindow(selectedWindow)} days logged in the ${selectedWindow}-day window. Keep logging and this unlocks automatically.`}
+              {`You have ${totalLogged} of ${MIN_LOGGED} logged days needed. Keep logging and this unlocks automatically.`}
             </Text>
             <Text style={[styles.emptyHint, { color: t.textMuted }]}>
-              Try a shorter window if you have enough data there.
+              Even rough estimates on the days you miss count.
             </Text>
           </View>
         )}

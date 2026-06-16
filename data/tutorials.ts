@@ -1484,23 +1484,13 @@ export const TUTORIALS: Tutorial[] = [
         },
       },
       {
-        targetKey: 'evr_window_picker',
-        title: 'PICK A WINDOW',
-        noTabBarOffset: true,
-        body: {
-          discipline: 'Choose 14, 30, or 90 days. More data equals more reliable findings. 90-day reports need 30+ logged days. 14-day is a quick pulse check.',
-          balanced: 'Choose how many days to analyze: 14, 30, or 90. Longer windows give more reliable results but need more data.',
-          mindful: 'Pick a time window for the analysis. Longer windows give a broader picture, shorter ones are more recent.',
-        },
-      },
-      {
         targetKey: 'evr_generate_btn',
         title: 'GENERATE',
         noTabBarOffset: true,
         body: {
-          discipline: 'Tap GENERATE. The engine scans every logged day in the window. If you don\'t have enough data, it tells you exactly how many days you need.',
-          balanced: 'Tap GENERATE to run the analysis. If you don\'t have enough logged days, it\'ll tell you what\'s missing.',
-          mindful: 'Tap GENERATE when you\'re ready. If there\'s not enough data yet, the app will let you know without any pressure.',
+          discipline: 'Tap GENERATE. There\'s no window to pick: each pattern is measured over the timeframe that fits it (recent metrics over a couple weeks, weight trends over months). If you don\'t have enough data yet, it tells you what you need.',
+          balanced: 'Tap GENERATE to run the analysis. There\'s no window to choose: every pattern uses its own timeframe automatically. If you don\'t have enough logged days, it\'ll tell you what\'s missing.',
+          mindful: 'Tap GENERATE when you\'re ready. Each pattern looks back over the timeframe that suits it, so there\'s nothing to set. If there\'s not enough data yet, the app will let you know without any pressure.',
         },
       },
       {

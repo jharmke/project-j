@@ -244,7 +244,7 @@ function fmtLbs1(v: number): string {
 // Capped at 6. The headline-dedupe (suppressing the card matching the EvR headline)
 // happens at the view layer, since the headline is resolved there.
 function buildDiagnosticCards(
-  windowDays: number,
+  windows: { weight: number; protein: number; fiber: number; sleep: number; consistency: number },
   deficitFinding: DeficitFinding | null,
   burnAccuracyFinding: BurnAccuracyFinding | null,
   macroFinding: MacroFinding | null,
@@ -254,7 +254,12 @@ function buildDiagnosticCards(
   recoveryFindings: EvrRecoveryFinding[],
 ): DiagnosticCard[] {
   const cards: DiagnosticCard[] = [];
-  const win = `Over ${windowDays} days`;
+  // Per-pattern window labels -- each card states its OWN lookback in its proof.
+  const winWeight = `Over ${windows.weight} days`;
+  const winProtein = `Over ${windows.protein} days`;
+  const winFiber = `Over ${windows.fiber} days`;
+  const winSleep = `Over ${windows.sleep} days`;
+  const winConsistency = `Over ${windows.consistency} days`;
 
   // ── Deficit: predicted vs actual results ──
   // Tracks whether results are LAGGING the logged deficit; the burn-accuracy card gates
@@ -279,7 +284,7 @@ function buildDiagnosticCards(
       cards.push({
         id: 'deficit', claim: `Your effort is showing up on the scale.`, proof,
         lever: `Whatever you are doing is working. Hold the pattern.`,
-        window: win, strength: clampStrength(48), tone: 'positive', positive: true,
+        window: winWeight, strength: clampStrength(48), tone: 'positive', positive: true,
         metric: deficitMetric,
       });
     } else {
@@ -292,7 +297,7 @@ function buildDiagnosticCards(
         lever: fellShort
           ? `The gap usually hides in unlogged days or an overstated calorie burn. Tighten one.`
           : `Strong pace. Make sure you are fueling enough to hold onto muscle.`,
-        window: win,
+        window: winWeight,
         strength: clampStrength(45 + Math.min(50, Math.abs(gap) * 28)),
         tone: Math.abs(gap) > 1.0 ? 'factor' : 'attention',
         positive: false,
@@ -310,7 +315,7 @@ function buildDiagnosticCards(
       claim: `Your calorie burn may be overstated.`,
       proof: `Burn accuracy at 100% · avg ${burnAccuracyFinding.avgActiveCalPerDay.toLocaleString()} active cal/day`,
       lever: `Set burn accuracy to 80 to 90% in Settings, Health for truer deficit math.`,
-      window: win, strength: clampStrength(50 + gapBump), tone: 'attention', positive: false,
+      window: winWeight, strength: clampStrength(50 + gapBump), tone: 'attention', positive: false,
     });
   }
 
@@ -322,7 +327,7 @@ function buildDiagnosticCards(
       claim: `Your protein is running under target.`,
       proof: `Avg ${macroFinding.avgProtein} g/day · goal ${macroFinding.proteinGoalMin} g`,
       lever: `Anchor one meal a day around a protein source to close the gap.`,
-      window: win, strength: clampStrength(42 + Math.min(50, pctUnder * 130)),
+      window: winProtein, strength: clampStrength(42 + Math.min(50, pctUnder * 130)),
       tone: macroFinding.macroStatus === 'factor' ? 'factor' : 'attention', positive: false,
       metric: { value: macroFinding.avgProtein, target: macroFinding.proteinGoalMin, unit: 'g', primaryLabel: 'AVG/DAY', secondaryLabel: 'GOAL' },
     });
@@ -336,7 +341,7 @@ function buildDiagnosticCards(
       claim: `Food quality has room: fiber is low.`,
       proof: `Avg ${macroFinding.avgFiber} g/day · target 25 to 38 g`,
       lever: `Lean on whole foods: fruit, vegetables, beans, whole grains.`,
-      window: win, strength: clampStrength(34 + Math.min(40, pctUnder * 70)),
+      window: winFiber, strength: clampStrength(34 + Math.min(40, pctUnder * 70)),
       tone: macroFinding.fiberStatus === 'factor' ? 'factor' : 'attention', positive: false,
       metric: { kind: 'range', value: macroFinding.avgFiber, target: 38, rangeMin: 25, rangeMax: 38, unit: 'g', primaryLabel: 'AVG/DAY', secondaryLabel: '25 TO 38' },
     });
@@ -358,7 +363,7 @@ function buildDiagnosticCards(
       claim: `Your logging is consistent enough to trust this read.`,
       proof: `${consistency.loggedDays} of ${consistency.totalDays} days logged`,
       lever: `Keep it up. The more you log, the sharper every pattern here gets.`,
-      window: win,
+      window: winConsistency,
       // Lowest-strength positive by decision (2026-06-16): a clean log is reassuring but a
       // low-value lead, so it sits under every other positive and the positives cap drops it
       // first. Back-pat positives must always score below result-explaining ones.
@@ -372,7 +377,7 @@ function buildDiagnosticCards(
       claim: `Gaps in your logging are blurring the picture.`,
       proof: `${consistency.loggedDays} of ${consistency.totalDays} days logged`,
       lever: `Even a rough entry on the days you miss keeps this read honest.`,
-      window: win,
+      window: winConsistency,
       strength: clampStrength(consistency.status === 'factor' ? 52 : 38),
       tone: consistency.status === 'factor' ? 'factor' : 'attention',
       positive: false,
@@ -387,7 +392,7 @@ function buildDiagnosticCards(
       claim: `Your protein is right where it needs to be.`,
       proof: `Avg ${macroFinding.avgProtein} g/day · goal ${macroFinding.proteinGoalMin} g`,
       lever: `Hold this. Protein is protecting your muscle while you cut.`,
-      window: win, strength: clampStrength(50), tone: 'positive', positive: true,
+      window: winProtein, strength: clampStrength(50), tone: 'positive', positive: true,
       metric: { kind: 'target', value: macroFinding.avgProtein, target: macroFinding.proteinGoalMin, unit: 'g', primaryLabel: 'AVG/DAY', secondaryLabel: 'GOAL' },
     });
   }
@@ -399,7 +404,7 @@ function buildDiagnosticCards(
       claim: `Your food quality is holding up.`,
       proof: `Avg ${macroFinding.avgFiber} g fiber/day · target 25 to 38 g`,
       lever: `Whole foods are doing the work. Keep them on the plate.`,
-      window: win, strength: clampStrength(40), tone: 'positive', positive: true,
+      window: winFiber, strength: clampStrength(40), tone: 'positive', positive: true,
       metric: { kind: 'range', value: macroFinding.avgFiber, target: 38, rangeMin: 25, rangeMax: 38, unit: 'g', primaryLabel: 'AVG/DAY', secondaryLabel: '25 TO 38' },
     });
   }
@@ -414,7 +419,7 @@ function buildDiagnosticCards(
       claim: `Your sleep is working in your favor.`,
       proof,
       lever: `Keep guarding it. Good sleep keeps your appetite and training steady.`,
-      window: win, strength: clampStrength(46), tone: 'positive', positive: true,
+      window: winSleep, strength: clampStrength(46), tone: 'positive', positive: true,
       // Score bar only when we have a 0-100 sleep score; the hours-only fallback has no
       // /100 scale, so it keeps the text proof (no broken bar).
       metric: sleepFinding.avgSleepScore !== null
@@ -464,7 +469,7 @@ function buildDiagnosticCards(
       const positive = !!c.positive;
       cards.push({
         id: c.id, claim: c.claim, proof: c.proof, lever: c.lever,
-        window: c.windowLabel ?? `Last ${windowDays} days`,
+        window: c.windowLabel ?? `Last ${windows.weight} days`,
         strength: c.strength,
         tone: positive ? 'positive' : (c.strength >= 75 ? 'factor' : 'attention'),
         positive,
@@ -495,9 +500,25 @@ function buildDiagnosticCards(
 
 // ── Main generation function ───────────────────────────────────────────────────
 
-export async function generateDiagnosticReport(windowDays: ReportWindow): Promise<DiagnosticReport> {
+// Per-pattern windows (spec section 5): each finding looks back only as far as IT needs.
+// We load the longest (weight) once, then slice shorter recent views off it. No user-picked
+// window. Tiers: SLOW (weight), BEHAVIORAL (~4wk patterns), RECENT (~2wk recency-sensitive).
+const W = {
+  weight: 90,
+  weekend: 28,
+  behavioral: 28,   // sleep->intake, burn->intake, water, sodium, steps->sleep, workout/rest
+  consistency: 30,  // logging reliability
+  fiber: 28,
+  protein: 14,
+  sleep: 14,
+  momentum: 30,
+} as const;
+const MAX_WINDOW = W.weight;
+const MIN_TOTAL_LOGGED = 7; // report blocks only if there's basically nothing to analyze
+
+export async function generateDiagnosticReport(): Promise<DiagnosticReport> {
   const yesterday = offsetToDateKey(1);
-  const rangeStart = offsetToDateKey(windowDays);
+  const rangeStart = offsetToDateKey(MAX_WINDOW);
 
   // ── Load profile + settings ──
   // calTarget, goal direction, and the protein goal all come from the SAME canonical
@@ -572,7 +593,7 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
 
   const days: DayData[] = [];
 
-  for (let i = windowDays; i >= 1; i--) {
+  for (let i = MAX_WINDOW; i >= 1; i--) {
     const dateKey = offsetToDateKey(i);
     let calories = 0, protein = 0, carbs = 0, fat = 0, fiber = 0, sodium = 0;
     let weight: number | null = null;
@@ -609,42 +630,51 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
     days.push({ dateKey, calories, protein, carbs, fat, fiber, sodium, weight, activeCalories, sleepHours, sleepScore, steps, water, excluded: excludedDiet, hadWorkout, isWeekend: isWeekend(dateKey) });
   }
 
-  // ── Consistency ──
+  // ── Per-pattern slices off the 90-day load (days is oldest->newest; slice(-n) = recent n) ──
+  const daysB = days.slice(-W.behavioral);   // behavioral correlations + weekend
+  const daysR = days.slice(-W.protein);      // recency-sensitive averages (protein, sleep)
+  const daysC = days.slice(-W.consistency);  // logging reliability
+
+  // Total logged across the full load -- gates the report and anchors deficit context.
   const loggedDays = days.filter(d => !d.excluded && d.calories > 400).length;
-  const suspectDays = days.filter(d => !d.excluded && d.calories > 0 && d.calories <= 400).length;
-  const excludedCount = days.filter(d => d.excluded).length;
-  const consistencyRate = windowDays > 0 ? loggedDays / windowDays : 0;
-  const firstLoggedDayIdx = days.findIndex(d => !d.excluded && d.calories > 400);
-  const effectiveWindowDays = firstLoggedDayIdx >= 0 ? windowDays - firstLoggedDayIdx : windowDays;
-  const adjustedConsistencyRate = effectiveWindowDays > 0 ? loggedDays / effectiveWindowDays : 0;
+  const insufficientData = loggedDays < MIN_TOTAL_LOGGED;
+
+  // ── Consistency (own ~30d window) ──
+  const loggedC = daysC.filter(d => !d.excluded && d.calories > 400).length;
+  const suspectDays = daysC.filter(d => !d.excluded && d.calories > 0 && d.calories <= 400).length;
+  const excludedCount = daysC.filter(d => d.excluded).length;
+  const consistencyRate = daysC.length > 0 ? loggedC / daysC.length : 0;
+  const firstLoggedDayIdx = daysC.findIndex(d => !d.excluded && d.calories > 400);
+  const effectiveWindowDays = firstLoggedDayIdx >= 0 ? daysC.length - firstLoggedDayIdx : daysC.length;
+  const adjustedConsistencyRate = effectiveWindowDays > 0 ? loggedC / effectiveWindowDays : 0;
 
   let consistencyStatus: FindingStatus = 'good';
   if (adjustedConsistencyRate < 0.70) consistencyStatus = 'factor';
   else if (adjustedConsistencyRate < 0.85) consistencyStatus = 'attention';
 
   const consistency: ConsistencyFinding = {
-    type: 'consistency', loggedDays, totalDays: windowDays, rate: consistencyRate,
+    type: 'consistency', loggedDays: loggedC, totalDays: daysC.length, rate: consistencyRate,
     suspectDays, excludedDays: excludedCount, status: consistencyStatus,
   };
-
-  const minDays = minDaysForWindow(windowDays);
-  const insufficientData = loggedDays < minDays;
 
   if (insufficientData) {
     return {
       id: Date.now().toString(),
       generatedAt: new Date().toISOString(),
-      windowDays, dateRangeStart: rangeStart, dateRangeEnd: yesterday, goalDirection,
-      summary: `Not enough logged data to generate a full analysis. You need at least ${minDays} days with food logged in the ${windowDays}-day window. You currently have ${loggedDays} logged day${loggedDays !== 1 ? 's' : ''}.`,
+      windowDays: MAX_WINDOW, dateRangeStart: rangeStart, dateRangeEnd: yesterday, goalDirection,
+      summary: `Not enough logged data to analyze yet. Log food on at least ${MIN_TOTAL_LOGGED} days and your report unlocks. You currently have ${loggedDays} logged day${loggedDays !== 1 ? 's' : ''}.`,
       deficit: null, burnAccuracy: null, consistency, macros: null, sleep: null, correlations: null,
-      suggestions: [{ rank: 1, headline: 'Log your food consistently', detail: `Aim for at least ${minDays} days of logging in a ${windowDays}-day window to unlock the full analysis. Even rough estimates count.` }],
+      suggestions: [{ rank: 1, headline: 'Log your food consistently', detail: `Aim for at least ${MIN_TOTAL_LOGGED} days of logging. Even rough estimates count.` }],
       cards: [],
       insufficientData: true, minLoggedDays: loggedDays,
+      momentumDebug: null,
     };
   }
 
-  // ── Deficit/surplus ──
-  const loggedDayData = days.filter(d => !d.excluded && d.calories > 400);
+  // ── Deficit/surplus (own ~90d window: the scale moves slowly) ──
+  const loggedDayData = days.filter(d => !d.excluded && d.calories > 400);          // 90d (deficit/weight + correlations)
+  const loggedB = daysB.filter(d => !d.excluded && d.calories > 400);               // ~28d behavioral
+  const loggedR = daysR.filter(d => !d.excluded && d.calories > 400);               // ~14d recency-sensitive
   const avgCals = avg(loggedDayData.map(d => d.calories));
   const avgActiveCalsRaw = avg(loggedDayData.map(d => d.activeCalories));
   const avgActiveCalsAdj = avgActiveCalsRaw * (burnAccuracyPct / 100);
@@ -688,12 +718,13 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
     isFlagged: isBurnFlagged, status: isBurnFlagged ? 'attention' : 'good',
   };
 
-  // ── Macros ──
+  // ── Macros: protein on its own ~14d window (recency matters -- a recent dip shouldn't be
+  // hidden by good months), fiber on the ~28d behavioral window (food-quality trend). ──
   let macroFinding: MacroFinding | null = null;
-  const macroLoggedDays = loggedDayData.filter(d => d.protein > 0 || d.carbs > 0 || d.fat > 0);
-  if (macroLoggedDays.length >= 5 && proteinGoalG > 0) {
-    const avgProtein = avg(macroLoggedDays.map(d => d.protein));
-    const fiberDays = macroLoggedDays.filter(d => d.fiber > 0);
+  const proteinLoggedDays = loggedR.filter(d => d.protein > 0 || d.carbs > 0 || d.fat > 0);
+  if (proteinLoggedDays.length >= 5 && proteinGoalG > 0) {
+    const avgProtein = avg(proteinLoggedDays.map(d => d.protein));
+    const fiberDays = loggedB.filter(d => d.fiber > 0);
     const avgFiber = fiberDays.length > 0 ? avg(fiberDays.map(d => d.fiber)) : 0;
     // Single real goal (your configured protein target), not a bodyweight estimate.
     const proteinGoalMin = Math.round(proteinGoalG);
@@ -708,16 +739,18 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
     };
   }
 
-  // ── Sleep ──
+  // ── Sleep: finding average on its own ~14d window; the sleep->intake correlation below
+  // uses the full pool (more pairs = a more reliable pattern). ──
   let sleepFinding: SleepFinding | null = null;
-  const sleepDays = days.filter(d => d.sleepHours !== null && d.sleepHours > 0);
+  const sleepDaysAll = days.filter(d => d.sleepHours !== null && d.sleepHours > 0); // full pool (correlation)
+  const sleepDays = daysR.filter(d => d.sleepHours !== null && d.sleepHours > 0);   // recent (~14d) average
   if (sleepDays.length >= 5) {
     const scoreDays = sleepDays.filter(d => d.sleepScore !== null);
     const avgSleepScore = scoreDays.length > 0 ? Math.round(avg(scoreDays.map(d => d.sleepScore!))) : null;
     const avgSleepHours = Math.round(avg(sleepDays.map(d => d.sleepHours!)) * 10) / 10;
 
     let poorSleepCalDelta: number | null = null;
-    if (sleepDays.length >= 7 && loggedDayData.length >= 7) {
+    if (sleepDaysAll.length >= 7 && loggedDayData.length >= 7) {
       const poorNextCals: number[] = [], goodNextCals: number[] = [];
       for (let i = 0; i < days.length - 1; i++) {
         if (days[i].sleepHours === null || days[i + 1].calories < 400) continue;
@@ -838,7 +871,7 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
             : `Whatever your weekend rhythm is, it is working.`,
           strength: corrStrength(delta, 250),
           positive: delta < 0,
-          windowLabel: `Weekends, last ${windowDays} days`,
+          windowLabel: `Across your recent weekends`,
         });
       }
     }
@@ -897,7 +930,7 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
   }
 
   // 6. Steps → sleep score
-  if (sleepDays.length >= 7) {
+  if (sleepDaysAll.length >= 7) {
     const stepDays = days.filter(d => d.steps > 0);
     const avgSteps = stepDays.length > 0 ? avg(stepDays.map(d => d.steps)) : 0;
     if (avgSteps > 0) {
@@ -957,7 +990,7 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
   }
 
   // 8. Sleep → next-day workout completion
-  if (sleepDays.length >= 7) {
+  if (sleepDaysAll.length >= 7) {
     const poorSleepWorkout: number[] = [], goodSleepWorkout: number[] = [];
     for (let i = 0; i < days.length - 1; i++) {
       if (days[i].sleepHours === null) continue;
@@ -1033,7 +1066,7 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
   const suggestions: Suggestion[] = [];
 
   if (consistency.status === 'factor') {
-    suggestions.push({ rank: 1, headline: 'Log more consistently', detail: `You logged ${loggedDays} out of ${windowDays} days. Even rough estimates on hard days are better than gaps -- aim for something every day.` });
+    suggestions.push({ rank: 1, headline: 'Log more consistently', detail: `You logged ${consistency.loggedDays} out of the last ${consistency.totalDays} days. Even rough estimates on hard days are better than gaps -- aim for something every day.` });
   }
   if (burnAccuracyFinding.isFlagged) {
     suggestions.push({ rank: suggestions.length + 1, headline: 'Adjust your burn accuracy setting', detail: `You're using 100% of Apple Health's active calorie estimate. Most wearables overstate by 10-30%. Go to Settings → Health and try 80-90%.` });
@@ -1069,23 +1102,26 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
     const actAbs = (Math.abs(Math.round(deficitFinding.actualChangeLbs * 10) / 10)).toFixed(1);
     const expDir = goalDirection === 'lose' ? 'lost' : 'gained';
     const actDir = deficitFinding.actualChangeLbs <= 0 ? 'lost' : 'gained';
-    summary = `Your logged data suggests you should have ${expDir} about ${expAbs} lbs over the past ${windowDays} days. You actually ${actDir} ${actAbs} lbs. Here's what the data says.`;
+    summary = `Your logged data suggests you should have ${expDir} about ${expAbs} lbs over the past ${W.weight} days. You actually ${actDir} ${actAbs} lbs. Here's what the data says.`;
   } else if (deficitFinding && avgCals > 0) {
     const defStr = avgDailyDeficit > 0 ? `a ${Math.round(avgDailyDeficit)} cal/day deficit` : `a ${Math.round(Math.abs(avgDailyDeficit))} cal/day surplus`;
-    summary = `Your data shows you logged ${defStr} on average over the past ${windowDays} days. Log your weight consistently to compare expected vs actual results.`;
+    summary = `Your data shows you logged ${defStr} on average over the past ${W.weight} days. Log your weight consistently to compare expected vs actual results.`;
   } else {
-    summary = `Your data from the past ${windowDays} days is analyzed below. The more consistently you log, the more accurate these findings become.`;
+    summary = `Your recent data is analyzed below. The more consistently you log, the more accurate these findings become.`;
   }
 
   // Recovery findings (rec_load_drag / tracks_sleep / sustained_low) come from the hub
   // coach's exact math via a fixed 14-day window, independent of this report's window.
   const recoveryFindings = await computeEvrRecoveryFindings();
-  const cards = buildDiagnosticCards(windowDays, deficitFinding, burnAccuracyFinding, macroFinding, sleepFinding, consistency, correlations, recoveryFindings);
+  const cards = buildDiagnosticCards(
+    { weight: W.weight, protein: W.protein, fiber: W.fiber, sleep: W.sleep, consistency: W.consistency },
+    deficitFinding, burnAccuracyFinding, macroFinding, sleepFinding, consistency, correlations, recoveryFindings,
+  );
 
   return {
     id: Date.now().toString(),
     generatedAt: new Date().toISOString(),
-    windowDays, dateRangeStart: rangeStart, dateRangeEnd: yesterday, goalDirection, summary,
+    windowDays: MAX_WINDOW, dateRangeStart: rangeStart, dateRangeEnd: yesterday, goalDirection, summary,
     deficit: deficitFinding, burnAccuracy: burnAccuracyFinding, consistency,
     macros: macroFinding, sleep: sleepFinding,
     correlations: correlations.length > 0 ? { type: 'correlations', correlations } : null,

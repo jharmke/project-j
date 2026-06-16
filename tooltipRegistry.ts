@@ -298,8 +298,8 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
         explanation: 'The report works with what you\'ve logged. If food wasn\'t tracked on certain days, weight wasn\'t recorded, or days were excluded, those gaps show up in the analysis. The more consistently you log, the more accurate the findings.',
       },
       {
-        term: 'More data = better insights',
-        explanation: 'A 30-day window gives the report more to work with than 14 days. Trends, correlations, and weight comparisons all become more reliable the longer your logging history.',
+        term: 'Each pattern has its own timeframe',
+        explanation: 'There\'s no window to pick. Every pattern is measured over the span that fits it: recent metrics like protein and sleep over the last couple weeks, behavioral patterns over about a month, and weight trends over up to 90 days. Each card states its own timeframe, so you see the right read for each one without choosing anything.',
       },
       {
         term: 'Not medical advice',

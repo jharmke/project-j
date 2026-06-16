@@ -1808,54 +1808,46 @@ export default function SettingsScreen() {
               <Ionicons name="flask-outline" size={18} color={theme.accentRed} />
             </TouchableOpacity>
 
-            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
               triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-              Alert.alert('Dump EvR Cards', 'Generates the diagnostic card feed off your real logged data and shows the ranked claim + proof + lever cards as plain text. Read-only, nothing is saved. Pick a window.', [
-                { text: 'Cancel', style: 'cancel' },
-                ...([14, 30, 90] as ReportWindow[]).map(w => ({
-                  text: `${w}d`,
-                  onPress: async () => {
-                    try {
-                      const report = await generateDiagnosticReport(w);
-                      if (report.insufficientData) {
-                        Alert.alert(`EvR Cards (${w}d)`, `Not enough data: only ${report.minLoggedDays} logged days in this window. Try a shorter window or log more.`);
-                        return;
-                      }
-                      const rawCards = report.cards ?? [];
-                      if (rawCards.length === 0) {
-                        Alert.alert(`EvR Cards (${w}d)`, 'No cards cleared their floors and no positive whys fired. If this looks wrong, flag it.');
-                        return;
-                      }
-                      let mode = 'balanced';
-                      try { const s = await AsyncStorage.getItem('pj_settings'); if (s) { const d = JSON.parse(s); if (d.styleMode) mode = d.styleMode; } } catch {}
-                      const cards = await voiceDiagnosticCards(rawCards, mode);
-                      const voicedAny = cards.some(c => !!c.insight);
-                      const debug = getLastVoiceDebug();
-                      const body = cards.map((c, i) =>
-                        `${i + 1}. [${c.strength} ${c.positive ? 'POS' : c.tone.toUpperCase()}] ${c.claim}\n   ${c.proof}\n${c.insight ? `   ${c.insight}\n` : ''}   → ${c.lever}\n   (${c.window})`
-                      ).join('\n\n');
-                      const header = voicedAny ? '(AI voiced)' : `(fallback: ${debug ?? 'unknown'})`;
-                      const rec = await dumpEvrRecoveryDebug();
-                      const recFooter =
-                        `\n\nRECOVERY CHECK (14d window, fixed):\n` +
-                        `recovery days: ${rec.recDaysInWindow}/${rec.minNeeded} needed${rec.recDaysInWindow < rec.minNeeded ? ' -> rules CANNOT fire' : ' -> rules can evaluate'}\n` +
-                        `mean recovery: ${rec.meanRecovery ?? 'none'} (sustained_low fires only if <${rec.sustainedLowFloor})\n` +
-                        `findings fired: ${rec.findings.length ? rec.findings.map(f => f.id).join(', ') : 'none (no pattern present)'}`;
-                      const m = report.momentumDebug;
-                      const momFooter = m
-                        ? `\n\nMOMENTUM CHECK (big-day snowball, 30d, vs per-day goal incl. active cal):\n` +
-                          `over-target days w/ a logged next day: ${m.overDays} (need 5)\n` +
-                          `of those, next day ran high: ${m.ranHigh}${m.ratio !== null ? ` (${Math.round(m.ratio * 100)}%, need 60%)` : ''}\n` +
-                          `trimmed avg overage next day: ${m.overage !== null ? `${m.overage >= 0 ? '+' : ''}${m.overage} cal` : 'n/a'}\n` +
-                          `card: ${m.fired ? 'FIRES' : 'does not fire'}`
-                        : `\n\nMOMENTUM CHECK: no calorie target set.`;
-                      Alert.alert(`EvR (${w}d) — ${cards.length} cards ${header}`, body + recFooter + momFooter);
-                    } catch (e) {
-                      Alert.alert('Error', 'Could not generate the card feed. Check the logs.');
-                    }
-                  },
-                })),
-              ]);
+              try {
+                const report = await generateDiagnosticReport();
+                if (report.insufficientData) {
+                  Alert.alert('EvR Cards', `Not enough data: only ${report.minLoggedDays} logged days. Log more.`);
+                  return;
+                }
+                const rawCards = report.cards ?? [];
+                if (rawCards.length === 0) {
+                  Alert.alert('EvR Cards', 'No cards cleared their floors and no positive whys fired. If this looks wrong, flag it.');
+                  return;
+                }
+                let mode = 'balanced';
+                try { const s = await AsyncStorage.getItem('pj_settings'); if (s) { const d = JSON.parse(s); if (d.styleMode) mode = d.styleMode; } } catch {}
+                const cards = await voiceDiagnosticCards(rawCards, mode);
+                const voicedAny = cards.some(c => !!c.insight);
+                const debug = getLastVoiceDebug();
+                const body = cards.map((c, i) =>
+                  `${i + 1}. [${c.strength} ${c.positive ? 'POS' : c.tone.toUpperCase()}] ${c.claim}\n   ${c.proof}\n${c.insight ? `   ${c.insight}\n` : ''}   → ${c.lever}\n   (${c.window})`
+                ).join('\n\n');
+                const header = voicedAny ? '(AI voiced)' : `(fallback: ${debug ?? 'unknown'})`;
+                const rec = await dumpEvrRecoveryDebug();
+                const recFooter =
+                  `\n\nRECOVERY CHECK (14d window, fixed):\n` +
+                  `recovery days: ${rec.recDaysInWindow}/${rec.minNeeded} needed${rec.recDaysInWindow < rec.minNeeded ? ' -> rules CANNOT fire' : ' -> rules can evaluate'}\n` +
+                  `mean recovery: ${rec.meanRecovery ?? 'none'} (sustained_low fires only if <${rec.sustainedLowFloor})\n` +
+                  `findings fired: ${rec.findings.length ? rec.findings.map(f => f.id).join(', ') : 'none (no pattern present)'}`;
+                const m = report.momentumDebug;
+                const momFooter = m
+                  ? `\n\nMOMENTUM CHECK (big-day snowball, 30d, vs per-day goal incl. active cal):\n` +
+                    `over-target days w/ a logged next day: ${m.overDays} (need 5)\n` +
+                    `of those, next day ran high: ${m.ranHigh}${m.ratio !== null ? ` (${Math.round(m.ratio * 100)}%, need 60%)` : ''}\n` +
+                    `trimmed avg overage next day: ${m.overage !== null ? `${m.overage >= 0 ? '+' : ''}${m.overage} cal` : 'n/a'}\n` +
+                    `card: ${m.fired ? 'FIRES' : 'does not fire'}`
+                  : `\n\nMOMENTUM CHECK: no calorie target set.`;
+                Alert.alert(`EvR — ${cards.length} cards ${header}`, body + recFooter + momFooter);
+              } catch (e) {
+                Alert.alert('Error', 'Could not generate the card feed. Check the logs.');
+              }
             }}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Dump EvR Cards</Text>

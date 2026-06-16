@@ -346,6 +346,11 @@ const TUTORIAL_DEMO_REPORT: DiagnosticReport = {
     { rank: 2, headline: 'Set a weekend calorie buffer', detail: 'Your weekday logging is strong. On weekends, plan for a 200-300 cal higher limit rather than trying to match weekday strictness.' },
     { rank: 3, headline: 'Adjust your burn estimate', detail: 'Your burn accuracy is at 100%. Most wearables overestimate by 15-25%. Try 85% in Settings > Health for more accurate math.' },
   ],
+  cards: [
+    { id: 'weekend_weekday', claim: 'Weekends are erasing your weekday deficit.', proof: 'Weekdays 1,820 cal · weekends 2,310 cal', lever: 'Give weekends the same loose plan you give weekdays and the deficit holds.', window: 'Weekends, last 30 days', strength: 86, tone: 'factor', positive: false },
+    { id: 'sleep_nextday_cals', claim: 'Short sleep is pushing your intake up the next day.', proof: 'After poor sleep: +180 cal the next day', lever: 'Protect a consistent bedtime. It moves your intake more than willpower does.', window: 'Last 30 days', strength: 72, tone: 'attention', positive: false },
+    { id: 'deficit', claim: 'Your results are lagging what your logging predicts.', proof: 'Predicted: lost 2.9 lbs · Actual: lost 1.6 lbs', lever: 'The gap usually hides in unlogged days or an overstated calorie burn. Tighten one.', window: 'Over 30 days', strength: 68, tone: 'attention', positive: false },
+  ],
 };
 
 // ── Main screen ────────────────────────────────────────────────────────────────

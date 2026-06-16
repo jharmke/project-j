@@ -20,6 +20,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { app, auth, db, saveToFirebase } from '../firebaseConfig';
 import { shouldSync, uploadAllLocal } from '../services/syncService';
 import { storageSet } from '../utils/storage';
+import { generateDiagnosticReport, ReportWindow } from '../utils/diagnosticReport';
 import { TOOLTIP_REGISTRY } from '../tooltipRegistry';
 import TooltipModal from '../components/TooltipModal';
 import TooltipIcon from '../components/TooltipIcon';
@@ -1778,6 +1779,42 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Clears tips and cooldowns. Forces fresh recompute on next EvR open.</Text>
               </View>
               <Ionicons name="bulb-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              Alert.alert('Dump EvR Cards', 'Generates the diagnostic card feed off your real logged data and shows the ranked claim + proof + lever cards as plain text. Read-only, nothing is saved. Pick a window.', [
+                { text: 'Cancel', style: 'cancel' },
+                ...([14, 30, 90] as ReportWindow[]).map(w => ({
+                  text: `${w}d`,
+                  onPress: async () => {
+                    try {
+                      const report = await generateDiagnosticReport(w);
+                      if (report.insufficientData) {
+                        Alert.alert(`EvR Cards (${w}d)`, `Not enough data: only ${report.minLoggedDays} logged days in this window. Try a shorter window or log more.`);
+                        return;
+                      }
+                      const cards = report.cards ?? [];
+                      if (cards.length === 0) {
+                        Alert.alert(`EvR Cards (${w}d)`, 'No cards cleared their floors and no positive whys fired. If this looks wrong, flag it.');
+                        return;
+                      }
+                      const body = cards.map((c, i) =>
+                        `${i + 1}. [${c.strength} ${c.positive ? 'POS' : c.tone.toUpperCase()}] ${c.claim}\n   Proof: ${c.proof}\n   Lever: ${c.lever}\n   (${c.window})`
+                      ).join('\n\n');
+                      Alert.alert(`EvR Cards (${w}d) — ${cards.length} shown`, body);
+                    } catch (e) {
+                      Alert.alert('Error', 'Could not generate the card feed. Check the logs.');
+                    }
+                  },
+                })),
+              ]);
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Dump EvR Cards</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Runs the new diagnostic feed on your real data. Shows ranked claim/proof/lever as plain text.</Text>
+              </View>
+              <Ionicons name="list-outline" size={18} color={theme.accentRed} />
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {

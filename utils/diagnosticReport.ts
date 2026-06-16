@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageSet } from './storage';
 import { offsetToDateKey } from './statsData';
 import { calcSleepScore } from './sleepScore';
+import { loadCalorieTargets } from './calorieTarget';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -67,11 +68,34 @@ export interface Correlation {
   id: string;
   headline: string;
   detail: string;
+  // Diagnostic-card fields (additive). Populated where the correlation is computed
+  // so the one number that proves the claim travels with it. buildDiagnosticCards
+  // turns any correlation carrying these into a ranked DiagnosticCard.
+  claim?: string;
+  proof?: string;
+  lever?: string;
+  strength?: number;      // 0-100, effect size relative to the pattern's floor
+  positive?: boolean;     // true = a "why it's working" story
+  windowLabel?: string;   // overrides the default "Last N days"
 }
 
 export interface CorrelationsFinding {
   type: 'correlations';
   correlations: Correlation[];
+}
+
+// Unified diagnostic card: claim + pointed proof + lever. Everything the EvR feed
+// renders is one of these, ranked by strength. Findings and correlations both
+// collapse into this single shape so the surface just renders a sorted list.
+export interface DiagnosticCard {
+  id: string;
+  claim: string;
+  proof: string;
+  lever: string;
+  window: string;
+  strength: number;       // 0-100
+  tone: 'positive' | 'attention' | 'factor';
+  positive: boolean;
 }
 
 export interface Suggestion {
@@ -95,6 +119,7 @@ export interface DiagnosticReport {
   sleep: SleepFinding | null;
   correlations: CorrelationsFinding | null;
   suggestions: Suggestion[];
+  cards: DiagnosticCard[];
   insufficientData: boolean;
   minLoggedDays: number;
 }
@@ -172,6 +197,198 @@ function isWeekend(dateKey: string): boolean {
   return day === 0 || day === 6;
 }
 
+// ── Diagnostic card model ────────────────────────────────────────────────────────
+
+function clampStrength(n: number): number {
+  return Math.max(0, Math.min(100, Math.round(n)));
+}
+
+// Effect size relative to a pattern's floor, mapped to a comparable 0-100 strength.
+// At the floor (ratio 1) a card scores `base`; at 2x the floor it reaches base+span.
+function corrStrength(effect: number, floor: number, base = 50, span = 42): number {
+  const ratio = floor > 0 ? Math.abs(effect) / floor : 1;
+  return clampStrength(base + Math.min(span, (ratio - 1) * span));
+}
+
+function fmtLbs1(v: number): string {
+  return `${(Math.round(Math.abs(v) * 10) / 10).toFixed(1)} lbs`;
+}
+
+// Turns the computed findings + correlations into one ranked, relevant-only feed of
+// claim + proof + lever cards. A finding only becomes a card when it has a genuine
+// current pattern; correlations carry their own floors. Positives count as cards so
+// the feed is rarely empty. Sort: strength desc, corrective above positive on a tie.
+// Capped at 6. The headline-dedupe (suppressing the card matching the EvR headline)
+// happens at the view layer, since the headline is resolved there.
+function buildDiagnosticCards(
+  windowDays: number,
+  deficitFinding: DeficitFinding | null,
+  burnAccuracyFinding: BurnAccuracyFinding | null,
+  macroFinding: MacroFinding | null,
+  sleepFinding: SleepFinding | null,
+  consistency: ConsistencyFinding,
+  correlations: Correlation[],
+): DiagnosticCard[] {
+  const cards: DiagnosticCard[] = [];
+  const win = `Over ${windowDays} days`;
+
+  // ── Deficit: predicted vs actual results ──
+  if (deficitFinding && deficitFinding.hasWeightData && deficitFinding.actualChangeLbs !== null) {
+    const gap = deficitFinding.gapLbs ?? 0;
+    const lose = deficitFinding.goalDirection === 'lose';
+    const expDir = lose ? 'lost' : 'gained';
+    const actDir = deficitFinding.actualChangeLbs <= 0 ? 'lost' : 'gained';
+    const proof = `Predicted: ${expDir} ${fmtLbs1(deficitFinding.expectedChangeLbs)} · Actual: ${actDir} ${fmtLbs1(deficitFinding.actualChangeLbs)}`;
+    const onTrack = lose ? gap <= 0.3 : gap >= -0.3;
+    if (onTrack) {
+      cards.push({
+        id: 'deficit', claim: `Your effort is showing up on the scale.`, proof,
+        lever: `Whatever you are doing is working. Hold the pattern.`,
+        window: win, strength: clampStrength(48), tone: 'positive', positive: true,
+      });
+    } else {
+      const fellShort = lose ? gap > 0 : gap < 0;
+      cards.push({
+        id: 'deficit',
+        claim: fellShort ? `Your results are lagging what your logging predicts.` : `You are moving faster than your logging predicts.`,
+        proof,
+        lever: fellShort
+          ? `The gap usually hides in unlogged days or an overstated calorie burn. Tighten one.`
+          : `Strong pace. Make sure you are fueling enough to hold onto muscle.`,
+        window: win,
+        strength: clampStrength(45 + Math.min(50, Math.abs(gap) * 28)),
+        tone: Math.abs(gap) > 1.0 ? 'factor' : 'attention',
+        positive: false,
+      });
+    }
+  }
+
+  // ── Burn accuracy ──
+  if (burnAccuracyFinding && burnAccuracyFinding.isFlagged) {
+    const gapBump = deficitFinding?.gapLbs != null && deficitFinding.gapLbs > 0.5 ? 15 : 0;
+    cards.push({
+      id: 'burn_accuracy',
+      claim: `Your calorie burn may be overstated.`,
+      proof: `Burn accuracy at 100% · avg ${burnAccuracyFinding.avgActiveCalPerDay.toLocaleString()} active cal/day`,
+      lever: `Set burn accuracy to 80 to 90% in Settings, Health for truer deficit math.`,
+      window: win, strength: clampStrength(50 + gapBump), tone: 'attention', positive: false,
+    });
+  }
+
+  // ── Protein ──
+  if (macroFinding && macroFinding.macroStatus !== 'good') {
+    const pctUnder = (macroFinding.proteinGoalMin - macroFinding.avgProtein) / Math.max(1, macroFinding.proteinGoalMin);
+    cards.push({
+      id: 'protein',
+      claim: `Your protein is running under target.`,
+      proof: `Avg ${macroFinding.avgProtein} g/day · goal ${macroFinding.proteinGoalMin} g`,
+      lever: `Anchor one meal a day around a protein source to close the gap.`,
+      window: win, strength: clampStrength(42 + Math.min(50, pctUnder * 130)),
+      tone: macroFinding.macroStatus === 'factor' ? 'factor' : 'attention', positive: false,
+    });
+  }
+
+  // ── Fiber (food quality) ──
+  if (macroFinding && macroFinding.fiberStatus !== 'good' && macroFinding.avgFiber > 0) {
+    const pctUnder = (25 - macroFinding.avgFiber) / 25;
+    cards.push({
+      id: 'fiber',
+      claim: `Food quality has room: fiber is low.`,
+      proof: `Avg ${macroFinding.avgFiber} g/day · target 25 to 38 g`,
+      lever: `Lean on whole foods: fruit, vegetables, beans, whole grains.`,
+      window: win, strength: clampStrength(34 + Math.min(40, pctUnder * 70)),
+      tone: macroFinding.fiberStatus === 'factor' ? 'factor' : 'attention', positive: false,
+    });
+  }
+
+  // ── Positive whys: genuinely-good findings get a "here's what's working and why"
+  // card too. Lower strength band so any real problem outranks them, but on a good
+  // week these fill the feed instead of a hollow "you're good." This is the
+  // never-blank, explain-the-good-stuff behavior the spec demands. ──
+
+  // Deficit holding (results agree with effort) handled above as a positive deficit card.
+
+  // Consistency: matters most when there are GAPS (they blur everything below). A clean
+  // log is reassuring but a low-value lead, so it sits in a low band and never leads.
+  // Gappy logging ranks up because it undermines the whole read.
+  if (consistency.status === 'good' && consistency.loggedDays > 0) {
+    cards.push({
+      id: 'consistency_good',
+      claim: `Your logging is consistent enough to trust this read.`,
+      proof: `${consistency.loggedDays} of ${consistency.totalDays} days logged`,
+      lever: `Keep it up. The more you log, the sharper every pattern here gets.`,
+      window: win,
+      strength: clampStrength(20 + Math.min(8, (consistency.rate - 0.85) * 50)),
+      tone: 'positive', positive: true,
+    });
+  } else if (consistency.status !== 'good' && consistency.loggedDays > 0) {
+    cards.push({
+      id: 'consistency_gaps',
+      claim: `Gaps in your logging are blurring the picture.`,
+      proof: `${consistency.loggedDays} of ${consistency.totalDays} days logged`,
+      lever: `Even a rough entry on the days you miss keeps this read honest.`,
+      window: win,
+      strength: clampStrength(consistency.status === 'factor' ? 52 : 38),
+      tone: consistency.status === 'factor' ? 'factor' : 'attention',
+      positive: false,
+    });
+  }
+
+  // Protein on point
+  if (macroFinding && macroFinding.hasData && macroFinding.macroStatus === 'good') {
+    cards.push({
+      id: 'protein_good',
+      claim: `Your protein is right where it needs to be.`,
+      proof: `Avg ${macroFinding.avgProtein} g/day · goal ${macroFinding.proteinGoalMin} g`,
+      lever: `Hold this. Protein is protecting your muscle while you cut.`,
+      window: win, strength: clampStrength(50), tone: 'positive', positive: true,
+    });
+  }
+
+  // Fiber / food quality on point
+  if (macroFinding && macroFinding.fiberStatus === 'good' && macroFinding.avgFiber > 0) {
+    cards.push({
+      id: 'fiber_good',
+      claim: `Your food quality is holding up.`,
+      proof: `Avg ${macroFinding.avgFiber} g fiber/day · target 25 to 38 g`,
+      lever: `Whole foods are doing the work. Keep them on the plate.`,
+      window: win, strength: clampStrength(40), tone: 'positive', positive: true,
+    });
+  }
+
+  // Sleep solid
+  if (sleepFinding && sleepFinding.hasEnoughData && sleepFinding.status === 'good') {
+    const proof = sleepFinding.avgSleepScore !== null
+      ? `Avg sleep score ${sleepFinding.avgSleepScore} over ${sleepFinding.totalSleepDays} nights`
+      : `Avg ${sleepFinding.avgSleepHours}h over ${sleepFinding.totalSleepDays} nights`;
+    cards.push({
+      id: 'sleep_good',
+      claim: `Your sleep is working in your favor.`,
+      proof,
+      lever: `Keep guarding it. Good sleep keeps your appetite and training steady.`,
+      window: win, strength: clampStrength(46), tone: 'positive', positive: true,
+    });
+  }
+
+  // ── Correlations that carry card fields ──
+  for (const c of correlations) {
+    if (c.claim && c.proof && c.lever && c.strength != null) {
+      const positive = !!c.positive;
+      cards.push({
+        id: c.id, claim: c.claim, proof: c.proof, lever: c.lever,
+        window: c.windowLabel ?? `Last ${windowDays} days`,
+        strength: c.strength,
+        tone: positive ? 'positive' : (c.strength >= 75 ? 'factor' : 'attention'),
+        positive,
+      });
+    }
+  }
+
+  // Strength desc; on a tie, corrective (positive=false) ranks above positive.
+  cards.sort((a, b) => (b.strength - a.strength) || (Number(a.positive) - Number(b.positive)));
+  return cards.slice(0, 6);
+}
+
 // ── Main generation function ───────────────────────────────────────────────────
 
 export async function generateDiagnosticReport(windowDays: ReportWindow): Promise<DiagnosticReport> {
@@ -179,16 +396,32 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
   const rangeStart = offsetToDateKey(windowDays);
 
   // ── Load profile + settings ──
-  let bodyWeightLbs = 0, weightGoal = 0, hasWeightGoal = false;
-  let calTarget = 0, burnAccuracyPct = 100, sleepGoal = 8;
+  // calTarget, goal direction, and the protein goal all come from the SAME canonical
+  // sources every other coach uses (utils/calorieTarget + the macro calc that mirrors
+  // buildEngineContext in smartTipsEngine), so EvR never guesses a target. The old code
+  // read calTarget from pj_settings (wrong bucket, always 0) and treated weightGoal as a
+  // number (it's a bucket string like 'lose_1'), which silently disabled the entire
+  // deficit/weight analysis.
+  let bodyWeightLbs = 0, burnAccuracyPct = 100, sleepGoal = 8;
+  let proteinGoalG = 0;
   let goalDirection: GoalDirection = 'maintain';
+
+  const { calTarget, paceDeficit } = await loadCalorieTargets(yesterday);
+  if (paceDeficit < 0) goalDirection = 'lose';
+  else if (paceDeficit > 0) goalDirection = 'gain';
 
   try {
     const profileRaw = await AsyncStorage.getItem('pj_profile');
     if (profileRaw) {
       const p = JSON.parse(profileRaw);
-      if (p.weightGoal) { weightGoal = parseFloat(p.weightGoal); hasWeightGoal = weightGoal > 0; }
       if (p.sleepGoal) sleepGoal = parseFloat(p.sleepGoal);
+      // Real protein goal: fixed grams, or ratio % of the canonical calTarget. Mirrors
+      // buildEngineContext so EvR reads the exact number your Macros card shows.
+      if (p.macroMode === 'fixed' && p.macroProteinG) {
+        proteinGoalG = parseFloat(p.macroProteinG) || 0;
+      } else if (p.macroProteinPct && calTarget > 0) {
+        proteinGoalG = Math.round(((parseFloat(p.macroProteinPct) || 35) / 100) * calTarget / 4);
+      }
       for (let i = 0; i <= 7 && bodyWeightLbs === 0; i++) {
         try {
           const dd = await AsyncStorage.getItem(`pj_${offsetToDateKey(i)}`);
@@ -202,16 +435,9 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
     const settingsRaw = await AsyncStorage.getItem('pj_settings');
     if (settingsRaw) {
       const s = JSON.parse(settingsRaw);
-      if (s.calTarget) calTarget = parseInt(s.calTarget);
       if (s.burnAccuracyPct) burnAccuracyPct = parseInt(s.burnAccuracyPct);
     }
   } catch {}
-
-  if (hasWeightGoal && bodyWeightLbs > 0) {
-    const diff = weightGoal - bodyWeightLbs;
-    if (diff < -2) goalDirection = 'lose';
-    else if (diff > 2) goalDirection = 'gain';
-  }
 
   // ── Load workout state ──
   let workoutState: any = {};
@@ -308,6 +534,7 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
       summary: `Not enough logged data to generate a full analysis. You need at least ${minDays} days with food logged in the ${windowDays}-day window. You currently have ${loggedDays} logged day${loggedDays !== 1 ? 's' : ''}.`,
       deficit: null, burnAccuracy: null, consistency, macros: null, sleep: null, correlations: null,
       suggestions: [{ rank: 1, headline: 'Log your food consistently', detail: `Aim for at least ${minDays} days of logging in a ${windowDays}-day window to unlock the full analysis. Even rough estimates count.` }],
+      cards: [],
       insufficientData: true, minLoggedDays: loggedDays,
     };
   }
@@ -360,13 +587,14 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
   // ── Macros ──
   let macroFinding: MacroFinding | null = null;
   const macroLoggedDays = loggedDayData.filter(d => d.protein > 0 || d.carbs > 0 || d.fat > 0);
-  if (macroLoggedDays.length >= 5 && bodyWeightLbs > 0) {
+  if (macroLoggedDays.length >= 5 && proteinGoalG > 0) {
     const avgProtein = avg(macroLoggedDays.map(d => d.protein));
     const fiberDays = macroLoggedDays.filter(d => d.fiber > 0);
     const avgFiber = fiberDays.length > 0 ? avg(fiberDays.map(d => d.fiber)) : 0;
-    const proteinGoalMin = Math.round(bodyWeightLbs * 0.7);
-    const proteinGoalMax = Math.round(bodyWeightLbs * 1.0);
-    const macroStatus: FindingStatus = avgProtein < proteinGoalMin * 0.7 ? 'factor' : avgProtein < proteinGoalMin ? 'attention' : 'good';
+    // Single real goal (your configured protein target), not a bodyweight estimate.
+    const proteinGoalMin = Math.round(proteinGoalG);
+    const proteinGoalMax = Math.round(proteinGoalG);
+    const macroStatus: FindingStatus = avgProtein < proteinGoalMin * 0.7 ? 'factor' : avgProtein < proteinGoalMin * 0.9 ? 'attention' : 'good';
     const fiberStatus: FindingStatus = avgFiber > 0 ? (avgFiber < 15 ? 'factor' : avgFiber < 22 ? 'attention' : 'good') : 'attention';
     const status: FindingStatus = macroStatus === 'factor' || fiberStatus === 'factor' ? 'factor' : macroStatus === 'attention' || fiberStatus === 'attention' ? 'attention' : 'good';
     macroFinding = {
@@ -427,6 +655,17 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
       detail: delta > 0
         ? `Your body releases more hunger hormones when you're tired. For you specifically, poor sleep nights are directly linked to higher calorie intake the following day.`
         : `Your data shows a clear pattern: better sleep nights are followed by lower calorie intake. Good sleep seems to regulate your appetite well.`,
+      claim: delta > 0
+        ? `Short sleep is pushing your intake up the next day.`
+        : `Good sleep is keeping your appetite in check.`,
+      proof: delta > 0
+        ? `After poor sleep: +${delta} cal the next day`
+        : `After good sleep: ${delta} cal the next day`,
+      lever: delta > 0
+        ? `Protect a consistent bedtime. It moves your intake more than willpower does.`
+        : `Keep guarding your sleep. It is regulating your hunger well.`,
+      strength: corrStrength(delta, 100),
+      positive: delta < 0,
     });
   }
 
@@ -452,6 +691,17 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
             detail: delta > 0
               ? `After high-activity days, your body often seeks a reward. That ${delta} cal swing the following day can partially offset the extra burn.`
               : `Interesting: your big workout days don't lead to overeating the next day. Your appetite regulation on recovery days is solid.`,
+            claim: delta > 0
+              ? `Big training days trigger a rebound the next day.`
+              : `Your appetite holds steady after hard training.`,
+            proof: delta > 0
+              ? `After big burn days: +${delta} cal the next day`
+              : `After big burn days: ${delta} cal the next day`,
+            lever: delta > 0
+              ? `Pre-plan the day after a hard session so the burn is not erased.`
+              : `Strong control. Nothing to change here.`,
+            strength: corrStrength(delta, 150),
+            positive: delta < 0,
           });
         }
       }
@@ -475,6 +725,16 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
           detail: delta > 0
             ? `Monday through Friday you averaged ${weekdayAvg.toLocaleString()} cal. Weekends averaged ${weekendAvg.toLocaleString()} cal. That ${delta} cal gap, across the month, adds up more than most people realize.`
             : `Interesting -- your weekends are actually cleaner than your weekdays. You averaged ${weekdayAvg.toLocaleString()} cal on weekdays vs ${weekendAvg.toLocaleString()} on weekends.`,
+          claim: delta > 0
+            ? `Weekends are erasing your weekday deficit.`
+            : `Your weekends are actually cleaner than your weekdays.`,
+          proof: `Weekdays ${weekdayAvg.toLocaleString()} cal · weekends ${weekendAvg.toLocaleString()} cal`,
+          lever: delta > 0
+            ? `Give weekends the same loose plan you give weekdays and the deficit holds.`
+            : `Whatever your weekend rhythm is, it is working.`,
+          strength: corrStrength(delta, 250),
+          positive: delta < 0,
+          windowLabel: `Weekends, last ${windowDays} days`,
         });
       }
     }
@@ -494,6 +754,11 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
             id: 'water_cals',
             headline: `On low-water days, you ate ${delta} more calories`,
             detail: `Thirst and hunger signals fire from the same place in the brain. On days you hit your water goal, your appetite was more controlled. Dehydration can read as hunger.`,
+            claim: `Low-water days come with more eating.`,
+            proof: `On low-water days: +${delta} cal`,
+            lever: `Hit your water goal first. Thirst often reads as hunger.`,
+            strength: corrStrength(delta, 100),
+            positive: false,
           });
         }
       }
@@ -517,6 +782,11 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
           id: 'sodium_weight',
           headline: `After high-sodium days, the scale jumps ${(Math.round(delta * 10) / 10).toFixed(1)} lbs`,
           detail: `High sodium causes your body to retain water overnight. This isn't fat -- it's fluid. After high-sodium days, your next-morning weight tends to be ${(Math.round(delta * 10) / 10).toFixed(1)} lbs higher on average.`,
+          claim: `High-sodium days spike the scale the next morning.`,
+          proof: `After high-sodium days: +${(Math.round(delta * 10) / 10).toFixed(1)} lbs`,
+          lever: `That jump is water, not fat. Do not let it derail you.`,
+          strength: corrStrength(delta, 0.5),
+          positive: false,
         });
       }
     }
@@ -540,6 +810,11 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
             id: 'steps_sleep',
             headline: `Higher step days lead to ${delta} pts better sleep score`,
             detail: `On above-average step days, your sleep score averaged ${Math.round(avg(highStepSleep))} vs ${Math.round(avg(lowStepSleep))} on lower-step days. Movement during the day is one of the strongest predictors of sleep quality.`,
+            claim: `Moving more is buying you better sleep.`,
+            proof: `High-step days: +${delta} pt sleep score`,
+            lever: `Keep the steps up. It is one of your strongest sleep levers.`,
+            strength: corrStrength(delta, 8),
+            positive: true,
           });
         }
       }
@@ -563,6 +838,15 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
           detail: delta > 0
             ? `Workout days averaged ${workoutAvg.toLocaleString()} cal, rest days ${restAvg.toLocaleString()} cal. Your appetite rises on training days -- whether it offsets the calorie burn is in the deficit math above.`
             : `Your calorie intake is actually lower on workout days (${workoutAvg.toLocaleString()} cal) than rest days (${restAvg.toLocaleString()} cal). You may be under-fueling training sessions.`,
+          claim: delta > 0
+            ? `Training days bump your appetite up.`
+            : `You under-eat on training days.`,
+          proof: `Workout days ${workoutAvg.toLocaleString()} cal · rest days ${restAvg.toLocaleString()} cal`,
+          lever: delta > 0
+            ? `Plan for the extra hunger on training days so it does not undo the burn.`
+            : `Fuel your sessions a bit more. Under-fueling stalls progress.`,
+          strength: corrStrength(delta, 200),
+          positive: false,
         });
       }
     }
@@ -587,6 +871,11 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
           id: 'sleep_workout',
           headline: `Poor sleep nights cut your next-day workout rate by ${Math.round(delta * 100)}%`,
           detail: `After good sleep, you worked out ${Math.round(goodRate * 100)}% of the time. After poor sleep, that dropped to ${Math.round(poorRate * 100)}%. Sleep and training have a direct relationship in your data.`,
+          claim: `Poor sleep is costing you workouts.`,
+          proof: `Good sleep: ${Math.round(goodRate * 100)}% trained · poor sleep: ${Math.round(poorRate * 100)}%`,
+          lever: `Sleep is upstream of training. Guard it and the sessions follow.`,
+          strength: corrStrength(delta, 0.2),
+          positive: false,
         });
       }
     }
@@ -609,6 +898,11 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
           id: 'surplus_nextday',
           headline: `After going over your target, you ate ${delta} more the next day too`,
           detail: `Days after exceeding your calorie target, you averaged ${surplusNextAvg.toLocaleString()} cal vs ${deficitNextAvg.toLocaleString()} cal after on-target days. Surpluses don't tend to self-correct -- they compound.`,
+          claim: `Overshooting one day pulls the next day up too.`,
+          proof: `After over-target days: +${delta} cal the next day`,
+          lever: `Treat a big day as done. Reset the next morning instead of drifting.`,
+          strength: corrStrength(delta, 150),
+          positive: false,
         });
       }
     }
@@ -662,6 +956,8 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
     summary = `Your data from the past ${windowDays} days is analyzed below. The more consistently you log, the more accurate these findings become.`;
   }
 
+  const cards = buildDiagnosticCards(windowDays, deficitFinding, burnAccuracyFinding, macroFinding, sleepFinding, consistency, correlations);
+
   return {
     id: Date.now().toString(),
     generatedAt: new Date().toISOString(),
@@ -670,6 +966,7 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
     macros: macroFinding, sleep: sleepFinding,
     correlations: correlations.length > 0 ? { type: 'correlations', correlations } : null,
     suggestions,
+    cards,
     insufficientData: false, minLoggedDays: loggedDays,
   };
 }

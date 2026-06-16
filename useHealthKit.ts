@@ -449,7 +449,7 @@ export function useHealthKit() {
         ['discreteAverage'],
         { filter: { date: { startDate: sleepStart, endDate: sleepEnd } } }
       );
-      const todayHRV = hrvSleep?.averageQuantity?.quantity
+      const hrvWindow = hrvSleep?.averageQuantity?.quantity
         ? Math.round(hrvSleep.averageQuantity.quantity * 10) / 10
         : null;
 
@@ -469,7 +469,18 @@ export function useHealthKit() {
       // robust low). Validated to match Apple's RHR but computed consistently from the
       // overnight window every night, so it never drifts during the day. Same call for
       // live (last night) and historical backfill (the anchor night).
-      const todayRHR = (await fetchOvernightRHR(anchorDate)).rhr;
+      const rhrResult = await fetchOvernightRHR(anchorDate);
+      const todayRHR = rhrResult.rhr;
+
+      // HRV gate: hold HRV to the SAME real-overnight standard as RHR. The HRV window
+      // (6pm->noon) otherwise lets a STRAY daytime SDNN sample leak through on a manual/
+      // watch-off night (no HealthKit sleep stages), manufacturing a recovery score the
+      // night should not have. Only accept the night's HRV when there was real tracked
+      // sleep (asleep sleep-stage segments exist -- the exact signal RHR already requires
+      // via fetchOvernightRHR.asleepMinutes); a manual/watch-off night voids HRV, and with
+      // RHR also null the recovery score voids cleanly (calcRecoveryScore !hasHRV && !hasRHR).
+      const hadTrackedSleep = rhrResult.asleepMinutes > 0;
+      const todayHRV = hadTrackedSleep ? hrvWindow : null;
 
       // RHR baseline: average of our OWN stored overnight RHRs over the prior N days, so
       // the baseline uses the same method as the daily value above. Apple's 7-day raw

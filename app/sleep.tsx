@@ -916,11 +916,20 @@ export default function SleepHub() {
           const raw = await AsyncStorage.getItem(k);
           const cur = raw ? JSON.parse(raw) : {};
           if (res.score === null) {
-            // No overnight data this night (manual/watchless): clear any stale top-level
-            // restingHR (an old Apple daytime value) so the stats graph + summaries gap
-            // here, consistent with the recovery charts. Honest gap, never a fake number.
-            // Read-then-merge: only the restingHR field is removed, all else untouched.
-            if (cur.restingHR !== undefined) { delete cur.restingHR; await storageSet(k, JSON.stringify(cur)); }
+            // No real overnight data this night (manual / watch-off): this night cannot
+            // produce an honest recovery score (HRV is now gated on real tracked sleep,
+            // same as RHR, so both void). Clear ANY stale derived fields so every surface
+            // gaps honestly here, never a fake number: the top-level restingHR (an old
+            // Apple daytime value) AND any recoveryScore/recoverySignals left over from
+            // before the HRV gate (e.g. a score built on a stray daytime HRV). Without
+            // this, those ghosts linger on the Recovery tab + would pollute the Day Score.
+            // Read-then-merge: only these derived fields are removed; all logged data
+            // (sleep, food, water, workout, etc.) is untouched.
+            let changed = false;
+            if (cur.restingHR !== undefined) { delete cur.restingHR; changed = true; }
+            if (cur.recoveryScore !== undefined) { delete cur.recoveryScore; changed = true; }
+            if (cur.recoverySignals !== undefined) { delete cur.recoverySignals; changed = true; }
+            if (changed) await storageSet(k, JSON.stringify(cur));
             continue;
           }
           // Write the recovery score + overnight signals. For the top-level restingHR:

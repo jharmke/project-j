@@ -14,7 +14,7 @@ import { DEVOTIONALS, getDevotionalCompletion, type DevotionalsStorage } from '.
 import { loadReadingPlanProgress } from '../utils/readingPlansProgress';
 import { loadDevotionalProgress, getDevotionalProgress, getNextDay } from '../utils/devotionals';
 import { useTheme, type Theme } from '../theme';
-import { CardWash } from './GradientCard';
+import { LinearGradient } from 'expo-linear-gradient';
 
 /**
  * Faith Today: the home tab's faith hub card (same slot 1 as the old Today's Message verse
@@ -101,7 +101,16 @@ function Slide({ width, minHeight, bg, onPress, onContentLayout, watermark, chil
       style={{ width: width || undefined }}
     >
       <Animated.View style={[styles.page, { minHeight, backgroundColor: bg, transform: [{ scale: s }] }]}>
-        <CardWash color={theme.accentAmber} radius={14} scored />
+        {/* Soft amber wash: starts translucent (no solid first stop) so the warm fade
+            stays but there is NO hard amber line at the top edge. */}
+        <LinearGradient
+          colors={[theme.accentAmber + '2E', theme.accentAmber + '00']}
+          locations={[0, 1]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 64, borderTopLeftRadius: 14, borderTopRightRadius: 14 }}
+          pointerEvents="none"
+        />
         {watermark}
         <View onLayout={onContentLayout} style={styles.pageContent}>{children}</View>
       </Animated.View>
@@ -199,7 +208,7 @@ export default function FaithTodayCard({ verse, theme }: Props) {
 
   return (
     <View style={styles.glow}>
-      <View style={[styles.clip, { borderColor: theme.borderCard, borderTopColor: 'rgba(212,134,10,0.38)' }]}>
+      <View style={[styles.clip, { borderColor: theme.borderCard }]}>
         <ScrollView
           ref={scrollRef}
           horizontal
@@ -308,7 +317,7 @@ export default function FaithTodayCard({ verse, theme }: Props) {
 
 const styles = StyleSheet.create({
   glow: { borderRadius: 14, marginBottom: 12, shadowColor: '#d4860a', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.85, shadowRadius: 8, elevation: 8 },
-  clip: { borderRadius: 14, borderWidth: 0.5, borderTopWidth: 1.5, overflow: 'hidden' },
+  clip: { borderRadius: 14, borderWidth: 0.5, overflow: 'hidden' },
   page: { width: '100%', overflow: 'hidden' },
   watermark: { position: 'absolute', right: -24, bottom: -28, opacity: 0.10 },
   pageContent: { padding: 16 },

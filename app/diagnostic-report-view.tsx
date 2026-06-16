@@ -15,6 +15,7 @@ import {
   BurnAccuracyFinding,
   ConsistencyFinding,
   DeficitFinding,
+  DiagnosticCard,
   DiagnosticReport,
   FindingStatus,
   MacroFinding,
@@ -34,7 +35,7 @@ import {
   loadCoachTipCacheEvr,
   loadSmartTips,
 } from '../utils/smartTipsEngine';
-import { refreshCoachTipEvr, resolveTipBody, resolveTipTitle } from '../utils/coachAI';
+import { refreshCoachTipEvr, resolveTipBody, resolveTipTitle, voiceDiagnosticCards } from '../utils/coachAI';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -254,6 +255,38 @@ function SleepCard({ f, isMindful, theme, shadowStyle }: { f: any; isMindful: bo
   );
 }
 
+// ── Diagnostic card feed (track 2 surface) ───────────────────────────────────────
+// Renders one ranked DiagnosticCard: claim (headline) + proof (the number, prominent)
+// + insight (AI context line, when voiced) + lever (the action, NEVER labeled "lever").
+// Replaces the old fixed scorecard finding cards. Mindful hides the status chip; full
+// Mindful lever-suppression is a later sub-step (voicer already softens copy in Mindful).
+function DiagnosticFeedCard({ card, theme, shadowStyle, isMindful }: { card: DiagnosticCard; theme: any; shadowStyle: any; isMindful: boolean }) {
+  const t = theme;
+  const accent = card.positive ? t.statusGood : (card.tone === 'factor' ? t.statusBad : t.statusWarn);
+  const chip = card.positive ? 'WORKING' : (card.tone === 'factor' ? 'KEY FACTOR' : 'WORTH ATTENTION');
+  return (
+    <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: accent, ...shadowStyle, marginBottom: 12 }]}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <Text style={[styles.cardLabel, { color: t.textMuted }]}>{(card.window || '').toUpperCase()}</Text>
+        {!isMindful && (
+          <View style={{ backgroundColor: accent + '22', borderColor: accent + '55', borderWidth: 1, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+            <Text style={{ fontSize: 9, letterSpacing: 1.5, fontFamily: 'DMSans_700Bold', color: accent }}>{chip}</Text>
+          </View>
+        )}
+      </View>
+      <Text style={{ fontSize: 16, fontFamily: 'DMSans_700Bold', color: t.textPrimary, lineHeight: 22, marginBottom: 8 }}>{card.claim}</Text>
+      <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: accent, marginBottom: card.insight ? 8 : 10 }}>{card.proof}</Text>
+      {card.insight ? (
+        <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: t.textSecondary, lineHeight: 20, marginBottom: 10 }}>{card.insight}</Text>
+      ) : null}
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 7 }}>
+        <Text style={{ fontSize: 14, color: t.accentBlueRaw, marginTop: 1, fontFamily: 'DMSans_700Bold' }}>→</Text>
+        <Text style={{ flex: 1, fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: t.textPrimary, lineHeight: 20 }}>{card.lever}</Text>
+      </View>
+    </View>
+  );
+}
+
 // ── Smart Tip cards ────────────────────────────────────────────────────────────
 
 function InsightTipCard({ tip, isBlurred, theme, shadowStyle }: { tip: StoredTip; isBlurred: boolean; theme: any; shadowStyle: any }) {
@@ -375,6 +408,12 @@ export default function DiagnosticReportViewScreen() {
   const [smartTips, setSmartTips] = useState<SmartTipsStore | null>(null);
   const [coachCache, setCoachCache] = useState<CoachTipCache | null>(null);
   const [coachLoading, setCoachLoading] = useState(false);
+  // Voiced diagnostic card feed: show deterministic cards instantly, upgrade to AI-voiced
+  // (claim/lever rewritten + insight added) when the batched call returns. Proof is never
+  // sent for editing, so numbers stay exact. Falls back to deterministic on any failure.
+  const [voicedCards, setVoicedCards] = useState<DiagnosticCard[] | null>(
+    isTutorialMode ? (TUTORIAL_DEMO_REPORT.cards ?? null) : null
+  );
 
   const isMindful = styleMode === 'Mindful';
   const shadowStyle = { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 3 };
@@ -388,15 +427,22 @@ export default function DiagnosticReportViewScreen() {
     useCallback(() => {
       if (isTutorialMode) return;
       const load = async () => {
+        let mode: 'Discipline' | 'Balanced' | 'Mindful' = 'Balanced';
         try {
           const s = await AsyncStorage.getItem('pj_settings');
-          if (s) { const d = JSON.parse(s); if (d.styleMode) setStyleMode(d.styleMode); }
+          if (s) { const d = JSON.parse(s); if (d.styleMode) { setStyleMode(d.styleMode); mode = d.styleMode; } }
         } catch {}
         if (!id) { setNotFound(true); return; }
         const reports = await loadSavedReports();
         const found = reports.find(r => r.id === decodeURIComponent(id));
         if (!found) { setNotFound(true); return; }
         setReport(found);
+        // Card feed: deterministic instantly, then voice in the background and upgrade.
+        const baseCards = found.cards ?? [];
+        setVoicedCards(baseCards);
+        if (baseCards.length > 0) {
+          voiceDiagnosticCards(baseCards, mode).then(setVoicedCards).catch(() => {});
+        }
         // Load stored Smart Tips for instant display, then refresh in background
         const stored = await loadSmartTips();
         if (stored) setSmartTips(stored);
@@ -505,16 +551,22 @@ export default function DiagnosticReportViewScreen() {
             )}
           </View>
 
-          {/* Finding cards */}
+          {/* Diagnostic card feed (claim + proof + lever) -- replaces the old scorecard finding cards */}
           {!report.insufficientData && (
             <>
               <View ref={findingsSectionRef} collapsable={false}>
-                <ConsistencyCard f={report.consistency} isMindful={isMindful} theme={t} shadowStyle={shadowStyle} />
+                {(voicedCards ?? report.cards ?? []).length > 0 ? (
+                  (voicedCards ?? report.cards ?? []).map((c, i) => (
+                    <DiagnosticFeedCard key={`${c.id}-${i}`} card={c} theme={t} shadowStyle={shadowStyle} isMindful={isMindful} />
+                  ))
+                ) : (
+                  <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: 'rgba(255,255,255,0.1)', ...shadowStyle }]}>
+                    <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: t.textSecondary, lineHeight: 20 }}>
+                      Nothing stands out in this window. Keep logging and patterns will surface here as they develop.
+                    </Text>
+                  </View>
+                )}
               </View>
-              {report.deficit && <DeficitCard f={report.deficit} isMindful={isMindful} theme={t} shadowStyle={shadowStyle} />}
-              {report.burnAccuracy && <BurnAccuracyCard f={report.burnAccuracy} isMindful={isMindful} theme={t} shadowStyle={shadowStyle} />}
-              {report.macros && <MacroCard f={report.macros} isMindful={isMindful} theme={t} shadowStyle={shadowStyle} />}
-              {report.sleep && <SleepCard f={report.sleep} isMindful={isMindful} theme={t} shadowStyle={shadowStyle} />}
 
               {/* AI Coach Insight card */}
               {TIPS_GATED ? (

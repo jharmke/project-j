@@ -9,6 +9,7 @@ import { useCallback, useRef, useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useToast } from './Toast';
 import { CardWash } from './GradientCard';
+import { LinearGradient } from 'expo-linear-gradient';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -89,7 +90,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
   const faith = variant === 'faith';
   const accent      = faith ? t.accentAmber : t.accentBlueRaw;          // hero, flame, week dots, watermark
   const cardBorder  = faith ? 'rgba(212,134,10,0.22)' : t.borderCard;
-  const cardTop     = faith ? 'rgba(212,134,10,0.38)' : t.accentBlueRaw;
+  const cardTop     = faith ? 'rgba(212,134,10,0.22)' : t.accentBlueRaw;
   const cardBg      = faith ? t.bgCardFaith : t.bgCard;                 // faint warm tint on the faith tab only
   const btnBg       = faith ? 'rgba(212,134,10,0.10)' : t.accentBlueBg;
   const btnBorder   = faith ? 'rgba(212,134,10,0.30)' : t.accentBlueBorder;
@@ -299,8 +300,10 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
   const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
   return (
-    <View ref={cardRef} style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder, borderTopColor: cardTop, overflow: 'hidden' }]}>
-      <CardWash color={t.accentAmber} radius={14} scored />
+    <View ref={cardRef} style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder, borderTopColor: cardTop, borderTopWidth: faith ? 0.5 : 1.5, overflow: 'hidden' }]}>
+      {faith
+        ? <LinearGradient colors={[t.accentAmber + '2E', t.accentAmber + '00']} locations={[0, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 64, borderTopLeftRadius: 14, borderTopRightRadius: 14 }} pointerEvents="none" />
+        : <CardWash color={t.accentBlueRaw} radius={14} />}
       <Ionicons name="heart" size={130} color={accent} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
 
       {/* Header */}

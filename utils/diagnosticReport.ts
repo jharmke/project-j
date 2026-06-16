@@ -98,6 +98,15 @@ export interface DiagnosticCard {
   tone: 'positive' | 'attention' | 'factor';
   positive: boolean;
   insight?: string;       // AI-voiced "why it matters" sentence; absent on deterministic fallback
+  // Optional structured proof so the surface can render a stat module (big numbers + bar)
+  // instead of a line of text. When absent, the surface falls back to the `proof` string.
+  metric?: {
+    value: number;          // current value
+    target: number;         // goal / comparison value
+    unit?: string;          // 'g', '%', etc.
+    primaryLabel: string;   // label under `value` (e.g. AVG/DAY)
+    secondaryLabel: string; // label under `target` (e.g. GOAL)
+  };
 }
 
 export interface Suggestion {
@@ -293,6 +302,7 @@ function buildDiagnosticCards(
       lever: `Anchor one meal a day around a protein source to close the gap.`,
       window: win, strength: clampStrength(42 + Math.min(50, pctUnder * 130)),
       tone: macroFinding.macroStatus === 'factor' ? 'factor' : 'attention', positive: false,
+      metric: { value: macroFinding.avgProtein, target: macroFinding.proteinGoalMin, unit: 'g', primaryLabel: 'AVG/DAY', secondaryLabel: 'GOAL' },
     });
   }
 

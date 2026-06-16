@@ -4,10 +4,11 @@ import { triggerHaptic } from '@/utils/haptics';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, Easing, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ToastRenderer, useToast } from '../components/Toast';
 import TooltipIcon from '../components/TooltipIcon';
+import { CardWash } from '../components/GradientCard';
 import { useTheme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
@@ -23,6 +24,7 @@ import {
   SleepFinding,
   deleteReport,
   loadSavedReports,
+  saveReport,
 } from '../utils/diagnosticReport';
 import {
   SmartTipsStore,
@@ -255,6 +257,46 @@ function SleepCard({ f, isMindful, theme, shadowStyle }: { f: any; isMindful: bo
   );
 }
 
+// ── Stat module: structured proof as big numbers + an animated bar, replacing the
+// plain-text proof line. value-vs-target shape (the common case). The bar fills to
+// value/target; track + fill are derived from the card's tone accent so it is theme-safe.
+function StatBar({ metric, accent, theme }: { metric: NonNullable<DiagnosticCard['metric']>; accent: string; theme: any }) {
+  const t = theme;
+  const unit = metric.unit ?? '';
+  const fill = metric.target > 0 ? Math.max(0, Math.min(1, metric.value / metric.target)) : 0;
+  const delta = Math.round(metric.target - metric.value);
+  const anim = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(anim, { toValue: fill, duration: 700, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
+  }, [fill]);
+  const numStyle = { fontSize: 32, fontFamily: 'BebasNeue_400Regular' as const, letterSpacing: 0.5, lineHeight: 34 };
+  const labelStyle = { fontSize: 9, letterSpacing: 2, fontFamily: 'DMSans_700Bold' as const, color: t.textMuted, textTransform: 'uppercase' as const, marginTop: 2 };
+  return (
+    <View style={{ marginBottom: 12 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginBottom: 10 }}>
+        <View style={{ marginRight: 28 }}>
+          <Text style={[numStyle, { color: accent }]}>{Math.round(metric.value)}<Text style={{ fontSize: 16 }}>{unit}</Text></Text>
+          <Text style={labelStyle}>{metric.primaryLabel}</Text>
+        </View>
+        <View>
+          <Text style={[numStyle, { color: t.textSecondary }]}>{Math.round(metric.target)}<Text style={{ fontSize: 16 }}>{unit}</Text></Text>
+          <Text style={labelStyle}>{metric.secondaryLabel}</Text>
+        </View>
+        {delta !== 0 && (
+          <View style={{ marginLeft: 'auto', alignSelf: 'center', backgroundColor: accent + '1f', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+            <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: accent }}>
+              {delta > 0 ? `${delta}${unit} short` : `${Math.abs(delta)}${unit} over`}
+            </Text>
+          </View>
+        )}
+      </View>
+      <View style={{ height: 8, borderRadius: 4, backgroundColor: accent + '22', overflow: 'hidden' }}>
+        <Animated.View style={{ height: '100%', borderRadius: 4, backgroundColor: accent, width: anim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }} />
+      </View>
+    </View>
+  );
+}
+
 // ── Diagnostic card feed (track 2 surface) ───────────────────────────────────────
 // Renders one ranked DiagnosticCard: claim (headline) + proof (the number, prominent)
 // + insight (AI context line, when voiced) + lever (the action, NEVER labeled "lever").
@@ -264,8 +306,23 @@ function DiagnosticFeedCard({ card, theme, shadowStyle, isMindful }: { card: Dia
   const t = theme;
   const accent = card.positive ? t.statusGood : (card.tone === 'factor' ? t.statusBad : t.statusWarn);
   const chip = card.positive ? 'WORKING' : (card.tone === 'factor' ? 'KEY FACTOR' : 'WORTH ATTENTION');
+  // Prototype: full "completed" treatment (gradient wash + dim hero icon) on the protein
+  // card only, to validate the look before rolling it out to every card. CardWash provides
+  // the colored top edge, so the 1.5px top border is flattened to 0.5 to avoid the uneven
+  // iOS corner the GradientCard recipe warns about.
+  const completed = card.id === 'protein';
   return (
-    <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: accent, ...shadowStyle, marginBottom: 12 }]}>
+    <View style={[styles.card, {
+      backgroundColor: t.bgCard,
+      borderColor: t.borderCard,
+      borderTopColor: completed ? t.borderCardTop : accent,
+      ...(completed ? { borderTopWidth: 0.5 } : null),
+      ...shadowStyle, marginBottom: 12,
+    }]}>
+      {completed && <CardWash color={accent} scored radius={14} />}
+      {completed && (
+        <Ionicons name="nutrition" size={86} color={accent} style={{ position: 'absolute', right: 8, bottom: 6, opacity: 0.07 }} />
+      )}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <Text style={[styles.cardLabel, { color: t.textMuted }]}>{(card.window || '').toUpperCase()}</Text>
         {!isMindful && (
@@ -274,14 +331,18 @@ function DiagnosticFeedCard({ card, theme, shadowStyle, isMindful }: { card: Dia
           </View>
         )}
       </View>
-      <Text style={{ fontSize: 16, fontFamily: 'DMSans_700Bold', color: t.textPrimary, lineHeight: 22, marginBottom: 8 }}>{card.claim}</Text>
-      <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: accent, marginBottom: card.insight ? 8 : 10 }}>{card.proof}</Text>
+      <Text style={{ fontSize: 15, fontFamily: 'DMSans_600SemiBold', color: t.textSecondary, lineHeight: 21, marginBottom: 12 }}>{card.claim}</Text>
+      {card.metric ? (
+        <StatBar metric={card.metric} accent={accent} theme={t} />
+      ) : (
+        <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: accent, marginBottom: card.insight ? 8 : 10 }}>{card.proof}</Text>
+      )}
       {card.insight ? (
         <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: t.textSecondary, lineHeight: 20, marginBottom: 10 }}>{card.insight}</Text>
       ) : null}
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 7 }}>
-        <Text style={{ fontSize: 14, color: t.accentBlueRaw, marginTop: 1, fontFamily: 'DMSans_700Bold' }}>→</Text>
-        <Text style={{ flex: 1, fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: t.textPrimary, lineHeight: 20 }}>{card.lever}</Text>
+        <Text style={{ fontSize: 14, color: accent, marginTop: 1, fontFamily: 'DMSans_700Bold' }}>→</Text>
+        <Text style={{ flex: 1, fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: accent, lineHeight: 20 }}>{card.lever}</Text>
       </View>
     </View>
   );
@@ -437,11 +498,24 @@ export default function DiagnosticReportViewScreen() {
         const found = reports.find(r => r.id === decodeURIComponent(id));
         if (!found) { setNotFound(true); return; }
         setReport(found);
-        // Card feed: deterministic instantly, then voice in the background and upgrade.
+        // Card feed: show whatever the report has instantly. Voice ONCE per report, then
+        // persist the voiced cards back onto the saved report so reopening never re-calls
+        // the AI (this was the 5-8s-every-open cost). A report counts as voiced once any
+        // card carries an `insight` line.
         const baseCards = found.cards ?? [];
         setVoicedCards(baseCards);
-        if (baseCards.length > 0) {
-          voiceDiagnosticCards(baseCards, mode).then(setVoicedCards).catch(() => {});
+        const alreadyVoiced = baseCards.some(c => !!c.insight);
+        if (baseCards.length > 0 && !alreadyVoiced) {
+          voiceDiagnosticCards(baseCards, mode)
+            .then(voiced => {
+              setVoicedCards(voiced);
+              // Only persist if voicing actually produced insight (real AI pass, not the
+              // unchanged fallback) so a timeout does not lock in un-voiced cards.
+              if (voiced.some(c => !!c.insight)) {
+                saveReport({ ...found, cards: voiced }).catch(() => {});
+              }
+            })
+            .catch(() => {});
         }
         // Load stored Smart Tips for instant display, then refresh in background
         const stored = await loadSmartTips();

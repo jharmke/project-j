@@ -280,9 +280,11 @@ async function callWithTimeout(
   apiKey: string,
   systemPrompt: string,
   userMessage: string,
+  maxTokens: number = 300,
+  timeoutMs: number = API_TIMEOUT_MS,
 ): Promise<string> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -295,7 +297,7 @@ async function callWithTimeout(
       },
       body: JSON.stringify({
         model: MODEL,
-        max_tokens: 300,
+        max_tokens: maxTokens,
         system: systemPrompt,
         messages: [{ role: 'user', content: userMessage }],
       }),
@@ -420,6 +422,111 @@ export function resolveTipBody(cache: CoachTipCache): string {
 
 export function resolveTipTitle(cache: CoachTipCache): string {
   return cache.packet.fallbackTitle;
+}
+
+// ── EvR diagnostic-card feed voicer ─────────────────────────────────────────────
+// Voices the WHOLE ranked card feed in ONE batched call: the model sees every card
+// at once, so it can vary phrasing and avoid repeating itself across cards. It only
+// rewrites each card's claim + lever and adds one "insight" sentence; the proof line
+// (the number that backs the card) is NEVER sent for editing, so numeric integrity is
+// guaranteed. Any card the model drops or mangles falls back to its deterministic text.
+// One call per report; the surface caches the voiced result onto the saved report.
+
+const FEED_VOICE_RULEBOOK = `You voice the diagnostic feed of a premium fitness and faith wellness app. The app has already done the analysis and handed you a ranked list of finding cards, each with a claim (what is going on), a lever (what to do), and a tone. Your only job is to make the language sound like a sharp, warm human coach wrote it, not a template.
+
+Rules:
+- Rewrite each card's "claim" and "lever". Add one short "insight" sentence that explains WHY it matters or the mechanism behind it. The insight is where the substance lives, so make it specific and useful, never filler.
+- Be concrete and plain. Name the real things: calories eaten, calories burned, days logged, grams of protein. NEVER use abstract or riddle-like phrasing like "the numbers going in versus the numbers going out", it confuses more than it explains. If you mean calories eaten or calories burned, say exactly that.
+- Keep it tight: the claim is one line, the insight is one clear sentence, the lever is one sentence. Short and sharp beats thorough. A card should be scannable in a few seconds.
+- Keep every number and fact exactly as given. Never invent a number, a cause, or a metric that was not in the card.
+- Second person ("you", "your"). Confident and specific, never preachy, never hype.
+- Match the card's tone: a "factor" card is direct and gets to the point; an "attention" card is a steady nudge; a "positive" card affirms and tells them to protect what is working.
+- The suggestion (the "lever" field) points the way. It does not give orders, and it does not tiptoe. A clear, plain instruction is the goal ("build one meal a day around a solid protein source"). Avoid BOTH extremes: no pressure or ultimatums ("pick one to fix first", "you must", "do this now", "dial it back"), and no hedging or apology. Phrases like "a loose, flexible plan, nothing rigid, just a rough structure" stack four soft qualifiers for one idea, which reads timid and apologetic. Say it once, plainly, with conviction. Confident and direct is the default voice, only genuine Mindful mode softens.
+- Never use the words "lever" or "levers" in your output. Users do not know that term.
+- Vary your phrasing across the cards. Do not start multiple cards the same way. The feed should read like one coach talking, not a mail merge.
+- No dashes of any kind, no markdown, no emojis, no clinical or medical claims.
+- Return ONLY valid JSON, no prose around it, in this exact shape:
+{"cards":[{"id":"<the id>","claim":"<rewritten>","insight":"<one sentence>","lever":"<rewritten>"}]}`;
+
+const FEED_VOICE_MINDFUL_NOTE = `This user is in Mindful mode. Frame everything as a gentle observation to notice, not a verdict or a correction. Soften or drop directive language in the lever ("you might notice", "when it feels right") and never use scoring, judgment, or pressure. Keep positives warm and calm.`;
+
+function sanitizeVoicedLine(raw: any): string {
+  if (typeof raw !== 'string') return '';
+  let s = raw.trim();
+  if (!s) return '';
+  s = s.replace(DASH_PATTERN, ', ').replace(/\*\*/g, '').replace(/\*/g, '').trim();
+  if (s.length > 220) return '';
+  const lower = s.toLowerCase();
+  if (BANNED_WORDS.find(w => lower.includes(w.toLowerCase()))) return '';
+  return s;
+}
+
+function parseVoicedCards(raw: string): Record<string, { claim?: string; insight?: string; lever?: string }> | null {
+  try {
+    let t = raw.trim();
+    // Strip markdown code fences if the model wrapped the JSON
+    t = t.replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+    const start = t.indexOf('{');
+    const end = t.lastIndexOf('}');
+    if (start < 0 || end < 0) return null;
+    const parsed = JSON.parse(t.slice(start, end + 1));
+    const arr = Array.isArray(parsed?.cards) ? parsed.cards : Array.isArray(parsed) ? parsed : null;
+    if (!arr) return null;
+    const map: Record<string, { claim?: string; insight?: string; lever?: string }> = {};
+    for (const item of arr) {
+      if (item && typeof item.id === 'string') map[item.id] = item;
+    }
+    return map;
+  } catch {
+    return null;
+  }
+}
+
+// Diagnostic: why the last voicing attempt fell back (read by the dev tool). Removable.
+let lastVoiceDebug: string | null = null;
+export function getLastVoiceDebug(): string | null { return lastVoiceDebug; }
+
+// Voices a ranked DiagnosticCard feed. Returns cards with claim/lever rewritten and an
+// insight sentence added. On no API key, timeout, or any parse failure, returns the
+// cards unchanged (deterministic fallback) so the feed always renders.
+export async function voiceDiagnosticCards<T extends { id: string; claim: string; proof: string; lever: string; tone: string; insight?: string }>(
+  cards: T[],
+  mode: string = 'balanced',
+): Promise<T[]> {
+  lastVoiceDebug = null;
+  if (cards.length === 0) return cards;
+  const apiKey = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY;
+  if (!apiKey) { lastVoiceDebug = 'no API key (EXPO_PUBLIC_ANTHROPIC_API_KEY missing)'; return cards; }
+
+  const isMindful = mode.toLowerCase() === 'mindful';
+  const systemPrompt = isMindful
+    ? `${FEED_VOICE_RULEBOOK}\n\n${FEED_VOICE_MINDFUL_NOTE}`
+    : FEED_VOICE_RULEBOOK;
+  const userMessage = `Voice these ${cards.length} cards. Return JSON only.\n\n` +
+    JSON.stringify(cards.map(c => ({ id: c.id, tone: c.tone, claim: c.claim, lever: c.lever })));
+
+  try {
+    const raw = await callWithTimeout(apiKey, systemPrompt, userMessage, 1100, 20000);
+    const voiced = parseVoicedCards(raw);
+    if (!voiced) { lastVoiceDebug = `parse failed; raw[0..140]: ${raw.slice(0, 140)}`; return cards; }
+    lastVoiceDebug = `ok: ${Object.keys(voiced).length} voiced`;
+    return cards.map(c => {
+      const v = voiced[c.id];
+      if (!v) return c;
+      const claim = sanitizeVoicedLine(v.claim);
+      const lever = sanitizeVoicedLine(v.lever);
+      const insight = sanitizeVoicedLine(v.insight);
+      return {
+        ...c,
+        claim: claim || c.claim,
+        lever: lever || c.lever,
+        insight: insight || c.insight,
+      };
+    });
+  } catch (e: any) {
+    lastVoiceDebug = `threw: ${String(e?.message || e)}`;
+    return cards;
+  }
 }
 
 // Weekly-specific refresh: computes its own packet (fixed date range, deduped

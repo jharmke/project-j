@@ -96,6 +96,7 @@ export interface DiagnosticCard {
   strength: number;       // 0-100
   tone: 'positive' | 'attention' | 'factor';
   positive: boolean;
+  insight?: string;       // AI-voiced "why it matters" sentence; absent on deterministic fallback
 }
 
 export interface Suggestion {
@@ -812,7 +813,7 @@ export async function generateDiagnosticReport(windowDays: ReportWindow): Promis
             detail: `On above-average step days, your sleep score averaged ${Math.round(avg(highStepSleep))} vs ${Math.round(avg(lowStepSleep))} on lower-step days. Movement during the day is one of the strongest predictors of sleep quality.`,
             claim: `Moving more is buying you better sleep.`,
             proof: `High-step days: +${delta} pt sleep score`,
-            lever: `Keep the steps up. It is one of your strongest sleep levers.`,
+            lever: `Keep the steps up. Daytime movement is one of the strongest things you can do for your sleep.`,
             strength: corrStrength(delta, 8),
             positive: true,
           });

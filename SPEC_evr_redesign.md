@@ -1,19 +1,29 @@
 # SPEC: Effort vs Results Redesign
 
-## RESUME HERE (handoff 2026-06-15)
+## RESUME HERE (handoff 2026-06-16)
 
-Fresh session picking this up: read project_j_roadmap.md first (per CLAUDE.md), then this whole file. State of the redesign:
+Fresh session picking this up: read project_j_roadmap.md first (per CLAUDE.md), then this whole file, then this block. Track 2 is IN PROGRESS. The ENGINE half of track 2 is built, verified on Justin's real data, and committed. The remaining work is the STYLED SURFACE plus polish. Do not rebuild the engine half.
 
-- **SHIPPED, do NOT redo:**
-  - Recovery wired into the EvR coach (commit 4456016): rec_load_drag / rec_tracks_sleep / rec_sustained_low in utils/smartTipsEngine.ts.
-  - Anti-weight-monopoly "headline topic fatigue" on ALL multi-topic coaching surfaces: home (track 1a, commit d1d8d25) + EvR/weekly/monthly (track 1b, commit b109c15). Lives in utils/smartTipsEngine.ts as headlineTopic() + the optional recentTopics param on selectByPrioritySpine, wired into computeCoachPacket('home'), computeCoachPacketEvr, computeCoachPacketWeekly, computeCoachPacketMonthly. Each has its own additive pj_coach_topic_hist_* key. Scoped sleep/recovery coaches are intentionally exempt (single-domain).
-- **NEXT = TRACK 2: the EvR surface rebuild** in app/diagnostic-report-view.tsx. Turn the report from a scorecard into the diagnostic feed below: EvR-styled diagnostic headline + a relevance-ranked, relevant-only card feed where each card = claim + pointed proof + lever (Sections 3, 4, 6). This is UI work AND the deferred strength-weighted relevance rewrite (Section 10 item 2), done together with proof-data per card rather than bolted onto the live spine.
-- **STILL OPEN:** app-wide vs EvR-only ranking scope (Justin leaned everywhere; 1a/1b already applied the fatigue everywhere, so effectively settled); ranking weight tuning; Free/Pro rework (parked, Section 10 item 3); which existing finding cards survive as diagnoses (Section 9).
-- **DECISIONS LOCKED:** Sections 2 through 9. Key ones: EvR explains results good AND bad; positives count as diagnoses so there is no empty state; per-pattern auto windows, no 14/30/90 selector; never invent a problem.
+### DONE + COMMITTED in track 2 (do NOT redo)
+- **Engine diagnostic-card model** (commit 8ea3464, utils/diagnosticReport.ts): every finding + correlation collapses into one `DiagnosticCard` { id, claim, proof, lever, window, strength 0-100, tone, positive, insight? }. Built by `buildDiagnosticCards()`, attached as `report.cards`. Ranked strength desc, corrective above positive on ties, capped at 6. Positives count as diagnoses (good findings emit "why it's working" cards) so the feed is never a hollow "you're good." Consistency reweighted to a low band (never leads); a corrective gaps card surfaces when logging is poor.
+- **Three pre-existing data bugs fixed** in generateDiagnosticReport (same commit): calTarget was read from pj_settings (wrong bucket, always 0); goalDirection treated weightGoal as a number when it is a bucket string; protein target used a bodyweight estimate. EvR now pulls calTarget / goalDirection / proteinGoalG from the SAME canonical sources every other coach uses (utils/calorieTarget loadCalorieTargets + the macro calc mirroring buildEngineContext). Verified on device: protein now shows the real 164g goal, the weight/deficit card now appears.
+- **AI voicing layer** (commit PENDING below, utils/coachAI.ts): `voiceDiagnosticCards(cards, mode)` voices the WHOLE ranked feed in ONE batched API call (Sonnet 4.6, 1100 tokens, 20s timeout via the new maxTokens+timeoutMs params on callWithTimeout). Rewrites claim + lever and adds one `insight` sentence; proof is NEVER sent for editing (numeric integrity guaranteed). Deterministic fallback returns cards unchanged on no-key / timeout / parse fail. FEED_VOICE_RULEBOOK tuned over several device iterations: concrete-not-riddle, tight (claim one line / insight one sentence / lever one sentence), suggestions point not push (no ultimatums) but also not hedgy/eggshells (no stacked soft qualifiers, that is Mindful's job only), and never output the word "lever"/"levers". `getLastVoiceDebug()` is a removable diagnostic.
+- **Dev tool "Dump EvR Cards"** (settings.tsx): generates the feed on real data, voices it, shows ranked claim/proof/insight/lever as plain text with an (AI voiced)/(fallback: reason) header. This is the verify-before-pixels harness; keep it until the surface ships, then can remove.
 
-Status: PARTIALLY BUILT. Engine anti-monopoly done (tracks 1a + 1b). EvR surface rebuild (track 2) not started. Free/Pro parked.
+### EXACTLY WHAT TO DO NEXT (track 2, step 2: the styled surface)
+1. **Rebuild app/diagnostic-report-view.tsx** to render: the EvR-styled headline diagnosis (keep the existing computeCoachPacketEvr headline, it is already deduped from home) + the ranked voiced card feed from report.cards. Each card renders claim (headline) + proof (the number, prominent) + insight (context line) + lever (the action, but NEVER label it "lever" in UI). Drop the old fixed finding-card components (Consistency/Deficit/BurnAccuracy/Macros/Sleep) and the scorecard role. Suppress the one feed card whose topic matches the headline so the feed does not echo the lead.
+2. **Cache the voiced output per report** so voicing is ONE call, not every open. Voice lazily on first view (show deterministic instantly, upgrade when the call returns) OR at generation; store voiced cards onto the saved report (pj_diagnostic_reports). Old saved reports lack cards/voiced text, handle gracefully (regenerate or render deterministic).
+3. **Mindful pass** on the new cards (Section 8): the voicer already softens in Mindful mode; also decide card suppression for Mindful (corrective levers soften/suppress per applyMindfulSuppression philosophy).
+4. **Drop the 14/30/90 window selector** (Section 5/9): reshape app/diagnostic-report.tsx entry flow to per-pattern windows. Do this AFTER the surface renders, as its own step. Each card already states its own window in its proof.
+5. **Tooltip + tutorial sync** (effort_vs_results entry in tooltipRegistry.ts + the EvR tutorial in data/tutorials.ts + the TUTORIAL_DEMO_REPORT in diagnostic-report-view.tsx) and **5-theme + Mindful audit**, then commit.
 
-This supersedes the old EvR report model (the configurable-window scorecard with fixed finding cards). The Level 1 / Level 2 smart coaching engine stays; what changes is what EvR IS and how findings get ranked.
+### STILL OPEN / DECISIONS
+- Ranking weight tuning (strength curves are first-pass; tune against more real output).
+- Free/Pro rework PARKED (Section 10 item 3) until the surface is locked.
+- Confirm the logged-days lock threshold stays 7 (Justin confirmed 7).
+- NOTE the AI voicing requires EXPO_PUBLIC_ANTHROPIC_API_KEY in the build; the home coach uses the same key.
+
+Status: track 2 ENGINE + VOICING done and verified on device. STYLED SURFACE not started. This supersedes the old scorecard EvR; the Level 1/Level 2 coaching engine stays.
 
 ---
 

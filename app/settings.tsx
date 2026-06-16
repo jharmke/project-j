@@ -21,6 +21,7 @@ import { app, auth, db, saveToFirebase } from '../firebaseConfig';
 import { shouldSync, uploadAllLocal } from '../services/syncService';
 import { storageSet } from '../utils/storage';
 import { generateDiagnosticReport, ReportWindow } from '../utils/diagnosticReport';
+import { voiceDiagnosticCards, getLastVoiceDebug } from '../utils/coachAI';
 import { TOOLTIP_REGISTRY } from '../tooltipRegistry';
 import TooltipModal from '../components/TooltipModal';
 import TooltipIcon from '../components/TooltipIcon';
@@ -1794,15 +1795,21 @@ export default function SettingsScreen() {
                         Alert.alert(`EvR Cards (${w}d)`, `Not enough data: only ${report.minLoggedDays} logged days in this window. Try a shorter window or log more.`);
                         return;
                       }
-                      const cards = report.cards ?? [];
-                      if (cards.length === 0) {
+                      const rawCards = report.cards ?? [];
+                      if (rawCards.length === 0) {
                         Alert.alert(`EvR Cards (${w}d)`, 'No cards cleared their floors and no positive whys fired. If this looks wrong, flag it.');
                         return;
                       }
+                      let mode = 'balanced';
+                      try { const s = await AsyncStorage.getItem('pj_settings'); if (s) { const d = JSON.parse(s); if (d.styleMode) mode = d.styleMode; } } catch {}
+                      const cards = await voiceDiagnosticCards(rawCards, mode);
+                      const voicedAny = cards.some(c => !!c.insight);
+                      const debug = getLastVoiceDebug();
                       const body = cards.map((c, i) =>
-                        `${i + 1}. [${c.strength} ${c.positive ? 'POS' : c.tone.toUpperCase()}] ${c.claim}\n   Proof: ${c.proof}\n   Lever: ${c.lever}\n   (${c.window})`
+                        `${i + 1}. [${c.strength} ${c.positive ? 'POS' : c.tone.toUpperCase()}] ${c.claim}\n   ${c.proof}\n${c.insight ? `   ${c.insight}\n` : ''}   → ${c.lever}\n   (${c.window})`
                       ).join('\n\n');
-                      Alert.alert(`EvR Cards (${w}d) — ${cards.length} shown`, body);
+                      const header = voicedAny ? '(AI voiced)' : `(fallback: ${debug ?? 'unknown'})`;
+                      Alert.alert(`EvR (${w}d) — ${cards.length} cards ${header}`, body);
                     } catch (e) {
                       Alert.alert('Error', 'Could not generate the card feed. Check the logs.');
                     }

@@ -23,6 +23,7 @@ import { storageSet } from '../utils/storage';
 import { generateDiagnosticReport, ReportWindow } from '../utils/diagnosticReport';
 import { dumpDayScoreWithRecovery } from '../utils/dayScoreStore';
 import { voiceDiagnosticCards, getLastVoiceDebug } from '../utils/coachAI';
+import { dumpHomeCoachCandidates } from '../utils/smartTipsEngine';
 import { TOOLTIP_REGISTRY } from '../tooltipRegistry';
 import TooltipModal from '../components/TooltipModal';
 import TooltipIcon from '../components/TooltipIcon';
@@ -1785,6 +1786,30 @@ export default function SettingsScreen() {
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
               triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              Alert.alert('Seed Topic Fatigue', 'Writes a fake "weight, weight, weight" recent-topic history into all four coach surfaces (home, EvR, weekly, monthly) so the anti-repeat rotation triggers immediately. After seeding: Reset Coach Tip Cache (NOT Smart Tips Cache), then open each surface. The headline should lead with a NON-weight finding if one exists. Only touches coach history keys, never your logged data.', [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Seed', style: 'destructive', onPress: async () => {
+                  triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
+                  const weightHist = JSON.stringify(['weight', 'weight', 'weight']);
+                  await Promise.all([
+                    AsyncStorage.setItem('pj_coach_topic_hist_home', weightHist),
+                    AsyncStorage.setItem('pj_coach_topic_hist_evr', weightHist),
+                    AsyncStorage.setItem('pj_coach_topic_hist_weekly', weightHist),
+                    AsyncStorage.setItem('pj_coach_topic_hist_monthly', weightHist),
+                  ]);
+                  Alert.alert('Seeded', 'All four surfaces now have weight x3 history. Next: Reset Coach Tip Cache (NOT Smart Tips Cache), then open Home / Effort vs Results / Weekly / Monthly. Each headline should lead with a non-weight finding.');
+                }},
+              ]);
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Seed Topic Fatigue</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Forces weight x3 recent-topic history on all surfaces to test anti-repeat rotation.</Text>
+              </View>
+              <Ionicons name="flask-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
               Alert.alert('Dump EvR Cards', 'Generates the diagnostic card feed off your real logged data and shows the ranked claim + proof + lever cards as plain text. Read-only, nothing is saved. Pick a window.', [
                 { text: 'Cancel', style: 'cancel' },
                 ...([14, 30, 90] as ReportWindow[]).map(w => ({
@@ -1823,6 +1848,39 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Runs the new diagnostic feed on your real data. Shows ranked claim/proof/lever as plain text.</Text>
               </View>
               <Ionicons name="list-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              try {
+                const d = await dumpHomeCoachCandidates();
+                const fmt = (n: number) => n.toFixed(2);
+                const lines = d.rows.map(r =>
+                  `${r.positive ? '[P]' : '[C]'} ${r.ruleId} (${r.scenario || '-'}) topic=${r.topic} fam${r.family} ${r.tier.slice(0, 4)} fat${fmt(r.fatigue)} = ${fmt(r.score)}${r.ruleId === d.selectedRuleId ? '  <-- SELECTED' : ''}${r.excluded ? ' (prev, excluded)' : ''}`
+                );
+                const p = d.proteinDebug;
+                const proteinBlock =
+                  `\n\nPROTEIN CHECK (goal ${p.goal}g):\n` +
+                  `last7 (g, newest first): [${p.last7.map(v => v === null ? '-' : v).join(', ')}]\n` +
+                  `days <80% goal (${Math.round(p.goal * 0.8)}g): ${p.under80Count}/7 food days (need 4 -> pattern ${p.patternFires ? 'FIRES' : 'no'})\n` +
+                  `days <50% goal (${Math.round(p.goal * 0.5)}g) in last 5: ${p.under50CountW5} (need 3 -> urgent ${p.urgentFires ? 'FIRES' : 'no'})\n` +
+                  `logged food days: ${p.loggedFoodDaysW7}/7, ${p.loggedFoodDaysW5}/5`;
+                const head =
+                  `recentTopics: [${d.recentTopics.join(', ') || 'empty'}]\n` +
+                  `logged: ${d.loggedCount}/7   override: ${d.override ?? 'none'}\n` +
+                  `pool: ${d.poolUsed} (corrective ${d.correctiveCount} / positive ${d.positiveCount})\n` +
+                  `SELECTED -> ${d.selectedRuleId ?? 'none'}${d.override ? `  (BUT override=${d.override} wins live)` : ''}\n\n` +
+                  `RANKED (lower score wins):`;
+                Alert.alert('Home Coach Candidates', `${head}\n${lines.join('\n') || '(none)'}${proteinBlock}`);
+              } catch (e) {
+                Alert.alert('Error', 'Could not dump home coach candidates. Check the logs.');
+              }
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Dump Home Coach Candidates</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Shows every home tip candidate with family, tier, fatigue penalty, and final score. Read-only.</Text>
+              </View>
+              <Ionicons name="analytics-outline" size={18} color={theme.accentRed} />
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {

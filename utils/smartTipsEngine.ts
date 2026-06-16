@@ -2367,6 +2367,150 @@ function selectByPrioritySpine(
   return pick(candidates);
 }
 
+// ── DEV diagnostic: dump the home spine candidates with full score breakdown ──
+// Read-only. Mirrors computeCoachPacket's home else-branch exactly (runAllRules ->
+// Mindful suppression -> selectByPrioritySpine scoring) so we can SEE whether a
+// non-weight corrective is competing and whether the fatigue penalty is landing.
+// Does not touch any storage, does not affect the live coach.
+export interface CoachCandidateRow {
+  ruleId: string;
+  scenario: string;
+  topic: string;
+  family: number;
+  tier: SmartTipTier;
+  positive: boolean;
+  fatigue: number;
+  score: number;
+  excluded: boolean;
+}
+export interface CoachCandidateDump {
+  recentTopics: string[];
+  loggedCount: number;
+  override: 'safety' | 'sparse-data' | null;
+  correctiveCount: number;
+  positiveCount: number;
+  poolUsed: 'corrective' | 'positive' | 'none';
+  rows: CoachCandidateRow[];
+  selectedRuleId: string | null;
+  selectedTitle: string | null;
+  proteinDebug: {
+    goal: number;
+    last7: (number | null)[];   // protein per day, most-recent-first; null = no food logged
+    under80Count: number;       // days < 80% goal (pattern threshold, needs >=4)
+    under50CountW5: number;     // days < 50% goal in last 5 (urgent threshold, needs >=3)
+    loggedFoodDaysW7: number;
+    loggedFoodDaysW5: number;
+    patternFires: boolean;
+    urgentFires: boolean;
+  };
+}
+
+export async function dumpHomeCoachCandidates(): Promise<CoachCandidateDump> {
+  const todayKey = todayDateKey();
+  const [lastRuleRaw, topicHistRaw, store, workoutRaw] = await Promise.all([
+    AsyncStorage.getItem('pj_coach_last_rule_home'),
+    AsyncStorage.getItem('pj_coach_topic_hist_home'),
+    loadSmartTips(),
+    AsyncStorage.getItem('pj_workout_state').catch(() => null),
+  ]);
+  let recentTopics: string[] = [];
+  try { recentTopics = topicHistRaw ? (JSON.parse(topicHistRaw) || []) : []; } catch { recentTopics = []; }
+  const persistedLastRuleId: string | null = lastRuleRaw ? JSON.parse(lastRuleRaw).ruleId : null;
+
+  const ctx = await buildEngineContext(todayKey);
+  const tipStore: SmartTipsStore = store ?? {
+    activeTips: [], recentHistory: [], cooldowns: {},
+    variantHistory: {}, lastComputed: '', topicLedger: {},
+  };
+  const workoutState: any = workoutRaw ? JSON.parse(workoutRaw) : {};
+
+  const allDays = await loadWindowDays(todayKey, ctx, workoutState);
+  const w14 = allDays.slice(0, 14);
+  const w7 = allDays.slice(0, 7);
+  const w5 = allDays.slice(0, 5);
+  const loggedCount = loggedDaysInWindow(w7);
+
+  const safety9 = checkFamily9Safety(w7, ctx);
+  const override: 'safety' | 'sparse-data' | null =
+    safety9 ? 'safety' : (loggedCount < 4 ? 'sparse-data' : null);
+
+  const rawCandidates = runAllRules(w7, w5, w14, ctx, tipStore);
+  const suppressed = applyMindfulSuppression(rawCandidates, ctx);
+
+  // Mirror selectByPrioritySpine scoring exactly.
+  const TIER_RANK_SPINE: Record<SmartTipTier, number> = { urgent: 3, pattern: 2, insight: 1 };
+  const FATIGUE_BY_RECENCY = [2.0, 1.2, 0.6];
+  const fatiguePenalty = (ruleId: string): number => {
+    if (recentTopics.length === 0) return 0;
+    const topic = headlineTopic(ruleId);
+    let penalty = 0;
+    for (let i = 0; i < recentTopics.length && i < FATIGUE_BY_RECENCY.length; i++) {
+      if (recentTopics[i] === topic) penalty = Math.max(penalty, FATIGUE_BY_RECENCY[i]);
+    }
+    return penalty;
+  };
+  const scoreOf = (c: CandidateTip): number =>
+    (RULE_FAMILY[c.ruleId] ?? 99) + (3 - TIER_RANK_SPINE[c.tier]) * 0.1 + fatiguePenalty(c.ruleId);
+
+  const excludeRuleIds = persistedLastRuleId ? [persistedLastRuleId] : [];
+  let pool = suppressed;
+  if (excludeRuleIds.length > 0) {
+    const without = suppressed.filter(c => !excludeRuleIds.includes(c.ruleId));
+    if (without.length > 0) pool = without;
+  }
+  const corrective = pool.filter(c => !c.positive);
+  const positive = pool.filter(c => c.positive);
+  const ranked = corrective.length > 0 ? corrective : positive;
+  const poolUsed: 'corrective' | 'positive' | 'none' =
+    ranked.length === 0 ? 'none' : (corrective.length > 0 ? 'corrective' : 'positive');
+  const selected = [...ranked].sort((a, b) => scoreOf(a) - scoreOf(b))[0] ?? null;
+
+  const rows: CoachCandidateRow[] = suppressed
+    .map(c => ({
+      ruleId: c.ruleId,
+      scenario: RULE_SCENARIO[c.ruleId] ?? '',
+      topic: headlineTopic(c.ruleId),
+      family: RULE_FAMILY[c.ruleId] ?? 99,
+      tier: c.tier,
+      positive: c.positive,
+      fatigue: fatiguePenalty(c.ruleId),
+      score: scoreOf(c),
+      excluded: excludeRuleIds.includes(c.ruleId),
+    }))
+    .sort((a, b) => a.score - b.score);
+
+  // Protein diagnostic: show exactly why ruleProteinUnder did or did not fire,
+  // since EvR's average-based detection and home's day-count detection disagree.
+  const pGoal = ctx.proteinGoalG;
+  const foodDaysW7 = w7.filter(d => d.hasFoodData);
+  const foodDaysW5 = w5.filter(d => d.hasFoodData);
+  const under80Count = pGoal > 0 ? foodDaysW7.filter(d => d.protein < pGoal * 0.8).length : 0;
+  const under50CountW5 = pGoal > 0 ? foodDaysW5.filter(d => d.protein < pGoal * 0.5).length : 0;
+  const proteinDebug = {
+    goal: pGoal,
+    last7: w7.map(d => d.hasFoodData ? Math.round(d.protein) : null),
+    under80Count,
+    under50CountW5,
+    loggedFoodDaysW7: foodDaysW7.length,
+    loggedFoodDaysW5: foodDaysW5.length,
+    patternFires: pGoal > 0 && under80Count >= 4 && loggedDaysInWindow(w7) >= 6,
+    urgentFires: pGoal > 0 && under50CountW5 >= 3 && loggedDaysInWindow(w5) >= 4,
+  };
+
+  return {
+    recentTopics,
+    loggedCount,
+    override,
+    correctiveCount: corrective.length,
+    positiveCount: positive.length,
+    poolUsed,
+    rows,
+    selectedRuleId: selected?.ruleId ?? null,
+    selectedTitle: selected?.title ?? null,
+    proteinDebug,
+  };
+}
+
 export async function computeCoachPacket(
   surface: 'home' | 'day_summary' | 'evr' = 'home',
   windowDays: number = 14,

@@ -12,6 +12,7 @@ Fresh session picking this up: read project_j_roadmap.md first (per CLAUDE.md), 
 
 ### EXACTLY WHAT TO DO NEXT (track 2, step 2: the styled surface)
 1. **Rebuild app/diagnostic-report-view.tsx** to render: the EvR-styled headline diagnosis (keep the existing computeCoachPacketEvr headline, it is already deduped from home) + the ranked voiced card feed from report.cards. Each card renders claim (headline) + proof (the number, prominent) + insight (context line) + lever (the action, but NEVER label it "lever" in UI). Drop the old fixed finding-card components (Consistency/Deficit/BurnAccuracy/Macros/Sleep) and the scorecard role. Suppress the one feed card whose topic matches the headline so the feed does not echo the lead.
+   - **PORT THE RECOVERY RULES (found missing 2026-06-16).** buildDiagnosticCards in utils/diagnosticReport.ts contains ZERO recovery references (grep-confirmed). The rec_load_drag / rec_tracks_sleep / rec_sustained_low rules shipped 2026-06-15 into the OLD EvR coach pool (smartTipsEngine) only; the new card engine was built from scratch and never incorporated them, so the card feed emits no recovery card regardless of data. Section 11 ("What stays") lists these as SEED correlations, so this is an unfinished port. Add all three to buildDiagnosticCards as proper DiagnosticCards (claim + proof + lever + strength/severity + per-pattern window + Mindful copy). Reuse the hub coach's compute helpers (computeRecLoadDrag/TracksSleep/SustainedLow) for the math. Without this, recovery findings vanish from EvR the moment the surface switches to the feed.
 2. **Cache the voiced output per report** so voicing is ONE call, not every open. Voice lazily on first view (show deterministic instantly, upgrade when the call returns) OR at generation; store voiced cards onto the saved report (pj_diagnostic_reports). Old saved reports lack cards/voiced text, handle gracefully (regenerate or render deterministic).
 3. **Mindful pass** on the new cards (Section 8): the voicer already softens in Mindful mode; also decide card suppression for Mindful (corrective levers soften/suppress per applyMindfulSuppression philosophy).
 4. **Drop the 14/30/90 window selector** (Section 5/9): reshape app/diagnostic-report.tsx entry flow to per-pattern windows. Do this AFTER the surface renders, as its own step. Each card already states its own window in its proof.
@@ -102,13 +103,13 @@ Ranking factors (tune at build):
 ### Coverage principle (honest guardrail)
 Coverage means "every signal that has something REAL to say gets shown," not "every metric always gets a card." No inventing a sodium tip when sodium is fine just to be fair to sodium. But when a low-tier signal genuinely has a story, it is no longer outranked into permanent silence.
 
-## 7. App-wide ranking scope (RECOMMENDED, confirm before build)
+## 7. App-wide ranking scope (LOCKED 2026-06-16: APP-WIDE)
 
 There is ONE shared ranking function (`selectByPrioritySpine` in utils/smartTipsEngine.ts) and every coaching surface runs through it: home card, day summary, weekly, monthly, EvR. So the weight monopoly is one root cause feeding every surface.
 
 Recommendation: make the relevance + anti-repeat ranking the shared behavior, so all surfaces benefit at once. It is one place to change (same work as fixing only EvR) and it is safe for summaries because weight is already a dedicated scorecard card there, separate from the coach tip; only the coaching headline rotates, the weight data is never hidden.
 
-OPEN: Justin leaned "everywhere" but was not fully committed. Before build, dig surface-by-surface to confirm the rotation behaves correctly on each (home, day, weekly, monthly) and does not strip a surface of something it genuinely needs.
+LOCKED 2026-06-16: APP-WIDE. Justin committed. BUILD ORDER (agreed): build and prove the relevance/severity ranking inside the EvR card engine FIRST (the card feed gives clean per-card proof data to tune severity against), THEN promote the same ranking onto the shared spine (selectByPrioritySpine) that drives home + day/weekly/monthly. Do NOT flip the live single-slot surfaces blind on day one. When promoting, dig surface-by-surface to confirm the rotation behaves correctly on each (home, day, weekly, monthly) and does not strip a surface of something it genuinely needs; weight stays a dedicated scorecard tile in summaries so weight DATA is never hidden, only the coaching headline rotates.
 
 ## 8. Mindful behavior
 
@@ -123,10 +124,10 @@ EvR in Mindful: observations, not verdicts. Diagnostic facts still show (factual
 
 ## 10. Open decisions (carry into build)
 
-1. **App-wide vs EvR-only ranking** (Section 7): recommended app-wide, needs final confirm + per-surface dig.
-2. **Exact ranking weights / tuning:** the relevance formula factors are agreed in principle; weights need tuning against real output.
+1. **App-wide vs EvR-only ranking** (Section 7): LOCKED 2026-06-16 APP-WIDE. Build in EvR first, then promote to the shared spine for home + summaries. Per-surface dig at promotion time.
+2. **Exact ranking weights / tuning:** DECISION 2026-06-16 -- NOT pre-settled; tuned LIVE during the EvR build against the "Dump EvR Cards" output on real data. Pre-deciding weights in the abstract is guesswork. Guiding principle locked under item 4 (result-explaining positives outrank metric-high back-pats).
 3. **Free vs Pro:** PARKED. Rework after the surface is locked, since what is sellable depends on what the cards become.
-4. **Card migration:** which existing finding cards survive as diagnoses.
+4. **Card migration:** LOCKED 2026-06-16. The new engine already recast deficit / burn accuracy / protein / fiber / consistency / sleep into claim+proof+lever cards, so this is judgment calls, not demolition. Rules: (a) CONSISTENCY -- keep consistency_gaps as a real lever; consistency_good drops to LOWEST strength so it only ever appears when nothing else does, never takes a real slot. (b) BURN ACCURACY -- gate it to fire ONLY alongside a deficit-vs-results mismatch (never a standalone readout). (c) POSITIVES -- capped at 3 in the feed (one-line constant, bump to 4 if it feels thin), ranked by the same unified 0-100 strength scale as correctives. PRINCIPLE: positives that EXPLAIN A RESULT ("your deficit is working, the scale confirms it"; "sleep is carrying everything") are weighted ABOVE positives that just note a metric is high ("water high", "steps high", "active high") -- the latter are back-pats and sit at the bottom / cap out first. (d) RECOVERY -- port rec_load_drag/tracks_sleep/sustained_low into the engine (see step-2 build note above); they are diagnoses, not back-pats.
 5. **Confirm the exact logged-days lock threshold** for report generation.
 
 ## 11. What stays (do not rebuild)

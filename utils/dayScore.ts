@@ -74,6 +74,11 @@ export interface DayScoreInput {
   sleepFeelRating: number | null;
   sleepIsManual: boolean;
   sleepConsistencyPts: number;
+
+  // Third category (Recovery): the real standalone Recovery Score for the day when
+  // present. When null/absent the third category falls back to the sleep score
+  // (today's behavior), so a day without a stored recoveryScore scores byte-identically.
+  recoveryScore?: number | null;
 }
 
 export interface DayScore {
@@ -97,6 +102,12 @@ export interface DayScore {
     rawSleepScore: number;
     categoryScore: number;
   } | null;
+  // The value actually used for the composite's third category (at the
+  // CATEGORY_WEIGHTS.sleep weight) and where it came from. 'recovery' = the real
+  // Recovery Score (no floor); 'sleep' = the floored sleep category (fallback);
+  // null = no third-category data. Additive: absent on days scored before this.
+  recoveryCategoryScore?: number | null;
+  recoveryCategorySource?: 'recovery' | 'sleep' | null;
   computedAt: string;
   excludedFromAverages: boolean;
   version?: number;              // stamped by the store; bump to force recompute
@@ -328,14 +339,24 @@ export function computeDayScore(input: DayScoreInput): DayScore | null {
   const activity = activityScore(input);
   const sleep = sleepScoreCategory(input);
 
+  // Third category (Recovery): prefer the real Recovery Score when present (no floor,
+  // it is a calibrated 0-100 readout), else fall back to the floored sleep category.
+  // When no recoveryScore is supplied this collapses to today's sleep-only behavior,
+  // so a day without one scores byte-identically.
+  const hasRecovery = input.recoveryScore != null && Number.isFinite(input.recoveryScore);
+  const thirdScore = hasRecovery
+    ? Math.max(0, Math.min(100, input.recoveryScore as number))
+    : (sleep ? sleep.score : null);
+  const thirdSource: 'recovery' | 'sleep' | null = hasRecovery ? 'recovery' : (sleep ? 'sleep' : null);
+
   // Minimum data threshold: at least one category must have data (spec 2.7).
-  if (!nutrition && !activity && !sleep) return null;
+  if (!nutrition && !activity && thirdScore === null) return null;
 
   let weightedSum = 0;
   let weightTotal = 0;
   if (nutrition) { weightedSum += nutrition.score * CATEGORY_WEIGHTS.nutrition; weightTotal += CATEGORY_WEIGHTS.nutrition; }
   if (activity) { weightedSum += activity.score * CATEGORY_WEIGHTS.activity; weightTotal += CATEGORY_WEIGHTS.activity; }
-  if (sleep) { weightedSum += sleep.score * CATEGORY_WEIGHTS.sleep; weightTotal += CATEGORY_WEIGHTS.sleep; }
+  if (thirdScore !== null) { weightedSum += thirdScore * CATEGORY_WEIGHTS.sleep; weightTotal += CATEGORY_WEIGHTS.sleep; }
 
   const composite = round1(weightTotal > 0 ? weightedSum / weightTotal : 0);
 
@@ -350,6 +371,8 @@ export function computeDayScore(input: DayScoreInput): DayScore | null {
     nutritionDetail: nutrition ? nutrition.detail : null,
     activityDetail: activity ? activity.detail : null,
     sleepDetail: sleep ? sleep.detail : null,
+    recoveryCategoryScore: thirdScore !== null ? round1(thirdScore) : null,
+    recoveryCategorySource: thirdSource,
     computedAt: input.computedAt,
     excludedFromAverages: !!input.excluded,
   };

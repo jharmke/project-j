@@ -21,6 +21,7 @@ import { app, auth, db, saveToFirebase } from '../firebaseConfig';
 import { shouldSync, uploadAllLocal } from '../services/syncService';
 import { storageSet } from '../utils/storage';
 import { generateDiagnosticReport, ReportWindow } from '../utils/diagnosticReport';
+import { dumpDayScoreWithRecovery } from '../utils/dayScoreStore';
 import { voiceDiagnosticCards, getLastVoiceDebug } from '../utils/coachAI';
 import { TOOLTIP_REGISTRY } from '../tooltipRegistry';
 import TooltipModal from '../components/TooltipModal';
@@ -1850,6 +1851,51 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Last night: our overnight deep-sleep RHR vs Apple's daytime value. Read-only, nothing saved.</Text>
               </View>
               <Ionicons name="heart-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              Alert.alert('Dump Day Score w/ Recovery', 'Recomputes your recent days BOTH ways: the current sleep-driven third category vs the real Recovery Score. Read-only, nothing is saved and live scoring is untouched. Pick a window.', [
+                { text: 'Cancel', style: 'cancel' },
+                ...[7, 14, 30].map(w => ({
+                  text: `${w}d`,
+                  onPress: async () => {
+                    try {
+                      const t = new Date();
+                      const todayKey = `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+                      const res = await dumpDayScoreWithRecovery(todayKey, w);
+                      if (res.scoredCount === 0) {
+                        Alert.alert(`Day Score + Recovery (${w}d)`, 'No scored days in this window.');
+                        return;
+                      }
+                      const sgn = (n: number) => `${n > 0 ? '+' : ''}${n}`;
+                      const md = (k: string | null) => (k ? k.slice(5) : '-');
+                      const head = [
+                        `${res.scoredCount} scored | ${res.recoveryCount} w/ recovery | ${res.changedCount} moved`,
+                        res.avgDelta !== null
+                          ? `Avg Δ ${sgn(res.avgDelta)} | Max Δ ${res.maxAbsDelta} on ${md(res.maxAbsDeltaDate)}`
+                          : 'No recovery-equipped days in this window.',
+                      ].join('\n');
+                      const recRows = res.rows.filter(r => r.hasRecovery);
+                      const lines = recRows.map(r =>
+                        `${r.dayName} ${md(r.dateKey)}  ${r.oldComposite}→${r.newComposite}  Δ${sgn(r.delta)}   3rd ${r.oldThird ?? '-'}→${r.newThird ?? '-'}`
+                      ).join('\n');
+                      const fallback = res.scoredCount - res.recoveryCount;
+                      const tail = fallback > 0 ? `\n\n+ ${fallback} sleep-fallback day${fallback === 1 ? '' : 's'} (unchanged)` : '';
+                      const body = head + '\n\n' + (lines.length ? lines : 'No day in this window had a stored Recovery Score.') + tail;
+                      Alert.alert(`Day Score + Recovery (${w}d)`, body);
+                    } catch (e) {
+                      Alert.alert('Error', 'Could not compute the dump. Check the logs.');
+                    }
+                  },
+                })),
+              ]);
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Dump Day Score w/ Recovery</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Recomputes recent days sleep-driven vs real Recovery Score. Shows old/new composite + delta. Read-only.</Text>
+              </View>
+              <Ionicons name="pulse-outline" size={18} color={theme.accentRed} />
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {

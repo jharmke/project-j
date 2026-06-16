@@ -394,6 +394,95 @@ export async function runDayScoreScan(todayKey: string, nowISO: string): Promise
   return yesterdayScore;
 }
 
+// ─── Dev tool: Day Score with Recovery, old vs new (read-only) ───────────────
+// Recomputes the last `windowDays` completed days BOTH ways: as today (third
+// category = sleep score) and with the day's stored Recovery Score injected as
+// the third category. Pure read: never writes, never touches live scoring. Lets
+// Justin eyeball the deltas on real data before the wire-up (#6) goes live.
+
+export interface RecoveryDumpRow {
+  dateKey: string;
+  dayName: string;
+  hasRecovery: boolean;          // a stored pj_<date>.recoveryScore exists
+  oldComposite: number;          // today's composite (sleep-driven third category)
+  newComposite: number;          // composite with Recovery Score as third category
+  delta: number;                 // newComposite - oldComposite
+  oldThird: number | null;       // sleep-driven third-category value (floored)
+  newThird: number | null;       // recovery-driven third-category value (no floor)
+  source: 'recovery' | 'sleep' | 'none';
+}
+
+export interface RecoveryDumpResult {
+  windowDays: number;
+  rows: RecoveryDumpRow[];        // scored days, most recent first
+  scoredCount: number;
+  recoveryCount: number;          // days where recovery replaced sleep
+  changedCount: number;           // recovery days whose composite actually moved
+  avgDelta: number | null;        // mean delta over recovery-equipped days
+  maxAbsDelta: number | null;
+  maxAbsDeltaDate: string | null;
+}
+
+export async function dumpDayScoreWithRecovery(todayKey: string, windowDays: number): Promise<RecoveryDumpResult> {
+  const nowISO = new Date().toISOString();
+  const rows: RecoveryDumpRow[] = [];
+
+  for (let offset = 1; offset <= windowDays; offset++) {
+    const dateKey = keyForOffset(todayKey, offset);
+    const raw = await AsyncStorage.getItem(`pj_${dateKey}`);
+    if (!raw) continue;
+    let day: any;
+    try { day = JSON.parse(raw); } catch { continue; }
+    if (isDayExcluded(day)) continue;
+
+    const input = await buildDayScoreInput(dateKey, nowISO);
+    if (!input) continue;
+    const oldScore = computeDayScore(input);
+    if (!oldScore) continue;
+
+    const recVal = typeof day.recoveryScore === 'number' && Number.isFinite(day.recoveryScore)
+      ? day.recoveryScore : null;
+    const newScore = recVal !== null
+      ? computeDayScore({ ...input, recoveryScore: recVal })
+      : oldScore;
+    const newComposite = newScore ? newScore.composite : oldScore.composite;
+
+    rows.push({
+      dateKey,
+      dayName: dayNameFromKey(dateKey),
+      hasRecovery: recVal !== null,
+      oldComposite: oldScore.composite,
+      newComposite,
+      delta: Math.round((newComposite - oldScore.composite) * 10) / 10,
+      oldThird: oldScore.recoveryCategoryScore ?? null,
+      newThird: newScore?.recoveryCategoryScore ?? null,
+      source: recVal !== null ? 'recovery' : (oldScore.recoveryCategorySource ?? 'none'),
+    });
+  }
+
+  const recoveryRows = rows.filter(r => r.hasRecovery);
+  const avgDelta = recoveryRows.length
+    ? Math.round((recoveryRows.reduce((s, r) => s + r.delta, 0) / recoveryRows.length) * 10) / 10
+    : null;
+  let maxAbsDelta: number | null = null;
+  let maxAbsDeltaDate: string | null = null;
+  for (const r of recoveryRows) {
+    const a = Math.abs(r.delta);
+    if (maxAbsDelta === null || a > maxAbsDelta) { maxAbsDelta = a; maxAbsDeltaDate = r.dateKey; }
+  }
+
+  return {
+    windowDays,
+    rows,
+    scoredCount: rows.length,
+    recoveryCount: recoveryRows.length,
+    changedCount: recoveryRows.filter(r => r.delta !== 0).length,
+    avgDelta,
+    maxAbsDelta,
+    maxAbsDeltaDate,
+  };
+}
+
 // ─── 90-day archive (Stats > Reports), grouped by week ───────────────────────
 
 export interface ArchiveDay {

@@ -101,11 +101,20 @@ export interface DiagnosticCard {
   // Optional structured proof so the surface can render a stat module (big numbers + bar)
   // instead of a line of text. When absent, the surface falls back to the `proof` string.
   metric?: {
-    value: number;          // current value
-    target: number;         // goal / comparison value
-    unit?: string;          // 'g', '%', etc.
-    primaryLabel: string;   // label under `value` (e.g. AVG/DAY)
-    secondaryLabel: string; // label under `target` (e.g. GOAL)
+    // Bar shape (default 'target'):
+    //  target  -> value vs goal, higher-better, "short"/"over" delta pill (protein, logging)
+    //  score   -> single 0-100 number, NO delta, second number is a caption (sleep, recovery mean)
+    //  range   -> value vs a [min,max] band, "in range" when inside, short/over only when outside (fiber)
+    //  compare -> two bars A vs B, no goal/delta (deficit predicted-vs-actual, recovery easy-vs-hard)
+    kind?: 'target' | 'score' | 'range' | 'compare' | 'goalbar';
+    value: number;          // current value (compare: the A / first bar)
+    target: number;         // target: goal | score: bar max (100) | range: bar max | compare: the B / second bar
+    unit?: string;          // 'g', '%', 'lb', etc.
+    primaryLabel: string;   // label under `value`  (compare: A label)
+    secondaryLabel: string; // label under `target` (compare: B label; score: unused)
+    caption?: string;       // score: small line replacing the second number (e.g. "OVER 14 NIGHTS")
+    rangeMin?: number;      // range: low edge of the healthy band
+    rangeMax?: number;      // range: high edge of the healthy band
   };
 }
 
@@ -254,12 +263,21 @@ function buildDiagnosticCards(
     const expDir = lose ? 'lost' : 'gained';
     const actDir = deficitFinding.actualChangeLbs <= 0 ? 'lost' : 'gained';
     const proof = `Predicted: ${expDir} ${fmtLbs1(deficitFinding.expectedChangeLbs)} · Actual: ${actDir} ${fmtLbs1(deficitFinding.actualChangeLbs)}`;
+    // A-vs-B comparison bar: predicted change vs what the scale actually did (magnitudes;
+    // direction lives in the claim/proof). Shape 4.
+    const deficitMetric = {
+      kind: 'goalbar' as const,
+      value: Math.round(Math.abs(deficitFinding.expectedChangeLbs) * 10) / 10,
+      target: Math.round(Math.abs(deficitFinding.actualChangeLbs) * 10) / 10,
+      unit: 'lb', primaryLabel: 'PREDICTED', secondaryLabel: 'ACTUAL',
+    };
     const onTrack = lose ? gap <= 0.3 : gap >= -0.3;
     if (onTrack) {
       cards.push({
         id: 'deficit', claim: `Your effort is showing up on the scale.`, proof,
         lever: `Whatever you are doing is working. Hold the pattern.`,
         window: win, strength: clampStrength(48), tone: 'positive', positive: true,
+        metric: deficitMetric,
       });
     } else {
       const fellShort = lose ? gap > 0 : gap < 0;
@@ -275,6 +293,7 @@ function buildDiagnosticCards(
         strength: clampStrength(45 + Math.min(50, Math.abs(gap) * 28)),
         tone: Math.abs(gap) > 1.0 ? 'factor' : 'attention',
         positive: false,
+        metric: deficitMetric,
       });
     }
   }
@@ -316,6 +335,7 @@ function buildDiagnosticCards(
       lever: `Lean on whole foods: fruit, vegetables, beans, whole grains.`,
       window: win, strength: clampStrength(34 + Math.min(40, pctUnder * 70)),
       tone: macroFinding.fiberStatus === 'factor' ? 'factor' : 'attention', positive: false,
+      metric: { kind: 'range', value: macroFinding.avgFiber, target: 38, rangeMin: 25, rangeMax: 38, unit: 'g', primaryLabel: 'AVG/DAY', secondaryLabel: '25 TO 38' },
     });
   }
 
@@ -341,6 +361,7 @@ function buildDiagnosticCards(
       // first. Back-pat positives must always score below result-explaining ones.
       strength: clampStrength(10 + Math.min(6, (consistency.rate - 0.85) * 40)),
       tone: 'positive', positive: true,
+      metric: { kind: 'target', value: consistency.loggedDays, target: consistency.totalDays, unit: '', primaryLabel: 'LOGGED', secondaryLabel: 'DAYS' },
     });
   } else if (consistency.status !== 'good' && consistency.loggedDays > 0) {
     cards.push({
@@ -352,6 +373,7 @@ function buildDiagnosticCards(
       strength: clampStrength(consistency.status === 'factor' ? 52 : 38),
       tone: consistency.status === 'factor' ? 'factor' : 'attention',
       positive: false,
+      metric: { kind: 'target', value: consistency.loggedDays, target: consistency.totalDays, unit: '', primaryLabel: 'LOGGED', secondaryLabel: 'DAYS' },
     });
   }
 
@@ -363,6 +385,7 @@ function buildDiagnosticCards(
       proof: `Avg ${macroFinding.avgProtein} g/day · goal ${macroFinding.proteinGoalMin} g`,
       lever: `Hold this. Protein is protecting your muscle while you cut.`,
       window: win, strength: clampStrength(50), tone: 'positive', positive: true,
+      metric: { kind: 'target', value: macroFinding.avgProtein, target: macroFinding.proteinGoalMin, unit: 'g', primaryLabel: 'AVG/DAY', secondaryLabel: 'GOAL' },
     });
   }
 
@@ -374,6 +397,7 @@ function buildDiagnosticCards(
       proof: `Avg ${macroFinding.avgFiber} g fiber/day · target 25 to 38 g`,
       lever: `Whole foods are doing the work. Keep them on the plate.`,
       window: win, strength: clampStrength(40), tone: 'positive', positive: true,
+      metric: { kind: 'range', value: macroFinding.avgFiber, target: 38, rangeMin: 25, rangeMax: 38, unit: 'g', primaryLabel: 'AVG/DAY', secondaryLabel: '25 TO 38' },
     });
   }
 
@@ -388,6 +412,11 @@ function buildDiagnosticCards(
       proof,
       lever: `Keep guarding it. Good sleep keeps your appetite and training steady.`,
       window: win, strength: clampStrength(46), tone: 'positive', positive: true,
+      // Score bar only when we have a 0-100 sleep score; the hours-only fallback has no
+      // /100 scale, so it keeps the text proof (no broken bar).
+      metric: sleepFinding.avgSleepScore !== null
+        ? { kind: 'score', value: sleepFinding.avgSleepScore, target: 100, unit: '', primaryLabel: 'SLEEP SCORE', secondaryLabel: '', caption: `OVER ${sleepFinding.totalSleepDays} NIGHTS` }
+        : undefined,
     });
   }
 
@@ -399,18 +428,22 @@ function buildDiagnosticCards(
   // Mindful pass (track 2 step 3); not special-cased here. ──
   for (const r of recoveryFindings) {
     let claim = '', proof = '', lever = '';
+    let metric: DiagnosticCard['metric'];
     if (r.id === 'rec_load_drag') {
       claim = `Your recovery dips after your hardest training days.`;
       proof = `Recovery runs ${r.delta} pts lower the day after high-load days`;
       lever = `Treat the day after a hard session as a real recovery day: lighter training, earlier night.`;
+      if (r.compare) metric = { kind: 'compare', value: r.compare.a, target: r.compare.b, unit: '', primaryLabel: r.compare.aLabel, secondaryLabel: r.compare.bLabel };
     } else if (r.id === 'rec_tracks_sleep') {
       claim = `Your recovery follows your sleep.`;
       proof = `Recovery runs ${r.delta} pts lower after your short nights`;
       lever = `Sleep is your strongest recovery lever right now. Protect the short nights first.`;
+      if (r.compare) metric = { kind: 'compare', value: r.compare.a, target: r.compare.b, unit: '', primaryLabel: r.compare.aLabel, secondaryLabel: r.compare.bLabel };
     } else {
       claim = `You have been under-recovered while training has held steady.`;
       proof = `Recovery averaging ${r.mean} over ${r.n} days`;
       lever = `A lighter week is worth considering. Sustained low recovery is recovery debt, not weakness.`;
+      if (r.mean != null) metric = { kind: 'score', value: r.mean, target: 100, unit: '', primaryLabel: 'RECOVERY', secondaryLabel: '', caption: `OVER ${r.n} DAYS` };
     }
     cards.push({
       id: r.id, claim, proof, lever,
@@ -418,6 +451,7 @@ function buildDiagnosticCards(
       strength: r.strength,
       tone: r.strength >= 75 ? 'factor' : 'attention',
       positive: false,
+      metric,
     });
   }
 

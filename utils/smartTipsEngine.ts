@@ -1271,7 +1271,7 @@ function recEvrDays(w14: WindowDay[]): WindowDay[] {
 }
 
 // R1: next-day recovery drags after the highest-effort days.
-function computeRecLoadDrag(w14: WindowDay[]): { delta: number; n: number } | null {
+function computeRecLoadDrag(w14: WindowDay[]): { delta: number; n: number; hardMean: number; easyMean: number } | null {
   const recDays = recEvrDays(w14);
   if (recDays.length < REC_MIN_PATTERN_DAYS) return null;
   const dayMap = buildDayMap(w14);
@@ -1287,11 +1287,11 @@ function computeRecLoadDrag(w14: WindowDay[]): { delta: number; n: number } | nu
   if (afterHigh.length < REC_MIN_PAIRS || afterLow.length < REC_MIN_PAIRS) return null;
   const delta = Math.round(avg(afterLow) - avg(afterHigh)); // positive = lower after hard days
   if (delta < REC_PATTERN_DELTA) return null;
-  return { delta, n: recDays.length };
+  return { delta, n: recDays.length, hardMean: Math.round(avg(afterHigh)), easyMean: Math.round(avg(afterLow)) };
 }
 
 // R2: recovery tracks sleep (lower after short nights).
-function computeRecTracksSleep(w14: WindowDay[], sleepGoal: number): { delta: number; n: number } | null {
+function computeRecTracksSleep(w14: WindowDay[], sleepGoal: number): { delta: number; n: number; shortMean: number; okMean: number } | null {
   const recDays = recEvrDays(w14);
   if (recDays.length < REC_MIN_PATTERN_DAYS) return null;
   const shortS: number[] = [], okS: number[] = [];
@@ -1302,7 +1302,7 @@ function computeRecTracksSleep(w14: WindowDay[], sleepGoal: number): { delta: nu
   if (shortS.length < REC_MIN_PAIRS || okS.length < REC_MIN_PAIRS) return null;
   const delta = Math.round(avg(okS) - avg(shortS)); // positive = lower after short nights
   if (delta < REC_PATTERN_DELTA) return null;
-  return { delta, n: recDays.length };
+  return { delta, n: recDays.length, shortMean: Math.round(avg(shortS)), okMean: Math.round(avg(okS)) };
 }
 
 // R3: sustained under-recovery while training holds steady.
@@ -1348,6 +1348,9 @@ export interface EvrRecoveryFinding {
   mean?: number;    // sustained_low: window mean recovery score
   n: number;        // recovery-equipped days in the window
   strength: number; // 0-100, first-pass (tuned live during the EvR build per decision 2)
+  // A-vs-B means for the comparison bar (load_drag / tracks_sleep). a = the worse cohort
+  // (after hard / after short), b = the better cohort (after easy / after full).
+  compare?: { a: number; aLabel: string; b: number; bLabel: string };
 }
 
 export async function computeEvrRecoveryFindings(todayKey?: string): Promise<EvrRecoveryFinding[]> {
@@ -1365,12 +1368,14 @@ export async function computeEvrRecoveryFindings(todayKey?: string): Promise<Evr
   if (load) out.push({
     id: 'rec_load_drag', delta: load.delta, n: load.n,
     strength: clamp(46 + (load.delta / REC_PATTERN_DELTA - 1) * 30),
+    compare: { a: load.hardMean, aLabel: 'AFTER HARD', b: load.easyMean, bLabel: 'AFTER EASY' },
   });
 
   const tracks = computeRecTracksSleep(w14, ctx.sleepGoal);
   if (tracks) out.push({
     id: 'rec_tracks_sleep', delta: tracks.delta, n: tracks.n,
     strength: clamp(46 + (tracks.delta / REC_PATTERN_DELTA - 1) * 30),
+    compare: { a: tracks.shortMean, aLabel: 'AFTER SHORT', b: tracks.okMean, bLabel: 'AFTER FULL' },
   });
 
   const sustained = computeRecSustainedLow(w14);

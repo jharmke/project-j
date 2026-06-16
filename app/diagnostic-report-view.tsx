@@ -260,39 +260,254 @@ function SleepCard({ f, isMindful, theme, shadowStyle }: { f: any; isMindful: bo
 // ── Stat module: structured proof as big numbers + an animated bar, replacing the
 // plain-text proof line. value-vs-target shape (the common case). The bar fills to
 // value/target; track + fill are derived from the card's tone accent so it is theme-safe.
-function StatBar({ metric, accent, theme }: { metric: NonNullable<DiagnosticCard['metric']>; accent: string; theme: any }) {
+// Axis ticks + centered labels for a plain bar that sits at top:4 height:8 inside a
+// height:34 positioned container (matches the range track). ticks anchored 0..1.
+function AxisTicks({ theme, ticks }: { theme: any; ticks: { pct: number; label: string | number }[] }) {
+  const t = theme;
+  return (
+    <>
+      {ticks.map((tk, i) => (
+        <View key={`mk${i}`} style={{ position: 'absolute', top: 13, left: `${tk.pct * 100}%`, width: 1, height: 4, backgroundColor: t.textMuted + '55' }} />
+      ))}
+      {ticks.map((tk, i) => (
+        <View key={`lb${i}`} style={{ position: 'absolute', top: 19, left: `${tk.pct * 100}%`, width: 30, marginLeft: -15, alignItems: 'center' }}>
+          <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: t.textMuted }}>{tk.label}</Text>
+        </View>
+      ))}
+    </>
+  );
+}
+
+// One stat module, four bar shapes (metric.kind):
+//  target  -> value vs goal, higher-better, "short"/"over" pill (suppressed on positives)
+//  score   -> single 0-100 number, NO delta, second number becomes a caption
+//  range   -> value vs a [min,max] band, pill only when outside the band
+//  compare -> two stacked bars A (accent) vs B (secondary), no goal/pill
+// Do NOT collapse these into one bar: a score or compare rendered as value/target would
+// produce a broken >100% fill (e.g. sleep 88 over 14 nights = 600%).
+function StatBar({ metric, accent, theme, positive }: { metric: NonNullable<DiagnosticCard['metric']>; accent: string; theme: any; positive: boolean }) {
   const t = theme;
   const unit = metric.unit ?? '';
-  const fill = metric.target > 0 ? Math.max(0, Math.min(1, metric.value / metric.target)) : 0;
-  const delta = Math.round(metric.target - metric.value);
+  const kind = metric.kind ?? 'target';
+  const fmt = (n: number) => (Number.isInteger(n) ? n : Math.round(n * 10) / 10);
+
+  // Fills per shape (0-1). compare gets a second fill.
+  let fill = 0, fillB = 0;
+  if (kind === 'compare') {
+    const max = Math.max(metric.value, metric.target, 0.0001);
+    fill = metric.value / max;
+    fillB = metric.target / max;
+  } else if (kind === 'score') {
+    fill = Math.max(0, Math.min(1, metric.value / (metric.target || 100)));
+  } else if (kind === 'range') {
+    const max = metric.rangeMax ?? metric.target;
+    fill = max > 0 ? Math.max(0, Math.min(1, metric.value / max)) : 0;
+  } else {
+    fill = metric.target > 0 ? Math.max(0, Math.min(1, metric.value / metric.target)) : 0;
+  }
+
   const anim = useRef(new Animated.Value(0)).current;
+  const animB = useRef(new Animated.Value(0)).current;
+  const reveal = useRef(new Animated.Value(0)).current; // 0->1 mount driver for dumbbell + range track
   useEffect(() => {
     Animated.timing(anim, { toValue: fill, duration: 700, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
-  }, [fill]);
+    if (kind === 'compare') Animated.timing(animB, { toValue: fillB, duration: 700, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
+    Animated.timing(reveal, { toValue: 1, duration: 700, easing: Easing.out(Easing.cubic), useNativeDriver: false }).start();
+  }, [fill, fillB]);
+
   const numStyle = { fontSize: 32, fontFamily: 'BebasNeue_400Regular' as const, letterSpacing: 0.5, lineHeight: 34 };
   const labelStyle = { fontSize: 9, letterSpacing: 2, fontFamily: 'DMSans_700Bold' as const, color: t.textMuted, textTransform: 'uppercase' as const, marginTop: 2 };
+  const barTrack = { height: 8, borderRadius: 4, backgroundColor: accent + '22', overflow: 'hidden' as const };
+  const widthOf = (a: Animated.Value) => a.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] });
+
+  // ── Pill (target + range only) ──
+  let pill: string | null = null;
+  if (!positive) {
+    if (kind === 'target') {
+      const d = Math.round(metric.target - metric.value);
+      if (d > 0) pill = `${d}${unit} short`; else if (d < 0) pill = `${Math.abs(d)}${unit} over`;
+    } else if (kind === 'range') {
+      const lo = metric.rangeMin ?? 0, hi = metric.rangeMax ?? metric.target;
+      if (metric.value < lo) pill = `${Math.round(lo - metric.value)}${unit} short`;
+      else if (metric.value > hi) pill = `${Math.round(metric.value - hi)}${unit} over`;
+    }
+  }
+
+  // ── goalbar: fill bar to ACTUAL with a tick at PREDICTED. When the fill overshoots the
+  // tick you beat the prediction; short of it you lagged. Color-coded to the two numbers:
+  // actual = accent fill, predicted = grey tick. value = predicted, target = actual. ──
+  if (kind === 'goalbar') {
+    const scaleMax = Math.max(metric.value, metric.target, 0.0001) * 1.18;
+    const fillActual = Math.max(0, Math.min(1, metric.target / scaleMax));
+    const goalPct = Math.max(0, Math.min(1, metric.value / scaleMax));
+    return (
+      <View style={{ marginBottom: 12 }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 12 }}>
+          <View>
+            <Text style={[numStyle, { color: t.textSecondary }]}>{fmt(metric.value)}<Text style={{ fontSize: 16 }}>{unit}</Text></Text>
+            <Text style={labelStyle}>{metric.primaryLabel}</Text>
+          </View>
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text style={[numStyle, { color: accent }]}>{fmt(metric.target)}<Text style={{ fontSize: 16 }}>{unit}</Text></Text>
+            <Text style={[labelStyle, { textAlign: 'right' }]}>{metric.secondaryLabel}</Text>
+          </View>
+        </View>
+        <View style={{ height: 28, paddingTop: 2 }}>
+          <View style={{ position: 'absolute', top: 2, left: 0, right: 0, height: 8, borderRadius: 4, backgroundColor: t.textMuted + '22' }} />
+          <Animated.View style={{ position: 'absolute', top: 2, left: 0, height: 8, borderRadius: 4, backgroundColor: accent, width: reveal.interpolate({ inputRange: [0, 1], outputRange: ['0%', `${fillActual * 100}%`] }) }} />
+          {/* PREDICTED tick (grey, matches the predicted number) */}
+          <View style={{ position: 'absolute', top: -1, left: `${goalPct * 100}%`, marginLeft: -1.5, width: 3, height: 14, borderRadius: 1.5, backgroundColor: t.textSecondary }} />
+          {/* axis ends */}
+          <Text style={{ position: 'absolute', top: 15, left: 0, fontSize: 9, fontFamily: 'DMSans_700Bold', color: t.textMuted }}>0</Text>
+          <Text style={{ position: 'absolute', top: 15, left: `${goalPct * 100}%`, marginLeft: -24, fontSize: 8, letterSpacing: 1, fontFamily: 'DMSans_700Bold', color: t.textMuted }}>PREDICTED</Text>
+        </View>
+      </View>
+    );
+  }
+
+  // ── compare: two numbers, two stacked bars (A accent, B secondary) ──
+  if (kind === 'compare') {
+    return (
+      <View style={{ marginBottom: 12 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginBottom: 10 }}>
+          <View style={{ marginRight: 28 }}>
+            <Text style={[numStyle, { color: accent }]}>{fmt(metric.value)}<Text style={{ fontSize: 16 }}>{unit}</Text></Text>
+            <Text style={labelStyle}>{metric.primaryLabel}</Text>
+          </View>
+          <View>
+            <Text style={[numStyle, { color: t.textSecondary }]}>{fmt(metric.target)}<Text style={{ fontSize: 16 }}>{unit}</Text></Text>
+            <Text style={labelStyle}>{metric.secondaryLabel}</Text>
+          </View>
+        </View>
+        <View style={[barTrack, { marginBottom: 6 }]}>
+          <Animated.View style={{ height: '100%', borderRadius: 4, backgroundColor: accent, width: widthOf(anim) }} />
+        </View>
+        <View style={barTrack}>
+          <Animated.View style={{ height: '100%', borderRadius: 4, backgroundColor: t.textSecondary, width: widthOf(animB) }} />
+        </View>
+      </View>
+    );
+  }
+
+  // ── score: single big number + caption, one bar (value / 100) ──
+  if (kind === 'score') {
+    return (
+      <View style={{ marginBottom: 12 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginBottom: 10 }}>
+          <View>
+            <Text style={[numStyle, { color: accent }]}>{fmt(metric.value)}<Text style={{ fontSize: 16 }}>{unit}</Text></Text>
+            <Text style={labelStyle}>{metric.primaryLabel}</Text>
+          </View>
+          {!!metric.caption && (
+            <Text style={{ marginLeft: 'auto', alignSelf: 'center', fontSize: 11, letterSpacing: 1.5, fontFamily: 'DMSans_700Bold', color: t.textMuted, textTransform: 'uppercase' }}>{metric.caption}</Text>
+          )}
+        </View>
+        <View style={{ height: 34, paddingTop: 4 }}>
+          <View style={{ position: 'absolute', top: 4, left: 0, right: 0, height: 8, borderRadius: 4, backgroundColor: accent + '22' }} />
+          <Animated.View style={{ position: 'absolute', top: 4, left: 0, height: 8, borderRadius: 4, backgroundColor: accent, width: widthOf(anim) }} />
+          <AxisTicks theme={t} ticks={[{ pct: 0, label: 0 }, { pct: 1, label: 100 }]} />
+        </View>
+      </View>
+    );
+  }
+
+  // ── range track: a rail with the healthy [min,max] zone highlighted + a marker pin at
+  // the value. Reads "where you sit relative to the band," not a fake value/max fill. ──
+  if (kind === 'range') {
+    const lo = metric.rangeMin ?? 0;
+    const hi = metric.rangeMax ?? metric.target;
+    const scaleMax = Math.max(hi * 1.25, metric.value * 1.1, 0.0001);
+    const bandLeft = lo / scaleMax;
+    const bandWidth = (hi - lo) / scaleMax;
+    const markerPct = Math.max(0, Math.min(1, metric.value / scaleMax));
+    const tickText = { fontSize: 9, fontFamily: 'DMSans_700Bold' as const, color: t.textMuted };
+    const tickLabel = (pct: number, txt: string | number) => (
+      <View style={{ position: 'absolute', top: 19, left: `${pct * 100}%`, width: 30, marginLeft: -15, alignItems: 'center' }}>
+        <Text style={tickText}>{txt}</Text>
+      </View>
+    );
+    return (
+      <View style={{ marginBottom: 12 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginBottom: 12 }}>
+          <View style={{ marginRight: 28 }}>
+            <Text style={[numStyle, { color: accent }]}>{fmt(metric.value)}<Text style={{ fontSize: 16 }}>{unit}</Text></Text>
+            <Text style={labelStyle}>{metric.primaryLabel}</Text>
+          </View>
+          <View>
+            <Text style={[numStyle, { color: t.textSecondary }]}>{lo}-{hi}<Text style={{ fontSize: 16 }}>{unit}</Text></Text>
+            <Text style={labelStyle}>TARGET RANGE</Text>
+          </View>
+          {pill && (
+            <View style={{ marginLeft: 'auto', alignSelf: 'center', backgroundColor: accent + '1f', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+              <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: accent }}>{pill}</Text>
+            </View>
+          )}
+        </View>
+        <View style={{ height: 34, justifyContent: 'flex-start', paddingTop: 4 }}>
+          <View style={{ position: 'absolute', top: 4, left: 0, right: 0, height: 8, borderRadius: 4, backgroundColor: t.textMuted + '22' }} />
+          <View style={{ position: 'absolute', top: 4, height: 8, borderRadius: 4, left: `${bandLeft * 100}%`, width: `${bandWidth * 100}%`, backgroundColor: accent + '38' }} />
+          <Animated.View style={{ position: 'absolute', top: 0, marginLeft: -2, left: reveal.interpolate({ inputRange: [0, 1], outputRange: ['0%', `${markerPct * 100}%`] }), width: 4, height: 16, borderRadius: 2, backgroundColor: accent }} />
+          {/* axis ticks: 0 origin + band edges + max, so the band is anchored, not floating */}
+          <View style={{ position: 'absolute', top: 13, left: 0, width: 1, height: 4, backgroundColor: t.textMuted + '55' }} />
+          <View style={{ position: 'absolute', top: 13, left: `${bandLeft * 100}%`, width: 1, height: 4, backgroundColor: t.textMuted + '55' }} />
+          <View style={{ position: 'absolute', top: 13, left: `${(bandLeft + bandWidth) * 100}%`, width: 1, height: 4, backgroundColor: t.textMuted + '55' }} />
+          <View style={{ position: 'absolute', top: 13, right: 0, width: 1, height: 4, backgroundColor: t.textMuted + '55' }} />
+          {/* all four labels centered on their ticks (ends bleed into the card padding) */}
+          {tickLabel(0, 0)}
+          {tickLabel(bandLeft, lo)}
+          {tickLabel(bandLeft + bandWidth, hi)}
+          {tickLabel(1, Math.round(scaleMax))}
+        </View>
+      </View>
+    );
+  }
+
+  // ── target: value vs goal, optional pill, one bar ──
+  const secondaryNum = `${fmt(metric.target)}${unit}`;
+  const secondaryCap = metric.secondaryLabel;
   return (
     <View style={{ marginBottom: 12 }}>
       <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginBottom: 10 }}>
         <View style={{ marginRight: 28 }}>
-          <Text style={[numStyle, { color: accent }]}>{Math.round(metric.value)}<Text style={{ fontSize: 16 }}>{unit}</Text></Text>
+          <Text style={[numStyle, { color: accent }]}>{fmt(metric.value)}<Text style={{ fontSize: 16 }}>{unit}</Text></Text>
           <Text style={labelStyle}>{metric.primaryLabel}</Text>
         </View>
         <View>
-          <Text style={[numStyle, { color: t.textSecondary }]}>{Math.round(metric.target)}<Text style={{ fontSize: 16 }}>{unit}</Text></Text>
-          <Text style={labelStyle}>{metric.secondaryLabel}</Text>
+          <Text style={[numStyle, { color: t.textSecondary }]}>{secondaryNum}</Text>
+          <Text style={labelStyle}>{secondaryCap}</Text>
         </View>
-        {delta !== 0 && (
+        {pill && (
           <View style={{ marginLeft: 'auto', alignSelf: 'center', backgroundColor: accent + '1f', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-            <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: accent }}>
-              {delta > 0 ? `${delta}${unit} short` : `${Math.abs(delta)}${unit} over`}
-            </Text>
+            <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: accent }}>{pill}</Text>
           </View>
         )}
       </View>
-      <View style={{ height: 8, borderRadius: 4, backgroundColor: accent + '22', overflow: 'hidden' }}>
-        <Animated.View style={{ height: '100%', borderRadius: 4, backgroundColor: accent, width: anim.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }} />
+      <View style={{ height: 34, paddingTop: 4 }}>
+        <View style={{ position: 'absolute', top: 4, left: 0, right: 0, height: 8, borderRadius: 4, backgroundColor: accent + '22' }} />
+        <Animated.View style={{ position: 'absolute', top: 4, left: 0, height: 8, borderRadius: 4, backgroundColor: accent, width: widthOf(anim) }} />
+        <AxisTicks theme={t} ticks={[{ pct: 0, label: 0 }, { pct: 1, label: fmt(metric.target) }]} />
       </View>
+    </View>
+  );
+}
+
+// Per-topic corner watermark. Keyed off card.id (positives share their topic's icon).
+// Clipped into the bottom-right via an inner overflow:hidden layer (NOT the card itself --
+// that would kill the shadow); bleeds past the corner so it reads as a tucked watermark.
+function CardWatermark({ id, color }: { id: string; color: string }) {
+  let icon: ReactNode = null;
+  const style = { position: 'absolute' as const, right: -18, bottom: -20, opacity: 0.07 };
+  if (id === 'protein' || id === 'protein_good') icon = <MaterialCommunityIcons name="food-drumstick" size={128} color={color} style={style} />;
+  else if (id === 'fiber' || id === 'fiber_good') icon = <Ionicons name="leaf" size={120} color={color} style={style} />;
+  else if (id === 'sleep_good') icon = <Ionicons name="moon" size={118} color={color} style={style} />;
+  else if (id === 'deficit') icon = <MaterialCommunityIcons name="scale-bathroom" size={120} color={color} style={style} />;
+  else if (id === 'consistency_good' || id === 'consistency_gaps') icon = <Ionicons name="calendar" size={116} color={color} style={style} />;
+  else if (id === 'burn_accuracy') icon = <Ionicons name="flame" size={120} color={color} style={style} />;
+  else if (id.startsWith('rec_')) icon = <Ionicons name="pulse" size={124} color={color} style={style} />;
+  else icon = <Ionicons name="analytics" size={120} color={color} style={style} />;
+  return (
+    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 14, overflow: 'hidden' }} pointerEvents="none">
+      {icon}
     </View>
   );
 }
@@ -306,28 +521,19 @@ function DiagnosticFeedCard({ card, theme, shadowStyle, isMindful }: { card: Dia
   const t = theme;
   const accent = card.positive ? t.statusGood : (card.tone === 'factor' ? t.statusBad : t.statusWarn);
   const chip = card.positive ? 'WORKING' : (card.tone === 'factor' ? 'KEY FACTOR' : 'WORTH ATTENTION');
-  // Prototype: full "completed" treatment (gradient wash + dim hero icon) on the protein
-  // card only, to validate the look before rolling it out to every card. CardWash provides
-  // the colored top edge, so the 1.5px top border is flattened to 0.5 to avoid the uneven
-  // iOS corner the GradientCard recipe warns about.
-  const completed = card.id === 'protein';
+  // Full treatment on EVERY card (rolled out from the protein reference 2026-06-16): tone-toned
+  // gradient wash + per-topic corner watermark. CardWash provides the colored top edge, so the
+  // 1.5px top border is flattened to 0.5 to avoid the uneven iOS corner the recipe warns about.
   return (
     <View style={[styles.card, {
       backgroundColor: t.bgCard,
       borderColor: t.borderCard,
-      borderTopColor: completed ? t.borderCardTop : accent,
-      ...(completed ? { borderTopWidth: 0.5 } : null),
+      borderTopColor: t.borderCardTop,
+      borderTopWidth: 0.5,
       ...shadowStyle, marginBottom: 12,
     }]}>
-      {completed && <CardWash color={accent} scored radius={14} />}
-      {completed && (
-        // Clip the watermark into the bottom-right corner via an inner overflow:hidden
-        // layer (NOT on the card itself -- that would kill the shadow). Bleeds past the
-        // corner so it reads as a tucked watermark, not a floating glyph.
-        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: 14, overflow: 'hidden' }} pointerEvents="none">
-          <MaterialCommunityIcons name="food-drumstick" size={128} color={accent} style={{ position: 'absolute', right: -18, bottom: -20, opacity: 0.07 }} />
-        </View>
-      )}
+      <CardWash color={accent} scored radius={14} />
+      <CardWatermark id={card.id} color={accent} />
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
         <Text style={[styles.cardLabel, { color: t.textMuted }]}>{(card.window || '').toUpperCase()}</Text>
         {!isMindful && (
@@ -338,7 +544,7 @@ function DiagnosticFeedCard({ card, theme, shadowStyle, isMindful }: { card: Dia
       </View>
       <Text style={{ fontSize: 15, fontFamily: 'DMSans_600SemiBold', color: t.textSecondary, lineHeight: 21, marginBottom: 12 }}>{card.claim}</Text>
       {card.metric ? (
-        <StatBar metric={card.metric} accent={accent} theme={t} />
+        <StatBar metric={card.metric} accent={accent} theme={t} positive={card.positive} />
       ) : (
         <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: accent, marginBottom: card.insight ? 8 : 10 }}>{card.proof}</Text>
       )}
@@ -613,40 +819,24 @@ export default function DiagnosticReportViewScreen() {
             </View>
           </View>
 
-          {/* Summary */}
-          <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.accentBlueRaw, ...shadowStyle, overflow: 'hidden' }]}>
-            <Ionicons name="analytics" size={130} color={t.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.08 }} />
-            <Text style={[styles.cardLabel, { color: t.textMuted, marginBottom: 8 }]}>SUMMARY</Text>
-            <Text style={{ fontSize: 14, fontFamily: 'DMSans_400Regular', color: t.textSecondary, lineHeight: 22 }}>
-              {report.summary}
-            </Text>
-            {report.insufficientData && (
-              <View style={{ marginTop: 12, backgroundColor: t.statusWarn + '18', borderRadius: 8, padding: 12, borderLeftWidth: 3, borderLeftColor: t.statusWarn }}>
+          {/* Summary card cut 2026-06-16 (redundant with the diagnosis headline + ranked feed).
+              Only the needs-more-data notice survives, shown standalone when the window is
+              under-logged so the data gate still communicates. */}
+          {report.insufficientData && (
+            <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.statusWarn, ...shadowStyle }]}>
+              <View style={{ backgroundColor: t.statusWarn + '18', borderRadius: 8, padding: 12, borderLeftWidth: 3, borderLeftColor: t.statusWarn }}>
                 <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: t.statusWarn, marginBottom: 2 }}>Needs more data</Text>
                 <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: t.textSecondary, lineHeight: 18 }}>
                   Log food for at least 7 days in this window to unlock the full analysis.
                 </Text>
               </View>
-            )}
-          </View>
+            </View>
+          )}
 
-          {/* Diagnostic card feed (claim + proof + lever) -- replaces the old scorecard finding cards */}
+          {/* Coach Insight (Level 1 headline diagnosis) now LEADS the report; the ranked card
+              feed follows it. Moved above the feed + reblued 2026-06-16. */}
           {!report.insufficientData && (
             <>
-              <View ref={findingsSectionRef} collapsable={false}>
-                {(voicedCards ?? report.cards ?? []).length > 0 ? (
-                  (voicedCards ?? report.cards ?? []).map((c, i) => (
-                    <DiagnosticFeedCard key={`${c.id}-${i}`} card={c} theme={t} shadowStyle={shadowStyle} isMindful={isMindful} />
-                  ))
-                ) : (
-                  <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: 'rgba(255,255,255,0.1)', ...shadowStyle }]}>
-                    <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: t.textSecondary, lineHeight: 20 }}>
-                      Nothing stands out in this window. Keep logging and patterns will surface here as they develop.
-                    </Text>
-                  </View>
-                )}
-              </View>
-
               {/* AI Coach Insight card */}
               {TIPS_GATED ? (
                 <View style={{ marginBottom: 12 }}>
@@ -695,30 +885,42 @@ export default function DiagnosticReportViewScreen() {
                 }
                 if (!coachCache) return null;
                 const body = resolveTipBody(coachCache);
-                const title = resolveTipTitle(coachCache);
-                const tone = coachCache.packet.tone;
-                const borderColor = tone === 'positive' ? t.statusGood : tone === 'care' ? t.statusBad : t.accentBlueRaw;
                 if (!body) return null;
+                // Blue Coach Insight box -- mirrors the day/weekly/monthly summary treatment
+                // exactly: translucent blue fill, centered header + divider, centered italic body.
                 return (
                   <View style={{ marginBottom: 12 }}>
-                    <Text style={[styles.sectionLabel, { color: t.textMuted }]}>COACH INSIGHT</Text>
                     <View style={[shadowStyle, {
-                      backgroundColor: t.bgCard, borderRadius: 14, borderWidth: 0.5,
-                      borderColor: t.borderCard, borderTopColor: 'rgba(255,255,255,0.1)',
-                      borderLeftWidth: 3, borderLeftColor: borderColor, padding: 16, paddingLeft: 15,
+                      backgroundColor: t.accentBlueRaw + '12', borderRadius: 12, borderWidth: 1,
+                      borderColor: t.accentBlueRaw + '50', padding: 14, alignItems: 'center',
                     }]}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                        <Ionicons name="sparkles" size={13} color={borderColor} />
-                        <Text style={{ fontSize: 9, letterSpacing: 3, color: t.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>
-                          {tone === 'positive' ? 'Positive' : tone === 'care' ? 'Heads Up' : tone === 'educational' ? 'Insight' : 'Focus Area'}
-                        </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 10 }}>
+                        <Ionicons name="sparkles" size={12} color={t.accentBlueRaw} />
+                        <Text style={{ fontSize: 9, letterSpacing: 3, color: t.accentBlueRaw, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>Coach Insight</Text>
                       </View>
-                      <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: t.textSecondary, lineHeight: 20, marginBottom: 8 }}>{title}</Text>
-                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: t.textSecondary, lineHeight: 20 }}>{body}</Text>
+                      <View style={{ width: '100%', height: 0.5, backgroundColor: t.accentBlueRaw + '40', marginBottom: 10 }} />
+                      <Text style={{ fontSize: 14, color: t.textSecondary, fontFamily: 'DMSans_600SemiBold', lineHeight: 22, fontStyle: 'italic', textAlign: 'center' }}>
+                        {body}
+                      </Text>
                     </View>
                   </View>
                 );
               })()}
+
+              {/* Diagnostic card feed (claim + proof + lever) -- ranked, below the headline */}
+              <View ref={findingsSectionRef} collapsable={false}>
+                {(voicedCards ?? report.cards ?? []).length > 0 ? (
+                  (voicedCards ?? report.cards ?? []).map((c, i) => (
+                    <DiagnosticFeedCard key={`${c.id}-${i}`} card={c} theme={t} shadowStyle={shadowStyle} isMindful={isMindful} />
+                  ))
+                ) : (
+                  <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: 'rgba(255,255,255,0.1)', ...shadowStyle }]}>
+                    <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: t.textSecondary, lineHeight: 20 }}>
+                      Nothing stands out in this window. Keep logging and patterns will surface here as they develop.
+                    </Text>
+                  </View>
+                )}
+              </View>
 
               {/* Smart Tips: cross-signal insight cards (gated) */}
               {(() => {

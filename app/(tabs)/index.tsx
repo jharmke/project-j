@@ -539,14 +539,19 @@ export default function HomeScreen() {
       if (fired) {
         showCelebration('small', 'WATER GOAL'); showDailyGoalToast('Water Goal', hitCount, 'water', '#3b82f6');
         let s = achievementStore;
-        if (hitCount === 1)   s = await handleAchievementUnlock('hydration_first', s);
-        if (hitCount === 10)  s = await handleAchievementUnlock('hydration_10', s);
-        if (hitCount === 30)  s = await handleAchievementUnlock('hydration_30', s);
-        if (hitCount === 50)  s = await handleAchievementUnlock('hydration_50', s);
-        if (hitCount === 75)  s = await handleAchievementUnlock('hydration_75', s);
-        if (hitCount === 100) s = await handleAchievementUnlock('hydration_100', s);
-        if (hitCount === 200) s = await handleAchievementUnlock('hydration_200', s);
-        if (hitCount === 365) await handleAchievementUnlock('hydration_365', s);
+        const hydrationMilestones = [
+          { id: 'hydration_first', threshold: 1   },
+          { id: 'hydration_10',   threshold: 10  },
+          { id: 'hydration_30',   threshold: 30  },
+          { id: 'hydration_50',   threshold: 50  },
+          { id: 'hydration_75',   threshold: 75  },
+          { id: 'hydration_100',  threshold: 100 },
+          { id: 'hydration_200',  threshold: 200 },
+          { id: 'hydration_365',  threshold: 365 },
+        ];
+        for (const m of hydrationMilestones) {
+          if (hitCount >= m.threshold) s = await handleAchievementUnlock(m.id, s);
+        }
       }
     }
   };
@@ -1157,14 +1162,19 @@ export default function HomeScreen() {
             showCelebration('small', 'STEP GOAL'); showDailyGoalToast('Step Goal', hitCount, 'footsteps', '#10b981');
             loadAchievements().then(async store => {
               let s = store;
-              if (hitCount === 1)   s = await handleAchievementUnlock('steps_first', s);
-              if (hitCount === 10)  s = await handleAchievementUnlock('steps_10', s);
-              if (hitCount === 30)  s = await handleAchievementUnlock('steps_30', s);
-              if (hitCount === 50)  s = await handleAchievementUnlock('steps_50', s);
-              if (hitCount === 75)  s = await handleAchievementUnlock('steps_75', s);
-              if (hitCount === 100) s = await handleAchievementUnlock('steps_100', s);
-              if (hitCount === 200) s = await handleAchievementUnlock('steps_200', s);
-              if (hitCount === 365) s = await handleAchievementUnlock('steps_365', s);
+              const stepsMilestones = [
+                { id: 'steps_first', threshold: 1   },
+                { id: 'steps_10',   threshold: 10  },
+                { id: 'steps_30',   threshold: 30  },
+                { id: 'steps_50',   threshold: 50  },
+                { id: 'steps_75',   threshold: 75  },
+                { id: 'steps_100',  threshold: 100 },
+                { id: 'steps_200',  threshold: 200 },
+                { id: 'steps_365',  threshold: 365 },
+              ];
+              for (const m of stepsMilestones) {
+                if (hitCount >= m.threshold) s = await handleAchievementUnlock(m.id, s);
+              }
               setAchievementStore(s);
             });
           }

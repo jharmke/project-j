@@ -1035,7 +1035,7 @@ export default function LogScreen() {
           { id: 'hydration_365',  threshold: 365 },
         ];
         for (const m of hydrationMilestones) {
-          if (hitCount === m.threshold) {
+          if (hitCount >= m.threshold) {
             const r = await checkAndUnlock(m.id, s);
             if (r.newlyUnlocked) {
               setAchievementStore(r.updatedStore);

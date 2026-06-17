@@ -559,7 +559,7 @@ async function loadProgressValues(): Promise<Record<string, number>> {
     // We scan last 365 days
     const profile = await AsyncStorage.getItem('pj_profile');
     const parsed  = profile ? JSON.parse(profile) : {};
-    const waterTarget = 128; // default, could read from profile
+    const profileWaterGoal = parsed.waterGoal ? parseInt(parsed.waterGoal) : 100;
 
     let waterDays      = 0;
     let stepDays       = 0;
@@ -578,7 +578,8 @@ async function loadProgressValues(): Promise<Record<string, number>> {
         const raw = await AsyncStorage.getItem(`pj_${dk}`);
         if (raw) {
           const day = JSON.parse(raw);
-          if ((day.water ?? 0) >= waterTarget) waterDays++;
+          const dayWaterGoal = day.waterGoal ? parseInt(day.waterGoal) : profileWaterGoal;
+          if ((day.water ?? 0) >= dayWaterGoal) waterDays++;
           if ((day.steps ?? 0) >= stepGoal)    stepDays++;
           const sleepHrs = day.sleepOverride ?? day.sleepHours ?? null;
           if (sleepHrs && sleepHrs > 0) {

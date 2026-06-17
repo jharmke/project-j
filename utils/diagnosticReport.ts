@@ -53,6 +53,14 @@ export interface MacroFinding {
   hasData: boolean;
   bodyWeightLbs: number;
   lowFiberNote: boolean;
+  // Trend-aware (change #2): recent 7d vs 30d baseline, so a card can lead with a recent
+  // change ("dropped this week") instead of a single flat average. Absent when there isn't
+  // enough data in both windows to be real.
+  proteinTrend?: {
+    recentAvg: number; recentN: number;
+    baselineAvg: number; baselineN: number;
+    diverges: boolean; direction: 'up' | 'down'; pctDelta: number;
+  };
 }
 
 export interface SleepFinding {
@@ -319,18 +327,67 @@ function buildDiagnosticCards(
     });
   }
 
-  // ── Protein ──
-  if (macroFinding && macroFinding.macroStatus !== 'good') {
-    const pctUnder = (macroFinding.proteinGoalMin - macroFinding.avgProtein) / Math.max(1, macroFinding.proteinGoalMin);
-    cards.push({
-      id: 'protein',
-      claim: `Your protein is running under target.`,
-      proof: `Avg ${macroFinding.avgProtein} g/day · goal ${macroFinding.proteinGoalMin} g`,
-      lever: `Anchor one meal a day around a protein source to close the gap.`,
-      window: winProtein, strength: clampStrength(42 + Math.min(50, pctUnder * 130)),
-      tone: macroFinding.macroStatus === 'factor' ? 'factor' : 'attention', positive: false,
-      metric: { value: macroFinding.avgProtein, target: macroFinding.proteinGoalMin, unit: 'g', primaryLabel: 'AVG/DAY', secondaryLabel: 'GOAL' },
-    });
+  // ── Protein (trend-aware -- change #2 prototype) ──
+  // When the recent 7d read diverges from the 30d baseline the card LEADS with that story
+  // (a recent drop, or a climb) instead of one flat 14d average; when the windows agree it
+  // falls back to the original status-vs-goal read. Every branch labels its real window and
+  // uses honest numbers (recent 7d vs 30d baseline, each backed by a real day count). This
+  // block emits exactly ONE protein card (replaces the old separate corrective + positive).
+  if (macroFinding && macroFinding.hasData) {
+    const goal = macroFinding.proteinGoalMin;
+    const t = macroFinding.proteinTrend;
+    const trendWin = `Last 7 days vs your last 30`;
+    const recentBar = (val: number): DiagnosticCard['metric'] => ({ value: val, target: goal, unit: 'g', primaryLabel: 'LAST 7d', secondaryLabel: 'GOAL' });
+    if (t && t.diverges && t.direction === 'down') {
+      // Recent drop -- worth flagging even if the 14d average still looks fine.
+      cards.push({
+        id: 'protein',
+        claim: `Your protein dropped off this week.`,
+        proof: `Last 7 days: ${t.recentAvg} g/day, down from your ${t.baselineAvg} g/day norm`,
+        lever: `Anchor one meal a day around a protein source to pull it back up.`,
+        window: trendWin, strength: clampStrength(48 + Math.min(30, Math.abs(t.pctDelta))),
+        tone: t.recentAvg < goal * 0.7 ? 'factor' : 'attention', positive: false,
+        metric: recentBar(t.recentAvg),
+      });
+    } else if (t && t.diverges && t.direction === 'up') {
+      // Recent climb. Still short of goal = encouraging-but-not-done; at goal = clean positive.
+      const stillUnder = t.recentAvg < goal * 0.95;
+      cards.push({
+        id: stillUnder ? 'protein' : 'protein_good',
+        claim: stillUnder ? `Your protein is climbing, not there yet.` : `Your protein is trending up.`,
+        proof: stillUnder
+          ? `Last 7 days: ${t.recentAvg} g/day, up from ${t.baselineAvg} · goal ${goal} g`
+          : `Last 7 days: ${t.recentAvg} g/day, up from your ${t.baselineAvg} g/day norm`,
+        lever: stillUnder
+          ? `Keep the momentum: one more protein-anchored meal closes the gap to ${goal} g.`
+          : `Whatever you changed this week, keep it on the plate.`,
+        window: trendWin, strength: clampStrength(stillUnder ? 44 : 46),
+        tone: stillUnder ? 'attention' : 'positive', positive: !stillUnder,
+        metric: recentBar(t.recentAvg),
+      });
+    } else if (macroFinding.macroStatus !== 'good') {
+      // Windows agree, under target: the original status-vs-goal read (14d average).
+      const pctUnder = (goal - macroFinding.avgProtein) / Math.max(1, goal);
+      cards.push({
+        id: 'protein',
+        claim: `Your protein is running under target.`,
+        proof: `Avg ${macroFinding.avgProtein} g/day · goal ${goal} g`,
+        lever: `Anchor one meal a day around a protein source to close the gap.`,
+        window: winProtein, strength: clampStrength(42 + Math.min(50, pctUnder * 130)),
+        tone: macroFinding.macroStatus === 'factor' ? 'factor' : 'attention', positive: false,
+        metric: { value: macroFinding.avgProtein, target: goal, unit: 'g', primaryLabel: 'AVG/DAY', secondaryLabel: 'GOAL' },
+      });
+    } else {
+      // Windows agree, on target: positive (the old protein_good card).
+      cards.push({
+        id: 'protein_good',
+        claim: `Your protein is right where it needs to be.`,
+        proof: `Avg ${macroFinding.avgProtein} g/day · goal ${goal} g`,
+        lever: `Hold this. Protein is protecting your muscle while you cut.`,
+        window: winProtein, strength: clampStrength(50), tone: 'positive', positive: true,
+        metric: { kind: 'target', value: macroFinding.avgProtein, target: goal, unit: 'g', primaryLabel: 'AVG/DAY', secondaryLabel: 'GOAL' },
+      });
+    }
   }
 
   // ── Fiber (food quality) ──
@@ -385,17 +442,7 @@ function buildDiagnosticCards(
     });
   }
 
-  // Protein on point
-  if (macroFinding && macroFinding.hasData && macroFinding.macroStatus === 'good') {
-    cards.push({
-      id: 'protein_good',
-      claim: `Your protein is right where it needs to be.`,
-      proof: `Avg ${macroFinding.avgProtein} g/day · goal ${macroFinding.proteinGoalMin} g`,
-      lever: `Hold this. Protein is protecting your muscle while you cut.`,
-      window: winProtein, strength: clampStrength(50), tone: 'positive', positive: true,
-      metric: { kind: 'target', value: macroFinding.avgProtein, target: macroFinding.proteinGoalMin, unit: 'g', primaryLabel: 'AVG/DAY', secondaryLabel: 'GOAL' },
-    });
-  }
+  // (Protein "on point" is now handled in the consolidated trend-aware protein block above.)
 
   // Fiber / food quality on point
   if (macroFinding && macroFinding.fiberStatus === 'good' && macroFinding.avgFiber > 0) {
@@ -748,10 +795,29 @@ export async function generateDiagnosticReport(): Promise<DiagnosticReport> {
     const macroStatus: FindingStatus = avgProtein < proteinGoalMin * 0.7 ? 'factor' : avgProtein < proteinGoalMin * 0.9 ? 'attention' : 'good';
     const fiberStatus: FindingStatus = avgFiber > 0 ? (avgFiber < 15 ? 'factor' : avgFiber < 22 ? 'attention' : 'good') : 'attention';
     const status: FindingStatus = macroStatus === 'factor' || fiberStatus === 'factor' ? 'factor' : macroStatus === 'attention' || fiberStatus === 'attention' ? 'attention' : 'good';
+
+    // Trend: recent 7d protein vs the 30d baseline, each over real logged days. Only computed
+    // when both windows have enough days to be real (recent >=4, baseline >=10). Divergence
+    // threshold 12% is FIRST-PASS -- tune on the dump. A protein-logged day = any macro logged.
+    const isMacroDay = (d: typeof days[number]) => !d.excluded && (d.protein > 0 || d.carbs > 0 || d.fat > 0);
+    const recent7 = days.slice(-7).filter(isMacroDay);
+    const baseline30 = days.slice(-30).filter(isMacroDay);
+    let proteinTrend: MacroFinding['proteinTrend'];
+    if (recent7.length >= 4 && baseline30.length >= 10) {
+      const recentAvg = Math.round(avg(recent7.map(d => d.protein)));
+      const baselineAvg = Math.round(avg(baseline30.map(d => d.protein)));
+      const pctDelta = baselineAvg > 0 ? Math.round(((recentAvg - baselineAvg) / baselineAvg) * 100) : 0;
+      proteinTrend = {
+        recentAvg, recentN: recent7.length, baselineAvg, baselineN: baseline30.length,
+        diverges: Math.abs(pctDelta) >= 12, direction: pctDelta >= 0 ? 'up' : 'down', pctDelta,
+      };
+    }
+
     macroFinding = {
       type: 'macros', avgProtein: Math.round(avgProtein), proteinGoalMin, proteinGoalMax,
       avgFiber: Math.round(avgFiber * 10) / 10, fiberStatus, macroStatus, status,
       hasData: true, bodyWeightLbs: Math.round(bodyWeightLbs), lowFiberNote: fiberStatus !== 'good',
+      proteinTrend,
     };
   }
 

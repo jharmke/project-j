@@ -20,7 +20,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { app, auth, db, saveToFirebase } from '../firebaseConfig';
 import { shouldSync, uploadAllLocal } from '../services/syncService';
 import { storageSet } from '../utils/storage';
-import { generateDiagnosticReport, ReportWindow } from '../utils/diagnosticReport';
+import { generateDiagnosticReport, ReportWindow, dumpWindowComparison } from '../utils/diagnosticReport';
 import { dumpDayScoreWithRecovery } from '../utils/dayScoreStore';
 import { voiceDiagnosticCards, getLastVoiceDebug } from '../utils/coachAI';
 import { dumpHomeCoachCandidates, dumpEvrRecoveryDebug } from '../utils/smartTipsEngine';
@@ -1854,6 +1854,22 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Runs the new diagnostic feed on your real data. Shows ranked claim/proof/lever as plain text.</Text>
               </View>
               <Ionicons name="list-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              try {
+                const body = await dumpWindowComparison();
+                Alert.alert('Window Comparison', body);
+              } catch (e) {
+                Alert.alert('Error', 'Could not run the window comparison. Check the logs.');
+              }
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Dump Window Comparison</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Read-only. Shows each metric at 7d/14d/30d (avg + day count) so we can see whether the windows actually diverge on your data.</Text>
+              </View>
+              <Ionicons name="resize-outline" size={18} color={theme.accentRed} />
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {

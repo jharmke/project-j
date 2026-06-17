@@ -244,7 +244,7 @@ function fmtLbs1(v: number): string {
 // Capped at 6. The headline-dedupe (suppressing the card matching the EvR headline)
 // happens at the view layer, since the headline is resolved there.
 function buildDiagnosticCards(
-  windows: { weight: number; protein: number; fiber: number; sleep: number; consistency: number },
+  windows: { weight: number; weightSpanDays?: number | null; protein: number; fiber: number; sleep: number; consistency: number },
   deficitFinding: DeficitFinding | null,
   burnAccuracyFinding: BurnAccuracyFinding | null,
   macroFinding: MacroFinding | null,
@@ -255,7 +255,7 @@ function buildDiagnosticCards(
 ): DiagnosticCard[] {
   const cards: DiagnosticCard[] = [];
   // Per-pattern window labels -- each card states its OWN lookback in its proof.
-  const winWeight = `Over ${windows.weight} days`;
+  const winWeight = `Over ${windows.weightSpanDays ?? windows.weight} days`;
   const winProtein = `Over ${windows.protein} days`;
   const winFiber = `Over ${windows.fiber} days`;
   const winSleep = `Over ${windows.sleep} days`;
@@ -683,11 +683,27 @@ export async function generateDiagnosticReport(): Promise<DiagnosticReport> {
   const weightEntries = days.filter(d => d.weight !== null);
   const hasWeightData = weightEntries.length >= 2;
   let actualChangeLbs: number | null = null;
-  if (hasWeightData) actualChangeLbs = weightEntries[weightEntries.length - 1].weight! - weightEntries[0].weight!;
+  // Honest weight window: the REAL span from first to last weigh-in, replacing the
+  // hardcoded "Over 90 days" label. days is oldest->newest and dateKeys sort
+  // chronologically, so [0] = oldest weigh-in, [last] = newest. We also use this span to
+  // scope the deficit prediction below, so Predicted vs Actual cover the SAME days.
+  let weightSpanDays: number | null = null;
+  let firstWeighKey = '', lastWeighKey = '';
+  if (hasWeightData) {
+    firstWeighKey = weightEntries[0].dateKey;
+    lastWeighKey = weightEntries[weightEntries.length - 1].dateKey;
+    actualChangeLbs = weightEntries[weightEntries.length - 1].weight! - weightEntries[0].weight!;
+    weightSpanDays = Math.round(Math.abs(new Date(lastWeighKey).getTime() - new Date(firstWeighKey).getTime()) / 86400000) + 1;
+  }
 
   let deficitFinding: DeficitFinding | null = null;
   if (goalDirection !== 'maintain' && calTarget > 0) {
-    const totalDeficit = loggedDayData.reduce((s, d) => s + (calTarget - d.calories + d.activeCalories * (burnAccuracyPct / 100)), 0);
+    // Predict over the SAME span the scale change is measured across (when we have weigh-ins),
+    // so the comparison is apples-to-apples instead of 90 days of logging vs 3 weeks of scale.
+    const predictionDays = hasWeightData
+      ? loggedDayData.filter(d => d.dateKey >= firstWeighKey && d.dateKey <= lastWeighKey)
+      : loggedDayData;
+    const totalDeficit = predictionDays.reduce((s, d) => s + (calTarget - d.calories + d.activeCalories * (burnAccuracyPct / 100)), 0);
     const expectedChangeLbs = -(totalDeficit / 3500);
     let gapLbs: number | null = null;
     if (actualChangeLbs !== null) gapLbs = actualChangeLbs - expectedChangeLbs;
@@ -1114,7 +1130,7 @@ export async function generateDiagnosticReport(): Promise<DiagnosticReport> {
   // coach's exact math via a fixed 14-day window, independent of this report's window.
   const recoveryFindings = await computeEvrRecoveryFindings();
   const cards = buildDiagnosticCards(
-    { weight: W.weight, protein: W.protein, fiber: W.fiber, sleep: W.sleep, consistency: W.consistency },
+    { weight: W.weight, weightSpanDays, protein: W.protein, fiber: W.fiber, sleep: W.sleep, consistency: W.consistency },
     deficitFinding, burnAccuracyFinding, macroFinding, sleepFinding, consistency, correlations, recoveryFindings,
   );
 
@@ -1130,4 +1146,98 @@ export async function generateDiagnosticReport(): Promise<DiagnosticReport> {
     insufficientData: false, minLoggedDays: loggedDays,
     momentumDebug,
   };
+}
+
+// ── DEV-ONLY read-only window comparison ─────────────────────────────────────────
+// Throwaway diagnostic (NOT shipped UI). For each metric it computes the average over
+// the last 7 / 14 / 30 days plus the COUNT of days that actually had data in each
+// window, so we can SEE whether the windows tell different stories on real data before
+// committing to a multi-window card design. Pure read: never writes a key.
+type WinStat = { avg: number | null; n: number };
+function pctDiff(a: number | null, b: number | null): number | null {
+  if (a == null || b == null || b === 0) return null;
+  return Math.round(((a - b) / Math.abs(b)) * 100);
+}
+function fmtWin(label: string, unit: string, s7: WinStat, s14: WinStat, s30: WinStat): string {
+  const f = (s: WinStat) => s.avg == null ? `--   (n=${s.n})` : `${s.avg}${unit} (n=${s.n})`;
+  const d = pctDiff(s7.avg, s30.avg);
+  const flag = d == null ? '' : (Math.abs(d) >= 10 ? `  <<< 7v30 ${d > 0 ? '+' : ''}${d}%  DIVERGES` : `  (7v30 ${d > 0 ? '+' : ''}${d}%, aligned)`);
+  return `${label.padEnd(14)}  7d: ${f(s7).padEnd(16)}  14d: ${f(s14).padEnd(16)}  30d: ${f(s30)}${flag}`;
+}
+
+export async function dumpWindowComparison(): Promise<string> {
+  let sleepGoal = 8;
+  try {
+    const profileRaw = await AsyncStorage.getItem('pj_profile');
+    if (profileRaw) { const p = JSON.parse(profileRaw); if (p.sleepGoal) sleepGoal = parseFloat(p.sleepGoal); }
+  } catch {}
+
+  type Row = {
+    protein: number; fiber: number; calories: number; activeCalories: number;
+    steps: number; water: number; sleepScore: number | null; weight: number | null;
+    excluded: boolean; dateKey: string;
+  };
+  const rows: Row[] = [];
+  for (let i = 1; i <= 30; i++) {
+    const dateKey = offsetToDateKey(i);
+    let calories = 0, protein = 0, fiber = 0, activeCalories = 0, steps = 0, water = 0;
+    let sleepScore: number | null = null, weight: number | null = null, excluded = false;
+    try {
+      const raw = await AsyncStorage.getItem(`pj_${dateKey}`);
+      if (raw) {
+        const d = JSON.parse(raw);
+        excluded = !!(d.excluded?.diet);
+        if (!excluded && d.entries?.length > 0) {
+          calories = d.entries.reduce((s: number, e: any) => s + (e.cal || 0), 0);
+          protein = d.entries.reduce((s: number, e: any) => s + (e.protein || 0), 0);
+          fiber = getEntryNutrient(d.entries, 'Fiber, total dietary');
+        }
+        if (d.weight) weight = d.weight;
+        activeCalories = d.activeCalories || d.caloriesBurned || 0;
+        if (d.steps) steps = d.steps;
+        if (typeof d.water === 'number') water = d.water;
+        const sh = d.sleepOverride || d.sleepHours;
+        if (sh) sleepScore = calcSleepScore(sh, d.sleepStages || null, sleepGoal, d.sleepFeelRating ?? null, !!d.sleepOverride, d.sleepConsistencyPts ?? 0).score;
+      }
+    } catch {}
+    rows.push({ protein, fiber, calories, activeCalories, steps, water, sleepScore, weight, excluded, dateKey });
+  }
+
+  // rows[0] = yesterday ... rows[29] = 30 days ago. slice(0,n) = most recent n days.
+  const win = (n: number, pick: (r: Row) => number | null, isLogged: (r: Row) => boolean): WinStat => {
+    const slice = rows.slice(0, n).filter(isLogged);
+    const vals = slice.map(pick).filter((v): v is number => v != null);
+    return { avg: vals.length ? Math.round((vals.reduce((s, v) => s + v, 0) / vals.length) * 10) / 10 : null, n: vals.length };
+  };
+  const loggedDiet = (r: Row) => !r.excluded && r.calories > 400;
+
+  const lines: string[] = [];
+  lines.push('=== WINDOW COMPARISON (read-only) ===');
+  lines.push('Avg over each window + (n = days with real data in it).');
+  lines.push('"DIVERGES" = 7d differs from 30d by >=10%: a window the current card throws away.');
+  lines.push('');
+  lines.push(fmtWin('Protein', 'g', win(7, r => r.protein, loggedDiet), win(14, r => r.protein, loggedDiet), win(30, r => r.protein, loggedDiet)));
+  lines.push(fmtWin('Fiber', 'g', win(7, r => r.fiber, r => loggedDiet(r) && r.fiber > 0), win(14, r => r.fiber, r => loggedDiet(r) && r.fiber > 0), win(30, r => r.fiber, r => loggedDiet(r) && r.fiber > 0)));
+  lines.push(fmtWin('Calories', '', win(7, r => r.calories, loggedDiet), win(14, r => r.calories, loggedDiet), win(30, r => r.calories, loggedDiet)));
+  lines.push(fmtWin('Active cal', '', win(7, r => r.activeCalories, r => r.activeCalories > 0), win(14, r => r.activeCalories, r => r.activeCalories > 0), win(30, r => r.activeCalories, r => r.activeCalories > 0)));
+  lines.push(fmtWin('Steps', '', win(7, r => r.steps, r => r.steps > 0), win(14, r => r.steps, r => r.steps > 0), win(30, r => r.steps, r => r.steps > 0)));
+  lines.push(fmtWin('Water', 'oz', win(7, r => r.water, r => r.water > 0), win(14, r => r.water, r => r.water > 0), win(30, r => r.water, r => r.water > 0)));
+  lines.push(fmtWin('Sleep score', '', win(7, r => r.sleepScore, r => r.sleepScore != null), win(14, r => r.sleepScore, r => r.sleepScore != null), win(30, r => r.sleepScore, r => r.sleepScore != null)));
+  lines.push('');
+
+  // Weight: the real first->last span inside each window (vs the hardcoded "Over 90 days").
+  const weighStat = (n: number): string => {
+    const slice = rows.slice(0, n).filter(r => r.weight != null);
+    if (slice.length < 2) return `${n}d: ${slice.length} weigh-in(s) -- need >=2`;
+    const newest = slice[0], oldest = slice[slice.length - 1];
+    const span = Math.abs((new Date(oldest.dateKey).getTime() - new Date(newest.dateKey).getTime()) / 86400000) + 1;
+    const change = Math.round((newest.weight! - oldest.weight!) * 10) / 10;
+    return `${n}d window: ${slice.length} weigh-ins, REAL span ${Math.round(span)} days, change ${change > 0 ? '+' : ''}${change} lbs`;
+  };
+  lines.push('--- WEIGHT (real span vs the hardcoded "Over 90 days") ---');
+  lines.push(weighStat(7));
+  lines.push(weighStat(14));
+  lines.push(weighStat(30));
+
+  return lines.join('\n');
 }

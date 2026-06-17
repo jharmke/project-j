@@ -511,6 +511,11 @@ export default function HomeScreen() {
     Animated.timing(waterDetailAnim, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => setShowWaterDetailModal(false));
   };
 
+  // Single source of truth for the water total: sum the entries (add = +, remove = -).
+  // The "Logged" number always derives from this so it can never disagree with the entries shown.
+  const waterTotalFromEntries = (entries: { amount: number; sign: 'add'|'remove' }[]): number =>
+    Math.max(0, entries.reduce((sum, e) => sum + (e.sign === 'add' ? e.amount : -e.amount), 0));
+
   const doWaterUpdate = async (deltaOz: number) => {
     const prev = water;
     const newWater = Math.max(0, water + deltaOz);
@@ -560,6 +565,45 @@ export default function HomeScreen() {
     showToast('Entry removed', `${newWater} oz total`, 'info');
   };
 
+  const openWaterEntryEdit = (idx: number) => {
+    const entry = waterEntries[idx];
+    if (!entry) return;
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    setEditWaterAmount(String(entry.amount));
+    setEditWaterSign(entry.sign);
+    setEditingWaterIdx(idx);
+    editWaterAnim.setValue(0);
+    Animated.timing(editWaterAnim, { toValue: 1, duration: 180, useNativeDriver: true }).start();
+  };
+
+  const closeWaterEntryEdit = () => {
+    Animated.timing(editWaterAnim, { toValue: 0, duration: 140, useNativeDriver: true }).start(() => setEditingWaterIdx(null));
+  };
+
+  // Edit one water entry's amount/sign, recompute the day total, read-then-merge into pj_<date>.
+  // Never overwrites other day fields; mirrors doWaterUpdate/deleteWaterEntry. No goal celebration
+  // on edit (correction, not a fresh log) -- matches deleteWaterEntry's behavior.
+  const saveWaterEntryEdit = async () => {
+    if (editingWaterIdx === null) return;
+    const amt = parseInt(editWaterAmount);
+    if (isNaN(amt) || amt <= 0) return;
+    const newEntries = waterEntries.map((e, i) =>
+      i === editingWaterIdx ? { ...e, amount: amt, sign: editWaterSign } : e
+    );
+    const newWater = Math.max(0, newEntries.reduce(
+      (sum, e) => sum + (e.sign === 'add' ? e.amount : -e.amount), 0
+    ));
+    setWater(newWater);
+    setWaterEntries(newEntries);
+    const existing = await AsyncStorage.getItem(`pj_${todayKey}`);
+    const current = existing ? JSON.parse(existing) : {};
+    await storageSet(`pj_${todayKey}`, JSON.stringify({ ...current, water: newWater, waterEntries: newEntries, waterGoal }));
+    saveToFirebase(todayKey, 'water', newWater);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    showToast('Entry updated', `${newWater} oz total`, 'success');
+    closeWaterEntryEdit();
+  };
+
   const saveWaterPresets = async () => {
     const p0 = parseInt(waterPresetInputs[0]);
     const p1 = parseInt(waterPresetInputs[1]);
@@ -585,6 +629,11 @@ export default function HomeScreen() {
   const waterModalAnim = useRef(new Animated.Value(0)).current;
   const waterCustomInputRef = useRef<any>(null);
   const [waterEntries, setWaterEntries] = useState<{amount:number;timestamp:string;sign:'add'|'remove'}[]>([]);
+  // Edit-entry state for the water log (amount + sign). Index into waterEntries; null = closed.
+  const [editingWaterIdx, setEditingWaterIdx] = useState<number | null>(null);
+  const [editWaterAmount, setEditWaterAmount] = useState('');
+  const [editWaterSign, setEditWaterSign]     = useState<'add'|'remove'>('add');
+  const editWaterAnim = useRef(new Animated.Value(0)).current;
   const [showWaterDetailModal, setShowWaterDetailModal] = useState(false);
   const waterDetailAnim = useRef(new Animated.Value(0)).current;
   const [waterPresetInputs, setWaterPresetInputs] = useState<[string,string,string]>(['','','']);
@@ -870,6 +919,7 @@ export default function HomeScreen() {
           setTodayDay(newDay);
           // Reset daily state
           setWater(0);
+          setWaterEntries([]); // must clear too -- else yesterday's entries leak into the new day
           setWeight(null);
           setDailyNote('');
           setTotalCals(0);
@@ -1215,8 +1265,17 @@ export default function HomeScreen() {
         const saved = await AsyncStorage.getItem(`pj_${todayKey}`);
         if (saved) {
           const data = JSON.parse(saved);
-          if (typeof data.water === 'number') { setWater(Math.max(0, data.water)); waterLoaded.current = true; }
-          if (Array.isArray(data.waterEntries)) setWaterEntries(data.waterEntries);
+          // Water: entries are the source of truth; total derives from them. Always set both
+          // together (else-clear) so a day with no entries never shows a prior day's list.
+          if (Array.isArray(data.waterEntries)) {
+            setWaterEntries(data.waterEntries);
+            setWater(waterTotalFromEntries(data.waterEntries));
+            waterLoaded.current = true;
+          } else {
+            setWaterEntries([]);
+            if (typeof data.water === 'number') { setWater(Math.max(0, data.water)); waterLoaded.current = true; }
+            else setWater(0);
+          }
           if (data.weight)        setWeight(data.weight);
           if ('dailyNote' in data) { setDailyNote(data.dailyNote ?? ''); setSavedDailyNoteText(data.dailyNote ?? ''); }
           const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
@@ -1238,7 +1297,13 @@ export default function HomeScreen() {
         } else {
           const cloudData = await loadFromFirebase(todayKey);
           if (cloudData) {
-            if (typeof cloudData.water === 'number') setWater(Math.max(0, cloudData.water));
+            if (Array.isArray(cloudData.waterEntries)) {
+              setWaterEntries(cloudData.waterEntries);
+              setWater(waterTotalFromEntries(cloudData.waterEntries));
+            } else {
+              setWaterEntries([]);
+              if (typeof cloudData.water === 'number') setWater(Math.max(0, cloudData.water));
+            }
             if (cloudData.weight)   setWeight(cloudData.weight);
             if ('dailyNote' in cloudData) { setDailyNote(cloudData.dailyNote ?? ''); setSavedDailyNoteText(cloudData.dailyNote ?? ''); }
             await storageSet(`pj_${todayKey}`, JSON.stringify(cloudData));
@@ -1353,8 +1418,15 @@ export default function HomeScreen() {
           if (data.sleepManualCore) setSleepManualCore(String(data.sleepManualCore));
           if (data.sleepManualDeep) setSleepManualDeep(String(data.sleepManualDeep));
           if (data.sleepManualRem)  setSleepManualRem(String(data.sleepManualRem));
-          if (typeof data.water === 'number') { setWater(Math.max(0, data.water)); waterLoaded.current = true; }
-          if (Array.isArray(data.waterEntries)) setWaterEntries(data.waterEntries);
+          if (Array.isArray(data.waterEntries)) {
+            setWaterEntries(data.waterEntries);
+            setWater(waterTotalFromEntries(data.waterEntries));
+            waterLoaded.current = true;
+          } else {
+            setWaterEntries([]);
+            if (typeof data.water === 'number') { setWater(Math.max(0, data.water)); waterLoaded.current = true; }
+            else setWater(0);
+          }
           if (data.weight) setWeight(data.weight);
           if ('dailyNote' in data) { setDailyNote(data.dailyNote ?? ''); setSavedDailyNoteText(data.dailyNote ?? ''); }
         }
@@ -3248,6 +3320,7 @@ export default function HomeScreen() {
           ? sleepWakeTime.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })
           : sleepStoredWake ?? '6:00 AM';
         return (
+          <>
           <Animated.View style={{ position:'absolute', top:0, bottom:0, left:0, right:0, backgroundColor: theme.overlayBg, zIndex:999, opacity: waterDetailAnim }}>
             <TouchableOpacity style={StyleSheet.absoluteFill} onPress={closeWaterDetailModal} activeOpacity={1} />
             <KeyboardAvoidingView
@@ -3318,9 +3391,14 @@ export default function HomeScreen() {
                         <Text style={{ fontSize:14, color: entry.sign === 'add' ? theme.statusGood : theme.statusBad, fontFamily:'DMSans_600SemiBold', flex:1 }}>
                           {entry.sign === 'add' ? '+' : '-'}{entry.amount} oz
                         </Text>
-                        <TouchableOpacity onPress={() => deleteWaterEntry(realIdx)} hitSlop={{top:8,bottom:8,left:12,right:8}}>
-                          <Ionicons name="trash-outline" size={16} color={theme.accentRed} />
-                        </TouchableOpacity>
+                        <View style={{ flexDirection:'row', alignItems:'center', gap:16 }}>
+                          <TouchableOpacity onPress={() => openWaterEntryEdit(realIdx)} hitSlop={{top:8,bottom:8,left:8,right:8}}>
+                            <Ionicons name="pencil" size={15} color={theme.accentBlue} />
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={() => deleteWaterEntry(realIdx)} hitSlop={{top:8,bottom:8,left:8,right:8}}>
+                            <Ionicons name="trash-outline" size={16} color={theme.accentRed} />
+                          </TouchableOpacity>
+                        </View>
                       </View>
                     );
                   })
@@ -3392,6 +3470,62 @@ export default function HomeScreen() {
             </Animated.View>
             </KeyboardAvoidingView>
           </Animated.View>
+
+          {/* Edit Entry overlay (amount + sign) -- layered above the water modal */}
+          {editingWaterIdx !== null && (
+            <Animated.View style={{ position:'absolute', top:0, bottom:0, left:0, right:0, backgroundColor: theme.overlayBg, zIndex:1000, opacity: editWaterAnim }}>
+              <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeWaterEntryEdit} />
+              <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex:1, justifyContent:'center', alignItems:'center' }} pointerEvents="box-none">
+                <Animated.View style={{ width:'82%', backgroundColor: theme.bgSheet, borderRadius:16, borderWidth:0.5, borderColor: theme.borderCard, borderTopWidth:1.5, borderTopColor: theme.accentBlueRaw, padding:18, transform:[{ scale: editWaterAnim.interpolate({ inputRange:[0,1], outputRange:[0.9,1] }) }] }}>
+                  <View style={{ alignItems:'center', marginBottom:6 }}>
+                    <View style={{ width:36, height:4, borderRadius:2, backgroundColor: theme.sheetHandle }} />
+                  </View>
+                  <Text style={{ fontSize:9, color: theme.accentBlueRaw, fontFamily:'DMSans_700Bold', letterSpacing:3, textTransform:'uppercase', marginBottom:16, textAlign:'center' }}>Edit Entry</Text>
+                  {/* Sign toggle */}
+                  <View style={{ flexDirection:'row', gap:8, marginBottom:14 }}>
+                    <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditWaterSign('add'); }}
+                      style={{ flex:1, paddingVertical:10, borderRadius:8, borderWidth:1, alignItems:'center', backgroundColor: editWaterSign==='add' ? theme.statusGood+'22' : 'transparent', borderColor: editWaterSign==='add' ? theme.statusGood : theme.borderInput }}>
+                      <Text style={{ fontSize:13, fontFamily:'DMSans_600SemiBold', color: editWaterSign==='add' ? theme.statusGood : theme.textMuted }}>Add</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setEditWaterSign('remove'); }}
+                      style={{ flex:1, paddingVertical:10, borderRadius:8, borderWidth:1, alignItems:'center', backgroundColor: editWaterSign==='remove' ? theme.statusBad+'22' : 'transparent', borderColor: editWaterSign==='remove' ? theme.statusBad : theme.borderInput }}>
+                      <Text style={{ fontSize:13, fontFamily:'DMSans_600SemiBold', color: editWaterSign==='remove' ? theme.statusBad : theme.textMuted }}>Remove</Text>
+                    </TouchableOpacity>
+                  </View>
+                  {/* Amount */}
+                  <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'center', marginBottom:18 }}>
+                    <TextInput
+                      style={{ backgroundColor: theme.bgInput, borderWidth:0.5, borderColor: theme.borderInput, borderRadius:8, color: theme.textSecondary, paddingVertical:10, paddingHorizontal:16, fontSize:26, fontFamily:'BebasNeue_400Regular', textAlign:'center', minWidth:130 }}
+                      value={editWaterAmount}
+                      onChangeText={v => setEditWaterAmount(v.replace(/[^0-9]/g,''))}
+                      keyboardType="number-pad"
+                      autoFocus
+                      placeholder="0"
+                      placeholderTextColor={theme.textPlaceholder}
+                    />
+                    <Text style={{ fontSize:16, color: theme.textMuted, fontFamily:'BebasNeue_400Regular', marginLeft:8 }}>oz</Text>
+                  </View>
+                  {/* Actions */}
+                  <View style={{ flexDirection:'row', gap:8 }}>
+                    <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeWaterEntryEdit(); }} style={{ flex:1, paddingVertical:12, borderRadius:8, borderWidth:1, borderColor: theme.borderInput, alignItems:'center' }}>
+                      <Text style={{ fontSize:14, fontFamily:'DMSans_600SemiBold', color: theme.textMuted }}>Cancel</Text>
+                    </TouchableOpacity>
+                    {(() => {
+                      const amt = parseInt(editWaterAmount);
+                      const saveable = !isNaN(amt) && amt > 0;
+                      return (
+                        <TouchableOpacity onPress={saveWaterEntryEdit} disabled={!saveable}
+                          style={{ flex:1, paddingVertical:12, borderRadius:8, borderWidth:1, alignItems:'center', backgroundColor: saveable ? theme.accentBlueBg : theme.bgInput, borderColor: saveable ? theme.accentBlueBorder : theme.borderInput, opacity: saveable ? 1 : 0.5 }}>
+                          <Text style={{ fontSize:14, fontFamily:'DMSans_600SemiBold', color: saveable ? theme.accentBlue : theme.textDim }}>Save</Text>
+                        </TouchableOpacity>
+                      );
+                    })()}
+                  </View>
+                </Animated.View>
+              </KeyboardAvoidingView>
+            </Animated.View>
+          )}
+          </>
         );
       })()}
 

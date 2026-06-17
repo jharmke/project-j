@@ -10,6 +10,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import CompanionFAB from '../../components/CompanionFAB';
 import CompanionChat from '../../components/CompanionChat';
+import { showToolkit } from '../../components/ToolkitSheet';
 import BibleStartGuide from '../../components/BibleStartGuide';
 import GratitudeStreakCard from '../../components/GratitudeStreakCard';
 import { resolveDailyVerse, VERSES, type DailyVerse } from '../../data/verses';
@@ -162,6 +163,9 @@ export default function FaithScreen() {
             style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}
           >
             <Ionicons name="journal" size={14} color={theme.accentBlue} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); showToolkit('faith'); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+            <Ionicons name="help-circle" size={22} color={theme.accentBlue} />
           </TouchableOpacity>
         </View>
       </View>

@@ -33,7 +33,7 @@ export interface Tutorial {
   id: string;
   name: string;
   description: string;
-  tab: 'home' | 'log' | 'workout' | 'stats' | 'profile' | 'settings';
+  tab: 'home' | 'log' | 'workout' | 'stats' | 'profile' | 'settings' | 'faith';
   steps: TutorialStep[];
   // Optional action key fired before step 0 opens (inject demo data before overlay appears)
   preAction?: string;
@@ -1931,6 +1931,7 @@ export const TAB_TUTORIALS: Record<string, string[]> = {
   stats: ['graph_creator', 'streaks', 'effort_vs_results', 'day_score'],
   profile: [],
   settings: ['goals', 'notifications', 'faith_and_style'],
+  faith: ['faith_prayer', 'faith_bible_plans', 'faith_halo'],
 };
 
 export function getTutorialById(id: string): Tutorial | undefined {

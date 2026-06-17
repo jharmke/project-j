@@ -291,6 +291,49 @@ No toolkit needed: Basic Info, Weight Goal, Water Presets, Appearance (themes/ac
 
 ---
 
+## FAITH TAB
+
+Square one when this section was written: the Faith tab had NO tutorial infrastructure at all -- no `?` hub icon, no card `(i)` toolkits, no spotlight refs, and `'faith'` was not wired into the tab type union, `TAB_LABELS`, `TAB_ROUTES`, or `TAB_TUTORIALS`.
+
+**Override note:** the global "WHAT DOES NOT GET A TUTORIAL" list at the bottom of this doc predates the Faith tab existing as its own tab. Several entries there (Today's Message, Reading Plans, Bible reader, Journal, Gratitude Streak) were written in the Home-tab context. For the Faith tab the rulings below take precedence -- the Faith tab bundles those features into richer cards (plans vs devotionals, prayer requests, the Halo companion) that a brand-new user needs help with. Today's Message and Gratitude stay toolkit-only here too; the rest get the treatment defined below.
+
+The Faith tab has its own card system (`FAITH_CARD_REGISTRY` in `app/(tabs)/faith.tsx`), fully separate from Home (`faithCardOrder` / `faithCardVisible` in pj_settings).
+
+### Faith Journey gating (LOCKED)
+- **Not Right Now**: the Faith tab is hidden entirely. None of these toolkits or tutorials are reachable. No special handling needed beyond the tab not existing for NRN users.
+- **Rooted** and **Exploring**: treated IDENTICALLY for tutorials and toolkits. No per-tier branching, no copy differences. Both see the full Faith tab and the full tutorial/toolkit set.
+
+### Tab-Level Toolkit (hub)
+- `?` `help-circle` filled icon, far RIGHT of the Faith header, floating (no box/border), size 22, after the journal-door icon. Same pulse behavior as the other tabs.
+- Opens the standard centered ToolkitSheet via `showToolkit('faith')`.
+- `TAB_LABELS.faith = 'FAITH'`, `TAB_ROUTES.faith = '/(tabs)/faith'`, `TAB_TUTORIALS.faith = ['faith_prayer', 'faith_bible_plans', 'faith_halo']`.
+- The `tab` union in data/tutorials.ts gains `'faith'`.
+
+### Toolkits
+
+| Card | Tutorial? | Notes |
+|------|-----------|-------|
+| Today's Message (`votd`) | Toolkit only | The daily verse (shared rotation with Home), what "Reflect with Halo" does. No tutorial. Custom verses/messages is a backlog item; revisit the explainer when that ships. |
+| Bible and Plans (`bible_plans`) | Toolkit + Tutorial | Toolkit: what the three parts are (free Bible reading, Reading Plans, Devotionals), plans vs devotionals distinction, where progress comes from. |
+| Gratitude (`gratitude`) | Toolkit only | `GratitudeStreakCard variant="faith"`. Streak mechanics covered by the existing Stats Streaks tutorial; here it is toolkit-only. |
+| Prayer (`prayer`) | Toolkit + Tutorial | Toolkit: active vs answered, what the preview shows, what "Ask for prayer" sends out. |
+| Halo Companion (FAB) | Toolkit + Tutorial | Toolkit: what Halo is (AI faith + wellness companion), what it can help with, that it is private. |
+
+### Tutorials (3) -- order in TAB_TUTORIALS: faith_prayer, faith_bible_plans, faith_halo
+
+| Tutorial ID | Name | Covers |
+|-------------|------|--------|
+| `faith_prayer` | Prayer | Interactive, crosses faith tab -> /prayer. Spotlight the Prayer card, the active-prayer preview rows, the "Ask for prayer" button (explain plainly that it sends a prayer request out to be prayed over). Navigate to /prayer: spotlight the answered hero stat, the active list, add-a-prayer, and the answer/manage actions that live on the full screen. Return to faith tab. Mode-aware copy. Every element mentioned is spotlighted; auto-scroll where needed. |
+| `faith_bible_plans` | Bible and Plans | Interactive. Spotlight the Bible and Plans card, then each part: the Bible reading strip (Continue reading / Where do I start? / Open the Bible), the BibleStartGuide door, the Reading Plans column, the Devotionals column. Explain plans vs devotionals in plain language. Navigate to /plans to show browsing/starting (read-only here, managed there), then return. State note: the card renders a returning state (Continue reading) vs a first-time state (Where do I start? + Open the Bible) depending on `pj_bible_last_read`. The tutorial must inject/force a known state so steps never land on a missing target (do NOT skip steps). |
+| `faith_halo` | Meet Halo | Halo-VOICED tutorial (LOCKED): callout bubbles carry Halo's identity (avatar/icon in the bubble, first-person voice). Spotlight the Halo FAB, explain what Halo is and can do, then OPEN the real companion chat seeded with a sample prompt so the user sees the actual interface and one real example, then close and finish. NOT a live-AI-driven tour (non-deterministic, costs an API call per run, and chat is a Modal the overlay cannot spotlight into) -- the engine drives it, dressed as Halo, with one real seeded sample. Mode-aware copy under the Halo voice. |
+
+### State + modal handling notes
+- **Prayer card states**: empty (no prayers), active-preview, and all-answered each render different copy. The tutorial injects a known state (tutorial-isolated, zero data footprint, same contract as log_food) so no step lands on a missing target.
+- **Bible card states**: returning vs first-time (see above). Force a known state for the tour.
+- **Modals to spotlight into** use the inline-render `tutorialMode` pattern (RN Modals are a separate native window the overlay cannot measure): BibleStartGuide, the prayer add/request modals, and CompanionChat. Where a modal cannot be made inline, spotlight the launcher and open the real modal as a terminal "see it live" step (the Halo chat sample uses this).
+
+---
+
 ## FULL AUDIT TOTALS
 
 ### Toolkits to build (new, across all tabs)
@@ -299,7 +342,8 @@ Log: Food detail screen + Recipe builder (2 new -- Advanced Nutrition already ex
 Workout: Tab hub, Today's Effort, Tags (3 new)
 Stats: Tab hub, At a Glance, Trends, Streaks, Calendar, Effort vs Results (6 new)
 Profile/Settings: Profile tab hub, Activity Level, Your Estimates, Settings hub, Faith & Style, Health/Burn Accuracy (6 new)
-Total new toolkits to build: ~20
+Faith: Tab hub, Today's Message, Bible and Plans, Gratitude, Prayer, Halo Companion (6 new)
+Total new toolkits to build: ~26
 
 ### Tutorials (all tabs)
 Home: Calories card, Macros card, Sleep card, IF card, You vs Yesterday (5)
@@ -307,8 +351,9 @@ Log: Logging Food, Managing Your Log, Barcode Scanner, Creating Your Own Food, R
 Workout: Workout Basics, Programs, Routines, Exercise Library (4)
 Stats: Graph Creator, Streaks, Effort vs Results (3)
 Profile/Settings: Your Style & Faith Journey (1)
+Faith: Prayer, Bible and Plans, Meet Halo (3)
 Meta-tutorial: (1)
-Total tutorials: 19 (including meta)
+Total tutorials: 22 (including meta)
 
 ### Help Articles
 Understanding Your Style (1 -- first article for Tips & Guides section)

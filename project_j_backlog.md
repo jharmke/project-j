@@ -49,6 +49,7 @@
 
 ## FAITH
 
+- Custom verses & messages (Today's Message) -- let users add their own verses/messages into the Today's Message rotation (faith tab + home tab share the rotation in data/verses.ts). When built, revisit the tutorial/toolkit treatment for Today's Message: it is toolkit-only today (no tutorial), but a user-authored rotation likely warrants a toolkit explainer on how to add/manage custom entries, and possibly a short tutorial. No spec yet.
 - Gratitude before meals -- one-tap give thanks before logging a meal. Unapologetically Christian. No spec yet.
 - Faith-based fasting -- spiritual fasting with prayer log, separate from 16:8 IF. No spec yet.
 - Challenges/Missions layer -- full spec in SMART_COACH_SPEC.md. Parked behind Faith AI track.

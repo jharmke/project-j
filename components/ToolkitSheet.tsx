@@ -49,6 +49,7 @@ const TAB_LABELS: Record<string, string> = {
   stats:   'STATS',
   profile: 'PROFILE',
   settings: 'SETTINGS',
+  faith:   'FAITH',
 };
 
 const TAB_ROUTES: Record<string, string> = {
@@ -57,6 +58,7 @@ const TAB_ROUTES: Record<string, string> = {
   workout: '/(tabs)/workout',
   stats:   '/(tabs)/stats',
   profile: '/(tabs)/profile',
+  faith:   '/(tabs)/faith',
 };
 
 function ToolkitSheetInner({ tab, onClose }: { tab: string; onClose: () => void }) {

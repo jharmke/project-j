@@ -219,7 +219,7 @@ export default function DiagnosticReportScreen() {
                         </View>
                       )}
                       <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: t.textSecondary }}>
-                        {fmtDate(r.dateRangeStart)} – {fmtDateFull(r.dateRangeEnd)}
+                        Generated {fmtDateFull(r.generatedAt.slice(0, 10))}
                       </Text>
                     </View>
                     <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: t.textMuted }}>

@@ -13,15 +13,8 @@ import { useTheme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import {
-  BurnAccuracyFinding,
-  ConsistencyFinding,
-  DeficitFinding,
   DiagnosticCard,
   DiagnosticReport,
-  FindingStatus,
-  MacroFinding,
-  ReportWindow,
-  SleepFinding,
   deleteReport,
   loadSavedReports,
   saveReport,
@@ -53,26 +46,6 @@ function fmtDateFull(dk: string): string {
   return `${MONTH_ABBR[parseInt(m) - 1]} ${parseInt(d)}, ${y}`;
 }
 
-function fmtLbs(v: number): string {
-  return `${Math.abs(Math.round(v * 10) / 10).toFixed(1)} lbs`;
-}
-
-function windowLabel(windowDays: ReportWindow): string {
-  return windowDays === 14 ? '14-Day' : windowDays === 30 ? '30-Day' : '90-Day';
-}
-
-// ── Status pill ────────────────────────────────────────────────────────────────
-
-function StatusPill({ status, theme }: { status: FindingStatus; theme: any }) {
-  const label = status === 'good' ? 'LOOKING GOOD' : status === 'attention' ? 'WORTH ATTENTION' : 'LIKELY FACTOR';
-  const color = status === 'good' ? theme.statusGood : status === 'attention' ? theme.statusWarn : theme.statusBad;
-  return (
-    <View style={{ backgroundColor: color + '22', borderWidth: 1, borderColor: color + '55', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
-      <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color }}>{label}</Text>
-    </View>
-  );
-}
-
 // ── Chip label ─────────────────────────────────────────────────────────────────
 
 function ChipLabel({ label, theme }: { label: string; theme: any }) {
@@ -80,180 +53,6 @@ function ChipLabel({ label, theme }: { label: string; theme: any }) {
     <View style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
       <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.accentBlueRaw }}>{label}</Text>
     </View>
-  );
-}
-
-// ── Data row ───────────────────────────────────────────────────────────────────
-
-function DataRow({ label, value, valueColor, theme }: { label: string; value: string; valueColor?: string; theme: any }) {
-  return (
-    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 5, borderBottomWidth: 0.5, borderBottomColor: theme.borderSubtle }}>
-      <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, flex: 1 }}>{label}</Text>
-      <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: valueColor ?? theme.textSecondary }}>{value}</Text>
-    </View>
-  );
-}
-
-// ── Finding card ───────────────────────────────────────────────────────────────
-
-function FindingCard({
-  chipLabel, headline, status, showStatus, theme, shadowStyle, children,
-}: {
-  chipLabel: string;
-  headline: ReactNode;
-  status: FindingStatus;
-  showStatus: boolean;
-  theme: any;
-  shadowStyle: any;
-  children?: React.ReactNode;
-}) {
-  const topColor = showStatus
-    ? (status === 'good' ? theme.statusGood : status === 'attention' ? theme.statusWarn : theme.statusBad)
-    : theme.accentBlueRaw;
-  return (
-    <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: topColor, ...shadowStyle }]}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
-        <ChipLabel label={chipLabel} theme={theme} />
-        {showStatus && <StatusPill status={status} theme={theme} />}
-      </View>
-      <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', color: theme.textSecondary, letterSpacing: 1, marginBottom: children ? 10 : 0, lineHeight: 22 }}>
-        {headline}
-      </Text>
-      {children}
-    </View>
-  );
-}
-
-// ── Consistency card ───────────────────────────────────────────────────────────
-
-function ConsistencyCard({ f, isMindful, theme, shadowStyle }: { f: ConsistencyFinding; isMindful: boolean; theme: any; shadowStyle: any }) {
-  const rate = Math.round(f.rate * 100);
-  const headline = `${f.loggedDays} of ${f.totalDays} days logged  ·  ${rate}%`;
-  const noteText = f.status !== 'good'
-    ? isMindful
-      ? `There are some gaps in this window. More logging days give the report more to work with.`
-      : `Inconsistent logging creates gaps in the deficit calculation. Even rough entries on hard days are better than nothing.`
-    : null;
-  return (
-    <FindingCard chipLabel="LOGGING CONSISTENCY" headline={headline} status={f.status} showStatus={!isMindful} theme={theme} shadowStyle={shadowStyle}>
-      <DataRow label="Logged days" value={`${f.loggedDays} / ${f.totalDays}`} theme={theme} />
-      {f.suspectDays > 0 && <DataRow label="Under 400 cal (suspect)" value={`${f.suspectDays} day${f.suspectDays !== 1 ? 's' : ''}`} valueColor={!isMindful ? theme.statusWarn : undefined} theme={theme} />}
-      {f.excludedDays > 0 && <DataRow label="Excluded from stats" value={`${f.excludedDays} day${f.excludedDays !== 1 ? 's' : ''}`} theme={theme} />}
-      {noteText && <Text style={styles.noteText}>{noteText}</Text>}
-    </FindingCard>
-  );
-}
-
-// ── Deficit card ───────────────────────────────────────────────────────────────
-
-function DeficitCard({ f, isMindful, theme, shadowStyle }: { f: DeficitFinding; isMindful: boolean; theme: any; shadowStyle: any }) {
-  const chipLabel = f.goalDirection === 'gain' ? 'CALORIE SURPLUS' : 'CALORIE DEFICIT';
-  let headline = '';
-  if (f.actualChangeLbs !== null) {
-    const expAbs = fmtLbs(Math.abs(f.expectedChangeLbs));
-    const expDir = f.goalDirection === 'lose' ? 'lost' : 'gained';
-    const actAbs = fmtLbs(Math.abs(f.actualChangeLbs));
-    const actDir = f.actualChangeLbs <= 0 ? 'lost' : 'gained';
-    headline = `Expected ${expDir} ${expAbs}. Actually ${actDir} ${actAbs}.`;
-  } else {
-    const abs = Math.abs(Math.round(f.avgDailyDeficit));
-    headline = `Avg ${abs} cal/day ${f.avgDailyDeficit >= 0 ? 'deficit' : 'surplus'} logged`;
-  }
-  const gapColor = !isMindful && f.gapLbs != null && f.gapLbs > 0.3 ? theme.statusWarn : theme.textSecondary;
-  return (
-    <FindingCard chipLabel={chipLabel} headline={headline} status={f.status} showStatus={!isMindful && f.hasWeightData} theme={theme} shadowStyle={shadowStyle}>
-      <DataRow label="Avg daily deficit" value={`${Math.abs(Math.round(f.avgDailyDeficit)).toLocaleString()} cal`} theme={theme} />
-      {Math.abs(f.expectedChangeLbs) >= 0.1 && (
-        <DataRow label="Expected over window" value={`${f.goalDirection === 'lose' ? '-' : '+'}${fmtLbs(f.expectedChangeLbs)}`} theme={theme} />
-      )}
-      {f.actualChangeLbs !== null && (
-        <DataRow label="Actual weight change" value={`${f.actualChangeLbs <= 0 ? '-' : '+'}${fmtLbs(f.actualChangeLbs)}`} theme={theme} />
-      )}
-      {!isMindful && f.gapLbs != null && Math.abs(f.gapLbs) >= 0.3 && (
-        <DataRow
-          label={f.goalDirection === 'lose' ? (f.gapLbs > 0 ? 'Fell short by' : 'Exceeded by') : (f.gapLbs < 0 ? 'Fell short by' : 'Exceeded by')}
-          value={fmtLbs(f.gapLbs)}
-          valueColor={gapColor}
-          theme={theme}
-        />
-      )}
-      {!f.hasWeightData && (
-        <Text style={[styles.noteText, { color: theme.textSecondary }]}>
-          Log your weight at least twice in this window to compare expected vs actual results.
-        </Text>
-      )}
-    </FindingCard>
-  );
-}
-
-// ── Burn accuracy card ─────────────────────────────────────────────────────────
-
-function BurnAccuracyCard({ f, isMindful, theme, shadowStyle }: { f: BurnAccuracyFinding; isMindful: boolean; theme: any; shadowStyle: any }) {
-  const headline = f.burnAccuracyPct === 100 ? `Burn estimate hasn't been adjusted` : `Burn estimate adjusted to ${f.burnAccuracyPct}%`;
-  const note = f.isFlagged
-    ? isMindful
-      ? `Your burn estimate is using the default 100%. Most wearables measure differently -- adjusting this in Settings is something worth exploring.`
-      : `Apple Watch and most wearables overestimate active burn by 10-30%. Try Settings → Health and set it to 80-90% for more accurate math.`
-    : null;
-  return (
-    <FindingCard chipLabel="BURN ACCURACY" headline={headline} status={f.status} showStatus={!isMindful && f.isFlagged} theme={theme} shadowStyle={shadowStyle}>
-      <DataRow label="Avg active calories/day" value={`${f.avgActiveCalPerDay.toLocaleString()} cal`} theme={theme} />
-      <DataRow label="Current adjustment" value={`${f.burnAccuracyPct}%`} theme={theme} />
-      {f.burnAccuracyPct < 100 && (
-        <DataRow label="Adjusted avg/day" value={`${Math.round(f.avgActiveCalPerDay * f.burnAccuracyPct / 100).toLocaleString()} cal`} theme={theme} />
-      )}
-      {note && <Text style={[styles.noteText, { color: theme.textSecondary }]}>{note}</Text>}
-    </FindingCard>
-  );
-}
-
-// ── Macro card ─────────────────────────────────────────────────────────────────
-
-function MacroCard({ f, isMindful, theme, shadowStyle }: { f: MacroFinding; isMindful: boolean; theme: any; shadowStyle: any }) {
-  const headline: ReactNode = f.macroStatus === 'good' && f.fiberStatus === 'good'
-    ? 'Macros and food quality look balanced'
-    : f.macroStatus !== 'good'
-    ? <>Protein averaging {f.avgProtein}<Text style={{ fontFamily: 'DMSans_600SemiBold', fontSize: 18 }}>g</Text> -- below target</>
-    : 'Food quality has room to improve';
-  const proteinColor = !isMindful && f.macroStatus !== 'good' ? theme.statusWarn : theme.textSecondary;
-  const fiberColor = !isMindful && f.fiberStatus !== 'good' ? theme.statusWarn : theme.textSecondary;
-  const fiberNote = f.lowFiberNote
-    ? isMindful
-      ? `Fiber tends to reflect how much of your diet comes from whole foods. Your average of ${f.avgFiber}g/day is worth paying attention to.`
-      : `Low fiber usually means fewer fruits, vegetables, and whole grains. Fiber is the best available proxy for food quality we can measure.`
-    : null;
-  return (
-    <FindingCard chipLabel="MACRO QUALITY" headline={headline} status={f.status} showStatus={!isMindful} theme={theme} shadowStyle={shadowStyle}>
-      <DataRow label="Avg protein/day" value={`${f.avgProtein}g`} valueColor={proteinColor} theme={theme} />
-      <DataRow label="Protein target" value={`${f.proteinGoalMin}–${f.proteinGoalMax}g`} theme={theme} />
-      {f.avgFiber > 0 && <DataRow label="Avg fiber/day" value={`${f.avgFiber}g`} valueColor={fiberColor} theme={theme} />}
-      {f.avgFiber > 0 && <DataRow label="Fiber target" value="25–38g" theme={theme} />}
-      {fiberNote && <Text style={[styles.noteText, { color: theme.textSecondary }]}>{fiberNote}</Text>}
-    </FindingCard>
-  );
-}
-
-// ── Sleep card ─────────────────────────────────────────────────────────────────
-
-function SleepCard({ f, isMindful, theme, shadowStyle }: { f: any; isMindful: boolean; theme: any; shadowStyle: any }) {
-  const headline = f.avgSleepScore !== null
-    ? `Avg sleep score: ${f.avgSleepScore} over ${f.totalSleepDays} nights`
-    : `Avg ${f.avgSleepHours}h/night over ${f.totalSleepDays} nights`;
-  const scoreColor = !isMindful && f.status !== 'good' ? theme.statusWarn : theme.textSecondary;
-  const note = f.status !== 'good'
-    ? isMindful
-      ? `Your sleep data shows some nights that could be improved. Sleep quality has an interesting relationship with appetite and energy.`
-      : `Poor sleep increases ghrelin (hunger hormone) and decreases leptin (fullness hormone), making fat loss harder even with a consistent deficit.`
-    : null;
-  return (
-    <FindingCard chipLabel="SLEEP QUALITY" headline={headline} status={f.status} showStatus={!isMindful} theme={theme} shadowStyle={shadowStyle}>
-      {f.avgSleepScore !== null && <DataRow label="Avg sleep score" value={`${f.avgSleepScore} / 100`} valueColor={scoreColor} theme={theme} />}
-      <DataRow label="Avg sleep duration" value={`${f.avgSleepHours}h`} theme={theme} />
-      {f.poorSleepCalDelta != null && f.poorSleepCalDelta > 0 && (
-        <DataRow label="Extra cals after poor sleep" value={`+${f.poorSleepCalDelta} cal`} valueColor={!isMindful ? theme.statusWarn : undefined} theme={theme} />
-      )}
-      {note && <Text style={[styles.noteText, { color: theme.textSecondary }]}>{note}</Text>}
-    </FindingCard>
   );
 }
 
@@ -836,7 +635,7 @@ export default function DiagnosticReportViewScreen() {
           <View style={{ alignItems: 'flex-start', marginBottom: 16 }}>
             <View style={{ backgroundColor: t.accentBlueBg, borderWidth: 1, borderColor: t.accentBlueBorder, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 5 }}>
               <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: t.accentBlueRaw }}>
-                AS OF {fmtDateFull(report.generatedAt.slice(0, 10))}
+                GENERATED {fmtDateFull(report.generatedAt.slice(0, 10))}
               </Text>
             </View>
           </View>
@@ -1020,11 +819,5 @@ const styles = StyleSheet.create({
     letterSpacing: 3,
     textTransform: 'uppercase',
     marginBottom: 10,
-  },
-  noteText: {
-    fontSize: 12,
-    fontFamily: 'DMSans_400Regular',
-    lineHeight: 18,
-    marginTop: 10,
   },
 });

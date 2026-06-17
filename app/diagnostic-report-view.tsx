@@ -507,6 +507,7 @@ const TUTORIAL_DEMO_REPORT: DiagnosticReport = {
   ],
   cards: [
     { id: 'weekend_weekday', claim: 'Weekends are erasing your weekday deficit.', proof: 'Weekdays 1,820 cal · weekends 2,310 cal', lever: 'Give weekends the same loose plan you give weekdays and the deficit holds.', window: 'Weekends, last 30 days', strength: 86, tone: 'factor', positive: false },
+    { id: 'protein_streak', claim: 'Your protein has been consistently strong.', proof: 'Last 7 days: 148 g/day vs 140 g goal', lever: 'Keep going. This is the habit that compounds.', window: 'Last 7 days', strength: 78, tone: 'positive', positive: true },
     { id: 'sleep_nextday_cals', claim: 'Short sleep is pushing your intake up the next day.', proof: 'After poor sleep: +180 cal the next day', lever: 'Protect a consistent bedtime. It moves your intake more than willpower does.', window: 'Last 30 days', strength: 72, tone: 'attention', positive: false },
     { id: 'deficit', claim: 'Your results are lagging what your logging predicts.', proof: 'Predicted: lost 2.9 lbs · Actual: lost 1.6 lbs', lever: 'The gap usually hides in unlogged days or an overstated calorie burn. Tighten one.', window: 'Over 30 days', strength: 68, tone: 'attention', positive: false },
   ],
@@ -522,9 +523,11 @@ export default function DiagnosticReportViewScreen() {
   const isTutorialMode = tutorial === '1';
 
   const { registerScrollView, unregisterScrollView } = useTutorial();
-  const findingsSectionRef = useTutorialTarget('evr_findings_section');
-  const correlationsRef    = useTutorialTarget('evr_correlations');
-  const suggestionsRef     = useTutorialTarget('evr_suggestions');
+  const findingsSectionRef  = useTutorialTarget('evr_findings_section');
+  const firstCardRef        = useTutorialTarget('evr_card_0');
+  const coachInsightRef     = useTutorialTarget('evr_coach_insight');
+  const correlationsRef     = useTutorialTarget('evr_correlations');
+  const suggestionsRef      = useTutorialTarget('evr_suggestions');
   const scrollRef = useRef<any>(null);
 
   const [report, setReport]       = useState<DiagnosticReport | null>(isTutorialMode ? TUTORIAL_DEMO_REPORT : null);
@@ -725,7 +728,23 @@ export default function DiagnosticReportViewScreen() {
           {!report.insufficientData && (
             <>
               {/* AI Coach Insight card */}
-              {TIPS_GATED ? (
+              {isTutorialMode ? (
+                <View ref={coachInsightRef} collapsable={false} style={{ marginBottom: 12 }}>
+                  <View style={[shadowStyle, {
+                    backgroundColor: t.accentBlueRaw + '12', borderRadius: 12, borderWidth: 1,
+                    borderColor: t.accentBlueRaw + '50', padding: 14, alignItems: 'center',
+                  }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 10 }}>
+                      <Ionicons name="sparkles" size={12} color={t.accentBlueRaw} />
+                      <Text style={{ fontSize: 9, letterSpacing: 3, color: t.accentBlueRaw, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>Coach Insight</Text>
+                    </View>
+                    <View style={{ width: '100%', height: 0.5, backgroundColor: t.accentBlueRaw + '40', marginBottom: 10 }} />
+                    <Text style={{ fontSize: 14, color: t.textSecondary, fontFamily: 'DMSans_600SemiBold', lineHeight: 22, fontStyle: 'italic', textAlign: 'center' }}>
+                      Your weekend pattern is the main lever. Close that gap and your deficit holds most weeks.
+                    </Text>
+                  </View>
+                </View>
+              ) : TIPS_GATED ? (
                 <View style={{ marginBottom: 12 }}>
                   <Text style={[styles.sectionLabel, { color: t.textMuted }]}>COACH INSIGHT</Text>
                   <View style={[shadowStyle, {
@@ -805,7 +824,9 @@ export default function DiagnosticReportViewScreen() {
                   </>
                 ) : (voicedCards ?? report.cards ?? []).length > 0 ? (
                   (voicedCards ?? report.cards ?? []).map((c, i) => (
-                    <DiagnosticFeedCard key={`${c.id}-${i}`} card={c} theme={t} shadowStyle={shadowStyle} isMindful={isMindful} />
+                    isTutorialMode && i === 0
+                      ? <View key={`${c.id}-${i}`} ref={firstCardRef} collapsable={false}><DiagnosticFeedCard card={c} theme={t} shadowStyle={shadowStyle} isMindful={isMindful} /></View>
+                      : <DiagnosticFeedCard key={`${c.id}-${i}`} card={c} theme={t} shadowStyle={shadowStyle} isMindful={isMindful} />
                   ))
                 ) : (
                   <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: 'rgba(255,255,255,0.1)', ...shadowStyle }]}>

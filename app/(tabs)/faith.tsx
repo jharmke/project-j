@@ -237,6 +237,8 @@ function VotdCard({ verse, theme, onReflect }: { verse: DailyVerse | null; theme
       style={[styles.card, {
         backgroundColor: theme.bgCardFaith,
         shadowColor: '#d4860a', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.85, shadowRadius: 8, elevation: 8,
+        borderTopWidth: theme.id === 'warm' ? 1.5 : 0.5,
+        borderTopColor: theme.id === 'warm' ? 'rgba(212,134,10,0.5)' : 'rgba(212,134,10,0.22)',
       }]}
     >
       <LinearGradient colors={[theme.accentAmber + '2E', theme.accentAmber + '00']} locations={[0, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 64, borderTopLeftRadius: 14, borderTopRightRadius: 14 }} pointerEvents="none" />
@@ -332,7 +334,7 @@ function BibleCard({ theme }: { theme: Theme }) {
 
   return (
     <>
-      <View style={[styles.card, { backgroundColor: theme.bgCardFaith, overflow: 'hidden' }]}>
+      <View style={[styles.card, { backgroundColor: theme.bgCardFaith, overflow: 'hidden', borderTopWidth: theme.id === 'warm' ? 1.5 : 0.5, borderTopColor: theme.id === 'warm' ? 'rgba(212,134,10,0.5)' : 'rgba(212,134,10,0.22)' }]}>
         <LinearGradient colors={[theme.accentAmber + '2E', theme.accentAmber + '00']} locations={[0, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 64, borderTopLeftRadius: 14, borderTopRightRadius: 14 }} pointerEvents="none" />
         <Ionicons name="book" size={130} color={theme.accentAmber} style={styles.cardWatermark} pointerEvents="none" />
         <View style={styles.cardLabelRow}>
@@ -566,7 +568,7 @@ function PrayerCard({ theme }: { theme: Theme }) {
   // answered count is NOT shown on the card; it lives as a hero on the prayer screen instead.
   return (
     <Animated.View style={{ transform: [{ scale }] }}>
-      <View style={[styles.card, { backgroundColor: theme.bgCardFaith, overflow: 'hidden' }]}>
+      <View style={[styles.card, { backgroundColor: theme.bgCardFaith, overflow: 'hidden', borderTopWidth: theme.id === 'warm' ? 1.5 : 0.5, borderTopColor: theme.id === 'warm' ? 'rgba(212,134,10,0.5)' : 'rgba(212,134,10,0.22)' }]}>
         <LinearGradient colors={[theme.accentAmber + '2E', theme.accentAmber + '00']} locations={[0, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 64, borderTopLeftRadius: 14, borderTopRightRadius: 14 }} pointerEvents="none" />
         <MaterialCommunityIcons name="hand-heart" size={130} color={theme.accentAmber} style={styles.cardWatermark} pointerEvents="none" />
         <TouchableOpacity

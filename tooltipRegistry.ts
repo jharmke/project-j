@@ -274,6 +274,22 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     },
   },
   {
+    key: 'neat',
+    category: 'Fitness',
+    title: 'NEAT',
+    body: 'Non-Exercise Activity Thermogenesis: the calories your body burns through all movement that is not a formal workout. Walking to your car, taking the stairs, pacing during a call, household chores, fidgeting. Every bit of non-gym movement adds up here.\n\nNEAT is one of the biggest variables in total daily burn. Two people with the same workout routine can have a 300-500 calorie daily gap purely from how much they move outside the gym. That gap does not show up in your workout log.\n\nYour step count is the best proxy for NEAT. On a cut, the body tends to quietly suppress it (fewer unconscious movements, less fidgeting) to conserve energy. Steps trending down week over week without you noticing is the most common hidden reason a cut stalls.',
+    definitions: [
+      {
+        term: 'Why steps are the proxy',
+        explanation: 'You cannot directly measure NEAT without lab equipment, but step count captures most of it. A consistent step goal accounts for the biggest variable in your daily burn that workouts do not cover.',
+      },
+      {
+        term: 'Adaptive suppression',
+        explanation: 'During a calorie deficit the body unconsciously reduces non-exercise movement to slow the energy drain. You may not notice it happening. Watching your step trend, not just hitting goal on gym days, is how you catch it.',
+      },
+    ],
+  },
+  {
     key: 'advanced_nutrition',
     category: 'Nutrition',
     title: 'Advanced Nutrition',

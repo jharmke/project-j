@@ -2229,6 +2229,14 @@ export default function HomeScreen() {
         
         {editingSleep && (
           <View style={{ marginBottom:10 }}>
+            {sleepHours != null && (
+              <View style={{ flexDirection:'row', alignItems:'flex-start', gap:6, backgroundColor: theme.statusWarn + '14', borderRadius:8, borderLeftWidth:3, borderLeftColor: theme.statusWarn, padding:10, marginBottom:10 }}>
+                <Ionicons name="information-circle-outline" size={14} color={theme.statusWarn} style={{ marginTop:1 }} />
+                <Text style={{ flex:1, fontSize:11, color: theme.textSecondary, fontFamily:'DMSans_400Regular', lineHeight:16 }}>
+                  A manual time overrides your Apple Health sleep for today. Tap Clear to restore it.
+                </Text>
+              </View>
+            )}
             <View style={{ flexDirection:'row', gap:8, marginBottom:8 }}>
               <TouchableOpacity
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setActiveSleepPicker(activeSleepPicker === 'bed' ? null : 'bed'); }}

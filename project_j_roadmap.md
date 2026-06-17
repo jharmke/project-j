@@ -104,7 +104,7 @@
 ## WORKOUT
 
 - [HIGH] PR tracking + lifting stats -- log PRs per lift, 1RM trend as graphable stat, surface in EvR, volume per muscle group. Required before workout achievement PRs can ship. Planning session needed.
-- Workout tab FAB search keyboard dismiss -- no way to dismiss keyboard by tapping outside search bar. workout.tsx.
+- [CLOSED 2026-06-17, STALE] Workout tab FAB search keyboard dismiss -- verified already handled: the FAB speed-dial modals use keyboardShouldPersistTaps="handled" + a Keyboard.dismiss tap wrapper; dismiss works fine on device (Justin confirmed). No change needed.
 - Load routine modal polish -- maxHeight + scroll fix done, handle pill + no-X standard applied, exercise preview on select done. Editable/deletable presets are bigger design items for a dedicated session.
 - [DONE 2026-06-17] Editable workout note name -- workout notes default to "Workout Note." Should be editable. Added workoutNoteNames (Record<day,string>) persisted in pj_workout_state (additive, read-then-merge via saveState; existing data untouched). The Workout Notes card header is now an editable single-line title (placeholder "Workout Note", maxLength 40, saves on blur via saveState); the journal entry created on Save Note uses that title instead of the hardcoded "Workout Note" (updates existing entry's title too). workout.tsx.
 - Workout tab muscle group breakdown -- aggregated session-level muscle group summary. MuscleMap exists for individual exercises only.
@@ -206,7 +206,7 @@
 - [DONE 2026-06-13] Bedtime consistency interim fix -- shows avg bedtime anchored (+-Xm from HH:MM). Proper fix needs baseline spec session. app/sleep.tsx renderMetrics.
 - [DONE 2026-06-13] Exclude card -- restored as own card below Coach with "OPTIONS" label. app/sleep.tsx.
 - Sleep score stage weight tuning -- bump REM weight higher, soften deep sleep penalty. REM and Deep currently equal at 30pts each. utils/sleepScore.ts.
-- Sleep edit disclaimer -- show disclaimer when user opens manual sleep edit: "will overwrite Apple Health synced data."
+- [DONE 2026-06-17, DEVICE-VERIFIED] Sleep edit disclaimer -- opening the manual sleep edit (home Sleep card gear) now shows an amber info line at the top of the edit panel: "A manual time overrides your Apple Health sleep for today. Tap Clear to restore it." Gated on sleepHours != null (only when there's real Apple Health sleep to override, so no-watch/manual-only users don't see a confusing Apple Health mention). HONEST WORDING: manual sets sleepOverride which takes precedence in-app (displaySleep = sleepOverride ?? sleepHours); it does NOT destroy HealthKit data and Clear restores it -- so "overrides... restore," not the roadmap's old "overwrites." index.tsx renderSleepCard.
 
 ---
 

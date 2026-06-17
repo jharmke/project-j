@@ -358,6 +358,15 @@ export const TUTORIALS: Tutorial[] = [
           mindful: 'The feel rating (1-10) is your morning check-in. How you feel matters regardless of what the data says. Keeping a consistent bedtime is also factored in.',
         },
       },
+      {
+        targetKey: 'sleep_card_main',
+        title: 'EXPLORE YOUR SLEEP',
+        body: {
+          discipline: 'Tap the card to open your full Sleep page: stage breakdown, trend history, HRV, resting heart rate, and recovery signals all in one place.',
+          balanced: 'Tap anywhere on this card to open your full Sleep page, where you can see your stage breakdown, trends, and recovery data over time.',
+          mindful: 'Tap anywhere on this card to explore your sleep in more depth whenever you feel like it. Everything is there when you want it.',
+        },
+      },
     ],
   },
 

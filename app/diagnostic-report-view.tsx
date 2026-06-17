@@ -606,12 +606,27 @@ export default function DiagnosticReportViewScreen() {
         computeAndStoreSmartTips().then(fresh => setSmartTips(fresh)).catch(() => {});
         // Load EvR coach tip: show cached instantly, then refresh in background.
         // Home ruleId is passed so EvR never repeats the same scenario as the home card.
-        const windowDays = found.windowDays as 14 | 30 | 90;
+        // The headline engine only ever analyzes a 7/14-day window (runAllRules on w7/w5/w14),
+        // so label it 14, NOT the report's stamped windowDays (90 = the old MAX_WINDOW leftover
+        // from the deleted selector). Feeding 90 made the AI scold "14 of 90 days logged, still an
+        // early read" for a finding that only looked at 14 days. The cards already use real
+        // per-pattern windows; this keeps the headline honest to what it actually computes.
+        const windowDays = 14 as const;
         const [cachedEvr, homeCache] = await Promise.all([
           loadCoachTipCacheEvr(windowDays),
           loadCoachTipCache(),
         ]);
-        if (cachedEvr) { setCoachCache(cachedEvr); } else { setCoachLoading(true); }
+        // Only flash a cached headline instantly when it is already TODAY's final read (same-day
+        // compute). The same-day gate in computeCoachPacketEvr guarantees the refresh returns it
+        // unchanged, so there's no swap. A stale prior-day cache WOULD get replaced by the refresh
+        // (the ranking re-rolls for today, e.g. weight -> sleep), so in that case show the loading
+        // spinner and reveal the fresh tip in one shot -- same no-swap treatment as the card feed.
+        const pad = (n: number) => String(n).padStart(2, '0');
+        const now = new Date();
+        const todayKey = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+        const cachedIsTodaysFinal = !!cachedEvr && cachedEvr.packet.computedDate === todayKey;
+        if (cachedIsTodaysFinal) { setCoachCache(cachedEvr); setCoachLoading(false); }
+        else { setCoachCache(null); setCoachLoading(true); }
         const homeRuleId = homeCache?.packet.ruleId ?? null;
         refreshCoachTipEvr(windowDays, homeRuleId)
           .then(cache => { setCoachCache(cache); setCoachLoading(false); })

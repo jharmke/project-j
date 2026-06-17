@@ -65,7 +65,6 @@ function DivergentBar({ score, theme, tone }: { score: number; theme: any; tone?
   const fillStyle = useAnimatedStyle(() => ({ width: w.value }));
   return (
     <View onLayout={e => setTrackW(e.nativeEvent.layout.width)} style={{ height: 8, borderRadius: 4, backgroundColor: theme.bgProgressTrack, justifyContent: 'center', overflow: 'hidden' }}>
-      <View style={{ position: 'absolute', left: '50%', width: 1, top: 1, bottom: 1, marginLeft: -0.5, backgroundColor: theme.borderSubtle }} />
       <ReAnimated.View
         style={[
           { position: 'absolute', height: 8, backgroundColor: color },
@@ -75,6 +74,10 @@ function DivergentBar({ score, theme, tone }: { score: number; theme: any; tone?
           fillStyle,
         ]}
       />
+      {/* Baseline anchor: a clear center tick rendered ON TOP of the fill. When the value
+          sits on baseline (zero delta) the fill is ~0 wide, so this tick is what the user
+          sees -- "right on your norm", intentional, never an empty/broken-looking bar. */}
+      <View style={{ position: 'absolute', left: '50%', width: 3, marginLeft: -1.5, top: 0, bottom: 0, borderRadius: 1.5, backgroundColor: theme.textDim }} />
     </View>
   );
 }

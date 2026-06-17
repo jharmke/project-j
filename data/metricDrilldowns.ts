@@ -23,7 +23,7 @@ export const METRIC_DRILLDOWNS: Record<string, MetricDrilldownContent> = {
   hrv: {
     title: "HRV (Overnight)",
     definition: "Heart rate variability is the tiny variation in time between your heartbeats. More variation is the good kind: it means your nervous system is relaxed and adaptable rather than under strain.",
-    calculation: "Your watch measures it overnight (a metric called SDNN). We average the readings across your sleep window into one daily number, then compare it to your 7-day baseline.",
+    calculation: "Your watch measures it overnight (a metric called SDNN). We average the readings across your sleep window into one daily number, then compare it to your 7-day baseline. Devices measure HRV differently, so watch your own trend rather than comparing this number to a friend's ring or strap.",
     affects: "HRV is one of the clearest recovery signals you have. At or above your baseline, your body has absorbed recent stress and training. A clear drop means it is still catching up.",
     improve: (isGood) => isGood
       ? ["Your HRV is sitting at or above your baseline, a sign your nervous system is recovered. A good day to train hard if your plan calls for it."]

@@ -1210,7 +1210,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
               returnKeyType="done"
             />
             <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Ionicons name="book" size={16} color={theme.accentBlue} />
+              <Ionicons name="journal" size={16} color={theme.accentBlue} />
             </TouchableOpacity>
           </View>
           <TextInput

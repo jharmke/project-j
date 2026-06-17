@@ -618,9 +618,10 @@ export default function JournalScreen() {
         <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>JOURNAL</Text>
         <TouchableOpacity
           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setSortOrder(p => p === 'desc' ? 'asc' : 'desc'); }}
-          style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+          style={[styles.headerBtn, { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
         >
           <Ionicons name={sortOrder === 'desc' ? 'arrow-down' : 'arrow-up'} size={14} color={theme.accentBlue} />
+          <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlue }}>{sortOrder === 'desc' ? 'Newest' : 'Oldest'}</Text>
         </TouchableOpacity>
       </View>
 
@@ -628,7 +629,7 @@ export default function JournalScreen() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={{ height: 48, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}
+        style={{ height: 48, flexGrow: 0, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}
         contentContainerStyle={{ paddingHorizontal: 16, gap: 8, alignItems: 'center', paddingVertical: 10 }}
       >
         <TouchableOpacity
@@ -662,6 +663,7 @@ export default function JournalScreen() {
       {/* Entry list */}
       <ScrollView
         ref={scrollViewRef}
+        style={{ flex: 1 }}
         contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets

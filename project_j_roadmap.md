@@ -275,7 +275,10 @@
 
 ## JOURNAL
 
-- Journal icon on Stats tab header -- not present. Routes to journal.tsx.
+- [DONE, ALREADY PRESENT] Journal icon on Stats tab header -- the `journal` Ionicon is already in the Stats header (stats.tsx:1700) routing to /journal. Roadmap note was stale.
+- [DONE 2026-06-17, NEEDS DEVICE VERIFY] Workout Notes card icon mismatch -- the card's top-right icon was `book`; switched to `journal` (workout.tsx:1213) to match the Stats header journal icon.
+- [DONE 2026-06-17, NEEDS DEVICE VERIFY] Journal sort button unclear -- the header sort toggle was a bare up/down arrow that didn't read as a sort control. Now a labeled pill: arrow + "Newest"/"Oldest" (journal.tsx), so it's obviously a date-sort toggle showing the current order.
+- [DONE 2026-06-17, NEEDS DEVICE VERIFY] Journal filter pills shifted vertically when switching filters (page "shifted down"). Root: the entry-list ScrollView had no flex:1, so the horizontal filter-pills ScrollView stretched vertically to absorb the leftover column space (its height:48 wasn't honored without flexGrow:0) and alignItems:'center' centered the pills in that tall band; the band's height changed with entry-list content height, moving the pills per filter. FIX (journal.tsx, layout-only): added flexGrow:0 to the filter ScrollView (holds it at 48px) + flex:1 to the entry-list ScrollView (claims remaining space). Pills now sit in a fixed strip under the header.
 - Date on journal entries tappable -- routes to that day's Day Detail. Not implemented.
 - Search within journal entries -- low priority.
 - Long text stress test -- verify 500-word entries format correctly. QA task.

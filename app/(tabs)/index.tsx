@@ -771,7 +771,7 @@ export default function HomeScreen() {
     return store;
   };
 
-  const { activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, bodyFatPct, exerciseMinutes, fetchTodayData } = useHealthKit();
+  const { activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, bodyFatPct, exerciseMinutes, fetchTodayData, hasHealthData, lastSyncedAt } = useHealthKit();
 
   // ── Sleep tutorial resolver: routes sleep_card to the manual-path tutorial when
   //    no Apple Health sleep data is present, or when dev override is active. ──
@@ -1980,6 +1980,9 @@ export default function HomeScreen() {
           <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:8 }}>
             <Ionicons name="barbell-outline" size={11} color={theme.textMuted} />
             <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Today's Training</Text>
+            {hasHealthData && lastSyncedAt ? (
+              <Text style={{ marginLeft:'auto', fontSize:9, color: theme.textDim, fontFamily:'DMSans_400Regular' }}>Synced {syncAgo(lastSyncedAt)}</Text>
+            ) : null}
           </View>
           {(() => {
             const programTags = todayProgram?.tags || [];
@@ -2078,6 +2081,17 @@ export default function HomeScreen() {
     );
   };
 
+  // Relative "last synced" label for HealthKit-sourced cards. Computed at render, so it
+  // refreshes whenever the card re-renders (pull-to-refresh resets lastSyncedAt to now).
+  const syncAgo = (ms: number) => {
+    const s = Math.floor((Date.now() - ms) / 1000);
+    if (s < 60) return 'just now';
+    const m = Math.floor(s / 60);
+    if (m < 60) return `${m} min ago`;
+    const h = Math.floor(m / 60);
+    return `${h} hr ago`;
+  };
+
   const renderStepsCard = () => {
     const pct = stepGoal > 0 ? steps / stepGoal : 0;
     const stepColor = pct >= 1 ? theme.statusGood : theme.accentBlue;
@@ -2103,7 +2117,12 @@ export default function HomeScreen() {
         <View style={{ marginBottom:8 }}>
           <AnimatedProgressBar pct={Math.min(pct*100,100)} color={stepColor} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} overGoal={pct >= 1} />
         </View>
-        <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase' }}>{distance} mi walked today</Text>
+        <View style={{ flexDirection:'row', justifyContent:'space-between', alignItems:'center' }}>
+          <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase' }}>{distance} mi walked today</Text>
+          {hasHealthData && lastSyncedAt ? (
+            <Text style={{ fontSize:9, color: theme.textDim, fontFamily:'DMSans_400Regular' }}>Synced {syncAgo(lastSyncedAt)}</Text>
+          ) : null}
+        </View>
       </View>
     );
   };

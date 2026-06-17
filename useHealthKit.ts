@@ -13,6 +13,7 @@ import { formatWorkoutDuration, WORKOUT_TYPE_NAMES } from './workoutData';
 
 export function useHealthKit() {
   const [authorized, setAuthorized] = useState(false);
+  const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null); // ms epoch of last successful HealthKit pull
   const [activeCalories, setActiveCalories] = useState(0);
   const [steps, setSteps] = useState(0);
   const [distance, setDistance] = useState(0);
@@ -103,6 +104,7 @@ export function useHealthKit() {
         { filter: { date: { startDate: startOfDay, endDate: now } } }
       );
       setSteps(Math.round(stepsData?.sumQuantity?.quantity ?? 0));
+      setLastSyncedAt(Date.now()); // core activity metrics just pulled from HealthKit
 
       // Distance
       const distanceData = await queryStatisticsForQuantity(
@@ -793,5 +795,5 @@ export function useHealthKit() {
     bloodOxygen !== null || hrv !== null || vo2Max !== null ||
     cardioRecovery !== null || bodyFatPct !== null || exerciseMinutes !== null;
 
-  return { authorized, hasHealthData, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, hrv, bodyFatPct, exerciseMinutes, appleWorkouts, fetchTodayData, fetchHistoricalWorkouts, fetchSleepHistory, fetchLastNightSegments, fetchRecoverySignals, fetchOvernightRHR, dumpHRV };
+  return { authorized, hasHealthData, lastSyncedAt, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, hrv, bodyFatPct, exerciseMinutes, appleWorkouts, fetchTodayData, fetchHistoricalWorkouts, fetchSleepHistory, fetchLastNightSegments, fetchRecoverySignals, fetchOvernightRHR, dumpHRV };
 }

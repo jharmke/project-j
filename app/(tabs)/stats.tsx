@@ -1858,7 +1858,7 @@ export default function StatsScreen() {
             </CollapsibleSection>
             );
             if (section.systemKey === 'records') return (
-              <CollapsibleSection key={section.id} label={section.label} subtitle="All-time bests with dates" defaultOpen={isFirst} theme={theme} first={isFirst}>
+              <CollapsibleSection key={section.id} label={section.label} subtitle="All-time bests" defaultOpen={isFirst} theme={theme} first={isFirst}>
           <View style={{ flexDirection: 'row', gap: 10, marginBottom: 10 }}>
             <RecordTile icon="footsteps" label="Best Steps" value={records.steps} unit="steps"
               color={theme.accentBlue} date={records.stepsDate}
@@ -2006,7 +2006,7 @@ export default function StatsScreen() {
             );
             if (section.systemKey === 'reports') return (
               <View key={section.id} onLayout={e => { reportsLayoutY.current = e.nativeEvent.layout.y; }}>
-              <CollapsibleSection label={section.label} subtitle="Effort vs. results analysis" defaultOpen={isFirst} theme={theme} first={isFirst} forceOpen={reportsSectionForceOpen}>
+              <CollapsibleSection label={section.label} subtitle="Summaries and Effort vs. Results" defaultOpen={isFirst} theme={theme} first={isFirst} forceOpen={reportsSectionForceOpen}>
                 <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, overflow: 'hidden' }]}>
                   {evrCardOpen && <Ionicons name="analytics" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />}
                   <TouchableOpacity

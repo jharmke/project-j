@@ -298,7 +298,7 @@ export default function FaithTodayCard({ verse, theme }: Props) {
           </Slide>
         </ScrollView>
 
-        {/* Amber page dots (bottom-right) */}
+        {/* Amber page dots (bottom-center) */}
         <View style={styles.dots} pointerEvents="none">
           {[0, 1, 2].map(i => (
             <View
@@ -346,5 +346,5 @@ const styles = StyleSheet.create({
   empty: { alignItems: 'center', paddingVertical: 14, gap: 6 },
   emptyText: { fontSize: 13, fontFamily: 'DMSans_600SemiBold', textAlign: 'center' },
   emptyHint: { fontSize: 11, fontFamily: 'DMSans_400Regular', textAlign: 'center' },
-  dots: { position: 'absolute', bottom: 10, right: 12, flexDirection: 'row', alignItems: 'center', gap: 5 },
+  dots: { position: 'absolute', bottom: 10, left: 0, right: 0, justifyContent: 'center', flexDirection: 'row', alignItems: 'center', gap: 5 },
 });

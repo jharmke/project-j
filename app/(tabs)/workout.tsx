@@ -94,6 +94,7 @@ export default function WorkoutScreen() {
 const [cardioComplete, setCardioComplete] = useState<Record<string, boolean>>({});
 const [programs, setPrograms] = useState<Record<string, DayProgram>>({});
 const [workoutNotes, setWorkoutNotes] = useState<Record<string, string>>({});
+const [workoutNoteNames, setWorkoutNoteNames] = useState<Record<string, string>>({}); // editable per-day note title (defaults to "Workout Note")
 const [weeklyTemplate, setWeeklyTemplate] = useState<Record<string, DayProgram>>({});
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingExercise, setEditingExercise] = useState<Exercise | null>(null);
@@ -533,6 +534,7 @@ useEffect(() => {
           if (data.cardioComplete) setCardioComplete(data.cardioComplete);
           if (data.programs) setPrograms(data.programs);
           if (data.workoutNotes) { setWorkoutNotes(data.workoutNotes); setSavedNoteText(data.workoutNotes); }
+          if (data.workoutNoteNames) setWorkoutNoteNames(data.workoutNoteNames);
           if (data.cardioLogs) setCardioLogs(data.cardioLogs);
           if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
           if (data.activeProgramName) setActiveProgramName(data.activeProgramName);
@@ -580,6 +582,7 @@ useEffect(() => {
 if (data.cardioComplete) setCardioComplete(data.cardioComplete);
 if (data.programs) setPrograms(data.programs);
 if (data.workoutNotes) { setWorkoutNotes(data.workoutNotes); setSavedNoteText(data.workoutNotes); }
+if (data.workoutNoteNames) setWorkoutNoteNames(data.workoutNoteNames);
 if (data.cardioLogs) setCardioLogs(data.cardioLogs);
 if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
           }
@@ -592,13 +595,14 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
     }, [])
   );
 
-  const saveState = async (newChecks = checks, newCardio = cardioComplete, newPrograms = programs, newNotes = workoutNotes, newCardioLogs = cardioLogs, newTemplate = weeklyTemplate, newProgramName = activeProgramName) => {
+  const saveState = async (newChecks = checks, newCardio = cardioComplete, newPrograms = programs, newNotes = workoutNotes, newCardioLogs = cardioLogs, newTemplate = weeklyTemplate, newProgramName = activeProgramName, newNoteNames = workoutNoteNames) => {
   try {
     await storageSet('pj_workout_state', JSON.stringify({
       checks: newChecks,
       cardioComplete: newCardio,
       programs: newPrograms,
       workoutNotes: newNotes,
+      workoutNoteNames: newNoteNames,
       cardioLogs: newCardioLogs,
       weeklyTemplate: newTemplate,
       activeProgramName: newProgramName,
@@ -697,6 +701,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
     Keyboard.dismiss();
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     const noteText = workoutNotes[activeDay]?.trim() || '';
+    const noteName = workoutNoteNames[activeDay]?.trim() || 'Workout Note';
     const isClearing = !noteText;
     const updatedNotes = { ...workoutNotes, [activeDay]: noteText };
     setWorkoutNotes(updatedNotes);
@@ -710,9 +715,9 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
         if (existing >= 0) entries.splice(existing, 1);
       } else {
         if (existing >= 0) {
-          entries[existing] = { ...entries[existing], notes: noteText };
+          entries[existing] = { ...entries[existing], title: noteName, notes: noteText };
         } else {
-          entries.unshift({ id: makeId(), date: activeDay, category: 'fitness', title: 'Workout Note', notes: noteText });
+          entries.unshift({ id: makeId(), date: activeDay, category: 'fitness', title: noteName, notes: noteText });
         }
       }
       await storageSet('pj_bible_reflections', JSON.stringify(entries));
@@ -1194,7 +1199,16 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
 
         <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, marginTop: 12 }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Workout Notes</Text>
+            <TextInput
+              style={{ flex: 1, fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', padding: 0, marginRight: 8 }}
+              value={workoutNoteNames[activeDay] ?? ''}
+              onChangeText={v => setWorkoutNoteNames(prev => ({ ...prev, [activeDay]: v }))}
+              onBlur={() => saveState()}
+              placeholder="Workout Note"
+              placeholderTextColor={theme.textMuted}
+              maxLength={40}
+              returnKeyType="done"
+            />
             <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <Ionicons name="book" size={16} color={theme.accentBlue} />
             </TouchableOpacity>

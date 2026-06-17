@@ -1284,7 +1284,7 @@ export default function SleepHub() {
             <TouchableOpacity activeOpacity={0.6} onPress={() => openDrill('spo2')} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 11, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
               <View style={{ width: 88 }}>
                 <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }} numberOfLines={1}>Blood Oxygen</Text>
-                <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 1 }}>Healthy 95 to 100%</Text>
+                <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 1 }}>Healthy 95-100%</Text>
               </View>
               <View style={{ flex: 1, marginHorizontal: 10 }}>
                 <RangeBar value={adjustedSignals.todaySpO2} theme={theme} />

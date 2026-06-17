@@ -777,5 +777,21 @@ export function useHealthKit() {
     }
   };
 
-  return { authorized, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, hrv, bodyFatPct, exerciseMinutes, appleWorkouts, fetchTodayData, fetchHistoricalWorkouts, fetchSleepHistory, fetchLastNightSegments, fetchRecoverySignals, fetchOvernightRHR, dumpHRV };
+  // HONEST connection signal. `authorized` only means "this device has HealthKit and we
+  // asked for access" -- iOS resolves requestAuthorization successfully EVEN IF the user
+  // denied, and never tells us read access was refused. So `authorized` being true does
+  // NOT mean we can actually read anything. `hasHealthData` is the truthful signal: it is
+  // true only when at least one real value has actually come back from HealthKit. Use this
+  // (not `authorized`) for any "connected / receiving data" UI or to decide whether to show
+  // a "connect your Apple Watch" empty state. A granted-but-no-data-yet device reads false
+  // until data arrives -- which is the correct behavior (we show the same honest empty
+  // state whether access was denied or simply has nothing yet; Apple can't tell them apart
+  // either, and the right UX is identical for both).
+  const hasHealthData =
+    activeCalories > 0 || steps > 0 || distance > 0 ||
+    sleepHours !== null || restingHR !== null || respiratoryRate !== null ||
+    bloodOxygen !== null || hrv !== null || vo2Max !== null ||
+    cardioRecovery !== null || bodyFatPct !== null || exerciseMinutes !== null;
+
+  return { authorized, hasHealthData, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, hrv, bodyFatPct, exerciseMinutes, appleWorkouts, fetchTodayData, fetchHistoricalWorkouts, fetchSleepHistory, fetchLastNightSegments, fetchRecoverySignals, fetchOvernightRHR, dumpHRV };
 }

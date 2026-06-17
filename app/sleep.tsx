@@ -222,7 +222,7 @@ function ScoreTrendChart({ nights, scores, theme }: { nights: SleepNight[]; scor
   const lineColor = theme.textPrimary;
   const baseY = C_TOP + PLOT_H;
   const areaPath = `M ${toX(0)},${toY(scores[0])} ` + scores.slice(1).map((s, i) => `L ${toX(i + 1)},${toY(s)}`).join(' ') + ` L ${toX(n - 1)},${baseY} L ${toX(0)},${baseY} Z`;
-  const dotColor = (s: number) => s >= 85 ? theme.statusGood : s >= 70 ? theme.statusWarn : theme.statusBad;
+  const dotColor = (s: number) => sleepScoreColor(s, theme);
   return (
     <ReAnimated.View style={slide}>
       <Svg width={CHART_W} height={CHART_H}>
@@ -1023,7 +1023,7 @@ export default function SleepHub() {
     })();
   }, []);
 
-  const scoreColor = score !== null ? (score >= 85 ? theme.statusGood : score >= 70 ? theme.statusWarn : theme.statusBad) : theme.textDim;
+  const scoreColor = score !== null ? sleepScoreColor(score, theme) : theme.textDim;
   const scoreLabel = score !== null ? (score >= 85 ? 'Well Rested' : score >= 70 ? 'Could Be Better' : 'Poor Sleep') : null;
 
   const cardStyle = {

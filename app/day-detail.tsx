@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
 import { storageSet } from '../utils/storage';
 import { DEFAULT_MEAL_SLOTS, MealSlot, findSlotForMeal, loadMealSlots, getMealDisplayName } from '../utils/mealSlots';
-import { calcSleepScore } from '../utils/sleepScore';
+import { calcSleepScore, sleepScoreColor as getSleepScoreColor } from '../utils/sleepScore';
 
 type SleepStages = { core: number; deep: number; rem: number; totalMs: number };
 
@@ -214,7 +214,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
   const sleepConsistencyPts: number = data?.sleepConsistencyPts ?? 0;
   const { score: sleepScore, hasStages } = calcSleepScore(sleepHours || null, sleepStages, sleepGoal, sleepFeelRating || null, !!data?.sleepOverride, sleepConsistencyPts);
   const sleepLabel = sleepScore !== null ? (sleepScore >= 85 ? 'Well Rested' : sleepScore >= 70 ? 'Could Be Better' : 'Poor Sleep') : null;
-  const sleepScoreColor = sleepScore !== null ? (sleepScore >= 85 ? theme.accentGreen : sleepScore >= 70 ? '#d4860a' : theme.accentRed) : theme.textDim;
+  const sleepScoreColor = sleepScore !== null ? getSleepScoreColor(sleepScore, theme) : theme.textDim;
 
   const dayprogram = workoutState?.programs?.[currentDate];
   const daychecks = workoutState?.checks?.[currentDate] || {};

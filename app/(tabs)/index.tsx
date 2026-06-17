@@ -33,7 +33,7 @@ import GratitudeStreakCard from '../../components/GratitudeStreakCard';
 import ReadingPlansCard from '../../components/ReadingPlansCard';
 import { StatsCard, CardPeriod, DATA_KEY_META, DEFAULT_STATS_CARDS } from '../../statsCardRegistry';
 import { TrendData, EMPTY_TREND_DATA, fetchTrendData } from '../../utils/statsData';
-import { calcSleepScore } from '../../utils/sleepScore';
+import { calcSleepScore, sleepScoreColor } from '../../utils/sleepScore';
 import { runDayScoreScan } from '../../utils/dayScoreStore';
 import { checkAndGenerateWeeklySummary, getLastClosedWeekStart, loadWeeklySummary, generateWeeklySummary, WeeklySummaryData } from '../../utils/weeklySummary';
 import { checkAndGenerateMonthly, getLastClosedMonth, loadMonthlySummary, generateMonthlySummary, MonthlySummaryData } from '../../utils/monthlySummary';
@@ -2233,7 +2233,7 @@ export default function HomeScreen() {
         ) : (() => {
           const isManual = !!sleepOverride;
           const { score, hasStages, path } = calcSleepScore(displaySleep, sleepStages, sleepGoal, sleepFeelRating, isManual, sleepConsistencyPts);
-          const scoreColor = score !== null ? (score >= 85 ? theme.statusGood : score >= 70 ? theme.statusWarn : theme.statusBad) : theme.textDim;
+          const scoreColor = score !== null ? sleepScoreColor(score, theme) : theme.textDim;
           const scoreLabel = score !== null ? (score >= 85 ? 'Well Rested' : score >= 70 ? 'Could Be Better' : 'Poor Sleep') : null;
           const totalMs = sleepStages?.totalMs||(displaySleep*3600000);
           const coreMs  = sleepStages?.core||0;

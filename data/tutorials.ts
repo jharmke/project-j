@@ -1662,6 +1662,185 @@ export const TUTORIALS: Tutorial[] = [
     ],
   },
 
+  {
+    id: 'goals',
+    name: 'Setting Your Goals',
+    description: 'Set your daily targets for steps, movement, sleep, calories, macros, and water, and learn how the recommended calorie value is calculated.',
+    tab: 'settings',
+    preAction: 'openGoalsSection',
+    steps: [
+      {
+        targetKey: 'none',
+        title: 'YOUR GOALS',
+        body: {
+          discipline: 'This is where every daily target lives. Fitness goals up top, nutrition goals below. These numbers drive your home screen progress bars, your celebrations, and your Day Score. Dial them in.',
+          balanced: 'This section holds all your daily targets, fitness goals first and nutrition goals after. They power your home screen progress bars and feed your Day Score.',
+          mindful: 'These are your daily targets. Set them wherever feels right for you. They quietly shape your progress bars and your daily picture, nothing more.',
+        },
+      },
+      {
+        targetKey: 'goals_steps',
+        noTabBarOffset: true,
+        title: 'STEP GOAL',
+        body: {
+          discipline: 'Your daily step target. The home screen step bar fills toward this number and you earn a goal hit when you cross it. Set it where it actually challenges you.',
+          balanced: 'Your daily step target. The step progress bar on your home screen fills toward this number, and hitting it counts as a goal for the day.',
+          mindful: 'Your daily step target. The step bar on your home screen fills toward it. A gentle marker, not a demand.',
+        },
+      },
+      {
+        targetKey: 'goals_movement',
+        noTabBarOffset: true,
+        title: 'ACTIVE CALORIES & EXERCISE',
+        body: {
+          discipline: 'Two Apple Health targets: active calories burned and exercise minutes. Each fills its own home screen bar and triggers a celebration the moment you hit it. Pulled automatically, no manual logging.',
+          balanced: 'These two targets, active calories and exercise minutes, come straight from Apple Health. Each has its own progress bar and celebrates when you reach it.',
+          mindful: 'Active calories and exercise minutes come from Apple Health automatically. They each have a bar that fills through the day. No pressure to hit either.',
+        },
+      },
+      {
+        targetKey: 'goals_sleep',
+        noTabBarOffset: true,
+        title: 'SLEEP GOAL',
+        body: {
+          discipline: 'How many hours you are aiming for each night. This is the target your sleep score measures duration against, so set it honestly to what your body needs.',
+          balanced: 'Set how many hours of sleep you are aiming for. Your sleep score uses this as the target when it scores how long you slept.',
+          mindful: 'How many hours of sleep feels right for you. Your sleep score gently compares your rest to this number. Adjust it anytime.',
+        },
+      },
+      {
+        targetKey: 'goals_calories',
+        noTabBarOffset: true,
+        title: 'DAILY CALORIE TARGET',
+        body: {
+          discipline: 'With Use Recommended Value on, the app calculates your target from your BMR, activity level, and weight goal set in Profile. Turn it off to type your own number. This target drives your calorie card and net calories.',
+          balanced: 'Leave Use Recommended Value on and the app sets your target from your BMR, activity, and weight goal in Profile. Switch it off to enter a custom number. This is the target your calorie card counts against.',
+          mindful: 'Use Recommended Value lets the app suggest a calorie target from your Profile details. Or turn it off and set your own. Either way, it simply informs your calorie card.',
+        },
+      },
+      {
+        targetKey: 'goals_netcarbs',
+        noTabBarOffset: true,
+        title: 'NET CARBS MODE',
+        body: {
+          discipline: 'Flip this on and the entire app counts carbs as total carbs minus fiber. Your carb goal below becomes a net carb target. Useful if you track keto or low carb. Off by default.',
+          balanced: 'Turn this on to show net carbs (total carbs minus fiber) everywhere in the app instead of total carbs. Your carb goal then represents net carbs.',
+          mindful: 'Net Carbs mode shows carbs as total minus fiber across the app. Helpful for some eating styles. Entirely optional.',
+        },
+      },
+      {
+        targetKey: 'goals_macros',
+        noTabBarOffset: true,
+        title: 'MACROS',
+        body: {
+          discipline: 'Set protein, carbs, and fat two ways. Ratio mode splits your calories by percentage and must total 100%. Fixed mode sets grams directly and should match your calorie target. Grams and percentages stay in sync automatically.',
+          balanced: 'Choose how to set your macros. Ratio mode uses percentages that add up to 100%. Fixed mode lets you set grams directly. The app keeps grams and percentages in sync as your calories change.',
+          mindful: 'Macros can be set by percentage (Ratio) or by grams (Fixed). The app handles the math either way. Set them loosely or precisely, your call.',
+        },
+      },
+      {
+        targetKey: 'goals_water',
+        noTabBarOffset: true,
+        title: 'WATER GOAL',
+        body: {
+          discipline: 'Your daily hydration target in ounces. The water bar on your home screen fills to this amount and counts as a goal hit when you reach it.',
+          balanced: 'Your daily water target in ounces. The hydration bar on your home screen fills toward this number as you log water.',
+          mindful: 'Your daily water target in ounces. The hydration bar fills as you log. A simple reminder to drink, nothing more.',
+        },
+      },
+    ],
+  },
+
+  {
+    id: 'notifications',
+    name: 'Notifications',
+    description: 'Set quiet hours, a daily cap, which categories can reach you, water reminders, and streak protection.',
+    tab: 'settings',
+    preAction: 'openNotificationsSection',
+    steps: [
+      {
+        targetKey: 'none',
+        title: 'NOTIFICATIONS',
+        body: {
+          discipline: 'Reminders that keep you accountable without spamming you. Everything here is tunable: when they can fire, how many, and what they cover. Set it up once and forget it.',
+          balanced: 'This is where you control every reminder the app can send: when, how often, and about what. Let us walk through the key controls.',
+          mindful: 'These are gentle reminders, fully in your control. You decide when they can reach you, how many, and what they cover. Turn any of it off anytime.',
+        },
+      },
+      {
+        targetKey: 'notif_master',
+        noTabBarOffset: true,
+        title: 'MASTER SWITCH',
+        body: {
+          discipline: 'The on and off for every reminder. Off means total silence, no matter what else is set below. The first time you turn it on, iOS asks permission to send notifications.',
+          balanced: 'This master switch turns all reminders on or off at once. When you first enable it, iOS will ask for permission to send notifications.',
+          mindful: 'One switch for everything. Off means complete quiet. Turning it on asks iOS for permission first. You are always in control.',
+        },
+      },
+      {
+        targetKey: 'notif_quiet',
+        noTabBarOffset: true,
+        title: 'QUIET HOURS',
+        body: {
+          discipline: 'No notification fires inside this window, period. Set it to your sleep hours so nothing wakes you. The one exception is streak protection, covered next.',
+          balanced: 'During quiet hours, the app holds all notifications. Set this to your sleep window so reminders never wake you up.',
+          mindful: 'Quiet hours are a window where nothing reaches you. Set it around your sleep so your rest stays undisturbed.',
+        },
+      },
+      {
+        targetKey: 'notif_streak',
+        noTabBarOffset: true,
+        title: 'STREAK PROTECTION',
+        body: {
+          discipline: 'A safety net. When a streak is about to break tonight, this fires even during quiet hours and even past your daily cap. It is the one reminder that always gets through. Leave it on.',
+          balanced: 'This always fires when one of your streaks is at risk of breaking that night, even during quiet hours and beyond the daily cap. A safety net so you never lose a streak by forgetting.',
+          mindful: 'If a streak is about to slip, this gentle nudge comes through even during quiet hours. It is here to help, and you can turn it off if you prefer.',
+        },
+      },
+      {
+        targetKey: 'notif_cap',
+        noTabBarOffset: true,
+        title: 'DAILY CAP',
+        body: {
+          discipline: 'The ceiling on how many reminders you get per day. Streak protection, your IF window, summaries, and water reminders do not count against it, so the cap only limits the optional nudges.',
+          balanced: 'This limits how many notifications you receive in a day. Streaks, your IF window, summaries, and water reminders are exempt, so the cap only applies to the rest.',
+          mindful: 'Set how many reminders feel right per day. Streaks, fasting, summaries, and water are not counted, so you stay in control of the rest.',
+        },
+      },
+      {
+        targetKey: 'notif_categories',
+        noTabBarOffset: true,
+        title: 'CATEGORIES',
+        body: {
+          discipline: 'Toggle entire topics on or off: Fitness, Faith, Fasting, and Summaries. Turn off what you do not care about and that whole category goes silent. Faith is hidden if your Faith Journey is set to Not Right Now.',
+          balanced: 'These pills control which topics can reach you: Fitness, Faith, Fasting, and Summaries. Tap any to mute that whole category. Faith only appears if your Faith Journey allows it.',
+          mindful: 'Choose which topics you want to hear about: Fitness, Faith, Fasting, and Summaries. Tap any to quiet it. Faith stays hidden if your Faith Journey is set to Not Right Now.',
+        },
+      },
+      {
+        targetKey: 'notif_water',
+        noTabBarOffset: true,
+        title: 'WATER REMINDERS',
+        body: {
+          discipline: 'Pick how many water nudges you want, spaced evenly across your waking hours. They live under the Fitness category and do not count toward your daily cap. Set to Off if you do not want them.',
+          balanced: 'Choose how many water reminders you get, spread evenly through your day. They are part of the Fitness category and do not count toward the daily cap.',
+          mindful: 'A few optional water nudges, spaced through your day. They do not count toward your cap. Set to Off whenever you like.',
+        },
+      },
+      {
+        targetKey: 'notif_advanced',
+        noTabBarOffset: true,
+        tutorialAction: 'closeNotificationsTutorial',
+        title: 'ADVANCED',
+        body: {
+          discipline: 'Open Advanced to fine-tune timing: your activity reminder time, weight log frequency, prayer check-in time, IF window lead time, and streak protection timing. Dial in exactly when each one fires.',
+          balanced: 'Tap Advanced for finer control: activity reminder time, weight log frequency, prayer check-in, IF window lead time, and streak protection timing. Everything here is optional.',
+          mindful: 'Advanced holds the finer timing settings: activity, weight, prayer, fasting, and streak reminders. Open it only if you want to adjust the details.',
+        },
+      },
+    ],
+  },
+
   // ─── DAY SCORE ────────────────────────────────────────────────────────────────
   {
     id: 'day_score',
@@ -1751,7 +1930,7 @@ export const TAB_TUTORIALS: Record<string, string[]> = {
   workout: ['workout_basics', 'programs', 'routines', 'exercise_library'],
   stats: ['graph_creator', 'streaks', 'effort_vs_results', 'day_score'],
   profile: [],
-  settings: ['faith_and_style'],
+  settings: ['goals', 'notifications', 'faith_and_style'],
 };
 
 export function getTutorialById(id: string): Tutorial | undefined {

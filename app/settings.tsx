@@ -380,6 +380,12 @@ export default function SettingsScreen() {
   const [styleMode, setStyleMode] = useState<'discipline' | 'balanced' | 'mindful'>('balanced');
   const [mindfulGrowthAreas, setMindfulGrowthAreas] = useState(false);
   const [faithStyleForceOpen, setFaithStyleForceOpen] = useState(false);
+  const [goalsForceOpen, setGoalsForceOpen] = useState(false);
+  const [notifForceOpen, setNotifForceOpen] = useState(false);
+  // Tutorial-only visual flag: forces the master-gated and Fitness-gated notification
+  // content to render during the Notifications tour even if the user has those toggled
+  // off. Never touches real settings or triggers a permission prompt. Reset on tour end.
+  const [notifTutorialActive, setNotifTutorialActive] = useState(false);
   const [faithJourney, setFaithJourney] = useState<FaithJourney>('rooted');
   const [burnAccuracyPct, setBurnAccuracyPct] = useState(100);
   const [devCelebVisible, setDevCelebVisible] = useState(false);
@@ -404,6 +410,21 @@ export default function SettingsScreen() {
   const fsRootedRef = useRef<any>(null);
   const fsExploringRef = useRef<any>(null);
   const fsNotRightNowRef = useRef<any>(null);
+  // Goals tutorial targets
+  const goalsStepsRef = useRef<any>(null);
+  const goalsMovementRef = useRef<any>(null);
+  const goalsSleepRef = useRef<any>(null);
+  const goalsCaloriesRef = useRef<any>(null);
+  const goalsNetCarbsRef = useRef<any>(null);
+  const goalsMacrosRef = useRef<any>(null);
+  const goalsWaterRef = useRef<any>(null);
+  // Notifications tutorial targets
+  const notifMasterRef = useRef<any>(null);
+  const notifStreakRef = useRef<any>(null);
+  const notifCapRef = useRef<any>(null);
+  const notifCategoriesRef = useRef<any>(null);
+  const notifWaterRef = useRef<any>(null);
+  const notifAdvancedRef = useRef<any>(null);
   const { startTutorial, registerTarget, unregisterTarget, registerScrollView, unregisterScrollView, registerTutorialAction, unregisterTutorialAction } = useTutorial();
   const macrosRef = useRef<any>(null);
   // Deep link from the macro modal's "Fine-tune in Settings > Goals" pointer: open the
@@ -433,10 +454,36 @@ export default function SettingsScreen() {
     registerTarget('fs_rooted_btn', fsRootedRef);
     registerTarget('fs_exploring_btn', fsExploringRef);
     registerTarget('fs_notrightnow_btn', fsNotRightNowRef);
+    registerTarget('goals_steps', goalsStepsRef);
+    registerTarget('goals_movement', goalsMovementRef);
+    registerTarget('goals_sleep', goalsSleepRef);
+    registerTarget('goals_calories', goalsCaloriesRef);
+    registerTarget('goals_netcarbs', goalsNetCarbsRef);
+    registerTarget('goals_macros', goalsMacrosRef);
+    registerTarget('goals_water', goalsWaterRef);
+    registerTarget('notif_master', notifMasterRef);
+    registerTarget('notif_quiet', quietHoursRowRef);
+    registerTarget('notif_streak', notifStreakRef);
+    registerTarget('notif_cap', notifCapRef);
+    registerTarget('notif_categories', notifCategoriesRef);
+    registerTarget('notif_water', notifWaterRef);
+    registerTarget('notif_advanced', notifAdvancedRef);
     registerScrollView('settings_main', scrollViewRef);
     registerTutorialAction('openFaithStyleSection', async () => {
       setFaithStyleForceOpen(true);
       await new Promise(r => setTimeout(r, 350));
+    });
+    registerTutorialAction('openGoalsSection', async () => {
+      setGoalsForceOpen(true);
+      await new Promise(r => setTimeout(r, 400));
+    });
+    registerTutorialAction('openNotificationsSection', async () => {
+      setNotifTutorialActive(true);
+      setNotifForceOpen(true);
+      await new Promise(r => setTimeout(r, 450));
+    });
+    registerTutorialAction('closeNotificationsTutorial', async () => {
+      setNotifTutorialActive(false);
     });
     return () => {
       unregisterTarget('fs_coaching_section');
@@ -447,8 +494,25 @@ export default function SettingsScreen() {
       unregisterTarget('fs_rooted_btn');
       unregisterTarget('fs_exploring_btn');
       unregisterTarget('fs_notrightnow_btn');
+      unregisterTarget('goals_steps');
+      unregisterTarget('goals_movement');
+      unregisterTarget('goals_sleep');
+      unregisterTarget('goals_calories');
+      unregisterTarget('goals_netcarbs');
+      unregisterTarget('goals_macros');
+      unregisterTarget('goals_water');
+      unregisterTarget('notif_master');
+      unregisterTarget('notif_quiet');
+      unregisterTarget('notif_streak');
+      unregisterTarget('notif_cap');
+      unregisterTarget('notif_categories');
+      unregisterTarget('notif_water');
+      unregisterTarget('notif_advanced');
       unregisterScrollView('settings_main');
       unregisterTutorialAction('openFaithStyleSection');
+      unregisterTutorialAction('openGoalsSection');
+      unregisterTutorialAction('openNotificationsSection');
+      unregisterTutorialAction('closeNotificationsTutorial');
     };
   }, []);
 
@@ -978,7 +1042,7 @@ export default function SettingsScreen() {
         </CollapsibleSection>
 
         {/* ── Goals ── */}
-        <CollapsibleSection label="Goals" subtitle="Fitness · Nutrition" defaultOpen={deepLinkSection === 'goals'} theme={theme}>
+        <CollapsibleSection label="Goals" subtitle="Fitness · Nutrition" defaultOpen={deepLinkSection === 'goals'} forceOpen={goalsForceOpen} theme={theme}>
           <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
 
             {/* FITNESS GOALS */}
@@ -987,58 +1051,64 @@ export default function SettingsScreen() {
             </View>
 
             {/* Steps */}
-            <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Steps</Text>
-            <TextInput
-              style={[styles.goalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
-              value={goalProfile.stepGoal}
-              onChangeText={v => updateGoalField('stepGoal', v.replace(/[^0-9]/g, ''))}
-              onBlur={() => { const v = parseInt(goalProfile.stepGoal) || 10000; updateGoalField('stepGoal', String(Math.min(100000, Math.max(1000, v)))); }}
-              keyboardType="number-pad"
-              maxLength={6}
-              placeholder="e.g. 10000"
-              placeholderTextColor={theme.textPlaceholder}
-            />
-            <Text style={[styles.goalHint, { color: theme.textMuted }]}>Daily step target. Shows on home screen progress bar.</Text>
+            <View ref={goalsStepsRef}>
+              <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Steps</Text>
+              <TextInput
+                style={[styles.goalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
+                value={goalProfile.stepGoal}
+                onChangeText={v => updateGoalField('stepGoal', v.replace(/[^0-9]/g, ''))}
+                onBlur={() => { const v = parseInt(goalProfile.stepGoal) || 10000; updateGoalField('stepGoal', String(Math.min(100000, Math.max(1000, v)))); }}
+                keyboardType="number-pad"
+                maxLength={6}
+                placeholder="e.g. 10000"
+                placeholderTextColor={theme.textPlaceholder}
+              />
+              <Text style={[styles.goalHint, { color: theme.textMuted }]}>Daily step target. Shows on home screen progress bar.</Text>
+            </View>
 
             <View style={{ height: 1, backgroundColor: theme.borderCard, marginVertical: 16 }} />
 
-            {/* Active Calories */}
-            <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Active Calories</Text>
-            <TextInput
-              style={[styles.goalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
-              value={goalProfile.activeCalGoal}
-              onChangeText={v => updateGoalField('activeCalGoal', v.replace(/[^0-9]/g, ''))}
-              onBlur={() => { const v = parseInt(goalProfile.activeCalGoal) || 500; updateGoalField('activeCalGoal', String(Math.min(5000, Math.max(100, v)))); }}
-              keyboardType="number-pad"
-              maxLength={4}
-              placeholder="e.g. 500"
-              placeholderTextColor={theme.textPlaceholder}
-            />
-            <Text style={[styles.goalHint, { color: theme.textMuted }]}>Daily active calorie target from Apple Health. Celebrates when you hit it.</Text>
+            {/* Active Calories + Exercise Minutes */}
+            <View ref={goalsMovementRef}>
+              <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Active Calories</Text>
+              <TextInput
+                style={[styles.goalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
+                value={goalProfile.activeCalGoal}
+                onChangeText={v => updateGoalField('activeCalGoal', v.replace(/[^0-9]/g, ''))}
+                onBlur={() => { const v = parseInt(goalProfile.activeCalGoal) || 500; updateGoalField('activeCalGoal', String(Math.min(5000, Math.max(100, v)))); }}
+                keyboardType="number-pad"
+                maxLength={4}
+                placeholder="e.g. 500"
+                placeholderTextColor={theme.textPlaceholder}
+              />
+              <Text style={[styles.goalHint, { color: theme.textMuted }]}>Daily active calorie target from Apple Health. Celebrates when you hit it.</Text>
 
-            <View style={{ height: 1, backgroundColor: theme.borderCard, marginVertical: 16 }} />
+              <View style={{ height: 1, backgroundColor: theme.borderCard, marginVertical: 16 }} />
 
-            {/* Exercise Minutes */}
-            <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Exercise Minutes</Text>
-            <TextInput
-              style={[styles.goalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
-              value={goalProfile.exerciseMinsGoal}
-              onChangeText={v => updateGoalField('exerciseMinsGoal', v.replace(/[^0-9]/g, ''))}
-              onBlur={() => { const v = parseInt(goalProfile.exerciseMinsGoal) || 30; updateGoalField('exerciseMinsGoal', String(Math.min(300, Math.max(1, v)))); }}
-              keyboardType="number-pad"
-              maxLength={3}
-              placeholder="e.g. 30"
-              placeholderTextColor={theme.textPlaceholder}
-            />
-            <Text style={[styles.goalHint, { color: theme.textMuted }]}>Daily exercise minutes from Apple Health. Celebrates when you hit it.</Text>
+              {/* Exercise Minutes */}
+              <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Exercise Minutes</Text>
+              <TextInput
+                style={[styles.goalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
+                value={goalProfile.exerciseMinsGoal}
+                onChangeText={v => updateGoalField('exerciseMinsGoal', v.replace(/[^0-9]/g, ''))}
+                onBlur={() => { const v = parseInt(goalProfile.exerciseMinsGoal) || 30; updateGoalField('exerciseMinsGoal', String(Math.min(300, Math.max(1, v)))); }}
+                keyboardType="number-pad"
+                maxLength={3}
+                placeholder="e.g. 30"
+                placeholderTextColor={theme.textPlaceholder}
+              />
+              <Text style={[styles.goalHint, { color: theme.textMuted }]}>Daily exercise minutes from Apple Health. Celebrates when you hit it.</Text>
+            </View>
 
             <View style={{ height: 1, backgroundColor: theme.borderCard, marginVertical: 16 }} />
 
             {/* Sleep Goal */}
-            <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Sleep Goal</Text>
-            <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', color: theme.textMuted, marginBottom: 12 }}>How many hours of sleep are you aiming for each night?</Text>
-            <View style={{ backgroundColor: theme.bgInset, borderRadius: 10, paddingVertical: 16, paddingHorizontal: 8 }}>
-              <SleepGoalPicker value={goalProfile.sleepGoal || '7'} onChange={v => updateGoalField('sleepGoal', v)} theme={theme} />
+            <View ref={goalsSleepRef}>
+              <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Sleep Goal</Text>
+              <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', color: theme.textMuted, marginBottom: 12 }}>How many hours of sleep are you aiming for each night?</Text>
+              <View style={{ backgroundColor: theme.bgInset, borderRadius: 10, paddingVertical: 16, paddingHorizontal: 8 }}>
+                <SleepGoalPicker value={goalProfile.sleepGoal || '7'} onChange={v => updateGoalField('sleepGoal', v)} theme={theme} />
+              </View>
             </View>
 
             <View style={{ height: 1, backgroundColor: theme.borderCard, marginTop: 20, marginBottom: 16 }} />
@@ -1049,71 +1119,77 @@ export default function SettingsScreen() {
             </View>
 
             {/* Calorie Target */}
-            <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Daily Calorie Target</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-              <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Use recommended value</Text>
-              <ToggleSwitch value={goalProfile.useRecommendedCal !== false} onValueChange={v => updateGoalField('useRecommendedCal', v)} />
+            <View ref={goalsCaloriesRef}>
+              <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Daily Calorie Target</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Use recommended value</Text>
+                <ToggleSwitch value={goalProfile.useRecommendedCal !== false} onValueChange={v => updateGoalField('useRecommendedCal', v)} />
+              </View>
+              <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginBottom: 10 }}>Based on your BMR, activity level, and weight goal set in Profile.</Text>
+              <TextInput
+                style={[styles.goalInput, { backgroundColor: goalProfile.useRecommendedCal !== false ? theme.bgProgressTrack : theme.bgInput, borderColor: theme.borderInput, color: goalProfile.useRecommendedCal !== false ? theme.textMuted : theme.textPrimary }]}
+                value={goalProfile.useRecommendedCal !== false ? (goalSuggested > 0 ? goalSuggested.toString() : 'Set stats in Profile') : goalProfile.calTarget}
+                onChangeText={v => updateGoalField('calTarget', v)}
+                onBlur={() => { if (goalProfile.useRecommendedCal !== false) return; const v = parseInt(goalProfile.calTarget) || 1750; updateGoalField('calTarget', String(Math.min(10000, Math.max(500, v)))); }}
+                keyboardType="number-pad"
+                maxLength={5}
+                placeholder="e.g. 1750"
+                placeholderTextColor={theme.textPlaceholder}
+                editable={goalProfile.useRecommendedCal === false}
+              />
+              {goalProfile.useRecommendedCal === false && (
+                <Text style={[styles.goalHint, { color: theme.textMuted }]}>Enter a custom calorie target.</Text>
+              )}
             </View>
-            <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginBottom: 10 }}>Based on your BMR, activity level, and weight goal set in Profile.</Text>
-            <TextInput
-              style={[styles.goalInput, { backgroundColor: goalProfile.useRecommendedCal !== false ? theme.bgProgressTrack : theme.bgInput, borderColor: theme.borderInput, color: goalProfile.useRecommendedCal !== false ? theme.textMuted : theme.textPrimary }]}
-              value={goalProfile.useRecommendedCal !== false ? (goalSuggested > 0 ? goalSuggested.toString() : 'Set stats in Profile') : goalProfile.calTarget}
-              onChangeText={v => updateGoalField('calTarget', v)}
-              onBlur={() => { if (goalProfile.useRecommendedCal !== false) return; const v = parseInt(goalProfile.calTarget) || 1750; updateGoalField('calTarget', String(Math.min(10000, Math.max(500, v)))); }}
-              keyboardType="number-pad"
-              maxLength={5}
-              placeholder="e.g. 1750"
-              placeholderTextColor={theme.textPlaceholder}
-              editable={goalProfile.useRecommendedCal === false}
-            />
-            {goalProfile.useRecommendedCal === false && (
-              <Text style={[styles.goalHint, { color: theme.textMuted }]}>Enter a custom calorie target.</Text>
-            )}
 
             <View style={{ height: 1, backgroundColor: theme.borderCard, marginVertical: 16 }} />
 
             {/* Net Carbs toggle */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-              <View style={{ flex: 1, paddingRight: 12 }}>
-                <Text style={[styles.goalLabel, { color: theme.textMuted, marginBottom: 2 }]}>Net Carbs Mode</Text>
-                <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', lineHeight: 15 }}>
-                  Shows total carbs minus fiber everywhere in the app.
-                </Text>
+            <View ref={goalsNetCarbsRef}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <View style={{ flex: 1, paddingRight: 12 }}>
+                  <Text style={[styles.goalLabel, { color: theme.textMuted, marginBottom: 2 }]}>Net Carbs Mode</Text>
+                  <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', lineHeight: 15 }}>
+                    Shows total carbs minus fiber everywhere in the app.
+                  </Text>
+                </View>
+                <ToggleSwitch value={showNetCarbs} onValueChange={v => { setShowNetCarbs(v); saveSetting('showNetCarbs', v); triggerHaptic(Haptics.ImpactFeedbackStyle.Light); }} />
               </View>
-              <ToggleSwitch value={showNetCarbs} onValueChange={v => { setShowNetCarbs(v); saveSetting('showNetCarbs', v); triggerHaptic(Haptics.ImpactFeedbackStyle.Light); }} />
+              {showNetCarbs && (
+                <View style={{ backgroundColor: theme.bgInset, borderRadius: 8, padding: 10, marginBottom: 8 }}>
+                  <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', lineHeight: 16 }}>
+                    Net carbs mode is on. Your Carbs goal below now represents your net carbs target. Update it if you'd like a more specific number.
+                  </Text>
+                </View>
+              )}
             </View>
-            {showNetCarbs && (
-              <View style={{ backgroundColor: theme.bgInset, borderRadius: 8, padding: 10, marginBottom: 8 }}>
-                <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', lineHeight: 16 }}>
-                  Net carbs mode is on. Your Carbs goal below now represents your net carbs target -- update it if you'd like a more specific number.
-                </Text>
-              </View>
-            )}
 
             <View ref={macrosRef} style={{ height: 1, backgroundColor: theme.borderCard, marginVertical: 16 }} />
 
             {/* Macros */}
-            <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Macros</Text>
-            <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', color: theme.textMuted, marginBottom: 14 }}>
-              {goalProfile.macroMode === 'ratio'
-                ? 'Set percentages -- grams update automatically when your calorie target changes.'
-                : 'Set grams directly. Percentages and kcal update live.'}
-            </Text>
+            <View ref={goalsMacrosRef}>
+              <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Macros</Text>
+              <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', color: theme.textMuted, marginBottom: 14 }}>
+                {goalProfile.macroMode === 'ratio'
+                  ? 'Set percentages. Grams update automatically when your calorie target changes.'
+                  : 'Set grams directly. Percentages and kcal update live.'}
+              </Text>
 
-            {/* Mode toggle */}
-            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
-              {(['ratio', 'fixed'] as const).map(mode => (
-                <TouchableOpacity
-                  key={mode}
-                  style={[styles.modeBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput },
-                    goalProfile.macroMode === mode && { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
-                  onPress={() => updateGoalField('macroMode', mode)}>
-                  <Text style={[{ fontSize: 14, fontFamily: 'DMSans_500Medium', color: theme.textMuted },
-                    goalProfile.macroMode === mode && { color: theme.accentBlue }]}>
-                    {mode === 'ratio' ? 'Ratio' : 'Fixed'}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+              {/* Mode toggle */}
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+                {(['ratio', 'fixed'] as const).map(mode => (
+                  <TouchableOpacity
+                    key={mode}
+                    style={[styles.modeBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput },
+                      goalProfile.macroMode === mode && { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+                    onPress={() => updateGoalField('macroMode', mode)}>
+                    <Text style={[{ fontSize: 14, fontFamily: 'DMSans_500Medium', color: theme.textMuted },
+                      goalProfile.macroMode === mode && { color: theme.accentBlue }]}>
+                      {mode === 'ratio' ? 'Ratio' : 'Fixed'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
 
             {goalProfile.macroMode === 'ratio' ? (
@@ -1216,19 +1292,21 @@ export default function SettingsScreen() {
             <View style={{ height: 1, backgroundColor: theme.borderCard, marginVertical: 16 }} />
 
             {/* Water Goal */}
-            <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Water Goal</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <TextInput
-                style={[styles.goalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, flex: 1, marginBottom: 0 }]}
-                value={goalProfile.waterGoal}
-                onChangeText={v => updateGoalField('waterGoal', v.replace(/[^0-9]/g, ''))}
-                keyboardType="number-pad"
-                placeholder="e.g. 128"
-                placeholderTextColor={theme.textPlaceholder}
-              />
-              <Text style={{ color: theme.textMuted, fontSize: 16, fontFamily: 'DMSans_400Regular' }}>oz</Text>
+            <View ref={goalsWaterRef}>
+              <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Water Goal</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                <TextInput
+                  style={[styles.goalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, flex: 1, marginBottom: 0 }]}
+                  value={goalProfile.waterGoal}
+                  onChangeText={v => updateGoalField('waterGoal', v.replace(/[^0-9]/g, ''))}
+                  keyboardType="number-pad"
+                  placeholder="e.g. 128"
+                  placeholderTextColor={theme.textPlaceholder}
+                />
+                <Text style={{ color: theme.textMuted, fontSize: 16, fontFamily: 'DMSans_400Regular' }}>oz</Text>
+              </View>
+              <Text style={[styles.goalHint, { color: theme.textMuted }]}>Daily hydration target in oz. Progress bar fills to this amount.</Text>
             </View>
-            <Text style={[styles.goalHint, { color: theme.textMuted }]}>Daily hydration target in oz. Progress bar fills to this amount.</Text>
 
             <View style={{ height: 16 }} />
           </View>
@@ -1403,7 +1481,7 @@ export default function SettingsScreen() {
         </CollapsibleSection>
 
         {/* ── Notifications ── */}
-        <CollapsibleSection label="Notifications" subtitle="Reminders · Daily Cap · Categories" defaultOpen={false} theme={theme}>
+        <CollapsibleSection label="Notifications" subtitle="Reminders · Daily Cap · Categories" defaultOpen={false} forceOpen={notifForceOpen} theme={theme}>
           <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
 
             {/* Permission banner */}
@@ -1415,7 +1493,7 @@ export default function SettingsScreen() {
             )}
 
             {/* Master toggle */}
-            <View style={[styles.row, { borderTopColor: 'transparent', paddingHorizontal: 0, paddingTop: 0 }]}>
+            <View ref={notifMasterRef} style={[styles.row, { borderTopColor: 'transparent', paddingHorizontal: 0, paddingTop: 0 }]}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Enable Notifications</Text>
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Master on/off for all reminders</Text>
@@ -1434,7 +1512,7 @@ export default function SettingsScreen() {
               />
             </View>
 
-            {notifSettings.masterEnabled && (
+            {(notifSettings.masterEnabled || notifTutorialActive) && (
               <>
                 {/* ── Quiet Hours ── */}
                 <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginTop: 16, marginBottom: 10 }}>Quiet Hours</Text>
@@ -1459,7 +1537,7 @@ export default function SettingsScreen() {
 
                 {/* ── Streak Protection ── */}
                 <View style={{ height: 1, backgroundColor: theme.borderInput, marginTop: 16, marginBottom: 12 }} />
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <View ref={notifStreakRef} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                   <View style={{ flex: 1, marginRight: 12 }}>
                     <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Streak Protection</Text>
                     <Text style={[styles.rowSub, { color: theme.textMuted }]}>Always fires when streaks are at risk tonight. Not subject to the daily cap.</Text>
@@ -1472,21 +1550,24 @@ export default function SettingsScreen() {
 
                 {/* ── Daily cap ── */}
                 <View style={{ height: 1, backgroundColor: theme.borderInput, marginTop: 16, marginBottom: 12 }} />
-                <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>How Many Per Day</Text>
-                <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 10 }}>Streaks, IF window, summaries, and water reminders are not counted toward this.</Text>
-                <View style={{ flexDirection: 'row', gap: 8 }}>
-                  {([3, 5, 'all'] as const).map(cap => (
-                    <TouchableOpacity
-                      key={String(cap)}
-                      onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateNotifSettings({ ...notifSettings, dailyCap: cap }); }}
-                      style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: notifSettings.dailyCap === cap ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: notifSettings.dailyCap === cap ? theme.accentBlueBorder : theme.borderInput }}>
-                      <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: notifSettings.dailyCap === cap ? theme.accentBlue : theme.textMuted }}>{cap === 'all' ? 'All' : String(cap)}</Text>
-                    </TouchableOpacity>
-                  ))}
+                <View ref={notifCapRef}>
+                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>How Many Per Day</Text>
+                  <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 10 }}>Streaks, IF window, summaries, and water reminders are not counted toward this.</Text>
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    {([3, 5, 'all'] as const).map(cap => (
+                      <TouchableOpacity
+                        key={String(cap)}
+                        onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); updateNotifSettings({ ...notifSettings, dailyCap: cap }); }}
+                        style={{ flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', backgroundColor: notifSettings.dailyCap === cap ? theme.accentBlueBg : theme.bgInput, borderWidth: 1, borderColor: notifSettings.dailyCap === cap ? theme.accentBlueBorder : theme.borderInput }}>
+                        <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: notifSettings.dailyCap === cap ? theme.accentBlue : theme.textMuted }}>{cap === 'all' ? 'All' : String(cap)}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
                 </View>
 
                 {/* ── Category pills ── */}
                 <View style={{ height: 1, backgroundColor: theme.borderInput, marginTop: 16, marginBottom: 12 }} />
+                <View ref={notifCategoriesRef}>
                 <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 10 }}>What Can We Notify You About</Text>
                 <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
                   {([
@@ -1512,10 +1593,11 @@ export default function SettingsScreen() {
                     );
                   })}
                 </View>
+                </View>
 
                 {/* ── Water reminders (Fitness category only) ── */}
-                {notifSettings.categoryFitness && (
-                  <>
+                {(notifSettings.categoryFitness || notifTutorialActive) && (
+                  <View ref={notifWaterRef}>
                     <View style={{ height: 1, backgroundColor: theme.borderInput, marginTop: 16, marginBottom: 12 }} />
                     <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 4 }}>Water Reminders</Text>
                     <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 10 }}>Spaced evenly through your waking hours. Does not count toward the daily cap.</Text>
@@ -1529,17 +1611,18 @@ export default function SettingsScreen() {
                         </TouchableOpacity>
                       ))}
                     </View>
-                  </>
+                  </View>
                 )}
 
                 {/* ── Advanced ── */}
                 <View style={{ marginTop: 12 }} />
+                <View ref={notifAdvancedRef}>
                 <NotifGroup label="Advanced" summary="Activity time, weight frequency, and more" theme={theme}>
 
                   {/* Activity reminder time */}
                   <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 2 }}>Activity Reminder Time</Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                    <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular' }}>Fires if no workout and steps below 75% of goal</Text>
+                    <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_400Regular', flex: 1, paddingRight: 10 }}>Fires if no workout and steps below 75% of goal</Text>
                     <TouchableOpacity
                       onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openTimePicker('activityTime', notifSettings.activityTime); }}
                       style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 7, paddingHorizontal: 14, marginLeft: 12 }}>
@@ -1614,6 +1697,7 @@ export default function SettingsScreen() {
                   </Text>
 
                 </NotifGroup>
+                </View>
               </>
             )}
           </View>

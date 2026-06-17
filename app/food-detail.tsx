@@ -674,8 +674,21 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
       const raw = useServingBased ? sk * servingCount : servingRates ? (servingRates as any)[servingKey] * grams : sk;
       return Math.round(raw * 10) / 10;
     }
+    // Recipe entries carry extended nutrients as flat fields (already scaled to the logged
+    // portion) with no foodNutrients. Fall back to them, rescaled if the amount was edited.
+    const flat = (food as any)[servingKey];
+    if (typeof flat === 'number' && flat !== 0) {
+      const baseCal = food.existingCal || food.cal || 0;
+      const scale = baseCal > 0 ? calories / baseCal : 1;
+      return Math.round(flat * scale * 10) / 10;
+    }
     return null;
   };
+
+  // True when this entry carries recipe-style flat extended nutrients (so the edit screen
+  // shows them instead of the "no detailed nutrition data" line).
+  const hasFlatExtended = ['fiber','sugar','sodium','cholesterol','saturatedFat','polyunsaturatedFat','monounsaturatedFat','addedSugars','transFat','vitaminA','vitaminC','vitaminD','potassium','calcium','iron','caffeine','sugarAlcohols']
+    .some(k => (((food as any)[k]) || 0) > 0);
 
   const getNutrientPer100g = (name: string, unitName: string = 'G') => {
     const n = food.foodNutrients?.find((n: any) => 
@@ -755,7 +768,24 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     try {
       if (isRecipeMode) {
-        // Save as pending ingredient for recipe builder to pick up
+        // Save as pending ingredient for recipe builder to pick up. Capture the EXTENDED
+        // nutrients (fiber, sugar, sodium, etc.) too -- previously only cal + the big 3 macros
+        // were carried, so every recipe ingredient logged 0 fiber/sodium/micros, starving the
+        // recipe (and the day's advanced nutrition / EvR fiber) of real data. computeExtended
+        // scales each to the chosen portion exactly like the macros above; optional micros are
+        // only carried when actually present.
+        const fiber        = computeExtended('fiber',              'Fiber, total dietary');
+        const sugar        = computeExtended('sugar',              'Sugars, total including NLEA');
+        const sodium       = computeExtended('sodium',             'Sodium, Na');
+        const cholesterol  = computeExtended('cholesterol',        'Cholesterol');
+        const saturatedFat = computeExtended('saturatedFat',       'Fatty acids, total saturated');
+        const polyFat      = computeExtended('polyunsaturatedFat', 'Polyunsaturated Fat');
+        const monoFat      = computeExtended('monounsaturatedFat', 'Monounsaturated Fat');
+        const addedSugars  = computeExtended('addedSugars',        'Added Sugars');
+        const transFat     = computeExtended('transFat',           'Trans Fat');
+        const vitaminA     = computeExtended('vitaminA',           'Vitamin A');
+        const vitaminC     = computeExtended('vitaminC',           'Vitamin C');
+        const vitaminD     = computeExtended('vitaminD',           'Vitamin D');
         const ingredient = {
           id: Math.random().toString(36).substr(2, 9),
           name: food.brand ? `${food.description} · ${food.brand}` : (food.description?.split(' · ')[0] ?? food.description),
@@ -763,6 +793,18 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           protein,
           carbs,
           fat,
+          fiber: fiber ?? 0,
+          sugar: sugar ?? 0,
+          sodium: sodium ?? 0,
+          cholesterol: cholesterol ?? 0,
+          saturatedFat: saturatedFat ?? 0,
+          ...(polyFat     ? { polyunsaturatedFat: polyFat } : {}),
+          ...(monoFat     ? { monounsaturatedFat: monoFat } : {}),
+          ...(addedSugars ? { addedSugars } : {}),
+          ...(transFat    ? { transFat } : {}),
+          ...(vitaminA    ? { vitaminA } : {}),
+          ...(vitaminC    ? { vitaminC } : {}),
+          ...(vitaminD    ? { vitaminD } : {}),
           amount: parseFloat(amount),
           unit,
           calPer100g,
@@ -1511,7 +1553,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           </View>
         )}
 
-        {calPer100g === 0 && (
+        {calPer100g === 0 && !hasFlatExtended && (
           <Text style={styles.noDataText}>No detailed nutrition data. Calories will be logged as entered.</Text>
         )}
 {/* Timestamp */}

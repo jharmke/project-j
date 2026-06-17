@@ -5,6 +5,25 @@ import { useRef, useMemo } from 'react';
 import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../theme';
 
+// Recipe-logged entries store extended nutrients as FLAT fields (e.fiber, e.sodium, ...),
+// already scaled to the logged portion, NOT inside foodNutrients. Map readable names to those
+// flat keys so recipe nutrients show in the drilldown source list + net-carb math.
+// NOTE: this same map is mirrored in log.tsx and utils/diagnosticReport.ts -- centralize later.
+const FLAT_NUTRIENT_KEY: Record<string, string> = {
+  'Fiber, total dietary': 'fiber',
+  'Sugars, total including NLEA': 'sugar',
+  'Sodium, Na': 'sodium',
+  'Cholesterol': 'cholesterol',
+  'Fatty acids, total saturated': 'saturatedFat',
+  'Polyunsaturated Fat': 'polyunsaturatedFat',
+  'Monounsaturated Fat': 'monounsaturatedFat',
+  'Added Sugars': 'addedSugars',
+  'Trans Fat': 'transFat',
+  'Vitamin A': 'vitaminA',
+  'Vitamin C': 'vitaminC',
+  'Vitamin D': 'vitaminD',
+};
+
 export function computeNetCarbsForEntry(e: any): number {
   const carbs = e.carbs || 0;
   let scale: number;
@@ -17,7 +36,8 @@ export function computeNetCarbsForEntry(e: any): number {
   }
   const fiberN = e.foodNutrients?.find((fn: any) => fn.nutrientName === 'Fiber, total dietary');
   const sacarN = e.foodNutrients?.find((fn: any) => fn.nutrientName === 'Sugar Alcohols');
-  const fiber = fiberN ? (fiberN.value || 0) * scale : 0;
+  // Recipe entries: fiber lives in the flat field, already portion-scaled.
+  const fiber = fiberN ? (fiberN.value || 0) * scale : (typeof e.fiber === 'number' ? e.fiber : 0);
   const sa    = sacarN ? (sacarN.value || 0) * scale : 0;
   return Math.max(0, Math.round((carbs - fiber - sa) * 10) / 10);
 }
@@ -102,16 +122,23 @@ export default function NutrientDrilldownModal({ visible, onClose, item, entries
         value = computeFn(e);
       } else if (item.nutrientKey) {
         const n = e.foodNutrients?.find((fn: any) => fn.nutrientName === item.nutrientKey);
-        if (!n) continue;
-        let scale: number;
-        if (e.fsId) {
-          scale = (e.calPer100g && e.calPer100g > 0) ? (e.cal / e.calPer100g) : 0;
+        if (!n) {
+          // Recipe entries: flat field, already portion-scaled (no foodNutrients on the entry).
+          const flatKey = FLAT_NUTRIENT_KEY[item.nutrientKey];
+          const flatVal = flatKey && typeof (e as any)[flatKey] === 'number' ? (e as any)[flatKey] : 0;
+          if (flatVal <= 0) continue;
+          value = Math.round(flatVal * 10) / 10;
         } else {
-          const sg = e.servingGrams;
-          const servingCal = sg && (e.calPer100g ?? 0) > 0 ? (e.calPer100g ?? 0) * sg / 100 : 0;
-          scale = servingCal > 0 ? e.cal / servingCal : 0;
+          let scale: number;
+          if (e.fsId) {
+            scale = (e.calPer100g && e.calPer100g > 0) ? (e.cal / e.calPer100g) : 0;
+          } else {
+            const sg = e.servingGrams;
+            const servingCal = sg && (e.calPer100g ?? 0) > 0 ? (e.calPer100g ?? 0) * sg / 100 : 0;
+            scale = servingCal > 0 ? e.cal / servingCal : 0;
+          }
+          value = Math.round((n.value || 0) * scale * 10) / 10;
         }
-        value = Math.round((n.value || 0) * scale * 10) / 10;
       } else if (item.directField) {
         value = Math.round(((e as any)[item.directField] || 0) * 10) / 10;
       }

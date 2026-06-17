@@ -406,10 +406,32 @@ export default function LogScreen() {
     // whole missing BMR, so show a dash + hint instead of a wrong number (mirrors home).
     { label: 'LIVE NET', value: profileBmr > 0 ? `${logNet > 0 ? '+' : ''}${Math.round(logNet)}` : '—', color: theme.textSecondary },
   ];
+  // Recipe-logged entries store extended nutrients as FLAT fields (e.fiber, e.sodium, ...),
+  // already scaled to the logged portion, NOT inside foodNutrients. Map each readable name to
+  // its flat key so recipe fiber/sugar/etc. actually count in the day's advanced nutrition.
+  const FLAT_NUTRIENT_KEY: Record<string, string> = {
+    'Fiber, total dietary': 'fiber',
+    'Sugars, total including NLEA': 'sugar',
+    'Sodium, Na': 'sodium',
+    'Cholesterol': 'cholesterol',
+    'Fatty acids, total saturated': 'saturatedFat',
+    'Polyunsaturated Fat': 'polyunsaturatedFat',
+    'Monounsaturated Fat': 'monounsaturatedFat',
+    'Added Sugars': 'addedSugars',
+    'Trans Fat': 'transFat',
+    'Vitamin A': 'vitaminA',
+    'Vitamin C': 'vitaminC',
+    'Vitamin D': 'vitaminD',
+  };
   const getAdvancedNutrient = (name: string) => {
     return Math.round(entries.reduce((s, e) => {
       const n = e.foodNutrients?.find((fn: any) => fn.nutrientName === name);
-      if (!n) return s;
+      if (!n) {
+        // Fallback to the flat field (recipe entries). Already the portion total -- no scaling.
+        const flatKey = FLAT_NUTRIENT_KEY[name];
+        if (flatKey && typeof (e as any)[flatKey] === 'number') return s + (e as any)[flatKey];
+        return s;
+      }
       let scale: number;
       if (e.fsId) {
         scale = (e.calPer100g && e.calPer100g > 0) ? (e.cal / e.calPer100g) : 0;

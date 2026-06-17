@@ -343,6 +343,47 @@ export default function RecipeBuilderScreen() {
   const cholesterolPerServing = Math.round(totalCholesterol / servings);
   const saturatedFatPerServing = Math.round(totalSaturatedFat / servings * 10) / 10;
 
+  // Shared extended-nutrition grid: shows every extended nutrient the recipe actually carries
+  // (wraps), not a fixed 5. div=1 for whole-batch totals, div=servings for per-serving.
+  const renderExtendedGrid = (div: number) => {
+    const f = (v: number) => Math.round((v || 0) / div * 10) / 10;
+    const exts = [
+      { val: f(totalFiber), unit: 'g', label: 'Fiber' },
+      { val: f(totalSugar), unit: 'g', label: 'Sugar' },
+      { val: f(totalAddedSugars), unit: 'g', label: 'Added Sug.' },
+      { val: f(totalSodium), unit: 'mg', label: 'Sodium' },
+      { val: f(totalCholesterol), unit: 'mg', label: 'Chol.' },
+      { val: f(totalSaturatedFat), unit: 'g', label: 'Sat. Fat' },
+      { val: f(totalPolyFat), unit: 'g', label: 'Poly Fat' },
+      { val: f(totalMonoFat), unit: 'g', label: 'Mono Fat' },
+      { val: f(totalTransFat), unit: 'g', label: 'Trans Fat' },
+      { val: f(totalVitaminA), unit: 'mcg', label: 'Vit A' },
+      { val: f(totalVitaminC), unit: 'mg', label: 'Vit C' },
+      { val: f(totalVitaminD), unit: 'mcg', label: 'Vit D' },
+      { val: f(totalVitaminE), unit: 'mg', label: 'Vit E' },
+      { val: f(totalVitaminK), unit: 'mcg', label: 'Vit K' },
+      { val: f(totalVitaminB6), unit: 'mg', label: 'B6' },
+      { val: f(totalFolate), unit: 'mcg', label: 'Folate' },
+      { val: f(totalVitaminB12), unit: 'mcg', label: 'B12' },
+      { val: f(totalBiotin), unit: 'mcg', label: 'Biotin' },
+      { val: f(totalMagnesium), unit: 'mg', label: 'Magnesium' },
+      { val: f(totalZinc), unit: 'mg', label: 'Zinc' },
+      { val: f(totalCopper), unit: 'mg', label: 'Copper' },
+      { val: f(totalCaffeine), unit: 'mg', label: 'Caffeine' },
+    ].filter(e => e.val > 0);
+    if (exts.length === 0) return null;
+    return (
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 12, paddingTop: 12, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
+        {exts.map(e => (
+          <View key={e.label} style={{ width: '25%', alignItems: 'center', marginBottom: 12 }}>
+            <Text style={styles.extVal}>{e.val}{e.unit}</Text>
+            <Text style={[styles.extLabel, { textAlign: 'center' }]}>{e.label}</Text>
+          </View>
+        ))}
+      </View>
+    );
+  };
+
   const canSave = recipeName.trim().length > 0 && ingredients.length > 0;
 
   const saveRecipe = async () => {
@@ -523,30 +564,7 @@ export default function RecipeBuilderScreen() {
                 <Text style={styles.macroLabel}>Fat</Text>
               </View>
             </View>
-            {hasExtended && (
-              <View style={styles.extendedRow}>
-                <View style={styles.extStat}>
-                  <Text style={styles.extVal}>{totalFiber}g</Text>
-                  <Text style={styles.extLabel}>Fiber</Text>
-                </View>
-                <View style={styles.extStat}>
-                  <Text style={styles.extVal}>{totalSugar}g</Text>
-                  <Text style={styles.extLabel}>Sugar</Text>
-                </View>
-                <View style={styles.extStat}>
-                  <Text style={styles.extVal}>{totalSodium}mg</Text>
-                  <Text style={styles.extLabel}>Sodium</Text>
-                </View>
-                <View style={styles.extStat}>
-                  <Text style={styles.extVal}>{totalCholesterol}mg</Text>
-                  <Text style={styles.extLabel}>Chol.</Text>
-                </View>
-                <View style={styles.extStat}>
-                  <Text style={styles.extVal}>{totalSaturatedFat}g</Text>
-                  <Text style={styles.extLabel}>Sat. Fat</Text>
-                </View>
-              </View>
-            )}
+            {renderExtendedGrid(1)}
           </View>
         )}
 
@@ -601,30 +619,7 @@ export default function RecipeBuilderScreen() {
                   <Text style={styles.macroLabel}>Fat</Text>
                 </View>
               </View>
-              {hasExtended && (
-                <View style={styles.extendedRow}>
-                  <View style={styles.extStat}>
-                    <Text style={styles.extVal}>{fiberPerServing}g</Text>
-                    <Text style={styles.extLabel}>Fiber</Text>
-                  </View>
-                  <View style={styles.extStat}>
-                    <Text style={styles.extVal}>{sugarPerServing}g</Text>
-                    <Text style={styles.extLabel}>Sugar</Text>
-                  </View>
-                  <View style={styles.extStat}>
-                    <Text style={styles.extVal}>{sodiumPerServing}mg</Text>
-                    <Text style={styles.extLabel}>Sodium</Text>
-                  </View>
-                  <View style={styles.extStat}>
-                    <Text style={styles.extVal}>{cholesterolPerServing}mg</Text>
-                    <Text style={styles.extLabel}>Chol.</Text>
-                  </View>
-                  <View style={styles.extStat}>
-                    <Text style={styles.extVal}>{saturatedFatPerServing}g</Text>
-                    <Text style={styles.extLabel}>Sat. Fat</Text>
-                  </View>
-                </View>
-              )}
+              {renderExtendedGrid(servings)}
             </View>
           )}
         </View>

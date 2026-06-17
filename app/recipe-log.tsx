@@ -202,6 +202,43 @@ export default function RecipeLogScreen() {
               <Text style={styles.macroLabel}>fat</Text>
             </View>
           </View>
+          {/* Extended nutrition: every nutrient the recipe actually carries, on the same basis
+              (whole batch vs per serving) as the macros above. Shows only what's present, so a
+              search food that only returned fiber/sugar/sodium shows just those -- honest. */}
+          {(() => {
+            const div = isWholeBatch ? 1 : (servingCount || 1);
+            const g = (v: number) => Math.round((v || 0) / div * 10) / 10;
+            const mg = (v: number) => Math.round((v || 0) / div);
+            const exts = [
+              { val: g(recipe.totalFiber), unit: 'g', label: 'Fiber' },
+              { val: g(recipe.totalSugar), unit: 'g', label: 'Sugar' },
+              { val: g(recipe.totalAddedSugars), unit: 'g', label: 'Added Sug.' },
+              { val: mg(recipe.totalSodium), unit: 'mg', label: 'Sodium' },
+              { val: mg(recipe.totalPotassium), unit: 'mg', label: 'Potassium' },
+              { val: mg(recipe.totalCholesterol), unit: 'mg', label: 'Chol.' },
+              { val: g(recipe.totalSaturatedFat), unit: 'g', label: 'Sat. Fat' },
+              { val: g(recipe.totalPolyFat), unit: 'g', label: 'Poly Fat' },
+              { val: g(recipe.totalMonoFat), unit: 'g', label: 'Mono Fat' },
+              { val: g(recipe.totalTransFat), unit: 'g', label: 'Trans Fat' },
+              { val: mg(recipe.totalCalcium), unit: 'mg', label: 'Calcium' },
+              { val: g(recipe.totalIron), unit: 'mg', label: 'Iron' },
+              { val: mg(recipe.totalVitaminA), unit: 'mcg', label: 'Vit A' },
+              { val: g(recipe.totalVitaminC), unit: 'mg', label: 'Vit C' },
+              { val: g(recipe.totalVitaminD), unit: 'mcg', label: 'Vit D' },
+              { val: mg(recipe.totalCaffeine), unit: 'mg', label: 'Caffeine' },
+            ].filter(e => e.val > 0);
+            if (exts.length === 0) return null;
+            return (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 14, paddingTop: 14, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
+                {exts.map(e => (
+                  <View key={e.label} style={{ width: '25%', alignItems: 'center', marginBottom: 12 }}>
+                    <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold' }}>{e.val}{e.unit}</Text>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_400Regular', letterSpacing: 1, marginTop: 2, textAlign: 'center' }}>{e.label}</Text>
+                  </View>
+                ))}
+              </View>
+            );
+          })()}
         </View>
 
         {/* Ingredients */}

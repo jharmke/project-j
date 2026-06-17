@@ -46,3 +46,10 @@ export function calcSleepScore(
   const feelPts = ((feelRating - 1) / 9) * 30;
   return { score: Math.round(Math.min(100, durationPts + feelPts + consistencyPts)), hasStages: false, path };
 }
+
+// Shared sleep-score tier color (single source of truth). >=85 strong / >=70 ok /
+// else poor, using the hub's status tokens. Use everywhere a sleep score is colored
+// (Sleep tab hero, Recovery card sleep row) so the SAME score never shows two colors.
+export function sleepScoreColor(score: number, theme: any): string {
+  return score >= 85 ? theme.statusGood : score >= 70 ? theme.statusWarn : theme.statusBad;
+}

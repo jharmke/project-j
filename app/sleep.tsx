@@ -21,7 +21,7 @@ import ToggleSwitch from '../components/ToggleSwitch';
 import TooltipIcon from '../components/TooltipIcon';
 import { triggerHaptic } from '../utils/haptics';
 import { storageSet } from '../utils/storage';
-import { calcSleepScore } from '../utils/sleepScore';
+import { calcSleepScore, sleepScoreColor } from '../utils/sleepScore';
 import { calcRecoveryScore, recoveryZone, RecoveryComponent, RecoveryResult } from '../utils/recoveryScore';
 import MetricDrilldownModal, { MetricDrilldownData } from '../components/MetricDrilldownModal';
 import { ScoreRing } from '../components/DaySummaryModal';
@@ -78,6 +78,24 @@ function DivergentBar({ score, theme, tone }: { score: number; theme: any; tone?
           sits on baseline (zero delta) the fill is ~0 wide, so this tick is what the user
           sees -- "right on your norm", intentional, never an empty/broken-looking bar. */}
       <View style={{ position: 'absolute', left: '50%', width: 3, marginLeft: -1.5, top: 0, bottom: 0, borderRadius: 1.5, backgroundColor: theme.textDim }} />
+    </View>
+  );
+}
+
+// Plain left-to-right fill bar (0..1 frac), no tick, caller-colored. For absolute
+// 0-100 scores that are NOT baseline-relative (Sleep Score): a divergent bar would
+// imply a personal baseline that does not exist, so this just shows "how good, 0-100".
+function FillBar({ frac, color, theme }: { frac: number; color: string; theme: any }) {
+  const [trackW, setTrackW] = useState(0);
+  const f = Math.max(0, Math.min(1, frac));
+  const w = useSharedValue(0);
+  useEffect(() => {
+    w.value = withTiming(f * trackW, { duration: 600, easing: Easing.out(Easing.cubic) });
+  }, [f, trackW]);
+  const fillStyle = useAnimatedStyle(() => ({ width: w.value }));
+  return (
+    <View onLayout={e => setTrackW(e.nativeEvent.layout.width)} style={{ height: 8, borderRadius: 4, backgroundColor: theme.bgProgressTrack, justifyContent: 'center', overflow: 'hidden' }}>
+      <ReAnimated.View style={[{ position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 4, backgroundColor: color }, fillStyle]} />
     </View>
   );
 }
@@ -1194,7 +1212,9 @@ export default function SleepHub() {
                       {bSub ? <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 1 }} numberOfLines={1}>{bSub}</Text> : null}
                     </View>
                     <View style={{ flex: 1, marginHorizontal: 10 }}>
-                      <DivergentBar score={comp.score} theme={theme} tone={theme.accentBlueRaw} />
+                      {dkey === 'sleepScore'
+                        ? <FillBar frac={comp.score / 100} color={theme.accentBlueRaw} theme={theme} />
+                        : <DivergentBar score={comp.score} theme={theme} tone={theme.accentBlueRaw} />}
                     </View>
                     <View style={{ width: 78, alignItems: 'flex-end' }}>
                       <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_700Bold' }}>{comp.value}</Text>
@@ -1234,7 +1254,7 @@ export default function SleepHub() {
           <View style={{ borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
             {rows.map(({ key, dkey, comp }, idx) => {
               if (!comp) return null;
-              const rc = rowColor(comp.score);
+              const rc = dkey === 'sleepScore' ? sleepScoreColor(comp.score, theme) : rowColor(comp.score);
               const isLast = idx === rows.length - 1;
               const bSub = baselineSub(dkey);
               return (
@@ -1244,7 +1264,9 @@ export default function SleepHub() {
                     {bSub ? <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 1 }} numberOfLines={1}>{bSub}</Text> : null}
                   </View>
                   <View style={{ flex: 1, marginHorizontal: 10 }}>
-                    <DivergentBar score={comp.score} theme={theme} />
+                    {dkey === 'sleepScore'
+                      ? <FillBar frac={comp.score / 100} color={sleepScoreColor(comp.score, theme)} theme={theme} />
+                      : <DivergentBar score={comp.score} theme={theme} />}
                   </View>
                   <View style={{ width: 78, alignItems: 'flex-end' }}>
                     <Text style={{ fontSize: 14, color: rc, fontFamily: 'DMSans_700Bold' }}>{comp.value}</Text>
@@ -1262,7 +1284,7 @@ export default function SleepHub() {
             <TouchableOpacity activeOpacity={0.6} onPress={() => openDrill('spo2')} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 11, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
               <View style={{ width: 88 }}>
                 <Text style={{ fontSize: 13, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }} numberOfLines={1}>Blood Oxygen</Text>
-                <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 1 }}>Informational</Text>
+                <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 1 }}>Healthy 95 to 100%</Text>
               </View>
               <View style={{ flex: 1, marginHorizontal: 10 }}>
                 <RangeBar value={adjustedSignals.todaySpO2} theme={theme} />
@@ -1562,6 +1584,7 @@ export default function SleepHub() {
     const sig = adjustedSignals;
     let value = '', reference: string | null = null, statusColor: string = theme.textSecondary;
     let isGood: boolean | null = null;
+    let statusWordOverride: string | null = null;
     if (key === 'hrv' && recoveryResult.hrv) {
       const c = recoveryResult.hrv; value = c.value; isGood = c.isPositive; statusColor = rc(c.score);
       reference = sig?.hrvBaseline != null ? `7-day baseline: ${Math.round(sig.hrvBaseline * 10) / 10}ms` : null;
@@ -1575,7 +1598,12 @@ export default function SleepHub() {
       const c = recoveryResult.activity; value = c.value; isGood = c.isPositive; statusColor = rc(c.score);
       reference = sig?.activCalBaseline != null ? `7-day baseline: ${sig.activCalBaseline} kcal` : null;
     } else if (key === 'sleepScore' && recoveryResult.sleep) {
-      const c = recoveryResult.sleep; value = c.value; isGood = c.score >= 70; statusColor = rc(c.score);
+      // Sleep is an absolute 3-tier score (85/70), NOT baseline-relative: color, status
+      // word, and tips all use the real sleep tiers so the drilldown matches the card and
+      // the Sleep tab (was using the recovery 75/70 thresholds, which read 81 as green).
+      const c = recoveryResult.sleep; value = c.value; isGood = c.score >= 85;
+      statusColor = sleepScoreColor(c.score, theme);
+      statusWordOverride = c.score >= 85 ? 'In a healthy range' : c.score >= 70 ? 'Could be better' : 'Needs attention';
       reference = 'Out of 100';
     } else if (key === 'spo2' && sig?.todaySpO2 != null) {
       value = `${sig.todaySpO2}%`; isGood = null;
@@ -1584,11 +1612,11 @@ export default function SleepHub() {
     } else {
       return null;
     }
-    const statusWord = isGood === null ? 'Informational' : isGood ? 'In a healthy range' : 'Worth watching';
+    const statusWord = statusWordOverride ?? (isGood === null ? 'Informational' : isGood ? 'In a healthy range' : 'Worth watching');
     return {
       title: content.title, value, statusWord, statusColor, reference,
       definition: content.definition, calculation: content.calculation, affects: content.affects,
-      tips: content.improve(isGood), informationalOnly: content.informationalOnly, disclaimer: content.disclaimer,
+      tips: content.improve(key === 'sleepScore' && recoveryResult.sleep ? recoveryResult.sleep.score : isGood), informationalOnly: content.informationalOnly, disclaimer: content.disclaimer,
     };
   };
   // Slice 2: per-metric history series for the drill-down mini-graph, over the

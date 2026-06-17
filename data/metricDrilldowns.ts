@@ -12,9 +12,10 @@ export interface MetricDrilldownContent {
   definition: string;   // what it is
   calculation: string;  // how it is calculated / where it comes from
   affects: string;      // what it affects / why it matters
-  // Improve tips selected by the user's current standing.
-  // isGood: true = healthy direction, false = worth watching, null = neutral/informational.
-  improve: (isGood: boolean | null) => string[];
+  // Improve tips selected by the user's current standing. Most metrics pass a boolean
+  // (true = healthy direction, false = worth watching, null = informational). Sleep Score
+  // passes its raw 0-100 number so it can return a 3-tier message (strong / decent / low).
+  improve: (standing: boolean | number | null) => string[];
   informationalOnly?: boolean; // SpO2 etc: show info, never prescribe action
   disclaimer?: string;
 }
@@ -67,9 +68,15 @@ export const METRIC_DRILLDOWNS: Record<string, MetricDrilldownContent> = {
     definition: "Your sleep score grades last night out of 100, based on how long you slept and how much deep and REM sleep you got.",
     calculation: "Built from your sleep duration against your goal plus your deep and REM percentages. The full stage-by-stage breakdown lives on the Sleep tab.",
     affects: "Sleep is the single biggest lever on recovery. A strong night lifts your recovery score and everything downstream: HRV, resting heart rate, and how you feel.",
-    improve: (isGood) => isGood
-      ? ["Last night scored well. Keeping a steady bedtime is the simplest way to repeat it."]
-      : ["Last night came in low. Open the Sleep tab for the stage-by-stage breakdown and what to target. An earlier, steadier bedtime is usually the fastest win."],
+    improve: (standing) => {
+      const score = typeof standing === 'number' ? standing : standing === true ? 100 : standing === false ? 0 : null;
+      if (score === null) return [];
+      return score >= 85
+        ? ["Last night scored well. Keeping a steady bedtime is the simplest way to repeat it."]
+        : score >= 70
+        ? ["A solid night, but there's room to climb. An earlier, steadier bedtime usually nudges your deep and REM up."]
+        : ["Last night came in low. Open the Sleep tab for the stage-by-stage breakdown and what to target. An earlier, steadier bedtime is usually the fastest win."];
+    },
   },
   spo2: {
     title: "Blood Oxygen (SpO2)",

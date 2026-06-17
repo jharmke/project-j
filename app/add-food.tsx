@@ -563,7 +563,7 @@ const saveEditFood = async () => {
     );
     setMyFoods(updated);
     await storageSet('pj_my_foods', JSON.stringify(updated));
-    await saveToFirebase('my_foods', 'foods', updated);
+    saveToFirebase('my_foods', 'foods', updated).catch(() => {});
     showToast('Food saved', editFoodData.name.trim(), 'success');
     closeEditModal();
   } catch (e) {
@@ -1202,7 +1202,7 @@ const openFoodDetail = async (food: SearchResult) => {
     const updated = [...myFoods, { name, cal }].sort((a, b) => a.name.localeCompare(b.name));
     setMyFoods(updated);
     await storageSet('pj_my_foods', JSON.stringify(updated));
-    await saveToFirebase('my_foods', 'foods', updated);
+    saveToFirebase('my_foods', 'foods', updated).catch(() => {});
     setNewName('');
     setNewCal('');
     setShowAddNew(false);
@@ -1220,7 +1220,7 @@ const openFoodDetail = async (food: SearchResult) => {
           const updated = myFoods.filter((_, i) => i !== idx);
           setMyFoods(updated);
           await storageSet('pj_my_foods', JSON.stringify(updated));
-          await saveToFirebase('my_foods', 'foods', updated);
+          saveToFirebase('my_foods', 'foods', updated).catch(() => {});
         }},
       ]
     );
@@ -1240,7 +1240,7 @@ const openFoodDetail = async (food: SearchResult) => {
             const updated = recipes.filter((r: any) => r.id !== recipeId);
             setRecipes(updated);
             await storageSet('pj_recipes', JSON.stringify(updated));
-            await saveToFirebase('recipes', 'list', updated);
+            saveToFirebase('recipes', 'list', updated).catch(() => {});
             showToast('Recipe deleted', recipeName, 'success');
           },
         },
@@ -1537,7 +1537,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
               );
               setFavorites(updated);
               await storageSet('pj_favorites', JSON.stringify(updated));
-              await saveToFirebase('my_foods', 'favorites', updated);
+              saveToFirebase('my_foods', 'favorites', updated).catch(() => {});
               showToast('Removed from favorites', name, 'info');
             });
           }},
@@ -1578,7 +1578,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
     }
     setFavorites(updated);
     await storageSet('pj_favorites', JSON.stringify(updated));
-    await saveToFirebase('my_foods', 'favorites', updated);
+    saveToFirebase('my_foods', 'favorites', updated).catch(() => {});
   };
 
   const styles = useStyles(theme, themeId);

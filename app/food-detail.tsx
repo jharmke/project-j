@@ -605,7 +605,7 @@ const isTutorialMode = tutorialMode === 'true';
         showToast('Added to favorites', food.description, 'success');
       }
       await storageSet('pj_favorites', JSON.stringify(favs));
-      await saveToFirebase('my_foods', 'favorites', favs);
+      saveToFirebase('my_foods', 'favorites', favs).catch(() => {});
       setIsFav(!isFav);
     } catch (e) {}
   };
@@ -1057,7 +1057,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
         } : f
       );
       await storageSet('pj_my_foods', JSON.stringify(updated));
-      await saveToFirebase('my_foods', 'foods', updated);
+      saveToFirebase('my_foods', 'foods', updated).catch(() => {});
       showToast('Food saved', editFoodData.name.trim(), 'success');
       closeEditFoodModal();
     } catch (e) {

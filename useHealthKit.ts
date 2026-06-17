@@ -447,9 +447,9 @@ export function useHealthKit() {
       const isHistorical = !!anchorDate;
       const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-      // Overnight sleep window (yesterday 6pm → today noon) for resp/SpO2 averages.
-      // HRV no longer uses this wide bracket -- it uses the REAL bed→wake window from
-      // fetchOvernightRHR (below) so it never averages in daytime SDNN samples.
+      // Fallback sleep window (yesterday 6pm → today noon) for resp/SpO2 on non-tracked nights.
+      // HRV and RHR use the REAL bed→wake window from fetchOvernightRHR; resp/SpO2 now do too,
+      // with this wide bracket as the fallback when no tracked sleep exists.
       const sleepStart = new Date(startOfDay);
       sleepStart.setDate(sleepStart.getDate() - 1);
       sleepStart.setHours(18, 0, 0, 0);
@@ -497,6 +497,11 @@ export function useHealthKit() {
           : null;
       }
       const todayHRV = hadTrackedSleep ? hrvWindow : null;
+
+      // Real bed→wake window for resp/SpO2; falls back to the wide 6pm→noon bracket on
+      // non-tracked (manual/watch-off) nights where no sleep window is available.
+      const respSpo2Start = rhrResult.sleepWindowStart != null ? new Date(rhrResult.sleepWindowStart) : sleepStart;
+      const respSpo2End = rhrResult.sleepWindowEnd != null ? new Date(rhrResult.sleepWindowEnd) : sleepEnd;
 
       // RHR baseline: average of our OWN stored overnight RHRs over the prior N days, so
       // the baseline uses the same method as the daily value above. Apple's 7-day raw
@@ -561,24 +566,14 @@ export function useHealthKit() {
           : null;
       }
 
-      // Resp rate: most recent for today; sleep-window average for a backfill day.
-      let todayResp: number | null;
-      if (isHistorical) {
-        const respDay = await queryStatisticsForQuantity(
-          'HKQuantityTypeIdentifierRespiratoryRate',
-          ['discreteAverage'],
-          { filter: { date: { startDate: sleepStart, endDate: sleepEnd } } }
-        );
-        todayResp = respDay?.averageQuantity?.quantity ? Math.round(respDay.averageQuantity.quantity * 10) / 10 : null;
-      } else {
-        // Morning snapshot: overnight sleep-window average (matches the backfill branch).
-        const respSleep = await queryStatisticsForQuantity(
-          'HKQuantityTypeIdentifierRespiratoryRate',
-          ['discreteAverage'],
-          { filter: { date: { startDate: sleepStart, endDate: sleepEnd } } }
-        );
-        todayResp = respSleep?.averageQuantity?.quantity ? Math.round(respSleep.averageQuantity.quantity * 10) / 10 : null;
-      }
+      // Resp rate: real bed→wake window average (live and backfill paths now identical).
+      // Falls back to the wide bracket on non-tracked nights via respSpo2Start/End.
+      const respSleep = await queryStatisticsForQuantity(
+        'HKQuantityTypeIdentifierRespiratoryRate',
+        ['discreteAverage'],
+        { filter: { date: { startDate: respSpo2Start, endDate: respSpo2End } } }
+      );
+      const todayResp = respSleep?.averageQuantity?.quantity ? Math.round(respSleep.averageQuantity.quantity * 10) / 10 : null;
 
       // Resp baseline: N-day average
       const respBase = await queryStatisticsForQuantity(
@@ -590,19 +585,14 @@ export function useHealthKit() {
         ? Math.round(respBase.averageQuantity.quantity * 10) / 10
         : null;
 
-      // SpO2: most recent for today; sleep-window average for a backfill day (display only).
-      let todaySpO2: number | null;
-      if (isHistorical) {
-        const spo2Day = await queryStatisticsForQuantity(
-          'HKQuantityTypeIdentifierOxygenSaturation',
-          ['discreteAverage'],
-          { filter: { date: { startDate: sleepStart, endDate: sleepEnd } } }
-        );
-        todaySpO2 = spo2Day?.averageQuantity?.quantity ? Math.round(spo2Day.averageQuantity.quantity * 1000) / 10 : null;
-      } else {
-        const spo2Data = await getMostRecentQuantitySample('HKQuantityTypeIdentifierOxygenSaturation');
-        todaySpO2 = spo2Data ? Math.round((spo2Data.quantity as number) * 1000) / 10 : null;
-      }
+      // SpO2: real sleep-window average for both live and backfill (display only, not in score).
+      // The old live path used getMostRecentQuantitySample which could pick a daytime reading.
+      const spo2Sleep = await queryStatisticsForQuantity(
+        'HKQuantityTypeIdentifierOxygenSaturation',
+        ['discreteAverage'],
+        { filter: { date: { startDate: respSpo2Start, endDate: respSpo2End } } }
+      );
+      const todaySpO2 = spo2Sleep?.averageQuantity?.quantity ? Math.round(spo2Sleep.averageQuantity.quantity * 1000) / 10 : null;
 
       // Yesterday's active calories
       const yestStart = new Date(startOfDay);

@@ -123,7 +123,12 @@ export async function buildDayScoreInput(dateKey: string, computedAt: string): P
   const sleepGoal = day.sleepGoal ?? (parseFloat(profile.sleepGoal) || 7);
   const sleepFeelRating = day.sleepFeelRating ?? null;
   const sleepIsManual = !!day.sleepOverride;
-  const sleepConsistencyPts = day.sleepConsistencyPts ?? 0;
+  // If consistency pts were stored (the home screen computed them on app-open), use them.
+  // If missing (app was never opened that day), fall back to 5 (the "not enough history"
+  // neutral from calcBedtimeConsistencyPts) when a bedtime exists, else 0.
+  const sleepConsistencyPts = typeof day.sleepConsistencyPts === 'number'
+    ? day.sleepConsistencyPts
+    : (day.sleepBedTime ? 5 : 0);
 
   // Recovery: the day's frozen Recovery Score (morning snapshot), read LIVE from the
   // record. Measured per-day data, NOT a goal, so it is never frozen into goalSnapshot.

@@ -406,7 +406,7 @@ export default function SettingsScreen() {
     });
     return () => task.cancel();
   }, [deepLinkSection]);
-  const { fetchHistoricalWorkouts, authorized, fetchOvernightRHR } = useHealthKit();
+  const { fetchHistoricalWorkouts, authorized, fetchOvernightRHR, dumpHRV } = useHealthKit();
 
   // ── Notification settings state ───────────────────────────────────────────
   const [notifSettings, setNotifSettings] = useState<NotificationSettings>(DEFAULT_NOTIFICATION_SETTINGS);
@@ -1915,6 +1915,41 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Last night: our overnight deep-sleep RHR vs Apple's daytime value. Read-only, nothing saved.</Text>
               </View>
               <Ionicons name="heart-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              try {
+                const h = await dumpHRV();
+                const fmt = (t: number | null) => t != null ? new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-';
+                const line = (label: string, avg: number | null, count: number) => `  ${label}: ${avg ?? '-'} ms (${count} reading${count === 1 ? '' : 's'})`;
+                const sampleList = h.rows.length
+                  ? h.rows.slice(0, 16).map(r => `  ${r.time}  ${r.v}ms  [${r.stage}]`).join('\n') + (h.rows.length > 16 ? `\n  ...+${h.rows.length - 16} more` : '')
+                  : '  (none)';
+                const body =
+                  `Sleep window: ${fmt(h.windowStart)} -> ${fmt(h.windowEnd)} (${h.asleepMinutes} min asleep)\n` +
+                  `Total SDNN readings (6pm-noon): ${h.total}\n\n` +
+                  `AVERAGES BY METHOD:\n` +
+                  line('bed->wake bracket (SHIPPING NOW)', h.bracketAvg, h.bracketCount) + '\n' +
+                  line('all asleep stages (proposed)', h.asleepAvg, h.asleepCount) + '\n' +
+                  line('deep only (Whoop-style)', h.deepAvg, h.deepCount) + '\n\n' +
+                  `PER STAGE:\n` +
+                  line('deep', h.deepAvg, h.deepCount) + '\n' +
+                  line('core', h.coreAvg, h.coreCount) + '\n' +
+                  line('rem', h.remAvg, h.remCount) + '\n' +
+                  line('awake', h.awakeAvg, h.awakeCount) + '\n' +
+                  line('daytime (outside window)', h.daytimeAvg, h.daytimeCount) + '\n\n' +
+                  `READINGS:\n${sampleList}`;
+                Alert.alert('Last Night HRV (SDNN)', body);
+              } catch {
+                Alert.alert('Error', 'Could not read HRV data. Check the logs.');
+              }
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Dump HRV (samples + per stage)</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Last night: how many SDNN readings, and the average per sleep stage vs each method. Read-only, nothing saved.</Text>
+              </View>
+              <Ionicons name="pulse-outline" size={18} color={theme.accentRed} />
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {

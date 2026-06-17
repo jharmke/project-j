@@ -330,8 +330,11 @@ export function useHealthKit() {
     appleRHR: number | null;
     asleepMinutes: number;
     fallbackUsed: 'asleep' | 'none';
+    sleepWindowStart: number | null;  // real bed (earliest asleep-segment start), ms epoch
+    sleepWindowEnd: number | null;    // real wake (latest asleep-segment end), ms epoch
+    asleepSegs: { start: number; end: number }[];  // asleep stage segments (for HRV strictness)
   }> => {
-    const empty = { rhr: null, rhrCount: 0, asleepP5: null, asleepCount: 0, deepMean: null, deepSampleCount: 0, nightMin: null, nightSampleCount: 0, appleRHR: null, asleepMinutes: 0, fallbackUsed: 'none' as const };
+    const empty = { rhr: null, rhrCount: 0, asleepP5: null, asleepCount: 0, deepMean: null, deepSampleCount: 0, nightMin: null, nightSampleCount: 0, appleRHR: null, asleepMinutes: 0, fallbackUsed: 'none' as const, sleepWindowStart: null, sleepWindowEnd: null, asleepSegs: [] as { start: number; end: number }[] };
     try {
       const now = anchorDate ? new Date(anchorDate) : new Date();
       const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -351,6 +354,11 @@ export function useHealthKit() {
         if (v === 4) deepSegs.push({ start: new Date(s.startDate).getTime(), end: new Date(s.endDate).getTime() });
       }
       const asleepMinutes = Math.round(asleepSegs.reduce((m, seg) => m + (seg.end - seg.start), 0) / 60000);
+      // The REAL overnight sleep window: earliest bed -> latest wake across asleep segments.
+      // Returned so HRV (and any other overnight signal) can scope its query to actual
+      // tracked sleep instead of a wide 6pm->noon bracket that leaks daytime samples.
+      const bedMs = asleepSegs.length ? Math.min(...asleepSegs.map(s => s.start)) : null;
+      const wakeMs = asleepSegs.length ? Math.max(...asleepSegs.map(s => s.end)) : null;
 
       // Raw heart-rate samples across the sleep window
       const hr = await queryQuantitySamples(
@@ -405,13 +413,14 @@ export function useHealthKit() {
           asleepP5: pct(asleepBpm, 5), asleepCount: asleepBpm.length,
           deepMean, deepSampleCount: deepBpm.length,
           nightMin, nightSampleCount, appleRHR, asleepMinutes, fallbackUsed: 'asleep',
+          sleepWindowStart: bedMs, sleepWindowEnd: wakeMs, asleepSegs,
         };
       }
       // No overnight sleep data (manual-sleep / watchless night): there is no honest
       // resting floor. Return null rather than computing from awake daytime HR, which
       // produced absurd 80-90 "RHR" spikes. The recovery score drops a null RHR (and
       // voids if no other overnight signal exists), and the trend chart leaves a gap.
-      return { ...empty, deepMean, deepSampleCount: deepBpm.length, nightMin, nightSampleCount, appleRHR };
+      return { ...empty, deepMean, deepSampleCount: deepBpm.length, nightMin, nightSampleCount, appleRHR, sleepWindowStart: bedMs, sleepWindowEnd: wakeMs, asleepSegs };
     } catch (e) {
       console.log('Overnight RHR error', e);
       return empty;
@@ -436,50 +445,55 @@ export function useHealthKit() {
       const isHistorical = !!anchorDate;
       const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-      // Sleep window (yesterday 6pm → today noon) for the HRV average
+      // Overnight sleep window (yesterday 6pm → today noon) for resp/SpO2 averages.
+      // HRV no longer uses this wide bracket -- it uses the REAL bed→wake window from
+      // fetchOvernightRHR (below) so it never averages in daytime SDNN samples.
       const sleepStart = new Date(startOfDay);
       sleepStart.setDate(sleepStart.getDate() - 1);
       sleepStart.setHours(18, 0, 0, 0);
       const sleepEnd = new Date(startOfDay);
       sleepEnd.setHours(12, 0, 0, 0);
 
-      // HRV: average SDNN during sleep window (canonical daily value per spec Decision #7)
-      const hrvSleep = await queryStatisticsForQuantity(
-        'HKQuantityTypeIdentifierHeartRateVariabilitySDNN',
-        ['discreteAverage'],
-        { filter: { date: { startDate: sleepStart, endDate: sleepEnd } } }
-      );
-      const hrvWindow = hrvSleep?.averageQuantity?.quantity
-        ? Math.round(hrvSleep.averageQuantity.quantity * 10) / 10
-        : null;
-
-      // HRV baseline: N-day average prior to this sleep window
-      const baselineStart = new Date(sleepStart);
-      baselineStart.setDate(baselineStart.getDate() - baselineDays);
-      const hrvBase = await queryStatisticsForQuantity(
-        'HKQuantityTypeIdentifierHeartRateVariabilitySDNN',
-        ['discreteAverage'],
-        { filter: { date: { startDate: baselineStart, endDate: sleepStart } } }
-      );
-      const hrvBaseline = hrvBase?.averageQuantity?.quantity
-        ? Math.round(hrvBase.averageQuantity.quantity * 10) / 10
-        : null;
-
       // RHR: our own overnight resting floor (raw HR during sleep, artifact-trimmed
       // robust low). Validated to match Apple's RHR but computed consistently from the
-      // overnight window every night, so it never drifts during the day. Same call for
-      // live (last night) and historical backfill (the anchor night).
+      // overnight window every night, so it never drifts during the day. Also returns the
+      // REAL sleep window (bed→wake) which we reuse to scope HRV. Same call for live
+      // (last night) and historical backfill (the anchor night).
       const rhrResult = await fetchOvernightRHR(anchorDate);
       const todayRHR = rhrResult.rhr;
 
-      // HRV gate: hold HRV to the SAME real-overnight standard as RHR. The HRV window
-      // (6pm->noon) otherwise lets a STRAY daytime SDNN sample leak through on a manual/
-      // watch-off night (no HealthKit sleep stages), manufacturing a recovery score the
-      // night should not have. Only accept the night's HRV when there was real tracked
-      // sleep (asleep sleep-stage segments exist -- the exact signal RHR already requires
-      // via fetchOvernightRHR.asleepMinutes); a manual/watch-off night voids HRV, and with
-      // RHR also null the recovery score voids cleanly (calcRecoveryScore !hasHRV && !hasRHR).
+      // HRV gate: hold HRV to the SAME real-overnight standard as RHR. Only accept the
+      // night's HRV when there was real tracked sleep (asleep sleep-stage segments exist
+      // -- the exact signal RHR already requires via fetchOvernightRHR.asleepMinutes); a
+      // manual/watch-off night voids HRV, and with RHR also null the recovery score voids
+      // cleanly (calcRecoveryScore !hasHRV && !hasRHR).
       const hadTrackedSleep = rhrResult.asleepMinutes > 0;
+
+      // HRV: average SDNN scoped to ACTUAL ASLEEP SEGMENTS (the Oura model + the canonical
+      // daily value, spec Decision #7). Matches RHR's strictness exactly -- only readings
+      // taken inside a real asleep stage count; any reading during a mid-night awake gap is
+      // dropped, same sleep definition both signals use. The old 6pm→noon bracket averaged
+      // in low pre-sleep/post-wake daytime samples, inflating the value. Apple records SDNN
+      // sparsely (~hourly), so we average every asleep reading -- deep-only is not viable
+      // (deep segments routinely get zero SDNN samples). Only queried on a tracked-sleep night.
+      let hrvWindow: number | null = null;
+      if (hadTrackedSleep && rhrResult.sleepWindowStart != null && rhrResult.sleepWindowEnd != null) {
+        const segs = rhrResult.asleepSegs;
+        const sdnn = await queryQuantitySamples(
+          'HKQuantityTypeIdentifierHeartRateVariabilitySDNN',
+          { unit: 'ms', limit: 0, filter: { date: { startDate: new Date(rhrResult.sleepWindowStart), endDate: new Date(rhrResult.sleepWindowEnd) } } }
+        );
+        const asleepHrv: number[] = [];
+        for (const s of sdnn) {
+          const v = s.quantity as number;
+          if (!Number.isFinite(v) || v <= 0) continue;
+          const t = new Date(s.startDate).getTime();
+          if (segs.some(seg => t >= seg.start && t <= seg.end)) asleepHrv.push(v);
+        }
+        hrvWindow = asleepHrv.length
+          ? Math.round((asleepHrv.reduce((a, b) => a + b, 0) / asleepHrv.length) * 10) / 10
+          : null;
+      }
       const todayHRV = hadTrackedSleep ? hrvWindow : null;
 
       // RHR baseline: average of our OWN stored overnight RHRs over the prior N days, so
@@ -510,6 +524,39 @@ export function useHealthKit() {
           { filter: { date: { startDate: new Date(startOfDay.getTime() - baselineDays * 86400000), endDate: startOfDay } } }
         );
         rhrBaseline = rhrBase?.averageQuantity?.quantity ? Math.round(rhrBase.averageQuantity.quantity) : null;
+      }
+
+      // HRV baseline: average of our OWN stored per-night overnight HRVs over the prior N
+      // days, so the baseline uses the same real-sleep-window method as the daily value
+      // above (mirrors the RHR baseline). Cold-start fallback to a continuous N-day SDNN
+      // average when too few stored nights exist (older stored values self-heal as new
+      // real-window nights accumulate).
+      const priorHRVs: number[] = [];
+      for (let i = 1; i <= baselineDays; i++) {
+        const d = new Date(startOfDay); d.setDate(d.getDate() - i);
+        const dk = `pj_${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+        try {
+          const raw = await AsyncStorage.getItem(dk);
+          if (raw) {
+            const v = JSON.parse(raw)?.recoverySignals?.hrv;
+            if (typeof v === 'number' && Number.isFinite(v)) priorHRVs.push(v);
+          }
+        } catch {}
+      }
+      let hrvBaseline: number | null = priorHRVs.length >= 3
+        ? Math.round((priorHRVs.reduce((s, v) => s + v, 0) / priorHRVs.length) * 10) / 10
+        : null;
+      if (hrvBaseline === null) {
+        const baselineStart = new Date(startOfDay);
+        baselineStart.setDate(baselineStart.getDate() - baselineDays);
+        const hrvBase = await queryStatisticsForQuantity(
+          'HKQuantityTypeIdentifierHeartRateVariabilitySDNN',
+          ['discreteAverage'],
+          { filter: { date: { startDate: baselineStart, endDate: startOfDay } } }
+        );
+        hrvBaseline = hrvBase?.averageQuantity?.quantity
+          ? Math.round(hrvBase.averageQuantity.quantity * 10) / 10
+          : null;
       }
 
       // Resp rate: most recent for today; sleep-window average for a backfill day.
@@ -586,6 +633,89 @@ export function useHealthKit() {
     }
   };
 
+  // DEV DIAGNOSTIC (read-only): everything we need to decide how HRV should be computed.
+  // Shows the real sleep window, the TOTAL SDNN sample count last night (settles "is Apple
+  // sparse or dense?"), and the average broken down per sleep stage (deep / core / REM /
+  // awake) plus the all-asleep average and the current bed->wake bracket average. Lets us
+  // see whether stage actually changes the number for THIS user and whether deep-only would
+  // have enough samples to trust. Nothing is saved.
+  const dumpHRV = async (): Promise<{
+    windowStart: number | null; windowEnd: number | null; asleepMinutes: number;
+    total: number;
+    bracketAvg: number | null; bracketCount: number;
+    asleepAvg: number | null; asleepCount: number;
+    deepAvg: number | null; deepCount: number;
+    coreAvg: number | null; coreCount: number;
+    remAvg: number | null; remCount: number;
+    awakeAvg: number | null; awakeCount: number;
+    daytimeAvg: number | null; daytimeCount: number;
+    rows: { time: string; v: number; stage: string }[];
+  }> => {
+    const empty = { windowStart: null, windowEnd: null, asleepMinutes: 0, total: 0, bracketAvg: null, bracketCount: 0, asleepAvg: null, asleepCount: 0, deepAvg: null, deepCount: 0, coreAvg: null, coreCount: 0, remAvg: null, remCount: 0, awakeAvg: null, awakeCount: 0, daytimeAvg: null, daytimeCount: 0, rows: [] as { time: string; v: number; stage: string }[] };
+    try {
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const sleepStart = new Date(startOfDay); sleepStart.setDate(sleepStart.getDate() - 1); sleepStart.setHours(18, 0, 0, 0);
+      const sleepEnd = new Date(startOfDay); sleepEnd.setHours(12, 0, 0, 0);
+
+      const stageName: Record<number, string> = { 2: 'awake', 3: 'core', 4: 'deep', 5: 'rem' };
+      const segData = await queryCategorySamples(
+        'HKCategoryTypeIdentifierSleepAnalysis',
+        { limit: 1000, filter: { date: { startDate: sleepStart, endDate: sleepEnd } } }
+      );
+      const segs: { start: number; end: number; stage: string }[] = [];
+      const asleepSegs: { start: number; end: number }[] = [];
+      for (const s of segData) {
+        const name = stageName[s.value as number];
+        if (!name) continue;
+        const seg = { start: new Date(s.startDate).getTime(), end: new Date(s.endDate).getTime(), stage: name };
+        segs.push(seg);
+        if (name === 'core' || name === 'deep' || name === 'rem') asleepSegs.push({ start: seg.start, end: seg.end });
+      }
+      const bedMs = asleepSegs.length ? Math.min(...asleepSegs.map(s => s.start)) : null;
+      const wakeMs = asleepSegs.length ? Math.max(...asleepSegs.map(s => s.end)) : null;
+      const asleepMinutes = Math.round(asleepSegs.reduce((m, seg) => m + (seg.end - seg.start), 0) / 60000);
+
+      const sdnn = await queryQuantitySamples(
+        'HKQuantityTypeIdentifierHeartRateVariabilitySDNN',
+        { unit: 'ms', limit: 0, filter: { date: { startDate: sleepStart, endDate: sleepEnd } } }
+      );
+      const stageFor = (t: number): string => {
+        const seg = segs.find(s => t >= s.start && t <= s.end);
+        if (seg) return seg.stage;
+        if (bedMs != null && wakeMs != null && t >= bedMs && t <= wakeMs) return 'gap';
+        return 'daytime';
+      };
+      const rows: { time: string; v: number; stage: string; t: number }[] = [];
+      for (const s of sdnn) {
+        const v = s.quantity as number;
+        if (!Number.isFinite(v) || v <= 0) continue;
+        const t = new Date(s.startDate).getTime();
+        rows.push({ time: new Date(s.startDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), v: Math.round(v * 10) / 10, stage: stageFor(t), t });
+      }
+      rows.sort((a, b) => a.t - b.t);
+      const avg = (a: number[]) => a.length ? Math.round((a.reduce((s, x) => s + x, 0) / a.length) * 10) / 10 : null;
+      const vals = (name: string) => rows.filter(r => r.stage === name).map(r => r.v);
+      const asleepVals = rows.filter(r => r.stage === 'core' || r.stage === 'deep' || r.stage === 'rem').map(r => r.v);
+      const bracketVals = (bedMs != null && wakeMs != null) ? rows.filter(r => r.t >= bedMs && r.t <= wakeMs).map(r => r.v) : [];
+      return {
+        windowStart: bedMs, windowEnd: wakeMs, asleepMinutes,
+        total: rows.length,
+        bracketAvg: avg(bracketVals), bracketCount: bracketVals.length,
+        asleepAvg: avg(asleepVals), asleepCount: asleepVals.length,
+        deepAvg: avg(vals('deep')), deepCount: vals('deep').length,
+        coreAvg: avg(vals('core')), coreCount: vals('core').length,
+        remAvg: avg(vals('rem')), remCount: vals('rem').length,
+        awakeAvg: avg(vals('awake')), awakeCount: vals('awake').length,
+        daytimeAvg: avg(vals('daytime')), daytimeCount: vals('daytime').length,
+        rows: rows.map(({ time, v, stage }) => ({ time, v, stage })),
+      };
+    } catch (e) {
+      console.log('Dump HRV error', e);
+      return empty;
+    }
+  };
+
   const fetchHistoricalWorkouts = async (days: number): Promise<any[]> => {
     try {
       const now = new Date();
@@ -647,5 +777,5 @@ export function useHealthKit() {
     }
   };
 
-  return { authorized, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, hrv, bodyFatPct, exerciseMinutes, appleWorkouts, fetchTodayData, fetchHistoricalWorkouts, fetchSleepHistory, fetchLastNightSegments, fetchRecoverySignals, fetchOvernightRHR };
+  return { authorized, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, hrv, bodyFatPct, exerciseMinutes, appleWorkouts, fetchTodayData, fetchHistoricalWorkouts, fetchSleepHistory, fetchLastNightSegments, fetchRecoverySignals, fetchOvernightRHR, dumpHRV };
 }

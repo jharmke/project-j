@@ -340,7 +340,15 @@ function CardWatermark({ id, color }: { id: string; color: string }) {
 // Mindful lever-suppression is a later sub-step (voicer already softens copy in Mindful).
 function DiagnosticFeedCard({ card, theme, shadowStyle, isMindful }: { card: DiagnosticCard; theme: any; shadowStyle: any; isMindful: boolean }) {
   const t = theme;
-  const accent = card.positive ? t.statusGood : (card.tone === 'factor' ? t.statusBad : t.statusWarn);
+  // MINDFUL: a corrective card is an OBSERVATION, not a verdict. Its amber/red accent flips to the
+  // neutral accent blue (same principle as the Recovery divergent bars in Mindful), and the wash
+  // follows it, so the card reads calm instead of alarming. Positive cards keep green in every
+  // mode (encouragement is never a judgment). The voicer already softens the copy in Mindful; the
+  // visual matches it here.
+  const softenLever = isMindful && !card.positive;
+  const accent = card.positive
+    ? t.statusGood
+    : (isMindful ? t.accentBlueRaw : (card.tone === 'factor' ? t.statusBad : t.statusWarn));
   const chip = card.positive ? 'WORKING' : (card.tone === 'factor' ? 'KEY FACTOR' : 'WORTH ATTENTION');
   // Full treatment on EVERY card (rolled out from the protein reference 2026-06-16): tone-toned
   // gradient wash + per-topic corner watermark. CardWash provides the colored top edge, so the
@@ -372,10 +380,16 @@ function DiagnosticFeedCard({ card, theme, shadowStyle, isMindful }: { card: Dia
       {card.insight ? (
         <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: t.textSecondary, lineHeight: 20, marginBottom: 10 }}>{card.insight}</Text>
       ) : null}
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 7 }}>
-        <Text style={{ fontSize: 14, color: accent, marginTop: 1, fontFamily: 'DMSans_700Bold' }}>→</Text>
-        <Text style={{ flex: 1, fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: accent, lineHeight: 20 }}>{card.lever}</Text>
-      </View>
+      {softenLever ? (
+        // Mindful corrective: no arrow, no bold directive color -- a quiet italic note to notice,
+        // not an instruction to follow.
+        <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', color: t.textSecondary, lineHeight: 20 }}>{card.lever}</Text>
+      ) : (
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 7 }}>
+          <Text style={{ fontSize: 14, color: accent, marginTop: 1, fontFamily: 'DMSans_700Bold' }}>→</Text>
+          <Text style={{ flex: 1, fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: accent, lineHeight: 20 }}>{card.lever}</Text>
+        </View>
+      )}
     </View>
   );
 }

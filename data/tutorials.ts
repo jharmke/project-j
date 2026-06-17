@@ -33,7 +33,7 @@ export interface Tutorial {
   id: string;
   name: string;
   description: string;
-  tab: 'home' | 'log' | 'workout' | 'stats' | 'profile';
+  tab: 'home' | 'log' | 'workout' | 'stats' | 'profile' | 'settings';
   steps: TutorialStep[];
   // Optional action key fired before step 0 opens (inject demo data before overlay appears)
   preAction?: string;
@@ -1552,34 +1552,47 @@ export const TUTORIALS: Tutorial[] = [
     ],
   },
 
-  // ─── PROFILE / SETTINGS ───────────────────────────────────────────────────────
+  // ─── SETTINGS ─────────────────────────────────────────────────────────────────
 
   {
     id: 'faith_and_style',
     name: 'Your Style & Faith Journey',
     description: 'What each coaching mode and faith journey tier changes across the app.',
-    tab: 'profile',
+    tab: 'settings',
+    preAction: 'openFaithStyleSection',
     steps: [
       {
         targetKey: 'none',
+        title: 'YOUR STYLE & FAITH JOURNEY',
+        body: {
+          discipline: 'Two settings, one place. Coaching Mode controls language, color thresholds, and intensity across the whole app. Faith Journey controls which faith features are active.',
+          balanced: 'Two settings, one place. Coaching Mode shapes how the app talks to you. Faith Journey controls which faith features appear.',
+          mindful: 'Two settings that make this app yours. Coaching Mode sets the tone. Faith Journey is entirely your choice.',
+        },
+      },
+      {
+        targetKey: 'fs_coaching_section',
+        noTabBarOffset: true,
         title: 'COACHING MODES',
         body: {
-          discipline: 'Three modes. Discipline: tight thresholds, direct language, full metrics. Balanced: encouraging, forgiving thresholds. Mindful: no color coding, no judgment, simplified.',
+          discipline: 'Three modes. Each changes color thresholds, language, and how your progress is framed. Switching is instant and never touches your data.',
           balanced: 'Three coaching modes shape how the app communicates with you. Discipline is direct, Balanced is encouraging, Mindful is judgment-free.',
           mindful: 'The three modes change how the app talks to you. Discipline is performance-focused, Balanced is in the middle, Mindful removes all judgment framing.',
         },
       },
       {
-        targetKey: 'none',
+        targetKey: 'fs_discipline_btn',
+        noTabBarOffset: true,
         title: 'DISCIPLINE MODE',
         body: {
           discipline: 'Tight color thresholds (±50 cal is green). Direct language throughout. Streak breaks surface a specific modal. Built for people who want accountability.',
           balanced: 'Discipline mode uses tighter color thresholds and direct language. Best for people who want clear, performance-focused feedback.',
-          mindful: 'Discipline mode is for people who want direct feedback with tight standards. It\'s an option -- not the default or the goal.',
+          mindful: 'Discipline mode is for people who want direct feedback with tight standards. An option, not the default or the goal.',
         },
       },
       {
-        targetKey: 'none',
+        targetKey: 'fs_balanced_btn',
+        noTabBarOffset: true,
         title: 'BALANCED MODE',
         body: {
           discipline: 'Balanced is the default. Forgiving thresholds (±150 cal is green). Encouraging language. Full metrics visible. Good middle ground.',
@@ -1588,29 +1601,61 @@ export const TUTORIALS: Tutorial[] = [
         },
       },
       {
-        targetKey: 'none',
+        targetKey: 'fs_mindful_btn',
+        noTabBarOffset: true,
         title: 'MINDFUL MODE',
         body: {
-          discipline: 'Mindful removes color coding, judgment language, net calories, score bars, and IF countdown. All data still present -- just framed neutrally.',
+          discipline: 'Mindful removes color coding, judgment language, net calories, score bars, and IF countdown. All data still present, just framed neutrally.',
           balanced: 'Mindful mode removes color coding and performance framing. Weight and calories appear without judgment. Built for people who find numbers stressful.',
           mindful: 'Mindful mode is designed for you. No color coding. No win/loss framing. Everything simplified and neutral. You still have access to your data.',
         },
       },
       {
-        targetKey: 'none',
+        targetKey: 'fs_faith_section',
+        noTabBarOffset: true,
         title: 'FAITH JOURNEY',
         body: {
-          discipline: 'Rooted: full faith experience -- verse, morning intention, prayer, Bible, gratitude streak. Exploring: faith present but gentle. Not Right Now: faith features hidden.',
-          balanced: 'Rooted shows all faith features. Exploring keeps them available without prompts. Not Right Now is a pure fitness experience.',
-          mindful: 'Your Faith Journey setting is entirely yours. Rooted, Exploring, or Not Right Now -- no judgment on any choice.',
+          discipline: 'Three tiers. Each one controls which faith features are active across the app. Switching never deletes data.',
+          balanced: 'Faith Journey is a personal setting with three tiers. Pick the one that matches where you are right now.',
+          mindful: 'Your Faith Journey setting is entirely yours. Three tiers, no judgment on any of them.',
+        },
+      },
+      {
+        targetKey: 'fs_rooted_btn',
+        noTabBarOffset: true,
+        title: 'ROOTED',
+        body: {
+          discipline: 'Full faith experience. Daily verse, morning intention, prayer log, Bible reader, and gratitude streak all active. Built for people who want faith woven into their day.',
+          balanced: 'Rooted turns on all faith features: daily verse, prayer, Bible reader, gratitude streak, and morning intention.',
+          mindful: 'Rooted brings faith into every part of the app: verse, prayer, Bible, gratitude. Everything available, nothing hidden.',
+        },
+      },
+      {
+        targetKey: 'fs_exploring_btn',
+        noTabBarOffset: true,
+        title: 'EXPLORING',
+        body: {
+          discipline: 'Faith features present but low-pressure. Verse is shown, no morning intention prompt. Good for people who want exposure without commitment.',
+          balanced: 'Exploring keeps faith features available without prompting. The verse shows up, but the app does not push prayer or intention routines.',
+          mindful: 'Exploring is gentle. Faith features are there if you want them, quiet if you do not. No prompts, no pressure.',
+        },
+      },
+      {
+        targetKey: 'fs_notrightnow_btn',
+        noTabBarOffset: true,
+        title: 'NOT RIGHT NOW',
+        body: {
+          discipline: 'Faith features hidden. Pure fitness experience. No verse, no prayer, no Bible. Everything else works identically.',
+          balanced: 'Not Right Now hides all faith content and gives you a pure fitness app experience. Nothing else changes.',
+          mindful: 'Not Right Now removes all faith features. The app becomes purely about wellness. You can always come back to this setting.',
         },
       },
       {
         targetKey: 'none',
         title: 'SWITCHING ANYTIME',
         body: {
-          discipline: 'Mode and Faith Journey are in Settings → Faith & Style. Switch anytime. Switching never deletes data. Find what works.',
-          balanced: 'You can change both settings anytime in Settings → Faith & Style. Switching never deletes any of your logged data.',
+          discipline: 'Both settings live right here in Settings. Switch anytime. Switching never deletes data. Find what works.',
+          balanced: 'You can change both settings anytime right here. Switching never deletes any of your logged data.',
           mindful: 'Both settings can be changed whenever you want, as many times as you want. Nothing is locked in, and nothing is ever deleted.',
         },
       },
@@ -1705,7 +1750,8 @@ export const TAB_TUTORIALS: Record<string, string[]> = {
   log: ['log_food', 'manage_log', 'barcode', 'log_edit_layout', 'create_food', 'recipes', 'if_card'],
   workout: ['workout_basics', 'programs', 'routines', 'exercise_library'],
   stats: ['graph_creator', 'streaks', 'effort_vs_results', 'day_score'],
-  profile: ['faith_and_style'],
+  profile: [],
+  settings: ['faith_and_style'],
 };
 
 export function getTutorialById(id: string): Tutorial | undefined {

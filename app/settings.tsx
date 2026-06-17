@@ -43,7 +43,8 @@ import {
   requestNotificationPermission,
 } from '../services/notifications';
 import { TUTORIALS } from '../data/tutorials';
-import { resetAllTutorials } from '../context/TutorialContext';
+import { resetAllTutorials, useTutorial } from '../context/TutorialContext';
+import { showToolkit } from '../components/ToolkitSheet';
 import { generateWeeklySummary } from '../utils/weeklySummary';
 import { generateMonthlySummary } from '../utils/monthlySummary';
 
@@ -191,6 +192,7 @@ function CollapsibleSection({
   label,
   subtitle,
   defaultOpen = false,
+  forceOpen,
   children,
   theme,
   rootRef,
@@ -198,6 +200,7 @@ function CollapsibleSection({
   label: string;
   subtitle?: string;
   defaultOpen?: boolean;
+  forceOpen?: boolean;
   children: React.ReactNode;
   theme: any;
   rootRef?: any;
@@ -213,6 +216,10 @@ function CollapsibleSection({
   const contentHeightRef = useRef(0);
   const openRef = useRef(defaultOpen);
   openRef.current = open;
+
+  useEffect(() => {
+    if (forceOpen && !openRef.current) toggle();
+  }, [forceOpen]);
 
   // For defaultOpen sections: measure natural height on first unconstrained render
   const onUnconstrained = (e: any) => {
@@ -372,6 +379,7 @@ export default function SettingsScreen() {
   const [showNetCarbs, setShowNetCarbs] = useState(false);
   const [styleMode, setStyleMode] = useState<'discipline' | 'balanced' | 'mindful'>('balanced');
   const [mindfulGrowthAreas, setMindfulGrowthAreas] = useState(false);
+  const [faithStyleForceOpen, setFaithStyleForceOpen] = useState(false);
   const [faithJourney, setFaithJourney] = useState<FaithJourney>('rooted');
   const [burnAccuracyPct, setBurnAccuracyPct] = useState(100);
   const [devCelebVisible, setDevCelebVisible] = useState(false);
@@ -388,6 +396,15 @@ export default function SettingsScreen() {
   const scrollViewRef = useRef<any>(null);
   const quietHoursRowRef = useRef<any>(null);
   const { section: deepLinkSection } = useLocalSearchParams<{ section?: string }>();
+  const fsCoachingSectionRef = useRef<any>(null);
+  const fsDisciplineRef = useRef<any>(null);
+  const fsBalancedRef = useRef<any>(null);
+  const fsMindfulRef = useRef<any>(null);
+  const fsFaithSectionRef = useRef<any>(null);
+  const fsRootedRef = useRef<any>(null);
+  const fsExploringRef = useRef<any>(null);
+  const fsNotRightNowRef = useRef<any>(null);
+  const { startTutorial, registerTarget, unregisterTarget, registerScrollView, unregisterScrollView, registerTutorialAction, unregisterTutorialAction } = useTutorial();
   const macrosRef = useRef<any>(null);
   // Deep link from the macro modal's "Fine-tune in Settings > Goals" pointer: open the
   // Goals section (via defaultOpen below) and scroll straight to the Macros block. Wait
@@ -406,6 +423,35 @@ export default function SettingsScreen() {
     });
     return () => task.cancel();
   }, [deepLinkSection]);
+
+  useEffect(() => {
+    registerTarget('fs_coaching_section', fsCoachingSectionRef);
+    registerTarget('fs_discipline_btn', fsDisciplineRef);
+    registerTarget('fs_balanced_btn', fsBalancedRef);
+    registerTarget('fs_mindful_btn', fsMindfulRef);
+    registerTarget('fs_faith_section', fsFaithSectionRef);
+    registerTarget('fs_rooted_btn', fsRootedRef);
+    registerTarget('fs_exploring_btn', fsExploringRef);
+    registerTarget('fs_notrightnow_btn', fsNotRightNowRef);
+    registerScrollView('settings_main', scrollViewRef);
+    registerTutorialAction('openFaithStyleSection', async () => {
+      setFaithStyleForceOpen(true);
+      await new Promise(r => setTimeout(r, 350));
+    });
+    return () => {
+      unregisterTarget('fs_coaching_section');
+      unregisterTarget('fs_discipline_btn');
+      unregisterTarget('fs_balanced_btn');
+      unregisterTarget('fs_mindful_btn');
+      unregisterTarget('fs_faith_section');
+      unregisterTarget('fs_rooted_btn');
+      unregisterTarget('fs_exploring_btn');
+      unregisterTarget('fs_notrightnow_btn');
+      unregisterScrollView('settings_main');
+      unregisterTutorialAction('openFaithStyleSection');
+    };
+  }, []);
+
   const { fetchHistoricalWorkouts, authorized, fetchOvernightRHR, dumpHRV } = useHealthKit();
 
   // ── Notification settings state ───────────────────────────────────────────
@@ -850,6 +896,9 @@ export default function SettingsScreen() {
             <Text style={[styles.headerTitle, { color: theme.accentBlue }]}>Settings</Text>
           </TouchableOpacity>
         </View>
+        <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); showToolkit('settings'); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+          <Ionicons name="help-circle" size={22} color={theme.accentBlue} />
+        </TouchableOpacity>
       </View>
 
       <ScrollView ref={scrollViewRef} contentContainerStyle={styles.content} automaticallyAdjustKeyboardInsets={true} onScroll={e => { goalScrollOffset.current = e.nativeEvent.contentOffset.y; }} scrollEventThrottle={16}>
@@ -1186,8 +1235,8 @@ export default function SettingsScreen() {
         </CollapsibleSection>
 
         {/* ── Faith & Style ── */}
-        <CollapsibleSection label="Faith & Style" subtitle="Coaching Mode · Faith Journey" defaultOpen={false} theme={theme}>
-          <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginBottom: 8 }}>
+        <CollapsibleSection label="Faith & Style" subtitle="Coaching Mode · Faith Journey" defaultOpen={deepLinkSection === 'faith_style'} forceOpen={faithStyleForceOpen} theme={theme}>
+          <View ref={fsCoachingSectionRef} style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginBottom: 8 }}>
             <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Coaching Mode</Text>
           </View>
           {([
@@ -1196,45 +1245,47 @@ export default function SettingsScreen() {
             { key: 'mindful',    label: 'Mindful',    sub: 'Observational. No judgment. Show up.' },
           ] as const).map(({ key, label, sub }) => {
             const isActive = styleMode === key;
+            const modeRef = key === 'discipline' ? fsDisciplineRef : key === 'balanced' ? fsBalancedRef : fsMindfulRef;
             return (
-              <TouchableOpacity
-                key={key}
-                style={[styles.row, { borderTopColor: theme.borderCard }]}
-                onPress={() => {
-                  if (isActive) return;
-                  triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-                  if (key === 'discipline') {
-                    Alert.alert(
-                      'Switch to Discipline',
-                      'This mode is for people who mean it. Tight calorie targets, direct feedback, and full accountability. Ready to commit?',
-                      [
-                        { text: 'Not yet', style: 'cancel' },
-                        { text: "I'm in", onPress: async () => { setStyleMode('discipline'); await saveSetting('styleMode', 'discipline'); } },
-                      ]
-                    );
-                  } else {
-                    const descriptions: Record<string, string> = {
-                      balanced: 'Encouraging and forgiving. Wide calorie targets, positive language, steady progress.',
-                      mindful: 'No judgment, no color coding. Celebrate showing up. Numbers are just information.',
-                    };
-                    Alert.alert(
-                      `Switch to ${label}`,
-                      descriptions[key],
-                      [
-                        { text: 'Cancel', style: 'cancel' },
-                        { text: 'Switch', onPress: async () => { setStyleMode(key); await saveSetting('styleMode', key); } },
-                      ]
-                    );
-                  }
-                }}
-                activeOpacity={0.7}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.rowTitle, { color: isActive ? theme.accentBlue : theme.textPrimary }]}>{label}</Text>
-                  <Text style={[styles.rowSub, { color: theme.textMuted }]}>{sub}</Text>
-                </View>
-                {isActive && <Ionicons name="checkmark-circle" size={20} color={theme.accentBlue} />}
-              </TouchableOpacity>
+              <View key={key} ref={modeRef}>
+                <TouchableOpacity
+                  style={[styles.row, { borderTopColor: theme.borderCard }]}
+                  onPress={() => {
+                    if (isActive) return;
+                    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+                    if (key === 'discipline') {
+                      Alert.alert(
+                        'Switch to Discipline',
+                        'This mode is for people who mean it. Tight calorie targets, direct feedback, and full accountability. Ready to commit?',
+                        [
+                          { text: 'Not yet', style: 'cancel' },
+                          { text: "I'm in", onPress: async () => { setStyleMode('discipline'); await saveSetting('styleMode', 'discipline'); } },
+                        ]
+                      );
+                    } else {
+                      const descriptions: Record<string, string> = {
+                        balanced: 'Encouraging and forgiving. Wide calorie targets, positive language, steady progress.',
+                        mindful: 'No judgment, no color coding. Celebrate showing up. Numbers are just information.',
+                      };
+                      Alert.alert(
+                        `Switch to ${label}`,
+                        descriptions[key],
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          { text: 'Switch', onPress: async () => { setStyleMode(key); await saveSetting('styleMode', key); } },
+                        ]
+                      );
+                    }
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.rowTitle, { color: isActive ? theme.accentBlue : theme.textPrimary }]}>{label}</Text>
+                    <Text style={[styles.rowSub, { color: theme.textMuted }]}>{sub}</Text>
+                  </View>
+                  {isActive && <Ionicons name="checkmark-circle" size={20} color={theme.accentBlue} />}
+                </TouchableOpacity>
+              </View>
             );
           })}
 
@@ -1251,7 +1302,7 @@ export default function SettingsScreen() {
             </View>
           )}
 
-          <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 16, marginBottom: 8 }}>
+          <View ref={fsFaithSectionRef} style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 16, marginBottom: 8 }}>
             <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Faith Journey</Text>
           </View>
           {([
@@ -1260,24 +1311,26 @@ export default function SettingsScreen() {
             { key: 'notrightnow', label: 'Not Right Now', sub: 'Pure fitness experience. No faith content.' },
           ] as const).map(({ key, label, sub }) => {
             const isActive = faithJourney === key;
+            const fjRef = key === 'rooted' ? fsRootedRef : key === 'exploring' ? fsExploringRef : fsNotRightNowRef;
             return (
-              <TouchableOpacity
-                key={key}
-                style={[styles.row, { borderTopColor: theme.borderCard }]}
-                onPress={async () => {
-                  if (isActive) return;
-                  triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-                  setFaithJourney(key);
-                  await saveSetting('faithJourney', key);
-                }}
-                activeOpacity={0.7}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.rowTitle, { color: isActive ? theme.accentBlue : theme.textPrimary }]}>{label}</Text>
-                  <Text style={[styles.rowSub, { color: theme.textMuted }]}>{sub}</Text>
-                </View>
-                {isActive && <Ionicons name="checkmark-circle" size={20} color={theme.accentBlue} />}
-              </TouchableOpacity>
+              <View key={key} ref={fjRef}>
+                <TouchableOpacity
+                  style={[styles.row, { borderTopColor: theme.borderCard }]}
+                  onPress={async () => {
+                    if (isActive) return;
+                    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+                    setFaithJourney(key);
+                    await saveSetting('faithJourney', key);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.rowTitle, { color: isActive ? theme.accentBlue : theme.textPrimary }]}>{label}</Text>
+                    <Text style={[styles.rowSub, { color: theme.textMuted }]}>{sub}</Text>
+                  </View>
+                  {isActive && <Ionicons name="checkmark-circle" size={20} color={theme.accentBlue} />}
+                </TouchableOpacity>
+              </View>
             );
           })}
           <View style={{ paddingBottom: 8 }} />

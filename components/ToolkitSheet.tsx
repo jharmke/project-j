@@ -48,6 +48,7 @@ const TAB_LABELS: Record<string, string> = {
   workout: 'WORKOUT',
   stats:   'STATS',
   profile: 'PROFILE',
+  settings: 'SETTINGS',
 };
 
 const TAB_ROUTES: Record<string, string> = {

@@ -12,7 +12,6 @@ import { useToast } from '../../components/Toast';
 import { saveToFirebase } from '../../firebaseConfig';
 import { storageSet } from '../../utils/storage';
 import { useTheme } from '../../theme';
-import { showToolkit } from '../../components/ToolkitSheet';
 import HeaderAvatar from '../../components/HeaderAvatar';
 
 interface Profile {
@@ -327,9 +326,6 @@ export default function ProfileScreen() {
             onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/settings'); }}
             style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}>
             <Ionicons name="settings" size={14} color={theme.accentBlue} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); showToolkit('profile'); }} hitSlop={{ top: 8, right: 8, bottom: 8, left: 8 }}>
-            <Ionicons name="help-circle" size={22} color={theme.accentBlue} />
           </TouchableOpacity>
         </View>
       </View>

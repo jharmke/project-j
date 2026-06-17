@@ -394,6 +394,25 @@ function DiagnosticFeedCard({ card, theme, shadowStyle, isMindful }: { card: Dia
   );
 }
 
+// ── Loading skeleton ───────────────────────────────────────────────────────────
+// Shown in the card-feed slot while the AI voicing call is in flight on first view, so
+// the feed reveals fully-voiced in one shot instead of swapping short text for voiced
+// (the "pop-in" jank). Pulses via a shared Animated value driven by the parent.
+function SkeletonFeedCard({ theme, shadowStyle, pulse }: { theme: any; shadowStyle: any; pulse: Animated.Value }) {
+  const t = theme;
+  const bar = (w: any, h: number, mb: number) => (
+    <Animated.View style={{ width: w, height: h, borderRadius: 5, marginBottom: mb, backgroundColor: t.textMuted, opacity: pulse }} />
+  );
+  return (
+    <View style={[styles.card, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: 'rgba(255,255,255,0.1)', ...shadowStyle }]}>
+      {bar('72%', 14, 14)}
+      {bar('42%', 18, 14)}
+      {bar('100%', 10, 7)}
+      {bar('88%', 10, 0)}
+    </View>
+  );
+}
+
 // ── Smart Tip cards ────────────────────────────────────────────────────────────
 
 function InsightTipCard({ tip, isBlurred, theme, shadowStyle }: { tip: StoredTip; isBlurred: boolean; theme: any; shadowStyle: any }) {
@@ -521,6 +540,18 @@ export default function DiagnosticReportViewScreen() {
   const [voicedCards, setVoicedCards] = useState<DiagnosticCard[] | null>(
     isTutorialMode ? (TUTORIAL_DEMO_REPORT.cards ?? null) : null
   );
+  // True while the first-view AI voicing call is in flight -- the feed shows skeletons
+  // instead of the short deterministic cards, then reveals voiced in one shot (no swap).
+  const [cardsVoicing, setCardsVoicing] = useState(false);
+  const cardPulse = useRef(new Animated.Value(0.3)).current;
+  useEffect(() => {
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(cardPulse, { toValue: 0.6, duration: 650, useNativeDriver: true }),
+      Animated.timing(cardPulse, { toValue: 0.22, duration: 650, useNativeDriver: true }),
+    ]));
+    loop.start();
+    return () => loop.stop();
+  }, []);
 
   const isMindful = styleMode === 'Mindful';
   const shadowStyle = { shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 3 };
@@ -552,6 +583,9 @@ export default function DiagnosticReportViewScreen() {
         setVoicedCards(baseCards);
         const alreadyVoiced = baseCards.some(c => !!c.insight);
         if (baseCards.length > 0 && !alreadyVoiced) {
+          // First view: show skeletons while voicing, then reveal voiced in one shot. On any
+          // failure/timeout, finally() clears the flag so the deterministic baseCards reveal.
+          setCardsVoicing(true);
           voiceDiagnosticCards(baseCards, mode)
             .then(voiced => {
               setVoicedCards(voiced);
@@ -561,7 +595,10 @@ export default function DiagnosticReportViewScreen() {
                 saveReport({ ...found, cards: voiced }).catch(() => {});
               }
             })
-            .catch(() => {});
+            .catch(() => {})
+            .finally(() => setCardsVoicing(false));
+        } else {
+          setCardsVoicing(false);
         }
         // Load stored Smart Tips for instant display, then refresh in background
         const stored = await loadSmartTips();
@@ -744,7 +781,14 @@ export default function DiagnosticReportViewScreen() {
 
               {/* Diagnostic card feed (claim + proof + lever) -- ranked, below the headline */}
               <View ref={findingsSectionRef} collapsable={false}>
-                {(voicedCards ?? report.cards ?? []).length > 0 ? (
+                {cardsVoicing ? (
+                  <>
+                    <Text style={[styles.sectionLabel, { color: t.textMuted, marginBottom: 10 }]}>SHARPENING YOUR READ…</Text>
+                    {Array.from({ length: Math.min(3, Math.max(2, (voicedCards ?? report.cards ?? []).length || 3)) }).map((_, i) => (
+                      <SkeletonFeedCard key={`sk${i}`} theme={t} shadowStyle={shadowStyle} pulse={cardPulse} />
+                    ))}
+                  </>
+                ) : (voicedCards ?? report.cards ?? []).length > 0 ? (
                   (voicedCards ?? report.cards ?? []).map((c, i) => (
                     <DiagnosticFeedCard key={`${c.id}-${i}`} card={c} theme={t} shadowStyle={shadowStyle} isMindful={isMindful} />
                   ))

@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
+import { useScrollToTop } from '@react-navigation/native';
 import { triggerHaptic } from '@/utils/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect } from 'expo-router';
@@ -181,6 +182,7 @@ export default function StatsScreen() {
   const graphCreatorCardRef       = useTutorialTarget('graph_creator_graph_card');
   const graphCreatorEditBtnRef    = useTutorialTarget('graph_creator_edit_btn');
   const statsScrollRef            = useRef<any>(null);
+  useScrollToTop(statsScrollRef);
   const manageStreaksScrollRef    = useRef<any>(null);
   const creatorScrollRef          = useRef<any>(null);
   const { registerScrollView, unregisterScrollView, registerTutorialAction, unregisterTutorialAction } = useTutorial();

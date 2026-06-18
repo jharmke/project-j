@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
+import { useScrollToTop } from '@react-navigation/native';
 import { triggerHaptic } from '@/utils/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
@@ -169,6 +170,7 @@ export default function LogScreen() {
   const tutorialEntryRegistered = useRef(false);
   const { registerTarget, unregisterTarget, registerTutorialAction, unregisterTutorialAction, registerScrollView, unregisterScrollView, activeState: tutorialActiveState } = useTutorial();
   const scrollRef = useRef<any>(null);
+  useScrollToTop(scrollRef);
   const ifCardOffset = useRef<number>(0);
   const { scrollTo } = useLocalSearchParams<{ scrollTo?: string }>();
   const tutorialIfCardState = (tutorialActiveState?.tutorial.steps[tutorialActiveState.stepIndex] as any)?.ifCardState as

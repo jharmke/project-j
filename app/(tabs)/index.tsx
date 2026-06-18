@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useScrollToTop } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -742,6 +743,7 @@ export default function HomeScreen() {
   const [goalWeight,     setGoalWeight]     = useState<number|null>(null);
   const [weightGoalPace, setWeightGoalPace] = useState<string>('lose_1');
   const scrollRef = useRef<any>(null);
+  useScrollToTop(scrollRef);
   const cardOffsets = useRef<Record<string, number>>({});
   const dailyNoteRef = useRef<any>(null);
   const { scrollTo } = useLocalSearchParams<{ scrollTo?: string }>();

@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useScrollToTop } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -103,6 +104,7 @@ const [weeklyTemplate, setWeeklyTemplate] = useState<Record<string, DayProgram>>
   const [dayLabel, setDayLabel] = useState('');
   const dayScrollRef = useRef<any>(null);
   const mainScrollRef = useRef<any>(null);
+  useScrollToTop(mainScrollRef);
   const noteInputRef = useRef<any>(null);
 
   // Tutorial spotlight targets

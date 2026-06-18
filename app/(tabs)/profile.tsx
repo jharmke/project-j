@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useScrollToTop } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -158,6 +159,7 @@ export default function ProfileScreen() {
   const SAVE_BAR_HEIGHT = 76;
   const floatAnim = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef<ScrollView>(null);
+  useScrollToTop(scrollRef);
   const scrollOffset = useRef(0);
   const goalWeightInputY = useRef(0);
   const [keyboardHeight, setKeyboardHeight] = useState(0);

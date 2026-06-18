@@ -394,6 +394,7 @@ export default function SettingsScreen() {
   const [devTapCount, setDevTapCount] = useState(0);
   const [devUnlocked, setDevUnlocked] = useState(false);
   const [devForceSleepManual, setDevForceSleepManual] = useState(false);
+  const [devProUnlocked, setDevProUnlocked] = useState(false);
   const [importRange, setImportRange] = useState<14 | 30 | 90>(30);
   const [importing, setImporting] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
@@ -649,6 +650,7 @@ export default function SettingsScreen() {
           if (data.faithJourney) setFaithJourney(data.faithJourney);
           if (data.burnAccuracyPct !== undefined) setBurnAccuracyPct(data.burnAccuracyPct);
           if (data.devForceSleepManual !== undefined) setDevForceSleepManual(data.devForceSleepManual);
+          if (data.devProUnlocked !== undefined) setDevProUnlocked(data.devProUnlocked);
         }
         // Load notification settings
         const ns = await loadNotificationSettings();
@@ -2647,6 +2649,21 @@ export default function SettingsScreen() {
                 onValueChange={(val) => {
                   setDevForceSleepManual(val);
                   saveSetting('devForceSleepManual', val);
+                  triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+                }}
+              />
+            </View>
+
+            <View style={[styles.row, { borderTopColor: theme.borderCard }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentAmber }]}>Unlock Pro Features</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Grants full Pro access: Halo unlimited, AI estimator 30/mo, Comparison Day vs Day.</Text>
+              </View>
+              <ToggleSwitch
+                value={devProUnlocked}
+                onValueChange={(val) => {
+                  setDevProUnlocked(val);
+                  saveSetting('devProUnlocked', val);
                   triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
                 }}
               />

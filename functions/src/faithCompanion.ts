@@ -204,6 +204,6 @@ export const faithCompanion = onCall(
       };
     }
 
-    return { ok: true, reply: replyText, used: cap.used, cap: FREE_DAILY_CAP };
+    return { ok: true, reply: replyText, used: cap.used, cap: dailyCap };
   },
 );

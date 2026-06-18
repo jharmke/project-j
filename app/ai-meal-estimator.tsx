@@ -34,7 +34,6 @@ const MULTIPLIERS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5];
 
 // TODO(monetization): wire to the real subscription entitlement when Pro ships.
 // Until then everyone is on the free tier (3/month).
-const IS_PRO = false;
 
 // Failsafe: every successful estimate is stashed here for the rest of the day so
 // a user who loses the screen (phone call, app reload) can reopen it without
@@ -121,6 +120,7 @@ export default function AIMealEstimatorScreen() {
   const [mealSlots, setMealSlots] = useState<MealSlot[]>(DEFAULT_MEAL_SLOTS);
   const [slotNameCache, setSlotNameCache] = useState<Record<string, string>>({});
   const [remaining, setRemaining] = useState<number | null>(null);
+  const [isPro, setIsPro] = useState(__DEV__);
 
   // Input state
   const [description, setDescription] = useState('');
@@ -155,11 +155,14 @@ export default function AIMealEstimatorScreen() {
 
   useEffect(() => {
     (async () => {
+      let proMode = __DEV__;
       try {
         const raw = await AsyncStorage.getItem('pj_settings');
         if (raw) {
           const s = JSON.parse(raw);
           setMindful(s.styleMode === 'Mindful');
+          proMode = __DEV__ || !!s.devProUnlocked;
+          setIsPro(proMode);
         }
       } catch {}
       const { mealSlots: ms, slotNameCache: sc } = await loadMealSlots();
@@ -167,7 +170,7 @@ export default function AIMealEstimatorScreen() {
       setSlotNameCache(sc);
       setTargetSlot(launchMeal || ms[0]?.id || DEFAULT_MEAL_SLOTS[0].id);
       setTargetDate(launchDate || toDateKey(new Date()));
-      setRemaining(await getRemainingUses(IS_PRO));
+      setRemaining(await getRemainingUses(proMode));
       // Recover today's stashed estimates (failsafe). Anything from a prior day
       // is ignored and overwritten on the next successful estimate.
       try {
@@ -246,7 +249,7 @@ export default function AIMealEstimatorScreen() {
   const handleSubmit = async () => {
     if (!canSubmit) return;
     // Quota gate BEFORE any call (no-food and failures never reach here as a use).
-    const rem = await getRemainingUses(IS_PRO);
+    const rem = await getRemainingUses(isPro);
     setRemaining(rem);
     if (rem <= 0) {
       triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
@@ -276,7 +279,7 @@ export default function AIMealEstimatorScreen() {
 
     // Success: this is the moment a use is counted (see service contract).
     const next = await incrementQuota();
-    setRemaining(Math.max(0, limitFor(IS_PRO) - next.usesThisMonth));
+    setRemaining(Math.max(0, limitFor(isPro) - next.usesThisMonth));
 
     setResult(outcome.result);
     setRows(rowsFromResult(outcome.result));
@@ -863,9 +866,9 @@ export default function AIMealEstimatorScreen() {
       <CenteredModal visible={showLimit} onClose={() => setShowLimit(false)} theme={theme} insets={insets}>
         <Text style={{ fontSize: 20, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginBottom: 10 }}>Monthly Limit Reached</Text>
         <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_400Regular', lineHeight: 21, marginBottom: 8 }}>
-          You have used all {limitFor(IS_PRO)} AI estimates for this month. Resets on {nextResetLabel()}.
+          You have used all {limitFor(isPro)} AI estimates for this month. Resets on {nextResetLabel()}.
         </Text>
-        {!IS_PRO && (
+        {!isPro && (
           <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular', lineHeight: 20, marginBottom: 8 }}>
             Pro members get {limitFor(true)} estimates a month.
           </Text>

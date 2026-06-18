@@ -271,7 +271,7 @@ function VotdCard({ verse, theme, onReflect }: { verse: DailyVerse | null; theme
           <Ionicons name="sunny-outline" size={11} color={theme.textMuted} />
           <Text style={[styles.verseLabel, { color: theme.textMuted }]}>TODAY'S MESSAGE</Text>
         </View>
-        <TooltipIcon tooltipKey="todays_message" />
+        <TooltipIcon tooltipKey="todays_message" color={theme.accentAmber} />
       </View>
       <Text style={[styles.verseText, { color: theme.textSecondary }]}>"{verse.text}"</Text>
       <Text style={[styles.verseRef, { color: theme.textMuted }]}>{verse.reference}</Text>
@@ -373,7 +373,7 @@ function BibleCard({ theme }: { theme: Theme }) {
             <Ionicons name="book" size={12} color={theme.accentAmber} />
             <Text style={[styles.cardLabel, { color: theme.textMuted }]}>BIBLE AND PLANS</Text>
           </View>
-          <TooltipIcon tooltipKey="bible_and_plans" />
+          <TooltipIcon tooltipKey="bible_and_plans" color={theme.accentAmber} />
         </View>
 
         {/* Part 1: the Bible reading strip. Returning resumes the last spot; first-time offers two doors. */}
@@ -624,7 +624,7 @@ function PrayerCard({ theme }: { theme: Theme }) {
               <Text style={[styles.cardLabel, { color: theme.textMuted }]}>PRAYER</Text>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <TooltipIcon tooltipKey="prayer" />
+              <TooltipIcon tooltipKey="prayer" color={theme.accentAmber} />
               <Ionicons name="chevron-forward" size={16} color={theme.accentAmber} />
             </View>
           </View>

@@ -14,9 +14,11 @@ interface Props {
    *  Use where the linked tutorial cannot run from here, e.g. inside another
    *  modal -- the tour lives on the full Day Summary page instead. */
   hideTour?: boolean;
+  /** Override the (i) icon color. Defaults to the blue accent; faith cards pass amber. */
+  color?: string;
 }
 
-export default function TooltipIcon({ tooltipKey, size = 13, hideTour }: Props) {
+export default function TooltipIcon({ tooltipKey, size = 13, hideTour, color }: Props) {
   const { theme } = useTheme();
   const { seen, markSeen } = useTooltip(tooltipKey);
   const [modalVisible, setModalVisible] = useState(false);
@@ -55,7 +57,7 @@ export default function TooltipIcon({ tooltipKey, size = 13, hideTour }: Props) 
         activeOpacity={0.7}
       >
         <Animated.View style={{ transform: [{ scale }] }}>
-          <Ionicons name="information-circle" size={size} color={theme.accentBlueRaw} />
+          <Ionicons name="information-circle" size={size} color={color ?? theme.accentBlueRaw} />
         </Animated.View>
       </TouchableOpacity>
       <TooltipModal

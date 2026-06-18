@@ -97,8 +97,9 @@ function daysBetween(startKey: string, endKey: string): number {
 export function todayKey(): string { return fmtKey(new Date()); }
 
 // Short human title for a challenge (shared by the Challenges page + Stats section).
-export function challengeTitle(ch: Challenge): string {
-  if (ch.type === 'beat') return 'Beat a Previous Period';
+// Mindful softens the competitive "Beat" framing into neutral "Grow Past".
+export function challengeTitle(ch: Challenge, mindful = false): string {
+  if (ch.type === 'beat') return mindful ? 'Grow Past a Previous Period' : 'Beat a Previous Period';
   const m = ch.metric as ChallengeMetric;
   if (m === 'weight') {
     const lose = !ch.weightGoal.startsWith('gain');

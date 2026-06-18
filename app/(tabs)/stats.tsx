@@ -1979,11 +1979,11 @@ export default function StatsScreen() {
                   </View>
                   {challengeActive && challengeProg ? (
                     <TouchableOpacity activeOpacity={0.7} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/challenges'); }}>
-                      <Text style={{ fontSize: 17, fontFamily: 'DMSans_700Bold', color: theme.textPrimary, marginBottom: 6 }}>{challengeTitle(challengeActive)}</Text>
+                      <Text style={{ fontSize: 17, fontFamily: 'DMSans_700Bold', color: theme.textPrimary, marginBottom: 6 }}>{challengeTitle(challengeActive, styleMode === 'Mindful')}</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                         <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlueRaw }}>
                           {challengeActive.type === 'beat'
-                            ? (challengeProg.won ? 'Beating it on all metrics' : `Leading on ${challengeProg.metricsBeaten ?? 0} of ${challengeProg.metricsTotal ?? 0}`)
+                            ? (challengeProg.won ? (styleMode === 'Mindful' ? 'Ahead on every metric' : 'Beating it on all metrics') : `Ahead on ${challengeProg.metricsBeaten ?? 0} of ${challengeProg.metricsTotal ?? 0}`)
                             : challengeProg.isWeight
                               ? `${challengeProg.weightChangeSoFar == null ? '—' : `${challengeProg.weightChangeSoFar > 0 ? '+' : ''}${challengeProg.weightChangeSoFar.toFixed(1)}`} of ${Math.abs(challengeActive.target ?? 0)} lbs`
                               : `Hit ${challengeProg.daysHit ?? 0} of ${challengeProg.daysElapsed ?? 0} days`}
@@ -1994,7 +1994,9 @@ export default function StatsScreen() {
                   ) : (
                     <>
                       <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 20, marginBottom: 14 }}>
-                        Outperform a past week or month, or set a higher daily target for a stretch. Track it live on your home screen.
+                        {styleMode === 'Mindful'
+                          ? 'Grow past a previous week or month, or set a higher daily target for a stretch. Track it gently on your home screen.'
+                          : 'Outperform a past week or month, or set a higher daily target for a stretch. Track it live on your home screen.'}
                       </Text>
                       <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/challenge-create'); }}
                         style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 8, paddingVertical: 12, alignItems: 'center' }}>

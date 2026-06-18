@@ -8,6 +8,7 @@
 //                end-state change target hard-capped at a safe rate.
 
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, KeyboardAvoidingView, Modal, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -69,6 +70,7 @@ export default function ChallengeCreateScreen() {
   const [type, setType] = useState<ChallengeType | null>(null);
   const [weightGoal, setWeightGoal] = useState<string>('maintain');
   const [paceTarget, setPaceTarget] = useState<number>(-500);
+  const [isMindful, setIsMindful] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
   // beat
@@ -94,6 +96,10 @@ export default function ChallengeCreateScreen() {
       const g = await loadComparisonGoals(fmtKey(new Date()));
       setWeightGoal(g.weightGoal);
       setPaceTarget(g.paceTarget);
+      try {
+        const s = await AsyncStorage.getItem('pj_settings');
+        setIsMindful(!!s && String(JSON.parse(s).styleMode).toLowerCase() === 'mindful');
+      } catch {}
       setLoaded(true);
     })();
   }, []);
@@ -135,11 +141,12 @@ export default function ChallengeCreateScreen() {
     if (!type) return '';
     if (type === 'beat') {
       const names = selectedMetrics.map(m => METRIC_META[m].label).join(', ') || 'metrics';
-      return `Beat ${benchmarkMode === 'custom' ? 'a past period' : 'last period'} on ${names} over ${durWord}, starting ${startWord}.`;
+      const verb = isMindful ? 'Grow past' : 'Beat';
+      return `${verb} ${benchmarkMode === 'custom' ? 'a past period' : 'last period'} on ${names} over ${durWord}, starting ${startWord}.`;
     }
     if (customMetric === 'weight') return `${weightVerb} ${target || '?'} lbs over ${durWord}, starting ${startWord}.`;
     return `Hit ${target || '?'} ${METRIC_META[customMetric].unit}/day on ${METRIC_META[customMetric].label} over ${durWord}, starting ${startWord}.`;
-  }, [type, selectedMetrics, customMetric, target, benchmarkMode, durWord, startWord, weightVerb]);
+  }, [type, selectedMetrics, customMetric, target, benchmarkMode, durWord, startWord, weightVerb, isMindful]);
 
   const confirm = async () => {
     if (!canConfirm || saving) return;
@@ -192,7 +199,7 @@ export default function ChallengeCreateScreen() {
         <SectionLabel>Challenge Type</SectionLabel>
         <View style={{ gap: 10 }}>
           {([
-            { id: 'beat', icon: 'trophy', title: 'Beat a Previous Period', sub: 'Outperform a past week or month across the metrics you pick.' },
+            { id: 'beat', icon: 'trophy', title: isMindful ? 'Grow Past a Previous Period' : 'Beat a Previous Period', sub: isMindful ? 'Build on a past week or month across the metrics you pick.' : 'Outperform a past week or month across the metrics you pick.' },
             { id: 'custom', icon: 'flag', title: 'Custom Goal', sub: 'Set a higher daily target for one metric, just for this stretch.' },
           ] as const).map(opt => {
             const sel = type === opt.id;
@@ -213,7 +220,7 @@ export default function ChallengeCreateScreen() {
         {/* ── Beat config ── */}
         {type === 'beat' && (
           <>
-            <SectionLabel>Metrics to Beat</SectionLabel>
+            <SectionLabel>{isMindful ? 'Metrics to Grow' : 'Metrics to Beat'}</SectionLabel>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               {offeredMetrics.map(m => {
                 const sel = selectedMetrics.includes(m);
@@ -226,7 +233,7 @@ export default function ChallengeCreateScreen() {
                 );
               })}
             </View>
-            <Text style={{ fontSize: 11, color: theme.textDim, marginTop: 8, fontFamily: 'DMSans_400Regular' }}>Beat the past period on all chosen metrics to win.</Text>
+            <Text style={{ fontSize: 11, color: theme.textDim, marginTop: 8, fontFamily: 'DMSans_400Regular' }}>{isMindful ? 'Grow past your previous period on each metric you pick.' : 'Beat the past period on all chosen metrics to win.'}</Text>
 
             <SectionLabel>Compare Against</SectionLabel>
             <View style={{ flexDirection: 'row', gap: 10 }}>

@@ -3,6 +3,7 @@
 // Shows the one active challenge in full detail, plus Past Challenges (Run It Back).
 
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import { ActivityIndicator, ScrollView, Text, TouchableOpacity, View } from 'react-native';
@@ -42,9 +43,14 @@ export default function ChallengesScreen() {
   const [active, setActive] = useState<Challenge | null>(null);
   const [progress, setProgress] = useState<ChallengeProgress | null>(null);
   const [history, setHistory] = useState<Challenge[]>([]);
+  const [isMindful, setIsMindful] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
+    try {
+      const s = await AsyncStorage.getItem('pj_settings');
+      setIsMindful(!!s && String(JSON.parse(s).styleMode).toLowerCase() === 'mindful');
+    } catch {}
     const ch = await loadActiveChallenge();
     setActive(ch);
     setProgress(ch ? await computeChallengeProgress(ch) : null);
@@ -108,14 +114,14 @@ export default function ChallengesScreen() {
               </Text>
               {progress.status === 'active' && <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_500Medium' }}>{progress.daysRemaining} left</Text>}
             </View>
-            <Text style={{ fontSize: 19, fontFamily: 'DMSans_700Bold', color: theme.textPrimary, marginBottom: 14 }}>{challengeTitle(active)}</Text>
+            <Text style={{ fontSize: 19, fontFamily: 'DMSans_700Bold', color: theme.textPrimary, marginBottom: 14 }}>{challengeTitle(active, isMindful)}</Text>
 
             {/* Type 1 beat */}
             {active.type === 'beat' && progress.rows && (
               <>
                 {progress.status !== 'pending' && (
                   <Text style={{ fontSize: 12, color: progress.won ? accent : theme.textSecondary, fontFamily: 'DMSans_600SemiBold', marginBottom: 10 }}>
-                    {progress.won ? 'Beating it on all metrics' : `Leading on ${progress.metricsBeaten} of ${progress.metricsTotal}`}
+                    {progress.won ? (isMindful ? 'Ahead on every metric' : 'Beating it on all metrics') : `Ahead on ${progress.metricsBeaten} of ${progress.metricsTotal}`}
                   </Text>
                 )}
                 {progress.rows.map((r, i) => (
@@ -129,7 +135,7 @@ export default function ChallengesScreen() {
                       <Text style={{ fontSize: 15, fontFamily: r.beating ? 'DMSans_700Bold' : 'DMSans_500Medium', color: r.beating ? accent : theme.textSecondary }}>{fmtMetricValue(r.metric, r.youAvg)}</Text>
                     </View>
                     <View style={{ flex: 1, alignItems: 'center' }}>
-                      <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>TO BEAT</Text>
+                      <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>{isMindful ? 'PREVIOUS' : 'TO BEAT'}</Text>
                       <Text style={{ fontSize: 15, fontFamily: 'DMSans_500Medium', color: theme.textSecondary }}>{fmtMetricValue(r.metric, r.benchmarkAvg)}</Text>
                     </View>
                   </View>
@@ -178,7 +184,7 @@ export default function ChallengesScreen() {
               <Ionicons name="trophy-outline" size={26} color={accent} />
             </View>
             <Text style={{ fontSize: 16, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>No active challenge</Text>
-            <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginTop: 6, textAlign: 'center', lineHeight: 19 }}>Beat a past period or set a custom goal, and track it right here.</Text>
+            <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginTop: 6, textAlign: 'center', lineHeight: 19 }}>{isMindful ? 'Grow past a previous period or set a goal, and track it right here.' : 'Beat a past period or set a custom goal, and track it right here.'}</Text>
           </View>
         )}
 
@@ -197,7 +203,7 @@ export default function ChallengesScreen() {
             {history.map(past => (
               <View key={past.id} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderRadius: 12, padding: 14, marginBottom: 8 }}>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary }}>{challengeTitle(past)}</Text>
+                  <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary }}>{challengeTitle(past, isMindful)}</Text>
                   <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>{past.startKey} → {past.endKey}</Text>
                 </View>
                 <TouchableOpacity onPress={() => runItBack(past)} style={{ backgroundColor: `${accent}1F`, borderWidth: 1, borderColor: `${accent}50`, borderRadius: 8, paddingVertical: 6, paddingHorizontal: 12 }} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>

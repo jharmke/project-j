@@ -53,7 +53,7 @@ import { refreshCoachTip, resolveTipBody, resolveTipTitle, refreshCoachTipSleep 
 import NutrientDrilldownModal, { DrilldownItem, computeNetCarbsForEntry } from '../../components/NutrientDrilldownModal';
 import AnimatedNumber from '../../components/AnimatedNumber';
 import SleepDonut from '../../components/SleepDonut';
-import { recoveryZone } from '../../utils/recoveryScore';
+import { recoveryZone, calcRecoveryScore } from '../../utils/recoveryScore';
 
 const RECOVERY_PURPLE = '#9b7adb';
 const CAROUSEL_PAGE_W = Dimensions.get('window').width - 32;
@@ -785,8 +785,20 @@ export default function HomeScreen() {
   // Recovery home card state
   const [homeRecoveryScore,   setHomeRecoveryScore]   = useState<number | null>(null);
   const [homeRecoverySignals, setHomeRecoverySignals] = useState<{ hrv: number|null; rhr: number|null; resp: number|null; spo2: number|null } | null>(null);
+  // Guards the home-side Recovery auto-compute: an in-flight flag (prevents
+  // overlapping wearable fetches) plus a "storage checked" gate so we only compute
+  // once the day-load has confirmed there's no stored score yet. The gate avoids a
+  // wasted fetch on every launch when a score already exists, and (unlike a
+  // once-per-day flag) lets a dev-tool reset re-trigger the compute when the score
+  // is cleared, since the day-load flips homeRecoveryScore back to null on refocus.
+  const recoveryComputeInFlightRef = useRef(false);
+  const [recoveryStorageChecked, setRecoveryStorageChecked] = useState(false);
   const [recoveryCoachCache,  setRecoveryCoachCache]  = useState<CoachTipCache | null>(null);
   const [activeSleepFace, setActiveSleepFace] = useState(0); // 0=recovery, 1=sleep
+  // Measured height of the Sleep/Recovery carousel (driven by the taller, populated
+  // face). An empty face stretches its centered empty-state to this so the card never
+  // shows dead space below stranded text. Guard avoids sub-pixel layout thrash.
+  const [carouselHeight, setCarouselHeight] = useState(0);
   const carouselRef = useRef<ScrollView>(null);
   const activeSleepFaceRef = useRef(0);
   const autoScrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -840,7 +852,7 @@ export default function HomeScreen() {
     return store;
   };
 
-  const { activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, exerciseMinutes, fetchTodayData, hasHealthData, lastSyncedAt } = useHealthKit();
+  const { activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, sleepAwakeCount, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, exerciseMinutes, fetchTodayData, hasHealthData, lastSyncedAt, fetchRecoverySignals } = useHealthKit();
 
   // ── Sleep tutorial resolver: routes sleep_card to the manual-path tutorial when
   //    no Apple Health sleep data is present, or when dev override is active. ──
@@ -890,6 +902,63 @@ export default function HomeScreen() {
   const getDateKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   const [todayKey, setTodayKey] = useState(() => getDateKey(new Date()));
   const [todayDay, setTodayDay] = useState(() => DAY_NAMES[new Date().getDay()]);
+
+  // Auto-compute today's Recovery Score on the HOME screen so the Recovery card
+  // populates without needing a Sleep Hub visit. Mirrors the hub's morning-snapshot
+  // freeze exactly (same fetchRecoverySignals(7) -> burn-accuracy adjust -> sleep
+  // score -> calcRecoveryScore -> write-once to pj_<date>): whichever surface computes
+  // first that day wins, and a score already in storage is never recomputed. A null
+  // result (watch off / no overnight signals) writes nothing and leaves the empty state.
+  useEffect(() => {
+    if (!recoveryStorageChecked) return;            // wait until the day-load confirms what's in storage
+    if (homeRecoveryScore !== null) return;         // already have a score
+    if (!hasHealthData) return;                     // no wearable data available yet
+    if (recoveryComputeInFlightRef.current) return; // a compute is already running
+    recoveryComputeInFlightRef.current = true;
+    let cancelled = false;
+    (async () => {
+      try {
+        const sig = await fetchRecoverySignals(7);
+        if (cancelled || !sig) return;
+        const k = burnAccuracyPct / 100;
+        const adj = {
+          ...sig,
+          yesterdayActiveCal: sig.yesterdayActiveCal !== null ? Math.round(sig.yesterdayActiveCal * k) : null,
+          activCalBaseline:   sig.activCalBaseline   !== null ? Math.round(sig.activCalBaseline   * k) : null,
+        };
+        const displaySleep = sleepOverride ?? sleepHours;
+        const isManual = !!sleepOverride;
+        const { score: sleepScoreVal } = calcSleepScore(displaySleep, sleepStages, sleepGoal, sleepFeelRating, isManual, sleepConsistencyPts);
+        const res = calcRecoveryScore({
+          sleepScore: sleepScoreVal,
+          todayHRV: adj.todayHRV, hrvBaseline: adj.hrvBaseline,
+          todayRHR: adj.todayRHR, rhrBaseline: adj.rhrBaseline,
+          yesterdayActiveCal: adj.yesterdayActiveCal, activCalBaseline: adj.activCalBaseline,
+          todayResp: adj.todayResp, respBaseline: adj.respBaseline,
+        });
+        if (cancelled || res.score === null) return;
+        const dk = `pj_${getDateKey(new Date())}`;
+        const raw = await AsyncStorage.getItem(dk);
+        const cur = raw ? JSON.parse(raw) : {};
+        // Race guard: if the hub froze a score between our fetch and now, use that
+        // frozen value instead of overwriting it (read-then-merge, never replace).
+        if (typeof cur.recoveryScore === 'number') {
+          if (!cancelled) {
+            setHomeRecoveryScore(cur.recoveryScore);
+            if (cur.recoverySignals && typeof cur.recoverySignals === 'object') setHomeRecoverySignals(cur.recoverySignals);
+          }
+          return;
+        }
+        const recoverySignals = { hrv: adj.todayHRV, rhr: adj.todayRHR, resp: adj.todayResp, spo2: adj.todaySpO2 };
+        await storageSet(dk, JSON.stringify({ ...cur, recoveryScore: res.score, recoverySignals }));
+        if (!cancelled) {
+          setHomeRecoveryScore(res.score);
+          setHomeRecoverySignals(recoverySignals);
+        }
+      } catch {} finally { recoveryComputeInFlightRef.current = false; }
+    })();
+    return () => { cancelled = true; };
+  }, [recoveryStorageChecked, hasHealthData, homeRecoveryScore, sleepHours, sleepStages, burnAccuracyPct, todayKey]);
   const rawHkCalories = activeCalories > 0 ? activeCalories : caloriesBurned;
   const hkCalories    = Math.round(rawHkCalories * burnAccuracyPct / 100);
   const displayedBurned = hkCalories;
@@ -1476,6 +1545,10 @@ export default function HomeScreen() {
           if (data.weight) setWeight(data.weight);
           if ('dailyNote' in data) { setDailyNote(data.dailyNote ?? ''); setSavedDailyNoteText(data.dailyNote ?? ''); }
         }
+        // The day-load has now confirmed whether a stored Recovery Score exists
+        // (set above when a record exists; absent on a brand-new day). This unblocks
+        // the home-side Recovery auto-compute effect.
+        setRecoveryStorageChecked(true);
         // Weight comparison loading
         const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
         const yk = `${yesterday.getFullYear()}-${String(yesterday.getMonth()+1).padStart(2,'0')}-${String(yesterday.getDate()).padStart(2,'0')}`;
@@ -2250,6 +2323,19 @@ export default function HomeScreen() {
     const recZone = homeRecoveryScore !== null ? recoveryZone(homeRecoveryScore) : null;
     const recColor = recZone ? (recZone.zoneColor === 'good' ? theme.statusGood : recZone.zoneColor === 'warn' ? theme.statusWarn : theme.statusBad) : theme.textDim;
     const recDonutSize = 120, recDonutStroke = 14, recDonutRadius = (recDonutSize - recDonutStroke) / 2, recDonutCirc = 2 * Math.PI * recDonutRadius;
+    // Shared empty-state for both carousel faces (recovery + sleep) so they read
+    // identically. Centered icon-in-circle + title + subtitle, stretched to the
+    // measured carousel height (minus header/padding) so the card fills, never
+    // leaving dead space under the text.
+    const renderCardEmptyState = (icon: any, color: string, title: string, subtitle: string) => (
+      <View style={{ minHeight: Math.max(200, carouselHeight - 64), alignItems: 'center', justifyContent: 'center', paddingVertical: 16 }}>
+        <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: color + '1A', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+          <Ionicons name={icon} size={28} color={color} />
+        </View>
+        <Text style={{ fontSize: 15, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', marginBottom: 6, textAlign: 'center' }}>{title}</Text>
+        <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', lineHeight: 17, textAlign: 'center', paddingHorizontal: 24 }}>{subtitle}</Text>
+      </View>
+    );
     return (
       <Animated.View ref={sleepCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: activeSleepFace === 0 ? RECOVERY_PURPLE : theme.accentBlueRaw, borderTopWidth: 1.5, overflow: 'hidden', padding: 0, transform: [{ scale: sleepCardScale }] }]}>
         <ScrollView
@@ -2266,6 +2352,7 @@ export default function HomeScreen() {
             scheduleCarouselTick(12000);
           }}
           style={{ width: CAROUSEL_PAGE_W }}
+          onLayout={(e) => { const h = e.nativeEvent.layout.height; setCarouselHeight(prev => Math.abs(prev - h) > 1 ? h : prev); }}
         >
           {/* ── Page 0: Recovery ── */}
           <TouchableOpacity
@@ -2285,10 +2372,7 @@ export default function HomeScreen() {
               <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
             </View>
             {homeRecoveryScore === null ? (
-              <View style={{ paddingVertical: 8 }}>
-                <Text style={{ fontSize: 13, color: theme.textDim, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginBottom: 6 }}>No recovery data yet</Text>
-                <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', lineHeight: 16 }}>Wear your Apple Watch to sleep to see your Recovery Score.</Text>
-              </View>
+              renderCardEmptyState('pulse', RECOVERY_PURPLE, 'No recovery data yet', 'Wear a smartwatch or fitness tracker to sleep to see your Recovery Score.')
             ) : (() => {
               const recTip = recoveryCoachCache ? resolveTipBody(recoveryCoachCache) : null;
               // Each signal carries its own identity color + icon (not a good/bad
@@ -2480,7 +2564,7 @@ export default function HomeScreen() {
           </View>
         )}
         {displaySleep === null ? (
-          <Text style={{ fontSize:13, color: theme.textDim, fontFamily:'DMSans_400Regular', fontStyle:'italic' }}>No sleep data for last night</Text>
+          editingSleep ? null : renderCardEmptyState('moon', theme.accentBlueRaw, 'No sleep logged yet', 'Wear a smartwatch or fitness tracker to sleep, or tap the gear to log it manually.')
         ) : (() => {
           const isManual = !!sleepOverride;
           const { score, hasStages, path } = calcSleepScore(displaySleep, sleepStages, sleepGoal, sleepFeelRating, isManual, sleepConsistencyPts);
@@ -2495,8 +2579,8 @@ export default function HomeScreen() {
           const corePct = totalMs>0?coreMs/totalMs:0;
           const deepPct = totalMs>0?deepMs/totalMs:0;
           const remPct  = totalMs>0?remMs/totalMs:0;
-          const fmtMs   = (ms: number) => { const h=Math.floor(ms/3600000); const m=Math.round((ms%3600000)/60000); return h>0?`${h}h ${m}m`:`${m}m`; };
-          const donutSize=140, donutStroke=16, donutRadius=(donutSize-donutStroke)/2;
+          const fmtMs   = (ms: number) => { let h=Math.floor(ms/3600000); let m=Math.round((ms%3600000)/60000); if(m===60){h+=1;m=0;} return h>0?`${h}h ${m}m`:`${m}m`; };
+          const donutSize=120, donutStroke=14, donutRadius=(donutSize-donutStroke)/2;
           const donutCirc=2*Math.PI*donutRadius;
           const coreFrac=corePct*donutCirc, deepFrac=deepPct*donutCirc, remFrac=remPct*donutCirc;
           const gapFrac=0.03*donutCirc;
@@ -2529,48 +2613,63 @@ export default function HomeScreen() {
           return (
             <View>
               {sleepStages ? (
-                <View style={{ flexDirection:'row', alignItems:'flex-start' }}>
-                  <View style={{ width:160, paddingRight:12 }}>
-                    <View style={{ shadowColor:'#000000', shadowOffset:{width:0,height:2}, shadowOpacity:0.18, shadowRadius:0 }}>
-                      <Text style={{ fontSize:42, color:scoreColor, fontFamily:'BebasNeue_400Regular', letterSpacing:1, opacity:0.88 }}>{hrs}h {mins}m</Text>
+                <View>
+                  <View style={{ flexDirection:'row', alignItems:'center', marginBottom:14 }}>
+                    <View style={{ flex:1, paddingRight:12 }}>
+                      <View style={{ shadowColor:'#000000', shadowOffset:{width:0,height:2}, shadowOpacity:0.18, shadowRadius:0 }}>
+                        <Text style={{ fontSize:42, color:scoreColor, fontFamily:'BebasNeue_400Regular', letterSpacing:1, opacity:0.88 }}>{hrs}h {mins}m</Text>
+                      </View>
+                      {scoreLabel ? (
+                        <Text style={{ fontSize:9, color:scoreColor, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginTop:2 }}>{scoreLabel}</Text>
+                      ) : (
+                        <Text style={{ fontSize:9, color:theme.textDim, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginTop:2 }}>HEALTHKIT</Text>
+                      )}
+                      {sleepTimes && (
+                        <Text style={{ fontSize:12, color:theme.textMuted, fontFamily:'DMSans_500Medium', marginTop:6 }}>
+                          {sleepTimes.bed} → {sleepTimes.wake}
+                        </Text>
+                      )}
                     </View>
-                    {scoreLabel ? (
-                      <Text style={{ fontSize:9, color:scoreColor, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:10 }}>{scoreLabel}</Text>
-                    ) : (
-                      <Text style={{ fontSize:9, color:theme.textDim, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginBottom:10 }}>HEALTHKIT</Text>
-                    )}
-                    {sleepTimes && (
-                      <Text style={{ fontSize:12, color:theme.textMuted, fontFamily:'DMSans_500Medium', marginBottom: sleepAwakeMs > 0 ? 4 : 10 }}>
-                        {sleepTimes.bed} → {sleepTimes.wake}
-                      </Text>
-                    )}
-                    {sleepAwakeMs > 0 && (
-                      <Text style={{ fontSize:11, color:theme.textDim, fontFamily:'DMSans_400Regular', marginBottom:10 }}>{fmtMs(sleepAwakeMs)} awake during night</Text>
-                    )}
-                    <View ref={sleepStagesRef} collapsable={false} style={{ gap:6 }}>
-                      {[{label:'Core',color:theme.sleepCore,val:coreMs},{label:'Deep',color:theme.sleepDeep,val:deepMs},{label:'REM',color:theme.sleepRem,val:remMs}].map(s => (
-                        <View key={s.label} style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
-                          <View style={{ width:8, height:8, borderRadius:4, backgroundColor:s.color }} />
-                          <Text style={{ fontSize:9, color:theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:1, textTransform:'uppercase' }}>{s.label}</Text>
-                          <Text style={{ fontSize:11, color:s.color, fontFamily:'DMSans_600SemiBold' }}>{fmtMs(s.val)}</Text>
-                        </View>
-                      ))}
+                    <View ref={sleepDonutRef} collapsable={false} style={{ flex:1, alignItems:'center' }}>
+                      <SleepDonut
+                        coreFrac={coreFrac} deepFrac={deepFrac} remFrac={remFrac}
+                        donutCirc={donutCirc} donutSize={donutSize} donutStroke={donutStroke} donutRadius={donutRadius}
+                        coreColor={theme.sleepCore} deepColor={theme.sleepDeep} remColor={theme.sleepRem}
+                        trackColor={theme.sleepTrack} gapFrac={gapFrac} refreshKey={refreshKey}
+                        score={score ?? 0} scoreColor={scoreColor}
+                        shimmer={score !== null && score >= 85}
+                      />
                     </View>
                   </View>
-                  <View ref={sleepDonutRef} collapsable={false}>
-                    <SleepDonut
-                      coreFrac={coreFrac} deepFrac={deepFrac} remFrac={remFrac}
-                      donutCirc={donutCirc} donutSize={donutSize} donutStroke={donutStroke} donutRadius={donutRadius}
-                      coreColor={theme.sleepCore} deepColor={theme.sleepDeep} remColor={theme.sleepRem}
-                      trackColor={theme.sleepTrack} gapFrac={gapFrac} refreshKey={refreshKey}
-                      score={score ?? 0} scoreColor={scoreColor}
-                      shimmer={score !== null && score >= 85}
-                    />
+                  {/* Stage stat boxes: identical layout to the recovery signal boxes
+                      (chip + stacked label/value-unit). Core/Deep/REM show duration +
+                      % of sleep (donut denominator); Awake shows duration + wake-event
+                      count (it is interruptions, not a sleep-stage share). */}
+                  <View ref={sleepStagesRef} collapsable={false} style={{ flexDirection:'row', flexWrap:'wrap', gap:8 }}>
+                    {[
+                      { label:'Core',  color:theme.sleepCore,  value:fmtMs(coreMs), unit:`${Math.round(corePct*100)}% of sleep` },
+                      { label:'Deep',  color:theme.sleepDeep,  value:fmtMs(deepMs), unit:`${Math.round(deepPct*100)}% of sleep` },
+                      { label:'REM',   color:theme.sleepRem,   value:fmtMs(remMs),  unit:`${Math.round(remPct*100)}% of sleep` },
+                      { label:'Awake', color:theme.sleepAwake, value:fmtMs(sleepAwakeMs), unit:`${sleepAwakeCount} ${sleepAwakeCount === 1 ? 'wake' : 'wakes'}` },
+                    ].map(s => (
+                      <View key={s.label} style={{ flex:1, minWidth:'46%', flexDirection:'row', alignItems:'center', gap:8, backgroundColor:s.color+'12', borderWidth:0.5, borderColor:s.color+'33', borderRadius:10, paddingVertical:9, paddingHorizontal:11 }}>
+                        <View style={{ width:26, height:26, borderRadius:13, backgroundColor:s.color+'22', alignItems:'center', justifyContent:'center' }}>
+                          <View style={{ width:10, height:10, borderRadius:5, backgroundColor:s.color }} />
+                        </View>
+                        <View style={{ flex:1 }}>
+                          <Text style={{ fontSize:9, color:theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:1, textTransform:'uppercase' }}>{s.label}</Text>
+                          <View style={{ flexDirection:'row', alignItems:'baseline', gap:3 }}>
+                            <Text style={{ fontSize:19, color:s.color, fontFamily:'BebasNeue_400Regular', letterSpacing:0.5 }}>{s.value}</Text>
+                            <Text style={{ fontSize:9, color:theme.textDim, fontFamily:'DMSans_400Regular' }}>{s.unit}</Text>
+                          </View>
+                        </View>
+                      </View>
+                    ))}
                   </View>
                 </View>
               ) : (
                 <View style={{ flexDirection:'row', alignItems:'center' }}>
-                  <View style={{ width:160, paddingRight:12 }}>
+                  <View style={{ flex:1, paddingRight:12 }}>
                     <View style={{ shadowColor:'#000000', shadowOffset:{width:0,height:2}, shadowOpacity:0.18, shadowRadius:0 }}>
                       <Text style={{ fontSize:42, color: score !== null ? scoreColor : theme.textPrimary, fontFamily:'BebasNeue_400Regular', letterSpacing:1, opacity:0.88 }}>{hrs}h {mins}m</Text>
                     </View>
@@ -2596,11 +2695,13 @@ export default function HomeScreen() {
                     )}
                   </View>
                   {score !== null && (
-                    <ScoreRing
-                      score={score} scoreColor={scoreColor} trackColor={theme.sleepTrack}
-                      donutSize={donutSize} donutStroke={donutStroke} donutRadius={donutRadius} donutCirc={donutCirc}
-                      shimmer={score >= 85} refreshKey={refreshKey}
-                    />
+                    <View style={{ flex:1, alignItems:'center' }}>
+                      <ScoreRing
+                        score={score} scoreColor={scoreColor} trackColor={theme.sleepTrack}
+                        donutSize={donutSize} donutStroke={donutStroke} donutRadius={donutRadius} donutCirc={donutCirc}
+                        shimmer={score >= 85} refreshKey={refreshKey}
+                      />
+                    </View>
                   )}
                 </View>
               )}

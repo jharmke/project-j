@@ -21,6 +21,7 @@ export function useHealthKit() {
   const [sleepStages, setSleepStages] = useState<{ core: number, deep: number, rem: number, totalMs: number } | null>(null);
   const [sleepTimes, setSleepTimes] = useState<{ bed: string, wake: string } | null>(null);
   const [sleepAwakeMs, setSleepAwakeMs] = useState<number>(0);
+  const [sleepAwakeCount, setSleepAwakeCount] = useState<number>(0); // awake events last night (one per awake segment)
   const [vo2Max, setVo2Max] = useState<number | null>(null);
   const [cardioRecovery, setCardioRecovery] = useState<number | null>(null);
   const [restingHR, setRestingHR] = useState<number | null>(null);
@@ -126,7 +127,7 @@ export function useHealthKit() {
       );
 
       // Sum up asleep stages separately
-      let coreMs = 0, deepMs = 0, remMs = 0, awakeMs = 0;
+      let coreMs = 0, deepMs = 0, remMs = 0, awakeMs = 0, awakeCount = 0;
       let earliestBed: number | null = null;
       let latestWake: number | null = null;
       for (const sample of sleepData) {
@@ -136,7 +137,7 @@ export function useHealthKit() {
         if (sample.value === 3) coreMs += dur;
         else if (sample.value === 4) deepMs += dur;
         else if (sample.value === 5) remMs += dur;
-        else if (sample.value === 2) awakeMs += dur;
+        else if (sample.value === 2) { awakeMs += dur; awakeCount += 1; }
         if ([3, 4, 5].includes(sample.value as number)) {
           if (earliestBed === null || start < earliestBed) earliestBed = start;
           if (latestWake === null || end > latestWake) latestWake = end;
@@ -146,6 +147,7 @@ export function useHealthKit() {
       setSleepHours(totalSleepMs > 0 ? Math.round((totalSleepMs / 3600000) * 10) / 10 : null);
       setSleepStages(totalSleepMs > 0 ? { core: coreMs, deep: deepMs, rem: remMs, totalMs: totalSleepMs } : null);
       setSleepAwakeMs(awakeMs);
+      setSleepAwakeCount(totalSleepMs > 0 ? awakeCount : 0);
       if (earliestBed && latestWake) {
         const bedStr = new Date(earliestBed).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         const wakeStr = new Date(latestWake).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -780,5 +782,5 @@ export function useHealthKit() {
     bloodOxygen !== null || hrv !== null || vo2Max !== null ||
     cardioRecovery !== null || exerciseMinutes !== null;
 
-  return { authorized, hasHealthData, lastSyncedAt, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, hrv, exerciseMinutes, appleWorkouts, fetchTodayData, fetchHistoricalWorkouts, fetchSleepHistory, fetchLastNightSegments, fetchRecoverySignals, fetchOvernightRHR, dumpHRV };
+  return { authorized, hasHealthData, lastSyncedAt, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, sleepAwakeCount, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, hrv, exerciseMinutes, appleWorkouts, fetchTodayData, fetchHistoricalWorkouts, fetchSleepHistory, fetchLastNightSegments, fetchRecoverySignals, fetchOvernightRHR, dumpHRV };
 }

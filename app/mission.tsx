@@ -30,7 +30,7 @@ const CARDS: MissionCard[] = [
     icon: 'stats-chart',
     label: 'ACCURACY',
     headline: 'The number you see is actually accurate.',
-    body: "Apple Watch overestimates active calories. Most apps trust that number anyway, and then you wonder why nothing adds up. There's an adjustment in Settings that lets you dial it back to something real. On top of that, instead of locking in your calorie target once at 6am, your resting burn gets subtracted as the day goes on. Small changes. Real difference.",
+    body: "Smartwatches overestimate active calories. Most apps trust that number anyway, and then you wonder why nothing adds up. There's an adjustment in Settings that lets you dial it back to something real. On top of that, instead of locking in your calorie target once at 6am, your resting burn gets subtracted as the day goes on. Small changes. Real difference.",
   },
   {
     icon: 'options',

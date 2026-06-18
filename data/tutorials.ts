@@ -1882,9 +1882,9 @@ export const TUTORIALS: Tutorial[] = [
         noTabBarOffset: true,
         bubbleAtBottom: true,
         body: {
-          discipline: 'Your real Recovery Score for the night: overnight HRV, sleep, resting heart rate, the prior day\'s activity, and breathing, each vs your own baseline. It needs overnight heart data from your watch; on a watch-off night it falls back to your sleep score.',
-          balanced: 'Your Recovery Score for the night, built from overnight HRV, sleep, resting heart rate, the day before\'s activity, and breathing, each compared to your own baseline. It needs overnight heart data from your watch; on a night the watch was off, it uses your sleep score instead.',
-          mindful: 'A gentle read on how rested you are, drawn from your overnight heart data and sleep. On a night without watch data, it leans on your sleep. Resting still matters.',
+          discipline: 'Your real Recovery Score for the night: overnight HRV, sleep, resting heart rate, the prior day\'s activity, and breathing, each vs your own baseline. It needs overnight heart data from a smartwatch or fitness tracker; on a night it was off, it falls back to your sleep score.',
+          balanced: 'Your Recovery Score for the night, built from overnight HRV, sleep, resting heart rate, the day before\'s activity, and breathing, each compared to your own baseline. It needs overnight heart data from a smartwatch or fitness tracker; on a night it was off, it uses your sleep score instead.',
+          mindful: 'A gentle read on how rested you are, drawn from your overnight heart data and sleep. On a night without tracker data, it leans on your sleep. Resting still matters.',
         },
       },
       {

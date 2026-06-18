@@ -40,8 +40,9 @@ function todayKey(): string {
 }
 
 const fmtMs = (ms: number) => {
-  const h = Math.floor(ms / 3600000);
-  const m = Math.round((ms % 3600000) / 60000);
+  let h = Math.floor(ms / 3600000);
+  let m = Math.round((ms % 3600000) / 60000);
+  if (m === 60) { h += 1; m = 0; } // carry: avoid "1h 60m"
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 };
 
@@ -522,7 +523,7 @@ function recoveryCoachTip(result: RecoveryResult, styleMode: string, mindfulGrow
 export default function SleepHub() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
-  const { sleepHours, sleepStages, sleepTimes, sleepAwakeMs, fetchSleepHistory, fetchLastNightSegments, fetchRecoverySignals } = useHealthKit();
+  const { sleepHours, sleepStages, sleepTimes, sleepAwakeMs, sleepAwakeCount, fetchSleepHistory, fetchLastNightSegments, fetchRecoverySignals } = useHealthKit();
 
   const { tab: initialTab } = useLocalSearchParams<{ tab?: string }>();
   const [activeTab, setActiveTab] = useState<SleepTab>(initialTab === 'recovery' ? 'recovery' : 'sleep');
@@ -1066,13 +1067,6 @@ export default function SleepHub() {
     const deepMs = sleepStages?.deep || 0;
     const remMs = sleepStages?.rem || 0;
 
-    const legend = [
-      { label: 'Core', color: theme.sleepCore, val: coreMs },
-      { label: 'Deep', color: theme.sleepDeep, val: deepMs },
-      { label: 'REM', color: theme.sleepRem, val: remMs },
-      ...(sleepAwakeMs > 0 ? [{ label: 'Awake', color: theme.sleepAwake, val: sleepAwakeMs }] : []),
-    ];
-
     return (
       <View style={cardStyle}>
         <CardWash color={score !== null ? scoreColor : undefined} scored={score !== null} />
@@ -1106,19 +1100,38 @@ export default function SleepHub() {
             </Text>
           )}
         </View>
-        {sleepStages && (
-          <View style={{ flexDirection: 'row', justifyContent: 'space-around', marginTop: 16, paddingHorizontal: 8 }}>
-            {legend.map(s => (
-              <View key={s.label} style={{ alignItems: 'center' }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 4 }}>
-                  <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: s.color }} />
-                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' }}>{s.label}</Text>
+        {sleepStages && (() => {
+          // Stage stat boxes: identical layout to the recovery signal boxes + the home
+          // Sleep card (chip + stacked label/value-unit). Core/Deep/REM show duration +
+          // % of sleep (donut/hypnogram denominator); Awake shows duration + wake-event
+          // count (interruptions, not a sleep-stage share).
+          const totalMs = sleepStages.totalMs || (displaySleep * 3600000);
+          const pct = (ms: number) => totalMs > 0 ? Math.round(ms / totalMs * 100) : 0;
+          const boxes = [
+            { label: 'Core',  color: theme.sleepCore,  value: fmtMs(coreMs), unit: `${pct(coreMs)}% of sleep` },
+            { label: 'Deep',  color: theme.sleepDeep,  value: fmtMs(deepMs), unit: `${pct(deepMs)}% of sleep` },
+            { label: 'REM',   color: theme.sleepRem,   value: fmtMs(remMs),  unit: `${pct(remMs)}% of sleep` },
+            { label: 'Awake', color: theme.sleepAwake, value: fmtMs(sleepAwakeMs), unit: `${sleepAwakeCount} ${sleepAwakeCount === 1 ? 'wake' : 'wakes'}` },
+          ];
+          return (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 16 }}>
+              {boxes.map(s => (
+                <View key={s.label} style={{ flex: 1, minWidth: '46%', flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: s.color + '12', borderWidth: 0.5, borderColor: s.color + '33', borderRadius: 10, paddingVertical: 9, paddingHorizontal: 11 }}>
+                  <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: s.color + '22', alignItems: 'center', justifyContent: 'center' }}>
+                    <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: s.color }} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' }}>{s.label}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 3 }}>
+                      <Text style={{ fontSize: 19, color: s.color, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5 }}>{s.value}</Text>
+                      <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>{s.unit}</Text>
+                    </View>
+                  </View>
                 </View>
-                <Text style={{ fontSize: 14, color: s.color, fontFamily: 'DMSans_700Bold' }}>{fmtMs(s.val)}</Text>
-              </View>
-            ))}
-          </View>
-        )}
+              ))}
+            </View>
+          );
+        })()}
         <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 16, textAlign: 'center' }}>
           For informational purposes only. Not medical advice.
         </Text>

@@ -37,7 +37,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
       },
       {
         term: 'Recovery (35%)',
-        explanation: 'Your real Recovery Score for the night: overnight HRV, sleep, resting heart rate, the prior day\'s activity, and breathing rate, each compared to your own baseline. It needs overnight heart data from your Apple Watch. On a night the watch was off, Recovery falls back to your sleep score so the day can still be scored. (VO2 Max, Cardio Recovery, and Blood Oxygen are shown for context but do not feed the score.)',
+        explanation: 'Your real Recovery Score for the night: overnight HRV, sleep, resting heart rate, the prior day\'s activity, and breathing rate, each compared to your own baseline. It needs overnight heart data from a smartwatch or fitness tracker. On a night it was off, Recovery falls back to your sleep score so the day can still be scored. (VO2 Max, Cardio Recovery, and Blood Oxygen are shown for context but do not feed the score.)',
       },
       {
         term: 'Activity (30%)',
@@ -84,7 +84,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     key: 'recovery_score_home',
     category: 'Sleep & Recovery',
     title: 'Recovery Score',
-    body: 'Recovery Score is a 0-100 measure of how ready your body is to perform today. It is based on your personal 7-day baselines, not population averages.\n\nPRIMED (80+): Strong readiness. Go hard.\nSTEADY (60-79): Ready zone. Train or rest by your plan.\nRECOVER (below 60): Body signaling it needs restoration.\n\nThe score requires at least one overnight physiological signal from your Apple Watch: HRV or resting heart rate. Manually entered sleep times alone do not generate a score. Tap this card to open the full Recovery Hub.',
+    body: 'Recovery Score is a 0-100 measure of how ready your body is to perform today. It is based on your personal 7-day baselines, not population averages.\n\nPRIMED (80+): Strong readiness. Go hard.\nSTEADY (60-79): Ready zone. Train or rest by your plan.\nRECOVER (below 60): Body signaling it needs restoration.\n\nThe score requires at least one overnight physiological signal from a smartwatch or fitness tracker: HRV or resting heart rate. Manually entered sleep times alone do not generate a score. Tap this card to open the full Recovery Hub.',
   },
   {
     key: 'macros_today',
@@ -229,7 +229,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     key: 'burn_accuracy',
     category: 'Fitness',
     title: 'Burn Accuracy',
-    body: 'Apple Watch and most fitness trackers are known to overestimate active calorie burn, often by 15 to 30%. This setting lets you apply a correction factor so your net calorie math reflects what you actually trust.',
+    body: 'Smartwatches and fitness trackers are known to overestimate active calorie burn, often by 15 to 30%. This setting lets you apply a correction factor so your net calorie math reflects what you actually trust.',
     definitions: [
       {
         term: '100% (Default)',

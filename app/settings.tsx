@@ -1422,7 +1422,7 @@ export default function SettingsScreen() {
               <TooltipIcon tooltipKey="burn_accuracy" />
             </View>
             <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, lineHeight: 18 }}>
-              Apple Watch often overestimates burn. Apply a correction factor to keep your net calories honest.
+              Smartwatches often overestimate burn. Apply a correction factor to keep your net calories honest.
             </Text>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               {([100, 90, 80, 70] as const).map(pct => (

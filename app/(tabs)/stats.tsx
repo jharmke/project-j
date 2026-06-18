@@ -1969,22 +1969,27 @@ export default function StatsScreen() {
             if (section.systemKey === 'challenges') return (
               <CollapsibleSection key={section.id} label={section.label} subtitle="Beat a period or set a goal" defaultOpen={isFirst} theme={theme} first={isFirst}>
                 <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, overflow: 'hidden' }]}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: challengeActive && challengeProg ? 4 : 8 }}>
+                    <Text style={[styles.cardLabel, { color: theme.textMuted }]}>
+                      {challengeActive && challengeProg
+                        ? (challengeProg.status === 'pending' ? 'Starts Tomorrow' : challengeProg.status === 'ended' ? 'Complete' : `Day ${challengeProg.dayNumber} of ${challengeProg.totalDays}`)
+                        : 'CHALLENGES'}
+                    </Text>
+                    <TooltipIcon tooltipKey="challenge_system" />
+                  </View>
                   {challengeActive && challengeProg ? (
                     <TouchableOpacity activeOpacity={0.7} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/challenges'); }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <Text style={[styles.cardLabel, { color: theme.textMuted }]}>
-                          {challengeProg.status === 'pending' ? 'Starts Tomorrow' : challengeProg.status === 'ended' ? 'Complete' : `Day ${challengeProg.dayNumber} of ${challengeProg.totalDays}`}
+                      <Text style={{ fontSize: 17, fontFamily: 'DMSans_700Bold', color: theme.textPrimary, marginBottom: 6 }}>{challengeTitle(challengeActive)}</Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlueRaw }}>
+                          {challengeActive.type === 'beat'
+                            ? (challengeProg.won ? 'Beating it on all metrics' : `Leading on ${challengeProg.metricsBeaten ?? 0} of ${challengeProg.metricsTotal ?? 0}`)
+                            : challengeProg.isWeight
+                              ? `${challengeProg.weightChangeSoFar == null ? '—' : `${challengeProg.weightChangeSoFar > 0 ? '+' : ''}${challengeProg.weightChangeSoFar.toFixed(1)}`} of ${Math.abs(challengeActive.target ?? 0)} lbs`
+                              : `Hit ${challengeProg.daysHit ?? 0} of ${challengeProg.daysElapsed ?? 0} days`}
                         </Text>
                         <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
                       </View>
-                      <Text style={{ fontSize: 17, fontFamily: 'DMSans_700Bold', color: theme.textPrimary, marginBottom: 6 }}>{challengeTitle(challengeActive)}</Text>
-                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlueRaw }}>
-                        {challengeActive.type === 'beat'
-                          ? (challengeProg.won ? 'Beating it on all metrics' : `Leading on ${challengeProg.metricsBeaten ?? 0} of ${challengeProg.metricsTotal ?? 0}`)
-                          : challengeProg.isWeight
-                            ? `${challengeProg.weightChangeSoFar == null ? '—' : `${challengeProg.weightChangeSoFar > 0 ? '+' : ''}${challengeProg.weightChangeSoFar.toFixed(1)}`} of ${Math.abs(challengeActive.target ?? 0)} lbs`
-                            : `Hit ${challengeProg.daysHit ?? 0} of ${challengeProg.daysElapsed ?? 0} days`}
-                      </Text>
                     </TouchableOpacity>
                   ) : (
                     <>
@@ -2103,7 +2108,10 @@ export default function StatsScreen() {
                     style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: comparisonCardOpen ? 8 : 0 }}
                   >
                     <Text style={[styles.cardLabel, { color: theme.textMuted }]}>COMPARISON</Text>
-                    <Ionicons name={comparisonCardOpen ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textMuted} />
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                      <TooltipIcon tooltipKey="comparison_report" />
+                      <Ionicons name={comparisonCardOpen ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textMuted} />
+                    </View>
                   </TouchableOpacity>
                   {comparisonCardOpen && (
                     <>

@@ -11,6 +11,7 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useTheme } from '../theme';
 import { useToast } from '../components/Toast';
+import TooltipIcon from '../components/TooltipIcon';
 import { METRIC_META, MetricId } from '../utils/comparisonEngine';
 import {
   Challenge, ChallengeProgress, ChallengeMetric,
@@ -83,6 +84,9 @@ export default function ChallengesScreen() {
         <Ionicons name="chevron-back" size={24} color={accent} />
       </TouchableOpacity>
       <Text style={{ fontSize: 24, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: accent, flex: 1 }}>CHALLENGES</Text>
+      <View style={{ transform: [{ translateY: -1 }] }}>
+        <TooltipIcon tooltipKey="challenge_system" size={18} />
+      </View>
     </View>
   );
 

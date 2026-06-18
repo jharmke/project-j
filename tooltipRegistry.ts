@@ -61,6 +61,18 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     ],
   },
   {
+    key: 'challenge_system',
+    category: 'Habits',
+    title: 'Challenges',
+    body: 'Start one challenge at a time and track it live on your home screen and here in Stats. Two kinds:\n\nBeat a Previous Period: pick the metrics you care about and try to outperform a past stretch (the equivalent period just before, or one you choose). You win by beating it on ALL the metrics you picked, so choose one for a near-sure win or several for a real test.\n\nCustom Goal: set a higher daily target for one metric, just for this stretch. Your normal goals never change. Hit the target each day. For challenges longer than a week, one off-day a week still counts as Complete, and a clean every-day run is a Perfect.\n\nFall short on any challenge and you still get credit for what you did, never a failure screen. For informational purposes only. Not medical advice.',
+    definitions: [
+      { term: 'Beat vs Custom', explanation: 'Beat = outperform a past period across the metrics you choose. Custom = one higher daily target for a set stretch.' },
+      { term: 'Weight goals', explanation: 'A weight challenge is an end-of-stretch change goal, capped at a safe pace (about 2 lbs a week to lose, 1 to gain). Only available if your goal is to lose or gain.' },
+      { term: 'Start today vs tomorrow', explanation: 'Challenges run in full days. Start tomorrow for a clean first day, or today if you want the current day to count.' },
+      { term: 'Run It Back', explanation: 'Re-start any past challenge from your history with one tap.' },
+    ],
+  },
+  {
     key: 'sleep_score',
     tutorialId: 'sleep_card',
     category: 'Sleep & Recovery',

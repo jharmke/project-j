@@ -96,6 +96,17 @@ function daysBetween(startKey: string, endKey: string): number {
 }
 export function todayKey(): string { return fmtKey(new Date()); }
 
+// Short human title for a challenge (shared by the Challenges page + Stats section).
+export function challengeTitle(ch: Challenge): string {
+  if (ch.type === 'beat') return 'Beat a Previous Period';
+  const m = ch.metric as ChallengeMetric;
+  if (m === 'weight') {
+    const lose = !ch.weightGoal.startsWith('gain');
+    return `${lose ? 'Lose' : 'Gain'} ${Math.abs(ch.target ?? 0)} lbs`;
+  }
+  return `${ch.target} ${METRIC_META[m].unit}/day · ${METRIC_META[m].label}`;
+}
+
 // ── Safe-rate weight cap (SPEC: 2 lb/wk loss, 1 lb/wk gain, maintain = no weight challenge) ──
 export function maxWeightChangeLbs(weightGoal: string, days: number): number {
   const weeks = days / 7;

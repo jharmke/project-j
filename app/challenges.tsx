@@ -15,7 +15,7 @@ import { METRIC_META, MetricId } from '../utils/comparisonEngine';
 import {
   Challenge, ChallengeProgress, ChallengeMetric,
   loadActiveChallenge, loadChallengeHistory, clearActiveChallenge, appendChallengeHistory,
-  computeChallengeProgress, createChallenge,
+  computeChallengeProgress, createChallenge, challengeTitle,
 } from '../utils/challenges';
 
 function fmtMetricValue(id: MetricId, v: number | null): string {
@@ -29,18 +29,6 @@ function fmtMetricValue(id: MetricId, v: number | null): string {
     case 'weight': return `${v > 0 ? '+' : ''}${v.toFixed(1)}`;
     default: return `${v}`;
   }
-}
-
-function challengeTitle(ch: Challenge): string {
-  if (ch.type === 'beat') {
-    return ch.benchmarkStartKey && ch.metrics ? 'Beat Your Previous Period' : 'Beat a Previous Period';
-  }
-  const m = ch.metric as ChallengeMetric;
-  if (m === 'weight') {
-    const lose = !ch.weightGoal.startsWith('gain');
-    return `${lose ? 'Lose' : 'Gain'} ${Math.abs(ch.target ?? 0)} lbs`;
-  }
-  return `${ch.target} ${METRIC_META[m].unit}/day · ${METRIC_META[m].label}`;
 }
 
 export default function ChallengesScreen() {

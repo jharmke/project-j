@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageSet } from './utils/storage';
 
 export type StatsCardType = 'system' | 'graph';
-export type SystemCardKey = 'atAGlance' | 'trends' | 'records' | 'streaks' | 'calendar' | 'reports';
+export type SystemCardKey = 'atAGlance' | 'trends' | 'records' | 'streaks' | 'challenges' | 'calendar' | 'reports';
 export type DataKey =
   // Nutrition
   'calories' | 'macros' | 'netCalories' | 'water' | 'advancedNutrition' |
@@ -50,10 +50,11 @@ export const DEFAULT_STATS_CARDS: StatsCard[] = [
   { id: 'graph_sleep',     type: 'graph',  dataKey: 'sleep',       chartType: 'line',       label: 'Sleep',              visible: true,  order: 6,  period: 30, placement: 'stats' },
   { id: 'graph_workoutFreq',type:'graph',  dataKey: 'workoutFreq', chartType: 'bar',        label: 'Workout Frequency',  visible: true,  order: 7,  period: 30, placement: 'stats' },
   // System cards (below graphs)
-  { id: 'sys_records',  type: 'system', systemKey: 'records',  label: 'Records',  visible: true, order: 8,  period: 7, placement: 'stats' },
-  { id: 'sys_streaks',  type: 'system', systemKey: 'streaks',  label: 'Streaks',  visible: true, order: 9,  period: 7, placement: 'stats' },
-  { id: 'sys_calendar', type: 'system', systemKey: 'calendar', label: 'Calendar', visible: true, order: 10, period: 7, placement: 'stats' },
-  { id: 'sys_reports',  type: 'system', systemKey: 'reports',  label: 'Reports',  visible: true, order: 11, period: 30, placement: 'stats' },
+  { id: 'sys_records',    type: 'system', systemKey: 'records',    label: 'Records',    visible: true, order: 8,  period: 7, placement: 'stats' },
+  { id: 'sys_streaks',    type: 'system', systemKey: 'streaks',    label: 'Streaks',    visible: true, order: 9,  period: 7, placement: 'stats' },
+  { id: 'sys_challenges', type: 'system', systemKey: 'challenges', label: 'Challenges', visible: true, order: 10, period: 7, placement: 'stats' },
+  { id: 'sys_calendar',   type: 'system', systemKey: 'calendar',   label: 'Calendar',   visible: true, order: 11, period: 7, placement: 'stats' },
+  { id: 'sys_reports',    type: 'system', systemKey: 'reports',    label: 'Reports',    visible: true, order: 12, period: 30, placement: 'stats' },
 ];
 
 const LEGACY_NUTRITION_KEY_MAP: Record<string, string> = {

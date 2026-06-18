@@ -26,6 +26,7 @@ import { loadWeeklySummary, WeeklySummaryData } from '../../utils/weeklySummary'
 import { loadMonthlySummary, MonthlySummaryData } from '../../utils/monthlySummary';
 import { TIPS_GATED } from '../../utils/smartTipsEngine';
 import { archiveNav } from '../../utils/archiveNav';
+import { loadActiveChallenge, loadChallengeHistory, computeChallengeProgress, challengeTitle, Challenge, ChallengeProgress } from '../../utils/challenges';
 import { showToolkit } from '../../components/ToolkitSheet';
 import { useTutorial } from '../../context/TutorialContext';
 import { useTutorialTarget } from '../../hooks/useTutorialTarget';
@@ -271,6 +272,19 @@ export default function StatsScreen() {
   // Monthly Summaries card
   const [monthlyCardOpen, setMonthlyCardOpen] = useState(false);
   const [monthlySummaries, setMonthlySummaries] = useState<MonthlySummaryData[]>([]);
+
+  // Challenges section (active challenge + history count). Reloads on focus.
+  const [challengeActive, setChallengeActive] = useState<Challenge | null>(null);
+  const [challengeProg, setChallengeProg] = useState<ChallengeProgress | null>(null);
+  const [challengeHistCount, setChallengeHistCount] = useState(0);
+  const loadChallengeSection = useCallback(async () => {
+    const ch = await loadActiveChallenge();
+    setChallengeActive(ch);
+    setChallengeProg(ch ? await computeChallengeProgress(ch) : null);
+    const hist = await loadChallengeHistory();
+    setChallengeHistCount(hist.length);
+  }, []);
+  useFocusEffect(useCallback(() => { loadChallengeSection(); }, [loadChallengeSection]));
 
   const [creatorVisible, setCreatorVisible] = useState(false);
   const [creatorStep, setCreatorStep] = useState<1 | 2 | 3>(1);
@@ -1951,6 +1965,46 @@ export default function StatsScreen() {
             )}
           </View>
             </CollapsibleSection>
+            );
+            if (section.systemKey === 'challenges') return (
+              <CollapsibleSection key={section.id} label={section.label} subtitle="Beat a period or set a goal" defaultOpen={isFirst} theme={theme} first={isFirst}>
+                <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, overflow: 'hidden' }]}>
+                  {challengeActive && challengeProg ? (
+                    <TouchableOpacity activeOpacity={0.7} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/challenges'); }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <Text style={[styles.cardLabel, { color: theme.textMuted }]}>
+                          {challengeProg.status === 'pending' ? 'Starts Tomorrow' : challengeProg.status === 'ended' ? 'Complete' : `Day ${challengeProg.dayNumber} of ${challengeProg.totalDays}`}
+                        </Text>
+                        <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
+                      </View>
+                      <Text style={{ fontSize: 17, fontFamily: 'DMSans_700Bold', color: theme.textPrimary, marginBottom: 6 }}>{challengeTitle(challengeActive)}</Text>
+                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlueRaw }}>
+                        {challengeActive.type === 'beat'
+                          ? (challengeProg.won ? 'Beating it on all metrics' : `Leading on ${challengeProg.metricsBeaten ?? 0} of ${challengeProg.metricsTotal ?? 0}`)
+                          : challengeProg.isWeight
+                            ? `${challengeProg.weightChangeSoFar == null ? '—' : `${challengeProg.weightChangeSoFar > 0 ? '+' : ''}${challengeProg.weightChangeSoFar.toFixed(1)}`} of ${Math.abs(challengeActive.target ?? 0)} lbs`
+                            : `Hit ${challengeProg.daysHit ?? 0} of ${challengeProg.daysElapsed ?? 0} days`}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <>
+                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 20, marginBottom: 14 }}>
+                        Outperform a past week or month, or set a higher daily target for a stretch. Track it live on your home screen.
+                      </Text>
+                      <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/challenge-create'); }}
+                        style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 8, paddingVertical: 12, alignItems: 'center' }}>
+                        <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: '#fff' }}>New Challenge</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
+                {challengeHistCount > 0 && (
+                  <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/challenges'); }}
+                    style={{ alignSelf: 'center', paddingVertical: 10 }} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+                    <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlueRaw }}>View past challenges ({challengeHistCount})</Text>
+                  </TouchableOpacity>
+                )}
+              </CollapsibleSection>
             );
             if (section.systemKey === 'calendar') return (
               <CollapsibleSection key={section.id} label={section.label} subtitle="Day-by-day history" defaultOpen={isFirst} theme={theme} first={isFirst}>

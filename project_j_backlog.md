@@ -4,6 +4,11 @@
 
 ---
 
+## MOTIVATION / GAMIFICATION
+- Motivation hub: unify Challenges + Achievements + Records + Streaks into one "proof you're showing up" family (Records/Streaks already live in Stats; Challenges section being added there too; Achievements has its own page). Design the Challenges Stats section so achievement siblings can slot in later. (Justin 2026-06-18, while building #7.)
+
+---
+
 ## FOOD INTELLIGENCE
 
 - Food health score -- per-item score based on how well food fits current goals at that moment.

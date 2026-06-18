@@ -260,14 +260,16 @@ export default function StatsScreen() {
   const [archiveCalMonth, setArchiveCalMonth] = useState(new Date().getMonth());
   const [archiveCalYear, setArchiveCalYear] = useState(new Date().getFullYear());
   // Reports card collapse state (each card individually collapsible).
-  const [daySummariesOpen, setDaySummariesOpen] = useState(true);
+  // All archives collapse by default; only EvR opens (the marquee interactive tool).
+  const [daySummariesOpen, setDaySummariesOpen] = useState(false);
   const [evrCardOpen, setEvrCardOpen] = useState(true);
-  const [weeklyCardOpen, setWeeklyCardOpen] = useState(true);
+  const [comparisonCardOpen, setComparisonCardOpen] = useState(false);
+  const [weeklyCardOpen, setWeeklyCardOpen] = useState(false);
   // Weekly Summaries card: loaded from storage, grouped by month.
   const [weeklySummaries, setWeeklySummaries] = useState<WeeklySummaryData[]>([]);
   const [expandedWeeklyMonths, setExpandedWeeklyMonths] = useState<Record<string, boolean>>({});
   // Monthly Summaries card
-  const [monthlyCardOpen, setMonthlyCardOpen] = useState(true);
+  const [monthlyCardOpen, setMonthlyCardOpen] = useState(false);
   const [monthlySummaries, setMonthlySummaries] = useState<MonthlySummaryData[]>([]);
 
   const [creatorVisible, setCreatorVisible] = useState(false);
@@ -2034,6 +2036,31 @@ export default function StatsScreen() {
                     </>
                   )}
                 </View>
+                {/* ── Comparison Report (launch card) ── */}
+                <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, overflow: 'hidden', marginTop: 12 }]}>
+                  {comparisonCardOpen && <Ionicons name="swap-horizontal" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />}
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setComparisonCardOpen(o => !o); }}
+                    style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: comparisonCardOpen ? 8 : 0 }}
+                  >
+                    <Text style={[styles.cardLabel, { color: theme.textMuted }]}>COMPARISON</Text>
+                    <Ionicons name={comparisonCardOpen ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textMuted} />
+                  </TouchableOpacity>
+                  {comparisonCardOpen && (
+                    <>
+                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 20, marginBottom: 14 }}>
+                        Compare two periods side by side: this week vs last week, this month vs last month, and more. Just the numbers, no scores.
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/comparison-report'); }}
+                        style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 8, paddingVertical: 12, alignItems: 'center' }}
+                      >
+                        <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: '#fff' }}>New Comparison</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </View>
                 {renderDayArchive()}
                 {renderWeeklyCard()}
                 {renderMonthlyCard()}
@@ -2571,16 +2598,19 @@ export default function StatsScreen() {
       {/* ── FAB speed dial items ── */}
       {showFabMenu && (
         <View style={{ position: 'absolute', bottom: 86, right: 20, alignItems: 'flex-end', gap: 12 }}>
-          {/* Add Report -- disabled, coming soon */}
+          {/* Comparison Report -- opens the comparison screen */}
           <Animated.View style={{ opacity: fabItem1Anim, transform: [{ translateY: fabItem1Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-              <View style={{ backgroundColor: theme.bgCard, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 0.5, borderColor: theme.borderCard, opacity: 0.5 }}>
-                <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_500Medium' }}>Add Report</Text>
-                <Text style={{ color: theme.textDim, fontSize: 10, fontFamily: 'DMSans_400Regular' }}>Coming soon</Text>
-              </View>
-              <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, alignItems: 'center', justifyContent: 'center', opacity: 0.5 }}>
-                <Ionicons name="bar-chart-outline" size={20} color={theme.textDim} />
-              </View>
+              <TouchableOpacity
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); setTimeout(() => router.push('/comparison-report'), 150); }}
+                style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, shadowColor: theme.accentBlueRaw, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Comparison</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); setTimeout(() => router.push('/comparison-report'), 150); }}
+                style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlueRaw, alignItems: 'center', justifyContent: 'center', shadowColor: theme.accentBlueRaw, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <Ionicons name="swap-horizontal" size={20} color="#ffffff" />
+              </TouchableOpacity>
             </View>
           </Animated.View>
 

@@ -91,6 +91,10 @@ Full access, no limitations, highlight included. Justification (on record, no ba
 - A preset you lack history for: QUIET disabled-chip-with-a-hint ("Last month · needs more data"), greyed, no jarring modal. Tapping does nothing harsh (maybe a soft haptic). Tells you WHY before you tap. (Chosen over a popup for CPP/calm "it is a report" tone.)
 - A metric row with no data inside a valid period: simple "—/no data" on that row.
 
+## #6 REMAINING / polish
+- CPP polish pass on the whole comparison screen + 5-theme audit (Justin 2026-06-18: "this whole page needs a polish pass anyways"). Includes the native date-picker calendar styling ("calendar is ugly") -- decide whether to keep datetimepicker or build a custom centered calendar grid.
+- (i) tooltip 'comparison_report' added; no interactive tutorial yet (tutorialId intentionally omitted so no dead "Take a Tour" button ships; add when a tour is built).
+
 ## #6 build flags / teardown
 - Delete `head-to-head.tsx`.
 - Winner-direction inherits H2H logic (above).

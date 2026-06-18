@@ -50,6 +50,17 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     ],
   },
   {
+    key: 'comparison_report',
+    category: 'Reports',
+    title: 'Comparison Report',
+    body: 'Pick two periods and see them side by side across your 7 core metrics. Just the numbers: no score, no winner declared, no coaching. The stronger value in each row is highlighted in accent, but there is no overall tally and the other side is never marked as "bad."\n\nMulti-day periods show a daily average, and each metric only averages the days that actually have data for it, so two metrics on the same side can span different day counts (shown under each value). Excluded days are removed, and today is never included, since a half-logged today would skew the average. Weight is shown as net change across the period, first weigh-in to last, so it needs at least two weigh-ins.\n\nNet Cals highlights the side closest to your pace target. Everything else highlights the higher value, except Weight, which highlights the bigger change in your goal direction. An exact match is a tie, with no buffer.',
+    definitions: [
+      { term: 'Presets', explanation: 'This week vs last week, this month vs last month, last 7 days vs the 7 before, and last 30 vs the 30 before. Free for everyone.' },
+      { term: 'Day vs Day', explanation: 'Compare any two single days (Pro). Each column is one day, so there are no day counts to show.' },
+      { term: 'Not enough data', explanation: 'A preset you have not logged enough days for shows greyed with a hint. A metric with no data on a side shows a dash on that row.' },
+    ],
+  },
+  {
     key: 'sleep_score',
     tutorialId: 'sleep_card',
     category: 'Sleep & Recovery',

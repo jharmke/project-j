@@ -11,7 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, PanResponder, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import ReAnimated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -524,7 +524,8 @@ export default function SleepHub() {
   const insets = useSafeAreaInsets();
   const { sleepHours, sleepStages, sleepTimes, sleepAwakeMs, fetchSleepHistory, fetchLastNightSegments, fetchRecoverySignals } = useHealthKit();
 
-  const [activeTab, setActiveTab] = useState<SleepTab>('sleep');
+  const { tab: initialTab } = useLocalSearchParams<{ tab?: string }>();
+  const [activeTab, setActiveTab] = useState<SleepTab>(initialTab === 'recovery' ? 'recovery' : 'sleep');
   const [range, setRange] = useState<'7' | '30'>('7');
   const [history, setHistory] = useState<SleepNight[]>([]);
   // Always-30-night set powering the PERSONAL BASELINES (avg deep/REM/bedtime/wake).

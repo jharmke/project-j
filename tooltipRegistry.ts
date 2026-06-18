@@ -81,6 +81,12 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     ],
   },
   {
+    key: 'recovery_score_home',
+    category: 'Sleep & Recovery',
+    title: 'Recovery Score',
+    body: 'Recovery Score is a 0-100 measure of how ready your body is to perform today. It is based on your personal 7-day baselines, not population averages.\n\nPRIMED (80+): Strong readiness. Go hard.\nSTEADY (60-79): Ready zone. Train or rest by your plan.\nRECOVER (below 60): Body signaling it needs restoration.\n\nThe score requires at least one overnight physiological signal from your Apple Watch: HRV or resting heart rate. Manually entered sleep times alone do not generate a score. Tap this card to open the full Recovery Hub.',
+  },
+  {
     key: 'macros_today',
     tutorialId: 'macros_card',
     category: 'Nutrition',

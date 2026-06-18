@@ -48,11 +48,15 @@ import { useTutorial, isTutorialSeen } from '../../context/TutorialContext';
 import { useTutorialTarget } from '../../hooks/useTutorialTarget';
 import { showToolkit } from '../../components/ToolkitSheet';
 import ToggleSwitch from '../../components/ToggleSwitch';
-import { StoredTip, loadSmartTips, CoachTipCache, loadCoachTipCacheSleep } from '../../utils/smartTipsEngine';
+import { StoredTip, loadSmartTips, CoachTipCache, loadCoachTipCacheSleep, loadCoachTipCacheRecovery } from '../../utils/smartTipsEngine';
 import { refreshCoachTip, resolveTipBody, resolveTipTitle, refreshCoachTipSleep } from '../../utils/coachAI';
 import NutrientDrilldownModal, { DrilldownItem, computeNetCarbsForEntry } from '../../components/NutrientDrilldownModal';
 import AnimatedNumber from '../../components/AnimatedNumber';
 import SleepDonut from '../../components/SleepDonut';
+import { recoveryZone } from '../../utils/recoveryScore';
+
+const RECOVERY_PURPLE = '#9b7adb';
+const CAROUSEL_PAGE_W = Dimensions.get('window').width - 32;
 
 // ─── Card Registry ────────────────────────────────────────────────────────────
 export type CardId =
@@ -87,7 +91,7 @@ const CARD_REGISTRY: CardMeta[] = [
   { id: 'weight',         label: 'Weight',             description: 'Daily weigh-in & total progress',        defaultVisible: true },
   { id: 'workout',        label: "Today's Training",   description: "Workout summary and calories burned",     defaultVisible: true },
   { id: 'steps',          label: 'Steps',              description: 'Step count from Apple Health',           defaultVisible: true },
-  { id: 'sleep',          label: 'Sleep',              description: 'Sleep duration & stages from Apple Health', defaultVisible: true },
+  { id: 'sleep',          label: 'Sleep & Recovery',   description: 'Sleep score + Recovery Score in one card', defaultVisible: true },
   { id: 'fitness_metrics',label: 'Fitness Metrics',    description: 'VO2 Max & cardio recovery score',        defaultVisible: true },
   { id: 'daily_note',       label: 'Daily Note',         description: 'Journal entry for the day',             defaultVisible: true },
   { id: 'gratitude_streak', label: 'Gratitude Streak',  description: 'Daily gratitude habit tracker',          defaultVisible: false },
@@ -776,6 +780,15 @@ export default function HomeScreen() {
   const [sleepManualDeep,   setSleepManualDeep]     = useState<string>('');
   const [sleepManualRem,    setSleepManualRem]      = useState<string>('');
 
+  // Recovery home card state
+  const [homeRecoveryScore,   setHomeRecoveryScore]   = useState<number | null>(null);
+  const [homeRecoverySignals, setHomeRecoverySignals] = useState<{ hrv: number|null; rhr: number|null; resp: number|null; spo2: number|null } | null>(null);
+  const [recoveryCoachCache,  setRecoveryCoachCache]  = useState<CoachTipCache | null>(null);
+  const [activeSleepFace, setActiveSleepFace] = useState(0); // 0=recovery, 1=sleep
+  const carouselRef = useRef<ScrollView>(null);
+  const activeSleepFaceRef = useRef(0);
+  const autoScrollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Style mode + faith journey
   const [styleMode, setStyleMode] = useState<'discipline' | 'balanced' | 'mindful'>('balanced');
   const [faithJourney, setFaithJourney] = useState<'rooted' | 'exploring' | 'notrightnow'>('rooted');
@@ -1087,13 +1100,30 @@ export default function HomeScreen() {
     // Sleep Coach for the home sleep card: cached body instantly, AI body when ready.
     loadCoachTipCacheSleep().then(c => { if (c) setSleepCoachCache(c); }).catch(() => {});
     refreshCoachTipSleep(14).then(c => setSleepCoachCache(c)).catch(() => {});
+    loadCoachTipCacheRecovery().then(c => { if (c) setRecoveryCoachCache(c); }).catch(() => {});
   }, []));
 
   // ── Keep refs in sync for auto-advance closure ──────────────────────────────
   useEffect(() => { homeTipsLengthRef.current = homeTips.length; }, [homeTips.length]);
   useEffect(() => { tipIndexRef.current = tipIndex; }, [tipIndex]);
 
-  // ── Auto-advance tip card every 22s (pause on drag, resume 10s after) ───────
+  // ── Sleep/Recovery carousel auto-scroll (6s cadence, 12s cooldown after a
+  //    manual swipe/tap so it doesn't move out from under you while reading) ──
+  function scheduleCarouselTick(delay = 6000) {
+    if (autoScrollTimerRef.current) clearTimeout(autoScrollTimerRef.current);
+    autoScrollTimerRef.current = setTimeout(() => {
+      const next = activeSleepFaceRef.current === 0 ? 1 : 0;
+      carouselRef.current?.scrollTo({ x: next * CAROUSEL_PAGE_W, animated: true });
+      activeSleepFaceRef.current = next;
+      setActiveSleepFace(next);
+      scheduleCarouselTick();
+    }, delay);
+  }
+  useEffect(() => {
+    scheduleCarouselTick();
+    return () => { if (autoScrollTimerRef.current) clearTimeout(autoScrollTimerRef.current); };
+  }, []);
+
   const stopTipAuto = () => { if (tipAutoRef.current) { clearInterval(tipAutoRef.current); tipAutoRef.current = null; } };
   const startTipAuto = useCallback(() => {
     stopTipAuto();
@@ -1428,6 +1458,8 @@ export default function HomeScreen() {
           if (data.sleepManualCore) setSleepManualCore(String(data.sleepManualCore));
           if (data.sleepManualDeep) setSleepManualDeep(String(data.sleepManualDeep));
           if (data.sleepManualRem)  setSleepManualRem(String(data.sleepManualRem));
+          setHomeRecoveryScore(typeof data.recoveryScore === 'number' && Number.isFinite(data.recoveryScore) ? data.recoveryScore : null);
+          setHomeRecoverySignals(data.recoverySignals && typeof data.recoverySignals === 'object' ? data.recoverySignals : null);
           if (Array.isArray(data.waterEntries)) {
             setWaterEntries(data.waterEntries);
             setWater(waterTotalFromEntries(data.waterEntries));
@@ -2209,18 +2241,122 @@ export default function HomeScreen() {
     );
   };
 
-  const renderSleepCard = () => {
+  const renderSleepRecoveryCard = () => {
     const displaySleep = sleepOverride ?? sleepHours;
+    const recZone = homeRecoveryScore !== null ? recoveryZone(homeRecoveryScore) : null;
+    const recColor = recZone ? (recZone.zoneColor === 'good' ? theme.statusGood : recZone.zoneColor === 'warn' ? theme.statusWarn : theme.statusBad) : theme.textDim;
+    const recDonutSize = 120, recDonutStroke = 14, recDonutRadius = (recDonutSize - recDonutStroke) / 2, recDonutCirc = 2 * Math.PI * recDonutRadius;
     return (
-      <Animated.View ref={sleepCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, overflow: 'hidden', transform: [{ scale: sleepCardScale }] }]}>
-        <Ionicons name="moon" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
-        <TouchableOpacity
-          activeOpacity={1}
-          onPress={() => { if (editingSleep) return; triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/sleep'); }}
-          onPressIn={() => { if (editingSleep) return; Animated.timing(sleepCardScale, { toValue: 0.97, duration: 100, useNativeDriver: true }).start(); }}
-          onPressOut={() => { Animated.timing(sleepCardScale, { toValue: 1, duration: 100, useNativeDriver: true }).start(); }}
+      <Animated.View ref={sleepCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: activeSleepFace === 0 ? RECOVERY_PURPLE : theme.accentBlueRaw, borderTopWidth: 1.5, overflow: 'hidden', padding: 0, transform: [{ scale: sleepCardScale }] }]}>
+        <ScrollView
+          ref={carouselRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScrollBeginDrag={() => { if (autoScrollTimerRef.current) clearTimeout(autoScrollTimerRef.current); }}
+          onMomentumScrollEnd={(e) => {
+            const page = Math.round(e.nativeEvent.contentOffset.x / CAROUSEL_PAGE_W);
+            activeSleepFaceRef.current = page;
+            setActiveSleepFace(page);
+            scheduleCarouselTick(12000);
+          }}
+          style={{ width: CAROUSEL_PAGE_W }}
         >
-        
+          {/* ── Page 0: Recovery ── */}
+          <TouchableOpacity
+            activeOpacity={1}
+            style={{ width: CAROUSEL_PAGE_W, padding: 16 }}
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/sleep', params: { tab: 'recovery' } }); }}
+            onPressIn={() => { Animated.timing(sleepCardScale, { toValue: 0.97, duration: 100, useNativeDriver: true }).start(); }}
+            onPressOut={() => { Animated.timing(sleepCardScale, { toValue: 1, duration: 100, useNativeDriver: true }).start(); }}
+          >
+            <Ionicons name="pulse" size={130} color={RECOVERY_PURPLE} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.08 }} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons name="pulse-outline" size={11} color={theme.textMuted} />
+                <Text style={[styles.cardLabel, { marginBottom: 0, color: theme.textMuted }]}>Recovery Today</Text>
+                <TooltipIcon tooltipKey="recovery_score_home" />
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
+            </View>
+            {homeRecoveryScore === null ? (
+              <View style={{ paddingVertical: 8 }}>
+                <Text style={{ fontSize: 13, color: theme.textDim, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', marginBottom: 6 }}>No recovery data yet</Text>
+                <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', lineHeight: 16 }}>Wear your Apple Watch to sleep to see your Recovery Score.</Text>
+              </View>
+            ) : (() => {
+              const recTip = recoveryCoachCache ? resolveTipBody(recoveryCoachCache) : null;
+              // Each signal carries its own identity color + icon (not a good/bad
+              // judgment, same as the sleep stage colors). Recovery is baseline-
+              // relative, so we don't threshold-color these here.
+              const recSignals: { label: string; value: string; unit: string; color: string; icon: any }[] = [];
+              if (homeRecoverySignals?.hrv != null)  recSignals.push({ label: 'HRV',        value: `${(Math.round((homeRecoverySignals.hrv as number) * 10) / 10).toFixed(1)}`, unit: 'ms',   color: '#9b7adb', icon: 'pulse' });
+              if (homeRecoverySignals?.rhr != null)  recSignals.push({ label: 'Resting HR', value: `${Math.round(homeRecoverySignals.rhr as number)}`,                              unit: 'bpm',  color: '#d65d7a', icon: 'heart' });
+              if (homeRecoverySignals?.resp != null) recSignals.push({ label: 'Resp Rate',  value: `${(Math.round((homeRecoverySignals.resp as number) * 10) / 10).toFixed(1)}`, unit: '/min', color: '#3a9bc1', icon: 'cloud-outline' });
+              if (homeRecoverySignals?.spo2 != null) recSignals.push({ label: 'Blood O2',   value: `${Math.round(homeRecoverySignals.spo2 as number)}`,                            unit: '%',    color: '#2a9d6e', icon: 'water' });
+              const readinessLine = styleMode === 'mindful'
+                ? (recZone?.zoneColor === 'good' ? 'Your body is showing strong readiness.' : recZone?.zoneColor === 'warn' ? 'Your body is in a steady place today.' : 'Your body is asking for a gentler day.')
+                : (recZone?.zoneColor === 'good' ? 'Your body is ready to perform.' : recZone?.zoneColor === 'warn' ? 'You are in the ready zone today.' : 'Signals point to taking it easier today.');
+              return (
+                <View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14 }}>
+                    <View style={{ flex: 1, paddingRight: 12 }}>
+                      <View style={{ shadowColor: '#000000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.18, shadowRadius: 0 }}>
+                        <Text style={{ fontSize: 40, color: recColor, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, opacity: 0.88, lineHeight: 42 }}>{recZone?.label}</Text>
+                      </View>
+                      <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium', lineHeight: 16, marginTop: 4 }}>{readinessLine}</Text>
+                    </View>
+                    <ScoreRing
+                      score={homeRecoveryScore} scoreColor={recColor} trackColor={theme.sleepTrack}
+                      donutSize={recDonutSize} donutStroke={recDonutStroke} donutRadius={recDonutRadius} donutCirc={recDonutCirc}
+                      shimmer={homeRecoveryScore >= 80} refreshKey={refreshKey}
+                    />
+                  </View>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+                    {recSignals.map(s => (
+                      <View key={s.label} style={{ flex: 1, minWidth: '46%', flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: s.color + '12', borderWidth: 0.5, borderColor: s.color + '33', borderRadius: 10, paddingVertical: 9, paddingHorizontal: 11 }}>
+                        <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: s.color + '22', alignItems: 'center', justifyContent: 'center' }}>
+                          <Ionicons name={s.icon} size={13} color={s.color} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' }}>{s.label}</Text>
+                          <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 3 }}>
+                            <Text style={{ fontSize: 19, color: s.color, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5 }}>{s.value}</Text>
+                            <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>{s.unit}</Text>
+                          </View>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                  {recTip && (
+                    <View style={{ marginTop: 10, paddingTop: 10, borderTopWidth: 0.5, borderTopColor: theme.borderSubtle }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
+                        <Ionicons name="bulb-outline" size={11} color={theme.textMuted} style={{ marginTop: 2 }} />
+                        <Text numberOfLines={2} style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_400Regular', fontStyle: 'italic', flex: 1, lineHeight: 17 }}>{recTip}</Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 6 }}>
+                        <Text style={{ fontSize: 10, color: RECOVERY_PURPLE, fontFamily: 'DMSans_600SemiBold' }}>Recovery Hub</Text>
+                        <Ionicons name="chevron-forward" size={11} color={RECOVERY_PURPLE} style={{ marginLeft: 1 }} />
+                      </View>
+                    </View>
+                  )}
+                  <Text style={{ fontSize: 10, color: theme.textDim, fontFamily: 'DMSans_400Regular', textAlign: 'center', marginTop: 8, fontStyle: 'italic' }}>For informational purposes only. Not medical advice.</Text>
+                </View>
+              );
+            })()}
+          </TouchableOpacity>
+
+          {/* ── Page 1: Sleep ── */}
+          <TouchableOpacity
+            activeOpacity={1}
+            style={{ width: CAROUSEL_PAGE_W, padding: 16 }}
+            onPress={() => { if (editingSleep) return; triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/sleep'); }}
+            onPressIn={() => { if (editingSleep) return; Animated.timing(sleepCardScale, { toValue: 0.97, duration: 100, useNativeDriver: true }).start(); }}
+            onPressOut={() => { Animated.timing(sleepCardScale, { toValue: 1, duration: 100, useNativeDriver: true }).start(); }}
+          >
+          <Ionicons name="moon" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
+
         <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
             <Ionicons name="moon-outline" size={11} color={theme.textMuted} />
@@ -2523,7 +2659,14 @@ export default function HomeScreen() {
             </View>
           );
         })()}
-        </TouchableOpacity>
+          </TouchableOpacity>
+        </ScrollView>
+
+        {/* Dot indicators */}
+        <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 5, paddingBottom: 10 }}>
+          <View style={{ width: activeSleepFace === 0 ? 16 : 6, height: 5, borderRadius: 3, backgroundColor: activeSleepFace === 0 ? RECOVERY_PURPLE : theme.textDim, opacity: activeSleepFace === 0 ? 1 : 0.35 }} />
+          <View style={{ width: activeSleepFace === 1 ? 16 : 6, height: 5, borderRadius: 3, backgroundColor: activeSleepFace === 1 ? theme.accentBlueRaw : theme.textDim, opacity: activeSleepFace === 1 ? 1 : 0.35 }} />
+        </View>
       </Animated.View>
     );
   };
@@ -3173,7 +3316,7 @@ export default function HomeScreen() {
       case 'weight':          return renderWeightCard();
       case 'workout':         return renderWorkoutCard();
       case 'steps':           return renderStepsCard();
-      case 'sleep':           return renderSleepCard();
+      case 'sleep':           return renderSleepRecoveryCard();
       case 'fitness_metrics': return renderFitnessMetricsCard();
       case 'daily_note':      return renderDailyNoteCard();
       case 'gratitude_streak':

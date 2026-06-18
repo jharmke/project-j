@@ -35,6 +35,14 @@ function fmtDateFull(dk: string): string {
   return `${MONTH_ABBR[parseInt(m) - 1]} ${parseInt(d)}, ${y}`;
 }
 
+// generatedAt is a UTC ISO timestamp; slicing its date shows the UTC day (rolls over
+// before local midnight). Derive the LOCAL calendar date instead.
+function localDateKey(iso: string): string {
+  const dt = new Date(iso);
+  if (isNaN(dt.getTime())) return iso.slice(0, 10);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+}
+
 function windowDateRange(windowDays: number): string {
   const today = new Date();
   const end = new Date(today);
@@ -219,7 +227,7 @@ export default function DiagnosticReportScreen() {
                         </View>
                       )}
                       <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: t.textSecondary }}>
-                        Generated {fmtDateFull(r.generatedAt.slice(0, 10))}
+                        Generated {fmtDateFull(localDateKey(r.generatedAt))}
                       </Text>
                     </View>
                     <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: t.textMuted }}>

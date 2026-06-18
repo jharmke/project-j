@@ -46,6 +46,15 @@ function fmtDateFull(dk: string): string {
   return `${MONTH_ABBR[parseInt(m) - 1]} ${parseInt(d)}, ${y}`;
 }
 
+// generatedAt is stored as a UTC ISO timestamp; slicing its date portion shows the UTC
+// day, which rolls over before midnight local (e.g. an 8pm-on-the-17th report read "Jun
+// 18"). Derive the LOCAL calendar date from the timestamp instead.
+function localDateKey(iso: string): string {
+  const dt = new Date(iso);
+  if (isNaN(dt.getTime())) return iso.slice(0, 10); // fallback for any legacy non-ISO value
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+}
+
 // ── Chip label ─────────────────────────────────────────────────────────────────
 
 function ChipLabel({ label, theme }: { label: string; theme: any }) {
@@ -704,7 +713,7 @@ export default function DiagnosticReportViewScreen() {
           <View style={{ alignItems: 'flex-start', marginBottom: 16 }}>
             <View style={{ backgroundColor: t.accentBlueBg, borderWidth: 1, borderColor: t.accentBlueBorder, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 5 }}>
               <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: t.accentBlueRaw }}>
-                GENERATED {fmtDateFull(report.generatedAt.slice(0, 10))}
+                GENERATED {fmtDateFull(localDateKey(report.generatedAt))}
               </Text>
             </View>
           </View>

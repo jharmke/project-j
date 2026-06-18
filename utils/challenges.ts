@@ -105,7 +105,14 @@ export function challengeTitle(ch: Challenge, mindful = false): string {
     const lose = !ch.weightGoal.startsWith('gain');
     return `${lose ? 'Lose' : 'Gain'} ${Math.abs(ch.target ?? 0)} lbs`;
   }
-  return `${ch.target} ${METRIC_META[m].unit}/day · ${METRIC_META[m].label}`;
+  const n = ch.target ?? 0;
+  switch (m) {
+    case 'steps':      return `Steps: ${Math.round(n).toLocaleString()}/day`;
+    case 'protein':    return `Protein: ${Math.round(n)}g/day`;
+    case 'water':      return `Water: ${Math.round(n)} oz/day`;
+    case 'net':        return `Net Cals: ${n > 0 ? '+' : ''}${Math.round(n).toLocaleString()} kcal/day`;
+    case 'sleepScore': return `Sleep Score: ${Math.round(n)}/100`;
+  }
 }
 
 // ── Safe-rate weight cap (SPEC: 2 lb/wk loss, 1 lb/wk gain, maintain = no weight challenge) ──

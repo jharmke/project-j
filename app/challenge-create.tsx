@@ -11,9 +11,8 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, KeyboardAvoidingView, Modal, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Animated, Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useTheme } from '../theme';
@@ -35,17 +34,23 @@ const DURATION_PRESETS = [
 ];
 
 const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const CAL_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const CAL_DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 function fmtKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 function addDays(d: Date, n: number): Date { const c = new Date(d); c.setDate(c.getDate() + n); return c; }
 function fmtDayLabel(d: Date): string { return `${MONTHS_SHORT[d.getMonth()]} ${d.getDate()}`; }
-function pickerVariantFor(bg: string): 'light' | 'dark' {
-  const h = (bg || '').replace('#', '');
-  if (h.length < 6) return 'light';
-  const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
-  return (r * 299 + g * 587 + b * 114) / 1000 > 140 ? 'light' : 'dark';
-}
+
+// Step sizes, ranges, and decimal places for the custom-goal target stepper.
+const STEP_CONFIG: Record<string, { step: number; min: number; maxFn: (cap: number) => number; decimals: number }> = {
+  steps:      { step: 500,  min: 1000,  maxFn: () => 50000, decimals: 0 },
+  water:      { step: 8,    min: 16,    maxFn: () => 320,   decimals: 0 },
+  protein:    { step: 5,    min: 10,    maxFn: () => 500,   decimals: 0 },
+  sleepScore: { step: 5,    min: 50,    maxFn: () => 100,   decimals: 0 },
+  net:        { step: 50,   min: -2500, maxFn: () => 500,   decimals: 0 },
+  weight:     { step: 0.5,  min: 0.5,   maxFn: (cap) => cap, decimals: 1 },
+};
 
 // Sensible default per-day target per metric (custom goals).
 function defaultTargetFor(m: ChallengeMetric, paceTarget: number): string {
@@ -55,7 +60,7 @@ function defaultTargetFor(m: ChallengeMetric, paceTarget: number): string {
     case 'protein': return '180';
     case 'sleepScore': return '85';
     case 'net': return String(paceTarget || -750);
-    case 'weight': return '';
+    case 'weight': return '1';
     default: return '';
   }
 }
@@ -65,7 +70,7 @@ export default function ChallengeCreateScreen() {
   const insets = useSafeAreaInsets();
   const { showToast } = useToast();
   const accent = theme.accentBlueRaw;
-  const pickerVariant = useMemo(() => pickerVariantFor(theme.bgPrimary), [theme.bgPrimary]);
+  const modalCardBg = theme.bgCard.startsWith('rgba') ? theme.bgPrimary : theme.bgCard;
 
   const [type, setType] = useState<ChallengeType | null>(null);
   const [weightGoal, setWeightGoal] = useState<string>('maintain');
@@ -87,8 +92,10 @@ export default function ChallengeCreateScreen() {
   const [customDays, setCustomDays] = useState<number>(10);
   const [startMode, setStartMode] = useState<StartMode>('tomorrow');
 
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const pickerAnim = useRef(new Animated.Value(0)).current;
+  const [calPickerOpen, setCalPickerOpen] = useState(false);
+  const calPickerAnim = useRef(new Animated.Value(0)).current;
+  const [calYear, setCalYear] = useState(() => addDays(new Date(), -8).getFullYear());
+  const [calMonth, setCalMonth] = useState(() => addDays(new Date(), -8).getMonth());
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -123,9 +130,68 @@ export default function ChallengeCreateScreen() {
     setSelectedMetrics(prev => prev.includes(m) ? prev.filter(x => x !== m) : [...prev, m]);
   };
 
-  const maxBenchDate = useMemo(() => addDays(new Date(), -1), []);
-  const openPicker = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setPickerOpen(true); };
-  const closePicker = () => Animated.timing(pickerAnim, { toValue: 0, duration: 140, useNativeDriver: true }).start(() => setPickerOpen(false));
+  const maxBenchKey = fmtKey(addDays(new Date(), -1));
+  const openCalPicker = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setCalPickerOpen(true); };
+  const closeCalPicker = () => Animated.timing(calPickerAnim, { toValue: 0, duration: 140, useNativeDriver: true }).start(() => setCalPickerOpen(false));
+  const calCanGoNext = () => {
+    const nm = calMonth === 11 ? 0 : calMonth + 1;
+    const ny = calMonth === 11 ? calYear + 1 : calYear;
+    return `${ny}-${String(nm + 1).padStart(2, '0')}-01` <= maxBenchKey;
+  };
+  const renderBenchCalGrid = () => {
+    const firstDay = new Date(calYear, calMonth, 1).getDay();
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+    const cells: (number | null)[] = [];
+    for (let i = 0; i < firstDay; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+    while (cells.length % 7 !== 0) cells.push(null);
+    const rows: (number | null)[][] = [];
+    for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
+    const selKey = fmtKey(benchStart);
+    return (
+      <View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <TouchableOpacity onPress={() => { if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1); } else { setCalMonth(m => m - 1); } }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="chevron-back" size={20} color={accent} />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 15, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>
+            {CAL_MONTHS[calMonth]} {calYear}
+          </Text>
+          <TouchableOpacity onPress={() => { if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1); } else { setCalMonth(m => m + 1); } }} disabled={!calCanGoNext()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="chevron-forward" size={20} color={calCanGoNext() ? accent : theme.textDim} />
+          </TouchableOpacity>
+        </View>
+        <View style={{ flexDirection: 'row', marginBottom: 6 }}>
+          {CAL_DAYS.map(d => (
+            <View key={d} style={{ flex: 1, alignItems: 'center' }}>
+              <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>{d}</Text>
+            </View>
+          ))}
+        </View>
+        {rows.map((row, ri) => (
+          <View key={ri} style={{ flexDirection: 'row', marginBottom: 2 }}>
+            {row.map((day, ci) => {
+              if (!day) return <View key={ci} style={{ flex: 1 }} />;
+              const dk = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+              const isSel = dk === selKey;
+              const isFut = dk > maxBenchKey;
+              return (
+                <TouchableOpacity key={ci} style={{ flex: 1, alignItems: 'center', paddingVertical: 5 }}
+                  onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setBenchStart(new Date(calYear, calMonth, day)); }}
+                  disabled={isFut} activeOpacity={0.7}>
+                  <View style={{ width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: isSel ? accent : 'transparent' }}>
+                    <Text style={{ fontSize: 13, fontFamily: isSel ? 'DMSans_700Bold' : 'DMSans_400Regular', color: isSel ? theme.bgPrimary : isFut ? theme.textDim : theme.textSecondary }}>
+                      {day}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        ))}
+      </View>
+    );
+  };
 
   // ── Validation + confirm ──
   const targetNum = parseFloat(target);
@@ -184,7 +250,7 @@ export default function ChallengeCreateScreen() {
   }
 
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
+    <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
       {/* Header */}
       <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
         <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={{ padding: 4 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -248,7 +314,7 @@ export default function ChallengeCreateScreen() {
               })}
             </View>
             {benchmarkMode === 'custom' && (
-              <TouchableOpacity activeOpacity={0.7} onPress={openPicker}
+              <TouchableOpacity activeOpacity={0.7} onPress={openCalPicker}
                 style={{ marginTop: 10, backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}>
                 <Text style={{ fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', color: theme.textDim, fontFamily: 'DMSans_700Bold', marginBottom: 3 }}>Past period starts</Text>
                 <Text style={{ fontSize: 15, fontFamily: 'DMSans_600SemiBold', color: accent }}>{fmtDayLabel(benchStart)} ({durationDays} days)</Text>
@@ -275,18 +341,32 @@ export default function ChallengeCreateScreen() {
             </View>
 
             <SectionLabel>{customMetric === 'weight' ? `${weightVerb} (lbs)` : 'Daily Target'}</SectionLabel>
-            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.bgInput ?? theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, paddingHorizontal: 14 }}>
-              <TextInput
-                value={target}
-                onChangeText={setTarget}
-                keyboardType={customMetric === 'net' ? 'numbers-and-punctuation' : 'numeric'}
-                placeholder={customMetric === 'weight' ? `up to ${weightCap}` : 'Target'}
-                placeholderTextColor={theme.textDim}
-                style={{ flex: 1, fontSize: 18, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary, paddingVertical: 12 }}
-              />
-              <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>
-                {customMetric === 'weight' ? 'lbs total' : `${METRIC_META[customMetric].unit}/day`}
-              </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10 }}>
+              <TouchableOpacity onPress={() => {
+                triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+                const cfg = STEP_CONFIG[customMetric];
+                const cur = parseFloat(target) || cfg.min;
+                const next = Math.max(cfg.min, cur - cfg.step);
+                setTarget(cfg.decimals > 0 ? next.toFixed(cfg.decimals) : String(next));
+              }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Ionicons name="remove-circle" size={32} color={parseFloat(target) <= STEP_CONFIG[customMetric].min ? theme.textDim : accent} />
+              </TouchableOpacity>
+              <View style={{ alignItems: 'center' }}>
+                <Text style={{ fontSize: 28, fontFamily: 'BebasNeue_400Regular', color: theme.textPrimary, letterSpacing: 1 }}>{target || '0'}</Text>
+                <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>
+                  {customMetric === 'weight' ? 'lbs total' : `${METRIC_META[customMetric].unit}/day`}
+                </Text>
+              </View>
+              <TouchableOpacity onPress={() => {
+                triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+                const cfg = STEP_CONFIG[customMetric];
+                const cur = parseFloat(target) || cfg.min;
+                const max = cfg.maxFn(weightCap);
+                const next = Math.min(max, cur + cfg.step);
+                setTarget(cfg.decimals > 0 ? next.toFixed(cfg.decimals) : String(next));
+              }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Ionicons name="add-circle" size={32} color={parseFloat(target) >= STEP_CONFIG[customMetric].maxFn(weightCap) ? theme.textDim : accent} />
+              </TouchableOpacity>
             </View>
             {customMetric === 'weight' && (
               <Text style={{ fontSize: 11, color: theme.textDim, marginTop: 8, fontFamily: 'DMSans_400Regular', lineHeight: 16 }}>
@@ -360,21 +440,20 @@ export default function ChallengeCreateScreen() {
       )}
 
       {/* ── Benchmark date picker ── */}
-      <Modal transparent visible={pickerOpen} animationType="none" statusBarTranslucent onRequestClose={closePicker}
-        onShow={() => { pickerAnim.setValue(0); Animated.spring(pickerAnim, { toValue: 1, useNativeDriver: true, friction: 8, tension: 90 }).start(); }}>
+      <Modal transparent visible={calPickerOpen} animationType="none" statusBarTranslucent onRequestClose={closeCalPicker}
+        onShow={() => { calPickerAnim.setValue(0); Animated.spring(calPickerAnim, { toValue: 1, useNativeDriver: true, friction: 8, tension: 90 }).start(); }}>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <TouchableOpacity activeOpacity={1} onPress={closePicker} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)' }} />
-          <Animated.View style={{ width: '88%', backgroundColor: theme.bgCard, borderRadius: 18, borderTopWidth: 1.5, borderTopColor: accent, borderWidth: 0.5, borderColor: theme.borderCard, padding: 16, opacity: pickerAnim, transform: [{ scale: pickerAnim.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) }] }}>
+          <TouchableOpacity activeOpacity={1} onPress={closeCalPicker} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)' }} />
+          <Animated.View style={{ width: '88%', backgroundColor: modalCardBg, borderRadius: 18, borderTopWidth: 1.5, borderTopColor: accent, borderWidth: 0.5, borderColor: theme.borderCard, padding: 16, transform: [{ scale: calPickerAnim.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) }] }}>
             <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard, alignSelf: 'center', marginBottom: 12 }} />
             <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase', color: theme.textMuted, textAlign: 'center', marginBottom: 8 }}>Past period start</Text>
-            <DateTimePicker value={benchStart} mode="date" display={Platform.OS === 'ios' ? 'inline' : 'calendar'} maximumDate={maxBenchDate} themeVariant={pickerVariant}
-              onChange={(_e, date) => { if (Platform.OS !== 'ios') setPickerOpen(false); if (date) setBenchStart(date); }} />
-            <TouchableOpacity onPress={closePicker} style={{ backgroundColor: accent, borderRadius: 8, paddingVertical: 11, alignItems: 'center', marginTop: 8 }}>
+            {renderBenchCalGrid()}
+            <TouchableOpacity onPress={closeCalPicker} style={{ backgroundColor: accent, borderRadius: 8, paddingVertical: 11, alignItems: 'center', marginTop: 8 }}>
               <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: '#fff' }}>Done</Text>
             </TouchableOpacity>
           </Animated.View>
         </View>
       </Modal>
-    </KeyboardAvoidingView>
+    </View>
   );
 }

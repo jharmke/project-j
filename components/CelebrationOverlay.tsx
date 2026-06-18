@@ -473,7 +473,7 @@ export default function CelebrationOverlay({ visible, tier, accentColor, label, 
       Animated.parallel(anims).start();
     }
 
-    // Slam text for medium and large
+    // Slam text for medium and large; gentle fade label for small (when a label is provided)
     if (tier === 'medium' || tier === 'large') {
       setTimeout(() => {
         Animated.parallel([
@@ -484,6 +484,14 @@ export default function CelebrationOverlay({ visible, tier, accentColor, label, 
           Animated.timing(textOpacity, { toValue: 0, duration: 400, useNativeDriver: true }).start();
         }, duration - 600);
       }, 300);
+    } else if (tier === 'small' && label) {
+      textScale.setValue(1);
+      setTimeout(() => {
+        Animated.timing(textOpacity, { toValue: 1, duration: 500, useNativeDriver: true }).start();
+        setTimeout(() => {
+          Animated.timing(textOpacity, { toValue: 0, duration: 500, useNativeDriver: true }).start();
+        }, duration - 800);
+      }, 500);
     }
 
     // Dismiss pill for small/medium -- slight delay then fade in
@@ -540,7 +548,7 @@ export default function CelebrationOverlay({ visible, tier, accentColor, label, 
           />
         ))}
 
-        {(tier === 'medium' || tier === 'large') && (
+        {(tier === 'medium' || tier === 'large' || (tier === 'small' && !!label)) && (
           <Animated.View style={{
             position: 'absolute',
             top: SH * 0.35,
@@ -548,10 +556,10 @@ export default function CelebrationOverlay({ visible, tier, accentColor, label, 
             right: 0,
             alignItems: 'center',
             opacity: textOpacity,
-            transform: [{ scale: textScale }],
+            transform: (tier === 'medium' || tier === 'large') ? [{ scale: textScale }] : [],
           }}>
             <Text style={{
-              fontSize: tier === 'large' ? 52 : 38,
+              fontSize: tier === 'large' ? 52 : tier === 'medium' ? 38 : 22,
               fontFamily: 'BebasNeue_400Regular',
               color: '#ffffff',
               letterSpacing: 4,

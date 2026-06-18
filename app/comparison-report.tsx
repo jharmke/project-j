@@ -14,9 +14,8 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Animated, Modal, Platform, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Animated, Modal, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useTheme } from '../theme';
@@ -27,43 +26,33 @@ import {
   ComparisonResult, MetricComparison, MetricId,
 } from '../utils/comparisonEngine';
 
-// Pro gate: true in dev builds so day-vs-day + export are testable; false in
-// production until the real entitlement exists. Swap when the subscription ships.
 const IS_PRO = __DEV__;
 
-// ── Date helpers ────────────────────────────────────────────────────────────────
+// ── Date helpers ──────────────────────────────────────────────────────────────
 function fmtKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 function addDays(d: Date, n: number): Date {
-  const c = new Date(d);
-  c.setDate(c.getDate() + n);
-  return c;
+  const c = new Date(d); c.setDate(c.getDate() + n); return c;
 }
-const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const CAL_MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const CAL_DAYS = ['Su','Mo','Tu','We','Th','Fr','Sa'];
 function fmtDayLabel(d: Date): string {
   return `${MONTHS_SHORT[d.getMonth()]} ${d.getDate()}`;
 }
 
-// Pick the native date-picker variant from the theme's background luminance, so
-// the inline calendar is readable on every theme (only Dark is a dark bg).
-function pickerVariantFor(bg: string): 'light' | 'dark' {
-  const h = (bg || '').replace('#', '');
-  if (h.length < 6) return 'light';
-  const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
-  return (r * 299 + g * 587 + b * 114) / 1000 > 140 ? 'light' : 'dark';
-}
+const METRIC_ICON: Record<string, string> = {
+  net: 'flame', protein: 'restaurant', steps: 'footsteps',
+  activeCals: 'bicycle', water: 'water', sleepScore: 'moon', weight: 'barbell',
+};
 
 interface Preset {
-  id: string;
-  label: string;
-  labelA: string;
-  labelB: string;
-  startA: string; endA: string;
-  startB: string; endB: string;
+  id: string; icon: string; line1: string; line2: string;
+  labelA: string; labelB: string;
+  startA: string; endA: string; startB: string; endB: string;
 }
 
-// Built at runtime off "now". Every range ends yesterday-or-earlier (today excluded).
 function buildPresets(now: Date): Preset[] {
   const yest = addDays(now, -1);
   const y = fmtKey(yest);
@@ -75,13 +64,17 @@ function buildPresets(now: Date): Preset[] {
   const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
 
   return [
-    { id: 'week', label: 'This week\nvs last week', labelA: 'This Week', labelB: 'Last Week',
+    { id: 'week', icon: 'calendar-outline', line1: 'THIS WEEK', line2: 'vs Last Week (calendar Sun-Sat)',
+      labelA: 'This Week', labelB: 'Last Week',
       startA: fmtKey(thisSun), endA: y, startB: fmtKey(lastSun), endB: fmtKey(lastSat) },
-    { id: 'month', label: 'This month\nvs last month', labelA: 'This Month', labelB: 'Last Month',
+    { id: 'month', icon: 'calendar-number-outline', line1: 'THIS MONTH', line2: 'vs Last Month (calendar)',
+      labelA: 'This Month', labelB: 'Last Month',
       startA: fmtKey(thisMonth1), endA: y, startB: fmtKey(lastMonth1), endB: fmtKey(lastMonthEnd) },
-    { id: '7d', label: 'Last 7 days\nvs prev 7', labelA: 'Last 7 Days', labelB: 'Previous 7',
+    { id: '7d', icon: 'trending-up-outline', line1: 'LAST 7 DAYS', line2: 'vs Previous 7 (rolling window)',
+      labelA: 'Last 7 Days', labelB: 'Previous 7',
       startA: fmtKey(addDays(yest, -6)), endA: y, startB: fmtKey(addDays(yest, -13)), endB: fmtKey(addDays(yest, -7)) },
-    { id: '30d', label: 'Last 30 days\nvs prev 30', labelA: 'Last 30 Days', labelB: 'Previous 30',
+    { id: '30d', icon: 'stats-chart-outline', line1: 'LAST 30 DAYS', line2: 'vs Previous 30 (rolling window)',
+      labelA: 'Last 30 Days', labelB: 'Previous 30',
       startA: fmtKey(addDays(yest, -29)), endA: y, startB: fmtKey(addDays(yest, -59)), endB: fmtKey(addDays(yest, -30)) },
   ];
 }
@@ -100,6 +93,44 @@ function formatMetric(id: MetricId, v: number | null): string {
   }
 }
 
+function formatDelta(id: MetricId, diff: number): string {
+  if (diff < 0.01) return '';
+  switch (id) {
+    case 'net': case 'activeCals': return `${Math.round(diff).toLocaleString()} kcal`;
+    case 'protein':    return `${Math.round(diff)}g`;
+    case 'steps':      return Math.round(diff).toLocaleString();
+    case 'water':      return `${Math.round(diff)} oz`;
+    case 'sleepScore': return `${Math.round(diff)} pts`;
+    case 'weight':     return `${diff.toFixed(1)} lbs`;
+    default:           return `${diff}`;
+  }
+}
+
+// Numeric part only — unit rendered separately at smaller size
+function formatValueNum(id: MetricId, v: number | null): string {
+  if (v === null) return '—';
+  switch (id) {
+    case 'net':        return `${v > 0 ? '+' : ''}${Math.round(v).toLocaleString()}`;
+    case 'protein':    return Math.round(v).toLocaleString();
+    case 'steps':      return Math.round(v).toLocaleString();
+    case 'activeCals': return Math.round(v).toLocaleString();
+    case 'water':      return Math.round(v).toLocaleString();
+    case 'sleepScore': return `${Math.round(v)}`;
+    case 'weight':     return `${v > 0 ? '+' : ''}${Math.abs(v).toFixed(1)}`;
+    default:           return `${Math.round(v as number)}`;
+  }
+}
+
+// Inline unit shown next to the big Bebas value (uppercase, smaller font). Empty = no unit.
+function inlineUnit(id: MetricId): string {
+  switch (id) {
+    case 'protein': return 'G';
+    case 'water':   return 'OZ';
+    case 'weight':  return 'LBS';
+    default:        return '';
+  }
+}
+
 type Mode = 'preset' | 'dayvsday';
 
 export default function ComparisonReportScreen() {
@@ -107,6 +138,9 @@ export default function ComparisonReportScreen() {
   const insets = useSafeAreaInsets();
   const { showToast } = useToast();
   const accent = theme.accentBlueRaw;
+  // bgCard uses rgba on Light/Slate/Blush for glassmorphism. In a modal over a dark overlay
+  // that alpha bleeds through -- use bgPrimary (always opaque) as the solid fallback.
+  const modalCardBg = theme.bgCard.startsWith('rgba') ? theme.bgPrimary : theme.bgCard;
 
   const presets = useMemo(() => buildPresets(new Date()), []);
   const [available, setAvailable] = useState<Record<string, boolean>>({});
@@ -117,13 +151,13 @@ export default function ComparisonReportScreen() {
   const [labels, setLabels] = useState<{ a: string; b: string }>({ a: '', b: '' });
   const [loading, setLoading] = useState(false);
 
-  // Day-vs-day state (Pro). Defaults: yesterday vs the day before.
   const [dayA, setDayA] = useState<Date>(() => addDays(new Date(), -1));
   const [dayB, setDayB] = useState<Date>(() => addDays(new Date(), -2));
   const [pickerOpen, setPickerOpen] = useState<null | 'a' | 'b'>(null);
   const pickerAnim = useRef(new Animated.Value(0)).current;
-  const maxPickDate = useMemo(() => addDays(new Date(), -1), []); // today excluded
-  const pickerVariant = useMemo(() => pickerVariantFor(theme.bgPrimary), [theme.bgPrimary]);
+  const maxPickDate = useMemo(() => addDays(new Date(), -1), []);
+  const [calYear, setCalYear] = useState(() => addDays(new Date(), -1).getFullYear());
+  const [calMonth, setCalMonth] = useState(() => addDays(new Date(), -1).getMonth());
 
   useEffect(() => {
     (async () => {
@@ -170,15 +204,15 @@ export default function ComparisonReportScreen() {
 
   const onDayVsDayChip = () => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-    if (!IS_PRO) {
-      showToast('Day vs Day is a Pro feature', undefined, 'info');
-      return;
-    }
+    if (!IS_PRO) { showToast('Day vs Day is a Pro feature', undefined, 'info'); return; }
     runDayVsDay(dayA, dayB);
   };
 
   const openPicker = (which: 'a' | 'b') => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    const d = which === 'a' ? dayA : dayB;
+    setCalYear(d.getFullYear());
+    setCalMonth(d.getMonth());
     setPickerOpen(which);
   };
   const closePicker = () => {
@@ -189,30 +223,82 @@ export default function ComparisonReportScreen() {
     else { setDayB(date); runDayVsDay(dayA, date); }
   };
 
-  // ── Header ──
-  const Header = (
-    <View style={{
-      paddingTop: insets.top + 8, paddingHorizontal: 16, paddingBottom: 12,
-      borderBottomWidth: 0.5, borderBottomColor: theme.borderCard,
-      flexDirection: 'row', alignItems: 'center', gap: 10,
-    }}>
-      <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={{ padding: 4 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-        <Ionicons name="chevron-back" size={24} color={accent} />
-      </TouchableOpacity>
-      <Text style={{ fontSize: 24, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: accent, flex: 1 }}>COMPARISON</Text>
-      <View style={{ transform: [{ translateY: -1 }] }}>
-        <TooltipIcon tooltipKey="comparison_report" size={18} />
+  const calMaxKey = fmtKey(maxPickDate);
+  const calCanGoNext = () => {
+    const nm = calMonth === 11 ? 0 : calMonth + 1;
+    const ny = calMonth === 11 ? calYear + 1 : calYear;
+    return `${ny}-${String(nm + 1).padStart(2, '0')}-01` <= calMaxKey;
+  };
+  const renderCalGrid = () => {
+    const selKey = fmtKey(pickerOpen === 'a' ? dayA : dayB);
+    const firstDay = new Date(calYear, calMonth, 1).getDay();
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+    const cells: (number | null)[] = [];
+    for (let i = 0; i < firstDay; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+    while (cells.length % 7 !== 0) cells.push(null);
+    const rows: (number | null)[][] = [];
+    for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
+    return (
+      <View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <TouchableOpacity onPress={() => { if (calMonth === 0) { setCalMonth(11); setCalYear(y => y - 1); } else { setCalMonth(m => m - 1); } }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="chevron-back" size={20} color={accent} />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 15, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{CAL_MONTHS[calMonth]} {calYear}</Text>
+          <TouchableOpacity onPress={() => { if (calMonth === 11) { setCalMonth(0); setCalYear(y => y + 1); } else { setCalMonth(m => m + 1); } }} disabled={!calCanGoNext()} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="chevron-forward" size={20} color={calCanGoNext() ? accent : theme.textDim} />
+          </TouchableOpacity>
+        </View>
+        <View style={{ flexDirection: 'row', marginBottom: 6 }}>
+          {CAL_DAYS.map(d => (
+            <View key={d} style={{ flex: 1, alignItems: 'center' }}>
+              <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>{d}</Text>
+            </View>
+          ))}
+        </View>
+        {rows.map((row, ri) => (
+          <View key={ri} style={{ flexDirection: 'row', marginBottom: 2 }}>
+            {row.map((day, ci) => {
+              if (!day) return <View key={ci} style={{ flex: 1 }} />;
+              const dk = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+              const isSel = dk === selKey;
+              const isFut = dk > calMaxKey;
+              return (
+                <TouchableOpacity key={ci} style={{ flex: 1, alignItems: 'center', paddingVertical: 5 }}
+                  onPress={() => { if (pickerOpen) { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); onPickDate(pickerOpen, new Date(calYear, calMonth, day)); } }}
+                  disabled={isFut} activeOpacity={0.7}>
+                  <View style={{ width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: isSel ? accent : 'transparent' }}>
+                    <Text style={{ fontSize: 13, fontFamily: isSel ? 'DMSans_700Bold' : 'DMSans_400Regular', color: isSel ? theme.bgPrimary : isFut ? theme.textDim : theme.textSecondary }}>
+                      {day}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        ))}
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
-      {Header}
+      {/* Header */}
+      <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={{ padding: 4 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <Ionicons name="chevron-back" size={24} color={accent} />
+        </TouchableOpacity>
+        <Text style={{ fontSize: 24, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: accent, flex: 1 }}>COMPARISON</Text>
+        <View style={{ transform: [{ translateY: -1 }] }}>
+          <TooltipIcon tooltipKey="comparison_report" size={18} />
+        </View>
+      </View>
+
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 40 }}>
 
         {/* ── Preset chips ── */}
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 }}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
           {presets.map(p => {
             const isAvail = available[p.id] !== false;
             const isSel = mode === 'preset' && p.id === selectedId;
@@ -221,17 +307,23 @@ export default function ComparisonReportScreen() {
               <TouchableOpacity
                 key={p.id}
                 activeOpacity={disabled ? 1 : 0.7}
-                onPress={() => { if (disabled) { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); return; } triggerHaptic(Haptics.ImpactFeedbackStyle.Light); selectPreset(p); }}
+                onPress={() => { if (disabled) return; triggerHaptic(Haptics.ImpactFeedbackStyle.Light); selectPreset(p); }}
                 style={{
                   flexGrow: 1, minWidth: '46%',
                   backgroundColor: isSel ? `${accent}1F` : theme.bgCard,
                   borderWidth: 1, borderColor: isSel ? `${accent}80` : theme.borderCard,
-                  borderRadius: 10, paddingVertical: 12, paddingHorizontal: 12,
+                  borderRadius: 12, paddingVertical: 13, paddingHorizontal: 14,
                   opacity: disabled ? 0.4 : 1,
+                  flexDirection: 'row', alignItems: 'center', gap: 10,
+                  shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4,
                 }}
               >
-                <Text style={{ fontSize: 13, lineHeight: 18, fontFamily: 'DMSans_600SemiBold', color: isSel ? accent : theme.textSecondary }}>{p.label}</Text>
-                {disabled && <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginTop: 3 }}>Needs more data</Text>}
+                <Ionicons name={p.icon as any} size={20} color={isSel ? accent : theme.textSecondary} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 10, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: isSel ? accent : theme.textPrimary }}>{p.line1}</Text>
+                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginTop: 2 }}>{p.line2}</Text>
+                </View>
+                {isSel && <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: accent }} />}
               </TouchableOpacity>
             );
           })}
@@ -245,12 +337,15 @@ export default function ComparisonReportScreen() {
             flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
             backgroundColor: mode === 'dayvsday' ? `${accent}1F` : theme.bgCard,
             borderWidth: 1, borderColor: mode === 'dayvsday' ? `${accent}80` : theme.borderCard,
-            borderRadius: 10, paddingVertical: 12, marginBottom: 16,
+            borderRadius: 12, paddingVertical: 13, marginBottom: 16,
+            shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4,
           }}
         >
-          <Ionicons name={IS_PRO ? 'calendar-outline' : 'lock-closed'} size={15} color={mode === 'dayvsday' ? accent : theme.textSecondary} />
+          <Ionicons name={IS_PRO ? 'calendar-outline' : 'lock-closed'} size={16} color={mode === 'dayvsday' ? accent : theme.textSecondary} />
           <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: mode === 'dayvsday' ? accent : theme.textSecondary }}>Day vs Day</Text>
-          {!IS_PRO && <Text style={{ fontSize: 10, fontFamily: 'DMSans_700Bold', letterSpacing: 1, color: theme.textDim }}>PRO</Text>}
+          {!IS_PRO && <View style={{ backgroundColor: `${accent}20`, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
+            <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: accent }}>PRO</Text>
+          </View>}
         </TouchableOpacity>
 
         {/* ── Day-vs-day date selectors ── */}
@@ -261,43 +356,51 @@ export default function ComparisonReportScreen() {
                 key={which}
                 activeOpacity={0.7}
                 onPress={() => openPicker(which)}
-                style={{ flex: 1, backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, paddingVertical: 10, alignItems: 'center' }}
+                style={{
+                  flex: 1, backgroundColor: theme.bgCard, borderWidth: 1, borderColor: theme.borderCard,
+                  borderRadius: 12, paddingVertical: 13, alignItems: 'center',
+                  shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 4,
+                }}
               >
-                <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase', color: theme.textDim, marginBottom: 3 }}>{which === 'a' ? 'Day A' : 'Day B'}</Text>
-                <Text style={{ fontSize: 15, fontFamily: 'DMSans_600SemiBold', color: accent }}>{fmtDayLabel(which === 'a' ? dayA : dayB)}</Text>
+                <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: theme.textDim, marginBottom: 5 }}>{which === 'a' ? 'Day A' : 'Day B'}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                  <Ionicons name="calendar-outline" size={13} color={accent} />
+                  <Text style={{ fontSize: 17, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: accent }}>{fmtDayLabel(which === 'a' ? dayA : dayB)}</Text>
+                </View>
               </TouchableOpacity>
             ))}
           </View>
         )}
 
-        {/* ── Table ── */}
+        {/* ── Loading ── */}
         {loading && <View style={{ paddingVertical: 40, alignItems: 'center' }}><ActivityIndicator color={accent} /></View>}
 
+        {/* ── Metric cards ── */}
+        {!loading && result && result.rows.map(row => (
+          <MetricCard
+            key={row.id}
+            row={row}
+            theme={theme}
+            accent={accent}
+            labelA={labels.a}
+            labelB={labels.b}
+            dayMode={mode === 'dayvsday'}
+          />
+        ))}
+
+        {/* ── Disclaimer ── */}
         {!loading && result && (
-          <View style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: accent, borderRadius: 14, padding: 16 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginBottom: 10 }}>
-              <View style={{ flex: 1.2 }} />
-              <View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 10, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase', color: accent, textAlign: 'center' }}>{labels.a}</Text></View>
-              <View style={{ flex: 1, alignItems: 'center' }}><Text style={{ fontSize: 10, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase', color: theme.textDim, textAlign: 'center' }}>{labels.b}</Text></View>
-            </View>
-            {result.rows.map((row, i) => (
-              <MetricRow key={row.id} row={row} theme={theme} accent={accent} isLast={i === result.rows.length - 1} dayMode={mode === 'dayvsday'} />
-            ))}
+          <View style={{ marginTop: 8, alignItems: 'center' }}>
+            <Text style={{ fontSize: 11, lineHeight: 17, fontFamily: 'DMSans_400Regular', color: theme.textDim, textAlign: 'center' }}>
+              {mode === 'dayvsday'
+                ? 'Each column is a single day. Metrics with no log that day show no data. Today is not selectable.'
+                : 'Values are daily averages using only logged days. Today is not included.'}
+            </Text>
+            <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginTop: 6, fontStyle: 'italic', textAlign: 'center' }}>For informational purposes only. Not medical advice.</Text>
           </View>
         )}
 
-        {/* ── Transparency layer ── */}
-        {!loading && result && (
-          <>
-            <Text style={{ fontSize: 11, lineHeight: 16, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginTop: 14 }}>
-              {mode === 'dayvsday'
-                ? 'Each column is a single day. A metric with no log that day shows no data. Today is not selectable.'
-                : 'Averages use only days with logged data. Excluded days are removed, so metrics can span different day counts. Today is not included.'}
-            </Text>
-            <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginTop: 8, fontStyle: 'italic' }}>For informational purposes only. Not medical advice.</Text>
-          </>
-        )}
-
+        {/* ── Empty state ── */}
         {!checking && !loading && !result && (
           <View style={{ paddingVertical: 50, alignItems: 'center', paddingHorizontal: 30 }}>
             <Ionicons name="bar-chart-outline" size={44} color={theme.textDim} />
@@ -307,32 +410,23 @@ export default function ComparisonReportScreen() {
         )}
       </ScrollView>
 
-      {/* ── Date picker modal (centered) ── */}
+      {/* ── Date picker modal ── */}
       <Modal transparent visible={pickerOpen !== null} animationType="none" statusBarTranslucent onRequestClose={closePicker}
         onShow={() => { pickerAnim.setValue(0); Animated.spring(pickerAnim, { toValue: 1, useNativeDriver: true, friction: 8, tension: 90 }).start(); }}>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <TouchableOpacity activeOpacity={1} onPress={closePicker} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)' }} />
+          <TouchableOpacity activeOpacity={1} onPress={closePicker} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)' }} />
           <Animated.View style={{
-            width: '88%', backgroundColor: theme.bgCard, borderRadius: 18, borderTopWidth: 1.5, borderTopColor: accent,
+            width: '88%', backgroundColor: modalCardBg, borderRadius: 18,
+            borderTopWidth: 1.5, borderTopColor: accent,
             borderWidth: 0.5, borderColor: theme.borderCard, padding: 16,
-            opacity: pickerAnim, transform: [{ scale: pickerAnim.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) }],
+            transform: [{ scale: pickerAnim.interpolate({ inputRange: [0, 1], outputRange: [0.85, 1] }) }],
           }}>
             <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard, alignSelf: 'center', marginBottom: 12 }} />
-            <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase', color: theme.textMuted, textAlign: 'center', marginBottom: 8 }}>
+            <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, textAlign: 'center', marginBottom: 12 }}>
               {pickerOpen === 'a' ? 'Day A' : 'Day B'}
             </Text>
-            <DateTimePicker
-              value={pickerOpen === 'a' ? dayA : (pickerOpen === 'b' ? dayB : maxPickDate)}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'inline' : 'calendar'}
-              maximumDate={maxPickDate}
-              themeVariant={pickerVariant}
-              onChange={(_e, date) => {
-                if (Platform.OS !== 'ios') setPickerOpen(null);
-                if (date && pickerOpen) onPickDate(pickerOpen, date);
-              }}
-            />
-            <TouchableOpacity onPress={closePicker} style={{ backgroundColor: accent, borderRadius: 8, paddingVertical: 11, alignItems: 'center', marginTop: 8 }}>
+            {renderCalGrid()}
+            <TouchableOpacity onPress={closePicker} style={{ backgroundColor: accent, borderRadius: 8, paddingVertical: 11, alignItems: 'center', marginTop: 12 }}>
               <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: '#fff' }}>Done</Text>
             </TouchableOpacity>
           </Animated.View>
@@ -342,30 +436,77 @@ export default function ComparisonReportScreen() {
   );
 }
 
-function MetricRow({ row, theme, accent, isLast, dayMode }: { row: MetricComparison; theme: any; accent: string; isLast: boolean; dayMode: boolean }) {
+function MetricCard({ row, theme, accent, labelA, labelB, dayMode }: {
+  row: MetricComparison; theme: any; accent: string; labelA: string; labelB: string; dayMode: boolean;
+}) {
   const meta = METRIC_META[row.id];
+  const icon = METRIC_ICON[row.id] ?? 'analytics-outline';
   const aWins = row.winner === 'a';
   const bWins = row.winner === 'b';
   const aColor = aWins ? accent : theme.textSecondary;
   const bColor = bWins ? accent : theme.textSecondary;
-  const aWeight = aWins ? 'DMSans_700Bold' : 'DMSans_500Medium';
-  const bWeight = bWins ? 'DMSans_700Bold' : 'DMSans_500Medium';
+  const aLabelColor = aWins ? accent : theme.textDim;
+  const bLabelColor = bWins ? accent : theme.textDim;
   const countLabel = (n: number) => n === 1 ? '1 day' : `${n} days`;
   const subCount = (mv: typeof row.a) => mv.avg === null ? 'no data' : countLabel(row.id === 'weight' ? (mv.weighIns ?? 0) : mv.loggedDays);
+  const rawDelta = (row.a.avg !== null && row.b.avg !== null) ? Math.abs(row.a.avg - row.b.avg) : null;
+  const delta = rawDelta !== null ? formatDelta(row.id, rawDelta) : null;
 
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 11, borderBottomWidth: isLast ? 0 : 0.5, borderBottomColor: theme.borderSubtle ?? theme.borderCard }}>
-      <View style={{ flex: 1.2 }}>
-        <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary }}>{meta.label}</Text>
-        <Text style={{ fontSize: 9, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginTop: 2 }}>{meta.unit}</Text>
+    <View style={{
+      backgroundColor: theme.bgCard, borderRadius: 14,
+      borderWidth: 0.5, borderColor: theme.borderCard,
+      marginBottom: 10, overflow: 'hidden',
+      shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 6,
+    }}>
+      {/* Accent bar on winning side */}
+      {aWins && <View style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, backgroundColor: accent }} />}
+      {bWins && <View style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 3, backgroundColor: accent }} />}
+
+      {/* Metric header */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingTop: 11, paddingBottom: 10, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, flex: 1 }}>
+          <Ionicons name={icon as any} size={13} color={accent} />
+          <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted }}>{meta.label}</Text>
+        </View>
+        <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: theme.textDim }}>{meta.unit}</Text>
       </View>
-      <View style={{ flex: 1, alignItems: 'center' }}>
-        <Text style={{ fontSize: 16, fontFamily: aWeight, color: aColor }}>{formatMetric(row.id, row.a.avg)}</Text>
-        {!dayMode && <Text style={{ fontSize: 9, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginTop: 2 }}>{subCount(row.a)}</Text>}
-      </View>
-      <View style={{ flex: 1, alignItems: 'center' }}>
-        <Text style={{ fontSize: 16, fontFamily: bWeight, color: bColor }}>{formatMetric(row.id, row.b.avg)}</Text>
-        {!dayMode && <Text style={{ fontSize: 9, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginTop: 2 }}>{subCount(row.b)}</Text>}
+
+      {/* Values */}
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', paddingLeft: 16, paddingRight: 14, paddingTop: 12, paddingBottom: 14 }}>
+        {/* Period A */}
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', color: aLabelColor, marginBottom: 4 }}>{labelA}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+            <Text style={{ fontSize: 32, fontFamily: 'BebasNeue_400Regular', color: aColor, letterSpacing: 0.5, lineHeight: 34 }}>{formatValueNum(row.id, row.a.avg)}</Text>
+            {!!inlineUnit(row.id) && row.a.avg !== null && (
+              <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: aColor, paddingBottom: 3, marginLeft: 1 }}>{inlineUnit(row.id)}</Text>
+            )}
+          </View>
+          {!dayMode && <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginTop: 4 }}>{subCount(row.a)}</Text>}
+        </View>
+
+        {/* Delta chip */}
+        <View style={{ alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8, paddingTop: dayMode ? 12 : 18, minWidth: 62 }}>
+          {delta ? (
+            <View style={{ backgroundColor: `${accent}15`, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 0.5, borderColor: `${accent}30`, alignItems: 'center', gap: 2 }}>
+              <Text style={{ fontSize: 7, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, color: theme.textDim, textTransform: 'uppercase' }}>DIFF</Text>
+              <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: theme.textDim, textAlign: 'center' }}>{delta}</Text>
+            </View>
+          ) : null}
+        </View>
+
+        {/* Period B */}
+        <View style={{ flex: 1, alignItems: 'flex-end' }}>
+          <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', color: bLabelColor, marginBottom: 4, textAlign: 'right' }}>{labelB}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'flex-end' }}>
+            <Text style={{ fontSize: 32, fontFamily: 'BebasNeue_400Regular', color: bColor, letterSpacing: 0.5, lineHeight: 34 }}>{formatValueNum(row.id, row.b.avg)}</Text>
+            {!!inlineUnit(row.id) && row.b.avg !== null && (
+              <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: bColor, paddingBottom: 3, marginLeft: 1 }}>{inlineUnit(row.id)}</Text>
+            )}
+          </View>
+          {!dayMode && <Text style={{ fontSize: 10, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginTop: 4, textAlign: 'right' }}>{subCount(row.b)}</Text>}
+        </View>
       </View>
     </View>
   );

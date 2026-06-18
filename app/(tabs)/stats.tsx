@@ -835,7 +835,7 @@ export default function StatsScreen() {
           if (s) {
             const d = JSON.parse(s);
             if (d.calTarget) target = parseInt(d.calTarget);
-            if (d.styleMode) { setStyleMode(d.styleMode); currentStyleMode = d.styleMode; }
+            if (d.styleMode) { const sm = (d.styleMode.charAt(0).toUpperCase() + d.styleMode.slice(1)) as 'Discipline' | 'Balanced' | 'Mindful'; setStyleMode(sm); currentStyleMode = sm; }
             if (d.faithJourney) { setFaithJourney(d.faithJourney); currentFaithJourney = d.faithJourney; }
             if (d.burnAccuracyPct !== undefined) burnAccuracy = d.burnAccuracyPct;
             if (d.showNetCarbs !== undefined) { netCarbsMode = d.showNetCarbs; setShowNetCarbs(d.showNetCarbs); }
@@ -2005,12 +2005,6 @@ export default function StatsScreen() {
                     </>
                   )}
                 </View>
-                {challengeHistCount > 0 && (
-                  <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/challenges'); }}
-                    style={{ alignSelf: 'center', paddingVertical: 10 }} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-                    <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlueRaw }}>View past challenges ({challengeHistCount})</Text>
-                  </TouchableOpacity>
-                )}
               </CollapsibleSection>
             );
             if (section.systemKey === 'calendar') return (
@@ -2073,7 +2067,7 @@ export default function StatsScreen() {
             );
             if (section.systemKey === 'reports') return (
               <View key={section.id} onLayout={e => { reportsLayoutY.current = e.nativeEvent.layout.y; }}>
-              <CollapsibleSection label={section.label} subtitle="Summaries and Effort vs. Results" defaultOpen={isFirst} theme={theme} first={isFirst} forceOpen={reportsSectionForceOpen}>
+              <CollapsibleSection label={section.label} subtitle="Summaries, Comparison and Effort vs. Results" defaultOpen={isFirst} theme={theme} first={isFirst} forceOpen={reportsSectionForceOpen}>
                 <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, overflow: 'hidden' }]}>
                   {evrCardOpen && <Ionicons name="analytics" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />}
                   <TouchableOpacity

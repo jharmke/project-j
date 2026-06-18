@@ -3013,10 +3013,10 @@ export default function HomeScreen() {
             <TooltipIcon tooltipKey="challenge_system" />
           </View>
           <View style={{ alignItems:'center', paddingVertical:6, gap:8 }}>
-            <Text style={{ color: theme.textPrimary, fontSize:15, fontFamily:'DMSans_700Bold', textAlign:'center' }}>
-              {isMindful ? 'Set a personal challenge' : 'Start a challenge'}
+            <Text style={{ color: accentRaw, fontSize:20, fontFamily:'BebasNeue_400Regular', letterSpacing:1, textAlign:'center' }}>
+              {isMindful ? 'Set a Personal Challenge' : 'Start a Challenge'}
             </Text>
-            <Text style={{ color: theme.textMuted, fontSize:12, fontFamily:'DMSans_400Regular', textAlign:'center', lineHeight:18, marginBottom:8 }}>
+            <Text style={{ color: theme.textSecondary, fontSize:12, fontFamily:'DMSans_400Regular', textAlign:'center', lineHeight:18, marginBottom:8 }}>
               {isMindful
                 ? 'Grow past a previous week, or set a higher daily target for a stretch. Track it gently right here.'
                 : 'Beat a previous week, or set a higher daily target for a stretch. Track it live, right here.'}
@@ -3097,14 +3097,14 @@ export default function HomeScreen() {
               <TooltipIcon tooltipKey="challenge_system" />
             </View>
           </View>
-          <Text style={{ fontSize:18, fontFamily:'DMSans_700Bold', color: theme.textPrimary, marginBottom:4 }}>{title}</Text>
+          <Text style={{ fontSize:18, fontFamily:'DMSans_700Bold', color: theme.textSecondary, marginBottom:4 }}>{title}</Text>
           {ch.type === 'beat' && !!summary && (
             <Text style={{ fontSize:12, fontFamily:'DMSans_400Regular', color: theme.textMuted, marginBottom:10 }}>{summary}</Text>
           )}
           <View style={{ flexDirection:'row', alignItems:'center', gap:5, marginTop:6 }}>
             <Ionicons name="time-outline" size={13} color={accentRaw} />
             <Text style={{ fontSize:12, fontFamily:'DMSans_600SemiBold', color: accentRaw }}>
-              Kicks off tomorrow · {prog.totalDays} {prog.totalDays === 1 ? 'day' : 'days'}
+              Kicks off tomorrow, {prog.totalDays} {prog.totalDays === 1 ? 'day' : 'days'}
             </Text>
           </View>
         </View>
@@ -3127,7 +3127,7 @@ export default function HomeScreen() {
             <Text style={{ fontSize:10, fontFamily:'DMSans_700Bold', letterSpacing:0.5, color: accentRaw }}>{daysLeftChip}</Text>
           </View>
         </View>
-        <Text style={{ fontSize:16, fontFamily:'DMSans_700Bold', color: theme.textPrimary, marginBottom: ch.type === 'beat' ? 2 : 12 }}>{title}</Text>
+        <Text style={{ fontSize:16, fontFamily:'DMSans_700Bold', color: theme.textSecondary, marginBottom: ch.type === 'beat' ? 2 : 12 }}>{title}</Text>
 
         {ch.type === 'beat' ? (
           <>
@@ -3194,8 +3194,13 @@ export default function HomeScreen() {
           }
           const target = ch.target ?? 0;
           const today = prog.todayValue ?? null;
-          const barPct = prog.totalDays > 0 ? Math.min(((prog.daysHit ?? 0) / prog.totalDays) * 100, 100) : 0;
+          // Bar reflects today's actual value vs target (not days-hit ratio which is 0% on day 1).
+          // Hide bar entirely if today has no data yet (would show a meaningless empty track).
+          const todayBarPct = (today !== null && target !== 0) ? Math.min((today / target) * 100, 100) : null;
           const unitLabel = metric === 'sleepScore' ? '' : METRIC_META[metric].unit;
+          const daysHit = prog.daysHit ?? 0;
+          const daysElapsed = prog.daysElapsed ?? 0;
+          const daysRemaining = prog.daysRemaining ?? 0;
           return (
             <>
               <View style={{ flexDirection:'row', alignItems:'baseline', gap:6, marginBottom:8 }}>
@@ -3203,9 +3208,11 @@ export default function HomeScreen() {
                 <Text style={{ fontSize:16, fontFamily:'BebasNeue_400Regular', letterSpacing:1, color: theme.textMuted }}>/ {fmtChallengeVal(metric, target)}{unitLabel ? ` ${unitLabel}` : ''}</Text>
                 <Text style={{ fontSize:10, fontFamily:'DMSans_500Medium', color: theme.textDim, marginLeft:'auto' }}>today</Text>
               </View>
-              <AnimatedProgressBar pct={barPct} color={accentRaw} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} />
+              {todayBarPct !== null && (
+                <AnimatedProgressBar pct={todayBarPct} color={accentRaw} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} />
+              )}
               <Text style={{ fontSize:12, fontFamily:'DMSans_500Medium', color: theme.textMuted, marginTop:8 }}>
-                Hit {prog.daysHit ?? 0} of {prog.daysElapsed} days · {prog.daysRemaining} left
+                Hit {daysHit} of {daysElapsed} days, {daysRemaining} left
               </Text>
             </>
           );

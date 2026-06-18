@@ -107,74 +107,109 @@ export default function ChallengesScreen() {
 
         {/* ── Active challenge ── */}
         {active && progress ? (
-          <View style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: accent, borderRadius: 14, padding: 16 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-              <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold' }}>
-                {progress.status === 'pending' ? 'Starts Tomorrow' : progress.status === 'ended' ? 'Complete' : `Day ${progress.dayNumber} of ${progress.totalDays}`}
-              </Text>
-              {progress.status === 'active' && <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_500Medium' }}>{progress.daysRemaining} left</Text>}
+          <View style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: accent, borderRadius: 14, padding: 16, overflow: 'hidden' }}>
+            <Ionicons name="trophy" size={130} color={accent} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.08 }} />
+            {/* Header row */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons name="trophy" size={11} color={theme.textMuted} />
+                <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold' }}>
+                  {progress.status === 'pending' ? 'Starts Tomorrow' : progress.status === 'ended' ? 'Complete' : `Day ${progress.dayNumber} of ${progress.totalDays}`}
+                </Text>
+              </View>
+              {progress.status === 'active' && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: `${accent}18`, borderWidth: 1, borderColor: `${accent}40`, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3 }}>
+                  <Ionicons name="timer-outline" size={10} color={accent} />
+                  <Text style={{ fontSize: 10, fontFamily: 'DMSans_700Bold', letterSpacing: 0.5, color: accent }}>
+                    {progress.daysRemaining} {progress.daysRemaining === 1 ? 'day' : 'days'} left
+                  </Text>
+                </View>
+              )}
             </View>
-            <Text style={{ fontSize: 19, fontFamily: 'DMSans_700Bold', color: theme.textPrimary, marginBottom: 14 }}>{challengeTitle(active, isMindful)}</Text>
+            <Text style={{ fontSize: 18, fontFamily: 'DMSans_700Bold', color: theme.textSecondary, marginBottom: 12 }}>{challengeTitle(active, isMindful)}</Text>
 
             {/* Type 1 beat */}
             {active.type === 'beat' && progress.rows && (
               <>
                 {progress.status !== 'pending' && (
-                  <Text style={{ fontSize: 12, color: progress.won ? accent : theme.textSecondary, fontFamily: 'DMSans_600SemiBold', marginBottom: 10 }}>
+                  <View style={{ flexDirection: 'row', marginBottom: 12 }}>
+                    <View style={{ flex: 1 }} />
+                    <View style={{ width: 88, alignItems: 'center' }}>
+                      <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', color: accent }}>You so far</Text>
+                    </View>
+                    <View style={{ width: 88, alignItems: 'center' }}>
+                      <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 1.5, textTransform: 'uppercase', color: theme.textDim }}>{isMindful ? 'Previous' : 'To Beat'}</Text>
+                    </View>
+                  </View>
+                )}
+                {progress.rows.map((r, i) => {
+                  const youColor = r.beating ? accent : theme.textDim;
+                  const benchColor = theme.textDim;
+                  return (
+                    <View key={r.metric} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 9, borderBottomWidth: i < progress.rows!.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderSubtle ?? theme.borderCard }}>
+                      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Ionicons name={(r.beating ? 'checkmark-circle' : 'ellipse-outline') as any} size={14} color={r.beating ? accent : theme.textDim} />
+                        <Text style={{ fontSize: 10, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase', color: theme.textSecondary }}>{r.label}</Text>
+                      </View>
+                      <View style={{ width: 88, alignItems: 'center' }}>
+                        {r.beating && <View style={{ position: 'absolute', left: 4, top: '15%', width: 2, height: '70%', backgroundColor: accent, borderRadius: 1 }} />}
+                        <Text style={{ fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: youColor }}>{fmtMetricValue(r.metric, r.youAvg)}</Text>
+                        <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase', color: youColor, opacity: 0.6 }}>{r.unit}</Text>
+                      </View>
+                      <View style={{ width: 88, alignItems: 'center' }}>
+                        <Text style={{ fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: benchColor }}>{fmtMetricValue(r.metric, r.benchmarkAvg)}</Text>
+                        <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase', color: benchColor, opacity: 0.6 }}>{r.unit}</Text>
+                      </View>
+                    </View>
+                  );
+                })}
+                {progress.status !== 'pending' && (
+                  <Text style={{ fontSize: 12, color: progress.won ? accent : theme.textSecondary, fontFamily: 'DMSans_600SemiBold', marginTop: 10 }}>
                     {progress.won ? (isMindful ? 'Ahead on every metric' : 'Beating it on all metrics') : `Ahead on ${progress.metricsBeaten} of ${progress.metricsTotal}`}
                   </Text>
                 )}
-                {progress.rows.map((r, i) => (
-                  <View key={r.metric} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 9, borderBottomWidth: i < progress.rows!.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderSubtle ?? theme.borderCard }}>
-                    <View style={{ flex: 1.1, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                      <Ionicons name={(r.beating ? 'checkmark-circle' : 'ellipse-outline') as any} size={15} color={r.beating ? accent : theme.textDim} />
-                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary }}>{r.label}</Text>
-                    </View>
-                    <View style={{ flex: 1, alignItems: 'center' }}>
-                      <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>YOU</Text>
-                      <Text style={{ fontSize: 15, fontFamily: r.beating ? 'DMSans_700Bold' : 'DMSans_500Medium', color: r.beating ? accent : theme.textSecondary }}>{fmtMetricValue(r.metric, r.youAvg)}</Text>
-                    </View>
-                    <View style={{ flex: 1, alignItems: 'center' }}>
-                      <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>{isMindful ? 'PREVIOUS' : 'TO BEAT'}</Text>
-                      <Text style={{ fontSize: 15, fontFamily: 'DMSans_500Medium', color: theme.textSecondary }}>{fmtMetricValue(r.metric, r.benchmarkAvg)}</Text>
-                    </View>
-                  </View>
-                ))}
               </>
             )}
 
             {/* Type 2 custom weight */}
             {active.type === 'custom' && progress.isWeight && (
-              <View style={{ alignItems: 'center', paddingVertical: 8 }}>
-                <Text style={{ fontSize: 40, fontFamily: 'BebasNeue_400Regular', color: progress.won ? accent : theme.textPrimary }}>
+              <View style={{ alignItems: 'center', paddingVertical: 12 }}>
+                <Text style={{ fontSize: 44, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: progress.won ? accent : theme.textPrimary }}>
                   {progress.weightChangeSoFar == null ? '—' : `${progress.weightChangeSoFar > 0 ? '+' : ''}${progress.weightChangeSoFar.toFixed(1)}`}
                 </Text>
                 <Text style={{ fontSize: 12, color: theme.textSecondary, fontFamily: 'DMSans_500Medium' }}>
                   of {Math.abs(active.target ?? 0)} lbs {(active.target ?? 0) < 0 ? 'to lose' : 'to gain'}
                 </Text>
+                {progress.status === 'active' && (
+                  <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 8 }}>
+                    {progress.daysRemaining} {progress.daysRemaining === 1 ? 'day' : 'days'} remaining
+                  </Text>
+                )}
               </View>
             )}
 
             {/* Type 2 custom per-day */}
             {active.type === 'custom' && !progress.isWeight && progress.metric && (
-              <View style={{ alignItems: 'center', paddingVertical: 8 }}>
-                <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_500Medium', marginBottom: 4 }}>
+              <View style={{ alignItems: 'center', paddingVertical: 12 }}>
+                <Text style={{ fontSize: 10, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: theme.textDim, marginBottom: 6 }}>
                   {progress.status === 'pending' ? 'Target' : 'Today'}
                 </Text>
-                <Text style={{ fontSize: 34, fontFamily: 'BebasNeue_400Regular', color: theme.textPrimary }}>
-                  {progress.status === 'pending' ? fmtMetricValue(progress.metric, progress.target ?? null) : `${fmtMetricValue(progress.metric, progress.todayValue ?? null)} / ${fmtMetricValue(progress.metric, progress.target ?? null)}`}
+                <Text style={{ fontSize: 38, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.textPrimary }}>
+                  {progress.status === 'pending'
+                    ? fmtMetricValue(progress.metric, progress.target ?? null)
+                    : `${fmtMetricValue(progress.metric, progress.todayValue ?? null)} / ${fmtMetricValue(progress.metric, progress.target ?? null)}`}
                 </Text>
                 {progress.status !== 'pending' && (
-                  <Text style={{ fontSize: 13, color: accent, fontFamily: 'DMSans_600SemiBold', marginTop: 6 }}>
-                    Hit {progress.daysHit} of {progress.daysElapsed} days {progress.daysRemaining > 0 ? `· ${progress.daysRemaining} left` : ''}
+                  <Text style={{ fontSize: 13, color: accent, fontFamily: 'DMSans_600SemiBold', marginTop: 8 }}>
+                    Hit {progress.daysHit} of {progress.daysElapsed} days, {progress.daysRemaining > 0 ? `${progress.daysRemaining} left` : 'final day'}
                   </Text>
                 )}
               </View>
             )}
 
             {/* End / replace */}
-            <TouchableOpacity onPress={endChallenge} style={{ marginTop: 14, alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 16 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_500Medium' }}>{progress.status === 'ended' ? 'Clear & start new' : 'End challenge'}</Text>
+            <TouchableOpacity onPress={endChallenge} style={{ marginTop: 12, alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 16 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_500Medium' }}>{progress.status === 'ended' ? 'Clear and start new' : 'End challenge'}</Text>
             </TouchableOpacity>
           </View>
         ) : (

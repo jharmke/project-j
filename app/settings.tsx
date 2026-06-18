@@ -2406,6 +2406,38 @@ export default function SettingsScreen() {
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
               triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              Alert.alert('Replay Challenge Completion', "Backdates the active challenge into the past (same length, ending yesterday) and clears the acknowledged flag, so the completion celebration + Complete card fire again on next app open, scored against your real data from that window. Only touches pj_challenge.", [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Force-End', onPress: async () => {
+                  try {
+                    const raw = await AsyncStorage.getItem('pj_challenge');
+                    if (!raw) { Alert.alert('No active challenge', 'Create a challenge first, then use this to replay its completion.'); return; }
+                    triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
+                    const ch = JSON.parse(raw);
+                    const parseKey = (k: string) => { const [yy, mm, dd] = k.split('-').map(Number); return new Date(yy, mm - 1, dd); };
+                    const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    const totalDays = Math.max(1, Math.round((parseKey(ch.endKey).getTime() - parseKey(ch.startKey).getTime()) / 86400000) + 1);
+                    // Read-then-merge: shift the whole window back so it ends yesterday and keeps its length.
+                    const end = new Date(); end.setDate(end.getDate() - 1);
+                    const start = new Date(end); start.setDate(start.getDate() - (totalDays - 1));
+                    ch.startKey = fmt(start);
+                    ch.endKey = fmt(end);
+                    ch.acknowledged = false;
+                    await AsyncStorage.setItem('pj_challenge', JSON.stringify(ch));
+                    Alert.alert('Done', `Challenge backdated to ${ch.startKey} - ${ch.endKey}. Close the app fully and reopen it to see the celebration, then the Complete card.`);
+                  } catch { Alert.alert('Error', 'Could not read the active challenge.'); }
+                }},
+              ]);
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Replay Challenge Completion</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Force-ends the active challenge so the win pop-up fires on next open.</Text>
+              </View>
+              <Ionicons name="trophy-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
               Alert.alert('Replay Sleep Coach', "Clear today's Sleep Coach tip so it recomputes with fresh data the next time you open the Sleep Hub?", [
                 { text: 'Cancel', style: 'cancel' },
                 { text: 'Replay', onPress: async () => {

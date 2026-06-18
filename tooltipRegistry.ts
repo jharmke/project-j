@@ -132,23 +132,8 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
   },
   // 'fitness_metrics' tooltip RETIRED 2026-06-17 with the home card (data duplicated the
   // Recovery card). Restore alongside the card if it comes back. See backlog.
-  {
-    key: 'vs_yesterday',
-    tutorialId: 'yvy_card',
-    category: 'Fitness',
-    title: 'You vs Yesterday',
-    body: 'A daily head-to-head between today you and yesterday you, across the metrics that matter most.',
-    definitions: [
-      {
-        term: 'Metrics',
-        explanation: 'Up to 4 metrics are shown at a time. Net Cals, Steps, Sleep Score, and Water are shown first. Weight, Active Calories, and Sleep Hours fill in when the primary metrics aren\'t available.',
-      },
-      {
-        term: 'Color Coding',
-        explanation: 'Metrics where today is ahead light up in your accent color with a highlight bar on the left. Metrics where yesterday was higher appear dimmed with a bar on the right. Ties show both values in the same muted tone.',
-      },
-    ],
-  },
+  // 'vs_yesterday' tooltip RETIRED 2026-06-18 with the You vs Yesterday card (replaced
+  // by the Challenge card; see 'challenge_system'). The /head-to-head screen was deleted.
   {
     key: 'if_countdown',
     tutorialId: 'if_card',

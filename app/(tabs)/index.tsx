@@ -54,6 +54,13 @@ import NutrientDrilldownModal, { DrilldownItem, computeNetCarbsForEntry } from '
 import AnimatedNumber from '../../components/AnimatedNumber';
 import SleepDonut from '../../components/SleepDonut';
 import { recoveryZone, calcRecoveryScore } from '../../utils/recoveryScore';
+import GradientCard, { CardWash } from '../../components/GradientCard';
+import {
+  loadActiveChallenge, saveActiveChallenge, clearActiveChallenge, appendChallengeHistory,
+  computeChallengeProgress, challengeStatus, challengeTitle,
+  Challenge, ChallengeProgress, ChallengeMetric,
+} from '../../utils/challenges';
+import { METRIC_META } from '../../utils/comparisonEngine';
 
 const RECOVERY_PURPLE = '#9b7adb';
 const CAROUSEL_PAGE_W = Dimensions.get('window').width - 32;
@@ -99,7 +106,7 @@ const CARD_REGISTRY: CardMeta[] = [
   { id: 'daily_note',       label: 'Daily Note',         description: 'Journal entry for the day',             defaultVisible: true },
   { id: 'gratitude_streak', label: 'Gratitude Streak',  description: 'Daily gratitude habit tracker',          defaultVisible: false },
   { id: 'reading_plans',    label: 'Reading Plans',      description: 'Daily Bible reading plan tracker',       defaultVisible: true },
-  { id: 'vs_yesterday',     label: 'You vs Yesterday',   description: 'Daily head-to-head across key metrics', defaultVisible: true },
+  { id: 'vs_yesterday',     label: 'Challenge',          description: 'Your active challenge, live', defaultVisible: true },
 ];
 
 const DEFAULT_ORDER: CardId[] = [
@@ -438,7 +445,6 @@ export default function HomeScreen() {
   const { showToast } = useToast();
   const { startTutorial, registerScrollView, unregisterScrollView, activeState: tutorialActiveState, registerIdResolver, unregisterIdResolver, registerTutorialAction, unregisterTutorialAction } = useTutorial();
   // Derive YvY demo flag -- true when the active tutorial step has yvyDemo: true.
-  const yvyTutorialDemo = !!(tutorialActiveState?.tutorial.steps[tutorialActiveState.stepIndex] as any)?.yvyDemo;
   const toolkitRef = useTutorialTarget('meta_toolkit_icon');
   // ── Tutorial spotlight targets ────────────────────────────────────────────────
   const calCardRef       = useTutorialTarget('cal_card_main');
@@ -453,8 +459,6 @@ export default function HomeScreen() {
   const sleepDonutRef    = useTutorialTarget('sleep_donut');
   const sleepStagesRef   = useTutorialTarget('sleep_stages');
   const sleepFeelRef     = useTutorialTarget('sleep_feel');
-  const yvyCardRef        = useTutorialTarget('yvy_card_main');
-  const yvyMetricsRef     = useTutorialTarget('yvy_metrics');
   const editLayoutBtnRef  = useTutorialTarget('edit_layout_btn');
   const editLayoutDragRef = useTutorialTarget('edit_layout_drag');
   const editLayoutEyeRef  = useTutorialTarget('edit_layout_eye');
@@ -828,9 +832,10 @@ export default function HomeScreen() {
   const [ydSleepHours,    setYdSleepHours]    = useState<number|null>(null);
   const [ydWater,         setYdWater]         = useState<number|null>(null);
   const [ydActiveCalories,setYdActiveCalories]= useState<number|null>(null);
-  const [vsStreak,        setVsStreak]        = useState(0);
-  // Latest "date|result" snapshot of the live YvY card, used to settle the streak at day rollover.
-  const [vsLiveKey,       setVsLiveKey]       = useState('');
+
+  // Challenge card state (the home slot the YvY card vacated). Loaded on focus.
+  const [activeChallenge, setActiveChallenge] = useState<Challenge | null>(null);
+  const [challengeProg,   setChallengeProg]   = useState<ChallengeProgress | null>(null);
 
   // Celebration state
   const [achievementStore,setAchievementStore]= useState<AchievementsStore>({});
@@ -1078,6 +1083,29 @@ export default function HomeScreen() {
       try {
         const now = new Date();
         const todayKey = getDateKey(now);
+
+        // ── Challenge completion (fires once on open after the end date, independent
+        //    of the summary once-per-day gate). Marks acknowledged so it won't repeat;
+        //    the Complete card state stays until the user taps Done. ──
+        try {
+          const ch = await loadActiveChallenge();
+          if (ch && challengeStatus(ch) === 'ended' && !ch.acknowledged) {
+            const cp = await computeChallengeProgress(ch);
+            const settingsRaw = await AsyncStorage.getItem('pj_settings');
+            const mindful = settingsRaw ? JSON.parse(settingsRaw).styleMode === 'mindful' : false;
+            if (cp.won) {
+              showCelebration(cp.tier === 'perfect' ? 'large' : 'medium', mindful ? 'CHALLENGE COMPLETE' : (cp.tier === 'perfect' ? 'PERFECT' : 'CHALLENGE WON'));
+            } else {
+              showCelebration('small', mindful ? 'NICE WORK' : 'CHALLENGE DONE');
+            }
+            const acked: Challenge = { ...ch, acknowledged: true };
+            await saveActiveChallenge(acked);
+            await appendChallengeHistory(acked);
+            setActiveChallenge(acked);
+            setChallengeProg(cp);
+          }
+        } catch {}
+
         const score = await runDayScoreScan(todayKey, new Date().toISOString());
         // Generate weekly/monthly summaries (each self-gated to Sunday / the 1st).
         await checkAndGenerateWeeklySummary().catch(() => {});
@@ -1172,6 +1200,19 @@ export default function HomeScreen() {
     loadCoachTipCacheSleep().then(c => { if (c) setSleepCoachCache(c); }).catch(() => {});
     refreshCoachTipSleep(14).then(c => setSleepCoachCache(c)).catch(() => {});
     loadCoachTipCacheRecovery().then(c => { if (c) setRecoveryCoachCache(c); }).catch(() => {});
+  }, []));
+
+  // ── Load the active challenge + live progress for the home challenge card ──
+  useFocusEffect(useCallback(() => {
+    let cancelled = false;
+    (async () => {
+      const ch = await loadActiveChallenge();
+      const cp = ch ? await computeChallengeProgress(ch) : null;
+      if (cancelled) return;
+      setActiveChallenge(ch);
+      setChallengeProg(cp);
+    })();
+    return () => { cancelled = true; };
   }, []));
 
   // ── Keep refs in sync for auto-advance closure ──────────────────────────────
@@ -1614,13 +1655,6 @@ export default function HomeScreen() {
             if (ydPath === 1 || ydFeel) setYdSleepScore(ydScore);
             else setYdSleepScore(null);
           }
-        }
-
-        // Load vs streak
-        const streakRaw = await AsyncStorage.getItem('pj_vs_streak');
-        if (streakRaw) {
-          const streakData = JSON.parse(streakRaw);
-          setVsStreak(streakData.streak || 0);
         }
 
         const workoutData = await AsyncStorage.getItem('pj_workout_state');
@@ -2949,354 +2983,231 @@ export default function HomeScreen() {
     );
   };
 
-  // ── YvY streak settlement ──
-  // The live card stashes "date|result" into vsLiveKey. When a new day arrives, the
-  // previously tracked day is final, so fold its result into the streak: win extends,
-  // loss resets to 0, tie holds. Today's in-progress result never inflates the badge.
-  useEffect(() => {
-    if (!vsLiveKey) return;
-    const [date, result] = vsLiveKey.split('|');
-    if (!date || !result) return;
-    (async () => {
-      try {
-        const raw = await AsyncStorage.getItem('pj_vs_streak');
-        const data = raw ? JSON.parse(raw) : {};
-        let streak: number = data.streak || 0;
-        let settledDate: string | null = data.settledDate ?? null;
-        let trackingDate: string | null = data.trackingDate ?? null;
-        let liveResult: string | null = data.liveResult ?? null;
+  // Format a challenge metric value for the home card (matches the YvY formats it replaced).
+  const fmtChallengeVal = (metric: ChallengeMetric, v: number | null): string => {
+    if (v === null) return '--';
+    if (metric === 'steps') return v >= 1000 ? `${(v / 1000).toFixed(1)}k` : Math.round(v).toString();
+    if (metric === 'net')   return `${v > 0 ? '+' : ''}${Math.round(v).toLocaleString()}`;
+    if (metric === 'weight') return v.toFixed(1);
+    return Math.round(v).toString();
+  };
 
-        // New day: settle the previously tracked day (once) into the streak.
-        if (trackingDate && trackingDate !== date && trackingDate !== settledDate && liveResult) {
-          if (liveResult === 'win') streak += 1;
-          else if (liveResult === 'lose') streak = 0;
-          // tie: streak unchanged
-          settledDate = trackingDate;
-        }
-        trackingDate = date;
-        liveResult = result;
-
-        await AsyncStorage.setItem('pj_vs_streak', JSON.stringify({ streak, settledDate, trackingDate, liveResult }));
-        setVsStreak(streak);
-      } catch {}
-    })();
-  }, [vsLiveKey]);
-
-  const renderVsYesterdayCard = () => {
-    // ── Today's values ──
-    const todayNet = totalCals - displayedBurned - runningBmr;
-    const todaySleepScore = sleepHours ? calcSleepScore(sleepHours, sleepStages, sleepGoal, sleepFeelRating, !!sleepOverride, sleepConsistencyPts) : null;
-    const todaySleepHours = sleepOverride ?? sleepHours ?? null;
-    const todayHasSleepScore = todaySleepScore !== null &&
-        todaySleepScore.score !== null &&
-        (todaySleepScore.path === 1 || sleepFeelRating !== null);
-
-    // ── Metric definitions ──
-    type MetricId = 'net' | 'steps' | 'sleepScore' | 'water' | 'weight' | 'activeCals' | 'sleepHours';
-    interface Metric {
-      id: MetricId;
-      label: string;
-      sub: string;
-      todayVal: number | null;
-      ydVal: number | null;
-      format: (v: number) => string;
-      unit: string;
-      winCondition: (today: number, yd: number) => 'win' | 'lose' | 'tie';
-    }
-
-    const sleepFmt = (h: number) => {
-      const hrs = Math.floor(h);
-      const mins = Math.round((h - hrs) * 60);
-      return mins > 0 ? `${hrs}h ${mins}m` : `${hrs}h`;
-    };
-
-    const allMetrics: Metric[] = [
-      {
-        id: 'net',
-        label: 'Net Cals',
-        sub: (() => {
-          const paceLabels: Record<string, string> = {
-            lose_2:   'Lose 2 lbs / wk pace',
-            lose_1_5: 'Lose 1.5 lbs / wk pace',
-            lose_1:   'Lose 1 lb / wk pace',
-            lose_0_5: 'Lose 0.5 lbs / wk pace',
-            maintain: 'Maintain weight pace',
-            gain_0_5: 'Gain 0.5 lbs / wk pace',
-            gain_1:   'Gain 1 lb / wk pace',
-          };
-          return paceLabels[weightGoalPace] ?? 'Calorie target pace';
-        })(),
-        // Net needs BMR; with no resolvable weight (BMR 0) it would be wrong, so treat
-        // it as no-data and let another metric take the slot rather than show a lie.
-        todayVal: profileBmr > 0 && (totalCals > 0 || displayedBurned > 0) ? todayNet : null,
-        ydVal: ydCals,
-        format: v => `${v > 0 ? '+' : ''}${Math.round(v).toLocaleString()}`,
-        unit: 'kcal',
-        winCondition: (t, y) => {
-          const tDiff = Math.abs(t - calTarget);
-          const yDiff = Math.abs(y - calTarget);
-          if (Math.abs(tDiff - yDiff) < 25) return 'tie';
-          return tDiff < yDiff ? 'win' : 'lose';
-        },
-      },
-      {
-        id: 'steps',
-        label: 'Steps',
-        sub: `${stepGoal.toLocaleString()} Goal`,
-        todayVal: steps > 0 ? steps : null,
-        ydVal: ydSteps,
-        format: v => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : Math.round(v).toString(),
-        unit: 'steps',
-        winCondition: (t, y) => t === y ? 'tie' : t > y ? 'win' : 'lose',
-      },
-      {
-        id: 'sleepScore',
-        label: 'Sleep Score',
-        sub: `${sleepGoal}h Goal`,
-        todayVal: todayHasSleepScore ? (todaySleepScore?.score ?? null) : null,
-        ydVal: ydSleepScore,
-        format: v => Math.round(v).toString(),
-        unit: '/100',
-        winCondition: (t, y) => t === y ? 'tie' : t > y ? 'win' : 'lose',
-      },
-      {
-        id: 'water',
-        label: 'Water',
-        sub: `${WATER_TARGET} Oz Goal`,
-        todayVal: water > 0 ? water : null,
-        ydVal: ydWater,
-        format: v => Math.round(v).toString(),
-        unit: 'oz',
-        winCondition: (t, y) => t === y ? 'tie' : t > y ? 'win' : 'lose',
-      },
-      {
-        id: 'weight',
-        label: 'Weight',
-        sub: goalWeight ? `${goalWeight} Lb Goal` : 'Trending',
-        todayVal: weight,
-        ydVal: yesterdayWeight,
-        format: v => v.toFixed(1),
-        unit: 'lbs',
-        winCondition: (t, y) => {
-          if (Math.round(Math.abs(t - y) * 10) / 10 <= 0.3) return 'tie';
-          const losing = weightGoalPace.startsWith('lose');
-          const gaining = weightGoalPace.startsWith('gain');
-          if (losing) return t < y ? 'win' : 'lose';
-          if (gaining) return t > y ? 'win' : 'lose';
-          return 'tie';
-        },
-      },
-      {
-        id: 'activeCals',
-        label: 'Active Cals',
-        sub: 'Burned Today',
-        todayVal: displayedBurned > 0 ? displayedBurned : null,
-        ydVal: ydActiveCalories,
-        format: v => Math.round(v).toLocaleString(),
-        unit: 'kcal',
-        winCondition: (t, y) => t === y ? 'tie' : t > y ? 'win' : 'lose',
-      },
-      {
-        id: 'sleepHours',
-        label: 'Sleep',
-        sub: `${sleepGoal}h Goal`,
-        todayVal: !todayHasSleepScore && todaySleepHours ? todaySleepHours : null,
-        ydVal: !ydSleepScore ? ydSleepHours : null,
-        format: sleepFmt,
-        unit: 'hrs',
-        winCondition: (t, y) => Math.abs(t - y) < 0.25 ? 'tie' : t > y ? 'win' : 'lose',
-      },
-    ];
-
-    // ── Tier priority ──
+  // ── Challenge home card (repurposes the retired YvY two-column layout) ──
+  // States: empty (CTA) | pending (starts tomorrow) | active (beat = two columns,
+  // custom = single-metric hero) | complete (gradient wash + outcome). Tappable
+  // into /challenges; the empty CTA routes to /challenge-create.
+  const renderChallengeCard = () => {
     const isMindful = styleMode === 'mindful';
-    const tier1Ids: MetricId[] = isMindful ? ['steps', 'sleepScore', 'water'] : ['net', 'steps', 'sleepScore', 'water'];
-    const tier2Ids: MetricId[] = ['weight', 'activeCals', 'sleepHours'];
-
-    const metricMap = Object.fromEntries(allMetrics.map(m => [m.id, m])) as Record<MetricId, Metric>;
-
-    const isEligible = (m: Metric) =>
-      m.todayVal !== null && m.ydVal !== null;
-
-    let selected: Metric[] = [];
-    for (const id of tier1Ids) {
-      if (selected.length >= 4) break;
-      const m = metricMap[id];
-      if (isEligible(m)) selected.push(m);
-    }
-    if (!isMindful) {
-      for (const id of tier2Ids) {
-        if (selected.length >= 4) break;
-        const m = metricMap[id];
-        if (isEligible(m)) selected.push(m);
-      }
-    }
-
-    // ── Tutorial demo override: show hardcoded 3-1 demo so all 4 Tier 1 metrics are guaranteed ──
-    if (yvyTutorialDemo) {
-      selected = [
-        { id: 'net' as MetricId, label: 'Net Cals', sub: 'Calorie target pace', todayVal: -220, ydVal: 180,
-          format: (v: number) => `${v > 0 ? '+' : ''}${Math.round(v).toLocaleString()}`, unit: 'kcal',
-          winCondition: () => 'win' as 'win' | 'lose' | 'tie' },
-        { id: 'steps' as MetricId, label: 'Steps', sub: '10,000 Goal', todayVal: 8420, ydVal: 7100,
-          format: (v: number) => `${(v / 1000).toFixed(1)}k`, unit: 'steps',
-          winCondition: () => 'win' as 'win' | 'lose' | 'tie' },
-        { id: 'sleepScore' as MetricId, label: 'Sleep Score', sub: `${sleepGoal}h Goal`, todayVal: 78, ydVal: 71,
-          format: (v: number) => Math.round(v).toString(), unit: '/100',
-          winCondition: () => 'win' as 'win' | 'lose' | 'tie' },
-        { id: 'water' as MetricId, label: 'Water', sub: `${waterGoal} Oz Goal`, todayVal: 60, ydVal: 72,
-          format: (v: number) => Math.round(v).toString(), unit: 'oz',
-          winCondition: () => 'lose' as 'win' | 'lose' | 'tie' },
-      ];
-    }
-
-    // ── Not enough data ──
-    if (!yvyTutorialDemo && selected.length < 2) return null;
-
-    // ── Score ──
-    type Result = 'win' | 'lose' | 'tie';
-    let results: Result[] = selected.map(m => {
-      if (m.todayVal === null || m.ydVal === null) return 'tie';
-      return m.winCondition(m.todayVal, m.ydVal);
-    });
-    if (yvyTutorialDemo) results = ['win', 'win', 'win', 'lose'];
-    const wins   = results.filter(r => r === 'win').length;
-    const losses = results.filter(r => r === 'lose').length;
-    const ties   = results.filter(r => r === 'tie').length;
-    const overallResult: Result = wins > losses ? 'win' : losses > wins ? 'lose' : 'tie';
-
-    // Snapshot today's live result so the settle effect can fold it into the streak at rollover.
-    // Skip the tutorial demo and Mindful mode (no win/loss framing there).
-    if (!yvyTutorialDemo && !isMindful) {
-      const liveKey = `${todayKey}|${overallResult}`;
-      if (vsLiveKey !== liveKey) setVsLiveKey(liveKey);
-    }
-
-    const motivationalLines: Record<Result, string[]> = {
-      win:  ['You just raised the bar.', 'Today beats yesterday. Keep going.', "Standard's rising. Keep the intensity.", 'Better than yesterday. Build on it.'],
-      lose: ['Yesterday set the bar high. Chase it.', 'Strong day. Yesterday was stronger.', 'Good effort. Yesterday had more.', 'Yesterday was built different. Match it.'],
-      tie:  ['Dead even. Tomorrow breaks it.', 'Matched yesterday exactly. Push past it.', 'Too close to call. Break the tie tomorrow.', 'Even match. Make tomorrow count.'],
-    };
-    const motLine = motivationalLines[overallResult][Math.floor(new Date().getDate() % motivationalLines[overallResult].length)];
-
     const accentRaw = theme.accentBlueRaw;
-    const winColor  = accentRaw;
-    const loseColor = theme.textDim;
-    const tieColor  = theme.textDim;
+    const ch = activeChallenge;
+    const prog = challengeProg;
 
-    // ── Mindful 4th slot cycling ──
-    let mindfulSelected = [...selected];
-    if (isMindful && mindfulSelected.length <= 3) {
-      const todayDate = new Date().getDate();
-      const hasFood = totalCals > 0;
-      const hasWorkout = Object.values(workoutChecks[todayKey] || {}).some(Boolean);
-      const cycleOptions = [
-        !hasFood   ? { id: 'log_meal',   label: 'Log a Meal',    sub: 'Tap + Log to add food',   done: false } : null,
-        !hasWorkout? { id: 'workout_check', label: 'Worked Out', sub: 'Log a workout today',      done: false } : null,
-        { id: 'showing_up', label: 'Showing Up',  sub: 'You logged today',          done: hasFood },
-      ].filter(Boolean) as { id: string; label: string; sub: string; done: boolean }[];
-      const slot4 = cycleOptions[todayDate % cycleOptions.length];
-      if (slot4) mindfulSelected = [...mindfulSelected, slot4 as any];
+    // ── Empty: no active challenge ──
+    if (!ch || !prog) {
+      return (
+        <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: accentRaw, overflow: 'hidden' }]}>
+          <Ionicons name="trophy" size={130} color={accentRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
+          <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:14 }}>
+            <Ionicons name="trophy" size={11} color={theme.textMuted} />
+            <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>Challenge</Text>
+            <TooltipIcon tooltipKey="challenge_system" />
+          </View>
+          <View style={{ alignItems:'center', paddingVertical:6, gap:8 }}>
+            <Text style={{ color: theme.textPrimary, fontSize:15, fontFamily:'DMSans_700Bold', textAlign:'center' }}>
+              {isMindful ? 'Set a personal challenge' : 'Start a challenge'}
+            </Text>
+            <Text style={{ color: theme.textMuted, fontSize:12, fontFamily:'DMSans_400Regular', textAlign:'center', lineHeight:18, marginBottom:8 }}>
+              {isMindful
+                ? 'Grow past a previous week, or set a higher daily target for a stretch. Track it gently right here.'
+                : 'Beat a previous week, or set a higher daily target for a stretch. Track it live, right here.'}
+            </Text>
+            <TouchableOpacity
+              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); router.push('/challenge-create'); }}
+              style={{ backgroundColor: accentRaw, borderRadius: 8, paddingVertical: 12, alignSelf: 'stretch', alignItems: 'center' }}>
+              <Text style={{ fontSize:13, fontFamily:'DMSans_600SemiBold', color:'#fff' }}>
+                {isMindful ? 'Set a Challenge' : 'Start a Challenge'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      );
     }
-    const displayMetrics = yvyTutorialDemo ? selected : (isMindful ? mindfulSelected : selected);
 
+    const status = prog.status;
+    const ended = status === 'ended';
+    const pending = status === 'pending';
+    const title = challengeTitle(ch, isMindful);
+    const won = prog.won;
+    const perfect = prog.tier === 'perfect';
+
+    // Top-left label per state.
+    const cardLabel = pending ? 'Starts Tomorrow'
+      : ended ? 'Complete'
+      : `Day ${prog.dayNumber} of ${prog.totalDays}`;
+
+    // Header right chip (countdown) -- active only.
+    const daysLeftChip = prog.daysRemaining <= 0 ? 'Final day'
+      : `${prog.daysRemaining} ${prog.daysRemaining === 1 ? 'day' : 'days'} left`;
+
+    // ── Complete: gradient wash (won = amber, partial = gentler accent) ──
+    if (ended) {
+      const washColor = won ? theme.accentAmber : accentRaw;
+      const outcomeLine = ch.type === 'beat'
+        ? (won
+            ? (isMindful ? 'You grew past your previous period on every metric.' : 'You beat your previous period on every metric.')
+            : `${isMindful ? 'Ahead on' : 'You came out ahead on'} ${prog.metricsBeaten ?? 0} of ${prog.metricsTotal ?? 0} metrics.`)
+        : prog.isWeight
+          ? (prog.weightChangeSoFar == null ? 'Not enough weigh-ins to call it.' : `${prog.weightChangeSoFar < 0 ? 'Down' : 'Up'} ${Math.abs(prog.weightChangeSoFar).toFixed(1)} of ${Math.abs(ch.target ?? 0).toFixed(1)} lbs.`)
+          : `You hit it ${prog.daysHit ?? 0} of ${prog.totalDays} days.`;
+      return (
+        <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: washColor, overflow: 'hidden' }]}>
+          <CardWash color={washColor} scored />
+          <Ionicons name={won ? 'trophy' : 'ribbon'} size={130} color={washColor} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.12 }} />
+          <View style={{ flexDirection:'row', alignItems:'center', gap:6, marginBottom:10 }}>
+            <Ionicons name={won ? 'trophy' : 'ribbon'} size={12} color={washColor} />
+            <Text style={[styles.cardLabel, { marginBottom:0, color: washColor }]}>{perfect && won ? 'Perfect' : 'Complete'}</Text>
+          </View>
+          <Text style={{ fontSize:18, fontFamily:'DMSans_700Bold', color: theme.textPrimary, marginBottom:4 }}>{title}</Text>
+          <Text style={{ fontSize:13, fontFamily:'DMSans_400Regular', color: theme.textSecondary, lineHeight:19, marginBottom:14 }}>{outcomeLine}</Text>
+          <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between' }}>
+            <Text style={{ fontSize:13, fontFamily:'DMSans_600SemiBold', color: washColor }}>See how you did ›</Text>
+            <TouchableOpacity
+              onPress={async (e: any) => { e?.stopPropagation?.(); triggerHaptic(Haptics.ImpactFeedbackStyle.Light); await clearActiveChallenge(); setActiveChallenge(null); setChallengeProg(null); }}
+              hitSlop={{ top:8, bottom:8, left:8, right:8 }}
+              style={{ paddingVertical:4, paddingHorizontal:10, borderRadius:6, borderWidth:1, borderColor: theme.borderCard }}>
+              <Text style={{ fontSize:12, fontFamily:'DMSans_600SemiBold', color: theme.textMuted }}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      );
+    }
+
+    // ── Pending: bounded < 24h, summary only (no elapsed data to show yet) ──
+    if (pending) {
+      const summary = ch.type === 'beat'
+        ? (prog.rows ?? []).map(r => r.label).join(', ')
+        : title;
+      return (
+        <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: accentRaw, overflow: 'hidden' }]}>
+          <Ionicons name="trophy" size={130} color={accentRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
+          <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:12 }}>
+            <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
+              <Ionicons name="trophy" size={11} color={theme.textMuted} />
+              <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>{cardLabel}</Text>
+              <TooltipIcon tooltipKey="challenge_system" />
+            </View>
+          </View>
+          <Text style={{ fontSize:18, fontFamily:'DMSans_700Bold', color: theme.textPrimary, marginBottom:4 }}>{title}</Text>
+          {ch.type === 'beat' && !!summary && (
+            <Text style={{ fontSize:12, fontFamily:'DMSans_400Regular', color: theme.textMuted, marginBottom:10 }}>{summary}</Text>
+          )}
+          <View style={{ flexDirection:'row', alignItems:'center', gap:5, marginTop:6 }}>
+            <Ionicons name="time-outline" size={13} color={accentRaw} />
+            <Text style={{ fontSize:12, fontFamily:'DMSans_600SemiBold', color: accentRaw }}>
+              Kicks off tomorrow · {prog.totalDays} {prog.totalDays === 1 ? 'day' : 'days'}
+            </Text>
+          </View>
+        </View>
+      );
+    }
+
+    // ── Active ──
     return (
-      <View ref={yvyCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
-        <Ionicons name="trophy" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
+      <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: accentRaw, overflow: 'hidden' }]}>
+        <Ionicons name="trophy" size={130} color={accentRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
         {/* Header */}
-        <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
+        <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'space-between', marginBottom:4 }}>
           <View style={{ flexDirection:'row', alignItems:'center', gap:6 }}>
             <Ionicons name="trophy" size={11} color={theme.textMuted} />
-            <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>
-              {isMindful ? 'You & Yesterday' : 'You vs Yesterday'}
+            <Text style={[styles.cardLabel, { marginBottom:0, color: theme.textMuted }]}>{cardLabel}</Text>
+            <TooltipIcon tooltipKey="challenge_system" />
+          </View>
+          <View style={{ flexDirection:'row', alignItems:'center', gap:4, backgroundColor: `${accentRaw}18`, borderWidth:1, borderColor:`${accentRaw}40`, borderRadius:6, paddingHorizontal:8, paddingVertical:3 }}>
+            <Ionicons name="timer-outline" size={10} color={accentRaw} />
+            <Text style={{ fontSize:10, fontFamily:'DMSans_700Bold', letterSpacing:0.5, color: accentRaw }}>{daysLeftChip}</Text>
+          </View>
+        </View>
+        <Text style={{ fontSize:16, fontFamily:'DMSans_700Bold', color: theme.textPrimary, marginBottom: ch.type === 'beat' ? 2 : 12 }}>{title}</Text>
+
+        {ch.type === 'beat' ? (
+          <>
+            <Text style={{ fontSize:12, fontFamily:'DMSans_600SemiBold', color: accentRaw, marginBottom:10 }}>
+              {isMindful ? 'Ahead on' : 'Leading on'} {prog.metricsBeaten ?? 0} of {prog.metricsTotal ?? 0}
             </Text>
-            {!isMindful && <TooltipIcon tooltipKey="vs_yesterday" />}
-          </View>
-          {!isMindful && vsStreak > 0 && (
-            <View style={{ flexDirection:'row', alignItems:'center', gap:5, backgroundColor: `${accentRaw}18`, borderWidth:1, borderColor:`${accentRaw}40`, borderRadius:6, paddingHorizontal:8, paddingVertical:3 }}>
-              <Text style={{ fontSize:11, color: accentRaw, fontFamily:'DMSans_700Bold' }}>🔥</Text>
-              <Text style={{ fontSize:13, color: accentRaw, fontFamily:'BebasNeue_400Regular', letterSpacing:1 }}>{vsStreak}</Text>
-              <Text style={{ fontSize:9, color: accentRaw, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase' }}>day streak</Text>
-            </View>
-          )}
-        </View>
-
-        {/* Column headers */}
-        <View style={{ flexDirection:'row', marginBottom:6 }}>
-          <View style={{ flex:1 }} />
-          <View style={{ width:80, alignItems:'center' }}>
-            <Text style={{ fontSize:9, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', color: isMindful ? theme.textMuted : accentRaw }}>Today</Text>
-          </View>
-          <View style={{ width:80, alignItems:'center' }}>
-            <Text style={{ fontSize:9, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', color: theme.textDim }}>Yesterday</Text>
-          </View>
-        </View>
-
-        {/* Metric rows */}
-        <View ref={yvyMetricsRef} collapsable={false}>
-        {displayMetrics.map((m: any, i: number) => {
-          const result = (yvyTutorialDemo || !isMindful) ? results[i] : 'tie';
-          const isSlot4 = isMindful && m.id && !['steps','sleepScore','water','net'].includes(m.id);
-          const rowColor = theme.textSecondary;
-          const todayColor = isMindful ? rowColor : (result === 'win' ? winColor : theme.textDim);
-          const ydColor    = isMindful ? theme.textDim : (result === 'lose' ? theme.textSecondary : theme.textDim);
-          const showWinBar = !isMindful && result === 'win';
-          const showYdBar  = !isMindful && result === 'lose';
-          return (
-            <View key={m.id || i} style={{ flexDirection:'row', alignItems:'center', paddingVertical:9,
-              borderBottomWidth: i < displayMetrics.length - 1 ? 0.5 : 0,
-              borderBottomColor: theme.borderSubtle }}>
-              <View style={{ flex:1 }}>
-                <Text style={{ fontSize:10, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', color: theme.textPrimary }}>{m.label}</Text>
-                <Text style={{ fontSize:10, fontFamily:'DMSans_400Regular', color: theme.textDim, marginTop:1 }}>{m.sub}</Text>
+            {/* Column headers */}
+            <View style={{ flexDirection:'row', marginBottom:4 }}>
+              <View style={{ flex:1 }} />
+              <View style={{ width:80, alignItems:'center' }}>
+                <Text style={{ fontSize:9, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase', color: accentRaw }}>You so far</Text>
               </View>
-              {isSlot4 ? (
-                <>
-                  <View style={{ width:80, alignItems:'center' }}>
-                    <Ionicons name={m.done ? 'checkmark-circle' : 'ellipse-outline'} size={22} color={m.done ? theme.statusGood : theme.textDim} />
+              <View style={{ width:80, alignItems:'center' }}>
+                <Text style={{ fontSize:9, fontFamily:'DMSans_700Bold', letterSpacing:1.5, textTransform:'uppercase', color: theme.textDim }}>{isMindful ? 'Previous' : 'To Beat'}</Text>
+              </View>
+            </View>
+            {/* Metric rows */}
+            {(prog.rows ?? []).map((r, i, arr) => {
+              const youLead = r.beating;
+              const youColor = isMindful ? theme.textSecondary : (youLead ? accentRaw : theme.textDim);
+              const benchColor = isMindful ? theme.textDim : (!youLead && r.enoughData ? theme.textSecondary : theme.textDim);
+              return (
+                <View key={r.metric} style={{ flexDirection:'row', alignItems:'center', paddingVertical:9,
+                  borderBottomWidth: i < arr.length - 1 ? 0.5 : 0, borderBottomColor: theme.borderSubtle }}>
+                  <View style={{ flex:1 }}>
+                    <Text style={{ fontSize:10, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', color: theme.textPrimary }}>{r.label}</Text>
                   </View>
-                  <View style={{ width:80 }} />
-                </>
-              ) : (
-                <>
                   <View style={{ width:80, alignItems:'center' }}>
-                    {showWinBar && (
+                    {!isMindful && youLead && (
                       <View style={{ position:'absolute', left:2, top:'10%', width:3, height:'80%', backgroundColor: accentRaw, borderRadius:2 }} />
                     )}
-                    <Text style={{ fontSize:20, fontFamily:'BebasNeue_400Regular', letterSpacing:1, color: todayColor }}>
-                      {m.todayVal !== null ? m.format(m.todayVal) : '--'}
-                    </Text>
-                    <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:1, textTransform:'uppercase', color: todayColor, opacity: result === 'tie' ? 0.3 : 0.6 }}>{m.unit}</Text>
+                    <Text style={{ fontSize:20, fontFamily:'BebasNeue_400Regular', letterSpacing:1, color: youColor }}>{fmtChallengeVal(r.metric, r.youAvg)}</Text>
+                    <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:1, textTransform:'uppercase', color: youColor, opacity:0.6 }}>{r.unit}</Text>
                   </View>
                   <View style={{ width:80, alignItems:'center' }}>
-                    {showYdBar && (
-                      <View style={{ position:'absolute', right:2, top:'10%', width:3, height:'80%', backgroundColor: theme.textSecondary, borderRadius:2 }} />
-                    )}
-                    <Text style={{ fontSize:20, fontFamily:'BebasNeue_400Regular', letterSpacing:1, color: ydColor }}>
-                      {m.ydVal !== null ? m.format(m.ydVal) : '--'}
-                    </Text>
-                    <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:1, textTransform:'uppercase', color: ydColor, opacity: result === 'tie' ? 0.3 : 0.6 }}>{m.unit}</Text>
+                    <Text style={{ fontSize:20, fontFamily:'BebasNeue_400Regular', letterSpacing:1, color: benchColor }}>{fmtChallengeVal(r.metric, r.benchmarkAvg)}</Text>
+                    <Text style={{ fontSize:8, fontFamily:'DMSans_700Bold', letterSpacing:1, textTransform:'uppercase', color: benchColor, opacity:0.6 }}>{r.unit}</Text>
                   </View>
-                </>
-              )}
-            </View>
-          );
-        })}
-        </View>
-
-        {/* Results countdown -- hidden in Mindful */}
-        {!isMindful && (() => {
-          const now = new Date();
-          const msLeft = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).getTime() - now.getTime();
-          const h = Math.floor(msLeft / 3600000);
-          const m = Math.floor((msLeft % 3600000) / 60000);
-          const s = Math.floor((msLeft % 60000) / 1000);
-          const fmt = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+                </View>
+              );
+            })}
+          </>
+        ) : (() => {
+          // ── Custom: single-metric hero ──
+          const metric = prog.metric as ChallengeMetric;
+          if (prog.isWeight) {
+            const change = prog.weightChangeSoFar ?? null;
+            const target = Math.abs(ch.target ?? 0);
+            const lose = !ch.weightGoal.startsWith('gain');
+            const doneAbs = change === null ? 0 : Math.abs(change);
+            const pct = target > 0 ? Math.min((doneAbs / target) * 100, 100) : 0;
+            return (
+              <>
+                <Text style={{ fontSize:26, fontFamily:'BebasNeue_400Regular', letterSpacing:1, color: theme.textPrimary, marginBottom:8 }}>
+                  {change === null ? 'Need 2 weigh-ins' : `${lose ? 'Down' : 'Up'} ${Math.abs(change).toFixed(1)} `}
+                  {change !== null && <Text style={{ color: theme.textMuted }}>of {target.toFixed(1)} lbs</Text>}
+                </Text>
+                <AnimatedProgressBar pct={pct} color={accentRaw} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} />
+                <Text style={{ fontSize:12, fontFamily:'DMSans_500Medium', color: theme.textMuted, marginTop:8 }}>
+                  {prog.daysRemaining} {prog.daysRemaining === 1 ? 'day' : 'days'} left
+                </Text>
+              </>
+            );
+          }
+          const target = ch.target ?? 0;
+          const today = prog.todayValue ?? null;
+          const barPct = prog.totalDays > 0 ? Math.min(((prog.daysHit ?? 0) / prog.totalDays) * 100, 100) : 0;
+          const unitLabel = metric === 'sleepScore' ? '' : METRIC_META[metric].unit;
           return (
-            <View style={{ flexDirection:'row', alignItems:'center', justifyContent:'center', gap:4, marginTop:12, marginBottom:-4 }}>
-              <Ionicons name="timer-outline" size={10} color={theme.textDim} />
-              <Text style={{ fontSize:10, fontFamily:'DMSans_500Medium', color: theme.textDim, letterSpacing:0.5 }}>Results in {fmt}</Text>
-            </View>
+            <>
+              <View style={{ flexDirection:'row', alignItems:'baseline', gap:6, marginBottom:8 }}>
+                <Text style={{ fontSize:26, fontFamily:'BebasNeue_400Regular', letterSpacing:1, color: theme.textPrimary }}>{fmtChallengeVal(metric, today)}</Text>
+                <Text style={{ fontSize:16, fontFamily:'BebasNeue_400Regular', letterSpacing:1, color: theme.textMuted }}>/ {fmtChallengeVal(metric, target)}{unitLabel ? ` ${unitLabel}` : ''}</Text>
+                <Text style={{ fontSize:10, fontFamily:'DMSans_500Medium', color: theme.textDim, marginLeft:'auto' }}>today</Text>
+              </View>
+              <AnimatedProgressBar pct={barPct} color={accentRaw} trackColor={theme.bgProgressTrack} refreshKey={refreshKey} />
+              <Text style={{ fontSize:12, fontFamily:'DMSans_500Medium', color: theme.textMuted, marginTop:8 }}>
+                Hit {prog.daysHit ?? 0} of {prog.daysElapsed} days · {prog.daysRemaining} left
+              </Text>
+            </>
           );
         })()}
       </View>
@@ -3407,24 +3318,9 @@ export default function HomeScreen() {
         if (faithJourney === 'notrightnow') return null;
         return <ReadingPlansCard theme={theme} />;
       case 'vs_yesterday': {
-        const cardContent = renderVsYesterdayCard();
-        if (!cardContent) return (
-          <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 16 }}>
-              <Ionicons name="git-compare-outline" size={11} color={theme.textMuted} />
-              <Text style={[styles.cardLabel, { marginBottom: 0, color: theme.textMuted }]}>You vs Yesterday</Text>
-            </View>
-            <View style={{ alignItems: 'center', paddingVertical: 16, gap: 8 }}>
-              <Ionicons name="bar-chart-outline" size={32} color={theme.textDim} />
-              <Text style={{ color: theme.textPrimary, fontSize: 15, fontFamily: 'DMSans_600SemiBold' }}>Keep tracking to compare</Text>
-              <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_400Regular', textAlign: 'center', lineHeight: 18 }}>Log food, water, or steps today and yesterday to unlock your daily comparison.</Text>
-            </View>
-          </View>
-        );
-        if (styleMode === 'mindful') return cardContent;
-        const today = new Date();
-        const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-        const fmtD = (d: Date) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        const cardContent = renderChallengeCard();
+        // Empty state owns its own CTA button -> don't make the whole card navigate.
+        if (!activeChallenge) return cardContent;
         const vsCardScale = new Animated.Value(1);
         const onPressIn = () => Animated.timing(vsCardScale, { toValue: 0.97, duration: 100, useNativeDriver: true }).start();
         const onPressOut = () => Animated.timing(vsCardScale, { toValue: 1, duration: 150, useNativeDriver: true }).start();
@@ -3435,7 +3331,7 @@ export default function HomeScreen() {
               delayPressIn={0}
               onPressIn={onPressIn}
               onPressOut={onPressOut}
-              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/head-to-head', params: { dateA: fmtD(today), dateB: fmtD(yesterday) } }); }}
+              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/challenges'); }}
             >
               {cardContent}
             </TouchableOpacity>

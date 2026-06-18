@@ -478,64 +478,9 @@ export const TUTORIALS: Tutorial[] = [
     ],
   },
 
-  {
-    id: 'yvy_card',
-    name: 'You vs Yesterday',
-    description: 'What you\'re being compared against and how wins and losses are scored.',
-    tab: 'home',
-    steps: [
-      {
-        targetKey: 'yvy_card_main',
-        yvyDemo: true,
-        title: 'YOU VS YESTERDAY',
-        body: {
-          discipline: 'This card compares today\'s metrics to yesterday\'s. Not to some ideal standard, to yourself. The only competition worth having.',
-          balanced: 'You vs Yesterday compares today\'s stats to yesterday\'s. It\'s about consistency and forward momentum, one day at a time.',
-          mindful: 'This card shows today and yesterday side by side. It\'s a gentle way to notice patterns, not to win or lose.',
-        },
-      },
-      {
-        targetKey: 'yvy_metrics',
-        yvyDemo: true,
-        title: 'THE METRICS',
-        body: {
-          discipline: '4 metrics shown: Net Cals, Steps, Sleep Score, and Water. These are your core daily performance indicators. The demo shows today winning 3 of 4. If any of these are missing (no sleep data yet, steps not tracked), backup metrics like weight, active calories, or sleep hours fill the slots automatically.',
-          balanced: 'The card tracks 4 key metrics: Net Cals, Steps, Sleep Score, and Water. Each shows your result for today vs yesterday. This demo shows today winning 3 of 4. If a primary metric has no data yet, a backup like weight, active calories, or sleep hours steps in so the card always has something to show.',
-          mindful: 'Steps, Sleep Score, and Water are compared in this mode. Each is just one piece of your day. This demo shows a sample comparison. If any metric has no data, a backup fills in so the card stays useful from day one.',
-        },
-      },
-      {
-        targetKey: 'yvy_metrics',
-        yvyDemo: true,
-        title: 'COLOR CODING',
-        body: {
-          discipline: 'Accent color with a left bar: you\'re ahead today. Dimmed with a right bar: yesterday was stronger. No bar: dead even. Net calories uses closest-to-target logic, not raw number.',
-          balanced: 'Metrics where you\'re ahead show in your accent color with a highlight bar on the left. Metrics where yesterday was higher appear dimmed. Ties show both values in the same muted tone.',
-          mindful: 'Today and yesterday are shown side by side. Neither side is highlighted, just numbers. Notice the patterns that feel meaningful to you.',
-        },
-      },
-      {
-        targetKey: 'yvy_card_main',
-        yvyDemo: true,
-        title: 'KEEP TRACKING',
-        body: {
-          discipline: 'The card needs data to work. Log food, water, and let Apple Health do its job. The more consistent your logging, the better this card gets.',
-          balanced: 'Log consistently and this card becomes more meaningful over time. The more data you have, the clearer your patterns become.',
-          mindful: 'The card fills in as you log. You don\'t have to log everything perfectly, just what feels useful and sustainable for you.',
-        },
-      },
-      {
-        targetKey: 'yvy_card_main',
-        yvyDemo: true,
-        title: 'HEAD TO HEAD',
-        body: {
-          discipline: 'Tap anywhere on this card to open Head to Head, a deeper breakdown where you can compare any two specific days side by side with full metric detail.',
-          balanced: 'Tap anywhere on this card to open Head to Head, where you can pick any two days and compare every metric in detail.',
-          mindful: 'Tap anywhere on this card to open Head to Head, where you can look at any two days side by side without any win or loss framing.',
-        },
-      },
-    ],
-  },
+  // (The old 'yvy_card' home tutorial was retired when the You vs Yesterday card
+  //  was replaced by the Challenge card. A guided Challenge tour is a planned
+  //  separate pass -- see project_j_roadmap.md "Guided tutorials (Stats toolkit)".)
 
   // ─── LOG TAB ──────────────────────────────────────────────────────────────────
 
@@ -2106,7 +2051,7 @@ export const TUTORIALS: Tutorial[] = [
 // ─── Tab → Tutorial Mapping ───────────────────────────────────────────────────
 
 export const TAB_TUTORIALS: Record<string, string[]> = {
-  home: ['cal_card', 'macros_card', 'sleep_card', 'yvy_card', 'edit_layout'],
+  home: ['cal_card', 'macros_card', 'sleep_card', 'edit_layout'],
   log: ['log_food', 'manage_log', 'barcode', 'log_edit_layout', 'create_food', 'recipes', 'if_card'],
   workout: ['workout_basics', 'programs', 'routines', 'exercise_library'],
   stats: ['graph_creator', 'streaks', 'effort_vs_results', 'day_score'],

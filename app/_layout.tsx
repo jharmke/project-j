@@ -156,7 +156,6 @@ function RootLayoutNav() {
         <Stack.Screen name="devotional" options={{ headerShown: false }} />
         <Stack.Screen name="plans" options={{ headerShown: false }} />
         <Stack.Screen name="achievements" options={{ headerShown: false }} />
-        <Stack.Screen name="head-to-head" options={{ headerShown: false, animation: 'fade' }} />
         <Stack.Screen name="day-summary" options={{ headerShown: false }} />
         <Stack.Screen name="comparison-report" options={{ headerShown: false }} />
         <Stack.Screen name="challenge-create" options={{ headerShown: false }} />

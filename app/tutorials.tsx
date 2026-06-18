@@ -2,14 +2,15 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TAB_TUTORIALS, Tutorial, getTutorialById } from '../data/tutorials';
 import { useTheme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
 
-const TAB_FILTERS = ['All', 'Home', 'Nutrition', 'Workout', 'Stats', 'Profile'] as const;
+const TAB_FILTERS = ['All', 'Home', 'Nutrition', 'Workout', 'Stats', 'Faith', 'Profile'] as const;
 type TabFilter = typeof TAB_FILTERS[number];
 
 const TAB_MAP: Record<TabFilter, string | null> = {
@@ -18,6 +19,7 @@ const TAB_MAP: Record<TabFilter, string | null> = {
   Nutrition: 'log',
   Workout:   'workout',
   Stats:     'stats',
+  Faith:     'faith',
   Profile:   'profile',
 };
 
@@ -79,8 +81,17 @@ export default function TutorialsScreen() {
   const insets = useSafeAreaInsets();
   const { startTutorial } = useTutorial();
   const [selectedFilter, setSelectedFilter] = useState<TabFilter>('All');
+  // Not Right Now users never see the faith tab, so hide its tutorials here too.
+  const [showFaith, setShowFaith] = useState(true);
+  useEffect(() => {
+    AsyncStorage.getItem('pj_settings')
+      .then(raw => { if (raw) setShowFaith(JSON.parse(raw)?.faithJourney !== 'notrightnow'); })
+      .catch(() => {});
+  }, []);
 
-  const allListed = Object.values(TAB_TUTORIALS).flat().map(id => getTutorialById(id)).filter(Boolean) as Tutorial[];
+  const allListed = (Object.values(TAB_TUTORIALS).flat().map(id => getTutorialById(id)).filter(Boolean) as Tutorial[])
+    .filter(t => showFaith || t.tab !== 'faith');
+  const visibleFilters = TAB_FILTERS.filter(f => showFaith || f !== 'Faith');
   const filtered = TAB_MAP[selectedFilter] === null
     ? allListed
     : allListed.filter(t => t.tab === TAB_MAP[selectedFilter]);
@@ -119,7 +130,7 @@ export default function TutorialsScreen() {
         {/* Tab filter pills */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
           <View style={{ flexDirection: 'row', gap: 8 }}>
-            {TAB_FILTERS.map(filter => {
+            {visibleFilters.map(filter => {
               const active = selectedFilter === filter;
               return (
                 <TouchableOpacity

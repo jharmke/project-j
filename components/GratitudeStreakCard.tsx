@@ -8,6 +8,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useToast } from './Toast';
+import TooltipIcon from './TooltipIcon';
 import { CardWash } from './GradientCard';
 import { LinearGradient } from 'expo-linear-gradient';
 
@@ -312,9 +313,12 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
           <Ionicons name="heart" size={11} color={faith ? accent : t.textMuted} />
           <Text style={[styles.cardLabel, { color: t.textMuted }]}>Gratitude Streak</Text>
         </View>
-        <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Ionicons name={faith ? 'journal' : 'book'} size={16} color={btnText} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          <TooltipIcon tooltipKey="gratitude_streak" />
+          <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name={faith ? 'journal' : 'book'} size={16} color={btnText} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Streak hero + week dots */}

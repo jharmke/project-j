@@ -1920,6 +1920,187 @@ export const TUTORIALS: Tutorial[] = [
       },
     ],
   },
+
+  // ─── FAITH ──────────────────────────────────────────────────────────────────
+
+  {
+    id: 'faith_prayer',
+    name: 'Prayer',
+    description: 'Keep what you are praying for, mark answered, and ask for prayer.',
+    tab: 'faith',
+    returnRoute: '/(tabs)/faith',
+    steps: [
+      {
+        targetKey: 'faith_prayer_card',
+        title: 'PRAYER',
+        body: {
+          discipline: 'This is your prayer list. Keep what you are praying for in one place so nothing slips, and build a record of what God has done. The card previews your active prayers.',
+          balanced: 'This card holds your prayers. It keeps what you are carrying in one place and previews your most recent active ones. The full screen is where you manage them.',
+          mindful: 'This is a quiet place for your prayers. It holds what is on your heart and shows your most recent ones. However much or little you add is okay.',
+        },
+      },
+      {
+        targetKey: 'faith_prayer_ask',
+        title: 'ASK FOR PRAYER',
+        body: {
+          discipline: 'Need someone in your corner? This sends a private prayer request. Every one is read and prayed over. It is never posted publicly or shared with other users.',
+          balanced: 'When you want others praying with you, this sends a private request. Every request is read and prayed over, and it stays private, never public.',
+          mindful: 'If you would like prayer from someone else, this sends a private request that is read and prayed over. It is never shared publicly. Only if you want it.',
+        },
+      },
+      {
+        targetKey: 'faith_prayer_hero',
+        navigateTo: '/prayer?tutorial=1',
+        navigateDelay: 700,
+        noTabBarOffset: true,
+        title: 'ANSWERED',
+        body: {
+          discipline: 'This is the full Prayer screen. Up top, your answered count: a running tally of prayers God has answered. It only shows once you have one.',
+          balanced: 'Here is the full Prayer screen. The number up top counts your answered prayers, a quiet record of God showing up. It appears once you have answered one.',
+          mindful: 'This is the full Prayer screen. The count up top simply marks the prayers you have seen answered. It is there as encouragement, nothing more.',
+        },
+      },
+      {
+        targetKey: 'faith_prayer_row',
+        noTabBarOffset: true,
+        title: 'ON YOUR HEART',
+        body: {
+          discipline: 'Each active prayer sits here. Tap one to open its options: mark it answered, edit the wording, or remove it.',
+          balanced: 'These are your active prayers. Tap any one to open it, where you can mark it answered, edit it, or remove it.',
+          mindful: 'These are the prayers you are carrying. Tap one whenever you want to mark it answered, reword it, or let it go.',
+        },
+      },
+      {
+        targetKey: 'faith_prayer_add',
+        noTabBarOffset: true,
+        title: 'ADD A PRAYER',
+        body: {
+          discipline: 'Tap the plus to add a new prayer. Keep it short or write it all out, whatever helps you pray.',
+          balanced: 'Tap the plus button to add a new prayer to your list. Write as much or as little as you like.',
+          mindful: 'Tap the plus to add a prayer whenever something comes to mind. There is no right way to word it.',
+        },
+      },
+      {
+        targetKey: 'faith_prayer_ask_us',
+        noTabBarOffset: true,
+        title: 'NEED PRAYER? ASK US',
+        body: {
+          discipline: 'Same private request, reachable from here too. Send what you are carrying and the team prays over every one.',
+          balanced: 'You can also ask for prayer from down here. Send a request and the team reads and prays over every one.',
+          mindful: 'If you would like prayer, you can reach out from here too. Every request is read and prayed over, in private.',
+        },
+      },
+    ],
+  },
+
+  {
+    id: 'faith_bible_plans',
+    name: 'Bible and Plans',
+    description: 'Read the Bible freely, or follow a reading plan or devotional.',
+    tab: 'faith',
+    returnRoute: '/(tabs)/faith',
+    steps: [
+      {
+        targetKey: 'faith_bible_card',
+        title: 'BIBLE AND PLANS',
+        body: {
+          discipline: 'One card, three ways into Scripture: open the Bible freely, follow a structured Reading Plan, or work through a Devotional. Here is how each one works.',
+          balanced: 'This card is your way into Scripture. It offers three things: free Bible reading, Reading Plans, and Devotionals. Let me show you each.',
+          mindful: 'This card is your doorway into Scripture, in whatever way suits you: open reading, a plan, or a devotional. No pressure to use all three.',
+        },
+      },
+      {
+        targetKey: 'faith_bible_strip',
+        title: 'READ THE BIBLE',
+        body: {
+          discipline: 'Open the Bible directly here. Once you have read anything, this resumes you exactly where you left off. Before that, it offers a guided pick or drops you at John 1.',
+          balanced: 'This is for open Bible reading. It picks up right where you left off, and if you are new, it helps you find a place to start.',
+          mindful: 'This opens the Bible whenever you want to read. It remembers where you were, and if you are unsure where to begin, it offers a gentle starting point.',
+        },
+      },
+      {
+        targetKey: 'faith_bible_plans_col',
+        title: 'READING PLANS',
+        body: {
+          discipline: 'A Reading Plan walks you through Scripture on a schedule: a set passage each day, so you always know what is next. The tile shows your progress and resumes you at the next reading.',
+          balanced: 'A Reading Plan gives you a passage a day on a schedule, so you always know what to read next. The tile tracks how far along you are.',
+          mindful: 'A Reading Plan offers a passage a day, so there is never a question of what to read next. Move through it at whatever pace feels right.',
+        },
+      },
+      {
+        targetKey: 'faith_bible_devos_col',
+        title: 'DEVOTIONALS',
+        body: {
+          discipline: 'A Devotional pairs a short daily reading with a written reflection, day by day. Use a plan to read through Scripture, a devotional to sit with a theme. The tile resumes your next day.',
+          balanced: 'A Devotional adds a short reflection alongside each day passage. Reading Plans are mostly reading; devotionals give you something to think on too.',
+          mindful: 'A Devotional pairs a short reading with a gentle reflection. Where a plan is reading, a devotional invites you to sit with it. Take what speaks to you.',
+        },
+      },
+      {
+        targetKey: 'faith_plans_segment',
+        navigateTo: '/plans?tab=reading',
+        navigateDelay: 700,
+        noTabBarOffset: true,
+        title: 'PLANS VS DEVOTIONALS',
+        body: {
+          discipline: 'This is the Plans screen. Switch between Reading Plans and Devotionals up here. This is where you start, continue, and drop them.',
+          balanced: 'Here is the Plans screen. This toggle flips between Reading Plans and Devotionals. Everything you start or stop happens here.',
+          mindful: 'This is the Plans screen. The toggle moves between Reading Plans and Devotionals, so you can browse either whenever you like.',
+        },
+      },
+      {
+        targetKey: 'faith_plans_card',
+        noTabBarOffset: true,
+        title: 'START ONE',
+        body: {
+          discipline: 'Each card describes a plan and its length. Tap Start to begin one. Once active, it shows up on your faith tab so you can jump back in fast.',
+          balanced: 'Each card shows a plan and how long it runs. Tap Start to begin, and it will appear on your faith tab to continue any time.',
+          mindful: 'Each card tells you what a plan is and how long it takes. Start one whenever you feel ready, and it will be waiting on your faith tab.',
+        },
+      },
+    ],
+  },
+
+  {
+    id: 'faith_halo',
+    name: 'Meet Halo',
+    description: 'Your faith and wellness companion, ready to talk any time.',
+    tab: 'faith',
+    returnRoute: '/(tabs)/faith',
+    steps: [
+      {
+        targetKey: 'faith_halo_fab',
+        title: 'MEET HALO',
+        noTabBarOffset: true,
+        body: {
+          discipline: 'Hi, I am Halo, your companion in this app. Part faith, part wellness. I live right here on your faith tab, one tap away whenever you need me.',
+          balanced: 'Hi, I am Halo. I am your companion here, part faith and part wellness. You will find me in this corner of your faith tab any time.',
+          mindful: 'Hi, I am Halo. Think of me as a companion for the faith and wellness side of things. I am always right here, only when you want me.',
+        },
+      },
+      {
+        targetKey: 'faith_halo_fab',
+        title: 'WHAT I CAN DO',
+        noTabBarOffset: true,
+        body: {
+          discipline: 'Ask me what a verse means, talk through what is on your mind, or get a straight word of encouragement. Open me from a verse or a prayer and I already know the context.',
+          balanced: 'You can ask me about a verse, talk through your day, or just look for some encouragement. Start me from a verse or prayer and I pick up where you are.',
+          mindful: 'You can ask me about a verse, share what is on your heart, or simply sit with a thought. There are no wrong questions, and I meet you where you are.',
+        },
+      },
+      {
+        targetKey: 'faith_halo_fab',
+        tutorialAction: 'openHaloSample',
+        noTabBarOffset: true,
+        title: "LET'S TALK",
+        body: {
+          discipline: 'That is the whole tour. Tap Done and I will open up so you can try it for real. Your conversations stay yours.',
+          balanced: 'That is everything. Tap Done and I will open right up so you can say hello. Your conversations are private to you.',
+          mindful: 'That is all there is to it. Tap Done and I will open so you can try, whenever you feel ready. Whatever you share stays with you.',
+        },
+      },
+    ],
+  },
 ];
 
 // ─── Tab → Tutorial Mapping ───────────────────────────────────────────────────

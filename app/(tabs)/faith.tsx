@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,6 +11,9 @@ import HeaderAvatar from '../../components/HeaderAvatar';
 import CompanionFAB from '../../components/CompanionFAB';
 import CompanionChat from '../../components/CompanionChat';
 import { showToolkit } from '../../components/ToolkitSheet';
+import TooltipIcon from '../../components/TooltipIcon';
+import { useTutorial } from '../../context/TutorialContext';
+import { useTutorialTarget } from '../../hooks/useTutorialTarget';
 import BibleStartGuide from '../../components/BibleStartGuide';
 import GratitudeStreakCard from '../../components/GratitudeStreakCard';
 import { resolveDailyVerse, VERSES, type DailyVerse } from '../../data/verses';
@@ -70,6 +73,23 @@ export default function FaithScreen() {
   const [cardVisible, setCardVisible] = useState<Record<FaithCardId, boolean>>(DEFAULT_FAITH_VISIBLE);
   const [dailyVerse, setDailyVerse] = useState<DailyVerse | null>(null);
   const now = new Date();
+  const { registerScrollView, unregisterScrollView, registerTutorialAction, unregisterTutorialAction } = useTutorial();
+
+  // Register the faith ScrollView so tutorials can scroll off-screen cards (prayer is 4th) into view.
+  useEffect(() => {
+    registerScrollView('faith', scrollRef);
+    return () => unregisterScrollView('faith');
+  }, []);
+
+  // Halo tutorial hands off to the real companion: the final step opens the live chat with a
+  // friendly greeting (null seed) so the user sees Halo for real, no API call until they type.
+  useEffect(() => {
+    registerTutorialAction('openHaloSample', async () => {
+      setCompanionSeed(null);
+      setChatOpen(true);
+    });
+    return () => unregisterTutorialAction('openHaloSample');
+  }, []);
 
   // Load the faith tab's own layout, read-then-merge so a new card slots in and an unknown
   // saved id is dropped. Never touches the home tab's cardOrder / cardVisible.
@@ -182,7 +202,7 @@ export default function FaithScreen() {
         ))}
       </ScrollView>
 
-      <CompanionFAB onPress={() => { setCompanionSeed(null); setChatOpen(true); }} />
+      <CompanionFAB tutorialKey="faith_halo_fab" onPress={() => { setCompanionSeed(null); setChatOpen(true); }} />
       <CompanionChat visible={chatOpen} seedContext={companionSeed} onClose={() => { setChatOpen(false); setCompanionSeed(null); }} />
     </LinearGradient>
   );
@@ -246,9 +266,12 @@ function VotdCard({ verse, theme, onReflect }: { verse: DailyVerse | null; theme
       }]}
     >
       <LinearGradient colors={[theme.accentAmber + '2E', theme.accentAmber + '00']} locations={[0, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 64, borderTopLeftRadius: 14, borderTopRightRadius: 14 }} pointerEvents="none" />
-      <View style={styles.verseLabelRow}>
-        <Ionicons name="sunny-outline" size={11} color={theme.textMuted} />
-        <Text style={[styles.verseLabel, { color: theme.textMuted }]}>TODAY'S MESSAGE</Text>
+      <View style={[styles.verseLabelRow, { justifyContent: 'space-between' }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          <Ionicons name="sunny-outline" size={11} color={theme.textMuted} />
+          <Text style={[styles.verseLabel, { color: theme.textMuted }]}>TODAY'S MESSAGE</Text>
+        </View>
+        <TooltipIcon tooltipKey="todays_message" />
       </View>
       <Text style={[styles.verseText, { color: theme.textSecondary }]}>"{verse.text}"</Text>
       <Text style={[styles.verseRef, { color: theme.textMuted }]}>{verse.reference}</Text>
@@ -282,6 +305,10 @@ function BibleCard({ theme }: { theme: Theme }) {
   const [guideOpen, setGuideOpen] = useState(false);
   const [planStore, setPlanStore] = useState<ReadingPlansStorage>({});
   const [devStore, setDevStore] = useState<DevotionalsStorage>({});
+  const cardRef = useTutorialTarget('faith_bible_card');
+  const stripRef = useTutorialTarget('faith_bible_strip');
+  const plansColRef = useTutorialTarget('faith_bible_plans_col');
+  const devosColRef = useTutorialTarget('faith_bible_devos_col');
 
   // Reload on focus so a spot recorded while reading, or a plan/devotional started or progressed on
   // /plans or the day screen, shows up here on return. All three reads are read-only (no writes).
@@ -338,15 +365,19 @@ function BibleCard({ theme }: { theme: Theme }) {
 
   return (
     <>
-      <View style={[styles.card, { backgroundColor: theme.bgCardFaith, overflow: 'hidden', borderTopWidth: theme.id === 'warm' ? 1.5 : 0.5, borderTopColor: theme.id === 'warm' ? 'rgba(212,134,10,0.5)' : 'rgba(212,134,10,0.22)' }]}>
+      <View ref={cardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCardFaith, overflow: 'hidden', borderTopWidth: theme.id === 'warm' ? 1.5 : 0.5, borderTopColor: theme.id === 'warm' ? 'rgba(212,134,10,0.5)' : 'rgba(212,134,10,0.22)' }]}>
         <LinearGradient colors={[theme.accentAmber + '2E', theme.accentAmber + '00']} locations={[0, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 64, borderTopLeftRadius: 14, borderTopRightRadius: 14 }} pointerEvents="none" />
         <Ionicons name="book" size={130} color={theme.accentAmber} style={styles.cardWatermark} pointerEvents="none" />
-        <View style={styles.cardLabelRow}>
-          <Ionicons name="book" size={12} color={theme.accentAmber} />
-          <Text style={[styles.cardLabel, { color: theme.textMuted }]}>BIBLE AND PLANS</Text>
+        <View style={[styles.cardLabelRow, { justifyContent: 'space-between' }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Ionicons name="book" size={12} color={theme.accentAmber} />
+            <Text style={[styles.cardLabel, { color: theme.textMuted }]}>BIBLE AND PLANS</Text>
+          </View>
+          <TooltipIcon tooltipKey="bible_and_plans" />
         </View>
 
         {/* Part 1: the Bible reading strip. Returning resumes the last spot; first-time offers two doors. */}
+        <View ref={stripRef} collapsable={false}>
         {lastRead ? (
           <>
             <PressButton
@@ -392,6 +423,7 @@ function BibleCard({ theme }: { theme: Theme }) {
             </View>
           </>
         )}
+        </View>
 
         {/* Part 2: divider between Bible reading and your plans. */}
         <View style={[styles.hDivider, { backgroundColor: 'rgba(212,134,10,0.18)' }]} />
@@ -399,6 +431,7 @@ function BibleCard({ theme }: { theme: Theme }) {
         {/* Part 3: two columns, active reading plans (left) | active devotionals (right). */}
         <View style={styles.plansRow}>
           <PlansColumn
+            colRef={plansColRef}
             theme={theme}
             label="READING PLANS"
             emptyText="No plans yet"
@@ -422,6 +455,7 @@ function BibleCard({ theme }: { theme: Theme }) {
           />
           <View style={[styles.vDivider, { backgroundColor: 'rgba(212,134,10,0.18)' }]} />
           <PlansColumn
+            colRef={devosColRef}
             theme={theme}
             label="DEVOTIONALS"
             emptyText="None yet"
@@ -460,16 +494,17 @@ type ColItem = {
 // One column of the Bible and Plans card (Reading Plans or Devotionals). Shows up to the cap of
 // compact tiles, a "+ Browse" into /plans while under the cap, or a compact empty state with a
 // Browse button when nothing is active. Capped lists mean it never needs a "+N more" overflow.
-function PlansColumn({ theme, label, emptyText, items, atCap, onBrowse }: {
+function PlansColumn({ theme, label, emptyText, items, atCap, onBrowse, colRef }: {
   theme: Theme;
   label: string;
   emptyText: string;
   items: ColItem[];
   atCap: boolean;
   onBrowse: () => void;
+  colRef?: RefObject<View | null>;
 }) {
   return (
-    <View style={styles.plansCol}>
+    <View ref={colRef} collapsable={false} style={styles.plansCol}>
       <Text style={[styles.colLabel, { color: theme.textMuted }]}>{label}</Text>
       {items.length === 0 ? (
         <View style={styles.emptyCol}>
@@ -552,6 +587,8 @@ function TileBar({ pct, theme }: { pct: number; theme: Theme }) {
 function PrayerCard({ theme }: { theme: Theme }) {
   const [prayers, setPrayers] = useState<Prayer[]>([]);
   const scale = useRef(new Animated.Value(1)).current;
+  const cardRef = useTutorialTarget('faith_prayer_card');
+  const askRef = useTutorialTarget('faith_prayer_ask');
 
   useFocusEffect(
     useCallback(() => {
@@ -572,7 +609,7 @@ function PrayerCard({ theme }: { theme: Theme }) {
   // answered count is NOT shown on the card; it lives as a hero on the prayer screen instead.
   return (
     <Animated.View style={{ transform: [{ scale }] }}>
-      <View style={[styles.card, { backgroundColor: theme.bgCardFaith, overflow: 'hidden', borderTopWidth: theme.id === 'warm' ? 1.5 : 0.5, borderTopColor: theme.id === 'warm' ? 'rgba(212,134,10,0.5)' : 'rgba(212,134,10,0.22)' }]}>
+      <View ref={cardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCardFaith, overflow: 'hidden', borderTopWidth: theme.id === 'warm' ? 1.5 : 0.5, borderTopColor: theme.id === 'warm' ? 'rgba(212,134,10,0.5)' : 'rgba(212,134,10,0.22)' }]}>
         <LinearGradient colors={[theme.accentAmber + '2E', theme.accentAmber + '00']} locations={[0, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 64, borderTopLeftRadius: 14, borderTopRightRadius: 14 }} pointerEvents="none" />
         <MaterialCommunityIcons name="hand-heart" size={130} color={theme.accentAmber} style={styles.cardWatermark} pointerEvents="none" />
         <TouchableOpacity
@@ -586,7 +623,10 @@ function PrayerCard({ theme }: { theme: Theme }) {
               <MaterialCommunityIcons name="hand-heart" size={13} color={theme.accentAmber} />
               <Text style={[styles.cardLabel, { color: theme.textMuted }]}>PRAYER</Text>
             </View>
-            <Ionicons name="chevron-forward" size={16} color={theme.accentAmber} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <TooltipIcon tooltipKey="prayer" />
+              <Ionicons name="chevron-forward" size={16} color={theme.accentAmber} />
+            </View>
           </View>
 
           {nothing ? (
@@ -610,13 +650,15 @@ function PrayerCard({ theme }: { theme: Theme }) {
             </Text>
           )}
         </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/prayer', params: { autoOpenRequest: '1' } }); }}
-          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: 'rgba(212,134,10,0.10)', borderColor: 'rgba(212,134,10,0.30)', borderWidth: 1, borderRadius: 6, paddingVertical: 9, paddingHorizontal: 12, minHeight: 44, marginTop: 8 }}
-        >
-          <Ionicons name="people" size={12} color={theme.accentAmber} />
-          <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: theme.accentAmber }}>Ask for prayer</Text>
-        </TouchableOpacity>
+        <View ref={askRef} collapsable={false}>
+          <TouchableOpacity
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/prayer', params: { autoOpenRequest: '1' } }); }}
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: 'rgba(212,134,10,0.10)', borderColor: 'rgba(212,134,10,0.30)', borderWidth: 1, borderRadius: 6, paddingVertical: 9, paddingHorizontal: 12, minHeight: 44, marginTop: 8 }}
+          >
+            <Ionicons name="people" size={12} color={theme.accentAmber} />
+            <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: theme.accentAmber }}>Ask for prayer</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </Animated.View>
   );

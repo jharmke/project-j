@@ -4,6 +4,7 @@ import Svg, { Circle, Defs, RadialGradient, Rect, Stop } from 'react-native-svg'
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useTutorialTarget } from '../hooks/useTutorialTarget';
 
 // "Halo": the faith companion's floating button. Flat and iconographic: a gold disc
 // with a cross. Every few seconds it takes a subtle "breath" (a small scale swell) so it
@@ -23,10 +24,11 @@ const DISC = 56; // matches the app's other FABs
 const CX = DISC / 2;
 const GLOW = 84; // tight, faint glow
 
-export default function CompanionFAB({ onPress, bottom = 18 }: { onPress?: () => void; bottom?: number }) {
+export default function CompanionFAB({ onPress, bottom = 18, tutorialKey }: { onPress?: () => void; bottom?: number; tutorialKey?: string }) {
   const [visible, setVisible] = useState(false);
   const breath = useRef(new Animated.Value(0)).current;
   const press  = useRef(new Animated.Value(1)).current;
+  const tutRef = useTutorialTarget(tutorialKey ?? 'companion_fab_unused');
 
   // Tier gate: present for Rooted and Exploring, hidden entirely for Not Right Now.
   useEffect(() => {
@@ -70,7 +72,7 @@ export default function CompanionFAB({ onPress, bottom = 18 }: { onPress?: () =>
   const barW = 4;
 
   return (
-    <View pointerEvents="box-none" style={[styles.wrap, { bottom }]}>
+    <View ref={tutRef} collapsable={false} pointerEvents="box-none" style={[styles.wrap, { bottom }]}>
       {/* Faint gold glow, tight around the disc, fades in and out with the breath. */}
       <Animated.View pointerEvents="none" style={[styles.glow, { opacity: glowOpacity }]}>
         <Svg width={GLOW} height={GLOW}>

@@ -22,6 +22,8 @@ import {
 } from '../utils/devotionals';
 import { useToast } from '../components/Toast';
 import { useTheme, type Theme } from '../theme';
+import { useTutorial } from '../context/TutorialContext';
+import { useTutorialTarget } from '../hooks/useTutorialTarget';
 
 /**
  * Plans hub. One Stack screen (so the faith-tab keyboard bug never applies) with two tabs:
@@ -45,6 +47,15 @@ export default function PlansScreen() {
   const [planStore, setPlanStore] = useState<ReadingPlansStorage>({});
   const [devStore, setDevStore] = useState<DevotionalsStorage>({});
   const [loading, setLoading] = useState(true);
+  const scrollRef = useRef<ScrollView>(null);
+  const { registerScrollView, unregisterScrollView } = useTutorial();
+  const segmentRef = useTutorialTarget('faith_plans_segment');
+  const planCardRef = useTutorialTarget('faith_plans_card');
+
+  useEffect(() => {
+    registerScrollView('plans', scrollRef);
+    return () => unregisterScrollView('plans');
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
@@ -173,7 +184,7 @@ export default function PlansScreen() {
       </View>
 
       {/* Segmented toggle: this is where the reading-plan vs devotional distinction is taught. */}
-      <View style={styles.segmentRow}>
+      <View ref={segmentRef} collapsable={false} style={styles.segmentRow}>
         <View style={[styles.segment, { backgroundColor: theme.bgInput, borderColor: theme.borderCard }]}>
           {(['reading', 'devotionals'] as const).map(t => {
             const on = tab === t;
@@ -197,6 +208,7 @@ export default function PlansScreen() {
         <View style={styles.loading}><ActivityIndicator color={theme.accentAmber} /></View>
       ) : (
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 48 }}
           showsVerticalScrollIndicator={false}
         >
@@ -235,19 +247,20 @@ export default function PlansScreen() {
                   Max {MAX_ACTIVE_PLANS} active plans. Drop one to add another.
                 </Text>
               )}
-              {availablePlans.map(plan => (
-                <PlanRow
-                  key={plan.id}
-                  theme={theme}
-                  icon={plan.icon}
-                  title={plan.name}
-                  lengthLabel={`${plan.totalDays} days`}
-                  description={plan.description}
-                  progress={null}
-                  primaryLabel="Start"
-                  onPrimary={() => startReadingPlan(plan.id)}
-                  disabled={plansAtLimit}
-                />
+              {availablePlans.map((plan, i) => (
+                <View key={plan.id} ref={i === 0 ? planCardRef : undefined} collapsable={false}>
+                  <PlanRow
+                    theme={theme}
+                    icon={plan.icon}
+                    title={plan.name}
+                    lengthLabel={`${plan.totalDays} days`}
+                    description={plan.description}
+                    progress={null}
+                    primaryLabel="Start"
+                    onPrimary={() => startReadingPlan(plan.id)}
+                    disabled={plansAtLimit}
+                  />
+                </View>
               ))}
             </>
           ) : (

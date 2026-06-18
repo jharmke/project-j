@@ -18,6 +18,17 @@ import {
   getActive, getAnswered, answeredCount, type Prayer,
 } from '../utils/prayers';
 import { useTheme, type Theme } from '../theme';
+import { useTutorial } from '../context/TutorialContext';
+import { useTutorialTarget } from '../hooks/useTutorialTarget';
+
+// Static demo prayers for the faith_prayer tutorial (?tutorial=1). Rendered without ever touching
+// pj_prayers, so a brand-new user with zero prayers still sees a full screen to learn on, and no
+// tutorial data is ever written. Zero footprint.
+const TUTORIAL_PRAYERS: Prayer[] = [
+  { id: 'tut_p1', text: 'Wisdom for a big decision at work', status: 'active', createdAt: 3, answeredAt: null },
+  { id: 'tut_p2', text: "Strength for a friend who is hurting", status: 'active', createdAt: 2, answeredAt: null },
+  { id: 'tut_p3', text: 'A clear answer on the apartment', status: 'answered', createdAt: 1, answeredAt: 1717200000000 },
+];
 
 /**
  * Dedicated prayer screen. Warm "carrying before God" framing, NOT a todo list: ongoing prayers
@@ -45,6 +56,18 @@ export default function PrayerScreen() {
   const insets = useSafeAreaInsets();
   const { showToast } = useToast();
   const params = useLocalSearchParams();
+  const isTutorial = params.tutorial === '1';
+  const scrollRef = useRef<ScrollView>(null);
+  const { registerScrollView, unregisterScrollView } = useTutorial();
+  const heroRef = useTutorialTarget('faith_prayer_hero');
+  const rowRef = useTutorialTarget('faith_prayer_row');
+  const addRef = useTutorialTarget('faith_prayer_add');
+  const askUsRef = useTutorialTarget('faith_prayer_ask_us');
+
+  useEffect(() => {
+    registerScrollView('prayer', scrollRef);
+    return () => unregisterScrollView('prayer');
+  }, []);
 
   const [prayers, setPrayers] = useState<Prayer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -59,6 +82,7 @@ export default function PrayerScreen() {
   // Auto-open the prayer request modal when navigated here with autoOpenRequest=1
   // (from the faith-tab Prayer card "Ask for prayer" button).
   useEffect(() => {
+    if (isTutorial) return; // tutorial never fires the email request modal
     if (params.autoOpenRequest === '1') {
       setTimeout(() => setRequestOpen(true), 350);
     }
@@ -66,12 +90,14 @@ export default function PrayerScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      // Tutorial mode shows static demo prayers and never reads or writes real data.
+      if (isTutorial) { setPrayers(TUTORIAL_PRAYERS); setLoading(false); return; }
       let alive = true;
       loadPrayers()
         .then(list => { if (alive) { setPrayers(list); setLoading(false); } })
         .catch(() => { if (alive) setLoading(false); });
       return () => { alive = false; };
-    }, []),
+    }, [isTutorial]),
   );
 
   const active = getActive(prayers);
@@ -150,10 +176,12 @@ export default function PrayerScreen() {
         <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>PRAYER</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           {answeredN > 0 && (
-            <Animated.View style={[styles.heroBox, { transform: [{ scale: heroPop }] }]}>
-              <Text style={[styles.heroNum, { color: theme.accentAmber }]}>{answeredN}</Text>
-              <Text style={[styles.heroLabel, { color: theme.textMuted }]}>ANSWERED</Text>
-            </Animated.View>
+            <View ref={heroRef} collapsable={false}>
+              <Animated.View style={[styles.heroBox, { transform: [{ scale: heroPop }] }]}>
+                <Text style={[styles.heroNum, { color: theme.accentAmber }]}>{answeredN}</Text>
+                <Text style={[styles.heroLabel, { color: theme.textMuted }]}>ANSWERED</Text>
+              </Animated.View>
+            </View>
           )}
           <TouchableOpacity
             onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setRequestOpen(true); }}
@@ -170,6 +198,7 @@ export default function PrayerScreen() {
         </View>
       ) : (
         <ScrollView
+          ref={scrollRef}
           contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 120 }}
           showsVerticalScrollIndicator={false}
         >
@@ -186,15 +215,16 @@ export default function PrayerScreen() {
               {active.length > 0 && (
                 <>
                   <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>ON MY HEART</Text>
-                  {active.map(p => (
-                    <PrayerRow
-                      key={p.id}
-                      prayer={p}
-                      theme={theme}
-                      celebrating={celebratingId === p.id}
-                      onCelebrationDone={() => finishAnswer(p)}
-                      onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setActionFor(p); }}
-                    />
+                  {active.map((p, i) => (
+                    <View key={p.id} ref={i === 0 ? rowRef : undefined} collapsable={false}>
+                      <PrayerRow
+                        prayer={p}
+                        theme={theme}
+                        celebrating={celebratingId === p.id}
+                        onCelebrationDone={() => finishAnswer(p)}
+                        onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setActionFor(p); }}
+                      />
+                    </View>
                   ))}
                 </>
               )}
@@ -225,6 +255,7 @@ export default function PrayerScreen() {
 
           {/* Ask us: opens the existing email PrayerRequestModal (a separate feature). */}
           <TouchableOpacity
+            ref={askUsRef as any}
             onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setRequestOpen(true); }}
             activeOpacity={0.85}
             style={[styles.askRow, {
@@ -249,7 +280,7 @@ export default function PrayerScreen() {
       )}
 
       {/* Add FAB (bottom-right; the faith Halo FAB lives bottom-left on the faith tab, no clash). */}
-      <View style={[styles.fab, { bottom: insets.bottom + 24 }]}>
+      <View ref={addRef} collapsable={false} style={[styles.fab, { bottom: insets.bottom + 24 }]}>
         <TouchableOpacity
           activeOpacity={0.85}
           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); setAddOpen(true); }}

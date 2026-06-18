@@ -160,6 +160,7 @@ function RootLayoutNav() {
         <Stack.Screen name="day-summary" options={{ headerShown: false }} />
         <Stack.Screen name="comparison-report" options={{ headerShown: false }} />
         <Stack.Screen name="challenge-create" options={{ headerShown: false }} />
+        <Stack.Screen name="challenges" options={{ headerShown: false }} />
         <Stack.Screen name="weekly-summary" options={{ headerShown: false }} />
         <Stack.Screen name="monthly-summary" options={{ headerShown: false }} />
         <Stack.Screen name="mission" options={{ headerShown: false }} />

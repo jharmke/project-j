@@ -283,8 +283,9 @@ export default function StatsScreen() {
   // FAB speed dial
   const [showFabMenu, setShowFabMenu] = useState(false);
   const fabScale = useRef(new Animated.Value(1)).current;
-  const fabItem1Anim = useRef(new Animated.Value(0)).current; // Add Report (top, last)
+  const fabItem1Anim = useRef(new Animated.Value(0)).current; // Comparison (top, last)
   const fabItem2Anim = useRef(new Animated.Value(0)).current; // Add Graph (bottom, first)
+  const fabItem3Anim = useRef(new Animated.Value(0)).current; // Challenges (very top)
 
   // Card edit modal
   const [editCard, setEditCard] = useState<StatsCard | null>(null);
@@ -1565,10 +1566,12 @@ export default function StatsScreen() {
   const openFabMenu = () => {
     fabItem1Anim.setValue(0);
     fabItem2Anim.setValue(0);
+    fabItem3Anim.setValue(0);
     setShowFabMenu(true);
     Animated.stagger(70, [
       Animated.spring(fabItem2Anim, { toValue: 1, useNativeDriver: true, friction: 7, tension: 120 }),
       Animated.spring(fabItem1Anim, { toValue: 1, useNativeDriver: true, friction: 7, tension: 120 }),
+      Animated.spring(fabItem3Anim, { toValue: 1, useNativeDriver: true, friction: 7, tension: 120 }),
     ]).start();
   };
 
@@ -1576,6 +1579,7 @@ export default function StatsScreen() {
     Animated.parallel([
       Animated.timing(fabItem1Anim, { toValue: 0, duration: 130, useNativeDriver: true }),
       Animated.timing(fabItem2Anim, { toValue: 0, duration: 130, useNativeDriver: true }),
+      Animated.timing(fabItem3Anim, { toValue: 0, duration: 130, useNativeDriver: true }),
     ]).start(() => setShowFabMenu(false));
   };
 
@@ -2598,6 +2602,22 @@ export default function StatsScreen() {
       {/* ── FAB speed dial items ── */}
       {showFabMenu && (
         <View style={{ position: 'absolute', bottom: 86, right: 20, alignItems: 'flex-end', gap: 12 }}>
+          {/* Challenges -- opens the Challenges page */}
+          <Animated.View style={{ opacity: fabItem3Anim, transform: [{ translateY: fabItem3Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <TouchableOpacity
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); setTimeout(() => router.push('/challenges'), 150); }}
+                style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, shadowColor: theme.accentBlueRaw, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Challenges</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); setTimeout(() => router.push('/challenges'), 150); }}
+                style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlueRaw, alignItems: 'center', justifyContent: 'center', shadowColor: theme.accentBlueRaw, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <Ionicons name="trophy" size={20} color="#ffffff" />
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+
           {/* Comparison Report -- opens the comparison screen */}
           <Animated.View style={{ opacity: fabItem1Anim, transform: [{ translateY: fabItem1Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>

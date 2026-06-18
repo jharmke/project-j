@@ -78,11 +78,16 @@ export async function loadStatsCards(): Promise<StatsCard[]> {
         return c;
       });
     const removed = await getRemovedDefaultIds();
+    // A newly-added default normally appends at the end. For sections that belong
+    // next to a sibling (not at the bottom), drop them just after that sibling via
+    // a fractional order so existing users don't get them stranded at the bottom.
+    const INSERT_AFTER: Record<string, string> = { sys_challenges: 'sys_streaks' };
     const merged = [...migrated];
     for (const def of DEFAULT_STATS_CARDS) {
       if (removed.includes(def.id)) continue;
       if (!merged.find(c => c.id === def.id)) {
-        merged.push({ ...def, order: merged.length });
+        const sib = INSERT_AFTER[def.id] ? merged.find(c => c.id === INSERT_AFTER[def.id]) : undefined;
+        merged.push({ ...def, order: sib ? sib.order + 0.5 : merged.length });
       }
     }
     return merged.sort((a, b) => a.order - b.order);

@@ -17,7 +17,6 @@ export type TrendData = {
   restingHR: { date: string; value: number }[];
   respiratoryRate: { date: string; value: number }[];
   bloodOxygen: { date: string; value: number }[];
-  bodyFatPct: { date: string; value: number }[];
   exerciseMinutes: { date: string; value: number }[];
   fiber: { date: string; value: number }[];
   sodium: { date: string; value: number }[];
@@ -32,7 +31,7 @@ export type TrendData = {
 export const EMPTY_TREND_DATA: TrendData = {
   weight: [], cal: [], steps: [], activeCal: [], sleep: [], macro: [], workoutDay: [],
   water: [], netCal: [], sleepScore: [], restingHR: [], respiratoryRate: [], bloodOxygen: [],
-  bodyFatPct: [], exerciseMinutes: [], fiber: [], sodium: [], cholesterol: [], saturatedFat: [],
+  exerciseMinutes: [], fiber: [], sodium: [], cholesterol: [], saturatedFat: [],
   sugarAlcohols: [], effortScore: [],
   excludedCounts: { diet: 0, water: 0, exercise: 0 },
   nutrients: {},
@@ -168,7 +167,6 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
   const rhrH: TrendData['restingHR'] = [];
   const rrH: TrendData['respiratoryRate'] = [];
   const boH: TrendData['bloodOxygen'] = [];
-  const bfH: TrendData['bodyFatPct'] = [];
   const emH: TrendData['exerciseMinutes'] = [];
   const fbH: TrendData['fiber'] = [];
   const sodH: TrendData['sodium'] = [];
@@ -254,7 +252,6 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
         if (data.restingHR) rhrH.push({ date: dateKey, value: data.restingHR });
         if (data.respiratoryRate) rrH.push({ date: dateKey, value: data.respiratoryRate });
         if (data.bloodOxygen) boH.push({ date: dateKey, value: data.bloodOxygen });
-        if (data.bodyFatPct) bfH.push({ date: dateKey, value: data.bodyFatPct });
         if (!excl.exercise && data.exerciseMinutes) emH.push({ date: dateKey, value: data.exerciseMinutes });
         if (!excl.exercise) hadWorkout = (workoutState.programs?.[dateKey]?.exercises?.length ?? 0) > 0;
         const es = workoutState.cardioLogs?.[dateKey]?.effortScore;
@@ -266,7 +263,7 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
   return {
     weight: wh, cal: ch, steps: sh, activeCal: ah, sleep: slh, macro: mh, workoutDay: wdh,
     water: waterH, netCal: ncH, sleepScore: ssH, restingHR: rhrH, respiratoryRate: rrH,
-    bloodOxygen: boH, bodyFatPct: bfH, exerciseMinutes: emH, effortScore: esH,
+    bloodOxygen: boH, exerciseMinutes: emH, effortScore: esH,
     fiber: fbH, sodium: sodH, cholesterol: choH, saturatedFat: sfH, sugarAlcohols: saH,
     excludedCounts: { diet: exDiet, water: exWater, exercise: exExercise },
     nutrients: nutrientMap,
@@ -353,11 +350,6 @@ export const getPinnedCardSummary = (dataKey: string, data: TrendData): { headli
       if (data.bloodOxygen.length === 0) return null;
       const avg = Math.round(data.bloodOxygen.reduce((s, x) => s + x.value, 0) / data.bloodOxygen.length * 10) / 10;
       return { headline: `${avg}%`, sublabel: 'avg blood oxygen' };
-    }
-    case 'bodyFatPct': {
-      if (data.bodyFatPct.length === 0) return null;
-      const latest = data.bodyFatPct[data.bodyFatPct.length - 1].value;
-      return { headline: `${Math.round(latest * 10) / 10}%`, sublabel: 'latest body fat %' };
     }
     case 'exerciseMinutes': {
       if (data.exerciseMinutes.length === 0) return null;

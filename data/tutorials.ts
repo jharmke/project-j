@@ -1352,7 +1352,7 @@ export const TUTORIALS: Tutorial[] = [
         bubbleAtBottom: true,
         title: 'CHOOSE YOUR DATA',
         body: {
-          discipline: '17 data types across 4 categories: Nutrition (calories, macros, fiber, sodium), Activity (steps, active cals, effort), Body (weight, body fat), Sleep & Recovery (score, hours).',
+          discipline: '16 data types across 4 categories: Nutrition (calories, macros, fiber, sodium), Activity (steps, active cals, effort), Body (weight), Sleep & Recovery (score, hours).',
           balanced: 'Pick what you want to graph. Options include calories, macros, steps, weight, sleep, and more, organized by category.',
           mindful: 'Choose from the available data types. Pick whatever feels interesting or useful to see over time.',
         },

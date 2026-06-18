@@ -9,7 +9,7 @@ export type DataKey =
   // Activity
   'steps' | 'activeCals' | 'workoutFreq' | 'exerciseMinutes' | 'effortScore' |
   // Body
-  'weight' | 'bodyFatPct' |
+  'weight' |
   // Sleep & Recovery
   'sleep' | 'sleepScore' | 'restingHR' | 'respiratoryRate' | 'bloodOxygen';
 export type ChartType = 'line' | 'bar' | 'stackedBar';
@@ -67,12 +67,15 @@ export async function loadStatsCards(): Promise<StatsCard[]> {
     const saved = await AsyncStorage.getItem(STORAGE_KEY);
     if (!saved) return DEFAULT_STATS_CARDS;
     const parsed: StatsCard[] = JSON.parse(saved);
-    const migrated = parsed.map(c => {
-      if (c.type === 'graph' && c.dataKey && LEGACY_NUTRITION_KEY_MAP[c.dataKey as string]) {
-        return { ...c, dataKey: 'advancedNutrition' as DataKey, nutrientKey: LEGACY_NUTRITION_KEY_MAP[c.dataKey as string] };
-      }
-      return c;
-    });
+    const migrated = parsed
+      // Drop any retired-dataKey graph cards (e.g. bodyFatPct) a user created before retirement.
+      .filter(c => !(c.type === 'graph' && (c.dataKey as string) === 'bodyFatPct'))
+      .map(c => {
+        if (c.type === 'graph' && c.dataKey && LEGACY_NUTRITION_KEY_MAP[c.dataKey as string]) {
+          return { ...c, dataKey: 'advancedNutrition' as DataKey, nutrientKey: LEGACY_NUTRITION_KEY_MAP[c.dataKey as string] };
+        }
+        return c;
+      });
     const removed = await getRemovedDefaultIds();
     const merged = [...migrated];
     for (const def of DEFAULT_STATS_CARDS) {
@@ -143,7 +146,7 @@ export const DATA_KEY_META: Record<DataKey, { icon: string; label: string; descr
   effortScore:   { icon: 'flame-outline',            label: 'Today\'s Effort',   description: 'Daily session effort rating (1-10)',    category: 'Activity' },
   // Body
   weight:        { icon: 'body-outline',            label: 'Weight',            description: 'Daily logged weight',                  category: 'Body' },
-  bodyFatPct:    { icon: 'pie-chart-outline',       label: 'Body Fat %',        description: 'Body fat % from Apple Health',         category: 'Body' },
+  // bodyFatPct RETIRED 2026-06-17 -- no Body Measurements feature to give it context; restore here + in statsData/StatsGraphCard/useHealthKit if it returns.
   // Sleep & Recovery
   sleep:         { icon: 'moon-outline',            label: 'Sleep',             description: 'Hours slept per night',                category: 'Sleep & Recovery' },
   sleepScore:    { icon: 'star-outline',            label: 'Sleep Score',       description: 'Nightly sleep quality score (0-100)',  category: 'Sleep & Recovery' },

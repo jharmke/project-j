@@ -92,7 +92,10 @@ const CARD_REGISTRY: CardMeta[] = [
   { id: 'workout',        label: "Today's Training",   description: "Workout summary and calories burned",     defaultVisible: true },
   { id: 'steps',          label: 'Steps',              description: 'Step count from Apple Health',           defaultVisible: true },
   { id: 'sleep',          label: 'Sleep & Recovery',   description: 'Sleep score + Recovery Score in one card', defaultVisible: true },
-  { id: 'fitness_metrics',label: 'Fitness Metrics',    description: 'VO2 Max & cardio recovery score',        defaultVisible: true },
+  // fitness_metrics card RETIRED 2026-06-17 -- RHR/Resp/SpO2 duplicated the Recovery card.
+  // Kept out of the registry (so it never renders / shows in Edit Layout) but the CardId
+  // member + renderFitnessMetricsCard() + render case are intentionally preserved for a
+  // fast restore if we rethink it (VO2 Max + Cardio Recovery capacity card). See backlog.
   { id: 'daily_note',       label: 'Daily Note',         description: 'Journal entry for the day',             defaultVisible: true },
   { id: 'gratitude_streak', label: 'Gratitude Streak',  description: 'Daily gratitude habit tracker',          defaultVisible: false },
   { id: 'reading_plans',    label: 'Reading Plans',      description: 'Daily Bible reading plan tracker',       defaultVisible: true },
@@ -102,7 +105,7 @@ const CARD_REGISTRY: CardMeta[] = [
 const DEFAULT_ORDER: CardId[] = [
   'verse', 'smart_tip', 'calories', 'macros', 'water', 'weight', 'workout',
   'steps', 'sleep', 'gratitude_streak', 'reading_plans',
-  'fitness_metrics', 'daily_note', 'vs_yesterday',
+  'daily_note', 'vs_yesterday',
 ];
 const DEFAULT_VISIBLE: Record<CardId, boolean> = Object.fromEntries(
   CARD_REGISTRY.map(c => [c.id, c.defaultVisible])
@@ -113,17 +116,16 @@ const DEFAULT_VISIBLE: Record<CardId, boolean> = Object.fromEntries(
 // Mode-specific default card orders -- only applied on fresh install (no saved cardOrder)
 const DISCIPLINE_ORDER: CardId[] = [
   'verse', 'calories', 'workout', 'sleep', 'macros', 'steps', 'water', 'weight',
-  'fitness_metrics', 'vs_yesterday', 'gratitude_streak', 'reading_plans', 'daily_note',
+  'vs_yesterday', 'gratitude_streak', 'reading_plans', 'daily_note',
 ];
 const MINDFUL_ORDER: CardId[] = [
   'verse', 'gratitude_streak', 'sleep', 'calories', 'workout', 'water', 'steps',
   'weight', 'reading_plans', 'daily_note', 'vs_yesterday',
 ];
-// Mindful hides macros and fitness_metrics by default -- users can add via Edit Layout
+// Mindful hides macros by default -- users can add via Edit Layout
 const MINDFUL_VISIBLE: Record<CardId, boolean> = {
   ...DEFAULT_VISIBLE,
   macros: false,
-  fitness_metrics: false,
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -838,7 +840,7 @@ export default function HomeScreen() {
     return store;
   };
 
-  const { activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, bodyFatPct, exerciseMinutes, fetchTodayData, hasHealthData, lastSyncedAt } = useHealthKit();
+  const { activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, exerciseMinutes, fetchTodayData, hasHealthData, lastSyncedAt } = useHealthKit();
 
   // ── Sleep tutorial resolver: routes sleep_card to the manual-path tutorial when
   //    no Apple Health sleep data is present, or when dev override is active. ──
@@ -1163,7 +1165,7 @@ export default function HomeScreen() {
 
   // ── Persist HealthKit to storage ────────────────────────────────────────────
   useEffect(() => {
-    if (activeCalories > 0 || steps > 0 || sleepHours !== null || restingHR !== null || respiratoryRate !== null || bloodOxygen !== null || bodyFatPct !== null || exerciseMinutes !== null || vo2Max !== null || cardioRecovery !== null) {
+    if (activeCalories > 0 || steps > 0 || sleepHours !== null || restingHR !== null || respiratoryRate !== null || bloodOxygen !== null || exerciseMinutes !== null || vo2Max !== null || cardioRecovery !== null) {
       AsyncStorage.getItem(`pj_${todayKey}`).then(saved => {
         const current = saved ? JSON.parse(saved) : {};
         storageSet(`pj_${todayKey}`, JSON.stringify({
@@ -1176,7 +1178,6 @@ export default function HomeScreen() {
           ...(restingHR !== null ? { restingHR } : {}),
           ...(respiratoryRate !== null ? { respiratoryRate } : {}),
           ...(bloodOxygen !== null ? { bloodOxygen } : {}),
-          ...(bodyFatPct !== null ? { bodyFatPct } : {}),
           ...(exerciseMinutes !== null ? { exerciseMinutes } : {}),
           ...(vo2Max !== null ? { vo2Max } : {}),
           ...(cardioRecovery !== null ? { cardioRecovery } : {}),
@@ -1239,7 +1240,7 @@ export default function HomeScreen() {
       }
       prevSleepHoursRef.current = sleepHours;
     }
-  }, [activeCalories, steps, sleepHours, sleepStages, restingHR, respiratoryRate, bloodOxygen, bodyFatPct, exerciseMinutes, loaded, stepGoal, activeCalGoal, exerciseMinsGoal]);
+  }, [activeCalories, steps, sleepHours, sleepStages, restingHR, respiratoryRate, bloodOxygen, exerciseMinutes, loaded, stepGoal, activeCalGoal, exerciseMinsGoal]);
 
   // ── Load layout from settings ────────────────────────────────────────────────
   useEffect(() => {
@@ -1252,7 +1253,10 @@ export default function HomeScreen() {
           const defaultOrder = mode === 'discipline' ? DISCIPLINE_ORDER : mode === 'mindful' ? MINDFUL_ORDER : DEFAULT_ORDER;
           const defaultVisible = mode === 'mindful' ? MINDFUL_VISIBLE : DEFAULT_VISIBLE;
           if (parsed.cardOrder && Array.isArray(parsed.cardOrder)) {
-            const merged = [...parsed.cardOrder, ...defaultOrder.filter(id => !parsed.cardOrder.includes(id))];
+            // Drop any retired card ids (e.g. fitness_metrics) lingering in saved order so
+            // the registry .find()! in Edit Layout never hits a dangling id.
+            const merged = [...parsed.cardOrder, ...defaultOrder.filter(id => !parsed.cardOrder.includes(id))]
+              .filter((id: CardId) => CARD_REGISTRY.some(c => c.id === id));
             setCardOrder(merged);
           } else {
             setCardOrder(defaultOrder);
@@ -2307,11 +2311,13 @@ export default function HomeScreen() {
                       </View>
                       <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium', lineHeight: 16, marginTop: 4 }}>{readinessLine}</Text>
                     </View>
-                    <ScoreRing
-                      score={homeRecoveryScore} scoreColor={recColor} trackColor={theme.sleepTrack}
-                      donutSize={recDonutSize} donutStroke={recDonutStroke} donutRadius={recDonutRadius} donutCirc={recDonutCirc}
-                      shimmer={homeRecoveryScore >= 80} refreshKey={refreshKey}
-                    />
+                    <View style={{ flex: 1, alignItems: 'center' }}>
+                      <ScoreRing
+                        score={homeRecoveryScore} scoreColor={recColor} trackColor={theme.sleepTrack}
+                        donutSize={recDonutSize} donutStroke={recDonutStroke} donutRadius={recDonutRadius} donutCirc={recDonutCirc}
+                        shimmer={homeRecoveryScore >= 80} refreshKey={refreshKey}
+                      />
+                    </View>
                   </View>
                   <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                     {recSignals.map(s => (
@@ -2672,7 +2678,7 @@ export default function HomeScreen() {
   };
 
   const renderFitnessMetricsCard = () => {
-    const hasAny = vo2Max !== null || cardioRecovery !== null || restingHR !== null || respiratoryRate !== null || bloodOxygen !== null || bodyFatPct !== null;
+    const hasAny = vo2Max !== null || cardioRecovery !== null || restingHR !== null || respiratoryRate !== null || bloodOxygen !== null;
 
     const good = theme.statusGood;
     const warn = theme.statusWarn;
@@ -2732,10 +2738,12 @@ export default function HomeScreen() {
       }
     };
 
-    const boxStyle = { width: '31%' as const, backgroundColor: theme.bgInset + '80', borderWidth: 0.5, borderColor: theme.borderCard, borderRadius: 8, padding: 10, alignItems: 'center' as const };
-    const valStyle = (color: string) => ({ fontSize: 22, color, fontFamily: 'BebasNeue_400Regular' as const, letterSpacing: 1 });
-    const labelStyle = { fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_500Medium' as const, textTransform: 'uppercase' as const, letterSpacing: 1, marginTop: 2, textAlign: 'center' as const };
-    const unitStyle = { fontSize: 8, color: theme.textDim, fontFamily: 'DMSans_400Regular' as const, marginTop: 1, textAlign: 'center' as const };
+    const metricBoxes: { key: string; label: string; value: string; unit: string; icon: any; color: string }[] = [];
+    if (vo2Max !== null)          metricBoxes.push({ key: 'vo2max',    label: 'VO2 Max',    value: `${vo2Max}`,                              unit: 'ml/kg/min', icon: 'speedometer', color: fitnessColor('vo2max', vo2Max) });
+    if (cardioRecovery !== null)  metricBoxes.push({ key: 'cardio',    label: 'Cardio Recovery', value: `${cardioRecovery}`,                 unit: 'bpm/min',   icon: 'pulse',       color: fitnessColor('cardio', cardioRecovery) });
+    if (restingHR !== null)       metricBoxes.push({ key: 'restingHR', label: 'Resting HR', value: `${restingHR}`,                           unit: 'bpm',       icon: 'heart',       color: fitnessColor('restingHR', restingHR) });
+    if (respiratoryRate !== null) metricBoxes.push({ key: 'respRate',  label: 'Resp. Rate', value: `${Math.round(respiratoryRate * 10) / 10}`, unit: 'br/min',  icon: 'cloud-outline', color: fitnessColor('respRate', respiratoryRate) });
+    if (bloodOxygen !== null)     metricBoxes.push({ key: 'bloodO2',   label: 'Blood O2',   value: `${Math.round(bloodOxygen * 10) / 10}`,   unit: '% SpO2',    icon: 'water',       color: fitnessColor('bloodO2', bloodOxygen) });
 
     return (
       <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }]}>
@@ -2753,49 +2761,21 @@ export default function HomeScreen() {
           </View>
         ) : (
           <>
-            <View style={{ flexDirection:'row', flexWrap:'wrap', gap:8 }}>
-              {vo2Max !== null && (
-                <View style={boxStyle}>
-                  <Text style={valStyle(fitnessColor('vo2max', vo2Max))}>{vo2Max}</Text>
-                  <Text style={labelStyle}>VO2 Max</Text>
-                  <Text style={unitStyle}>ml/kg/min</Text>
+            <View style={{ flexDirection:'row', flexWrap:'wrap', gap:8, justifyContent: 'center' }}>
+              {metricBoxes.map(m => (
+                <View key={m.key} style={{ width: '48%', flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: m.color + '12', borderWidth: 0.5, borderColor: m.color + '33', borderRadius: 10, paddingVertical: 9, paddingHorizontal: 11 }}>
+                  <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: m.color + '22', alignItems: 'center', justifyContent: 'center' }}>
+                    <Ionicons name={m.icon} size={13} color={m.color} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' }}>{m.label}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 3 }}>
+                      <Text style={{ fontSize: 19, color: m.color, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5 }}>{m.value}</Text>
+                      <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular' }}>{m.unit}</Text>
+                    </View>
+                  </View>
                 </View>
-              )}
-              {cardioRecovery !== null && (
-                <View style={boxStyle}>
-                  <Text style={valStyle(fitnessColor('cardio', cardioRecovery))}>{cardioRecovery}</Text>
-                  <Text style={labelStyle}>Cardio Recovery</Text>
-                  <Text style={unitStyle}>bpm / 1 min</Text>
-                </View>
-              )}
-              {restingHR !== null && (
-                <View style={boxStyle}>
-                  <Text style={valStyle(fitnessColor('restingHR', restingHR))}>{restingHR}</Text>
-                  <Text style={labelStyle}>Resting HR</Text>
-                  <Text style={unitStyle}>bpm</Text>
-                </View>
-              )}
-              {respiratoryRate !== null && (
-                <View style={boxStyle}>
-                  <Text style={valStyle(fitnessColor('respRate', respiratoryRate))}>{Math.round(respiratoryRate * 10) / 10}</Text>
-                  <Text style={labelStyle}>Resp. Rate</Text>
-                  <Text style={unitStyle}>br / min</Text>
-                </View>
-              )}
-              {bloodOxygen !== null && (
-                <View style={boxStyle}>
-                  <Text style={valStyle(fitnessColor('bloodO2', bloodOxygen))}>{Math.round(bloodOxygen * 10) / 10}%</Text>
-                  <Text style={labelStyle}>Blood O2</Text>
-                  <Text style={unitStyle}>% SpO2</Text>
-                </View>
-              )}
-              {bodyFatPct !== null && (
-                <View style={boxStyle}>
-                  <Text style={valStyle(fitnessColor('bodyFat', bodyFatPct))}>{Math.round(bodyFatPct * 10) / 10}%</Text>
-                  <Text style={labelStyle}>Body Fat</Text>
-                  <Text style={unitStyle}>% body fat</Text>
-                </View>
-              )}
+              ))}
             </View>
             <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_400Regular', marginTop: 10, textAlign: 'center' }}>
               For informational purposes only. Not medical advice.

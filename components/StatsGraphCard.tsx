@@ -1041,10 +1041,6 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
         return ct === 'bar'
           ? <GenericBarChart data={cardTrendData.bloodOxygen} color={gc ?? '#ef4444'} unit="%" fmtY={v => `${Math.round(v * 10) / 10}%`} startFromZero={false} theme={theme} />
           : <LineChart data={cardTrendData.bloodOxygen} color={gc ?? '#ef4444'} unit="%" fmtY={v => `${Math.round(v * 10) / 10}%`} gradientId={`bo_${card.id}`} theme={theme} />;
-      case 'bodyFatPct':
-        return ct === 'bar'
-          ? <GenericBarChart data={cardTrendData.bodyFatPct} color={gc ?? '#f97316'} unit="%" fmtY={v => `${Math.round(v * 10) / 10}%`} startFromZero={false} theme={theme} />
-          : <LineChart data={cardTrendData.bodyFatPct} color={gc ?? '#f97316'} unit="%" fmtY={v => `${Math.round(v * 10) / 10}%`} gradientId={`bf_${card.id}`} theme={theme} />;
       case 'exerciseMinutes':
         return ct === 'bar'
           ? <GenericBarChart data={cardTrendData.exerciseMinutes} color={gc ?? '#10b981'} unit=" min" fmtY={v => `${Math.round(v)}`} theme={theme} />
@@ -1165,17 +1161,6 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
         const min = Math.round(Math.min(...d.bloodOxygen.map(x => x.value)) * 10) / 10;
         return [{ label: 'Avg', value: `${avg}%` }, { label: 'Lowest', value: `${min}%` }];
       }
-      case 'bodyFatPct': {
-        if (d.bodyFatPct.length === 0) return undefined;
-        const latest = Math.round(d.bodyFatPct[d.bodyFatPct.length - 1].value * 10) / 10;
-        const change = d.bodyFatPct.length >= 2
-          ? Math.round((d.bodyFatPct[d.bodyFatPct.length - 1].value - d.bodyFatPct[0].value) * 10) / 10
-          : null;
-        return [
-          { label: 'Latest', value: `${latest}%` },
-          ...(change !== null ? [{ label: 'Change This Period', value: `${change > 0 ? '+' : ''}${change}%` }] : []),
-        ];
-      }
       case 'exerciseMinutes': {
         if (d.exerciseMinutes.length === 0) return undefined;
         const avg = Math.round(d.exerciseMinutes.reduce((s, x) => s + x.value, 0) / d.exerciseMinutes.length);
@@ -1221,7 +1206,7 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
       water: cardTrendData.water, netCalories: cardTrendData.netCal,
       sleepScore: cardTrendData.sleepScore, restingHR: cardTrendData.restingHR,
       respiratoryRate: cardTrendData.respiratoryRate, bloodOxygen: cardTrendData.bloodOxygen,
-      bodyFatPct: cardTrendData.bodyFatPct, exerciseMinutes: cardTrendData.exerciseMinutes,
+      exerciseMinutes: cardTrendData.exerciseMinutes,
       effortScore: cardTrendData.effortScore, fiber: cardTrendData.fiber, sodium: cardTrendData.sodium,
       cholesterol: cardTrendData.cholesterol, saturatedFat: cardTrendData.saturatedFat,
     };

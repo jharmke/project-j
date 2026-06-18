@@ -103,6 +103,8 @@ interface EngineContext {
   paceTarget: number;
   burnAccuracyPct: number;
   proteinGoalG: number;
+  carbGoalG: number;
+  fatGoalG: number;
   waterGoal: number;
   activeCalGoal: number;
   stepGoal: number;
@@ -115,6 +117,7 @@ interface EngineContext {
   ifEnabled: boolean;
   fiberGoal: number;
   paceLabel: string;
+  loggingStreak: number;       // true consecutive food-logged days ending today/yesterday
   todayKey: string;
 }
 
@@ -164,6 +167,29 @@ function keyForOffset(todayKey: string, offset: number): string {
   const dt = new Date(y, m - 1, d);
   dt.setDate(dt.getDate() - offset);
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
+}
+
+// True consecutive food-logged-day streak, walking back from today through storage
+// (the 14-day engine window can't see a longer streak). A day counts when it has at
+// least one food entry. Today is included if logged; otherwise we start from yesterday
+// so an unlogged-but-still-early today doesn't break a real streak. Capped at 400 days.
+async function computeLoggingStreak(todayKey: string): Promise<number> {
+  const keys: string[] = [];
+  for (let i = 0; i <= 400; i++) keys.push(`pj_${keyForOffset(todayKey, i)}`);
+  let pairs: readonly [string, string | null][] = [];
+  try { pairs = await AsyncStorage.multiGet(keys); } catch { return 0; }
+  const logged = (raw: string | null): boolean => {
+    if (!raw) return false;
+    try { const d = JSON.parse(raw); return Array.isArray(d.entries) && d.entries.length > 0; } catch { return false; }
+  };
+  let streak = 0;
+  // If today isn't logged yet, don't let it break the streak: start counting at yesterday.
+  let start = logged(pairs[0]?.[1] ?? null) ? 0 : 1;
+  for (let i = start; i < pairs.length; i++) {
+    if (logged(pairs[i][1])) streak++;
+    else break;
+  }
+  return streak;
 }
 
 function isWeekend(dateKey: string): boolean {
@@ -412,7 +438,23 @@ async function buildEngineContext(todayKey: string): Promise<EngineContext> {
     proteinGoalG = Math.round(((parseFloat(profile.macroProteinPct) || 35) / 100) * calTarget / 4);
   }
 
+  // Carb + fat gram goals, same source as protein. Carbs at 4 kcal/g, fat at 9 kcal/g.
+  // Stay 0 (= rule gate off) when no macro target is configured.
+  let carbGoalG = 0;
+  if (profile.macroMode === 'fixed' && profile.macroCarbsG) {
+    carbGoalG = parseFloat(profile.macroCarbsG) || 0;
+  } else if (profile.macroCarbsPct && calTarget > 0) {
+    carbGoalG = Math.round(((parseFloat(profile.macroCarbsPct) || 0) / 100) * calTarget / 4);
+  }
+  let fatGoalG = 0;
+  if (profile.macroMode === 'fixed' && profile.macroFatG) {
+    fatGoalG = parseFloat(profile.macroFatG) || 0;
+  } else if (profile.macroFatPct && calTarget > 0) {
+    fatGoalG = Math.round(((parseFloat(profile.macroFatPct) || 0) / 100) * calTarget / 9);
+  }
+
   const fiberGoal = profile.sex === 'male' ? 38 : 25;
+  const loggingStreak = await computeLoggingStreak(todayKey);
 
   return {
     bmr,
@@ -420,6 +462,8 @@ async function buildEngineContext(todayKey: string): Promise<EngineContext> {
     paceTarget,
     burnAccuracyPct,
     proteinGoalG,
+    carbGoalG,
+    fatGoalG,
     waterGoal: parseFloat(profile.waterGoal) || 0,
     activeCalGoal: parseInt(profile.activeCalGoal) || 500,
     stepGoal: parseInt(profile.stepGoal) || 10000,
@@ -432,6 +476,7 @@ async function buildEngineContext(todayKey: string): Promise<EngineContext> {
     ifEnabled: !!settings.ifEnabled || !!settings.ifMethod,
     fiberGoal,
     paceLabel: PACE_LABELS[weightGoal] ?? 'Maintain',
+    loggingStreak,
     todayKey,
   };
 }
@@ -756,6 +801,26 @@ function ruleProteinHigh(w7: WindowDay[], ctx: EngineContext, store: SmartTipsSt
   const days = w7.filter(d => d.hasFoodData && d.protein > ctx.proteinGoalG * 1.1);
   if (days.length < 5) return null;
   return makeTip('protein_high', 'insight', true, 'insight_all', ctx, store, { days: days.length });
+}
+
+// Carb / fat OVER goal (corrective). Over-only by design (Justin: not worried about
+// low carb/fat). Gated on a real macro target. Sits in family 2 just below protein so
+// protein always wins a same-tier tie. Fires when over goal on 4+ of the last 7 logged
+// days (the +1.1 cushion avoids nagging a day that just grazed the target).
+function ruleFatHigh(w7: WindowDay[], ctx: EngineContext, store: SmartTipsStore): CandidateTip | null {
+  if (ctx.fatGoalG <= 0) return null;
+  if (!meetsLoggingGate(w7, 6)) return null;
+  const days = w7.filter(d => d.hasFoodData && d.fat > ctx.fatGoalG * 1.1);
+  if (days.length < 4) return null;
+  return makeTip('fat_high', 'pattern', false, 'pattern', ctx, store, { goal: Math.round(ctx.fatGoalG), days: days.length });
+}
+
+function ruleCarbsHigh(w7: WindowDay[], ctx: EngineContext, store: SmartTipsStore): CandidateTip | null {
+  if (ctx.carbGoalG <= 0) return null;
+  if (!meetsLoggingGate(w7, 6)) return null;
+  const days = w7.filter(d => d.hasFoodData && d.carbs > ctx.carbGoalG * 1.1);
+  if (days.length < 4) return null;
+  return makeTip('carbs_high', 'pattern', false, 'pattern', ctx, store, { goal: Math.round(ctx.carbGoalG), days: days.length });
 }
 
 function ruleWaterUnder(w7: WindowDay[], w5: WindowDay[], ctx: EngineContext, store: SmartTipsStore): CandidateTip | null {
@@ -1111,7 +1176,9 @@ function ruleLogStreakStrong(w7: WindowDay[], ctx: EngineContext, store: SmartTi
   if (w7.length < 7) return null;
   const allLogged = w7.every(d => d.hasFoodData);
   if (!allLogged) return null;
-  return makeTip('log_streak_strong', 'insight', true, 'insight_all', ctx, store);
+  // Gate stays "all 7 of the last 7 logged" (a genuinely strong streak), but the copy
+  // shows the TRUE streak length, not a hardcoded "seven" (ctx.loggingStreak >= 7 here).
+  return makeTip('log_streak_strong', 'insight', true, 'insight_all', ctx, store, { streak: ctx.loggingStreak });
 }
 
 // ── CROSS-SIGNAL RULES ────────────────────────────────────────────────────────
@@ -1432,6 +1499,8 @@ function runAllRules(
   push(ruleCalOutlierWeek(w7, ctx, store));
   push(ruleProteinUnder(w7, w5, ctx, store));
   push(ruleProteinHigh(w7, ctx, store));
+  push(ruleFatHigh(w7, ctx, store));
+  push(ruleCarbsHigh(w7, ctx, store));
   push(ruleWaterUnder(w7, w5, ctx, store));
   push(ruleWaterHigh(w7, ctx, store));
   push(ruleFiberLow(w7, ctx, store));
@@ -1855,7 +1924,7 @@ export async function computeCoachPacketEvr(
 const RULE_FAMILY: Record<string, number> = {
   net_above_pace: 1, net_below_pace: 1, weight_plateau: 1,
   weight_wrong_direction: 1, weight_on_track: 1,
-  protein_under: 2, water_under: 2, fiber_low: 2, sodium_high: 2,
+  protein_under: 2, fat_high: 2, carbs_high: 2, water_under: 2, fiber_low: 2, sodium_high: 2,
   sugar_high: 2, active_low: 2, steps_low: 2, workout_low: 2,
   cross_protein_sleep: 3, cross_sodium_scale: 3, cross_high_burn_overeating: 3,
   cross_sleep_intake: 3, cross_workout_intake: 3, cross_steps_sleep: 3,
@@ -1873,7 +1942,7 @@ const RULE_FAMILY: Record<string, number> = {
 const RULE_SCENARIO: Record<string, string> = {
   net_above_pace: '1.1', net_below_pace: '1.2', weight_plateau: '1.3',
   weight_wrong_direction: '1.4', weight_on_track: '1.5',
-  protein_under: '2.1', water_under: '2.2', fiber_low: '2.3',
+  protein_under: '2.1', fat_high: '2.9', carbs_high: '2.10', water_under: '2.2', fiber_low: '2.3',
   sodium_high: '2.4', sugar_high: '2.5', active_low: '2.6',
   steps_low: '2.7', workout_low: '2.8',
   cross_protein_sleep: '3.1', cross_sodium_scale: '3.2',
@@ -2224,6 +2293,24 @@ function buildDiagnosisActionFacts(
         facts: { avgProtein: avgP, goal: Math.round(ctx.proteinGoalG), daysHigh: high.length },
       };
     }
+    case 'fat_high': {
+      const high = foodDays7.filter(d => d.fat > ctx.fatGoalG * 1.1);
+      const avgF = high.length ? Math.round(avg(high.map(d => d.fat))) : 0;
+      return {
+        diagnosis: `Over the last 7 days, fat averaging ${avgF}g on ${high.length} of ${foodDays7.length} logged days, above the ${Math.round(ctx.fatGoalG)}g target. Fat is the most calorie dense macro, so this is a common source of a calorie surplus`,
+        action: 'Trim portions of the highest-fat foods to pull daily calories back toward target',
+        facts: { avgFat: avgF, goal: Math.round(ctx.fatGoalG), daysHigh: high.length },
+      };
+    }
+    case 'carbs_high': {
+      const high = foodDays7.filter(d => d.carbs > ctx.carbGoalG * 1.1);
+      const avgC = high.length ? Math.round(avg(high.map(d => d.carbs))) : 0;
+      return {
+        diagnosis: `Over the last 7 days, carbs averaging ${avgC}g on ${high.length} of ${foodDays7.length} logged days, above the ${Math.round(ctx.carbGoalG)}g target`,
+        action: 'Time more carbs around training and trim them on lower-activity days',
+        facts: { avgCarbs: avgC, goal: Math.round(ctx.carbGoalG), daysHigh: high.length },
+      };
+    }
     case 'water_high': {
       const hit = w7.filter(d => d.isLoggedDay && d.waterLogged >= ctx.waterGoal);
       return {
@@ -2263,11 +2350,11 @@ function buildDiagnosisActionFacts(
       };
     }
     case 'log_streak_strong': {
-      const logged = w7.filter(d => d.isLoggedDay).length;
+      const streak = ctx.loggingStreak;
       return {
-        diagnosis: `Food logged on ${logged} of the last 7 days, strong consistency`,
+        diagnosis: `Food logged ${streak} consecutive days, strong consistency`,
         action: 'Maintain the logging habit',
-        facts: { loggedDays: logged },
+        facts: { streakDays: streak },
       };
     }
     case 'sleep_score_high': {

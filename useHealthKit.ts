@@ -27,7 +27,6 @@ export function useHealthKit() {
   const [respiratoryRate, setRespiratoryRate] = useState<number | null>(null);
   const [bloodOxygen, setBloodOxygen] = useState<number | null>(null);
   const [hrv, setHrv] = useState<number | null>(null);
-  const [bodyFatPct, setBodyFatPct] = useState<number | null>(null);
   const [exerciseMinutes, setExerciseMinutes] = useState<number | null>(null);
   const [appleWorkouts, setAppleWorkouts] = useState<readonly any[]>([]);
 
@@ -180,10 +179,6 @@ export function useHealthKit() {
       // Blood oxygen -- most recent
       const spo2Data = await getMostRecentQuantitySample('HKQuantityTypeIdentifierOxygenSaturation');
       if (spo2Data) setBloodOxygen(Math.round((spo2Data.quantity as number) * 1000) / 10);
-
-      // Body fat % -- most recent
-      const fatData = await getMostRecentQuantitySample('HKQuantityTypeIdentifierBodyFatPercentage');
-      if (fatData) setBodyFatPct(Math.round((fatData.quantity as number) * 1000) / 10);
 
       // Exercise minutes -- daily sum
       const exMinData = await queryStatisticsForQuantity(
@@ -783,7 +778,7 @@ export function useHealthKit() {
     activeCalories > 0 || steps > 0 || distance > 0 ||
     sleepHours !== null || restingHR !== null || respiratoryRate !== null ||
     bloodOxygen !== null || hrv !== null || vo2Max !== null ||
-    cardioRecovery !== null || bodyFatPct !== null || exerciseMinutes !== null;
+    cardioRecovery !== null || exerciseMinutes !== null;
 
-  return { authorized, hasHealthData, lastSyncedAt, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, hrv, bodyFatPct, exerciseMinutes, appleWorkouts, fetchTodayData, fetchHistoricalWorkouts, fetchSleepHistory, fetchLastNightSegments, fetchRecoverySignals, fetchOvernightRHR, dumpHRV };
+  return { authorized, hasHealthData, lastSyncedAt, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, hrv, exerciseMinutes, appleWorkouts, fetchTodayData, fetchHistoricalWorkouts, fetchSleepHistory, fetchLastNightSegments, fetchRecoverySignals, fetchOvernightRHR, dumpHRV };
 }

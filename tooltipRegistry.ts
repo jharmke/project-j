@@ -107,38 +107,8 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
       },
     ],
   },
-  {
-    key: 'fitness_metrics',
-    category: 'Fitness',
-    title: 'Fitness Metrics',
-    body: 'Advanced health metrics pulled automatically from Apple Health. Most require an Apple Watch.\n\nColor ranges are based on ACSM, ACE, and AHA research guidelines. For informational purposes only. Not medical advice.',
-    definitions: [
-      {
-        term: 'VO2 Max',
-        explanation: 'A measure of how efficiently your body uses oxygen during exercise. Higher is better. Ranges are age and sex adjusted using ACSM tables. Apple Watch estimates this during outdoor walks and runs.',
-      },
-      {
-        term: 'Cardio Recovery',
-        explanation: 'How many beats per minute your heart drops in the first minute after a workout ends. Per AHA research, a drop of 20+ bpm is healthy. Higher recovery means your cardiovascular system bounces back faster.',
-      },
-      {
-        term: 'Resting HR',
-        explanation: 'Your heart rate while at rest. 40-75 bpm is healthy; athletes often sit in the 40s-50s. 76-90 is elevated. Above 90 is high. Below 40 may indicate bradycardia unless you are an elite athlete.',
-      },
-      {
-        term: 'Resp. Rate',
-        explanation: 'Breaths per minute while at rest. Normal range is 12-20 breaths/min. Apple Watch measures this during sleep. Elevated rate can be an early signal of illness or stress.',
-      },
-      {
-        term: 'Blood O2',
-        explanation: 'Blood oxygen saturation (SpO2): how well your red blood cells are carrying oxygen. 95-100% is normal. Apple Watch measures this during sleep and on demand.',
-      },
-      {
-        term: 'Body Fat',
-        explanation: 'Percentage of total body weight that is fat. Requires a connected BIA smart scale (Withings, Garmin Index, etc.). Apple Health syncs from the device; it does not calculate this itself. BIA measurements carry ±3-5% error. Color ranges based on ACE fitness categories by sex.',
-      },
-    ],
-  },
+  // 'fitness_metrics' tooltip RETIRED 2026-06-17 with the home card (data duplicated the
+  // Recovery card). Restore alongside the card if it comes back. See backlog.
   {
     key: 'vs_yesterday',
     tutorialId: 'yvy_card',
@@ -333,7 +303,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     key: 'smart_tip',
     category: 'Reports',
     title: 'Smart Tip',
-    body: 'Smart Tips are pattern-based coaching observations drawn from your logged data over the past 7 to 14 days. They read your patterns across protein, hydration, sleep, activity, and recovery, then surface the one finding most relevant to you right now.\n\nThe tip here is your highest-priority observation today. Tap the card to open Effort vs Results and see the full picture behind it.\n\nTips update once per day as your data changes. The more consistently you log, the more accurate and specific the tips become.',
+    body: 'Smart Tips are pattern-based coaching observations drawn from your logged data over the past 7 to 14 days. They read your patterns across calories, macros (protein, carbs, fat), hydration, sleep, activity, and recovery, then surface the one finding most relevant to you right now.\n\nThe tip here is your highest-priority observation today. Tap the card to open Effort vs Results and see the full picture behind it.\n\nTips update once per day as your data changes. The more consistently you log, the more accurate and specific the tips become.',
     definitions: [
       {
         term: 'Pattern tips',

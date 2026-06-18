@@ -139,6 +139,40 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     ],
   },
 
+  fat_high: {
+    title: 'Fat Pattern',
+    positive: false,
+    db: {
+      pattern: [
+        'Fat has been above your {goal}g target on {days} of the last 7 days. Fat is calorie dense, so it is often where a surplus quietly comes from.',
+        'Most days this week came in over your fat goal. Worth a look at the higher-fat foods, since they add up fast on the calorie side.',
+        'Fat intake has been over target most of the week. Not a problem on its own, but it is the easiest macro to overshoot calories with.',
+      ],
+    },
+    mindful: [
+      'Fat has been on the higher side this week. It is the most calorie dense macro, so small changes there move your totals more than you would expect.',
+      'We noticed fat intake has been running a bit high most days. Something to be aware of, since it carries more calories per gram than carbs or protein.',
+      'Fat has been above where it usually sits this week. Worth a gentle look, just to stay aware of where your calories come from.',
+    ],
+  },
+
+  carbs_high: {
+    title: 'Carb Pattern',
+    positive: false,
+    db: {
+      pattern: [
+        'Carbs have been above your {goal}g target on {days} of the last 7 days. Worth checking whether they are fueling your training or just adding up.',
+        'Most days this week came in over your carb goal. Timing more of them around workouts can make them work harder for you.',
+        'Carb intake has been over target most of the week. Not inherently a problem, but worth knowing where they are landing in your day.',
+      ],
+    },
+    mindful: [
+      'Carbs have been on the higher side this week. They are your main fuel source, so it is more about timing than cutting.',
+      'We noticed carb intake has been running a bit high most days. Something to be aware of, especially around how it lines up with your activity.',
+      'Carbs have been above where they usually sit this week. Worth a gentle look at when in the day they tend to show up.',
+    ],
+  },
+
   water_under: {
     title: 'Hydration Dip',
     positive: false,
@@ -642,15 +676,15 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: true,
     db: {
       insight_all: [
-        'Seven consecutive days of logging. That is the kind of consistency that makes every other insight more reliable and actionable.',
-        'A full week of logging, every day. The data is the most complete it has been. Patterns this clear are rare and valuable.',
-        'Seven days in a row. Logging streaks like this are where the real signal starts to emerge.',
+        '{streak} consecutive days of logging. That is the kind of consistency that makes every other insight more reliable and actionable.',
+        '{streak} days of logging in a row. The data is the most complete it has been. Patterns this clear are rare and valuable.',
+        '{streak} days straight. Logging streaks like this are where the real signal starts to emerge.',
       ],
     },
     mindful: [
-      'You have logged every day this week, seven days in a row. That kind of showing up for yourself matters.',
-      'A whole week of logging. Not because you have to, because you chose to. That is real commitment.',
-      'Seven consecutive logged days. You have been showing up consistently. That is worth acknowledging.',
+      'You have logged {streak} days in a row. That kind of showing up for yourself matters.',
+      '{streak} days of logging straight. Not because you have to, because you chose to. That is real commitment.',
+      '{streak} consecutive logged days. You have been showing up consistently. That is worth acknowledging.',
     ],
   },
 

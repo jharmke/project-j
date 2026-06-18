@@ -29,7 +29,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     tutorialId: 'day_score',
     category: 'Reports',
     title: 'Day Summary',
-    body: 'Each morning you get a single 0-100 score for the day before -- a snapshot of how the day went across three areas. It is weighted Nutrition 35%, Recovery 35%, Activity 30%. Any area with no logged data drops out and the rest re-balance, so you are only ever graded on what you actually tracked.\n\nScoring is proximity-based, not pass/fail: getting close to a goal earns most of the points. Today is never scored while it is still in progress -- the score only appears the morning after.',
+    body: 'Each morning you get a single 0-100 score for the day before: a snapshot of how the day went across three areas. It is weighted Nutrition 35%, Recovery 35%, Activity 30%. Any area with no logged data drops out and the rest re-balance, so you are only ever graded on what you actually tracked.\n\nScoring is proximity-based, not pass/fail: getting close to a goal earns most of the points. Today is never scored while it is still in progress; the score only appears the morning after.',
     definitions: [
       {
         term: 'Nutrition (35%)',
@@ -41,7 +41,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
       },
       {
         term: 'Activity (30%)',
-        explanation: 'Active calories vs your goal, plus workout completion on training days. Tag a day as Rest and it will not be dinged for having no workout -- your movement still earns credit.',
+        explanation: 'Active calories vs your goal, plus workout completion on training days. Tag a day as Rest and it will not be dinged for having no workout, and your movement still earns credit.',
       },
       {
         term: 'Excluding a day',
@@ -85,11 +85,11 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     tutorialId: 'macros_card',
     category: 'Nutrition',
     title: 'Macros Today',
-    body: 'Track your three core macronutrients -- protein, carbs, and fat -- against your daily goals.',
+    body: 'Track your three core macronutrients, protein, carbs, and fat, against your daily goals.',
     definitions: [
       {
         term: 'Protein / Carbs / Fat',
-        explanation: 'The three macronutrients that make up your calories. Each plays a different role -- protein builds muscle, carbs fuel energy, fat supports hormones and recovery.',
+        explanation: 'The three macronutrients that make up your calories. Each plays a different role: protein builds muscle, carbs fuel energy, fat supports hormones and recovery.',
       },
       {
         term: 'Goals',
@@ -97,7 +97,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
       },
       {
         term: 'Color Coding',
-        explanation: 'Each macro has its own color -- green for protein, amber for carbs, red for fat. Any macro that exceeds its goal turns orange as a warning.',
+        explanation: 'Each macro has its own color: green for protein, amber for carbs, red for fat. Any macro that exceeds its goal turns orange as a warning.',
       },
     ],
   },
@@ -138,7 +138,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     tutorialId: 'yvy_card',
     category: 'Fitness',
     title: 'You vs Yesterday',
-    body: 'A daily head-to-head between today you and yesterday you -- across the metrics that matter most.',
+    body: 'A daily head-to-head between today you and yesterday you, across the metrics that matter most.',
     definitions: [
       {
         term: 'Metrics',
@@ -155,7 +155,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     tutorialId: 'if_card',
     category: 'Nutrition',
     title: 'Intermittent Fast',
-    body: 'Track your daily fasting window from first meal to last -- and see how you did against your target.',
+    body: 'Track your daily fasting window from first meal to last, and see how you did against your target.',
     definitions: [
       {
         term: 'Fasting Method',
@@ -171,7 +171,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
       },
       {
         term: 'Result',
-        explanation: 'Once your window is closed, you\'ll see your target vs your actual eating window -- and whether you hit your goal.',
+        explanation: 'Once your window is closed, you\'ll see your target vs your actual eating window, and whether you hit your goal.',
       },
     ],
   },
@@ -253,7 +253,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     key: 'burn_accuracy',
     category: 'Fitness',
     title: 'Burn Accuracy',
-    body: 'Apple Watch and most fitness trackers are known to overestimate active calorie burn -- often by 15-30%. This setting lets you apply a correction factor so your net calorie math reflects what you actually trust.',
+    body: 'Apple Watch and most fitness trackers are known to overestimate active calorie burn, often by 15 to 30%. This setting lets you apply a correction factor so your net calorie math reflects what you actually trust.',
     definitions: [
       {
         term: '100% (Default)',
@@ -348,7 +348,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     tutorialId: 'streaks',
     category: 'Habits',
     title: 'Streaks',
-    body: 'Streaks track how many consecutive days you hit a goal or complete a habit. Each streak counts backward from today -- a streak ends the moment you miss a day.\n\nTap the gear icon to add, remove, or create custom streaks. Your configuration is saved and never reset automatically.',
+    body: 'Streaks track how many consecutive days you hit a goal or complete a habit. Each streak counts backward from today; a streak ends the moment you miss a day.\n\nTap the gear icon to add, remove, or create custom streaks. Your configuration is saved and never reset automatically.',
     definitions: [
       { term: 'Workout', explanation: 'Counts any day you log at least one exercise. Rest days do not break the streak.' },
       { term: 'Calories', explanation: 'Counts completed days you hit your calorie goal. On days with workout or activity data, it checks your net calories (food minus active burn minus the calories your body burned at rest) against your weight-goal pace target. On days without activity data, it checks your intake against your calorie target. Today is not counted until the day ends.' },
@@ -358,13 +358,13 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
       { term: 'Active Cals', explanation: 'Counts days your active calorie burn from Apple Health meets or exceeds your active calorie goal, adjusted for your burn accuracy setting.' },
       { term: 'Exercise Mins', explanation: 'Counts days your Apple Health exercise minutes meet or exceed your exercise minutes goal.' },
       { term: 'Sleep Duration', explanation: 'Counts days your total sleep time meets or exceeds your sleep goal.' },
-      { term: 'Sleep Quality', explanation: 'Counts days your calculated sleep score is 85 or higher -- the Well Rested threshold. Requires Apple Health stage data or a feel rating.' },
-      { term: 'Bible', explanation: 'Counts days you log a reflection on a Bible verse in the Bible reader. Logging today counts immediately -- Bible streaks do not wait for the day to end.' },
+      { term: 'Sleep Quality', explanation: 'Counts days your calculated sleep score is 85 or higher, the Well Rested threshold. Requires Apple Health stage data or a feel rating.' },
+      { term: 'Bible', explanation: 'Counts days you log a reflection on a Bible verse in the Bible reader. Logging today counts immediately; Bible streaks do not wait for the day to end.' },
       { term: 'Gratitude', explanation: 'Counts days you log a gratitude entry in the journal. Logging today counts immediately.' },
-      { term: 'Journaling', explanation: 'Counts days you save a Personal entry in the journal. Bible reflections, gratitude entries, workout notes, and prayer entries do not count toward this streak -- only entries filed under the Personal category.' },
+      { term: 'Journaling', explanation: 'Counts days you save a Personal entry in the journal. Bible reflections, gratitude entries, workout notes, and prayer entries do not count toward this streak, only entries filed under the Personal category.' },
       { term: 'Morning Intention', explanation: 'A manual habit streak. Tap the tile each morning to check in. Tap again to undo if you tapped by mistake.' },
       { term: 'Prayer', explanation: 'A manual habit streak. Tap the tile to check in for the day. Tap again to undo.' },
-      { term: 'Custom', explanation: 'Create your own streak with any name and emoji. Custom streaks are always manual -- tap the tile to check in each day.' },
+      { term: 'Custom', explanation: 'Create your own streak with any name and emoji. Custom streaks are always manual: tap the tile to check in each day.' },
     ],
   },
   {
@@ -428,7 +428,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     key: 'diagnostic_correlations',
     category: 'Reports',
     title: 'Patterns in Your Data',
-    body: 'Correlations show patterns between two different habits in your data -- and why that pattern matters for your results. Unlike averages, correlations reveal cause-and-effect relationships specific to you.\n\nNot every correlation fires every report. One only surfaces when the pattern is strong enough -- there\'s a minimum delta required for each type.',
+    body: 'Correlations show patterns between two different habits in your data, and why that pattern matters for your results. Unlike averages, correlations reveal cause-and-effect relationships specific to you.\n\nNot every correlation fires every report. One only surfaces when the pattern is strong enough; there\'s a minimum delta required for each type.',
     definitions: [
       {
         term: 'For you specifically',

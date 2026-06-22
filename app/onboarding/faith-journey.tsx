@@ -11,6 +11,7 @@ import { storageSet } from '../../utils/storage';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { Ionicons } from '@expo/vector-icons';
+import { isOnboardingPreview } from '../../utils/onboardingPreview';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -293,6 +294,7 @@ export default function FaithJourneyScreen() {
   }, [selected]);
 
   const handleContinue = async () => {
+    if (isOnboardingPreview()) { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); router.push('/onboarding/apple-health'); return; }
     if (!selected) return;
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     Animated.sequence([

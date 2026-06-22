@@ -20,6 +20,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { app, auth, db, saveToFirebase } from '../firebaseConfig';
 import { shouldSync, uploadAllLocal, resetRestoreGate } from '../services/syncService';
 import { storageSet } from '../utils/storage';
+import { setOnboardingPreview } from '../utils/onboardingPreview';
 import { generateDiagnosticReport, ReportWindow, dumpWindowComparison } from '../utils/diagnosticReport';
 import { dumpDayScoreWithRecovery } from '../utils/dayScoreStore';
 import { voiceDiagnosticCards, getLastVoiceDebug } from '../utils/coachAI';
@@ -2698,6 +2699,18 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Counts what is actually in this account's cloud. Writes nothing.</Text>
               </View>
               <Ionicons name="cloud-outline" size={18} color={theme.accentBlue} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              setOnboardingPreview(true);
+              router.push('/onboarding/profile-setup');
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentBlue }]}>Preview Onboarding (safe)</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Walk the whole onboarding flow to review it. Writes nothing, syncs nothing, never touches your data. Continue advances without saving; back out or finish to exit.</Text>
+              </View>
+              <Ionicons name="eye-outline" size={18} color={theme.accentBlue} />
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {

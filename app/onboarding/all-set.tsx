@@ -11,6 +11,7 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { THEMES, useTheme } from '../../theme';
 import { storageSet } from '../../utils/storage';
+import { isOnboardingPreview, setOnboardingPreview } from '../../utils/onboardingPreview';
 
 const theme = THEMES['light'];
 
@@ -111,6 +112,8 @@ export default function AllSetScreen() {
   }, []);
 
   const applyDefaultLayout = async (openEditLayout: boolean) => {
+    // Preview mode: write nothing, just exit the preview back to the app.
+    if (isOnboardingPreview()) { setOnboardingPreview(false); router.replace('/(tabs)'); return; }
     if (saving) return;
     setSaving(true);
 

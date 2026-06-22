@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { Ionicons } from '@expo/vector-icons';
+import { isOnboardingPreview } from '../../utils/onboardingPreview';
 import { THEMES } from '../../theme';
 
 const theme = THEMES['light'];
@@ -100,7 +101,7 @@ function CommitmentRow({
 export default function CommitmentScreen() {
   const insets = useSafeAreaInsets();
   const [confirmed, setConfirmed] = useState([false, false, false]);
-  const allConfirmed = confirmed.every(Boolean);
+  const allConfirmed = isOnboardingPreview() || confirmed.every(Boolean);
 
   const fadeAnim  = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(24)).current;
@@ -144,6 +145,7 @@ export default function CommitmentScreen() {
   };
 
   const handleCommit = () => {
+    if (isOnboardingPreview()) { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); router.push('/onboarding/faith-journey'); return; }
     if (!allConfirmed) return;
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     Animated.sequence([

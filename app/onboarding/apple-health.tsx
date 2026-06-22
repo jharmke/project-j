@@ -11,6 +11,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useTheme, THEMES } from '../../theme';
+import { isOnboardingPreview } from '../../utils/onboardingPreview';
 import { storageSet } from '../../utils/storage';
 
 const AH_RED = '#FF3B30';
@@ -100,6 +101,7 @@ export default function AppleHealthScreen() {
   }, []);
 
   const saveAndContinue = async (connected: boolean) => {
+    if (isOnboardingPreview()) { router.push('/onboarding/all-set'); return; }
     try {
       const existing = await AsyncStorage.getItem('pj_settings');
       const current  = existing ? JSON.parse(existing) : {};
@@ -118,6 +120,7 @@ export default function AppleHealthScreen() {
 
   const handleConnect = async () => {
     if (connecting) return;
+    if (isOnboardingPreview()) { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); router.push('/onboarding/all-set'); return; }
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     Animated.sequence([
       Animated.timing(btnScale, { toValue: 0.97, duration: 80, useNativeDriver: true }),

@@ -10,6 +10,7 @@ import { THEMES } from '../../theme';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { Ionicons } from '@expo/vector-icons';
+import { isOnboardingPreview } from '../../utils/onboardingPreview';
 
 const theme = THEMES['light'];
 
@@ -89,10 +90,11 @@ export default function StyleSurveyScreen() {
     ]).start();
   };
 
-  const allAnswered = QUESTIONS.every(q => answers[q.id] !== undefined);
+  const allAnswered = isOnboardingPreview() || QUESTIONS.every(q => answers[q.id] !== undefined);
   const totalScore  = Object.values(answers).reduce((a, b) => a + b, 0);
 
   const handleContinue = () => {
+    if (isOnboardingPreview()) { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); router.push({ pathname: '/onboarding/your-style', params: { mode: 'balanced', score: '8' } }); return; }
     if (!allAnswered) return;
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     const mode = scoreToMode(totalScore);

@@ -13,6 +13,7 @@ import { THEMES } from '../../theme';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { Ionicons } from '@expo/vector-icons';
+import { isOnboardingPreview, setOnboardingPreview } from '../../utils/onboardingPreview';
 
 const theme = THEMES['light'];
 
@@ -54,9 +55,11 @@ export default function ProfileSetupScreen() {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   const canContinue =
-    name.trim().length > 0 &&
-    parseFloat(heightFt) > 0 &&
-    birthday !== null;
+    isOnboardingPreview() || (
+      name.trim().length > 0 &&
+      parseFloat(heightFt) > 0 &&
+      birthday !== null
+    );
 
   useEffect(() => {
     const show = Keyboard.addListener('keyboardWillShow', () => setKeyboardVisible(true));
@@ -65,6 +68,7 @@ export default function ProfileSetupScreen() {
   }, []);
 
   const handleContinue = async () => {
+    if (isOnboardingPreview()) { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); router.push('/onboarding/style-survey'); return; }
     if (!canContinue) return;
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     const ageYears = (Date.now() - birthday!.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
@@ -98,7 +102,7 @@ export default function ProfileSetupScreen() {
       {/* Progress bar */}
       <View style={[styles.progressBar, { paddingTop: insets.top + 12 }]}>
           <TouchableOpacity
-            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); if (isOnboardingPreview()) setOnboardingPreview(false); router.back(); }}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             style={[styles.backBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
           >

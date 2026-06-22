@@ -14,6 +14,7 @@ import Svg, { Path, Line, Circle, Text as SvgText, Defs, LinearGradient as SvgGr
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { Ionicons } from '@expo/vector-icons';
+import { isOnboardingPreview } from '../../utils/onboardingPreview';
 
 const PACE_PILLS = [
   { key: 'lose_2',   label: '−2 lbs/wk',   name: 'Aggressive' },
@@ -365,6 +366,7 @@ export default function YourStyleScreen() {
   };
 
   const handleContinue = async () => {
+    if (isOnboardingPreview()) { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); router.push('/onboarding/commitment'); return; }
     if (!canContinue) return;
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     try {
@@ -428,7 +430,7 @@ export default function YourStyleScreen() {
   // Current weight is required for net-based modes (Balanced/Discipline): BMR, and
   // therefore the calorie net shown on the home card, needs it. Mindful never shows
   // net, so weight stays optional there.
-  const canContinue = selectedMode === 'mindful' || parseFloat(currentWeight) > 0;
+  const canContinue = isOnboardingPreview() || selectedMode === 'mindful' || parseFloat(currentWeight) > 0;
 
   return (
     <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1 }}>

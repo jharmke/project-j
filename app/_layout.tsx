@@ -24,6 +24,7 @@ import { CelebrationRenderer } from '../components/CelebrationOverlay';
 import { ToastProvider } from '../components/Toast';
 import TutorialOverlay from '../components/TutorialOverlay';
 import { ToolkitRenderer } from '../components/ToolkitSheet';
+import LaunchSplash from '../components/LaunchSplash';
 import { TutorialProvider } from '../context/TutorialContext';
 import { ThemeProvider, useTheme } from '../theme';
 import { AuthProvider, useAuth } from '../AuthContext';
@@ -32,6 +33,10 @@ LogBox.ignoreLogs(['VirtualizedLists should never be nested']);
 
 SplashScreen.preventAutoHideAsync();
 setupNotificationHandler();
+
+// Cold-launch-only gate for the app-open logo splash. Module scope, so it resets on
+// every fresh JS load (a true kill + relaunch) and never replays on a warm resume.
+let coldSplashConsumed = false;
 
 function ThemedStatusBar() {
   const { themeId } = useTheme();
@@ -57,6 +62,7 @@ function RootLayoutNav() {
   const { user, loading: authLoading } = useAuth();
   const [onboardingChecked, setOnboardingChecked] = useState(false);
   const [onboardingComplete, setOnboardingComplete] = useState(false);
+  const [showSplash, setShowSplash] = useState(false);
   // Only route to /sign-in once per app session -- prevents re-navigation when
   // the user signs in while already on the sign-in screen (kills the animation).
   const hasInitialRouted = useRef(false);
@@ -121,6 +127,8 @@ function RootLayoutNav() {
       // this, unlocks sync, and returns instantly without overwriting local. (Fresh-install
       // restore happens earlier, in sign-in.tsx, before onboarding can write.)
       runRestoreGate().finally(() => {
+        // Cold launch into Home: play the condensed logo cinematic over the hand-off.
+        if (!coldSplashConsumed) { coldSplashConsumed = true; setShowSplash(true); }
         router.replace('/(tabs)');
         SplashScreen.hideAsync();
         // Fire-and-forget: schedule today's notis after tabs load
@@ -176,6 +184,7 @@ function RootLayoutNav() {
       <CelebrationRenderer />
       <TutorialOverlay />
       <ToolkitRenderer />
+      {showSplash && <LaunchSplash onDone={() => setShowSplash(false)} />}
     </>
   );
 }

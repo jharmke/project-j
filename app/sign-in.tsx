@@ -239,6 +239,13 @@ export default function SignInScreen() {
             <AntDesign name="google" size={22} color="#4285F4" style={{ marginRight: 10 }} />
             <Text style={styles.googleButtonText}>Continue with Google</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/mission'); }}
+            activeOpacity={0.7}
+            style={styles.missionLinkWrap}
+          >
+            <Text style={styles.missionLink}>What makes this app different</Text>
+          </TouchableOpacity>
           <Text style={styles.legal}>
             {'By signing in you agree to our '}
             <Text style={styles.legalLink} onPress={() => Linking.openURL(TERMS_URL)}>
@@ -345,6 +352,18 @@ const styles = StyleSheet.create({
     fontFamily: 'DMSans_600SemiBold',
     fontSize: 17,
     color: '#1a1a1a',
+  },
+  missionLinkWrap: {
+    marginTop: 18,
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  missionLink: {
+    fontFamily: 'DMSans_600SemiBold',
+    fontSize: 13,
+    color: '#8a8ad8',
+    textDecorationLine: 'underline',
+    textAlign: 'center',
   },
   legal: {
     fontFamily: 'DMSans_400Regular',

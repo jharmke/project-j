@@ -171,6 +171,10 @@ export default function NotificationsScreen() {
           <Text style={[styles.reassure, { color: theme.textDim }]}>
             Quiet hours and a daily limit are on by default, so it stays helpful, never noisy.
           </Text>
+          <Text style={[styles.pointer, { color: theme.textMuted }]}>
+            Fine-tune exactly what you get anytime in{' '}
+            <Text style={{ color: theme.accentBlueRaw, fontFamily: 'DMSans_600SemiBold' }}>Settings {'>'} Notifications</Text>.
+          </Text>
         </Animated.View>
 
       </View>
@@ -201,10 +205,6 @@ export default function NotificationsScreen() {
         <TouchableOpacity onPress={handleSkip} style={styles.skipBtn} activeOpacity={0.6}>
           <Text style={[styles.skipText, { color: theme.textDim }]}>Maybe later</Text>
         </TouchableOpacity>
-
-        <Text style={[styles.pointer, { color: theme.textDim }]}>
-          Fine tune exactly what you get anytime in Settings {'>'} Notifications.
-        </Text>
       </Animated.View>
 
     </LinearGradient>
@@ -243,5 +243,5 @@ const styles = StyleSheet.create({
   connectBtnText: { fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 3, color: '#ffffff' },
   skipBtn:        { paddingVertical: 12 },
   skipText:       { fontSize: 14, fontFamily: 'DMSans_400Regular' },
-  pointer:        { fontSize: 11, fontFamily: 'DMSans_400Regular', marginTop: 2, textAlign: 'center' },
+  pointer:        { fontSize: 12, fontFamily: 'DMSans_400Regular', marginTop: 10, textAlign: 'center', paddingHorizontal: 8 },
 });

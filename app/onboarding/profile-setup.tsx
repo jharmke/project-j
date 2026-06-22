@@ -125,7 +125,7 @@ export default function ProfileSetupScreen() {
             <Text style={[styles.screenLabel, { color: theme.textMuted }]}>STEP 2 OF 7</Text>
             <Text style={[styles.title,       { color: theme.accentBlueRaw }]}>Let's get to know you</Text>
             <Text style={[styles.subtitle,    { color: theme.textMuted }]}>
-              This helps us calculate your real calorie target.
+              Just the basics, so every number in the app is built around you.
             </Text>
 
             {/* Name */}

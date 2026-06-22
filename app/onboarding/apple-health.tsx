@@ -185,10 +185,10 @@ export default function AppleHealthScreen() {
             <BeatingHeart />
           </View>
 
-          <Text style={[styles.title, { color: theme.textPrimary }]}>
+          <Text style={[styles.title, { color: theme.accentBlueRaw }]}>
             Better Data.{'\n'}Better Results.
           </Text>
-          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+          <Text style={[styles.subtitle, { color: theme.textMuted }]}>
             Connect Apple Health and Project J gets smarter. Every metric is more accurate, more personal, and more useful.
           </Text>
         </Animated.View>

@@ -459,7 +459,7 @@ export default function YourStyleScreen() {
 
           <Text style={[styles.screenLabel, { color: theme.textMuted }]}>STEP 4 OF 7</Text>
           <Text style={[styles.title, { color: theme.accentBlueRaw }]}>Your Style</Text>
-          <Text style={[styles.oneliner, { color: theme.textSecondary }]}>{oneliner}</Text>
+          <Text style={[styles.oneliner, { color: theme.textMuted }]}>{oneliner}</Text>
 
           {/* Three style cards */}
           {Object.entries(MODE_COPY).map(([key, copy]) => {
@@ -861,7 +861,7 @@ const styles = StyleSheet.create({
   content:           { padding: 24, paddingTop: 16 },
   screenLabel:       { fontSize: 9,  fontFamily: 'DMSans_700Bold',      letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 },
   title:             { fontSize: 36, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, marginBottom: 8 },
-  oneliner:          { fontSize: 14, fontFamily: 'DMSans_400Regular',    lineHeight: 22, marginBottom: 24, fontStyle: 'italic' },
+  oneliner:          { fontSize: 13, fontFamily: 'DMSans_400Regular',    lineHeight: 20, marginBottom: 28 },
   modeCard:          { borderWidth: 1, borderRadius: 14, padding: 16, marginBottom: 12 },
   modeDot:           { width: 10, height: 10, borderRadius: 5, marginRight: 10 },
   modeTitle:         { fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, flex: 1 },

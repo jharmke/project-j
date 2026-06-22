@@ -24,6 +24,7 @@ import { setOnboardingPreview } from '../utils/onboardingPreview';
 import { generateDiagnosticReport, ReportWindow, dumpWindowComparison } from '../utils/diagnosticReport';
 import { dumpDayScoreWithRecovery } from '../utils/dayScoreStore';
 import { probeStreakExclusions } from '../utils/streakExclusion';
+import { startVacation, endVacationEarly, cancelVacationFully, describeVacation, vacationTodayKey, addDaysKey } from '../utils/vacationMode';
 import { voiceDiagnosticCards, getLastVoiceDebug } from '../utils/coachAI';
 import { dumpHomeCoachCandidates, dumpEvrRecoveryDebug } from '../utils/smartTipsEngine';
 import { TOOLTIP_REGISTRY } from '../tooltipRegistry';
@@ -2169,6 +2170,24 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Proves the HOLD bridge math, then lists which streaks each of your excluded days (last 120d) bridges. Read-only.</Text>
               </View>
               <Ionicons name="git-merge-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              const state = await describeVacation();
+              Alert.alert('Vacation Mode (dev)', `${state}\n\nWrites the full-day exclusion onto each in-range day (read-then-merge, reversible). Use a TODAY start to test fully reversibly; use Full reset to wipe all trace.`, [
+                { text: 'Close', style: 'cancel' },
+                { text: 'Start 3d (today)', onPress: async () => { await startVacation(vacationTodayKey(), 3); Alert.alert('Vacation started', 'Today + next 2 days are excluded. Now check Stats: streaks should HOLD (freeze), and the weekly summary should drop these days. Sleep/recovery scores still show.'); } },
+                { text: 'Start 3d (ending yesterday)', onPress: async () => { await startVacation(addDaysKey(vacationTodayKey(), -3), 3); Alert.alert('Vacation set (past)', 'The last 3 days (NOT today) are marked as a vacation: yesterday and the two days before. Today is untouched. Check the calendar + Sleep page.'); } },
+                { text: 'End early', onPress: async () => { await endVacationEarly(); Alert.alert('Ended early', 'Today + any future days un-excluded (prior manual exclusions restored). Past vacation days kept.'); } },
+                { text: 'Full reset (dev)', style: 'destructive', onPress: async () => { await cancelVacationFully(); Alert.alert('Fully reset', 'Every vacation stamp removed and the record deleted. Zero trace left.'); } },
+              ]);
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Vacation Mode (dev)</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Start/end a test vacation to verify the engine: streak freeze, summary drop, sleep still visible. Reversible (Full reset wipes all trace).</Text>
+              </View>
+              <Ionicons name="airplane-outline" size={18} color={theme.accentRed} />
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {

@@ -332,8 +332,11 @@ export default function StatsScreen() {
         if (saved) {
           const data = JSON.parse(saved);
           const ex = (data.excluded && typeof data.excluded === 'object') ? data.excluded : {};
-          // Sleep-trend exclusion is its own flag (legacy plain-boolean excluded was the old sleep toggle).
-          const sleepTrend = data.sleepTrendExcluded === true || data.excluded === true;
+          // Purple dot = sleep/recovery excluded from the trend. Fires on the dedicated sleep
+          // toggle (sleepTrendExcluded / legacy boolean) AND on a full-day exclusion (Vacation
+          // Mode or a manual all-category day), matching what the Sleep page drops from its trend.
+          const fullyExcluded = !!(ex.diet && ex.water && ex.exercise) || data.dayScore?.excludedFromAverages === true;
+          const sleepTrend = data.sleepTrendExcluded === true || data.excluded === true || fullyExcluded;
           if (ex.diet || ex.water || ex.exercise || sleepTrend) {
             exDays.push({ date: dateKey, diet: !!ex.diet, water: !!ex.water, exercise: !!ex.exercise, sleepTrend });
           }
@@ -792,7 +795,8 @@ export default function StatsScreen() {
             if (saved) {
               const data = JSON.parse(saved);
               const ex = (data.excluded && typeof data.excluded === 'object') ? data.excluded : {};
-              const sleepTrend = data.sleepTrendExcluded === true || data.excluded === true;
+              const fullyExcluded = !!(ex.diet && ex.water && ex.exercise) || data.dayScore?.excludedFromAverages === true;
+              const sleepTrend = data.sleepTrendExcluded === true || data.excluded === true || fullyExcluded;
               if (ex.diet || ex.water || ex.exercise || sleepTrend) {
                 exDays.push({ date: dateKey, diet: !!ex.diet, water: !!ex.water, exercise: !!ex.exercise, sleepTrend });
               }

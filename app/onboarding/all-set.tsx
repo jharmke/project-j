@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  Animated, StyleSheet, Text, TouchableOpacity, View,
+  Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -59,6 +59,25 @@ const MODE_ICON: Record<string, string> = {
   mindful:    'heart',
 };
 
+// Quick tips, order locked: stuck -> refresher -> make it yours
+const ALLSET_TIPS = [
+  {
+    icon: 'help-circle',
+    lead: 'Stuck on anything?',
+    body: 'Tap the (i) on any card to see what its numbers mean, or the (?) in a tab’s header for quick tips and tutorials.',
+  },
+  {
+    icon: 'book',
+    lead: 'Need a refresher?',
+    body: 'Every guide and explainer in the app lives in one place: Settings > Help.',
+  },
+  {
+    icon: 'grid',
+    lead: 'Make it yours',
+    body: 'Tap the grid icon up top to rearrange or hide your home cards.',
+  },
+];
+
 // ─── Component ───────────────────────────────────────────────────────────────
 export default function AllSetScreen() {
   const insets = useSafeAreaInsets();
@@ -74,6 +93,8 @@ export default function AllSetScreen() {
   const labelSlide  = useRef(new Animated.Value(16)).current;
   const lineAnim    = useRef(new Animated.Value(0)).current;
   const lineSlide   = useRef(new Animated.Value(12)).current;
+  const tipsAnim    = useRef(new Animated.Value(0)).current;
+  const tipsSlide   = useRef(new Animated.Value(12)).current;
   const btnAnim     = useRef(new Animated.Value(0)).current;
   const btnSlide    = useRef(new Animated.Value(12)).current;
   const btnScale    = useRef(new Animated.Value(1)).current;
@@ -106,8 +127,13 @@ export default function AllSetScreen() {
     ]).start();
 
     Animated.parallel([
-      Animated.timing(btnAnim,  { toValue: 1, duration: 340, delay: 580, useNativeDriver: true }),
-      Animated.timing(btnSlide, { toValue: 0, duration: 340, delay: 580, useNativeDriver: true }),
+      Animated.timing(tipsAnim,  { toValue: 1, duration: 360, delay: 520, useNativeDriver: true }),
+      Animated.timing(tipsSlide, { toValue: 0, duration: 360, delay: 520, useNativeDriver: true }),
+    ]).start();
+
+    Animated.parallel([
+      Animated.timing(btnAnim,  { toValue: 1, duration: 340, delay: 700, useNativeDriver: true }),
+      Animated.timing(btnSlide, { toValue: 0, duration: 340, delay: 700, useNativeDriver: true }),
     ]).start();
   }, []);
 
@@ -206,7 +232,11 @@ export default function AllSetScreen() {
       </View>
 
       {/* Content */}
-      <View style={[styles.content, { paddingBottom: insets.bottom + 120 }]}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={[styles.content, { paddingBottom: 24 }]}
+        showsVerticalScrollIndicator={false}
+      >
 
         {/* Icon */}
         <Animated.View style={[
@@ -227,16 +257,33 @@ export default function AllSetScreen() {
           <Text style={[styles.headline, { color: accentColor }]}>{modeLine}</Text>
         </Animated.View>
 
-        {/* Subtext */}
-        <Animated.View style={{ opacity: lineAnim, transform: [{ translateY: lineSlide }] }}>
-          <Text style={[styles.subtext, { color: theme.textSecondary }]}>
-            {isDiscipline
-              ? 'Your home screen is ready. You can customize it anytime from the home header.'
-              : 'Want to set up your home screen now, or let us handle it?'}
-          </Text>
+        {/* Quick tips */}
+        <Animated.View style={{ opacity: tipsAnim, transform: [{ translateY: tipsSlide }], width: '100%', marginTop: 26 }}>
+          <View style={[styles.tipCard, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: accentColor }]}>
+            {ALLSET_TIPS.map((tip, i) => (
+              <View
+                key={tip.lead}
+                style={[
+                  styles.tipRow,
+                  i < ALLSET_TIPS.length - 1 && {
+                    borderBottomWidth: StyleSheet.hairlineWidth,
+                    borderBottomColor: theme.borderCard,
+                  },
+                ]}
+              >
+                <View style={[styles.tipIconCircle, { backgroundColor: accentColor + '18', borderColor: accentColor + '30' }]}>
+                  <Ionicons name={tip.icon as any} size={17} color={accentColor} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.tipLead, { color: theme.textPrimary }]}>{tip.lead}</Text>
+                  <Text style={[styles.tipBody, { color: theme.textMuted }]}>{tip.body}</Text>
+                </View>
+              </View>
+            ))}
+          </View>
         </Animated.View>
 
-      </View>
+      </ScrollView>
 
       {/* Footer */}
       <Animated.View style={[
@@ -280,13 +327,6 @@ export default function AllSetScreen() {
           </Animated.View>
         )}
 
-        <Text style={[styles.footnote, { color: theme.textDim }]}>
-          You can always change your layout from the home screen.
-        </Text>
-        <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/mission'); }} activeOpacity={0.7} style={{ marginTop: 6 }}>
-          <Text style={[styles.missionLink, { color: accentColor }]}>What makes this app different</Text>
-        </TouchableOpacity>
-
       </Animated.View>
 
     </LinearGradient>
@@ -299,7 +339,7 @@ const styles = StyleSheet.create({
   progressFill:     { height: '100%', borderRadius: 2 },
   backBtn:          { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
 
-  content:          { flex: 1, paddingHorizontal: 28, paddingTop: 48, alignItems: 'flex-start' },
+  content:          { flexGrow: 1, paddingHorizontal: 28, paddingTop: 40, alignItems: 'flex-start' },
 
   iconBox:          { width: 68, height: 68, borderRadius: 20, borderWidth: 1,
                       alignItems: 'center', justifyContent: 'center', marginBottom: 28 },
@@ -312,6 +352,13 @@ const styles = StyleSheet.create({
                       textShadowColor: 'rgba(0,0,0,0.12)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
 
   subtext:          { fontSize: 15, fontFamily: 'DMSans_400Regular', lineHeight: 22, maxWidth: 300 },
+
+  tipCard:          { width: '100%', borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14,
+                      shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 },
+  tipRow:           { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 13, gap: 12 },
+  tipIconCircle:    { width: 36, height: 36, borderRadius: 10, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
+  tipLead:          { fontSize: 13, fontFamily: 'DMSans_600SemiBold', marginBottom: 2 },
+  tipBody:          { fontSize: 11, fontFamily: 'DMSans_400Regular', lineHeight: 16 },
 
   footer:           { paddingHorizontal: 24, paddingTop: 14, borderTopWidth: 0.5,
                       alignItems: 'center', gap: 0 },

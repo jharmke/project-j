@@ -194,7 +194,7 @@ export default function AppleHealthScreen() {
         </Animated.View>
 
         {/* Health items card */}
-        <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard }]}>
+        <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw }]}>
           {HEALTH_ITEMS.map((item, i) => (
             <Animated.View
               key={item.label}
@@ -275,7 +275,7 @@ const styles = StyleSheet.create({
                     textShadowColor: 'rgba(0,0,0,0.12)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
   subtitle:       { fontSize: 13, fontFamily: 'DMSans_400Regular', lineHeight: 20, marginBottom: 22 },
 
-  card:           { borderWidth: 0.5, borderRadius: 14,
+  card:           { borderWidth: 0.5, borderTopWidth: 1.5, borderRadius: 14,
                     shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 },
   healthRow:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 11, gap: 12 },
   iconCircle:     { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },

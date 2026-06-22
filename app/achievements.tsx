@@ -559,7 +559,7 @@ async function loadProgressValues(): Promise<Record<string, number>> {
     // We scan last 365 days
     const profile = await AsyncStorage.getItem('pj_profile');
     const parsed  = profile ? JSON.parse(profile) : {};
-    const profileWaterGoal = parsed.waterGoal ? parseInt(parsed.waterGoal) : 100;
+    const profileWaterGoal = parsed.waterGoal ? parseInt(parsed.waterGoal) : 128;
 
     let waterDays      = 0;
     let stepDays       = 0;

@@ -24,6 +24,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { app, auth } from '../firebaseConfig';
 import { useAuth } from '../AuthContext';
 import { runRestoreGate } from '../services/syncService';
+import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 
 const IOS_CLIENT_ID = '841973180275-obscsfo4ad9ibir9dtpcago5fuptojlg.apps.googleusercontent.com';
 
@@ -170,6 +172,7 @@ export default function SignInScreen() {
   };
 
   const handleGoogleSignIn = async () => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     try {
       setLoading(true);
       justSignedIn.current = true;
@@ -256,7 +259,7 @@ export default function SignInScreen() {
         >
           <TouchableOpacity
             style={styles.getStartedButton}
-            onPress={() => router.push('/onboarding/profile-setup')}
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); router.push('/onboarding/profile-setup'); }}
             activeOpacity={0.85}
           >
             <Text style={styles.getStartedText}>GET STARTED</Text>

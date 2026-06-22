@@ -7,6 +7,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { THEMES } from '../../theme';
+import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
+import { Ionicons } from '@expo/vector-icons';
 
 const theme = THEMES['light'];
 
@@ -76,6 +79,7 @@ export default function StyleSurveyScreen() {
   ).current;
 
   const handleSelect = (qIdx: number, aIdx: number, points: number) => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     setAnswers(prev => ({ ...prev, [QUESTIONS[qIdx].id]: points }));
     // spring the selected answer
     const anim = scaleAnims[qIdx][aIdx];
@@ -90,6 +94,7 @@ export default function StyleSurveyScreen() {
 
   const handleContinue = () => {
     if (!allAnswered) return;
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     const mode = scoreToMode(totalScore);
     router.push({ pathname: '/onboarding/your-style', params: { mode, score: String(totalScore) } });
   };
@@ -99,6 +104,13 @@ export default function StyleSurveyScreen() {
 
       {/* Progress bar */}
       <View style={[styles.progressBar, { paddingTop: insets.top + 12 }]}>
+        <TouchableOpacity
+          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          style={[styles.backBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+        >
+          <Ionicons name="chevron-back" size={20} color={theme.accentBlue} />
+        </TouchableOpacity>
         <View style={[styles.progressTrack, { backgroundColor: theme.bgProgressTrack }]}>
           <View style={[styles.progressFill, { backgroundColor: theme.accentBlueRaw, width: '28%' }]} />
         </View>
@@ -192,9 +204,10 @@ export default function StyleSurveyScreen() {
 }
 
 const styles = StyleSheet.create({
-  progressBar:    { paddingHorizontal: 24, paddingBottom: 8 },
-  progressTrack:  { height: 3, borderRadius: 2, overflow: 'hidden' },
+  progressBar:    { paddingHorizontal: 24, paddingBottom: 8, flexDirection: 'row', alignItems: 'center' },
+  progressTrack:  { flex: 1, height: 3, borderRadius: 2, overflow: 'hidden' },
   progressFill:   { height: '100%', borderRadius: 2 },
+  backBtn:        { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   content:        { padding: 24, paddingTop: 16 },
   screenLabel:    { fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 },
   title:          { fontSize: 36, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, marginBottom: 6 },

@@ -28,8 +28,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = async () => {
-    // Re-lock sync and clear the restore gate so the next account that signs in re-runs
-    // the gate from scratch (never syncs to a uid before its cloud data is pulled down).
+    // Re-lock sync and clear the in-memory gate so the next sign-in re-runs it from
+    // scratch. The local data-owner stamp (pj_data_owner_uid) is deliberately NOT cleared
+    // here: it must survive sign-out so the gate can detect an account switch on the next
+    // sign-in and replace local data with the correct account's cloud before unlocking sync.
     resetRestoreGate();
     await firebaseSignOut(auth);
   };

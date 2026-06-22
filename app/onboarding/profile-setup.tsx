@@ -10,6 +10,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageSet } from '../../utils/storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { THEMES } from '../../theme';
+import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
+import { Ionicons } from '@expo/vector-icons';
 
 const theme = THEMES['light'];
 
@@ -63,6 +66,7 @@ export default function ProfileSetupScreen() {
 
   const handleContinue = async () => {
     if (!canContinue) return;
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     const ageYears = (Date.now() - birthday!.getTime()) / (365.25 * 24 * 60 * 60 * 1000);
     if (ageYears < 13) {
       Alert.alert('Age Requirement', 'Project J is designed for users 13 and older.');
@@ -90,19 +94,27 @@ export default function ProfileSetupScreen() {
 
   return (
     <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1 }}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
 
-        {/* Progress bar */}
-        <View style={[styles.progressBar, { paddingTop: insets.top + 12 }]}>
+      {/* Progress bar */}
+      <View style={[styles.progressBar, { paddingTop: insets.top + 12 }]}>
+          <TouchableOpacity
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={[styles.backBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+          >
+            <Ionicons name="chevron-back" size={20} color={theme.accentBlue} />
+          </TouchableOpacity>
           <View style={[styles.progressTrack, { backgroundColor: theme.bgProgressTrack }]}>
             <View style={[styles.progressFill, { backgroundColor: theme.accentBlueRaw, width: '14%' }]} />
           </View>
         </View>
 
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
           ref={scrollViewRef}
           contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 100 }]}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
           <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
 
@@ -163,6 +175,7 @@ export default function ProfileSetupScreen() {
             <TouchableOpacity
               style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, justifyContent: 'center' }]}
               onPress={() => {
+                triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
                 setTempBirthday(birthday || new Date(1990, 0, 1));
                 setShowPicker(true);
                 setTimeout(() => scrollViewRef.current?.scrollToEnd({ animated: true }), 100);
@@ -180,21 +193,23 @@ export default function ProfileSetupScreen() {
                   style={{ position: 'absolute', top: -1000, bottom: 0, left: -24, right: -24, zIndex: 0 }}
                 />
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 8, paddingHorizontal: 4, zIndex: 1 }}>
-                  <TouchableOpacity onPress={() => { setShowPicker(false); setTempBirthday(null); }} style={{ paddingVertical: 12, paddingHorizontal: 16 }}>
+                  <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowPicker(false); setTempBirthday(null); }} style={{ paddingVertical: 12, paddingHorizontal: 16 }}>
                     <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium' }}>Cancel</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity onPress={() => { if (tempBirthday) setBirthday(tempBirthday); setShowPicker(false); }} style={{ paddingVertical: 12, paddingHorizontal: 16 }}>
+                  <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); if (tempBirthday) setBirthday(tempBirthday); setShowPicker(false); }} style={{ paddingVertical: 12, paddingHorizontal: 16 }}>
                     <Text style={{ color: theme.accentBlueRaw, fontSize: 12, fontFamily: 'DMSans_600SemiBold' }}>Confirm</Text>
                   </TouchableOpacity>
                 </View>
-                <DateTimePicker
-                  mode="date"
-                  value={tempBirthday || new Date(1990, 0, 1)}
-                  display="spinner"
-                  textColor={theme.textPrimary}
-                  maximumDate={new Date()}
-                  onChange={(_, date) => { if (date) setTempBirthday(date); }}
-                />
+                <View style={{ alignItems: 'center', width: '100%' }}>
+                  <DateTimePicker
+                    mode="date"
+                    value={tempBirthday || new Date(1990, 0, 1)}
+                    display="spinner"
+                    textColor={theme.textPrimary}
+                    maximumDate={new Date()}
+                    onChange={(_, date) => { if (date) setTempBirthday(date); }}
+                  />
+                </View>
               </View>
             )}
 
@@ -204,7 +219,7 @@ export default function ProfileSetupScreen() {
               {SEX_OPTIONS.map(o => (
                 <TouchableOpacity
                   key={o.key}
-                  onPress={() => setSex(o.key)}
+                  onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setSex(o.key); }}
                   style={[
                     styles.segmentBtn,
                     { backgroundColor: theme.bgInput, borderColor: theme.borderInput },
@@ -226,8 +241,9 @@ export default function ProfileSetupScreen() {
 
           </Animated.View>
         </ScrollView>
+      </KeyboardAvoidingView>
 
-        {/* Continue button */}
+      {/* Continue button */}
         <View style={[styles.footer, { paddingBottom: keyboardVisible ? 12 : insets.bottom + 16, borderTopColor: theme.borderCard, backgroundColor: theme.gradientEnd }]}>
           <TouchableOpacity
             style={[
@@ -247,15 +263,15 @@ export default function ProfileSetupScreen() {
           </TouchableOpacity>
         </View>
 
-      </KeyboardAvoidingView>
     </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  progressBar:      { paddingHorizontal: 24, paddingBottom: 8 },
-  progressTrack:    { height: 3, borderRadius: 2, overflow: 'hidden' },
+  progressBar:      { paddingHorizontal: 24, paddingBottom: 8, flexDirection: 'row', alignItems: 'center' },
+  progressTrack:    { flex: 1, height: 3, borderRadius: 2, overflow: 'hidden' },
   progressFill:     { height: '100%', borderRadius: 2 },
+  backBtn:          { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   content:          { padding: 24, paddingTop: 16 },
   screenLabel:      { fontSize: 9,  fontFamily: 'DMSans_700Bold',   letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 },
   title:            { fontSize: 36, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, marginBottom: 6 },

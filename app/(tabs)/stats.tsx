@@ -200,7 +200,7 @@ export default function StatsScreen() {
 
   const [calTarget, setCalTarget] = useState(0);
   const [stepGoal, setStepGoal] = useState(10000);
-  const [sleepGoal, setSleepGoal] = useState(8);
+  const [sleepGoal, setSleepGoal] = useState(7);
 
   const [records, setRecords] = useState<{
     steps: number | null, stepsDate: string | null,

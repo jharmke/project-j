@@ -14,7 +14,7 @@ import { useAuth } from '../AuthContext';
 import { BLANK_DAY, WorkoutTag } from '../workoutData';
 import CelebrationOverlay from '../components/CelebrationOverlay';
 import { showAchievementToast } from '../components/AchievementToast';
-import { ACHIEVEMENTS } from '../achievementData';
+import { ACHIEVEMENTS, loadAchievements, checkAndUnlock, loadGoalHitCounts, checkSleepAchievements, checkNutritionAchievements, checkMomentumAchievements, checkWorkoutAchievements, checkFaithAchievements } from '../achievementData';
 import { collection, getDocs } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { app, auth, db, saveToFirebase } from '../firebaseConfig';
@@ -2654,6 +2654,112 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Type the exact streak + saver count. Use when a rebuild cannot reconstruct savers.</Text>
               </View>
               <Ionicons name="create-outline" size={18} color={theme.accentBlue} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              try {
+                const uid = auth.currentUser?.uid;
+                const email = auth.currentUser?.email || '(none)';
+                if (!uid) { Alert.alert('Cloud Audit', 'Not signed in.'); return; }
+                const snap = await getDocs(collection(db, 'users', uid, 'store'));
+                const cloud: Record<string, string> = {};
+                snap.forEach(d => { const data = d.data() as any; if (data.key) cloud[data.key] = data.value; });
+                const keys = Object.keys(cloud);
+                const dayKeys = keys.filter(k => /^pj_\d{4}-\d{2}-\d{2}$/.test(k)).sort();
+                const oldest = dayKeys[0]?.replace('pj_', '') || 'none';
+                const newest = dayKeys[dayKeys.length - 1]?.replace('pj_', '') || 'none';
+                let profileName = '(no profile)';
+                try { const p = cloud['pj_profile'] ? JSON.parse(cloud['pj_profile']) : null; if (p) profileName = p.name || '(unnamed)'; } catch {}
+                const has = (k: string) => keys.includes(k) ? 'YES' : 'no';
+                const recipes = (() => { try { return cloud['pj_recipes'] ? JSON.parse(cloud['pj_recipes']).length : 0; } catch { return '?'; } })();
+                const myFoods = (() => { try { return cloud['pj_my_foods'] ? JSON.parse(cloud['pj_my_foods']).length : 0; } catch { return '?'; } })();
+                const reflections = (() => { try { return cloud['pj_bible_reflections'] ? JSON.parse(cloud['pj_bible_reflections']).length : 0; } catch { return '?'; } })();
+                Alert.alert(
+                  'Cloud Audit (read-only)',
+                  `Account: ${email}\nUID: ${uid.slice(0, 8)}...\n\n` +
+                  `Total cloud docs: ${keys.length}\n` +
+                  `Profile name: ${profileName}\n\n` +
+                  `Daily entries: ${dayKeys.length}\n` +
+                  `  range: ${oldest} -> ${newest}\n\n` +
+                  `pj_workout_state: ${has('pj_workout_state')}\n` +
+                  `pj_recipes: ${has('pj_recipes')} (${recipes})\n` +
+                  `pj_my_foods: ${has('pj_my_foods')} (${myFoods})\n` +
+                  `pj_favorites: ${has('pj_favorites')}\n` +
+                  `pj_exercise_library: ${has('pj_exercise_library')}\n` +
+                  `pj_bible_reflections: ${has('pj_bible_reflections')} (${reflections})\n` +
+                  `pj_streaks: ${has('pj_streaks')}\n` +
+                  `pj_settings: ${has('pj_settings')}`,
+                );
+              } catch (e) { Alert.alert('Cloud Audit failed', String(e)); }
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentBlue }]}>Cloud Audit (read-only)</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Counts what is actually in this account's cloud. Writes nothing.</Text>
+              </View>
+              <Ionicons name="cloud-outline" size={18} color={theme.accentBlue} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              Alert.alert(
+                'Rebuild Achievements from Logs',
+                'Recomputes your goal-hit counters from your daily logs and re-grants every badge your data has earned (hydration, steps, sleep, nutrition, workouts, faith). Reads your logs; writes only achievement keys. Does not touch any logged data. Safe.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Rebuild', onPress: async () => {
+                    triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
+                    try {
+                      // 1. Recompute water + step goal-hit counts from daily logs (same logic
+                      //    the achievements page uses for its progress bars).
+                      const profileRaw = await AsyncStorage.getItem('pj_profile');
+                      const profile = profileRaw ? JSON.parse(profileRaw) : {};
+                      const profileWaterGoal = profile.waterGoal ? parseInt(profile.waterGoal) : 128;
+                      const stepGoal = profile.stepGoal ? parseInt(profile.stepGoal) : 10000;
+                      let waterDays = 0, stepDays = 0, waterLast = '', stepLast = '';
+                      const today = new Date();
+                      for (let i = 0; i < 365; i++) {
+                        const d = new Date(today); d.setDate(d.getDate() - i);
+                        const dk = d.toISOString().split('T')[0];
+                        const raw = await AsyncStorage.getItem(`pj_${dk}`);
+                        if (!raw) continue;
+                        const day = JSON.parse(raw);
+                        const dayWaterGoal = day.waterGoal ? parseInt(day.waterGoal) : profileWaterGoal;
+                        if ((day.water ?? 0) >= dayWaterGoal) { waterDays++; if (!waterLast) waterLast = dk; }
+                        if ((day.steps ?? 0) >= stepGoal)     { stepDays++;  if (!stepLast)  stepLast  = dk; }
+                      }
+                      // 2. Write counters back, preserving activeCals/exerciseMins.
+                      const counts = await loadGoalHitCounts();
+                      await storageSet('pj_goal_hit_counts', JSON.stringify({
+                        ...counts,
+                        water: { count: waterDays, lastEarned: waterLast || counts.water.lastEarned },
+                        steps: { count: stepDays,  lastEarned: stepLast  || counts.steps.lastEarned },
+                      }));
+                      // 3. Unlock every hydration/steps tier at or below the true counts.
+                      let store = await loadAchievements();
+                      const waterTiers: [string, number][] = [['hydration_first',1],['hydration_10',10],['hydration_30',30],['hydration_50',50],['hydration_75',75],['hydration_100',100],['hydration_200',200],['hydration_365',365]];
+                      const stepTiers:  [string, number][] = [['steps_first',1],['steps_10',10],['steps_30',30],['steps_50',50],['steps_75',75],['steps_100',100],['steps_200',200],['steps_365',365]];
+                      for (const [id, th] of waterTiers) if (waterDays >= th) { store = (await checkAndUnlock(id, store)).updatedStore; }
+                      for (const [id, th] of stepTiers)  if (stepDays  >= th) { store = (await checkAndUnlock(id, store)).updatedStore; }
+                      // 4. Clear the once-per-day gates and run the app's own backfills for the
+                      //    remaining categories (these unlock only what the data earns).
+                      await AsyncStorage.multiRemove(['pj_momentum_checked','pj_workout_ach_checked','pj_sleep_ach_checked','pj_nutrition_ach_checked']);
+                      await checkSleepAchievements();
+                      await checkNutritionAchievements();
+                      await checkMomentumAchievements();
+                      await checkWorkoutAchievements();
+                      for (const t of ['verse','prayer','gratitude','bible'] as const) await checkFaithAchievements(t);
+                      Alert.alert('Done', `Rebuilt from your logs:\nWater goal days: ${waterDays}\nStep goal days: ${stepDays}\n\nBadges re-granted. Reopen the Achievements page to see them.`);
+                    } catch (e) { Alert.alert('Error', 'Rebuild failed: ' + e); }
+                  } },
+                ],
+              );
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentBlue }]}>Rebuild Achievements from Logs</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Recomputes counters + re-grants earned badges from your daily data. Safe.</Text>
+              </View>
+              <Ionicons name="trophy-outline" size={18} color={theme.accentBlue} />
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {

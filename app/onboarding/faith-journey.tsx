@@ -10,6 +10,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageSet } from '../../utils/storage';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
+import { Ionicons } from '@expo/vector-icons';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -324,6 +325,13 @@ export default function FaithJourneyScreen() {
 
       {/* Progress bar */}
       <View style={[styles.progressBar, { paddingTop: insets.top + 12 }]}>
+        <TouchableOpacity
+          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          style={[styles.backBtn, { backgroundColor: 'rgba(232,160,32,0.15)', borderColor: 'rgba(232,160,32,0.30)' }]}
+        >
+          <Ionicons name="chevron-back" size={20} color={AMBER} />
+        </TouchableOpacity>
         <View style={[styles.progressTrack, { backgroundColor: 'rgba(255,255,255,0.08)' }]}>
           <View style={[styles.progressFill, { backgroundColor: AMBER, width: '70%' }]} />
         </View>
@@ -381,9 +389,10 @@ export default function FaithJourneyScreen() {
 }
 
 const styles = StyleSheet.create({
-  progressBar:     { paddingHorizontal: 24, paddingBottom: 8 },
-  progressTrack:   { height: 3, borderRadius: 2, overflow: 'hidden' },
+  progressBar:     { paddingHorizontal: 24, paddingBottom: 8, flexDirection: 'row', alignItems: 'center' },
+  progressTrack:   { flex: 1, height: 3, borderRadius: 2, overflow: 'hidden' },
   progressFill:    { height: '100%', borderRadius: 2 },
+  backBtn:         { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   content:         { flex: 1, paddingHorizontal: 24, paddingTop: 32 },
   screenLabel:     { fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 },
   title:           { fontSize: 52, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, lineHeight: 54, marginBottom: 12 },

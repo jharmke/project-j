@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  Animated, ScrollView, StyleSheet, Text,
+  Animated, Keyboard, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text,
   TouchableOpacity, View
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -11,6 +11,9 @@ import { storageSet } from '../../utils/storage';
 import { TextInput } from 'react-native';
 import { THEMES } from '../../theme';
 import Svg, { Path, Line, Circle, Text as SvgText, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
+import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
+import { Ionicons } from '@expo/vector-icons';
 
 const PACE_PILLS = [
   { key: 'lose_2',   label: '−2 lbs/wk',   name: 'Aggressive' },
@@ -304,6 +307,7 @@ export default function YourStyleScreen() {
   const [weightGoal,    setWeightGoal]    = useState('lose_1');
   const [suggestedCals, setSuggestedCals] = useState<number | null>(null);
   const [profileData,   setProfileData]   = useState<any>(null);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
 
   const fadeAnim  = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
@@ -313,6 +317,12 @@ export default function YourStyleScreen() {
       Animated.timing(fadeAnim,  { toValue: 1, duration: 500, useNativeDriver: true }),
       Animated.timing(slideAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
     ]).start();
+  }, []);
+
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardWillShow', () => setKeyboardVisible(true));
+    const hide  = Keyboard.addListener('keyboardWillHide', () => setKeyboardVisible(false));
+    return () => { show.remove(); hide.remove(); };
   }, []);
 
   // Load profile biometrics for calorie calc -- never pre-fill weight fields
@@ -348,6 +358,7 @@ export default function YourStyleScreen() {
 
   // When user switches mode, update macro preset default
   const handleModeSelect = (mode: string) => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     setSelectedMode(mode);
     if (mode === 'discipline') setMacroPreset('high_protein');
     if (mode === 'balanced')   setMacroPreset('balanced');
@@ -355,6 +366,7 @@ export default function YourStyleScreen() {
 
   const handleContinue = async () => {
     if (!canContinue) return;
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const existing = await AsyncStorage.getItem('pj_settings');
       const current  = existing ? JSON.parse(existing) : {};
@@ -423,14 +435,23 @@ export default function YourStyleScreen() {
 
       {/* Progress bar */}
       <View style={[styles.progressBar, { paddingTop: insets.top + 12 }]}>
+        <TouchableOpacity
+          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          style={[styles.backBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+        >
+          <Ionicons name="chevron-back" size={20} color={theme.accentBlue} />
+        </TouchableOpacity>
         <View style={[styles.progressTrack, { backgroundColor: theme.bgProgressTrack }]}>
           <View style={[styles.progressFill, { backgroundColor: theme.accentBlueRaw, width: '42%' }]} />
         </View>
       </View>
 
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
 
@@ -529,7 +550,7 @@ export default function YourStyleScreen() {
                 return (
                   <TouchableOpacity
                     key={o.key}
-                    onPress={() => setLifestyleActivity(o.key)}
+                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setLifestyleActivity(o.key); }}
                   style={{
                     flex: 1,
                     minHeight: 72,
@@ -557,7 +578,7 @@ export default function YourStyleScreen() {
                 return (
                   <TouchableOpacity
                     key={o.key}
-                    onPress={() => setLifestyleActivity(o.key)}
+                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setLifestyleActivity(o.key); }}
                     style={{
                       flex: 1,
                       minHeight: 72,
@@ -587,7 +608,7 @@ export default function YourStyleScreen() {
                 return (
                   <TouchableOpacity
                     key={o.key}
-                    onPress={() => setTrainingFrequency(o.key)}
+                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setTrainingFrequency(o.key); }}
                     style={{
                       flex: 1,
                       minHeight: 72,
@@ -611,7 +632,7 @@ export default function YourStyleScreen() {
                 return (
                   <TouchableOpacity
                     key={o.key}
-                    onPress={() => setTrainingFrequency(o.key)}
+                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setTrainingFrequency(o.key); }}
                     style={{
                       flex: 1,
                       minHeight: 72,
@@ -635,7 +656,7 @@ export default function YourStyleScreen() {
                 return (
                   <TouchableOpacity
                     key={o.key}
-                    onPress={() => setTrainingFrequency(o.key)}
+                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setTrainingFrequency(o.key); }}
                     style={{
                       width: '48.5%',
                       minHeight: 72,
@@ -700,7 +721,7 @@ export default function YourStyleScreen() {
                   return (
                     <TouchableOpacity
                       key={pill.key}
-                      onPress={() => { if (!isDimmed) setWeightGoal(pill.key); }}
+                      onPress={() => { if (!isDimmed) { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setWeightGoal(pill.key); } }}
                       activeOpacity={isDimmed ? 1 : 0.7}
                       style={{
                         borderWidth: 0.5,
@@ -771,7 +792,7 @@ export default function YourStyleScreen() {
                   return (
                     <TouchableOpacity
                       key={key}
-                      onPress={() => setMacroPreset(key)}
+                      onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setMacroPreset(key); }}
                       style={[
                         styles.presetBtn,
                         { backgroundColor: theme.bgInput, borderColor: theme.borderInput },
@@ -805,9 +826,10 @@ export default function YourStyleScreen() {
 
         </Animated.View>
       </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Continue footer */}
-      <View style={[styles.footer, { paddingBottom: insets.bottom + 16, borderTopColor: theme.borderCard, backgroundColor: theme.gradientEnd }]}>
+      <View style={[styles.footer, { paddingBottom: keyboardVisible ? 12 : insets.bottom + 16, borderTopColor: theme.borderCard, backgroundColor: theme.gradientEnd }]}>
         {!canContinue && (
           <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textDim, textAlign: 'center', marginBottom: 10 }}>
             Enter your current weight to continue.
@@ -830,9 +852,10 @@ export default function YourStyleScreen() {
 }
 
 const styles = StyleSheet.create({
-  progressBar:       { paddingHorizontal: 24, paddingBottom: 8 },
-  progressTrack:     { height: 3, borderRadius: 2, overflow: 'hidden' },
+  progressBar:       { paddingHorizontal: 24, paddingBottom: 8, flexDirection: 'row', alignItems: 'center' },
+  progressTrack:     { flex: 1, height: 3, borderRadius: 2, overflow: 'hidden' },
   progressFill:      { height: '100%', borderRadius: 2 },
+  backBtn:           { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   content:           { padding: 24, paddingTop: 16 },
   screenLabel:       { fontSize: 9,  fontFamily: 'DMSans_700Bold',      letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 },
   title:             { fontSize: 36, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, marginBottom: 8 },

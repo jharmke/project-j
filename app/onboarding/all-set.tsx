@@ -140,6 +140,15 @@ export default function AllSetScreen() {
         selectedAccent: accentId,
       }));
 
+      const profileRaw     = await AsyncStorage.getItem('pj_profile');
+      const profileCurrent = profileRaw ? JSON.parse(profileRaw) : {};
+      await storageSet('pj_profile', JSON.stringify({
+        ...profileCurrent,
+        waterGoal: profileCurrent.waterGoal ?? '128',
+        stepGoal:  profileCurrent.stepGoal  ?? '10000',
+        sleepGoal: profileCurrent.sleepGoal ?? '7',
+      }));
+
       await storageSet('pj_onboarding_complete', 'true');
 
       if (openEditLayout) {
@@ -181,6 +190,13 @@ export default function AllSetScreen() {
 
       {/* Progress bar -- full */}
       <View style={[styles.progressBar, { paddingTop: insets.top + 12 }]}>
+        <TouchableOpacity
+          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          style={[styles.backBtn, { backgroundColor: `${accentColor}18`, borderColor: `${accentColor}35` }]}
+        >
+          <Ionicons name="chevron-back" size={20} color={accentColor} />
+        </TouchableOpacity>
         <View style={[styles.progressTrack, { backgroundColor: theme.borderCard }]}>
           <View style={[styles.progressFill, { backgroundColor: accentColor, width: '100%' }]} />
         </View>
@@ -264,7 +280,7 @@ export default function AllSetScreen() {
         <Text style={[styles.footnote, { color: theme.textDim }]}>
           You can always change your layout from the home screen.
         </Text>
-        <TouchableOpacity onPress={() => router.push('/mission')} activeOpacity={0.7} style={{ marginTop: 6 }}>
+        <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/mission'); }} activeOpacity={0.7} style={{ marginTop: 6 }}>
           <Text style={[styles.missionLink, { color: accentColor }]}>What makes this app different</Text>
         </TouchableOpacity>
 
@@ -275,9 +291,10 @@ export default function AllSetScreen() {
 }
 
 const styles = StyleSheet.create({
-  progressBar:      { paddingHorizontal: 24, paddingBottom: 8 },
-  progressTrack:    { height: 3, borderRadius: 2, overflow: 'hidden' },
+  progressBar:      { paddingHorizontal: 24, paddingBottom: 8, flexDirection: 'row', alignItems: 'center' },
+  progressTrack:    { flex: 1, height: 3, borderRadius: 2, overflow: 'hidden' },
   progressFill:     { height: '100%', borderRadius: 2 },
+  backBtn:          { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
 
   content:          { flex: 1, paddingHorizontal: 28, paddingTop: 48, alignItems: 'flex-start' },
 

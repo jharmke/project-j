@@ -9,6 +9,12 @@ const EXCLUDE_PREFIXES = ['pj_bible_'];
 // install has already run restoreIfFresh so we don't repeat it on every cold launch.
 const RESTORE_GATE_KEY = 'pj_fresh_restore_done';
 
+// Local-only stamp recording which Firebase UID the local pj_* data belongs to.
+// Survives sign-out on purpose: it is how the restore gate detects an account switch
+// (incoming uid != stamped owner) so one account's local data can never be uploaded
+// under another account's uid. Never synced, never restored.
+const DATA_OWNER_KEY = 'pj_data_owner_uid';
+
 // ── Sync lock (reinstall clobber protection) ──────────────────────────────────
 // Cloud writes stay LOCKED until the restore gate (runRestoreGate) has run for the
 // signed-in user. This is the core protection against the reinstall clobber: a fresh,
@@ -130,47 +136,96 @@ export function runRestoreGate(): Promise<RestoreGateResult> {
   return gatePromise;
 }
 
-async function _runRestoreGate(): Promise<RestoreGateResult> {
-  const uid = auth.currentUser?.uid;
-  if (!uid) return 'no-auth'; // nothing to do without a user; sync stays locked
-
-  // Existing install: real data already present locally. Local is authoritative (it may
-  // hold newer-than-cloud changes), so do NOT overwrite it; just turn sync on. On a
-  // storage read error, default to this safe path (never restore-overwrite blindly).
-  let onboarded: string | null = null;
-  try {
-    onboarded = await AsyncStorage.getItem('pj_onboarding_complete');
-  } catch {
-    markSyncReady();
-    return 'existing';
-  }
-  if (onboarded === 'true') { markSyncReady(); return 'existing'; }
-
-  // Fresh install (not onboarded locally). Pull the account from the cloud BEFORE any
-  // onboarding write can clobber it. Retry a few times so a transient hiccup is not
-  // mistaken for a brand-new (empty) account.
-  let snap: Awaited<ReturnType<typeof getDocs>> | null = null;
+// Fetch the signed-in user's whole cloud store, retrying a few times so a transient
+// network hiccup is not mistaken for an empty account. Returns null if unreachable.
+async function fetchCloudSnapshot(uid: string): Promise<Awaited<ReturnType<typeof getDocs>> | null> {
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      snap = await getDocs(collection(db, 'users', uid, 'store'));
-      break;
+      return await getDocs(collection(db, 'users', uid, 'store'));
     } catch {
-      snap = null;
       if (attempt < 2) await new Promise((r) => setTimeout(r, 800));
     }
   }
-  if (!snap) return 'error'; // cloud unreachable: stay LOCKED, do not wipe, retry next launch
+  return null;
+}
 
-  if (snap.empty) { markSyncReady(); return 'new-user'; } // genuine brand-new user
-
-  // Cloud holds the account. Restore everything (local is empty on a fresh install, so
-  // this is purely additive in practice). Only AFTER the write succeeds do we unlock sync.
+function snapshotToPairs(snap: Awaited<ReturnType<typeof getDocs>>): [string, string][] {
   const pairs: [string, string][] = [];
   snap.forEach((d) => {
     const data = d.data() as any;
     if (data.key && data.value) pairs.push([data.key, data.value]);
   });
+  return pairs;
+}
+
+// Wipe every local pj_* key. ONLY called after an incoming account's cloud snapshot is
+// already in hand (account-switch path), so the data being cleared belongs to a different
+// account that already has it safely in its own cloud. Never called on the normal path.
+async function clearLocalPjData(): Promise<void> {
+  const keys = await AsyncStorage.getAllKeys();
+  const pjKeys = keys.filter((k) => k.startsWith('pj_'));
+  if (pjKeys.length > 0) await AsyncStorage.multiRemove(pjKeys);
+}
+
+async function stampOwner(uid: string): Promise<void> {
+  try { await AsyncStorage.setItem(DATA_OWNER_KEY, uid); } catch {}
+}
+
+async function _runRestoreGate(): Promise<RestoreGateResult> {
+  const uid = auth.currentUser?.uid;
+  if (!uid) return 'no-auth'; // nothing to do without a user; sync stays locked
+
+  // Which account does the local data belong to? (Stamp survives sign-out on purpose.)
+  let owner: string | null = null;
+  try {
+    owner = await AsyncStorage.getItem(DATA_OWNER_KEY);
+  } catch {
+    // Storage unreadable: safe default, treat as existing, never blind-overwrite.
+    markSyncReady();
+    return 'existing';
+  }
+
+  // ── Account switch ──────────────────────────────────────────────────────────
+  // Local data belongs to a DIFFERENT account. That account's data is already in its
+  // own cloud (synced while it was active), so we must NEVER upload it under this uid.
+  // Pull THIS account's cloud FIRST; only once it is in hand do we clear the previous
+  // account's local data and replace it. Cloud unreachable => stay LOCKED, do not wipe.
+  if (owner && owner !== uid) {
+    const snap = await fetchCloudSnapshot(uid);
+    if (!snap) return 'error';
+    await clearLocalPjData();
+    const pairs = snapshotToPairs(snap);
+    if (pairs.length > 0) await AsyncStorage.multiSet(pairs);
+    await stampOwner(uid);
+    markSyncReady();
+    return snap.empty ? 'new-user' : 'restored';
+  }
+
+  // ── Same account (or first run on an un-stamped existing install) ─────────────
+  // Existing install: real data already present locally. Local is authoritative (it may
+  // hold newer-than-cloud changes), so do NOT overwrite it; just stamp + turn sync on.
+  let onboarded: string | null = null;
+  try {
+    onboarded = await AsyncStorage.getItem('pj_onboarding_complete');
+  } catch {
+    await stampOwner(uid);
+    markSyncReady();
+    return 'existing';
+  }
+  if (onboarded === 'true') { await stampOwner(uid); markSyncReady(); return 'existing'; }
+
+  // Fresh install (not onboarded locally). Pull the account from the cloud BEFORE any
+  // onboarding write can clobber it.
+  const snap = await fetchCloudSnapshot(uid);
+  if (!snap) return 'error'; // cloud unreachable: stay LOCKED, do not wipe, retry next launch
+
+  if (snap.empty) { await stampOwner(uid); markSyncReady(); return 'new-user'; } // brand-new
+
+  // Cloud holds the account. Restore everything (local is empty on a fresh install, so
+  // this is purely additive in practice). Only AFTER the write succeeds do we unlock sync.
+  const pairs = snapshotToPairs(snap);
   if (pairs.length > 0) await AsyncStorage.multiSet(pairs);
+  await stampOwner(uid);
   markSyncReady();
   return 'restored';
 }

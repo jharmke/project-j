@@ -101,7 +101,7 @@ export default function AppleHealthScreen() {
   }, []);
 
   const saveAndContinue = async (connected: boolean) => {
-    if (isOnboardingPreview()) { router.push('/onboarding/all-set'); return; }
+    if (isOnboardingPreview()) { router.push('/onboarding/notifications'); return; }
     try {
       const existing = await AsyncStorage.getItem('pj_settings');
       const current  = existing ? JSON.parse(existing) : {};
@@ -115,12 +115,12 @@ export default function AppleHealthScreen() {
     } catch (e) {
       console.log('Apple Health save error', e);
     }
-    router.push('/onboarding/all-set');
+    router.push('/onboarding/notifications');
   };
 
   const handleConnect = async () => {
     if (connecting) return;
-    if (isOnboardingPreview()) { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); router.push('/onboarding/all-set'); return; }
+    if (isOnboardingPreview()) { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); router.push('/onboarding/notifications'); return; }
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     Animated.sequence([
       Animated.timing(btnScale, { toValue: 0.97, duration: 80, useNativeDriver: true }),
@@ -179,7 +179,7 @@ export default function AppleHealthScreen() {
 
         {/* Header block */}
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-          <Text style={[styles.screenLabel, { color: theme.textMuted }]}>STEP 6 OF 7</Text>
+          <Text style={[styles.screenLabel, { color: theme.textMuted }]}>STEP 6 OF 8</Text>
 
           <View style={[styles.ahIconBox, { backgroundColor: AH_RED + '12', borderColor: AH_RED + '25' }]}>
             <BeatingHeart />

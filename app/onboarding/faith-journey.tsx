@@ -343,7 +343,7 @@ export default function FaithJourneyScreen() {
       <View style={[styles.content, { paddingBottom: insets.bottom + 100 }]}>
 
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-          <Text style={[styles.screenLabel, { color: 'rgba(232,160,32,0.45)' }]}>STEP 5 OF 7</Text>
+          <Text style={[styles.screenLabel, { color: 'rgba(232,160,32,0.45)' }]}>STEP 5 OF 8</Text>
           <Text style={[styles.title, {
             color: AMBER,
             textShadowColor:  'rgba(232,160,32,0.2)',

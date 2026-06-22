@@ -443,7 +443,7 @@ export default function YourStyleScreen() {
       >
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
 
-          <Text style={[styles.screenLabel, { color: theme.textMuted }]}>STEP 4 OF 7</Text>
+          <Text style={[styles.screenLabel, { color: theme.textMuted }]}>STEP 4 OF 8</Text>
           <Text style={[styles.title, { color: theme.accentBlueRaw }]}>Your Style</Text>
           <Text style={[styles.oneliner, { color: theme.textMuted }]}>{oneliner}</Text>
 

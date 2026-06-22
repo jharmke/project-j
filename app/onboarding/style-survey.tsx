@@ -122,7 +122,7 @@ export default function StyleSurveyScreen() {
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.screenLabel, { color: theme.textMuted }]}>STEP 3 OF 7</Text>
+        <Text style={[styles.screenLabel, { color: theme.textMuted }]}>STEP 3 OF 8</Text>
         <Text style={[styles.title, { color: theme.accentBlueRaw }]}>Let's find your style</Text>
         <Text style={[styles.subtitle, { color: theme.textMuted }]}>
           Four questions. No wrong answers.

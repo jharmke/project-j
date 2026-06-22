@@ -141,6 +141,7 @@ function RootLayoutNav() {
         <Stack.Screen name="onboarding/commitment" options={{ headerShown: false, animation: 'fade' }} />
         <Stack.Screen name="onboarding/faith-journey" options={{ headerShown: false, animation: 'fade' }} />
         <Stack.Screen name="onboarding/apple-health" options={{ headerShown: false, animation: 'fade' }} />
+        <Stack.Screen name="onboarding/notifications" options={{ headerShown: false, animation: 'fade' }} />
         <Stack.Screen name="onboarding/all-set" options={{ headerShown: false, animation: 'fade' }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
         <Stack.Screen name="workout-library" options={{ headerShown: false }} />

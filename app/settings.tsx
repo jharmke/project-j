@@ -18,7 +18,7 @@ import { ACHIEVEMENTS } from '../achievementData';
 import { collection, getDocs } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { app, auth, db, saveToFirebase } from '../firebaseConfig';
-import { shouldSync, uploadAllLocal } from '../services/syncService';
+import { shouldSync, uploadAllLocal, resetRestoreGate } from '../services/syncService';
 import { storageSet } from '../utils/storage';
 import { generateDiagnosticReport, ReportWindow, dumpWindowComparison } from '../utils/diagnosticReport';
 import { dumpDayScoreWithRecovery } from '../utils/dayScoreStore';
@@ -2654,6 +2654,33 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Type the exact streak + saver count. Use when a rebuild cannot reconstruct savers.</Text>
               </View>
               <Ionicons name="create-outline" size={18} color={theme.accentBlue} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              Alert.alert(
+                'Simulate Fresh Install',
+                'Clears all local app data on this phone to mimic a fresh install. Your cloud backup is NOT touched. After it clears, fully reload the app and it should auto-restore everything from the cloud, no onboarding, no dev tools. This tests the reinstall flow without reinstalling.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Clear & Test', style: 'destructive', onPress: async () => {
+                    triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
+                    try {
+                      const allKeys = await AsyncStorage.getAllKeys();
+                      const pjKeys = allKeys.filter(k => k.startsWith('pj_'));
+                      if (pjKeys.length > 0) await AsyncStorage.multiRemove(pjKeys);
+                      resetRestoreGate(); // re-lock sync + clear the gate so the reload runs it fresh
+                      Alert.alert('Local data cleared', `Removed ${pjKeys.length} local keys (cloud untouched). Now FULLY reload the app: press R in your Metro terminal, or kill and reopen the app. It should auto-restore from the cloud and land you on Home.`);
+                    } catch (e) { Alert.alert('Error', 'Clear failed: ' + e); }
+                  } },
+                ],
+              );
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Simulate Fresh Install</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Clears local data (cloud is safe) to test auto-restore on next reload.</Text>
+              </View>
+              <Ionicons name="refresh-circle-outline" size={18} color={theme.accentRed} />
             </TouchableOpacity>
 
             {(['small', 'medium', 'large', 'diamond'] as const).map(tier => (

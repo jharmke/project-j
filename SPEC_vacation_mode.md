@@ -1,6 +1,6 @@
 # SPEC — Vacation Mode
 
-Status: DESIGN IN PROGRESS 2026-06-22. Unblocked by the Exclusion-behavior decision (Option A / HOLD) + the Step 1-3 exclusion-contract work, all shipped 2026-06-22. This doc is the source of truth; nothing is built yet. Sections marked LOCKED are decided with Justin; OPEN sections still need a call.
+Status: DESIGN LOCKED 2026-06-22. Unblocked by the Exclusion-behavior decision (Option A / HOLD) + the Step 1-3 exclusion-contract work, all shipped 2026-06-22. This doc is the source of truth; nothing is built yet. All design decisions are settled with Justin; the only remaining item (exact second discoverable home) is a minor build-time call. Ready to build.
 
 Pairs with: Snooze notifications (separate item, designed alongside but not built here). Built on: the per-day exclusion model (`pj_<date>.excluded = {diet,water,exercise}`), the canonical `isDayExcluded` contract, and the streak HOLD helper `streakHeldByExclusion` (utils/streakExclusion.ts).
 
@@ -50,7 +50,7 @@ Net: "as if the app stops existing" for scoring/streaks, but passive data (sleep
 ## Controls & lifecycle (LOCKED unless noted)
 
 - **Duration:** a day-count stepper, **max 30 days** (LOCKED; longer = re-toggle).
-- **Start:** today by default, or pick a future date. [OPEN: allow a PAST start date / mark a past trip? Lean forward-only v1 — see Open Questions, touches guardrail 2.]
+- **Start:** today by default, or pick ANY date — future (plan a trip) or past (mark a trip already taken). LOCKED 2026-06-22 (past allowed). The 30-day cap applies to the total span. Mechanics: past/current in-range days already have a `pj_<date>` record → merge the excluded flag directly; future in-range days are lazily stamped as they arrive. A fully-past range applies immediately and shows no active banner (the trip is over); a range whose end is still in the future shows the "back [date]" banner + End early.
 - **Active banner:** while a vacation is live, a home-screen banner reads "On vacation · back [date]" with an "End early" action.
 - **End early:** stops the vacation immediately; un-excludes the remaining FUTURE days in the range (days already passed stay excluded — they really were off days). [LOCKED: ending early never un-excludes a day that has already elapsed.]
 - **Auto-expiry:** on the first app open after the end date, vacation auto-clears (no user action). Past vacation days keep their excluded flag permanently (honest record of the trip).
@@ -89,10 +89,10 @@ Vacation Mode has NO sub-options / configuration. The whole value is not having 
 
 ## Open questions
 
-1. **[OPEN] Past-range support.** Allow starting a vacation in the PAST to mark a trip already taken? Legit (you really were away) but it is the closest thing to the "retroactive eraser" guardrail 2 warns about. Options: (a) forward/today only — cleanest, most honest; (b) allow past with the same intentional framing. LEAN (a) for v1; a real past trip can still be excluded day-by-day the old way. AWAITING JUSTIN.
-2. **[MINOR] Exact second home.** Confirmed: Settings (setup) + active home banner + Toolkit entry (lead). Could also add an entry near the Stats calendar/exclusions area. Finalize during build.
+1. **[MINOR] Exact second home.** Confirmed: Settings (setup) + active home banner + Toolkit entry (lead). Could also add an entry near the Stats calendar/exclusions area. Finalize during build.
 
 ### Resolved 2026-06-22
+- **Past-range:** ALLOWED. Start any date, past or future (30-day span cap). Reasoning: the user can ALREADY exclude past days one-by-one in Day Detail, so a past range grants NO new gaming power — forward-only would only inconvenience honest users marking a real trip. Honesty is held by the existing guardrails (visible on calendar, marked excluded not faked, framed as "mark a trip" not "wipe a week"). Technically cheap (past days already have records to merge into).
 - **Max duration:** 30-day cap. **Edit-while-active:** end + restart (no in-place edit).
 - **Notifications:** ALL off during vacation (incl. verse). No carve-outs.
 - **Weight:** no special handling — Vacation Mode does not prompt for weight; logged weight still shows.

@@ -28,7 +28,8 @@ Vacation Mode applies a FULL-DAY exclusion to every day in the range. Concretely
 
 - **Day Score:** no composite for that day (drops out, renormalizes to nothing — the day simply has no score).
 - **Weekly / Monthly summaries + Comparison + EvR:** the day is dropped from all averages and counts.
-- **Streaks:** ALL auto-tracked streaks HOLD (freeze) across the range — no break, no +1 — via the full-day branch of `streakHeldByExclusion`. The user returns to the exact streak length they left with.
+- **Streaks:** TOTAL BLACKOUT — EVERY streak HOLDS (freezes) across the range, fitness AND faith/manual (gratitude, prayer, custom check-ins) — no break, no +1. The user returns to the exact streak length they left with. This protects faith streaks too: a trip never breaks a 100-day gratitude run (on-brand: faith is never punitive). (Decided 2026-06-22; overrides the earlier "faith streaks stay active" default.)
+  - BUILD NOTE: `streakHeldByExclusion` deliberately never holds faith/manual keys on a NORMAL excluded day (you can still pray on a sick day). Vacation needs a SEPARATE path so faith/manual freeze ONLY during an active vacation, leaving regular-exclusion behavior unchanged. Likely: pass an `inVacation` flag into the streak walk-back that, when set, holds every key for in-range days.
 - **Stats graphs:** per-category gating already drops the day's calories/macros/water/active-cals/exercise-mins/steps.
 
 ### The sleep & recovery exception (LOCKED — Justin's call)
@@ -48,12 +49,16 @@ Net: "as if the app stops existing" for scoring/streaks, but passive data (sleep
 
 ## Controls & lifecycle (LOCKED unless noted)
 
-- **Duration:** a day-count stepper (e.g. 1-30 days). [OPEN: max cap? suggest 30, with a note that longer = re-toggle.]
-- **Start:** today by default, or pick a future date. [OPEN: allow a PAST start date / mark a past trip? See Open Questions — touches guardrail 2.]
+- **Duration:** a day-count stepper, **max 30 days** (LOCKED; longer = re-toggle).
+- **Start:** today by default, or pick a future date. [OPEN: allow a PAST start date / mark a past trip? Lean forward-only v1 — see Open Questions, touches guardrail 2.]
 - **Active banner:** while a vacation is live, a home-screen banner reads "On vacation · back [date]" with an "End early" action.
 - **End early:** stops the vacation immediately; un-excludes the remaining FUTURE days in the range (days already passed stay excluded — they really were off days). [LOCKED: ending early never un-excludes a day that has already elapsed.]
 - **Auto-expiry:** on the first app open after the end date, vacation auto-clears (no user action). Past vacation days keep their excluded flag permanently (honest record of the trip).
-- **Edit active vacation:** [OPEN: can the user extend/shorten a running vacation, or must they end + restart?]
+- **Edit active vacation:** END + RESTART (LOCKED) — no in-place extend/shorten in v1. Keeps it simple.
+
+## No settings panel (LOCKED — Justin 2026-06-22)
+
+Vacation Mode has NO sub-options / configuration. The whole value is not having to think — a restful feature should not ship with a control panel. ONE decision: how many days. Behavior is total and predictable (everything off). If users later need granularity, add it then; v1 stays dead simple.
 
 ---
 
@@ -75,22 +80,24 @@ Net: "as if the app stops existing" for scoring/streaks, but passive data (sleep
 - **Mindful:** warm, rest-affirming. "Rest is part of the work. Take the time, we will be right here when you return." No streak-pressure language.
 - Faith tie-in [OPEN, optional]: a gentle rest/Sabbath note for Rooted/Exploring (rest without guilt), hidden for Not Right Now. Keep it optional and unforced.
 
-## Notifications during vacation (LOCKED intent; specifics pair with Snooze)
+## Notifications during vacation (LOCKED — total silence)
 
-- Suppress streak-risk and "you are behind" nudges for the duration (they directly contradict "you are off"). 
-- [OPEN: keep faith/verse + sleep/recovery informational notifications? Lean yes for Rooted/Exploring — they are not performance nudges.]
-- Implementation pairs with the Snooze item; the vacation window acts as a blanket snooze on performance notifications.
+- ALL notifications are silenced for the duration. Total blackout, including the daily verse and all informational pushes — not just performance nudges. (Justin 2026-06-22: "vacation should be everything off." The verse-as-sole-exception was offered and declined; everything means everything.)
+- Implementation: the active vacation window acts as a blanket mute over the whole notification scheduler. Pairs with the Snooze item (vacation = a full-window snooze).
 
 ---
 
-## Open questions (need Justin)
+## Open questions
 
-1. **Past-range support.** Allow starting a vacation in the PAST to mark a trip already taken? Legit (you really were away) but it is the closest thing to the "retroactive eraser" guardrail 2 warns about. Options: (a) forward/today only — cleanest, most honest; (b) allow past with the same intentional framing. LEAN (a) for v1; a real past trip can still be excluded day-by-day the old way.
-2. **Exact home(s).** Confirmed: Settings (setup) + active home banner. Still deciding the SECOND discoverable entry — Toolkit sheet is the lead candidate. Also consider an entry near the Stats calendar/exclusions area.
-3. **Max duration cap** (suggest 30) and **edit-while-active** (extend/shorten vs end+restart).
-4. **Notification carve-outs** (faith + informational kept on?).
-5. **Weight during vacation:** weight has no exclusion category and the weight graph is intentionally ungated. Likely Vacation Mode just does not prompt for weight; weight you do log still shows. Confirm no special handling needed.
-6. **Manual / faith streaks** (gratitude, prayer, custom check-ins): these are NEVER auto-held by exclusion (you can still do them on an off day). Confirm Vacation Mode should likewise leave them fully active — you can keep your prayer streak alive on vacation if you want.
+1. **[OPEN] Past-range support.** Allow starting a vacation in the PAST to mark a trip already taken? Legit (you really were away) but it is the closest thing to the "retroactive eraser" guardrail 2 warns about. Options: (a) forward/today only — cleanest, most honest; (b) allow past with the same intentional framing. LEAN (a) for v1; a real past trip can still be excluded day-by-day the old way. AWAITING JUSTIN.
+2. **[MINOR] Exact second home.** Confirmed: Settings (setup) + active home banner + Toolkit entry (lead). Could also add an entry near the Stats calendar/exclusions area. Finalize during build.
+
+### Resolved 2026-06-22
+- **Max duration:** 30-day cap. **Edit-while-active:** end + restart (no in-place edit).
+- **Notifications:** ALL off during vacation (incl. verse). No carve-outs.
+- **Weight:** no special handling — Vacation Mode does not prompt for weight; logged weight still shows.
+- **Faith / manual streaks:** FREEZE during vacation (total blackout), unlike a normal exclusion which leaves them active. Needs the `inVacation` streak path (see Scope build note).
+- **Settings panel:** none. One decision (days); behavior is total.
 
 ---
 

@@ -9,6 +9,7 @@ import { useTheme } from '../theme';
 import { storageSet } from '../utils/storage';
 import { DEFAULT_MEAL_SLOTS, MealSlot, findSlotForMeal, loadMealSlots, getMealDisplayName } from '../utils/mealSlots';
 import { calcSleepScore, sleepScoreColor as getSleepScoreColor } from '../utils/sleepScore';
+import { recoveryZone } from '../utils/recoveryScore';
 
 type SleepStages = { core: number; deep: number; rem: number; totalMs: number };
 
@@ -57,6 +58,7 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
   const [mealsOpen, setMealsOpen] = useState(true);
   const [workoutOpen, setWorkoutOpen] = useState(true);
   const [sleepOpen, setSleepOpen] = useState(true);
+  const [recoveryOpen, setRecoveryOpen] = useState(true);
   const [advNutritionOpen, setAdvNutritionOpen] = useState(false);
   const [profileBmr, setProfileBmr] = useState(0);
   const [sleepGoal, setSleepGoal] = useState(7);
@@ -215,6 +217,11 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
   const { score: sleepScore, hasStages } = calcSleepScore(sleepHours || null, sleepStages, sleepGoal, sleepFeelRating || null, !!data?.sleepOverride, sleepConsistencyPts);
   const sleepLabel = sleepScore !== null ? (sleepScore >= 85 ? 'Well Rested' : sleepScore >= 70 ? 'Could Be Better' : 'Poor Sleep') : null;
   const sleepScoreColor = sleepScore !== null ? getSleepScoreColor(sleepScore, theme) : theme.textDim;
+
+  const recoveryScore: number | null = typeof data?.recoveryScore === 'number' ? data.recoveryScore : null;
+  const recoverySignals: { hrv?: number; rhr?: number; resp?: number; spo2?: number } | null = data?.recoverySignals ?? null;
+  const recZone = recoveryScore !== null ? recoveryZone(recoveryScore) : null;
+  const recColor = recZone ? (recZone.zoneColor === 'good' ? theme.statusGood : recZone.zoneColor === 'warn' ? theme.statusWarn : theme.statusBad) : theme.textDim;
 
   const dayprogram = workoutState?.programs?.[currentDate];
   const daychecks = workoutState?.checks?.[currentDate] || {};
@@ -491,6 +498,55 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                     </View>
                   </>
                 )}
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Recovery */}
+        {recoveryScore !== null && (
+          <View style={styles.card}>
+            <Ionicons name="pulse" size={130} color={theme.accentBlueRaw} style={styles.heroIcon} />
+            <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setRecoveryOpen(!recoveryOpen); }} style={styles.cardRow} activeOpacity={0.7}>
+              <Text style={[styles.cardLabel, { marginBottom: 0 }]}>Recovery</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={[styles.scorePill, { backgroundColor: recColor + '22', borderColor: recColor + '66' }]}>
+                  <Text style={[styles.scorePillText, { color: recColor }]}>{recoveryScore} · {recZone?.label}</Text>
+                </View>
+                <Ionicons name={recoveryOpen ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textDim} />
+              </View>
+            </TouchableOpacity>
+            {recoveryOpen && (
+              <View style={{ marginTop: 12 }}>
+                <View style={styles.statRow}>
+                  <View style={styles.stat}>
+                    <Text style={styles.statVal}>
+                      {recoverySignals?.hrv != null ? <>{Math.round(recoverySignals.hrv)}<Text style={styles.statUnit}> ms</Text></> : '--'}
+                    </Text>
+                    <Text style={styles.statLabel}>HRV</Text>
+                  </View>
+                  <View style={styles.stat}>
+                    <Text style={styles.statVal}>
+                      {recoverySignals?.rhr != null ? <>{Math.round(recoverySignals.rhr)}<Text style={styles.statUnit}> bpm</Text></> : '--'}
+                    </Text>
+                    <Text style={styles.statLabel}>Resting HR</Text>
+                  </View>
+                </View>
+                <View style={styles.divider} />
+                <View style={styles.statRow}>
+                  <View style={styles.stat}>
+                    <Text style={styles.statVal}>
+                      {recoverySignals?.resp != null ? <>{recoverySignals.resp.toFixed(1)}<Text style={styles.statUnit}> brpm</Text></> : '--'}
+                    </Text>
+                    <Text style={styles.statLabel}>Resp Rate</Text>
+                  </View>
+                  <View style={styles.stat}>
+                    <Text style={styles.statVal}>
+                      {recoverySignals?.spo2 != null ? <>{Math.round(recoverySignals.spo2)}<Text style={styles.statUnit}>%</Text></> : '--'}
+                    </Text>
+                    <Text style={styles.statLabel}>Blood O2</Text>
+                  </View>
+                </View>
               </View>
             )}
           </View>

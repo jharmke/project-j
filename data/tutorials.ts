@@ -1848,9 +1848,9 @@ export const TUTORIALS: Tutorial[] = [
         highlightPadding: 10,
         noTabBarOffset: true,
         body: {
-          discipline: 'Sick, traveling, or a planned off day? Exclude it here so it does not drag your weekly average. Past scores live in Stats > Reports.',
-          balanced: 'For a genuine off day, exclude it here so it does not affect your averages. You can revisit any day from Stats > Reports.',
-          mindful: 'For an off day, you can quietly exclude it so it does not weigh on your averages. Past days are always there in Stats > Reports when you want them.',
+          discipline: 'Sick, traveling, or a planned off day? Exclude it here so it does not drag your scores or weekly average. It also holds your streaks so they do not break. Past scores live in Stats > Reports.',
+          balanced: 'For a genuine off day, exclude it here so it does not affect your scores or averages, and it holds your streaks instead of breaking them. You can revisit any day from Stats > Reports.',
+          mindful: 'For an off day, you can quietly exclude it so it does not weigh on your averages, and your streaks simply hold rather than break. Past days are always there in Stats > Reports when you want them.',
         },
       },
       {

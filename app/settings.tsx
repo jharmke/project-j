@@ -2716,7 +2716,12 @@ export default function SettingsScreen() {
                       const profile = profileRaw ? JSON.parse(profileRaw) : {};
                       const profileWaterGoal = profile.waterGoal ? parseInt(profile.waterGoal) : 128;
                       const stepGoal = profile.stepGoal ? parseInt(profile.stepGoal) : 10000;
-                      let waterDays = 0, stepDays = 0, waterLast = '', stepLast = '';
+                      const activeCalGoal = profile.activeCalGoal ? parseInt(profile.activeCalGoal) : 500;
+                      const exerciseMinsGoal = profile.exerciseMinsGoal ? parseInt(profile.exerciseMinsGoal) : 30;
+                      const settingsRaw = await AsyncStorage.getItem('pj_settings');
+                      const burnAccuracyPct = settingsRaw ? (JSON.parse(settingsRaw).burnAccuracyPct ?? 100) : 100;
+                      let waterDays = 0, stepDays = 0, calDays = 0, exDays = 0;
+                      let waterLast = '', stepLast = '', calLast = '', exLast = '';
                       const today = new Date();
                       for (let i = 0; i < 365; i++) {
                         const d = new Date(today); d.setDate(d.getDate() - i);
@@ -2727,13 +2732,18 @@ export default function SettingsScreen() {
                         const dayWaterGoal = day.waterGoal ? parseInt(day.waterGoal) : profileWaterGoal;
                         if ((day.water ?? 0) >= dayWaterGoal) { waterDays++; if (!waterLast) waterLast = dk; }
                         if ((day.steps ?? 0) >= stepGoal)     { stepDays++;  if (!stepLast)  stepLast  = dk; }
+                        const adjCals = Math.round((day.activeCalories ?? 0) * burnAccuracyPct / 100);
+                        if (adjCals >= activeCalGoal && adjCals > 0)               { calDays++; if (!calLast) calLast = dk; }
+                        if ((day.exerciseMinutes ?? 0) >= exerciseMinsGoal && (day.exerciseMinutes ?? 0) > 0) { exDays++; if (!exLast) exLast = dk; }
                       }
                       // 2. Write counters back, preserving activeCals/exerciseMins.
                       const counts = await loadGoalHitCounts();
                       await storageSet('pj_goal_hit_counts', JSON.stringify({
                         ...counts,
-                        water: { count: waterDays, lastEarned: waterLast || counts.water.lastEarned },
-                        steps: { count: stepDays,  lastEarned: stepLast  || counts.steps.lastEarned },
+                        water:        { count: waterDays, lastEarned: waterLast || counts.water.lastEarned },
+                        steps:        { count: stepDays,  lastEarned: stepLast  || counts.steps.lastEarned },
+                        activeCals:   { count: calDays,   lastEarned: calLast   || counts.activeCals.lastEarned },
+                        exerciseMins: { count: exDays,    lastEarned: exLast    || counts.exerciseMins.lastEarned },
                       }));
                       // 3. Unlock every hydration/steps tier at or below the true counts.
                       let store = await loadAchievements();
@@ -2749,7 +2759,7 @@ export default function SettingsScreen() {
                       await checkMomentumAchievements();
                       await checkWorkoutAchievements();
                       for (const t of ['verse','prayer','gratitude','bible'] as const) await checkFaithAchievements(t);
-                      Alert.alert('Done', `Rebuilt from your logs:\nWater goal days: ${waterDays}\nStep goal days: ${stepDays}\n\nBadges re-granted. Reopen the Achievements page to see them.`);
+                      Alert.alert('Done', `Rebuilt from your logs:\nWater: ${waterDays}\nSteps: ${stepDays}\nActive Cals: ${calDays}\nExercise: ${exDays}\n\nBadges re-granted. Reopen the Achievements page to see them.`);
                     } catch (e) { Alert.alert('Error', 'Rebuild failed: ' + e); }
                   } },
                 ],

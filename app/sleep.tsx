@@ -628,7 +628,16 @@ export default function SleepHub() {
       for (const dk of keys) {
         try {
           const raw = await AsyncStorage.getItem(`pj_${dk}`);
-          if (raw && JSON.parse(raw).excluded) ex.add(dk);
+          if (raw) {
+            const d = JSON.parse(raw);
+            // Drop a night from the sleep/recovery TRENDS only: the dedicated toggle
+            // flag, the legacy plain-boolean that toggle used to write, or a fully
+            // excluded (all-category) sick/off day.
+            const exObj = d.excluded;
+            const fullyExcluded = d.dayScore?.excludedFromAverages === true ||
+              !!(exObj && typeof exObj === 'object' && exObj.diet && exObj.water && exObj.exercise);
+            if (d.sleepTrendExcluded === true || d.excluded === true || fullyExcluded) ex.add(dk);
+          }
         } catch {}
       }
       if (!cancelled) { setExcludedSet(ex); setExcludedToday(ex.has(todayKey())); }
@@ -992,7 +1001,9 @@ export default function SleepHub() {
       const k = `pj_${todayKey()}`;
       const raw = await AsyncStorage.getItem(k);
       const cur = raw ? JSON.parse(raw) : {};
-      await storageSet(k, JSON.stringify({ ...cur, excluded: val }));
+      // Sleep-trend exclusion is its OWN flag now: it must never touch the day's
+      // averaging exclusion (which feeds Day Score / weekly / monthly / comparison).
+      await storageSet(k, JSON.stringify({ ...cur, sleepTrendExcluded: val }));
     } catch {}
   };
 

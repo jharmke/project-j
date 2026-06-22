@@ -107,7 +107,7 @@ export default function DaySummaryScreen() {
         const sc: DayScore | null = day?.dayScore ?? null;
         setScore(sc);
         const ex = day?.excluded;
-        setExcluded(ex === true || (ex && typeof ex === 'object' && !!(ex.diet && ex.water && ex.exercise)));
+        setExcluded(day?.dayScore?.excludedFromAverages === true || (ex && typeof ex === 'object' && !!(ex.diet && ex.water && ex.exercise)));
         const inp = await buildDayScoreInput(date, new Date().toISOString());
         setInput(inp);
 

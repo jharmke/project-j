@@ -118,7 +118,6 @@ function isExcluded(day: any): boolean {
   const _ex = day?.excluded;
   return !!(
     day?.dayScore?.excludedFromAverages ||
-    _ex === true ||
     (_ex && typeof _ex === 'object' && !!(_ex.diet && _ex.water && _ex.exercise))
   );
 }

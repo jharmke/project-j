@@ -142,7 +142,7 @@ utils/monthlySummary.ts -- Monthly summary computation
 firebaseConfig.ts, workoutData.ts, config.ts
 
 ## AsyncStorage Keys
-pj_YYYY-MM-DD -- daily data (entries, water, weight, steps, activeCalories, caloriesBurned, sleep fields, IF fields, excluded)
+pj_YYYY-MM-DD -- daily data (entries, water, weight, steps, activeCalories, caloriesBurned, sleep fields, IF fields, excluded {diet,water,exercise} = averaging exclusion, sleepTrendExcluded = sleep/recovery-trend-only exclusion)
 pj_workout_state -- workout (checks, cardioComplete, programs, workoutNotes, cardioLogs, weeklyTemplate)
 pj_my_foods, pj_favorites, pj_recipes, pj_exercise_library
 pj_profile -- profile + waterPresets + waterGoal + stepGoal + sleepGoal

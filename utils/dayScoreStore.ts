@@ -40,15 +40,26 @@ function keyForOffset(todayKey: string, offset: number): string {
 }
 
 // A day counts as fully excluded from the Day Score (no score, dash in archive,
-// out of the weekly average) only when every category exclusion is on. The app
-// stores per-category exclusions as { diet, water, exercise } (Day Detail
-// toggles + calendar dots); the pop-up's "Exclude this day" sets all three. A
-// legacy plain-boolean excluded is also honored for safety.
+// out of the weekly/monthly average) only when every category exclusion is on.
+// The app stores per-category exclusions as { diet, water, exercise } (Day Detail
+// toggles + calendar dots); the pop-up's "Exclude this day" sets all three AND
+// mirrors dayScore.excludedFromAverages. A legacy plain-boolean `excluded: true`
+// was ONLY ever written by the Sleep screen's "exclude last night" toggle and
+// means "drop from sleep/recovery trends," NOT a full-day exclusion -- it
+// deliberately does NOT count here (see isSleepTrendExcluded).
 export function isDayExcluded(day: any): boolean {
+  if (day?.dayScore?.excludedFromAverages === true) return true;
   const ex = day?.excluded;
-  if (ex === true) return true;
   if (ex && typeof ex === 'object') return !!(ex.diet && ex.water && ex.exercise);
   return false;
+}
+
+// True when a night should drop out of the sleep + recovery TREND charts only
+// (the Sleep screen's "exclude last night" toggle). Honors the dedicated flag,
+// the legacy plain-boolean `excluded: true` that toggle used to write, and any
+// fully-excluded day (a sick/off day shouldn't sit in the sleep trend either).
+export function isSleepTrendExcluded(day: any): boolean {
+  return day?.sleepTrendExcluded === true || day?.excluded === true || isDayExcluded(day);
 }
 
 // Workout day type + completion counts for a date, mirroring the workout tab:
@@ -313,7 +324,7 @@ export async function loadRecentComposites(beforeKey: string, count: number): Pr
     if (!raw) continue;
     try {
       const day = JSON.parse(raw);
-      if (day.excluded) continue;
+      if (isDayExcluded(day)) continue;
       if (day.dayScore && typeof day.dayScore.composite === 'number') out.push(day.dayScore.composite);
     } catch {}
   }

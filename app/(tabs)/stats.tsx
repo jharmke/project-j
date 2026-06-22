@@ -241,7 +241,7 @@ export default function StatsScreen() {
   const [flashId, setFlashId] = useState<string | null>(null);
   const flashOpacity = useRef(new Animated.Value(0)).current;
   const modalKeyboardOffset = useRef(new Animated.Value(0)).current;
-  const [excludedDays, setExcludedDays] = useState<{ date: string, diet: boolean, water: boolean, exercise: boolean }[]>([]);
+  const [excludedDays, setExcludedDays] = useState<{ date: string, diet: boolean, water: boolean, exercise: boolean, sleepTrend: boolean }[]>([]);
 
   const [statsCards, setStatsCards] = useState<StatsCard[]>(DEFAULT_STATS_CARDS);
   const [editSheetVisible, setEditSheetVisible] = useState(false);
@@ -323,15 +323,18 @@ export default function StatsScreen() {
   // update immediately after day-detail closes (the modal lives inside this tab, so
   // useFocusEffect never re-fires on its own). Read-only, sets state only.
   const reloadExcludedDays = async () => {
-    const exDays: { date: string, diet: boolean, water: boolean, exercise: boolean }[] = [];
+    const exDays: { date: string, diet: boolean, water: boolean, exercise: boolean, sleepTrend: boolean }[] = [];
     for (let d = 1; d <= daysInMonth; d++) {
       const dateKey = `${calendarYear}-${String(calendarMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
       try {
         const saved = await AsyncStorage.getItem(`pj_${dateKey}`);
         if (saved) {
           const data = JSON.parse(saved);
-          if (data.excluded && Object.values(data.excluded).some(v => v === true)) {
-            exDays.push({ date: dateKey, diet: !!data.excluded.diet, water: !!data.excluded.water, exercise: !!data.excluded.exercise });
+          const ex = (data.excluded && typeof data.excluded === 'object') ? data.excluded : {};
+          // Sleep-trend exclusion is its own flag (legacy plain-boolean excluded was the old sleep toggle).
+          const sleepTrend = data.sleepTrendExcluded === true || data.excluded === true;
+          if (ex.diet || ex.water || ex.exercise || sleepTrend) {
+            exDays.push({ date: dateKey, diet: !!ex.diet, water: !!ex.water, exercise: !!ex.exercise, sleepTrend });
           }
         }
       } catch {}
@@ -773,15 +776,17 @@ export default function StatsScreen() {
   useFocusEffect(
     useCallback(() => {
       const loadAll = async () => {
-        const exDays: { date: string, diet: boolean, water: boolean, exercise: boolean }[] = [];
+        const exDays: { date: string, diet: boolean, water: boolean, exercise: boolean, sleepTrend: boolean }[] = [];
         for (let d = 1; d <= daysInMonth; d++) {
           const dateKey = `${calendarYear}-${String(calendarMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
           try {
             const saved = await AsyncStorage.getItem(`pj_${dateKey}`);
             if (saved) {
               const data = JSON.parse(saved);
-              if (data.excluded && Object.values(data.excluded).some(v => v === true)) {
-                exDays.push({ date: dateKey, diet: !!data.excluded.diet, water: !!data.excluded.water, exercise: !!data.excluded.exercise });
+              const ex = (data.excluded && typeof data.excluded === 'object') ? data.excluded : {};
+              const sleepTrend = data.sleepTrendExcluded === true || data.excluded === true;
+              if (ex.diet || ex.water || ex.exercise || sleepTrend) {
+                exDays.push({ date: dateKey, diet: !!ex.diet, water: !!ex.water, exercise: !!ex.exercise, sleepTrend });
               }
             }
           } catch {}
@@ -2046,17 +2051,19 @@ export default function StatsScreen() {
                         {exDay.diet && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: 'rgba(245,158,11,0.6)' }} />}
                         {exDay.water && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: 'rgba(59,130,246,0.6)' }} />}
                         {exDay.exercise && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: 'rgba(239,68,68,0.6)' }} />}
+                        {exDay.sleepTrend && <View style={{ width: 4, height: 4, borderRadius: 2, backgroundColor: 'rgba(155,122,219,0.7)' }} />}
                       </View>
                     )}
                   </TouchableOpacity>
                 );
               })}
             </View>
-            <View style={{ flexDirection: 'row', gap: 12, marginTop: 8, flexWrap: 'wrap' }}>
+            <View style={{ flexDirection: 'row', gap: 12, marginTop: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
               {[
                 { color: 'rgba(245,158,11,0.6)', label: 'Diet excluded' },
                 { color: 'rgba(59,130,246,0.6)', label: 'Water excluded' },
                 { color: 'rgba(239,68,68,0.6)', label: 'Exercise excluded' },
+                { color: 'rgba(155,122,219,0.7)', label: 'Sleep & recovery excluded' },
               ].map(l => (
                 <View key={l.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: l.color }} />

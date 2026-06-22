@@ -248,7 +248,6 @@ export async function generateMonthlySummary(monthKey: string): Promise<MonthlyS
     const _ex = day?.excluded;
     const excluded = !!(
       day?.dayScore?.excludedFromAverages ||
-      _ex === true ||
       (_ex && typeof _ex === 'object' && !!(_ex.diet && _ex.water && _ex.exercise))
     );
 

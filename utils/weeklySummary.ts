@@ -251,7 +251,6 @@ export async function generateWeeklySummary(weekStart: string): Promise<WeeklySu
     const _ex = day?.excluded;
     const excluded = !!(
       day?.dayScore?.excludedFromAverages ||
-      _ex === true ||
       (_ex && typeof _ex === 'object' && !!(_ex.diet && _ex.water && _ex.exercise))
     );
 

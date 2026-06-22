@@ -10,6 +10,17 @@ import { GOAL_DEFICITS, loadCalorieTargets } from './calorieTarget';
 import { calcSleepScore } from './sleepScore';
 import { RULE_COPY, pickVariant, fillSlots } from './smartTipsCopy';
 
+// A day is fully excluded only when all three category exclusions are on (or the
+// pop-up's "Exclude this day" mirrored dayScore.excludedFromAverages). A partial
+// per-category exclusion (e.g. water only) keeps a valid composite, so it must NOT
+// drop the whole day out of the tip/recovery windows. Matches isDayExcluded in
+// dayScoreStore; inlined here to avoid a cross-module import cycle.
+function dayFullyExcluded(day: any): boolean {
+  if (day?.dayScore?.excludedFromAverages === true) return true;
+  const ex = day?.excluded;
+  return !!(ex && typeof ex === 'object' && ex.diet && ex.water && ex.exercise);
+}
+
 // ── Config ────────────────────────────────────────────────────────────────────
 export const TIPS_GATED = false;          // TestFlight: gate off. Flip true pre-launch.
 const RATE_LIMIT_PER_DAY = 0;            // 0 = disabled (parked until launch)
@@ -409,7 +420,7 @@ async function loadWindowDays(
         resp: typeof day.recoverySignals.resp === 'number' ? day.recoverySignals.resp : null,
         spo2: typeof day.recoverySignals.spo2 === 'number' ? day.recoverySignals.spo2 : null,
       } : null,
-      excluded: !!day.excluded,
+      excluded: dayFullyExcluded(day),
     });
   }
 
@@ -633,7 +644,7 @@ async function loadWindowDayRange(
         resp: typeof day.recoverySignals.resp === 'number' ? day.recoverySignals.resp : null,
         spo2: typeof day.recoverySignals.spo2 === 'number' ? day.recoverySignals.spo2 : null,
       } : null,
-      excluded: !!day.excluded,
+      excluded: dayFullyExcluded(day),
     });
   }
 

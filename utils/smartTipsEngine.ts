@@ -194,11 +194,20 @@ async function computeLoggingStreak(todayKey: string): Promise<number> {
     try { const d = JSON.parse(raw); return Array.isArray(d.entries) && d.entries.length > 0; } catch { return false; }
   };
   let streak = 0;
-  // If today isn't logged yet, don't let it break the streak: start counting at yesterday.
-  let start = logged(pairs[0]?.[1] ?? null) ? 0 : 1;
-  for (let i = start; i < pairs.length; i++) {
-    if (logged(pairs[i][1])) streak++;
-    else break;
+  for (let i = 0; i < pairs.length; i++) {
+    const raw = pairs[i][1];
+    // Diet (or full-day) excluded: the user opted out of food logging that day, so
+    // it BRIDGES the streak -- neither counts nor breaks it (Option A / HOLD).
+    if (raw) {
+      try {
+        const d = JSON.parse(raw);
+        const ex = (d.excluded && typeof d.excluded === 'object') ? d.excluded : {};
+        if (ex.diet || d.dayScore?.excludedFromAverages === true) continue;
+      } catch {}
+    }
+    if (logged(raw)) { streak++; continue; }
+    if (i === 0) continue; // today not logged yet: don't break the streak
+    break;
   }
   return streak;
 }

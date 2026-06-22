@@ -23,6 +23,7 @@ import { storageSet } from '../utils/storage';
 import { setOnboardingPreview } from '../utils/onboardingPreview';
 import { generateDiagnosticReport, ReportWindow, dumpWindowComparison } from '../utils/diagnosticReport';
 import { dumpDayScoreWithRecovery } from '../utils/dayScoreStore';
+import { probeStreakExclusions } from '../utils/streakExclusion';
 import { voiceDiagnosticCards, getLastVoiceDebug } from '../utils/coachAI';
 import { dumpHomeCoachCandidates, dumpEvrRecoveryDebug } from '../utils/smartTipsEngine';
 import { TOOLTIP_REGISTRY } from '../tooltipRegistry';
@@ -2152,6 +2153,22 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Recomputes recent days sleep-driven vs real Recovery Score. Shows old/new composite + delta. Read-only.</Text>
               </View>
               <Ionicons name="pulse-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              try {
+                const text = await probeStreakExclusions(120);
+                Alert.alert('Streak Exclusion Probe', text);
+              } catch (e) {
+                Alert.alert('Error', 'Could not run the streak probe. Check the logs.');
+              }
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Probe Streak Exclusions</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Proves the HOLD bridge math, then lists which streaks each of your excluded days (last 120d) bridges. Read-only.</Text>
+              </View>
+              <Ionicons name="git-merge-outline" size={18} color={theme.accentRed} />
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {

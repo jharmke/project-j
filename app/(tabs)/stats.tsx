@@ -28,6 +28,7 @@ import { loadMonthlySummary, MonthlySummaryData } from '../../utils/monthlySumma
 import { TIPS_GATED } from '../../utils/smartTipsEngine';
 import { archiveNav } from '../../utils/archiveNav';
 import { loadActiveChallenge, loadChallengeHistory, computeChallengeProgress, challengeTitle, Challenge, ChallengeProgress } from '../../utils/challenges';
+import { streakHeldByExclusion } from '../../utils/streakExclusion';
 import { showToolkit } from '../../components/ToolkitSheet';
 import { useTutorial } from '../../context/TutorialContext';
 import { useTutorialTarget } from '../../hooks/useTutorialTarget';
@@ -586,6 +587,12 @@ export default function StatsScreen() {
         todayLogged[item.id] = hit;
         streakCounters[item.id] = hit ? 1 : 0;
       }
+      // If today is excluded for this streak, hold it: don't count today as a hit
+      // and don't show it as logged (the walk-back still bridges to the real run).
+      if (todayData && streakHeldByExclusion(item.key, todayData)) {
+        streakCounters[item.id] = 0;
+        todayLogged[item.id] = false;
+      }
       streakDone[item.id] = false;
     }
 
@@ -654,6 +661,7 @@ export default function StatsScreen() {
           } else {
             hit = (customDates[item.id] || []).includes(dateKey);
           }
+          if (streakHeldByExclusion(item.key, data)) continue; // excluded: bridge the gap (no +1, no break)
           if (hit) { streakCounters[item.id]++; } else { streakDone[item.id] = true; }
         }
         i++; if (i > 365) break;

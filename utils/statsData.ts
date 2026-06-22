@@ -233,7 +233,7 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
             }
           }
         }
-        if (data.steps) sh.push({ date: dateKey, value: data.steps });
+        if (!excl.exercise && data.steps) sh.push({ date: dateKey, value: data.steps });
         const rawActiveCal = data.activeCalories || data.caloriesBurned || 0;
         if (!excl.exercise && rawActiveCal > 0) ah.push({ date: dateKey, value: Math.round(rawActiveCal * burnAccuracyPct / 100) });
         if (!excl.water && typeof data.water === 'number' && data.water > 0) waterH.push({ date: dateKey, value: data.water });

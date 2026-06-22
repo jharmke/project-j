@@ -2523,31 +2523,29 @@ export default function SettingsScreen() {
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
               triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-              Alert.alert('Force Restore from Firestore', 'This wipes all local pj_* data and pulls everything from your cloud backup. Use only if your data is missing after signing in.', [
+              Alert.alert('Restore from Firestore', 'Pulls your cloud backup down and overwrites the local copy of those keys. It does NOT wipe local-only data and does NOT upload first, so it can never overwrite your cloud with empty data. Use if data is missing after signing in.', [
                 { text: 'Cancel', style: 'cancel' },
-                { text: 'Restore', style: 'destructive', onPress: async () => {
+                { text: 'Restore', onPress: async () => {
                   triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
                   const uid = auth.currentUser?.uid;
                   if (!uid) { Alert.alert('Not signed in'); return; }
                   try {
-                    // Safety: push any local-only data up BEFORE wiping, so a key that
-                    // never synced (or is brand new) cannot be lost by the wipe-and-restore.
-                    await uploadAllLocal();
-                    const allKeys = await AsyncStorage.getAllKeys();
-                    const pjKeys = allKeys.filter(k => k.startsWith('pj_'));
-                    if (pjKeys.length > 0) await AsyncStorage.multiRemove(pjKeys);
+                    // Non-destructive merge: pull cloud down and overwrite local copies of
+                    // those keys. NO pre-upload (that was the clobber vector) and NO wipe, so
+                    // local-only data survives and an empty local can never overwrite cloud.
                     const snap = await getDocs(collection(db, 'users', uid, 'store'));
                     const pairs: [string, string][] = [];
                     snap.forEach(d => { const data = d.data(); if (data.key && data.value) pairs.push([data.key, data.value]); });
-                    if (pairs.length > 0) await AsyncStorage.multiSet(pairs);
+                    if (pairs.length === 0) { Alert.alert('Nothing to restore', 'Your cloud backup is empty for this account.'); return; }
+                    await AsyncStorage.multiSet(pairs);
                     Alert.alert('Done', `Restored ${pairs.length} keys from Firestore. Restart the app.`);
                   } catch (e) { Alert.alert('Error', 'Restore failed: ' + e); }
                 }},
               ]);
             }}>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.rowTitle, { color: theme.accentAmber }]}>Force Restore from Firestore</Text>
-                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Wipes local data and pulls everything from cloud.</Text>
+                <Text style={[styles.rowTitle, { color: theme.accentAmber }]}>Restore from Firestore</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Pulls cloud backup into local. Never wipes local-only data.</Text>
               </View>
               <Ionicons name="cloud-download-outline" size={18} color={theme.accentAmber} />
             </TouchableOpacity>

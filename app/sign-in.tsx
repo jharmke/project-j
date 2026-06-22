@@ -23,6 +23,7 @@ import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { app, auth } from '../firebaseConfig';
 import { useAuth } from '../AuthContext';
+import { runRestoreGate } from '../services/syncService';
 
 const IOS_CLIENT_ID = '841973180275-obscsfo4ad9ibir9dtpcago5fuptojlg.apps.googleusercontent.com';
 
@@ -80,26 +81,51 @@ export default function SignInScreen() {
     ]).start();
   }, []);
 
-  // Fires when user appears -- either fresh sign-in or app relaunch mid-onboarding
+  // Fires when user appears -- either fresh sign-in or app relaunch mid-onboarding.
+  // DATA SAFETY: before showing onboarding on a not-yet-onboarded device, run the restore
+  // gate. On a REINSTALL the account already has cloud data, so the gate pulls it down
+  // (restoring pj_onboarding_complete) and we go straight into the app instead of running
+  // onboarding and letting its writes clobber the cloud. Sync stays LOCKED until the gate
+  // runs, so nothing can upload over the cloud in the meantime.
   useEffect(() => {
     if (!user) return;
-    AsyncStorage.getItem('pj_onboarding_complete').then(val => {
-      if (val === 'true') return; // onboarding done, _layout.tsx routes to tabs
+    (async () => {
+      let obc = await AsyncStorage.getItem('pj_onboarding_complete');
 
+      if (obc !== 'true') {
+        const result = await runRestoreGate();
+        if (result === 'error') {
+          // Cloud unreachable: do NOT run onboarding (a fresh start would sit over real
+          // data) and do NOT unlock sync. Ask the user to reconnect and relaunch.
+          Alert.alert(
+            'Connection needed',
+            'We could not reach your account to restore your data. Check your internet connection and reopen the app.',
+          );
+          return;
+        }
+        obc = await AsyncStorage.getItem('pj_onboarding_complete'); // restore may have set it
+      }
+
+      if (obc === 'true') {
+        // Existing or just-restored account: straight into the app. _layout would also
+        // route here, but doing it explicitly avoids a flash of the onboarding stage.
+        router.replace('/(tabs)');
+        return;
+      }
+
+      // Genuine brand-new user (cloud confirmed empty): run onboarding as before.
       if (justSignedIn.current) {
-        // Fresh sign-in: animate the swap
         justSignedIn.current = false;
         Animated.sequence([
           Animated.timing(authOpacity, { toValue: 0, duration: 500, useNativeDriver: true }),
           Animated.timing(onboardingOpacity, { toValue: 1, duration: 500, useNativeDriver: true }),
         ]).start(() => setStage('onboarding'));
       } else {
-        // Already signed in on mount (relaunched mid-onboarding): jump straight to stage 2
         authOpacity.setValue(0);
         onboardingOpacity.setValue(1);
         setStage('onboarding');
       }
-    });
+    })();
   }, [user]);
 
   const handleAppleSignIn = async () => {

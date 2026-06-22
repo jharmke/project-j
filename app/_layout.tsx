@@ -15,7 +15,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AppState, LogBox } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { restoreIfFresh, uploadAllLocal } from '../services/syncService';
+import { runRestoreGate, uploadAllLocal } from '../services/syncService';
 import * as Notifications from 'expo-notifications';
 import { setupNotificationHandler } from '../services/notifications';
 import { runDailyNotificationScheduler, refreshLiveNotifications } from '../services/notificationScheduler';
@@ -117,9 +117,10 @@ function RootLayoutNav() {
       SplashScreen.hideAsync();
       hasInitialRouted.current = true;
     } else {
-      // On a fresh device, restore from Firestore before showing the app.
-      // On an existing device hasPjData is true so this returns instantly.
-      restoreIfFresh().finally(() => {
+      // Existing install (onboarding already complete locally). The restore gate confirms
+      // this, unlocks sync, and returns instantly without overwriting local. (Fresh-install
+      // restore happens earlier, in sign-in.tsx, before onboarding can write.)
+      runRestoreGate().finally(() => {
         router.replace('/(tabs)');
         SplashScreen.hideAsync();
         // Fire-and-forget: schedule today's notis after tabs load

@@ -10,6 +10,95 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
 import { formatWorkoutDuration, WORKOUT_TYPE_NAMES } from './workoutData';
+import { storageSet } from './utils/storage';
+
+// ── Apple Health workout backfill / recovery ──────────────────────────────────
+// Re-imports Apple Health workouts over the last `days` days and merges them into
+// pj_workout_state, each marked COMPLETED (faithful to the daily auto-import). This
+// is purely ADDITIVE: it reads current state, ADDS any workout not already present
+// (deduped by Apple's workout UUID), and writes back. It NEVER deletes or blind-
+// overwrites, and it touches ONLY pj_workout_state. Used today as the recovery tool;
+// reused later as the "backfill on reinstall" feature so a fresh install rebuilds
+// full workout history from Apple Health (the source of truth). Returns counts.
+const APPLE_LIFT_TYPES = new Set([20, 50, 59]); // Functional / Traditional Strength, Core Training
+
+// Faithful copy of workout.tsx's local formatDuration so re-imported rows match the
+// daily import byte-for-byte (mm:ss, or h:mm:ss past an hour).
+const fmtWorkoutDur = (seconds: number): string => {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  return `${m}:${String(s).padStart(2, '0')}`;
+};
+
+const localDayKey = (d: Date): string =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+export async function restoreAppleWorkoutHistory(
+  days: number,
+): Promise<{ imported: number; markedComplete: number; total: number; days: number }> {
+  const now = new Date();
+  const startDate = new Date();
+  startDate.setDate(startDate.getDate() - days);
+  startDate.setHours(0, 0, 0, 0);
+
+  const workouts = await queryWorkoutSamples({
+    limit: 5000,
+    filter: { date: { startDate, endDate: now } },
+  });
+
+  // Read-then-merge: load current state, never start from scratch.
+  const raw = await AsyncStorage.getItem('pj_workout_state');
+  const state = raw ? JSON.parse(raw) : {};
+  const programs: Record<string, any> = state.programs ? { ...state.programs } : {};
+  const checks: Record<string, any> = state.checks ? { ...state.checks } : {};
+
+  let imported = 0;
+  let markedComplete = 0;
+
+  for (const w of workouts) {
+    const dateKey = localDayKey(new Date(w.startDate));
+    const day = programs[dateKey]
+      ? { ...programs[dateKey] }
+      : { type: 'cardio', focus: 'Cardio', exercises: [] };
+    const exercises: any[] = Array.isArray(day.exercises) ? [...day.exercises] : [];
+    const existingUUIDs = new Set(exercises.map((e: any) => e.appleHealthUUID).filter(Boolean));
+
+    const exId = `apple_${w.uuid}`;
+    if (!existingUUIDs.has(w.uuid)) {
+      const distanceMi = w.totalDistance
+        ? Math.round((w.totalDistance.quantity / 1609.34) * 100) / 100
+        : null;
+      exercises.push({
+        id: exId,
+        name: WORKOUT_TYPE_NAMES[w.workoutActivityType] ?? 'Workout',
+        sets: '', reps: '', rest: '', note: '',
+        isCardio: !APPLE_LIFT_TYPES.has(w.workoutActivityType),
+        duration: String(fmtWorkoutDur(w.duration?.quantity ?? 0)),
+        distance: distanceMi ? String(distanceMi) : '',
+        calories: String(Math.round(w.totalEnergyBurned?.quantity ?? 0)),
+        fromAppleHealth: true,
+        appleHealthUUID: w.uuid,
+        appleStartDate: w.startDate,
+      });
+      imported++;
+    }
+
+    // An Apple workout means the day wasn't a rest day; flip rest -> cardio so rows
+    // aren't hidden (mirrors the daily import).
+    if (day.type === 'rest') { day.type = 'cardio'; day.focus = 'Cardio'; }
+    day.exercises = exercises;
+    programs[dateKey] = day;
+
+    // Mark COMPLETED. Also repairs an already-present-but-unchecked import (today's).
+    if (!checks[dateKey]?.[exId]) markedComplete++;
+    checks[dateKey] = { ...(checks[dateKey] || {}), [exId]: true };
+  }
+
+  await storageSet('pj_workout_state', JSON.stringify({ ...state, programs, checks }));
+  return { imported, markedComplete, total: workouts.length, days };
+}
 
 export function useHealthKit() {
   const [authorized, setAuthorized] = useState(false);

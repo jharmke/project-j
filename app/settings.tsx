@@ -9,7 +9,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, Dimensions, Easing, InteractionManager, Keyboard, KeyboardAvoidingView, Linking, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ACCENT_PALETTES, THEME_ORDER, ThemeId, THEMES, useTheme } from '../theme';
-import { useHealthKit } from '../useHealthKit';
+import { useHealthKit, restoreAppleWorkoutHistory } from '../useHealthKit';
 import { useAuth } from '../AuthContext';
 import { BLANK_DAY, WorkoutTag } from '../workoutData';
 import CelebrationOverlay from '../components/CelebrationOverlay';
@@ -2550,6 +2550,112 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Wipes local data and pulls everything from cloud.</Text>
               </View>
               <Ionicons name="cloud-download-outline" size={18} color={theme.accentAmber} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              Alert.alert(
+                'Restore Apple Workout History',
+                'Re-imports your Apple Health workouts from the last 90 days and marks them completed. Additive only: it adds workouts you are missing, deduped by Apple ID, and never deletes or overwrites anything. Touches only your workout data. Safe to run more than once.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Restore', onPress: async () => {
+                    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+                    try {
+                      const r = await restoreAppleWorkoutHistory(90);
+                      if (r.total === 0) {
+                        Alert.alert('No workouts found', 'Found 0 Apple workouts in the last 90 days. Make sure Apple Health is connected (iOS Settings > Privacy > Health > Project J) with Workouts permission on, then try again.');
+                      } else {
+                        Alert.alert('Done', `Found ${r.total} Apple workouts in the last ${r.days} days.\n\nImported ${r.imported} new, marked ${r.markedComplete} completed.\n\nOpen the Workout tab to check.`);
+                      }
+                    } catch (e) { Alert.alert('Error', 'Restore failed: ' + e); }
+                  } },
+                ],
+              );
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentBlue }]}>Restore Apple Workout History</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Re-imports last 90 days of Apple workouts, marked completed. Additive, never deletes.</Text>
+              </View>
+              <Ionicons name="barbell-outline" size={18} color={theme.accentBlue} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              Alert.alert(
+                'Rebuild Gratitude Streak',
+                'Recomputes your gratitude streak from your journal gratitude entries. Reads your entries only and updates the streak count. Never deletes anything.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Rebuild', onPress: async () => {
+                    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+                    try {
+                      const refRaw = await AsyncStorage.getItem('pj_bible_reflections');
+                      const entries = refRaw ? JSON.parse(refRaw) : [];
+                      const dates = Array.from(new Set(
+                        entries
+                          .filter((e: any) => e && e.category === 'gratitude' && typeof e.date === 'string')
+                          .map((e: any) => e.date),
+                      )).sort() as string[]; // ascending YYYY-MM-DD
+                      if (dates.length === 0) { Alert.alert('No gratitude entries', 'Found no gratitude entries in your journal to rebuild from.'); return; }
+                      const totalDays = dates.length;
+                      const lastLoggedDate = dates[dates.length - 1];
+                      // Current streak = consecutive days ending at the most recent gratitude date.
+                      let currentStreak = 1;
+                      for (let i = dates.length - 1; i > 0; i--) {
+                        const cur = new Date(dates[i] + 'T00:00:00');
+                        const prev = new Date(dates[i - 1] + 'T00:00:00');
+                        if (Math.round((cur.getTime() - prev.getTime()) / 86400000) === 1) currentStreak++;
+                        else break;
+                      }
+                      const streaksRaw = await AsyncStorage.getItem('pj_streaks');
+                      const existing = streaksRaw ? JSON.parse(streaksRaw) : {};
+                      const merged = { ...existing, gratitude: { ...(existing.gratitude || {}), currentStreak, totalDays, lastLoggedDate } };
+                      await storageSet('pj_streaks', JSON.stringify(merged));
+                      Alert.alert('Done', `Gratitude streak rebuilt:\n\nCurrent streak: ${currentStreak} day(s)\nTotal days logged: ${totalDays}\nLast logged: ${lastLoggedDate}\n\nReopen the Faith tab to see it.`);
+                    } catch (e) { Alert.alert('Error', 'Rebuild failed: ' + e); }
+                  } },
+                ],
+              );
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentBlue }]}>Rebuild Gratitude Streak</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Recomputes the streak from your journal gratitude entries.</Text>
+              </View>
+              <Ionicons name="flame-outline" size={18} color={theme.accentBlue} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              Alert.prompt('Set Gratitude Streak', 'Current streak (days):', (streakStr) => {
+                const cs = parseInt((streakStr || '').trim(), 10);
+                if (isNaN(cs) || cs < 0) { Alert.alert('Invalid', 'Enter a whole number.'); return; }
+                Alert.prompt('Set Streak Savers', 'Savers remaining:', async (saverStr) => {
+                  const sv = parseInt((saverStr || '').trim(), 10);
+                  if (isNaN(sv) || sv < 0) { Alert.alert('Invalid', 'Enter a whole number.'); return; }
+                  try {
+                    const d = new Date();
+                    const todayKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    const streaksRaw = await AsyncStorage.getItem('pj_streaks');
+                    const existing = streaksRaw ? JSON.parse(streaksRaw) : {};
+                    const merged = {
+                      ...existing,
+                      gratitude: { ...(existing.gratitude || {}), currentStreak: cs, lastLoggedDate: todayKey },
+                      // Set savers count and reset the earn baseline to the current streak so the
+                      // user does not instantly earn savers from the corrected number.
+                      savers: { ...(existing.savers || {}), count: sv, earnBaselineStreak: cs, earnBaselineIsActive: true },
+                    };
+                    await storageSet('pj_streaks', JSON.stringify(merged));
+                    Alert.alert('Done', `Gratitude streak set to ${cs} day(s), ${sv} saver(s). Reopen the Faith tab to see it.`);
+                  } catch (e) { Alert.alert('Error', 'Set failed: ' + e); }
+                }, 'plain-text');
+              }, 'plain-text');
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentBlue }]}>Set Gratitude Streak Manually</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Type the exact streak + saver count. Use when a rebuild cannot reconstruct savers.</Text>
+              </View>
+              <Ionicons name="create-outline" size={18} color={theme.accentBlue} />
             </TouchableOpacity>
 
             {(['small', 'medium', 'large', 'diamond'] as const).map(tier => (

@@ -16,6 +16,7 @@ import { AppState, LogBox } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { runRestoreGate, uploadAllLocal } from '../services/syncService';
+import { applyVacation } from '../utils/vacationMode';
 import * as Notifications from 'expo-notifications';
 import { setupNotificationHandler } from '../services/notifications';
 import { runDailyNotificationScheduler, refreshLiveNotifications } from '../services/notificationScheduler';
@@ -76,6 +77,8 @@ function RootLayoutNav() {
         uploadAllLocal().catch(() => {});
       } else if (nextAppState === 'active') {
         refreshLiveNotifications().catch(() => {});
+        // Stamp any newly-arrived in-range vacation days + auto-expire a finished one.
+        applyVacation().catch(() => {});
       }
     });
     return () => subscription.remove();
@@ -127,6 +130,9 @@ function RootLayoutNav() {
       // this, unlocks sync, and returns instantly without overwriting local. (Fresh-install
       // restore happens earlier, in sign-in.tsx, before onboarding can write.)
       runRestoreGate().finally(() => {
+        // Sync is unlocked now: apply any active vacation (stamp elapsed in-range days,
+        // auto-expire a finished one) so the cloud mirror lands too.
+        applyVacation().catch(() => {});
         // Cold launch into Home: play the condensed logo cinematic over the hand-off.
         if (!coldSplashConsumed) { coldSplashConsumed = true; setShowSplash(true); }
         router.replace('/(tabs)');

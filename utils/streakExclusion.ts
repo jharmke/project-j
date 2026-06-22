@@ -14,7 +14,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { offsetToDateKey } from './statsData';
 
 export function streakHeldByExclusion(key: string | undefined, day: any): boolean {
-  if (!key) return false; // custom + manual streaks: never auto-held
+  // Vacation Mode is a TOTAL BLACKOUT: a vacation day (stamped vacationDay:true by the
+  // engine) holds EVERY streak -- fitness AND faith/manual/custom -- unlike a normal
+  // excluded day, which leaves faith/manual active (you can still pray on a sick day).
+  if (day?.vacationDay === true) return true;
+  if (!key) return false; // custom + manual streaks: never auto-held on a normal exclusion
   const ex = (day?.excluded && typeof day.excluded === 'object') ? day.excluded : {};
   const dietEx = !!ex.diet, waterEx = !!ex.water, exerciseEx = !!ex.exercise;
   const fullyEx = (dietEx && waterEx && exerciseEx) || day?.dayScore?.excludedFromAverages === true;

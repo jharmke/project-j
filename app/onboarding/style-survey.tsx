@@ -102,7 +102,7 @@ export default function StyleSurveyScreen() {
   };
 
   return (
-    <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1 }}>
+    <LinearGradient colors={['#c4c8e8', '#dadcef', '#f0f0f5']} style={{ flex: 1 }}>
 
       {/* Progress bar */}
       <View style={[styles.progressBar, { paddingTop: insets.top + 12 }]}>
@@ -212,12 +212,14 @@ const styles = StyleSheet.create({
   backBtn:        { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   content:        { padding: 24, paddingTop: 16 },
   screenLabel:    { fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 },
-  title:          { fontSize: 36, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, marginBottom: 6 },
+  title:          { fontSize: 36, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, marginBottom: 6,
+                    textShadowColor: 'rgba(0,0,0,0.12)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
   subtitle:       { fontSize: 13, fontFamily: 'DMSans_400Regular', lineHeight: 20, marginBottom: 28 },
   questionBlock:  { marginBottom: 28 },
   questionText:   { fontSize: 15, fontFamily: 'DMSans_600SemiBold', lineHeight: 22, marginBottom: 12 },
   answersCol:     { gap: 8 },
-  answerBtn:      { flexDirection: 'row', alignItems: 'center', borderWidth: 0.5, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 13, gap: 12 },
+  answerBtn:      { flexDirection: 'row', alignItems: 'center', borderWidth: 0.5, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 13, gap: 12,
+                    shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 },
   answerDot:      { width: 16, height: 16, borderRadius: 8, borderWidth: 1.5 },
   answerText:     { fontSize: 14, fontFamily: 'DMSans_500Medium', flex: 1 },
   footer:         { position: 'absolute', bottom: 0, left: 0, right: 0, paddingHorizontal: 24, paddingTop: 12, borderTopWidth: 0.5, backgroundColor: theme.gradientEnd },

@@ -189,7 +189,7 @@ export default function AllSetScreen() {
   const modeIcon = MODE_ICON[styleMode]  ?? 'leaf';
 
   return (
-    <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1 }}>
+    <LinearGradient colors={['#c4c8e8', '#dadcef', '#f0f0f5']} style={{ flex: 1 }}>
 
       {/* Progress bar -- full */}
       <View style={[styles.progressBar, { paddingTop: insets.top + 12 }]}>
@@ -308,7 +308,8 @@ const styles = StyleSheet.create({
                       textTransform: 'uppercase', marginBottom: 12 },
 
   headline:         { fontSize: 36, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1.5,
-                      lineHeight: 40, marginBottom: 14 },
+                      lineHeight: 40, marginBottom: 14,
+                      textShadowColor: 'rgba(0,0,0,0.12)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
 
   subtext:          { fontSize: 15, fontFamily: 'DMSans_400Regular', lineHeight: 22, maxWidth: 300 },
 

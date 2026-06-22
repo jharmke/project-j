@@ -233,7 +233,7 @@ const GOAL_LABELS: Record<string, string> = {
 const LIFESTYLE_OPTIONS = [
   { key: 'sedentary',   label: 'Sedentary',      sub: 'Desk job, minimal movement outside of workouts',        multiplier: 1.2  },
   { key: 'light',       label: 'Lightly Active', sub: 'Some walking, on your feet occasionally during the day', multiplier: 1.3  },
-  { key: 'active',      label: 'Active',         sub: 'On your feet a lot -- server, teacher, retail, trades',  multiplier: 1.45 },
+  { key: 'active',      label: 'Active',         sub: 'On your feet a lot: server, teacher, retail, trades',     multiplier: 1.45 },
   { key: 'very_active', label: 'Very Active',    sub: 'Hard physical labor most of the day',                    multiplier: 1.6  },
 ];
 
@@ -419,7 +419,7 @@ export default function YourStyleScreen() {
   const canContinue = isOnboardingPreview() || selectedMode === 'mindful' || parseFloat(currentWeight) > 0;
 
   return (
-    <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1 }}>
+    <LinearGradient colors={['#c4c8e8', '#dadcef', '#f0f0f5']} style={{ flex: 1 }}>
 
       {/* Progress bar */}
       <View style={[styles.progressBar, { paddingTop: insets.top + 12 }]}>
@@ -488,7 +488,7 @@ export default function YourStyleScreen() {
               <Text style={[styles.sectionLabel, { color: theme.textMuted, marginBottom: 8 }]}>CURRENT WEIGHT</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <TextInput
-                  style={[{ flex: 1, borderWidth: 0.5, borderRadius: 10, padding: 14, fontSize: 16, fontFamily: 'DMSans_400Regular', backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
+                  style={[{ flex: 1, borderWidth: 0.5, borderRadius: 10, padding: 14, fontSize: 16, fontFamily: 'DMSans_400Regular', backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 }]}
                   placeholder="177"
                   placeholderTextColor={theme.textPlaceholder}
                   value={currentWeight}
@@ -509,7 +509,7 @@ export default function YourStyleScreen() {
               <Text style={[styles.sectionLabel, { color: theme.textMuted, marginBottom: 8 }]}>GOAL WEIGHT <Text style={{ color: theme.textDim, fontSize: 9 }}>(OPT)</Text></Text>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                 <TextInput
-                  style={[{ flex: 1, borderWidth: 0.5, borderRadius: 10, padding: 14, fontSize: 16, fontFamily: 'DMSans_400Regular', backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
+                  style={[{ flex: 1, borderWidth: 0.5, borderRadius: 10, padding: 14, fontSize: 16, fontFamily: 'DMSans_400Regular', backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 }]}
                   placeholder="165"
                   placeholderTextColor={theme.textPlaceholder}
                   value={goalWeight}
@@ -666,7 +666,7 @@ export default function YourStyleScreen() {
 
           {/* Live calorie estimate */}
           {suggestedCals && (
-            <View style={{ marginTop: 20, borderWidth: 0.5, borderRadius: 14, padding: 16, alignItems: 'center', backgroundColor: theme.bgCard, borderColor: theme.borderCard }}>
+            <View style={{ marginTop: 20, borderWidth: 0.5, borderRadius: 14, padding: 16, alignItems: 'center', backgroundColor: theme.bgCard, borderColor: theme.borderCard, shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 }}>
               <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 8 }}>YOUR DAILY CALORIE TARGET</Text>
               <Text style={{ fontSize: 48, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.accentBlueRaw }}>
                 {suggestedCals} <Text style={{ fontSize: 14, color: theme.textMuted }}>kcal</Text>
@@ -846,9 +846,11 @@ const styles = StyleSheet.create({
   backBtn:           { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   content:           { padding: 24, paddingTop: 16 },
   screenLabel:       { fontSize: 9,  fontFamily: 'DMSans_700Bold',      letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 },
-  title:             { fontSize: 36, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, marginBottom: 8 },
+  title:             { fontSize: 36, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, marginBottom: 8,
+                       textShadowColor: 'rgba(0,0,0,0.12)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
   oneliner:          { fontSize: 13, fontFamily: 'DMSans_400Regular',    lineHeight: 20, marginBottom: 28 },
-  modeCard:          { borderWidth: 1, borderRadius: 14, padding: 16, marginBottom: 12 },
+  modeCard:          { borderWidth: 1, borderRadius: 14, padding: 16, marginBottom: 12,
+                       shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 },
   modeDot:           { width: 10, height: 10, borderRadius: 5, marginRight: 10 },
   modeTitle:         { fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, flex: 1 },
   recommendedBadge:  { borderWidth: 1, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
@@ -858,7 +860,8 @@ const styles = StyleSheet.create({
   sectionLabel:      { fontSize: 9,  fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 4 },
   sectionSub:        { fontSize: 11, fontFamily: 'DMSans_400Regular', marginBottom: 12 },
   presetGrid:        { gap: 8 },
-  presetBtn:         { borderWidth: 0.5, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  presetBtn:         { borderWidth: 0.5, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+                       shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 },
   presetLabel:       { fontSize: 14, fontFamily: 'DMSans_600SemiBold' },
   presetRatio:       { fontSize: 11, fontFamily: 'DMSans_400Regular' },
   mindfulCard:       { marginTop: 28, borderWidth: 1, borderRadius: 14, padding: 20, alignItems: 'center' },

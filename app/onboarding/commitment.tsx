@@ -157,7 +157,7 @@ export default function CommitmentScreen() {
   };
 
   return (
-    <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1 }}>
+    <LinearGradient colors={['#c4c8e8', '#dadcef', '#f0f0f5']} style={{ flex: 1 }}>
 
       {/* Progress bar */}
       <View style={[styles.progressBar, { paddingTop: insets.top + 12 }]}>
@@ -224,10 +224,12 @@ const styles = StyleSheet.create({
   backBtn:              { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   content:              { flex: 1, paddingHorizontal: 28, paddingTop: 36 },
   screenLabel:          { fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 },
-  title:                { fontSize: 48, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, lineHeight: 50, marginBottom: 14 },
+  title:                { fontSize: 48, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, lineHeight: 50, marginBottom: 14,
+                          textShadowColor: 'rgba(0,0,0,0.12)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
   subtitle:             { fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, lineHeight: 20, marginBottom: 8 },
   commitmentsContainer: { marginTop: 36, gap: 14 },
-  commitmentRow:        { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 14, padding: 18 },
+  commitmentRow:        { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 14, padding: 18,
+                          shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 },
   commitmentNumber:     { fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, lineHeight: 26, minWidth: 28 },
   commitmentText:       { flex: 1, fontSize: 17, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, lineHeight: 26 },
   footer:               { paddingHorizontal: 24, paddingTop: 12, borderTopWidth: 0.5 },

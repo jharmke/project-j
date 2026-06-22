@@ -157,7 +157,7 @@ export default function AppleHealthScreen() {
 
   return (
     <LinearGradient
-      colors={[theme.gradientStart, theme.gradientEnd]}
+      colors={['#c4c8e8', '#dadcef', '#f0f0f5']}
       style={{ flex: 1 }}
     >
       {/* Progress bar */}
@@ -271,10 +271,12 @@ const styles = StyleSheet.create({
 
   ahIconBox:      { width: 56, height: 56, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginBottom: 18 },
 
-  title:          { fontSize: 40, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1.5, lineHeight: 42, marginBottom: 10 },
+  title:          { fontSize: 40, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1.5, lineHeight: 42, marginBottom: 10,
+                    textShadowColor: 'rgba(0,0,0,0.12)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
   subtitle:       { fontSize: 13, fontFamily: 'DMSans_400Regular', lineHeight: 20, marginBottom: 22 },
 
-  card:           { borderWidth: 0.5, borderRadius: 14, overflow: 'hidden' },
+  card:           { borderWidth: 0.5, borderRadius: 14,
+                    shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 },
   healthRow:      { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 11, gap: 12 },
   iconCircle:     { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   rowText:        { flex: 1 },

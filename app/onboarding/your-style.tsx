@@ -270,28 +270,14 @@ const MODE_COPY = {
   },
 };
 
-const ONELINER: Record<string, Record<string, string>> = {
-  discipline: {
-    default: "You're built for results. Discipline is exactly where you belong.",
-    grace:   "You want results but you analyze and recommit — that's Discipline.",
-    numbers: "You want full visibility and you stay consistent. That's Discipline.",
-  },
-  balanced: {
-    default: "You want results but you give yourself grace — that's exactly what Balanced is built for.",
-    grace:   "You meet yourself halfway and build real habits. Balanced fits you perfectly.",
-    numbers: "General awareness, real habits, real results. Balanced is your match.",
-  },
-  mindful: {
-    default: "You lead with grace. Mindful is built for exactly how you approach this.",
-    grace:   "Numbers stress you out and you give yourself grace. Mindful was made for you.",
-    numbers: "You're here to feel better, not chase numbers. Mindful is your home.",
-  },
+const ONELINER: Record<string, string> = {
+  discipline: "You're built for results, and you're ready to put in the work.",
+  balanced:   "Real habits, real results, without the pressure to be perfect.",
+  mindful:    "Show up, be honest, and let progress take its time.",
 };
 
 function getOneliner(mode: string, score: number): string {
-  if (mode === 'mindful')    return ONELINER.mindful.grace;
-  if (mode === 'discipline') return score >= 11 ? ONELINER.discipline.numbers : ONELINER.discipline.default;
-  return score <= 7 ? ONELINER.balanced.grace : ONELINER.balanced.numbers;
+  return ONELINER[mode] ?? ONELINER.balanced;
 }
 
 export default function YourStyleScreen() {

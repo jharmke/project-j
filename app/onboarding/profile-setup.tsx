@@ -97,7 +97,7 @@ export default function ProfileSetupScreen() {
   };
 
   return (
-    <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1 }}>
+    <LinearGradient colors={['#c4c8e8', '#dadcef', '#f0f0f5']} style={{ flex: 1 }}>
 
       {/* Progress bar */}
       <View style={[styles.progressBar, { paddingTop: insets.top + 12 }]}>
@@ -278,15 +278,19 @@ const styles = StyleSheet.create({
   backBtn:          { width: 36, height: 36, borderRadius: 18, borderWidth: 1, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   content:          { padding: 24, paddingTop: 16 },
   screenLabel:      { fontSize: 9,  fontFamily: 'DMSans_700Bold',   letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 },
-  title:            { fontSize: 36, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, marginBottom: 6 },
+  title:            { fontSize: 36, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, marginBottom: 6,
+                      textShadowColor: 'rgba(0,0,0,0.12)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 3 },
   subtitle:         { fontSize: 13, fontFamily: 'DMSans_400Regular', lineHeight: 20, marginBottom: 28 },
   fieldLabel:       { fontSize: 9,  fontFamily: 'DMSans_700Bold',   letterSpacing: 2, textTransform: 'uppercase', marginBottom: 8, marginTop: 20 },
-  input:            { borderWidth: 0.5, borderRadius: 10, padding: 14, fontSize: 16, fontFamily: 'DMSans_400Regular' },
+  input:            { borderWidth: 0.5, borderRadius: 10, padding: 14, fontSize: 16, fontFamily: 'DMSans_400Regular',
+                      shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 },
   inputRow:         { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  unitTag:          { borderWidth: 0.5, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 14 },
+  unitTag:          { borderWidth: 0.5, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 14,
+                      shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 },
   unitTagText:      { fontSize: 14, fontFamily: 'DMSans_600SemiBold' },
   segmentRow:       { flexDirection: 'row', gap: 8 },
-  segmentBtn:       { flex: 1, borderWidth: 0.5, borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
+  segmentBtn:       { flex: 1, borderWidth: 0.5, borderRadius: 10, paddingVertical: 12, alignItems: 'center',
+                      shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 8, elevation: 2 },
   segmentText:      { fontSize: 12, fontFamily: 'DMSans_600SemiBold' },
   
   footer:           { paddingHorizontal: 24, paddingTop: 12, borderTopWidth: 0.5 },

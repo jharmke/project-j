@@ -28,6 +28,7 @@ import { startVacation, endVacationEarly, cancelVacationFully, describeVacation,
 
 const VAC_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const VAC_DAYS_OF_WEEK = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+const VAC_DOW3 = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const VAC_INTRO: Record<string, string> = {
   discipline: 'Planned time off. Your streaks hold and nothing counts while you are away. Sleep and recovery still show, just for your eyes.',
   balanced: 'Taking a trip? Pause everything and pick back up right where you left off when you are back.',
@@ -35,7 +36,7 @@ const VAC_INTRO: Record<string, string> = {
 };
 function vacFmtNice(key: string): string {
   const d = new Date(key + 'T00:00:00');
-  return `${VAC_DAYS_OF_WEEK[d.getDay()]} ${VAC_MONTHS[d.getMonth()].slice(0, 3)} ${d.getDate()}`;
+  return `${VAC_DOW3[d.getDay()]} ${VAC_MONTHS[d.getMonth()].slice(0, 3)} ${d.getDate()}`;
 }
 import { voiceDiagnosticCards, getLastVoiceDebug } from '../utils/coachAI';
 import { dumpHomeCoachCandidates, dumpEvrRecoveryDebug } from '../utils/smartTipsEngine';
@@ -699,7 +700,7 @@ export default function SettingsScreen() {
           <TouchableOpacity hitSlop={hit} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); if (vacCalMonth === 0) { setVacCalMonth(11); setVacCalYear(y => y - 1); } else setVacCalMonth(m => m - 1); }}>
             <Ionicons name="chevron-back" size={20} color={theme.accentBlue} />
           </TouchableOpacity>
-          <Text style={{ fontSize: 15, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{VAC_MONTHS[vacCalMonth]} {vacCalYear}</Text>
+          <Text style={{ fontSize: 15, color: theme.accentBlue, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{VAC_MONTHS[vacCalMonth]} {vacCalYear}</Text>
           <TouchableOpacity hitSlop={hit} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); if (vacCalMonth === 11) { setVacCalMonth(0); setVacCalYear(y => y + 1); } else setVacCalMonth(m => m + 1); }}>
             <Ionicons name="chevron-forward" size={20} color={theme.accentBlue} />
           </TouchableOpacity>
@@ -1580,7 +1581,7 @@ export default function SettingsScreen() {
         {/* ── Vacation Mode ── */}
         <CollapsibleSection label="Vacation Mode" subtitle="Pause everything for a trip" defaultOpen={false} theme={theme}>
           <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
-            <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 20, marginBottom: 16 }}>
+            <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textMuted, lineHeight: 20, marginBottom: 16 }}>
               {VAC_INTRO[styleMode]}
             </Text>
 
@@ -1591,11 +1592,11 @@ export default function SettingsScreen() {
                   <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.textMuted, textTransform: 'uppercase', marginBottom: 4 }}>
                     {vacationTodayKey() < vacation.startKey ? 'Scheduled' : 'On vacation'}
                   </Text>
-                  <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.textPrimary }}>
-                    {vacFmtNice(vacation.startKey)}  ·  {vacFmtNice(vacation.endKey)}
+                  <Text style={{ fontSize: 24, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.accentBlue, textAlign: 'center' }}>
+                    {vacFmtNice(vacation.startKey)}  to  {vacFmtNice(vacation.endKey)}
                   </Text>
-                  <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 2 }}>
-                    Back {vacFmtNice(addDaysKey(vacation.endKey, 1))}
+                  <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 4 }}>
+                    Resumes {vacFmtNice(addDaysKey(vacation.endKey, 1))}
                   </Text>
                 </View>
                 <TouchableOpacity disabled={vacBusy} activeOpacity={0.7} onPress={handleEndVacation}
@@ -1615,7 +1616,7 @@ export default function SettingsScreen() {
                     <Ionicons name="remove-circle" size={34} color={vacDays <= 1 ? theme.textDim : theme.accentBlue} />
                   </TouchableOpacity>
                   <View style={{ alignItems: 'center', minWidth: 80 }}>
-                    <Text style={{ fontSize: 32, fontFamily: 'BebasNeue_400Regular', color: theme.textPrimary }}>{vacDays}</Text>
+                    <Text style={{ fontSize: 34, fontFamily: 'BebasNeue_400Regular', color: theme.accentBlue }}>{vacDays}</Text>
                     <Text style={{ fontSize: 10, fontFamily: 'DMSans_700Bold', letterSpacing: 1, color: theme.textMuted, textTransform: 'uppercase' }}>{vacDays === 1 ? 'day' : 'days'}</Text>
                   </View>
                   <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} disabled={vacDays >= MAX_VACATION_DAYS}
@@ -1623,9 +1624,14 @@ export default function SettingsScreen() {
                     <Ionicons name="add-circle" size={34} color={vacDays >= MAX_VACATION_DAYS ? theme.textDim : theme.accentBlue} />
                   </TouchableOpacity>
                 </View>
-                <Text style={{ textAlign: 'center', fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 16 }}>
-                  {vacFmtNice(vacStartKey)}  ›  back {vacFmtNice(addDaysKey(vacStartKey, vacDays))}
-                </Text>
+                <View style={{ alignItems: 'center', marginBottom: 16 }}>
+                  <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 0.3 }}>
+                    {vacFmtNice(vacStartKey)}  to  {vacFmtNice(addDaysKey(vacStartKey, vacDays - 1))}
+                  </Text>
+                  <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 3 }}>
+                    {vacDays} {vacDays === 1 ? 'Day Off' : 'Days Off'} · Resumes {vacFmtNice(addDaysKey(vacStartKey, vacDays))}
+                  </Text>
+                </View>
                 <TouchableOpacity disabled={vacBusy} activeOpacity={0.85} onPress={handleStartVacation}
                   style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 8, paddingVertical: 13, alignItems: 'center', opacity: vacBusy ? 0.5 : 1 }}>
                   <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: '#fff', letterSpacing: 1 }}>START VACATION</Text>

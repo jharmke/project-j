@@ -131,6 +131,37 @@ export async function saveVersePool(pool: VersePool): Promise<void> {
   await storageSet('pj_verse_pool', JSON.stringify(pool));
 }
 
+// Verses actually in rotation (raw, no empty-pool fallback) so the UI guards can refuse any
+// action that would leave the rotation with nothing in it.
+export function activeVerseCount(p: VersePool): number {
+  return VERSES.filter(v => !p.disabledPresets.includes(v.reference)).length + p.customVerses.length;
+}
+
+function genCustomId(): string {
+  return `${Date.now().toString(36)}_${Math.floor(Math.random() * 1e9).toString(36)}`;
+}
+
+// Add a custom verse to the pool (deduped by reference). Read-then-merge: loads the live pool,
+// appends, saves. Returns the saved pool plus whether it was newly added (false = already there).
+export async function addCustomVerse(text: string, reference: string): Promise<{ pool: VersePool; added: boolean }> {
+  const pool = await loadVersePool();
+  if (pool.customVerses.some(c => c.reference === reference)) return { pool, added: false };
+  const next: VersePool = { ...pool, customVerses: [...pool.customVerses, { id: genCustomId(), text, reference }] };
+  await saveVersePool(next);
+  return { pool: next, added: true };
+}
+
+// Remove every custom verse matching a reference. Clears the pin if it pointed at one removed.
+export async function removeCustomVerseByRef(reference: string): Promise<VersePool> {
+  const pool = await loadVersePool();
+  const removedKeys = pool.customVerses.filter(c => c.reference === reference).map(c => customKey(c.id));
+  const customVerses = pool.customVerses.filter(c => c.reference !== reference);
+  const pinnedKey = pool.pinnedKey && removedKeys.includes(pool.pinnedKey) ? null : pool.pinnedKey;
+  const next: VersePool = { ...pool, customVerses, pinnedKey };
+  await saveVersePool(next);
+  return next;
+}
+
 // Every verse in the user's library, each with its stable key: ALL presets (disabled or not)
 // plus the user's customs. Used for the static pin lookup so a pinned verse always shows even
 // when the built-in group is toggled off for the cycle.

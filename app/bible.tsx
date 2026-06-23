@@ -22,6 +22,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ToastRenderer, useToast } from '../components/Toast';
 import { storageSet } from '../utils/storage';
 import { BIBLE_BOOKS, Book, Chapter, Verse, fetchChapter, parseReference } from '../data/bible-web';
+import { loadVersePool, addCustomVerse, removeCustomVerseByRef, activeVerseCount } from '../data/verses';
 import { useTheme } from '../theme';
 import CompanionFAB from '../components/CompanionFAB';
 import CompanionChat from '../components/CompanionChat';
@@ -102,6 +103,10 @@ export default function BibleScreen() {
   const [favorites, setFavorites] = useState<BibleFavorite[]>([]);
   const [showFavoritesModal, setShowFavoritesModal] = useState(false);
   const [favoritesSort, setFavoritesSort] = useState<'book' | 'recent'>('book');
+  // References of the custom verses already in the Today's Message rotation, so the add action
+  // can show an added/not-added state. Refreshed on mount and on focus (catches removals made in
+  // the manage modal).
+  const [poolRefs, setPoolRefs] = useState<string[]>([]);
 
   const [bibleTextSize, setBibleTextSize] = useState(16);
   const [bibleFontFamily, setBibleFontFamily] = useState('DMSans_400Regular');
@@ -187,6 +192,7 @@ export default function BibleScreen() {
     AsyncStorage.getItem('pj_bible_favorites').then(raw => {
       setFavorites(raw ? JSON.parse(raw) : []);
     });
+    loadVersePool().then(p => setPoolRefs(p.customVerses.map(c => c.reference))).catch(() => {});
   }, []);
 
   // Load chapter
@@ -231,6 +237,7 @@ export default function BibleScreen() {
   useFocusEffect(
     useCallback(() => {
       if (highlightedVerseRef) loadTodayAcknowledged(highlightedVerseRef);
+      loadVersePool().then(p => setPoolRefs(p.customVerses.map(c => c.reference))).catch(() => {});
     }, [highlightedVerseRef])
   );
 
@@ -351,6 +358,31 @@ export default function BibleScreen() {
     } catch (e) {}
   };
 
+  // Add or remove the highlighted verse from the Today's Message rotation. Mirrors the favorite
+  // toggle that sits next to it: tap to add, tap again to remove. Removing is blocked if it would
+  // leave the rotation empty.
+  const toggleTodaysMessage = async () => {
+    if (!highlightedVerseRef || !highlightedVerseText) return;
+    if (poolRefs.includes(highlightedVerseRef)) {
+      const pool = await loadVersePool();
+      const after = { ...pool, customVerses: pool.customVerses.filter(c => c.reference !== highlightedVerseRef) };
+      if (activeVerseCount(after) === 0) {
+        triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+        showToast('Keep at least one verse', 'Turn the built-in verses back on first.', 'error');
+        return;
+      }
+      triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+      const next = await removeCustomVerseByRef(highlightedVerseRef);
+      setPoolRefs(next.customVerses.map(c => c.reference));
+      showToast("Removed from Today's Message", highlightedVerseRef, 'success');
+    } else {
+      triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+      const { pool, added } = await addCustomVerse(highlightedVerseText, highlightedVerseRef);
+      setPoolRefs(pool.customVerses.map(c => c.reference));
+      showToast(added ? "Added to Today's Message" : "Already in Today's Message", highlightedVerseRef, 'success');
+    }
+  };
+
   const removeFavorite = async (ref: string) => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
     try {
@@ -380,6 +412,7 @@ export default function BibleScreen() {
   };
 
   const isCurrentFavorited = highlightedVerseRef ? favorites.some(f => f.ref === highlightedVerseRef) : false;
+  const isInTodaysMessage = highlightedVerseRef ? poolRefs.includes(highlightedVerseRef) : false;
 
   const sortedFavorites = [...favorites].sort((a, b) => {
     if (favoritesSort === 'recent') return b.savedAt - a.savedAt;
@@ -651,6 +684,9 @@ export default function BibleScreen() {
             </Text>
           </TouchableOpacity>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+            <TouchableOpacity onPress={toggleTodaysMessage} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name={isInTodaysMessage ? 'sunny' : 'sunny-outline'} size={16} color={isInTodaysMessage ? theme.accentAmber : theme.textMuted} />
+            </TouchableOpacity>
             <TouchableOpacity onPress={toggleFavorite} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <Ionicons name={isCurrentFavorited ? 'star' : 'star-outline'} size={16} color={isCurrentFavorited ? theme.accentAmber : theme.textMuted} />
             </TouchableOpacity>

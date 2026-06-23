@@ -7,8 +7,8 @@ import { useTheme } from '../theme';
 import { useToast, ToastRenderer } from './Toast';
 import ToggleSwitch from './ToggleSwitch';
 import {
-  VERSES, presetKey, customKey, loadVersePool, saveVersePool, getAllVerses, resolveDailyVerse,
-  DEFAULT_POOL, type VersePool, type CustomVerse, type DailyVerse,
+  VERSES, customKey, loadVersePool, saveVersePool, getAllVerses, resolveDailyVerse,
+  activeVerseCount, DEFAULT_POOL, type VersePool, type CustomVerse, type DailyVerse,
 } from '../data/verses';
 
 // Manage the Today's Message pool. Opened from the gear on the Today's Message card (both the
@@ -24,11 +24,6 @@ interface Props {
 }
 
 const dateKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-
-// Count of verses actually in rotation for a prospective pool (raw, no empty-pool fallback), so
-// the guards can refuse any action that would leave the rotation with nothing in it.
-const rawActiveCount = (p: VersePool) =>
-  VERSES.filter(v => !p.disabledPresets.includes(v.reference)).length + p.customVerses.length;
 
 // A signature of what actually affects the displayed verse, so we only report a change when one
 // truly happened. The pinned verse is ignored while cycling, so flipping to Pin one and back to
@@ -116,7 +111,7 @@ export default function VersePoolModal({ visible, onClose, onChanged }: Props) {
       ? [...pool.disabledPresets, ref]
       : pool.disabledPresets.filter(r => r !== ref);
     const next = { ...pool, disabledPresets };
-    if (rawActiveCount(next) === 0) {
+    if (activeVerseCount(next) === 0) {
       showToast('Keep at least one verse', 'You need at least one verse in rotation.', 'error');
       return;
     }
@@ -137,7 +132,7 @@ export default function VersePoolModal({ visible, onClose, onChanged }: Props) {
       customVerses,
       pinnedKey: pool.pinnedKey === customKey(c.id) ? null : pool.pinnedKey,
     };
-    if (rawActiveCount(next) === 0) {
+    if (activeVerseCount(next) === 0) {
       triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
       showToast('Keep at least one verse', 'Turn the built-in verses back on first.', 'error');
       setConfirmRemove(null);

@@ -73,9 +73,9 @@ export const VERSES: DailyVerse[] = [
   { text: "For I am persuaded, that neither death, nor life, nor angels, nor principalities, nor powers, nor things present, nor things to come, nor height, nor depth, nor any other creature, shall be able to separate us from the love of God, which is in Christ Jesus our Lord.", reference: "Romans 8:38-39" },
 ];
 
-type Rotation = { order: number[]; index: number; lastDate: string };
+type Rotation = { order: string[]; index: number; lastDate: string };
 
-function shuffle(arr: number[]): number[] {
+function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -84,35 +84,109 @@ function shuffle(arr: number[]): number[] {
   return a;
 }
 
+// ── User verse pool (pj_verse_pool) ────────────────────────────────────────
+// Today's Message draws from a user-controlled pool layered over the preset list:
+//   - presets can be turned off individually (disabledPresets holds their references)
+//   - custom verses the user adds from the Bible reader (text + reference, frozen at add time)
+//   - mode 'cycle' runs the daily no-repeat rotation; 'static' pins one verse indefinitely
+// Defaults (no key yet): every preset on, cycle mode, nothing pinned, so behavior is identical
+// to the old hardcoded list until the user changes something. The pool decides what is ACTIVE;
+// the rotation (pj_verse_rotation) just sequences it.
+
+export type CustomVerse = DailyVerse & { id: string };
+export type VerseMode = 'cycle' | 'static';
+export type VersePool = {
+  mode: VerseMode;
+  pinnedKey: string | null;
+  disabledPresets: string[];
+  customVerses: CustomVerse[];
+};
+
+export const DEFAULT_POOL: VersePool = { mode: 'cycle', pinnedKey: null, disabledPresets: [], customVerses: [] };
+
+// Stable identity for a pool entry. Presets key on their reference, customs on their id, so the
+// rotation order survives edits to the VERSES list or to the user's customs.
+export const presetKey = (v: DailyVerse) => `p:${v.reference}`;
+export const customKey = (id: string) => `c:${id}`;
+
+export async function loadVersePool(): Promise<VersePool> {
+  try {
+    const raw = await AsyncStorage.getItem('pj_verse_pool');
+    if (!raw) return { ...DEFAULT_POOL };
+    const parsed = JSON.parse(raw);
+    return {
+      mode: parsed.mode === 'static' ? 'static' : 'cycle',
+      pinnedKey: typeof parsed.pinnedKey === 'string' ? parsed.pinnedKey : null,
+      disabledPresets: Array.isArray(parsed.disabledPresets) ? parsed.disabledPresets.filter((x: any) => typeof x === 'string') : [],
+      customVerses: Array.isArray(parsed.customVerses)
+        ? parsed.customVerses.filter((c: any) => c && typeof c.id === 'string' && typeof c.text === 'string' && typeof c.reference === 'string')
+        : [],
+    };
+  } catch {
+    return { ...DEFAULT_POOL };
+  }
+}
+
+export async function saveVersePool(pool: VersePool): Promise<void> {
+  await storageSet('pj_verse_pool', JSON.stringify(pool));
+}
+
+// The active, ordered list of verses the card can show, each with its stable key. Active presets
+// come first (preset order), then the user's customs. Falls back to the full preset list if the
+// pool is somehow empty, so the card is never blank.
+export function getActiveVerses(pool: VersePool): Array<{ key: string; verse: DailyVerse }> {
+  const presets = VERSES
+    .filter(v => !pool.disabledPresets.includes(v.reference))
+    .map(v => ({ key: presetKey(v), verse: { text: v.text, reference: v.reference } }));
+  const customs = pool.customVerses.map(c => ({ key: customKey(c.id), verse: { text: c.text, reference: c.reference } }));
+  const active = [...presets, ...customs];
+  if (active.length) return active;
+  return VERSES.map(v => ({ key: presetKey(v), verse: { text: v.text, reference: v.reference } }));
+}
+
 /**
- * Returns today's verse, advancing the no-repeat rotation at most once per day. Persists the
- * rotation through storageSet so it rides the cloud backup. The lastDate guard makes the
- * advance idempotent for the day, so Home and Faith stay in sync no matter which loads first.
- * Throws on corrupt data so the caller can fall back (Home nukes the key and shows a random
- * verse). `todayStr` must be the local YYYY-MM-DD key both tabs already use.
+ * Returns today's verse from the active pool. In 'static' mode it returns the pinned verse with
+ * no rotation; otherwise it advances the no-repeat rotation at most once per day, persisting it
+ * through storageSet so it rides the cloud backup. The lastDate guard makes the daily advance
+ * idempotent, so Home and Faith stay in sync no matter which loads first. The rotation also
+ * reshuffles whenever the active pool changes (a verse added or removed) so a pool edit shows a
+ * fresh verse immediately. Throws on corrupt data so the caller can fall back. `todayStr` must be
+ * the local YYYY-MM-DD key both tabs already use.
  */
 export async function resolveDailyVerse(todayStr: string): Promise<DailyVerse> {
+  const pool = await loadVersePool();
+  const active = getActiveVerses(pool);
+  const byKey = new Map(active.map(a => [a.key, a.verse]));
+
+  // Static mode: pin one verse, no rotation. If the pinned verse is gone (removed or disabled),
+  // fall through to the cycle so the card still shows something.
+  if (pool.mode === 'static' && pool.pinnedKey && byKey.has(pool.pinnedKey)) {
+    return byKey.get(pool.pinnedKey)!;
+  }
+
+  const activeKeys = active.map(a => a.key);
   const rotationRaw = await AsyncStorage.getItem('pj_verse_rotation');
   let rotation: Rotation = rotationRaw ? JSON.parse(rotationRaw) : { order: [], index: 0, lastDate: '' };
 
-  // If rotation is empty or exhausted, reshuffle.
-  if (!rotation.order.length || rotation.index >= rotation.order.length) {
-    rotation = { order: shuffle(VERSES.map((_, i) => i)), index: 0, lastDate: todayStr };
+  // Reshuffle when the rotation is empty, exhausted, or no longer matches the active pool. Any
+  // key in the saved order that is no longer active forces a reshuffle (order always holds every
+  // active key, so an add or a remove both trip this).
+  const sameSet = rotation.order.length === activeKeys.length && rotation.order.every(k => byKey.has(k));
+  if (!sameSet || rotation.index >= rotation.order.length) {
+    rotation = { order: shuffle(activeKeys), index: 0, lastDate: todayStr };
     await storageSet('pj_verse_rotation', JSON.stringify(rotation));
-  }
-
-  // New day: advance the index (reshuffle if we just exhausted the list).
-  if (rotation.lastDate !== todayStr) {
+  } else if (rotation.lastDate !== todayStr) {
+    // New day: advance the index (reshuffle if we just exhausted the list).
     rotation.index = rotation.lastDate === '' ? 0 : rotation.index + 1;
     if (rotation.index >= rotation.order.length) {
-      rotation = { order: shuffle(VERSES.map((_, i) => i)), index: 0, lastDate: todayStr };
+      rotation = { order: shuffle(activeKeys), index: 0, lastDate: todayStr };
     } else {
       rotation.lastDate = todayStr;
     }
     await storageSet('pj_verse_rotation', JSON.stringify(rotation));
   }
 
-  const resolved = VERSES[rotation.order[rotation.index]];
-  if (!resolved) throw new Error('bad verse index');
+  const resolved = byKey.get(rotation.order[rotation.index]);
+  if (!resolved) throw new Error('bad verse key');
   return resolved;
 }

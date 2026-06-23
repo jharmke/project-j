@@ -2046,6 +2046,35 @@ export const TUTORIALS: Tutorial[] = [
       },
     ],
   },
+  {
+    id: 'vacation_mode',
+    name: 'Vacation Mode',
+    description: 'Pause everything for a trip. Streaks hold, nothing counts, data keeps coming in.',
+    tab: 'settings',
+    preAction: 'openVacationSection',
+    steps: [
+      {
+        targetKey: 'vac_card',
+        noTabBarOffset: true,
+        title: 'VACATION MODE',
+        body: {
+          discipline: 'One toggle that pauses everything for a planned trip. Streaks freeze, days are excluded from averages, notifications go quiet. Your data still comes in. When you return, you pick up exactly where you left off. No missed streak, no bad-week drag.',
+          balanced: 'Turn this on before a trip and the app steps back for the whole window. Streaks hold, exclusions apply automatically, notifications pause. Your health data still flows in so you can see it when you get back. You do not lose anything.',
+          mindful: 'Rest is part of the work. Vacation Mode gives you full permission to be away without the app counting anything against you. Streaks hold. Notifications go quiet. You come back to the same page you left, ready to continue.',
+        },
+      },
+      {
+        targetKey: 'vac_card',
+        noTabBarOffset: true,
+        title: 'SET IT UP',
+        body: {
+          discipline: 'Pick your start date, set how many days you will be out (max 30), and tap Start Vacation. The app handles the rest. End early any time if plans change.',
+          balanced: 'Choose a start date, set the length (up to 30 days), and tap Start Vacation. That is all one decision. You can end it early anytime from Settings.',
+          mindful: 'Choose your start date, set how many days feel right, and tap Start Vacation. Simple and single. If you come back early, End Early is right here.',
+        },
+      },
+    ],
+  },
 ];
 
 // ─── Tab → Tutorial Mapping ───────────────────────────────────────────────────
@@ -2056,7 +2085,7 @@ export const TAB_TUTORIALS: Record<string, string[]> = {
   workout: ['workout_basics', 'programs', 'routines', 'exercise_library'],
   stats: ['graph_creator', 'streaks', 'effort_vs_results', 'day_score'],
   profile: [],
-  settings: ['goals', 'notifications', 'faith_and_style'],
+  settings: ['goals', 'notifications', 'faith_and_style', 'vacation_mode'],
   faith: ['faith_prayer', 'faith_bible_plans', 'faith_halo'],
 };
 

@@ -1668,7 +1668,7 @@ export default function StatsScreen() {
   const dayScoreMap = useMemo(() => {
     const map: Record<string, number> = {};
     archiveWeeks.forEach(w => w.days.forEach(d => {
-      if (d.score !== null) map[d.dateKey] = Math.round(d.score.composite);
+      if (d.score !== null && !d.excluded) map[d.dateKey] = Math.round(d.score.composite);
     }));
     return map;
   }, [archiveWeeks]);

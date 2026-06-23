@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { scheduleDailyNotifications, SchedulerContext, FaithJourney, StyleMode, shouldAskPermission, requestNotificationPermission, scheduleWaterNotificationsNow, scheduleActivityNotificationNow } from './notifications';
+import { getVacation, vacationTodayKey } from '../utils/vacationMode';
 
 export const runDailyNotificationScheduler = async () => {
   try {
@@ -237,6 +238,11 @@ export const runDailyNotificationScheduler = async () => {
 
 export const refreshLiveNotifications = async () => {
   try {
+    // Vacation Mode: bail during active window (no live reschedule)
+    const vacation = await getVacation();
+    const todayVac = vacationTodayKey();
+    if (vacation && vacation.active && todayVac >= vacation.startKey && todayVac <= vacation.endKey) return;
+
     const _now = new Date();
     const todayKey = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}-${String(_now.getDate()).padStart(2, '0')}`;
 

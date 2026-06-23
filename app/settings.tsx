@@ -405,6 +405,8 @@ export default function SettingsScreen() {
   const [faithJourney, setFaithJourney] = useState<FaithJourney>('rooted');
   const [burnAccuracyPct, setBurnAccuracyPct] = useState(100);
   // Vacation Mode (own Settings section)
+  const [vacationForceOpen, setVacationForceOpen] = useState(false);
+  const vacCardRef = useRef<any>(null);
   const [vacation, setVacation] = useState<VacationState | null>(null);
   const [vacStartKey, setVacStartKey] = useState<string>(() => vacationTodayKey());
   const [vacDays, setVacDays] = useState(7);
@@ -509,6 +511,11 @@ export default function SettingsScreen() {
     registerTutorialAction('closeNotificationsTutorial', async () => {
       setNotifTutorialActive(false);
     });
+    registerTutorialAction('openVacationSection', async () => {
+      setVacationForceOpen(true);
+      await new Promise(r => setTimeout(r, 400));
+      registerTarget('vac_card', vacCardRef);
+    });
     return () => {
       unregisterTarget('fs_coaching_section');
       unregisterTarget('fs_discipline_btn');
@@ -537,6 +544,8 @@ export default function SettingsScreen() {
       unregisterTutorialAction('openGoalsSection');
       unregisterTutorialAction('openNotificationsSection');
       unregisterTutorialAction('closeNotificationsTutorial');
+      unregisterTutorialAction('openVacationSection');
+      unregisterTarget('vac_card');
     };
   }, []);
 
@@ -1579,8 +1588,8 @@ export default function SettingsScreen() {
         </CollapsibleSection>
 
         {/* ── Vacation Mode ── */}
-        <CollapsibleSection label="Vacation Mode" subtitle="Pause everything for a trip" defaultOpen={false} theme={theme}>
-          <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+        <CollapsibleSection label="Vacation Mode" subtitle="Pause everything for a trip" defaultOpen={deepLinkSection === 'vacation'} forceOpen={vacationForceOpen} theme={theme}>
+          <View ref={vacCardRef} collapsable={false} style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
             <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textMuted, lineHeight: 20, marginBottom: 16 }}>
               {VAC_INTRO[styleMode]}
             </Text>

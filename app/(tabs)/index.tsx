@@ -62,6 +62,7 @@ import {
   Challenge, ChallengeProgress, ChallengeMetric,
 } from '../../utils/challenges';
 import { METRIC_META } from '../../utils/comparisonEngine';
+import { getVacation, endVacationEarly, vacationTodayKey, addDaysKey, VacationState } from '../../utils/vacationMode';
 
 const RECOVERY_PURPLE = '#9b7adb';
 const CAROUSEL_PAGE_W = Dimensions.get('window').width - 32;
@@ -465,6 +466,9 @@ export default function HomeScreen() {
   const editLayoutEyeRef  = useTutorialTarget('edit_layout_eye');
   const editLayoutTabsRef = useTutorialTarget('edit_layout_tabs');
   // showAchievementToast is now a direct import
+
+  // Vacation Mode banner
+  const [vacationBanner, setVacationBanner] = useState<VacationState | null>(null);
 
   // Layout state
   const [cardOrder,   setCardOrder]   = useState<CardId[]>(DEFAULT_ORDER);
@@ -1185,6 +1189,15 @@ export default function HomeScreen() {
     const sub = AppState.addEventListener('change', s => { if (s === 'active') runScan(); });
     return () => { sub.remove(); if (summaryTimerRef.current) clearTimeout(summaryTimerRef.current); };
   }, []);
+
+  // ── Vacation Mode banner: refresh on every focus so Settings changes land ───
+  useFocusEffect(useCallback(() => {
+    getVacation().then(v => {
+      const today = vacationTodayKey();
+      if (v && v.active && today <= v.endKey) setVacationBanner(v);
+      else setVacationBanner(null);
+    });
+  }, []));
 
   // ── Load Smart Tips + AI coach tip for home card ────────────────────────────
   useFocusEffect(useCallback(() => {
@@ -3722,6 +3735,41 @@ export default function HomeScreen() {
           />
         }
       >
+        {/* ── Vacation Mode banner ── */}
+        {vacationBanner && (() => {
+          const today = vacationTodayKey();
+          const isScheduled = today < vacationBanner.startKey;
+          const rd = new Date(addDaysKey(vacationBanner.endKey, 1) + 'T00:00:00');
+          const VAC_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+          const VAC_DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+          const resumeStr = `${VAC_DOW[rd.getDay()]} ${VAC_MONTHS[rd.getMonth()]} ${rd.getDate()}`;
+          return (
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueRaw + '44', borderRadius: 12, padding: 12, marginBottom: 12, gap: 10 }}>
+              <Ionicons name="airplane" size={18} color={theme.accentBlueRaw} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.accentBlueRaw }}>
+                  {isScheduled ? 'Vacation Scheduled' : 'On Vacation'}
+                </Text>
+                <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textMuted }}>
+                  Back {resumeStr}
+                </Text>
+              </View>
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={async () => {
+                  triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+                  await endVacationEarly();
+                  setVacationBanner(null);
+                  showToast('Vacation ended early', undefined, 'success');
+                }}
+                style={{ backgroundColor: theme.accentRedBg, borderWidth: 1, borderColor: theme.accentRedBorder, borderRadius: 6, paddingHorizontal: 10, paddingVertical: 6 }}
+              >
+                <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentRed, letterSpacing: 1 }}>END EARLY</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        })()}
+
         {visibleCards.map((id) => (
           <View key={id} onLayout={(e) => { cardOffsets.current[id] = e.nativeEvent.layout.y; }}>
             {renderCardById(id)}

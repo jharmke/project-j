@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 import { storageSet } from '../utils/storage';
 import { getLastClosedWeekStart } from '../utils/weeklySummary';
 import { getLastClosedMonth } from '../utils/monthlySummary';
+import { getVacation, vacationTodayKey } from '../utils/vacationMode';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -884,6 +885,14 @@ const cancelAllDailyNotis = async () => {
 export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
   const s = await loadNotificationSettings();
   if (!s.masterEnabled) { await cancelAllDailyNotis(); return; }
+
+  // Vacation Mode: total silence during the active window
+  const vacation = await getVacation();
+  const todayVac = vacationTodayKey();
+  if (vacation && vacation.active && todayVac >= vacation.startKey && todayVac <= vacation.endKey) {
+    await cancelAllDailyNotis();
+    return;
+  }
 
   const status = await getPermissionStatus();
   if (status !== 'granted') return;

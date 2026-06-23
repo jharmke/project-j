@@ -447,9 +447,12 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     key: 'todays_message',
     category: 'Faith',
     title: "Today's Message",
-    body: 'A verse for the day, the same one you see on your Home tab so they always match. It rotates through a curated set, one per day. Tap the verse to open it in the Bible reader at that exact passage, where you can read the surrounding chapter.\n\nThis card is read only. It is here for a moment of focus before the rest of your day, not something to track or complete.',
+    body: 'A verse for the day, the same one you see on your Home tab so they always match.\n\nYou control what shows here. Tap the gear on the card to manage your rotation: cycle through a new verse each day or pin one favorite, keep the curated verses on or off, and add your own. To add a verse, open it in the Bible reader and tap the sun icon.\n\nTap the verse to open it in the Bible reader at that exact passage, where you can read the surrounding chapter.',
     definitions: [
       { term: 'Same as Home', explanation: 'The verse here and the verse on your Home tab come from one shared rotation, so they are always identical and advance together once per day.' },
+      { term: 'Manage your rotation', explanation: 'Tap the gear on the card. Cycle daily shows a new verse each day from your rotation; Pin one keeps a single verse until you change it. You can turn the curated verses on or off and remove ones you added.' },
+      { term: 'Add your own', explanation: 'In the Bible reader, tap a verse to highlight it, then tap the sun icon to add it to your Today\'s Message rotation. Tap the sun again to remove it.' },
+      { term: 'Sun vs star', explanation: 'The sun adds a verse to your daily rotation. The star is separate: it just saves a verse to your Favorites for later, without changing what shows here.' },
       { term: 'Tap to read', explanation: 'Tapping the verse opens the Bible reader at that passage so you can read it in context.' },
       { term: 'Reflect with Halo', explanation: 'Opens Halo, your companion, already aware of the verse so you can talk it through or ask what it means.' },
     ],

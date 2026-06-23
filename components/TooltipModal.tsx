@@ -170,7 +170,7 @@ export default function TooltipModal({ tooltipKey, visible, onClose, hideTour }:
                     <Text style={{
                       fontFamily: 'DMSans_700Bold',
                       fontSize: 13,
-                      color: theme.textPrimary,
+                      color: d.termColor ?? theme.textPrimary,
                       marginBottom: 3,
                     }}>
                       {d.term}

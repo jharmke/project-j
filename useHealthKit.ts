@@ -879,6 +879,26 @@ export function useHealthKit() {
     } catch { return []; }
   };
 
+  // HR ZONES: find a specific imported workout by its UUID (querying the calendar day it
+  // started) and return its real start/end window + HR samples. Works for any imported
+  // workout regardless of age, using only the stored appleHealthUUID + appleStartDate -- no
+  // migration of older imports needed.
+  const fetchWorkoutHRByUUID = async (uuid: string, approxDateMs: number): Promise<{ found: boolean; startMs: number; endMs: number; durationSec: number; samples: { t: number; v: number }[] }> => {
+    const empty = { found: false, startMs: 0, endMs: 0, durationSec: 0, samples: [] as { t: number; v: number }[] };
+    try {
+      const start = new Date(approxDateMs); start.setHours(0, 0, 0, 0);
+      const end = new Date(approxDateMs); end.setHours(23, 59, 59, 999);
+      const workouts = await queryWorkoutSamples({ limit: 100, filter: { date: { startDate: start, endDate: end } } });
+      const w = (workouts || []).find((x: any) => x.uuid === uuid);
+      if (!w) return empty;
+      const startMs = new Date(w.startDate).getTime();
+      const durationSec = w.duration?.quantity ?? 0;
+      const endMs = w.endDate ? new Date(w.endDate).getTime() : startMs + durationSec * 1000;
+      const samples = await fetchWorkoutHeartRate(startMs, endMs);
+      return { found: true, startMs, endMs, durationSec, samples };
+    } catch { return empty; }
+  };
+
   // HR ZONES: raw heart-rate samples within a workout window, for time-in-zone math.
   const fetchWorkoutHeartRate = async (startMs: number, endMs: number): Promise<{ t: number; v: number }[]> => {
     try {
@@ -912,5 +932,5 @@ export function useHealthKit() {
     bloodOxygen !== null || hrv !== null || vo2Max !== null ||
     cardioRecovery !== null || exerciseMinutes !== null;
 
-  return { authorized, hasHealthData, lastSyncedAt, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, sleepAwakeCount, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, hrv, exerciseMinutes, appleWorkouts, fetchTodayData, fetchHistoricalWorkouts, fetchSleepHistory, fetchLastNightSegments, fetchRecoverySignals, fetchOvernightRHR, fetchWorkoutWindows, fetchWorkoutHeartRate, dumpHRV };
+  return { authorized, hasHealthData, lastSyncedAt, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, sleepAwakeCount, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, hrv, exerciseMinutes, appleWorkouts, fetchTodayData, fetchHistoricalWorkouts, fetchSleepHistory, fetchLastNightSegments, fetchRecoverySignals, fetchOvernightRHR, fetchWorkoutWindows, fetchWorkoutHeartRate, fetchWorkoutHRByUUID, dumpHRV };
 }

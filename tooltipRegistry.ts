@@ -4,7 +4,7 @@ export interface TooltipDefinition {
   title: string;
   body: string;
   tutorialId?: string;
-  definitions?: { term: string; explanation: string }[];
+  definitions?: { term: string; explanation: string; termColor?: string }[];
   example?: {
     label: string;
     lines: { desc: string; value: string }[];
@@ -22,6 +22,21 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
       { term: 'Possibly Not Included', explanation: 'Hidden additions the AI flags but does not add to the numbers, like cooking oils, butter, or sauces. They are there to prompt you, not to inflate the estimate. Edit an item up if you think something was missed.' },
       { term: 'Needs Your Review', explanation: 'Items the AI was genuinely unsure about. You confirm, edit, or remove each one before the meal can be added to your log.' },
       { term: 'Portion size', explanation: 'Scale the whole estimate up or down if the serving was larger or smaller than standard. You can also scale a single item from inside its edit panel.' },
+    ],
+  },
+  {
+    key: 'hr_zones',
+    category: 'Fitness',
+    title: 'HR Zones',
+    body: 'For any workout your watch recorded heart rate during, this shows how long you spent in each of five training zones, from easy all the way to maximum effort. It lets you see whether a session was mostly gentle aerobic work or a genuine hard push.\n\nZones are built from your max heart rate. We estimate that from your age (the Tanaka formula, more accurate than the old rule of 220 minus your age) and raise it automatically if one of your workouts shows a higher real peak. By default we personalize the zones with your resting heart rate, so as your fitness changes the zones move with you.\n\nTime spent below the first zone shows in grey as "Below Zone." It was real movement, just lighter than training intensity. Zones need heart rate data from a smartwatch or fitness tracker, so a manually logged workout will not show a breakdown.',
+    definitions: [
+      { term: 'Z1 Warm Up', termColor: '#3b82f6', explanation: 'Very light. Easy movement, warming up, or cooling down.' },
+      { term: 'Z2 Fat Burn', termColor: '#0d9268', explanation: 'A comfortable aerobic effort you could hold for a long time. Builds endurance.' },
+      { term: 'Z3 Cardio', termColor: '#d4860a', explanation: 'Moderate to strong. Breathing harder, working but still sustainable.' },
+      { term: 'Z4 Threshold', termColor: '#e2622e', explanation: 'Hard. The edge of what you can hold for long, where speed and capacity are built.' },
+      { term: 'Z5 Peak', termColor: '#cc3333', explanation: 'Maximum effort. Short bursts only, near your limit.' },
+      { term: 'Below Zone', termColor: '#9499b5', explanation: 'Time your heart rate sat under Zone 1. Real movement, just below training intensity. Shown in grey so the picture stays honest.' },
+      { term: 'Personalized zones', explanation: 'Your zones are built from your resting heart rate, not just your max (the Karvonen method). A fitter heart rests lower, so your zones adjust to you instead of a generic chart.' },
     ],
   },
   {

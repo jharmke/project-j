@@ -23,6 +23,8 @@ import HeaderAvatar from '../../components/HeaderAvatar';
 import { useHealthKit } from '../../useHealthKit';
 import { BLANK_DAY, DEFAULT_TAGS, DayProgram, Exercise, Routine, TAG_COLOR_PALETTE, WorkoutTag, PRESET_ROUTINES } from '../../workoutData';
 import MuscleMap from '../../components/MuscleMap';
+import HRZoneModal, { HRZoneData } from '../../components/HRZoneModal';
+import { resolveMaxHR, zoneBounds, timeInZones, ageFromBirthday } from '../../utils/hrZones';
 import { showToolkit } from '../../components/ToolkitSheet';
 import { useTutorial } from '../../context/TutorialContext';
 import { useTutorialTarget } from '../../hooks/useTutorialTarget';
@@ -339,7 +341,68 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
   const [editingTag, setEditingTag] = useState<WorkoutTag | null>(null);
   const [tagLabelInput, setTagLabelInput] = useState('');
   const [tagColorInput, setTagColorInput] = useState(TAG_COLOR_PALETTE[0]);
-const { activeCalories, appleWorkouts, fetchTodayData } = useHealthKit();
+const { activeCalories, appleWorkouts, fetchTodayData, fetchWorkoutHRByUUID } = useHealthKit();
+
+// HR Zones per-workout modal
+const [hrModalVisible, setHrModalVisible] = useState(false);
+const [hrModalLoading, setHrModalLoading] = useState(false);
+const [hrModalData, setHrModalData] = useState<HRZoneData | null>(null);
+
+const openHRZones = async (ex: any) => {
+  triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+  setHrModalData(null);
+  setHrModalLoading(true);
+  setHrModalVisible(true);
+  try {
+    const approxMs = ex.appleStartDate ? new Date(ex.appleStartDate).getTime() : Date.now();
+    const res = await fetchWorkoutHRByUUID(ex.appleHealthUUID, approxMs);
+    if (!res.found || res.samples.length === 0) { setHrModalLoading(false); setHrModalData(null); return; }
+    // User params: age (Tanaka), manual override + model + stored observed peak (settings),
+    // resting HR (latest frozen recovery value). All read-then-merge safe.
+    const prof = await AsyncStorage.getItem('pj_profile');
+    const age = ageFromBirthday(prof ? JSON.parse(prof).birthday : null);
+    const settingsRaw = await AsyncStorage.getItem('pj_settings');
+    const sd = settingsRaw ? JSON.parse(settingsRaw) : {};
+    const manualOverride = sd.hrMaxOverride ?? null;
+    const model: 'hrr' | 'maxhr' = sd.hrZoneModel === 'maxhr' ? 'maxhr' : 'hrr';
+    const storedPeak = typeof sd.hrObservedPeak === 'number' ? sd.hrObservedPeak : null;
+    // This workout's peak; persist it as the running observed peak if it's a new high (auto-raise).
+    const thisPeak = res.samples.reduce((m, s) => (s.v > m ? s.v : m), 0);
+    const observedPeak = Math.max(storedPeak ?? 0, thisPeak) || null;
+    if (thisPeak > 0 && (storedPeak === null || thisPeak > storedPeak)) {
+      try {
+        const cur = settingsRaw ? JSON.parse(settingsRaw) : {};
+        await storageSet('pj_settings', JSON.stringify({ ...cur, hrObservedPeak: thisPeak }));
+      } catch {}
+    }
+    // Resting HR: latest frozen overnight value from recovery, walking back up to 14 days.
+    let restingHR: number | null = null;
+    const now = new Date();
+    for (let i = 0; i < 14 && restingHR === null; i++) {
+      const d = new Date(now); d.setDate(now.getDate() - i);
+      const key = `pj_${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      try {
+        const raw = await AsyncStorage.getItem(key);
+        const rhr = raw ? JSON.parse(raw)?.recoverySignals?.rhr : null;
+        if (typeof rhr === 'number' && rhr > 0) restingHR = rhr;
+      } catch {}
+    }
+    const { value: maxHR, source } = resolveMaxHR({ age, manualOverride, observedPeak });
+    if (!maxHR) { setHrModalLoading(false); setHrModalData(null); return; }
+    const bounds = zoneBounds(maxHR, restingHR, model);
+    const r = timeInZones(res.samples, bounds);
+    setHrModalData({
+      workoutName: ex.name || 'Workout',
+      durationSec: res.durationSec,
+      maxHR, maxHRSource: source, model, restingHR, bounds,
+      secs: r.secs, belowZ1: r.belowZ1, peak: r.peak,
+    });
+    setHrModalLoading(false);
+  } catch {
+    setHrModalLoading(false);
+    setHrModalData(null);
+  }
+};
 
 useEffect(() => {
   if (activeCalories > 0) {
@@ -1072,17 +1135,19 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                         {exerciseLibrary.find((e: any) => e.name === ex.name && (e.instructions?.length || e.primaryMuscles?.length)) ? (
                           <Ionicons name="information-circle-outline" size={14} color={theme.textDim} style={{ marginLeft: 4, marginTop: 1 }} />
                         ) : null}
-                        {ex.fromAppleHealth && (
-                          <View style={[styles.badge, { backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder }]}>
-                            <Text style={[styles.badgeText, { color: theme.accentGreen }]}>APPLE HEALTH</Text>
-                          </View>
-                        )}
                         {ex.dropset && (
                           <View style={[styles.badge, { backgroundColor: color + '22' }]}>
                             <Text style={[styles.badgeText, { color }]}>DROPSET</Text>
                           </View>
                         )}
                       </TouchableOpacity>
+                      {ex.fromAppleHealth && (
+                        <View style={{ flexDirection: 'row', marginTop: 6, marginBottom: 6 }}>
+                          <View style={[styles.badge, { marginLeft: 0, backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder }]}>
+                            <Text style={[styles.badgeText, { color: theme.accentGreen }]}>APPLE HEALTH</Text>
+                          </View>
+                        </View>
+                      )}
                       {ex.isCardio ? (
                         <View ref={ex.id === 'tutorial_demo_treadmill' ? firstCardioRef : undefined} collapsable={false}>
                           <Text style={[styles.exerciseMeta, { color: theme.textMuted }]}>
@@ -1095,6 +1160,17 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                               ex.calories ? `${ex.calories} cal` : null,
                             ].filter(Boolean).join(' · ') || 'Cardio · tap edit to log stats'}
                           </Text>
+                          {ex.fromAppleHealth && ex.appleHealthUUID && (
+                            <TouchableOpacity
+                              onPress={() => openHRZones(ex)}
+                              activeOpacity={0.7}
+                              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                              style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', marginTop: 6, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, gap: 4 }}>
+                              <Ionicons name="pulse" size={12} color={theme.accentBlue} />
+                              <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlue }}>HR Zones</Text>
+                              <Ionicons name="chevron-forward" size={11} color={theme.accentBlue} />
+                            </TouchableOpacity>
+                          )}
                         </View>
                       ) : (
                         <View ref={ex.id === 'tutorial_demo_bench' ? firstSetsRepsRef : undefined} collapsable={false}>
@@ -1790,6 +1866,8 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
           </View>
         </Modal>
       )}
+
+      <HRZoneModal visible={hrModalVisible} loading={hrModalLoading} data={hrModalData} onClose={() => setHrModalVisible(false)} />
 
     </LinearGradient>
     </GestureHandlerRootView>

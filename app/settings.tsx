@@ -24,7 +24,19 @@ import { setOnboardingPreview } from '../utils/onboardingPreview';
 import { generateDiagnosticReport, ReportWindow, dumpWindowComparison } from '../utils/diagnosticReport';
 import { dumpDayScoreWithRecovery } from '../utils/dayScoreStore';
 import { probeStreakExclusions } from '../utils/streakExclusion';
-import { startVacation, endVacationEarly, cancelVacationFully, describeVacation, vacationTodayKey, addDaysKey } from '../utils/vacationMode';
+import { startVacation, endVacationEarly, cancelVacationFully, describeVacation, getVacation, vacationTodayKey, addDaysKey, MAX_VACATION_DAYS, VacationState } from '../utils/vacationMode';
+
+const VAC_MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const VAC_DAYS_OF_WEEK = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+const VAC_INTRO: Record<string, string> = {
+  discipline: 'Planned time off. Your streaks hold and nothing counts while you are away. Sleep and recovery still show, just for your eyes.',
+  balanced: 'Taking a trip? Pause everything and pick back up right where you left off when you are back.',
+  mindful: 'Rest is part of the work. Take the time you need, we will be right here when you return.',
+};
+function vacFmtNice(key: string): string {
+  const d = new Date(key + 'T00:00:00');
+  return `${VAC_DAYS_OF_WEEK[d.getDay()]} ${VAC_MONTHS[d.getMonth()].slice(0, 3)} ${d.getDate()}`;
+}
 import { voiceDiagnosticCards, getLastVoiceDebug } from '../utils/coachAI';
 import { dumpHomeCoachCandidates, dumpEvrRecoveryDebug } from '../utils/smartTipsEngine';
 import { TOOLTIP_REGISTRY } from '../tooltipRegistry';
@@ -391,6 +403,13 @@ export default function SettingsScreen() {
   const [notifTutorialActive, setNotifTutorialActive] = useState(false);
   const [faithJourney, setFaithJourney] = useState<FaithJourney>('rooted');
   const [burnAccuracyPct, setBurnAccuracyPct] = useState(100);
+  // Vacation Mode (own Settings section)
+  const [vacation, setVacation] = useState<VacationState | null>(null);
+  const [vacStartKey, setVacStartKey] = useState<string>(() => vacationTodayKey());
+  const [vacDays, setVacDays] = useState(7);
+  const [vacCalMonth, setVacCalMonth] = useState(() => new Date().getMonth());
+  const [vacCalYear, setVacCalYear] = useState(() => new Date().getFullYear());
+  const [vacBusy, setVacBusy] = useState(false);
   const [devCelebVisible, setDevCelebVisible] = useState(false);
   const [devCelebTier, setDevCelebTier] = useState<'small' | 'medium' | 'large' | 'diamond'>('small');
   const [devCelebLabel, setDevCelebLabel] = useState<string | undefined>(undefined);
@@ -637,6 +656,79 @@ export default function SettingsScreen() {
           },
         },
       ]
+    );
+  };
+
+  useEffect(() => { getVacation().then(setVacation).catch(() => {}); }, []);
+
+  const handleStartVacation = async () => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    setVacBusy(true);
+    try {
+      await startVacation(vacStartKey, vacDays);
+      setVacation(await getVacation());
+      showToast('Vacation set', `Back ${vacFmtNice(addDaysKey(vacStartKey, vacDays))}`, 'success');
+    } catch { showToast('Could not set vacation', undefined, 'error'); }
+    setVacBusy(false);
+  };
+
+  const handleEndVacation = async () => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    setVacBusy(true);
+    try {
+      await endVacationEarly();
+      setVacation(await getVacation());
+      showToast('Vacation ended', undefined, 'success');
+    } catch { showToast('Could not end vacation', undefined, 'error'); }
+    setVacBusy(false);
+  };
+
+  const renderVacCalGrid = () => {
+    const firstDay = new Date(vacCalYear, vacCalMonth, 1).getDay();
+    const daysInMonth = new Date(vacCalYear, vacCalMonth + 1, 0).getDate();
+    const cells: (number | null)[] = [];
+    for (let i = 0; i < firstDay; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+    while (cells.length % 7 !== 0) cells.push(null);
+    const rows: (number | null)[][] = [];
+    for (let i = 0; i < cells.length; i += 7) rows.push(cells.slice(i, i + 7));
+    const hit = { top: 10, bottom: 10, left: 10, right: 10 };
+    return (
+      <View>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <TouchableOpacity hitSlop={hit} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); if (vacCalMonth === 0) { setVacCalMonth(11); setVacCalYear(y => y - 1); } else setVacCalMonth(m => m - 1); }}>
+            <Ionicons name="chevron-back" size={20} color={theme.accentBlue} />
+          </TouchableOpacity>
+          <Text style={{ fontSize: 15, color: theme.textPrimary, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{VAC_MONTHS[vacCalMonth]} {vacCalYear}</Text>
+          <TouchableOpacity hitSlop={hit} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); if (vacCalMonth === 11) { setVacCalMonth(0); setVacCalYear(y => y + 1); } else setVacCalMonth(m => m + 1); }}>
+            <Ionicons name="chevron-forward" size={20} color={theme.accentBlue} />
+          </TouchableOpacity>
+        </View>
+        <View style={{ flexDirection: 'row', marginBottom: 6 }}>
+          {VAC_DAYS_OF_WEEK.map(d => (
+            <View key={d} style={{ flex: 1, alignItems: 'center' }}>
+              <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>{d}</Text>
+            </View>
+          ))}
+        </View>
+        {rows.map((row, ri) => (
+          <View key={ri} style={{ flexDirection: 'row', marginBottom: 2 }}>
+            {row.map((day, ci) => {
+              if (!day) return <View key={ci} style={{ flex: 1 }} />;
+              const dk = `${vacCalYear}-${String(vacCalMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+              const isSel = dk === vacStartKey;
+              return (
+                <TouchableOpacity key={ci} style={{ flex: 1, alignItems: 'center', paddingVertical: 5 }} activeOpacity={0.7}
+                  onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setVacStartKey(dk); }}>
+                  <View style={{ width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: isSel ? theme.accentBlueRaw : 'transparent' }}>
+                    <Text style={{ fontSize: 13, fontFamily: isSel ? 'DMSans_700Bold' : 'DMSans_400Regular', color: isSel ? '#fff' : theme.textSecondary }}>{day}</Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        ))}
+      </View>
     );
   };
 
@@ -1482,6 +1574,64 @@ export default function SettingsScreen() {
                 {importing ? 'IMPORTING...' : 'IMPORT WORKOUT HISTORY'}
               </Text>
             </TouchableOpacity>
+          </View>
+        </CollapsibleSection>
+
+        {/* ── Vacation Mode ── */}
+        <CollapsibleSection label="Vacation Mode" subtitle="Pause everything for a trip" defaultOpen={false} theme={theme}>
+          <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+            <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 20, marginBottom: 16 }}>
+              {VAC_INTRO[styleMode]}
+            </Text>
+
+            {vacation && vacation.active ? (
+              <View>
+                <View style={{ backgroundColor: theme.bgInput, borderRadius: 12, borderWidth: 1, borderColor: theme.borderInput, padding: 16, marginBottom: 14, alignItems: 'center' }}>
+                  <Ionicons name="airplane" size={26} color={theme.accentBlue} style={{ marginBottom: 8 }} />
+                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: theme.textMuted, textTransform: 'uppercase', marginBottom: 4 }}>
+                    {vacationTodayKey() < vacation.startKey ? 'Scheduled' : 'On vacation'}
+                  </Text>
+                  <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.textPrimary }}>
+                    {vacFmtNice(vacation.startKey)}  ·  {vacFmtNice(vacation.endKey)}
+                  </Text>
+                  <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 2 }}>
+                    Back {vacFmtNice(addDaysKey(vacation.endKey, 1))}
+                  </Text>
+                </View>
+                <TouchableOpacity disabled={vacBusy} activeOpacity={0.7} onPress={handleEndVacation}
+                  style={{ borderWidth: 1, borderColor: theme.accentRedBorder, backgroundColor: theme.accentRedBg, borderRadius: 8, paddingVertical: 12, alignItems: 'center', opacity: vacBusy ? 0.5 : 1 }}>
+                  <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.accentRed, letterSpacing: 1 }}>END EARLY</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View>
+                <Text style={[styles.sectionLabel, { color: theme.textMuted, paddingHorizontal: 0, paddingBottom: 10 }]}>START DATE</Text>
+                {renderVacCalGrid()}
+
+                <Text style={[styles.sectionLabel, { color: theme.textMuted, paddingHorizontal: 0, paddingTop: 18, paddingBottom: 6 }]}>LENGTH</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 28, marginBottom: 8 }}>
+                  <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} disabled={vacDays <= 1}
+                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setVacDays(d => Math.max(1, d - 1)); }}>
+                    <Ionicons name="remove-circle" size={34} color={vacDays <= 1 ? theme.textDim : theme.accentBlue} />
+                  </TouchableOpacity>
+                  <View style={{ alignItems: 'center', minWidth: 80 }}>
+                    <Text style={{ fontSize: 32, fontFamily: 'BebasNeue_400Regular', color: theme.textPrimary }}>{vacDays}</Text>
+                    <Text style={{ fontSize: 10, fontFamily: 'DMSans_700Bold', letterSpacing: 1, color: theme.textMuted, textTransform: 'uppercase' }}>{vacDays === 1 ? 'day' : 'days'}</Text>
+                  </View>
+                  <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} disabled={vacDays >= MAX_VACATION_DAYS}
+                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setVacDays(d => Math.min(MAX_VACATION_DAYS, d + 1)); }}>
+                    <Ionicons name="add-circle" size={34} color={vacDays >= MAX_VACATION_DAYS ? theme.textDim : theme.accentBlue} />
+                  </TouchableOpacity>
+                </View>
+                <Text style={{ textAlign: 'center', fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginBottom: 16 }}>
+                  {vacFmtNice(vacStartKey)}  ›  back {vacFmtNice(addDaysKey(vacStartKey, vacDays))}
+                </Text>
+                <TouchableOpacity disabled={vacBusy} activeOpacity={0.85} onPress={handleStartVacation}
+                  style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 8, paddingVertical: 13, alignItems: 'center', opacity: vacBusy ? 0.5 : 1 }}>
+                  <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: '#fff', letterSpacing: 1 }}>START VACATION</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </CollapsibleSection>
 

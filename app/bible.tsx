@@ -23,6 +23,8 @@ import { ToastRenderer, useToast } from '../components/Toast';
 import { storageSet } from '../utils/storage';
 import { BIBLE_BOOKS, Book, Chapter, Verse, fetchChapter, parseReference } from '../data/bible-web';
 import { loadVersePool, addCustomVerse, removeCustomVerseByRef, activeVerseCount } from '../data/verses';
+import { useTutorial } from '../context/TutorialContext';
+import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { useTheme } from '../theme';
 import CompanionFAB from '../components/CompanionFAB';
 import CompanionChat from '../components/CompanionChat';
@@ -107,6 +109,18 @@ export default function BibleScreen() {
   // can show an added/not-added state. Refreshed on mount and on focus (catches removals made in
   // the manage modal).
   const [poolRefs, setPoolRefs] = useState<string[]>([]);
+
+  // Tutorial wiring. The reader owns the 'bible' tour: an info icon in the header launches it,
+  // a setup action injects a demo-highlighted verse so the action banner is visible, and a clear
+  // action restores the prior highlight on end/skip. These targets are spotlit step by step.
+  const { startTutorial, registerTutorialAction, unregisterTutorialAction } = useTutorial();
+  const tutBookRef = useTutorialTarget('bible_tut_book');
+  const tutVerseRef = useTutorialTarget('bible_tut_verse');
+  const tutBannerRef = useTutorialTarget('bible_tut_banner');
+  const tutSunRef = useTutorialTarget('bible_tut_sun');
+  const tutStarRef = useTutorialTarget('bible_tut_star');
+  const tutGearRef = useTutorialTarget('bible_tut_gear');
+  const tutPrevHighlight = useRef<{ verse: number | null; ref: string | null; text: string | null; ack: boolean } | null>(null);
 
   const [bibleTextSize, setBibleTextSize] = useState(16);
   const [bibleFontFamily, setBibleFontFamily] = useState('DMSans_400Regular');
@@ -240,6 +254,46 @@ export default function BibleScreen() {
       loadVersePool().then(p => setPoolRefs(p.customVerses.map(c => c.reference))).catch(() => {});
     }, [highlightedVerseRef])
   );
+
+  // Tutorial setup/clear actions. Kept reading fresh chapter + highlight state through a ref so
+  // they never need to re-register. Setup demo-highlights the first verse of the loaded chapter
+  // (scrolled to top) so the action banner is on screen for the banner steps; clear restores the
+  // highlight the user had before the tour.
+  const tutDataRef = useRef({
+    verses: chapterVerses, book: selectedBook, chapter: selectedChapter,
+    hv: highlightedVerse, hvRef: highlightedVerseRef, hvText: highlightedVerseText, hvAck: highlightedVerseAcknowledged,
+  });
+  tutDataRef.current = {
+    verses: chapterVerses, book: selectedBook, chapter: selectedChapter,
+    hv: highlightedVerse, hvRef: highlightedVerseRef, hvText: highlightedVerseText, hvAck: highlightedVerseAcknowledged,
+  };
+
+  useEffect(() => {
+    registerTutorialAction('bibleTutorialSetup', async () => {
+      const d = tutDataRef.current;
+      tutPrevHighlight.current = { verse: d.hv, ref: d.hvRef, text: d.hvText, ack: d.hvAck };
+      stopAutoScroll();
+      scrollYShared.value = 0;
+      const first = d.verses[0];
+      if (first) {
+        setHighlightedVerse(first.verse);
+        setHighlightedVerseRef(`${d.book.name} ${d.chapter.chapter}:${first.verse}`);
+        setHighlightedVerseText(first.text);
+        setHighlightedVerseAcknowledged(false);
+      }
+    });
+    registerTutorialAction('bibleTutorialClear', async () => {
+      const p = tutPrevHighlight.current;
+      setHighlightedVerse(p?.verse ?? null);
+      setHighlightedVerseRef(p?.ref ?? null);
+      setHighlightedVerseText(p?.text ?? null);
+      setHighlightedVerseAcknowledged(p?.ack ?? false);
+    });
+    return () => {
+      unregisterTutorialAction('bibleTutorialSetup');
+      unregisterTutorialAction('bibleTutorialClear');
+    };
+  }, [registerTutorialAction, unregisterTutorialAction, stopAutoScroll, scrollYShared]);
 
   useFocusEffect(
     useCallback(() => {
@@ -553,7 +607,7 @@ export default function BibleScreen() {
         <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.back(); }} style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
           <Ionicons name="chevron-back" size={14} color={theme.accentBlue} />
         </TouchableOpacity>
-        <TouchableOpacity onPress={openBookPicker} style={styles.headerTitle}>
+        <TouchableOpacity ref={tutBookRef as any} onPress={openBookPicker} style={styles.headerTitle}>
           <Text style={[styles.headerBookName, { color: theme.accentBlueRaw }]}>{selectedBook.name}</Text>
           <Ionicons name="chevron-down" size={14} color={theme.accentBlueRaw} />
         </TouchableOpacity>
@@ -564,8 +618,11 @@ export default function BibleScreen() {
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); }} style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
             <Ionicons name="book" size={14} color={theme.accentBlue} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={openSettingsModal} style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
+          <TouchableOpacity ref={tutGearRef as any} onPress={openSettingsModal} style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
             <Ionicons name="settings-outline" size={14} color={theme.accentBlue} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); startTutorial('bible'); }} style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
+            <Ionicons name="information-circle" size={14} color={theme.accentBlue} />
           </TouchableOpacity>
         </View>
       </View>
@@ -666,7 +723,7 @@ export default function BibleScreen() {
 
       {/* Reflect banner + favorite star */}
       {highlightedVerse !== null && highlightedVerseRef && (
-        <View style={[styles.acknowledgeBanner, {
+        <View ref={tutBannerRef} collapsable={false} style={[styles.acknowledgeBanner, {
           backgroundColor: highlightedVerseAcknowledged ? theme.accentGreenBg : theme.accentBlueBg,
           borderColor: highlightedVerseAcknowledged ? theme.accentGreenBorder : theme.accentBlueBorder,
         }]}>
@@ -684,10 +741,10 @@ export default function BibleScreen() {
             </Text>
           </TouchableOpacity>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-            <TouchableOpacity onPress={toggleTodaysMessage} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <TouchableOpacity ref={tutSunRef as any} onPress={toggleTodaysMessage} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <Ionicons name={isInTodaysMessage ? 'sunny' : 'sunny-outline'} size={16} color={isInTodaysMessage ? theme.accentAmber : theme.textMuted} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={toggleFavorite} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <TouchableOpacity ref={tutStarRef as any} onPress={toggleFavorite} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
               <Ionicons name={isCurrentFavorited ? 'star' : 'star-outline'} size={16} color={isCurrentFavorited ? theme.accentAmber : theme.textMuted} />
             </TouchableOpacity>
             <TouchableOpacity onPress={shareVerse} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
@@ -741,6 +798,7 @@ export default function BibleScreen() {
           return (
             <TouchableOpacity
               key={v.verse} activeOpacity={0.7}
+              ref={isHighlighted ? (tutVerseRef as any) : undefined}
               onPress={() => handleVerseTap(v.verse, v.text)}
               onLayout={e => { verseYPositions.current[v.verse] = e.nativeEvent.layout.y; }}
               style={[styles.verseRow, isHighlighted && { backgroundColor: 'rgba(212,134,10,0.5)', borderRadius: 8, marginHorizontal: -8, paddingHorizontal: 8 }]}

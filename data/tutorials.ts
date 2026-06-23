@@ -2075,6 +2075,94 @@ export const TUTORIALS: Tutorial[] = [
       },
     ],
   },
+
+  // ─── BIBLE READER ─────────────────────────────────────────────────────────
+  // Launched from the info icon in the Bible reader header. preAction injects a demo highlight
+  // (first verse of the loaded chapter) so the action banner is on screen for the banner steps;
+  // the last step clears it. Single screen, so no navigation between steps.
+  {
+    id: 'bible',
+    name: 'The Bible Reader',
+    description: 'Read, highlight, save a verse, and shape your daily message.',
+    tab: 'faith',
+    preAction: 'bibleTutorialSetup',
+    steps: [
+      {
+        targetKey: 'none',
+        noDimOverlay: true,
+        title: 'THE BIBLE',
+        body: {
+          discipline: 'The full King James Bible, offline and yours. Here is how to move through it and put it to work.',
+          balanced: 'This is the Bible reader, the whole King James text in your pocket. Quick tour of what it can do.',
+          mindful: 'Welcome to the Bible reader. No rush here. Let me show you a few gentle ways to make it your own.',
+        },
+      },
+      {
+        targetKey: 'bible_tut_book',
+        title: 'FIND YOUR PLACE',
+        body: {
+          discipline: 'Tap the book name to jump to any book. Use the row just below it to switch chapters.',
+          balanced: 'Tap the book name up top to pick any book, and use the chapter row below to move around.',
+          mindful: 'Tap the book name to choose a book, and the row below to find a chapter. Wander wherever you feel led.',
+        },
+      },
+      {
+        targetKey: 'bible_tut_verse',
+        title: 'TAP A VERSE',
+        body: {
+          discipline: 'Tap any verse to highlight it. That opens an action bar for everything you can do with it.',
+          balanced: 'Tap a verse to highlight it. A little action bar appears with what you can do next.',
+          mindful: 'Tap any verse that speaks to you. It highlights, and a few gentle options appear.',
+        },
+      },
+      {
+        targetKey: 'bible_tut_banner',
+        title: 'VERSE ACTIONS',
+        body: {
+          discipline: "This bar acts on the highlighted verse: reflect on it, save it, share it, bring it to Halo, or add it to your daily message.",
+          balanced: "This bar works on the verse you tapped. You can reflect, save, share, talk it over with Halo, or add it to Today's Message.",
+          mindful: "Everything here works with the verse you chose. Reflect on it, keep it, share it, sit with it through Halo, or add it to your day.",
+        },
+      },
+      {
+        targetKey: 'bible_tut_sun',
+        title: "ADD TO TODAY'S MESSAGE",
+        body: {
+          discipline: "The sun adds this verse to your Today's Message rotation, so it can show up as your verse of the day. Tap it again to remove it.",
+          balanced: "Tap the sun to add this verse to your Today's Message rotation. It will start showing up as a verse of the day. Tap again to take it out.",
+          mindful: "The sun adds this verse to your daily rotation, so it can greet you on another morning. Tap it again any time to remove it.",
+        },
+      },
+      {
+        targetKey: 'bible_tut_star',
+        title: 'SAVE A FAVORITE',
+        body: {
+          discipline: 'The star saves a verse to your Favorites, a personal list you can revisit. It is separate from the sun: the star saves, the sun adds to your rotation.',
+          balanced: 'The star saves a verse to your Favorites to find later. Keep these two straight: the star saves to Favorites, the sun adds to your daily rotation.',
+          mindful: 'The star tucks a verse into your Favorites for whenever you want to return to it. Different from the sun: the star is just a keepsake, the sun shapes your daily message.',
+        },
+      },
+      {
+        targetKey: 'bible_tut_gear',
+        title: 'MAKE IT YOURS',
+        body: {
+          discipline: 'The gear sets your font, text size, and auto-scroll speed. The star button up top opens your saved Favorites.',
+          balanced: 'Tap the gear for reading settings: font, size, and auto-scroll. The star button up here opens your saved verses.',
+          mindful: 'The gear lets you set a font, size, and a calm auto-scroll. The star button up top holds the verses you have saved.',
+        },
+      },
+      {
+        targetKey: 'none',
+        tutorialAction: 'bibleTutorialClear',
+        title: 'MANAGE YOUR ROTATION',
+        body: {
+          discipline: "On your Today's Message card, tap the gear to manage the rotation: cycle daily or pin one verse, turn the curated verses on or off, and remove ones you added.",
+          balanced: "Back on your Today's Message card, the gear manages all of this: cycle daily or pin one, turn the curated verses on or off, and remove any you added. You are set.",
+          mindful: "On your Today's Message card, the gear is where you shape it all: let it cycle or pin one verse, keep the curated verses or not, and remove any you added. Take your time with it.",
+        },
+      },
+    ],
+  },
 ];
 
 // ─── Tab → Tutorial Mapping ───────────────────────────────────────────────────

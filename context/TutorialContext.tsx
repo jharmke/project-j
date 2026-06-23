@@ -209,6 +209,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
     try { actions.current['closeGraphCreatorTutorial']?.(); } catch {}
     try { actions.current['deleteTutorialGraph']?.(); } catch {}
     try { actions.current['closeNotificationsTutorial']?.(); } catch {}
+    try { actions.current['bibleTutorialClear']?.(); } catch {}
     setActiveState(null);
     if (prev) finishNavigation(prev);
   }, [setActiveState, finishNavigation]);

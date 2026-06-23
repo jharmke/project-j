@@ -452,7 +452,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
       { term: 'Same as Home', explanation: 'The verse here and the verse on your Home tab come from one shared rotation, so they are always identical and advance together once per day.' },
       { term: 'Manage your rotation', explanation: 'Tap the gear on the card. Cycle daily shows a new verse each day from your rotation; Pin one keeps a single verse until you change it. You can turn the curated verses on or off and remove ones you added.' },
       { term: 'Add your own', explanation: 'In the Bible reader, tap a verse to highlight it, then tap the sun icon to add it to your Today\'s Message rotation. Tap the sun again to remove it.' },
-      { term: 'Sun vs star', explanation: 'The sun adds a verse to your daily rotation. The star is separate: it just saves a verse to your Favorites for later, without changing what shows here.' },
+      { term: 'Rotation vs Favorites', explanation: 'The sun adds a verse to your daily rotation. The star is separate: it just saves a verse to your Favorites for later, without changing what shows here.' },
       { term: 'Tap to read', explanation: 'Tapping the verse opens the Bible reader at that passage so you can read it in context.' },
       { term: 'Reflect with Halo', explanation: 'Opens Halo, your companion, already aware of the verse so you can talk it through or ask what it means.' },
     ],

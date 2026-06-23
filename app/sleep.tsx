@@ -572,6 +572,10 @@ export default function SleepHub() {
   const [trendReload, setTrendReload] = useState(0);
   const [drillKey, setDrillKey] = useState<string | null>(null);
   const [drillHistory, setDrillHistory] = useState<{ dateKey: string; value: number; label: string }[] | null>(null);
+  // Tip rotation: each metric keeps an open-count so repeat visits surface a
+  // different pair from the tip pool instead of the same two forever. Incremented
+  // in openDrill; read in buildDrill. Resets on app restart (fine, just variety).
+  const drillTipRotRef = useRef<Record<string, number>>({});
 
   // Bumped on focus so the donut re-animates each time the screen is entered.
   const [refreshKey, setRefreshKey] = useState(0);
@@ -1585,10 +1589,22 @@ export default function SleepHub() {
 
   // Assemble a metric drill-down from the registry content + the user's live
   // standing, so the improve tips reflect their REAL state (SPEC_sleep 13).
-  const openDrill = (key: string) => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setDrillKey(key); };
+  const openDrill = (key: string) => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    drillTipRotRef.current[key] = (drillTipRotRef.current[key] ?? -1) + 1;
+    setDrillKey(key);
+  };
+  // Show 2 tips from the pool, stepping by 2 each open so repeat visits cycle
+  // through the whole pool before repeating. Pools of 2 or fewer return as-is.
+  const pickTwo = (pool: string[], offset: number): string[] => {
+    if (pool.length <= 2) return pool;
+    const start = (offset * 2) % pool.length;
+    return [pool[start % pool.length], pool[(start + 1) % pool.length]];
+  };
   const buildDrill = (key: string): MetricDrilldownData | null => {
     const content = METRIC_DRILLDOWNS[key];
     if (!content) return null;
+    const tipRot = drillTipRotRef.current[key] ?? 0;
     const statusWordFor = (g: boolean | null) => g === null ? 'Informational' : g ? 'In a healthy range' : 'Worth watching';
 
     // Sleep-tab metric rows: read the live value/standing from the shared memo, so
@@ -1599,7 +1615,7 @@ export default function SleepHub() {
         title: content.title, value: sleepRow.value, statusWord: statusWordFor(sleepRow.isGood),
         statusColor: sleepRow.valueColor, reference: sleepRow.reference,
         definition: content.definition, calculation: content.calculation, affects: content.affects,
-        tips: content.improve(sleepRow.isGood), informationalOnly: content.informationalOnly, disclaimer: content.disclaimer,
+        tips: pickTwo(content.improve(sleepRow.isGood), tipRot), informationalOnly: content.informationalOnly, disclaimer: content.disclaimer,
       };
     }
 
@@ -1641,7 +1657,7 @@ export default function SleepHub() {
     return {
       title: content.title, value, statusWord, statusColor, reference,
       definition: content.definition, calculation: content.calculation, affects: content.affects,
-      tips: content.improve(key === 'sleepScore' && recoveryResult.sleep ? recoveryResult.sleep.score : isGood), informationalOnly: content.informationalOnly, disclaimer: content.disclaimer,
+      tips: pickTwo(content.improve(key === 'sleepScore' && recoveryResult.sleep ? recoveryResult.sleep.score : isGood), tipRot), informationalOnly: content.informationalOnly, disclaimer: content.disclaimer,
     };
   };
   // Slice 2: per-metric history series for the drill-down mini-graph, over the

@@ -27,10 +27,9 @@ import {
   computeAndStoreSmartTips,
   isCrossSignalRule,
   loadCoachTipCache,
-  loadCoachTipCacheEvr,
   loadSmartTips,
 } from '../utils/smartTipsEngine';
-import { refreshCoachTipEvr, resolveTipBody, resolveTipTitle, voiceDiagnosticCards } from '../utils/coachAI';
+import { refreshCoachTip, resolveTipBody, resolveTipTitle, voiceDiagnosticCards } from '../utils/coachAI';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -616,31 +615,19 @@ export default function DiagnosticReportViewScreen() {
         const stored = await loadSmartTips();
         if (stored) setSmartTips(stored);
         computeAndStoreSmartTips().then(fresh => setSmartTips(fresh)).catch(() => {});
-        // Load EvR coach tip: show cached instantly, then refresh in background.
-        // Home ruleId is passed so EvR never repeats the same scenario as the home card.
-        // The headline engine only ever analyzes a 7/14-day window (runAllRules on w7/w5/w14),
-        // so label it 14, NOT the report's stamped windowDays (90 = the old MAX_WINDOW leftover
-        // from the deleted selector). Feeding 90 made the AI scold "14 of 90 days logged, still an
-        // early read" for a finding that only looked at 14 days. The cards already use real
-        // per-pattern windows; this keeps the headline honest to what it actually computes.
+        // EvR headline shows the SAME tip as the home card (Option A sync).
+        // Home card is the teaser; EvR is the same headline + the full card feed below it.
+        // No dedup, no separate EvR compute -- just read/refresh the home cache. Instant if
+        // home was already opened today; otherwise computes fresh (same result either way).
         const windowDays = 14 as const;
-        const [cachedEvr, homeCache] = await Promise.all([
-          loadCoachTipCacheEvr(windowDays),
-          loadCoachTipCache(),
-        ]);
-        // Only flash a cached headline instantly when it is already TODAY's final read (same-day
-        // compute). The same-day gate in computeCoachPacketEvr guarantees the refresh returns it
-        // unchanged, so there's no swap. A stale prior-day cache WOULD get replaced by the refresh
-        // (the ranking re-rolls for today, e.g. weight -> sleep), so in that case show the loading
-        // spinner and reveal the fresh tip in one shot -- same no-swap treatment as the card feed.
+        const cachedHome = await loadCoachTipCache();
         const pad = (n: number) => String(n).padStart(2, '0');
         const now = new Date();
         const todayKey = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-        const cachedIsTodaysFinal = !!cachedEvr && cachedEvr.packet.computedDate === todayKey;
-        if (cachedIsTodaysFinal) { setCoachCache(cachedEvr); setCoachLoading(false); }
+        const cachedIsTodaysFinal = !!cachedHome && cachedHome.packet.computedDate === todayKey;
+        if (cachedIsTodaysFinal) { setCoachCache(cachedHome); setCoachLoading(false); }
         else { setCoachCache(null); setCoachLoading(true); }
-        const homeRuleId = homeCache?.packet.ruleId ?? null;
-        refreshCoachTipEvr(windowDays, homeRuleId)
+        refreshCoachTip('home', windowDays)
           .then(cache => { setCoachCache(cache); setCoachLoading(false); })
           .catch(() => setCoachLoading(false));
       };

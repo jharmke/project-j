@@ -3304,7 +3304,7 @@ export default function HomeScreen() {
                         </View>
                       </View>
                       <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: theme.textSecondary, lineHeight: 21, marginBottom: 6 }}>{displayTitle}</Text>
-                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 20, marginBottom: 12 }}>{displayBody}</Text>
+                      <Text numberOfLines={3} ellipsizeMode="tail" style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 20, marginBottom: 12 }}>{displayBody}</Text>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                         <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlueRaw }}>View in Effort vs Results</Text>
                         <Ionicons name="chevron-forward" size={12} color={theme.accentBlueRaw} />

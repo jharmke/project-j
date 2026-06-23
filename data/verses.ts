@@ -131,7 +131,16 @@ export async function saveVersePool(pool: VersePool): Promise<void> {
   await storageSet('pj_verse_pool', JSON.stringify(pool));
 }
 
-// The active, ordered list of verses the card can show, each with its stable key. Active presets
+// Every verse in the user's library, each with its stable key: ALL presets (disabled or not)
+// plus the user's customs. Used for the static pin lookup so a pinned verse always shows even
+// when the built-in group is toggled off for the cycle.
+export function getAllVerses(pool: VersePool): Array<{ key: string; verse: DailyVerse }> {
+  const presets = VERSES.map(v => ({ key: presetKey(v), verse: { text: v.text, reference: v.reference } }));
+  const customs = pool.customVerses.map(c => ({ key: customKey(c.id), verse: { text: c.text, reference: c.reference } }));
+  return [...presets, ...customs];
+}
+
+// The active, ordered list of verses the cycle can show, each with its stable key. Active presets
 // come first (preset order), then the user's customs. Falls back to the full preset list if the
 // pool is somehow empty, so the card is never blank.
 export function getActiveVerses(pool: VersePool): Array<{ key: string; verse: DailyVerse }> {
@@ -158,10 +167,12 @@ export async function resolveDailyVerse(todayStr: string): Promise<DailyVerse> {
   const active = getActiveVerses(pool);
   const byKey = new Map(active.map(a => [a.key, a.verse]));
 
-  // Static mode: pin one verse, no rotation. If the pinned verse is gone (removed or disabled),
+  // Static mode: pin one verse, no rotation. Resolve from the full library so a pinned verse
+  // shows even when the built-in group is off for the cycle. If the pin is gone (custom removed),
   // fall through to the cycle so the card still shows something.
-  if (pool.mode === 'static' && pool.pinnedKey && byKey.has(pool.pinnedKey)) {
-    return byKey.get(pool.pinnedKey)!;
+  if (pool.mode === 'static' && pool.pinnedKey) {
+    const all = new Map(getAllVerses(pool).map(a => [a.key, a.verse]));
+    if (all.has(pool.pinnedKey)) return all.get(pool.pinnedKey)!;
   }
 
   const activeKeys = active.map(a => a.key);

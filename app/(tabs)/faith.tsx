@@ -17,6 +17,7 @@ import { useTutorial } from '../../context/TutorialContext';
 import { useTutorialTarget } from '../../hooks/useTutorialTarget';
 import BibleStartGuide from '../../components/BibleStartGuide';
 import GratitudeStreakCard from '../../components/GratitudeStreakCard';
+import VersePoolModal from '../../components/VersePoolModal';
 import { resolveDailyVerse, VERSES, type DailyVerse } from '../../data/verses';
 import { loadPrayers, getActive, type Prayer } from '../../utils/prayers';
 import {
@@ -253,12 +254,16 @@ function PressButton({ onPress, style, wrapperStyle, children }: { onPress: () =
 // The home-only extras (the reflection-prompt subtext Justin flagged, and the journal
 // shortcut) are intentionally left off here; the Halo-reflection flow is a later item.
 function VotdCard({ verse, theme, onReflect }: { verse: DailyVerse | null; theme: Theme; onReflect?: () => void }) {
-  if (!verse) return null;
+  const [manageOpen, setManageOpen] = useState(false);
+  const [localVerse, setLocalVerse] = useState<DailyVerse | null>(null);
+  const v = localVerse ?? verse;
+  if (!v) return null;
   return (
+    <>
     <PressCard
       onPress={() => {
         triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-        router.push({ pathname: '/bible', params: { verseRef: verse.reference, verseText: verse.text } });
+        router.push({ pathname: '/bible', params: { verseRef: v.reference, verseText: v.text } });
       }}
       style={[styles.card, {
         backgroundColor: theme.bgCardFaith,
@@ -275,10 +280,16 @@ function VotdCard({ verse, theme, onReflect }: { verse: DailyVerse | null; theme
           <Ionicons name="sunny-outline" size={11} color={theme.textMuted} />
           <Text style={[styles.verseLabel, { color: theme.textMuted }]}>TODAY'S MESSAGE</Text>
         </View>
-        <TooltipIcon tooltipKey="todays_message" color={theme.accentAmber} />
+        {/* (i) stays on the left, the gear takes the right corner. */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <TooltipIcon tooltipKey="todays_message" color={theme.accentAmber} />
+          <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setManageOpen(true); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Ionicons name="settings" size={15} color={theme.accentAmber} />
+          </TouchableOpacity>
+        </View>
       </View>
-      <Text style={[styles.verseText, { color: theme.textSecondary }]}>"{verse.text}"</Text>
-      <Text style={[styles.verseRef, { color: theme.textMuted }]}>{verse.reference}</Text>
+      <Text style={[styles.verseText, { color: theme.textSecondary }]}>"{v.text}"</Text>
+      <Text style={[styles.verseRef, { color: theme.textMuted }]}>{v.reference}</Text>
       {onReflect && (
         <TouchableOpacity
           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); onReflect!(); }}
@@ -289,6 +300,8 @@ function VotdCard({ verse, theme, onReflect }: { verse: DailyVerse | null; theme
         </TouchableOpacity>
       )}
     </PressCard>
+    <VersePoolModal visible={manageOpen} onClose={() => setManageOpen(false)} onChanged={setLocalVerse} />
+    </>
   );
 }
 

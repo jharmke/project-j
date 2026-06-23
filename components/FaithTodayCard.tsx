@@ -15,6 +15,7 @@ import { loadReadingPlanProgress } from '../utils/readingPlansProgress';
 import { loadDevotionalProgress, getDevotionalProgress, getNextDay } from '../utils/devotionals';
 import { useTheme, type Theme } from '../theme';
 import { LinearGradient } from 'expo-linear-gradient';
+import VersePoolModal from './VersePoolModal';
 
 /**
  * Faith Today: the home tab's faith hub card (same slot 1 as the old Today's Message verse
@@ -40,8 +41,9 @@ type RowItem = { id: string; icon: string; name: string; pct: number; nextRef: s
 
 // Each page's own state title is the single card label (no separate "FAITH TODAY" line;
 // the card is named Faith Today in the edit-layout list). Page 1 also carries the journal door.
-function PageHeader({ title, icon, theme, withJournal, onJournal }: {
-  title: string; icon: ReactNode; theme: Theme; withJournal?: boolean; onJournal?: () => void;
+function PageHeader({ title, icon, theme, withJournal, onJournal, withGear, onGear }: {
+  title: string; icon: ReactNode; theme: Theme;
+  withJournal?: boolean; onJournal?: () => void; withGear?: boolean; onGear?: () => void;
 }) {
   return (
     <View style={styles.header}>
@@ -49,10 +51,19 @@ function PageHeader({ title, icon, theme, withJournal, onJournal }: {
         {icon}
         <Text style={[styles.title, { color: theme.textSecondary }]}>{title}</Text>
       </View>
-      {withJournal && (
-        <TouchableOpacity onPress={onJournal} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Ionicons name="journal" size={16} color={theme.accentAmber} />
-        </TouchableOpacity>
+      {(withJournal || withGear) && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+          {withJournal && (
+            <TouchableOpacity onPress={onJournal} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="journal" size={16} color={theme.accentAmber} />
+            </TouchableOpacity>
+          )}
+          {withGear && (
+            <TouchableOpacity onPress={onGear} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="settings" size={16} color={theme.accentAmber} />
+            </TouchableOpacity>
+          )}
+        </View>
       )}
     </View>
   );
@@ -127,6 +138,9 @@ export default function FaithTodayCard({ verse, theme }: Props) {
   const [planStore, setPlanStore] = useState<ReadingPlansStorage>({});
   const [devStore, setDevStore] = useState<DevotionalsStorage>({});
   const [prayers, setPrayers] = useState<Prayer[]>([]);
+  const [manageOpen, setManageOpen] = useState(false);
+  const [localVerse, setLocalVerse] = useState<DailyVerse | null>(null);
+  const sv = localVerse ?? verse;
 
   const scrollRef = useRef<ScrollView>(null);
   const autoRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -180,11 +194,11 @@ export default function FaithTodayCard({ verse, theme }: Props) {
     }
   };
 
-  const goVerse = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/bible', params: { verseRef: verse?.reference ?? '', verseText: verse?.text ?? '' } }); };
+  const goVerse = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/bible', params: { verseRef: sv?.reference ?? '', verseText: sv?.text ?? '' } }); };
   const goFaithPlans = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/faith', params: { scrollTo: 'bible_plans' } }); };
   const goFaithPrayer = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/faith', params: { scrollTo: 'prayer' } }); };
   const goJournal = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/journal'); };
-  const goReflectWithHalo = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/faith', params: { openHalo: String(Date.now()), haloVerseRef: verse?.reference ?? '', haloVerseText: verse?.text ?? '' } }); };
+  const goReflectWithHalo = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/faith', params: { openHalo: String(Date.now()), haloVerseRef: sv?.reference ?? '', haloVerseText: sv?.text ?? '' } }); };
   const goAskForPrayer = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/prayer', params: { autoOpenRequest: '1' } }); };
 
   const activePlans = READING_PLANS.filter(p => !!planStore[p.id]);
@@ -207,6 +221,7 @@ export default function FaithTodayCard({ verse, theme }: Props) {
   const noPlans = planItems.length === 0 && devItems.length === 0;
 
   return (
+    <>
     <View style={styles.glow}>
       <View style={[styles.clip, { borderColor: theme.borderCard }]}>
         <ScrollView
@@ -227,9 +242,11 @@ export default function FaithTodayCard({ verse, theme }: Props) {
               theme={theme}
               withJournal
               onJournal={goJournal}
+              withGear
+              onGear={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setManageOpen(true); }}
             />
-            <Text style={[styles.verseText, { color: theme.textSecondary }]}>"{verse?.text}"</Text>
-            <Text style={[styles.verseRef, { color: theme.textMuted }]}>{verse?.reference}</Text>
+            <Text style={[styles.verseText, { color: theme.textSecondary }]}>"{sv?.text}"</Text>
+            <Text style={[styles.verseRef, { color: theme.textMuted }]}>{sv?.reference}</Text>
             <TouchableOpacity
               onPress={goReflectWithHalo}
               style={[styles.haloBtn, { backgroundColor: 'rgba(212,134,10,0.10)', borderColor: 'rgba(212,134,10,0.30)' }]}
@@ -312,6 +329,8 @@ export default function FaithTodayCard({ verse, theme }: Props) {
         </View>
       </View>
     </View>
+    <VersePoolModal visible={manageOpen} onClose={() => setManageOpen(false)} onChanged={setLocalVerse} />
+    </>
   );
 }
 

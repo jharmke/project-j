@@ -39,8 +39,12 @@ function isOffScreen(l: TargetRect | null, noTabBar = false): boolean {
   if (!l) return false;
   if (l.y + l.h < 0) return true;                  // off top
   const tabH = noTabBar ? 0 : TAB_H;
-  if (l.y > SH - tabH - 50) return true;           // off bottom
-  if (l.y + l.h > SH - tabH - 24) return true;     // bottom clips into tab bar / safe area
+  if (l.y > SH - tabH - 50) return true;           // off bottom (top edge too low to show)
+  // A target taller than the visible viewport can never fully fit -- a bottom clip is
+  // unavoidable. In that case spotlight the visible portion instead of bailing to a
+  // full-screen dim with no cutout. Only the normal (fits-but-clipped) case scrolls/bails.
+  const availH = SH - tabH - 24;
+  if (l.h <= availH && l.y + l.h > availH) return true; // bottom clips into tab bar / safe area
   return false;
 }
 

@@ -1339,7 +1339,7 @@ export default function SleepHub() {
               {avg !== null && (
                 <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 6 }}>
                   <Text style={{ fontSize: 24, color: theme.statusGood, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5 }}>{avg}</Text>
-                  <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>avg over {recoveryTrend.length} {recoveryTrend.length === 1 ? 'day' : 'days'}</Text>
+                  <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>Avg over {recoveryTrend.length} {recoveryTrend.length === 1 ? 'day' : 'days'}</Text>
                 </View>
               )}
             </View>
@@ -1431,7 +1431,7 @@ export default function SleepHub() {
             {avg !== null && (
               <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 6, marginTop: 6 }}>
                 <Text style={{ fontSize: 24, color: theme.accentBlueRaw, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5 }}>{avg}</Text>
-                <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>avg over {trendData.length} {trendData.length === 1 ? 'night' : 'nights'}</Text>
+                <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium' }}>Avg over {trendData.length} {trendData.length === 1 ? 'night' : 'nights'}</Text>
               </View>
             )}
           </View>

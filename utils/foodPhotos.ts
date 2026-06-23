@@ -61,6 +61,19 @@ export async function deleteFoodPhotoCloud(foodId: string): Promise<void> {
   try { await deleteObject(r); } catch {}
 }
 
+// Full cleanup for a food being deleted: local cache file + stored key + cloud copy.
+// Safe no-op if the food never had a photo. Use when deleting the FOOD itself (not a
+// single diary entry) so no orphaned image is left behind in Storage.
+export async function purgeFoodPhoto(foodId: string): Promise<void> {
+  if (!foodId) return;
+  try {
+    const f = new FSFile(localPhotoPath(foodId));
+    if (f.exists) f.delete();
+  } catch {}
+  try { await AsyncStorage.removeItem(photoKey(foodId)); } catch {}
+  await deleteFoodPhotoCloud(foodId);
+}
+
 // Resolve a displayable LOCAL uri for a food's photo. Handles, in order:
 //  - local cache hit -> use it (and backfill-upload if the stored ref is a legacy
 //    local path, so the photo becomes cloud-safe going forward);

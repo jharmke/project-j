@@ -15,6 +15,7 @@ import CustomFoodCreator from '../components/CustomFoodCreator';
 import { USDA_API_KEY } from '../config';
 import { db, getUserId, loadFromFirebase, saveToFirebase } from '../firebaseConfig';
 import { storageSet } from '../utils/storage';
+import { purgeFoodPhoto } from '../utils/foodPhotos';
 import { getMealDisplayName, MealSlot, loadMealSlots } from '../utils/mealSlots';
 import { useTheme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
@@ -1221,6 +1222,8 @@ const openFoodDetail = async (food: SearchResult) => {
           setMyFoods(updated);
           await storageSet('pj_my_foods', JSON.stringify(updated));
           saveToFirebase('my_foods', 'foods', updated).catch(() => {});
+          // Clean up this food's photo (local + cloud) so no orphan is left behind.
+          if ((food as any)?.id) purgeFoodPhoto((food as any).id).catch(() => {});
         }},
       ]
     );

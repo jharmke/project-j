@@ -12,8 +12,8 @@
 // uploads any legacy local-only photo still on the device so it becomes cloud-safe.
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
-import * as FileSystem from 'expo-file-system';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Directory, File as FSFile, Paths } from 'expo-file-system/next';
 import { storage, auth } from '../firebaseConfig';
 
@@ -34,17 +34,23 @@ function cloudRef(foodId: string) {
   return ref(storage, `users/${uid}/food_photos/${safeIdOf(foodId)}.jpg`);
 }
 
-// Upload a local image file to Storage; returns the download URL, or null on failure
-// / no auth (caller falls back to local-only and a later backfill picks it up).
-export async function uploadFoodPhoto(foodId: string, localUri: string): Promise<string | null> {
+// Upload a local image file to Storage; returns the download URL (url) or, on
+// failure / no auth, url:null plus an error string for diagnostics. Caller falls
+// back to local-only and a later backfill picks it up.
+export async function uploadFoodPhoto(foodId: string, localUri: string): Promise<{ url: string | null; error?: string }> {
   const r = cloudRef(foodId);
-  if (!r) return null;
+  if (!r) return { url: null, error: 'not signed in (no uid)' };
   try {
-    const base64 = await FileSystem.readAsStringAsync(localUri, { encoding: 'base64' });
-    await uploadString(r, base64, 'base64', { contentType: 'image/jpeg' });
-    return await getDownloadURL(r);
-  } catch {
-    return null;
+    // Fetch the local file into a (file-backed) Blob and upload it. base64/uploadString
+    // fails in RN ("Creating blobs from ArrayBuffer ... not supported"); a fetched Blob
+    // is the supported Expo/Firebase Storage path.
+    const response = await fetch(localUri);
+    const blob = await response.blob();
+    await uploadBytes(r, blob, { contentType: 'image/jpeg' });
+    const url = await getDownloadURL(r);
+    return { url };
+  } catch (e: any) {
+    return { url: null, error: e?.message || String(e) };
   }
 }
 
@@ -71,7 +77,7 @@ export async function resolveFoodPhoto(foodId: string): Promise<string | null> {
 
   if (localFile.exists) {
     if (!isCloudUrl(stored)) {
-      const url = await uploadFoodPhoto(foodId, localPath);
+      const { url } = await uploadFoodPhoto(foodId, localPath);
       if (url) { try { await AsyncStorage.setItem(photoKey(foodId), url); } catch {} }
     }
     return localPath;

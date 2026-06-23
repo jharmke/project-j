@@ -1103,7 +1103,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
       showToast('Photo saved', undefined, 'success');
       // Upload to cloud so it survives a reinstall; store the cloud URL (falls back to
       // the local path if offline / not signed in -- the next load backfills it).
-      const url = await uploadFoodPhoto(foodId, destUri);
+      const { url } = await uploadFoodPhoto(foodId, destUri);
       await AsyncStorage.setItem(`pj_food_photo_${foodId}`, url || destUri);
     } catch (e: any) {
       showToast('Photo save failed', e?.message || 'Please try again', 'error');

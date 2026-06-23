@@ -365,10 +365,21 @@ function BibleCard({ theme }: { theme: Theme }) {
   const activePlans = READING_PLANS.filter(p => !!planStore[p.id]);
   const activeDevs = DEVOTIONALS.filter(d => !!devStore[d.id]);
 
+  // Pilot surface treatment (Bible & Plans card only): on the 4 light-family themes the 6%
+  // amber tile wash vanished into the card, so lift insets to a clean bright surface; dark
+  // already floats its tiles, so keep its token. Filled-amber buttons take white text on the
+  // light family (dark amber) and near-black on dark (light amber).
+  const isDark = theme.id === 'dark';
+  // Warm brown ink instead of the cold near-black textPrimary on the light family (keeps the
+  // faith warmth while staying readable); dark keeps its light textPrimary.
+  const inkText = isDark ? theme.textPrimary : '#4a3214';
+  // One unified warm-tan tint for every filled box + button on the card (kills the muddy 3-shade mix).
+  const tintBg = isDark ? theme.bgTileFaith : theme.accentAmber + '16';
+  const tintBorder = isDark ? theme.borderCard : theme.accentAmber + '38';
+
   return (
     <>
-      <View ref={cardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCardFaith, overflow: 'hidden', borderTopWidth: theme.id === 'warm' ? 1.5 : 0.5, borderTopColor: theme.id === 'warm' ? 'rgba(212,134,10,0.5)' : 'rgba(212,134,10,0.22)' }]}>
-        <LinearGradient colors={[theme.accentAmber + '2E', theme.accentAmber + '00']} locations={[0, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 64, borderTopLeftRadius: 14, borderTopRightRadius: 14 }} pointerEvents="none" />
+      <View ref={cardRef} collapsable={false} style={[styles.card, { backgroundColor: isDark ? theme.bgCardFaith : 'rgba(250,244,232,0.92)', overflow: 'hidden', borderTopWidth: 2, borderTopColor: 'rgba(212,134,10,0.55)' }]}>
         <Ionicons name="book" size={130} color={theme.accentAmber} style={styles.cardWatermark} pointerEvents="none" />
         <View style={[styles.cardLabelRow, { justifyContent: 'space-between' }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -384,7 +395,7 @@ function BibleCard({ theme }: { theme: Theme }) {
           <>
             <PressButton
               onPress={() => openReader({ openBook: lastRead.book, openChapter: String(lastRead.chapter) })}
-              style={[styles.bibleContinueBtn, { backgroundColor: theme.bgTileFaithStrong, borderColor: 'rgba(212,134,10,0.3)' }]}
+              style={[styles.bibleContinueBtn, { backgroundColor: tintBg, borderColor: tintBorder }]}
             >
               <View style={{ flex: 1 }}>
                 <Text style={[styles.bibleContinueLabel, { color: theme.textMuted }]}>CONTINUE READING</Text>
@@ -394,7 +405,7 @@ function BibleCard({ theme }: { theme: Theme }) {
             </PressButton>
             <PressButton
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setGuideOpen(true); }}
-              style={[styles.bibleFindBtn, { backgroundColor: theme.bgTileFaith, borderColor: 'rgba(212,134,10,0.3)' }]}
+              style={[styles.bibleFindBtn, { backgroundColor: tintBg, borderColor: tintBorder }]}
             >
               <Ionicons name="compass-outline" size={15} color={theme.accentAmber} />
               <Text style={[styles.bibleFindBtnText, { color: theme.accentAmber }]}>Find something to read</Text>
@@ -402,7 +413,7 @@ function BibleCard({ theme }: { theme: Theme }) {
           </>
         ) : (
           <>
-            <Text style={[styles.bibleTitle, { color: theme.accentAmber }]}>Read the Bible</Text>
+            <Text style={[styles.bibleTitle, { color: inkText }]}>Read the Bible</Text>
             <Text style={[styles.bibleFirstSub, { color: theme.textSecondary }]}>
               Not sure where to begin? Start with a guided pick, or jump straight in.
             </Text>
@@ -410,7 +421,7 @@ function BibleCard({ theme }: { theme: Theme }) {
               <PressButton
                 wrapperStyle={{ flex: 1 }}
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setGuideOpen(true); }}
-                style={[styles.bibleBtnPrimary, { backgroundColor: theme.bgTileFaith, borderColor: 'rgba(212,134,10,0.3)' }]}
+                style={[styles.bibleBtnPrimary, { backgroundColor: tintBg, borderColor: tintBorder }]}
               >
                 <Ionicons name="compass-outline" size={15} color={theme.accentAmber} />
                 <Text style={[styles.bibleBtnPrimaryText, { color: theme.accentAmber }]}>Where do I start?</Text>
@@ -418,7 +429,7 @@ function BibleCard({ theme }: { theme: Theme }) {
               <PressButton
                 wrapperStyle={{ flex: 1 }}
                 onPress={() => openReader({ openBook: 'John', openChapter: '1' })}
-                style={[styles.bibleBtnSecondary, { backgroundColor: theme.bgTileFaith, borderColor: 'rgba(212,134,10,0.3)' }]}
+                style={[styles.bibleBtnSecondary, { backgroundColor: tintBg, borderColor: tintBorder }]}
               >
                 <Text style={[styles.bibleBtnSecondaryText, { color: theme.accentAmber }]}>Open the Bible</Text>
               </PressButton>
@@ -505,6 +516,17 @@ function PlansColumn({ theme, label, emptyText, items, atCap, onBrowse, colRef }
   onBrowse: () => void;
   colRef?: RefObject<View | null>;
 }) {
+  // Same pilot surface rule as the Bible strip: lift insets off the card on the light family,
+  // keep dark on its already-floating token. Local to this card until the look is approved.
+  const isDark = theme.id === 'dark';
+  const inkText = isDark ? theme.textPrimary : '#4a3214';
+  const tileSurface = isDark ? theme.bgTileFaith : 'rgba(255,255,255,0.92)'; // empty-state Browse btn
+  // Tinted identity box for the plan/devotional tiles, modeled on the Sleep Last Night stat boxes:
+  // soft amber tint + a defined amber border + an icon chip, so each reads as a contained warm box
+  // instead of a flat row. Dark keeps its solid elevated tile fill (already floats on the dark card).
+  const tintBg = isDark ? theme.bgTileFaith : theme.accentAmber + '16';
+  const tintBorder = isDark ? theme.borderCard : theme.accentAmber + '38';
+  const chipBg = theme.accentAmber + (isDark ? '2e' : '24');
   return (
     <View ref={colRef} collapsable={false} style={styles.plansCol}>
       <Text style={[styles.colLabel, { color: theme.textMuted }]}>{label}</Text>
@@ -513,7 +535,7 @@ function PlansColumn({ theme, label, emptyText, items, atCap, onBrowse, colRef }
           <Text style={[styles.emptyColText, { color: theme.textSecondary }]}>{emptyText}</Text>
           <PressButton
             onPress={onBrowse}
-            style={[styles.emptyBrowseBtn, { backgroundColor: theme.bgTileFaith, borderColor: 'rgba(212,134,10,0.4)' }]}
+            style={[styles.emptyBrowseBtn, { backgroundColor: tileSurface, borderColor: 'rgba(212,134,10,0.4)' }]}
           >
             <Text style={[styles.emptyBrowseText, { color: theme.accentAmber }]}>Browse</Text>
           </PressButton>
@@ -524,19 +546,21 @@ function PlansColumn({ theme, label, emptyText, items, atCap, onBrowse, colRef }
             <PressCard
               key={it.id}
               onPress={it.onPress}
-              style={[styles.tile, { backgroundColor: theme.bgTileFaith, borderColor: theme.borderCard, borderLeftColor: theme.accentAmber }]}
+              style={[styles.tile, { backgroundColor: tintBg, borderColor: tintBorder }]}
             >
               <View style={styles.tileTop}>
-                <Ionicons name={it.icon as any} size={14} color={theme.accentAmber} />
-                <Text numberOfLines={1} style={[styles.tileName, { color: theme.accentAmber }]}>{it.name}</Text>
+                <View style={[styles.tileChip, { backgroundColor: chipBg }]}>
+                  <Ionicons name={it.icon as any} size={14} color={theme.accentAmber} />
+                </View>
+                <Text numberOfLines={1} style={[styles.tileName, { color: inkText }]}>{it.name}</Text>
               </View>
               <TileProgress progress={it.progress} refLabel={it.ref} theme={theme} />
             </PressCard>
           ))}
           {!atCap && (
             <PressButton onPress={onBrowse} style={styles.browseLink}>
-              <Ionicons name="add" size={14} color={theme.textMuted} />
-              <Text style={[styles.browseLinkText, { color: theme.textMuted }]}>Browse</Text>
+              <Ionicons name="add" size={14} color={theme.textDim} />
+              <Text style={[styles.browseLinkText, { color: theme.textDim }]}>Browse</Text>
             </PressButton>
           )}
         </>
@@ -604,6 +628,13 @@ function PrayerCard({ theme }: { theme: Theme }) {
   const preview = active.slice(0, 3);
   const nothing = prayers.length === 0;
 
+  // Calm-card + tinted-box treatment (same as the Bible card): clean near-white card on the light
+  // family, warm-brown ink, amber-tinted preview boxes so they pop against the calm card.
+  const isDark = theme.id === 'dark';
+  const inkText = isDark ? theme.textPrimary : '#4a3214';
+  const tintBg = isDark ? theme.bgTileFaith : theme.accentAmber + '16';
+  const tintBorder = isDark ? theme.borderCard : theme.accentAmber + '38';
+
   const openScreen = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/prayer'); };
 
   // The card body scales on press (project card-press standard) and navigates to the full
@@ -611,8 +642,7 @@ function PrayerCard({ theme }: { theme: Theme }) {
   // answered count is NOT shown on the card; it lives as a hero on the prayer screen instead.
   return (
     <Animated.View style={{ transform: [{ scale }] }}>
-      <View ref={cardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCardFaith, overflow: 'hidden', borderTopWidth: theme.id === 'warm' ? 1.5 : 0.5, borderTopColor: theme.id === 'warm' ? 'rgba(212,134,10,0.5)' : 'rgba(212,134,10,0.22)' }]}>
-        <LinearGradient colors={[theme.accentAmber + '2E', theme.accentAmber + '00']} locations={[0, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 64, borderTopLeftRadius: 14, borderTopRightRadius: 14 }} pointerEvents="none" />
+      <View ref={cardRef} collapsable={false} style={[styles.card, { backgroundColor: isDark ? theme.bgCardFaith : 'rgba(250,244,232,0.92)', overflow: 'hidden', borderTopWidth: 2, borderTopColor: 'rgba(212,134,10,0.55)' }]}>
         <MaterialCommunityIcons name="hand-heart" size={130} color={theme.accentAmber} style={styles.cardWatermark} pointerEvents="none" />
         <TouchableOpacity
           activeOpacity={0.9}
@@ -638,8 +668,8 @@ function PrayerCard({ theme }: { theme: Theme }) {
           ) : preview.length > 0 ? (
             <View style={{ marginTop: 6 }}>
               {preview.map(p => (
-                <View key={p.id} style={[styles.prayerPreviewBox, { backgroundColor: theme.bgTileFaith, borderColor: theme.borderCard, borderLeftColor: theme.accentAmber }]}>
-                  <Text numberOfLines={1} style={[styles.prayerPreviewText, { color: theme.accentAmber }]}>{p.text}</Text>
+                <View key={p.id} style={[styles.prayerPreviewBox, { backgroundColor: tintBg, borderColor: tintBorder }]}>
+                  <Text numberOfLines={1} style={[styles.prayerPreviewText, { color: inkText }]}>{p.text}</Text>
                 </View>
               ))}
               {active.length > preview.length && (
@@ -655,7 +685,7 @@ function PrayerCard({ theme }: { theme: Theme }) {
         <View ref={askRef} collapsable={false}>
           <TouchableOpacity
             onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/prayer', params: { autoOpenRequest: '1' } }); }}
-            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: 'rgba(212,134,10,0.10)', borderColor: 'rgba(212,134,10,0.30)', borderWidth: 1, borderRadius: 6, paddingVertical: 9, paddingHorizontal: 12, minHeight: 44, marginTop: 8 }}
+            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, backgroundColor: tintBg, borderColor: tintBorder, borderWidth: 1, borderRadius: 6, paddingVertical: 9, paddingHorizontal: 12, minHeight: 44, marginTop: 8 }}
           >
             <Ionicons name="people" size={12} color={theme.accentAmber} />
             <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: theme.accentAmber }}>Ask for prayer</Text>
@@ -695,7 +725,7 @@ const styles = StyleSheet.create({
   bibleBtnSecondaryText:{ fontSize: 13, fontFamily: 'DMSans_600SemiBold' },
   // Prayer preview card.
   prayerEmpty:        { fontSize: 13, fontFamily: 'DMSans_400Regular', lineHeight: 20, marginTop: 2, fontStyle: 'italic' },
-  prayerPreviewBox:   { borderRadius: 10, borderWidth: 1, borderLeftWidth: 3, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 7, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.12, shadowRadius: 3, elevation: 2 },
+  prayerPreviewBox:   { borderRadius: 12, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 11, marginBottom: 7, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.12, shadowRadius: 3, elevation: 2 },
   prayerPreviewText:  { fontSize: 15, fontFamily: 'Lora_500Medium', lineHeight: 22 },
   prayerPreviewMore:  { fontSize: 11, fontFamily: 'DMSans_600SemiBold', marginTop: 2, marginLeft: 2 },
   // Bible and Plans card: the divider + the two active-plan / active-devotional columns.
@@ -707,9 +737,10 @@ const styles = StyleSheet.create({
   // Clean surface tile with a 3px amber left accent bar (the settings pattern), so amber reads as an
   // accent instead of a fill. Name is Lora serif (the "set apart" font, matching prayers + the
   // Continue Reading ref). Background / borders come from theme tokens (set inline per card).
-  tile:            { borderRadius: 10, borderWidth: 1, borderLeftWidth: 3, padding: 10, marginBottom: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.12, shadowRadius: 3, elevation: 2 },
-  tileTop:         { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
-  tileName:        { flex: 1, fontSize: 14, fontFamily: 'Lora_500Medium', lineHeight: 18 },
+  tile:            { borderRadius: 12, borderWidth: 1, padding: 12, marginBottom: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.12, shadowRadius: 3, elevation: 2 },
+  tileTop:         { flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 8 },
+  tileChip:        { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },
+  tileName:        { flex: 1, fontSize: 13, fontFamily: 'Lora_500Medium', lineHeight: 17 },
   tileBarTrack:    { height: 5, borderRadius: 3, overflow: 'hidden' },
   tileBarFill:     { height: 5, borderRadius: 3 },
   tileCaptionRow:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 5, gap: 6 },

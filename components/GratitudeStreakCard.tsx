@@ -10,7 +10,6 @@ import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-nativ
 import { useToast } from './Toast';
 import TooltipIcon from './TooltipIcon';
 import { CardWash } from './GradientCard';
-import { LinearGradient } from 'expo-linear-gradient';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -89,15 +88,22 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
   // Faith-tab skin. The 'home' branch of every value is the exact current token, so the home
   // card renders identically; only the faith variant swaps the cool blue accent for warm gold.
   const faith = variant === 'faith';
+  const isDark = t.id === 'dark';
+  // Faith calm-card + tinted-box treatment (matches the Bible/Prayer cards): clean near-white card
+  // + warm-brown ink + amber-tinted entry box, light family only. Home variant is fully untouched
+  // (every faith value stays gated behind `faith`).
+  const inkText    = isDark ? t.textPrimary : '#4a3214';
+  const tintBg     = isDark ? t.bgTileFaith : t.accentAmber + '16';
+  const tintBorder = isDark ? t.borderCard : t.accentAmber + '38';
   const accent      = faith ? t.accentAmber : t.accentBlueRaw;          // hero, flame, week dots, watermark
   const cardBorder  = faith ? 'rgba(212,134,10,0.22)' : t.borderCard;
-  const cardTop     = faith ? (t.id === 'warm' ? 'rgba(212,134,10,0.5)' : 'rgba(212,134,10,0.22)') : t.accentBlueRaw;
-  const cardBg      = faith ? t.bgCardFaith : t.bgCard;                 // faint warm tint on the faith tab only
-  const btnBg       = faith ? 'rgba(212,134,10,0.10)' : t.accentBlueBg;
-  const btnBorder   = faith ? 'rgba(212,134,10,0.30)' : t.accentBlueBorder;
+  const cardTop     = faith ? 'rgba(212,134,10,0.55)' : t.accentBlueRaw;     // visible amber identity edge
+  const cardBg      = faith ? (isDark ? t.bgCardFaith : 'rgba(250,244,232,0.92)') : t.bgCard; // warm eggshell on the faith tab (light family)
+  const btnBg       = faith ? tintBg : t.accentBlueBg;                       // one unified warm tan (matches the entry box)
+  const btnBorder   = faith ? tintBorder : t.accentBlueBorder;
   const btnText     = faith ? t.accentAmber : t.accentBlue;
-  const entryFill   = faith ? t.bgTileFaith : t.bgInput;
-  const entryBorder = faith ? t.borderCard : t.borderInput;
+  const entryFill   = faith ? tintBg : t.bgInput;
+  const entryBorder = faith ? tintBorder : t.borderInput;
 
   useFocusEffect(useCallback(() => { loadData(); }, [todayKey]));
 
@@ -301,9 +307,9 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
   const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
   return (
-    <View ref={cardRef} style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder, borderTopColor: cardTop, borderTopWidth: faith ? (t.id === 'warm' ? 1.5 : 0.5) : 1.5, overflow: 'hidden' }]}>
+    <View ref={cardRef} style={[styles.card, { backgroundColor: cardBg, borderColor: cardBorder, borderTopColor: cardTop, borderTopWidth: faith ? 2 : 1.5, overflow: 'hidden' }]}>
       {faith
-        ? <LinearGradient colors={[t.accentAmber + '2E', t.accentAmber + '00']} locations={[0, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 64, borderTopLeftRadius: 14, borderTopRightRadius: 14 }} pointerEvents="none" />
+        ? null
         : <CardWash color={t.accentBlueRaw} radius={14} />}
       <Ionicons name="heart" size={130} color={accent} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />
 
@@ -389,10 +395,10 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
 
       {/* Scripture */}
       <View style={{ marginBottom: 12 }}>
-        <Text style={{ fontFamily: 'DMSans_400Regular', fontSize: 12, color: t.textSecondary, fontStyle: 'italic', lineHeight: 18 }}>
+        <Text style={{ fontFamily: faith ? 'Lora_500Medium' : 'DMSans_400Regular', fontSize: faith ? 14 : 12, color: t.textSecondary, fontStyle: faith ? 'normal' : 'italic', lineHeight: faith ? 21 : 18, textAlign: faith ? 'center' : 'left' }}>
           "{verse.text}"
         </Text>
-        <Text style={{ fontFamily: 'DMSans_600SemiBold', fontSize: 10, color: t.accentAmber, marginTop: 4, letterSpacing: 0.5 }}>
+        <Text style={{ fontFamily: 'DMSans_600SemiBold', fontSize: 10, color: t.accentAmber, marginTop: 4, letterSpacing: 0.5, textAlign: faith ? 'center' : 'left' }}>
           {verse.ref}
         </Text>
       </View>
@@ -400,9 +406,9 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
       {/* Logged state */}
       {cardState === 'logged' ? (
         <>
-          <View style={[styles.entryBox, { backgroundColor: entryFill, borderColor: entryBorder, borderLeftWidth: faith ? 3 : 1, borderLeftColor: faith ? accent : entryBorder }]}>
+          <View style={[styles.entryBox, { backgroundColor: entryFill, borderColor: entryBorder, borderLeftWidth: 1, borderLeftColor: entryBorder }]}>
             <Text style={[styles.entryLabel, { color: t.textMuted }]}>Today's Entry</Text>
-            <Text style={{ fontFamily: 'DMSans_400Regular', fontSize: 14, color: t.textPrimary, lineHeight: 20 }}>
+            <Text style={{ fontFamily: 'DMSans_400Regular', fontSize: 14, color: faith ? inkText : t.textPrimary, lineHeight: 20 }}>
               {loggedEntry}
             </Text>
           </View>

@@ -14,6 +14,7 @@ import { ToastRenderer, useToast } from '../components/Toast';
 import * as FileSystem from 'expo-file-system';
 import { Directory, File as FSFile, Paths } from 'expo-file-system/next';
 import * as ImagePicker from 'expo-image-picker';
+import { resolveFoodPhoto, uploadFoodPhoto, deleteFoodPhotoCloud } from '../utils/foodPhotos';
 import { ACHIEVEMENTS, checkAndUnlock, loadAchievements, checkMomentumAchievements, checkNutritionAchievements, getCelebTier } from '../achievementData';
 import { showAchievementToast } from '../components/AchievementToast';
 import { showCelebration } from '../components/CelebrationOverlay';
@@ -448,14 +449,10 @@ const isTutorialMode = tutorialMode === 'true';
     if (!foodId) return;
     (async () => {
       try {
-        const uri = await AsyncStorage.getItem(`pj_food_photo_${foodId}`);
-        if (!uri) return;
-        const file = new FSFile(uri);
-        if (file.exists) {
-          setPhotoUri(uri);
-        } else {
-          await AsyncStorage.removeItem(`pj_food_photo_${foodId}`);
-        }
+        // Resolves the local cache, or re-downloads from cloud on a reinstall, or
+        // backfills a legacy local-only photo up to the cloud. Returns a local uri.
+        const local = await resolveFoodPhoto(foodId);
+        if (local) setPhotoUri(local);
       } catch {}
     })();
   }, []);
@@ -1100,11 +1097,14 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
       if (destFile.exists) destFile.delete();
       const srcFile = new FSFile(sourceUri);
       srcFile.copy(destFile);
-      await AsyncStorage.setItem(`pj_food_photo_${foodId}`, destUri);
       setPhotoUri(destUri);
       setShowPhotoFullscreen(false);
       triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
       showToast('Photo saved', undefined, 'success');
+      // Upload to cloud so it survives a reinstall; store the cloud URL (falls back to
+      // the local path if offline / not signed in -- the next load backfills it).
+      const url = await uploadFoodPhoto(foodId, destUri);
+      await AsyncStorage.setItem(`pj_food_photo_${foodId}`, url || destUri);
     } catch (e: any) {
       showToast('Photo save failed', e?.message || 'Please try again', 'error');
     }
@@ -1121,6 +1121,7 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
             const file = new FSFile(photoUri);
             if (file.exists) file.delete();
             await AsyncStorage.removeItem(`pj_food_photo_${foodId}`);
+            deleteFoodPhotoCloud(foodId).catch(() => {}); // remove the cloud copy too
             setPhotoUri(null);
             setShowPhotoFullscreen(false);
             showToast('Photo removed', undefined, 'success');

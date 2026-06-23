@@ -111,28 +111,29 @@ const CARD_REGISTRY: CardMeta[] = [
   { id: 'vs_yesterday',     label: 'Challenge',          description: 'Your active challenge, live', defaultVisible: true },
 ];
 
-const DEFAULT_ORDER: CardId[] = [
+export const DEFAULT_ORDER: CardId[] = [
   'verse', 'smart_tip', 'calories', 'macros', 'water', 'weight', 'workout',
   'steps', 'sleep', 'gratitude_streak', 'reading_plans',
   'daily_note', 'vs_yesterday',
 ];
-const DEFAULT_VISIBLE: Record<CardId, boolean> = Object.fromEntries(
+export const DEFAULT_VISIBLE: Record<CardId, boolean> = Object.fromEntries(
   CARD_REGISTRY.map(c => [c.id, c.defaultVisible])
 ) as Record<CardId, boolean>;
 
 
 
-// Mode-specific default card orders -- only applied on fresh install (no saved cardOrder)
-const DISCIPLINE_ORDER: CardId[] = [
+// Mode-specific default card orders. Applied on fresh install, and on demand when
+// the user picks "Use defaults" in the Settings coaching-mode switch modal.
+export const DISCIPLINE_ORDER: CardId[] = [
   'verse', 'calories', 'workout', 'sleep', 'macros', 'steps', 'water', 'weight',
   'vs_yesterday', 'gratitude_streak', 'reading_plans', 'daily_note',
 ];
-const MINDFUL_ORDER: CardId[] = [
+export const MINDFUL_ORDER: CardId[] = [
   'verse', 'gratitude_streak', 'sleep', 'calories', 'workout', 'water', 'steps',
   'weight', 'reading_plans', 'daily_note', 'vs_yesterday',
 ];
 // Mindful hides macros by default -- users can add via Edit Layout
-const MINDFUL_VISIBLE: Record<CardId, boolean> = {
+export const MINDFUL_VISIBLE: Record<CardId, boolean> = {
   ...DEFAULT_VISIBLE,
   macros: false,
 };
@@ -1684,6 +1685,24 @@ export default function HomeScreen() {
           const sd = JSON.parse(settingsData);
           if (sd.workoutTags && Array.isArray(sd.workoutTags)) setWorkoutTags(sd.workoutTags);
           if (sd.styleMode) setStyleMode(sd.styleMode);
+          // Refresh card layout on focus too (mirrors the mount-time loadLayout), so a
+          // "Use defaults" layout change made in Settings shows when returning to Home.
+          {
+            const fMode = sd.styleMode || 'balanced';
+            const fDefOrder = fMode === 'discipline' ? DISCIPLINE_ORDER : fMode === 'mindful' ? MINDFUL_ORDER : DEFAULT_ORDER;
+            const fDefVisible = fMode === 'mindful' ? MINDFUL_VISIBLE : DEFAULT_VISIBLE;
+            if (sd.cardOrder && Array.isArray(sd.cardOrder)) {
+              setCardOrder([...sd.cardOrder, ...fDefOrder.filter(id => !sd.cardOrder.includes(id))]
+                .filter((id: CardId) => CARD_REGISTRY.some(c => c.id === id)));
+            } else {
+              setCardOrder(fDefOrder);
+            }
+            if (sd.cardVisible && typeof sd.cardVisible === 'object') {
+              setCardVisible({ ...fDefVisible, ...sd.cardVisible });
+            } else {
+              setCardVisible(fDefVisible);
+            }
+          }
           if (sd.faithJourney) setFaithJourney(sd.faithJourney);
           if (sd.burnAccuracyPct !== undefined) setBurnAccuracyPct(sd.burnAccuracyPct);
           if (sd.devForceSleepManual !== undefined) setDevForceSleepManual(sd.devForceSleepManual);

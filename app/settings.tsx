@@ -21,6 +21,7 @@ import { app, auth, db, saveToFirebase } from '../firebaseConfig';
 import { shouldSync, uploadAllLocal, resetRestoreGate } from '../services/syncService';
 import { storageSet } from '../utils/storage';
 import { setOnboardingPreview } from '../utils/onboardingPreview';
+import { DEFAULT_ORDER, DEFAULT_VISIBLE, DISCIPLINE_ORDER, MINDFUL_ORDER, MINDFUL_VISIBLE, type CardId } from './(tabs)/index';
 import { generateDiagnosticReport, ReportWindow, dumpWindowComparison } from '../utils/diagnosticReport';
 import { dumpDayScoreWithRecovery } from '../utils/dayScoreStore';
 import { probeStreakExclusions } from '../utils/streakExclusion';
@@ -561,6 +562,12 @@ export default function SettingsScreen() {
   const sheetAnim = useRef(new Animated.Value(300)).current;
   const overlayAnim = useRef(new Animated.Value(0)).current;
 
+  // ── Coaching-mode switch modal ────────────────────────────────────────────
+  const [modeSwitchTarget, setModeSwitchTarget] = useState<'discipline' | 'balanced' | 'mindful' | null>(null);
+  const [applyLayoutDefaults, setApplyLayoutDefaults] = useState(false);
+  const modeModalScale = useRef(new Animated.Value(0.85)).current;
+  const modeModalOpacity = useRef(new Animated.Value(0)).current;
+
   // ── Goal profile state ────────────────────────────────────────────────────
   const [goalProfile, setGoalProfile] = useState<GoalProfile>(DEFAULT_GOAL_PROFILE);
   const [savedGoalProfile, setSavedGoalProfile] = useState<GoalProfile>(DEFAULT_GOAL_PROFILE);
@@ -988,6 +995,42 @@ export default function SettingsScreen() {
       const current = saved ? JSON.parse(saved) : {};
       await storageSet('pj_settings', JSON.stringify({ ...current, [key]: value }));
     } catch (e) {}
+  };
+
+  // Coaching-mode switch modal copy + handlers.
+  const MODE_LABEL: Record<'discipline' | 'balanced' | 'mindful', string> = { discipline: 'Discipline', balanced: 'Balanced', mindful: 'Mindful' };
+  const MODE_SWITCH_COPY: Record<'discipline' | 'balanced' | 'mindful', string> = {
+    discipline: 'This mode is for people who mean it. Tight calorie targets, direct feedback, and full accountability. Ready to commit?',
+    balanced: 'Encouraging and forgiving. Wide calorie targets, positive language, and steady progress.',
+    mindful: 'No judgment, no color coding. Numbers are just information, and showing up is the win.',
+  };
+  const closeModeModal = (after?: () => void) => {
+    Animated.parallel([
+      Animated.timing(modeModalScale, { toValue: 0.85, duration: 150, useNativeDriver: true }),
+      Animated.timing(modeModalOpacity, { toValue: 0, duration: 150, useNativeDriver: true }),
+    ]).start(() => { setModeSwitchTarget(null); after?.(); });
+  };
+  const confirmModeSwitch = async () => {
+    if (!modeSwitchTarget) return;
+    const m = modeSwitchTarget;
+    const didLayout = applyLayoutDefaults;
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      // Read-then-merge: never wipe other pj_settings keys. Layout defaults only
+      // written when the user opted in via the toggle, so their cards stay otherwise.
+      const saved = await AsyncStorage.getItem('pj_settings');
+      const current = saved ? JSON.parse(saved) : {};
+      const next: any = { ...current, styleMode: m };
+      if (didLayout) {
+        next.cardOrder = m === 'discipline' ? DISCIPLINE_ORDER : m === 'mindful' ? MINDFUL_ORDER : DEFAULT_ORDER;
+        next.cardVisible = m === 'mindful' ? MINDFUL_VISIBLE : DEFAULT_VISIBLE;
+      }
+      await storageSet('pj_settings', JSON.stringify(next));
+      setStyleMode(m);
+      closeModeModal(() => showToast(`Switched to ${MODE_LABEL[m]}`, didLayout ? 'Home layout reset to defaults' : undefined, 'success'));
+    } catch {
+      closeModeModal(() => showToast('Could not switch mode', undefined, 'error'));
+    }
   };
 
   const updateNotifSettings = async (updated: NotificationSettings) => {
@@ -1438,29 +1481,8 @@ export default function SettingsScreen() {
                   onPress={() => {
                     if (isActive) return;
                     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-                    if (key === 'discipline') {
-                      Alert.alert(
-                        'Switch to Discipline',
-                        'This mode is for people who mean it. Tight calorie targets, direct feedback, and full accountability. Ready to commit?',
-                        [
-                          { text: 'Not yet', style: 'cancel' },
-                          { text: "I'm in", onPress: async () => { setStyleMode('discipline'); await saveSetting('styleMode', 'discipline'); } },
-                        ]
-                      );
-                    } else {
-                      const descriptions: Record<string, string> = {
-                        balanced: 'Encouraging and forgiving. Wide calorie targets, positive language, steady progress.',
-                        mindful: 'No judgment, no color coding. Celebrate showing up. Numbers are just information.',
-                      };
-                      Alert.alert(
-                        `Switch to ${label}`,
-                        descriptions[key],
-                        [
-                          { text: 'Cancel', style: 'cancel' },
-                          { text: 'Switch', onPress: async () => { setStyleMode(key); await saveSetting('styleMode', key); } },
-                        ]
-                      );
-                    }
+                    setApplyLayoutDefaults(false);
+                    setModeSwitchTarget(key);
                   }}
                   activeOpacity={0.7}
                 >
@@ -3165,6 +3187,65 @@ export default function SettingsScreen() {
           </View>
         </Animated.View>
       </KeyboardAvoidingView>
+
+      {/* Coaching-mode switch modal (centered card, replaces the old iOS Alert) */}
+      <Modal
+        visible={!!modeSwitchTarget}
+        transparent
+        animationType="none"
+        onRequestClose={() => closeModeModal()}
+        onShow={() => {
+          modeModalScale.setValue(0.85);
+          modeModalOpacity.setValue(0);
+          Animated.parallel([
+            Animated.spring(modeModalScale, { toValue: 1, useNativeDriver: true, damping: 22, stiffness: 300 }),
+            Animated.timing(modeModalOpacity, { toValue: 1, duration: 150, useNativeDriver: true }),
+          ]).start();
+        }}
+      >
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Animated.View style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.55)', opacity: modeModalOpacity }]} pointerEvents="none" />
+          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeModeModal(); }} />
+          <Animated.View style={{
+            width: '86%', backgroundColor: theme.bgSheet, borderRadius: 20, borderWidth: 0.5, borderColor: theme.borderCard,
+            borderTopWidth: 4, borderTopColor: theme.accentBlueRaw, overflow: 'hidden',
+            shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.45, shadowRadius: 28, elevation: 24,
+            transform: [{ scale: modeModalScale }], opacity: modeModalOpacity,
+          }}>
+            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeModeModal(); }} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 6 }} hitSlop={{ top: 12, bottom: 12, left: 60, right: 60 }}>
+              <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
+            </TouchableOpacity>
+            {modeSwitchTarget && (
+              <View style={{ paddingHorizontal: 20, paddingBottom: 18, paddingTop: 4 }}>
+                <Text style={{ fontSize: 24, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.accentBlue, textAlign: 'center', marginBottom: 8 }}>
+                  Switch to {MODE_LABEL[modeSwitchTarget]}?
+                </Text>
+
+                <Text style={{ fontSize: 13.5, lineHeight: 20, fontFamily: 'DMSans_400Regular', color: theme.textMuted, textAlign: 'center', marginBottom: 16 }}>
+                  {MODE_SWITCH_COPY[modeSwitchTarget]}
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.bgInput, borderRadius: 12, borderWidth: 0.5, borderColor: theme.borderInput, padding: 12, marginBottom: 16 }}>
+                  <View style={{ flex: 1, paddingRight: 12 }}>
+                    <Text style={{ fontSize: 14, fontFamily: 'DMSans_500Medium', color: theme.textPrimary, marginBottom: 2 }}>Apply {MODE_LABEL[modeSwitchTarget]} layout</Text>
+                    <Text style={{ fontSize: 11, lineHeight: 16, fontFamily: 'DMSans_400Regular', color: theme.textMuted }}>Off keeps your current home cards. On rearranges them to this mode's defaults.</Text>
+                  </View>
+                  <ToggleSwitch value={applyLayoutDefaults} onValueChange={val => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setApplyLayoutDefaults(val); }} />
+                </View>
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeModeModal(); }} activeOpacity={0.8}
+                    style={{ flex: 1, paddingVertical: 13, borderRadius: 10, borderWidth: 1, borderColor: theme.borderCard, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary }}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={confirmModeSwitch} activeOpacity={0.85}
+                    style={{ flex: 1, paddingVertical: 13, borderRadius: 10, backgroundColor: theme.accentBlueRaw, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: '#ffffff' }}>{modeSwitchTarget === 'discipline' ? "I'm In" : 'Switch'}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+          </Animated.View>
+        </View>
+      </Modal>
 
       {/* Time picker modal for notification settings */}
       <Modal

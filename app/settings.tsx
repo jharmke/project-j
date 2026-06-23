@@ -22,7 +22,7 @@ import { shouldSync, uploadAllLocal, resetRestoreGate } from '../services/syncSe
 import { storageSet } from '../utils/storage';
 import { setOnboardingPreview } from '../utils/onboardingPreview';
 import { DEFAULT_ORDER, DEFAULT_VISIBLE, DISCIPLINE_ORDER, MINDFUL_ORDER, MINDFUL_VISIBLE, type CardId } from './(tabs)/index';
-import { resolveMaxHR, zoneBounds, timeInZones, fmtZoneTime, ageFromBirthday } from '../utils/hrZones';
+import { resolveMaxHR, zoneBounds, timeInZones, fmtZoneTime, ageFromBirthday, tanakaMaxHR } from '../utils/hrZones';
 import { generateDiagnosticReport, ReportWindow, dumpWindowComparison } from '../utils/diagnosticReport';
 import { dumpDayScoreWithRecovery } from '../utils/dayScoreStore';
 import { probeStreakExclusions } from '../utils/streakExclusion';
@@ -406,6 +406,9 @@ export default function SettingsScreen() {
   const [notifTutorialActive, setNotifTutorialActive] = useState(false);
   const [faithJourney, setFaithJourney] = useState<FaithJourney>('rooted');
   const [burnAccuracyPct, setBurnAccuracyPct] = useState(100);
+  const [hrMaxOverride, setHrMaxOverride] = useState<number | null>(null);
+  const [hrMaxInput, setHrMaxInput] = useState('');
+  const [hrZoneModel, setHrZoneModel] = useState<'hrr' | 'maxhr'>('hrr');
   // Vacation Mode (own Settings section)
   const [vacationForceOpen, setVacationForceOpen] = useState(false);
   const vacCardRef = useRef<any>(null);
@@ -762,6 +765,8 @@ export default function SettingsScreen() {
           if (data.mindfulGrowthAreas !== undefined) setMindfulGrowthAreas(data.mindfulGrowthAreas);
           if (data.faithJourney) setFaithJourney(data.faithJourney);
           if (data.burnAccuracyPct !== undefined) setBurnAccuracyPct(data.burnAccuracyPct);
+          if (data.hrMaxOverride !== undefined && data.hrMaxOverride !== null) { setHrMaxOverride(data.hrMaxOverride); setHrMaxInput(String(data.hrMaxOverride)); }
+          if (data.hrZoneModel === 'maxhr' || data.hrZoneModel === 'hrr') setHrZoneModel(data.hrZoneModel);
           if (data.devForceSleepManual !== undefined) setDevForceSleepManual(data.devForceSleepManual);
           if (data.devProUnlocked !== undefined) setDevProUnlocked(data.devProUnlocked);
         }
@@ -997,6 +1002,19 @@ export default function SettingsScreen() {
       await storageSet('pj_settings', JSON.stringify({ ...current, [key]: value }));
     } catch (e) {}
   };
+
+  // HR max override: save on blur. Empty reverts to the age estimate; valid 100-230 saves.
+  const saveHrMax = async () => {
+    const trimmed = hrMaxInput.trim();
+    if (trimmed === '') { setHrMaxOverride(null); setHrMaxInput(''); await saveSetting('hrMaxOverride', null); return; }
+    const n = parseInt(trimmed, 10);
+    if (Number.isFinite(n) && n >= 100 && n <= 230) {
+      setHrMaxOverride(n); setHrMaxInput(String(n)); await saveSetting('hrMaxOverride', n);
+    } else {
+      setHrMaxInput(hrMaxOverride != null ? String(hrMaxOverride) : ''); // revert invalid entry
+    }
+  };
+  const hrMaxEstimate = (() => { const a = ageFromBirthday(goalProfile.birthday); return a ? tanakaMaxHR(a) : null; })();
 
   // Coaching-mode switch modal copy + handlers.
   const MODE_LABEL: Record<'discipline' | 'balanced' | 'mindful', string> = { discipline: 'Discipline', balanced: 'Balanced', mindful: 'Mindful' };
@@ -1545,7 +1563,7 @@ export default function SettingsScreen() {
         </CollapsibleSection>
 
         {/* ── Health ── */}
-        <CollapsibleSection label="Health" subtitle="Burn Accuracy · Apple Health" defaultOpen={false} theme={theme}>
+        <CollapsibleSection label="Health" subtitle="Burn Accuracy · HR Zones · Apple Health" defaultOpen={false} theme={theme}>
           <View style={{ paddingHorizontal: 16, paddingBottom: 16, gap: 10 }}>
             <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', flex: 1 }}>Active Calorie Accuracy</Text>
@@ -1575,6 +1593,62 @@ export default function SettingsScreen() {
                 e.g. Apple reports 400 kcal active → you use {Math.round(400 * burnAccuracyPct / 100)} kcal in your net
               </Text>
             )}
+          </View>
+
+          {/* Heart Rate Zones */}
+          <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 4, marginBottom: 10, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', flex: 1 }}>Heart Rate Zones</Text>
+            <TooltipIcon tooltipKey="hr_zones" />
+          </View>
+          <View style={{ paddingHorizontal: 16, paddingBottom: 16, gap: 14 }}>
+            <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, lineHeight: 18 }}>
+              These set how your training zones are calculated from each recorded workout.
+            </Text>
+
+            <View>
+              <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Max Heart Rate</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <TextInput
+                  value={hrMaxInput}
+                  onChangeText={setHrMaxInput}
+                  onEndEditing={saveHrMax}
+                  onBlur={saveHrMax}
+                  keyboardType="number-pad"
+                  placeholder={hrMaxEstimate ? String(hrMaxEstimate) : '188'}
+                  placeholderTextColor={theme.textDim}
+                  style={[styles.goalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, flex: 1, marginBottom: 0 }]}
+                />
+                <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted }}>bpm</Text>
+              </View>
+              <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textMuted, lineHeight: 16, marginTop: 6 }}>
+                {hrMaxOverride != null
+                  ? `Using your number, ${hrMaxOverride} bpm.`
+                  : `Leave blank to use the estimate${hrMaxEstimate ? ` (${hrMaxEstimate} bpm, based on your age)` : ''}. Only set your own if you know it from a test or race.`}
+              </Text>
+            </View>
+
+            <View>
+              <Text style={[styles.goalLabel, { color: theme.textMuted }]}>Zones</Text>
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                {([['hrr', 'Personalized'], ['maxhr', 'Max HR']] as const).map(([val, label]) => (
+                  <TouchableOpacity
+                    key={val}
+                    onPress={async () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setHrZoneModel(val); await saveSetting('hrZoneModel', val); }}
+                    style={{
+                      flex: 1, paddingVertical: 10, borderRadius: 8, alignItems: 'center', borderWidth: 1,
+                      borderColor: hrZoneModel === val ? theme.accentBlueBorder : theme.borderInput,
+                      backgroundColor: hrZoneModel === val ? theme.accentBlueBg : theme.bgInput,
+                    }}>
+                    <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: hrZoneModel === val ? theme.accentBlue : theme.textMuted }}>{label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textMuted, lineHeight: 16, marginTop: 6 }}>
+                {hrZoneModel === 'hrr'
+                  ? 'Personalized uses your resting heart rate, so your zones fit your fitness.'
+                  : 'Max HR uses a simple percentage of your maximum heart rate.'}
+              </Text>
+            </View>
           </View>
 
           <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 4, marginBottom: 12 }}>

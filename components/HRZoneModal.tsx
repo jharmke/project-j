@@ -94,7 +94,8 @@ export default function HRZoneModal({ visible, loading, data, onClose }: Props) 
       sec: data.belowZ1,
     },
   ] : [];
-  const maxSec = Math.max(1, ...rows.map(r => r.sec));
+  // Each bar = that zone's share of the total tracked time (bars sum to 100%).
+  const totalSec = Math.max(1, rows.reduce((a, r) => a + r.sec, 0));
 
   const usingKarvonen = data?.model === 'hrr' && data.restingHR != null;
   const methodValue = data
@@ -160,7 +161,7 @@ export default function HRZoneModal({ visible, loading, data, onClose }: Props) 
                     <View style={{ flex: 1, height: 10, borderRadius: 5, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
                       <Animated.View style={{
                         height: '100%', borderRadius: 5, backgroundColor: r.color,
-                        width: barProgress.interpolate({ inputRange: [0, 1], outputRange: ['0%', `${Math.round((r.sec / maxSec) * 100)}%`] }),
+                        width: barProgress.interpolate({ inputRange: [0, 1], outputRange: ['0%', `${Math.round((r.sec / totalSec) * 100)}%`] }),
                       }} />
                     </View>
                     <Text style={{ width: 50, textAlign: 'right', fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5, color: r.sec > 0 ? theme.textPrimary : theme.textDim }}>

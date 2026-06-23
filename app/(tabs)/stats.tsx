@@ -14,6 +14,7 @@ import { DayDetailContent } from '../day-detail';
 import { useTheme } from '../../theme';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import { CardPeriod, ChartType, DATA_KEY_CATEGORIES, DATA_KEY_META, DataKey, DEFAULT_STATS_CARDS, StatsCard, availableChartTypes, generateCardId, loadStatsCards, saveStatsCards } from '../../statsCardRegistry';
+import HRZonesStatsCard from '../../components/HRZonesStatsCard';
 import { ToastRenderer, useToast } from '../../components/Toast';
 import { EMPTY_TREND_DATA, TrendData, fetchTrendData as fetchTrendDataUtil, offsetToDateKey, computeDayNet, buildDailyBmrMap } from '../../utils/statsData';
 import { evaluateCalorieGoalHit, paceTargetFromWeightGoal } from '../../utils/goalHit';
@@ -2024,6 +2025,11 @@ export default function StatsScreen() {
                     </>
                   )}
                 </View>
+              </CollapsibleSection>
+            );
+            if (section.systemKey === 'hrZones') return (
+              <CollapsibleSection key={section.id} label={section.label} subtitle="Workout heart rate breakdown" defaultOpen={isFirst} theme={theme} first={isFirst}>
+                <HRZonesStatsCard />
               </CollapsibleSection>
             );
             if (section.systemKey === 'calendar') return (

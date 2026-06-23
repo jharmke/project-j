@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageSet } from './utils/storage';
 
 export type StatsCardType = 'system' | 'graph';
-export type SystemCardKey = 'atAGlance' | 'trends' | 'records' | 'streaks' | 'challenges' | 'calendar' | 'reports';
+export type SystemCardKey = 'atAGlance' | 'trends' | 'records' | 'streaks' | 'challenges' | 'hrZones' | 'calendar' | 'reports';
 export type DataKey =
   // Nutrition
   'calories' | 'macros' | 'netCalories' | 'water' | 'advancedNutrition' |
@@ -52,9 +52,10 @@ export const DEFAULT_STATS_CARDS: StatsCard[] = [
   // System cards (below graphs)
   { id: 'sys_records',    type: 'system', systemKey: 'records',    label: 'Records',    visible: true, order: 8,  period: 7, placement: 'stats' },
   { id: 'sys_streaks',    type: 'system', systemKey: 'streaks',    label: 'Streaks',    visible: true, order: 9,  period: 7, placement: 'stats' },
-  { id: 'sys_challenges', type: 'system', systemKey: 'challenges', label: 'Challenges', visible: true, order: 10, period: 7, placement: 'stats' },
-  { id: 'sys_calendar',   type: 'system', systemKey: 'calendar',   label: 'Calendar',   visible: true, order: 11, period: 7, placement: 'stats' },
-  { id: 'sys_reports',    type: 'system', systemKey: 'reports',    label: 'Reports',    visible: true, order: 12, period: 30, placement: 'stats' },
+  { id: 'sys_challenges', type: 'system', systemKey: 'challenges', label: 'Challenges',    visible: true, order: 10, period: 7, placement: 'stats' },
+  { id: 'sys_hrZones',    type: 'system', systemKey: 'hrZones',    label: 'Heart Rate Zones', visible: true, order: 11, period: 7, placement: 'stats' },
+  { id: 'sys_calendar',   type: 'system', systemKey: 'calendar',   label: 'Calendar',      visible: true, order: 12, period: 7, placement: 'stats' },
+  { id: 'sys_reports',    type: 'system', systemKey: 'reports',    label: 'Reports',       visible: true, order: 13, period: 30, placement: 'stats' },
 ];
 
 const LEGACY_NUTRITION_KEY_MAP: Record<string, string> = {
@@ -75,13 +76,19 @@ export async function loadStatsCards(): Promise<StatsCard[]> {
         if (c.type === 'graph' && c.dataKey && LEGACY_NUTRITION_KEY_MAP[c.dataKey as string]) {
           return { ...c, dataKey: 'advancedNutrition' as DataKey, nutrientKey: LEGACY_NUTRITION_KEY_MAP[c.dataKey as string] };
         }
+        // System-section labels are not user-editable, so always sync them to the current
+        // registry default (lets us rename a section without stranding the old saved label).
+        if (c.type === 'system') {
+          const def = DEFAULT_STATS_CARDS.find(d => d.id === c.id);
+          if (def && def.label !== c.label) return { ...c, label: def.label };
+        }
         return c;
       });
     const removed = await getRemovedDefaultIds();
     // A newly-added default normally appends at the end. For sections that belong
     // next to a sibling (not at the bottom), drop them just after that sibling via
     // a fractional order so existing users don't get them stranded at the bottom.
-    const INSERT_AFTER: Record<string, string> = { sys_challenges: 'sys_streaks' };
+    const INSERT_AFTER: Record<string, string> = { sys_challenges: 'sys_streaks', sys_hrZones: 'sys_challenges' };
     const merged = [...migrated];
     for (const def of DEFAULT_STATS_CARDS) {
       if (removed.includes(def.id)) continue;

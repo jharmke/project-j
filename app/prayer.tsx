@@ -58,6 +58,7 @@ export default function PrayerScreen() {
   const params = useLocalSearchParams();
   const isTutorial = params.tutorial === '1';
   const scrollRef = useRef<ScrollView>(null);
+  const fabScale = useRef(new Animated.Value(1)).current;
   const { registerScrollView, unregisterScrollView } = useTutorial();
   const heroRef = useTutorialTarget('faith_prayer_hero');
   const rowRef = useTutorialTarget('faith_prayer_row');
@@ -185,9 +186,9 @@ export default function PrayerScreen() {
           )}
           <TouchableOpacity
             onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setRequestOpen(true); }}
-            style={[styles.headerBtn, { backgroundColor: 'rgba(212,134,10,0.10)', borderColor: 'rgba(212,134,10,0.30)' }]}
+            style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
           >
-            <Ionicons name="people" size={14} color={theme.accentAmber} />
+            <Ionicons name="people" size={14} color={theme.accentBlue} />
           </TouchableOpacity>
         </View>
       </View>
@@ -281,13 +282,17 @@ export default function PrayerScreen() {
 
       {/* Add FAB (bottom-right; the faith Halo FAB lives bottom-left on the faith tab, no clash). */}
       <View ref={addRef} collapsable={false} style={[styles.fab, { bottom: insets.bottom + 24 }]}>
-        <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); setAddOpen(true); }}
-          style={[styles.fabBtn, { backgroundColor: GOLD }]}
-        >
-          <Ionicons name="add" size={28} color="#fff" />
-        </TouchableOpacity>
+        <Animated.View style={{ transform: [{ scale: fabScale }] }}>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPressIn={() => Animated.timing(fabScale, { toValue: 0.9, duration: 100, useNativeDriver: true }).start()}
+            onPressOut={() => Animated.timing(fabScale, { toValue: 1, duration: 150, useNativeDriver: true }).start()}
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); setAddOpen(true); }}
+            style={[styles.fabBtn, { backgroundColor: GOLD }]}
+          >
+            <Ionicons name="add" size={28} color="#fff" />
+          </TouchableOpacity>
+        </Animated.View>
       </View>
 
       <AddPrayerModal

@@ -350,9 +350,12 @@ function PlanRow({
   onDrop?: () => void;
   disabled?: boolean;
 }) {
+  // Calm warm card to match the faith tab: eggshell on the light family (warm theme brightens so it
+  // lifts off its warm page), dark keeps its card color.
+  const isDark = theme.id === 'dark';
   return (
     <View style={[styles.card, {
-      backgroundColor: theme.bgCard,
+      backgroundColor: isDark ? theme.bgCard : theme.id === 'warm' ? 'rgba(255,253,248,0.96)' : 'rgba(250,244,232,0.92)',
       borderColor: `rgba(${GOLD_RGB},0.22)`,
       borderTopColor: `rgba(${GOLD_RGB},0.6)`,
     }]}>
@@ -366,7 +369,7 @@ function PlanRow({
         </View>
       </View>
 
-      <Text style={[styles.cardDesc, { color: theme.textSecondary }]}>{description}</Text>
+      <Text style={[styles.cardDesc, { color: isDark ? theme.textSecondary : '#4a3214' }]}>{description}</Text>
 
       {progress && (
         <View style={styles.progressWrap}>

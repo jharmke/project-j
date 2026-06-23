@@ -74,7 +74,6 @@ export default function AddPrayerModal({ visible, onClose, onAdded, editPrayer }
   };
 
   const handleSave = async () => {
-    console.log('[PRAYERMODAL] add onPress fired. canSave=', text.trim().length > 0 && !saving);
     if (!text.trim() || saving) return;
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     setSaving(true);
@@ -99,8 +98,7 @@ export default function AddPrayerModal({ visible, onClose, onAdded, editPrayer }
       <TouchableOpacity
         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: theme.overlayBg }}
         activeOpacity={1}
-        onPressIn={() => console.log('[PRAYERMODAL] backdrop onPressIn')}
-        onPress={() => { console.log('[PRAYERMODAL] backdrop onPress'); close(); }}
+        onPress={close}
       />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -162,14 +160,12 @@ export default function AddPrayerModal({ visible, onClose, onAdded, editPrayer }
 
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <TouchableOpacity
-              onPressIn={() => console.log('[PRAYERMODAL] cancel onPressIn')}
-              onPress={() => { console.log('[PRAYERMODAL] cancel onPress'); triggerHaptic(Haptics.ImpactFeedbackStyle.Light); close(); }}
+              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); close(); }}
               style={{ flex: 1, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 12, backgroundColor: theme.bgInput }}
             >
               <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted }}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPressIn={() => console.log('[PRAYERMODAL] add onPressIn')}
               onPress={handleSave}
               disabled={!canSave}
               style={{

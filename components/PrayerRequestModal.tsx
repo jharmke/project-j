@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { useRef, useState } from 'react';
 import { Animated, KeyboardAvoidingView, Modal, Platform, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { triggerHaptic } from '@/utils/haptics';
 import { auth, db } from '../firebaseConfig';
 import { useTheme } from '../theme';
 import { ToastRenderer, useToast } from './Toast';
@@ -40,6 +42,7 @@ export default function PrayerRequestModal({ visible, onClose, variant }: Props)
 
   const handleSend = async () => {
     if (!message.trim() || sending || !auth.currentUser) return;
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     setSending(true);
     try {
       await addDoc(collection(db, 'users', auth.currentUser.uid, 'prayer_requests'), {
@@ -80,7 +83,9 @@ export default function PrayerRequestModal({ visible, onClose, variant }: Props)
             borderColor: theme.borderCard,
             borderTopWidth: 1.5,
             borderTopColor: faith ? theme.accentAmber : theme.accentBlueRaw,
-            padding: 20,
+            paddingHorizontal: 20,
+            paddingTop: 8,
+            paddingBottom: 20,
             transform: [{ scale: scaleAnim }],
             opacity: opacityAnim,
             shadowColor: '#000',
@@ -89,7 +94,7 @@ export default function PrayerRequestModal({ visible, onClose, variant }: Props)
             shadowRadius: 12,
           }}
         >
-          <TouchableOpacity onPress={close} style={{ alignSelf: 'center', paddingVertical: 8, paddingHorizontal: 24, marginBottom: 4 }}>
+          <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); close(); }} style={{ alignSelf: 'center', paddingTop: 4, paddingBottom: 10, paddingHorizontal: 24, marginBottom: 6 }}>
             <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
           </TouchableOpacity>
 
@@ -128,7 +133,7 @@ export default function PrayerRequestModal({ visible, onClose, variant }: Props)
 
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <TouchableOpacity
-              onPress={close}
+              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); close(); }}
               style={{ flex: 1, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingVertical: 12, backgroundColor: theme.bgInput }}
             >
               <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted }}>Cancel</Text>

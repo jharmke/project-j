@@ -22,6 +22,7 @@ import { shouldSync, uploadAllLocal, resetRestoreGate } from '../services/syncSe
 import { storageSet } from '../utils/storage';
 import { setOnboardingPreview } from '../utils/onboardingPreview';
 import { DEFAULT_ORDER, DEFAULT_VISIBLE, DISCIPLINE_ORDER, MINDFUL_ORDER, MINDFUL_VISIBLE, type CardId } from './(tabs)/index';
+import { resolveMaxHR, zoneBounds, timeInZones, fmtZoneTime, ageFromBirthday } from '../utils/hrZones';
 import { generateDiagnosticReport, ReportWindow, dumpWindowComparison } from '../utils/diagnosticReport';
 import { dumpDayScoreWithRecovery } from '../utils/dayScoreStore';
 import { probeStreakExclusions } from '../utils/streakExclusion';
@@ -550,7 +551,7 @@ export default function SettingsScreen() {
     };
   }, []);
 
-  const { fetchHistoricalWorkouts, authorized, fetchOvernightRHR, dumpHRV } = useHealthKit();
+  const { fetchHistoricalWorkouts, authorized, fetchOvernightRHR, dumpHRV, fetchWorkoutWindows, fetchWorkoutHeartRate, fetchRecoverySignals } = useHealthKit();
 
   // ── Notification settings state ───────────────────────────────────────────
   const [notifSettings, setNotifSettings] = useState<NotificationSettings>(DEFAULT_NOTIFICATION_SETTINGS);
@@ -2295,6 +2296,55 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Last night: how many SDNN readings, and the average per sleep stage vs each method. Read-only, nothing saved.</Text>
               </View>
               <Ionicons name="pulse-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              try {
+                const windows = await fetchWorkoutWindows(30);
+                if (!windows.length) { Alert.alert('HR Zones', 'No Apple Health workouts found in the last 30 days.'); return; }
+                const prof = await AsyncStorage.getItem('pj_profile');
+                const birthday = prof ? JSON.parse(prof).birthday : null;
+                const age = ageFromBirthday(birthday);
+                const set = await AsyncStorage.getItem('pj_settings');
+                const sd = set ? JSON.parse(set) : {};
+                const manualOverride = sd.hrMaxOverride ?? null;
+                const model: 'hrr' | 'maxhr' = sd.hrZoneModel === 'maxhr' ? 'maxhr' : 'hrr';
+                const rec = await fetchRecoverySignals(7);
+                const restingHR = rec?.rhrBaseline ?? null;
+                const recent = windows.slice(0, 5);
+                const perWorkout: { name: string; durationSec: number; samples: { t: number; v: number }[] }[] = [];
+                let observedPeak: number | null = null;
+                for (const w of recent) {
+                  const samples = await fetchWorkoutHeartRate(w.startMs, w.endMs);
+                  const peak = samples.reduce((m, s) => (s.v > m ? s.v : m), 0);
+                  if (peak > 0 && (observedPeak === null || peak > observedPeak)) observedPeak = peak;
+                  perWorkout.push({ name: w.name, durationSec: w.durationSec, samples });
+                }
+                const { value: maxHR, source } = resolveMaxHR({ age, manualOverride, observedPeak });
+                if (!maxHR) { Alert.alert('HR Zones', 'No max HR available. Set a birthday in your profile, or record a workout so we can use your observed peak.'); return; }
+                const bounds = zoneBounds(maxHR, restingHR, model);
+                const head =
+                  `Max HR ${maxHR} (${source})\n` +
+                  `Model: ${model === 'hrr' ? `Karvonen / %HRR (resting ${restingHR ?? '-'})` : '%Max HR'}\n` +
+                  `Age ${age ?? '-'} · observed peak ${observedPeak ?? '-'} · ${recent.length} recent workouts\n`;
+                const zoneLines = 'ZONES:\n' + bounds.map(b => `  Z${b.z} ${b.name}: ${b.lo}-${b.hi} bpm`).join('\n');
+                const wlines = perWorkout.map(({ name, durationSec, samples }) => {
+                  if (!samples.length) return `\n${name} (${Math.round(durationSec / 60)}m): no HR data`;
+                  const r = timeInZones(samples, bounds);
+                  const zs = r.secs.map((s, i) => `Z${i + 1} ${fmtZoneTime(s)}`).join(' · ');
+                  return `\n${name} (${samples.length} samples, peak ${r.peak}):\n  ${zs}${r.belowZ1 > 1 ? `\n  below Z1: ${fmtZoneTime(r.belowZ1)}` : ''}`;
+                }).join('\n');
+                Alert.alert('HR Zones (dump)', `${head}\n${zoneLines}\n${wlines}`);
+              } catch {
+                Alert.alert('Error', 'Could not compute HR zones. Check the logs.');
+              }
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Dump HR Zones (recent workouts)</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Last 5 Apple Health workouts: max HR + source, zone bpm ranges, and time-in-zone per workout. Read-only, nothing saved.</Text>
+              </View>
+              <Ionicons name="speedometer-outline" size={18} color={theme.accentRed} />
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {

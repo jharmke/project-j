@@ -855,6 +855,47 @@ export function useHealthKit() {
     }
   };
 
+  // HR ZONES: recent workout time windows (start/end) from Apple Health workout sessions.
+  // Used to attach an HR-zone breakdown to each recorded workout. endMs computed from
+  // start + duration (robust across HealthKit shapes).
+  const fetchWorkoutWindows = async (days: number): Promise<{ uuid: string; name: string; startMs: number; endMs: number; durationSec: number }[]> => {
+    try {
+      const now = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+      startDate.setHours(0, 0, 0, 0);
+      const workouts = await queryWorkoutSamples({ limit: 500, filter: { date: { startDate, endDate: now } } });
+      if (!workouts || workouts.length === 0) return [];
+      return workouts.map((w: any) => {
+        const startMs = new Date(w.startDate).getTime();
+        const durationSec = w.duration?.quantity ?? 0;
+        const endMs = w.endDate ? new Date(w.endDate).getTime() : startMs + durationSec * 1000;
+        return {
+          uuid: w.uuid,
+          name: WORKOUT_TYPE_NAMES[w.workoutActivityType] ?? 'Workout',
+          startMs, endMs, durationSec,
+        };
+      }).sort((a, b) => b.startMs - a.startMs);
+    } catch { return []; }
+  };
+
+  // HR ZONES: raw heart-rate samples within a workout window, for time-in-zone math.
+  const fetchWorkoutHeartRate = async (startMs: number, endMs: number): Promise<{ t: number; v: number }[]> => {
+    try {
+      const hr = await queryQuantitySamples(
+        'HKQuantityTypeIdentifierHeartRate',
+        { unit: 'count/min', limit: 0, filter: { date: { startDate: new Date(startMs), endDate: new Date(endMs) } } }
+      );
+      const out: { t: number; v: number }[] = [];
+      for (const s of hr) {
+        const v = s.quantity as number;
+        if (!Number.isFinite(v) || v <= 0) continue;
+        out.push({ t: new Date(s.startDate).getTime(), v });
+      }
+      return out;
+    } catch { return []; }
+  };
+
   // HONEST connection signal. `authorized` only means "this device has HealthKit and we
   // asked for access" -- iOS resolves requestAuthorization successfully EVEN IF the user
   // denied, and never tells us read access was refused. So `authorized` being true does
@@ -871,5 +912,5 @@ export function useHealthKit() {
     bloodOxygen !== null || hrv !== null || vo2Max !== null ||
     cardioRecovery !== null || exerciseMinutes !== null;
 
-  return { authorized, hasHealthData, lastSyncedAt, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, sleepAwakeCount, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, hrv, exerciseMinutes, appleWorkouts, fetchTodayData, fetchHistoricalWorkouts, fetchSleepHistory, fetchLastNightSegments, fetchRecoverySignals, fetchOvernightRHR, dumpHRV };
+  return { authorized, hasHealthData, lastSyncedAt, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, sleepAwakeCount, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, hrv, exerciseMinutes, appleWorkouts, fetchTodayData, fetchHistoricalWorkouts, fetchSleepHistory, fetchLastNightSegments, fetchRecoverySignals, fetchOvernightRHR, fetchWorkoutWindows, fetchWorkoutHeartRate, dumpHRV };
 }

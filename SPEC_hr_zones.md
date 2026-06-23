@@ -1,0 +1,80 @@
+# SPEC: HR Zone Training
+
+Status: DESIGN IN PROGRESS (started 2026-06-23). Calculation foundation LOCKED with Justin. Display/surface + settings + build order still open.
+
+Roadmap origin: WORKOUT section, "HR Zone Training: 5-zone system, max HR (220-age default, user-settable), optional Karvonen. Stats: time-in-zone stacked bar." This spec supersedes that one-liner.
+
+Pure JS feature: raw heart-rate (`HKQuantityTypeIdentifierHeartRate`) is already an authorized HealthKit read (used by the recovery/RHR system) and `queryWorkoutSamples` already returns workout start/end. NO new permission, NO native rebuild.
+
+---
+
+## 1. Why we did the research (accuracy mandate)
+Justin's requirement: calculations must be relevant, useful, and accurate. We studied Garmin, Whoop, and the max-HR literature before locking anything.
+
+Findings:
+- **Garmin**: defaults to **%Max HR**, zones at 50/60/70/80/90/100% of max. Estimates max HR as 220-age then AUTO-RAISES from observed workout peaks. Offers %HRR as an option.
+- **Whoop**: defaults to **%HRR (Karvonen)** because it factors in resting HR (personalizes to fitness). Estimates max HR with the Gellish formula (not 220-age), nudges from real peak.
+- **Max-HR formula accuracy**: plain **220-age is the LEAST accurate** (biased, +/-10-12 bpm, worse for women and over-40). **Tanaka (208 - 0.7 x age)** is the validated best age-based formula (2001 meta-analysis of 351 studies). Most accurate practical approach used by both Garmin and Whoop: start from a formula, then trust the user's real observed peak HR when higher.
+
+Sources: Garmin HR-zone docs; WHOOP max-HR/zone docs; Tanaka vs 220-age studies (SciELO, SimpliFaster).
+
+---
+
+## 2. LOCKED calculation model (confirmed with Justin 2026-06-23)
+
+### 2.1 Zone model: %HRR default, %Max HR toggle
+- **Default = %HRR (Karvonen)**: zone bound = ((maxHR - restingHR) x pct) + restingHR. Chosen because it personalizes to fitness and we already compute a solid overnight resting HR.
+- **Toggle = %Max HR**: zone bound = maxHR x pct. Simpler Garmin-style; offered as a setting because it's cheap once the engine exists.
+
+### 2.2 Max HR: Tanaka + observed-peak auto-raise + manual override
+- Default estimate: **Tanaka = round(208 - 0.7 x age)** (age from profile birthday). NOT 220-age.
+- **Auto-raise**: if the user's recorded workout HR samples show a peak higher than the current estimate, use the observed peak (Garmin/Whoop behavior). Track the highest HR sample seen across workout windows.
+- **Manual override** always wins (settable in Settings).
+- Honest-numbers rule: the UI must show WHICH max HR is in use and its source (estimated / observed / manual). Never hide it.
+
+### 2.3 Resting HR (for Karvonen)
+- Use the same overnight resting HR the recovery system computes (the RHR baseline), the best resting value we have. Document the exact source field at build time.
+
+### 2.4 Zone boundaries (universal 5-zone split)
+Applied through whichever model is active. Below 50% = uncounted/rest (not a zone).
+- Z1 Warm Up: 50-60%
+- Z2 Fat Burn: 60-70%
+- Z3 Cardio: 70-80%
+- Z4 Threshold: 80-90%
+- Z5 Peak: 90-100%
+(Zone NAMES still subject to a final copy pass; these are the working set.)
+
+### 2.5 Time-in-zone computation
+For a given workout: query raw HR samples between workout start and end, assign each sample (or the interval it represents) to a zone by the active model, and sum duration per zone. Mirror the existing sleep-window HR query pattern in useHealthKit.
+
+---
+
+## 3. Data source + entry point (workout tab is day-based)
+- HR zones exist ONLY for workouts with recorded HR over a time window = real **Apple Health workout sessions** (imported as day rows with `fromAppleHealth: true`, `appleHealthUUID`, `appleStartDate`). The session END time must also be available (currently only start is stored on import; add appleEndDate or re-query).
+- The app's own **strength checkmarks are NOT time-bounded sessions** -> no HR window -> no zones, UNLESS the watch recorded the lift as an Apple workout (then it imports and qualifies).
+- Primary surface (LOCKED direction): **per-workout first** -- tapping a completed Apple Health cardio row in the workout tab opens its zone breakdown. Stats aggregate (time-in-zone stacked bar over 7/30d) is the fast-follow.
+
+---
+
+## 3a. LOCKED scope + display (confirmed with Justin 2026-06-23)
+- **Scope: RECORDED workouts only.** HR zones require continuous HR samples over the workout window, so they exist only for Apple Health workout sessions. Manual / watchless workouts get a clean non-judgmental EMPTY STATE ("HR zones need heart-rate data from a watch or tracker"); we NEVER fake or estimate them (honest-numbers). Building a manual workout tracker would NOT unlock zones (a phone can't measure HR during exercise), so the two are unrelated -- do not build manual tracking for this.
+  - Parked future edge: a workout logged manually in-app on a day the user WORE a watch has HR in Apple Health but we don't store the manual log's exact start time, so we can't pull the window. Could add a start-time field to manual logs later to enable it. Low value, parked.
+- **Display: horizontal STACKED BAR + rows, in a centered modal.** Entry point = a small "HR Zones >" chip on Apple Health cardio rows that have HR data (does NOT hijack the name-tap=instructions or the edit/delete/check buttons; only appears where zone data exists, so it is self-documenting). Bar chosen over a donut because zones are an ordered intensity ladder and need bpm-range + time labels (Garmin/Whoop/Apple all use bars). Justin is used to donuts from other trackers but agreed to try the bar; the chart is a cheap swap, so we prototype the bar on his REAL workout data and revisit a donut only if it does not land. Layout: name + duration header; proportional 5-segment stacked bar; 5 rows (zone name, bpm range, time); max HR value + source line; active model line; inline disclaimer.
+
+## 4. OPEN -- next design steps (not yet decided)
+- **4.2 Stats time-in-zone stacked bar**: aggregate surface over the 7/30D range (roadmap-named). After per-workout.
+- **4.3 Settings**: where max-HR override + model toggle live (likely a new block under Goals or Health).
+- **4.4 Zone colors**: the blue->green->yellow->orange->red convention vs the app's design-system tokens; must pass 5-theme audit.
+- **4.5 Empty states**: watchless / no-HR-recorded workout.
+- **4.6 Disclaimer**: inline micro disclaimer + first-use modal (max HR is an estimate, not medical). Per Build Standards.
+- **4.7 Mode-awareness**: zones shown factually in ALL modes; suppress prescriptive "spend more time in Z4" coaching in Mindful; Discipline/Balanced may show targets.
+- **4.8 Tooltip + tutorial**: (i) tooltip entry + eventual interactive tutorial per standards.
+
+---
+
+## 5. Build order (draft, refine as display locks)
+1. [BUILT 2026-06-23, NEEDS DEVICE VERIFY VIA DUMP] Calculation engine (util) + HR fetch + dev dump. utils/hrZones.ts: tanakaMaxHR, resolveMaxHR (manual > observed-peak > Tanaka estimate, returns source), zoneBounds (Karvonen %HRR or %Max, falls back to %Max if no resting HR), zoneForValue, timeInZones (attributes inter-sample interval to earlier sample's zone, clamps gaps > 30s so auto-pause doesn't dump time), fmtZoneTime, ageFromBirthday. HR_ZONES table (50/60/70/80/90/100%, universal blue->red colors). useHealthKit.ts: fetchWorkoutWindows(days) (workout start/end from queryWorkoutSamples) + fetchWorkoutHeartRate(startMs,endMs) (raw HR samples in window), both exposed. settings.tsx dev tool "Dump HR Zones (recent workouts)": last 5 Apple workouts, resolves max HR (age from pj_profile.birthday, resting from fetchRecoverySignals.rhrBaseline, override from pj_settings.hrMaxOverride, model from pj_settings.hrZoneModel default hrr), shows max HR + source, zone bpm ranges, and time-in-zone per workout. Read-only. tsc clean (16 pre-existing). VERIFY ON DEVICE: run the dump, sanity-check zone ranges + that time-in-zone roughly matches each workout's duration and feels right for the effort. THEN build UI.
+2. Per-workout display + entry point.
+3. Settings (max HR override + model toggle).
+4. Stats time-in-zone aggregate.
+5. Disclaimer + tooltip + tutorial + Mindful pass + 5-theme audit.

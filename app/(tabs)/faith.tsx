@@ -267,7 +267,9 @@ function VotdCard({ verse, theme, onReflect }: { verse: DailyVerse | null; theme
         borderTopColor: theme.id === 'warm' ? 'rgba(212,134,10,0.5)' : 'rgba(212,134,10,0.22)',
       }]}
     >
-      <LinearGradient colors={[theme.accentAmber + '2E', theme.accentAmber + '00']} locations={[0, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 64, borderTopLeftRadius: 14, borderTopRightRadius: 14 }} pointerEvents="none" />
+      {/* Inner warm wash on the light family only; on dark it reads muddy, so the card leans on
+          its amber glow (the card shadow) instead. */}
+      {theme.id !== 'dark' && <LinearGradient colors={[theme.accentAmber + '2E', theme.accentAmber + '00']} locations={[0, 1]} start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 64, borderTopLeftRadius: 14, borderTopRightRadius: 14 }} pointerEvents="none" />}
       <View style={[styles.verseLabelRow, { justifyContent: 'space-between' }]}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <Ionicons name="sunny-outline" size={11} color={theme.textMuted} />
@@ -379,7 +381,7 @@ function BibleCard({ theme }: { theme: Theme }) {
 
   return (
     <>
-      <View ref={cardRef} collapsable={false} style={[styles.card, { backgroundColor: isDark ? theme.bgCardFaith : 'rgba(250,244,232,0.92)', overflow: 'hidden', borderTopWidth: 2, borderTopColor: 'rgba(212,134,10,0.55)' }]}>
+      <View ref={cardRef} collapsable={false} style={[styles.card, { backgroundColor: isDark ? theme.bgCardFaith : theme.id === 'warm' ? 'rgba(255,253,248,0.96)' : 'rgba(250,244,232,0.92)', overflow: 'hidden', borderTopWidth: 2, borderTopColor: 'rgba(212,134,10,0.55)' }]}>
         <Ionicons name="book" size={130} color={theme.accentAmber} style={styles.cardWatermark} pointerEvents="none" />
         <View style={[styles.cardLabelRow, { justifyContent: 'space-between' }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -642,7 +644,7 @@ function PrayerCard({ theme }: { theme: Theme }) {
   // answered count is NOT shown on the card; it lives as a hero on the prayer screen instead.
   return (
     <Animated.View style={{ transform: [{ scale }] }}>
-      <View ref={cardRef} collapsable={false} style={[styles.card, { backgroundColor: isDark ? theme.bgCardFaith : 'rgba(250,244,232,0.92)', overflow: 'hidden', borderTopWidth: 2, borderTopColor: 'rgba(212,134,10,0.55)' }]}>
+      <View ref={cardRef} collapsable={false} style={[styles.card, { backgroundColor: isDark ? theme.bgCardFaith : theme.id === 'warm' ? 'rgba(255,253,248,0.96)' : 'rgba(250,244,232,0.92)', overflow: 'hidden', borderTopWidth: 2, borderTopColor: 'rgba(212,134,10,0.55)' }]}>
         <MaterialCommunityIcons name="hand-heart" size={130} color={theme.accentAmber} style={styles.cardWatermark} pointerEvents="none" />
         <TouchableOpacity
           activeOpacity={0.9}

@@ -98,7 +98,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
   const accent      = faith ? t.accentAmber : t.accentBlueRaw;          // hero, flame, week dots, watermark
   const cardBorder  = faith ? 'rgba(212,134,10,0.22)' : t.borderCard;
   const cardTop     = faith ? 'rgba(212,134,10,0.55)' : t.accentBlueRaw;     // visible amber identity edge
-  const cardBg      = faith ? (isDark ? t.bgCardFaith : 'rgba(250,244,232,0.92)') : t.bgCard; // warm eggshell on the faith tab (light family)
+  const cardBg      = faith ? (isDark ? t.bgCardFaith : t.id === 'warm' ? 'rgba(255,253,248,0.96)' : 'rgba(250,244,232,0.92)') : t.bgCard; // eggshell faith card; warm theme brightens so it lifts off its warm page
   const btnBg       = faith ? tintBg : t.accentBlueBg;                       // one unified warm tan (matches the entry box)
   const btnBorder   = faith ? tintBorder : t.accentBlueBorder;
   const btnText     = faith ? t.accentAmber : t.accentBlue;

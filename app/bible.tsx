@@ -116,7 +116,6 @@ export default function BibleScreen() {
   const { startTutorial, registerTutorialAction, unregisterTutorialAction } = useTutorial();
   const tutBookRef = useTutorialTarget('bible_tut_book');
   const tutVerseRef = useTutorialTarget('bible_tut_verse');
-  const tutBannerRef = useTutorialTarget('bible_tut_banner');
   const tutSunRef = useTutorialTarget('bible_tut_sun');
   const tutStarRef = useTutorialTarget('bible_tut_star');
   const tutGearRef = useTutorialTarget('bible_tut_gear');
@@ -273,13 +272,19 @@ export default function BibleScreen() {
       const d = tutDataRef.current;
       tutPrevHighlight.current = { verse: d.hv, ref: d.hvRef, text: d.hvText, ack: d.hvAck };
       stopAutoScroll();
-      scrollYShared.value = 0;
-      const first = d.verses[0];
-      if (first) {
-        setHighlightedVerse(first.verse);
-        setHighlightedVerseRef(`${d.book.name} ${d.chapter.chapter}:${first.verse}`);
-        setHighlightedVerseText(first.text);
+      // Highlight a verse a few rows down, NOT verse 1: verse 1 sits flush under the action banner
+      // so the two spotlights collide. Then scroll it clear of the banner so the spotlight has room.
+      const idx = Math.min(2, d.verses.length - 1);
+      const v = d.verses[idx];
+      if (v) {
+        setHighlightedVerse(v.verse);
+        setHighlightedVerseRef(`${d.book.name} ${d.chapter.chapter}:${v.verse}`);
+        setHighlightedVerseText(v.text);
         setHighlightedVerseAcknowledged(false);
+        const y = verseYPositions.current[v.verse];
+        scrollYShared.value = y != null ? Math.max(0, y - 200) : 0;
+      } else {
+        scrollYShared.value = 0;
       }
     });
     registerTutorialAction('bibleTutorialClear', async () => {
@@ -723,7 +728,7 @@ export default function BibleScreen() {
 
       {/* Reflect banner + favorite star */}
       {highlightedVerse !== null && highlightedVerseRef && (
-        <View ref={tutBannerRef} collapsable={false} style={[styles.acknowledgeBanner, {
+        <View style={[styles.acknowledgeBanner, {
           backgroundColor: highlightedVerseAcknowledged ? theme.accentGreenBg : theme.accentBlueBg,
           borderColor: highlightedVerseAcknowledged ? theme.accentGreenBorder : theme.accentBlueBorder,
         }]}>

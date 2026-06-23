@@ -2110,18 +2110,9 @@ export const TUTORIALS: Tutorial[] = [
         targetKey: 'bible_tut_verse',
         title: 'TAP A VERSE',
         body: {
-          discipline: 'Tap any verse to highlight it. That opens an action bar for everything you can do with it.',
-          balanced: 'Tap a verse to highlight it. A little action bar appears with what you can do next.',
-          mindful: 'Tap any verse that speaks to you. It highlights, and a few gentle options appear.',
-        },
-      },
-      {
-        targetKey: 'bible_tut_banner',
-        title: 'VERSE ACTIONS',
-        body: {
-          discipline: "This bar acts on the highlighted verse: reflect on it, save it, share it, bring it to Halo, or add it to your daily message.",
-          balanced: "This bar works on the verse you tapped. You can reflect, save, share, talk it over with Halo, or add it to Today's Message.",
-          mindful: "Everything here works with the verse you chose. Reflect on it, keep it, share it, sit with it through Halo, or add it to your day.",
+          discipline: 'Tap any verse to highlight it. An action bar appears at the top for everything you can do with it.',
+          balanced: 'Tap a verse to highlight it. An action bar appears up top with what you can do next.',
+          mindful: 'Tap any verse that speaks to you. It highlights, and a small action bar appears up top.',
         },
       },
       {
@@ -2144,21 +2135,12 @@ export const TUTORIALS: Tutorial[] = [
       },
       {
         targetKey: 'bible_tut_gear',
+        tutorialAction: 'bibleTutorialClear',
         title: 'MAKE IT YOURS',
         body: {
-          discipline: 'The gear sets your font, text size, and auto-scroll speed. The star button up top opens your saved Favorites.',
-          balanced: 'Tap the gear for reading settings: font, size, and auto-scroll. The star button up here opens your saved verses.',
-          mindful: 'The gear lets you set a font, size, and a calm auto-scroll. The star button up top holds the verses you have saved.',
-        },
-      },
-      {
-        targetKey: 'none',
-        tutorialAction: 'bibleTutorialClear',
-        title: 'MANAGE YOUR ROTATION',
-        body: {
-          discipline: "On your Today's Message card, tap the gear to manage the rotation: cycle daily or pin one verse, turn the curated verses on or off, and remove ones you added.",
-          balanced: "Back on your Today's Message card, the gear manages all of this: cycle daily or pin one, turn the curated verses on or off, and remove any you added. You are set.",
-          mindful: "On your Today's Message card, the gear is where you shape it all: let it cycle or pin one verse, keep the curated verses or not, and remove any you added. Take your time with it.",
+          discipline: "This gear sets your font, text size, and auto-scroll. To manage your rotation, your Today's Message card has its own gear: cycle or pin, curate the list, and remove ones you added.",
+          balanced: "Tap this gear for reading settings: font, size, and auto-scroll. To shape your rotation, your Today's Message card has its own gear: cycle or pin, curate, and remove.",
+          mindful: "This gear holds your reading settings: font, size, and a calm auto-scroll. And your Today's Message card has its own gear to shape the rotation whenever you are ready.",
         },
       },
     ],

@@ -109,8 +109,8 @@ export default function HRZonesStatsCard() {
   }, [data, loading]);
 
   const rows = data ? [
-    ...data.bounds.map((b, i) => ({ key: `z${b.z}`, label: `Z${b.z} ${b.name}`, color: b.color, sec: data.secs[i] ?? 0 })).reverse(),
-    { key: 'below', label: 'Below Zone', color: theme.textDim, sec: data.belowZ1 },
+    ...data.bounds.map((b, i) => ({ key: `z${b.z}`, label: `Z${b.z} ${b.name}`, range: `${b.lo}-${b.hi} bpm`, color: b.color, sec: data.secs[i] ?? 0 })).reverse(),
+    { key: 'below', label: 'Below Zone', range: `under ${data.bounds[0]?.lo ?? 0} bpm`, color: theme.textDim, sec: data.belowZ1 },
   ] : [];
   // Bars show each zone's SHARE of total tracked time (bars sum to 100%), so "full"
   // means a real fraction of your time, not just "longest bar wins."
@@ -163,18 +163,27 @@ export default function HRZonesStatsCard() {
         </View>
       ) : (
         <>
-          {rows.map(r => (
-            <View key={r.key} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 9 }}>
-              <View style={{ width: 92, flexDirection: 'row', alignItems: 'center', gap: 5, paddingRight: 8 }}>
-                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: r.color }} />
-                <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary }} numberOfLines={1}>{r.label}</Text>
+          {rows.map(r => {
+            const pct = Math.round((r.sec / totalSec) * 100);
+            return (
+              <View key={r.key} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+                <View style={{ width: 96, paddingRight: 8 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: r.color }} />
+                    <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary }} numberOfLines={1}>{r.label}</Text>
+                  </View>
+                  <Text style={{ fontSize: 9.5, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginLeft: 13 }}>{r.range}</Text>
+                </View>
+                <View style={{ flex: 1, height: 10, borderRadius: 5, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
+                  <Animated.View style={{ height: '100%', borderRadius: 5, backgroundColor: r.color, width: barProgress.interpolate({ inputRange: [0, 1], outputRange: ['0%', `${pct}%`] }) }} />
+                </View>
+                <View style={{ width: 56, alignItems: 'flex-end', paddingLeft: 6 }}>
+                  <Text style={{ fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5, color: r.sec > 0 ? theme.textPrimary : theme.textDim }}>{fmtZoneTime(r.sec)}</Text>
+                  <Text style={{ fontSize: 10, fontFamily: 'DMSans_500Medium', color: theme.textMuted }}>{pct}%</Text>
+                </View>
               </View>
-              <View style={{ flex: 1, height: 10, borderRadius: 5, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
-                <Animated.View style={{ height: '100%', borderRadius: 5, backgroundColor: r.color, width: barProgress.interpolate({ inputRange: [0, 1], outputRange: ['0%', `${Math.round((r.sec / totalSec) * 100)}%`] }) }} />
-              </View>
-              <Text style={{ width: 54, textAlign: 'right', fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5, color: r.sec > 0 ? theme.textPrimary : theme.textDim }}>{fmtZoneTime(r.sec)}</Text>
-            </View>
-          ))}
+            );
+          })}
           <View style={{ marginTop: 6, borderTopWidth: 0.5, borderTopColor: theme.borderCard, paddingTop: 10 }}>
             <View style={{ flexDirection: 'row', alignItems: 'baseline', marginBottom: 6 }}>
               <Text style={{ width: 66, fontSize: 11, letterSpacing: 0.3, fontFamily: 'DMSans_700Bold', color: theme.textMuted }}>Max HR</Text>

@@ -149,26 +149,30 @@ export default function HRZoneModal({ visible, loading, data, onClose }: Props) 
             ) : (
               <>
                 {/* Zone bars */}
-                {rows.map(r => (
-                  <View key={r.key} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-                    <View style={{ width: 96, paddingRight: 8 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: r.color }} />
-                        <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary }} numberOfLines={1}>{r.label}</Text>
+                {rows.map(r => {
+                  const pct = Math.round((r.sec / totalSec) * 100);
+                  return (
+                    <View key={r.key} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+                      <View style={{ width: 96, paddingRight: 8 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+                          <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: r.color }} />
+                          <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary }} numberOfLines={1}>{r.label}</Text>
+                        </View>
+                        <Text style={{ fontSize: 9.5, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginLeft: 13 }}>{r.range}</Text>
                       </View>
-                      <Text style={{ fontSize: 9.5, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginLeft: 13 }}>{r.range}</Text>
+                      <View style={{ flex: 1, height: 10, borderRadius: 5, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
+                        <Animated.View style={{
+                          height: '100%', borderRadius: 5, backgroundColor: r.color,
+                          width: barProgress.interpolate({ inputRange: [0, 1], outputRange: ['0%', `${pct}%`] }),
+                        }} />
+                      </View>
+                      <View style={{ width: 56, alignItems: 'flex-end', paddingLeft: 6 }}>
+                        <Text style={{ fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5, color: r.sec > 0 ? theme.textPrimary : theme.textDim }}>{fmtZoneTime(r.sec)}</Text>
+                        <Text style={{ fontSize: 10, fontFamily: 'DMSans_500Medium', color: theme.textMuted }}>{pct}%</Text>
+                      </View>
                     </View>
-                    <View style={{ flex: 1, height: 10, borderRadius: 5, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
-                      <Animated.View style={{
-                        height: '100%', borderRadius: 5, backgroundColor: r.color,
-                        width: barProgress.interpolate({ inputRange: [0, 1], outputRange: ['0%', `${Math.round((r.sec / totalSec) * 100)}%`] }),
-                      }} />
-                    </View>
-                    <Text style={{ width: 50, textAlign: 'right', fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5, color: r.sec > 0 ? theme.textPrimary : theme.textDim }}>
-                      {fmtZoneTime(r.sec)}
-                    </Text>
-                  </View>
-                ))}
+                  );
+                })}
 
                 {/* Max HR + method: consistent label/value rows */}
                 <View style={{ marginTop: 6, borderTopWidth: 0.5, borderTopColor: theme.borderCard, paddingTop: 12 }}>

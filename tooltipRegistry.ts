@@ -45,7 +45,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
       },
       {
         term: 'Excluding a day',
-        explanation: 'Genuine off days (sick, travel, a planned break) can be excluded so they do not drag down your scores or weekly averages. An excluded day also holds your streaks: it will not break them, and it does not count as a logged day either. Tap "Exclude this day" on the summary, or use the toggle in Day Detail.',
+        explanation: 'Genuine off days (sick, travel, a planned break) can be excluded so they do not drag down your scores or weekly averages. An excluded day also holds your streaks: it will not break them, and it does not count as a logged day either. Tap "Exclude this day" on the summary, or use the toggle in Day Detail. To exclude a whole trip at once, turn on Vacation Mode in Settings.',
       },
     ],
   },

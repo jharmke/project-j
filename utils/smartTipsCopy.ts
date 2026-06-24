@@ -105,7 +105,7 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: false,
     db: {
       pattern: [
-        'Protein has been below your {goal}g target on {days} of the last 7 days.',
+        'Protein has been below your {goal}g target on {days} of your last 7 logged days.',
         'Most days this week came in under your protein goal. At a deficit, that gap matters more than people realize.',
         'Protein has been consistently below target this week. It is one of those things that compounds quietly.',
       ],
@@ -127,7 +127,7 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: true,
     db: {
       insight_all: [
-        'Protein has been consistently strong this week, above goal on {days} of the last 7 days. That kind of consistency adds up.',
+        'Protein has been consistently strong this week, above goal on {days} of your last 7 logged days. That kind of consistency adds up.',
         'Solid protein intake across most of the week. One of the best things you can do for your body regardless of your goal.',
         'Protein above target most days this week. That is exactly the pattern that supports recovery and keeps hunger in check.',
       ],
@@ -144,7 +144,7 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: false,
     db: {
       pattern: [
-        'Fat has been above your {goal}g target on {days} of the last 7 days. Fat is calorie dense, so it is often where a surplus quietly comes from.',
+        'Fat has been above your {goal}g target on {days} of your last 7 logged days. Fat is calorie dense, so it is often where a surplus quietly comes from.',
         'Most days this week came in over your fat goal. Worth a look at the higher-fat foods, since they add up fast on the calorie side.',
         'Fat intake has been over target most of the week. Not a problem on its own, but it is the easiest macro to overshoot calories with.',
       ],
@@ -161,7 +161,7 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: false,
     db: {
       pattern: [
-        'Carbs have been above your {goal}g target on {days} of the last 7 days. Worth checking whether they are fueling your training or just adding up.',
+        'Carbs have been above your {goal}g target on {days} of your last 7 logged days. Worth checking whether they are fueling your training or just adding up.',
         'Most days this week came in over your carb goal. Timing more of them around workouts can make them work harder for you.',
         'Carb intake has been over target most of the week. Not inherently a problem, but worth knowing where they are landing in your day.',
       ],
@@ -200,7 +200,7 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: true,
     db: {
       insight_all: [
-        'Water goal hit on {days} of the last 7 days. That consistency is doing more for you than you probably realize.',
+        'Water goal hit on {days} of your last 7 logged days. That consistency is doing more for you than you probably realize.',
         'Hydration has been excellent this week. Consistently hitting your water goal is one of the highest-leverage habits you can build.',
         'Nearly perfect hydration this week. That consistency shows up in energy, focus, and recovery.',
       ],
@@ -234,7 +234,7 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: false,
     db: {
       pattern: [
-        'Sodium has been running high on most days this week, above {threshold}mg on {days} of the last 7 days.',
+        'Sodium has been running high on most days this week, above {threshold}mg on {days} of your last 7 logged days.',
         'Consistently high sodium this week. At these levels it can affect how you feel day to day, especially energy and bloating.',
         'Sodium has been well above recommended most days. Worth looking at where it is coming from. It hides in a lot of unexpected places.',
       ],
@@ -273,7 +273,7 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: true,
     db: {
       insight_all: [
-        'Calorie goal hit {days} of the last 7 days. That kind of consistency is exactly what produces results over time.',
+        'Calorie goal hit {days} of your last 7 logged days. That kind of consistency is exactly what produces results over time.',
         'Nearly perfect on your calorie goal this week. Building this as a daily habit is more valuable than any single perfect day.',
         'You have been hitting your goal almost every day this week. Consistency like this is where the real change happens.',
       ],
@@ -294,7 +294,7 @@ export const RULE_COPY: Record<string, RuleCopy> = {
       pattern: [
         'Sleep scores have been lower than usual most nights this week. Recovery happens during sleep. It is worth prioritizing.',
         'Consistently lower sleep scores this week. Poor sleep affects hunger, energy, and workout performance more than most people expect.',
-        'Sleep quality has been lower than usual on {days} of the last 7 nights.',
+        'Sleep quality has been lower than usual on {days} of your last 7 logged nights.',
       ],
       urgent: [
         'Sleep has been poor for {days} nights in a row, significantly below a healthy threshold. At this level, recovery, hunger, and performance are all affected.',
@@ -353,7 +353,7 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: true,
     db: {
       insight_all: [
-        'Sleep scores have been excellent on {days} of the last 7 nights. Strong recovery like this compounds over time.',
+        'Sleep scores have been excellent on {days} of your last 7 logged nights. Strong recovery like this compounds over time.',
         'Consistently excellent sleep this week. Recovery is where adaptation happens. You are doing this right.',
         'Sleep has been strong across most of the week. That kind of recovery makes every other part of your effort work better.',
       ],
@@ -428,7 +428,7 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: false,
     db: {
       pattern: [
-        'Steps have been below your {goal} goal on {days} of the last 7 days. Daily step count is one of the most underrated variables in the whole system.',
+        'Steps have been below your {goal} goal on {days} of your last 7 logged days. Daily step count is one of the most underrated variables in the whole system.',
         'Step goal missed most days this week. Small habit changes, parking further away, taking the stairs, add up more than a single workout.',
         'Steps have been consistently below goal this week. Movement outside of formal exercise has a big impact on total daily burn.',
       ],
@@ -445,7 +445,7 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: true,
     db: {
       insight_all: [
-        'Active calorie goal hit {days} of the last 7 days. That kind of sustained burn adds up significantly over a week.',
+        'Active calorie goal hit {days} of your last 7 logged days. That kind of sustained burn adds up significantly over a week.',
         'Nearly every day this week has hit the active calorie goal. Strong work. This is what creates a meaningful gap between eat and burn.',
         'Active burn above goal almost every day this week. Consistency here compounds in a way that no single workout ever will.',
       ],
@@ -462,7 +462,7 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: true,
     db: {
       insight_all: [
-        'Step goal hit {days} of the last 7 days. Your daily movement habits are in a genuinely strong place.',
+        'Step goal hit {days} of your last 7 logged days. Your daily movement habits are in a genuinely strong place.',
         'Nearly perfect steps this week. Daily movement at this level makes everything else, sleep, hunger, mood, work better.',
         'Consistent step goal achievement all week. This is the kind of habit that silently does a lot of heavy lifting.',
       ],
@@ -498,7 +498,7 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: false,
     db: {
       pattern: [
-        'Your fasting window has been inconsistent on {days} of the last 7 IF days. The consistency is where the benefit comes from, more than any single day.',
+        'Your fasting window has been inconsistent on {days} of your last 7 logged IF days. The consistency is where the benefit comes from, more than any single day.',
         'IF window has been broken or skipped most days this week. A consistent window, even a shorter one, is more effective than a perfect window most days.',
         'Fasting consistency has been lower this week. The regularity of the pattern matters more than the exact hours.',
       ],
@@ -516,7 +516,7 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     db: {
       pattern: [
         'The eating window has been running about {avg} hours longer than intended on most days this week. Evening eating tends to be where extra calories sneak in.',
-        'Window has been closing later than planned on {days} of the last 7 IF days. Late-night eating is one of the most consistent patterns in exceeding calorie goals.',
+        'Window has been closing later than planned on {days} of your last 7 logged IF days. Late-night eating is one of the most consistent patterns in exceeding calorie goals.',
         'Most days this week the eating window ran significantly longer than the {method} target. Worth looking at what is driving the late extension.',
       ],
     },
@@ -532,7 +532,7 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: true,
     db: {
       insight_all: [
-        'Fasting window hit within 30 minutes of target on {days} of the last 7 days. That discipline is where IF actually delivers its benefit.',
+        'Fasting window hit within 30 minutes of target on {days} of your last 7 logged days. That discipline is where IF actually delivers its benefit.',
         'Incredibly consistent fasting window this week. This level of adherence is what separates IF as a real tool from a loose concept.',
         'Window consistency has been excellent this week. The metabolic benefit of IF comes from exactly this kind of regularity.',
       ],

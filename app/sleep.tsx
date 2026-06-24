@@ -370,6 +370,14 @@ function Hypnogram({ segments, theme, hideAxis }: { segments: SleepSeg[]; theme:
   const toX = (ms: number) => GUT + ((ms - bed) / dur) * plotW;
   const laneY = (stage: SleepSeg['stage']) => lanes.indexOf(stage) * (laneH + laneGap);
   const fmtClock = (ms: number) => new Date(ms).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  // Hour-aligned X-axis ticks (rounded to the whole hour) so the timeline reads at a
+  // glance: 2h steps on longer nights, 1h on short ones (keeps it to ~4-5 ticks).
+  const fmtHour = (ms: number) => new Date(ms).toLocaleTimeString([], { hour: 'numeric' });
+  const tickStepMs = (dur / 3600000 > 6 ? 2 : 1) * 3600000;
+  const firstTickMs = (() => { const d = new Date(bed); d.setMinutes(0, 0, 0); let t = d.getTime(); while (t < bed) t += 3600000; return t; })();
+  const ticks: number[] = [];
+  for (let t = firstTickMs; t <= wake; t += tickStepMs) ticks.push(t);
+  const axisH = hideAxis ? 0 : 20;
 
   const handle = (locX: number) => {
     const x = Math.max(GUT, Math.min(CHART_W, locX));
@@ -391,7 +399,7 @@ function Hypnogram({ segments, theme, hideAxis }: { segments: SleepSeg[]; theme:
   return (
     <ReAnimated.View style={slide}>
       <View {...pan.panHandlers}>
-        <Svg width={CHART_W} height={H}>
+        <Svg width={CHART_W} height={H + axisH}>
           {lanes.map(stage => (
             <G key={stage}>
               <Rect x={GUT} y={laneY(stage)} width={plotW} height={laneH} fill={theme.bgInset} rx={4} />
@@ -401,15 +409,19 @@ function Hypnogram({ segments, theme, hideAxis }: { segments: SleepSeg[]; theme:
           {segments.map((s, i) => (
             <Rect key={i} x={toX(s.start)} y={laneY(s.stage)} width={Math.max(3, toX(s.end) - toX(s.start))} height={laneH} fill={laneColor[s.stage]} rx={3} />
           ))}
+          {!hideAxis && ticks.map((t, i) => {
+            const x = toX(t);
+            if (x < GUT + 8 || x > CHART_W - 8) return null;
+            return (
+              <G key={`tick${i}`}>
+                <Line x1={x} y1={H + 2} x2={x} y2={H + 5} stroke={theme.textDim} strokeWidth={1} />
+                <SvgText x={x} y={H + 15} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">{fmtHour(t)}</SvgText>
+              </G>
+            );
+          })}
           {cursor && <Line x1={cursor.x} y1={0} x2={cursor.x} y2={H} stroke={theme.textPrimary} strokeWidth={1} opacity={0.45} />}
         </Svg>
       </View>
-      {!hideAxis && (
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 6, paddingLeft: GUT }}>
-          <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_500Medium' }}>{fmtClock(bed)}</Text>
-          <Text style={{ fontSize: 9, color: theme.textDim, fontFamily: 'DMSans_500Medium' }}>{fmtClock(wake)}</Text>
-        </View>
-      )}
       {cursor && (
         <View style={{ position: 'absolute', top: 0, left: Math.max(0, Math.min(CHART_W - 96, cursor.x - 48)), backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderWidth: 0.5, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, flexDirection: 'row', alignItems: 'center', gap: 6, shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 4, shadowOffset: { width: 0, height: 2 } }}>
           <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: cursor.color }} />
@@ -1105,7 +1117,7 @@ export default function SleepHub() {
         </View>
         {segments.length > 0 && (
           <View style={{ marginTop: 16 }}>
-            <Hypnogram segments={segments} theme={theme} hideAxis />
+            <Hypnogram segments={segments} theme={theme} />
           </View>
         )}
         <View style={{ alignItems: 'center', marginTop: 14 }}>

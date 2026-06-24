@@ -331,6 +331,11 @@ async function loadWindowDays(
     const dateKey = fullKey.slice(3);
     let day: any;
     try { day = JSON.parse(raw); } catch { continue; }
+    // Fully-excluded days (all 3 of diet/water/exercise, or a Day-Score "exclude this
+    // day"/vacation) are dropped from the coaching window before any rule runs, so no
+    // tip is ever computed off excluded data (recovery already filtered; this covers
+    // every other rule too). Partial per-category exclusions still pass (see option B).
+    if (dayFullyExcluded(day)) continue;
 
     const entries: any[] = Array.isArray(day.entries) ? day.entries : [];
     let consumed = 0, protein = 0, fat = 0, carbs = 0;
@@ -555,6 +560,8 @@ async function loadWindowDayRange(
     const dateKey = fullKey.slice(3);
     let day: any;
     try { day = JSON.parse(raw); } catch { continue; }
+    // Same exclusion drop as loadWindowDays (range-based paths: EvR/weekly/monthly coach).
+    if (dayFullyExcluded(day)) continue;
 
     const entries: any[] = Array.isArray(day.entries) ? day.entries : [];
     let consumed = 0, protein = 0, fat = 0, carbs = 0;
@@ -2052,11 +2059,14 @@ function buildDiagnosisActionFacts(
     }
     case 'protein_under': {
       const low = foodDays7.filter(d => d.protein < ctx.proteinGoalG * 0.8);
-      const avgLow = low.length ? Math.round(avg(low.map(d => d.protein))) : 0;
+      // Cite the OVERALL logged average (the same number the protein card shows), not the
+      // average-of-only-the-missed-days -- the on-low-days figure contradicted the card and
+      // read as a weekly average it was not. Keep the "short on N of M" count for context.
+      const avgAll = foodDays7.length ? Math.round(avg(foodDays7.map(d => d.protein))) : 0;
       return {
-        diagnosis: `Over the last 7 days, protein fell short on ${low.length} of ${foodDays7.length} logged days, averaging ${avgLow}g on those days against a ${Math.round(ctx.proteinGoalG)}g goal`,
+        diagnosis: `Over your last ${foodDays7.length} logged days, protein averaged ${avgAll}g against a ${Math.round(ctx.proteinGoalG)}g goal, falling short on ${low.length} of them`,
         action: 'Add one high-protein meal or snack on training days',
-        facts: { avgProteinOnLowDays: avgLow, goal: Math.round(ctx.proteinGoalG), daysLow: low.length },
+        facts: { avgProtein: avgAll, goal: Math.round(ctx.proteinGoalG), daysLow: low.length, loggedDays: foodDays7.length },
       };
     }
     case 'water_under': {

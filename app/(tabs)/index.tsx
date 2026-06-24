@@ -1207,7 +1207,20 @@ export default function HomeScreen() {
   // ── Load Smart Tips + AI coach tip for home card ────────────────────────────
   useFocusEffect(useCallback(() => {
     loadSmartTips().then(store => {
-      const tips = store?.activeTips?.slice(0, 3) ?? [];
+      // Today's fresh active tips only (cap 3), deduped by TOPIC so two same-theme rules
+      // (e.g. "weight_trend" + "weight_progress" -> topic "weight") never show twice.
+      // NOTE: history backfill was tried (to always fill 2-3 pages) but PULLED -- it
+      // resurfaced older count-based tips ("over goal on 6 of 7 days") whose numbers were
+      // true when computed but read as stale/current now. Fewer fresh pages > stale pages.
+      const seenTopics = new Set<string>();
+      const tips: StoredTip[] = [];
+      for (const t of (store?.activeTips ?? [])) {
+        const topic = t.topic || t.ruleId;
+        if (seenTopics.has(topic)) continue;
+        seenTopics.add(topic);
+        tips.push(t);
+        if (tips.length >= 3) break;
+      }
       setHomeTips(tips);
       setTipIndex(i => (i >= tips.length ? 0 : i));
     });
@@ -3272,9 +3285,15 @@ export default function HomeScreen() {
         return <FaithTodayCard verse={dailyVerse} theme={theme} />;
       }
       case 'smart_tip': {
-        const pageCount = homeTips.length > 0 ? homeTips.length : (coachCache ? 1 : 0);
+        // Page 0 is the AI-voiced coach insight (when present); pages 1+ are the other
+        // smart tips. The coach voices the TOP finding, so exclude any body tip sharing
+        // its title -- otherwise the same tip (e.g. "Weight Progress") shows twice.
+        const coachTitle = coachCache ? resolveTipTitle(coachCache) : null;
+        const bodyTips = coachCache ? homeTips.filter(t => t.title !== coachTitle) : homeTips;
+        const pageTips: (StoredTip | null)[] = coachCache ? [null, ...bodyTips].slice(0, 3) : bodyTips.slice(0, 3);
+        const pageCount = pageTips.length;
         if (pageCount === 0) return null;
-        const page0Tip = homeTips[0] ?? null;
+        const page0Tip = pageTips[0] ?? null;
         const page0Positive = coachCache ? coachCache.packet.tone === 'positive' : (page0Tip?.positive ?? false);
         const page0Tier = coachCache ? (coachCache.packet.tone === 'care' ? 'urgent' : 'pattern') : (page0Tip?.tier ?? 'insight');
         const page0BorderColor = page0Positive ? theme.statusGood : page0Tier === 'urgent' ? theme.statusBad : theme.statusWarn;
@@ -3293,7 +3312,7 @@ export default function HomeScreen() {
               onMomentumScrollEnd={onTipMomentumEnd}
             >
               {Array.from({ length: pageCount }, (_, idx) => {
-                const homeTip = homeTips[idx] ?? null;
+                const homeTip = pageTips[idx] ?? null;
                 const isFirst = idx === 0;
                 const displayTitle = isFirst && coachCache ? resolveTipTitle(coachCache) : (homeTip?.title ?? '');
                 const displayBody = isFirst && coachCache ? resolveTipBody(coachCache) : (homeTip?.body ?? '');

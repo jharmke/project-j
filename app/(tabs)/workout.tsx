@@ -1278,11 +1278,11 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
         <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, marginTop: 12 }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <TextInput
-              style={{ flex: 1, fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold', padding: 0, marginRight: 8 }}
+              style={{ flex: 1, fontSize: 10, letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, fontFamily: 'DMSans_700Bold', padding: 0, marginRight: 8 }}
               value={workoutNoteNames[activeDay] ?? ''}
               onChangeText={v => setWorkoutNoteNames(prev => ({ ...prev, [activeDay]: v }))}
               onBlur={() => saveState()}
-              placeholder="Workout Note"
+              placeholder="WORKOUT NOTE"
               placeholderTextColor={theme.textMuted}
               maxLength={40}
               returnKeyType="done"

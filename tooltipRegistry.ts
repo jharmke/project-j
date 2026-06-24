@@ -341,7 +341,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     definitions: [
       {
         term: 'Pattern tips',
-        explanation: 'Fire when a single metric has been consistently off target across most of the last 7 days. Examples: protein under goal, water goal missed most days, sleep scores low.',
+        explanation: 'Fire when a single metric has been consistently off target across most of your last 7 logged days. Days you excluded (sick, travel, Vacation Mode) are skipped, so they never trigger or skew a tip. Examples: protein under goal, water goal missed most days, sleep scores low.',
       },
       {
         term: 'Positive tips',

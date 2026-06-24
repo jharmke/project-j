@@ -133,10 +133,18 @@ function RootLayoutNav() {
         // Sync is unlocked now: apply any active vacation (stamp elapsed in-range days,
         // auto-expire a finished one) so the cloud mirror lands too.
         applyVacation().catch(() => {});
-        // Cold launch into Home: play the condensed logo cinematic over the hand-off.
-        if (!coldSplashConsumed) { coldSplashConsumed = true; setShowSplash(true); }
+        // Cold launch into Home: play the condensed logo cinematic over the hand-off. Show
+        // the custom splash FIRST and let it hide the native splash itself once it has painted
+        // (see LaunchSplash) -- otherwise hiding the native splash here lifts it a frame before
+        // the React overlay paints, flashing Home. If the cinematic was already consumed this
+        // session, just lift the native splash directly.
+        if (!coldSplashConsumed) {
+          coldSplashConsumed = true;
+          setShowSplash(true);
+        } else {
+          SplashScreen.hideAsync();
+        }
         router.replace('/(tabs)');
-        SplashScreen.hideAsync();
         // Fire-and-forget: schedule today's notis after tabs load
         runDailyNotificationScheduler().catch(() => {});
       });

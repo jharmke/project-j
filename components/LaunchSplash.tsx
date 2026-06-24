@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Animated, Dimensions, Image, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as SplashScreen from 'expo-splash-screen';
 
 // Condensed app-open cinematic. Replicates the sign-in logo treatment (full-width
 // logo + top/bottom gradient fades that melt the logo's edges into the dark bg, so
@@ -15,6 +16,10 @@ export default function LaunchSplash({ onDone }: { onDone: () => void }) {
   const logoScale      = useRef(new Animated.Value(0.96)).current;
 
   useEffect(() => {
+    // This overlay is now on screen at full opacity over a bg matching the native splash, so
+    // hide the native splash on the next frame -- a seamless hand-off with no Home flash in the
+    // gap (the native splash was held open until this painted; see app/_layout.tsx).
+    const raf = requestAnimationFrame(() => { SplashScreen.hideAsync().catch(() => {}); });
     Animated.sequence([
       Animated.parallel([
         Animated.timing(logoOpacity, { toValue: 1, duration: 350, useNativeDriver: true }),
@@ -23,6 +28,7 @@ export default function LaunchSplash({ onDone }: { onDone: () => void }) {
       Animated.delay(300),
       Animated.timing(overlayOpacity, { toValue: 0, duration: 450, useNativeDriver: true }),
     ]).start(() => onDone());
+    return () => cancelAnimationFrame(raf);
   }, []);
 
   return (

@@ -228,6 +228,7 @@ export default function TooltipModal({ tooltipKey, visible, onClose, hideTour }:
                 <Animated.View style={{ opacity: tourPulse }}>
                   <TouchableOpacity
                     onPress={() => {
+                      triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
                       handleClose();
                       setTimeout(() => startTutorial(def.tutorialId!), 350);
                     }}

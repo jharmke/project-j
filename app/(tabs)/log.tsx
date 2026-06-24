@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { storageSet } from '../../utils/storage';
+import { sumWaterEntries, reconcileDayWater } from '../../utils/waterData';
 import { cancelWaterPaceNotification } from '../../services/notifications';
 import { loadCalorieTargets } from '../../utils/calorieTarget';
 import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, handleDailyGoalHit, getCelebTier } from '../../achievementData';
@@ -658,11 +659,21 @@ export default function LogScreen() {
     setVisibleMeals(prev => ({ ...prev, [tutKey]: true }));
   }
 }
-            if (typeof data.water === 'number') setWater(Math.max(0, data.water));
+            // Water: load the entries list too (NOT just the number) so this list never
+            // goes stale on focus -- a stale list written back is what clobbered a day's
+            // real total. Total derives from the list; number is the fallback for legacy days.
+            if (Array.isArray(data.waterEntries)) {
+              setWaterEntries(data.waterEntries);
+              setWater(sumWaterEntries(data.waterEntries));
+            } else {
+              setWaterEntries([]);
+              if (typeof data.water === 'number') setWater(Math.max(0, data.water));
+            }
             setCaloriesBurned(parseInt(data.activeCalories || data.caloriesBurned) || 0);
           } else {
             setEntries([]);
             setWater(0);
+            setWaterEntries([]);
             setTotalProtein(0);
             setTotalCarbs(0);
             setTotalFat(0);
@@ -1004,15 +1015,19 @@ export default function LogScreen() {
   };
 
   const updateWater = async (oz: number) => {
-    const prev = water;
-    const newWater = Math.max(0, water + oz);
-    const sign: 'add' | 'remove' = oz > 0 ? 'add' : 'remove';
-    const newEntry = { amount: Math.abs(oz), timestamp: new Date().toISOString(), sign };
-    const newEntries = [...waterEntries, newEntry];
-    setWater(newWater);
-    setWaterEntries(newEntries);
+    // Re-read the stored day and reconcile it (never-lower) as the baseline, so a stale or
+    // empty in-memory list can never clobber the day's real total. Append to that, derive
+    // the number from the list.
     const existing = await AsyncStorage.getItem(`pj_${activeDate}`);
     const current = existing ? JSON.parse(existing) : {};
+    const base = reconcileDayWater(current, activeDate);
+    const prev = base.water;
+    const sign: 'add' | 'remove' = oz > 0 ? 'add' : 'remove';
+    const newEntry = { amount: Math.abs(oz), timestamp: new Date().toISOString(), sign };
+    const newEntries = [...base.waterEntries, newEntry];
+    const newWater = sumWaterEntries(newEntries);
+    setWater(newWater);
+    setWaterEntries(newEntries);
     await storageSet(`pj_${activeDate}`, JSON.stringify({ ...current, water: newWater, waterEntries: newEntries, waterGoal }));
     saveToFirebase(activeDate, 'water', newWater);
     if (oz > 0) {

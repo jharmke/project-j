@@ -19,6 +19,7 @@ import { showAchievementToast, showDailyGoalToast } from '../../components/Achie
 import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, weightEntryIsPlausible, getWeightMilestonesCrossed, isGoalWeightHit, handleDailyGoalHit, checkMomentumAchievements, checkSleepAchievements, getCelebTier } from '../../achievementData';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { storageSet } from '../../utils/storage';
+import { reconcileDayWater, runWaterReconciliation } from '../../utils/waterData';
 import { cancelWaterPaceNotification, cancelWeeklySummaryNotification, cancelMonthlySummaryNotification } from '../../services/notifications';
 import { VERSES, resolveDailyVerse } from '../../data/verses';
 import FaithTodayCard from '../../components/FaithTodayCard';
@@ -533,15 +534,18 @@ export default function HomeScreen() {
     Math.max(0, entries.reduce((sum, e) => sum + (e.sign === 'add' ? e.amount : -e.amount), 0));
 
   const doWaterUpdate = async (deltaOz: number) => {
-    const prev = water;
-    const newWater = Math.max(0, water + deltaOz);
-    const sign: 'add' | 'remove' = deltaOz > 0 ? 'add' : 'remove';
-    const newEntry = { amount: Math.abs(deltaOz), timestamp: new Date().toISOString(), sign };
-    const newEntries = [...waterEntries, newEntry];
-    setWater(newWater);
-    setWaterEntries(newEntries);
+    // Re-read + reconcile (never-lower) the stored day as the baseline so a stale in-memory
+    // list can't clobber the real total. Append to that, derive the number from the list.
     const existing = await AsyncStorage.getItem(`pj_${todayKey}`);
     const current = existing ? JSON.parse(existing) : {};
+    const base = reconcileDayWater(current, todayKey);
+    const prev = base.water;
+    const sign: 'add' | 'remove' = deltaOz > 0 ? 'add' : 'remove';
+    const newEntry = { amount: Math.abs(deltaOz), timestamp: new Date().toISOString(), sign };
+    const newEntries = [...base.waterEntries, newEntry];
+    const newWater = waterTotalFromEntries(newEntries);
+    setWater(newWater);
+    setWaterEntries(newEntries);
     await storageSet(`pj_${todayKey}`, JSON.stringify({ ...current, water: newWater, waterEntries: newEntries, waterGoal }));
     saveToFirebase(todayKey, 'water', newWater);
     if (deltaOz > 0) {
@@ -1506,6 +1510,11 @@ export default function HomeScreen() {
   // metaTutorialFiredRef gates re-runs after the tutorial has actually been confirmed
   // seen or launched, but stays false if the timer was cancelled mid-redirect so the
   // next real focus (user landing on home after onboarding) tries again.
+  // One-time water history heal (never-lower reconciliation). Self-gated on the sync lock
+  // + a done-flag inside runWaterReconciliation, so it heals once sync is ready (cloud too)
+  // and no-ops every focus after. Retries on focus until it succeeds.
+  useFocusEffect(useCallback(() => { runWaterReconciliation(); }, []));
+
   const metaTutorialFiredRef = useRef(false);
   useFocusEffect(useCallback(() => {
     if (metaTutorialFiredRef.current) return;

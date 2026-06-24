@@ -2,6 +2,12 @@
 Last updated: Session 61 (May 31 2026)
 Status: SPECCED -- not yet built. Blocked on Firebase Storage migration for photo persistence.
 
+> NOTE (2026-06-24): MEASUREMENTS have been split into the authoritative **SPEC_body_measurements.md**.
+> Part 2 (Body Measurements) below is **SUPERSEDED** by that file -- it predates the BODY section name,
+> the condensed card, goals, the single "How to measure" index modal, the dropped-illustration-blocker
+> decision, the disclaimer/Mindful calls, etc. Use SPEC_body_measurements.md for measurements. This file
+> remains the source of truth for PHOTOS (Part 1) only.
+
 ---
 
 ## Overview
@@ -81,6 +87,9 @@ Photos/Attachments section added to Day Detail screen. Default collapsed (does n
 ---
 
 ## Part 2 -- Body Measurements
+
+> SUPERSEDED 2026-06-24 -- see SPEC_body_measurements.md (authoritative). The content below is
+> retained for history only and is out of date. Do not build from it.
 
 ### Fields
 

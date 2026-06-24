@@ -20,6 +20,7 @@ import {
 import { Directory, File as FSFile, Paths } from 'expo-file-system/next';
 import * as ImagePicker from 'expo-image-picker';
 import { saveToFirebase } from '../firebaseConfig';
+import { uploadFoodPhoto } from '../utils/foodPhotos';
 import { useTheme } from '../theme';
 import { useToast } from './Toast';
 import { useTutorial } from '../context/TutorialContext';
@@ -411,7 +412,11 @@ export default function CustomFoodCreator({ visible, onClose, onSaved, title, tu
           if (destFile.exists) destFile.delete();
           const srcFile = new FSFile(pendingPhotoUri);
           srcFile.copy(destFile);
-          await AsyncStorage.setItem(`pj_food_photo_${id}`, destUri);
+          // Upload to Firebase Storage at creation so the photo survives a reinstall
+          // (storing the cloud URL, falling back to the local path if offline / not
+          // signed in -- the next food-detail view backfills it). Mirrors food-detail.
+          const { url } = await uploadFoodPhoto(id, destUri);
+          await AsyncStorage.setItem(`pj_food_photo_${id}`, url || destUri);
         } catch (e) {
           console.log('CustomFoodCreator photo save error', e);
         }

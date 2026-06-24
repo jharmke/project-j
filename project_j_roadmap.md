@@ -4,6 +4,26 @@
 
 ---
 
+## 🚨🚨🚨 REVERT BEFORE APP STORE LAUNCH 🚨🚨🚨 (TESTFLIGHT-ONLY HACKS - DO NOT SHIP)
+
+THESE ARE TEMPORARY FOR JUSTIN'S TESTFLIGHT TESTING (added 2026-06-24). EVERY ONE MUST BE
+UNDONE OR REPLACED BEFORE A PUBLIC APP STORE RELEASE. CHECK THIS LIST AT EVERY LAUNCH-PREP SESSION.
+
+1. ⚠️ ANTHROPIC API KEY IS BUNDLED CLIENT-SIDE. coachAI.ts + aiMealEstimator.ts call
+   api.anthropic.com directly with EXPO_PUBLIC_ANTHROPIC_API_KEY, which is inlined into the
+   shipped JS bundle and EXTRACTABLE from the binary. Anyone can pull the key and run up
+   Justin's Anthropic bill. BEFORE LAUNCH: proxy all client AI (coach tips + estimator) through
+   a Cloud Function exactly like Halo (functions faithCompanion) already does, and remove the
+   bundled key. This is a HARD launch blocker (security + cost).
+2. ⚠️ devProUnlocked = FREE UNLIMITED PRO. The Settings dev toggle grants Pro (AI estimator
+   unlimited, comparison Day-vs-Day, branded export) with NO payment. BEFORE LAUNCH: gate Pro on
+   a real subscription (RevenueCat/StoreKit) and REMOVE the devProUnlocked override + its toggle.
+3. ⚠️ AI ESTIMATOR QUOTA RAISED FOR TESTERS. PRO_LIMIT was bumped to effectively unlimited for
+   the trip (services/aiMealEstimator.ts). BEFORE LAUNCH: restore real caps (free 3 / Pro 30 or
+   whatever the final monetization decides).
+
+---
+
 ## BUGS
 
 - [OPTION A FIXED 2026-06-24, NEEDS DEVICE VERIFY] Smart Coach / AI tips IGNORE calendar exclusions. Justin excluded his vacation (Fri/Sat/Sun) in the calendar, reset the coach tip cache, and got a "Bedtime Rhythm" tip -- suspected it was computed off the excluded nights. CONFIRMED: it almost certainly was. FINDINGS (utils/smartTipsEngine.ts): (1) loadWindowDays loads the last 14 days and stamps each WindowDay.excluded = dayFullyExcluded(day), which is TRUE only on a FULL exclusion (all three diet+water+exercise toggled off in Day Detail, or a Day-Score "exclude this day"/excludedFromAverages). (2) Of ~30 coaching rules, ONLY the recovery rules filter `!d.excluded` (line 1357 + the recovery-coach engine line 3121). EVERY other rule ignores exclusion: nutrition (protein/carbs/fat/water/fiber/sodium/sugar), activity (steps/active-cal/workout), sleep (sleep_score_low, sleep_duration_short, sleep_bedtime_inconsistent, deep_low, sleep-positive), weight, and all cross-signal rules. (3) ruleSleepBedtimeInconsistent (line 967) averages bedtime variance over `w7.filter(d => d.sleepBedTimeMin !== null)` with NO exclusion filter -- so irregular vacation bedtimes inflated the std-dev past the 60-min threshold and fired the tip. (4) SEPARATE gap: the sleep hub's own sleep-trend exclusion (`sleepTrendExcluded`) is NOT loaded into WindowDay at all, so sleep-specific exclusions are invisible to the engine. NET: recovery is the only protected coaching surface; everything else pulls excluded data. FIX OPTIONS: (A simple, covers the vacation case) drop fully-excluded days from the window in loadWindowDays before any rule runs -- one-line systemic fix, low risk, but doesn't handle PARTIAL (e.g. diet-only) exclusions; (B thorough/surgical) each rule respects the matching per-category flag (nutrition->excluded.diet, activity->excluded.exercise, water->excluded.water) + load & honor sleepTrendExcluded for sleep rules -- more correct, bigger, per-rule testing. RECOMMENDED: A now (closes the leak everywhere with low risk), B as a follow-up for per-category precision. OPTION A SHIPPED 2026-06-24 (Justin's call; he confirmed he manually toggled all 3 diet/water/exercise on the vacation days AND ran Vacation Mode on top -> dayFullyExcluded is true for them, so A fully covers his case): added a `if (dayFullyExcluded(day)) continue;` guard right after the JSON parse in BOTH window loaders -- loadWindowDays (home smart tips + sleep coach paths) AND loadWindowDayRange (EvR/weekly/monthly coach paths) -- so fully-excluded days are dropped before any rule sees them, across every coaching surface. Recovery rules already filtered `!d.excluded`; the field is now always false (excluded days never pushed) so those filters are harmless/redundant. tsc/diagnostics clean. VERIFY: Reset Smart Tips Cache (the once-per-day cache still holds the pre-fix bedtime tip) then reopen EvR/home -- confirm the bedtime-rhythm tip recomputes off non-vacation nights and is gone if those were the cause. STILL OPEN (option B, follow-up, NOT done): per-category exclusion precision (a diet-ONLY excluded cheat day still feeds sleep/activity rules; a sleep-trend-only exclude via the hub is still invisible because `sleepTrendExcluded` is not loaded into WindowDay). Decide if B is worth it after A is verified.

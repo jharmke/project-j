@@ -114,6 +114,47 @@ export function fmtZoneTime(sec: number): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+export interface ZoneDebrief {
+  key: 'intensity' | 'cardio' | 'aerobic' | 'mixed';
+  headline: string;
+  body: string;
+}
+
+// A short written read of a workout's character from where its time landed across the
+// zones (NOT a numbers recap, the bars already show that). Deterministic / rule based.
+// secs = Z1..Z5 in-zone seconds; below-zone time is ignored so standing around does not
+// dilute the read. Mode aware: Discipline + Balanced share the performance voice, Mindful
+// softens to observational (no push, no recovery-debt nudge). Returns null when there is
+// too little tracked zone time to say anything honest.
+export function zoneDebrief(secs: number[], styleMode: string): ZoneDebrief | null {
+  const s = secs.map(v => v || 0);
+  const inZone = s[0] + s[1] + s[2] + s[3] + s[4];
+  if (inZone < 60) return null;
+  const pLow = (s[0] + s[1]) / inZone;   // Z1 Warm Up + Z2 Fat Burn
+  const pMid = s[2] / inZone;            // Z3 Cardio
+  const pHigh = (s[3] + s[4]) / inZone;  // Z4 Threshold + Z5 Peak
+  const mindful = styleMode === 'mindful';
+
+  if (pHigh >= 0.30) {
+    return mindful
+      ? { key: 'intensity', headline: 'A Hard Effort', body: 'You spent real time in your higher zones today. Let your body settle and recover when it asks for it.' }
+      : { key: 'intensity', headline: 'Real Intensity Today', body: 'A solid share of this lived in your Threshold and Peak zones, the effort that lifts your top end. Give recovery the same respect you gave the work.' };
+  }
+  if (pMid >= 0.40) {
+    return mindful
+      ? { key: 'cardio', headline: 'Steady Cardio', body: 'You held a steady working pace through most of this. Nice rhythm.' }
+      : { key: 'cardio', headline: 'Strong Cardio Session', body: 'You held a sustained moderate to hard effort in your Cardio zone, the bread and butter of cardiovascular fitness.' };
+  }
+  if (pLow >= 0.60) {
+    return mindful
+      ? { key: 'aerobic', headline: 'Easy Aerobic Day', body: 'You kept this at an easy, steady effort. Gentle on the body and still good for you.' }
+      : { key: 'aerobic', headline: 'Aerobic Base Work', body: 'Most of this sat in your easier aerobic zones, the steady effort that builds your endurance base and burns fat at a low recovery cost.' };
+  }
+  return mindful
+    ? { key: 'mixed', headline: 'A Bit of Everything', body: 'Your effort moved across a range of zones today. A nice mix.' }
+    : { key: 'mixed', headline: 'Mixed Effort', body: 'Your time spread across easy and harder zones today, a versatile session that touches a bit of everything.' };
+}
+
 // Age from a stored birthday string (mirrors settings.tsx BMR age parse).
 export function ageFromBirthday(birthday: string | null | undefined): number | null {
   if (!birthday) return null;

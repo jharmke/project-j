@@ -396,6 +396,7 @@ const openHRZones = async (ex: any) => {
       durationSec: res.durationSec,
       maxHR, maxHRSource: source, model, restingHR, bounds,
       secs: r.secs, belowZ1: r.belowZ1, peak: r.peak,
+      styleMode: sd.styleMode ?? 'balanced',
     });
     setHrModalLoading(false);
   } catch {

@@ -37,6 +37,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
       { term: 'Z5 Peak', termColor: '#cc3333', explanation: 'Maximum effort. Short bursts only, near your limit.' },
       { term: 'Below Zone', termColor: '#9499b5', explanation: 'Time your heart rate sat under Zone 1. Real movement, just below training intensity. Shown in grey so the picture stays honest.' },
       { term: 'Personalized zones', explanation: 'Your zones are built from your resting heart rate, not just your max (the Karvonen method). A fitter heart rests lower, so your zones adjust to you instead of a generic chart.' },
+      { term: 'Session read', explanation: 'The short note above the bars reads where most of your time landed and tells you what the session was good for: aerobic base, strong cardio, real intensity, or a mixed effort. It is a quick rule-of-thumb read, not a prescription.' },
     ],
   },
   {

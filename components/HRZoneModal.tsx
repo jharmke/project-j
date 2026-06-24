@@ -12,7 +12,7 @@ import { useEffect, useRef } from 'react';
 import { ActivityIndicator, Animated, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../theme';
 import TooltipIcon from './TooltipIcon';
-import { ZoneBound, fmtZoneTime, MaxHRSource, HRZoneModel } from '../utils/hrZones';
+import { ZoneBound, fmtZoneTime, MaxHRSource, HRZoneModel, zoneDebrief } from '../utils/hrZones';
 
 export interface HRZoneData {
   workoutName: string;
@@ -25,6 +25,7 @@ export interface HRZoneData {
   secs: number[];      // index 0..4 = Z1..Z5 seconds
   belowZ1: number;     // seconds below Z1
   peak: number | null;
+  styleMode?: string;  // coaching mode for the written debrief (Mindful softens)
 }
 
 interface Props {
@@ -102,6 +103,15 @@ export default function HRZoneModal({ visible, loading, data, onClose }: Props) 
     ? (usingKarvonen ? `Personalized to your resting HR (${data.restingHR})` : 'Based on your max HR')
     : '';
 
+  // Written session read from the zone time split (sits under the bars).
+  const debrief = data ? zoneDebrief(data.secs, data.styleMode ?? 'balanced') : null;
+  const DEBRIEF_STYLE: Record<string, { color: string; icon: string }> = {
+    intensity: { color: '#e2622e', icon: 'flame' },
+    cardio:    { color: '#d4860a', icon: 'pulse' },
+    aerobic:   { color: '#0d9268', icon: 'walk' },
+    mixed:     { color: theme.accentBlueRaw, icon: 'shuffle' },
+  };
+
   return (
     <Modal visible={visible} transparent animationType="none" onShow={open} onRequestClose={closeWithHaptic}>
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -173,6 +183,17 @@ export default function HRZoneModal({ visible, loading, data, onClose }: Props) 
                     </View>
                   );
                 })}
+
+                {/* Written session read from the zone split */}
+                {debrief && (
+                  <View style={{ marginTop: 4, marginBottom: 2, padding: 12, borderRadius: 10, backgroundColor: DEBRIEF_STYLE[debrief.key].color + '14', borderWidth: 1, borderColor: DEBRIEF_STYLE[debrief.key].color + '30' }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                      <Ionicons name={DEBRIEF_STYLE[debrief.key].icon as any} size={14} color={DEBRIEF_STYLE[debrief.key].color} />
+                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{debrief.headline}</Text>
+                    </View>
+                    <Text style={{ fontSize: 12, lineHeight: 18, fontFamily: 'DMSans_400Regular', color: theme.textMuted }}>{debrief.body}</Text>
+                  </View>
+                )}
 
                 {/* Max HR + method: consistent label/value rows */}
                 <View style={{ marginTop: 6, borderTopWidth: 0.5, borderTopColor: theme.borderCard, paddingTop: 12 }}>

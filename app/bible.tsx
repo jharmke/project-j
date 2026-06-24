@@ -25,6 +25,7 @@ import { BIBLE_BOOKS, Book, Chapter, Verse, fetchChapter, parseReference } from 
 import { loadVersePool, addCustomVerse, removeCustomVerseByRef, activeVerseCount } from '../data/verses';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
+import TooltipIcon from '../components/TooltipIcon';
 import { useTheme } from '../theme';
 import CompanionFAB from '../components/CompanionFAB';
 import CompanionChat from '../components/CompanionChat';
@@ -113,7 +114,7 @@ export default function BibleScreen() {
   // Tutorial wiring. The reader owns the 'bible' tour: an info icon in the header launches it,
   // a setup action injects a demo-highlighted verse so the action banner is visible, and a clear
   // action restores the prior highlight on end/skip. These targets are spotlit step by step.
-  const { startTutorial, registerTutorialAction, unregisterTutorialAction } = useTutorial();
+  const { registerTutorialAction, unregisterTutorialAction } = useTutorial();
   const tutBookRef = useTutorialTarget('bible_tut_book');
   const tutVerseRef = useTutorialTarget('bible_tut_verse');
   const tutSunRef = useTutorialTarget('bible_tut_sun');
@@ -626,9 +627,9 @@ export default function BibleScreen() {
           <TouchableOpacity ref={tutGearRef as any} onPress={openSettingsModal} style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
             <Ionicons name="settings-outline" size={14} color={theme.accentBlue} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); startTutorial('bible'); }} style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
-            <Ionicons name="information-circle" size={14} color={theme.accentBlue} />
-          </TouchableOpacity>
+          <View style={[styles.headerBtn, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
+            <TooltipIcon tooltipKey="bible_reader" size={16} color={theme.accentBlue} />
+          </View>
         </View>
       </View>
 

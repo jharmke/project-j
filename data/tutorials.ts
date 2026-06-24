@@ -2156,7 +2156,7 @@ export const TAB_TUTORIALS: Record<string, string[]> = {
   stats: ['graph_creator', 'streaks', 'effort_vs_results', 'day_score'],
   profile: [],
   settings: ['goals', 'notifications', 'faith_and_style', 'vacation_mode'],
-  faith: ['faith_prayer', 'faith_bible_plans', 'faith_halo'],
+  faith: ['faith_prayer', 'faith_bible_plans', 'faith_halo', 'bible'],
 };
 
 export function getTutorialById(id: string): Tutorial | undefined {

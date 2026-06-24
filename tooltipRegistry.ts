@@ -472,6 +472,19 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     ],
   },
   {
+    key: 'bible_reader',
+    tutorialId: 'bible',
+    category: 'Faith',
+    title: 'The Bible',
+    body: 'The full King James Bible, offline and always with you. Tap the book name up top to go anywhere, and tap any verse to highlight it. A highlighted verse opens a small action bar: reflect on it, save it, share it, talk it over with Halo, or add it to your daily message.\n\nNew here? Take the tour below for a quick walkthrough.',
+    definitions: [
+      { term: 'Highlight a verse', explanation: 'Tap any verse to highlight it. That opens an action bar with everything you can do, and keeps your place.' },
+      { term: "Add to Today's Message", explanation: 'The sun on the action bar adds a verse to your daily rotation, so it can show up as your verse of the day. Tap it again to remove it.' },
+      { term: 'Favorites', explanation: 'The star saves a verse to your Favorites, a personal list you can revisit from the star button in the header. Separate from the sun: the star saves a verse, the sun shapes your daily message.' },
+      { term: 'Reading settings', explanation: 'The gear sets your font, text size, and auto-scroll speed, so the reading feels right for you.' },
+    ],
+  },
+  {
     key: 'gratitude_streak',
     category: 'Habits',
     title: 'Gratitude',

@@ -8,12 +8,12 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { triggerHaptic } from '@/utils/haptics';
 import { useTheme } from '../theme';
-import { useToast } from './Toast';
+import { useToast, ToastRenderer } from './Toast';
 import {
   BodyMeasurementEntry, MEASURE_FIELDS, MeasureFieldKey,
   loadMeasurements, loadBodyMeasureSettings, loadBodyProfile, saveBodyMeasureSettings,
@@ -45,25 +45,39 @@ export default function BodyMeasurementsCard() {
   const bf = lastKnownBodyFat(entries);
   const hasData = entries.length > 0;
 
+  const pickerScale = useRef(new Animated.Value(0.85)).current;
+  const pickerOpacity = useRef(new Animated.Value(0)).current;
+  const animatePickerIn = () => {
+    pickerScale.setValue(0.85); pickerOpacity.setValue(0);
+    Animated.parallel([
+      Animated.spring(pickerScale, { toValue: 1, useNativeDriver: true, damping: 22, stiffness: 300 }),
+      Animated.timing(pickerOpacity, { toValue: 1, duration: 150, useNativeDriver: true }),
+    ]).start();
+  };
+  const closePicker = (after?: () => void) => {
+    Animated.parallel([
+      Animated.timing(pickerScale, { toValue: 0.9, duration: 150, useNativeDriver: true }),
+      Animated.timing(pickerOpacity, { toValue: 0, duration: 140, useNativeDriver: true }),
+    ]).start(() => { setPickerOpen(false); after?.(); });
+  };
+  const closePickerHaptic = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closePicker(); };
+
   const openPicker = () => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     setDraftSlots(settings.slots);
     setPickerOpen(true);
   };
   const toggleSlot = (key: MeasureFieldKey) => {
+    if (draftSlots.includes(key)) { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setDraftSlots(draftSlots.filter(k => k !== key)); return; }
+    if (draftSlots.length >= 6) { showToast('Up to 6 fields', 'Remove one to add another', 'info'); return; }
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-    setDraftSlots(prev => {
-      if (prev.includes(key)) return prev.filter(k => k !== key);
-      if (prev.length >= 6) return prev; // cap at 6
-      return [...prev, key];
-    });
+    setDraftSlots([...draftSlots, key]);
   };
   const savePicker = async () => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     await saveBodyMeasureSettings({ slots: draftSlots });
     setSettings(s => ({ ...s, slots: draftSlots }));
-    setPickerOpen(false);
-    showToast('Card updated', undefined, 'success');
+    closePicker(() => showToast('Card updated', undefined, 'success'));
   };
 
   const fmtDelta = (deltaIn: number): string => {
@@ -153,13 +167,24 @@ export default function BodyMeasurementsCard() {
         <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: '#fff' }}>Log Measurements</Text>
       </TouchableOpacity>
 
-      {/* Slot picker */}
-      <Modal visible={pickerOpen} transparent animationType="fade" onRequestClose={() => setPickerOpen(false)}>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: theme.overlayBg, paddingHorizontal: 24 }}>
-          <View style={{ width: '100%', maxHeight: '76%', backgroundColor: theme.bgSheet, borderRadius: 18, borderTopWidth: 4, borderTopColor: accent, paddingTop: 16, paddingBottom: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.45, shadowRadius: 28, elevation: 24 }}>
-            <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle, alignSelf: 'center', marginBottom: 12 }} />
-            <Text style={{ fontSize: 16, fontFamily: 'DMSans_700Bold', color: theme.textPrimary, textAlign: 'center', marginBottom: 2 }}>Card Fields</Text>
-            <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, textAlign: 'center', marginBottom: 10 }}>Pick up to 6 to show ({draftSlots.length}/6)</Text>
+      {/* Slot picker -- house-standard centered modal */}
+      <Modal visible={pickerOpen} transparent animationType="none" onShow={animatePickerIn} onRequestClose={closePickerHaptic}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Animated.View style={[StyleSheet.absoluteFillObject, { backgroundColor: theme.overlayBg, opacity: pickerOpacity }]} pointerEvents="none" />
+          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={closePickerHaptic} />
+          <Animated.View style={{ width: '88%', maxHeight: '78%', backgroundColor: theme.bgSheet, borderRadius: 20, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 4, borderTopColor: accent, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.45, shadowRadius: 28, elevation: 24, transform: [{ scale: pickerScale }], opacity: pickerOpacity }}>
+            {/* Handle */}
+            <TouchableOpacity onPress={closePickerHaptic} style={{ alignItems: 'center', paddingTop: 12, paddingBottom: 4 }} hitSlop={{ top: 12, bottom: 12, left: 60, right: 60 }}>
+              <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.sheetHandle }} />
+            </TouchableOpacity>
+            {/* Header */}
+            <View style={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 6, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>Card Fields</Text>
+              <TouchableOpacity onPress={closePickerHaptic} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Ionicons name="close" size={20} color={theme.textMuted} />
+              </TouchableOpacity>
+            </View>
+            <Text style={{ fontSize: 12, fontFamily: 'DMSans_400Regular', color: theme.textMuted, paddingHorizontal: 20, marginBottom: 6 }}>Pick up to 6 to show ({draftSlots.length}/6)</Text>
             <ScrollView style={{ paddingHorizontal: 18 }} showsVerticalScrollIndicator={false}>
               {MEASURE_FIELDS.map(f => {
                 const on = draftSlots.includes(f.key);
@@ -173,14 +198,15 @@ export default function BodyMeasurementsCard() {
               })}
             </ScrollView>
             <View style={{ flexDirection: 'row', gap: 10, padding: 16 }}>
-              <TouchableOpacity onPress={() => setPickerOpen(false)} style={{ flex: 1, alignItems: 'center', paddingVertical: 13, borderRadius: 10, borderWidth: 1, borderColor: theme.borderInput }}>
+              <TouchableOpacity onPress={closePickerHaptic} style={{ flex: 1, alignItems: 'center', paddingVertical: 13, borderRadius: 10, borderWidth: 1, borderColor: theme.borderInput }}>
                 <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary }}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity disabled={draftSlots.length < 1} onPress={savePicker} style={{ flex: 1, alignItems: 'center', paddingVertical: 13, borderRadius: 10, backgroundColor: draftSlots.length < 1 ? theme.bgInput : accent }}>
                 <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: draftSlots.length < 1 ? theme.textDim : '#fff' }}>Save</Text>
               </TouchableOpacity>
             </View>
-          </View>
+            <ToastRenderer />
+          </Animated.View>
         </View>
       </Modal>
     </TouchableOpacity>

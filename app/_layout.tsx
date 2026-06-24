@@ -165,6 +165,8 @@ function RootLayoutNav() {
         <Stack.Screen name="recipe-log" options={{ headerShown: false }} />
         <Stack.Screen name="ai-meal-estimator" options={{ headerShown: false }} />
         <Stack.Screen name="day-detail" options={{ headerShown: false, animation: 'none' }} />
+        <Stack.Screen name="body-measurements" options={{ headerShown: false }} />
+        <Stack.Screen name="body-measurement-log" options={{ headerShown: false }} />
         <Stack.Screen name="settings" options={{ headerShown: false }} />
         <Stack.Screen name="bible" options={{ headerShown: false }} />
         <Stack.Screen name="journal" options={{ headerShown: false }} />

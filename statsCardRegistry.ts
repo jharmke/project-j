@@ -53,7 +53,7 @@ export const DEFAULT_STATS_CARDS: StatsCard[] = [
   { id: 'sys_records',    type: 'system', systemKey: 'records',    label: 'Records',    visible: true, order: 8,  period: 7, placement: 'stats' },
   { id: 'sys_streaks',    type: 'system', systemKey: 'streaks',    label: 'Streaks',    visible: true, order: 9,  period: 7, placement: 'stats' },
   { id: 'sys_challenges', type: 'system', systemKey: 'challenges', label: 'Challenges',    visible: true, order: 10, period: 7, placement: 'stats' },
-  { id: 'sys_hrZones',    type: 'system', systemKey: 'hrZones',    label: 'Heart Rate Zones', visible: true, order: 11, period: 7, placement: 'stats' },
+  { id: 'sys_hrZones',    type: 'system', systemKey: 'hrZones',    label: 'Body', visible: true, order: 11, period: 7, placement: 'stats' },
   { id: 'sys_calendar',   type: 'system', systemKey: 'calendar',   label: 'Calendar',      visible: true, order: 12, period: 7, placement: 'stats' },
   { id: 'sys_reports',    type: 'system', systemKey: 'reports',    label: 'Reports',       visible: true, order: 13, period: 30, placement: 'stats' },
 ];

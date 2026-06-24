@@ -40,6 +40,17 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     ],
   },
   {
+    key: 'body_measurements',
+    category: 'Fitness',
+    title: 'Body Measurements',
+    body: 'Track your body with a tape measure over time: neck, chest, shoulders, waist, hips, arms, and legs. Log whenever you want, as often as you want. The snapshot shows your latest value for each spot with how long ago you measured it, so an old number never reads as fresh. Trends show the direction each measurement is heading.\n\nWhat matters is the trend, not any single reading. Tape numbers wobble a little with how snug you pull it, the time of day, and water. Measure the same spot the same way each time and the line tells the truth.\n\nTap "How to measure" on the logging screen for placement on every field. Everything is optional: log only what you care about.',
+    definitions: [
+      { term: 'Navy Body Fat %', explanation: 'An estimate from your neck, waist (and hips for women) plus your height, using the U.S. Navy tape method. It is an estimate, not a clinical scan like DEXA, and can be off by a few points. Watch the trend, not the exact number.' },
+      { term: 'Delta from start', explanation: 'How far a measurement has moved from the first time you logged it. Shown under each value on the card.' },
+      { term: 'Stale values', explanation: 'A measurement older than 30 days is dimmed and marked with how long ago it was taken, so you know it is your best-known value but not a fresh one.' },
+    ],
+  },
+  {
     key: 'day_score',
     tutorialId: 'day_score',
     category: 'Reports',

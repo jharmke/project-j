@@ -97,7 +97,10 @@ export default function BodyMeasurementLogScreen() {
 
   const renderField = (key: MeasureFieldKey, label: string) => (
     <View key={key} style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 7 }}>
-      <Text style={{ flex: 1, fontSize: 14, fontFamily: 'DMSans_500Medium', color: theme.textSecondary }}>{label}</Text>
+      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+        <View style={{ width: 3, height: 16, borderRadius: 2, backgroundColor: accent, marginRight: 10 }} />
+        <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary }}>{label}</Text>
+      </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', width: 130, backgroundColor: theme.bgInput, borderColor: theme.borderInput, borderWidth: 1, borderRadius: 8, paddingHorizontal: 10 }}>
         <TextInput
           value={inputs[key] ?? ''}
@@ -138,7 +141,7 @@ export default function BodyMeasurementLogScreen() {
             </TouchableOpacity>
 
             {MEASURE_REGIONS.map(region => (
-              <View key={region} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop }]}>
+              <View key={region} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: accent }]}>
                 <Text style={[styles.cardLabel, { color: theme.textMuted }]}>{region.toUpperCase()}</Text>
                 {fieldsForRegion(region).map(f => renderField(f.key, f.label))}
               </View>

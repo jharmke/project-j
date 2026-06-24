@@ -88,6 +88,7 @@ export default function BodyMeasurementsScreen() {
   const hasData = entries.length > 0;
   const u = settings.unit;
   const accent = theme.accentBlueRaw;
+  const fabScale = useRef(new Animated.Value(1)).current;
 
   const shadowStyle = {
     shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 12, elevation: 6,
@@ -104,11 +105,10 @@ export default function BodyMeasurementsScreen() {
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Ionicons name="chevron-back" size={20} color={theme.accentBlue} />
           </TouchableOpacity>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={{ fontSize: 26, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.accentBlueRaw }}>BODY</Text>
-            <TooltipIcon tooltipKey="body_measurements" size={15} />
+          <Text style={{ flex: 1, textAlign: 'center', fontSize: 26, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.accentBlueRaw }}>BODY</Text>
+          <View style={{ width: 38, alignItems: 'center', justifyContent: 'center' }}>
+            <TooltipIcon tooltipKey="body_measurements" size={18} />
           </View>
-          <View style={{ width: 38 }} />
         </View>
 
         <ScrollView contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: insets.bottom + 120 }} showsVerticalScrollIndicator={false}>
@@ -252,12 +252,16 @@ export default function BodyMeasurementsScreen() {
         </ScrollView>
 
         {/* FAB */}
-        <TouchableOpacity
-          onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); router.push('/body-measurement-log'); }}
-          activeOpacity={0.85}
-          style={[styles.fab, { backgroundColor: accent, bottom: insets.bottom + 24, shadowColor: accent }]}>
-          <Ionicons name="add" size={30} color="#fff" />
-        </TouchableOpacity>
+        <Animated.View style={[styles.fab, { backgroundColor: accent, bottom: insets.bottom + 24, shadowColor: accent, transform: [{ scale: fabScale }] }]}>
+          <TouchableOpacity
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); router.push('/body-measurement-log'); }}
+            onPressIn={() => Animated.timing(fabScale, { toValue: 0.9, duration: 90, useNativeDriver: true }).start()}
+            onPressOut={() => Animated.timing(fabScale, { toValue: 1, duration: 90, useNativeDriver: true }).start()}
+            activeOpacity={1}
+            style={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="add" size={30} color="#fff" />
+          </TouchableOpacity>
+        </Animated.View>
 
         <MeasureHowToModal visible={howToOpen} onClose={() => setHowToOpen(false)} />
 

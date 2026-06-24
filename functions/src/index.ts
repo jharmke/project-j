@@ -150,7 +150,7 @@ export const onPrayerRequestCreated = onDocumentCreated(
       });
       await transporter.sendMail({
         from: '"Project J" <jtharmke@gmail.com>',
-        to: 'jtharmke@gmail.com',
+        to: 'dev.harmke@gmail.com',
         subject: `Prayer Request -- ${userName || 'App User'}`,
         text: `From: ${userName || 'Anonymous'}${userEmail ? ` (${userEmail})` : ''}\n\n${message}`,
       });

@@ -13,6 +13,7 @@ import { useHealthKit, restoreAppleWorkoutHistory } from '../useHealthKit';
 import { useAuth } from '../AuthContext';
 import { BLANK_DAY, WorkoutTag } from '../workoutData';
 import CelebrationOverlay from '../components/CelebrationOverlay';
+import FeedbackModal from '../components/FeedbackModal';
 import { showAchievementToast } from '../components/AchievementToast';
 import { ACHIEVEMENTS, loadAchievements, checkAndUnlock, loadGoalHitCounts, checkSleepAchievements, checkNutritionAchievements, checkMomentumAchievements, checkWorkoutAchievements, checkFaithAchievements } from '../achievementData';
 import { collection, getDocs } from 'firebase/firestore';
@@ -1112,6 +1113,7 @@ export default function SettingsScreen() {
   };
 
   const appVersion = Constants.expoConfig?.version ?? '1.0';
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
 
   return (
@@ -1972,7 +1974,7 @@ export default function SettingsScreen() {
 
 
         {/* ── Help ── */}
-        <CollapsibleSection label="Help" subtitle="Definitions · Guides · Prayer" defaultOpen={false} theme={theme}>
+        <CollapsibleSection label="Help" subtitle="Definitions · Guides · Prayer · Feedback" defaultOpen={false} theme={theme}>
           <View style={{ paddingBottom: 8 }}>
             <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 8, marginBottom: 8 }}>
               <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Definitions</Text>
@@ -2017,6 +2019,16 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Share what's on your heart</Text>
               </View>
               <Ionicons name="heart" size={15} color={theme.textMuted} />
+            </TouchableOpacity>
+            <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, marginHorizontal: 16, marginTop: 16, marginBottom: 8 }}>
+              <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase' }}>Feedback</Text>
+            </View>
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setFeedbackOpen(true); }} activeOpacity={0.7}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>Send Feedback</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Report a bug or share an idea</Text>
+              </View>
+              <Ionicons name="chatbox-ellipses" size={15} color={theme.textMuted} />
             </TouchableOpacity>
           </View>
         </CollapsibleSection>
@@ -3433,6 +3445,8 @@ export default function SettingsScreen() {
         def={devCelebTier === 'diamond' ? ACHIEVEMENTS.find(a => a.id === 'weight_goal') : undefined}
         onDismiss={() => setDevCelebVisible(false)}
       />
+
+      <FeedbackModal visible={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
 
     </LinearGradient>
   );

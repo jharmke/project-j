@@ -366,18 +366,23 @@ function AnimatedProgressBar({ pct, color, trackColor, refreshKey, ready, overGo
   const width = useSharedValue(0);
   const hasFired = useRef(false);
   const shimmerX = useSharedValue(-80);
+  // Latest pct, so the delayed reveal timeouts animate to the CURRENT value, not the one
+  // captured in their closure. Without this, a value that loads during the reveal delay
+  // (e.g. water on cold launch) leaves the bar stuck at a stale length until a refresh.
+  const pctRef = useRef(pct);
+  pctRef.current = pct;
 
   useEffect(() => {
     hasFired.current = false;
     width.value = 0;
     if (ready === undefined) {
       setTimeout(() => {
-        width.value = withTiming(Math.min(100, pct), { duration: 1200 });
+        width.value = withTiming(Math.min(100, pctRef.current), { duration: 1200 });
         hasFired.current = true;
       }, 800);
     } else if (ready) {
       setTimeout(() => {
-        width.value = withTiming(Math.min(100, pct), { duration: 1200 });
+        width.value = withTiming(Math.min(100, pctRef.current), { duration: 1200 });
         hasFired.current = true;
       }, 300);
     }
@@ -539,7 +544,6 @@ export default function HomeScreen() {
     const existing = await AsyncStorage.getItem(`pj_${todayKey}`);
     const current = existing ? JSON.parse(existing) : {};
     const base = reconcileDayWater(current, todayKey);
-    const prev = base.water;
     const sign: 'add' | 'remove' = deltaOz > 0 ? 'add' : 'remove';
     const newEntry = { amount: Math.abs(deltaOz), timestamp: new Date().toISOString(), sign };
     const newEntries = [...base.waterEntries, newEntry];
@@ -553,38 +557,22 @@ export default function HomeScreen() {
     } else if (deltaOz < 0) {
       showToast('Water removed', `-${Math.abs(deltaOz)} oz · ${newWater} oz total`, 'info');
     }
-    if (deltaOz > 0 && newWater >= waterGoal && prev < waterGoal) {
-      cancelWaterPaceNotification();
-      const { fired, count: hitCount } = await handleDailyGoalHit('water');
-      if (fired) {
-        showCelebration('small', 'WATER GOAL'); showDailyGoalToast('Water Goal', hitCount, 'water', '#3b82f6');
-        let s = achievementStore;
-        const hydrationMilestones = [
-          { id: 'hydration_first', threshold: 1   },
-          { id: 'hydration_10',   threshold: 10  },
-          { id: 'hydration_30',   threshold: 30  },
-          { id: 'hydration_50',   threshold: 50  },
-          { id: 'hydration_75',   threshold: 75  },
-          { id: 'hydration_100',  threshold: 100 },
-          { id: 'hydration_200',  threshold: 200 },
-          { id: 'hydration_365',  threshold: 365 },
-        ];
-        for (const m of hydrationMilestones) {
-          if (hitCount >= m.threshold) s = await handleAchievementUnlock(m.id, s);
-        }
-      }
-    }
   };
 
   const deleteWaterEntry = async (idx: number) => {
-    const newEntries = waterEntries.filter((_, i) => i !== idx);
-    const newWater = Math.max(0, newEntries.reduce(
-      (sum, e) => sum + (e.sign === 'add' ? e.amount : -e.amount), 0
-    ));
-    setWater(newWater);
-    setWaterEntries(newEntries);
+    const target = waterEntries[idx];
+    if (!target) return;
+    // Re-read + reconcile (never-lower) the STORED day instead of writing the in-memory
+    // list, so a stale in-memory view can't drop other entries (the clobber bug). Remove
+    // only the targeted entry, matched by its unique timestamp (index fallback).
     const existing = await AsyncStorage.getItem(`pj_${todayKey}`);
     const current = existing ? JSON.parse(existing) : {};
+    const base = reconcileDayWater(current, todayKey);
+    const matchIdx = base.waterEntries.findIndex(e => e.timestamp === target.timestamp && e.amount === target.amount && e.sign === target.sign);
+    const newEntries = base.waterEntries.filter((_, i) => i !== (matchIdx >= 0 ? matchIdx : idx));
+    const newWater = waterTotalFromEntries(newEntries);
+    setWater(newWater);
+    setWaterEntries(newEntries);
     await storageSet(`pj_${todayKey}`, JSON.stringify({ ...current, water: newWater, waterEntries: newEntries, waterGoal }));
     saveToFirebase(todayKey, 'water', newWater);
     showToast('Entry removed', `${newWater} oz total`, 'info');
@@ -612,16 +600,21 @@ export default function HomeScreen() {
     if (editingWaterIdx === null) return;
     const amt = parseInt(editWaterAmount);
     if (isNaN(amt) || amt <= 0) return;
-    const newEntries = waterEntries.map((e, i) =>
-      i === editingWaterIdx ? { ...e, amount: amt, sign: editWaterSign } : e
-    );
-    const newWater = Math.max(0, newEntries.reduce(
-      (sum, e) => sum + (e.sign === 'add' ? e.amount : -e.amount), 0
-    ));
-    setWater(newWater);
-    setWaterEntries(newEntries);
+    const target = waterEntries[editingWaterIdx];
+    if (!target) return;
+    // Re-read + reconcile the STORED day (never-lower) so the edit can't clobber entries
+    // missing from a stale in-memory list. Edit only the targeted entry, matched by timestamp.
     const existing = await AsyncStorage.getItem(`pj_${todayKey}`);
     const current = existing ? JSON.parse(existing) : {};
+    const base = reconcileDayWater(current, todayKey);
+    const matchIdx = base.waterEntries.findIndex(e => e.timestamp === target.timestamp && e.amount === target.amount && e.sign === target.sign);
+    const editPos = matchIdx >= 0 ? matchIdx : editingWaterIdx;
+    const newEntries = base.waterEntries.map((e, i) =>
+      i === editPos ? { ...e, amount: amt, sign: editWaterSign } : e
+    );
+    const newWater = waterTotalFromEntries(newEntries);
+    setWater(newWater);
+    setWaterEntries(newEntries);
     await storageSet(`pj_${todayKey}`, JSON.stringify({ ...current, water: newWater, waterEntries: newEntries, waterGoal }));
     saveToFirebase(todayKey, 'water', newWater);
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
@@ -1384,6 +1377,42 @@ export default function HomeScreen() {
       prevSleepHoursRef.current = sleepHours;
     }
   }, [activeCalories, steps, sleepHours, sleepStages, restingHR, respiratoryRate, bloodOxygen, exerciseMinutes, loaded, stepGoal, activeCalGoal, exerciseMinsGoal]);
+
+  // ── Water goal achievement (single source of truth) ──────────────────────────
+  // Whenever the day is at/over the water goal, ask handleDailyGoalHit to register it -- its
+  // once-per-day gate fires the count + celebration exactly once. This deliberately does NOT
+  // use a prev-value "crossing" guard like steps: water/waterGoal load separately (waterGoal
+  // defaults to 128 then settles to the real goal), so a crossing guard misses the fire when
+  // the goal settles after the water value, or when the never-lower reconciliation loads the
+  // day already over goal. Moved out of doWaterUpdate so it can't double-fire.
+  useEffect(() => {
+    if (!loaded) return;
+    if (water > 0 && waterGoal > 0 && water >= waterGoal) {
+      handleDailyGoalHit('water').then(({ fired, count: hitCount }) => {
+        if (!fired) return;
+        cancelWaterPaceNotification();
+        showCelebration('small', 'WATER GOAL');
+        showDailyGoalToast('Water Goal', hitCount, 'water', '#3b82f6');
+        loadAchievements().then(async store => {
+          let s = store;
+          const hydrationMilestones = [
+            { id: 'hydration_first', threshold: 1   },
+            { id: 'hydration_10',   threshold: 10  },
+            { id: 'hydration_30',   threshold: 30  },
+            { id: 'hydration_50',   threshold: 50  },
+            { id: 'hydration_75',   threshold: 75  },
+            { id: 'hydration_100',  threshold: 100 },
+            { id: 'hydration_200',  threshold: 200 },
+            { id: 'hydration_365',  threshold: 365 },
+          ];
+          for (const m of hydrationMilestones) {
+            if (hitCount >= m.threshold) s = await handleAchievementUnlock(m.id, s);
+          }
+          setAchievementStore(s);
+        });
+      });
+    }
+  }, [water, waterGoal, loaded]);
 
   // ── Load layout from settings ────────────────────────────────────────────────
   useEffect(() => {

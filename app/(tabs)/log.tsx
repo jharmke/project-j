@@ -921,12 +921,18 @@ export default function LogScreen() {
   };
 
   const deleteWaterEntry = async (idx: number) => {
-    const newEntries = waterEntries.filter((_, i) => i !== idx);
-    const newWater = Math.max(0, newEntries.reduce((sum, e) => sum + (e.sign === 'add' ? e.amount : -e.amount), 0));
-    setWater(newWater);
-    setWaterEntries(newEntries);
+    const target = waterEntries[idx];
+    if (!target) return;
+    // Re-read + reconcile (never-lower) the STORED day so a stale in-memory list can't drop
+    // other entries (clobber bug). Remove only the targeted entry, matched by its timestamp.
     const existing = await AsyncStorage.getItem(`pj_${activeDate}`);
     const current = existing ? JSON.parse(existing) : {};
+    const base = reconcileDayWater(current, activeDate);
+    const matchIdx = base.waterEntries.findIndex(e => e.timestamp === target.timestamp && e.amount === target.amount && e.sign === target.sign);
+    const newEntries = base.waterEntries.filter((_, i) => i !== (matchIdx >= 0 ? matchIdx : idx));
+    const newWater = sumWaterEntries(newEntries);
+    setWater(newWater);
+    setWaterEntries(newEntries);
     await storageSet(`pj_${activeDate}`, JSON.stringify({ ...current, water: newWater, waterEntries: newEntries, waterGoal }));
     saveToFirebase(activeDate, 'water', newWater);
     showToast('Entry removed', `${newWater} oz total`, 'info');

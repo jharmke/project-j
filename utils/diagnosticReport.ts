@@ -413,7 +413,7 @@ function buildDiagnosticCards(
       lever: `Lean on whole foods: fruit, vegetables, beans, whole grains.`,
       window: winFiber, strength: clampStrength(34 + Math.min(40, pctUnder * 70)),
       tone: macroFinding.fiberStatus === 'factor' ? 'factor' : 'attention', positive: false,
-      metric: { kind: 'range', value: macroFinding.avgFiber, target: 38, rangeMin: 25, rangeMax: 38, unit: 'g', primaryLabel: 'AVG/DAY', secondaryLabel: '25 TO 38' },
+      metric: { kind: 'range', value: macroFinding.avgFiber, target: 38, rangeMin: 25, rangeMax: 38, unit: 'g', primaryLabel: 'FIBER AVG/DAY', secondaryLabel: '25 TO 38' },
     });
   }
 
@@ -465,7 +465,7 @@ function buildDiagnosticCards(
       proof: `Avg ${macroFinding.avgFiber} g fiber/day · target 25 to 38 g`,
       lever: `Whole foods are doing the work. Keep them on the plate.`,
       window: winFiber, strength: clampStrength(40), tone: 'positive', positive: true,
-      metric: { kind: 'range', value: macroFinding.avgFiber, target: 38, rangeMin: 25, rangeMax: 38, unit: 'g', primaryLabel: 'AVG/DAY', secondaryLabel: '25 TO 38' },
+      metric: { kind: 'range', value: macroFinding.avgFiber, target: 38, rangeMin: 25, rangeMax: 38, unit: 'g', primaryLabel: 'FIBER AVG/DAY', secondaryLabel: '25 TO 38' },
     });
   }
 

@@ -74,6 +74,31 @@ export async function purgeFoodPhoto(foodId: string): Promise<void> {
   await deleteFoodPhotoCloud(foodId);
 }
 
+// Push every local-only food photo up to Firebase Storage so it survives a reinstall,
+// instead of waiting for each food to be opened in detail. For each pj_food_photo_ key
+// whose value is still a local path, resolveFoodPhoto runs the same upload+rewrite the
+// detail screen does (only when the local file still exists). Already-cloud photos are
+// skipped. "unrecoverable" = the stored ref was local-only AND the file is already gone.
+export async function backfillAllPhotos(): Promise<{ total: number; uploaded: number; alreadyCloud: number; unrecoverable: number }> {
+  let total = 0, uploaded = 0, alreadyCloud = 0, unrecoverable = 0;
+  let keys: readonly string[] = [];
+  try { keys = await AsyncStorage.getAllKeys(); } catch { return { total, uploaded, alreadyCloud, unrecoverable }; }
+  const photoKeys = keys.filter(k => k.startsWith('pj_food_photo_'));
+  total = photoKeys.length;
+  for (const key of photoKeys) {
+    const foodId = key.slice('pj_food_photo_'.length);
+    let before: string | null = null;
+    try { before = await AsyncStorage.getItem(key); } catch {}
+    if (before && before.startsWith('http')) { alreadyCloud++; continue; }
+    await resolveFoodPhoto(foodId); // uploads + rewrites the key to a cloud URL if the local file exists
+    let after: string | null = null;
+    try { after = await AsyncStorage.getItem(key); } catch {}
+    if (after && after.startsWith('http')) uploaded++;
+    else unrecoverable++;
+  }
+  return { total, uploaded, alreadyCloud, unrecoverable };
+}
+
 // Resolve a displayable LOCAL uri for a food's photo. Handles, in order:
 //  - local cache hit -> use it (and backfill-upload if the stored ref is a legacy
 //    local path, so the photo becomes cloud-safe going forward);

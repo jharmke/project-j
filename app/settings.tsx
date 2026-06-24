@@ -19,7 +19,8 @@ import { ACHIEVEMENTS, loadAchievements, checkAndUnlock, loadGoalHitCounts, chec
 import { collection, getDocs } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { app, auth, db, saveToFirebase } from '../firebaseConfig';
-import { shouldSync, uploadAllLocal, resetRestoreGate } from '../services/syncService';
+import { shouldSync, uploadAllLocal, resetRestoreGate, verifyBackup } from '../services/syncService';
+import { backfillAllPhotos } from '../utils/foodPhotos';
 import { storageSet } from '../utils/storage';
 import { setOnboardingPreview } from '../utils/onboardingPreview';
 import { DEFAULT_ORDER, DEFAULT_VISIBLE, DISCIPLINE_ORDER, MINDFUL_ORDER, MINDFUL_VISIBLE, type CardId } from './(tabs)/index';
@@ -3058,6 +3059,56 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Counts what is actually in this account's cloud. Writes nothing.</Text>
               </View>
               <Ionicons name="cloud-outline" size={18} color={theme.accentBlue} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              try {
+                const r = await verifyBackup();
+                if (!r.signedIn) { Alert.alert('Backup Verify', 'Not signed in.'); return; }
+                if (!r.cloudReachable) { Alert.alert('Backup Verify', 'Cloud unreachable. Check your connection and try again. (Nothing was changed.)'); return; }
+                const keysLine = r.keysMissing.length === 0
+                  ? `KEYS: ${r.keysInCloud}/${r.syncableKeys} backed up ✓`
+                  : `KEYS: ${r.keysInCloud}/${r.syncableKeys} backed up\n⚠️ MISSING (${r.keysMissing.length}): ${r.keysMissing.slice(0, 8).join(', ')}${r.keysMissing.length > 8 ? ' ...' : ''}`;
+                const photoLine = r.photoTotal === 0
+                  ? 'PHOTOS: none stored'
+                  : (r.photosAtRisk.length === 0
+                      ? `PHOTOS: ${r.photosCloudSafe}/${r.photoTotal} cloud-safe ✓`
+                      : `PHOTOS: ${r.photosCloudSafe}/${r.photoTotal} cloud-safe\n🚨 AT RISK (${r.photosAtRisk.length}, local only): run "Backfill Photos to Cloud" below before deleting the app`);
+                const verdict = (r.keysMissing.length === 0 && r.photosAtRisk.length === 0)
+                  ? '\n\n✅ SAFE TO DELETE: everything is backed up.'
+                  : '\n\n⚠️ NOT fully backed up yet. Background the app (auto-uploads) and/or run Backfill Photos, then re-check.';
+                Alert.alert('Backup Verify (read-only)', `${keysLine}\n\n${photoLine}${verdict}`);
+              } catch (e) { Alert.alert('Backup Verify failed', String(e)); }
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentGreen }]}>Backup Verify (read-only)</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Confirms every key AND every photo is actually in the cloud. Writes nothing. Run before deleting the app.</Text>
+              </View>
+              <Ionicons name="shield-checkmark-outline" size={18} color={theme.accentGreen} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              Alert.alert(
+                'Backfill Photos to Cloud',
+                'Uploads any food photo that is still local-only to Firebase Storage so it survives a reinstall. Safe: only uploads, never deletes.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Backfill', onPress: async () => {
+                    try {
+                      const r = await backfillAllPhotos();
+                      Alert.alert('Backfill Photos', `${r.total} photo(s) checked:\n\n${r.uploaded} uploaded to cloud\n${r.alreadyCloud} already cloud-safe\n${r.unrecoverable} unrecoverable (local file already gone)`);
+                    } catch (e) { Alert.alert('Backfill failed', String(e)); }
+                  } },
+                ],
+              );
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentBlue }]}>Backfill Photos to Cloud</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Pushes any local-only food photos up to Storage. Run if Backup Verify flags photos at risk.</Text>
+              </View>
+              <Ionicons name="cloud-upload-outline" size={18} color={theme.accentBlue} />
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {

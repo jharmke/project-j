@@ -26,7 +26,10 @@ const API_URL = 'https://api.anthropic.com/v1/messages';
 
 export const QUOTA_KEY = 'pj_ai_estimator_quota';
 export const FREE_LIMIT = 3;
-export const PRO_LIMIT = 30;
+// 🚨 TESTFLIGHT HACK (2026-06-24) -- raised from 30 so devProUnlocked = effectively
+// unlimited estimates for Justin's trip (TestFlight, where __DEV__ is false). REVERT to
+// the real cap before App Store launch. See the REVERT-BEFORE-LAUNCH banner in the roadmap.
+export const PRO_LIMIT = 9999;
 
 // DEV testing: unlimited estimates in the dev build only. __DEV__ is false in
 // release/TestFlight builds, so the real FREE_LIMIT/PRO_LIMIT caps apply there

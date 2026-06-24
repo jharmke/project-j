@@ -171,6 +171,60 @@ async function stampOwner(uid: string): Promise<void> {
   try { await AsyncStorage.setItem(DATA_OWNER_KEY, uid); } catch {}
 }
 
+// ── Backup verification (read-only) ───────────────────────────────────────────
+// Cross-checks LOCAL data against the cloud so we can prove nothing is missing,
+// instead of trusting a raw key count. Two layers:
+//   - every syncable pj_* key is confirmed present in Firestore;
+//   - every food-photo key is checked for a real CLOUD URL value (an http URL means
+//     the IMAGE is in Firebase Storage; a local file path means the image is local-only
+//     and would die on reinstall -- the exact failure mode that lost photos before).
+// Reads only; never writes, never deletes.
+export interface BackupReport {
+  totalLocalKeys: number;
+  syncableKeys: number;
+  keysInCloud: number;
+  keysMissing: string[];
+  photoTotal: number;
+  photosCloudSafe: number;
+  photosAtRisk: string[]; // foodIds whose photo is local-only (no cloud image)
+  cloudReachable: boolean;
+  signedIn: boolean;
+}
+
+export async function verifyBackup(): Promise<BackupReport> {
+  const base: BackupReport = {
+    totalLocalKeys: 0, syncableKeys: 0, keysInCloud: 0, keysMissing: [],
+    photoTotal: 0, photosCloudSafe: 0, photosAtRisk: [], cloudReachable: false, signedIn: false,
+  };
+  const uid = auth.currentUser?.uid;
+  if (!uid) return base;
+  base.signedIn = true;
+
+  const allKeys = await AsyncStorage.getAllKeys();
+  base.totalLocalKeys = allKeys.length;
+  const syncable = allKeys.filter(shouldSync);
+  base.syncableKeys = syncable.length;
+
+  // Photo cloud-safety (value is an http cloud URL vs a local file path).
+  const photoKeys = allKeys.filter(k => k.startsWith('pj_food_photo_'));
+  base.photoTotal = photoKeys.length;
+  const photoPairs = await AsyncStorage.multiGet(photoKeys);
+  for (const [k, v] of photoPairs) {
+    if (v && v.startsWith('http')) base.photosCloudSafe++;
+    else base.photosAtRisk.push(k.slice('pj_food_photo_'.length));
+  }
+
+  // Confirm each syncable key exists in the cloud.
+  const snap = await fetchCloudSnapshot(uid);
+  if (!snap) return base; // cloudReachable stays false
+  base.cloudReachable = true;
+  const cloudKeys = new Set<string>();
+  snap.forEach(d => { const data = d.data() as any; if (data.key) cloudKeys.add(data.key); });
+  base.keysMissing = syncable.filter(k => !cloudKeys.has(k));
+  base.keysInCloud = syncable.length - base.keysMissing.length;
+  return base;
+}
+
 async function _runRestoreGate(): Promise<RestoreGateResult> {
   const uid = auth.currentUser?.uid;
   if (!uid) return 'no-auth'; // nothing to do without a user; sync stays locked

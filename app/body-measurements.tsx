@@ -105,7 +105,7 @@ export default function BodyMeasurementsScreen() {
             <Ionicons name="chevron-back" size={20} color={theme.accentBlue} />
           </TouchableOpacity>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Text style={{ fontSize: 26, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.textPrimary }}>BODY</Text>
+            <Text style={{ fontSize: 26, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.accentBlueRaw }}>BODY</Text>
             <TooltipIcon tooltipKey="body_measurements" size={15} />
           </View>
           <View style={{ width: 38 }} />
@@ -157,7 +157,7 @@ export default function BodyMeasurementsScreen() {
                     const stale = lk ? daysSince(lk.date) > STALE_DAYS : false;
                     return (
                       <View key={f.key} style={{ width: '50%', paddingVertical: 6, paddingRight: 8 }}>
-                        <Text style={{ fontSize: 10, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted }} numberOfLines={1}>{f.label}</Text>
+                        <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 1, textTransform: 'uppercase' }} numberOfLines={1}>{f.label}</Text>
                         {lk ? (
                           <>
                             <Text style={{ fontSize: 18, fontFamily: 'DMSans_700Bold', color: stale ? theme.textDim : theme.textPrimary }}>
@@ -205,7 +205,7 @@ export default function BodyMeasurementsScreen() {
                 const isOpen = expandedId === entry.id;
                 const count = MEASURE_FIELDS.filter(f => typeof entry.values[f.key] === 'number').length;
                 return (
-                  <View key={entry.id} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, ...shadowStyle, paddingVertical: 0 }]}>
+                  <View key={entry.id} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: accent, ...shadowStyle, paddingVertical: 0 }]}>
                     <TouchableOpacity activeOpacity={0.7}
                       onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setExpandedId(isOpen ? null : entry.id); }}
                       style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 14 }}>

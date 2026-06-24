@@ -124,7 +124,7 @@ export default function BodyMeasurementLogScreen() {
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
               <Ionicons name="chevron-back" size={20} color={theme.accentBlue} />
             </TouchableOpacity>
-            <Text style={{ fontSize: 16, fontFamily: 'DMSans_700Bold', color: theme.textPrimary }}>{isEdit ? 'Edit Measurements' : 'Log Measurements'}</Text>
+            <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1.5, color: theme.accentBlueRaw }}>{isEdit ? 'Edit Measurements' : 'Log Measurements'}</Text>
             <View style={{ width: 38 }} />
           </View>
 
@@ -132,7 +132,7 @@ export default function BodyMeasurementLogScreen() {
             {/* How to measure entry point */}
             <TouchableOpacity
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setHowToOpen(true); }}
-              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder, borderWidth: 1, borderRadius: 10, paddingVertical: 11, marginBottom: 14 }}>
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: theme.bgCard, borderColor: theme.accentBlueBorder, borderWidth: 1, borderRadius: 10, paddingVertical: 12, marginBottom: 14, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.12, shadowRadius: 6, elevation: 3 }}>
               <Ionicons name="help-circle-outline" size={17} color={theme.accentBlue} />
               <Text style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlue }}>How to measure</Text>
             </TouchableOpacity>

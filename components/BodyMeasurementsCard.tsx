@@ -69,7 +69,7 @@ export default function BodyMeasurementsCard() {
   };
   const toggleSlot = (key: MeasureFieldKey) => {
     if (draftSlots.includes(key)) { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setDraftSlots(draftSlots.filter(k => k !== key)); return; }
-    if (draftSlots.length >= 6) { showToast('Up to 6 fields', 'Remove one to add another', 'info'); return; }
+    if (draftSlots.length >= 6) { showToast('Up to 6 fields', 'Remove one to add another', 'error'); return; }
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     setDraftSlots([...draftSlots, key]);
   };
@@ -126,7 +126,9 @@ export default function BodyMeasurementsCard() {
               const lk = lastKnownFor(entries, key);
               const delta = deltaFromStart(entries, key);
               const isLastOdd = i === slots.length - 1 && slots.length % 2 === 1;
-              const deltaColor = isMindful ? theme.textSecondary : (delta == null || delta === 0 ? theme.textMuted : delta < 0 ? theme.accentGreen : theme.accentAmber);
+              // Neutral deltas for now: green/amber would assume "smaller is better", which is
+              // wrong for muscle-gain goals. Re-introduce goal-aware coloring with the goal selector.
+              const deltaColor = theme.textSecondary;
               return (
                 <View key={key} style={{ width: isLastOdd ? '100%' : '50%', alignItems: isLastOdd ? 'center' : 'flex-start', paddingVertical: 7, paddingRight: isLastOdd ? 0 : 8 }}>
                   <Text style={{ fontSize: 10, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted }}>{def.label}</Text>
@@ -179,7 +181,7 @@ export default function BodyMeasurementsCard() {
             </TouchableOpacity>
             {/* Header */}
             <View style={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 6, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>Card Fields</Text>
+              <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.accentBlue, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>Card Fields</Text>
               <TouchableOpacity onPress={closePickerHaptic} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                 <Ionicons name="close" size={20} color={theme.textMuted} />
               </TouchableOpacity>

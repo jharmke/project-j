@@ -46,7 +46,7 @@ export default function BodyMeasurementLogScreen() {
       const ph: Record<string, string> = {};
       for (const f of MEASURE_FIELDS) {
         const lk = lastKnownFor(entries, f.key);
-        if (lk) ph[f.key] = `last: ${toDisplay(lk.value, s.unit)}`;
+        if (lk) ph[f.key] = `${toDisplay(lk.value, s.unit)}`;
       }
       setPlaceholders(ph);
       // Edit mode: pre-fill the entry's values.
@@ -105,7 +105,7 @@ export default function BodyMeasurementLogScreen() {
         <TextInput
           value={inputs[key] ?? ''}
           onChangeText={t => setInputs(prev => ({ ...prev, [key]: t.replace(/[^0-9.]/g, '') }))}
-          placeholder={placeholders[key] ?? unitLabel(unit)}
+          placeholder={placeholders[key] ?? ''}
           placeholderTextColor={theme.textPlaceholder}
           keyboardType="decimal-pad"
           style={{ flex: 1, fontSize: 15, fontFamily: 'DMSans_600SemiBold', color: theme.textPrimary, paddingVertical: 9 }}

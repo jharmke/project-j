@@ -160,8 +160,8 @@ export default function BodyMeasurementsScreen() {
                         <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', color: theme.textMuted, letterSpacing: 1, textTransform: 'uppercase' }} numberOfLines={1}>{f.label}</Text>
                         {lk ? (
                           <>
-                            <Text style={{ fontSize: 18, fontFamily: 'DMSans_700Bold', color: stale ? theme.textDim : theme.textPrimary }}>
-                              {toDisplay(lk.value, u)}<Text style={{ fontSize: 11, color: theme.textMuted }}> {unitLabel(u)}</Text>
+                            <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5, color: stale ? theme.textDim : theme.textSecondary }}>
+                              {toDisplay(lk.value, u)}<Text style={{ fontSize: 11, fontFamily: 'DMSans_500Medium', color: theme.textMuted }}> {unitLabel(u)}</Text>
                             </Text>
                             <Text style={{ fontSize: 9.5, fontFamily: 'DMSans_400Regular', color: stale ? theme.accentAmber : theme.textDim }}>{relativeAge(lk.date)}</Text>
                           </>
@@ -303,7 +303,8 @@ function Sparkline({ label, series, unit, theme, isMindful }: {
   }).join(' ');
   const first = series[0].v, last = series[series.length - 1].v;
   const change = Math.round((last - first) * 10) / 10;
-  const changeColor = isMindful ? theme.textSecondary : (change === 0 ? theme.textMuted : change < 0 ? theme.accentGreen : theme.accentAmber);
+  // Neutral for now -- goal-aware coloring (up vs down good) comes with the goal selector.
+  const changeColor = theme.textSecondary;
   return (
     <View style={{ backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.borderCardTop, borderWidth: 0.5, borderRadius: 12, padding: 12, marginBottom: 8, flexDirection: 'row', alignItems: 'center' }}>
       <View style={{ width: 84 }}>

@@ -4,6 +4,20 @@
 
 ---
 
+## ✅ POST-TRIP TEST LIST (verify on the NEXT build after the June 25-28 trip)
+
+TestFlight build cut + device-verified 2026-06-24 (all PASSED): real reinstall -> auto-restored, no onboarding, food photo intact; AI estimator works in TestFlight + unlimited (9999) via devProUnlocked; Halo + coach insights generate; hypnogram ticks, WORKOUT NOTE caps, HR debrief text, water-clobber, protein "logged days" wording all confirmed on device.
+
+These shipped AFTER that build, so they need a FRESH build to verify:
+- [ ] HR ZONE BARS: confirm the bars no longer animate to the right length then SNAP BACK shorter. Justin caught it still doing this on the trip build (the % width animation). Fixed by switching to scaleX + native driver + static width (HRZoneModal.tsx, transformOrigin left). VERIFY on next build the grow animation is clean and the rest length is correct.
+- [ ] PROTEIN PATTERN HOME CARD: confirm the bare one-sentence variant now reads with its added second sentence ("Protein protects muscle while you are in a deficit...") so it matches the fat/carb cards' depth (smartTipsCopy.ts protein_under pattern variant 1).
+
+OPEN follow-ups discussed this session (decide / build after trip):
+- [ ] MACRO TIP COPY PRECISION: the fat/carb/protein pattern tips say "above/below your [exact] target on N days," but the count uses a cushion (protein counts days below 80% of goal; fat/carb count days above 110%). So the day-count slightly under-represents "days off target." Pre-existing + minor; tighten the wording ("well below" / "comfortably above") or count to the true target.
+- [ ] OPTIONAL HR ZONE BAR REDESIGN: Justin asked whether the independent per-zone bars should instead be ONE full-width bar split into colored segments (so it reads as the whole workout). Numbers are honest either way; purely a visual call.
+
+---
+
 ## 🚨🚨🚨 REVERT BEFORE APP STORE LAUNCH 🚨🚨🚨 (TESTFLIGHT-ONLY HACKS - DO NOT SHIP)
 
 THESE ARE TEMPORARY FOR JUSTIN'S TESTFLIGHT TESTING (added 2026-06-24). EVERY ONE MUST BE

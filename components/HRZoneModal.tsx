@@ -66,7 +66,9 @@ export default function HRZoneModal({ visible, loading, data, onClose }: Props) 
   useEffect(() => {
     if (visible && data && !loading) {
       barProgress.setValue(0);
-      Animated.timing(barProgress, { toValue: 1, duration: 650, useNativeDriver: false }).start();
+      // Animate scaleX (native driver) instead of an interpolated percentage width --
+      // the % width path overshoots then snaps to its final length on release builds.
+      Animated.timing(barProgress, { toValue: 1, duration: 650, useNativeDriver: true }).start();
     }
   }, [visible, data, loading]);
 
@@ -172,8 +174,9 @@ export default function HRZoneModal({ visible, loading, data, onClose }: Props) 
                       </View>
                       <View style={{ flex: 1, height: 10, borderRadius: 5, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
                         <Animated.View style={{
-                          height: '100%', borderRadius: 5, backgroundColor: r.color,
-                          width: barProgress.interpolate({ inputRange: [0, 1], outputRange: ['0%', `${pct}%`] }),
+                          height: '100%', width: `${pct}%`, borderRadius: 5, backgroundColor: r.color,
+                          transformOrigin: 'left',
+                          transform: [{ scaleX: barProgress }],
                         }} />
                       </View>
                       <View style={{ width: 56, alignItems: 'flex-end', paddingLeft: 6 }}>

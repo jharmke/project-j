@@ -726,6 +726,21 @@ if (data.setLogs) setSetLogs(data.setLogs);
     return null;
   };
 
+  // Tap-to-reorder (replaces drag, which can't work while the list's own scroll is disabled).
+  // Swaps an exercise with its neighbor in the active day's program and saves.
+  const moveExercise = (exId: string, dir: -1 | 1) => {
+    const baseProgram = programs[activeDay] || weeklyTemplate[activeDayName];
+    const list = [...(baseProgram?.exercises || [])];
+    const idx = list.findIndex((e: any) => e.id === exId);
+    const newIdx = idx + dir;
+    if (idx < 0 || newIdx < 0 || newIdx >= list.length) return;
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    [list[idx], list[newIdx]] = [list[newIdx], list[idx]];
+    const newPrograms = { ...programs, [activeDay]: { ...baseProgram, exercises: list } };
+    setPrograms(newPrograms);
+    saveState(checks, cardioComplete, newPrograms, workoutNotes, cardioLogs, weeklyTemplate);
+  };
+
   const toggleExercise = (id: string) => {
   triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
   const dayChecks = checks[activeDay] || {};
@@ -1151,32 +1166,34 @@ if (data.setLogs) setSetLogs(data.setLogs);
           </>
         )}
 
-        <DraggableFlatList
-          data={isRest ? [] : exercises}
-          keyExtractor={(ex: any) => ex.id}
-          onDragEnd={({ data }) => {
-            const baseProgram = programs[activeDay] || weeklyTemplate[activeDayName];
-            const newPrograms = { ...programs, [activeDay]: { ...baseProgram, exercises: data } };
-            setPrograms(newPrograms);
-            saveState(checks, cardioComplete, newPrograms, workoutNotes, cardioLogs, weeklyTemplate);
-          }}
-          renderItem={({ item: ex, drag, isActive }: RenderItemParams<any>) => {
+        {!isRest && exercises.map((ex: any) => {
             const isDone = dayChecks[ex.id];
             return (
-              <ScaleDecorator>
                 <View
+                  key={ex.id}
                   ref={ex.id === 'tutorial_demo_bench' ? firstExerciseRef : undefined}
                   collapsable={false}
                   style={[styles.exerciseItem, isDone && styles.exerciseDone, {
                   backgroundColor: theme.bgCard,
                   borderColor: theme.borderCard,
                   borderLeftColor: isDone ? theme.accentBlue : theme.textDim,
-                  opacity: isActive ? 0.9 : 1
                 }]}>
                   <View style={styles.exerciseRow}>
-                    <TouchableOpacity onLongPress={drag} style={{ paddingRight: 10, justifyContent: 'center' }}>
-                      <Text style={{ color: theme.textDim, fontSize: 18, lineHeight: 14 }}>⠿</Text>
-                    </TouchableOpacity>
+                    {(() => {
+                      const idx = exercises.findIndex((e: any) => e.id === ex.id);
+                      const isFirst = idx <= 0;
+                      const isLast = idx === exercises.length - 1;
+                      return (
+                        <View style={{ paddingRight: 10, justifyContent: 'center', gap: 1 }}>
+                          <TouchableOpacity onPress={() => moveExercise(ex.id, -1)} disabled={isFirst} hitSlop={{ top: 4, bottom: 2, left: 6, right: 6 }}>
+                            <Ionicons name="arrow-up" size={17} color={isFirst ? theme.textDim + '44' : theme.textMuted} />
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={() => moveExercise(ex.id, 1)} disabled={isLast} hitSlop={{ top: 2, bottom: 4, left: 6, right: 6 }}>
+                            <Ionicons name="arrow-down" size={17} color={isLast ? theme.textDim + '44' : theme.textMuted} />
+                          </TouchableOpacity>
+                        </View>
+                      );
+                    })()}
                     <View style={styles.exerciseInfo}>
                       <TouchableOpacity style={styles.exerciseNameRow} activeOpacity={0.7}
                         onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openInfoModal(ex.name); }}>
@@ -1261,10 +1278,8 @@ if (data.setLogs) setSetLogs(data.setLogs);
                     </View>
                   </View>
                 </View>
-              </ScaleDecorator>
             );
-          }}
-        />
+        })}
 
         {!isRest && exercises.length === 0 && (
           <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, alignItems: 'center', paddingVertical: 28, marginBottom: 12 }]}>

@@ -1513,6 +1513,12 @@ export type DailyGoalCounts = Record<DailyGoalId, DailyGoalEntry>;
 const GOAL_COUNTS_KEY = 'pj_goal_hit_counts';
 const GOAL_CELEB_KEY  = 'pj_daily_goal_celebrations';
 
+// LOCAL calendar date (Y-M-D), matching todayKey everywhere else in the app. Using toISOString()
+// here was a UTC date -- an evening goal hit (already next-day UTC) got stamped/gated on the wrong
+// day, so achievements showed the date off by one. Must match the reader in achievements.tsx.
+const localGoalDateKey = (d: Date = new Date()) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
 export const DEFAULT_DAILY_GOAL_COUNTS: DailyGoalCounts = {
   water:        { count: 0, lastEarned: '' },
   steps:        { count: 0, lastEarned: '' },
@@ -1535,7 +1541,7 @@ export async function loadGoalHitCounts(): Promise<DailyGoalCounts> {
 export async function handleDailyGoalHit(
   goalId: DailyGoalId
 ): Promise<{ fired: boolean; count: number; lastEarned: string }> {
-  const today = new Date().toISOString().split('T')[0];
+  const today = localGoalDateKey();
 
   try {
     const celebRaw = await AsyncStorage.getItem(GOAL_CELEB_KEY);

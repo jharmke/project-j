@@ -3111,6 +3111,34 @@ export default function SettingsScreen() {
               <Ionicons name="cloud-upload-outline" size={18} color={theme.accentBlue} />
             </TouchableOpacity>
 
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              try {
+                const now = new Date();
+                const localKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                const utcKey = now.toISOString().split('T')[0];
+                const countsRaw = await AsyncStorage.getItem('pj_goal_hit_counts');
+                const counts = countsRaw ? JSON.parse(countsRaw) : null;
+                const celebRaw = await AsyncStorage.getItem('pj_daily_goal_celebrations');
+                const celeb = celebRaw ? JSON.parse(celebRaw) : null;
+                const fmt = (g: string) => {
+                  const e = counts?.[g];
+                  return e ? `${g}: ${e.count}x, last ${e.lastEarned || 'never'}` : `${g}: (none)`;
+                };
+                const body =
+                  `TODAY  local ${localKey}  |  UTC ${utcKey}${localKey !== utcKey ? '  (DIFFER)' : ''}` +
+                  `\n\nGOAL HIT COUNTS:\n${['water', 'steps', 'activeCals', 'exerciseMins'].map(fmt).join('\n')}` +
+                  `\n\nCELEBRATED TODAY (the once-per-day gate):\n${celeb ? `date ${celeb.date}\ngoals: ${(celeb.goals || []).join(', ') || '(none)'}` : '(no record)'}`;
+                Alert.alert('Daily Goal State (read-only)', body);
+              } catch (e) { Alert.alert('Dump failed', String(e)); }
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentGreen }]}>Dump Daily Goal State (read-only)</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Shows the stored goal hit counts + last-earned dates, the once-per-day celebration record, and today's local vs UTC date. Writes nothing.</Text>
+              </View>
+              <Ionicons name="bug-outline" size={18} color={theme.accentGreen} />
+            </TouchableOpacity>
+
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
               triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
               setOnboardingPreview(true);

@@ -488,8 +488,11 @@ function DailyGoalCard({ def, counts }: { def: DailyGoalDef; counts: DailyGoalCo
   const entry      = counts[def.id];
   const count      = entry?.count ?? 0;
   const lastEarned = entry?.lastEarned ?? '';
-  const today      = new Date().toISOString().split('T')[0];
-  const yesterday  = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+  // LOCAL date (must match the writer in achievementData.ts localGoalDateKey) so "Last: Today"
+  // lines up with the day the user actually earned it, not the UTC calendar day.
+  const ld = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const today      = ld(new Date());
+  const yesterday  = ld(new Date(Date.now() - 86400000));
 
   const lastLabel = !lastEarned
     ? 'Not yet earned'

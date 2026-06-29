@@ -29,10 +29,16 @@ IN (this build):
 - PR detection at finish: heaviest weight and best estimated 1RM (Epley) per lift, stored.
 - Editing: today's logged sets are editable anytime; a session can be re-opened and corrected.
 
+ADDED BACK 2026-06-29 (Justin trains with supersets, so "core only" was too aggressive):
+- Supersets: link consecutive lift exercises into a group via a "Superset" pill in the gap;
+  renders as one bordered block (accent rail + SUPERSET label) with an UNLINK control on the
+  divider between members. Data: optional Exercise.supersetGroup id; consecutive same-id lifts
+  group. Cardio cannot be supersetted. Built in workout.tsx (renderExerciseCard + units render).
+  The rest timer (increment 4) will rest after a full round of the group, not after each member.
+
 OUT (explicit, later builds):
 - RPE / RIR per set.
-- Supersets (grouping exercises).
-- Drop sets.
+- Drop sets (can be faked with extra set rows; revisit later).
 - 1RM trend graph (graphable stat), volume per muscle group, EvR surfacing of PRs.
 - A dedicated PR history / records page (beyond the finish-summary flag). [OPEN, see 11]
 - Rest timer running in the background after the app is closed (in-app countdown only for now;

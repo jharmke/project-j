@@ -19,7 +19,7 @@ These shipped AFTER that build, so they need a FRESH build to verify:
 - [FIXED + VERIFIED 2026-06-29] HOME-TAB FLASH BEFORE SPLASH: no flash confirmed by Justin. Also bumped fade-in from 350ms to 600ms (was too fast to read as a fade), hold from 300ms to 400ms, fade-out from 450ms to 500ms. Total ~1.5s. Justin confirmed splash now fades in and out correctly.
 
 OPEN follow-ups discussed this session (decide / build after trip):
-- [ ] MACRO TIP COPY PRECISION: the fat/carb/protein pattern tips say "above/below your [exact] target on N days," but the count uses a cushion (protein counts days below 80% of goal; fat/carb count days above 110%). So the day-count slightly under-represents "days off target." Pre-existing + minor; tighten the wording ("well below" / "comfortably above") or count to the true target.
+- [CUT 2026-06-29, Justin's call] MACRO TIP COPY PRECISION (fat/carb/protein "above/below your target on N days" vs the 80%/110% cushion count). Reviewed: the copy is already technically true (every counted day genuinely is below/above target); the cushion just makes it conservative/under-count near-misses, never over-states. Numbers shown are correct and good. Not worth a wording change. Leave as-is.
 - [ ] OPTIONAL HR ZONE BAR REDESIGN: Justin asked whether the independent per-zone bars should instead be ONE full-width bar split into colored segments (so it reads as the whole workout). Numbers are honest either way; purely a visual call.
 
 ---

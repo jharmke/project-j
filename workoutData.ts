@@ -16,6 +16,15 @@ export interface Exercise {
   calories?: string;
 }
 
+// One logged set of a lift: actual weight x reps, the per-set rest target, and the done check.
+// Stored in pj_workout_state.setLogs[dateKey][exerciseId]. weight/reps null = not entered yet.
+export interface SetEntry {
+  weight: number | null;
+  reps: number | null;
+  rest: number | null;
+  done: boolean;
+}
+
 export interface WorkoutTag {
   id: string;
   label: string;

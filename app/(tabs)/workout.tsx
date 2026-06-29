@@ -21,8 +21,9 @@ import { cancelActivityNotification } from '../../services/notifications';
 import { useTheme } from '../../theme';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import { useHealthKit } from '../../useHealthKit';
-import { BLANK_DAY, DEFAULT_TAGS, DayProgram, Exercise, Routine, TAG_COLOR_PALETTE, WorkoutTag, PRESET_ROUTINES } from '../../workoutData';
+import { BLANK_DAY, DEFAULT_TAGS, DayProgram, Exercise, Routine, SetEntry, TAG_COLOR_PALETTE, WorkoutTag, PRESET_ROUTINES } from '../../workoutData';
 import MuscleMap from '../../components/MuscleMap';
+import ExerciseSetRows from '../../components/ExerciseSetRows';
 import HRZoneModal, { HRZoneData } from '../../components/HRZoneModal';
 import { resolveMaxHR, zoneBounds, timeInZones, ageFromBirthday } from '../../utils/hrZones';
 import { showToolkit } from '../../components/ToolkitSheet';
@@ -94,6 +95,8 @@ export default function WorkoutScreen() {
   }, []);
   const [loaded, setLoaded] = useState(false);
   const [checks, setChecks] = useState<Record<string, Record<string, boolean>>>({});
+// Actual logged sets per lift: setLogs[dateKey][exerciseId] = SetEntry[]. Additive on pj_workout_state.
+const [setLogs, setSetLogs] = useState<Record<string, Record<string, SetEntry[]>>>({});
 const [cardioComplete, setCardioComplete] = useState<Record<string, boolean>>({});
 const [programs, setPrograms] = useState<Record<string, DayProgram>>({});
 const [workoutNotes, setWorkoutNotes] = useState<Record<string, string>>({});
@@ -603,6 +606,7 @@ useEffect(() => {
           if (data.workoutNoteNames) setWorkoutNoteNames(data.workoutNoteNames);
           if (data.cardioLogs) setCardioLogs(data.cardioLogs);
           if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
+          if (data.setLogs) setSetLogs(data.setLogs);
           if (data.activeProgramName) setActiveProgramName(data.activeProgramName);
         }
         const settings = await AsyncStorage.getItem('pj_settings');
@@ -651,6 +655,7 @@ if (data.workoutNotes) { setWorkoutNotes(data.workoutNotes); setSavedNoteText(da
 if (data.workoutNoteNames) setWorkoutNoteNames(data.workoutNoteNames);
 if (data.cardioLogs) setCardioLogs(data.cardioLogs);
 if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
+if (data.setLogs) setSetLogs(data.setLogs);
           }
         } catch (e) {
           console.log('Reload error', e);
@@ -661,7 +666,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
     }, [])
   );
 
-  const saveState = async (newChecks = checks, newCardio = cardioComplete, newPrograms = programs, newNotes = workoutNotes, newCardioLogs = cardioLogs, newTemplate = weeklyTemplate, newProgramName = activeProgramName, newNoteNames = workoutNoteNames) => {
+  const saveState = async (newChecks = checks, newCardio = cardioComplete, newPrograms = programs, newNotes = workoutNotes, newCardioLogs = cardioLogs, newTemplate = weeklyTemplate, newProgramName = activeProgramName, newNoteNames = workoutNoteNames, newSetLogs = setLogs) => {
   try {
     await storageSet('pj_workout_state', JSON.stringify({
       checks: newChecks,
@@ -672,11 +677,54 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
       cardioLogs: newCardioLogs,
       weeklyTemplate: newTemplate,
       activeProgramName: newProgramName,
+      setLogs: newSetLogs,
     }));
   } catch (e) {
     console.log('Save error', e);
   }
 };
+
+  // Logged sets for an exercise on the active day. Seeds empty rows from the target sets count
+  // (default 3) the first time, so a fresh lift shows rows to fill. Seeded rows are not persisted
+  // until the user actually edits/checks one.
+  const getSeededSets = (ex: any): SetEntry[] => {
+    const stored = setLogs[activeDay]?.[ex.id];
+    if (stored && stored.length) return stored;
+    const n = Math.max(1, Math.min(10, parseInt(ex.sets) || 3));
+    const rest = parseInt(ex.rest) || null;
+    return Array.from({ length: n }, () => ({ weight: null, reps: null, rest, done: false }));
+  };
+
+  const saveSetsForExercise = (exId: string, sets: SetEntry[]) => {
+    const next = { ...setLogs, [activeDay]: { ...(setLogs[activeDay] || {}), [exId]: sets } };
+    setSetLogs(next);
+    saveState(checks, cardioComplete, programs, workoutNotes, cardioLogs, weeklyTemplate, activeProgramName, workoutNoteNames, next);
+  };
+
+  // Most recent PRIOR session's logged sets for the same lift (matched by normalized name), so
+  // each set row can show last time's weight x reps. Resolves each past day's exercise list from
+  // its program override or the weekly template to map the logged exerciseId back to a name.
+  const normalizeLiftName = (name: string) => (name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  const WEEKDAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const dayNameOf = (dateKey: string) => WEEKDAY_SHORT[new Date(dateKey + 'T12:00:00').getDay()];
+  const getPreviousSets = (ex: any): SetEntry[] | null => {
+    const target = normalizeLiftName(ex.name);
+    if (!target) return null;
+    const dates = Object.keys(setLogs).filter(d => d < activeDay).sort().reverse();
+    for (const d of dates) {
+      const dayLogs = setLogs[d];
+      if (!dayLogs) continue;
+      const prog = programs[d] || weeklyTemplate[dayNameOf(d)];
+      const exList: any[] = prog?.exercises || [];
+      for (const pastEx of exList) {
+        if (normalizeLiftName(pastEx.name) === target) {
+          const logged = dayLogs[pastEx.id];
+          if (logged && logged.some(s => s.weight != null || s.reps != null || s.done)) return logged;
+        }
+      }
+    }
+    return null;
+  };
 
   const toggleExercise = (id: string) => {
   triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
@@ -1134,7 +1182,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                         onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openInfoModal(ex.name); }}>
                         <Text style={[styles.exerciseName, { color: theme.textSecondary }, isDone && [styles.exerciseNameDone, { color: theme.textDim }]]}>{ex.name}</Text>
                         {exerciseLibrary.find((e: any) => e.name === ex.name && (e.instructions?.length || e.primaryMuscles?.length)) ? (
-                          <Ionicons name="information-circle-outline" size={14} color={theme.textDim} style={{ marginLeft: 4, marginTop: 1 }} />
+                          <Ionicons name="information-circle-outline" size={14} color={theme.textDim} style={{ marginLeft: -2 }} />
                         ) : null}
                         {ex.dropset && (
                           <View style={[styles.badge, { backgroundColor: color + '22' }]}>
@@ -1175,7 +1223,19 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
                         </View>
                       ) : (
                         <View ref={ex.id === 'tutorial_demo_bench' ? firstSetsRepsRef : undefined} collapsable={false}>
-                          <Text style={[styles.exerciseMeta, { color: theme.textMuted }]}>{ex.sets} sets · {ex.reps} reps · {ex.rest} rest</Text>
+                          {(ex.reps || ex.rest) ? (
+                            <Text style={[styles.exerciseMeta, { color: theme.textMuted }]}>
+                              {[ex.reps ? `${ex.reps} reps` : null, ex.rest ? `${ex.rest} rest` : null].filter(Boolean).join(' · ')}
+                            </Text>
+                          ) : null}
+                          <ExerciseSetRows
+                            key={`${activeDay}_${ex.id}`}
+                            initialSets={getSeededSets(ex)}
+                            previousSets={getPreviousSets(ex)}
+                            defaultRest={parseInt(ex.rest) || null}
+                            onPersist={(sets) => saveSetsForExercise(ex.id, sets)}
+                            theme={theme}
+                          />
                         </View>
                       )}
                       {ex.note ? <Text style={[styles.exerciseNote, { color: theme.textDim }]}>{ex.note}</Text> : null}

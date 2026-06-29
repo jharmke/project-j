@@ -118,6 +118,10 @@ export function useHealthKit() {
   const [bloodOxygen, setBloodOxygen] = useState<number | null>(null);
   const [hrv, setHrv] = useState<number | null>(null);
   const [exerciseMinutes, setExerciseMinutes] = useState<number | null>(null);
+  // LOCAL date (Y-M-D) the core activity metrics (steps/cals/exercise) were last pulled FOR.
+  // Lets goal detection confirm the numbers belong to today before firing, so it can never fire
+  // on yesterday's leftover values during a warm-app date rollover.
+  const [activityDataDate, setActivityDataDate] = useState<string>('');
   const [appleWorkouts, setAppleWorkouts] = useState<readonly any[]>([]);
 
   useEffect(() => {
@@ -278,6 +282,9 @@ export function useHealthKit() {
         { filter: { date: { startDate: startOfDay, endDate: now } } }
       );
       setExerciseMinutes(Math.round(exMinData?.sumQuantity?.quantity ?? 0));
+      // Core activity metrics (cals/steps/exercise) are now all today's -- stamp the local date so
+      // goal detection knows the numbers are fresh for today before it fires.
+      setActivityDataDate(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`);
 
       // Apple Workouts
       try {
@@ -932,5 +939,5 @@ export function useHealthKit() {
     bloodOxygen !== null || hrv !== null || vo2Max !== null ||
     cardioRecovery !== null || exerciseMinutes !== null;
 
-  return { authorized, hasHealthData, lastSyncedAt, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, sleepAwakeCount, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, hrv, exerciseMinutes, appleWorkouts, fetchTodayData, fetchHistoricalWorkouts, fetchSleepHistory, fetchLastNightSegments, fetchRecoverySignals, fetchOvernightRHR, fetchWorkoutWindows, fetchWorkoutHeartRate, fetchWorkoutHRByUUID, dumpHRV };
+  return { authorized, hasHealthData, lastSyncedAt, activityDataDate, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, sleepAwakeCount, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, hrv, exerciseMinutes, appleWorkouts, fetchTodayData, fetchHistoricalWorkouts, fetchSleepHistory, fetchLastNightSegments, fetchRecoverySignals, fetchOvernightRHR, fetchWorkoutWindows, fetchWorkoutHeartRate, fetchWorkoutHRByUUID, dumpHRV };
 }

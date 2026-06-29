@@ -737,9 +737,10 @@ export default function HomeScreen() {
   const [sleepGoal,      setSleepGoal]      = useState(7);
   const [activeCalGoal,  setActiveCalGoal]  = useState(500);
   const [exerciseMinsGoal, setExerciseMinsGoal] = useState(30);
-  const prevStepsRef        = useRef<number | null>(null);
-  const prevActiveCalRef    = useRef<number | null>(null);
-  const prevExerciseMinsRef = useRef<number | null>(null);
+  // Per-goal "already handled this session today" guard -- avoids re-calling handleDailyGoalHit on
+  // every HealthKit tick once a goal is hit. The once-per-day record in handleDailyGoalHit remains
+  // the persistent source of truth; this just trims redundant async calls. Re-armed on a new day.
+  const goalFiredSessionRef = useRef<{ day: string; steps: boolean; activeCals: boolean; exerciseMins: boolean }>({ day: '', steps: false, activeCals: false, exerciseMins: false });
   const prevSleepHoursRef   = useRef<number | null>(null);
   const [macroGoals,     setMacroGoals]     = useState({ protein: 0, carbs: 0, fat: 0 });
   const [goalWeight,     setGoalWeight]     = useState<number|null>(null);
@@ -864,7 +865,7 @@ export default function HomeScreen() {
     return store;
   };
 
-  const { activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, sleepAwakeCount, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, exerciseMinutes, fetchTodayData, hasHealthData, lastSyncedAt, fetchRecoverySignals } = useHealthKit();
+  const { activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, sleepAwakeCount, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, exerciseMinutes, activityDataDate, fetchTodayData, hasHealthData, lastSyncedAt, fetchRecoverySignals } = useHealthKit();
 
   // ── Sleep tutorial resolver: routes sleep_card to the manual-path tutorial when
   //    no Apple Health sleep data is present, or when dev override is active. ──
@@ -1326,10 +1327,18 @@ export default function HomeScreen() {
         }));
       });
     }
-    if (loaded) {
-      const stepsCrossed = prevStepsRef.current !== null && prevStepsRef.current < stepGoal;
-      const stepsFirstAboveGoal = prevStepsRef.current === null && steps >= stepGoal;
-      if (steps > 0 && stepGoal > 0 && steps >= stepGoal && (stepsCrossed || stepsFirstAboveGoal)) {
+    // Activity goal detection (steps / active cals / exercise). Gated on activityDataDate === todayKey
+    // so it only ever evaluates HealthKit numbers confirmed fresh for TODAY -- never yesterday's
+    // leftover values during a warm-app midnight rollover (the false-fire/skip bug). Fires at >=goal
+    // (no crossing needed, so a goal already met on the day's first fresh read still fires); the
+    // once-per-day record dedupes across sessions and the session guard trims redundant calls.
+    if (loaded && activityDataDate === todayKey) {
+      if (goalFiredSessionRef.current.day !== todayKey) {
+        goalFiredSessionRef.current = { day: todayKey, steps: false, activeCals: false, exerciseMins: false };
+      }
+      const g = goalFiredSessionRef.current;
+      if (!g.steps && steps > 0 && stepGoal > 0 && steps >= stepGoal) {
+        g.steps = true;
         handleDailyGoalHit('steps').then(({ fired, count: hitCount }) => {
           if (fired) {
             showCelebration('small', 'STEP GOAL'); showDailyGoalToast('Step Goal', hitCount, 'footsteps', '#10b981');
@@ -1353,25 +1362,21 @@ export default function HomeScreen() {
           }
         });
       }
-      prevStepsRef.current = steps;
       const adjustedActiveCals = Math.round(activeCalories * burnAccuracyPct / 100);
-      const prevAdjustedActiveCals = prevActiveCalRef.current !== null ? Math.round(prevActiveCalRef.current * burnAccuracyPct / 100) : null;
-      const calsCrossed = prevAdjustedActiveCals !== null && prevAdjustedActiveCals < activeCalGoal;
-      const calsFirstAboveGoal = prevActiveCalRef.current === null && adjustedActiveCals >= activeCalGoal;
-      if (adjustedActiveCals > 0 && activeCalGoal > 0 && adjustedActiveCals >= activeCalGoal && (calsCrossed || calsFirstAboveGoal)) {
+      if (!g.activeCals && adjustedActiveCals > 0 && activeCalGoal > 0 && adjustedActiveCals >= activeCalGoal) {
+        g.activeCals = true;
         handleDailyGoalHit('activeCals').then(({ fired, count: hitCount }) => {
           if (fired) { showCelebration('small', 'ACTIVE CALS'); showDailyGoalToast('Active Cal Goal', hitCount, 'flame', '#f97316'); }
         });
       }
-      prevActiveCalRef.current = activeCalories;
-      const exerciseCrossed = prevExerciseMinsRef.current !== null && prevExerciseMinsRef.current < exerciseMinsGoal;
-      const exerciseFirstAboveGoal = prevExerciseMinsRef.current === null && exerciseMinutes !== null && exerciseMinutes >= exerciseMinsGoal;
-      if (exerciseMinutes !== null && exerciseMinsGoal > 0 && exerciseMinutes >= exerciseMinsGoal && (exerciseCrossed || exerciseFirstAboveGoal)) {
+      if (!g.exerciseMins && exerciseMinutes !== null && exerciseMinsGoal > 0 && exerciseMinutes >= exerciseMinsGoal) {
+        g.exerciseMins = true;
         handleDailyGoalHit('exerciseMins').then(({ fired, count: hitCount }) => {
           if (fired) { showCelebration('small', 'EXERCISE GOAL'); showDailyGoalToast('Exercise Goal', hitCount, 'bicycle', '#8b5cf6'); }
         });
       }
-      prevExerciseMinsRef.current = exerciseMinutes;
+    }
+    if (loaded) {
       if (sleepHours !== null && prevSleepHoursRef.current === null) {
         checkSleepAchievements().then(unlocked => {
           unlocked.forEach(def => {
@@ -1382,7 +1387,7 @@ export default function HomeScreen() {
       }
       prevSleepHoursRef.current = sleepHours;
     }
-  }, [activeCalories, steps, sleepHours, sleepStages, restingHR, respiratoryRate, bloodOxygen, exerciseMinutes, loaded, stepGoal, activeCalGoal, exerciseMinsGoal]);
+  }, [activeCalories, steps, sleepHours, sleepStages, restingHR, respiratoryRate, bloodOxygen, exerciseMinutes, activityDataDate, todayKey, loaded, stepGoal, activeCalGoal, exerciseMinsGoal]);
 
   // ── Water goal achievement (single source of truth) ──────────────────────────
   // Whenever the day is at/over the water goal, ask handleDailyGoalHit to register it -- its

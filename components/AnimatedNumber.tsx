@@ -8,9 +8,12 @@ interface Props {
   decimals?: number;
   duration?: number;
   formatter?: (n: number) => string;
+  // When true, a change up FROM zero rolls instead of snapping. Default false preserves every
+  // existing caller (steps/water/etc. snap on first data load rather than counting up from 0).
+  animateFromZero?: boolean;
 }
 
-export default function AnimatedNumber({ value, style, decimals = 0, duration = 350, formatter }: Props) {
+export default function AnimatedNumber({ value, style, decimals = 0, duration = 350, formatter, animateFromZero = false }: Props) {
   const animRef = useRef(new Animated.Value(value));
   const [display, setDisplay] = useState(value);
   const prevRef = useRef(value);
@@ -20,7 +23,7 @@ export default function AnimatedNumber({ value, style, decimals = 0, duration = 
     const prev = prevRef.current;
     prevRef.current = value;
 
-    if (prev === 0) {
+    if (prev === 0 && !animateFromZero) {
       animRef.current.setValue(value);
       setDisplay(value);
       return;

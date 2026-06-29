@@ -5,10 +5,11 @@ import { cancelEveningGratitudeNotification, rescheduleStreakProtection } from '
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Animated, Easing, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useToast } from './Toast';
 import TooltipIcon from './TooltipIcon';
+import AnimatedNumber from './AnimatedNumber';
 import { CardWash } from './GradientCard';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -23,6 +24,9 @@ interface StreakSavers {
   count: number;
   earnBaselineStreak: number;
   earnBaselineIsActive: boolean;
+  // The day (pj_<date> key) a grace saver auto-covered a missed day, so the card can say so
+  // for that day only. Additive/optional -- read-then-merge keeps every other savers field.
+  lastGraceUsedDate?: string;
 }
 
 export interface PJStreaks {
@@ -32,8 +36,17 @@ export interface PJStreaks {
 
 const DEFAULT_STREAKS: PJStreaks = {
   gratitude: { currentStreak: 0, totalDays: 0, lastLoggedDate: null },
-  savers: { count: 0, earnBaselineStreak: 0, earnBaselineIsActive: true },
+  savers: { count: 0, earnBaselineStreak: 0, earnBaselineIsActive: true, lastGraceUsedDate: '' },
 };
+
+// Date-key helpers (local Y-M-D math on the pj_<date> key format).
+const dayKeyMinus = (key: string, n: number) => {
+  const d = new Date(key + 'T00:00:00');
+  d.setDate(d.getDate() - n);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+const dayDiff = (fromKey: string, toKey: string) =>
+  Math.round((new Date(toKey + 'T00:00:00').getTime() - new Date(fromKey + 'T00:00:00').getTime()) / 86400000);
 
 // ─── Verses (KJV) ────────────────────────────────────────────────────────────
 
@@ -84,6 +97,18 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
 
   const saverCap = styleMode === 'discipline' ? 1 : styleMode === 'balanced' ? 2 : 0;
   const isMindful = styleMode === 'mindful';
+
+  // Gentle continuous flame pulse -- a lit streak feels alive. Dimmed + still when the streak is
+  // 0 (see flameLit at render), so a broken streak reads as the flame going out.
+  const flamePulse = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(flamePulse, { toValue: 1.12, duration: 900, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+      Animated.timing(flamePulse, { toValue: 1,    duration: 900, easing: Easing.inOut(Easing.quad), useNativeDriver: true }),
+    ]));
+    loop.start();
+    return () => loop.stop();
+  }, []);
 
   // Faith-tab skin. The 'home' branch of every value is the exact current token, so the home
   // card renders identically; only the faith variant swaps the cool blue accent for warm gold.
@@ -136,23 +161,47 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
       setWeeklyLogs(weekDates.map(date => entries.some(e => e.category === 'gratitude' && e.date === date)));
 
       let gratitudeStreak = stored.gratitude;
+      let saversState = stored.savers;
+      let needsWrite = false;
 
       // If pj_streaks says today was logged but the journal entry was deleted, revert the increment
       if (gratitudeStreak.lastLoggedDate === todayKey && !todayEntry) {
-        const d = new Date(todayKey + 'T00:00:00');
-        d.setDate(d.getDate() - 1);
-        const yk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const yk = dayKeyMinus(todayKey, 1);
         gratitudeStreak = {
           ...gratitudeStreak,
           currentStreak: Math.max(0, gratitudeStreak.currentStreak - 1),
           totalDays: Math.max(0, gratitudeStreak.totalDays - 1),
           lastLoggedDate: gratitudeStreak.currentStreak <= 1 ? null : yk,
         };
-        await storageSet('pj_streaks', JSON.stringify({ ...stored, gratitude: gratitudeStreak }));
+        needsWrite = true;
+      }
+
+      // Grace-saver auto-protect (Model B): if exactly one day was missed and a saver is available,
+      // spend one saver to keep the streak alive -- heal the gap to yesterday so a later log just
+      // increments, and stamp the save so the card can say it covered yesterday. Runs once: after it
+      // heals lastLoggedDate to yesterday, the next focus sees a 1-day gap and does nothing. No saver
+      // / a multi-day gap = streak breaks (shown as 0 at render, no write -- a log resets it cleanly).
+      if (gratitudeStreak.lastLoggedDate && gratitudeStreak.lastLoggedDate !== todayKey) {
+        const diff = dayDiff(gratitudeStreak.lastLoggedDate, todayKey);
+        if (diff === 2 && saverCap > 0 && saversState.count > 0) {
+          const newSavers = { ...saversState, count: saversState.count - 1, lastGraceUsedDate: todayKey };
+          // Spending a saver reactivates earning toward a refill (mirrors computeStreak).
+          if (newSavers.count < saverCap && !newSavers.earnBaselineIsActive) {
+            newSavers.earnBaselineStreak = gratitudeStreak.currentStreak;
+            newSavers.earnBaselineIsActive = true;
+          }
+          gratitudeStreak = { ...gratitudeStreak, lastLoggedDate: dayKeyMinus(todayKey, 1) };
+          saversState = newSavers;
+          needsWrite = true;
+        }
+      }
+
+      if (needsWrite) {
+        await storageSet('pj_streaks', JSON.stringify({ ...stored, gratitude: gratitudeStreak, savers: saversState }));
       }
 
       setStreak(gratitudeStreak);
-      setSavers(stored.savers);
+      setSavers(saversState);
 
       if (todayEntry) {
         setLoggedEntry(todayEntry.notes || '');
@@ -192,6 +241,7 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
         s.currentStreak++;
         s.totalDays++;
         sv.count--;
+        sv.lastGraceUsedDate = today;
         graceUsed = true;
         if (sv.count < saverCap && !sv.earnBaselineIsActive) {
           sv.earnBaselineStreak = s.currentStreak;
@@ -298,8 +348,23 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
   const isLoggedToday = cardState === 'logged' || cardState === 'editing';
   const canSave = inputText.trim().length > 0;
 
+  // Honest streak shown the instant the card appears (no waiting for a log): intact if logged
+  // today or yesterday, or if a saver is covering a single missed day; otherwise 0 (broken).
+  const effectiveStreak = (() => {
+    const g = streak;
+    if (g.lastLoggedDate === null) return 0;
+    if (g.lastLoggedDate === todayKey) return g.currentStreak;
+    const diff = dayDiff(g.lastLoggedDate, todayKey);
+    if (diff === 1) return g.currentStreak;
+    if (diff === 2 && saverCap > 0 && savers.count > 0) return g.currentStreak;
+    return 0;
+  })();
+  const heroValue = isMindful ? streak.totalDays : effectiveStreak;
+  const flameLit = heroValue > 0;
+  const graceUsedToday = !isMindful && savers.lastGraceUsedDate === todayKey;
+
   const earnProgress = !isMindful && savers.earnBaselineIsActive && savers.count < saverCap
-    ? Math.min(streak.currentStreak - savers.earnBaselineStreak, 7)
+    ? Math.min(Math.max(0, effectiveStreak - savers.earnBaselineStreak), 7)
     : 0;
 
   const verse = getDailyVerse(todayKey);
@@ -330,10 +395,15 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
       {/* Streak hero + week dots */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Ionicons name="flame" size={22} color={accent} />
-          <Text style={[styles.heroNumber, { color: accent }]}>
-            {isMindful ? streak.totalDays : streak.currentStreak}
-          </Text>
+          <Animated.View style={{ transform: [{ scale: flameLit ? flamePulse : 1 }], opacity: flameLit ? 1 : 0.3 }}>
+            <Ionicons name="flame" size={22} color={accent} />
+          </Animated.View>
+          <AnimatedNumber
+            value={heroValue}
+            animateFromZero
+            duration={600}
+            style={[styles.heroNumber, { color: accent }]}
+          />
           <Text style={[styles.heroLabel, { color: t.textMuted }]}>
             {isMindful ? 'TOTAL DAYS' : 'DAY STREAK'}
           </Text>
@@ -382,10 +452,12 @@ export default function GratitudeStreakCard({ styleMode, todayKey, scrollRef, th
               }}
             />
           ))}
-          <Text style={{ fontFamily: 'DMSans_500Medium', fontSize: 10, color: t.textMuted }}>
-            {savers.count < saverCap
-              ? `${earnProgress}/7 to grace saver`
-              : `${savers.count} grace saver${savers.count !== 1 ? 's' : ''}`}
+          <Text style={{ fontFamily: graceUsedToday ? 'DMSans_600SemiBold' : 'DMSans_500Medium', fontSize: 10, color: graceUsedToday ? t.accentAmber : t.textMuted }}>
+            {graceUsedToday
+              ? 'Grace saver covered yesterday'
+              : savers.count < saverCap
+                ? `${earnProgress}/7 to grace saver`
+                : `${savers.count} grace saver${savers.count !== 1 ? 's' : ''}`}
           </Text>
         </View>
       )}

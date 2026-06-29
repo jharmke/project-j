@@ -22,11 +22,11 @@ export default function LaunchSplash({ onDone }: { onDone: () => void }) {
     const raf = requestAnimationFrame(() => { SplashScreen.hideAsync().catch(() => {}); });
     Animated.sequence([
       Animated.parallel([
-        Animated.timing(logoOpacity, { toValue: 1, duration: 350, useNativeDriver: true }),
-        Animated.timing(logoScale,   { toValue: 1, duration: 350, useNativeDriver: true }),
+        Animated.timing(logoOpacity, { toValue: 1, duration: 600, useNativeDriver: true }),
+        Animated.timing(logoScale,   { toValue: 1, duration: 600, useNativeDriver: true }),
       ]),
-      Animated.delay(300),
-      Animated.timing(overlayOpacity, { toValue: 0, duration: 450, useNativeDriver: true }),
+      Animated.delay(400),
+      Animated.timing(overlayOpacity, { toValue: 0, duration: 500, useNativeDriver: true }),
     ]).start(() => onDone());
     return () => cancelAnimationFrame(raf);
   }, []);

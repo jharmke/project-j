@@ -3500,11 +3500,12 @@ export default function HomeScreen() {
               value={waterCustomInput} onChangeText={setWaterCustomInput} keyboardType="number-pad" placeholder="0" placeholderTextColor={theme.textPlaceholder} autoFocus />
             <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:1, textTransform:'uppercase', textAlign:'center', marginBottom:16 }}>oz</Text>
             <View style={{ flexDirection:'row', gap:10 }}>
-              <TouchableOpacity style={{ flex:1, padding:12, borderRadius:8, backgroundColor: theme.bgInput, alignItems:'center' }} onPress={() => closeWaterCustomModal()}>
+              <TouchableOpacity style={{ flex:1, padding:12, borderRadius:8, backgroundColor: theme.bgInput, alignItems:'center' }} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeWaterCustomModal(); }}>
                 <Text style={{ color: theme.textMuted, fontFamily:'DMSans_600SemiBold', fontSize:14 }}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={{ flex:1, padding:12, borderRadius:8, backgroundColor: waterCustomSign==='add' ? theme.accentBlueBg : theme.accentRedBg, alignItems:'center' }}
                 onPress={async () => {
+                  triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
                   const amt = parseInt(waterCustomInput);
                   if (amt > 0) { await doWaterUpdate(waterCustomSign === 'add' ? amt : -amt); }
                   closeWaterCustomModal();

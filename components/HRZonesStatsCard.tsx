@@ -45,6 +45,7 @@ export default function HRZonesStatsCard() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<AggData | null>(null);
   const barProgress = useRef(new Animated.Value(0)).current;
+  const [trackW, setTrackW] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -102,11 +103,11 @@ export default function HRZonesStatsCard() {
   }, [period, hasHealthData]);
 
   useEffect(() => {
-    if (data && !loading) {
+    if (data && !loading && trackW > 0) {
       barProgress.setValue(0);
       Animated.timing(barProgress, { toValue: 1, duration: 650, useNativeDriver: false }).start();
     }
-  }, [data, loading]);
+  }, [data, loading, trackW]);
 
   const rows = data ? [
     ...data.bounds.map((b, i) => ({ key: `z${b.z}`, label: `Z${b.z} ${b.name}`, range: `${b.lo}-${b.hi} bpm`, color: b.color, sec: data.secs[i] ?? 0 })).reverse(),
@@ -174,8 +175,11 @@ export default function HRZonesStatsCard() {
                   </View>
                   <Text style={{ fontSize: 9.5, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginLeft: 13 }}>{r.range}</Text>
                 </View>
-                <View style={{ flex: 1, height: 10, borderRadius: 5, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}>
-                  <Animated.View style={{ height: '100%', borderRadius: 5, backgroundColor: r.color, width: barProgress.interpolate({ inputRange: [0, 1], outputRange: ['0%', `${pct}%`] }) }} />
+                <View
+                  style={{ flex: 1, height: 10, borderRadius: 5, backgroundColor: theme.bgProgressTrack, overflow: 'hidden' }}
+                  onLayout={e => { if (trackW === 0) setTrackW(e.nativeEvent.layout.width); }}
+                >
+                  <Animated.View style={{ height: '100%', borderRadius: 5, backgroundColor: r.color, width: trackW > 0 ? barProgress.interpolate({ inputRange: [0, 1], outputRange: [0, trackW * pct / 100] }) : 0 }} />
                 </View>
                 <View style={{ width: 56, alignItems: 'flex-end', paddingLeft: 6 }}>
                   <Text style={{ fontSize: 16, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5, color: r.sec > 0 ? theme.textPrimary : theme.textDim }}>{fmtZoneTime(r.sec)}</Text>

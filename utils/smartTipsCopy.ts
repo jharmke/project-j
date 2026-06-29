@@ -105,7 +105,7 @@ export const RULE_COPY: Record<string, RuleCopy> = {
     positive: false,
     db: {
       pattern: [
-        'Protein has been below your {goal}g target on {days} of your last 7 logged days. Protein protects muscle while you are in a deficit, so closing that gap keeps the weight you lose coming off fat.',
+        'Protein has been below your {goal}g target on {days} of your last 7 logged days. At a deficit, low protein means more of the weight you lose comes from muscle.',
         'Most days this week came in under your protein goal. At a deficit, that gap matters more than people realize.',
         'Protein has been consistently below target this week. It is one of those things that compounds quietly.',
       ],

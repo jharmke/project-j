@@ -27,6 +27,15 @@ export interface SetEntry {
   done: boolean;
 }
 
+// All-time personal records per lift (keyed by normalized exercise name in pj_workout_state.prs).
+// Updated on Finish Workout; beating a stored best = a PR.
+export interface PRRecord {
+  name: string; // display name as last seen
+  bestWeight: { value: number; reps: number; dateKey: string } | null;
+  bestE1RM:  { value: number; weight: number; reps: number; dateKey: string } | null;
+  updatedAt: string;
+}
+
 export interface WorkoutTag {
   id: string;
   label: string;

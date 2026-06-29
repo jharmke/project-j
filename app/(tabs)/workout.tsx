@@ -22,7 +22,7 @@ import * as Notifications from 'expo-notifications';
 import { useTheme } from '../../theme';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import { useHealthKit } from '../../useHealthKit';
-import { BLANK_DAY, DEFAULT_TAGS, DayProgram, Exercise, Routine, SetEntry, TAG_COLOR_PALETTE, WorkoutTag, PRESET_ROUTINES } from '../../workoutData';
+import { BLANK_DAY, DEFAULT_TAGS, DayProgram, Exercise, PRRecord, Routine, SetEntry, TAG_COLOR_PALETTE, WorkoutTag, PRESET_ROUTINES } from '../../workoutData';
 import MuscleMap from '../../components/MuscleMap';
 import ExerciseSetRows from '../../components/ExerciseSetRows';
 import HRZoneModal, { HRZoneData } from '../../components/HRZoneModal';
@@ -118,6 +118,9 @@ const restEndRef = useRef(0);
 const restIntervalRef = useRef<any>(null);
 const restNotifIdRef = useRef<string | null>(null);
 const restBuzzedRef = useRef(false);
+// All-time PRs per lift (keyed by normalized name). Banked on Finish Workout.
+const [prs, setPrs] = useState<Record<string, PRRecord>>({});
+const [finishSummary, setFinishSummary] = useState<{ totalVolume: number; doneSets: number; doneExercises: number; prHits: any[]; mindful: boolean } | null>(null);
 const [cardioComplete, setCardioComplete] = useState<Record<string, boolean>>({});
 const [programs, setPrograms] = useState<Record<string, DayProgram>>({});
 const [workoutNotes, setWorkoutNotes] = useState<Record<string, string>>({});
@@ -628,6 +631,7 @@ useEffect(() => {
           if (data.cardioLogs) setCardioLogs(data.cardioLogs);
           if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
           if (data.setLogs) setSetLogs(data.setLogs);
+          if (data.prs) setPrs(data.prs);
           if (data.activeProgramName) setActiveProgramName(data.activeProgramName);
         }
         const settings = await AsyncStorage.getItem('pj_settings');
@@ -677,6 +681,7 @@ if (data.workoutNoteNames) setWorkoutNoteNames(data.workoutNoteNames);
 if (data.cardioLogs) setCardioLogs(data.cardioLogs);
 if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
 if (data.setLogs) setSetLogs(data.setLogs);
+if (data.prs) setPrs(data.prs);
           }
         } catch (e) {
           console.log('Reload error', e);
@@ -687,7 +692,7 @@ if (data.setLogs) setSetLogs(data.setLogs);
     }, [])
   );
 
-  const saveState = async (newChecks = checks, newCardio = cardioComplete, newPrograms = programs, newNotes = workoutNotes, newCardioLogs = cardioLogs, newTemplate = weeklyTemplate, newProgramName = activeProgramName, newNoteNames = workoutNoteNames, newSetLogs = setLogs) => {
+  const saveState = async (newChecks = checks, newCardio = cardioComplete, newPrograms = programs, newNotes = workoutNotes, newCardioLogs = cardioLogs, newTemplate = weeklyTemplate, newProgramName = activeProgramName, newNoteNames = workoutNoteNames, newSetLogs = setLogs, newPrs = prs) => {
   try {
     await storageSet('pj_workout_state', JSON.stringify({
       checks: newChecks,
@@ -699,6 +704,7 @@ if (data.setLogs) setSetLogs(data.setLogs);
       weeklyTemplate: newTemplate,
       activeProgramName: newProgramName,
       setLogs: newSetLogs,
+      prs: newPrs,
     }));
   } catch (e) {
     console.log('Save error', e);
@@ -808,6 +814,58 @@ if (data.setLogs) setSetLogs(data.setLogs);
     // created); default to 90s when none is set so a timer always shows.
     const rest = parseRestSeconds(ex.rest) || 90;
     startRest(rest, ex.name);
+  };
+
+  // ── Finish Workout: recap (volume / sets) + PR detection (heaviest weight + best est. 1RM) ──
+  const epley = (w: number, r: number) => w * (1 + r / 30);
+  const finishWorkout = async () => {
+    const dayLogs = setLogs[activeDay] || {};
+    let totalVolume = 0, doneSets = 0, doneExercises = 0;
+    const prHits: any[] = [];
+    const newPrs: Record<string, PRRecord> = { ...prs };
+    for (const ex of exercises) {
+      if (ex.isCardio) continue;
+      const sets = dayLogs[ex.id];
+      if (!sets) continue;
+      const done = sets.filter(s => s.done);
+      if (!done.length) continue;
+      doneExercises++;
+      doneSets += done.length;
+      for (const s of done) totalVolume += (s.weight || 0) * (s.reps || 0);
+      const weighted = done.filter(s => (s.weight || 0) > 0 && (s.reps || 0) > 0);
+      if (!weighted.length) continue;
+      const key = normalizeLiftName(ex.name);
+      const topSet = weighted.reduce((a, b) => ((b.weight as number) > (a.weight as number) || (b.weight === a.weight && (b.reps as number) > (a.reps as number))) ? b : a);
+      const e1rmSets = weighted.filter(s => (s.reps as number) <= 12);
+      const bestE1RM = e1rmSets.length ? Math.round(Math.max(...e1rmSets.map(s => epley(s.weight as number, s.reps as number)))) : null;
+      const rec = newPrs[key];
+      const isFirst = !rec;
+      const nr: PRRecord = rec ? { ...rec } : { name: ex.name, bestWeight: null, bestE1RM: null, updatedAt: activeDay };
+      nr.name = ex.name;
+      let weightPR = false, e1rmPR = false;
+      if (!nr.bestWeight || (topSet.weight as number) > nr.bestWeight.value) {
+        if (nr.bestWeight) weightPR = true; // only a PR if it beats a prior best (first log = baseline)
+        nr.bestWeight = { value: topSet.weight as number, reps: topSet.reps || 0, dateKey: activeDay };
+      }
+      if (bestE1RM != null && (!nr.bestE1RM || bestE1RM > nr.bestE1RM.value)) {
+        if (nr.bestE1RM) e1rmPR = true;
+        nr.bestE1RM = { value: bestE1RM, weight: topSet.weight as number, reps: topSet.reps || 0, dateKey: activeDay };
+      }
+      nr.updatedAt = activeDay;
+      newPrs[key] = nr;
+      if (!isFirst && (weightPR || e1rmPR)) {
+        prHits.push({ name: ex.name, weightPR, e1rmPR, weightVal: nr.bestWeight?.value, weightReps: nr.bestWeight?.reps, e1rmVal: nr.bestE1RM?.value });
+      }
+    }
+    if (doneSets === 0) { showToast('Nothing logged yet', 'Check off a set or two first', 'error'); return; }
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    setPrs(newPrs);
+    saveState(checks, cardioComplete, programs, workoutNotes, cardioLogs, weeklyTemplate, activeProgramName, workoutNoteNames, setLogs, newPrs);
+    let mindful = false;
+    try { const sr = await AsyncStorage.getItem('pj_settings'); mindful = sr ? JSON.parse(sr).styleMode === 'mindful' : false; } catch {}
+    setFinishSummary({ totalVolume, doneSets, doneExercises, prHits, mindful });
+    // No big celebration overlay for PRs -- new lifters PR almost every session, so the recap's
+    // trophy section is the recognition. (A bigger celebration is reserved for lifting GOALS later.)
   };
 
   // Most recent PRIOR session's logged sets for the same lift (matched by normalized name), so
@@ -1499,6 +1557,16 @@ if (data.setLogs) setSetLogs(data.setLogs);
           </View>
         )}
 
+        {!isRest && exercises.some((e: any) => !e.isCardio) && (
+          <TouchableOpacity
+            onPress={finishWorkout}
+            style={{ marginTop: 4, marginBottom: 4, backgroundColor: theme.accentBlue, borderRadius: 12, paddingVertical: 15, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8,
+              shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}>
+            <Ionicons name="checkmark-done" size={18} color={theme.bgPrimary} />
+            <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', letterSpacing: 0.5, color: theme.bgPrimary }}>Finish Workout</Text>
+          </TouchableOpacity>
+        )}
+
         <View ref={effortCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, marginTop: 12 }]}>
           <Text style={[styles.cardLabel, { color: theme.textMuted }]}>Today's Effort</Text>
           <View style={{ flexDirection: 'column', gap: 8, marginTop: 12 }}>
@@ -1626,6 +1694,66 @@ if (data.setLogs) setSetLogs(data.setLogs);
           </TouchableOpacity>
         </View>
       )}
+
+      {/* Finish Workout summary */}
+      <Modal visible={!!finishSummary} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setFinishSummary(null)}>
+        <View style={{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }}>
+          <View style={{ width: '100%', maxWidth: 420, backgroundColor: theme.bgSheet, borderRadius: 18, borderWidth: 1, borderColor: theme.borderCard, padding: 22,
+            shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35, shadowRadius: 20, elevation: 10 }}>
+            <View style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard, marginBottom: 16 }} />
+            {finishSummary && (
+              <>
+                <Text style={{ fontSize: 22, fontFamily: 'DMSans_700Bold', color: theme.textPrimary, textAlign: 'center', marginBottom: 18 }}>
+                  {finishSummary.mindful ? 'Nice work' : 'Workout Complete'}
+                </Text>
+                <View style={{ flexDirection: 'row', marginBottom: finishSummary.prHits.length ? 18 : 6 }}>
+                  {[
+                    { value: Math.round(finishSummary.totalVolume).toLocaleString(), label: 'Lbs Volume' },
+                    { value: String(finishSummary.doneSets), label: 'Sets' },
+                    { value: String(finishSummary.doneExercises), label: 'Exercises' },
+                  ].map((s, i) => (
+                    <View key={i} style={{ flex: 1, alignItems: 'center' }}>
+                      <Text style={{ fontSize: 30, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.accentBlue }}>{s.value}</Text>
+                      <Text style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted, marginTop: 2 }}>{s.label}</Text>
+                    </View>
+                  ))}
+                </View>
+                {finishSummary.prHits.length > 0 && (
+                  <View style={{ backgroundColor: theme.accentAmber + '14', borderWidth: 1, borderColor: theme.accentAmber + '40', borderRadius: 12, padding: 14, marginBottom: 14 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 10 }}>
+                      <Ionicons name="trophy" size={16} color={theme.accentAmber} />
+                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.accentAmber }}>
+                        {finishSummary.mindful
+                          ? `${finishSummary.prHits.length} new best${finishSummary.prHits.length !== 1 ? 's' : ''}`
+                          : `You set ${finishSummary.prHits.length} PR${finishSummary.prHits.length !== 1 ? 's' : ''} today`}
+                      </Text>
+                    </View>
+                    {finishSummary.prHits.map((pr: any, i: number) => (
+                      <View key={i} style={{ marginBottom: i < finishSummary.prHits.length - 1 ? 10 : 0 }}>
+                        <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: theme.textPrimary, marginBottom: 2 }}>{pr.name}</Text>
+                        {pr.weightPR && (
+                          <Text style={{ fontSize: 12, fontFamily: 'DMSans_500Medium', color: theme.textSecondary }}>
+                            {finishSummary.mindful ? 'Heaviest set' : 'New top set'}: {pr.weightVal} × {pr.weightReps}
+                          </Text>
+                        )}
+                        {pr.e1rmPR && (
+                          <Text style={{ fontSize: 12, fontFamily: 'DMSans_500Medium', color: theme.textSecondary }}>
+                            {finishSummary.mindful ? 'Best estimated max' : 'New est. 1RM'}: {pr.e1rmVal} lb
+                          </Text>
+                        )}
+                      </View>
+                    ))}
+                  </View>
+                )}
+                <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setFinishSummary(null); }}
+                  style={{ backgroundColor: theme.accentBlue, borderRadius: 12, paddingVertical: 14, alignItems: 'center' }}>
+                  <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: theme.bgPrimary }}>Done</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
 
       {/* Add/Edit Modal */}
       <Modal visible={showAddModal} transparent animationType="none" statusBarTranslucent hardwareAccelerated onShow={() => {

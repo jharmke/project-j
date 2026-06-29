@@ -18,6 +18,7 @@ import { showCelebration } from '../../components/CelebrationOverlay';
 import { checkWorkoutAchievements, getCelebTier } from '../../achievementData';
 import { storageSet } from '../../utils/storage';
 import { cancelActivityNotification } from '../../services/notifications';
+import * as Notifications from 'expo-notifications';
 import { useTheme } from '../../theme';
 import HeaderAvatar from '../../components/HeaderAvatar';
 import { useHealthKit } from '../../useHealthKit';
@@ -35,6 +36,20 @@ const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 
 const makeId = () => Math.random().toString(36).substr(2, 9);
+
+// Parse a free-text rest value into seconds. Accepts "90", "90s", "1:30", "2 min".
+const parseRestSeconds = (raw: any): number | null => {
+  if (raw == null) return null;
+  const s = String(raw).trim().toLowerCase();
+  if (!s) return null;
+  if (s.includes(':')) {
+    const [m, sec] = s.split(':');
+    return ((parseInt(m) || 0) * 60 + (parseInt(sec) || 0)) || null;
+  }
+  if (s.includes('m')) { const n = parseFloat(s); return n ? Math.round(n * 60) : null; }
+  return parseInt(s) || null;
+};
+const formatRest = (sec: number): string => (sec < 60 ? `${sec}s` : `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`);
 
 function getTodayDay() {
   return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date().getDay()];
@@ -97,6 +112,12 @@ export default function WorkoutScreen() {
   const [checks, setChecks] = useState<Record<string, Record<string, boolean>>>({});
 // Actual logged sets per lift: setLogs[dateKey][exerciseId] = SetEntry[]. Additive on pj_workout_state.
 const [setLogs, setSetLogs] = useState<Record<string, Record<string, SetEntry[]>>>({});
+// Rest timer (auto-starts on checking a set; dismissible; buzzes + notifies at zero, then counts up).
+const [restTimer, setRestTimer] = useState<{ secondsLeft: number; overtime: number; label: string } | null>(null);
+const restEndRef = useRef(0);
+const restIntervalRef = useRef<any>(null);
+const restNotifIdRef = useRef<string | null>(null);
+const restBuzzedRef = useRef(false);
 const [cardioComplete, setCardioComplete] = useState<Record<string, boolean>>({});
 const [programs, setPrograms] = useState<Record<string, DayProgram>>({});
 const [workoutNotes, setWorkoutNotes] = useState<Record<string, string>>({});
@@ -725,6 +746,70 @@ if (data.setLogs) setSetLogs(data.setLogs);
     setSetRowsVersion(v => ({ ...v, [ex.id]: (v[ex.id] || 0) + 1 }));
   };
 
+  // ── Rest timer ───────────────────────────────────────────────────────────────
+  const clearRest = () => {
+    if (restIntervalRef.current) { clearInterval(restIntervalRef.current); restIntervalRef.current = null; }
+    if (restNotifIdRef.current) { Notifications.cancelScheduledNotificationAsync(restNotifIdRef.current).catch(() => {}); restNotifIdRef.current = null; }
+  };
+  const scheduleRestNotif = async (seconds: number, label: string) => {
+    try {
+      if (restNotifIdRef.current) await Notifications.cancelScheduledNotificationAsync(restNotifIdRef.current);
+      restNotifIdRef.current = await Notifications.scheduleNotificationAsync({
+        content: { title: 'Rest complete', body: `Time for your next set${label ? ` of ${label}` : ''}.`, sound: true },
+        trigger: { seconds: Math.max(1, Math.round(seconds)) } as any,
+      });
+    } catch {}
+  };
+  const startRest = (seconds: number, label: string) => {
+    clearRest();
+    restBuzzedRef.current = false;
+    restEndRef.current = Date.now() + seconds * 1000;
+    setRestTimer({ secondsLeft: seconds, overtime: 0, label });
+    scheduleRestNotif(seconds, label);
+    restIntervalRef.current = setInterval(() => {
+      const secs = Math.round((restEndRef.current - Date.now()) / 1000);
+      if (secs > 0) {
+        setRestTimer(prev => (prev ? { ...prev, secondsLeft: secs, overtime: 0 } : prev));
+      } else {
+        // Crossed zero: buzz once + cancel the now-redundant notification (foreground). Then keep
+        // counting UP in overtime so the user sees how long they have actually rested.
+        if (!restBuzzedRef.current) {
+          restBuzzedRef.current = true;
+          // Triple buzz so it is felt with the phone down / in a pocket.
+          triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
+          setTimeout(() => triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy), 140);
+          setTimeout(() => triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy), 280);
+          if (restNotifIdRef.current) { Notifications.cancelScheduledNotificationAsync(restNotifIdRef.current).catch(() => {}); restNotifIdRef.current = null; }
+        }
+        setRestTimer(prev => (prev ? { ...prev, secondsLeft: 0, overtime: -secs } : prev));
+      }
+    }, 500);
+  };
+  const skipRest = () => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); clearRest(); setRestTimer(null); };
+  const adjustRest = (delta: number) => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    restEndRef.current = Math.max(Date.now() + 1000, restEndRef.current + delta * 1000);
+    const left = Math.max(1, Math.round((restEndRef.current - Date.now()) / 1000));
+    restBuzzedRef.current = false; // re-arm the buzz since we are back to counting down
+    setRestTimer(prev => (prev ? { ...prev, secondsLeft: left, overtime: 0 } : prev));
+    scheduleRestNotif(left, restTimer?.label ?? '');
+  };
+  // Clean up the interval if the screen unmounts mid-rest (the scheduled notification still fires).
+  useEffect(() => () => { if (restIntervalRef.current) clearInterval(restIntervalRef.current); }, []);
+
+  // A set was checked -> start the rest timer. For a superset, only rest after the LAST exercise of
+  // the group (you alternate between members, so the rest belongs after a full round).
+  const handleSetChecked = (ex: any) => {
+    if (ex.supersetGroup) {
+      const members = exercises.filter((e: any) => e.supersetGroup === ex.supersetGroup);
+      if (members.length && members[members.length - 1].id !== ex.id) return;
+    }
+    // Always read the exercise's CURRENT rest (not the value frozen onto the set when it was
+    // created); default to 90s when none is set so a timer always shows.
+    const rest = parseRestSeconds(ex.rest) || 90;
+    startRest(rest, ex.name);
+  };
+
   // Most recent PRIOR session's logged sets for the same lift (matched by normalized name), so
   // each set row can show last time's weight x reps. Resolves each past day's exercise list from
   // its program override or the weekly template to map the logged exerciseId back to a name.
@@ -1120,17 +1205,21 @@ if (data.setLogs) setSetLogs(data.setLogs);
               </View>
             ) : (
               <View ref={ex.id === 'tutorial_demo_bench' ? firstSetsRepsRef : undefined} collapsable={false}>
-                {(ex.reps || ex.rest) ? (
-                  <Text style={[styles.exerciseMeta, { color: theme.textMuted }]}>
-                    {[ex.reps ? `${ex.reps} reps` : null, ex.rest ? `${ex.rest} rest` : null].filter(Boolean).join(' · ')}
-                  </Text>
-                ) : null}
+                {(() => {
+                  const restSec = parseRestSeconds(ex.rest);
+                  return (ex.reps || restSec) ? (
+                    <Text style={[styles.exerciseMeta, { color: theme.textMuted }]}>
+                      {[ex.reps ? `${ex.reps} reps` : null, restSec ? `Rest ${formatRest(restSec)}` : null].filter(Boolean).join(' · ')}
+                    </Text>
+                  ) : null;
+                })()}
                 <ExerciseSetRows
                   key={`${activeDay}_${ex.id}_${setRowsVersion[ex.id] || 0}`}
                   initialSets={getSeededSets(ex)}
                   previousSets={getPreviousSets(ex)}
-                  defaultRest={parseInt(ex.rest) || null}
+                  defaultRest={parseRestSeconds(ex.rest)}
                   onPersist={(sets) => saveSetsForExercise(ex.id, sets)}
+                  onSetChecked={() => handleSetChecked(ex)}
                   theme={theme}
                 />
               </View>
@@ -1501,6 +1590,42 @@ if (data.setLogs) setSetLogs(data.setLogs);
         </View>
 
       </ScrollView>
+
+      {/* Rest timer bar -- floats above the tab bar while resting */}
+      {restTimer && (
+        <View style={{ position: 'absolute', left: 12, right: 12, bottom: 64 + insets.bottom + 10, zIndex: 50,
+          backgroundColor: theme.bgSheet, borderRadius: 14, borderWidth: 1, borderColor: theme.accentBlueBorder,
+          flexDirection: 'row', alignItems: 'center', paddingVertical: 10, paddingHorizontal: 14, gap: 10,
+          shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 8 }}>
+          {(() => {
+            const over = restTimer.overtime > 0;
+            const secs = over ? restTimer.overtime : restTimer.secondsLeft;
+            const num = `${over ? '+' : ''}${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`;
+            return (
+              <>
+                <Ionicons name="timer-outline" size={20} color={over ? theme.accentRed : theme.accentBlue} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: over ? theme.accentRed : theme.textPrimary }}>
+                    {num}
+                  </Text>
+                  <Text style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: over ? theme.accentRed : theme.textMuted }} numberOfLines={1}>
+                    {over ? 'Over rest' : 'Rest'}{restTimer.label ? ` · ${restTimer.label}` : ''}
+                  </Text>
+                </View>
+              </>
+            );
+          })()}
+          <TouchableOpacity onPress={() => adjustRest(-15)} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 7 }} hitSlop={{ top: 6, bottom: 6, left: 2, right: 2 }}>
+            <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>−15s</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => adjustRest(15)} style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 8, paddingHorizontal: 9, paddingVertical: 7 }} hitSlop={{ top: 6, bottom: 6, left: 2, right: 2 }}>
+            <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>+15s</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={skipRest} style={{ backgroundColor: theme.accentBlue, borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8 }} hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}>
+            <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.bgPrimary }}>Skip</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Add/Edit Modal */}
       <Modal visible={showAddModal} transparent animationType="none" statusBarTranslucent hardwareAccelerated onShow={() => {

@@ -16,6 +16,7 @@ interface Props {
   previousSets: SetEntry[] | null; // last session's logged sets for this lift (index-aligned), or null
   defaultRest: number | null;
   onPersist: (sets: SetEntry[]) => void;
+  onSetChecked?: (restSeconds: number | null) => void; // fired when a set is checked ON (starts rest)
   theme: any;
 }
 
@@ -33,7 +34,7 @@ const COL = { set: 0.6, prev: 1.3, input: 1.5 };
 const CHECK_W = 34;
 const X_W = 22;
 
-export default function ExerciseSetRows({ initialSets, previousSets, defaultRest, onPersist, theme: t }: Props) {
+export default function ExerciseSetRows({ initialSets, previousSets, defaultRest, onPersist, onSetChecked, theme: t }: Props) {
   const [sets, setSets] = useState<SetEntry[]>(initialSets);
   const atMax = sets.length >= MAX_SETS;
 
@@ -48,6 +49,7 @@ export default function ExerciseSetRows({ initialSets, previousSets, defaultRest
 
   const toggle = (i: number) => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    const turningOn = !sets[i].done;
     commit(sets.map((s, idx) => {
       if (idx !== i) return s;
       if (s.done) return { ...s, done: false };
@@ -60,6 +62,7 @@ export default function ExerciseSetRows({ initialSets, previousSets, defaultRest
         reps: s.reps == null && p ? p.reps : s.reps,
       };
     }));
+    if (turningOn) onSetChecked?.(sets[i].rest ?? defaultRest);
   };
   const addSet = () => {
     if (sets.length >= MAX_SETS) return;

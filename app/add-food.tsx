@@ -186,6 +186,7 @@ async function callFatSecretApi(q: string): Promise<SearchResult[]> {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body,
   });
+  if (!res.ok) throw new Error(`FatSecret HTTP ${res.status}`);
   const data = await res.json();
   const foods = data?.foods?.food;
   if (!foods) return [];
@@ -194,59 +195,56 @@ async function callFatSecretApi(q: string): Promise<SearchResult[]> {
 }
 
 async function fetchFatSecretSearch(q: string): Promise<SearchResult[]> {
-  try {
-    const words = q.trim().split(' ');
-    const last = words[words.length - 1];
-    const pluralQ = last && last.length >= 5 && !last.endsWith('s')
-      ? [...words.slice(0, -1), last + 's'].join(' ')
-      : null;
+  const words = q.trim().split(' ');
+  const last = words[words.length - 1];
+  const pluralQ = last && last.length >= 5 && !last.endsWith('s')
+    ? [...words.slice(0, -1), last + 's'].join(' ')
+    : null;
 
-    const [primary, secondary] = await Promise.all([
-      callFatSecretApi(q),
-      pluralQ ? callFatSecretApi(pluralQ) : Promise.resolve([] as SearchResult[]),
-    ]);
+  // The primary query is allowed to throw on a network/HTTP failure so callers can tell
+  // "offline" from "no results". The plural variant is best-effort enrichment -- its failure
+  // must never sink a good primary, so it swallows its own error.
+  const [primary, secondary] = await Promise.all([
+    callFatSecretApi(q),
+    pluralQ ? callFatSecretApi(pluralQ).catch(() => [] as SearchResult[]) : Promise.resolve([] as SearchResult[]),
+  ]);
 
-    const seen = new Set<string>();
-    const merged: SearchResult[] = [];
-    for (const r of [...secondary, ...primary]) {
-      const key = (r as any).fsId ?? r.description;
-      if (!seen.has(key)) { seen.add(key); merged.push(r); }
-    }
-    return merged;
-  } catch (e) {
-    console.log('FatSecret search error', e);
-    return [];
+  const seen = new Set<string>();
+  const merged: SearchResult[] = [];
+  for (const r of [...secondary, ...primary]) {
+    const key = (r as any).fsId ?? r.description;
+    if (!seen.has(key)) { seen.add(key); merged.push(r); }
   }
+  return merged;
 }
 
 async function fetchFatSecretBarcode(barcode: string): Promise<SearchResult | null> {
-  try {
-    // Step 1: barcode -> food_id
-    const lookupUrl = buildFatSecretUrl({
-      method: 'food.find_id_for_barcode',
-      barcode,
-      format: 'json',
-    });
-    const lookupRes = await fetch(lookupUrl);
-    const lookupData = await lookupRes.json();
-    const foodId = lookupData?.food_id?.value;
-    if (!foodId) return null;
+  // Network/HTTP failures throw (caller shows a connection error); null is reserved for a genuine
+  // "barcode not in the database" so the two are never confused (the offline-as-not-found bug).
+  // Step 1: barcode -> food_id
+  const lookupUrl = buildFatSecretUrl({
+    method: 'food.find_id_for_barcode',
+    barcode,
+    format: 'json',
+  });
+  const lookupRes = await fetch(lookupUrl);
+  if (!lookupRes.ok) throw new Error(`FatSecret HTTP ${lookupRes.status}`);
+  const lookupData = await lookupRes.json();
+  const foodId = lookupData?.food_id?.value;
+  if (!foodId || foodId === '0') return null; // FatSecret returns "0" for an unknown barcode
 
-    // Step 2: food_id -> full food data
-    const getUrl = buildFatSecretUrl({
-      method: 'food.get.v4',
-      food_id: foodId,
-      format: 'json',
-    });
-    const getRes = await fetch(getUrl);
-    const getData = await getRes.json();
-    const food = getData?.food;
-    if (!food) return null;
-    return normalizeFsServing(food);
-  } catch (e) {
-    console.log('FatSecret barcode error', e);
-    return null;
-  }
+  // Step 2: food_id -> full food data
+  const getUrl = buildFatSecretUrl({
+    method: 'food.get.v4',
+    food_id: foodId,
+    format: 'json',
+  });
+  const getRes = await fetch(getUrl);
+  if (!getRes.ok) throw new Error(`FatSecret HTTP ${getRes.status}`);
+  const getData = await getRes.json();
+  const food = getData?.food;
+  if (!food) return null;
+  return normalizeFsServing(food);
 }
 
 async function fetchFatSecretServings(fsId: string): Promise<any[]> {
@@ -384,6 +382,8 @@ export default function AddFoodScreen() {
   const [showCreateFood, setShowCreateFood] = useState(false);
   const [barcodeForCreate, setBarcodeForCreate] = useState<string | null>(null);
   const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState(false);   // online search/barcode-name lookup failed (offline / server)
+  const [barcodeLookup, setBarcodeLookup] = useState(false); // barcode -> food lookup in flight (separate from `scanning`, which is the camera being open)
   const [activeTab, setActiveTab] = useState<'recent' | 'myfoods' | 'favorites' | 'recipes' | 'pinned'>('recent');
 const [recentFoods, setRecentFoods] = useState<SearchResult[]>([]);
 const [favorites, setFavorites] = useState<MyFood[]>([]);
@@ -968,12 +968,14 @@ const saveEditFood = async () => {
     if (!query.trim()) {
       setResults([]);
       setSearching(false);
+      setSearchError(false);
       if (searchDebounceTimer.current) clearTimeout(searchDebounceTimer.current);
       return;
     }
 
     // Show spinner immediately so there's no blank gap before debounce fires
     setSearching(true);
+    setSearchError(false);
 
     // My Foods match immediately -- no debounce needed
     const nq = normalizeForMatch(query);
@@ -1010,6 +1012,7 @@ const saveEditFood = async () => {
         }
       } catch (e) {
         console.log('Search error', e);
+        if (thisSearchId === searchIdRef.current) setSearchError(true);
       } finally {
         if (thisSearchId === searchIdRef.current) {
           setSearching(false);
@@ -1331,6 +1334,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
     // No override -- fetch barcode from FatSecret
     try {
       setSearching(true);
+      setBarcodeLookup(true);
       const barcodeResult = await fetchFatSecretBarcode(data);
 
       if (barcodeResult) {
@@ -1370,9 +1374,13 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
     } catch (e) {
       console.log('Barcode error', e);
       setSearching(false);
-      Alert.alert('Scan Error', 'Something went wrong. Please try again.');
+      Alert.alert(
+        'No Connection',
+        'Couldn\'t reach the food database. Check your internet connection and try again.'
+      );
     } finally {
       isBarcodeSearchRef.current = false;
+      setBarcodeLookup(false);
     }
   };
   const loadRecent = async () => {
@@ -1682,16 +1690,34 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         </View>
       )}
 
-      {/* Loading indicator -- shows when searching and no results yet */}
-      {searching && query.trim() && results.length === 0 && (
+      {/* Loading indicator -- shows while a search or barcode lookup is in flight and nothing is shown yet */}
+      {((searching && query.trim()) || barcodeLookup) && results.length === 0 && (
         <View style={{ alignItems: 'center', paddingTop: 40, gap: 10 }}>
           <ActivityIndicator size="small" color={theme.accentBlueRaw} />
-          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Searching...</Text>
+          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{barcodeLookup ? 'Looking up barcode...' : 'Searching...'}</Text>
         </View>
       )}
 
-      {/* No results state */}
-      {!searching && query.trim() && results.length === 0 && (
+      {/* Connection error state -- distinct from "no results" so offline never reads as "not found" */}
+      {!searching && !barcodeLookup && searchError && query.trim() && results.length === 0 && (
+        <View style={{ alignItems: 'center', paddingTop: 60, paddingHorizontal: 32, gap: 12 }}>
+          <Ionicons name="cloud-offline-outline" size={40} color={theme.textDim} />
+          <Text style={{ fontSize: 16, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', textAlign: 'center' }}>
+            Can't reach the food database
+          </Text>
+          <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular', textAlign: 'center', lineHeight: 20 }}>
+            Check your internet connection and try again.
+          </Text>
+          <TouchableOpacity
+            onPress={() => searchFood(query)}
+            style={{ marginTop: 4, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8, paddingHorizontal: 22, paddingVertical: 10 }}>
+            <Text style={{ fontSize: 13, color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold' }}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* No results state -- genuine empty only (not a connection error) */}
+      {!searching && !barcodeLookup && !searchError && query.trim() && results.length === 0 && (
         <View style={{ alignItems: 'center', paddingTop: 60, paddingHorizontal: 32, gap: 12 }}>
           <Ionicons name="search-outline" size={40} color={theme.textDim} />
           <Text style={{ fontSize: 16, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', textAlign: 'center' }}>
@@ -1700,6 +1726,14 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
           <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular', textAlign: 'center', lineHeight: 20 }}>
             Try a different search term or scan the barcode
           </Text>
+        </View>
+      )}
+
+      {/* Offline but local matches exist -- show them, but be honest the online search didn't run */}
+      {searchError && query.trim() && results.length > 0 && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 8 }}>
+          <Ionicons name="cloud-offline-outline" size={14} color={theme.textMuted} />
+          <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Offline. Couldn't load online results.</Text>
         </View>
       )}
 

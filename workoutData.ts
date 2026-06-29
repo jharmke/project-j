@@ -7,6 +7,8 @@ export interface Exercise {
   note: string;
   dropset?: boolean;
   isCardio?: boolean;
+  // Consecutive lift exercises sharing this id render as one superset block. Additive/optional.
+  supersetGroup?: string;
   duration?: string;
   distance?: string;
   speed?: string;

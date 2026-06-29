@@ -48,7 +48,18 @@ export default function ExerciseSetRows({ initialSets, previousSets, defaultRest
 
   const toggle = (i: number) => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-    commit(sets.map((s, idx) => (idx === i ? { ...s, done: !s.done } : s)));
+    commit(sets.map((s, idx) => {
+      if (idx !== i) return s;
+      if (s.done) return { ...s, done: false };
+      // Checking an empty row auto-fills weight/reps from last session, so a repeat set is one tap.
+      const p = previousSets?.[i];
+      return {
+        ...s,
+        done: true,
+        weight: s.weight == null && p ? p.weight : s.weight,
+        reps: s.reps == null && p ? p.reps : s.reps,
+      };
+    }));
   };
   const addSet = () => {
     if (sets.length >= MAX_SETS) return;

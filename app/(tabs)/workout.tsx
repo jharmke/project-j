@@ -698,7 +698,31 @@ if (data.setLogs) setSetLogs(data.setLogs);
   const saveSetsForExercise = (exId: string, sets: SetEntry[]) => {
     const next = { ...setLogs, [activeDay]: { ...(setLogs[activeDay] || {}), [exId]: sets } };
     setSetLogs(next);
-    saveState(checks, cardioComplete, programs, workoutNotes, cardioLogs, weeklyTemplate, activeProgramName, workoutNoteNames, next);
+    // Derive per-exercise completion from set completion so the existing checks boolean (Today's
+    // Effort / activity notifications / EvR) stays in sync: an exercise is "done" when it has at
+    // least one set and every set is checked.
+    const allDone = sets.length > 0 && sets.every(s => s.done);
+    const dayChecksNow = checks[activeDay] || {};
+    const changed = !!dayChecksNow[exId] !== allDone;
+    const newChecks = changed ? { ...checks, [activeDay]: { ...dayChecksNow, [exId]: allDone } } : checks;
+    if (changed) setChecks(newChecks);
+    if (allDone && !dayChecksNow[exId] && activeDay === todayKey) cancelActivityNotification();
+    saveState(newChecks, cardioComplete, programs, workoutNotes, cardioLogs, weeklyTemplate, activeProgramName, workoutNoteNames, next);
+  };
+
+  // Big per-exercise checkmark on a LIFT marks every set done / undone at once (filling empties
+  // from last session when completing). A version bump re-mounts the set rows so they re-seed from
+  // the updated log. Cardio keeps its manual toggleExercise.
+  const [setRowsVersion, setSetRowsVersion] = useState<Record<string, number>>({});
+  const bulkToggleLift = (ex: any, done: boolean) => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    const current = getSeededSets(ex);
+    const prev = done ? getPreviousSets(ex) : null;
+    const nextSets = current.map((s, i) => done
+      ? { ...s, done: true, weight: s.weight == null && prev?.[i] ? prev[i].weight : s.weight, reps: s.reps == null && prev?.[i] ? prev[i].reps : s.reps }
+      : { ...s, done: false });
+    saveSetsForExercise(ex.id, nextSets);
+    setSetRowsVersion(v => ({ ...v, [ex.id]: (v[ex.id] || 0) + 1 }));
   };
 
   // Most recent PRIOR session's logged sets for the same lift (matched by normalized name), so
@@ -739,6 +763,34 @@ if (data.setLogs) setSetLogs(data.setLogs);
     const newPrograms = { ...programs, [activeDay]: { ...baseProgram, exercises: list } };
     setPrograms(newPrograms);
     saveState(checks, cardioComplete, newPrograms, workoutNotes, cardioLogs, weeklyTemplate);
+  };
+
+  // Supersets: link an exercise with the one directly below it into a shared group (reuses an
+  // adjacent group id so you can chain 3+). Unlink clears the group id off every member.
+  const writeExerciseList = (list: any[]) => {
+    const baseProgram = programs[activeDay] || weeklyTemplate[activeDayName];
+    const newPrograms = { ...programs, [activeDay]: { ...baseProgram, exercises: list } };
+    setPrograms(newPrograms);
+    saveState(checks, cardioComplete, newPrograms, workoutNotes, cardioLogs, weeklyTemplate);
+  };
+  const linkSuperset = (exId: string) => {
+    const baseProgram = programs[activeDay] || weeklyTemplate[activeDayName];
+    const list = [...(baseProgram?.exercises || [])];
+    const i = list.findIndex((e: any) => e.id === exId);
+    if (i < 0 || i >= list.length - 1) return;
+    const a = list[i], b = list[i + 1];
+    if (a.isCardio || b.isCardio) return;
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    const groupId = a.supersetGroup || b.supersetGroup || makeId();
+    list[i] = { ...a, supersetGroup: groupId };
+    list[i + 1] = { ...b, supersetGroup: groupId };
+    writeExerciseList(list);
+  };
+  const unlinkSuperset = (groupId: string) => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    const baseProgram = programs[activeDay] || weeklyTemplate[activeDayName];
+    const list = (baseProgram?.exercises || []).map((e: any) => e.supersetGroup === groupId ? { ...e, supersetGroup: undefined } : e);
+    writeExerciseList(list);
   };
 
   const toggleExercise = (id: string) => {
@@ -1001,6 +1053,114 @@ if (data.setLogs) setSetLogs(data.setLogs);
     } catch (e) { console.log('Load routine error', e); }
   };
 
+  // One exercise card. `inGroup` renders it borderless inside a superset container (the group
+  // provides the border/rail); standalone it gets its own card chrome.
+  const renderExerciseCard = (ex: any, opts: { inGroup?: boolean; isLastInGroup?: boolean } = {}) => {
+    const { inGroup = false, isLastInGroup = false } = opts;
+    const isDone = dayChecks[ex.id];
+    const idx = exercises.findIndex((e: any) => e.id === ex.id);
+    const isFirst = idx <= 0;
+    const isLast = idx === exercises.length - 1;
+    return (
+      <View
+        key={ex.id}
+        ref={ex.id === 'tutorial_demo_bench' ? firstExerciseRef : undefined}
+        collapsable={false}
+        style={inGroup
+          ? [isDone && styles.exerciseDone, { paddingHorizontal: 14, paddingVertical: 12 }]
+          : [styles.exerciseItem, isDone && styles.exerciseDone, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderLeftColor: isDone ? theme.accentBlue : theme.textDim }]
+        }>
+        <View style={styles.exerciseRow}>
+          <View style={{ paddingRight: 10, justifyContent: 'center', gap: 1 }}>
+            <TouchableOpacity onPress={() => moveExercise(ex.id, -1)} disabled={isFirst} hitSlop={{ top: 4, bottom: 2, left: 6, right: 6 }}>
+              <Ionicons name="arrow-up" size={17} color={isFirst ? theme.textDim + '44' : theme.textMuted} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => moveExercise(ex.id, 1)} disabled={isLast} hitSlop={{ top: 2, bottom: 4, left: 6, right: 6 }}>
+              <Ionicons name="arrow-down" size={17} color={isLast ? theme.textDim + '44' : theme.textMuted} />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.exerciseInfo}>
+            <TouchableOpacity style={styles.exerciseNameRow} activeOpacity={0.7}
+              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openInfoModal(ex.name); }}>
+              <Text style={[styles.exerciseName, { color: theme.textSecondary }, isDone && [styles.exerciseNameDone, { color: theme.textDim }]]}>{ex.name}</Text>
+              {exerciseLibrary.find((e: any) => e.name === ex.name && (e.instructions?.length || e.primaryMuscles?.length)) ? (
+                <Ionicons name="information-circle-outline" size={14} color={theme.textDim} style={{ marginLeft: -2 }} />
+              ) : null}
+            </TouchableOpacity>
+            {ex.fromAppleHealth && (
+              <View style={{ flexDirection: 'row', marginTop: 6, marginBottom: 6 }}>
+                <View style={[styles.badge, { marginLeft: 0, backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder }]}>
+                  <Text style={[styles.badgeText, { color: theme.accentGreen }]}>APPLE HEALTH</Text>
+                </View>
+              </View>
+            )}
+            {ex.isCardio ? (
+              <View ref={ex.id === 'tutorial_demo_treadmill' ? firstCardioRef : undefined} collapsable={false}>
+                <Text style={[styles.exerciseMeta, { color: theme.textMuted }]}>
+                  {[
+                    ex.duration ? (ex.fromAppleHealth ? ex.duration : `${ex.duration} min`) : null,
+                    ex.distance ? `${parseFloat(ex.distance)} mi` : null,
+                    ex.speed ? `${ex.speed} mph` : null,
+                    ex.incline ? `${ex.incline}% incline` : null,
+                    ex.hr ? `${ex.hr} bpm` : null,
+                    ex.calories ? `${ex.calories} cal` : null,
+                  ].filter(Boolean).join(' · ') || 'Cardio · tap edit to log stats'}
+                </Text>
+                {ex.fromAppleHealth && ex.appleHealthUUID && (
+                  <TouchableOpacity
+                    onPress={() => openHRZones(ex)}
+                    activeOpacity={0.7}
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', marginTop: 6, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, gap: 4 }}>
+                    <Ionicons name="pulse" size={12} color={theme.accentBlue} />
+                    <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlue }}>HR Zones</Text>
+                    <Ionicons name="chevron-forward" size={11} color={theme.accentBlue} />
+                  </TouchableOpacity>
+                )}
+              </View>
+            ) : (
+              <View ref={ex.id === 'tutorial_demo_bench' ? firstSetsRepsRef : undefined} collapsable={false}>
+                {(ex.reps || ex.rest) ? (
+                  <Text style={[styles.exerciseMeta, { color: theme.textMuted }]}>
+                    {[ex.reps ? `${ex.reps} reps` : null, ex.rest ? `${ex.rest} rest` : null].filter(Boolean).join(' · ')}
+                  </Text>
+                ) : null}
+                <ExerciseSetRows
+                  key={`${activeDay}_${ex.id}_${setRowsVersion[ex.id] || 0}`}
+                  initialSets={getSeededSets(ex)}
+                  previousSets={getPreviousSets(ex)}
+                  defaultRest={parseInt(ex.rest) || null}
+                  onPersist={(sets) => saveSetsForExercise(ex.id, sets)}
+                  theme={theme}
+                />
+              </View>
+            )}
+            {ex.note ? <Text style={[styles.exerciseNote, { color: theme.textDim }]}>{ex.note}</Text> : null}
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <TouchableOpacity
+              style={{ padding: 10 }}
+              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openEditModal(activeDay, ex); }}
+              hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
+              <Ionicons name="pencil" size={15} color={theme.textMuted} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{ padding: 10 }}
+              onPress={() => removeExercise(activeDay, ex.id)}
+              hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
+              <Ionicons name="trash" size={15} color={theme.accentRed} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.checkCircle, { borderColor: theme.borderCard }, isDone && { backgroundColor: theme.accentBlue, borderColor: theme.accentBlue }]}
+              onPress={() => ex.isCardio ? toggleExercise(ex.id) : bulkToggleLift(ex, !isDone)}>
+              {isDone && <Text style={[styles.checkMark, { color: theme.bgPrimary }]}>✓</Text>}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={[styles.container, { paddingTop: insets.top }]}>
@@ -1166,120 +1326,67 @@ if (data.setLogs) setSetLogs(data.setLogs);
           </>
         )}
 
-        {!isRest && exercises.map((ex: any) => {
-            const isDone = dayChecks[ex.id];
-            return (
-                <View
-                  key={ex.id}
-                  ref={ex.id === 'tutorial_demo_bench' ? firstExerciseRef : undefined}
-                  collapsable={false}
-                  style={[styles.exerciseItem, isDone && styles.exerciseDone, {
-                  backgroundColor: theme.bgCard,
-                  borderColor: theme.borderCard,
-                  borderLeftColor: isDone ? theme.accentBlue : theme.textDim,
-                }]}>
-                  <View style={styles.exerciseRow}>
-                    {(() => {
-                      const idx = exercises.findIndex((e: any) => e.id === ex.id);
-                      const isFirst = idx <= 0;
-                      const isLast = idx === exercises.length - 1;
-                      return (
-                        <View style={{ paddingRight: 10, justifyContent: 'center', gap: 1 }}>
-                          <TouchableOpacity onPress={() => moveExercise(ex.id, -1)} disabled={isFirst} hitSlop={{ top: 4, bottom: 2, left: 6, right: 6 }}>
-                            <Ionicons name="arrow-up" size={17} color={isFirst ? theme.textDim + '44' : theme.textMuted} />
-                          </TouchableOpacity>
-                          <TouchableOpacity onPress={() => moveExercise(ex.id, 1)} disabled={isLast} hitSlop={{ top: 2, bottom: 4, left: 6, right: 6 }}>
-                            <Ionicons name="arrow-down" size={17} color={isLast ? theme.textDim + '44' : theme.textMuted} />
-                          </TouchableOpacity>
-                        </View>
-                      );
-                    })()}
-                    <View style={styles.exerciseInfo}>
-                      <TouchableOpacity style={styles.exerciseNameRow} activeOpacity={0.7}
-                        onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openInfoModal(ex.name); }}>
-                        <Text style={[styles.exerciseName, { color: theme.textSecondary }, isDone && [styles.exerciseNameDone, { color: theme.textDim }]]}>{ex.name}</Text>
-                        {exerciseLibrary.find((e: any) => e.name === ex.name && (e.instructions?.length || e.primaryMuscles?.length)) ? (
-                          <Ionicons name="information-circle-outline" size={14} color={theme.textDim} style={{ marginLeft: -2 }} />
-                        ) : null}
-                        {ex.dropset && (
-                          <View style={[styles.badge, { backgroundColor: color + '22' }]}>
-                            <Text style={[styles.badgeText, { color }]}>DROPSET</Text>
-                          </View>
-                        )}
+        {!isRest && (() => {
+          // Group consecutive exercises that share a supersetGroup id into one superset block.
+          const units: any[] = [];
+          for (let i = 0; i < exercises.length;) {
+            const g = exercises[i].supersetGroup;
+            if (g) {
+              const members = [exercises[i]];
+              let j = i + 1;
+              while (j < exercises.length && exercises[j].supersetGroup === g) { members.push(exercises[j]); j++; }
+              if (members.length >= 2) { units.push({ type: 'group', groupId: g, members }); i = j; continue; }
+            }
+            units.push({ type: 'single', ex: exercises[i] });
+            i++;
+          }
+          const out: any[] = [];
+          units.forEach((unit, ui) => {
+            if (unit.type === 'single') {
+              out.push(renderExerciseCard(unit.ex));
+            } else {
+              const memberRows: any[] = [];
+              unit.members.forEach((m: any, mi: number) => {
+                memberRows.push(renderExerciseCard(m, { inGroup: true }));
+                if (mi < unit.members.length - 1) {
+                  memberRows.push(
+                    <View key={`div_${m.id}`} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, marginVertical: 2 }}>
+                      <View style={{ flex: 1, height: 0.5, backgroundColor: theme.borderCard }} />
+                      <TouchableOpacity onPress={() => unlinkSuperset(unit.groupId)} style={{ flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 10, paddingVertical: 3 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                        <Ionicons name="close" size={11} color={theme.textMuted} />
+                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>UNLINK</Text>
                       </TouchableOpacity>
-                      {ex.fromAppleHealth && (
-                        <View style={{ flexDirection: 'row', marginTop: 6, marginBottom: 6 }}>
-                          <View style={[styles.badge, { marginLeft: 0, backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder }]}>
-                            <Text style={[styles.badgeText, { color: theme.accentGreen }]}>APPLE HEALTH</Text>
-                          </View>
-                        </View>
-                      )}
-                      {ex.isCardio ? (
-                        <View ref={ex.id === 'tutorial_demo_treadmill' ? firstCardioRef : undefined} collapsable={false}>
-                          <Text style={[styles.exerciseMeta, { color: theme.textMuted }]}>
-                            {[
-                              ex.duration ? (ex.fromAppleHealth ? ex.duration : `${ex.duration} min`) : null,
-                              ex.distance ? `${parseFloat(ex.distance)} mi` : null,
-                              ex.speed ? `${ex.speed} mph` : null,
-                              ex.incline ? `${ex.incline}% incline` : null,
-                              ex.hr ? `${ex.hr} bpm` : null,
-                              ex.calories ? `${ex.calories} cal` : null,
-                            ].filter(Boolean).join(' · ') || 'Cardio · tap edit to log stats'}
-                          </Text>
-                          {ex.fromAppleHealth && ex.appleHealthUUID && (
-                            <TouchableOpacity
-                              onPress={() => openHRZones(ex)}
-                              activeOpacity={0.7}
-                              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                              style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', marginTop: 6, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, gap: 4 }}>
-                              <Ionicons name="pulse" size={12} color={theme.accentBlue} />
-                              <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlue }}>HR Zones</Text>
-                              <Ionicons name="chevron-forward" size={11} color={theme.accentBlue} />
-                            </TouchableOpacity>
-                          )}
-                        </View>
-                      ) : (
-                        <View ref={ex.id === 'tutorial_demo_bench' ? firstSetsRepsRef : undefined} collapsable={false}>
-                          {(ex.reps || ex.rest) ? (
-                            <Text style={[styles.exerciseMeta, { color: theme.textMuted }]}>
-                              {[ex.reps ? `${ex.reps} reps` : null, ex.rest ? `${ex.rest} rest` : null].filter(Boolean).join(' · ')}
-                            </Text>
-                          ) : null}
-                          <ExerciseSetRows
-                            key={`${activeDay}_${ex.id}`}
-                            initialSets={getSeededSets(ex)}
-                            previousSets={getPreviousSets(ex)}
-                            defaultRest={parseInt(ex.rest) || null}
-                            onPersist={(sets) => saveSetsForExercise(ex.id, sets)}
-                            theme={theme}
-                          />
-                        </View>
-                      )}
-                      {ex.note ? <Text style={[styles.exerciseNote, { color: theme.textDim }]}>{ex.note}</Text> : null}
+                      <View style={{ flex: 1, height: 0.5, backgroundColor: theme.borderCard }} />
                     </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                      <TouchableOpacity
-                        style={{ padding: 10 }}
-                        onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openEditModal(activeDay, ex); }}
-                        hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
-                        <Ionicons name="pencil" size={15} color={theme.textMuted} />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={{ padding: 10 }}
-                        onPress={() => removeExercise(activeDay, ex.id)}
-                        hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}>
-                        <Ionicons name="trash" size={15} color={theme.accentRed} />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={[styles.checkCircle, { borderColor: theme.borderCard }, isDone && { backgroundColor: theme.accentBlue, borderColor: theme.accentBlue }]}
-                        onPress={() => toggleExercise(ex.id)}>
-                        {isDone && <Text style={[styles.checkMark, { color: theme.bgPrimary }]}>✓</Text>}
-                      </TouchableOpacity>
-                    </View>
+                  );
+                }
+              });
+              out.push(
+                <View key={`g_${unit.groupId}`} style={[styles.exerciseItem, { backgroundColor: theme.bgCard, borderColor: theme.accentBlue + '55', borderLeftColor: theme.accentBlue, padding: 0, overflow: 'hidden' }]}>
+                  <View style={{ paddingHorizontal: 14, paddingTop: 10, paddingBottom: 0 }}>
+                    <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.accentBlue, fontFamily: 'DMSans_700Bold' }}>SUPERSET</Text>
                   </View>
+                  {memberRows}
                 </View>
-            );
-        })}
+              );
+            }
+            // Link connector between this unit and the next (lift-to-lift only).
+            const lastEx = unit.type === 'group' ? unit.members[unit.members.length - 1] : unit.ex;
+            const nextUnit = units[ui + 1];
+            const nextFirst = nextUnit ? (nextUnit.type === 'group' ? nextUnit.members[0] : nextUnit.ex) : null;
+            if (nextFirst && !lastEx.isCardio && !nextFirst.isCardio) {
+              out.push(
+                <TouchableOpacity key={`link_${lastEx.id}`} onPress={() => linkSuperset(lastEx.id)}
+                  style={{ alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: -2, marginBottom: 8, paddingVertical: 4, paddingHorizontal: 12, borderRadius: 12, backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard }}
+                  hitSlop={{ top: 6, bottom: 6, left: 8, right: 8 }}>
+                  <Ionicons name="link" size={12} color={theme.textMuted} />
+                  <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold', letterSpacing: 0.5 }}>Superset</Text>
+                </TouchableOpacity>
+              );
+            }
+          });
+          return out;
+        })()}
 
         {!isRest && exercises.length === 0 && (
           <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, alignItems: 'center', paddingVertical: 28, marginBottom: 12 }]}>

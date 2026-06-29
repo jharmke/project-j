@@ -123,7 +123,7 @@
     <header>
       <p class="wordmark">Project J</p>
       <h1>Privacy Policy</h1>
-      <p class="meta">Effective Date: May 20, 2026 &nbsp;|&nbsp; Last Updated: June 12, 2026</p>
+      <p class="meta">Effective Date: May 20, 2026 &nbsp;|&nbsp; Last Updated: June 29, 2026</p>
     </header>
 
     <section>
@@ -221,15 +221,6 @@
       </ul>
       <p>You control HealthKit permissions at any time through iOS Settings &gt; Privacy &amp; Security &gt; Health &gt; Project J.</p>
 
-      <p><strong>Health Data We Write to Apple HealthKit</strong></p>
-      <p>With your explicit permission, Project J can save data you log in the App back to Apple Health, so it stays in sync with your other apps and devices. We only ever write data that originates in the App from your own entries:</p>
-      <ul>
-        <li>Body weight you record</li>
-        <li>Water intake you log</li>
-        <li>Nutrition you log (energy consumed and the protein, carbohydrate, and fat macronutrients)</li>
-      </ul>
-      <p>We never write back data that was read from Apple Health, and we never modify or delete data written by other apps. You can turn write access on or off at any time through iOS Settings &gt; Privacy &amp; Security &gt; Health &gt; Project J.</p>
-
       <p><strong>Microphone and Voice Input (Optional)</strong></p>
       <p>Project J offers an optional voice dictation feature so you can speak a food or meal description instead of typing it. If you use this feature, the App requests microphone access and uses speech recognition to convert your speech into text. Depending on your device and iOS settings, speech recognition may be processed on your device or by Apple's speech recognition service. Audio is captured only while you are actively dictating, is used solely to fill in the text field you are editing, and is never stored or transmitted by us to our servers. The microphone is never accessed in the background or without your action.</p>
     </section>
@@ -246,7 +237,6 @@
         <li><strong>HealthKit data is never sold</strong> to data brokers, insurers, employers, financial institutions, or any other entity.</li>
         <li><strong>HealthKit data is never used to determine insurance eligibility, employment status, or for any discriminatory purpose.</strong></li>
         <li>Health metrics read from HealthKit are displayed to you within the App and stored in your personal cloud account (Firebase Firestore), accessible only under your authenticated user ID.</li>
-        <li>When you grant write permission, the App writes only the data you log yourself — body weight, water intake, and nutrition — back to Apple Health, so it stays in sync across your apps. We never write back data read from Apple Health, never alter or delete data created by other apps, and writing is always under your control through iOS Settings.</li>
       </ul>
     </section>
 
@@ -263,9 +253,10 @@
         <li>To generate personalized reports and analysis within the App</li>
         <li>To personally receive and read prayer requests you voluntarily submit through the App</li>
         <li>To schedule local notifications on your device for reminders about goals, streaks, and fasting windows — all notifications are generated on-device and no notification content is transmitted to our servers</li>
-        <li>To write data you log in the App (body weight, water intake, and nutrition) back to Apple Health when you grant permission, so your entries stay in sync across your apps and devices</li>
         <li>To let you dictate food and meal descriptions by voice using your device's microphone and speech recognition, when you choose to use that feature</li>
         <li>To generate personalized coaching tips using an AI service (Anthropic). When the Smart Coach feature runs, a summary of your recent health and fitness data (such as calorie totals, macronutrient averages, weight trend, sleep scores, and activity levels) is transmitted to Anthropic's API to generate a coaching observation. No personally identifying information such as your name, email, or account ID is included in this transmission. The data sent is limited to the aggregate metrics needed to generate the tip and is not used to train Anthropic's models.</li>
+        <li>To power the Faith AI Companion (Halo). When you send a message to Halo, your typed message and recent conversation history are transmitted to Anthropic's API to generate a response. Your name, email, account ID, prayer log entries, and journal content are never included. Conversation content is not used to train Anthropic's models and is not logged or stored by us beyond what is needed to maintain your active session.</li>
+        <li>To store food photos you attach to food entries in Firebase Storage, so they are preserved across devices and after reinstalling the App. Photos are stored under your authenticated user ID and are deleted when you delete the associated food entry or your account.</li>
       </ul>
       <p>We do not use your information for advertising, behavioral profiling, or any purpose outside of operating the App's core features.</p>
     </section>
@@ -274,7 +265,7 @@
       <h2>5. Third-Party Services</h2>
 
       <p><strong>Firebase (Google LLC)</strong></p>
-      <p>We use Firebase Authentication to manage your account and Firebase Firestore to securely sync your data. Your data is stored under your unique user ID in a Firestore database, which is governed by Firebase's security rules ensuring only your authenticated account can access your data. Google's privacy policy applies to Firebase: <a href="https://policies.google.com/privacy" target="_blank">https://policies.google.com/privacy</a></p>
+      <p>We use Firebase Authentication to manage your account, Firebase Firestore to securely sync your data, and Firebase Storage to store food photos you attach to food entries. Your data is stored under your unique user ID and governed by Firebase's security rules, ensuring only your authenticated account can read or write your data. Google's privacy policy applies to Firebase: <a href="https://policies.google.com/privacy" target="_blank">https://policies.google.com/privacy</a></p>
 
       <p><strong>FatSecret</strong></p>
       <p>Food search functionality is powered by the FatSecret food database. When you search for food, your search query is transmitted to FatSecret's API to retrieve nutritional data. Search queries are not linked to your personal identity in our systems. This product uses the FatSecret Platform API but is not endorsed or certified by FatSecret. FatSecret's privacy policy: <a href="https://www.fatsecret.com/privacy.aspx" target="_blank">https://www.fatsecret.com/privacy.aspx</a></p>
@@ -285,19 +276,21 @@
       <p><strong>Google Sign-In</strong></p>
       <p>If you authenticate using Google Sign-In, Google provides your name and email address. Google's privacy policy applies: <a href="https://policies.google.com/privacy" target="_blank">https://policies.google.com/privacy</a></p>
 
-      <p><strong>Anthropic (AI Coaching &amp; Meal Estimation)</strong></p>
-      <p>The Smart Coach feature uses Anthropic's Claude AI to phrase personalized coaching tips. When the Smart Coach runs, a structured summary of your recent health and fitness metrics (such as calorie averages, macronutrient totals, weight trend, sleep scores, and activity levels over a recent window of days) is transmitted to Anthropic's API. No personally identifying information is included in this transmission — your name, email, account ID, and journal or prayer content are never sent to Anthropic. The data transmitted is limited to the aggregate metrics required to generate the coaching tip and is not used to train Anthropic's models. Anthropic's privacy policy applies to data processed through their API: <a href="https://www.anthropic.com/privacy" target="_blank">https://www.anthropic.com/privacy</a></p>
+      <p><strong>Anthropic (AI Coaching, Meal Estimation &amp; Faith Companion)</strong></p>
+      <p>The Smart Coach feature uses Anthropic's Claude AI to phrase personalized coaching tips. When the Smart Coach runs, a structured summary of your recent health and fitness metrics (such as calorie averages, macronutrient totals, weight trend, sleep scores, and activity levels over a recent window of days) is transmitted to Anthropic's API. No personally identifying information is included in this transmission — your name, email, account ID, journal entries, and prayer content are never sent to Anthropic. The data transmitted is limited to the aggregate metrics required to generate the coaching tip and is not used to train Anthropic's models. Anthropic's privacy policy applies to data processed through their API: <a href="https://www.anthropic.com/privacy" target="_blank">https://www.anthropic.com/privacy</a></p>
       <p>The AI Meal Estimator feature also uses Anthropic's Claude AI. When you request a meal estimate, the meal photo you choose to attach (if any) and the text description you provide are transmitted to Anthropic's API solely to generate the nutritional estimate you see. This data is sent only when you actively request an estimate, is used only to produce that estimate, and is not used to train Anthropic's models. We recommend you do not include personally identifying information in your meal descriptions. Anthropic's privacy policy linked above applies to this data.</p>
+      <p>The Faith AI Companion (Halo) also uses Anthropic's Claude AI. When you send a message to Halo, your typed message and recent conversation history (up to the last several exchanges) are transmitted to Anthropic's API to generate a response. Your name, email address, account ID, prayer log entries, and journal content are never transmitted. Conversation content is not used to train Anthropic's models. A server-side crisis detection layer screens messages before they reach the AI model; messages identified as indicating a crisis trigger a hardcoded response with mental health resources rather than an AI reply.</p>
 
-      <p>These are the only third-party services used by Project J. We do not use advertising SDKs, analytics platforms, or any other third-party data processors.</p>
+      <p>We do not use advertising SDKs, analytics platforms, or any other third-party data processors beyond those listed above.</p>
     </section>
 
     <section>
       <h2>6. Data Storage and Security</h2>
-      <p>Your data is stored in two locations:</p>
+      <p>Your data is stored in the following locations:</p>
       <ul>
         <li><strong>On your device:</strong> Using iOS local storage (AsyncStorage). This data is sandboxed to the App and is not accessible to other apps or parties.</li>
-        <li><strong>In the cloud:</strong> Mirrored to Firebase Firestore under your unique user ID. Firebase security rules ensure only requests authenticated with your specific account credentials can read or write your data.</li>
+        <li><strong>Firebase Firestore (cloud):</strong> Your health, fitness, and preference data is mirrored to Firebase Firestore under your unique user ID. Firebase security rules ensure only requests authenticated with your specific account credentials can read or write your data.</li>
+        <li><strong>Firebase Storage (cloud):</strong> Food photos you attach to food entries are stored in Firebase Storage under your unique user ID. This allows photos to be preserved across devices and after reinstalling the App. Firebase security rules restrict access to your authenticated account only.</li>
       </ul>
       <p>We implement appropriate technical safeguards to protect your information from unauthorized access, alteration, disclosure, or destruction. However, no method of transmission over the internet or electronic storage is 100% secure, and we cannot guarantee absolute security.</p>
     </section>
@@ -312,7 +305,7 @@
         <li>Behavioral analytics, crash reports, or usage telemetry (no analytics SDK is used)</li>
         <li>Financial or payment information (the App is free)</li>
         <li>Contacts, calendar, or other device data</li>
-        <li>Camera access is used for barcode scanning, which is processed on-device and not transmitted. The only images that leave your device are meal photos you deliberately attach to the AI Meal Estimator, which are sent to Anthropic solely to generate that estimate (see Section 5). We never access your camera or photos in the background or without your action.</li>
+        <li>Camera access is used for barcode scanning, which is processed on-device and not transmitted. Food photos you attach to food entries are uploaded to Firebase Storage under your account (see Section 6). Meal photos you attach to the AI Meal Estimator are transmitted to Anthropic to generate the nutritional estimate (see Section 5). We never access your camera or photos in the background or without your action.</li>
       </ul>
       <p><strong>We do not sell, rent, trade, or share your personal information with any third party for their own purposes.</strong></p>
     </section>
@@ -327,7 +320,8 @@
       <p>When you delete your account:</p>
       <ul>
         <li>Your Firebase Authentication account is permanently deleted</li>
-        <li>All cloud-synced data in Firebase Firestore (users/[your ID]) is permanently erased</li>
+        <li>All cloud-synced data in Firebase Firestore (users/[your ID]) is permanently erased, including prayer requests</li>
+        <li>All food photos stored in Firebase Storage under your account are permanently deleted</li>
         <li>All locally stored data on your device is removed</li>
         <li>Your Apple Sign-In authorization token is revoked with Apple's servers</li>
         <li>All food logs, workout data, journal entries, Bible reflections, and personal data are permanently deleted</li>

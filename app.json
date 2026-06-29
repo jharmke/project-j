@@ -63,8 +63,7 @@
       [
         "@kingstinct/react-native-healthkit",
         {
-          "NSHealthShareUsageDescription": "Project J uses HealthKit to read your fitness and health data including activity, sleep, heart rate, body measurements, and other health metrics to provide personalized insights.",
-          "NSHealthUpdateUsageDescription": "Project J can save your weight, water, and nutrition entries to the Health app so they stay in sync across your apps and devices."
+          "NSHealthShareUsageDescription": "Project J uses HealthKit to read your fitness and health data including activity, sleep, heart rate, body measurements, and other health metrics to provide personalized insights."
         }
       ],
       "expo-apple-authentication",

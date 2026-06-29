@@ -116,6 +116,22 @@ export const deleteAccount = onCall(
       await Promise.all(storeDocs.docs.map(d => d.ref.delete()));
     } catch { /* non-fatal */ }
 
+    // Step 2b: Delete all prayer_requests docs
+    try {
+      const prayerDocs = await admin.firestore()
+        .collection('users').doc(uid)
+        .collection('prayer_requests')
+        .get();
+      await Promise.all(prayerDocs.docs.map(d => d.ref.delete()));
+    } catch { /* non-fatal */ }
+
+    // Step 2c: Delete all Firebase Storage food photos
+    try {
+      const bucket = admin.storage().bucket();
+      const [files] = await bucket.getFiles({ prefix: `users/${uid}/food_photos/` });
+      await Promise.all(files.map(f => f.delete()));
+    } catch { /* non-fatal */ }
+
     // Step 3: Delete the users/{uid} root doc (holds appleRefreshToken)
     try {
       await admin.firestore().collection('users').doc(uid).delete();

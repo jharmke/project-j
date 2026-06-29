@@ -776,7 +776,10 @@ export default function HomeScreen() {
   const [sleepStoredBed,  setSleepStoredBed]  = useState<string|null>(null);
   const [sleepStoredWake, setSleepStoredWake] = useState<string|null>(null);
   const [editingSleep,    setEditingSleep]    = useState(false);
-  
+  // Live mirror so the carousel auto-scroll tick can check it without a stale closure.
+  const editingSleepRef = useRef(false);
+  editingSleepRef.current = editingSleep;
+
   const [sleepBedTime,    setSleepBedTime]    = useState<Date|null>(null);
   const [sleepWakeTime,   setSleepWakeTime]   = useState<Date|null>(null);
   const [showBedTimePicker, setShowBedTimePicker]   = useState(false);
@@ -1250,6 +1253,9 @@ export default function HomeScreen() {
   function scheduleCarouselTick(delay = 6000) {
     if (autoScrollTimerRef.current) clearTimeout(autoScrollTimerRef.current);
     autoScrollTimerRef.current = setTimeout(() => {
+      // Don't move the card out from under a manual sleep entry in progress -- keep the loop alive
+      // but skip the scroll while the editor is open; resumes on the next tick after it closes.
+      if (editingSleepRef.current) { scheduleCarouselTick(); return; }
       const next = activeSleepFaceRef.current === 0 ? 1 : 0;
       carouselRef.current?.scrollTo({ x: next * CAROUSEL_PAGE_W, animated: true });
       activeSleepFaceRef.current = next;

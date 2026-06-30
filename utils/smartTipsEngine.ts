@@ -2318,7 +2318,7 @@ function buildDiagnosisActionFacts(
       const high = foodDays7.filter(d => d.protein > ctx.proteinGoalG * 1.1);
       const avgP = high.length ? Math.round(avg(high.map(d => d.protein))) : 0;
       return {
-        diagnosis: `Over the last 7 days, protein averaging ${avgP}g on ${high.length} of ${foodDays7.length} logged days, consistently above the ${Math.round(ctx.proteinGoalG)}g goal`,
+        diagnosis: `Protein cleared the ${Math.round(ctx.proteinGoalG)}g goal on ${high.length} of ${foodDays7.length} logged days, averaging ${avgP}g on those days`,
         action: 'Maintain the current food pattern',
         facts: { avgProtein: avgP, goal: Math.round(ctx.proteinGoalG), daysHigh: high.length },
       };
@@ -2327,7 +2327,7 @@ function buildDiagnosisActionFacts(
       const high = foodDays7.filter(d => d.fat > ctx.fatGoalG * 1.1);
       const avgF = high.length ? Math.round(avg(high.map(d => d.fat))) : 0;
       return {
-        diagnosis: `Over the last 7 days, fat averaging ${avgF}g on ${high.length} of ${foodDays7.length} logged days, above the ${Math.round(ctx.fatGoalG)}g target. Fat is the most calorie dense macro, so this is a common source of a calorie surplus`,
+        diagnosis: `Fat exceeded the ${Math.round(ctx.fatGoalG)}g target on ${high.length} of ${foodDays7.length} logged days, averaging ${avgF}g on those days. Fat is the most calorie-dense macro, so this is a common source of a calorie surplus`,
         action: 'Trim portions of the highest-fat foods to pull daily calories back toward target',
         facts: { avgFat: avgF, goal: Math.round(ctx.fatGoalG), daysHigh: high.length },
       };
@@ -2336,7 +2336,7 @@ function buildDiagnosisActionFacts(
       const high = foodDays7.filter(d => d.carbs > ctx.carbGoalG * 1.1);
       const avgC = high.length ? Math.round(avg(high.map(d => d.carbs))) : 0;
       return {
-        diagnosis: `Over the last 7 days, carbs averaging ${avgC}g on ${high.length} of ${foodDays7.length} logged days, above the ${Math.round(ctx.carbGoalG)}g target`,
+        diagnosis: `Carbs exceeded the ${Math.round(ctx.carbGoalG)}g target on ${high.length} of ${foodDays7.length} logged days, averaging ${avgC}g on those days`,
         action: 'Time more carbs around training and trim them on lower-activity days',
         facts: { avgCarbs: avgC, goal: Math.round(ctx.carbGoalG), daysHigh: high.length },
       };

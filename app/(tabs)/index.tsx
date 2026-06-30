@@ -96,9 +96,9 @@ const CARD_REGISTRY: CardMeta[] = [
   { id: 'verse',          label: 'Faith Today',        description: 'Verse, plans, and prayer hub',           defaultVisible: true },
   { id: 'smart_tip',      label: 'Smart Tip',          description: 'Your top coaching insight for today',    defaultVisible: true },
   { id: 'calories',       label: 'Calories',           description: 'Daily calorie intake & progress',        defaultVisible: true },
-  { id: 'macros',         label: 'Macros',             description: 'Protein, carbs & fat breakdown',         defaultVisible: true },
+  { id: 'macros',         label: 'Macros',             description: 'Protein, carbs & fat breakdown',         defaultVisible: false },
   { id: 'water',          label: 'Water',              description: 'Hydration tracking',                     defaultVisible: true },
-  { id: 'weight',         label: 'Weight',             description: 'Daily weigh-in & total progress',        defaultVisible: true },
+  { id: 'weight',         label: 'Weight',             description: 'Daily weigh-in & total progress',        defaultVisible: false },
   { id: 'workout',        label: "Today's Training",   description: "Workout summary and calories burned",     defaultVisible: true },
   { id: 'steps',          label: 'Steps',              description: 'Step count from Apple Health',           defaultVisible: true },
   { id: 'sleep',          label: 'Sleep & Recovery',   description: 'Sleep score + Recovery Score in one card', defaultVisible: true },
@@ -106,16 +106,15 @@ const CARD_REGISTRY: CardMeta[] = [
   // Kept out of the registry (so it never renders / shows in Edit Layout) but the CardId
   // member + renderFitnessMetricsCard() + render case are intentionally preserved for a
   // fast restore if we rethink it (VO2 Max + Cardio Recovery capacity card). See backlog.
-  { id: 'daily_note',       label: 'Daily Note',         description: 'Journal entry for the day',             defaultVisible: true },
+  { id: 'daily_note',       label: 'Daily Note',         description: 'Journal entry for the day',             defaultVisible: false },
   { id: 'gratitude_streak', label: 'Gratitude Streak',  description: 'Daily gratitude habit tracker',          defaultVisible: false },
-  { id: 'reading_plans',    label: 'Reading Plans',      description: 'Daily Bible reading plan tracker',       defaultVisible: true },
-  { id: 'vs_yesterday',     label: 'Challenge',          description: 'Your active challenge, live', defaultVisible: true },
+  { id: 'reading_plans',    label: 'Reading Plans',      description: 'Daily Bible reading plan tracker',       defaultVisible: false },
+  { id: 'vs_yesterday',     label: 'Challenge',          description: 'Your active challenge, live',            defaultVisible: false },
 ];
 
 export const DEFAULT_ORDER: CardId[] = [
-  'verse', 'smart_tip', 'calories', 'macros', 'water', 'weight', 'workout',
-  'steps', 'sleep', 'gratitude_streak', 'reading_plans',
-  'daily_note', 'vs_yesterday',
+  'verse', 'calories', 'workout', 'water', 'steps', 'sleep', 'smart_tip',
+  'macros', 'weight', 'daily_note', 'reading_plans', 'vs_yesterday', 'gratitude_streak',
 ];
 export const DEFAULT_VISIBLE: Record<CardId, boolean> = Object.fromEntries(
   CARD_REGISTRY.map(c => [c.id, c.defaultVisible])
@@ -126,12 +125,12 @@ export const DEFAULT_VISIBLE: Record<CardId, boolean> = Object.fromEntries(
 // Mode-specific default card orders. Applied on fresh install, and on demand when
 // the user picks "Use defaults" in the Settings coaching-mode switch modal.
 export const DISCIPLINE_ORDER: CardId[] = [
-  'verse', 'calories', 'workout', 'sleep', 'macros', 'steps', 'water', 'weight',
-  'vs_yesterday', 'gratitude_streak', 'reading_plans', 'daily_note',
+  'verse', 'calories', 'workout', 'sleep', 'steps', 'water', 'smart_tip',
+  'macros', 'weight', 'vs_yesterday', 'gratitude_streak', 'reading_plans', 'daily_note',
 ];
 export const MINDFUL_ORDER: CardId[] = [
-  'verse', 'gratitude_streak', 'sleep', 'calories', 'workout', 'water', 'steps',
-  'weight', 'reading_plans', 'daily_note', 'vs_yesterday',
+  'verse', 'sleep', 'calories', 'workout', 'water', 'steps', 'smart_tip',
+  'gratitude_streak', 'weight', 'reading_plans', 'daily_note', 'vs_yesterday',
 ];
 // Mindful hides macros by default -- users can add via Edit Layout
 export const MINDFUL_VISIBLE: Record<CardId, boolean> = {
@@ -3891,12 +3890,12 @@ export default function HomeScreen() {
         <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center' }]}>
           <View style={[styles.editSheet, { backgroundColor: theme.bgSheet, borderColor: theme.borderSheet, borderWidth: 0.5, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw }]}>
             {/* Handle bar */}
-            <View style={{ alignSelf: 'center', paddingVertical: 10, paddingHorizontal: 40 }}>
+            <View style={{ alignSelf: 'center', paddingVertical: 6, paddingHorizontal: 40 }}>
               <View style={[styles.editSheetHandle, { backgroundColor: theme.sheetHandle }]} />
             </View>
             {/* Header */}
             <View style={[styles.editSheetHeader, { borderBottomColor: theme.borderSubtle }]}>
-              <Text style={{ fontSize: 13, color: theme.accentBlueRaw, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase' }}>Edit Layout</Text>
+              <Text style={{ fontSize: 10, color: theme.accentBlueRaw, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase' }}>Edit Layout</Text>
               <View style={{ backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder, borderRadius: 6, paddingHorizontal: 14, paddingVertical: 6, height: 32, alignItems: 'center', justifyContent: 'center' }}>
                 <Text style={{ color: theme.accentGreen, fontSize: 12, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>DONE</Text>
               </View>
@@ -4017,12 +4016,12 @@ export default function HomeScreen() {
               borderTopColor: theme.accentBlueRaw,
               opacity: editSheetAnim,
             }]}>
-            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); exitEditMode(); }} style={{ alignSelf:'center', paddingVertical:10, paddingHorizontal:40 }}>
+            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); exitEditMode(); }} style={{ alignSelf:'center', paddingVertical:6, paddingHorizontal:40 }}>
               <View style={[styles.editSheetHandle, { backgroundColor: theme.sheetHandle }]} />
             </TouchableOpacity>
             {/* Header row */}
             <View style={[styles.editSheetHeader, { borderBottomColor: theme.borderSubtle }]}>
-              <Text style={{ fontSize:13, color: theme.accentBlueRaw, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase' }}>Edit Layout</Text>
+              <Text style={{ fontSize:10, color: theme.accentBlueRaw, fontFamily:'DMSans_700Bold', letterSpacing:3, textTransform:'uppercase' }}>Edit Layout</Text>
               <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); exitEditMode(); }}
                 style={{ backgroundColor: theme.accentGreenBg, borderWidth:1, borderColor: theme.accentGreenBorder, borderRadius:6, paddingHorizontal:14, paddingVertical:6, height:32, alignItems:'center', justifyContent:'center' }}>
                 <Text style={{ color: theme.accentGreen, fontSize:12, fontFamily:'DMSans_700Bold', letterSpacing:1 }}>DONE</Text>
@@ -4050,12 +4049,14 @@ export default function HomeScreen() {
             {editTab === 'my' && (
               <View style={{ flex: 1 }}>
               <DraggableFlatList
-                data={cardOrder}
+                data={cardOrder.filter(id => cardVisible[id])}
                 keyExtractor={(item) => item}
                 contentContainerStyle={{ paddingHorizontal:16, paddingBottom: 20 }}
-                onDragEnd={({ data }) => {
-                  setCardOrder(data);
-                  saveLayout(data, cardVisible);
+                onDragEnd={({ data: visibleData }) => {
+                  const hidden = cardOrder.filter(id => !cardVisible[id]);
+                  const newOrder = [...visibleData, ...hidden];
+                  setCardOrder(newOrder);
+                  saveLayout(newOrder, cardVisible);
                 }}
                 renderItem={({ item: id, drag, isActive }: RenderItemParams<CardId>) => {
                   const meta = CARD_REGISTRY.find(c => c.id === id)!;
@@ -4386,8 +4387,8 @@ const styles = StyleSheet.create({
   saveBtnText:      { fontSize:12, fontFamily:'DMSans_500Medium' },
   // Edit sheet
   editSheet:        { width:'92%', borderRadius:20, maxHeight:'72%', borderWidth:0.5, paddingBottom:20, flex:1 },
-  editSheetHandle:  { width:36, height:4, borderRadius:2, alignSelf:'center', marginTop:12, marginBottom:12 },
-  editSheetHeader:  { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:16, paddingBottom:16, borderBottomWidth:0.5, marginBottom:8 },
+  editSheetHandle:  { width:36, height:4, borderRadius:2, alignSelf:'center', marginTop:6, marginBottom:6 },
+  editSheetHeader:  { flexDirection:'row', alignItems:'center', justifyContent:'space-between', paddingHorizontal:16, paddingBottom:12, borderBottomWidth:0.5, marginBottom:4 },
   // Edit mode
   editCardRow:      { flexDirection:'row', alignItems:'center', gap:10, marginBottom:10 },
   editBadge:        { width:28, height:28, borderRadius:14, borderWidth:1, alignItems:'center', justifyContent:'center' },

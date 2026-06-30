@@ -70,6 +70,7 @@
 ## SOCIAL
 
 - Social and accountability partner -- one person you share daily score with. Not a full social feed. Build after core features + onboarding stable.
+- Shared Bible plans / accountability partner (faith) -- YouVersion users specifically praise following a reading plan WITH a partner remotely: couples and friends use it to stay spiritually connected. Project J has no community/social features yet. When community is eventually built, shared faith reading plans should be the FIRST use case: lower-stakes than sharing workout logs and natural for our faith-first identity. Parked here until community is on the active roadmap. (From competitive-research planning session 2026-06-30.)
 
 ---
 

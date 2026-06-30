@@ -2339,7 +2339,7 @@ const styles = StyleSheet.create({
   exerciseInfo:         { flex: 1 },
   exerciseNameRow:      { flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 },
   exerciseName:         { fontSize: 14, fontWeight: '600', fontFamily: 'DMSans_600SemiBold' },
-  exerciseNameDone:     { textDecorationLine: 'line-through' },
+  exerciseNameDone:     {},
   exerciseMeta:         { fontSize: 10, marginBottom: 4, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' },
   exerciseNote:         { fontSize: 11, fontStyle: 'italic', lineHeight: 16, fontFamily: 'DMSans_400Regular' },
   badge:                { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 3 },

@@ -86,9 +86,12 @@ type Msg = { role: Role; text: string; feedback?: 'up' | 'down'; routes?: string
 // reply. Unknown keys are stripped (a bad link can never navigate anywhere).
 function substituteRoutes(text: string): { text: string; routes: string[] } {
   const routes: string[] = [];
+  // Strip the token from the text entirely (the model names the screen in words already) and just
+  // collect the key for a pill below. Stripping avoids the "label typed twice" collision that inline
+  // substitution caused when the model wrote both the token AND the screen name.
   const out = text.replace(/\[\[route:([a-zA-Z0-9_]+)\]\]/g, (_m, key: string) => {
     const r = COMPANION_ROUTES[key];
-    if (r) { if (!routes.includes(key)) routes.push(key); return r.label; }
+    if (r && !routes.includes(key)) routes.push(key);
     return '';
   });
   const cleaned = out

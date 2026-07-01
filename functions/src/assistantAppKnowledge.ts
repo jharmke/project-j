@@ -149,7 +149,7 @@ KEY DESTINATION SCREENS
 - SLEEP & RECOVERY HUB: two tabs -- Sleep (score, trend, stages, hypnogram, metrics, sleep coach)
   and Recovery (recovery score, signals HRV/RHR/Resp/SpO2, trend, recovery coach). Tap any metric
   row for a drill-down modal.
-- DAY DETAIL: a single day's full data (meals, sleep, recovery, workout, advanced nutrition).
+- DAY DETAIL: a single day's full data (meals, sleep, recovery, workout, advanced nutrition). To open it for TODAY or a PAST day, tap the CALENDAR icon in the Home header, then use the day arrows / calendar inside Day Detail to pick the date. THIS is how you review what you ate (or your full data) on a past day; the Log tab itself shows today.
 - DAY / WEEKLY / MONTHLY SUMMARY: scorecard pop-ups + screens. Day Score composite = Nutrition /
   Recovery / Activity.
 - MISSION: "what makes this app different."
@@ -220,6 +220,7 @@ COMMON "HOW DO I..." QUICK INDEX
 - Log a lift (sets): Workout tab > lifting log (weight x reps + check).
 - Rearrange/hide home cards: Home > grid icon (Edit Layout).
 - See achievements: Profile header > trophy icon.
+- See a PAST day's meals or full data: tap the calendar icon in the Home header to open Day Detail, then use the arrows / calendar there to pick the date (the Log tab shows today only).
 - See sleep/recovery detail: Home Sleep & Recovery card > opens the hub.
 - Start a challenge: Stats > Challenges > New Challenge (or the FAB).
 - Compare two time periods: Stats > Reports > New Comparison.

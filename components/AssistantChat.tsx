@@ -16,6 +16,9 @@ import { router } from 'expo-router';
 import { CRISIS_RESPONSE, screenForCrisis } from '../utils/faithCrisis';
 import { buildCompanionStats } from '../utils/companionStats';
 import { COMPANION_ROUTES, ROUTE_TRIGGERS } from '../utils/companionRoutes';
+import { TUTORIAL_TRIGGERS, TUTORIAL_ROUTE_OVERLAP } from '../utils/companionTutorials';
+import { useTutorial } from '../context/TutorialContext';
+import { TAB_TUTORIALS } from '../data/tutorials';
 import { ToastRenderer, useToast } from './Toast';
 import { useTheme } from '../theme';
 
@@ -79,12 +82,12 @@ function substituteStats(text: string, valueMap: Record<string, string>): string
 }
 
 type Role = 'user' | 'assistant' | 'system' | 'crisis';
-type Msg = { role: Role; text: string; feedback?: 'up' | 'down'; routes?: string[] };
+type Msg = { role: Role; text: string; feedback?: 'up' | 'down'; routes?: string[]; tutorials?: string[] };
 
 // Replace [[route:key]] tokens with the route's plain label inline (so the sentence still reads
 // naturally) and collect the recognized keys so the client can render tappable pills below the
 // reply. Unknown keys are stripped (a bad link can never navigate anywhere).
-function substituteRoutes(text: string): { text: string; routes: string[] } {
+function substituteRoutes(text: string, question: string): { text: string; routes: string[]; tutorials: string[] } {
   const routes: string[] = [];
   // Strip the token from the text entirely (the model names the screen in words already) and just
   // collect the key for a pill below. Stripping avoids the "label typed twice" collision that inline
@@ -108,7 +111,24 @@ function substituteRoutes(text: string): { text: string; routes: string[] } {
     if (routes.includes(t.key)) continue;
     if (t.phrases.some(p => lower.includes(p))) routes.push(t.key);
   }
-  return { text: cleaned, routes };
+  // "Show me how" tutorial pills scan the USER'S QUESTION (their intent), NOT the reply. Scanning
+  // the reply let an incidental mention hijack the pill: asking "how do I log food" surfaced the
+  // BARCODE tutorial because the answer happened to mention scanning a barcode. The question is what
+  // they actually want to learn. When a tutorial covers the same feature as a route pill, the route
+  // pill is dropped (TUTORIAL_ROUTE_OVERLAP) so the user never gets both for one thing.
+  const qLower = question.toLowerCase();
+  const tutorials: string[] = [];
+  for (const t of TUTORIAL_TRIGGERS) {
+    if (tutorials.length >= 2) break;
+    if (tutorials.includes(t.id)) continue;
+    if (t.phrases.some(p => qLower.includes(p))) tutorials.push(t.id);
+  }
+  const dropRoutes = new Set(tutorials.map(id => TUTORIAL_ROUTE_OVERLAP[id]).filter(Boolean));
+  const keptRoutes = routes.filter(k => !dropRoutes.has(k));
+  // Combined cap of 3, tutorials prioritized (a walkthrough is more actionable than a jump).
+  const cappedTutorials = tutorials.slice(0, 3);
+  const keptRoutesCapped = keptRoutes.slice(0, Math.max(0, 3 - cappedTutorials.length));
+  return { text: cleaned, routes: keptRoutesCapped, tutorials: cappedTutorials };
 }
 
 // Build the per-user CONTEXT block (profile + goals) sent to the function, plus the mode/tier the
@@ -204,8 +224,22 @@ function TypingDots({ color }: { color: string }) {
   );
 }
 
+// Otto can be open on any screen, but a tutorial's targets live on its own tab. Resolve the tab a
+// tutorial belongs to (from TAB_TUTORIALS) so the launcher can navigate there first; tutorials that
+// push further (add-food, recipe-builder, etc.) do so via their own steps once on that tab.
+const TUTORIAL_TAB_ROUTE: Record<string, string> = {
+  home: '/(tabs)', log: '/(tabs)/log', workout: '/(tabs)/workout', stats: '/(tabs)/stats', profile: '/(tabs)/profile', settings: '/settings',
+};
+function tutorialTabRoute(id: string): string | null {
+  for (const tab of Object.keys(TAB_TUTORIALS)) {
+    if (TAB_TUTORIALS[tab].includes(id)) return TUTORIAL_TAB_ROUTE[tab] ?? null;
+  }
+  return null;
+}
+
 export default function AssistantChat({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const { theme } = useTheme();
+  const { startTutorial } = useTutorial();
   const insets = useSafeAreaInsets();
   const { showToast } = useToast();
   // theme.accentBlue is already button-safe (theme bakes in the light-theme override), so filled
@@ -276,6 +310,21 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
       onClose();
       if (r.params) router.push({ pathname: r.path as any, params: r.params });
       else router.push(r.path as any);
+    });
+  };
+
+  // Tapping a "Show me how" pill: fade the chat out, then launch the guided tutorial. The tour
+  // self-navigates to its own screen via its steps, so we just start it. A short delay lets the
+  // chat finish closing before the tutorial overlay takes over (mirrors the tutorials list launch).
+  const openTutorial = (id: string) => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    Keyboard.dismiss();
+    const tabRoute = tutorialTabRoute(id);
+    Animated.timing(anim, { toValue: 0, duration: 180, useNativeDriver: false }).start(() => {
+      onClose();
+      if (tabRoute) router.push(tabRoute as any);
+      // Let the destination mount before the tour starts (it then drives navigation via its steps).
+      setTimeout(() => { startTutorial(id); }, tabRoute ? 420 : 300);
     });
   };
 
@@ -387,8 +436,8 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
         setSending(false);
         // Substitute [[stat:key]] tokens with the exact values from the pack we sent (so any personal
         // number is the app's own number), then pull out [[route:key]] tokens into tappable pills.
-        const { text: finalText, routes } = substituteRoutes(substituteStats(data.reply!, pack.valueMap));
-        setMessages(prev => [...prev, { role: 'assistant', text: finalText, routes }]);
+        const { text: finalText, routes, tutorials } = substituteRoutes(substituteStats(data.reply!, pack.valueMap), text);
+        setMessages(prev => [...prev, { role: 'assistant', text: finalText, routes, tutorials }]);
       } else if (data.message) {
         setSending(false);
         setMessages(prev => [...prev, { role: 'system', text: data.message! }]);
@@ -512,9 +561,19 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
                 return (
                   <View key={i} style={styles.replyWrap}>
                     <View style={[styles.bubble, styles.assistantBubble, styles.replyBubble, { borderLeftColor: accent }]}>{body}</View>
-                    {m.routes && m.routes.length > 0 && (
+                    {((m.routes && m.routes.length > 0) || (m.tutorials && m.tutorials.length > 0)) && (
                       <View style={styles.pillRow}>
-                        {m.routes.map(k => {
+                        {m.tutorials?.map(id => {
+                          const t = TUTORIAL_TRIGGERS.find(x => x.id === id);
+                          if (!t) return null;
+                          return (
+                            <Pressable key={`tut-${id}`} onPress={() => openTutorial(id)} style={[styles.pill, { backgroundColor: theme.accentGreenBg, borderColor: theme.accentGreenBorder }]}>
+                              <Ionicons name="play-circle" size={13} color={theme.accentGreen} />
+                              <Text style={[styles.pillText, { color: theme.accentGreen }]}>{t.label}</Text>
+                            </Pressable>
+                          );
+                        })}
+                        {m.routes?.map(k => {
                           const r = COMPANION_ROUTES[k];
                           if (!r) return null;
                           return (

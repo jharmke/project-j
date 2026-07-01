@@ -23,7 +23,7 @@ export const COMPANION_ROUTES: Record<string, CompanionRoute> = {
   settings:      { path: '/settings',                                       label: 'Settings' },
 
   // Destination screens
-  sleep_hub:     { path: '/sleep',                                          label: 'Sleep & Recovery' },
+  sleep_hub:     { path: '/sleep',                                          label: 'Sleep' },
   recovery_hub:  { path: '/sleep', params: { tab: 'recovery' },             label: 'Recovery' },
   achievements:  { path: '/achievements',                                   label: 'Achievements' },
   challenges:    { path: '/challenges',                                     label: 'Challenges' },

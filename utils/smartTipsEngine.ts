@@ -990,7 +990,14 @@ function ruleSleepScoreHigh(w7: WindowDay[], ctx: EngineContext, store: SmartTip
 function ruleSleepDeepLow(w7: WindowDay[], ctx: EngineContext, store: SmartTipsStore): CandidateTip | null {
   const stageDays = w7.filter(d => d.deepSleepPct !== null);
   if (stageDays.length < 5) return null;
-  const low = stageDays.filter(d => d.deepSleepPct! < 15);
+  // deepSleepPct actually holds deep sleep DURATION in ms (day.sleepStages.deep), so convert it to a
+  // real percent of that night's sleep before the "< 15%" comparison. Previously it compared the raw
+  // millisecond value against 15, which is never true, so this rule never fired.
+  const low = stageDays.filter(d => {
+    if (!d.sleepHours || d.sleepHours <= 0) return false;
+    const deepPct = (d.deepSleepPct! / 3600000) / d.sleepHours * 100;
+    return deepPct < 15;
+  });
   if (low.length < 5) return null;
   return makeTip('sleep_deep_low', 'pattern', false, 'pattern', ctx, store);
 }

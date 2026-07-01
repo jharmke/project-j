@@ -210,22 +210,31 @@ export async function buildCompanionStats(todayKey: string): Promise<CompanionSt
   }
 
   // ── Sleep (last night + 7-night averages) ─────────────────────────────────
-  const lastNight = trailing.find(d => d.sleepScore !== null) || null;
+  // Sleep + recovery are keyed to the WAKE day (today's date key) and are COMPLETE overnight
+  // records, unlike the partial "so far today" nutrition/activity that must exclude today. So they
+  // must INCLUDE today or they read one night stale (this made Otto report sleep from 2 nights ago
+  // while the app showed last night). sleepNights is most-recent-first and includes today; [0]
+  // falls back to the prior night automatically if today has no sleep record yet.
+  const sleepNights = sleepDays(windowIncludingToday);
+  const last7Nights = sleepNights.slice(0, 7);
+  const lastNight = sleepNights[0] || null;
   if (lastNight) {
     if (lastNight.sleepScore !== null) add('sleep_score_lastnight', 'last night sleep score', lastNight.sleepScore, `${r0(lastNight.sleepScore)}`);
     if (lastNight.sleepHours !== null) add('sleep_hours_lastnight', 'last night sleep duration', lastNight.sleepHours, fmtHoursFromHours(lastNight.sleepHours));
     if (lastNight.deepSleepPct !== null) add('deep_sleep_lastnight', 'last night deep sleep', lastNight.deepSleepPct, fmtMsToHm(lastNight.deepSleepPct));
   }
-  const score7 = mean(pick(sleepDays(last7), d => d.sleepScore));
+  const score7 = mean(pick(last7Nights, d => d.sleepScore));
   if (score7 !== null) add('sleep_score_7d_avg', 'sleep score, average over last 7 nights', score7, `${r0(score7)}`);
-  const hours7 = mean(pick(sleepDays(last7), d => d.sleepHours));
+  const hours7 = mean(pick(last7Nights, d => d.sleepHours));
   if (hours7 !== null) add('sleep_hours_7d_avg', 'sleep duration, average over last 7 nights', hours7, fmtHoursFromHours(hours7));
-  const deep7 = mean(pick(sleepDays(last7), d => d.deepSleepPct));
+  const deep7 = mean(pick(last7Nights, d => d.deepSleepPct));
   if (deep7 !== null) add('deep_sleep_7d_avg', 'deep sleep, average over last 7 nights', deep7, fmtMsToHm(deep7));
   if (ctx.sleepGoal) add('sleep_goal', 'sleep duration goal', ctx.sleepGoal, `${r1(ctx.sleepGoal)}h`);
 
   // ── Recovery (latest score + signals) ─────────────────────────────────────
-  const rec = trailing.find(d => d.recoveryScore !== null) || null;
+  // Recovery is also wake-day-keyed (see the sleep note above), so include today.
+  const recNights = windowIncludingToday.filter(d => d.recoveryScore !== null);
+  const rec = recNights[0] || null;
   if (rec) {
     if (rec.recoveryScore !== null) add('recovery_score_latest', 'latest recovery score', rec.recoveryScore, `${r0(rec.recoveryScore)}`);
     const sig = rec.recoverySignals;
@@ -236,7 +245,7 @@ export async function buildCompanionStats(todayKey: string): Promise<CompanionSt
       if (sig.spo2 !== null) add('spo2_latest', 'latest blood oxygen', sig.spo2, `${r0(sig.spo2)}%`);
     }
   }
-  const recAvg7 = mean(pick(last7, d => d.recoveryScore));
+  const recAvg7 = mean(pick(recNights.slice(0, 7), d => d.recoveryScore));
   if (recAvg7 !== null) add('recovery_score_7d_avg', 'recovery score, average over last 7 days', recAvg7, `${r0(recAvg7)}`);
 
   // ── Workouts (count in the last 7 days) ───────────────────────────────────

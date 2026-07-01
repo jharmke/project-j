@@ -31,8 +31,10 @@ import { ASSISTANT_APP_KNOWLEDGE } from './assistantAppKnowledge';
 const ANTHROPIC_API_KEY = defineSecret('ANTHROPIC_API_KEY');
 
 // Free tier messages per user per day. Pro (about 50/day) does not exist yet (no subscription
-// system), so EVERYONE is free for now; this becomes a tier lookup later. Halo is a separate 5/day.
-const FREE_DAILY_CAP = 10;
+// system), so EVERYONE is free for now; this becomes a tier lookup later. Halo is a separate cap.
+// 🚨 BETA HACK (2026-07-01): raised from 10 to 100 so email-invited TestFlight testers can
+// exercise Otto freely. REVERT to 10 (real free-tier cap) before App Store launch.
+const FREE_DAILY_CAP = 100;
 
 // Dev/test accounts that bypass the daily cap (effectively unlimited). Empty this before public
 // launch. Currently just Justin's uid for testing (same uid Halo whitelists).

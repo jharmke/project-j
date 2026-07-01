@@ -1104,7 +1104,7 @@ export async function generateDiagnosticReport(): Promise<DiagnosticReport> {
           headline: `Poor sleep nights cut your next-day workout rate by ${Math.round(delta * 100)}%`,
           detail: `After good sleep, you worked out ${Math.round(goodRate * 100)}% of the time. After poor sleep, that dropped to ${Math.round(poorRate * 100)}%. Sleep and training have a direct relationship in your data.`,
           claim: `Poor sleep is costing you workouts.`,
-          proof: `Good sleep: ${Math.round(goodRate * 100)}% trained · poor sleep: ${Math.round(poorRate * 100)}%`,
+          proof: `Trained ${Math.round(goodRate * 100)}% of days after good sleep, ${Math.round(poorRate * 100)}% after poor sleep`,
           lever: `Sleep is upstream of training. Guard it and the sessions follow.`,
           strength: corrStrength(delta, 0.2),
           positive: false,

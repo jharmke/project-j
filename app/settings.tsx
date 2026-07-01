@@ -1141,7 +1141,7 @@ export default function SettingsScreen() {
       <ScrollView ref={scrollViewRef} contentContainerStyle={styles.content} automaticallyAdjustKeyboardInsets={true} onScroll={e => { goalScrollOffset.current = e.nativeEvent.contentOffset.y; }} scrollEventThrottle={16}>
 
         {/* ── Appearance ── */}
-        <CollapsibleSection label="Appearance" subtitle="Theme · Accent · Haptics" defaultOpen={false} theme={theme}>
+        <CollapsibleSection label="Appearance" subtitle="Theme · Accent · Haptics" defaultOpen={deepLinkSection === 'appearance'} theme={theme}>
           <View style={{ paddingHorizontal: 16, paddingBottom: 16, gap: 10 }}>
             {THEME_ORDER.map((id: ThemeId) => {
               const t = THEMES[id];
@@ -1567,7 +1567,7 @@ export default function SettingsScreen() {
         </CollapsibleSection>
 
         {/* ── Health ── */}
-        <CollapsibleSection label="Health" subtitle="Burn Accuracy · HR Zones · Apple Health" defaultOpen={false} theme={theme}>
+        <CollapsibleSection label="Health" subtitle="Burn Accuracy · HR Zones · Apple Health" defaultOpen={deepLinkSection === 'health'} theme={theme}>
           <View style={{ paddingHorizontal: 16, paddingBottom: 16, gap: 10 }}>
             <View style={{ borderLeftWidth: 3, borderLeftColor: theme.accentBlueRaw, paddingLeft: 10, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Text style={{ fontSize: 11, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 2, textTransform: 'uppercase', flex: 1 }}>Active Calorie Accuracy</Text>
@@ -1752,7 +1752,7 @@ export default function SettingsScreen() {
         </CollapsibleSection>
 
         {/* ── Notifications ── */}
-        <CollapsibleSection label="Notifications" subtitle="Reminders · Daily Cap · Categories" defaultOpen={false} forceOpen={notifForceOpen} theme={theme}>
+        <CollapsibleSection label="Notifications" subtitle="Reminders · Daily Cap · Categories" defaultOpen={deepLinkSection === 'notifications'} forceOpen={notifForceOpen} theme={theme}>
           <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
 
             {/* Permission banner */}

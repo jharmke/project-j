@@ -12,8 +12,10 @@ import { triggerHaptic, triggerHapticNotification } from '@/utils/haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { app } from '../firebaseConfig';
+import { router } from 'expo-router';
 import { CRISIS_RESPONSE, screenForCrisis } from '../utils/faithCrisis';
 import { buildCompanionStats } from '../utils/companionStats';
+import { COMPANION_ROUTES } from '../utils/companionRoutes';
 import { ToastRenderer, useToast } from './Toast';
 import { useTheme } from '../theme';
 
@@ -77,7 +79,25 @@ function substituteStats(text: string, valueMap: Record<string, string>): string
 }
 
 type Role = 'user' | 'assistant' | 'system' | 'crisis';
-type Msg = { role: Role; text: string; feedback?: 'up' | 'down' };
+type Msg = { role: Role; text: string; feedback?: 'up' | 'down'; routes?: string[] };
+
+// Replace [[route:key]] tokens with the route's plain label inline (so the sentence still reads
+// naturally) and collect the recognized keys so the client can render tappable pills below the
+// reply. Unknown keys are stripped (a bad link can never navigate anywhere).
+function substituteRoutes(text: string): { text: string; routes: string[] } {
+  const routes: string[] = [];
+  const out = text.replace(/\[\[route:([a-zA-Z0-9_]+)\]\]/g, (_m, key: string) => {
+    const r = COMPANION_ROUTES[key];
+    if (r) { if (!routes.includes(key)) routes.push(key); return r.label; }
+    return '';
+  });
+  const cleaned = out
+    .replace(/\(\s*\)/g, '')
+    .replace(/\s+([,.;:!?])/g, '$1')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+  return { text: cleaned, routes };
+}
 
 // Build the per-user CONTEXT block (profile + goals) sent to the function, plus the mode/tier the
 // function needs. Read-only; never writes. Missing fields are simply omitted.
@@ -234,6 +254,19 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
     try { await Share.share({ message: text }); } catch {}
   };
 
+  // Tapping a route pill: fade the chat out (same as close), then navigate to the destination.
+  const openRoute = (key: string) => {
+    const r = COMPANION_ROUTES[key];
+    if (!r) return;
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    Keyboard.dismiss();
+    Animated.timing(anim, { toValue: 0, duration: 180, useNativeDriver: false }).start(() => {
+      onClose();
+      if (r.params) router.push({ pathname: r.path as any, params: r.params });
+      else router.push(r.path as any);
+    });
+  };
+
   // Thumbs-down saves the flagged exchange locally (append-only, read-then-merge). No external send.
   const saveReport = async (userMessage: string, reply: string) => {
     try {
@@ -340,9 +373,10 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
         setMessages(prev => [...prev, { role: 'crisis', text: '' }]);
       } else if (data.ok && data.reply) {
         setSending(false);
-        // Substitute [[stat:key]] tokens with the exact values from the pack we sent, so any personal
-        // number the assistant states is the app's own number, never one it typed itself.
-        setMessages(prev => [...prev, { role: 'assistant', text: substituteStats(data.reply!, pack.valueMap) }]);
+        // Substitute [[stat:key]] tokens with the exact values from the pack we sent (so any personal
+        // number is the app's own number), then pull out [[route:key]] tokens into tappable pills.
+        const { text: finalText, routes } = substituteRoutes(substituteStats(data.reply!, pack.valueMap));
+        setMessages(prev => [...prev, { role: 'assistant', text: finalText, routes }]);
       } else if (data.message) {
         setSending(false);
         setMessages(prev => [...prev, { role: 'system', text: data.message! }]);
@@ -466,6 +500,20 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
                 return (
                   <View key={i} style={styles.replyWrap}>
                     <View style={[styles.bubble, styles.assistantBubble, styles.replyBubble, { borderLeftColor: accent }]}>{body}</View>
+                    {m.routes && m.routes.length > 0 && (
+                      <View style={styles.pillRow}>
+                        {m.routes.map(k => {
+                          const r = COMPANION_ROUTES[k];
+                          if (!r) return null;
+                          return (
+                            <Pressable key={k} onPress={() => openRoute(k)} style={[styles.pill, { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
+                              <Ionicons name="arrow-forward" size={12} color={accent} />
+                              <Text style={[styles.pillText, { color: accent }]}>{r.label}</Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    )}
                     <View style={styles.actionRow}>
                       <Pressable onPress={() => shareMessage(m.text)} hitSlop={8} style={styles.actionBtn}>
                         <Ionicons name="share-outline" size={17} color={theme.textMuted} />
@@ -569,6 +617,9 @@ const styles = StyleSheet.create({
   replyBubble: { maxWidth: '100%', marginBottom: 0 },
   actionRow:   { flexDirection: 'row', alignItems: 'center', marginTop: 2, paddingLeft: 2 },
   actionBtn:   { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
+  pillRow:     { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8, marginBottom: 2 },
+  pill:        { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: 14, paddingHorizontal: 10, paddingVertical: 5 },
+  pillText:    { fontSize: 12, fontFamily: 'DMSans_600SemiBold' },
   systemMsg:  { fontSize: 12, fontFamily: 'DMSans_400Regular', textAlign: 'center', alignSelf: 'center', maxWidth: '90%', marginVertical: 10, lineHeight: 17 },
   crisisCard: {
     alignSelf: 'stretch',

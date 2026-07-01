@@ -51,6 +51,15 @@ function fmtHoursFromHours(h: number): string {
   return mm === 0 ? `${hh}h` : `${hh}h ${mm}m`;
 }
 
+// The coach engine's `deepSleepPct` field is actually deep sleep DURATION in milliseconds
+// (day.sleepStages.deep), not a percent, so we format it as a duration.
+function fmtMsToHm(ms: number): string {
+  const totalMin = Math.round(ms / 60000);
+  const hh = Math.floor(totalMin / 60);
+  const mm = totalMin % 60;
+  return hh > 0 ? (mm === 0 ? `${hh}h` : `${hh}h ${mm}m`) : `${mm}m`;
+}
+
 // ── aggregation helpers (all exclusion-correct because the input days already are) ──
 function pick(days: WindowDay[], sel: (d: WindowDay) => number | null): number[] {
   const out: number[] = [];
@@ -105,6 +114,8 @@ export async function buildCompanionStats(todayKey: string): Promise<CompanionSt
 
   const foodDays = (arr: WindowDay[]) => arr.filter(d => d.hasFoodData);
   const sleepDays = (arr: WindowDay[]) => arr.filter(d => d.sleepScore !== null);
+  // Active calories carry the user's burn-accuracy adjustment so they match what the app shows.
+  const burnAdj = (raw: number) => raw * (ctx.burnAccuracyPct > 0 ? ctx.burnAccuracyPct / 100 : 1);
 
   // ── Nutrition: calories + macros (today, 7d avg, goal, delta-to-goal) ──────
   type NutriDef = { key: string; sel: (d: WindowDay) => number; goal: number; unit: 'kcal' | 'g'; name: string };
@@ -126,12 +137,36 @@ export async function buildCompanionStats(todayKey: string): Promise<CompanionSt
       add(`${m.key}_7d_avg`, `${m.name}, average over last 7 logged days`, avg7, unitStr(avg7, m.unit));
       if (m.goal && m.goal > 0) {
         add(`${m.key}_goal`, `${m.name} daily goal`, m.goal, unitStr(m.goal, m.unit));
-        const delta = avg7 - m.goal;
-        add(`${m.key}_vs_goal_7d`, `${m.name} 7-day average vs goal (positive is over)`, delta,
-          `${delta >= 0 ? '+' : ''}${unitStr(Math.abs(delta), m.unit).replace('+', '')}${delta < 0 ? ' under' : ' over'}`);
+        // Calories vs goal is handled separately below because it MUST account for active-calorie
+        // burn (effective budget = base target + what you burned). A raw intake-vs-target delta
+        // would falsely read "over" on an active day. Macros are pure intake vs goal, so they stay.
+        if (m.key !== 'calories') {
+          const delta = avg7 - m.goal;
+          add(`${m.key}_vs_goal_7d`, `${m.name} 7-day average vs goal (positive is over)`, delta,
+            `${delta >= 0 ? '+' : ''}${unitStr(Math.abs(delta), m.unit).replace('+', '')}${delta < 0 ? ' under' : ' over'}`);
+        }
       }
     }
   }
+
+  // Calories vs BUDGET (activity-aware). The app's real model is consumed vs (base target + active
+  // calories burned), so eating at target on an active day is actually UNDER budget. We compute the
+  // net (eaten minus active burn) and the vs-budget delta per day (burn-accuracy adjusted, like the
+  // coach's momentum rule), never raw intake vs the flat target.
+  const calBudget = (d: WindowDay) => ctx.calTarget + burnAdj(d.rawActive);
+  if (today && today.hasFoodData) {
+    const netToday = today.consumed - burnAdj(today.rawActive);
+    add('calories_net_today', 'net calories so far today (eaten minus active burn)', netToday, commas(netToday));
+    const vb = today.consumed - calBudget(today);
+    add('calories_vs_budget_today', 'calories today vs your activity-adjusted budget (negative is under budget)', vb,
+      `${commas(Math.abs(vb))} ${vb < 0 ? 'under' : 'over'}`);
+  }
+  const fdays = foodDays(last7);
+  const netAvg = mean(fdays.map(d => d.consumed - burnAdj(d.rawActive)));
+  if (netAvg !== null) add('calories_net_7d_avg', 'net calories, average over last 7 logged days (eaten minus active burn)', netAvg, commas(netAvg));
+  const vbAvg = mean(fdays.map(d => d.consumed - calBudget(d)));
+  if (vbAvg !== null) add('calories_vs_budget_7d', 'daily calories vs your activity-adjusted budget, 7-day average (negative is under budget)', vbAvg,
+    `${commas(Math.abs(vbAvg))} ${vbAvg < 0 ? 'under' : 'over'}`);
 
   // Sodium + sugar: 7d average only (no goal in the app model).
   for (const m of [
@@ -153,8 +188,6 @@ export async function buildCompanionStats(todayKey: string): Promise<CompanionSt
   if (steps7 !== null) add('steps_7d_avg', 'steps, average over last 7 days', steps7, commas(steps7));
   if (ctx.stepGoal) add('steps_goal', 'step daily goal', ctx.stepGoal, commas(ctx.stepGoal));
 
-  // Active calories carry the user's burn-accuracy adjustment so they match what the app shows.
-  const burnAdj = (raw: number) => raw * (ctx.burnAccuracyPct > 0 ? ctx.burnAccuracyPct / 100 : 1);
   const active7 = mean(pick(last7, d => (d.rawActive > 0 ? burnAdj(d.rawActive) : null)));
   if (today && today.rawActive > 0) add('activecals_today', 'active calories today', burnAdj(today.rawActive), commas(burnAdj(today.rawActive)));
   if (active7 !== null) add('activecals_7d_avg', 'active calories, average over last 7 days', active7, commas(active7));
@@ -181,14 +214,14 @@ export async function buildCompanionStats(todayKey: string): Promise<CompanionSt
   if (lastNight) {
     if (lastNight.sleepScore !== null) add('sleep_score_lastnight', 'last night sleep score', lastNight.sleepScore, `${r0(lastNight.sleepScore)}`);
     if (lastNight.sleepHours !== null) add('sleep_hours_lastnight', 'last night sleep duration', lastNight.sleepHours, fmtHoursFromHours(lastNight.sleepHours));
-    if (lastNight.deepSleepPct !== null) add('deep_pct_lastnight', 'last night deep sleep percent', lastNight.deepSleepPct, `${r0(lastNight.deepSleepPct)}%`);
+    if (lastNight.deepSleepPct !== null) add('deep_sleep_lastnight', 'last night deep sleep', lastNight.deepSleepPct, fmtMsToHm(lastNight.deepSleepPct));
   }
   const score7 = mean(pick(sleepDays(last7), d => d.sleepScore));
   if (score7 !== null) add('sleep_score_7d_avg', 'sleep score, average over last 7 nights', score7, `${r0(score7)}`);
   const hours7 = mean(pick(sleepDays(last7), d => d.sleepHours));
   if (hours7 !== null) add('sleep_hours_7d_avg', 'sleep duration, average over last 7 nights', hours7, fmtHoursFromHours(hours7));
   const deep7 = mean(pick(sleepDays(last7), d => d.deepSleepPct));
-  if (deep7 !== null) add('deep_pct_7d_avg', 'deep sleep percent, average over last 7 nights', deep7, `${r0(deep7)}%`);
+  if (deep7 !== null) add('deep_sleep_7d_avg', 'deep sleep, average over last 7 nights', deep7, fmtMsToHm(deep7));
   if (ctx.sleepGoal) add('sleep_goal', 'sleep duration goal', ctx.sleepGoal, `${r1(ctx.sleepGoal)}h`);
 
   // ── Recovery (latest score + signals) ─────────────────────────────────────

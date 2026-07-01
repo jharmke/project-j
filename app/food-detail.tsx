@@ -18,7 +18,8 @@ import { resolveFoodPhoto, uploadFoodPhoto, deleteFoodPhotoCloud } from '../util
 import { ACHIEVEMENTS, checkAndUnlock, loadAchievements, checkMomentumAchievements, checkNutritionAchievements, getCelebTier } from '../achievementData';
 import { showAchievementToast } from '../components/AchievementToast';
 import { showCelebration } from '../components/CelebrationOverlay';
-import { saveToFirebase } from '../firebaseConfig';
+import { app, saveToFirebase } from '../firebaseConfig';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { storageSet } from '../utils/storage';
 import { cancelFoodLogNotification } from '../services/notifications';
 import { useTheme } from '../theme';
@@ -26,7 +27,6 @@ import { DEFAULT_MEAL_SLOTS, MealSlot, loadMealSlots, getMealDisplayName } from 
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { TUTORIAL_CHICKEN_BREAST } from '../data/tutorialFood';
-import CryptoJS from 'crypto-js';
 
 function buildTutorialChickenFood() {
   const fsServings = TUTORIAL_CHICKEN_BREAST.servings.serving.map(s => ({
@@ -130,32 +130,22 @@ function MacroDonut({ protein, carbs, fat, calories, theme }: { protein: number;
     </View>
   );
 }
+// FatSecret access via the server-side proxy (functions/src/fatSecretProxy.ts). Signing + the
+// consumer key/secret live server-side; the client just names a method + params. Returns the same
+// raw FatSecret JSON the direct call used to return, throws on a transport/proxy failure.
+async function callFatSecretProxy(method: string, params: Record<string, string>): Promise<any> {
+  const callable = httpsCallable(getFunctions(app), 'fatSecretProxy');
+  const res = await callable({ method, params });
+  const data = (res.data ?? {}) as { ok?: boolean; data?: any; reason?: string; status?: number };
+  if (!data.ok) {
+    throw new Error(`FatSecret proxy failed (${data.reason ?? 'unknown'}${data.status ? ' ' + data.status : ''})`);
+  }
+  return data.data;
+}
+
 async function fetchFatSecretServings(fsId: string): Promise<any[]> {
   try {
-    const FS_KEY = 'b8543feaeabd412f81427bc901e2f3b9';
-    const FS_SECRET = '659c1da30b4e48eaab5788534cb2b77a';
-    const FS_BASE = 'https://platform.fatsecret.com/rest/server.api';
-    const oauth: Record<string, string> = {
-      oauth_consumer_key: FS_KEY,
-      oauth_nonce: Math.random().toString(36).substring(2) + Date.now().toString(36),
-      oauth_signature_method: 'HMAC-SHA1',
-      oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
-      oauth_version: '1.0',
-    };
-    const apiParams: Record<string, string> = { method: 'food.get.v4', food_id: fsId, format: 'json' };
-    const allParams = { ...oauth, ...apiParams };
-    const sorted = Object.keys(allParams).sort().map(k =>
-      `${encodeURIComponent(k)}=${encodeURIComponent(allParams[k])}`
-    ).join('&');
-    const base = `GET&${encodeURIComponent(FS_BASE)}&${encodeURIComponent(sorted)}`;
-    const signingKey = `${encodeURIComponent(FS_SECRET)}&`;
-    const sig = CryptoJS.HmacSHA1(base, signingKey).toString(CryptoJS.enc.Base64);
-    const finalParams: Record<string, string> = { ...allParams, oauth_signature: sig };
-    const qs = Object.keys(finalParams).sort().map(k =>
-      `${encodeURIComponent(k)}=${encodeURIComponent(finalParams[k])}`
-    ).join('&');
-    const res = await fetch(`${FS_BASE}?${qs}`);
-    const data = await res.json();
+    const data = await callFatSecretProxy('food.get.v4', { food_id: fsId });
     const food = data?.food;
     if (!food) return [];
     let servings = food.servings?.serving;
@@ -204,30 +194,7 @@ async function fetchFatSecretServings(fsId: string): Promise<any[]> {
 // Used as a fallback when a food has no fsId (stale diary/recent entry).
 async function fetchFatSecretByName(name: string): Promise<any[]> {
   try {
-    const FS_KEY = 'b8543feaeabd412f81427bc901e2f3b9';
-    const FS_SECRET = '659c1da30b4e48eaab5788534cb2b77a';
-    const FS_BASE = 'https://platform.fatsecret.com/rest/server.api';
-    const oauth: Record<string, string> = {
-      oauth_consumer_key: FS_KEY,
-      oauth_nonce: Math.random().toString(36).substring(2) + Date.now().toString(36),
-      oauth_signature_method: 'HMAC-SHA1',
-      oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
-      oauth_version: '1.0',
-    };
-    const apiParams: Record<string, string> = { method: 'foods.search', search_expression: name, format: 'json', max_results: '5' };
-    const allParams = { ...oauth, ...apiParams };
-    const sorted = Object.keys(allParams).sort().map(k =>
-      `${encodeURIComponent(k)}=${encodeURIComponent(allParams[k])}`
-    ).join('&');
-    const base = `GET&${encodeURIComponent(FS_BASE)}&${encodeURIComponent(sorted)}`;
-    const signingKey = `${encodeURIComponent(FS_SECRET)}&`;
-    const sig = CryptoJS.HmacSHA1(base, signingKey).toString(CryptoJS.enc.Base64);
-    const finalParams: Record<string, string> = { ...allParams, oauth_signature: sig };
-    const qs = Object.keys(finalParams).sort().map(k =>
-      `${encodeURIComponent(k)}=${encodeURIComponent(finalParams[k])}`
-    ).join('&');
-    const res = await fetch(`${FS_BASE}?${qs}`);
-    const data = await res.json();
+    const data = await callFatSecretProxy('foods.search', { search_expression: name, max_results: '5' });
     let foods = data?.foods?.food;
     if (!foods) return [];
     if (!Array.isArray(foods)) foods = [foods];

@@ -26,7 +26,12 @@ const API_TIMEOUT_MS = 30000; // vision on a complex plate can be slow
 // ── Quota ───────────────────────────────────────────────────────────────────
 
 export const QUOTA_KEY = 'pj_ai_estimator_quota';
-export const FREE_LIMIT = 3;
+// 🚨 BETA HACK (2026-07-01) -- raised from 3 to 100 so email-invited TestFlight testers can
+// actually exercise the estimator (3/mo made it untestable). Cost is bounded: each estimate is
+// ~1-3 cents, the key is now server-side (aiProxy), and aiProxy enforces a 60/day per-user
+// backstop. REVERT to the real free-tier cap (3, or whatever monetization decides) before App
+// Store launch. See the REVERT-BEFORE-LAUNCH banner in the roadmap.
+export const FREE_LIMIT = 100;
 // 🚨 TESTFLIGHT HACK (2026-06-24) -- raised from 30 so devProUnlocked = effectively
 // unlimited estimates for Justin's trip (TestFlight, where __DEV__ is false). REVERT to
 // the real cap before App Store launch. See the REVERT-BEFORE-LAUNCH banner in the roadmap.

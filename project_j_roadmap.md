@@ -29,18 +29,24 @@ OPEN follow-ups discussed this session (decide / build after trip):
 THESE ARE TEMPORARY FOR JUSTIN'S TESTFLIGHT TESTING (added 2026-06-24). EVERY ONE MUST BE
 UNDONE OR REPLACED BEFORE A PUBLIC APP STORE RELEASE. CHECK THIS LIST AT EVERY LAUNCH-PREP SESSION.
 
-1. ⚠️ ANTHROPIC API KEY IS BUNDLED CLIENT-SIDE. coachAI.ts + aiMealEstimator.ts call
-   api.anthropic.com directly with EXPO_PUBLIC_ANTHROPIC_API_KEY, which is inlined into the
-   shipped JS bundle and EXTRACTABLE from the binary. Anyone can pull the key and run up
-   Justin's Anthropic bill. BEFORE LAUNCH: proxy all client AI (coach tips + estimator) through
-   a Cloud Function exactly like Halo (functions faithCompanion) already does, and remove the
-   bundled key. This is a HARD launch blocker (security + cost).
+1. [RESOLVED IN CODE 2026-07-01 -- was the #6 launch blocker; see LAUNCH BLOCKERS below] ANTHROPIC
+   API KEY WAS BUNDLED CLIENT-SIDE. coachAI.ts + aiMealEstimator.ts called api.anthropic.com
+   directly with EXPO_PUBLIC_ANTHROPIC_API_KEY. FIXED: both now route through the aiProxy Cloud
+   Function; the key lives server-side only. Zero client references remain (full-app grep clean).
+   TWO TAILS STILL OPEN: (a) client change reaches testers only on the NEXT TestFlight build (no
+   OTA); (b) the previously-exposed key must still be ROTATED (regenerate + revoke) AFTER testers
+   are on the new build, before public launch.
 2. ⚠️ devProUnlocked = FREE UNLIMITED PRO. The Settings dev toggle grants Pro (AI estimator
    unlimited, comparison Day-vs-Day, branded export) with NO payment. BEFORE LAUNCH: gate Pro on
    a real subscription (RevenueCat/StoreKit) and REMOVE the devProUnlocked override + its toggle.
 3. ⚠️ AI ESTIMATOR QUOTA RAISED FOR TESTERS. PRO_LIMIT was bumped to effectively unlimited for
    the trip (services/aiMealEstimator.ts). BEFORE LAUNCH: restore real caps (free 3 / Pro 30 or
    whatever the final monetization decides).
+4. ⚠️ BETA CAPS RAISED (2026-07-01) so email-invited testers aren't throttled. Otto
+   (appCompanion) FREE_DAILY_CAP 10 -> 100/day; Halo (faithCompanion) FREE_DAILY_CAP 5 -> 50/day
+   (both Cloud Functions, live on deploy, no build). AI Meal Estimator FREE_LIMIT 3 -> 100/month
+   (services/aiMealEstimator.ts, client -- rides the next build). All three marked with loud BETA
+   HACK code comments. BEFORE LAUNCH: revert to 10 / 5 / 3 (or final monetization caps).
 
 ---
 
@@ -108,7 +114,7 @@ UNDONE OR REPLACED BEFORE A PUBLIC APP STORE RELEASE. CHECK THIS LIST AT EVERY L
 - App Store Connect setup -- privacy label, age rating, URLs, description, screenshots, review notes. No code. Do after name is locked.
 - Verification scan -- production build, device install, all flows confirmed before submitting.
 - Set Anthropic account spend limit (cost backstop). Before launch, set a hard monthly spend cap in the Anthropic console so AI cost can never run away. The per-user daily caps (Halo 5 free / 50 Pro, Companion 10 free / 50 Pro) bound each user's cost server-side, but an account-level spend limit is the final "sleep at night" switch: if total cost ever spikes, the API stops rather than billing unbounded. Pure console config, no code.
-- [SECURITY -- HARD BLOCKER before any public App Store release or public TestFlight link, gym thread 2026-07-01] Move ALL direct third-party API calls behind Cloud Functions (client-side secret exposure). Two issues, same root cause + same fix. (F-07 ANTHROPIC KEY) coachAI.ts (Smart Coach voice layer: 3 call sites reading EXPO_PUBLIC_ANTHROPIC_API_KEY plus a direct fetch to api.anthropic.com/v1/messages) and services/aiMealEstimator.ts (AI Meal Estimator) both call Anthropic DIRECTLY from the client with the key baked into the JS bundle via .env -- extractable from the shipped IPA, so anyone could run calls at Justin's cost with no per-user limit. (This Anthropic half is ALSO flagged in the REVERT-BEFORE-LAUNCH banner above; keep them cross-referenced.) (F-08 FATSECRET KEYS) app/add-food.tsx (FS_KEY, FS_SECRET) and app/food-detail.tsx hardcode the FatSecret OAuth consumer key + secret in PLAINTEXT in the client -- same extraction risk: someone could burn Justin's FatSecret quota or violate FatSecret's terms and risk losing API access entirely. FIX (same for both): proxy every one of these calls through a Cloud Function exactly like faithCompanion/appCompanion already do -- key lives ONLY server-side, the client calls our own function instead of the third party. SEVERITY: medium/low during a small trusted TestFlight beta; HARD BLOCKER before any public release or public TestFlight link. SCOPE: real JS work across 4 client files (2 features x 2 files each), NOT a quick redeploy like the function-only fixes.
+- [RESOLVED IN CODE + DEVICE-VERIFIED 2026-07-01; two tails remain -- see below] SECURITY #6: Move ALL direct third-party API calls behind Cloud Functions (client-side secret exposure). DONE: (F-08 FatSecret) fatSecretProxy Cloud Function holds the OAuth key+secret server-side; add-food.tsx + food-detail.tsx now call it (search, barcode, food.get, name-fallback all verified on device -- crayons barcode = honest not-found). (F-07 Anthropic) aiProxy Cloud Function holds the Anthropic key; coachAI.ts (callWithTimeout + 3 key-gates dropped) + aiMealEstimator.ts now call it (estimator returned calories+macros on device; coach card intact). Full-app grep confirms ZERO client references to either secret. Commits f5a772b, a8748b7, 99d65d8. Two proxies mirror appCompanion/faithCompanion shape (auth gate, allowlist, per-user safety caps). TAILS: (1) client edits reach testers only on the NEXT TestFlight build (no OTA -- functions are live now, client switch rides the build); (2) ROTATE the old FatSecret + Anthropic keys (regenerate in each console, drop new values into the existing Firebase secrets, revoke old) AFTER all testers are on the new build -- do NOT rotate sooner or the current TestFlight build breaks. NOTE: estimator's user-facing monthly quota stayed client-side (Option A); the server cap is an abuse backstop only. Estimator FREE_LIMIT bumped 3 -> 100/mo for the beta (BETA HACK marker in aiMealEstimator.ts; revert before launch) so testers can actually use it. ORIGINAL DETAIL BELOW (kept for reference): Move ALL direct third-party API calls behind Cloud Functions (client-side secret exposure). Two issues, same root cause + same fix. (F-07 ANTHROPIC KEY) coachAI.ts (Smart Coach voice layer: 3 call sites reading EXPO_PUBLIC_ANTHROPIC_API_KEY plus a direct fetch to api.anthropic.com/v1/messages) and services/aiMealEstimator.ts (AI Meal Estimator) both call Anthropic DIRECTLY from the client with the key baked into the JS bundle via .env -- extractable from the shipped IPA, so anyone could run calls at Justin's cost with no per-user limit. (This Anthropic half is ALSO flagged in the REVERT-BEFORE-LAUNCH banner above; keep them cross-referenced.) (F-08 FATSECRET KEYS) app/add-food.tsx (FS_KEY, FS_SECRET) and app/food-detail.tsx hardcode the FatSecret OAuth consumer key + secret in PLAINTEXT in the client -- same extraction risk: someone could burn Justin's FatSecret quota or violate FatSecret's terms and risk losing API access entirely. FIX (same for both): proxy every one of these calls through a Cloud Function exactly like faithCompanion/appCompanion already do -- key lives ONLY server-side, the client calls our own function instead of the third party. SEVERITY: medium/low during a small trusted TestFlight beta; HARD BLOCKER before any public release or public TestFlight link. SCOPE: real JS work across 4 client files (2 features x 2 files each), NOT a quick redeploy like the function-only fixes.
 
 ---
 

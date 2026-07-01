@@ -24,6 +24,8 @@ import {
   loadCoachTipCacheRecovery,
 } from './smartTipsEngine';
 import { DayScore, DayScoreInput } from './dayScore';
+import { app } from '../firebaseConfig';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 
 const COACH_TIP_KEY = 'pj_coach_tip';
 const API_TIMEOUT_MS = 8000;
@@ -276,40 +278,29 @@ function cleanupPass(
 
 // ── AI call ───────────────────────────────────────────────────────────────────
 
+// Routes through the aiProxy Cloud Function (functions/src/aiProxy.ts) so the Anthropic key lives
+// server-side instead of in the app bundle. Returns the assistant text; throws on any failure so
+// the callers' existing try/catch fallbacks render the templated tip. The Firebase callable's own
+// timeout replaces the old AbortController.
 async function callWithTimeout(
-  apiKey: string,
   systemPrompt: string,
   userMessage: string,
   maxTokens: number = 300,
   timeoutMs: number = API_TIMEOUT_MS,
 ): Promise<string> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: maxTokens,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userMessage }],
-      }),
-    });
-    if (!res.ok) throw new Error(`API ${res.status}`);
-    const data = await res.json();
-    const block = data?.content?.[0];
-    if (!block || block.type !== 'text') throw new Error('Non-text response');
-    return block.text as string;
-  } finally {
-    clearTimeout(timer);
-  }
+  const callable = httpsCallable(getFunctions(app), 'aiProxy', { timeout: timeoutMs });
+  const res = await callable({
+    feature: 'coach',
+    model: MODEL,
+    max_tokens: maxTokens,
+    system: systemPrompt,
+    messages: [{ role: 'user', content: userMessage }],
+  });
+  const payload = (res.data ?? {}) as { ok?: boolean; data?: any; reason?: string };
+  if (!payload.ok || !payload.data) throw new Error(`aiProxy ${payload.reason ?? 'failed'}`);
+  const block = payload.data?.content?.[0];
+  if (!block || block.type !== 'text') throw new Error('Non-text response');
+  return block.text as string;
 }
 
 // ── Main export ───────────────────────────────────────────────────────────────
@@ -325,14 +316,6 @@ export async function generateCoachTip(
     return cache;
   }
 
-  const apiKey = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return {
-      ...cache,
-      fallbackUsed: true,
-    };
-  }
-
   const mode = cache.packet.mode.toLowerCase();
   const voiceExamples = VOICE_EXAMPLES[mode] ?? VOICE_EXAMPLES.balanced;
   const systemPrompt = `${RULEBOOK}\n\n${voiceExamples}`;
@@ -341,7 +324,7 @@ export async function generateCoachTip(
   let updatedCache: CoachTipCache;
 
   try {
-    const rawOutput = await callWithTimeout(apiKey, systemPrompt, userMessage);
+    const rawOutput = await callWithTimeout(systemPrompt, userMessage);
     const { passed, cleaned, reason } = cleanupPass(rawOutput, cache.packet);
 
     if (passed) {
@@ -495,8 +478,6 @@ export async function voiceDiagnosticCards<T extends { id: string; claim: string
 ): Promise<T[]> {
   lastVoiceDebug = null;
   if (cards.length === 0) return cards;
-  const apiKey = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY;
-  if (!apiKey) { lastVoiceDebug = 'no API key (EXPO_PUBLIC_ANTHROPIC_API_KEY missing)'; return cards; }
 
   const isMindful = mode.toLowerCase() === 'mindful';
   const systemPrompt = isMindful
@@ -506,7 +487,7 @@ export async function voiceDiagnosticCards<T extends { id: string; claim: string
     JSON.stringify(cards.map(c => ({ id: c.id, tone: c.tone, claim: c.claim, lever: c.lever })));
 
   try {
-    const raw = await callWithTimeout(apiKey, systemPrompt, userMessage, 1100, 20000);
+    const raw = await callWithTimeout(systemPrompt, userMessage, 1100, 20000);
     const voiced = parseVoicedCards(raw);
     if (!voiced) { lastVoiceDebug = `parse failed; raw[0..140]: ${raw.slice(0, 140)}`; return cards; }
     lastVoiceDebug = `ok: ${Object.keys(voiced).length} voiced`;
@@ -836,18 +817,15 @@ export async function refreshDayCoachTip(
   const fallbackCache: CoachTipCache = { packet, aiBody: null, aiGeneratedDate: null, fallbackUsed: true };
 
   // Fire AI call in background. Result is saved to storage and shown on next visit.
-  const apiKey = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY;
-  if (apiKey) {
-    const modeKey = mode.toLowerCase() as keyof typeof VOICE_EXAMPLES;
-    const systemPrompt = `${RULEBOOK}\n\n${VOICE_EXAMPLES[modeKey] ?? VOICE_EXAMPLES.balanced}`;
-    callWithTimeout(apiKey, systemPrompt, formatPacketMessage(packet))
-      .then(rawOutput => {
-        const { passed, cleaned } = cleanupPass(rawOutput, packet);
-        const aiCache: CoachTipCache = { packet, aiBody: passed ? cleaned : null, aiGeneratedDate: dateKey, fallbackUsed: !passed };
-        storageSet(cacheKey, JSON.stringify(aiCache)).catch(() => {});
-      })
-      .catch(() => {});
-  }
+  const modeKey = mode.toLowerCase() as keyof typeof VOICE_EXAMPLES;
+  const bgSystemPrompt = `${RULEBOOK}\n\n${VOICE_EXAMPLES[modeKey] ?? VOICE_EXAMPLES.balanced}`;
+  callWithTimeout(bgSystemPrompt, formatPacketMessage(packet))
+    .then(rawOutput => {
+      const { passed, cleaned } = cleanupPass(rawOutput, packet);
+      const aiCache: CoachTipCache = { packet, aiBody: passed ? cleaned : null, aiGeneratedDate: dateKey, fallbackUsed: !passed };
+      storageSet(cacheKey, JSON.stringify(aiCache)).catch(() => {});
+    })
+    .catch(() => {});
 
   return fallbackCache;
 }

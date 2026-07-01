@@ -19,6 +19,10 @@ export { appCompanion } from './appCompanion';
 // longer baked into the shipped app bundle. See fatSecretProxy.ts.
 export { fatSecretProxy } from './fatSecretProxy';
 
+// Anthropic proxy for the two DIRECT AI features (Smart Coach tips + AI Meal Estimator). Holds the
+// Anthropic key server-side so it is no longer bundled in the app. See aiProxy.ts.
+export { aiProxy } from './aiProxy';
+
 const APPLE_PRIVATE_KEY = defineSecret('APPLE_PRIVATE_KEY');
 const GMAIL_APP_PASSWORD = defineSecret('GMAIL_APP_PASSWORD');
 

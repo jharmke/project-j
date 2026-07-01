@@ -8,6 +8,8 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageSet } from '../utils/storage';
+import { app } from '../firebaseConfig';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 
 // ── Tunables ────────────────────────────────────────────────────────────────
 
@@ -20,7 +22,6 @@ export const IMAGE_QUALITY = 0.4;
 
 const MODEL = 'claude-sonnet-4-6';
 const API_TIMEOUT_MS = 30000; // vision on a complex plate can be slow
-const API_URL = 'https://api.anthropic.com/v1/messages';
 
 // ── Quota ───────────────────────────────────────────────────────────────────
 
@@ -270,9 +271,6 @@ function extractJsonText(data: any): string | null {
  * that "a use is counted only when the user sees a result" stays in one place.
  */
 export async function generateMealEstimate(input: EstimateInput): Promise<EstimateOutcome> {
-  const apiKey = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY;
-  if (!apiKey) return { ok: false, kind: 'no_key' };
-
   const description = (input.description || '').trim();
   const hasImage = !!input.imageBase64;
   const inputQuality: InputQuality = hasImage ? 'photo_and_text' : 'text_only';
@@ -290,37 +288,28 @@ export async function generateMealEstimate(input: EstimateInput): Promise<Estima
   }
   content.push({ type: 'text', text: buildUserText(description, hasImage) });
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
-
+  // Routes through the aiProxy Cloud Function so the Anthropic key stays server-side. Returns the
+  // same raw Anthropic response the direct call did, so extractJsonText below is unchanged. Any
+  // failure (offline, timeout, or the server-side safety cap) collapses to the single 'network'
+  // state, never a use.
   let data: any;
   try {
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 1500,
-        temperature: 0.1,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: 'user', content }],
-      }),
+    const callable = httpsCallable(getFunctions(app), 'aiProxy', { timeout: API_TIMEOUT_MS });
+    const res = await callable({
+      feature: 'estimator',
+      model: MODEL,
+      max_tokens: 1500,
+      temperature: 0.1,
+      system: SYSTEM_PROMPT,
+      messages: [{ role: 'user', content }],
     });
-    if (!res.ok) {
-      // 4xx/5xx from the API. Treat as a service/network problem, never a use.
+    const payload = (res.data ?? {}) as { ok?: boolean; data?: any; reason?: string };
+    if (!payload.ok || !payload.data) {
       return { ok: false, kind: 'network' };
     }
-    data = await res.json();
+    data = payload.data;
   } catch {
-    // Abort (timeout) or fetch failure (offline). Single network error state.
     return { ok: false, kind: 'network' };
-  } finally {
-    clearTimeout(timer);
   }
 
   const jsonText = extractJsonText(data);

@@ -69,7 +69,7 @@ export interface SmartTipsStore {
   topicLedger: Record<string, { date: string; surface: string }>;
 }
 
-interface WindowDay {
+export interface WindowDay {
   dateKey: string;
   consumed: number;
   protein: number;
@@ -108,7 +108,7 @@ interface WindowDay {
   excluded: boolean;
 }
 
-interface EngineContext {
+export interface EngineContext {
   bmr: number;
   calTarget: number;
   paceTarget: number;
@@ -184,7 +184,7 @@ function keyForOffset(todayKey: string, offset: number): string {
 // (the 14-day engine window can't see a longer streak). A day counts when it has at
 // least one food entry. Today is included if logged; otherwise we start from yesterday
 // so an unlogged-but-still-early today doesn't break a real streak. Capped at 400 days.
-async function computeLoggingStreak(todayKey: string): Promise<number> {
+export async function computeLoggingStreak(todayKey: string): Promise<number> {
   const keys: string[] = [];
   for (let i = 0; i <= 400; i++) keys.push(`pj_${keyForOffset(todayKey, i)}`);
   let pairs: readonly [string, string | null][] = [];
@@ -310,7 +310,7 @@ async function saveSmartTipsStore(store: SmartTipsStore): Promise<void> {
 
 // ── Window loading ────────────────────────────────────────────────────────────
 
-async function loadWindowDays(
+export async function loadWindowDays(
   todayKey: string,
   ctx: EngineContext,
   workoutState: any,
@@ -443,7 +443,7 @@ async function loadWindowDays(
 
 // ── Engine context ────────────────────────────────────────────────────────────
 
-async function buildEngineContext(todayKey: string): Promise<EngineContext> {
+export async function buildEngineContext(todayKey: string): Promise<EngineContext> {
   let profile: any = {}, settings: any = {};
   try { const r = await AsyncStorage.getItem('pj_profile'); profile = r ? JSON.parse(r) : {}; } catch {}
   try { const r = await AsyncStorage.getItem('pj_settings'); settings = r ? JSON.parse(r) : {}; } catch {}

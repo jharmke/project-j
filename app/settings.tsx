@@ -27,6 +27,7 @@ import { DEFAULT_ORDER, DEFAULT_VISIBLE, DISCIPLINE_ORDER, MINDFUL_ORDER, MINDFU
 import { resolveMaxHR, zoneBounds, timeInZones, fmtZoneTime, ageFromBirthday, tanakaMaxHR } from '../utils/hrZones';
 import { generateDiagnosticReport, ReportWindow, dumpWindowComparison } from '../utils/diagnosticReport';
 import { dumpDayScoreWithRecovery } from '../utils/dayScoreStore';
+import { buildCompanionStats } from '../utils/companionStats';
 import { probeStreakExclusions } from '../utils/streakExclusion';
 import { startVacation, endVacationEarly, cancelVacationFully, describeVacation, getVacation, vacationTodayKey, addDaysKey, MAX_VACATION_DAYS, VacationState } from '../utils/vacationMode';
 
@@ -2271,6 +2272,22 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Runs the new diagnostic feed on your real data. Shows ranked claim/proof/lever as plain text.</Text>
               </View>
               <Ionicons name="list-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              try {
+                const d = new Date();
+                const tk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                const pack = await buildCompanionStats(tk);
+                Alert.alert(`Companion Stats (${pack.stats.length})`, pack.snapshotText || 'No stats available.');
+              } catch (e) { Alert.alert('Dump failed', String(e)); }
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentRed }]}>Dump Companion Stats</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>The pre-computed stat pack the Companion will use. Verify every number matches Home / Stats / EvR BEFORE it is wired to the assistant.</Text>
+              </View>
+              <Ionicons name="stats-chart-outline" size={18} color={theme.accentRed} />
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {

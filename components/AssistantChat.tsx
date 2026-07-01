@@ -13,6 +13,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { app } from '../firebaseConfig';
 import { CRISIS_RESPONSE, screenForCrisis } from '../utils/faithCrisis';
+import { buildCompanionStats } from '../utils/companionStats';
 import { ToastRenderer, useToast } from './Toast';
 import { useTheme } from '../theme';
 
@@ -41,6 +42,39 @@ const pickGreeting = () => GREETINGS[Math.floor(Math.random() * GREETINGS.length
 // date is the server's UTC day, so a stale cache self-expires at the daily reset.
 const QUOTA_KEY = 'pj_companion_quota';
 const utcDay = () => new Date().toISOString().slice(0, 10);
+const localTodayKey = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+// Replace [[stat:key]] tokens in a reply with the guaranteed-correct value from the pack the client
+// sent. An UNKNOWN key (the model referenced a stat that does not exist) is STRIPPED, never rendered
+// as a number, so a missing value can never become a wrong one; unknown keys are logged to a dev key
+// as the leak backstop. Also cleans the little artifacts a strip can leave (empty parens, doubled
+// spaces, a space before punctuation), same as Halo's reference-strip cleanup.
+function substituteStats(text: string, valueMap: Record<string, string>): string {
+  const unknown: string[] = [];
+  const out = text.replace(/\[\[stat:([a-zA-Z0-9_]+)\]\]/g, (_m, key: string) => {
+    if (valueMap[key] !== undefined) return valueMap[key];
+    unknown.push(key);
+    return '';
+  });
+  const cleaned = out
+    .replace(/\(\s*\)/g, '')
+    .replace(/\s+([,.;:!?])/g, '$1')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+  if (unknown.length) {
+    AsyncStorage.getItem('pj_companion_stat_flags')
+      .then(raw => {
+        const all = raw ? JSON.parse(raw) : [];
+        all.push({ ts: Date.now(), unknown });
+        return AsyncStorage.setItem('pj_companion_stat_flags', JSON.stringify(all.slice(-100)));
+      })
+      .catch(() => {});
+  }
+  return cleaned;
+}
 
 type Role = 'user' | 'assistant' | 'system' | 'crisis';
 type Msg = { role: Role; text: string; feedback?: 'up' | 'down' };
@@ -289,8 +323,11 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
 
     try {
       const { styleMode, faithTier, userContext } = await loadUserContext();
+      // Fresh each message so mid-chat logging is reflected. Reuses the app's own calc utils, so
+      // every number matches the coach/reports exactly (see utils/companionStats.ts).
+      const pack = await buildCompanionStats(localTodayKey());
       const callable = httpsCallable(getFunctions(app), 'appCompanion');
-      const res = await callable({ message: text, history, styleMode, faithTier, userContext });
+      const res = await callable({ message: text, history, styleMode, faithTier, userContext, dataSnapshot: pack.snapshotText });
       const data = (res.data ?? {}) as { ok?: boolean; reply?: string; crisis?: boolean; message?: string; used?: number; cap?: number };
 
       if (typeof data.used === 'number' && typeof data.cap === 'number') {
@@ -303,7 +340,9 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
         setMessages(prev => [...prev, { role: 'crisis', text: '' }]);
       } else if (data.ok && data.reply) {
         setSending(false);
-        setMessages(prev => [...prev, { role: 'assistant', text: data.reply! }]);
+        // Substitute [[stat:key]] tokens with the exact values from the pack we sent, so any personal
+        // number the assistant states is the app's own number, never one it typed itself.
+        setMessages(prev => [...prev, { role: 'assistant', text: substituteStats(data.reply!, pack.valueMap) }]);
       } else if (data.message) {
         setSending(false);
         setMessages(prev => [...prev, { role: 'system', text: data.message! }]);

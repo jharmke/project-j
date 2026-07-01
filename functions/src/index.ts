@@ -11,6 +11,10 @@ admin.initializeApp();
 // file to keep this entry clean and avoid disturbing the functions above.
 export { faithCompanion } from './faithCompanion';
 
+// General Companion assistant (wellness + app knowledge, NOT faith). Separate function, separate
+// prompt, separate daily cap + usage counter. See appCompanion.ts.
+export { appCompanion } from './appCompanion';
+
 const APPLE_PRIVATE_KEY = defineSecret('APPLE_PRIVATE_KEY');
 const GMAIL_APP_PASSWORD = defineSecret('GMAIL_APP_PASSWORD');
 

@@ -44,3 +44,23 @@ export const COMPANION_ROUTES: Record<string, CompanionRoute> = {
   profile:       { path: '/(tabs)/profile',                                 label: 'Profile tab' },
   faith:         { path: '/(tabs)/faith',                                   label: 'Faith tab' },
 };
+
+// Deterministic fallback: the model (Haiku) is inconsistent about emitting [[route:key]] tokens, so
+// the client ALSO scans a reply for these distinctive destination names and attaches the matching
+// pill. Ordered most-specific first; DISTINCTIVE destination phrases only (no generic tab names or
+// single common words), so a pill only appears when a reply genuinely points at that screen. Used
+// by AssistantChat after the token pass; capped so pills never get noisy.
+export const ROUTE_TRIGGERS: { key: string; phrases: string[] }[] = [
+  { key: 'recovery_hub', phrases: ['sleep & recovery', 'sleep and recovery', 'recovery hub', 'recovery tab'] },
+  { key: 'challenges',   phrases: ['challenges', 'new challenge'] },
+  { key: 'achievements', phrases: ['achievements'] },
+  { key: 'evr',          phrases: ['effort vs results', 'effort vs. results'] },
+  { key: 'comparison',   phrases: ['comparison report'] },
+  { key: 'vacation',     phrases: ['vacation mode'] },
+  { key: 'faith_style',  phrases: ['faith & style', 'coaching mode', 'faith journey'] },
+  { key: 'appearance',   phrases: ['appearance'] },
+  { key: 'health',       phrases: ['apple health'] },
+  { key: 'body',         phrases: ['body measurements'] },
+  { key: 'goals',        phrases: ['goals settings', 'goals section'] },
+  { key: 'bible',        phrases: ['bible reader'] },
+];

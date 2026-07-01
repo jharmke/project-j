@@ -15,7 +15,7 @@ import { app } from '../firebaseConfig';
 import { router } from 'expo-router';
 import { CRISIS_RESPONSE, screenForCrisis } from '../utils/faithCrisis';
 import { buildCompanionStats } from '../utils/companionStats';
-import { COMPANION_ROUTES } from '../utils/companionRoutes';
+import { COMPANION_ROUTES, ROUTE_TRIGGERS } from '../utils/companionRoutes';
 import { ToastRenderer, useToast } from './Toast';
 import { useTheme } from '../theme';
 
@@ -99,6 +99,15 @@ function substituteRoutes(text: string): { text: string; routes: string[] } {
     .replace(/\s+([,.;:!?])/g, '$1')
     .replace(/[ \t]{2,}/g, ' ')
     .trim();
+  // Deterministic fallback: the model is unreliable about emitting route tokens, so also attach a
+  // pill whenever the reply NAMES a known destination (it names screens in words every time). Caps
+  // total pills so they never get noisy.
+  const lower = cleaned.toLowerCase();
+  for (const t of ROUTE_TRIGGERS) {
+    if (routes.length >= 3) break;
+    if (routes.includes(t.key)) continue;
+    if (t.phrases.some(p => lower.includes(p))) routes.push(t.key);
+  }
   return { text: cleaned, routes };
 }
 

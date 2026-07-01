@@ -10,6 +10,7 @@ import { useAuth } from '../AuthContext';
 import { useCameraActive } from '../utils/assistantFab';
 import { useTooltip } from '../useTooltip';
 import { useTheme } from '../theme';
+import { useTutorial } from '../context/TutorialContext';
 
 // Single app-wide mount for the general Companion assistant. Rendered once in the root layout, it
 // decides on every screen whether the FAB should appear, and owns the open/close state for the chat.
@@ -48,6 +49,7 @@ export default function AssistantOverlay() {
   const cameraActive = useCameraActive();
   const { theme } = useTheme();
   const { seen, markSeen } = useTooltip('companion_fab'); // first-use callout, shown once
+  const { activeState } = useTutorial();
   const [open, setOpen] = useState(false);
 
   const isTab = segments[0] === '(tabs)';
@@ -60,6 +62,13 @@ export default function AssistantOverlay() {
 
   if (hidden) return null;
 
+  // A tutorial is running: the FAB must step aside so it doesn't sit lit above the dim overlay,
+  // EXCEPT during its own meta step (targetKey 'meta_otto_fab'), where it stays lit + highlighted.
+  // `suppressed` keeps it mounted-but-invisible (see AssistantFAB) so the spotlight lands cleanly.
+  const tutorialActive = !!activeState;
+  const currentStepTarget = activeState?.tutorial.steps[activeState.stepIndex]?.targetKey;
+  const suppressed = tutorialActive && currentStepTarget !== 'meta_otto_fab';
+
   // Match Halo's placement exactly. Halo mounts INSIDE a faith tab screen at bottom:18, and the
   // navigator already insets that content above the tab bar (64 + safe-area). This overlay lives
   // ABOVE the tab bar, so to land at the same spot we add the tab-bar height + safe-area + that
@@ -68,7 +77,7 @@ export default function AssistantOverlay() {
 
   // First-use callout: shown once (seen === false means loaded + not yet dismissed), only while the
   // chat is closed. Opening the chat (via the callout or the FAB) marks it seen so it never nags.
-  const showCallout = seen === false && !open;
+  const showCallout = seen === false && !open && !tutorialActive;
   const openChat = () => { if (seen === false) markSeen(); setOpen(true); };
 
   return (
@@ -82,7 +91,7 @@ export default function AssistantOverlay() {
           <Text style={[styles.calloutText, { color: theme.textSecondary }]}>Ask me how to do anything in the app, or how you're tracking. Tap to start.</Text>
         </Pressable>
       )}
-      <AssistantFAB bottom={bottom} onPress={openChat} />
+      <AssistantFAB bottom={bottom} onPress={openChat} suppressed={suppressed} />
       <AssistantChat visible={open} onClose={() => setOpen(false)} />
     </>
   );

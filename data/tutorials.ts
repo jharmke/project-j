@@ -60,6 +60,15 @@ export const TUTORIALS: Tutorial[] = [
         },
       },
       {
+        targetKey: 'meta_otto_fab',
+        title: 'MEET OTTO',
+        body: {
+          discipline: 'That\'s Otto, your assistant. Tap it any time to ask how something works or get straight answers about your data. No digging through menus.',
+          balanced: 'See that button? That\'s Otto. Tap it anytime to ask how something works or for help with your numbers. He knows the app and your data.',
+          mindful: 'That\'s Otto, here whenever you have a question. Ask him how something works, no rush. He\'s always around.',
+        },
+      },
+      {
         targetKey: 'none',
         title: 'CARD HELP',
         body: {
@@ -115,6 +124,15 @@ export const TUTORIALS: Tutorial[] = [
           discipline: 'The ? in each tab has guided tours for every feature. A good place to start is the Edit Layout tour. It shows you how to remove any card you don\'t want.',
           balanced: 'The ? in each tab has guided tours for every feature. A good place to start is the Edit Layout tour. It shows you how to remove any card you don\'t want.',
           mindful: 'The ? in each tab has guided tours for every feature. A good place to start is the Edit Layout tour. It shows you how to remove any card you don\'t want.',
+        },
+      },
+      {
+        targetKey: 'meta_otto_fab',
+        title: 'MEET OTTO',
+        body: {
+          discipline: 'That\'s Otto, here whenever you have a question. Ask him how something works or how you\'re tracking, no rush. He\'s always around.',
+          balanced: 'That\'s Otto, here whenever you have a question. Ask him how something works or how you\'re tracking, no rush. He\'s always around.',
+          mindful: 'That\'s Otto, here whenever you have a question. Ask him how something works or how you\'re tracking, no rush. He\'s always around.',
         },
       },
       {

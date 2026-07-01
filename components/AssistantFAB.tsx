@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useTheme } from '../theme';
+import { useTutorialTarget } from '../hooks/useTutorialTarget';
 
 // The GENERAL Companion assistant's floating button. Distinct from Halo (the gold cross): this one
 // wears the app's THEME ACCENT and a spark icon, signalling a general AI helper rather than the
@@ -20,8 +21,12 @@ const DISC = 56; // matches the app's other FABs
 const CX = DISC / 2;
 const GLOW = 84;
 
-export default function AssistantFAB({ onPress, bottom = 18 }: { onPress?: () => void; bottom?: number }) {
+// `suppressed` keeps the FAB MOUNTED (so its tutorial-target ref stays measurable) but invisible +
+// untappable. Used during other tutorials so it steps aside, then lights back up on its own step
+// without a remount flicker that could mis-place the spotlight.
+export default function AssistantFAB({ onPress, bottom = 18, suppressed = false }: { onPress?: () => void; bottom?: number; suppressed?: boolean }) {
   const { theme } = useTheme();
+  const fabRef = useTutorialTarget('meta_otto_fab'); // spotlight target for the meta tutorial's Otto step
   const breath = useRef(new Animated.Value(0)).current;
   const press = useRef(new Animated.Value(1)).current;
 
@@ -55,7 +60,7 @@ export default function AssistantFAB({ onPress, bottom = 18 }: { onPress?: () =>
   const glowColor = theme.accentBlueRaw;
 
   return (
-    <View pointerEvents="box-none" style={[styles.wrap, { bottom }]}>
+    <View ref={fabRef} pointerEvents={suppressed ? 'none' : 'box-none'} style={[styles.wrap, { bottom, opacity: suppressed ? 0 : 1 }]}>
       {/* Faint accent glow, tight around the disc, fades in and out with the breath. */}
       <Animated.View pointerEvents="none" style={[styles.glow, { opacity: glowOpacity }]}>
         <Svg width={GLOW} height={GLOW}>

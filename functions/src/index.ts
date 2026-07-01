@@ -15,6 +15,10 @@ export { faithCompanion } from './faithCompanion';
 // prompt, separate daily cap + usage counter. See appCompanion.ts.
 export { appCompanion } from './appCompanion';
 
+// FatSecret food-database proxy. Holds the OAuth consumer key + secret server-side so they are no
+// longer baked into the shipped app bundle. See fatSecretProxy.ts.
+export { fatSecretProxy } from './fatSecretProxy';
+
 const APPLE_PRIVATE_KEY = defineSecret('APPLE_PRIVATE_KEY');
 const GMAIL_APP_PASSWORD = defineSecret('GMAIL_APP_PASSWORD');
 

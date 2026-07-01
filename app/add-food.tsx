@@ -13,7 +13,8 @@ import { Svg, Path, G } from 'react-native-svg';
 import { useToast } from '../components/Toast';
 import CustomFoodCreator from '../components/CustomFoodCreator';
 import { USDA_API_KEY } from '../config';
-import { db, getUserId, loadFromFirebase, saveToFirebase } from '../firebaseConfig';
+import { app, db, getUserId, loadFromFirebase, saveToFirebase } from '../firebaseConfig';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { storageSet } from '../utils/storage';
 import { purgeFoodPhoto } from '../utils/foodPhotos';
 import { getMealDisplayName, MealSlot, loadMealSlots } from '../utils/mealSlots';
@@ -22,7 +23,6 @@ import { useTheme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { TUTORIAL_CHICKEN_BREAST } from '../data/tutorialFood';
-import CryptoJS from 'crypto-js';
 
 
 
@@ -56,44 +56,21 @@ interface SearchResult {
   cal?: number;
 }
 
-// ─── FatSecret OAuth 1.0a helpers ───────────────────────────────────────────
-
-const FS_KEY = 'b8543feaeabd412f81427bc901e2f3b9';
-const FS_SECRET = '659c1da30b4e48eaab5788534cb2b77a';
-const FS_BASE = 'https://platform.fatsecret.com/rest/server.api';
-
-function hmacSha1(key: string, message: string): string {
-  return CryptoJS.HmacSHA1(message, key).toString(CryptoJS.enc.Base64);
-}
-
-function buildOAuthParams(): Record<string, string> {
-  return {
-    oauth_consumer_key: FS_KEY,
-    oauth_nonce: Math.random().toString(36).substring(2) + Date.now().toString(36),
-    oauth_signature_method: 'HMAC-SHA1',
-    oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
-    oauth_version: '1.0',
-  };
-}
-
-function signRequest(method: string, url: string, params: Record<string, string>): string {
-  const sorted = Object.keys(params).sort().map(k =>
-    `${encodeURIComponent(k)}=${encodeURIComponent(params[k])}`
-  ).join('&');
-  const base = `${method}&${encodeURIComponent(url)}&${encodeURIComponent(sorted)}`;
-  const signingKey = `${encodeURIComponent(FS_SECRET)}&`;
-  return hmacSha1(signingKey, base);
-}
-
-function buildFatSecretUrl(apiParams: Record<string, string>): string {
-  const oauth = buildOAuthParams();
-  const allParams = { ...oauth, ...apiParams };
-  const sig = signRequest('GET', FS_BASE, allParams);
-  const finalParams = { ...allParams, oauth_signature: sig };
-  const qs = Object.keys(finalParams).sort().map(k =>
-    `${encodeURIComponent(k)}=${encodeURIComponent((finalParams as Record<string, string>)[k])}`
-  ).join('&');
-  return `${FS_BASE}?${qs}`;
+// ─── FatSecret access (via server-side proxy) ───────────────────────────────
+// Signing moved server-side (functions/src/fatSecretProxy.ts) so the OAuth consumer key + secret
+// are no longer bundled in the app. The client just names a method + params; the function signs the
+// request and calls FatSecret, returning the same raw JSON the direct call used to return.
+//
+// Throws on a transport/proxy failure so callers can still tell "offline" from a genuine empty
+// result (the offline-as-not-found distinction the barcode + search flows depend on).
+async function callFatSecretProxy(method: string, params: Record<string, string>): Promise<any> {
+  const callable = httpsCallable(getFunctions(app), 'fatSecretProxy');
+  const res = await callable({ method, params });
+  const data = (res.data ?? {}) as { ok?: boolean; data?: any; reason?: string; status?: number };
+  if (!data.ok) {
+    throw new Error(`FatSecret proxy failed (${data.reason ?? 'unknown'}${data.status ? ' ' + data.status : ''})`);
+  }
+  return data.data;
 }
 
 // Parse FatSecret food_description string: "Per 1 cup - Calories: 52kcal | Fat: 0.17g | Carbs: 13.81g | Protein: 0.26g"
@@ -169,26 +146,10 @@ function normalizeQueryForApi(q: string): string {
 }
 
 async function callFatSecretApi(q: string): Promise<SearchResult[]> {
-  const apiParams = {
-    method: 'foods.search',
+  const data = await callFatSecretProxy('foods.search', {
     search_expression: q,
     max_results: '20',
-    format: 'json',
-  };
-  const oauth = buildOAuthParams();
-  const allParams = { ...oauth, ...apiParams };
-  const sig = signRequest('POST', FS_BASE, allParams);
-  const finalParams = { ...allParams, oauth_signature: sig };
-  const body = Object.keys(finalParams).sort().map(k =>
-    `${encodeURIComponent(k)}=${encodeURIComponent((finalParams as Record<string, string>)[k])}`
-  ).join('&');
-  const res = await fetch(FS_BASE, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body,
   });
-  if (!res.ok) throw new Error(`FatSecret HTTP ${res.status}`);
-  const data = await res.json();
   const foods = data?.foods?.food;
   if (!foods) return [];
   const arr = Array.isArray(foods) ? foods : [foods];
@@ -223,26 +184,12 @@ async function fetchFatSecretBarcode(barcode: string): Promise<SearchResult | nu
   // Network/HTTP failures throw (caller shows a connection error); null is reserved for a genuine
   // "barcode not in the database" so the two are never confused (the offline-as-not-found bug).
   // Step 1: barcode -> food_id
-  const lookupUrl = buildFatSecretUrl({
-    method: 'food.find_id_for_barcode',
-    barcode,
-    format: 'json',
-  });
-  const lookupRes = await fetch(lookupUrl);
-  if (!lookupRes.ok) throw new Error(`FatSecret HTTP ${lookupRes.status}`);
-  const lookupData = await lookupRes.json();
+  const lookupData = await callFatSecretProxy('food.find_id_for_barcode', { barcode });
   const foodId = lookupData?.food_id?.value;
   if (!foodId || foodId === '0') return null; // FatSecret returns "0" for an unknown barcode
 
   // Step 2: food_id -> full food data
-  const getUrl = buildFatSecretUrl({
-    method: 'food.get.v4',
-    food_id: foodId,
-    format: 'json',
-  });
-  const getRes = await fetch(getUrl);
-  if (!getRes.ok) throw new Error(`FatSecret HTTP ${getRes.status}`);
-  const getData = await getRes.json();
+  const getData = await callFatSecretProxy('food.get.v4', { food_id: foodId });
   const food = getData?.food;
   if (!food) return null;
   return normalizeFsServing(food);
@@ -250,13 +197,7 @@ async function fetchFatSecretBarcode(barcode: string): Promise<SearchResult | nu
 
 async function fetchFatSecretServings(fsId: string): Promise<any[]> {
   try {
-    const url = buildFatSecretUrl({
-      method: 'food.get.v4',
-      food_id: fsId,
-      format: 'json',
-    });
-    const res = await fetch(url);
-    const data = await res.json();
+    const data = await callFatSecretProxy('food.get.v4', { food_id: fsId });
     const food = data?.food;
     if (!food) return [];
     let servings = food.servings?.serving;

@@ -29,6 +29,8 @@ import LaunchSplash from '../components/LaunchSplash';
 import { TutorialProvider } from '../context/TutorialContext';
 import { ThemeProvider, useTheme } from '../theme';
 import { AuthProvider, useAuth } from '../AuthContext';
+import { SafeAreaProvider, initialWindowMetrics } from 'react-native-safe-area-context';
+import AssistantOverlay from '../components/AssistantOverlay';
 
 LogBox.ignoreLogs(['VirtualizedLists should never be nested']);
 
@@ -200,6 +202,7 @@ function RootLayoutNav() {
       <CelebrationRenderer />
       <TutorialOverlay />
       <ToolkitRenderer />
+      <AssistantOverlay />
       {showSplash && <LaunchSplash onDone={() => setShowSplash(false)} />}
     </>
   );
@@ -220,6 +223,7 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+    <SafeAreaProvider initialMetrics={initialWindowMetrics}>
     <AuthProvider>
     <ThemeProvider>
     <ToastProvider>
@@ -233,6 +237,7 @@ export default function RootLayout() {
     </ToastProvider>
     </ThemeProvider>
     </AuthProvider>
+    </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

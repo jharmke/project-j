@@ -17,6 +17,7 @@ import { db, getUserId, loadFromFirebase, saveToFirebase } from '../firebaseConf
 import { storageSet } from '../utils/storage';
 import { purgeFoodPhoto } from '../utils/foodPhotos';
 import { getMealDisplayName, MealSlot, loadMealSlots } from '../utils/mealSlots';
+import { setCameraActive } from '../utils/assistantFab';
 import { useTheme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
@@ -319,6 +320,13 @@ export default function AddFoodScreen() {
   const [results, setResults] = useState<SearchResult[]>([]);
   const [myFoods, setMyFoods] = useState<MyFood[]>([]);
   const [scanning, setScanning] = useState(false);
+  // Hide the Companion FAB while the barcode camera is open (a floating button over a live camera
+  // preview is wrong). Increments the shared camera signal on open, decrements on close/unmount.
+  useEffect(() => {
+    if (!scanning) return;
+    setCameraActive(true);
+    return () => setCameraActive(false);
+  }, [scanning]);
   const [closingCamera, setClosingCamera] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
   const [torchOn, setTorchOn] = useState(false);

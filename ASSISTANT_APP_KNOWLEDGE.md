@@ -86,8 +86,13 @@ LOG TAB (FOOD DIARY)
   - BARCODE SCAN: tap the BARCODE icon on the Add Food screen.
   - AI MEAL ESTIMATOR: the AI icon in the Add Food header (slot-aware), OR the AI estimator card on
     the Log tab, OR the FAB in the Food Library. Photo + text input, editable breakdown.
-  - CUSTOM FOOD: create via the Custom Food Creator (inside Add Food / My Foods).
-- RECIPES: build a recipe (Recipe Builder), log a recipe (Recipe Log).
+  - CUSTOM FOOD: from the Food Library (Log tab > LIBRARY button) tap the FAB (bottom corner) >
+    CREATE FOOD. (Also reachable inline via the Custom Food Creator inside Add Food / My Foods.)
+- RECIPES: from the Food Library (Log tab > LIBRARY button) tap the FAB > CREATE RECIPE (opens the
+  Recipe Builder). Log a saved recipe from the Recipes tab in Add Food, or the Recipe Log.
+- IMPORTANT: there is NO "Add Food" button on the Log tab itself. Food is added via the PLUS sign on
+  a mealtime card, or via the LIBRARY button (Food Library). Never tell a user to "tap Add Food" on
+  the Log tab.
 - WATER: there is a dedicated Water card on BOTH the Home tab and the Log tab, and they are
   identical (same quick-add presets, same water log with per-entry edit/delete).
 - FOOD DETAIL: tap a logged entry to edit amount/servings, add a photo, favorite it.
@@ -213,6 +218,8 @@ COMMON "HOW DO I..." QUICK INDEX
 - Scan a barcode: Add Food screen > barcode icon.
 - Use the AI meal estimator: Add Food header AI icon, the Log-tab estimator card, or the Food
   Library FAB.
+- Build a recipe: Log tab > Library > FAB > Create Recipe (opens the Recipe Builder).
+- Create a custom food: Log tab > Library > FAB > Create Food.
 - Log water: Home Water card presets, or the identical Water card on the Log tab.
 - Edit/delete a water entry: open the water log > pencil icon on the entry.
 - Log a lift (sets): Workout tab > lifting log (weight x reps + check).

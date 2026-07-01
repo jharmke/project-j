@@ -78,7 +78,7 @@ export default function AssistantFAB({ onPress, bottom = 18 }: { onPress?: () =>
           onPressOut={pressOut}
           hitSlop={14}
           accessibilityRole="button"
-          accessibilityLabel="Open the Project J assistant"
+          accessibilityLabel="Open Otto, the wellness and app assistant"
         >
           <View style={[styles.disc, { backgroundColor: accent, shadowColor: glowColor }]}>
             <Ionicons name="sparkles" size={24} color="#ffffff" />

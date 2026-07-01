@@ -78,7 +78,7 @@ export default function AssistantOverlay() {
           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openChat(); }}
           style={[styles.callout, { bottom: bottom + FAB_DISC + 10, backgroundColor: theme.bgSheet, borderColor: theme.accentBlueBorder }]}
         >
-          <Text style={[styles.calloutTitle, { color: theme.textPrimary }]}>Hey, I can help</Text>
+          <Text style={[styles.calloutTitle, { color: theme.textPrimary }]}>Hey, I'm Otto</Text>
           <Text style={[styles.calloutText, { color: theme.textSecondary }]}>Ask me how to do anything in the app, or how you're tracking. Tap to start.</Text>
         </Pressable>
       )}

@@ -31,8 +31,8 @@ type StyleMode = 'discipline' | 'balanced' | 'mindful';
 type FaithTier = 'rooted' | 'exploring' | 'notrightnow';
 
 const GREETINGS = [
-  "Hey, I'm your Project J assistant. What can I help you with?",
-  "Hi. Question about the app, your numbers, or where to start? Ask away.",
+  "Hey, I'm Otto. What can I help you with?",
+  "Hi, Otto here. Question about the app, your numbers, or where to start? Ask away.",
   "What's on your mind, food, training, sleep, or finding your way around the app?",
   "I'm here. Ask me how to do anything, or how you're tracking.",
   "Ready when you are. What would you like to figure out?",
@@ -303,7 +303,7 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
       }
       saveReport(userMessage, cur.text);
     }
-    showToast(newVal === 'up' ? 'Thanks for the feedback' : 'Thanks, this helps improve the assistant', undefined, 'success');
+    showToast(newVal === 'up' ? 'Thanks for the feedback' : 'Thanks, this helps improve Otto', undefined, 'success');
   };
 
   const resetChat = () => {
@@ -400,8 +400,8 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
       setSending(false);
       const code = String((e as { code?: string })?.code ?? '');
       const msg = code.includes('unauthenticated')
-        ? 'Please sign in to use the assistant.'
-        : 'The assistant is resting. Please try again in a little bit.';
+        ? 'Please sign in to use Otto.'
+        : 'Otto is resting. Please try again in a little bit.';
       setMessages(prev => [...prev, { role: 'system', text: msg }]);
     }
   };
@@ -452,7 +452,7 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
                       <Ionicons name="sparkles" size={15} color="#ffffff" />
                     </View>
                     <View>
-                      <Text style={[styles.brand, { color: theme.textPrimary }]}>Assistant</Text>
+                      <Text style={[styles.brand, { color: theme.textPrimary }]}>Otto</Text>
                       <Text style={[styles.brandSub, { color: theme.textDim }]}>Wellness and app guide</Text>
                     </View>
                   </View>
@@ -551,7 +551,7 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
               <TextInput
                 ref={inputRef}
                 style={[styles.input, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]}
-                placeholder="Ask the assistant..."
+                placeholder="Ask Otto..."
                 placeholderTextColor={theme.textPlaceholder}
                 value={input}
                 onChangeText={setInput}
@@ -568,7 +568,7 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
             </View>
 
             <Text style={[styles.disclaimer, { color: theme.textDim, paddingBottom: kb > 0 ? 10 : insets.bottom + 8 }]}>
-              The assistant is AI and can make mistakes. Not a substitute for a doctor or professional.
+              Otto is AI and can make mistakes. Not a substitute for a doctor or professional.
             </Text>
           </View>
         </Animated.View>

@@ -88,7 +88,7 @@ export const appCompanion = onCall(
   async (request) => {
     // 1. Auth.
     if (!request.auth) {
-      throw new HttpsError('unauthenticated', 'Please sign in to use the companion.');
+      throw new HttpsError('unauthenticated', 'Please sign in to use Otto.');
     }
     const uid = request.auth.uid;
 
@@ -208,7 +208,7 @@ export const appCompanion = onCall(
       return {
         ok: false,
         reason: 'unavailable',
-        message: 'The companion is resting. Please try again in a little bit.',
+        message: 'Otto is resting. Please try again in a little bit.',
       };
     }
 
@@ -228,7 +228,7 @@ export const appCompanion = onCall(
       return {
         ok: false,
         reason: 'unavailable',
-        message: 'The companion is resting. Please try again in a little bit.',
+        message: 'Otto is resting. Please try again in a little bit.',
       };
     }
 

@@ -139,7 +139,7 @@ const [prs, setPrs] = useState<Record<string, PRRecord>>({});
 const [finishSummary, setFinishSummary] = useState<{
   totalVolume: number; doneSets: number; doneExercises: number; prHits: any[]; mindful: boolean;
   hasLifts: boolean; liftDurationSec: number | null;
-  cardio: { count: number; distanceMi: number; durationSec: number; calories: number; avgHr: number | null; maxHr: number | null } | null;
+  cardio: { count: number; distanceMi: number; durationSec: number; calories: number; avgHr: number | null; maxHr: number | null; items?: { name: string; durationSec: number; distanceMi: number; calories: number; avgHr: number | null; maxHr: number | null }[] } | null;
   totalCalories: number;
 } | null>(null);
 // Per-day recap snapshot for days already finished THIS SESSION. Drives the Finish -> View Summary
@@ -174,6 +174,13 @@ const [weeklyTemplate, setWeeklyTemplate] = useState<Record<string, DayProgram>>
 const [labelInput, setLabelInput] = useState('');
   const [form, setForm] = useState({ name: '', sets: '', reps: '', rest: '', note: '', isCardio: false, duration: '', distance: '', speed: '', incline: '', resistance: '', hr: '', calories: ''});
 const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
+  // Manual workout timer per day. startedAt = epoch ms while running (null when stopped); elapsedSec =
+  // banked seconds from prior run segments. Opt-in; only relevant on days WITHOUT an Apple strength
+  // banner (Apple duration always wins). Persisted inside pj_workout_state via saveState.
+  const [workoutTimers, setWorkoutTimers] = useState<Record<string, { startedAt: number | null; elapsedSec: number }>>({});
+  const [timerTick, setTimerTick] = useState(0); // 1s heartbeat to re-render the running clock
+  const [durationEditDay, setDurationEditDay] = useState<string | null>(null); // manual duration edit modal
+  const [durationEditText, setDurationEditText] = useState('');
   const [calBurnedSaved, setCalBurnedSaved] = useState(false);
   const [savedNoteText, setSavedNoteText] = useState<Record<string, string>>({});
   const [tags, setTags] = useState<WorkoutTag[]>(DEFAULT_TAGS);
@@ -207,6 +214,11 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
   const finishCardOpacity = useSharedValue(1);
   const finishOverlayStyle = useAnimatedStyle(() => ({ opacity: finishOverlay.value }));
   const finishCardStyle = useAnimatedStyle(() => ({ transform: [{ scale: finishCardScale.value }], opacity: finishCardOpacity.value }));
+  const durationOverlay = useSharedValue(0);
+  const durationCardScale = useSharedValue(0.85);
+  const durationCardOpacity = useSharedValue(0);
+  const durationOverlayStyle = useAnimatedStyle(() => ({ opacity: durationOverlay.value }));
+  const durationCardStyle = useAnimatedStyle(() => ({ transform: [{ scale: durationCardScale.value }], opacity: durationCardOpacity.value }));
   const fabScale = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
   const originalForm = useRef<typeof form | null>(null);
@@ -696,6 +708,7 @@ useEffect(() => {
           if (data.exerciseDoneAt) setExerciseDoneAt(data.exerciseDoneAt);
           if (data.prs) setPrs(data.prs);
           if (data.activeProgramName) setActiveProgramName(data.activeProgramName);
+          if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
         }
         const settings = await AsyncStorage.getItem('pj_settings');
         const s = settings ? JSON.parse(settings) : {};
@@ -746,6 +759,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
 if (data.setLogs) setSetLogs(data.setLogs);
 if (data.exerciseDoneAt) setExerciseDoneAt(data.exerciseDoneAt);
 if (data.prs) setPrs(data.prs);
+if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
           }
         } catch (e) {
           console.log('Reload error', e);
@@ -756,7 +770,7 @@ if (data.prs) setPrs(data.prs);
     }, [])
   );
 
-  const saveState = async (newChecks = checks, newCardio = cardioComplete, newPrograms = programs, newNotes = workoutNotes, newCardioLogs = cardioLogs, newTemplate = weeklyTemplate, newProgramName = activeProgramName, newNoteNames = workoutNoteNames, newSetLogs = setLogs, newPrs = prs, newExerciseDoneAt = exerciseDoneAt) => {
+  const saveState = async (newChecks = checks, newCardio = cardioComplete, newPrograms = programs, newNotes = workoutNotes, newCardioLogs = cardioLogs, newTemplate = weeklyTemplate, newProgramName = activeProgramName, newNoteNames = workoutNoteNames, newSetLogs = setLogs, newPrs = prs, newExerciseDoneAt = exerciseDoneAt, newTimers = workoutTimers) => {
   try {
     await storageSet('pj_workout_state', JSON.stringify({
       checks: newChecks,
@@ -770,11 +784,82 @@ if (data.prs) setPrs(data.prs);
       setLogs: newSetLogs,
       prs: newPrs,
       exerciseDoneAt: newExerciseDoneAt,
+      workoutTimers: newTimers,
     }));
   } catch (e) {
     console.log('Save error', e);
   }
 };
+
+  // ---- Manual workout timer (no-watch users) ----
+  // Live elapsed = banked seconds + current run segment. Apple strength days never use this.
+  const getTimerElapsedSec = (day: string): number => {
+    const t = workoutTimers[day];
+    if (!t) return 0;
+    const live = t.startedAt ? (Date.now() - t.startedAt) / 1000 : 0;
+    return Math.max(0, Math.round((t.elapsedSec || 0) + live));
+  };
+  const isTimerRunning = (day: string): boolean => !!workoutTimers[day]?.startedAt;
+
+  // Persist the day's manual workout minutes onto pj_<date> (read-then-merge, never clobber other fields)
+  // so Home/Stats/goals/achievements can credit no-watch users. Apple-priority merge lives in the readers.
+  const writeManualMinutesToDay = async (day: string, elapsedSec: number) => {
+    try {
+      const mins = Math.max(0, Math.round(elapsedSec / 60));
+      const raw = await AsyncStorage.getItem('pj_' + day);
+      const cur = raw ? JSON.parse(raw) : {};
+      await storageSet('pj_' + day, JSON.stringify({ ...cur, manualWorkoutMinutes: mins }));
+    } catch (e) { console.log('manual minutes write error', e); }
+  };
+  const persistTimers = (next: Record<string, { startedAt: number | null; elapsedSec: number }>) =>
+    saveState(checks, cardioComplete, programs, workoutNotes, cardioLogs, weeklyTemplate, activeProgramName, workoutNoteNames, setLogs, prs, exerciseDoneAt, next);
+
+  const startWorkoutTimer = (day: string) => {
+    if (workoutTimers[day]?.startedAt) return;
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    const next = { ...workoutTimers, [day]: { startedAt: Date.now(), elapsedSec: workoutTimers[day]?.elapsedSec || 0 } };
+    setWorkoutTimers(next);
+    persistTimers(next);
+    clearFinished(day); // starting/continuing invalidates any stale recap snapshot
+  };
+  const stopWorkoutTimer = (day: string) => {
+    const t = workoutTimers[day];
+    if (!t?.startedAt) return;
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    const elapsedSec = Math.max(0, Math.round((t.elapsedSec || 0) + (Date.now() - t.startedAt) / 1000));
+    const next = { ...workoutTimers, [day]: { startedAt: null, elapsedSec } };
+    setWorkoutTimers(next);
+    persistTimers(next);
+    writeManualMinutesToDay(day, elapsedSec);
+    clearFinished(day);
+    showToast('Workout Timer Stopped', formatDuration(elapsedSec) + ' logged', 'success');
+  };
+  const openDurationEdit = (day: string) => {
+    setDurationEditDay(day);
+    const mins = Math.round(getTimerElapsedSec(day) / 60);
+    setDurationEditText(mins > 0 ? String(mins) : '');
+  };
+  const saveDurationEdit = () => {
+    if (!durationEditDay) return;
+    const mins = Math.max(0, Math.min(1440, parseInt(durationEditText) || 0));
+    const elapsedSec = mins * 60;
+    const next = { ...workoutTimers, [durationEditDay]: { startedAt: null, elapsedSec } };
+    setWorkoutTimers(next);
+    persistTimers(next);
+    writeManualMinutesToDay(durationEditDay, elapsedSec);
+    clearFinished(durationEditDay);
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    showToast('Duration Updated', mins > 0 ? formatDuration(elapsedSec) + ' logged' : 'Duration cleared', 'success');
+    setDurationEditDay(null);
+    setDurationEditText('');
+  };
+
+  // 1s heartbeat so the running clock re-renders; only ticks while the active day's timer runs.
+  useEffect(() => {
+    if (!workoutTimers[activeDay]?.startedAt) return;
+    const id = setInterval(() => setTimerTick(x => x + 1), 1000);
+    return () => clearInterval(id);
+  }, [workoutTimers, activeDay]);
 
   // Logged sets for an exercise on the active day. Seeds empty rows from the target sets count
   // (default 3) the first time, so a fresh lift shows rows to fill. Seeded rows are not persisted
@@ -924,29 +1009,36 @@ if (data.prs) setPrs(data.prs);
         prHits.push({ name: ex.name, weightPR, e1rmPR, weightVal: nr.bestWeight?.value, weightReps: nr.bestWeight?.reps, e1rmVal: nr.bestE1RM?.value });
       }
     }
-    // Lift session duration: first -> last checked-set stamp (no data on pre-timestamp logs).
-    const stamps: number[] = [];
-    for (const ex of exercises) {
-      if (ex.isCardio) continue;
-      const sets = dayLogs[ex.id];
-      if (!sets) continue;
-      for (const s of sets) if (s.done && s.doneAt != null) stamps.push(s.doneAt);
-    }
-    const liftDurationSec = stamps.length >= 2 && Math.max(...stamps) > Math.min(...stamps)
-      ? Math.round((Math.max(...stamps) - Math.min(...stamps)) / 1000) : null;
+    // Lift session duration. Priority: Apple Watch strength session (measured, ground truth) > manual
+    // workout timer (no-watch users) > nothing. The old first-to-last checked-set span is RETIRED: it
+    // counted idle gaps between morning/evening sets as "duration" and could balloon to hours.
+    const hmsToSecLift = (str: any) => {
+      const p = String(str || '').split(':').map((x: string) => parseInt(x) || 0);
+      if (p.length === 3) return p[0] * 3600 + p[1] * 60 + p[2];
+      if (p.length === 2) return p[0] * 60 + p[1];
+      return p[0] || 0;
+    };
+    const appleLiftDurSec = appleSessions.reduce((s: number, a: any) => s + hmsToSecLift(a.duration), 0);
+    const manualLiftDurSec = getTimerElapsedSec(activeDay);
+    const liftDurationSec = appleLiftDurSec > 0 ? appleLiftDurSec : (manualLiftDurSec > 0 ? manualLiftDurSec : null);
 
     // Cardio recap: aggregate the day's COMPLETED cardio (also lets a cardio-only day finish).
     const dayChecks2 = checks[activeDay] || {};
     let cardioCount = 0, cardioDistance = 0, cardioDurationSec = 0, cardioCalories = 0, maxHrVal = 0;
     const hrAvgs: number[] = [];
+    // Per-cardio breakdown so multi-session days show each walk/run's OWN heart rate instead of one
+    // blended average across unlike efforts (easy dog walk vs hard treadmill). Totals still sum.
+    const cardioItems: { name: string; durationSec: number; distanceMi: number; calories: number; avgHr: number | null; maxHr: number | null }[] = [];
     for (const ex of exercises as any[]) {
       if (!ex.isCardio || !dayChecks2[ex.id]) continue;
       cardioCount++;
-      const dist = parseFloat(ex.distance ?? ''); if (!isNaN(dist)) cardioDistance += dist;
-      cardioDurationSec += parseCardioDurationSec(ex);
-      const cal = parseFloat(ex.calories ?? ''); if (!isNaN(cal)) cardioCalories += cal;
+      const dist = parseFloat(ex.distance ?? ''); const distVal = !isNaN(dist) ? dist : 0; cardioDistance += distVal;
+      const itemDurSec = parseCardioDurationSec(ex); cardioDurationSec += itemDurSec;
+      const cal = parseFloat(ex.calories ?? ''); const calVal = !isNaN(cal) ? cal : 0; cardioCalories += calVal;
       // Heart rate: prefer real HealthKit samples for Apple-synced cardio (same source HR Zones uses);
       // fall back to a manually-typed HR only when there are no samples. avg = mean, max = peak sample.
+      // Captured per session (itemAvgHr/itemMaxHr) AND pooled into hrAvgs/maxHrVal for single-session days.
+      let itemAvgHr: number | null = null, itemMaxHr: number | null = null;
       let gotSamples = false;
       if (ex.fromAppleHealth && ex.appleHealthUUID) {
         try {
@@ -955,6 +1047,8 @@ if (data.prs) setPrs(data.prs);
           if (res?.found && res.samples?.length) {
             const vals = res.samples.map((s: any) => s.v).filter((v: any) => typeof v === 'number' && v > 0);
             if (vals.length) {
+              itemAvgHr = Math.round(vals.reduce((a: number, b: number) => a + b, 0) / vals.length);
+              itemMaxHr = Math.round(vals.reduce((m: number, v: number) => (v > m ? v : m), 0));
               hrAvgs.push(vals.reduce((a: number, b: number) => a + b, 0) / vals.length);
               for (const v of vals) if (v > maxHrVal) maxHrVal = v;
               gotSamples = true;
@@ -964,8 +1058,9 @@ if (data.prs) setPrs(data.prs);
       }
       if (!gotSamples) {
         const hr = parseFloat(ex.hr ?? '');
-        if (!isNaN(hr) && hr > 0) { hrAvgs.push(hr); if (hr > maxHrVal) maxHrVal = hr; }
+        if (!isNaN(hr) && hr > 0) { itemAvgHr = Math.round(hr); itemMaxHr = Math.round(hr); hrAvgs.push(hr); if (hr > maxHrVal) maxHrVal = hr; }
       }
+      cardioItems.push({ name: ex.name || 'Cardio', durationSec: itemDurSec, distanceMi: distVal, calories: Math.round(calVal), avgHr: itemAvgHr, maxHr: itemMaxHr });
     }
     const avgHr = hrAvgs.length ? Math.round(hrAvgs.reduce((a, b) => a + b, 0) / hrAvgs.length) : null;
     const maxHr = maxHrVal > 0 ? Math.round(maxHrVal) : null;
@@ -981,7 +1076,7 @@ if (data.prs) setPrs(data.prs);
       hasLifts: doneSets > 0,
       liftDurationSec,
       cardio: cardioCount > 0
-        ? { count: cardioCount, distanceMi: cardioDistance, durationSec: cardioDurationSec, calories: Math.round(cardioCalories), avgHr, maxHr }
+        ? { count: cardioCount, distanceMi: cardioDistance, durationSec: cardioDurationSec, calories: Math.round(cardioCalories), avgHr, maxHr, items: cardioItems }
         : null,
       totalCalories: Math.round(cardioCalories),
     };
@@ -1025,9 +1120,13 @@ if (data.prs) setPrs(data.prs);
     const full = [...(baseProgram?.exercises || [])];
     const target = full.find((e: any) => e.id === exId);
     if (!target) return;
-    // Reorder among same-type visible PEERS only (lifts among lifts, cardio among cardio); Apple
-    // session envelopes and the other type keep their slots, so a lift can't leave the session.
-    const isPeer = (e: any) => !isAppleSession(e) && (!!e.isCardio === !!target.isCardio);
+    // With an Apple strength container present, reorder within same-type lanes (lifts among lifts,
+    // cardio among cardio) so a lift can't be knocked out of the session. With NO container on the
+    // day, reorder is fully free: any card moves past any card.
+    const hasContainer = full.some(isAppleSession);
+    const isPeer = hasContainer
+      ? (e: any) => !isAppleSession(e) && (!!e.isCardio === !!target.isCardio)
+      : (e: any) => !isAppleSession(e);
     const peers = full.filter(isPeer);
     const idx = peers.findIndex((e: any) => e.id === exId);
     const newIdx = idx + dir;
@@ -1358,6 +1457,47 @@ if (data.prs) setPrs(data.prs);
     );
   };
 
+  // Manual workout timer pill. Shown only on days WITHOUT an Apple strength banner (Apple wins).
+  const renderWorkoutTimerPill = (day: string) => {
+    const running = isTimerRunning(day);
+    const elapsed = getTimerElapsedSec(day);
+    const hasTime = elapsed > 0;
+    return (
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: running ? theme.accentBlueBorder : theme.borderCard, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 14, marginBottom: 12,
+        shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 2 }}>
+        <TouchableOpacity onPress={() => openDurationEdit(day)} activeOpacity={hasTime && !running ? 0.6 : 1} disabled={!hasTime || running} style={{ flexDirection: 'row', alignItems: 'center', gap: 9, flex: 1 }} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
+          <Ionicons name={running ? 'stopwatch' : 'stopwatch-outline'} size={18} color={running ? theme.accentBlue : theme.textMuted} />
+          <View>
+            <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>
+              {running ? 'Workout Running' : hasTime ? 'Workout Time' : 'Workout Timer'}
+            </Text>
+            <Text style={{ fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5, color: running ? theme.accentBlueRaw : hasTime ? theme.textSecondary : theme.textMuted, marginTop: 1 }}>
+              {hasTime || running ? formatDuration(elapsed) : 'Not started'}
+            </Text>
+          </View>
+        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          {hasTime && !running && (
+            <TouchableOpacity onPress={() => openDurationEdit(day)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} style={{ padding: 4 }}>
+              <Ionicons name="create-outline" size={17} color={theme.textMuted} />
+            </TouchableOpacity>
+          )}
+          {running ? (
+            <TouchableOpacity onPress={() => stopWorkoutTimer(day)} activeOpacity={0.8} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: theme.accentRed + '22', borderWidth: 1, borderColor: theme.accentRed + '55', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+              <Ionicons name="stop" size={13} color={theme.accentRed} />
+              <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.accentRed }}>Stop</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity onPress={() => startWorkoutTimer(day)} activeOpacity={0.8} style={{ flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+              <Ionicons name="play" size={13} color={theme.accentBlue} />
+              <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.accentBlue }}>{hasTime ? 'Resume' : 'Start'}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    );
+  };
+
   const handleLoadRoutine = async () => {
     if (!selectedRoutine || selectedLoadDays.length === 0) return;
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
@@ -1406,9 +1546,11 @@ if (data.prs) setPrs(data.prs);
     const { inGroup = false, isLastInGroup = false } = opts;
     const isDone = dayChecks[ex.id];
     const loggedAt = ex.isCardio ? (exerciseDoneAt[activeDay]?.[ex.id] ?? null) : (isDone ? liftLoggedAt(ex.id) : null);
-    // Reorder arrows move an exercise among its OWN kind (lifts among lifts, cardio among cardio) so
-    // a lift can't be nudged out of the Apple session container.
-    const peers = displayExercises.filter((e: any) => !!e.isCardio === !!ex.isCardio);
+    // Arrow enable/disable must match moveExercise: same-type lanes when an Apple strength container
+    // is present (a lift can't be nudged out of the session), otherwise the full visible list.
+    const peers = appleSessions.length > 0
+      ? displayExercises.filter((e: any) => !!e.isCardio === !!ex.isCardio)
+      : displayExercises;
     const idx = peers.findIndex((e: any) => e.id === ex.id);
     const isFirst = idx <= 0;
     const isLast = idx === peers.length - 1;
@@ -1772,8 +1914,14 @@ if (data.prs) setPrs(data.prs);
         {!isRest && (() => {
           const lifts = displayExercises.filter((e: any) => !e.isCardio);
           const cardio = displayExercises.filter((e: any) => e.isCardio);
-          // No Apple strength session on this day: render lifts + cardio as normal cards (unchanged).
-          if (appleSessions.length === 0) return <>{renderExerciseUnits(displayExercises)}</>;
+          // No Apple strength session on this day: render lifts + cardio as normal cards. Lifts get the
+          // opt-in manual workout timer above them (no watch = no measured duration otherwise).
+          if (appleSessions.length === 0) return (
+            <>
+              {lifts.length > 0 && renderWorkoutTimerPill(activeDay)}
+              {renderExerciseUnits(displayExercises)}
+            </>
+          );
           // Apple Watch strength session = a CONTAINER wrapping the day's lifts; cardio stays outside.
           const hmsToSec = (str: any) => {
             const p = String(str || '').split(':').map((x: string) => parseInt(x) || 0);
@@ -1798,11 +1946,15 @@ if (data.prs) setPrs(data.prs);
                   <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
                     <View style={{ flex: 1 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                        <Ionicons name="watch-outline" size={14} color={theme.accentBlue} />
+                        <View style={{ width: 14, alignItems: 'center' }}>
+                          <Ionicons name="watch-outline" size={14} color={theme.accentBlue} />
+                        </View>
                         <Text style={{ fontSize: 10, letterSpacing: 2, color: theme.accentBlue, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>Strength Session</Text>
                       </View>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 }}>
-                        <Ionicons name="heart" size={11} color={theme.accentGreen} />
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                        <View style={{ width: 14, alignItems: 'center' }}>
+                          <Ionicons name="heart" size={11} color={theme.accentGreen} />
+                        </View>
                         <Text style={[styles.badgeText, { color: theme.accentGreen }]}>APPLE HEALTH</Text>
                       </View>
                     </View>
@@ -2041,13 +2193,17 @@ if (data.prs) setPrs(data.prs);
                 liftStats.push({ icon: 'layers-outline', value: String(fs.doneSets), label: 'Sets' });
                 liftStats.push({ icon: 'list-outline', value: String(fs.doneExercises), label: 'Exercises' });
               }
+              // Multiple cardios => never blend HR into one misleading average. Top tiles show the
+              // summable totals; each session's own avg/max HR renders in the breakdown list below.
+              const multiCardio = !!(fs.cardio?.items && fs.cardio.items.length > 1);
               const cardioStats: { icon: any; value: string; label: string }[] = [];
               if (fs.cardio) {
                 if (fs.cardio.durationSec > 0) cardioStats.push({ icon: 'stopwatch-outline', value: formatDuration(fs.cardio.durationSec), label: 'Duration' });
                 if (fs.cardio.distanceMi > 0) cardioStats.push({ icon: 'navigate-outline', value: fs.cardio.distanceMi.toFixed(2), label: 'Miles' });
                 if (fs.cardio.calories > 0) cardioStats.push({ icon: 'flame-outline', value: String(fs.cardio.calories), label: 'Cal' });
-                if (fs.cardio.avgHr != null) cardioStats.push({ icon: 'heart-outline', value: String(fs.cardio.avgHr), label: 'Avg BPM' });
-                if (fs.cardio.maxHr != null) cardioStats.push({ icon: 'heart', value: String(fs.cardio.maxHr), label: 'Max BPM' });
+                if (multiCardio) cardioStats.push({ icon: 'fitness-outline', value: String(fs.cardio.count), label: 'Sessions' });
+                if (!multiCardio && fs.cardio.avgHr != null) cardioStats.push({ icon: 'heart-outline', value: String(fs.cardio.avgHr), label: 'Avg BPM' });
+                if (!multiCardio && fs.cardio.maxHr != null) cardioStats.push({ icon: 'heart', value: String(fs.cardio.maxHr), label: 'Max BPM' });
                 if (cardioStats.length === 0) cardioStats.push({ icon: 'fitness-outline', value: String(fs.cardio.count), label: fs.cardio.count === 1 ? 'Session' : 'Sessions' });
               }
               const dateLabel = (() => {
@@ -2087,6 +2243,40 @@ if (data.prs) setPrs(data.prs);
                     <View style={{ marginBottom: fs.prHits.length ? 16 : 6 }}>
                       {showHeaders && sectionLabel('Cardio')}
                       {renderTiles(cardioStats)}
+                      {multiCardio && (
+                        <View style={{ marginTop: 10, gap: 8 }}>
+                          {fs.cardio.items!.map((it, idx) => (
+                            <View key={idx} style={{ backgroundColor: theme.bgInset, borderWidth: 0.5, borderColor: theme.borderCard, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12 }}>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <Text numberOfLines={1} style={{ flex: 1, fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, marginRight: 8 }}>{it.name}</Text>
+                                {it.durationSec > 0 && (
+                                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted }}>{formatDuration(it.durationSec)}</Text>
+                                )}
+                              </View>
+                              {(it.avgHr != null || it.maxHr != null) ? (
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 6 }}>
+                                  {it.avgHr != null && (
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                      <Ionicons name="heart-outline" size={12} color={theme.accentBlue} />
+                                      <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{it.avgHr}</Text>
+                                      <Text style={{ fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted }}>Avg BPM</Text>
+                                    </View>
+                                  )}
+                                  {it.maxHr != null && (
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                      <Ionicons name="heart" size={12} color={theme.accentBlue} />
+                                      <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{it.maxHr}</Text>
+                                      <Text style={{ fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted }}>Max BPM</Text>
+                                    </View>
+                                  )}
+                                </View>
+                              ) : (
+                                <Text style={{ fontSize: 11, fontFamily: 'DMSans_500Medium', color: theme.textMuted, marginTop: 5 }}>No heart rate recorded</Text>
+                              )}
+                            </View>
+                          ))}
+                        </View>
+                      )}
                     </View>
                   )}
 
@@ -2128,6 +2318,50 @@ if (data.prs) setPrs(data.prs);
             })()}
           </Reanimated.View>
         </View>
+      </Modal>
+
+      {/* Manual workout duration edit */}
+      <Modal visible={!!durationEditDay} transparent animationType="none" statusBarTranslucent onRequestClose={() => setDurationEditDay(null)}
+        onShow={() => {
+          durationOverlay.value = withTiming(1, { duration: 150 });
+          durationCardScale.value = withSpring(1, { damping: 24, stiffness: 320, overshootClamping: true });
+          durationCardOpacity.value = withTiming(1, { duration: 150 });
+        }}>
+        <Reanimated.View style={[StyleSheet.absoluteFill, { backgroundColor: theme.overlayBg }, durationOverlayStyle]} pointerEvents="none" />
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => { setDurationEditDay(null); durationOverlay.value = 0; durationCardScale.value = 0.85; durationCardOpacity.value = 0; }} />
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 28 }} pointerEvents="box-none">
+          <Reanimated.View pointerEvents="auto" style={[{ width: '100%', maxWidth: 360, backgroundColor: theme.bgSheet, borderRadius: 18, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, padding: 22, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35, shadowRadius: 20, elevation: 10 }, durationCardStyle]}>
+            <View style={{ alignItems: 'center', marginBottom: 14 }}>
+              <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
+            </View>
+            <Text style={{ fontSize: 12, letterSpacing: 2.5, color: theme.accentBlue, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', textAlign: 'center', marginBottom: 6 }}>Workout Duration</Text>
+            <Text style={{ fontSize: 13, fontFamily: 'DMSans_500Medium', color: theme.textMuted, textAlign: 'center', marginBottom: 16 }}>How many minutes did you train? Set to 0 to clear it.</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 18 }}>
+              <TextInput
+                value={durationEditText}
+                onChangeText={t => setDurationEditText(t.replace(/[^0-9]/g, ''))}
+                keyboardType="number-pad"
+                placeholder="0"
+                placeholderTextColor={theme.textPlaceholder}
+                style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 10, paddingVertical: 12, paddingHorizontal: 18, fontSize: 24, fontFamily: 'DMSans_700Bold', color: theme.textPrimary, textAlign: 'center', minWidth: 120 }}
+                autoFocus
+                maxLength={4}
+              />
+              <Text style={{ fontSize: 14, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted }}>min</Text>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity onPress={() => { setDurationEditDay(null); setDurationEditText(''); durationOverlay.value = 0; durationCardScale.value = 0.85; durationCardOpacity.value = 0; }}
+                style={{ flex: 1, backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 12, paddingVertical: 13, alignItems: 'center' }}>
+                <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: theme.textMuted }}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => { durationOverlay.value = 0; durationCardScale.value = 0.85; durationCardOpacity.value = 0; saveDurationEdit(); }}
+                style={{ flex: 1, backgroundColor: theme.accentBlue, borderRadius: 12, paddingVertical: 13, alignItems: 'center' }}>
+                <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: theme.bgPrimary }}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </Reanimated.View>
+        </KeyboardAvoidingView>
+        <ToastRenderer />
       </Modal>
 
       {/* Add/Edit Modal */}

@@ -24,6 +24,7 @@ import { StatsCardEditModal } from '../../components/StatsCardEditModal';
 import TooltipIcon from '../../components/TooltipIcon';
 import { storageSet } from '../../utils/storage';
 import { calcSleepScore } from '../../utils/sleepScore';
+import { effectiveExerciseMinutes } from '../../utils/exerciseMinutes';
 import { loadDayScoreArchive, findMostRecentTourDay, ArchiveWeek, ArchiveDay } from '../../utils/dayScoreStore';
 import { loadWeeklySummary, WeeklySummaryData } from '../../utils/weeklySummary';
 import { loadMonthlySummary, MonthlySummaryData } from '../../utils/monthlySummary';
@@ -584,7 +585,7 @@ export default function StatsScreen() {
             case 'water':        hit = (todayData.water || 0) >= (todayData.waterGoal || wGoal); break;
             case 'steps':        hit = (todayData.steps || 0) >= (todayData.stepGoal || stepParam); break;
             case 'activecals':   hit = aCalGoal > 0 && dayActive >= aCalGoal; break;
-            case 'exercisemins': hit = exMinsGoal > 0 && (todayData.exerciseMinutes || 0) >= exMinsGoal; break;
+            case 'exercisemins': hit = exMinsGoal > 0 && effectiveExerciseMinutes(todayData) >= exMinsGoal; break;
             case 'sleepduration':hit = ((todayData.sleepOverride ?? todayData.sleepHours) || 0) >= (todayData.sleepGoal || sGoal); break;
             case 'sleepquality': hit = todaySleepScore !== null && todaySleepScore >= 85; break;
           }
@@ -654,7 +655,7 @@ export default function StatsScreen() {
               case 'water':       hit = (data.water || 0) >= (data.waterGoal || wGoal); break;
               case 'steps':       hit = (data.steps || 0) >= (data.stepGoal || stepParam); break;
               case 'activecals':  hit = aCalGoal > 0 && dayActive >= aCalGoal; break;
-              case 'exercisemins':hit = exMinsGoal > 0 && (data.exerciseMinutes || 0) >= exMinsGoal; break;
+              case 'exercisemins':hit = exMinsGoal > 0 && effectiveExerciseMinutes(data) >= exMinsGoal; break;
               case 'sleepduration': hit = ((data.sleepOverride ?? data.sleepHours) || 0) >= effectiveSleepGoal; break;
               case 'sleepquality':  hit = sleepScore !== null && sleepScore >= 85; break;
               case 'bible':       hit = bibleDates.has(dateKey); break;

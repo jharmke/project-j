@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { scheduleDailyNotifications, SchedulerContext, FaithJourney, StyleMode, shouldAskPermission, requestNotificationPermission, scheduleWaterNotificationsNow, scheduleActivityNotificationNow } from './notifications';
 import { getVacation, vacationTodayKey } from '../utils/vacationMode';
+import { effectiveExerciseMinutes } from '../utils/exerciseMinutes';
 
 export const runDailyNotificationScheduler = async () => {
   try {
@@ -30,7 +31,7 @@ export const runDailyNotificationScheduler = async () => {
     const today = todayRaw ? JSON.parse(todayRaw) : {};
     const todayWater = typeof today.water === 'number' ? today.water : 0;
     const todayActiveCals = typeof today.activeCalories === 'number' ? today.activeCalories : 0;
-    const todayExerciseMins = typeof today.exerciseMinutes === 'number' ? today.exerciseMinutes : 0;
+    const todayExerciseMins = effectiveExerciseMinutes(today);
 
     // Count food entries across all stored meal keys
     let todayFoodEntries = 0;
@@ -261,7 +262,7 @@ export const refreshLiveNotifications = async () => {
     const today = todayRaw ? JSON.parse(todayRaw) : {};
     const todayWater = typeof today.water === 'number' ? today.water : 0;
     const todayActiveCals = typeof today.activeCalories === 'number' ? today.activeCalories : 0;
-    const todayExerciseMins = typeof today.exerciseMinutes === 'number' ? today.exerciseMinutes : 0;
+    const todayExerciseMins = effectiveExerciseMinutes(today);
 
     await scheduleWaterNotificationsNow(todayWater, waterGoal, styleMode, mindfulGrowthAreas);
     await scheduleActivityNotificationNow(todayActiveCals, activeCalGoal, todayExerciseMins, exerciseMinsGoal, styleMode, mindfulGrowthAreas);

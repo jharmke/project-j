@@ -736,6 +736,10 @@ export default function HomeScreen() {
   const [sleepGoal,      setSleepGoal]      = useState(7);
   const [activeCalGoal,  setActiveCalGoal]  = useState(500);
   const [exerciseMinsGoal, setExerciseMinsGoal] = useState(30);
+  // Manual workout-timer minutes logged for today (pj_<date>.manualWorkoutMinutes). Feeds the Exercise
+  // Goal for no-watch users; ignored whenever Apple Health has its own exercise minutes (no double-count).
+  const [manualWorkoutMin, setManualWorkoutMin] = useState(0);
+  const manualExGoalFiredRef = useRef<string>(''); // day this session already fired the manual exercise goal
   // Per-goal "already handled this session today" guard -- avoids re-calling handleDailyGoalHit on
   // every HealthKit tick once a goal is hit. The once-per-day record in handleDailyGoalHit remains
   // the persistent source of truth; this just trims redundant async calls. Re-armed on a new day.
@@ -1387,6 +1391,34 @@ export default function HomeScreen() {
       prevSleepHoursRef.current = sleepHours;
     }
   }, [activeCalories, steps, sleepHours, sleepStages, restingHR, respiratoryRate, bloodOxygen, exerciseMinutes, activityDataDate, todayKey, loaded, stepGoal, activeCalGoal, exerciseMinsGoal]);
+
+  // ── Manual workout timer -> exercise minutes (no-watch users) ─────────────────
+  // Load today's manual workout minutes on focus (written by the Workout tab's timer). Keyed on
+  // todayKey so a midnight rollover reloads for the new day instead of carrying yesterday's value.
+  useFocusEffect(useCallback(() => {
+    let alive = true;
+    AsyncStorage.getItem(`pj_${todayKey}`).then(saved => {
+      if (!alive) return;
+      const d = saved ? JSON.parse(saved) : {};
+      setManualWorkoutMin(typeof d.manualWorkoutMinutes === 'number' ? d.manualWorkoutMinutes : 0);
+    });
+    return () => { alive = false; };
+  }, [todayKey]));
+
+  // Fire the Exercise Goal from manual minutes ONLY when Apple Health hasn't already met it (Apple
+  // priority, no double-count). handleDailyGoalHit dedupes the count/celebration once per day across
+  // both the HealthKit path above and this manual path; the ref trims redundant fires this session.
+  useEffect(() => {
+    if (!loaded || exerciseMinsGoal <= 0) return;
+    const hkMet = exerciseMinutes !== null && exerciseMinutes >= exerciseMinsGoal;
+    if (hkMet) return; // HealthKit path already handles it
+    if (manualWorkoutMin < exerciseMinsGoal) return;
+    if (manualExGoalFiredRef.current === todayKey) return;
+    manualExGoalFiredRef.current = todayKey;
+    handleDailyGoalHit('exerciseMins').then(({ fired, count: hitCount }) => {
+      if (fired) { showCelebration('small', 'EXERCISE GOAL'); showDailyGoalToast('Exercise Goal', hitCount, 'bicycle', '#8b5cf6'); }
+    });
+  }, [loaded, exerciseMinutes, manualWorkoutMin, exerciseMinsGoal, todayKey]);
 
   // ── Water goal achievement (single source of truth) ──────────────────────────
   // Whenever the day is at/over the water goal, ask handleDailyGoalHit to register it -- its
@@ -2387,15 +2419,20 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {exerciseMinutes !== null && exerciseMinutes > 0 && (
-          <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginTop:6 }}>
-            {exerciseMinutes < 60
-              ? `${exerciseMinutes} min active today`
-              : exerciseMinutes % 60 > 0
-                ? `${Math.floor(exerciseMinutes / 60)}h ${exerciseMinutes % 60}m active today`
-                : `${Math.floor(exerciseMinutes / 60)}h active today`}
-          </Text>
-        )}
+        {(() => {
+          // Apple Health minutes if present, else the manual workout timer (no-watch users).
+          const effMin = (exerciseMinutes !== null && exerciseMinutes > 0) ? exerciseMinutes : manualWorkoutMin;
+          if (effMin <= 0) return null;
+          return (
+            <Text style={{ fontSize:9, color: theme.textMuted, fontFamily:'DMSans_700Bold', letterSpacing:2, textTransform:'uppercase', marginTop:6 }}>
+              {effMin < 60
+                ? `${effMin} min active today`
+                : effMin % 60 > 0
+                  ? `${Math.floor(effMin / 60)}h ${effMin % 60}m active today`
+                  : `${Math.floor(effMin / 60)}h active today`}
+            </Text>
+          );
+        })()}
       </TouchableOpacity>
       </Animated.View>
     );

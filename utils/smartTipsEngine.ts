@@ -76,6 +76,7 @@ export interface WindowDay {
   fat: number;
   carbs: number;
   fiber: number;
+  sugarAlcohols: number;
   sodium: number;
   sugar: number;
   waterLogged: number;
@@ -123,6 +124,7 @@ export interface EngineContext {
   weightGoal: string;
   goalBucket: GoalBucket;
   styleMode: string;
+  showNetCarbs: boolean;
   isMindful: boolean;
   mindfulGrowthAreas: boolean;
   ifEnabled: boolean;
@@ -339,7 +341,7 @@ export async function loadWindowDays(
 
     const entries: any[] = Array.isArray(day.entries) ? day.entries : [];
     let consumed = 0, protein = 0, fat = 0, carbs = 0;
-    let fiber = 0, sodium = 0, sugar = 0;
+    let fiber = 0, sugarAlcohols = 0, sodium = 0, sugar = 0;
     let fiberEntries = 0, sodiumEntries = 0, sugarEntries = 0;
 
     for (const e of entries) {
@@ -350,6 +352,8 @@ export async function loadWindowDays(
       const f = getEntryNutrient(e, 'Fiber, total dietary');
       const s = getEntryNutrient(e, 'Sodium, Na');
       const su = getEntryNutrient(e, 'Sugars, total');
+      // Sugar alcohols: matches the Home card's net-carbs math (carbs - fiber - sugarAlcohols).
+      sugarAlcohols += getEntryNutrient(e, 'Sugar Alcohols');
       fiber += f; sodium += s; sugar += su;
       if (f > 0) fiberEntries++;
       if (s > 0) sodiumEntries++;
@@ -402,6 +406,7 @@ export async function loadWindowDays(
       fat: Math.round(fat * 10) / 10,
       carbs: Math.round(carbs * 10) / 10,
       fiber: Math.round(fiber * 10) / 10,
+      sugarAlcohols: Math.round(sugarAlcohols * 10) / 10,
       sodium: Math.round(sodium),
       sugar: Math.round(sugar * 10) / 10,
       waterLogged: typeof day.water === 'number' ? day.water : 0,
@@ -453,6 +458,7 @@ export async function buildEngineContext(todayKey: string): Promise<EngineContex
   const paceTarget: number = GOAL_DEFICITS[weightGoal] ?? 0;
   const burnAccuracyPct: number = settings.burnAccuracyPct ?? 100;
   const styleMode: string = settings.styleMode ?? 'balanced';
+  const showNetCarbs: boolean = settings.showNetCarbs === true;
   const isMindful = styleMode === 'mindful';
   const mindfulGrowthAreas: boolean = settings.mindfulGrowthAreas === true;
 
@@ -496,6 +502,7 @@ export async function buildEngineContext(todayKey: string): Promise<EngineContex
     weightGoal,
     goalBucket: goalBucket(weightGoal),
     styleMode,
+    showNetCarbs,
     isMindful,
     mindfulGrowthAreas,
     ifEnabled: !!settings.ifEnabled || !!settings.ifMethod,
@@ -565,7 +572,7 @@ async function loadWindowDayRange(
 
     const entries: any[] = Array.isArray(day.entries) ? day.entries : [];
     let consumed = 0, protein = 0, fat = 0, carbs = 0;
-    let fiber = 0, sodium = 0, sugar = 0;
+    let fiber = 0, sugarAlcohols = 0, sodium = 0, sugar = 0;
     let fiberEntries = 0, sodiumEntries = 0, sugarEntries = 0;
 
     for (const e of entries) {
@@ -576,6 +583,8 @@ async function loadWindowDayRange(
       const f = getEntryNutrient(e, 'Fiber, total dietary');
       const s = getEntryNutrient(e, 'Sodium, Na');
       const su = getEntryNutrient(e, 'Sugars, total');
+      // Sugar alcohols: matches the Home card's net-carbs math (carbs - fiber - sugarAlcohols).
+      sugarAlcohols += getEntryNutrient(e, 'Sugar Alcohols');
       fiber += f; sodium += s; sugar += su;
       if (f > 0) fiberEntries++;
       if (s > 0) sodiumEntries++;
@@ -628,6 +637,7 @@ async function loadWindowDayRange(
       fat: Math.round(fat * 10) / 10,
       carbs: Math.round(carbs * 10) / 10,
       fiber: Math.round(fiber * 10) / 10,
+      sugarAlcohols: Math.round(sugarAlcohols * 10) / 10,
       sodium: Math.round(sodium),
       sugar: Math.round(sugar * 10) / 10,
       waterLogged: typeof day.water === 'number' ? day.water : 0,
@@ -842,10 +852,16 @@ function ruleFatHigh(w7: WindowDay[], ctx: EngineContext, store: SmartTipsStore)
   return makeTip('fat_high', 'pattern', false, 'pattern', ctx, store, { goal: Math.round(ctx.fatGoalG), days: days.length });
 }
 
+// Effective carbs for a day, respecting the Net Carbs toggle so the coach's carb numbers match the
+// Home card exactly (the card shows carbs minus fiber minus sugar alcohols when Net Carbs is on).
+function effCarbs(d: WindowDay, ctx: EngineContext): number {
+  return ctx.showNetCarbs ? Math.max(0, d.carbs - d.fiber - d.sugarAlcohols) : d.carbs;
+}
+
 function ruleCarbsHigh(w7: WindowDay[], ctx: EngineContext, store: SmartTipsStore): CandidateTip | null {
   if (ctx.carbGoalG <= 0) return null;
   if (!meetsLoggingGate(w7, 6)) return null;
-  const days = w7.filter(d => d.hasFoodData && d.carbs > ctx.carbGoalG * 1.1);
+  const days = w7.filter(d => d.hasFoodData && effCarbs(d, ctx) > ctx.carbGoalG * 1.1);
   if (days.length < 4) return null;
   return makeTip('carbs_high', 'pattern', false, 'pattern', ctx, store, { goal: Math.round(ctx.carbGoalG), days: days.length });
 }
@@ -2340,10 +2356,10 @@ function buildDiagnosisActionFacts(
       };
     }
     case 'carbs_high': {
-      const high = foodDays7.filter(d => d.carbs > ctx.carbGoalG * 1.1);
-      const avgC = high.length ? Math.round(avg(high.map(d => d.carbs))) : 0;
+      const high = foodDays7.filter(d => effCarbs(d, ctx) > ctx.carbGoalG * 1.1);
+      const avgC = high.length ? Math.round(avg(high.map(d => effCarbs(d, ctx)))) : 0;
       return {
-        diagnosis: `Carbs exceeded the ${Math.round(ctx.carbGoalG)}g target on ${high.length} of ${foodDays7.length} logged days, averaging ${avgC}g on those days`,
+        diagnosis: `${ctx.showNetCarbs ? 'Net carbs' : 'Carbs'} exceeded the ${Math.round(ctx.carbGoalG)}g target on ${high.length} of ${foodDays7.length} logged days, averaging ${avgC}g on those days`,
         action: 'Time more carbs around training and trim them on lower-activity days',
         facts: { avgCarbs: avgC, goal: Math.round(ctx.carbGoalG), daysHigh: high.length },
       };

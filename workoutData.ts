@@ -25,6 +25,7 @@ export interface SetEntry {
   reps: number | null;
   rest: number | null;
   done: boolean;
+  doneAt?: number; // epoch ms the set was checked on (cleared when unchecked). Optional: pre-existing logs have none.
 }
 
 // All-time personal records per lift (keyed by normalized exercise name in pj_workout_state.prs).

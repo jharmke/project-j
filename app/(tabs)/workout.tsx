@@ -51,6 +51,16 @@ const parseRestSeconds = (raw: any): number | null => {
 };
 const formatRest = (sec: number): string => (sec < 60 ? `${sec}s` : `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`);
 
+// Cardio duration -> seconds. Apple Health imports the duration as "MM:SS"; manual entries are whole
+// MINUTES. Used to sum cardio time for the finish recap without rounding.
+const parseCardioDurationSec = (ex: any): number => {
+  if (ex?.duration == null) return 0;
+  const raw = String(ex.duration).trim();
+  if (!raw) return 0;
+  if (raw.includes(':')) { const [m, s] = raw.split(':'); return (parseInt(m) || 0) * 60 + (parseInt(s) || 0); }
+  const mins = parseFloat(raw); return mins ? Math.round(mins * 60) : 0;
+};
+
 function getTodayDay() {
   return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][new Date().getDay()];
 }
@@ -112,6 +122,9 @@ export default function WorkoutScreen() {
   const [checks, setChecks] = useState<Record<string, Record<string, boolean>>>({});
 // Actual logged sets per lift: setLogs[dateKey][exerciseId] = SetEntry[]. Additive on pj_workout_state.
 const [setLogs, setSetLogs] = useState<Record<string, Record<string, SetEntry[]>>>({});
+// Epoch ms a CARDIO exercise was marked done: exerciseDoneAt[dateKey][exerciseId]. Lifts derive their
+// stamp from set doneAt instead; this only covers cardio (no sets). Additive on pj_workout_state.
+const [exerciseDoneAt, setExerciseDoneAt] = useState<Record<string, Record<string, number>>>({});
 // Rest timer (auto-starts on checking a set; dismissible; buzzes + notifies at zero, then counts up).
 const [restTimer, setRestTimer] = useState<{ secondsLeft: number; overtime: number; label: string } | null>(null);
 const restEndRef = useRef(0);
@@ -120,7 +133,16 @@ const restNotifIdRef = useRef<string | null>(null);
 const restBuzzedRef = useRef(false);
 // All-time PRs per lift (keyed by normalized name). Banked on Finish Workout.
 const [prs, setPrs] = useState<Record<string, PRRecord>>({});
-const [finishSummary, setFinishSummary] = useState<{ totalVolume: number; doneSets: number; doneExercises: number; prHits: any[]; mindful: boolean } | null>(null);
+const [finishSummary, setFinishSummary] = useState<{
+  totalVolume: number; doneSets: number; doneExercises: number; prHits: any[]; mindful: boolean;
+  hasLifts: boolean; liftDurationSec: number | null;
+  cardio: { count: number; distanceMi: number; durationSec: number; calories: number; avgHr: number | null; maxHr: number | null } | null;
+  totalCalories: number;
+} | null>(null);
+// Per-day recap snapshot for days already finished THIS SESSION. Drives the Finish -> View Summary
+// button swap. In-memory only (resets on reload -> button returns to "Finish Workout"); cleared for a
+// day the moment its workout is edited so a stale summary never shows.
+const [finishedSummaries, setFinishedSummaries] = useState<Record<string, NonNullable<typeof finishSummary>>>({});
 const [cardioComplete, setCardioComplete] = useState<Record<string, boolean>>({});
 const [programs, setPrograms] = useState<Record<string, DayProgram>>({});
 const [workoutNotes, setWorkoutNotes] = useState<Record<string, string>>({});
@@ -176,6 +198,12 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
   const infoCardOpacity = useSharedValue(1);
   const infoOverlayStyle = useAnimatedStyle(() => ({ opacity: infoOverlay.value }));
   const infoCardStyle = useAnimatedStyle(() => ({ transform: [{ scale: infoCardScale.value }], opacity: infoCardOpacity.value }));
+  // Finish-workout recap modal (centered floating card, house standard animation).
+  const finishOverlay = useSharedValue(0);
+  const finishCardScale = useSharedValue(0.92);
+  const finishCardOpacity = useSharedValue(1);
+  const finishOverlayStyle = useAnimatedStyle(() => ({ opacity: finishOverlay.value }));
+  const finishCardStyle = useAnimatedStyle(() => ({ transform: [{ scale: finishCardScale.value }], opacity: finishCardOpacity.value }));
   const fabScale = useRef(new Animated.Value(0)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
   const originalForm = useRef<typeof form | null>(null);
@@ -631,6 +659,7 @@ useEffect(() => {
           if (data.cardioLogs) setCardioLogs(data.cardioLogs);
           if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
           if (data.setLogs) setSetLogs(data.setLogs);
+          if (data.exerciseDoneAt) setExerciseDoneAt(data.exerciseDoneAt);
           if (data.prs) setPrs(data.prs);
           if (data.activeProgramName) setActiveProgramName(data.activeProgramName);
         }
@@ -681,6 +710,7 @@ if (data.workoutNoteNames) setWorkoutNoteNames(data.workoutNoteNames);
 if (data.cardioLogs) setCardioLogs(data.cardioLogs);
 if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
 if (data.setLogs) setSetLogs(data.setLogs);
+if (data.exerciseDoneAt) setExerciseDoneAt(data.exerciseDoneAt);
 if (data.prs) setPrs(data.prs);
           }
         } catch (e) {
@@ -692,7 +722,7 @@ if (data.prs) setPrs(data.prs);
     }, [])
   );
 
-  const saveState = async (newChecks = checks, newCardio = cardioComplete, newPrograms = programs, newNotes = workoutNotes, newCardioLogs = cardioLogs, newTemplate = weeklyTemplate, newProgramName = activeProgramName, newNoteNames = workoutNoteNames, newSetLogs = setLogs, newPrs = prs) => {
+  const saveState = async (newChecks = checks, newCardio = cardioComplete, newPrograms = programs, newNotes = workoutNotes, newCardioLogs = cardioLogs, newTemplate = weeklyTemplate, newProgramName = activeProgramName, newNoteNames = workoutNoteNames, newSetLogs = setLogs, newPrs = prs, newExerciseDoneAt = exerciseDoneAt) => {
   try {
     await storageSet('pj_workout_state', JSON.stringify({
       checks: newChecks,
@@ -705,6 +735,7 @@ if (data.prs) setPrs(data.prs);
       activeProgramName: newProgramName,
       setLogs: newSetLogs,
       prs: newPrs,
+      exerciseDoneAt: newExerciseDoneAt,
     }));
   } catch (e) {
     console.log('Save error', e);
@@ -723,6 +754,7 @@ if (data.prs) setPrs(data.prs);
   };
 
   const saveSetsForExercise = (exId: string, sets: SetEntry[]) => {
+    clearFinished();
     const next = { ...setLogs, [activeDay]: { ...(setLogs[activeDay] || {}), [exId]: sets } };
     setSetLogs(next);
     // Derive per-exercise completion from set completion so the existing checks boolean (Today's
@@ -745,9 +777,10 @@ if (data.prs) setPrs(data.prs);
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     const current = getSeededSets(ex);
     const prev = done ? getPreviousSets(ex) : null;
+    const stamp = Date.now();
     const nextSets = current.map((s, i) => done
-      ? { ...s, done: true, weight: s.weight == null && prev?.[i] ? prev[i].weight : s.weight, reps: s.reps == null && prev?.[i] ? prev[i].reps : s.reps }
-      : { ...s, done: false });
+      ? { ...s, done: true, doneAt: stamp, weight: s.weight == null && prev?.[i] ? prev[i].weight : s.weight, reps: s.reps == null && prev?.[i] ? prev[i].reps : s.reps }
+      : { ...s, done: false, doneAt: undefined });
     saveSetsForExercise(ex.id, nextSets);
     setSetRowsVersion(v => ({ ...v, [ex.id]: (v[ex.id] || 0) + 1 }));
   };
@@ -857,13 +890,71 @@ if (data.prs) setPrs(data.prs);
         prHits.push({ name: ex.name, weightPR, e1rmPR, weightVal: nr.bestWeight?.value, weightReps: nr.bestWeight?.reps, e1rmVal: nr.bestE1RM?.value });
       }
     }
-    if (doneSets === 0) { showToast('Nothing logged yet', 'Check off a set or two first', 'error'); return; }
+    // Lift session duration: first -> last checked-set stamp (no data on pre-timestamp logs).
+    const stamps: number[] = [];
+    for (const ex of exercises) {
+      if (ex.isCardio) continue;
+      const sets = dayLogs[ex.id];
+      if (!sets) continue;
+      for (const s of sets) if (s.done && s.doneAt != null) stamps.push(s.doneAt);
+    }
+    const liftDurationSec = stamps.length >= 2 && Math.max(...stamps) > Math.min(...stamps)
+      ? Math.round((Math.max(...stamps) - Math.min(...stamps)) / 1000) : null;
+
+    // Cardio recap: aggregate the day's COMPLETED cardio (also lets a cardio-only day finish).
+    const dayChecks2 = checks[activeDay] || {};
+    let cardioCount = 0, cardioDistance = 0, cardioDurationSec = 0, cardioCalories = 0, maxHrVal = 0;
+    const hrAvgs: number[] = [];
+    for (const ex of exercises as any[]) {
+      if (!ex.isCardio || !dayChecks2[ex.id]) continue;
+      cardioCount++;
+      const dist = parseFloat(ex.distance ?? ''); if (!isNaN(dist)) cardioDistance += dist;
+      cardioDurationSec += parseCardioDurationSec(ex);
+      const cal = parseFloat(ex.calories ?? ''); if (!isNaN(cal)) cardioCalories += cal;
+      // Heart rate: prefer real HealthKit samples for Apple-synced cardio (same source HR Zones uses);
+      // fall back to a manually-typed HR only when there are no samples. avg = mean, max = peak sample.
+      let gotSamples = false;
+      if (ex.fromAppleHealth && ex.appleHealthUUID) {
+        try {
+          const approxMs = ex.appleStartDate ? new Date(ex.appleStartDate).getTime() : Date.now();
+          const res = await fetchWorkoutHRByUUID(ex.appleHealthUUID, approxMs);
+          if (res?.found && res.samples?.length) {
+            const vals = res.samples.map((s: any) => s.v).filter((v: any) => typeof v === 'number' && v > 0);
+            if (vals.length) {
+              hrAvgs.push(vals.reduce((a: number, b: number) => a + b, 0) / vals.length);
+              for (const v of vals) if (v > maxHrVal) maxHrVal = v;
+              gotSamples = true;
+            }
+          }
+        } catch {}
+      }
+      if (!gotSamples) {
+        const hr = parseFloat(ex.hr ?? '');
+        if (!isNaN(hr) && hr > 0) { hrAvgs.push(hr); if (hr > maxHrVal) maxHrVal = hr; }
+      }
+    }
+    const avgHr = hrAvgs.length ? Math.round(hrAvgs.reduce((a, b) => a + b, 0) / hrAvgs.length) : null;
+    const maxHr = maxHrVal > 0 ? Math.round(maxHrVal) : null;
+
+    if (doneSets === 0 && cardioCount === 0) { showToast('Nothing logged yet', 'Check off a set or finish some cardio first', 'error'); return; }
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     setPrs(newPrs);
     saveState(checks, cardioComplete, programs, workoutNotes, cardioLogs, weeklyTemplate, activeProgramName, workoutNoteNames, setLogs, newPrs);
     let mindful = false;
     try { const sr = await AsyncStorage.getItem('pj_settings'); mindful = sr ? JSON.parse(sr).styleMode === 'mindful' : false; } catch {}
-    setFinishSummary({ totalVolume, doneSets, doneExercises, prHits, mindful });
+    const summary = {
+      totalVolume, doneSets, doneExercises, prHits, mindful,
+      hasLifts: doneSets > 0,
+      liftDurationSec,
+      cardio: cardioCount > 0
+        ? { count: cardioCount, distanceMi: cardioDistance, durationSec: cardioDurationSec, calories: Math.round(cardioCalories), avgHr, maxHr }
+        : null,
+      totalCalories: Math.round(cardioCalories),
+    };
+    // Snapshot the recap for this day so the button becomes "View Summary" and re-opens THIS result
+    // (PRs included) without recomputing. Cleared by clearFinished() the moment the day is edited.
+    setFinishedSummaries(prev => ({ ...prev, [activeDay]: summary }));
+    openFinishSummary(summary);
     // No big celebration overlay for PRs -- new lifters PR almost every session, so the recap's
     // trophy section is the recognition. (A bigger celebration is reserved for lifting GOALS later.)
   };
@@ -938,12 +1029,18 @@ if (data.prs) setPrs(data.prs);
 
   const toggleExercise = (id: string) => {
   triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+  clearFinished();
   const dayChecks = checks[activeDay] || {};
   const nowChecked = !dayChecks[id];
   const newDayChecks = { ...dayChecks, [id]: nowChecked };
   const newChecks = { ...checks, [activeDay]: newDayChecks };
   setChecks(newChecks);
-  saveState(newChecks);
+  // Stamp / clear the cardio completion time (lifts derive theirs from set doneAt instead).
+  const dayTimes = { ...(exerciseDoneAt[activeDay] || {}) };
+  if (nowChecked) dayTimes[id] = Date.now(); else delete dayTimes[id];
+  const newExerciseDoneAt = { ...exerciseDoneAt, [activeDay]: dayTimes };
+  setExerciseDoneAt(newExerciseDoneAt);
+  saveState(newChecks, cardioComplete, programs, workoutNotes, cardioLogs, weeklyTemplate, activeProgramName, workoutNoteNames, setLogs, prs, newExerciseDoneAt);
   if (nowChecked && activeDay === todayKey) cancelActivityNotification();
 };
 
@@ -961,6 +1058,7 @@ if (data.prs) setPrs(data.prs);
   const saveExercise = () => {
   if (!form.name.trim()) return;
   triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+  clearFinished(modalDay);
   const baseProgram = programs[modalDay] || weeklyTemplate[DATES.find(d => d.key === modalDay)?.dayName || 'Mon'] || BLANK_DAY;
   const newPrograms = { ...programs };
   if (editingExercise) {
@@ -1004,6 +1102,7 @@ if (data.prs) setPrs(data.prs);
       text: 'Remove', style: 'destructive',
       onPress: () => {
         triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
+        clearFinished(day);
         const baseProgram = programs[day] || weeklyTemplate[DATES.find(d => d.key === day)?.dayName || 'Mon'] || BLANK_DAY;
         const newPrograms = { ...programs };
         newPrograms[day] = {
@@ -1119,6 +1218,17 @@ if (data.prs) setPrs(data.prs);
     });
   };
 
+  // Editing a finished day's workout invalidates its recap -> drop the snapshot so the button flips
+  // back to "Finish Workout" and never re-opens stale numbers.
+  const clearFinished = (day: string = activeDay) => {
+    setFinishedSummaries(prev => {
+      if (!prev[day]) return prev;
+      const next = { ...prev };
+      delete next[day];
+      return next;
+    });
+  };
+
   const openLoadRoutineModal = async () => {
     closeFabMenu();
     try {
@@ -1165,6 +1275,47 @@ if (data.prs) setPrs(data.prs);
     });
   };
 
+  const openFinishSummary = (summary: NonNullable<typeof finishSummary>) => {
+    finishOverlay.value = 0;
+    finishCardScale.value = 0.92;
+    finishCardOpacity.value = 1;
+    setFinishSummary(summary);
+    finishOverlay.value = withTiming(1, { duration: 180 });
+    finishCardScale.value = withSpring(1, { damping: 24, stiffness: 320, overshootClamping: true });
+  };
+  const closeFinishSummary = () => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    finishOverlay.value = withTiming(0, { duration: 160 });
+    finishCardScale.value = withTiming(0.88, { duration: 160 });
+    finishCardOpacity.value = withTiming(0, { duration: 160 }, (finished) => {
+      if (finished) runOnJS(setFinishSummary)(null);
+    });
+  };
+
+  // Finish-recap stats as boxed inset tiles, 2 per row, centered content. One accent element per
+  // tile (the value); icon + label stay muted so it reads structured, not "all accent." An odd last
+  // tile keeps the same half-width and centers in its row instead of stretching full-width.
+  const renderTiles = (stats: { icon: any; value: string; label: string }[]) => {
+    const rows: { icon: any; value: string; label: string }[][] = [];
+    for (let i = 0; i < stats.length; i += 2) rows.push(stats.slice(i, i + 2));
+    return (
+      <View style={{ gap: 10 }}>
+        {rows.map((row, ri) => (
+          <View key={ri} style={{ flexDirection: 'row', gap: 10, justifyContent: 'center' }}>
+            {row.map((s, i) => (
+              <View key={i} style={{ flexBasis: '47%', maxWidth: '47%', flexGrow: row.length === 2 ? 1 : 0, alignItems: 'center', backgroundColor: theme.bgInset, borderWidth: 0.5, borderColor: theme.borderCard, borderRadius: 12, paddingVertical: 13, paddingHorizontal: 10,
+                shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 6, elevation: 3 }}>
+                <Ionicons name={s.icon} size={15} color={theme.accentBlue} style={{ marginBottom: 5 }} />
+                <Text style={{ fontSize: 28, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5, color: theme.textSecondary }}>{s.value}</Text>
+                <Text style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted, marginTop: 2 }}>{s.label}</Text>
+              </View>
+            ))}
+          </View>
+        ))}
+      </View>
+    );
+  };
+
   const handleLoadRoutine = async () => {
     if (!selectedRoutine || selectedLoadDays.length === 0) return;
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
@@ -1196,11 +1347,23 @@ if (data.prs) setPrs(data.prs);
     } catch (e) { console.log('Load routine error', e); }
   };
 
+  // Time-of-day stamp for a finished exercise. Lifts read the newest set's doneAt (when you finished
+  // the lift); cardio reads its own exerciseDoneAt map. Pre-existing logs have no stamp -> no line.
+  const formatLoggedAt = (ms?: number | null) =>
+    ms ? `Logged ${new Date(ms).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}` : null;
+  const liftLoggedAt = (exId: string): number | null => {
+    const s = setLogs[activeDay]?.[exId];
+    if (!s || !s.length) return null;
+    const times = s.filter(x => x.done && x.doneAt != null).map(x => x.doneAt as number);
+    return times.length ? Math.max(...times) : null;
+  };
+
   // One exercise card. `inGroup` renders it borderless inside a superset container (the group
   // provides the border/rail); standalone it gets its own card chrome.
   const renderExerciseCard = (ex: any, opts: { inGroup?: boolean; isLastInGroup?: boolean } = {}) => {
     const { inGroup = false, isLastInGroup = false } = opts;
     const isDone = dayChecks[ex.id];
+    const loggedAt = ex.isCardio ? (exerciseDoneAt[activeDay]?.[ex.id] ?? null) : (isDone ? liftLoggedAt(ex.id) : null);
     const idx = exercises.findIndex((e: any) => e.id === ex.id);
     const isFirst = idx <= 0;
     const isLast = idx === exercises.length - 1;
@@ -1231,10 +1394,9 @@ if (data.prs) setPrs(data.prs);
               ) : null}
             </TouchableOpacity>
             {ex.fromAppleHealth && (
-              <View style={{ flexDirection: 'row', marginTop: 6, marginBottom: 6 }}>
-                <View style={[styles.badge, { marginLeft: 0, backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder }]}>
-                  <Text style={[styles.badgeText, { color: theme.accentGreen }]}>APPLE HEALTH</Text>
-                </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6, marginBottom: 6 }}>
+                <Ionicons name="heart" size={11} color={theme.accentGreen} />
+                <Text style={[styles.badgeText, { color: theme.accentGreen }]}>APPLE HEALTH</Text>
               </View>
             )}
             {ex.isCardio ? (
@@ -1304,6 +1466,11 @@ if (data.prs) setPrs(data.prs);
             </TouchableOpacity>
           </View>
         </View>
+        {loggedAt != null && (
+          <Text style={{ alignSelf: 'flex-end', fontSize: 11, fontFamily: 'DMSans_500Medium', color: theme.textDim, marginTop: 2 }}>
+            {formatLoggedAt(loggedAt)}
+          </Text>
+        )}
       </View>
     );
   };
@@ -1557,14 +1724,24 @@ if (data.prs) setPrs(data.prs);
           </View>
         )}
 
-        {!isRest && exercises.some((e: any) => !e.isCardio) && (
-          <TouchableOpacity
-            onPress={finishWorkout}
-            style={{ marginTop: 4, marginBottom: 4, backgroundColor: theme.accentBlue, borderRadius: 12, paddingVertical: 15, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8,
-              shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}>
-            <Ionicons name="checkmark-done" size={18} color={theme.bgPrimary} />
-            <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', letterSpacing: 0.5, color: theme.bgPrimary }}>Finish Workout</Text>
-          </TouchableOpacity>
+        {!isRest && exercises.length > 0 && (
+          finishedSummaries[activeDay] ? (
+            <TouchableOpacity
+              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openFinishSummary(finishedSummaries[activeDay]); }}
+              style={{ marginTop: 4, marginBottom: 4, backgroundColor: theme.accentBlue, borderRadius: 12, paddingVertical: 15, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8,
+                shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}>
+              <Ionicons name="checkmark-circle" size={18} color={theme.bgPrimary} />
+              <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', letterSpacing: 0.5, color: theme.bgPrimary }}>View Summary</Text>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              onPress={finishWorkout}
+              style={{ marginTop: 4, marginBottom: 4, backgroundColor: theme.accentBlue, borderRadius: 12, paddingVertical: 15, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8,
+                shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}>
+              <Ionicons name="checkmark-done" size={18} color={theme.bgPrimary} />
+              <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', letterSpacing: 0.5, color: theme.bgPrimary }}>Finish Workout</Text>
+            </TouchableOpacity>
+          )
         )}
 
         <View ref={effortCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, marginTop: 12 }]}>
@@ -1696,62 +1873,107 @@ if (data.prs) setPrs(data.prs);
       )}
 
       {/* Finish Workout summary */}
-      <Modal visible={!!finishSummary} transparent animationType="fade" statusBarTranslucent onRequestClose={() => setFinishSummary(null)}>
-        <View style={{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }}>
-          <View style={{ width: '100%', maxWidth: 420, backgroundColor: theme.bgSheet, borderRadius: 18, borderWidth: 1, borderColor: theme.borderCard, padding: 22,
-            shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35, shadowRadius: 20, elevation: 10 }}>
-            <View style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard, marginBottom: 16 }} />
-            {finishSummary && (
-              <>
-                <Text style={{ fontSize: 22, fontFamily: 'DMSans_700Bold', color: theme.textPrimary, textAlign: 'center', marginBottom: 18 }}>
-                  {finishSummary.mindful ? 'Nice work' : 'Workout Complete'}
-                </Text>
-                <View style={{ flexDirection: 'row', marginBottom: finishSummary.prHits.length ? 18 : 6 }}>
-                  {[
-                    { value: Math.round(finishSummary.totalVolume).toLocaleString(), label: 'Lbs Volume' },
-                    { value: String(finishSummary.doneSets), label: 'Sets' },
-                    { value: String(finishSummary.doneExercises), label: 'Exercises' },
-                  ].map((s, i) => (
-                    <View key={i} style={{ flex: 1, alignItems: 'center' }}>
-                      <Text style={{ fontSize: 30, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.accentBlue }}>{s.value}</Text>
-                      <Text style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted, marginTop: 2 }}>{s.label}</Text>
+      <Modal visible={!!finishSummary} transparent animationType="none" statusBarTranslucent onRequestClose={closeFinishSummary}>
+        <Reanimated.View style={[StyleSheet.absoluteFill, { backgroundColor: theme.overlayBg }, finishOverlayStyle]} pointerEvents="none" />
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeFinishSummary} />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24 }} pointerEvents="box-none">
+          <Reanimated.View pointerEvents="box-none" style={[{ width: '100%', maxWidth: 420, maxHeight: '90%' }, finishCardStyle]}>
+            {finishSummary && (() => {
+              const fs = finishSummary;
+              const showHeaders = fs.hasLifts && !!fs.cardio;
+              const liftStats: { icon: any; value: string; label: string }[] = [];
+              if (fs.hasLifts) {
+                if (fs.liftDurationSec != null) liftStats.push({ icon: 'stopwatch-outline', value: formatDuration(fs.liftDurationSec), label: 'Duration' });
+                if (fs.totalVolume > 0) liftStats.push({ icon: 'barbell-outline', value: Math.round(fs.totalVolume).toLocaleString(), label: 'Lbs Volume' });
+                liftStats.push({ icon: 'layers-outline', value: String(fs.doneSets), label: 'Sets' });
+                liftStats.push({ icon: 'list-outline', value: String(fs.doneExercises), label: 'Exercises' });
+              }
+              const cardioStats: { icon: any; value: string; label: string }[] = [];
+              if (fs.cardio) {
+                if (fs.cardio.durationSec > 0) cardioStats.push({ icon: 'stopwatch-outline', value: formatDuration(fs.cardio.durationSec), label: 'Duration' });
+                if (fs.cardio.distanceMi > 0) cardioStats.push({ icon: 'navigate-outline', value: fs.cardio.distanceMi.toFixed(2), label: 'Miles' });
+                if (fs.cardio.calories > 0) cardioStats.push({ icon: 'flame-outline', value: String(fs.cardio.calories), label: 'Cal' });
+                if (fs.cardio.avgHr != null) cardioStats.push({ icon: 'heart-outline', value: String(fs.cardio.avgHr), label: 'Avg BPM' });
+                if (fs.cardio.maxHr != null) cardioStats.push({ icon: 'heart', value: String(fs.cardio.maxHr), label: 'Max BPM' });
+                if (cardioStats.length === 0) cardioStats.push({ icon: 'fitness-outline', value: String(fs.cardio.count), label: fs.cardio.count === 1 ? 'Session' : 'Sessions' });
+              }
+              const dateLabel = (() => {
+                try { return new Date(activeDay + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }); } catch { return ''; }
+              })();
+              const sectionLabel = (txt: string) => (
+                <Text style={{ fontSize: 10, letterSpacing: 2.5, color: theme.accentBlue, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 9 }}>{txt}</Text>
+              );
+              return (
+                <View style={{ backgroundColor: theme.bgSheet, borderRadius: 18, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden',
+                  shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35, shadowRadius: 20, elevation: 10 }}>
+                  <ScrollView showsVerticalScrollIndicator={false} bounces={false} contentContainerStyle={{ paddingHorizontal: 22, paddingTop: 10, paddingBottom: 22 }}>
+                  <TouchableOpacity activeOpacity={0.7} onPress={closeFinishSummary} style={{ alignItems: 'center', paddingBottom: 14 }} hitSlop={{ top: 10, bottom: 10, left: 40, right: 40 }}>
+                    <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
+                  </TouchableOpacity>
+
+                  <View style={{ alignItems: 'center', marginBottom: 20 }}>
+                    <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
+                      <Ionicons name="checkmark" size={30} color={theme.accentBlue} />
                     </View>
-                  ))}
-                </View>
-                {finishSummary.prHits.length > 0 && (
-                  <View style={{ backgroundColor: theme.accentAmber + '14', borderWidth: 1, borderColor: theme.accentAmber + '40', borderRadius: 12, padding: 14, marginBottom: 14 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 10 }}>
-                      <Ionicons name="trophy" size={16} color={theme.accentAmber} />
-                      <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.accentAmber }}>
-                        {finishSummary.mindful
-                          ? `${finishSummary.prHits.length} new best${finishSummary.prHits.length !== 1 ? 's' : ''}`
-                          : `You set ${finishSummary.prHits.length} PR${finishSummary.prHits.length !== 1 ? 's' : ''} today`}
-                      </Text>
-                    </View>
-                    {finishSummary.prHits.map((pr: any, i: number) => (
-                      <View key={i} style={{ marginBottom: i < finishSummary.prHits.length - 1 ? 10 : 0 }}>
-                        <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: theme.textPrimary, marginBottom: 2 }}>{pr.name}</Text>
-                        {pr.weightPR && (
-                          <Text style={{ fontSize: 12, fontFamily: 'DMSans_500Medium', color: theme.textSecondary }}>
-                            {finishSummary.mindful ? 'Heaviest set' : 'New top set'}: {pr.weightVal} × {pr.weightReps}
-                          </Text>
-                        )}
-                        {pr.e1rmPR && (
-                          <Text style={{ fontSize: 12, fontFamily: 'DMSans_500Medium', color: theme.textSecondary }}>
-                            {finishSummary.mindful ? 'Best estimated max' : 'New est. 1RM'}: {pr.e1rmVal} lb
-                          </Text>
-                        )}
-                      </View>
-                    ))}
+                    <Text style={{ fontSize: 26, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1.5, color: theme.accentBlueRaw }}>
+                      {fs.mindful ? 'Nice Work' : 'Workout Complete'}
+                    </Text>
+                    {!!dateLabel && (
+                      <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted, marginTop: 3, letterSpacing: 0.3 }}>{dateLabel}</Text>
+                    )}
                   </View>
-                )}
-                <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setFinishSummary(null); }}
-                  style={{ backgroundColor: theme.accentBlue, borderRadius: 12, paddingVertical: 14, alignItems: 'center' }}>
-                  <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: theme.bgPrimary }}>Done</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
+
+                  {fs.hasLifts && (
+                    <View style={{ marginBottom: (fs.cardio || fs.prHits.length) ? 16 : 6 }}>
+                      {showHeaders && sectionLabel('Lifting')}
+                      {renderTiles(liftStats)}
+                    </View>
+                  )}
+
+                  {fs.cardio && (
+                    <View style={{ marginBottom: fs.prHits.length ? 16 : 6 }}>
+                      {showHeaders && sectionLabel('Cardio')}
+                      {renderTiles(cardioStats)}
+                    </View>
+                  )}
+
+                  {fs.prHits.length > 0 && (
+                    <View style={{ backgroundColor: theme.accentAmber + '14', borderWidth: 1, borderColor: theme.accentAmber + '40', borderRadius: 12, padding: 14, marginBottom: 16 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 10 }}>
+                        <Ionicons name="trophy" size={16} color={theme.accentAmber} />
+                        <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.accentAmber }}>
+                          {fs.mindful
+                            ? `${fs.prHits.length} new best${fs.prHits.length !== 1 ? 's' : ''}`
+                            : `You set ${fs.prHits.length} PR${fs.prHits.length !== 1 ? 's' : ''} today`}
+                        </Text>
+                      </View>
+                      {fs.prHits.map((pr: any, i: number) => (
+                        <View key={i} style={{ marginBottom: i < fs.prHits.length - 1 ? 10 : 0 }}>
+                          <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: theme.textPrimary, marginBottom: 2 }}>{pr.name}</Text>
+                          {pr.weightPR && (
+                            <Text style={{ fontSize: 12, fontFamily: 'DMSans_500Medium', color: theme.textSecondary }}>
+                              {fs.mindful ? 'Heaviest set' : 'New top set'}: {pr.weightVal} × {pr.weightReps}
+                            </Text>
+                          )}
+                          {pr.e1rmPR && (
+                            <Text style={{ fontSize: 12, fontFamily: 'DMSans_500Medium', color: theme.textSecondary }}>
+                              {fs.mindful ? 'Best estimated max' : 'New est. 1RM'}: {pr.e1rmVal} lb
+                            </Text>
+                          )}
+                        </View>
+                      ))}
+                    </View>
+                  )}
+
+                  <TouchableOpacity onPress={closeFinishSummary}
+                    style={{ backgroundColor: theme.accentBlue, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 10 }}>
+                    <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: theme.bgPrimary }}>Done</Text>
+                  </TouchableOpacity>
+                  </ScrollView>
+                </View>
+              );
+            })()}
+          </Reanimated.View>
         </View>
       </Modal>
 

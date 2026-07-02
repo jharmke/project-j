@@ -52,12 +52,13 @@ export default function ExerciseSetRows({ initialSets, previousSets, defaultRest
     const turningOn = !sets[i].done;
     commit(sets.map((s, idx) => {
       if (idx !== i) return s;
-      if (s.done) return { ...s, done: false };
+      if (s.done) return { ...s, done: false, doneAt: undefined };
       // Checking an empty row auto-fills weight/reps from last session, so a repeat set is one tap.
       const p = previousSets?.[i];
       return {
         ...s,
         done: true,
+        doneAt: Date.now(),
         weight: s.weight == null && p ? p.weight : s.weight,
         reps: s.reps == null && p ? p.reps : s.reps,
       };
@@ -79,7 +80,7 @@ export default function ExerciseSetRows({ initialSets, previousSets, defaultRest
   const inputStyle = (done: boolean) => ({
     width: '100%' as const, height: 32, borderRadius: 8, borderWidth: 1, textAlign: 'center' as const,
     fontSize: 15, fontFamily: 'DMSans_700Bold' as const, paddingVertical: 0,
-    backgroundColor: t.bgInput, borderColor: done ? t.accentGreenBorder : t.borderInput, color: t.textPrimary,
+    backgroundColor: t.bgInput, borderColor: done ? t.accentGreenBorder : t.borderInput, color: t.textSecondary,
   });
 
   return (

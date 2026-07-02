@@ -125,6 +125,9 @@ const [setLogs, setSetLogs] = useState<Record<string, Record<string, SetEntry[]>
 // Epoch ms a CARDIO exercise was marked done: exerciseDoneAt[dateKey][exerciseId]. Lifts derive their
 // stamp from set doneAt instead; this only covers cardio (no sets). Additive on pj_workout_state.
 const [exerciseDoneAt, setExerciseDoneAt] = useState<Record<string, Record<string, number>>>({});
+// Aggregated avg/max HR for the active day's Apple Watch strength session(s), fetched from HealthKit
+// samples (same source as HR Zones). Null while loading or when no HR data exists.
+const [sessionHR, setSessionHR] = useState<{ avgHr: number | null; maxHr: number | null }>({ avgHr: null, maxHr: null });
 // Rest timer (auto-starts on checking a set; dismissible; buzzes + notifies at zero, then counts up).
 const [restTimer, setRestTimer] = useState<{ secondsLeft: number; overtime: number; label: string } | null>(null);
 const restEndRef = useRef(0);
@@ -621,8 +624,14 @@ const program = programs[activeDay] || weeklyTemplate[activeDayName] || BLANK_DA
 const isLift = program?.type === 'lift';
 const isRest = program?.type === 'rest';
 const exercises = program?.exercises || [];
+// An Apple Watch STRENGTH workout imports as a non-cardio exercise carrying only a session envelope
+// (duration/calories/HR, no sets). We surface those as ONE aggregated session banner instead of junk
+// cards, so pull them out of the rendered/counted exercise list. Manual lifts + cardio stay as cards.
+const isAppleSession = (e: any) => !!(e && e.fromAppleHealth && !e.isCardio && e.appleHealthUUID);
+const appleSessions = exercises.filter(isAppleSession);
+const displayExercises = exercises.filter((e: any) => !isAppleSession(e));
 const dayChecks = checks[activeDay] || {};
-const doneCount = exercises.filter(ex => dayChecks[ex.id]).length;
+const doneCount = displayExercises.filter(ex => dayChecks[ex.id]).length;
 const color = theme.accentBlue;
 const noteCurrentText = workoutNotes[activeDay]?.trim() || '';
 const noteLastSaved = savedNoteText[activeDay]?.trim() || '';
@@ -632,9 +641,34 @@ const modalCanSave = editingExercise
   : !!form.name.trim();
 
 useEffect(() => {
-  const pct = exercises.length > 0 ? doneCount / exercises.length : 0;
+  const pct = displayExercises.length > 0 ? doneCount / displayExercises.length : 0;
   Animated.timing(progressAnim, { toValue: pct, duration: 300, useNativeDriver: false }).start();
-}, [doneCount, exercises.length]);
+}, [doneCount, displayExercises.length]);
+
+// Pool HR samples across the day's Apple strength session(s) -> avg + max for the session banner.
+const sessionUUIDKey = appleSessions.map((s: any) => s.appleHealthUUID).join(',');
+useEffect(() => {
+  let cancelled = false;
+  if (!appleSessions.length) { setSessionHR({ avgHr: null, maxHr: null }); return; }
+  (async () => {
+    const vals: number[] = [];
+    for (const s of appleSessions as any[]) {
+      try {
+        const approxMs = s.appleStartDate ? new Date(s.appleStartDate).getTime() : Date.now();
+        const res = await fetchWorkoutHRByUUID(s.appleHealthUUID, approxMs);
+        if (res?.found && res.samples?.length) {
+          for (const smp of res.samples) if (typeof smp.v === 'number' && smp.v > 0) vals.push(smp.v);
+        }
+      } catch {}
+    }
+    if (cancelled) return;
+    if (!vals.length) { setSessionHR({ avgHr: null, maxHr: null }); return; }
+    let mx = 0; let sum = 0;
+    for (const v of vals) { sum += v; if (v > mx) mx = v; }
+    setSessionHR({ avgHr: Math.round(sum / vals.length), maxHr: Math.round(mx) });
+  })();
+  return () => { cancelled = true; };
+}, [activeDay, sessionUUIDKey]);
 
 useEffect(() => {
   if (!loaded) return;
@@ -988,12 +1022,20 @@ if (data.prs) setPrs(data.prs);
   // Swaps an exercise with its neighbor in the active day's program and saves.
   const moveExercise = (exId: string, dir: -1 | 1) => {
     const baseProgram = programs[activeDay] || weeklyTemplate[activeDayName];
-    const list = [...(baseProgram?.exercises || [])];
-    const idx = list.findIndex((e: any) => e.id === exId);
+    const full = [...(baseProgram?.exercises || [])];
+    const target = full.find((e: any) => e.id === exId);
+    if (!target) return;
+    // Reorder among same-type visible PEERS only (lifts among lifts, cardio among cardio); Apple
+    // session envelopes and the other type keep their slots, so a lift can't leave the session.
+    const isPeer = (e: any) => !isAppleSession(e) && (!!e.isCardio === !!target.isCardio);
+    const peers = full.filter(isPeer);
+    const idx = peers.findIndex((e: any) => e.id === exId);
     const newIdx = idx + dir;
-    if (idx < 0 || newIdx < 0 || newIdx >= list.length) return;
+    if (idx < 0 || newIdx < 0 || newIdx >= peers.length) return;
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-    [list[idx], list[newIdx]] = [list[newIdx], list[idx]];
+    [peers[idx], peers[newIdx]] = [peers[newIdx], peers[idx]];
+    let pi = 0;
+    const list = full.map((e: any) => (isPeer(e) ? peers[pi++] : e));
     const newPrograms = { ...programs, [activeDay]: { ...baseProgram, exercises: list } };
     setPrograms(newPrograms);
     saveState(checks, cardioComplete, newPrograms, workoutNotes, cardioLogs, weeklyTemplate);
@@ -1364,9 +1406,12 @@ if (data.prs) setPrs(data.prs);
     const { inGroup = false, isLastInGroup = false } = opts;
     const isDone = dayChecks[ex.id];
     const loggedAt = ex.isCardio ? (exerciseDoneAt[activeDay]?.[ex.id] ?? null) : (isDone ? liftLoggedAt(ex.id) : null);
-    const idx = exercises.findIndex((e: any) => e.id === ex.id);
+    // Reorder arrows move an exercise among its OWN kind (lifts among lifts, cardio among cardio) so
+    // a lift can't be nudged out of the Apple session container.
+    const peers = displayExercises.filter((e: any) => !!e.isCardio === !!ex.isCardio);
+    const idx = peers.findIndex((e: any) => e.id === ex.id);
     const isFirst = idx <= 0;
-    const isLast = idx === exercises.length - 1;
+    const isLast = idx === peers.length - 1;
     return (
       <View
         key={ex.id}
@@ -1473,6 +1518,90 @@ if (data.prs) setPrs(data.prs);
         )}
       </View>
     );
+  };
+
+  // Render a list of exercises into cards, grouping consecutive supersets and adding link connectors.
+  // Reused for the lifts INSIDE the Apple session container and the cardio cards OUTSIDE it.
+  const renderExerciseUnits = (list: any[]) => {
+    const units: any[] = [];
+    for (let i = 0; i < list.length;) {
+      const g = list[i].supersetGroup;
+      if (g) {
+        const members = [list[i]];
+        let j = i + 1;
+        while (j < list.length && list[j].supersetGroup === g) { members.push(list[j]); j++; }
+        if (members.length >= 2) { units.push({ type: 'group', groupId: g, members }); i = j; continue; }
+      }
+      units.push({ type: 'single', ex: list[i] });
+      i++;
+    }
+    const out: any[] = [];
+    units.forEach((unit, ui) => {
+      if (unit.type === 'single') {
+        out.push(renderExerciseCard(unit.ex));
+      } else {
+        const memberRows: any[] = [];
+        unit.members.forEach((m: any, mi: number) => {
+          memberRows.push(renderExerciseCard(m, { inGroup: true }));
+          if (mi < unit.members.length - 1) {
+            memberRows.push(
+              <View key={`div_${m.id}`} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, marginVertical: 2 }}>
+                <View style={{ flex: 1, height: 0.5, backgroundColor: theme.borderCard }} />
+                <TouchableOpacity onPress={() => unlinkSuperset(unit.groupId)} style={{ flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 10, paddingVertical: 3 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Ionicons name="close" size={11} color={theme.textMuted} />
+                  <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>UNLINK</Text>
+                </TouchableOpacity>
+                <View style={{ flex: 1, height: 0.5, backgroundColor: theme.borderCard }} />
+              </View>
+            );
+          }
+        });
+        out.push(
+          <View key={`g_${unit.groupId}`} style={[styles.exerciseItem, { backgroundColor: theme.bgCard, borderColor: theme.accentBlue + '55', borderLeftColor: theme.accentBlue, padding: 0, overflow: 'hidden' }]}>
+            <View style={{ paddingHorizontal: 14, paddingTop: 10, paddingBottom: 0 }}>
+              <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.accentBlue, fontFamily: 'DMSans_700Bold' }}>SUPERSET</Text>
+            </View>
+            {memberRows}
+          </View>
+        );
+      }
+      // Link connector between this unit and the next (lift-to-lift only).
+      const lastEx = unit.type === 'group' ? unit.members[unit.members.length - 1] : unit.ex;
+      const nextUnit = units[ui + 1];
+      const nextFirst = nextUnit ? (nextUnit.type === 'group' ? nextUnit.members[0] : nextUnit.ex) : null;
+      if (nextFirst && !lastEx.isCardio && !nextFirst.isCardio) {
+        out.push(
+          <TouchableOpacity key={`link_${lastEx.id}`} onPress={() => linkSuperset(lastEx.id)}
+            style={{ alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: -2, marginBottom: 8, paddingVertical: 4, paddingHorizontal: 12, borderRadius: 12, backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard }}
+            hitSlop={{ top: 6, bottom: 6, left: 8, right: 8 }}>
+            <Ionicons name="link" size={12} color={theme.textMuted} />
+            <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold', letterSpacing: 0.5 }}>Superset</Text>
+          </TouchableOpacity>
+        );
+      }
+    });
+    return out;
+  };
+
+  // Delete the day's Apple Watch strength session(s). Caveat: Apple-synced, so it can re-import on the
+  // next Health sync (same as any Apple Health entry today) -- a permanent ignore-list is a follow-up.
+  const deleteAppleSession = () => {
+    Alert.alert('Remove Apple Watch Session', 'This removes the synced session for this day. It may return on the next Apple Health sync.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove', style: 'destructive',
+        onPress: () => {
+          triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
+          const baseProgram = programs[activeDay] || weeklyTemplate[activeDayName] || BLANK_DAY;
+          const ids = new Set(appleSessions.map((s: any) => s.id));
+          const newExercises = (baseProgram.exercises || []).filter((e: any) => !ids.has(e.id));
+          const newPrograms = { ...programs, [activeDay]: { ...baseProgram, exercises: newExercises } };
+          setPrograms(newPrograms);
+          saveState(checks, cardioComplete, newPrograms, workoutNotes, cardioLogs, weeklyTemplate);
+          showToast('Session removed', '', 'success');
+        },
+      },
+    ]);
   };
 
   return (
@@ -1631,7 +1760,7 @@ if (data.prs) setPrs(data.prs);
                 </View>
               </TouchableOpacity>
               <View ref={progressCountRef} collapsable={false}>
-                <Text style={[styles.progressCount, { color: doneCount === exercises.length && exercises.length > 0 ? theme.statusGood : color }]}>{doneCount}/{exercises.length}</Text>
+                <Text style={[styles.progressCount, { color: doneCount === displayExercises.length && displayExercises.length > 0 ? theme.statusGood : color }]}>{doneCount}/{displayExercises.length}</Text>
               </View>
             </View>
             <View style={[styles.progressBarBg, { backgroundColor: theme.bgProgressTrack }]}>
@@ -1641,68 +1770,92 @@ if (data.prs) setPrs(data.prs);
         )}
 
         {!isRest && (() => {
-          // Group consecutive exercises that share a supersetGroup id into one superset block.
-          const units: any[] = [];
-          for (let i = 0; i < exercises.length;) {
-            const g = exercises[i].supersetGroup;
-            if (g) {
-              const members = [exercises[i]];
-              let j = i + 1;
-              while (j < exercises.length && exercises[j].supersetGroup === g) { members.push(exercises[j]); j++; }
-              if (members.length >= 2) { units.push({ type: 'group', groupId: g, members }); i = j; continue; }
-            }
-            units.push({ type: 'single', ex: exercises[i] });
-            i++;
-          }
-          const out: any[] = [];
-          units.forEach((unit, ui) => {
-            if (unit.type === 'single') {
-              out.push(renderExerciseCard(unit.ex));
-            } else {
-              const memberRows: any[] = [];
-              unit.members.forEach((m: any, mi: number) => {
-                memberRows.push(renderExerciseCard(m, { inGroup: true }));
-                if (mi < unit.members.length - 1) {
-                  memberRows.push(
-                    <View key={`div_${m.id}`} style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, marginVertical: 2 }}>
-                      <View style={{ flex: 1, height: 0.5, backgroundColor: theme.borderCard }} />
-                      <TouchableOpacity onPress={() => unlinkSuperset(unit.groupId)} style={{ flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 10, paddingVertical: 3 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                        <Ionicons name="close" size={11} color={theme.textMuted} />
-                        <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1 }}>UNLINK</Text>
-                      </TouchableOpacity>
-                      <View style={{ flex: 1, height: 0.5, backgroundColor: theme.borderCard }} />
+          const lifts = displayExercises.filter((e: any) => !e.isCardio);
+          const cardio = displayExercises.filter((e: any) => e.isCardio);
+          // No Apple strength session on this day: render lifts + cardio as normal cards (unchanged).
+          if (appleSessions.length === 0) return <>{renderExerciseUnits(displayExercises)}</>;
+          // Apple Watch strength session = a CONTAINER wrapping the day's lifts; cardio stays outside.
+          const hmsToSec = (str: any) => {
+            const p = String(str || '').split(':').map((x: string) => parseInt(x) || 0);
+            if (p.length === 3) return p[0] * 3600 + p[1] * 60 + p[2];
+            if (p.length === 2) return p[0] * 60 + p[1];
+            return p[0] || 0;
+          };
+          const totalDurSec = appleSessions.reduce((s: number, a: any) => s + hmsToSec(a.duration), 0);
+          const totalCals = appleSessions.reduce((s: number, a: any) => s + (parseInt(a.calories || '0') || 0), 0);
+          const stats = [
+            totalDurSec > 0 ? { value: formatDuration(totalDurSec), label: 'Duration' } : null,
+            totalCals > 0 ? { value: String(totalCals), label: 'Cal' } : null,
+            sessionHR.avgHr != null ? { value: String(sessionHR.avgHr), label: 'Avg BPM' } : null,
+            sessionHR.maxHr != null ? { value: String(sessionHR.maxHr), label: 'Max BPM' } : null,
+          ].filter(Boolean) as { value: string; label: string }[];
+          return (
+            <>
+              <View style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderTopWidth: 1.5, borderTopColor: theme.accentBlueRaw, borderRadius: 14, marginBottom: 12, overflow: 'hidden',
+                shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 6, elevation: 2 }}>
+                {/* Session header: the Apple Watch envelope (duration / calories / HR). */}
+                <View style={{ padding: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <View style={{ flex: 1 }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Ionicons name="watch-outline" size={14} color={theme.accentBlue} />
+                        <Text style={{ fontSize: 10, letterSpacing: 2, color: theme.accentBlue, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' }}>Strength Session</Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 }}>
+                        <Ionicons name="heart" size={11} color={theme.accentGreen} />
+                        <Text style={[styles.badgeText, { color: theme.accentGreen }]}>APPLE HEALTH</Text>
+                      </View>
                     </View>
-                  );
-                }
-              });
-              out.push(
-                <View key={`g_${unit.groupId}`} style={[styles.exerciseItem, { backgroundColor: theme.bgCard, borderColor: theme.accentBlue + '55', borderLeftColor: theme.accentBlue, padding: 0, overflow: 'hidden' }]}>
-                  <View style={{ paddingHorizontal: 14, paddingTop: 10, paddingBottom: 0 }}>
-                    <Text style={{ fontSize: 9, letterSpacing: 2, color: theme.accentBlue, fontFamily: 'DMSans_700Bold' }}>SUPERSET</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      {appleSessions.length === 1 && (
+                        <TouchableOpacity onPress={() => openHRZones(appleSessions[0])} activeOpacity={0.7} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                          style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 3, gap: 4 }}>
+                          <Ionicons name="pulse" size={12} color={theme.accentBlue} />
+                          <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: theme.accentBlue }}>HR Zones</Text>
+                          <Ionicons name="chevron-forward" size={11} color={theme.accentBlue} />
+                        </TouchableOpacity>
+                      )}
+                      <TouchableOpacity onPress={deleteAppleSession} style={{ padding: 4 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                        <Ionicons name="trash" size={15} color={theme.accentRed} />
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                  {memberRows}
+                  {appleSessions.length > 1 && (
+                    <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_500Medium', marginBottom: 12 }}>
+                      Combined from {appleSessions.length} separate workouts
+                    </Text>
+                  )}
+                  <View style={{ flexDirection: 'row', alignItems: 'stretch' }}>
+                    {stats.map((s, i) => (
+                      <View key={i} style={{ flex: 1, flexDirection: 'row', alignItems: 'stretch' }}>
+                        {i > 0 && <View style={{ width: 0.5, backgroundColor: theme.borderCard, marginVertical: 2 }} />}
+                        <View style={{ flex: 1, alignItems: 'center', paddingHorizontal: 2 }}>
+                          <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5, color: theme.textSecondary }}>{s.value}</Text>
+                          <Text style={{ fontSize: 8, letterSpacing: 1.2, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted, marginTop: 1, textAlign: 'center' }}>{s.label}</Text>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
                 </View>
-              );
-            }
-            // Link connector between this unit and the next (lift-to-lift only).
-            const lastEx = unit.type === 'group' ? unit.members[unit.members.length - 1] : unit.ex;
-            const nextUnit = units[ui + 1];
-            const nextFirst = nextUnit ? (nextUnit.type === 'group' ? nextUnit.members[0] : nextUnit.ex) : null;
-            if (nextFirst && !lastEx.isCardio && !nextFirst.isCardio) {
-              out.push(
-                <TouchableOpacity key={`link_${lastEx.id}`} onPress={() => linkSuperset(lastEx.id)}
-                  style={{ alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: -2, marginBottom: 8, paddingVertical: 4, paddingHorizontal: 12, borderRadius: 12, backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard }}
-                  hitSlop={{ top: 6, bottom: 6, left: 8, right: 8 }}>
-                  <Ionicons name="link" size={12} color={theme.textMuted} />
-                  <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold', letterSpacing: 0.5 }}>Superset</Text>
-                </TouchableOpacity>
-              );
-            }
-          });
-          return out;
+                {/* Your lifts, nested INSIDE the session as clean borderless rows (no card-on-card). */}
+                <View style={{ backgroundColor: theme.bgInset }}>
+                  {lifts.length > 0
+                    ? lifts.map((lift: any, i: number) => (
+                        <View key={lift.id}>
+                          {renderExerciseCard(lift, { inGroup: true })}
+                          {i < lifts.length - 1 && <View style={{ height: 0.5, backgroundColor: theme.borderCard, marginHorizontal: 14 }} />}
+                        </View>
+                      ))
+                    : <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular', textAlign: 'center', paddingVertical: 18, paddingHorizontal: 14 }}>No lifts logged in this session yet. Tap the + to add one.</Text>}
+                </View>
+              </View>
+              {/* Cardio stays OUTSIDE the session. */}
+              {cardio.length > 0 && renderExerciseUnits(cardio)}
+            </>
+          );
         })()}
 
-        {!isRest && exercises.length === 0 && (
+        {!isRest && displayExercises.length === 0 && appleSessions.length === 0 && (
           <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, alignItems: 'center', paddingVertical: 28, marginBottom: 12 }]}>
             <Ionicons name="barbell-outline" size={32} color={theme.textDim} />
             <Text style={{ color: theme.textPrimary, fontSize: 16, fontFamily: 'DMSans_600SemiBold', marginTop: 10 }}>No exercises yet</Text>
@@ -1724,7 +1877,7 @@ if (data.prs) setPrs(data.prs);
           </View>
         )}
 
-        {!isRest && exercises.length > 0 && (
+        {!isRest && displayExercises.length > 0 && (
           finishedSummaries[activeDay] ? (
             <TouchableOpacity
               onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openFinishSummary(finishedSummaries[activeDay]); }}

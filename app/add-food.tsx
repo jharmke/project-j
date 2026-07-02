@@ -1759,7 +1759,10 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         keyExtractor={(item, i) => {
           if ((item as any)._isSuppDivider) return 'supp-divider';
           if ((item as any).recipeData) return `recipe-${(item as any).recipeData.name || i}`;
-          return (item as any).id || ((item as any).fsId ? `fs_${(item as any).fsId}` : `item_${i}`);
+          // Append the index so two results that share an id/fsId (e.g. a barcode result plus the
+          // same food already in the search list) can never collide into a duplicate React key.
+          const base = (item as any).id || ((item as any).fsId ? `fs_${(item as any).fsId}` : 'item');
+          return `${base}_${i}`;
         }}
         renderItem={({ item, index }) => {
           if ((item as any)._isSuppDivider) {

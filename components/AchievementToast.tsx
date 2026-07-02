@@ -459,7 +459,7 @@ type QueuedToast =
 
 let _counter = 0;
 
-export function AchievementToastRenderer() {
+export function AchievementToastRenderer({ hold = false }: { hold?: boolean }) {
   const [queue, setQueue] = useState<QueuedToast[]>([]);
 
   useEffect(() => {
@@ -476,7 +476,10 @@ export function AchievementToastRenderer() {
   }, []);
 
   const dismiss = (id: number) => setQueue(prev => prev.filter(t => t.id !== id));
-  const active  = queue[0] ?? null;
+  // While `hold` is true (the launch splash is still up on a cold start), keep enqueuing but display
+  // NOTHING, so a toast's entrance animation never plays hidden behind the splash. The queued toast
+  // plays in full the moment the splash finishes and hold flips false.
+  const active  = hold ? null : (queue[0] ?? null);
 
   return (
     <View style={styles.renderer} pointerEvents="box-none">

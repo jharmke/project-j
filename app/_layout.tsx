@@ -198,7 +198,7 @@ function RootLayoutNav() {
         <Stack.Screen name="sleep" options={{ headerShown: false }} />
       </Stack>
       <ThemedStatusBar />
-      <AchievementToastRenderer />
+      <AchievementToastRenderer hold={showSplash} />
       <CelebrationRenderer />
       <TutorialOverlay />
       <ToolkitRenderer />

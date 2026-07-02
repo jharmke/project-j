@@ -34,7 +34,7 @@ export default function LaunchSplash({ onDone }: { onDone: () => void }) {
   return (
     <Animated.View
       pointerEvents="none"
-      style={[StyleSheet.absoluteFill, { backgroundColor: BG, opacity: overlayOpacity, alignItems: 'center', justifyContent: 'center', zIndex: 9999 }]}
+      style={[StyleSheet.absoluteFill, { backgroundColor: BG, opacity: overlayOpacity, alignItems: 'center', justifyContent: 'center', zIndex: 1000000 }]}
     >
       <Animated.View style={{ width: SCREEN_W, height: SCREEN_W, opacity: logoOpacity, transform: [{ scale: logoScale }] }}>
         <Image

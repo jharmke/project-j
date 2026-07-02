@@ -1376,7 +1376,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
       if (savedRecipesRaw) {
         (JSON.parse(savedRecipesRaw) as any[]).forEach(r => { recipeByName[r.name] = r; });
       }
-      setRecentFoods(recent.slice(0, 15).map(f => {
+      setRecentFoods(recent.slice(0, 30).map(f => {
         const stripped = f.name.replace(/\s*\(.*?\)\s*$/, '');
         const matchedRecipe = recipeByName[stripped];
         if (matchedRecipe) {

@@ -19,7 +19,6 @@
 - Calorie periodization -- higher calories on workout days, automated suggestion.
 - Restaurant menu lookup -- scan/search restaurant, pull nutrition from FatSecret. Post-FatSecret feature.
 - Creatine tracking (manual) -- mirror the existing caffeine tracking: let users log creatine by hand (FatSecret does not carry it), then surface it in the nutrition display. Common supplement people track, Justin included. (Justin 2026-07-01.)
-- Food Library "recent" surfacing -- show recently used/logged foods more prominently in the Food Library (a recents sort or section) so common repeats are faster to find than searching every time. (Justin 2026-07-01.)
 
 ---
 

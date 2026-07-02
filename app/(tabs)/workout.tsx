@@ -139,6 +139,8 @@ const [prs, setPrs] = useState<Record<string, PRRecord>>({});
 const [finishSummary, setFinishSummary] = useState<{
   totalVolume: number; doneSets: number; doneExercises: number; prHits: any[]; mindful: boolean;
   hasLifts: boolean; liftDurationSec: number | null;
+  liftCalories: number | null; liftAvgHr: number | null; liftMaxHr: number | null;
+  liftItems: { name: string; volume: number; sets: { weight: number; reps: number }[] }[];
   cardio: { count: number; distanceMi: number; durationSec: number; calories: number; avgHr: number | null; maxHr: number | null; items?: { name: string; durationSec: number; distanceMi: number; calories: number; avgHr: number | null; maxHr: number | null }[] } | null;
   totalCalories: number;
 } | null>(null);
@@ -869,7 +871,8 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
     if (stored && stored.length) return stored;
     const n = Math.max(1, Math.min(10, parseInt(ex.sets) || 3));
     const rest = parseInt(ex.rest) || null;
-    return Array.from({ length: n }, () => ({ weight: null, reps: null, rest, done: false }));
+    const reps = parseInt(ex.reps) || null; // pre-fill target reps so a fresh lift shows its rep target
+    return Array.from({ length: n }, () => ({ weight: null, reps, rest, done: false }));
   };
 
   const saveSetsForExercise = (exId: string, sets: SetEntry[]) => {
@@ -974,6 +977,8 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
     const dayLogs = setLogs[activeDay] || {};
     let totalVolume = 0, doneSets = 0, doneExercises = 0;
     const prHits: any[] = [];
+    // Per-lift breakdown so the recap lists each lift's sets (mirrors the per-cardio HR breakdown).
+    const liftItems: { name: string; volume: number; sets: { weight: number; reps: number }[] }[] = [];
     const newPrs: Record<string, PRRecord> = { ...prs };
     for (const ex of exercises) {
       if (ex.isCardio) continue;
@@ -983,7 +988,11 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
       if (!done.length) continue;
       doneExercises++;
       doneSets += done.length;
-      for (const s of done) totalVolume += (s.weight || 0) * (s.reps || 0);
+      let exVolume = 0;
+      const itemSets: { weight: number; reps: number }[] = [];
+      for (const s of done) { exVolume += (s.weight || 0) * (s.reps || 0); itemSets.push({ weight: s.weight || 0, reps: s.reps || 0 }); }
+      totalVolume += exVolume;
+      liftItems.push({ name: ex.name || 'Lift', volume: exVolume, sets: itemSets });
       const weighted = done.filter(s => (s.weight || 0) > 0 && (s.reps || 0) > 0);
       if (!weighted.length) continue;
       const key = normalizeLiftName(ex.name);
@@ -1021,6 +1030,13 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
     const appleLiftDurSec = appleSessions.reduce((s: number, a: any) => s + hmsToSecLift(a.duration), 0);
     const manualLiftDurSec = getTimerElapsedSec(activeDay);
     const liftDurationSec = appleLiftDurSec > 0 ? appleLiftDurSec : (manualLiftDurSec > 0 ? manualLiftDurSec : null);
+    // Apple strength session envelope on the LIFTING side of the recap: calories summed across the day's
+    // strength workouts + pooled avg/max HR (same source as the banner). null on manual-only days.
+    const liftCalories = appleSessions.length > 0
+      ? appleSessions.reduce((s: number, a: any) => s + (parseInt(a.calories || '0') || 0), 0)
+      : null;
+    const liftAvgHr = appleSessions.length > 0 ? sessionHR.avgHr : null;
+    const liftMaxHr = appleSessions.length > 0 ? sessionHR.maxHr : null;
 
     // Cardio recap: aggregate the day's COMPLETED cardio (also lets a cardio-only day finish).
     const dayChecks2 = checks[activeDay] || {};
@@ -1075,6 +1091,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
       totalVolume, doneSets, doneExercises, prHits, mindful,
       hasLifts: doneSets > 0,
       liftDurationSec,
+      liftCalories, liftAvgHr, liftMaxHr, liftItems,
       cardio: cardioCount > 0
         ? { count: cardioCount, distanceMi: cardioDistance, durationSec: cardioDurationSec, calories: Math.round(cardioCalories), avgHr, maxHr, items: cardioItems }
         : null,
@@ -1223,9 +1240,34 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
       showToast('Exercise added', form.name, 'success');
     }
   }
+  // Fix A: reflect the edited target sets/reps onto the per-set rows. Reconcile UNLOGGED rows only so
+  // real logged data is never lost: pre-fill the target reps on blank rows and grow/shrink the blank-row
+  // count toward the new sets target. Rows that are checked or carry a weight are preserved untouched.
+  let newSetLogs = setLogs;
+  let newChecks = checks;
+  if (editingExercise && !form.isCardio) {
+    const exId = editingExercise.id;
+    const stored = setLogs[modalDay]?.[exId];
+    if (stored && stored.length) {
+      const targetN = Math.max(1, Math.min(10, parseInt(form.sets) || stored.length));
+      const targetReps = parseInt(form.reps) || null;
+      const targetRest = parseInt(form.rest) || null;
+      const isLogged = (s: SetEntry) => s.done || s.weight != null;
+      let rows: SetEntry[] = stored.map(s => isLogged(s) ? s : { ...s, reps: targetReps, rest: targetRest });
+      while (rows.length > targetN && !isLogged(rows[rows.length - 1])) rows = rows.slice(0, -1);
+      while (rows.length < targetN) rows.push({ weight: null, reps: targetReps, rest: targetRest, done: false });
+      newSetLogs = { ...setLogs, [modalDay]: { ...(setLogs[modalDay] || {}), [exId]: rows } };
+      const allDone = rows.length > 0 && rows.every(s => s.done);
+      const dayChecksNow = checks[modalDay] || {};
+      if (!!dayChecksNow[exId] !== allDone) newChecks = { ...checks, [modalDay]: { ...dayChecksNow, [exId]: allDone } };
+    }
+    setSetRowsVersion(v => ({ ...v, [exId]: (v[exId] || 0) + 1 })); // re-mount rows so they re-seed
+  }
+  if (newSetLogs !== setLogs) setSetLogs(newSetLogs);
+  if (newChecks !== checks) setChecks(newChecks);
   setPrograms(newPrograms);
   setDayLabel(newPrograms[activeDay]?.customLabel || '');
-  saveState(checks, cardioComplete, newPrograms, workoutNotes, cardioLogs, weeklyTemplate);
+  saveState(newChecks, cardioComplete, newPrograms, workoutNotes, cardioLogs, weeklyTemplate, activeProgramName, workoutNoteNames, newSetLogs);
   closeAddExerciseModal();
   if (editingExercise) showToast('Exercise updated', form.name, 'success');
   checkWorkoutAchievements().then(unlocked => {
@@ -1436,25 +1478,37 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
   // Finish-recap stats as boxed inset tiles, 2 per row, centered content. One accent element per
   // tile (the value); icon + label stay muted so it reads structured, not "all accent." An odd last
   // tile keeps the same half-width and centers in its row instead of stretching full-width.
-  const renderTiles = (stats: { icon: any; value: string; label: string }[]) => {
+  const renderTiles = (stats: { icon: any; value: string; label: string }[], accentColor: string = theme.accentBlue) => {
     const rows: { icon: any; value: string; label: string }[][] = [];
     for (let i = 0; i < stats.length; i += 2) rows.push(stats.slice(i, i + 2));
     return (
-      <View style={{ gap: 10 }}>
+      <View style={{ gap: 8 }}>
         {rows.map((row, ri) => (
-          <View key={ri} style={{ flexDirection: 'row', gap: 10, justifyContent: 'center' }}>
+          <View key={ri} style={{ flexDirection: 'row', gap: 8, justifyContent: 'center' }}>
             {row.map((s, i) => (
-              <View key={i} style={{ flexBasis: '47%', maxWidth: '47%', flexGrow: row.length === 2 ? 1 : 0, alignItems: 'center', backgroundColor: theme.bgInset, borderWidth: 0.5, borderColor: theme.borderCard, borderRadius: 12, paddingVertical: 13, paddingHorizontal: 10,
+              <View key={i} style={{ flexBasis: '47%', maxWidth: '47%', flexGrow: row.length === 2 ? 1 : 0, alignItems: 'center', backgroundColor: theme.bgInset, borderWidth: 0.5, borderColor: theme.borderCard, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 10,
                 shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 6, elevation: 3 }}>
-                <Ionicons name={s.icon} size={15} color={theme.accentBlue} style={{ marginBottom: 5 }} />
-                <Text style={{ fontSize: 28, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5, color: theme.textSecondary }}>{s.value}</Text>
-                <Text style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted, marginTop: 2 }}>{s.label}</Text>
+                <Ionicons name={s.icon} size={14} color={accentColor} style={{ marginBottom: 3 }} />
+                <Text style={{ fontSize: 23, fontFamily: 'BebasNeue_400Regular', letterSpacing: 0.5, color: theme.textSecondary }}>{s.value}</Text>
+                <Text style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted, marginTop: 1 }}>{s.label}</Text>
               </View>
             ))}
           </View>
         ))}
       </View>
     );
+  };
+
+  // Sets summary for a recap lift row: "50 × 10  ·  50 × 10", "10 reps" for bodyweight-with-reps,
+  // and "3 sets" when a lift was checked off with no weight/reps entered.
+  const formatLiftSets = (sets: { weight: number; reps: number }[]): string => {
+    const parts = sets.map(s => {
+      if (s.weight > 0 && s.reps > 0) return `${s.weight} lb × ${s.reps}`;
+      if (s.reps > 0) return `${s.reps} reps`;
+      return null;
+    }).filter(Boolean) as string[];
+    if (parts.length) return parts.join('   ·   ');
+    return `${sets.length} set${sets.length !== 1 ? 's' : ''}`;
   };
 
   // Manual workout timer pill. Shown only on days WITHOUT an Apple strength banner (Apple wins).
@@ -2188,6 +2242,10 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                 if (fs.totalVolume > 0) liftStats.push({ icon: 'barbell-outline', value: Math.round(fs.totalVolume).toLocaleString(), label: 'Lbs Volume' });
                 liftStats.push({ icon: 'layers-outline', value: String(fs.doneSets), label: 'Sets' });
                 liftStats.push({ icon: 'list-outline', value: String(fs.doneExercises), label: 'Exercises' });
+                // Apple Watch strength-session envelope (only present when a strength session is on the day).
+                if (fs.liftCalories != null && fs.liftCalories > 0) liftStats.push({ icon: 'flame-outline', value: String(fs.liftCalories), label: 'Cal' });
+                if (fs.liftAvgHr != null) liftStats.push({ icon: 'heart-outline', value: String(fs.liftAvgHr), label: 'Avg BPM' });
+                if (fs.liftMaxHr != null) liftStats.push({ icon: 'heart', value: String(fs.liftMaxHr), label: 'Max BPM' });
               }
               // Multiple cardios => never blend HR into one misleading average. Top tiles show the
               // summable totals; each session's own avg/max HR renders in the breakdown list below.
@@ -2205,8 +2263,8 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
               const dateLabel = (() => {
                 try { return new Date(activeDay + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }); } catch { return ''; }
               })();
-              const sectionLabel = (txt: string) => (
-                <Text style={{ fontSize: 10, letterSpacing: 2.5, color: theme.accentBlue, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 9 }}>{txt}</Text>
+              const sectionLabel = (txt: string, color: string = theme.accentBlue) => (
+                <Text style={{ fontSize: 10, letterSpacing: 2.5, color, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 9 }}>{txt}</Text>
               );
               return (
                 <View style={{ backgroundColor: theme.bgSheet, borderRadius: 18, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden',
@@ -2227,17 +2285,27 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                     <View style={{ marginBottom: (fs.cardio || fs.prHits.length) ? 16 : 6 }}>
                       {showHeaders && sectionLabel('Lifting')}
                       {renderTiles(liftStats)}
+                      {fs.liftItems && fs.liftItems.length > 0 && (
+                        <View style={{ marginTop: 8, gap: 8 }}>
+                          {fs.liftItems.map((it, idx) => (
+                            <View key={idx} style={{ backgroundColor: theme.bgInset, borderWidth: 0.5, borderLeftWidth: 2.5, borderColor: theme.borderCard, borderLeftColor: theme.accentBlue, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12 }}>
+                              <Text numberOfLines={1} style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary }}>{it.name}</Text>
+                              <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.textSecondary, marginTop: 6 }}>{formatLiftSets(it.sets)}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
                     </View>
                   )}
 
                   {fs.cardio && (
                     <View style={{ marginBottom: fs.prHits.length ? 16 : 6 }}>
-                      {showHeaders && sectionLabel('Cardio')}
-                      {renderTiles(cardioStats)}
+                      {showHeaders && sectionLabel('Cardio', theme.accentAmber)}
+                      {renderTiles(cardioStats, theme.accentAmber)}
                       {multiCardio && (
                         <View style={{ marginTop: 10, gap: 8 }}>
                           {fs.cardio.items!.map((it, idx) => (
-                            <View key={idx} style={{ backgroundColor: theme.bgInset, borderWidth: 0.5, borderColor: theme.borderCard, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12 }}>
+                            <View key={idx} style={{ backgroundColor: theme.bgInset, borderWidth: 0.5, borderLeftWidth: 2.5, borderColor: theme.borderCard, borderLeftColor: theme.accentAmber, borderRadius: 12, paddingVertical: 10, paddingHorizontal: 12 }}>
                               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                                 <Text numberOfLines={1} style={{ flex: 1, fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, marginRight: 8 }}>{it.name}</Text>
                                 {it.durationSec > 0 && (
@@ -2248,14 +2316,14 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginTop: 6 }}>
                                   {it.avgHr != null && (
                                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                      <Ionicons name="heart-outline" size={12} color={theme.accentBlue} />
+                                      <Ionicons name="heart-outline" size={12} color={theme.accentAmber} />
                                       <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{it.avgHr}</Text>
                                       <Text style={{ fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted }}>Avg BPM</Text>
                                     </View>
                                   )}
                                   {it.maxHr != null && (
                                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                                      <Ionicons name="heart" size={12} color={theme.accentBlue} />
+                                      <Ionicons name="heart" size={12} color={theme.accentAmber} />
                                       <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{it.maxHr}</Text>
                                       <Text style={{ fontSize: 9, letterSpacing: 1, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted }}>Max BPM</Text>
                                     </View>

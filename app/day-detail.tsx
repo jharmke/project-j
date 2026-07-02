@@ -593,11 +593,15 @@ export function DayDetailContent({ date, onClose, todayBurned }: { date: string;
                     <Text style={[styles.exerciseName, { color: daychecks[ex.id] ? theme.textDim : theme.textSecondary }]} numberOfLines={1}>
                       {ex.name}
                     </Text>
-                    {ex.isCardio && (
+                    {ex.isCardio ? (
                       <Text style={styles.cardioMeta}>
                         {[ex.duration ? `${ex.duration}m` : null, ex.distance ? `${ex.distance}mi` : null].filter(Boolean).join(' · ')}
                       </Text>
-                    )}
+                    ) : (ex.fromAppleHealth && ex.duration) ? (
+                      <Text style={styles.cardioMeta}>
+                        {[`${ex.duration}m`, ex.calories ? `${ex.calories} cal` : null].filter(Boolean).join(' · ')}
+                      </Text>
+                    ) : null}
                   </View>
                 ))
               )}

@@ -20,6 +20,7 @@ import {
   minDaysForWindow,
   saveReport,
 } from '../utils/diagnosticReport';
+import { refreshCoachTip, resolveTipBody } from '../utils/coachAI';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -124,7 +125,15 @@ export default function DiagnosticReportScreen() {
     setGenerating(true);
     try {
       const report = await generateDiagnosticReport();
-      await saveReport(report);
+      // Snapshot the coach insight AT generation so this report keeps its OWN insight forever,
+      // instead of the view later showing whatever the live home tip happens to be. Best-effort:
+      // on failure the report saves without a snapshot and the view falls back to the live tip.
+      let coachInsight: string | undefined;
+      try {
+        const cache = await refreshCoachTip('home', 14);
+        coachInsight = resolveTipBody(cache) || undefined;
+      } catch {}
+      await saveReport({ ...report, coachInsight });
       const updated = await loadSavedReports();
       setSavedReports(updated);
       router.push(`/diagnostic-report-view?id=${encodeURIComponent(report.id)}`);

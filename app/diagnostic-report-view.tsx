@@ -497,7 +497,7 @@ const TUTORIAL_DEMO_REPORT: DiagnosticReport = {
   insufficientData: false,
   minLoggedDays: 22,
   consistency: { type: 'consistency', status: 'attention', loggedDays: 22, totalDays: 30, suspectDays: 2, excludedDays: 0, rate: 0.73 },
-  deficit: { type: 'deficit', status: 'good', goalDirection: 'lose', avgDailyDeficit: -340, expectedChangeLbs: 2.9, actualChangeLbs: -1.6, gapLbs: 1.3, loggedDays: 22, hasWeightData: true },
+  deficit: { type: 'deficit', status: 'good', goalDirection: 'lose', avgDailyDeficit: -340, expectedChangeLbs: 2.9, actualChangeLbs: -1.6, gapLbs: 1.3, loggedDays: 22, daysSinceLastWeighIn: 1, hasWeightData: true },
   burnAccuracy: { type: 'burnAccuracy', status: 'attention', burnAccuracyPct: 100, avgActiveCalPerDay: 480, isFlagged: true },
   macros: { type: 'macros', status: 'attention', macroStatus: 'attention', fiberStatus: 'good', avgProtein: 112, proteinGoalMin: 140, proteinGoalMax: 160, avgFiber: 28, hasData: true, bodyWeightLbs: 185, lowFiberNote: false },
   sleep: { type: 'sleep', status: 'attention', avgSleepScore: 61, avgSleepHours: 6.4, totalSleepDays: 18, poorSleepCalDelta: 180, hasEnoughData: true },
@@ -543,7 +543,7 @@ export default function DiagnosticReportViewScreen() {
   const [showAllSuggestions, setShowAllSuggestions] = useState(false);
   const [notFound, setNotFound]   = useState(false);
   const [smartTips, setSmartTips] = useState<SmartTipsStore | null>(null);
-  const [coachCache, setCoachCache] = useState<CoachTipCache | null>(null);
+  const [coachBody, setCoachBody] = useState<string | null>(null);
   const [coachLoading, setCoachLoading] = useState(false);
   // Voiced diagnostic card feed: show deterministic cards instantly, upgrade to AI-voiced
   // (claim/lever rewritten + insight added) when the batched call returns. Proof is never
@@ -615,21 +615,26 @@ export default function DiagnosticReportViewScreen() {
         const stored = await loadSmartTips();
         if (stored) setSmartTips(stored);
         computeAndStoreSmartTips().then(fresh => setSmartTips(fresh)).catch(() => {});
-        // EvR headline shows the SAME tip as the home card (Option A sync).
-        // Home card is the teaser; EvR is the same headline + the full card feed below it.
-        // No dedup, no separate EvR compute -- just read/refresh the home cache. Instant if
-        // home was already opened today; otherwise computes fresh (same result either way).
-        const windowDays = 14 as const;
-        const cachedHome = await loadCoachTipCache();
-        const pad = (n: number) => String(n).padStart(2, '0');
-        const now = new Date();
-        const todayKey = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-        const cachedIsTodaysFinal = !!cachedHome && cachedHome.packet.computedDate === todayKey;
-        if (cachedIsTodaysFinal) { setCoachCache(cachedHome); setCoachLoading(false); }
-        else { setCoachCache(null); setCoachLoading(true); }
-        refreshCoachTip('home', windowDays)
-          .then(cache => { setCoachCache(cache); setCoachLoading(false); })
-          .catch(() => setCoachLoading(false));
+        // Coach Insight: a report now SNAPSHOTS its own coach insight at generation
+        // (found.coachInsight), so a historical report keeps the insight it was BORN with instead of
+        // today's live one (the bug: every report showed the current home tip). LEGACY reports made
+        // before this have no snapshot, so they fall back to the live home tip (old Option A
+        // behavior) rather than blanking out.
+        if (found.coachInsight) {
+          setCoachBody(found.coachInsight);
+          setCoachLoading(false);
+        } else {
+          const cachedHome = await loadCoachTipCache();
+          const pad = (n: number) => String(n).padStart(2, '0');
+          const now = new Date();
+          const todayKey = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+          const cachedIsTodaysFinal = !!cachedHome && cachedHome.packet.computedDate === todayKey;
+          if (cachedIsTodaysFinal) { setCoachBody(resolveTipBody(cachedHome) || null); setCoachLoading(false); }
+          else { setCoachBody(null); setCoachLoading(true); }
+          refreshCoachTip('home', 14)
+            .then(cache => { setCoachBody(resolveTipBody(cache) || null); setCoachLoading(false); })
+            .catch(() => setCoachLoading(false));
+        }
       };
       load();
     }, [id, isTutorialMode])
@@ -767,8 +772,8 @@ export default function DiagnosticReportViewScreen() {
                     </View>
                   </View>
                 </View>
-              ) : (coachLoading || !!coachCache) && (() => {
-                if (coachLoading && !coachCache) {
+              ) : (coachLoading || !!coachBody) && (() => {
+                if (coachLoading && !coachBody) {
                   return (
                     <View style={{ marginBottom: 12 }}>
                       <Text style={[styles.sectionLabel, { color: t.textMuted }]}>COACH INSIGHT</Text>
@@ -785,8 +790,8 @@ export default function DiagnosticReportViewScreen() {
                     </View>
                   );
                 }
-                if (!coachCache) return null;
-                const body = resolveTipBody(coachCache);
+                if (!coachBody) return null;
+                const body = coachBody;
                 if (!body) return null;
                 // Blue Coach Insight box -- mirrors the day/weekly/monthly summary treatment
                 // exactly: translucent blue fill, centered header + divider, centered italic body.

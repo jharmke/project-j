@@ -19,6 +19,7 @@ export interface DeficitFinding {
   goalDirection: GoalDirection;
   avgDailyDeficit: number;
   loggedDays: number;
+  daysSinceLastWeighIn: number | null;
   status: FindingStatus;
   hasWeightData: boolean;
 }
@@ -149,6 +150,9 @@ export interface DiagnosticReport {
   correlations: CorrelationsFinding | null;
   suggestions: Suggestion[];
   cards: DiagnosticCard[];
+  // Snapshot of the home coach tip's body AT generation time, so a historical report keeps the
+  // insight it was born with instead of showing today's live one. Optional: legacy reports lack it.
+  coachInsight?: string;
   insufficientData: boolean;
   minLoggedDays: number;
   // Read-only dev diagnostic (Dump EvR Cards): the snowball-card fire math. Optional/transient.
@@ -300,8 +304,25 @@ function buildDiagnosticCards(
       target: Math.round(Math.abs(deficitFinding.actualChangeLbs) * 10) / 10,
       unit: 'lb', primaryLabel: 'PREDICTED', secondaryLabel: 'ACTUAL',
     };
+    // Stale-data reframe: if the newest weigh-in is more than 10 days old, this card is analyzing a
+    // weeks-old span and has no idea where the scale is NOW, so it must NOT cheer "keep it up" (that
+    // contradicts the coach insight, which correctly flags the missing weigh-ins). It keeps showing
+    // the honest predicted-vs-actual numbers for that span, but flips to a "weigh in to confirm" nudge.
+    const STALE_WEIGH_DAYS = 10;
+    const staleWeighIn = deficitFinding.daysSinceLastWeighIn != null && deficitFinding.daysSinceLastWeighIn >= STALE_WEIGH_DAYS;
     const onTrack = lose ? gap <= 0.3 : gap >= -0.3;
-    if (onTrack) {
+    if (staleWeighIn) {
+      const n = deficitFinding.daysSinceLastWeighIn;
+      cards.push({
+        id: 'deficit',
+        claim: `This is from your last weigh-in, ${n} days ago, not where you are now.`,
+        proof,
+        lever: `Step on the scale to see where you actually stand. Without a recent weigh-in this cannot confirm you are still on track.`,
+        window: winWeight, strength: clampStrength(52), tone: 'attention', positive: false,
+        metric: deficitMetric,
+      });
+      // deficitLagging stays false: never fire the burn-accuracy explainer off stale scale data.
+    } else if (onTrack) {
       cards.push({
         id: 'deficit', claim: `Your effort is showing up on the scale.`, proof,
         lever: `Whatever you are doing is working. Hold the pattern.`,
@@ -427,11 +448,17 @@ function buildDiagnosticCards(
   // Consistency: matters most when there are GAPS (they blur everything below). A clean
   // log is reassuring but a low-value lead, so it sits in a low band and never leads.
   // Gappy logging ranks up because it undermines the whole read.
+  // Vacation-day denotation: excluded days are intentional off days, not slips. The proof carries a
+  // "N vacation" note so the number line is honest, and the copy stops treating them as misses.
+  const vacDays = consistency.excludedDays;
+  const vacNote = vacDays > 0 ? ` · ${vacDays} vacation` : '';
   if (consistency.status === 'good' && consistency.loggedDays > 0) {
     cards.push({
       id: 'consistency_good',
-      claim: `Your logging is consistent enough to trust this read.`,
-      proof: `${consistency.loggedDays} of ${consistency.totalDays} days logged`,
+      claim: vacDays > 0
+        ? `You logged every day you were around; the only gaps were planned vacation days.`
+        : `Your logging is consistent enough to trust this read.`,
+      proof: `${consistency.loggedDays} of ${consistency.totalDays} days logged${vacNote}`,
       lever: `Keep it up. The more you log, the sharper every pattern here gets.`,
       window: winConsistency,
       // Lowest-strength positive by decision (2026-06-16): a clean log is reassuring but a
@@ -445,8 +472,10 @@ function buildDiagnosticCards(
     cards.push({
       id: 'consistency_gaps',
       claim: `Gaps in your logging are blurring the picture.`,
-      proof: `${consistency.loggedDays} of ${consistency.totalDays} days logged`,
-      lever: `Even a rough entry on the days you miss keeps this read honest.`,
+      proof: `${consistency.loggedDays} of ${consistency.totalDays} days logged${vacNote}`,
+      lever: vacDays > 0
+        ? `Even a rough entry on the days you actually miss keeps this read honest; your vacation days do not count against you.`
+        : `Even a rough entry on the days you miss keeps this read honest.`,
       window: winConsistency,
       strength: clampStrength(consistency.status === 'factor' ? 52 : 38),
       tone: consistency.status === 'factor' ? 'factor' : 'attention',
@@ -705,7 +734,12 @@ export async function generateDiagnosticReport(): Promise<DiagnosticReport> {
   const excludedCount = daysC.filter(d => d.excluded).length;
   const consistencyRate = daysC.length > 0 ? loggedC / daysC.length : 0;
   const firstLoggedDayIdx = daysC.findIndex(d => !d.excluded && d.calories > 400);
-  const effectiveWindowDays = firstLoggedDayIdx >= 0 ? daysC.length - firstLoggedDayIdx : daysC.length;
+  // Effective window = from the first logged day onward, MINUS excluded (vacation) days, so
+  // intentionally-off vacation days never count against logging consistency (they are not misses).
+  // Without this, a run of vacation days drags the rate and the card wrongly reads "worth attention"
+  // even when every real day was logged.
+  const effWindow = firstLoggedDayIdx >= 0 ? daysC.slice(firstLoggedDayIdx) : daysC;
+  const effectiveWindowDays = Math.max(0, effWindow.length - effWindow.filter(d => d.excluded).length);
   const adjustedConsistencyRate = effectiveWindowDays > 0 ? loggedC / effectiveWindowDays : 0;
 
   let consistencyStatus: FindingStatus = 'good';
@@ -748,12 +782,16 @@ export async function generateDiagnosticReport(): Promise<DiagnosticReport> {
   // chronologically, so [0] = oldest weigh-in, [last] = newest. We also use this span to
   // scope the deficit prediction below, so Predicted vs Actual cover the SAME days.
   let weightSpanDays: number | null = null;
+  let daysSinceLastWeighIn: number | null = null;
   let firstWeighKey = '', lastWeighKey = '';
   if (hasWeightData) {
     firstWeighKey = weightEntries[0].dateKey;
     lastWeighKey = weightEntries[weightEntries.length - 1].dateKey;
     actualChangeLbs = weightEntries[weightEntries.length - 1].weight! - weightEntries[0].weight!;
     weightSpanDays = Math.round(Math.abs(new Date(lastWeighKey).getTime() - new Date(firstWeighKey).getTime()) / 86400000) + 1;
+    // How stale the newest weigh-in is, from today. Drives the stale-data reframe on the card so
+    // it stops cheering "keep it up" off a weeks-old reading (which contradicts the coach insight).
+    daysSinceLastWeighIn = Math.round((new Date().setHours(0, 0, 0, 0) - new Date(lastWeighKey + 'T00:00:00').getTime()) / 86400000);
   }
 
   let deficitFinding: DeficitFinding | null = null;
@@ -781,7 +819,7 @@ export async function generateDiagnosticReport(): Promise<DiagnosticReport> {
 
     deficitFinding = {
       type: 'deficit', expectedChangeLbs, actualChangeLbs, gapLbs, goalDirection,
-      avgDailyDeficit, loggedDays, status: hasWeightData ? deficitStatus : 'attention', hasWeightData,
+      avgDailyDeficit, loggedDays, daysSinceLastWeighIn, status: hasWeightData ? deficitStatus : 'attention', hasWeightData,
     };
   }
 

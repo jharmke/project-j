@@ -2377,7 +2377,7 @@ export default function StatsScreen() {
               {/* Step 3: Color + preview + save */}
               {creatorStep === 3 && creatorDataKey && creatorChartType && (
                 <>
-                  {creatorDataKey !== 'workoutFreq' && creatorDataKey !== 'netCalories' && (
+                  {creatorDataKey !== 'workoutFreq' && creatorDataKey !== 'netCalories' && creatorDataKey !== 'sleepStages' && (
                     <View ref={graphCreatorColorRef} collapsable={false}>
                       <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 10 }}>
                         {creatorDataKey === 'macros' ? 'Macro Colors' : 'Color'}
@@ -2576,7 +2576,7 @@ export default function StatsScreen() {
               {creatorStep === 3 && creatorDataKey && creatorChartType && (
                 <>
                   {/* Color picker */}
-                  {creatorDataKey !== 'workoutFreq' && creatorDataKey !== 'netCalories' && (
+                  {creatorDataKey !== 'workoutFreq' && creatorDataKey !== 'netCalories' && creatorDataKey !== 'sleepStages' && (
                     <>
                       <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 3, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 10 }}>
                         {creatorDataKey === 'macros' ? 'Macro Colors' : 'Color'}

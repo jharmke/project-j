@@ -183,8 +183,10 @@ export function StatsCardEditModal({ card, onClose, onSave, onDelete, theme }: P
                 ))}
               </View>
 
-              {/* Color picker -- hidden for workoutFreq + netCalories (semantic coloring) */}
-              {card?.dataKey !== 'workoutFreq' && card?.dataKey !== 'netCalories' && (
+              {/* Color picker -- hidden for workoutFreq + netCalories + sleepStages (semantic/fixed
+                  identity coloring: sleep stages always match the Sleep hub's colors, so a user
+                  color choice would do nothing and desync from the rest of the app) */}
+              {card?.dataKey !== 'workoutFreq' && card?.dataKey !== 'netCalories' && card?.dataKey !== 'sleepStages' && (
                 <>
                   <Text style={styles.sectionLabel(theme)}>
                     {card?.dataKey === 'macros' ? 'Macro Colors' : 'Color'}

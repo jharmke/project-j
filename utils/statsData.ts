@@ -14,6 +14,7 @@ export type TrendData = {
   water: { date: string; value: number }[];
   netCal: { date: string; value: number }[];
   sleepScore: { date: string; value: number }[];
+  sleepStages: { date: string; deep: number; rem: number; core: number; awake: number; awakeCount: number }[];
   restingHR: { date: string; value: number }[];
   respiratoryRate: { date: string; value: number }[];
   bloodOxygen: { date: string; value: number }[];
@@ -30,7 +31,7 @@ export type TrendData = {
 
 export const EMPTY_TREND_DATA: TrendData = {
   weight: [], cal: [], steps: [], activeCal: [], sleep: [], macro: [], workoutDay: [],
-  water: [], netCal: [], sleepScore: [], restingHR: [], respiratoryRate: [], bloodOxygen: [],
+  water: [], netCal: [], sleepScore: [], sleepStages: [], restingHR: [], respiratoryRate: [], bloodOxygen: [],
   exerciseMinutes: [], fiber: [], sodium: [], cholesterol: [], saturatedFat: [],
   sugarAlcohols: [], effortScore: [],
   excludedCounts: { diet: 0, water: 0, exercise: 0 },
@@ -164,6 +165,7 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
   const waterH: TrendData['water'] = [];
   const ncH: TrendData['netCal'] = [];
   const ssH: TrendData['sleepScore'] = [];
+  const stgH: TrendData['sleepStages'] = [];
   const rhrH: TrendData['restingHR'] = [];
   const rrH: TrendData['respiratoryRate'] = [];
   const boH: TrendData['bloodOxygen'] = [];
@@ -247,6 +249,15 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
           const consistencyPts = data.sleepConsistencyPts ?? 0;
           const score = calcSleepScore(sleepH, stages, sleepGoal, feel, isManual, consistencyPts).score;
           if (score !== null) ssH.push({ date: dateKey, value: score });
+          if (stages) {
+            const toMin = (ms: number) => Math.round((ms || 0) / 60000);
+            // awake persisted alongside stages starting 2026-07-01; older nights lack it (default 0).
+            stgH.push({
+              date: dateKey,
+              deep: toMin(stages.deep), rem: toMin(stages.rem), core: toMin(stages.core),
+              awake: toMin(data.sleepAwakeMs ?? 0), awakeCount: data.sleepAwakeCount ?? 0,
+            });
+          }
         }
         // HealthKit metrics persisted to storage
         if (data.restingHR) rhrH.push({ date: dateKey, value: data.restingHR });
@@ -262,7 +273,7 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
   }
   return {
     weight: wh, cal: ch, steps: sh, activeCal: ah, sleep: slh, macro: mh, workoutDay: wdh,
-    water: waterH, netCal: ncH, sleepScore: ssH, restingHR: rhrH, respiratoryRate: rrH,
+    water: waterH, netCal: ncH, sleepScore: ssH, sleepStages: stgH, restingHR: rhrH, respiratoryRate: rrH,
     bloodOxygen: boH, exerciseMinutes: emH, effortScore: esH,
     fiber: fbH, sodium: sodH, cholesterol: choH, saturatedFat: sfH, sugarAlcohols: saH,
     excludedCounts: { diet: exDiet, water: exWater, exercise: exExercise },

@@ -785,6 +785,163 @@ function MacroBarChart({ data, theme, proteinColor, carbsColor, fatColor }: {
   );
 }
 
+// Stacked sleep-stage bars (deep/core/REM/awake per night). Mirrors MacroBarChart: bar total is
+// time in bed, tap a bar for the per-stage breakdown. Awake is a distinct top band; deep/REM/core
+// percentages are of TIME ASLEEP (matching the Sleep hub), awake carries its wake count instead.
+function SleepStagesBarChart({ data, theme }: {
+  data: { date: string; deep: number; rem: number; core: number; awake: number; awakeCount: number }[],
+  theme: any,
+}) {
+  const dColor = theme.sleepDeep;
+  const cColor = theme.sleepCore;
+  const rColor = theme.sleepRem;
+  const aColor = theme.sleepAwake;
+  const [callout, setCallout] = useState<{ x: number; y: number; date: string; deep: number; rem: number; core: number; awake: number; awakeCount: number } | null>(null);
+  const { slideAnim } = useChartAnim(data.length > 0);
+
+  if (data.length === 0) {
+    return (
+      <View style={{ height: CHART_HEIGHT, alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+        <Ionicons name="bar-chart-outline" size={24} color={theme.iconMuted} />
+        <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular', fontStyle: 'italic' }}>No sleep stage data yet</Text>
+      </View>
+    );
+  }
+
+  // Axis math happens in HOURS (not minutes) so niceYTicks lands on clean values like 0/2/4/6/8h,
+  // matching the existing sleep-hours chart. Doing it in minutes then converting for display was
+  // what produced ugly ticks like "3.3h". A small 1.1x headroom factor also gives tall bars (most
+  // nights, since sleep duration varies far less night to night than daily calories do) a bit more
+  // clearance above them for the callout.
+  const maxTotalHrs = Math.max(...data.map(d => (d.deep + d.core + d.rem + d.awake) / 60), 1);
+  const ticks = niceYTicks(0, maxTotalHrs * 1.1, 4);
+  const tickMaxHrs = ticks[ticks.length - 1];
+
+  const chartH = CHART_HEIGHT - CHART_PAD_TOP - CHART_PAD_BOTTOM;
+  const plotLeft = CHART_PAD_LEFT;
+  const plotRight = CHART_WIDTH - CHART_PAD_RIGHT;
+  const plotW = plotRight - plotLeft;
+  const chartBottom = CHART_PAD_TOP + chartH;
+
+  const toH = (mins: number) => Math.max(0, (mins / 60 / tickMaxHrs) * chartH);
+  const toY = (hrs: number) => CHART_PAD_TOP + (1 - hrs / tickMaxHrs) * chartH;
+  const midIdx = Math.floor(data.length / 2);
+
+  const BAR_W = Math.min(16, plotW / data.length - 3);
+  const slot = plotW / data.length;
+
+  const fmtMin = (m: number) => m >= 60 ? `${Math.floor(m / 60)}h ${m % 60}m` : `${m}m`;
+
+  return (
+    <>
+      <Animated.View style={{ transform: [{ translateY: slideAnim }] }}>
+        <Svg width={CHART_WIDTH} height={CHART_HEIGHT}>
+          <Rect x={0} y={0} width={CHART_WIDTH} height={CHART_HEIGHT} fill="transparent" onPress={() => setCallout(null)} />
+
+          {ticks.map((tick, i) => (
+            <Line key={`g${i}`} x1={plotLeft} y1={toY(tick)} x2={plotRight} y2={toY(tick)}
+              stroke={theme.borderSubtle} strokeWidth={1} opacity={1} />
+          ))}
+
+          {ticks.map((tick, i) => (
+            <SvgText key={`y${i}`} x={plotLeft - 4} y={toY(tick) + 3}
+              fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">
+              {`${tick}h`}
+            </SvgText>
+          ))}
+
+          {data.map((d, i) => {
+            const x = plotLeft + i * slot + (slot - BAR_W) / 2;
+            const cx = x + BAR_W / 2;
+            const deepH = toH(d.deep);
+            const coreH = toH(d.core);
+            const remH = toH(d.rem);
+            const awakeH = toH(d.awake);
+            const totalH = deepH + coreH + remH + awakeH;
+            return [
+              <Rect key={`d${i}`} x={x} y={chartBottom - deepH}                         width={BAR_W} height={deepH} fill={dColor} opacity={0.9} />,
+              <Rect key={`c${i}`} x={x} y={chartBottom - deepH - coreH}                 width={BAR_W} height={coreH} fill={cColor} opacity={0.9} />,
+              <Rect key={`r${i}`} x={x} y={chartBottom - deepH - coreH - remH}          width={BAR_W} height={remH} fill={rColor} opacity={0.9} />,
+              <Rect key={`a${i}`} x={x} y={chartBottom - deepH - coreH - remH - awakeH} width={BAR_W} height={awakeH} fill={aColor} opacity={0.9} rx={2} />,
+              <Rect key={`t${i}`} x={x} y={chartBottom - totalH} width={BAR_W} height={Math.max(totalH, 12)}
+                fill="transparent"
+                onPress={() => setCallout(prev =>
+                  prev?.date === fmtDate(d.date) ? null :
+                  { x: cx, y: chartBottom - totalH, date: fmtDate(d.date), deep: d.deep, rem: d.rem, core: d.core, awake: d.awake, awakeCount: d.awakeCount }
+                )} />,
+            ];
+          })}
+
+          <SvgText x={plotLeft} y={CHART_HEIGHT} fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium">
+            {fmtDate(data[0].date)}
+          </SvgText>
+          {data.length > 10 && (
+            <SvgText x={plotLeft + (midIdx / data.length) * plotW + slot / 2} y={CHART_HEIGHT}
+              fill={theme.textDim} fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">
+              {fmtDate(data[midIdx].date)}
+            </SvgText>
+          )}
+          <SvgText x={plotRight} y={CHART_HEIGHT} fill={theme.textDim}
+            fontSize={8} fontFamily="DMSans_500Medium" textAnchor="end">
+            {fmtDate(data[data.length - 1].date)}
+          </SvgText>
+
+          {callout !== null && (() => {
+            const asleep = callout.deep + callout.rem + callout.core;
+            const pct = (v: number) => asleep > 0 ? Math.round((v / asleep) * 100) : 0;
+            // Compact 2x2 grid (not 4 stacked rows) so the pill is short enough to actually fit
+            // above a bar: most nights run near this chart's max height (sleep duration varies far
+            // less night to night than daily calories), so a tall pill would sit over the bar it is
+            // describing more often than the equivalent macro callout does.
+            const cPillW = 172;
+            const cPillH = 56;
+            const cPillX = Math.min(Math.max(callout.x - cPillW / 2, plotLeft), plotRight - cPillW);
+            const cPillY = Math.max(CHART_PAD_TOP - 2, callout.y - cPillH - 10);
+            const col1X = cPillX + 9;
+            const col2X = cPillX + cPillW / 2 + 3;
+            return (
+              <>
+                <Rect x={cPillX} y={cPillY} width={cPillW} height={cPillH}
+                  fill={theme.bgCard} stroke={theme.borderCard} strokeWidth={0.5} rx={6}
+                  onPress={() => setCallout(null)} />
+                <SvgText x={cPillX + cPillW / 2} y={cPillY + 12} fill={theme.textDim}
+                  fontSize={8} fontFamily="DMSans_500Medium" textAnchor="middle">
+                  {callout.date}
+                </SvgText>
+                <SvgText x={col1X} y={cPillY + 27} fill={dColor} fontSize={8.5} fontFamily="DMSans_700Bold">
+                  {`Deep ${fmtMin(callout.deep)} ${pct(callout.deep)}%`}
+                </SvgText>
+                <SvgText x={col2X} y={cPillY + 27} fill={rColor} fontSize={8.5} fontFamily="DMSans_700Bold">
+                  {`REM ${fmtMin(callout.rem)} ${pct(callout.rem)}%`}
+                </SvgText>
+                <SvgText x={col1X} y={cPillY + 43} fill={cColor} fontSize={8.5} fontFamily="DMSans_700Bold">
+                  {`Core ${fmtMin(callout.core)} ${pct(callout.core)}%`}
+                </SvgText>
+                <SvgText x={col2X} y={cPillY + 43} fill={aColor} fontSize={8.5} fontFamily="DMSans_700Bold">
+                  {`Awake ${fmtMin(callout.awake)} ${callout.awakeCount}w`}
+                </SvgText>
+              </>
+            );
+          })()}
+        </Svg>
+      </Animated.View>
+      <View style={{ flexDirection: 'row', gap: 14, marginTop: 8 }}>
+        {[
+          { color: dColor, label: 'Deep' },
+          { color: rColor, label: 'REM' },
+          { color: cColor, label: 'Core' },
+          { color: aColor, label: 'Awake' },
+        ].map(l => (
+          <View key={l.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+            <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: l.color }} />
+            <Text style={{ fontSize: 9, color: theme.textMuted, fontFamily: 'DMSans_700Bold', letterSpacing: 1, textTransform: 'uppercase' }}>{l.label}</Text>
+          </View>
+        ))}
+      </View>
+    </>
+  );
+}
+
 function WorkoutFrequencyChart({ data, theme }: {
   data: { date: string, hadWorkout: boolean }[],
   theme: any,
@@ -991,6 +1148,8 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
         return <MacroBarChart data={macroData} theme={theme}
           proteinColor={card.macroColors?.protein} carbsColor={card.macroColors?.carbs} fatColor={card.macroColors?.fat} />;
       }
+      case 'sleepStages':
+        return <SleepStagesBarChart data={cardTrendData.sleepStages} theme={theme} />;
       case 'steps':
         return ct === 'bar'
           ? <GenericBarChart data={cardTrendData.steps} color={gc ?? theme.accentBlue} unit=""
@@ -1104,6 +1263,15 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
           : Math.round(d.macro.reduce((s, x) => s + x.carbs, 0) / d.macro.length * 10) / 10;
         return [{ label: 'Avg Protein', value: `${avgP}g` }, { label: showNetCarbs ? 'Avg Net Carbs' : 'Avg Carbs', value: `${avgC}g` }, { label: 'Avg Fat', value: `${avgF}g` }];
       }
+      case 'sleepStages': {
+        if (d.sleepStages.length === 0) return undefined;
+        const n = d.sleepStages.length;
+        const fmtM = (m: number) => m >= 60 ? `${Math.floor(m / 60)}h ${Math.round(m % 60)}m` : `${Math.round(m)}m`;
+        const avgD = d.sleepStages.reduce((s, x) => s + x.deep, 0) / n;
+        const avgR = d.sleepStages.reduce((s, x) => s + x.rem, 0) / n;
+        const avgCo = d.sleepStages.reduce((s, x) => s + x.core, 0) / n;
+        return [{ label: 'Avg Deep', value: fmtM(avgD) }, { label: 'Avg REM', value: fmtM(avgR) }, { label: 'Avg Core', value: fmtM(avgCo) }];
+      }
       case 'steps': {
         if (d.steps.length === 0) return undefined;
         const avg = Math.round(d.steps.reduce((s, x) => s + x.value, 0) / d.steps.length);
@@ -1204,7 +1372,7 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
       weight: cardTrendData.weight, calories: cardTrendData.cal, steps: cardTrendData.steps,
       activeCals: cardTrendData.activeCal, sleep: cardTrendData.sleep, macros: cardTrendData.macro,
       water: cardTrendData.water, netCalories: cardTrendData.netCal,
-      sleepScore: cardTrendData.sleepScore, restingHR: cardTrendData.restingHR,
+      sleepScore: cardTrendData.sleepScore, sleepStages: cardTrendData.sleepStages, restingHR: cardTrendData.restingHR,
       respiratoryRate: cardTrendData.respiratoryRate, bloodOxygen: cardTrendData.bloodOxygen,
       exerciseMinutes: cardTrendData.exerciseMinutes,
       effortScore: cardTrendData.effortScore, fiber: cardTrendData.fiber, sodium: cardTrendData.sodium,

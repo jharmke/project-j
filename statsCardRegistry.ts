@@ -11,7 +11,7 @@ export type DataKey =
   // Body
   'weight' |
   // Sleep & Recovery
-  'sleep' | 'sleepScore' | 'restingHR' | 'respiratoryRate' | 'bloodOxygen';
+  'sleep' | 'sleepScore' | 'sleepStages' | 'restingHR' | 'respiratoryRate' | 'bloodOxygen';
 export type ChartType = 'line' | 'bar' | 'stackedBar';
 export type CardPeriod = 7 | 30 | 90;
 export type CardPlacement = 'stats' | 'home' | 'both'; // 'home' / 'both' reserved for future shared card pool
@@ -163,6 +163,7 @@ export const DATA_KEY_META: Record<DataKey, { icon: string; label: string; descr
   // Sleep & Recovery
   sleep:         { icon: 'moon-outline',            label: 'Sleep',             description: 'Hours slept per night',                category: 'Sleep & Recovery' },
   sleepScore:    { icon: 'star-outline',            label: 'Sleep Score',       description: 'Nightly sleep quality score (0-100)',  category: 'Sleep & Recovery' },
+  sleepStages:   { icon: 'bar-chart-outline',       label: 'Sleep Stages',      description: 'Deep, REM, core, and awake per night', category: 'Sleep & Recovery' },
   restingHR:     { icon: 'heart-circle-outline',    label: 'Resting HR',        description: 'Resting heart rate (bpm)',             category: 'Sleep & Recovery' },
   respiratoryRate:{ icon: 'pulse-outline',          label: 'Respiratory Rate',  description: 'Breaths per minute',                  category: 'Sleep & Recovery' },
   bloodOxygen:   { icon: 'medical-outline',         label: 'Blood Oxygen',      description: 'Blood oxygen % from Apple Health',    category: 'Sleep & Recovery' },
@@ -171,7 +172,7 @@ export const DATA_KEY_META: Record<DataKey, { icon: string; label: string; descr
 // Chart types available per data key. Macros only supports stackedBar.
 // All others support line and bar.
 export function availableChartTypes(dataKey: DataKey): ChartType[] {
-  if (dataKey === 'macros') return ['stackedBar'];
+  if (dataKey === 'macros' || dataKey === 'sleepStages') return ['stackedBar'];
   return ['line', 'bar'];
 }
 

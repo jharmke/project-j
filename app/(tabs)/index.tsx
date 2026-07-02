@@ -1315,7 +1315,7 @@ export default function HomeScreen() {
           ...(activeCalories > 0 ? { activeCalories } : {}),
           ...(steps > 0 ? { steps, stepGoal } : {}),
           ...(sleepHours !== null ? { sleepHours, sleepGoal } : {}),
-          ...(sleepStages !== null ? { sleepStages } : {}),
+          ...(sleepStages !== null ? { sleepStages, sleepAwakeMs, sleepAwakeCount } : {}),
           ...(sleepTimes !== null ? { sleepBedTime: sleepTimes.bed, sleepWakeTime: sleepTimes.wake } : {}),
           ...(restingHR !== null ? { restingHR } : {}),
           ...(respiratoryRate !== null ? { respiratoryRate } : {}),

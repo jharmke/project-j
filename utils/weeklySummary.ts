@@ -8,6 +8,7 @@ import { storageSet } from './storage';
 import { DayScore } from './dayScore';
 import { loadCalorieTargets } from './calorieTarget';
 import { CAL_MAX, PROTEIN_MAX, WATER_MAX } from './dayScore';
+import { effectiveExerciseMinutes } from './exerciseMinutes';
 
 const WEEKLY_SUMMARY_KEY_PREFIX = 'pj_weekly_summary_';
 const WEEKLY_GATE_KEY = 'pj_last_weekly_generated';
@@ -311,8 +312,10 @@ export async function generateWeeklySummary(weekStart: string): Promise<WeeklySu
     const steps = day.steps || 0;
     if (steps > 0) stepsList.push(steps);
 
-    const exMin = day.exerciseMinutes;
-    if (typeof exMin === 'number' && exMin > 0) exerciseMinutesList.push(exMin);
+    // Apple Health minutes if present, else the manual workout timer (no-watch users) -- same merge
+    // used by the goal, streak, and Home card so exercise minutes are consistent app-wide.
+    const exMin = effectiveExerciseMinutes(day);
+    if (exMin > 0) exerciseMinutesList.push(exMin);
 
     if (typeof day.restingHR === 'number' && day.restingHR > 0) restingHRList.push(day.restingHR);
     if (typeof day.respiratoryRate === 'number' && day.respiratoryRate > 0) respiratoryRateList.push(day.respiratoryRate);
@@ -365,8 +368,12 @@ export async function generateWeeklySummary(weekStart: string): Promise<WeeklySu
       const cardioDone = (workoutState.cardioComplete || {})[dk] === true;
       if (exercises.length > 0) {
         const checked = exercises.filter((ex: any) => dayChecks[ex.id]);
+        // Apple Watch strength imports are non-cardio, auto-checked session envelopes, NOT individual lifts.
+        // Count typed lifts individually; if a day is watch-only (Apple strength, no typed lifts), credit it as 1.
+        const appleStrength = checked.filter((ex: any) => ex.fromAppleHealth && !ex.isCardio && ex.appleHealthUUID);
+        const manualLifts = checked.filter((ex: any) => !ex.isCardio && !(ex.fromAppleHealth && ex.appleHealthUUID));
         cardioDays += checked.filter((ex: any) => ex.isCardio).length;
-        liftDays += checked.filter((ex: any) => !ex.isCardio).length;
+        liftDays += manualLifts.length > 0 ? manualLifts.length : (appleStrength.length > 0 ? 1 : 0);
       } else if (cardioDone) {
         cardioDays += 1;
       }

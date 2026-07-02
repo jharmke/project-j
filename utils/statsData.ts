@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ADVANCED_NUTRIENTS } from '../statsCardRegistry';
 import { calcSleepScore } from './sleepScore';
+import { effectiveExerciseMinutes } from './exerciseMinutes';
 
 export type TrendData = {
   weight: { date: string; value: number }[];
@@ -263,7 +264,8 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
         if (data.restingHR) rhrH.push({ date: dateKey, value: data.restingHR });
         if (data.respiratoryRate) rrH.push({ date: dateKey, value: data.respiratoryRate });
         if (data.bloodOxygen) boH.push({ date: dateKey, value: data.bloodOxygen });
-        if (!excl.exercise && data.exerciseMinutes) emH.push({ date: dateKey, value: data.exerciseMinutes });
+        const effEm = effectiveExerciseMinutes(data); // Apple minutes, else manual timer (no-watch users)
+        if (!excl.exercise && effEm > 0) emH.push({ date: dateKey, value: effEm });
         if (!excl.exercise) hadWorkout = (workoutState.programs?.[dateKey]?.exercises?.length ?? 0) > 0;
         const es = workoutState.cardioLogs?.[dateKey]?.effortScore;
         if (!excl.exercise && es != null) esH.push({ date: dateKey, value: es });

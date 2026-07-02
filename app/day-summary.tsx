@@ -31,6 +31,7 @@ import { contextLine as computeContextLine, hadFaithEntryOn } from '../utils/day
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { useTutorial } from '../context/TutorialContext';
 import { refreshDayCoachTip, resolveTipBody } from '../utils/coachAI';
+import { effectiveExerciseMinutes } from '../utils/exerciseMinutes';
 
 const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -557,7 +558,7 @@ export default function DaySummaryScreen() {
                         left={input.workoutTotalCount > 0
                           ? { label: 'COMPLETED', value: `${input.workoutCompletedCount}` }
                           : { label: 'CARDIO', value: 'Complete' }}
-                        right={input.dayData?.exerciseMinutes ? { label: 'ACTIVE MINS', value: `${input.dayData.exerciseMinutes} min` } : undefined}
+                        right={effectiveExerciseMinutes(input.dayData) > 0 ? { label: 'ACTIVE MINS', value: `${effectiveExerciseMinutes(input.dayData)} min` } : undefined}
                       />
                     }
                   />

@@ -15,7 +15,8 @@ import { useEffect, useRef, useState } from 'react';
 import { AppState, LogBox } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { runRestoreGate, uploadAllLocal } from '../services/syncService';
+import { runRestoreGate, uploadAllLocal, isSyncReady } from '../services/syncService';
+import { backfillAllPhotos } from '../utils/foodPhotos';
 import { applyVacation } from '../utils/vacationMode';
 import * as Notifications from 'expo-notifications';
 import { setupNotificationHandler } from '../services/notifications';
@@ -77,6 +78,12 @@ function RootLayoutNav() {
     const subscription = AppState.addEventListener('change', nextAppState => {
       if (nextAppState === 'background') {
         uploadAllLocal().catch(() => {});
+        // Heal any still-local-only food photos up to the cloud before a possible delete/reinstall.
+        // Same function as the dev "Backfill Photos" tool: uploads only local-only photos, skips
+        // cloud-safe ones, removes only dead keys (image already gone). Gated on the restore lock so
+        // it never runs mid-restore; no-ops when signed out. This is what makes photos self-heal for
+        // regular users who never touch dev tools (e.g. a photo whose capture-time upload failed offline).
+        if (isSyncReady()) backfillAllPhotos().catch(() => {});
       } else if (nextAppState === 'active') {
         refreshLiveNotifications().catch(() => {});
         // Stamp any newly-arrived in-range vacation days + auto-expire a finished one.

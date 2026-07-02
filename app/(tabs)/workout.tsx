@@ -2030,23 +2030,19 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
         )}
 
         {!isRest && displayExercises.length > 0 && (
-          finishedSummaries[activeDay] ? (
-            <TouchableOpacity
-              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openFinishSummary(finishedSummaries[activeDay]); }}
-              style={{ marginTop: 4, marginBottom: 4, backgroundColor: theme.accentBlue, borderRadius: 12, paddingVertical: 15, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8,
-                shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}>
-              <Ionicons name="checkmark-circle" size={18} color={theme.bgPrimary} />
-              <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', letterSpacing: 0.5, color: theme.bgPrimary }}>View Summary</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              onPress={finishWorkout}
-              style={{ marginTop: 4, marginBottom: 4, backgroundColor: theme.accentBlue, borderRadius: 12, paddingVertical: 15, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8,
-                shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}>
-              <Ionicons name="checkmark-done" size={18} color={theme.bgPrimary} />
-              <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', letterSpacing: 0.5, color: theme.bgPrimary }}>Finish Workout</Text>
-            </TouchableOpacity>
-          )
+          // Always "View Summary": the button is a viewer, not a save gate (your logged sets already
+          // persist on every circle-check). A snapshot re-opens instantly; otherwise it computes the
+          // live recap (which also banks PRs + snapshots for this session).
+          <TouchableOpacity
+            onPress={() => {
+              if (finishedSummaries[activeDay]) { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openFinishSummary(finishedSummaries[activeDay]); }
+              else finishWorkout();
+            }}
+            style={{ marginTop: 4, marginBottom: 4, backgroundColor: theme.accentBlue, borderRadius: 12, paddingVertical: 15, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8,
+              shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}>
+            <Ionicons name="checkmark-circle" size={18} color={theme.bgPrimary} />
+            <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', letterSpacing: 0.5, color: theme.bgPrimary }}>View Summary</Text>
+          </TouchableOpacity>
         )}
 
         <View ref={effortCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, marginTop: 12 }]}>
@@ -2216,19 +2212,14 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                 <View style={{ backgroundColor: theme.bgSheet, borderRadius: 18, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden',
                   shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.35, shadowRadius: 20, elevation: 10 }}>
                   <ScrollView showsVerticalScrollIndicator={false} bounces={false} contentContainerStyle={{ paddingHorizontal: 22, paddingTop: 10, paddingBottom: 22 }}>
-                  <TouchableOpacity activeOpacity={0.7} onPress={closeFinishSummary} style={{ alignItems: 'center', paddingBottom: 14 }} hitSlop={{ top: 10, bottom: 10, left: 40, right: 40 }}>
+                  <TouchableOpacity activeOpacity={0.7} onPress={closeFinishSummary} style={{ alignItems: 'center', paddingBottom: 12 }} hitSlop={{ top: 10, bottom: 10, left: 40, right: 40 }}>
                     <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
                   </TouchableOpacity>
 
-                  <View style={{ alignItems: 'center', marginBottom: 20 }}>
-                    <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
-                      <Ionicons name="checkmark" size={30} color={theme.accentBlue} />
-                    </View>
-                    <Text style={{ fontSize: 26, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1.5, color: theme.accentBlueRaw }}>
-                      {fs.mindful ? 'Nice Work' : 'Workout Complete'}
-                    </Text>
+                  <View style={{ marginBottom: 18, paddingBottom: 12, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
+                    <Text style={[styles.modalTitle, { color: theme.accentBlue, marginBottom: !!dateLabel ? 2 : 0 }]}>Workout Summary</Text>
                     {!!dateLabel && (
-                      <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted, marginTop: 3, letterSpacing: 0.3 }}>{dateLabel}</Text>
+                      <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted, letterSpacing: 0.3 }}>{dateLabel}</Text>
                     )}
                   </View>
 

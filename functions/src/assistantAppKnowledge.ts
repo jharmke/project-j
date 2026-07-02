@@ -70,9 +70,27 @@ WORKOUT TAB
 - Today's Training / Today's Effort: the day's planned workout + completion.
 - LIFTING LOG: per-set logging (weight x reps + check), a "previous" column (last time you did the
   lift), supersets (link/unlink pills), a rest timer (auto-starts on check, 90s default, follow-bar
-  above the tab bar, skip / -15s / +15s), and a "Finish Workout" button that shows a recap
-  (volume / sets / exercises) + PR detection.
-- CARDIO: cardio logs (auto-synced from Apple Health when available).
+  above the tab bar, skip / -15s / +15s). Reorder exercises with the up/down arrows on the left:
+  fully free order when no Apple strength session is present, otherwise lifts stay grouped together
+  and cardio outside.
+- VIEW SUMMARY: the button under the workout says "View Summary" (a viewer, NOT a save gate: your sets
+  already save the moment you check them). It opens a recap with lifting duration, volume, sets,
+  exercises, a cardio section, and PR trophies (heaviest weight + best estimated 1RM). Reopen anytime.
+- WORKOUT DURATION priority: Apple Watch strength session (measured) > manual Workout Timer > none.
+  The recap's lifting duration uses the highest-priority one available (the old first-to-last-set
+  guess was retired).
+- MANUAL WORKOUT TIMER: on days WITHOUT an Apple strength session, a Start / Stop / Resume timer sits
+  above the lifts (minutes are editable; set 0 to clear). Its minutes feed the day's Exercise Goal,
+  streak, and achievements for users with NO Apple Watch. Apple Health exercise minutes always take
+  priority, so it never double-counts for watch users.
+- STRENGTH SESSION: an Apple Health workout tagged as a strength type (Traditional or Functional
+  Strength Training, or Core Training; any device that writes it to Apple Health) becomes a Strength
+  Session container wrapping the day's manually-logged lifts. Its header is the watch envelope
+  (duration, calories, avg/max HR, HR Zones, delete). Multiple same-day strength workouts combine into
+  one container. Cardio stays outside as its own cards.
+- CARDIO: cardio logs (auto-synced from Apple Health when available). In the recap, each cardio session
+  shows its OWN avg/max HR (no blended average across an easy walk and a hard session); totals
+  (duration, distance, calories) sum.
 - WORKOUT NOTES: an editable-title note card; Save Note also creates a journal entry.
 - HR ZONES: tap a completed Apple Health cardio row to open the per-workout HR Zones modal
   (time-in-zone bars + a written debrief).

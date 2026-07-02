@@ -367,7 +367,7 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
       { term: 'Water', explanation: 'Counts days your total logged water meets or exceeds your water goal.' },
       { term: 'Steps', explanation: 'Counts days your Apple Health step count meets or exceeds your step goal.' },
       { term: 'Active Cals', explanation: 'Counts days your active calorie burn from Apple Health meets or exceeds your active calorie goal, adjusted for your burn accuracy setting.' },
-      { term: 'Exercise Mins', explanation: 'Counts days your Apple Health exercise minutes meet or exceed your exercise minutes goal.' },
+      { term: 'Exercise Mins', explanation: 'Counts days your exercise minutes meet or exceed your goal. Minutes come from Apple Health. No Apple Watch? The Workout tab timer\'s minutes count instead. If you do wear a watch, Apple\'s number always wins, so it never double counts.' },
       { term: 'Sleep Duration', explanation: 'Counts days your total sleep time meets or exceeds your sleep goal.' },
       { term: 'Sleep Quality', explanation: 'Counts days your calculated sleep score is 85 or higher, the Well Rested threshold. Requires Apple Health stage data or a feel rating.' },
       { term: 'Bible', explanation: 'Counts days you log a reflection on a Bible verse in the Bible reader. Logging today counts immediately; Bible streaks do not wait for the day to end.' },

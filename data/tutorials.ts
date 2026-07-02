@@ -1066,9 +1066,9 @@ export const TUTORIALS: Tutorial[] = [
         targetKey: 'workout_exercise_row',
         title: 'EDITING AND REMOVING',
         body: {
-          discipline: 'Pencil icon edits the exercise: update sets, reps, rest, or name. Trash icon removes it permanently. Long-press the left grip to drag and reorder the list. All changes save automatically.',
-          balanced: 'Tap the pencil to edit an exercise, the trash to remove it, or long-press the left handle to drag it to a different position. Everything saves instantly.',
-          mindful: 'Tap the pencil to adjust any exercise. Tap the trash to remove one that doesn\'t fit your session. Long-press the left grip to rearrange the order.',
+          discipline: 'Pencil icon edits the exercise: update sets, reps, rest, or name. Trash icon removes it permanently. Use the up and down arrows on the left to reorder the list. All changes save automatically.',
+          balanced: 'Tap the pencil to edit an exercise, the trash to remove it, or the up and down arrows on the left to move it. Everything saves instantly.',
+          mindful: 'Tap the pencil to adjust any exercise. Tap the trash to remove one that doesn\'t fit your session. Use the up and down arrows on the left to rearrange the order.',
         },
       },
       {
@@ -1656,9 +1656,9 @@ export const TUTORIALS: Tutorial[] = [
         noTabBarOffset: true,
         title: 'ACTIVE CALORIES & EXERCISE',
         body: {
-          discipline: 'Two Apple Health targets: active calories burned and exercise minutes. Each fills its own home screen bar and triggers a celebration the moment you hit it. Pulled automatically, no manual logging.',
-          balanced: 'These two targets, active calories and exercise minutes, come straight from Apple Health. Each has its own progress bar and celebrates when you reach it.',
-          mindful: 'Active calories and exercise minutes come from Apple Health automatically. They each have a bar that fills through the day. No pressure to hit either.',
+          discipline: 'Two targets: active calories burned and exercise minutes. Active calories pull from Apple Health. Exercise minutes come from Apple Health, or from the Workout tab timer if you don\'t wear a watch. Each fills its own home screen bar and celebrates the moment you hit it.',
+          balanced: 'Active calories and exercise minutes each get a progress bar and a celebration when you reach it. Active calories come from Apple Health. Exercise minutes come from Apple Health, or from the Workout tab timer when you have no watch.',
+          mindful: 'Active calories and exercise minutes each have a bar that fills through the day. They come from Apple Health, and exercise minutes can also come from the Workout tab timer if you don\'t wear a watch. No pressure to hit either.',
         },
       },
       {

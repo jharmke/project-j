@@ -18,6 +18,7 @@ import HRZonesStatsCard from '../../components/HRZonesStatsCard';
 import BodyMeasurementsCard from '../../components/BodyMeasurementsCard';
 import { ToastRenderer, useToast } from '../../components/Toast';
 import { EMPTY_TREND_DATA, TrendData, fetchTrendData as fetchTrendDataUtil, offsetToDateKey, computeDayNet, buildDailyBmrMap } from '../../utils/statsData';
+import { loadMetricPresence, seedMetricPresenceOnce, PresenceMap, PresenceMetric } from '../../utils/metricPresence';
 import { evaluateCalorieGoalHit, paceTargetFromWeightGoal } from '../../utils/goalHit';
 import { StatsGraphCard, GRAPH_SWATCHES, MACRO_PROTEIN, MACRO_CARBS, MACRO_FAT } from '../../components/StatsGraphCard';
 import { StatsCardEditModal } from '../../components/StatsCardEditModal';
@@ -167,6 +168,18 @@ function CollapsibleSection({ label, subtitle, children, defaultOpen = true, the
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 
+// Graph metrics that ONLY exist with a worn device, mapped to their presence-signal key.
+// Hidden from the "add a graph" picker when the user has NEVER had that data, so a non-wearer
+// can't add a chart that stays permanently empty. Gated on real per-metric history (utils/
+// metricPresence), NOT a global "is a watch user" flag -- a partial user still gets the graphs
+// for the data they DO have. Sleep, Sleep Score, steps, active cals, exercise minutes are NOT
+// here: they have manual/phone sources so they are relevant to everyone.
+const WATCH_ONLY_GRAPHS: Partial<Record<DataKey, PresenceMetric>> = {
+  restingHR: 'restingHR', respiratoryRate: 'respiratoryRate', bloodOxygen: 'bloodOxygen',
+  sleepStages: 'sleepStages', recoveryScore: 'recovery', hrv: 'hrv', vo2Max: 'vo2Max',
+  cardioRecovery: 'cardioRecovery',
+};
+
 export default function StatsScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
@@ -201,6 +214,29 @@ export default function StatsScreen() {
   const [activePeriod, setActivePeriod] = useState<'7' | '30' | '90' | '180' | 'ytd'>('7');
 
   const [trendDataMap, setTrendDataMap] = useState<Record<string, TrendData>>({});
+
+  // Per-metric "has this user ever had this data" map, for hiding watch-only graphs from
+  // non-wearers. null until loaded -> the picker fails OPEN (shows everything) during load,
+  // so a real wearer is never briefly blocked. Seeds from history once, then reads the
+  // grow-only persisted map.
+  const [metricPresence, setMetricPresence] = useState<PresenceMap | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try { await seedMetricPresenceOnce(); } catch {}
+      const p = await loadMetricPresence();
+      if (!cancelled) setMetricPresence(p);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+  // A graph metric is offerable unless it is watch-only AND we have confirmed the user has
+  // never had that data. Unknown/still-loading -> offer it (fail open).
+  const isGraphMetricAvailable = (dk: DataKey): boolean => {
+    const pk = WATCH_ONLY_GRAPHS[dk];
+    if (!pk) return true;
+    if (!metricPresence) return true;
+    return metricPresence[pk] === true;
+  };
 
   const [calTarget, setCalTarget] = useState(0);
   const [stepGoal, setStepGoal] = useState(10000);
@@ -2319,7 +2355,8 @@ export default function StatsScreen() {
               {creatorStep === 1 && (
                 <View ref={graphCreatorDataGridRef} collapsable={false} style={{ gap: 16 }}>
                   {DATA_KEY_CATEGORIES.map(cat => {
-                    const keys = (Object.keys(DATA_KEY_META) as DataKey[]).filter(dk => DATA_KEY_META[dk].category === cat);
+                    const keys = (Object.keys(DATA_KEY_META) as DataKey[]).filter(dk => DATA_KEY_META[dk].category === cat && isGraphMetricAvailable(dk));
+                    if (keys.length === 0) return null;
                     return (
                       <View key={cat}>
                         <Text style={{ fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted, marginBottom: 10 }}>
@@ -2517,7 +2554,8 @@ export default function StatsScreen() {
               {creatorStep === 1 && (
                 <View style={{ gap: 16 }}>
                   {DATA_KEY_CATEGORIES.map(cat => {
-                    const keys = (Object.keys(DATA_KEY_META) as DataKey[]).filter(dk => DATA_KEY_META[dk].category === cat);
+                    const keys = (Object.keys(DATA_KEY_META) as DataKey[]).filter(dk => DATA_KEY_META[dk].category === cat && isGraphMetricAvailable(dk));
+                    if (keys.length === 0) return null;
                     return (
                       <View key={cat}>
                         <Text style={{ fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted, marginBottom: 10 }}>

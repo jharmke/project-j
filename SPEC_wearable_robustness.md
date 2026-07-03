@@ -299,15 +299,96 @@ for addition 1. (Exact thresholds = open question.)
 
 ## OPEN QUESTIONS / TO DISCUSS
 
-- Adaptive TDEE trend-smoothing algorithm + how often it re-evaluates / suggests.
+- [DECIDED 2026-07-03] Trend smoothing = EMA (~10-day half-life recommended); weekly cadence; suggest-
+  only; Mindful = no visible nudge; first-use disclaimer required. Full design in "PHASE 2 DESIGN"
+  above. REMAINING tuning: exact EMA constant, min weigh-in count, divergence threshold, per-step cap.
 - Exact wear-inference thresholds (what counts as none/partial/full, over what window).
-- Does adaptive TDEE need its own onboarding/first-use explainer + disclaimer (health-data standard)?
 - Interaction with the existing "burn accuracy %" setting (that handles OVER-estimation; adaptive TDEE
-  is a different lever).
-- Mindful-mode behavior for suggestions/pivots.
-- How this coexists with EvR's existing predicted-vs-actual (do we unify them?).
+  is a different lever) -- confirm they don't fight.
+- How this coexists with EvR's existing predicted-vs-actual: unify via ONE shared trend engine (rec) or
+  keep walled off (Justin's call).
+- Where the suggestion surfaces (home Calories card? settings? dedicated coach card?).
 - The per-rule coaching audit (walk every smart-tip rule, confirm it guards on data presence) -- the
   read-only methodical scan to turn "probably fine" into "verified fine."
+
+---
+
+## PHASE 2 DESIGN: ADAPTIVE TDEE (DRAFT 2026-07-03, NOT signed off -- do NOT build yet)
+
+Framed deliberately as a walled-off, optional, suggestion-only box so it is a SMALL, reversible change
+to data/app even though it is a BIG feature to design. Justin's core anxiety was "this touches
+everything" -- it does not. See "Blast radius" below.
+
+### The one-sentence idea
+If you ate ~X per day and the SCALE trend moved more (or less) than that intake should have caused,
+your real burn differs from the formula's guess. Work backwards to the real burn, and SUGGEST a target
+that matches it. Runs on FOOD + WEIGHT only. It does NOT read watch active-calories (too noisy); the
+scale is the honest referee, and it still catches "you burn more than assumed" because you can't burn
+extra without the weight moving.
+
+### The math (honest, simple, defensible)
+- Energy per lb of body-weight change ~= 3,500 kcal.
+- Over a rolling window: realTDEE = avgDailyIntake - (smoothedWeightChangeLbs x 3500) / windowDays.
+- Worked example (Justin): avg intake 1,638, smoothed trend -2 lbs over 14 days ->
+  (-2 x 3500)/14 = -500/day -> realTDEE = 1638 - (-500) = ~2,138. The formula target never knew this.
+- Weight change MUST come from a SMOOTHED trend (EMA, ~10-day half-life recommended -- honest + cheap;
+  a Kalman filter is overkill), never raw scale jumps, so water/glycogen spikes can't move the target.
+
+### Cadence + hedging (from MacroFactor research)
+- Re-evaluate on a weekly rhythm; first ~14 days just watch/build confidence before suggesting.
+- Do NOT react 1:1 to a single week's swing. Only surface when the divergence is MEANINGFUL
+  (realTDEE differs from the assumed TDEE by >= ~150 kcal) AND persists. Cap each suggested step
+  (e.g. +/-100-150 kcal) so it eases toward truth instead of lurching ("no caloric roller coaster").
+
+### Guards / weigh-in dependence (the safety rails)
+- Thin history / <~4-5 weigh-ins in the window -> do NOTHING; fall back to the profile target. No
+  regression, ever. A user who never weighs in never sees this feature.
+- Newest weigh-in >= 10 days old -> HOLD the last good estimate, do NOT drift, show the gentle
+  "step on the scale to keep your target accurate" nudge. REUSE STALE_WEIGH_DAYS = 10 and the exact
+  honest-when-stale pattern EvR's deficit card already uses (diagnosticReport.ts ~311), so the two
+  behave identically. Never show a stale auto-change.
+
+### Delivery (LOCKED with Justin 2026-07-03): SUGGEST, never silently change
+- Track the estimate in the background; when the trend clearly diverges, SURFACE a suggestion
+  ("Your real burn looks higher, raise target to ~X?") that only applies on the user's TAP.
+- Optional opt-in AUTO-ADJUST toggle, OFF by default, for the set-and-forget crowd.
+- The ONLY thing the feature ever WRITES is the calorie target number -- and only on accept. This is
+  the SAME operation a user can already do by hand in settings (type a new target). It invents no new
+  write path.
+
+### Mindful-mode behavior (LOCKED with Justin 2026-07-03)
+- Mindful users do NOT get the visible suggestion nudge (Mindful already hides net calories / score bar
+  / weight emphasis; a "raise your target" callout would violate the mode contract).
+- If a Mindful user has deliberately enabled auto-adjust, the engine may quietly keep their target
+  honest in the background with NO callout. Discipline/Balanced get the visible suggestion.
+
+### Blast radius (the anxiety answer -- honest, not just soothing)
+- WRITES exactly one thing: the calorie target, only on accept. That's an operation the app already
+  supports, so Day Score / summaries / stats / EvR / logs need NO surgery -- they read the target like
+  always.
+- READS food + weight only; writes nothing to logged data. No migration, no data rewrite, no reset.
+- Ships behind a toggle. Toggle OFF (default) = the feature does not exist; the app is byte-identical
+  to today. The "undo" at every step is simply "don't tap accept."
+- The one CONNECTION point is EvR: it already computes the honest weight span, daysSinceLastWeighIn,
+  and predicted-vs-actual (diagnosticReport.ts ~289, ~780-800). STRONG REC: ONE shared weight-trend
+  engine feeds both EvR and the target suggestion (a wire, not a rewrite), so they can't drift and
+  defect 5/C folds in cleanly. Open: keep it fully walled off from EvR instead, if Justin prefers.
+
+### First-use + disclaimer (health-data standard)
+- Surfaces a recommendation/metric, so it needs the first-use modal + inline micro disclaimer per the
+  Disclaimer Standard, before it ever suggests a target change.
+
+### Base stays clean
+- loadCalorieTargets (utils/calorieTarget.ts) is the untouched base. Adaptive TDEE is a LAYER that
+  produces a suggestion against that base; the base number only changes if the user accepts.
+
+### Still open before build
+- Exact EMA half-life / smoothing constants + minimum weigh-in count for the window.
+- Meaningful-divergence threshold (~150 kcal?) and per-suggestion cap (~100-150 kcal?) -- tune.
+- Unify with EvR predicted-vs-actual vs keep walled off (Justin's call).
+- Where the suggestion surfaces (home Calories card? settings? a dedicated coach card?).
+- Interaction with the existing "burn accuracy %" setting (that handles watch OVER-estimation; this is
+  a different lever -- confirm they don't fight).
 
 ---
 

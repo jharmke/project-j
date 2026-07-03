@@ -477,7 +477,11 @@ export default function WeeklySummaryScreen() {
           </SectionCard>
 
           {/* Recovery card -- headline is the avg real Recovery Score (raw sleep on fallback) */}
-          <SectionCard label="Recovery" icon="heart" score={avgRecoveryScore} pct="35% OF SCORE" borderColor={COLOR_RECOVERY}>
+          <SectionCard label="Recovery" icon="heart" score={avgRecoveryScore} pct={avgRecoveryScore == null ? '' : '35% OF SCORE'} borderColor={COLOR_RECOVERY}>
+            {avgRecoveryScore == null ? (
+              <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', paddingVertical: 4 }}>Recovery needs a smartwatch or fitness tracker worn overnight. No recovery or sleep data this week.</Text>
+            ) : (
+            <>
             {avgHRV !== null && (
               <StatRow label="HRV" labelColor={COLOR_RECOVERY} value={`${avgHRV} ms`} />
             )}
@@ -506,6 +510,8 @@ export default function WeeklySummaryScreen() {
                   <SubBlock left={{ label: 'BLOOD OXYGEN', value: `${avgBloodOxygen}%` }} />
                 )}
               </View>
+            )}
+            </>
             )}
           </SectionCard>
 

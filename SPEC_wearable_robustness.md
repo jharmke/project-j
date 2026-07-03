@@ -1,0 +1,280 @@
+# SPEC: Wearable Robustness (no-watch / partial-watch users + adaptive TDEE)
+
+STATUS: DESIGN IN PROGRESS (from the deep 2026-07-03 session). Do NOT build until finished + signed
+off. This is a SEPARATE subsystem from SPEC_workout_sessions.md, it's about the calorie/coaching
+engine and how the app behaves for users who don't wear a wearable 24/7. Kept in its own spec on
+purpose so the two big pain points don't tangle.
+
+Origin: Justin's concern that the app was designed ~99% for full-time watch wearers (like him) and
+that non-watch / inconsistent-watch / multi-device users get incomplete or misleading data.
+
+---
+
+## THE CONCERN
+
+The app is watch-FIRST (a valid, strong focus, same as Whoop/Oura). But a large share of real users
+won't wear a watch 24/7. The fear: their smart features are irrelevant or actively inaccurate, and the
+coaching tells them negative things ("you're way under on burn") purely because they aren't wearing a
+device. This spec separates what's actually true from what feels true, and defines the additive fixes.
+
+---
+
+## VERIFIED FINDINGS (code-grounded 2026-07-03 -- so future-me doesn't re-panic)
+
+- **Calorie TARGET is watch-INDEPENDENT.** `loadCalorieTargets` (utils/calorieTarget.ts) = BMR (Mifflin)
+  x lifestyle multiplier + training bonus - goal deficit, ALL from pj_profile (lifestyleActivity,
+  trainingFrequency, weightGoal). Active calories from the watch are NOWHERE in it. So the number users
+  look at most (calories to eat) is accurate for everyone, watch or not. The app also does NOT do the
+  MyFitnessPal "eat back your exercise" thing -- the target is fixed, daily burn is never added to the
+  eating budget. (Confirmed by Justin's own device: burning 900 doesn't change his 1638 target.)
+- **`net` stat DOES include burn.** index.tsx ~line 990: net = eaten - active burn - BMR. For a
+  non-wearer, burn ~0 so net understates the deficit. It's a SECONDARY stat, and Mindful mode hides it.
+- **Coaching HAS partial coverage-awareness.** smartTipsEngine computes daysWithNutritionData /
+  daysWithActivityData / daysWithSleepData (~line 536) and attaches them to the EvR/weekly/monthly
+  packets; coachAI.ts rulebook softens to "in the days you logged" when coverage <50% and won't praise
+  a deficit when nutrition coverage <60%. NOTE: "activity data" counts STEPS, so a phone-carrying
+  no-watch user reads as having activity data and gets legit step-based coaching -- rarely truly blind.
+  GAP: there is NO deliberate "this user has no wearable -> pivot to nutrition-first" mode. It softens,
+  it doesn't pivot.
+- **EvR "predicted vs actual"** uses active cals in the prediction, so for a non-wearer predicted burn
+  is understated -> predicted deficit smaller than the real scale change -> the gap widens.
+- **Recovery / HRV / RHR / sleep stages / HR zones / VO2 / SpO2 / resp rate** void HONESTLY without a
+  watch (no data shown, never fabricated). Impossible without a wearable in ANY app -- not a Project J
+  flaw, it's physics.
+- **No adaptive TDEE exists.** calTarget never reads the weight trend to adjust; EvR merely SHOWS the
+  predicted-vs-actual gap and never feeds it back into the target.
+
+### Honest verdict
+Non-watch users are NOT screwed -- they get an accurate nutrition + weight + calorie-target + faith
+app. The wearable-only layer is honestly absent, not faked. The real, ADDITIVE work is below. Nothing
+here is a rewrite, and the calorie target (the scariest assumption) is already clean.
+
+### The real limitation
+The fixed target is a crude average of assumed activity; it doesn't track real burn/variance and only
+self-corrects if the user manually edits their activity level/goal. That's what adaptive TDEE fixes,
+for everyone (see addition 2).
+
+---
+
+## DEFECT INVENTORY + PHASED ACTION PLAN (locked 2026-07-03)
+
+### The defects (everything identified)
+- **A.** Coaching may surface active-cal or recovery insights to a user with little/no watch data (a
+  tip computed off ~0 data). Extent = TBD by the Phase 0 audit.
+- **B.** The `net` stat understates burn for non-wearers (smaller apparent deficit). Secondary stat;
+  Mindful already hides it.
+- **C.** EvR "predicted vs actual" leans on active calories, so a non-wearer's predicted deficit is
+  understated vs the real scale change -> the card can mislead.
+- **D.** No adaptive TDEE: the target never self-corrects from weight trend (the "I burn more than my
+  pace and the app never knows" gap). Affects everyone.
+- **E.** Wearable-gated cards (recovery/HR/sleep) render empty/broken for non-wearers instead of
+  explaining they need a device.
+- **F.** No deliberate wear-level detection -> coaching softens but doesn't PIVOT for confirmed
+  non-wearers.
+- **G.** Multi-device users can get duplicate workouts.
+
+### The phases
+- **Phase 0 - FULL data-flow audit (read-only, changes nothing).** Inventory EVERY surface where
+  watch-dependent data (active cals, exercise min, HRV/recovery, HR, sleep stages, VO2/SpO2/resp) flows
+  into something a user sees -- smart tips, sleep coach, recovery coach, EvR cards, Day Score
+  activity+recovery, the net stat, weekly/monthly summaries, stats graphs, home cards, notifications,
+  achievements, streaks. For each: what happens when that data is ABSENT / SPARSE / from MULTIPLE
+  sources. Output = the exact bounded defect list. Fixes nothing; removes the guessing. Scopes A/B/C.
+- **Phase 1 - Guards + honest states (additive, low-risk, per-finding).** data-presence guards so no
+  insight fires off missing data (A, simple parts of B/C), device-gated empty states (E), wear-level
+  detection + coaching pivot (F).
+- **Phase 2 - Adaptive TDEE (the one real build on this track).** weight-trend-based, suggest-not-auto,
+  staleness handling (D, and the deep half of C).
+- **Phase 3 - Workout sessions migration (the OTHER problem, separate track, SPEC_workout_sessions.md).**
+  Multi-device dedup (G) rides along here.
+
+### Defect -> phase map (nothing orphaned)
+A -> scoped P0, fixed P1. B -> scoped P0, fixed P1 (guard/framing). C -> P1 guard + P2 anchor.
+D -> P2. E -> P1. F -> P1. G -> P3.
+
+### Still unknown
+Only the exact contents of the Phase 0 findings (which specific rules/surfaces misfire, how badly).
+Phase 1's true size is an estimate until Phase 0 runs.
+
+---
+
+## PHASE 0 AUDIT FINDINGS (read-only sweep, 2026-07-03)
+
+### THE ROOT CAUSE (one bug, many faces)
+Across the app, code treats **`activeCalories === 0` as "the user barely moved"** instead of "no
+wearable is measuring burn." `rawActive = day.activeCalories || day.caloriesBurned || 0`, so a no-watch
+user is 0 every day, and every "is activity low?" check reads that 0 as genuine inactivity. Nutrition,
+sleep, and recovery are all correctly guarded (they void/skip on missing data); ACTIVITY is the hole.
+THE PHASE 1 FIX is one concept applied everywhere: a `hasActivityData` signal (device detected / any
+active-cal or exercise-minute data present) that GUARDS every "activity is low" rule, notification, and
+score portion, so absence of a wearable never reads as laziness.
+
+### CONFIRMED DEFECTS (fire misleading/negative output off missing watch data)
+1. **[HIGH] `ruleActiveLow`** (smartTipsEngine.ts ~1023). Filters days where `rawActive < goal*0.4`;
+   a no-watch user's rawActive is 0, so EVERY day qualifies. Gated only by `meetsLoggingGate` (= any
+   logging; FOOD satisfies it). Net: a no-watch user who logs food gets "your active calories have been
+   critically low (avg 0)". This is exactly the "told negative things for not wearing a watch" fear.
+2. **[HIGH] `ruleActivityStreakLow`** (smartTipsEngine.ts ~1041). Counts a streak of days where
+   `adjActive < goal*0.3 && workoutChecked === 0` -> fires "you've been inactive N days" off rawActive=0
+   for any non-watch user who isn't logging manual workouts.
+3. **[MED-HIGH] Activity Reminder notification** (notifications.ts ~1029). Fires when NOT
+   `(todayActiveCals >= activeCalGoal && todayExerciseMins >= exerciseMinsGoal)`. activeCals is 0 for a
+   non-wearer, so the AND is never satisfied and the "push your activity / more movement" nudge can fire
+   DAILY. exerciseMins has a manual fallback but activeCals does not, so even a manual-timer user gets
+   nagged.
+4. **[MED] Day Score activity understated on workout days (was defect H, now folded in).** dayScore.ts
+   activityScore(): on a completed-workout day the score = active-cals(/60) + completion(/40). A no-watch
+   user who logs a full workout gets 0/60 + 40/40 = ~40/100, vs a watch user's ~90 for the identical
+   workout. Since Activity is 30% of Day Score, that's ~15 Day Score points lost for the SAME behavior,
+   purely for lacking watch-measured calories. (The NO-workout no-data path is fine -- it returns null
+   and drops out, not penalized.)
+5. **[MED] EvR "predicted vs actual" deficit** (diagnosticReport.ts ~289). Predicted change uses active
+   cals; for a non-wearer active=0 so predicted loss is understated, while actual (scale) is real ->
+   the gap widens. Direction is usually falsely-POSITIVE / mis-attributed ("your effort is outpacing
+   your logged deficit") rather than negative, and it needs weigh-ins to fire at all, but it's still
+   wrong attribution. Adaptive TDEE (Phase 2) is the real fix; a data guard is the Phase 1 stopgap.
+6. **[LOW-MED] `net` stat** (index.tsx ~990). eaten - burn - BMR; burn=0 for non-wearers understates the
+   deficit. Secondary stat; Mindful hides it.
+
+### VERIFIED GOOD (honest already -- do NOT touch)
+- **Calorie TARGET** -- fully watch-independent (profile-based). The most-viewed number is accurate.
+- **Day Score, non-workout no-data day** -- activityScore returns null and drops out (weightTotal
+  excludes it), so a no-watch rest/quiet day is NOT penalized.
+- **All nutrition rules** (net/protein/carbs/fat/water/fiber/sodium/sugar/cal-goal) -- guarded on
+  `hasFoodData` + logging gates + min-day counts. Never fire off missing data.
+- **All sleep rules** -- guarded on sleep-day counts; recovery voids honestly without a watch.
+- **daySummaryCopy** -- activity subs gated on `activityScore !== null` and `activeCalScore > 0`, so it
+  won't emit a "you were lazy" line off 0 active cals (worst case a lukewarm summary from defect 4).
+- **`ruleActiveHigh` / `ruleStepsHigh`** -- positive tips requiring goals HIT, so 0-data users never
+  trigger them.
+- **Coverage-awareness exists** -- daysWithNutrition/Activity/SleepData computed + handed to the AI;
+  rulebook softens when coverage is low. Partial protection (but note: it SOFTENS, the rules above
+  still FIRE; softening the wording of a wrong tip is not the same as not firing it).
+
+### SECOND-PASS CLOSURES (chased the flagged stones)
+- **Recovery coach** -- CONFIRMED GRACEFUL. buildRecoveryFinding returns null when recDays (days with a
+  recoveryScore) is empty; a no-watch user has zero recovery scores -> the public fn falls back to
+  `rec_no_data` ("wear a watch overnight to build your recovery picture"). No negative output. GOOD.
+- **Cross-signal rules** (workout-intake, steps-sleep, fiber-calorie, etc.) -- CONFIRMED GUARDED. They
+  split by `workoutChecked` (manual-loggable) or require `steps > 0 && sleepScore !== null`, and gate on
+  min day counts with data. None fire a negative "you're inactive" read off active=0. GOOD.
+- **Sleep coach `sleep_data_low`** -- gentle PROMPT ("log a few more nights"), not a misleading negative.
+  Acceptable; manual sleep entry feeds it for no-watch users. Low concern.
+- **Otto stat pack (companionStats.ts)** -- LIKELY AFFECTED, same root cause. It omits NULL metrics, but
+  `rawActive` is `activeCalories || caloriesBurned || 0` = a finite 0, not null, so a non-wearer's pack
+  would report "~0 active cal/day" and Otto could comment on low activity. Folds into the same
+  hasActivityData fix (treat 0-with-no-device as absent, omit it from the pack). Ships with Otto -- fix
+  in Phase 1.
+- **`ruleStepsLow`** -- phone-tracked steps are usually real; genuine edge is a no-phone-carry user.
+  Lower risk, same class; apply the guard for consistency.
+- **Averaged display surfaces** (EvR / weekly / monthly activity averages) -- 0-data days drag averages
+  down; this is display UNDERSTATEMENT (same class as `net`), not a coaching accusation. Minor.
+- **HR zones** -- absent without a watch, like recovery. Honest, no fix.
+- **Multi-device dupes (G)** -- belongs to the sessions track (SPEC_workout_sessions.md), not re-verified.
+
+### COMPLETENESS STATEMENT (honest)
+The coaching / scoring / notification / summary surfaces were swept and all trace to ONE root cause
+(active-cals 0 read as "inactive" instead of "no device"). The confirmed defects (1-6) plus the Otto
+pack all fold into the single hasActivityData guard. No audit can claim literal 100%, but the surfaces
+that could TELL a user something wrong are accounted for; residual risk is small and same-class. If a
+new firing spot turns up, it will be the same pattern and the same fix.
+
+### PHASE 1 SCOPE (now concrete)
+Add a `hasActivityData` guard and apply it to: ruleActiveLow, ruleActivityStreakLow (skip when no
+activity data); the Activity Reminder notification (don't nag when no device is measuring burn); the
+Day Score workout-day branch (don't cap at 40 -- score completion fairly when active data is absent);
+and as a stopgap on the EvR deficit card (until Phase 2 adaptive TDEE lands). Plus device-gated empty
+states (E) and the wear-level detection/pivot (F). Everything in "VERIFIED GOOD" is left alone.
+
+---
+
+## WEAR-LEVEL INFERENCE (the enabler)
+
+We are NOT blind to who wears a device. We already track, per day, whether HealthKit sent HRV /
+exercise minutes / sleep / active cals. Over a rolling window we can infer:
+- **None** = no HRV + no exercise minutes + no sleep data, ever.
+- **Partial** = sporadic presence.
+- **Full** = consistent presence.
+It's an inference from existing data, NOT a setting we have to ask for. This inference is the trigger
+for addition 1. (Exact thresholds = open question.)
+
+---
+
+## THE 3 ADDITIONS
+
+### 1. No/low-wearable coaching pivot
+- WHAT: when wear-inference says none/low, the coaching leans confidently on food + weight + steps and
+  SUPPRESSES active-cal / recovery insights instead of merely softening them.
+- FIXES: a non-wearer getting a thin or misleading activity insight (e.g. "your active calories
+  dropped" computed off ~0 data), or an inapplicable recovery tip.
+- FULL-WATCH USERS AFFECTED? NO. Gated on data ABSENCE, so it never triggers for wearers. Pure
+  protection for non-wearers.
+
+### 2. Adaptive TDEE (highest leverage -- helps EVERYONE)
+- WHAT: track a "real" TDEE estimate from the weight trend vs logged intake, and use it to refine the
+  calorie target. Watch-INDEPENDENT (runs on weight + food).
+- FIXES: (a) the fixed-target limitation -- if real burn differs from the assumed activity level, the
+  target self-corrects from the scale; (b) Justin's exact "I burn more than my -750 pace and the app
+  doesn't know" concern -- solved by the weight trend, NOT by chasing noisy daily watch burn; (c) makes
+  non-wearers' targets accurate too.
+- FULL-WATCH USERS AFFECTED? YES, beneficially -- tightens the crude flat multiplier for everyone.
+- WEIGH-IN DEPENDENCE (Justin's key concern): it relies on weigh-ins. Behavior:
+  - Not enough weight history yet -> do nothing; fall back to the profile-based target (no regression).
+  - Recent regular weigh-ins -> refine the target from the trend.
+  - Stale weigh-ins (e.g. Justin's current 11 days) -> HOLD the last good target, do NOT drift, show a
+    gentle "step on the scale to keep your target accurate" nudge. NEVER show stale auto-changes.
+    REUSE the existing EvR staleness pattern (deficit card reframes once newest weigh-in is >=10 days
+    old). Same threshold, same honest-when-stale behavior.
+  - Net: purely ADDITIVE. Helps consistent weighers, neutral (= today's behavior) for non-weighers,
+    never punishes, never shows garbage.
+- DELIVERY (Justin's call -- do NOT overstep): **SUGGEST, never silently change.** Track the estimate
+  in the background; when the trend clearly diverges from goal pace, SURFACE a suggestion ("your real
+  burn looks higher, raise target to ~X?") that only applies on the user's tap. Optional opt-in
+  "auto-adjust" toggle (OFF by default) for the set-and-forget crowd.
+- COST: a real build (trend-smoothing algorithm, staleness handling, "here's why your target changed"
+  UI). Worth it; not a quick toggle. Research MacroFactor-style trend smoothing + adjustment cadence
+  before designing for real.
+
+### 3. Device-gated empty states + tutorial/tooltip references
+- WHAT: wearable-gated cards become honest explainers, not blank/broken cards. A non-wearer's Recovery
+  card reads "Recovery needs a watch worn overnight" (icon + title + subtitle + how-to = the app's
+  Empty States standard). Tutorials/tooltips note which features are device-gated.
+- FIXES: a non-wearer opening the app to empty recovery/HR cards that feel like "this app isn't for me."
+- FULL-WATCH USERS AFFECTED? NO. Gated on data presence; their cards show as always.
+
+### Who each affects, summary
+- #1 and #3: non-wearers only (gated on data absence), zero change to full-watch users.
+- #2 (adaptive TDEE): everyone, beneficially, and it directly answers Justin's 1638 concern.
+
+---
+
+## MULTI-DEVICE (edge case, from the same session)
+
+- Real dupe risk is NARROW: two devices only duplicate when they log the SAME activity type. Oura + a
+  smartwatch is common but COMPLEMENTARY (Oura = sleep/recovery, watch = workouts) -> low dupe risk.
+  Two workout-trackers (Garmin + Apple Watch, Whoop + Garmin) is the genuine dupe case, and rarer.
+- For the genuine case: auto-detect (same type + overlapping time window + different source) and
+  collapse to ONE session by default, with a "2 sources detected, tap to switch" cue. (Ties into
+  SPEC_workout_sessions.md session model.)
+- Day-level calorie totals are HealthKit's job (it has source-priority dedup the user sets in Health).
+
+---
+
+## OPEN QUESTIONS / TO DISCUSS
+
+- Adaptive TDEE trend-smoothing algorithm + how often it re-evaluates / suggests.
+- Exact wear-inference thresholds (what counts as none/partial/full, over what window).
+- Does adaptive TDEE need its own onboarding/first-use explainer + disclaimer (health-data standard)?
+- Interaction with the existing "burn accuracy %" setting (that handles OVER-estimation; adaptive TDEE
+  is a different lever).
+- Mindful-mode behavior for suggestions/pivots.
+- How this coexists with EvR's existing predicted-vs-actual (do we unify them?).
+- The per-rule coaching audit (walk every smart-tip rule, confirm it guards on data presence) -- the
+  read-only methodical scan to turn "probably fine" into "verified fine."
+
+---
+
+## RELATION TO OTHER WORK
+
+Independent of SPEC_workout_sessions.md (different subsystem). Shares only the multi-device dedup edge
+case. Can be built on its own track, any time.

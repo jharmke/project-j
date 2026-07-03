@@ -20,6 +20,7 @@ import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, weig
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { storageSet } from '../../utils/storage';
 import { runAfterLaunchSplash } from '../../utils/launchSplashGate';
+import { isSyncReady } from '../../services/syncService';
 import { reconcileDayWater, runWaterReconciliation } from '../../utils/waterData';
 import { cancelWaterPaceNotification, cancelWeeklySummaryNotification, cancelMonthlySummaryNotification } from '../../services/notifications';
 import { VERSES, resolveDailyVerse } from '../../data/verses';
@@ -1611,7 +1612,17 @@ export default function HomeScreen() {
     let timerId: ReturnType<typeof setTimeout>;
     Promise.all([isTutorialSeen('meta'), isTutorialSeen('meta_mindful')]).then(([metaSeen, mindfulSeen]) => {
       if (metaSeen || mindfulSeen) { metaTutorialFiredRef.current = true; return; }
-      timerId = setTimeout(() => { metaTutorialFiredRef.current = true; runAfterLaunchSplash(() => startTutorial('meta')); }, 1500);
+      timerId = setTimeout(() => {
+        runAfterLaunchSplash(() => {
+          // Reinstall guard: only fire once the restore gate has settled. On a fresh reinstall the home
+          // tab can mount transiently during the sign-in/restore churn, and without this the tutorial
+          // popped over the sign-in screen. If not ready yet, leave the ref unset so the next home
+          // focus retries once the app is settled.
+          if (!isSyncReady()) return;
+          metaTutorialFiredRef.current = true;
+          startTutorial('meta');
+        });
+      }, 1500);
     });
     return () => clearTimeout(timerId);
   }, []));

@@ -288,11 +288,25 @@ function activityScore(input: DayScoreInput): { score: number; detail: NonNullab
 
   // A completed workout always earns credit, rest tag or not.
   if (didWorkout) {
-    const activeScore = activeAgainst(ACTIVE_MAX_WORKOUT_DAY);
     // total 0 with a completion means a logged cardio session: full credit.
     const workoutScore = total > 0
       ? WORKOUT_MAX * Math.min(1, completed / total)
       : WORKOUT_MAX;
+    // No-device guard: if nothing measured burn this day (no wearable), don't penalize the active-cal
+    // half -- score the workout on completion scaled to 100, so a logged workout isn't unfairly capped
+    // at ~40 just for lacking watch-measured calories. Watch users (activeCalories/caloriesBurned/
+    // exerciseMinutes present) never hit this branch, so their scoring is unchanged.
+    const hasActivityData = (input.dayData?.activeCalories ?? 0) > 0
+      || (input.dayData?.caloriesBurned ?? 0) > 0
+      || (input.dayData?.exerciseMinutes ?? 0) > 0;
+    if (!hasActivityData) {
+      const score = total > 0 ? 100 * Math.min(1, completed / total) : 100;
+      return {
+        score,
+        detail: { activeCalScore: 0, workoutScore: round1(workoutScore), isMindfulPresence: false },
+      };
+    }
+    const activeScore = activeAgainst(ACTIVE_MAX_WORKOUT_DAY);
     return {
       score: activeScore + workoutScore,
       detail: { activeCalScore: round1(activeScore), workoutScore: round1(workoutScore), isMindfulPresence: false },

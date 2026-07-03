@@ -257,7 +257,7 @@ export default function StatsScreen() {
   const [periodData, setPeriodData] = useState({
     avgCal: 0, avgProtein: 0, avgCarbs: 0, avgFat: 0,
     avgWater: 0, avgSteps: 0, avgActiveCals: 0, avgSleep: 0, avgNetCals: 0,
-    avgSleepScore: null as number | null, calGoalDays: 0,
+    avgSleepScore: null as number | null, avgRecoveryScore: null as number | null, avgExerciseMinutes: 0, calGoalDays: 0,
     workoutDays: 0, totalDays: 0, loggedDays: 0,
     startWeight: null as number | null, endWeight: null as number | null,
   });
@@ -460,6 +460,7 @@ export default function StatsScreen() {
     let totalCal = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0, totalFiber = 0, totalSugarAlcohols = 0, totalWater = 0, totalNetCal = 0, netDays = 0;
     let totalSteps = 0, stepsDays = 0, totalActiveCals = 0, activeDays = 0, totalSleep = 0, sleepDays = 0;
     let totalSleepScore = 0, sleepScoreDays = 0, calGoalDays = 0;
+    let totalRecoveryScore = 0, recoveryDays = 0, totalExMin = 0, exMinDays = 0;
     let dietDays = 0, waterDays = 0, workoutDays = 0;
     let startWeight: number | null = null, endWeight: number | null = null;
     for (const dateKey of dates) {
@@ -526,6 +527,9 @@ export default function StatsScreen() {
             const { score, path } = calcSleepScore(sleepH, data.sleepStages || null, sleepGoalVal, data.sleepFeelRating ?? null, !!data.sleepOverride, data.sleepConsistencyPts ?? 0);
             if (score !== null && (path === 1 || data.sleepFeelRating)) { totalSleepScore += score; sleepScoreDays++; }
           }
+          const emDay = effectiveExerciseMinutes(data);
+          if (!isTodayKey && !excl.exercise && emDay > 0) { totalExMin += emDay; exMinDays++; }
+          if (data.recoveryScore) { totalRecoveryScore += data.recoveryScore; recoveryDays++; }
         }
       } catch {}
     }
@@ -541,6 +545,8 @@ export default function StatsScreen() {
       avgActiveCals: activeDays > 0 ? Math.round(totalActiveCals / activeDays) : 0,
       avgSleep: sleepDays > 0 ? Math.round(totalSleep / sleepDays * 10) / 10 : 0,
       avgSleepScore: sleepScoreDays > 0 ? Math.round(totalSleepScore / sleepScoreDays) : null,
+      avgRecoveryScore: recoveryDays > 0 ? Math.round(totalRecoveryScore / recoveryDays) : null,
+      avgExerciseMinutes: exMinDays > 0 ? Math.round(totalExMin / exMinDays) : 0,
       calGoalDays,
       workoutDays, totalDays: dates.length, loggedDays: dietDays, startWeight, endWeight,
     });
@@ -1816,79 +1822,63 @@ export default function StatsScreen() {
                 </TouchableOpacity>
               ))}
             </View>
-            <View style={{ position: 'relative' }}>
-              <View style={{ position: 'absolute', top: 0, bottom: 0, left: '50%', width: 0.5, backgroundColor: theme.borderSubtle }} />
-              {styleMode !== 'Mindful' && (
-                <>
-                  <View style={[styles.glanceRow, { borderBottomColor: theme.borderSubtle }]}>
-                    <View style={styles.glanceCellL}>
-                      <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>CALORIES / DAY</Text>
-                      <Text style={[styles.glanceVal, { color: theme.textSecondary }]}>{periodData.avgCal > 0 ? `${periodData.avgCal} kcal` : '--'}</Text>
-                    </View>
-                    <View style={styles.glanceCellR}>
-                      <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>NET CALS / DAY</Text>
-                      <Text style={[styles.glanceVal, { color: theme.textSecondary }]}>{periodData.avgNetCals !== 0 ? `${periodData.avgNetCals} kcal` : '--'}</Text>
-                    </View>
+              {(() => {
+                const isMindful = styleMode === 'Mindful';
+                const has = (m: PresenceMetric) => !metricPresence || metricPresence[m] === true;
+                const fmtSleep = (v: number) => v > 0 ? `${Math.floor(v)}h ${Math.round((v % 1) * 60)}m` : '--';
+                // Data-driven glance rows. Watch-only rows (Active Cals, Recovery) are OMITTED
+                // entirely when the user has never had that data (presence signal, fail-open
+                // while loading), so the grid reflows into clean pairs with no holes. Sleep,
+                // Sleep Score, and Recovery now show in EVERY mode (neutral color in Mindful);
+                // Mindful still drops the calorie-focused rows.
+                const g: { label: string; value: string; color?: string }[] = [];
+                if (!isMindful) {
+                  g.push({ label: 'CALORIES / DAY', value: periodData.avgCal > 0 ? `${periodData.avgCal} kcal` : '--' });
+                  g.push({ label: 'NET CALS / DAY', value: periodData.avgNetCals !== 0 ? `${periodData.avgNetCals} kcal` : '--' });
+                  if (has('activeCals')) g.push({ label: 'ACTIVE CALS / DAY', value: periodData.avgActiveCals > 0 ? `${periodData.avgActiveCals} kcal` : '--' });
+                  g.push({ label: 'CAL GOAL / DAY', value: periodData.loggedDays > 0 ? `${periodData.calGoalDays} / ${periodData.loggedDays}` : '--' });
+                }
+                g.push({ label: 'STEPS / DAY', value: periodData.avgSteps > 0 ? periodData.avgSteps.toLocaleString() : '--' });
+                g.push({ label: 'WORKOUT DAYS', value: `${periodData.workoutDays} / ${periodData.totalDays}` });
+                g.push({ label: 'EXERCISE / DAY', value: periodData.avgExerciseMinutes > 0 ? `${periodData.avgExerciseMinutes} min` : '--' });
+                g.push({ label: 'SLEEP / NIGHT', value: fmtSleep(periodData.avgSleep) });
+                g.push({ label: 'SLEEP SCORE', value: periodData.avgSleepScore !== null ? `${periodData.avgSleepScore}` : '--' });
+                if (has('recovery')) g.push({ label: 'RECOVERY SCORE', value: periodData.avgRecoveryScore !== null ? `${periodData.avgRecoveryScore}` : '--' });
+                g.push({ label: 'WATER / DAY', value: periodData.avgWater > 0 ? `${periodData.avgWater} oz` : '--' });
+                g.push({ label: 'WEIGHT CHANGE', value: weightChange !== null ? `${weightChange > 0 ? '+' : ''}${weightChange} lbs` : '--', color: (weightChange !== null && !isMindful) ? (weightChange < 0 ? theme.statusGood : weightChange > 0 ? theme.statusBad : theme.textPrimary) : theme.textSecondary });
+
+                const hasAnyData = periodData.loggedDays > 0 || periodData.avgSteps > 0 || periodData.avgSleep > 0 || periodData.workoutDays > 0 || periodData.avgWater > 0 || periodData.avgRecoveryScore !== null || weightChange !== null;
+                if (!hasAnyData) return (
+                  <View style={{ paddingVertical: 24, alignItems: 'center', paddingHorizontal: 16 }}>
+                    <Ionicons name="stats-chart-outline" size={28} color={theme.textDim} style={{ marginBottom: 8 }} />
+                    <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_600SemiBold', marginBottom: 4 }}>No data yet</Text>
+                    <Text style={{ fontSize: 12, color: theme.textDim, fontFamily: 'DMSans_400Regular', textAlign: 'center', lineHeight: 17 }}>Log a day and your averages show up here.</Text>
                   </View>
-                  <View style={[styles.glanceRow, { borderBottomColor: theme.borderSubtle }]}>
-                    <View style={styles.glanceCellL}>
-                      <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>ACTIVE CALS / DAY</Text>
-                      <Text style={[styles.glanceVal, { color: theme.textSecondary }]}>{periodData.avgActiveCals > 0 ? `${periodData.avgActiveCals} kcal` : '--'}</Text>
-                    </View>
-                    <View style={styles.glanceCellR}>
-                      <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>CAL GOAL / DAY</Text>
-                      <Text style={[styles.glanceVal, { color: theme.textSecondary }]}>{periodData.loggedDays > 0 ? `${periodData.calGoalDays} / ${periodData.loggedDays}` : '--'}</Text>
-                    </View>
+                );
+                const rows: { label: string; value: string; color?: string }[][] = [];
+                for (let i = 0; i < g.length; i += 2) rows.push(g.slice(i, i + 2));
+                return (
+                  <View style={{ position: 'relative' }}>
+                    <View style={{ position: 'absolute', top: 0, bottom: 0, left: '50%', width: 0.5, backgroundColor: theme.borderSubtle }} />
+                    {rows.map((pair, ri) => (
+                      <View key={ri} style={[styles.glanceRow, { borderBottomColor: ri === rows.length - 1 ? 'transparent' : theme.borderSubtle }]}>
+                        <View style={styles.glanceCellL}>
+                          <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>{pair[0].label}</Text>
+                          <Text style={[styles.glanceVal, { color: pair[0].color ?? theme.textSecondary }]}>{pair[0].value}</Text>
+                        </View>
+                        <View style={styles.glanceCellR}>
+                          {pair[1] ? (
+                            <>
+                              <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>{pair[1].label}</Text>
+                              <Text style={[styles.glanceVal, { color: pair[1].color ?? theme.textSecondary }]}>{pair[1].value}</Text>
+                            </>
+                          ) : null}
+                        </View>
+                      </View>
+                    ))}
                   </View>
-                </>
-              )}
-              <View style={[styles.glanceRow, { borderBottomColor: theme.borderSubtle }]}>
-                <View style={styles.glanceCellL}>
-                  <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>STEPS / DAY</Text>
-                  <Text style={[styles.glanceVal, { color: theme.textSecondary }]}>{periodData.avgSteps > 0 ? periodData.avgSteps.toLocaleString() : '--'}</Text>
-                </View>
-                <View style={styles.glanceCellR}>
-                  <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>WORKOUT DAYS</Text>
-                  <Text style={[styles.glanceVal, { color: theme.textSecondary }]}>{`${periodData.workoutDays} / ${periodData.totalDays}`}</Text>
-                </View>
-              </View>
-              {styleMode === 'Mindful' && (
-                <View style={[styles.glanceRow, { borderBottomColor: theme.borderSubtle }]}>
-                  <View style={styles.glanceCellL}>
-                    <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>WORKOUT DAYS</Text>
-                    <Text style={[styles.glanceVal, { color: theme.textSecondary }]}>{`${periodData.workoutDays} / ${periodData.totalDays}`}</Text>
-                  </View>
-                  <View style={styles.glanceCellR}>
-                    <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>SLEEP / NIGHT</Text>
-                    <Text style={[styles.glanceVal, { color: theme.textSecondary }]}>{periodData.avgSleep > 0 ? `${Math.floor(periodData.avgSleep)}h ${Math.round((periodData.avgSleep % 1) * 60)}m` : '--'}</Text>
-                  </View>
-                </View>
-              )}
-              {styleMode !== 'Mindful' && (
-                <View style={[styles.glanceRow, { borderBottomColor: theme.borderSubtle }]}>
-                  <View style={styles.glanceCellL}>
-                    <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>SLEEP / NIGHT</Text>
-                    <Text style={[styles.glanceVal, { color: theme.textSecondary }]}>{periodData.avgSleep > 0 ? `${Math.floor(periodData.avgSleep)}h ${Math.round((periodData.avgSleep % 1) * 60)}m` : '--'}</Text>
-                  </View>
-                  <View style={styles.glanceCellR}>
-                    <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>SLEEP SCORE</Text>
-                    <Text style={[styles.glanceVal, { color: theme.textSecondary }]}>{periodData.avgSleepScore !== null ? periodData.avgSleepScore.toString() : '--'}</Text>
-                  </View>
-                </View>
-              )}
-              <View style={[styles.glanceRow, { borderBottomColor: 'transparent' }]}>
-                <View style={styles.glanceCellL}>
-                  <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>WATER / DAY</Text>
-                  <Text style={[styles.glanceVal, { color: theme.textSecondary }]}>{periodData.avgWater > 0 ? `${periodData.avgWater} oz` : '--'}</Text>
-                </View>
-                <View style={styles.glanceCellR}>
-                  <Text style={[styles.glanceLabel, { color: theme.textMuted }]}>WEIGHT CHANGE</Text>
-                  <Text style={[styles.glanceVal, { color: weightChange !== null ? (weightChange < 0 ? theme.statusGood : weightChange > 0 ? theme.statusBad : theme.textPrimary) : theme.textPrimary }]}>
-                    {weightChange !== null ? `${weightChange > 0 ? '+' : ''}${weightChange} lbs` : '--'}
-                  </Text>
-                </View>
-              </View>
-            </View>
+                );
+              })()}
           </View>
             </CollapsibleSection>
             );

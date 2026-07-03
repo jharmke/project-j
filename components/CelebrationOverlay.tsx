@@ -27,7 +27,7 @@ function subscribeCeleb(fn: CelebListener) {
 interface CelebQueued { id: number; tier: CelebTier; label?: string; def?: AchievementDef; }
 let _celebCounter = 0;
 
-export function CelebrationRenderer() {
+export function CelebrationRenderer({ hold = false }: { hold?: boolean }) {
   const { theme } = useTheme();
   const [queue, setQueue] = useState<CelebQueued[]>([]);
 
@@ -38,7 +38,11 @@ export function CelebrationRenderer() {
     });
   }, []);
 
-  const active = queue[0] ?? null;
+  // While `hold` is true (the launch splash is still up on a cold start), keep enqueuing but render
+  // NOTHING, so a celebration's confetti/text never plays hidden behind the splash. The queued
+  // celebration plays in full the moment the splash finishes and hold flips false. Mirrors the
+  // AchievementToastRenderer hold.
+  const active = hold ? null : (queue[0] ?? null);
   const dismiss = (id: number) => setQueue(prev => prev.filter(c => c.id !== id));
 
   if (!active) return null;

@@ -3098,7 +3098,11 @@ const recStd = (xs: number[]) => {
 // Snapshot floor (R8): describe today's state from the live signals. building=true
 // appends the honest "still building" note when under the pattern-data threshold.
 function recSnapshotFinding(score: number, live: RecoveryLiveToday, n: number, building: boolean): RecFinding {
-  const note = building ? ` Still building your recovery picture (${n} of 14 nights).` : '';
+  // Excluded (vacation) days are already dropped from the window by loadWindowDays, so a hardcoded
+  // "of 14" denominator counted those excluded days as if unlogged (Justin's 6 vacation days read as
+  // "8 of 14 logged," implying he slacked). State the real count of recovery-data nights instead, with
+  // no fabricated denominator -- honest and consistent with how the window already handles exclusions.
+  const note = building ? ` Still building your recovery picture (${n} night${n === 1 ? '' : 's'} of data so far).` : '';
   if (live?.hrv && live.hrv.isPositive === false) {
     return {
       ruleId: 'rec_snapshot_hrv', scenario: 'rec_snapshot_hrv', familyNum: 4, tone: 'corrective',

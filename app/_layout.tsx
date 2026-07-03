@@ -17,6 +17,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { runRestoreGate, uploadAllLocal, isSyncReady } from '../services/syncService';
 import { backfillAllPhotos } from '../utils/foodPhotos';
+import { setLaunchSplashShowing } from '../utils/launchSplashGate';
 import { applyVacation } from '../utils/vacationMode';
 import * as Notifications from 'expo-notifications';
 import { setupNotificationHandler } from '../services/notifications';
@@ -149,6 +150,7 @@ function RootLayoutNav() {
         // session, just lift the native splash directly.
         if (!coldSplashConsumed) {
           coldSplashConsumed = true;
+          setLaunchSplashShowing(true); // hold launch pop-ups (summary, meta tutorial) until the cinematic ends
           setShowSplash(true);
         } else {
           SplashScreen.hideAsync();
@@ -206,11 +208,11 @@ function RootLayoutNav() {
       </Stack>
       <ThemedStatusBar />
       <AchievementToastRenderer hold={showSplash} />
-      <CelebrationRenderer />
+      <CelebrationRenderer hold={showSplash} />
       <TutorialOverlay />
       <ToolkitRenderer />
       <AssistantOverlay />
-      {showSplash && <LaunchSplash onDone={() => setShowSplash(false)} />}
+      {showSplash && <LaunchSplash onDone={() => { setShowSplash(false); setLaunchSplashShowing(false); }} />}
     </>
   );
 }

@@ -19,6 +19,7 @@ import { showAchievementToast, showDailyGoalToast } from '../../components/Achie
 import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, weightEntryIsPlausible, getWeightMilestonesCrossed, isGoalWeightHit, handleDailyGoalHit, checkMomentumAchievements, checkSleepAchievements, getCelebTier } from '../../achievementData';
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { storageSet } from '../../utils/storage';
+import { runAfterLaunchSplash } from '../../utils/launchSplashGate';
 import { reconcileDayWater, runWaterReconciliation } from '../../utils/waterData';
 import { cancelWaterPaceNotification, cancelWeeklySummaryNotification, cancelMonthlySummaryNotification } from '../../services/notifications';
 import { VERSES, resolveDailyVerse } from '../../data/verses';
@@ -1174,19 +1175,24 @@ export default function HomeScreen() {
         // a modal actually shows (a kill during the delay won't burn the day).
         summaryTimerRef.current = setTimeout(async () => {
           summaryTimerRef.current = null;
-          await storageSet('pj_last_summary_shown', todayKey);
-          if (p.kind === 'month') {
-            cancelMonthlySummaryNotification().catch(() => {}); // saw it in-app -> no redundant push
-            setMonthSummary(p.data);
-          } else if (p.kind === 'week') {
-            cancelWeeklySummaryNotification().catch(() => {});
-            setWeekSummary(p.data);
-          } else {
-            // First ever score: show the one-time disclaimer gate first.
-            const seen = await AsyncStorage.getItem('pj_dayscore_disclaimer_seen');
-            if (seen === 'true') setDaySummary({ score: p.score, dateKey: p.dateKey });
-            else setDayScoreDisclaimer({ score: p.score, dateKey: p.dateKey });
-          }
+          // Hold the pop-up AND the once-per-day gate stamp until the launch splash finishes on a
+          // cold start, so it never appears behind the cinematic (a kill mid-splash won't burn the
+          // day since nothing is stamped until it actually shows). Fires immediately on warm launches.
+          runAfterLaunchSplash(async () => {
+            await storageSet('pj_last_summary_shown', todayKey);
+            if (p.kind === 'month') {
+              cancelMonthlySummaryNotification().catch(() => {}); // saw it in-app -> no redundant push
+              setMonthSummary(p.data);
+            } else if (p.kind === 'week') {
+              cancelWeeklySummaryNotification().catch(() => {});
+              setWeekSummary(p.data);
+            } else {
+              // First ever score: show the one-time disclaimer gate first.
+              const seen = await AsyncStorage.getItem('pj_dayscore_disclaimer_seen');
+              if (seen === 'true') setDaySummary({ score: p.score, dateKey: p.dateKey });
+              else setDayScoreDisclaimer({ score: p.score, dateKey: p.dateKey });
+            }
+          });
         }, 800);
       } catch (e) { console.log('[DayScore] scan error', e); }
     };
@@ -1605,7 +1611,7 @@ export default function HomeScreen() {
     let timerId: ReturnType<typeof setTimeout>;
     Promise.all([isTutorialSeen('meta'), isTutorialSeen('meta_mindful')]).then(([metaSeen, mindfulSeen]) => {
       if (metaSeen || mindfulSeen) { metaTutorialFiredRef.current = true; return; }
-      timerId = setTimeout(() => { metaTutorialFiredRef.current = true; startTutorial('meta'); }, 1500);
+      timerId = setTimeout(() => { metaTutorialFiredRef.current = true; runAfterLaunchSplash(() => startTutorial('meta')); }, 1500);
     });
     return () => clearTimeout(timerId);
   }, []));

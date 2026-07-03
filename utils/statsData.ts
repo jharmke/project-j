@@ -19,6 +19,10 @@ export type TrendData = {
   restingHR: { date: string; value: number }[];
   respiratoryRate: { date: string; value: number }[];
   bloodOxygen: { date: string; value: number }[];
+  recoveryScore: { date: string; value: number }[];
+  hrv: { date: string; value: number }[];
+  vo2Max: { date: string; value: number }[];
+  cardioRecovery: { date: string; value: number }[];
   exerciseMinutes: { date: string; value: number }[];
   fiber: { date: string; value: number }[];
   sodium: { date: string; value: number }[];
@@ -33,6 +37,7 @@ export type TrendData = {
 export const EMPTY_TREND_DATA: TrendData = {
   weight: [], cal: [], steps: [], activeCal: [], sleep: [], macro: [], workoutDay: [],
   water: [], netCal: [], sleepScore: [], sleepStages: [], restingHR: [], respiratoryRate: [], bloodOxygen: [],
+  recoveryScore: [], hrv: [], vo2Max: [], cardioRecovery: [],
   exerciseMinutes: [], fiber: [], sodium: [], cholesterol: [], saturatedFat: [],
   sugarAlcohols: [], effortScore: [],
   excludedCounts: { diet: 0, water: 0, exercise: 0 },
@@ -170,6 +175,10 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
   const rhrH: TrendData['restingHR'] = [];
   const rrH: TrendData['respiratoryRate'] = [];
   const boH: TrendData['bloodOxygen'] = [];
+  const recH: TrendData['recoveryScore'] = [];
+  const hrvH: TrendData['hrv'] = [];
+  const vo2H: TrendData['vo2Max'] = [];
+  const cardioH: TrendData['cardioRecovery'] = [];
   const emH: TrendData['exerciseMinutes'] = [];
   const fbH: TrendData['fiber'] = [];
   const sodH: TrendData['sodium'] = [];
@@ -264,6 +273,11 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
         if (data.restingHR) rhrH.push({ date: dateKey, value: data.restingHR });
         if (data.respiratoryRate) rrH.push({ date: dateKey, value: data.respiratoryRate });
         if (data.bloodOxygen) boH.push({ date: dateKey, value: data.bloodOxygen });
+        if (data.recoveryScore) recH.push({ date: dateKey, value: data.recoveryScore });
+        const hrvVal = data.recoverySignals?.hrv;
+        if (hrvVal) hrvH.push({ date: dateKey, value: hrvVal });
+        if (data.vo2Max) vo2H.push({ date: dateKey, value: data.vo2Max });
+        if (data.cardioRecovery) cardioH.push({ date: dateKey, value: data.cardioRecovery });
         const effEm = effectiveExerciseMinutes(data); // Apple minutes, else manual timer (no-watch users)
         if (!excl.exercise && effEm > 0) emH.push({ date: dateKey, value: effEm });
         if (!excl.exercise) hadWorkout = (workoutState.programs?.[dateKey]?.exercises?.length ?? 0) > 0;
@@ -276,7 +290,7 @@ export const fetchTrendData = async (days: number, workoutState: any, sleepGoal 
   return {
     weight: wh, cal: ch, steps: sh, activeCal: ah, sleep: slh, macro: mh, workoutDay: wdh,
     water: waterH, netCal: ncH, sleepScore: ssH, sleepStages: stgH, restingHR: rhrH, respiratoryRate: rrH,
-    bloodOxygen: boH, exerciseMinutes: emH, effortScore: esH,
+    bloodOxygen: boH, recoveryScore: recH, hrv: hrvH, vo2Max: vo2H, cardioRecovery: cardioH, exerciseMinutes: emH, effortScore: esH,
     fiber: fbH, sodium: sodH, cholesterol: choH, saturatedFat: sfH, sugarAlcohols: saH,
     excludedCounts: { diet: exDiet, water: exWater, exercise: exExercise },
     nutrients: nutrientMap,
@@ -363,6 +377,26 @@ export const getPinnedCardSummary = (dataKey: string, data: TrendData): { headli
       if (data.bloodOxygen.length === 0) return null;
       const avg = Math.round(data.bloodOxygen.reduce((s, x) => s + x.value, 0) / data.bloodOxygen.length * 10) / 10;
       return { headline: `${avg}%`, sublabel: 'avg blood oxygen' };
+    }
+    case 'recoveryScore': {
+      if (data.recoveryScore.length === 0) return null;
+      const avg = Math.round(data.recoveryScore.reduce((s, x) => s + x.value, 0) / data.recoveryScore.length);
+      return { headline: `${avg}`, sublabel: 'avg recovery score' };
+    }
+    case 'hrv': {
+      if (data.hrv.length === 0) return null;
+      const avg = Math.round(data.hrv.reduce((s, x) => s + x.value, 0) / data.hrv.length);
+      return { headline: `${avg} ms`, sublabel: 'avg HRV' };
+    }
+    case 'vo2Max': {
+      if (data.vo2Max.length === 0) return null;
+      const avg = Math.round(data.vo2Max.reduce((s, x) => s + x.value, 0) / data.vo2Max.length * 10) / 10;
+      return { headline: `${avg}`, sublabel: 'avg VO2 max' };
+    }
+    case 'cardioRecovery': {
+      if (data.cardioRecovery.length === 0) return null;
+      const avg = Math.round(data.cardioRecovery.reduce((s, x) => s + x.value, 0) / data.cardioRecovery.length);
+      return { headline: `${avg} bpm`, sublabel: 'avg cardio recovery' };
     }
     case 'exerciseMinutes': {
       if (data.exerciseMinutes.length === 0) return null;

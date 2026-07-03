@@ -11,7 +11,8 @@ export type DataKey =
   // Body
   'weight' |
   // Sleep & Recovery
-  'sleep' | 'sleepScore' | 'sleepStages' | 'restingHR' | 'respiratoryRate' | 'bloodOxygen';
+  'sleep' | 'sleepScore' | 'sleepStages' | 'restingHR' | 'respiratoryRate' | 'bloodOxygen' |
+  'recoveryScore' | 'hrv' | 'vo2Max' | 'cardioRecovery';
 export type ChartType = 'line' | 'bar' | 'stackedBar';
 export type CardPeriod = 7 | 30 | 90;
 export type CardPlacement = 'stats' | 'home' | 'both'; // 'home' / 'both' reserved for future shared card pool
@@ -167,6 +168,10 @@ export const DATA_KEY_META: Record<DataKey, { icon: string; label: string; descr
   restingHR:     { icon: 'heart-circle-outline',    label: 'Resting HR',        description: 'Resting heart rate (bpm)',             category: 'Sleep & Recovery' },
   respiratoryRate:{ icon: 'pulse-outline',          label: 'Respiratory Rate',  description: 'Breaths per minute',                  category: 'Sleep & Recovery' },
   bloodOxygen:   { icon: 'medical-outline',         label: 'Blood Oxygen',      description: 'Blood oxygen % from Apple Health',    category: 'Sleep & Recovery' },
+  recoveryScore: { icon: 'heart-circle-outline',    label: 'Recovery Score',    description: 'Daily recovery score (0-100)',        category: 'Sleep & Recovery' },
+  hrv:           { icon: 'pulse-outline',           label: 'HRV',               description: 'Heart rate variability (ms)',         category: 'Sleep & Recovery' },
+  vo2Max:        { icon: 'speedometer-outline',     label: 'VO2 Max',           description: 'Cardio fitness (mL/kg/min)',          category: 'Sleep & Recovery' },
+  cardioRecovery:{ icon: 'fitness-outline',         label: 'Cardio Recovery',   description: 'Heart rate recovery after exercise',  category: 'Sleep & Recovery' },
 };
 
 // Chart types available per data key. Macros only supports stackedBar.

@@ -1200,6 +1200,22 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
         return ct === 'bar'
           ? <GenericBarChart data={cardTrendData.bloodOxygen} color={gc ?? '#ef4444'} unit="%" fmtY={v => `${Math.round(v * 10) / 10}%`} startFromZero={false} theme={theme} />
           : <LineChart data={cardTrendData.bloodOxygen} color={gc ?? '#ef4444'} unit="%" fmtY={v => `${Math.round(v * 10) / 10}%`} gradientId={`bo_${card.id}`} theme={theme} />;
+      case 'recoveryScore':
+        return ct === 'bar'
+          ? <GenericBarChart data={cardTrendData.recoveryScore} color={gc ?? '#9b7adb'} unit="" fmtY={v => `${Math.round(v)}`} theme={theme} />
+          : <LineChart data={cardTrendData.recoveryScore} color={gc ?? '#9b7adb'} unit="" fmtY={v => `${Math.round(v)}`} gradientId={`rec_${card.id}`} theme={theme} />;
+      case 'hrv':
+        return ct === 'bar'
+          ? <GenericBarChart data={cardTrendData.hrv} color={gc ?? '#9b7adb'} unit=" ms" fmtY={v => `${Math.round(v)}`} startFromZero={false} theme={theme} />
+          : <LineChart data={cardTrendData.hrv} color={gc ?? '#9b7adb'} unit=" ms" fmtY={v => `${Math.round(v)}`} gradientId={`hrv_${card.id}`} theme={theme} />;
+      case 'vo2Max':
+        return ct === 'bar'
+          ? <GenericBarChart data={cardTrendData.vo2Max} color={gc ?? '#10b981'} unit=" mL/kg/min" fmtY={v => `${Math.round(v * 10) / 10}`} fmtFull={v => `${Math.round(v * 10) / 10} mL/kg/min`} startFromZero={false} theme={theme} />
+          : <LineChart data={cardTrendData.vo2Max} color={gc ?? '#10b981'} unit=" mL/kg/min" fmtY={v => `${Math.round(v * 10) / 10}`} fmtFull={v => `${Math.round(v * 10) / 10} mL/kg/min`} gradientId={`vo2_${card.id}`} theme={theme} />;
+      case 'cardioRecovery':
+        return ct === 'bar'
+          ? <GenericBarChart data={cardTrendData.cardioRecovery} color={gc ?? '#0ea5e9'} unit=" bpm" fmtY={v => `${Math.round(v)}`} startFromZero={false} theme={theme} />
+          : <LineChart data={cardTrendData.cardioRecovery} color={gc ?? '#0ea5e9'} unit=" bpm" fmtY={v => `${Math.round(v)}`} gradientId={`cr_${card.id}`} theme={theme} />;
       case 'exerciseMinutes':
         return ct === 'bar'
           ? <GenericBarChart data={cardTrendData.exerciseMinutes} color={gc ?? '#10b981'} unit=" min" fmtY={v => `${Math.round(v)}`} theme={theme} />
@@ -1329,6 +1345,30 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
         const min = Math.round(Math.min(...d.bloodOxygen.map(x => x.value)) * 10) / 10;
         return [{ label: 'Avg', value: `${avg}%` }, { label: 'Lowest', value: `${min}%` }];
       }
+      case 'recoveryScore': {
+        if (d.recoveryScore.length === 0) return undefined;
+        const avg = Math.round(d.recoveryScore.reduce((s, x) => s + x.value, 0) / d.recoveryScore.length);
+        const strong = d.recoveryScore.filter(x => x.value >= 70).length;
+        return [{ label: 'Avg Score', value: `${avg}` }, { label: 'Strong Days', value: `${strong}` }];
+      }
+      case 'hrv': {
+        if (d.hrv.length === 0) return undefined;
+        const avg = Math.round(d.hrv.reduce((s, x) => s + x.value, 0) / d.hrv.length);
+        const peak = Math.round(Math.max(...d.hrv.map(x => x.value)));
+        return [{ label: 'Avg', value: `${avg} ms` }, { label: 'Highest', value: `${peak} ms` }];
+      }
+      case 'vo2Max': {
+        if (d.vo2Max.length === 0) return undefined;
+        const avg = Math.round(d.vo2Max.reduce((s, x) => s + x.value, 0) / d.vo2Max.length * 10) / 10;
+        const peak = Math.round(Math.max(...d.vo2Max.map(x => x.value)) * 10) / 10;
+        return [{ label: 'Avg', value: `${avg}` }, { label: 'Highest', value: `${peak}` }];
+      }
+      case 'cardioRecovery': {
+        if (d.cardioRecovery.length === 0) return undefined;
+        const avg = Math.round(d.cardioRecovery.reduce((s, x) => s + x.value, 0) / d.cardioRecovery.length);
+        const peak = Math.round(Math.max(...d.cardioRecovery.map(x => x.value)));
+        return [{ label: 'Avg', value: `${avg} bpm` }, { label: 'Highest', value: `${peak} bpm` }];
+      }
       case 'exerciseMinutes': {
         if (d.exerciseMinutes.length === 0) return undefined;
         const avg = Math.round(d.exerciseMinutes.reduce((s, x) => s + x.value, 0) / d.exerciseMinutes.length);
@@ -1374,6 +1414,7 @@ export function StatsGraphCard({ card, cardTrendData, theme, calTarget, stepGoal
       water: cardTrendData.water, netCalories: cardTrendData.netCal,
       sleepScore: cardTrendData.sleepScore, sleepStages: cardTrendData.sleepStages, restingHR: cardTrendData.restingHR,
       respiratoryRate: cardTrendData.respiratoryRate, bloodOxygen: cardTrendData.bloodOxygen,
+      recoveryScore: cardTrendData.recoveryScore, hrv: cardTrendData.hrv, vo2Max: cardTrendData.vo2Max, cardioRecovery: cardTrendData.cardioRecovery,
       exerciseMinutes: cardTrendData.exerciseMinutes,
       effortScore: cardTrendData.effortScore, fiber: cardTrendData.fiber, sodium: cardTrendData.sodium,
       cholesterol: cardTrendData.cholesterol, saturatedFat: cardTrendData.saturatedFat,

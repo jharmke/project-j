@@ -160,11 +160,12 @@ score portion, so absence of a wearable never reads as laziness.
   min day counts with data. None fire a negative "you're inactive" read off active=0. GOOD.
 - **Sleep coach `sleep_data_low`** -- gentle PROMPT ("log a few more nights"), not a misleading negative.
   Acceptable; manual sleep entry feeds it for no-watch users. Low concern.
-- **Otto stat pack (companionStats.ts)** -- LIKELY AFFECTED, same root cause. It omits NULL metrics, but
-  `rawActive` is `activeCalories || caloriesBurned || 0` = a finite 0, not null, so a non-wearer's pack
-  would report "~0 active cal/day" and Otto could comment on low activity. Folds into the same
-  hasActivityData fix (treat 0-with-no-device as absent, omit it from the pack). Ships with Otto -- fix
-  in Phase 1.
+- **Otto stat pack (companionStats.ts)** -- VERIFIED ALREADY SAFE (re-read 2026-07-03). It converts a
+  0-active-cal day to null BEFORE averaging (`d.rawActive > 0 ? burnAdj(d.rawActive) : null`) and only
+  adds today's active-cals `if (today.rawActive > 0)`. So a non-wearer's pack OMITS the active-cal
+  stats entirely rather than reporting 0. No fix needed. (The `calories_net_*` stats do subtract burn,
+  so net = eaten for a non-wearer -- same low-concern class as the `net` display stat, labeled
+  transparently; left as-is.)
 - **`ruleStepsLow`** -- phone-tracked steps are usually real; genuine edge is a no-phone-carry user.
   Lower risk, same class; apply the guard for consistency.
 - **Averaged display surfaces** (EvR / weekly / monthly activity averages) -- 0-data days drag averages
@@ -185,6 +186,42 @@ activity data); the Activity Reminder notification (don't nag when no device is 
 Day Score workout-day branch (don't cap at 40 -- score completion fairly when active data is absent);
 and as a stopgap on the EvR deficit card (until Phase 2 adaptive TDEE lands). Plus device-gated empty
 states (E) and the wear-level detection/pivot (F). Everything in "VERIFIED GOOD" is left alone.
+
+---
+
+## PHASE 1 STATUS (BUILT 2026-07-03, dev-verified via the sim)
+
+The unifying fix: a `hasActivityData` signal (device measured burn that day = active cals or exercise
+minutes present) that guards every "activity is low" surface. It is a PURE NO-OP for watch users
+(hasActivityData always true -> `true && X` === `X`), so it can only change behavior on a no-device /
+partial-device day. Verified on-device: the No-Watch Sim's ">> activity/recovery rules" line went from
+`active_low` + `sleep_deep_low` to `(none)`, while the REAL-data list stayed byte-identical.
+
+- [DONE] `hasActivityData` added at the source (both WindowDay loaders in smartTipsEngine.ts).
+- [DONE] Guarded `ruleActiveLow`, `ruleActivityStreakLow`, and `ruleStepsLow` (defects 1, 2, and the
+  steps edge). ruleStepsLow now also requires real step DATA (steps > 0) so a 0-step/no-device day
+  isn't read as "low steps."
+- [DONE] Activity Reminder notification (notifications.ts) now requires an activity signal today
+  (active cals or exercise minutes > 0) before nagging -> no daily "push your activity" for a
+  no-device user. Watch users still get it (they have data by the time it fires). (Defect 3.)
+- [DONE] Day Score workout-day cap (defect 4): a logged workout on a no-device day now scores on
+  completion (up to 100) instead of being capped at ~40 by the missing active-cal /60. No-op for watch
+  users. NOTE: changes the score number for no-watch users' workout days + triggers historical
+  recompute for them (Justin OK'd; his own scores unchanged since he wears a watch 24/7).
+- [ALREADY SAFE] Otto stat pack (defect: none) -- see closures above.
+- [DEV TOOL] "No-Watch Sim (read-only)" added to Settings dev tools (smartTipsEngine.dumpWearableSim):
+  strips activity + recovery + sleep-stage data from an in-memory copy of the real window, runs the
+  rules, reports what fires. Writes nothing. This is the repeatable way to observe/verify the
+  non-wearer experience without being a non-wearer (Justin wears his watch 24/7 + testers won't hunt
+  these), and to catch regressions.
+
+STILL OPEN on this track:
+- Defect 5 (EvR predicted-vs-actual) real fix = Phase 2 adaptive TDEE (not built). Defect 6 (`net`
+  stat) is low-concern/secondary, deferred.
+- E (device-gated empty states) and F (deliberate wear-level pivot beyond per-rule guards) not built.
+- Phase 2 (adaptive TDEE, weight-trend, suggest-not-auto) not started; research pass recommended first.
+- Follow-up read still owed: the ~15 EvR cards + summary COPY for any same-class stragglers (the sim +
+  the unified guard mean any straggler is the same pattern/fix).
 
 ---
 

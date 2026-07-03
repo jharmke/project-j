@@ -1026,7 +1026,12 @@ export const scheduleDailyNotifications = async (ctx: SchedulerContext) => {
   }
 
   // 5. Activity Reminder (both active-cal goal and exercise-mins goal not yet hit)
-  if (s.categoryFitness && !(ctx.todayActiveCals >= ctx.activeCalGoal && ctx.todayExerciseMins >= ctx.exerciseMinsGoal) && (!isMindful || growthOn)) {
+  // Device-presence guard: only nag when there is SOME activity signal today (active cals or exercise
+  // minutes). A user with zero of both is almost certainly not wearing a device, so "push your
+  // activity" would nag them daily off missing data (the wearable-robustness fix). Watch users still
+  // get it -- by the time this reminder fires they have active-cal data.
+  const hasActivitySignal = ctx.todayActiveCals > 0 || ctx.todayExerciseMins > 0;
+  if (s.categoryFitness && hasActivitySignal && !(ctx.todayActiveCals >= ctx.activeCalGoal && ctx.todayExerciseMins >= ctx.exerciseMinsGoal) && (!isMindful || growthOn)) {
     const v = pickCopy('activity', COPY_POOLS.activity, m, growthOn, rotation);
     candidates.push({
       id: 'pj_activity',

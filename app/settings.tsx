@@ -44,7 +44,7 @@ function vacFmtNice(key: string): string {
   return `${VAC_DOW3[d.getDay()]} ${VAC_MONTHS[d.getMonth()].slice(0, 3)} ${d.getDate()}`;
 }
 import { voiceDiagnosticCards, getLastVoiceDebug } from '../utils/coachAI';
-import { dumpHomeCoachCandidates, dumpEvrRecoveryDebug } from '../utils/smartTipsEngine';
+import { dumpHomeCoachCandidates, dumpEvrRecoveryDebug, dumpWearableSim } from '../utils/smartTipsEngine';
 import { TOOLTIP_REGISTRY } from '../tooltipRegistry';
 import TooltipModal from '../components/TooltipModal';
 import TooltipIcon from '../components/TooltipIcon';
@@ -2304,6 +2304,22 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Read-only. Shows each metric at 7d/14d/30d (avg + day count) so we can see whether the windows actually diverge on your data.</Text>
               </View>
               <Ionicons name="resize-outline" size={18} color={theme.accentRed} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              try {
+                const body = await dumpWearableSim();
+                Alert.alert('No-Watch Sim (read-only)', body);
+              } catch (e) {
+                Alert.alert('Sim failed', String(e));
+              }
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentGreen }]}>No-Watch Sim (read-only)</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Simulates a no-watch / partial-watch user on a COPY of your real data and shows which coaching rules fire. Writes nothing. Activity/recovery rules in the no-watch list = the bug.</Text>
+              </View>
+              <Ionicons name="watch-outline" size={18} color={theme.accentGreen} />
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {

@@ -81,6 +81,10 @@ export interface WindowDay {
   sugar: number;
   waterLogged: number;
   rawActive: number;
+  // TRUE only when a device actually measured burn that day (active cals or exercise minutes present).
+  // Distinguishes "0 because sedentary/device present" from "0 because no wearable" -- activity rules
+  // must NOT read a no-device 0 as genuine inactivity (the wearable-robustness fix).
+  hasActivityData: boolean;
   steps: number;
   weight: number | null;
   sleepScore: number | null;
@@ -374,6 +378,9 @@ export async function loadWindowDays(
       ? day.sleepStages.deep : null;
 
     const rawActive = day.activeCalories || day.caloriesBurned || 0;
+    // Device measured burn this day? active cals or exercise minutes present = yes. A no-wearable day
+    // has none of these, so its rawActive 0 must NOT be read as "was inactive."
+    const hasActivityData = rawActive > 0 || (day.exerciseMinutes ?? 0) > 0;
     const bmr: number = day.goalSnapshot?.bmr || ctx.bmr;
 
     const dayName = dayNameFromKey(dateKey);
@@ -411,6 +418,7 @@ export async function loadWindowDays(
       sugar: Math.round(sugar * 10) / 10,
       waterLogged: typeof day.water === 'number' ? day.water : 0,
       rawActive,
+      hasActivityData,
       steps: day.steps || 0,
       weight: day.weight ?? null,
       sleepScore,
@@ -605,6 +613,9 @@ async function loadWindowDayRange(
       ? day.sleepStages.deep : null;
 
     const rawActive = day.activeCalories || day.caloriesBurned || 0;
+    // Device measured burn this day? active cals or exercise minutes present = yes. A no-wearable day
+    // has none of these, so its rawActive 0 must NOT be read as "was inactive."
+    const hasActivityData = rawActive > 0 || (day.exerciseMinutes ?? 0) > 0;
     const bmr: number = day.goalSnapshot?.bmr || ctx.bmr;
 
     const dayName = dayNameFromKey(dateKey);
@@ -642,6 +653,7 @@ async function loadWindowDayRange(
       sugar: Math.round(sugar * 10) / 10,
       waterLogged: typeof day.water === 'number' ? day.water : 0,
       rawActive,
+      hasActivityData,
       steps: day.steps || 0,
       weight: day.weight ?? null,
       sleepScore,
@@ -1024,13 +1036,15 @@ function ruleActiveLow(w7: WindowDay[], w5: WindowDay[], ctx: EngineContext, sto
   if (ctx.goalBucket === 'gain') return null;
   const { activeCalGoal, burnAccuracyPct } = ctx;
 
-  const urgentQual = w5.filter(d => d.rawActive * burnAccuracyPct / 100 < activeCalGoal * 0.4);
+  // hasActivityData guard: only days a device actually measured count as "low active" -- a no-wearable
+  // day (rawActive 0 with no device) is NOT evidence of inactivity, so it is excluded here.
+  const urgentQual = w5.filter(d => d.hasActivityData && d.rawActive * burnAccuracyPct / 100 < activeCalGoal * 0.4);
   if (urgentQual.length >= 3 && meetsLoggingGate(w5, 4)) {
     const poolKey = ctx.goalBucket === 'lose' ? 'urgent_lose' : 'pattern';
     return makeTip('active_low', 'urgent', false, poolKey, ctx, store, { goal: activeCalGoal, avg: Math.round(avg(urgentQual.map(d => d.rawActive * burnAccuracyPct / 100))), days: urgentQual.length });
   }
 
-  const patternQual = w7.filter(d => d.rawActive * burnAccuracyPct / 100 < activeCalGoal * 0.6);
+  const patternQual = w7.filter(d => d.hasActivityData && d.rawActive * burnAccuracyPct / 100 < activeCalGoal * 0.6);
   if (patternQual.length >= 5 && meetsLoggingGate(w7, 6)) {
     return makeTip('active_low', 'pattern', false, 'pattern', ctx, store, { goal: activeCalGoal, avg: Math.round(avg(patternQual.map(d => d.rawActive * burnAccuracyPct / 100))), days: patternQual.length });
   }
@@ -1046,7 +1060,9 @@ function ruleActivityStreakLow(w14: WindowDay[], ctx: EngineContext, store: Smar
   let streak = 0;
   for (const d of w14) {
     const adjActive = d.rawActive * burnAccuracyPct / 100;
-    if (adjActive < activeCalGoal * 0.3 && d.workoutChecked === 0) {
+    // Only a device-measured low day counts toward an inactive streak. A no-wearable day (no activity
+    // data) breaks the streak -- we can't claim inactivity we never measured.
+    if (d.hasActivityData && adjActive < activeCalGoal * 0.3 && d.workoutChecked === 0) {
       streak++;
     } else {
       break;
@@ -1061,8 +1077,11 @@ function ruleActivityStreakLow(w14: WindowDay[], ctx: EngineContext, store: Smar
 function ruleStepsLow(w7: WindowDay[], ctx: EngineContext, store: SmartTipsStore): CandidateTip | null {
   if (ctx.stepGoal <= 0) return null;
   if (!meetsLoggingGate(w7, 6)) return null;
-  const low = w7.filter(d => d.steps < ctx.stepGoal * 0.6);
-  if (low.length < 5) return null;
+  // Require real step DATA (steps > 0) on the qualifying days: a 0-step day almost always means no
+  // device tracked it (phone left behind / no wearable), not a genuinely motionless day.
+  const low = w7.filter(d => d.steps > 0 && d.steps < ctx.stepGoal * 0.6);
+  const daysWithSteps = w7.filter(d => d.steps > 0).length;
+  if (low.length < 5 || daysWithSteps < 6) return null;
   return makeTip('steps_low', 'pattern', false, 'pattern', ctx, store, { goal: ctx.stepGoal.toLocaleString(), days: low.length });
 }
 
@@ -1738,6 +1757,56 @@ export interface CoachTipCache {
   aiBody: string | null;
   aiGeneratedDate: string | null;
   fallbackUsed: boolean;
+}
+
+// ── DEV: wearable simulation (READ-ONLY) ──────────────────────────────────────
+// Simulate a no-watch / partial-watch user by stripping activity + recovery data from an IN-MEMORY
+// COPY of the real window, then run the coaching rules on that copy and report which rules fire.
+// Writes NOTHING and never touches storage (uses a throwaway EMPTY_STORE clone), same safety class as
+// the read-only Dump tools. Lets us observe the non-wearer coaching experience -- and later verify the
+// hasActivityData guards -- without being a non-wearer. Any activity/recovery rule that appears in the
+// no-watch / partial lists is the defect (it fired off missing wearable data).
+export async function dumpWearableSim(): Promise<string> {
+  const todayKey = todayDateKey();
+  const [ctx, workoutRaw] = await Promise.all([
+    buildEngineContext(todayKey),
+    AsyncStorage.getItem('pj_workout_state').catch(() => null),
+  ]);
+  const workoutState: any = workoutRaw ? JSON.parse(workoutRaw) : {};
+  const real = await loadWindowDays(todayKey, ctx, workoutState);
+  if (real.length === 0) return 'No recent data to simulate against. Log a few days first, then re-run.';
+
+  // Throwaway store so rule generation can never read/write real cooldown state.
+  const store: SmartTipsStore = { ...EMPTY_STORE };
+  const fire = (days: WindowDay[]): string[] =>
+    runAllRules(days.slice(0, 7), days.slice(0, 5), days, ctx, { ...store }).map(c => c.ruleId);
+
+  // A wearable supplies active calories, recovery/HRV, and sleep STAGES (deep %). Strip all of them to
+  // faithfully simulate no device. Steps are phone-tracked and manual sleep HOURS survive, so those are
+  // LEFT intact (realistic for a phone-carrying no-watch user).
+  const stripNoWatch = (d: WindowDay): WindowDay => ({
+    ...d, rawActive: 0, hasActivityData: false, recoveryScore: null, recoverySignals: null, deepSleepPct: null,
+  });
+  const isWearableRule = (id: string) => /activ|steps|workout|recover|deep/i.test(id);
+
+  const realFired = fire(real);
+  const noWatchFired = fire(real.map(stripNoWatch));
+  const partialFired = fire(real.map((d, i) => (i % 2 === 0 ? stripNoWatch(d) : d)));
+
+  const fmt = (ids: string[]) => (ids.length ? ids.join(', ') : '(none)');
+  const flagged = (ids: string[]) => { const f = ids.filter(isWearableRule); return f.length ? f.join(', ') : '(none)'; };
+
+  return [
+    `Read-only sim over your last ${real.length} days. Nothing saved; live coaching untouched.`,
+    ``,
+    `REAL data fires:\n${fmt(realFired)}`,
+    ``,
+    `NO-WATCH sim fires:\n${fmt(noWatchFired)}`,
+    `  >> activity/recovery rules (should be NONE after the fix): ${flagged(noWatchFired)}`,
+    ``,
+    `PARTIAL-WATCH sim fires:\n${fmt(partialFired)}`,
+    `  >> activity/recovery rules: ${flagged(partialFired)}`,
+  ].join('\n');
 }
 
 export async function loadCoachTipCache(): Promise<CoachTipCache | null> {

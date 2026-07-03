@@ -167,12 +167,6 @@ function CollapsibleSection({ label, subtitle, children, defaultOpen = true, the
 
 // ── Main screen ───────────────────────────────────────────────────────────────
 
-// Graph metrics that ONLY exist with a worn device (no manual/phone fallback). Hidden
-// from the "add a graph" picker when Apple Health isn't connected so a non-wearer can't
-// add a chart that stays permanently empty. Sleep and Sleep Score are NOT here: manual
-// sleep logging produces both.
-const WATCH_ONLY_DATA_KEYS: DataKey[] = ['sleepStages', 'restingHR', 'respiratoryRate', 'bloodOxygen'];
-
 export default function StatsScreen() {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
@@ -207,12 +201,6 @@ export default function StatsScreen() {
   const [activePeriod, setActivePeriod] = useState<'7' | '30' | '90' | '180' | 'ytd'>('7');
 
   const [trendDataMap, setTrendDataMap] = useState<Record<string, TrendData>>({});
-
-  // Whether Apple Health is connected. Gates the watch-only graph metrics out of the
-  // "add a graph" picker for non-wearers (so they can't add a chart that just sits empty).
-  // Any real wearer has this true, so it never hides a metric from a watch user; it
-  // flips back on the moment they connect a device.
-  const [healthkitConnected, setHealthkitConnected] = useState(false);
 
   const [calTarget, setCalTarget] = useState(0);
   const [stepGoal, setStepGoal] = useState(10000);
@@ -873,7 +861,6 @@ export default function StatsScreen() {
             if (d.faithJourney) { setFaithJourney(d.faithJourney); currentFaithJourney = d.faithJourney; }
             if (d.burnAccuracyPct !== undefined) burnAccuracy = d.burnAccuracyPct;
             if (d.showNetCarbs !== undefined) { netCarbsMode = d.showNetCarbs; setShowNetCarbs(d.showNetCarbs); }
-            setHealthkitConnected(!!d.healthkitConnected);
           }
         } catch {}
         // calTarget fallback: pj_settings.calTarget, else pj_profile.calTarget,
@@ -2332,8 +2319,7 @@ export default function StatsScreen() {
               {creatorStep === 1 && (
                 <View ref={graphCreatorDataGridRef} collapsable={false} style={{ gap: 16 }}>
                   {DATA_KEY_CATEGORIES.map(cat => {
-                    const keys = (Object.keys(DATA_KEY_META) as DataKey[]).filter(dk => DATA_KEY_META[dk].category === cat && (healthkitConnected || !WATCH_ONLY_DATA_KEYS.includes(dk)));
-                    if (keys.length === 0) return null;
+                    const keys = (Object.keys(DATA_KEY_META) as DataKey[]).filter(dk => DATA_KEY_META[dk].category === cat);
                     return (
                       <View key={cat}>
                         <Text style={{ fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted, marginBottom: 10 }}>
@@ -2531,8 +2517,7 @@ export default function StatsScreen() {
               {creatorStep === 1 && (
                 <View style={{ gap: 16 }}>
                   {DATA_KEY_CATEGORIES.map(cat => {
-                    const keys = (Object.keys(DATA_KEY_META) as DataKey[]).filter(dk => DATA_KEY_META[dk].category === cat && (healthkitConnected || !WATCH_ONLY_DATA_KEYS.includes(dk)));
-                    if (keys.length === 0) return null;
+                    const keys = (Object.keys(DATA_KEY_META) as DataKey[]).filter(dk => DATA_KEY_META[dk].category === cat);
                     return (
                       <View key={cat}>
                         <Text style={{ fontSize: 9, letterSpacing: 2.5, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted, marginBottom: 10 }}>

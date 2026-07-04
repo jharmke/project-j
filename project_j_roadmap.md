@@ -4,6 +4,25 @@
 
 ---
 
+## 📌 PARKED SMALL IDEAS (from 2026-07-04 design chat, do when convenient)
+- [ ] Achievement "pop on the action" timing. Achievements earned by an action (e.g. logging the 60th
+  food day) don't pop until the next app-open, because the per-category check is gated once/day and
+  runs on open (often BEFORE the action). Sixty Strong popped the morning after + dated a day late.
+  FIX: run the relevant check right after the qualifying action (food log -> momentum + nutrition
+  checks, mirroring how sleep already fires after a sleep save) + let a same-day qualifying action
+  bypass the once/day gate. Small perf angle (full-history rescan), scope deliberately. BEST DONE as
+  part of the Otto notification-hub build, since that reworks when achievement events fire anyway
+  (achievements = a Type B / stack hub event). Verified: streak = consecutive FOOD-logged days through
+  YESTERDAY; today-unlogged doesn't break it (smartTipsEngine.computeLoggingStreak).
+- [ ] "Manage in Settings" button in the in-app Health section: a Linking.openSettings() hotlink so a
+  user can jump to iOS Settings to change Apple Health permissions (Apple blocks in-app permission
+  toggles; openSettings is the App-Store-safe path). Pairs with the Otto Apple-Health knowledge fix
+  already shipped 2026-07-04.
+- [ ] "View all achievements" button in the Stats Records or Streaks section (the trophy icon in the
+  Profile/Stats header is a bit buried).
+
+---
+
 ## 🔜 NOW (do before next TestFlight test-group submission)
 - [ ] [NOW] REAL VOICE DICTATION in the AI meal estimator. The mic icon (ai-meal-estimator.tsx ~583)
   currently only focuses the text field + fires a "Voice input is coming soon" toast (interim, added

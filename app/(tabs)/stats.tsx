@@ -1838,14 +1838,14 @@ export default function StatsScreen() {
                   if (has('activeCals')) g.push({ label: 'ACTIVE CALS / DAY', value: periodData.avgActiveCals > 0 ? `${periodData.avgActiveCals} kcal` : '--' });
                   g.push({ label: 'CAL GOAL / DAY', value: periodData.loggedDays > 0 ? `${periodData.calGoalDays} / ${periodData.loggedDays}` : '--' });
                 }
-                g.push({ label: 'STEPS / DAY', value: periodData.avgSteps > 0 ? periodData.avgSteps.toLocaleString() : '--' });
-                g.push({ label: 'WORKOUT DAYS', value: `${periodData.workoutDays} / ${periodData.totalDays}` });
                 g.push({ label: 'EXERCISE / DAY', value: periodData.avgExerciseMinutes > 0 ? `${periodData.avgExerciseMinutes} min` : '--' });
-                g.push({ label: 'SLEEP / NIGHT', value: fmtSleep(periodData.avgSleep) });
+                g.push({ label: 'WORKOUT DAYS', value: `${periodData.workoutDays} / ${periodData.totalDays}` });
                 g.push({ label: 'SLEEP SCORE', value: periodData.avgSleepScore !== null ? `${periodData.avgSleepScore}` : '--' });
+                g.push({ label: 'SLEEP / NIGHT', value: fmtSleep(periodData.avgSleep) });
                 if (has('recovery')) g.push({ label: 'RECOVERY SCORE', value: periodData.avgRecoveryScore !== null ? `${periodData.avgRecoveryScore}` : '--' });
-                g.push({ label: 'WATER / DAY', value: periodData.avgWater > 0 ? `${periodData.avgWater} oz` : '--' });
                 g.push({ label: 'WEIGHT CHANGE', value: weightChange !== null ? `${weightChange > 0 ? '+' : ''}${weightChange} lbs` : '--', color: (weightChange !== null && !isMindful) ? (weightChange < 0 ? theme.statusGood : weightChange > 0 ? theme.statusBad : theme.textPrimary) : theme.textSecondary });
+                g.push({ label: 'STEPS / DAY', value: periodData.avgSteps > 0 ? periodData.avgSteps.toLocaleString() : '--' });
+                g.push({ label: 'WATER / DAY', value: periodData.avgWater > 0 ? `${periodData.avgWater} oz` : '--' });
 
                 const hasAnyData = periodData.loggedDays > 0 || periodData.avgSteps > 0 || periodData.avgSleep > 0 || periodData.workoutDays > 0 || periodData.avgWater > 0 || periodData.avgRecoveryScore !== null || weightChange !== null;
                 if (!hasAnyData) return (

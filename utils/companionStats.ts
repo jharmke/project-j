@@ -25,6 +25,7 @@ import {
   type WindowDay,
   type EngineContext,
 } from './smartTipsEngine';
+import { loadMetricPresence, seedMetricPresenceOnce, type PresenceMetric } from './metricPresence';
 
 export type CompanionStat = {
   key: string;        // token key, e.g. "protein_7d_avg"
@@ -262,13 +263,52 @@ export async function buildCompanionStats(todayKey: string): Promise<CompanionSt
     add('if_target_hours', 'intermittent fasting target window', ifTarget, `${r0(ifTarget)}h`);
   }
 
+  // ── Device data availability (wearable awareness) ─────────────────────────
+  // Tell Otto which watch-only metrics this user has NEVER recorded, so instead of
+  // dodging ("I don't have that number") it can honestly explain the metric needs a
+  // wearable to track. FAIL-OPEN: we only speak up when the presence map shows real
+  // signal (at least one metric ever true); an empty/unseeded map stays silent so we
+  // can NEVER tell a real wearer they lack a device. Only genuinely device-dependent
+  // metrics are listed here (steps come from a phone, sleep score + exercise minutes
+  // have manual fallbacks, so those are never flagged).
+  let deviceNote = '';
+  try {
+    await seedMetricPresenceOnce();
+    const presence = await loadMetricPresence();
+    const anyPresent = Object.values(presence).some(v => v === true);
+    if (anyPresent) {
+      const deviceOnly: { key: PresenceMetric; name: string }[] = [
+        { key: 'recovery', name: 'recovery score' },
+        { key: 'hrv', name: 'HRV' },
+        { key: 'restingHR', name: 'resting heart rate' },
+        { key: 'respiratoryRate', name: 'respiratory rate' },
+        { key: 'bloodOxygen', name: 'blood oxygen' },
+        { key: 'vo2Max', name: 'VO2 max' },
+        { key: 'cardioRecovery', name: 'cardio recovery' },
+        { key: 'sleepStages', name: 'sleep stages (deep, REM, core)' },
+        { key: 'activeCals', name: 'active calories' },
+      ];
+      const missing = deviceOnly.filter(m => presence[m.key] !== true).map(m => m.name);
+      if (missing.length) {
+        deviceNote =
+          '\n\nDEVICE DATA AVAILABILITY (accuracy guard): This user has never recorded the ' +
+          'following, which require a smartwatch or fitness tracker: ' + missing.join(', ') + '. ' +
+          'If they ask about any of these, warmly and plainly explain it needs a smartwatch or ' +
+          'fitness tracker to track (worn overnight for recovery and sleep stages), instead of ' +
+          'implying the app is broken or that you cannot access their data. Do NOT tell them to ' +
+          'buy or go get a device. Do NOT offer or promise any other metric unless it actually ' +
+          'appears in the snapshot above; if nothing relevant is listed, do not force a pivot.';
+      }
+    }
+  } catch {}
+
   // ── Assemble outputs ──────────────────────────────────────────────────────
   const valueMap: Record<string, string> = {};
   for (const s of stats) valueMap[s.key] = s.display;
 
-  const snapshotText = stats.length
+  const snapshotText = (stats.length
     ? stats.map(s => `- ${s.key}: ${s.label} = ${s.display}`).join('\n')
-    : '(No recent logged data available for this user right now.)';
+    : '(No recent logged data available for this user right now.)') + deviceNote;
 
   return { stats, valueMap, snapshotText };
 }

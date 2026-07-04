@@ -392,7 +392,117 @@ extra without the weight moving.
 
 ---
 
+## DEFECT F: NON-WEARER COACHING PIVOT -- DESIGN LOCKED 2026-07-04
+
+This SUPERSEDES the earlier "WEAR-LEVEL INFERENCE (none/partial/full)" section above. We are NOT
+storing a persistent none/partial/full wear-level label on the user. Reason: a stored classification
+can go stale, can be wrong, and forces a global yes/no where a per-metric answer is more accurate.
+Instead every feature asks, per-metric and per-moment, "is real data present right now for the thing I
+need?" (the same pattern as the existing hasActivityData guard + utils/metricPresence.ts). NOTE: the
+none/partial/full CONCEPT survives only as a derived, computed-on-demand helper (see isLikelyWearer
+below), never as a stored flag.
+
+### Core model: per-metric, per-moment presence (no stored label)
+Each card/feature checks its OWN metric ("do I have recovery right now?") and shows data or an empty
+state accordingly. ~99% of surfaces only ever need this per-metric check.
+
+### The 3 states every watch-dependent surface resolves to
+1. HAS-NOW (data present in the current view) -> show the data.
+2. EVER-HAD (grow-only metricPresence is true, they've had this metric before) -> soft "no recent
+   data" state. NEVER "you need a watch" (they clearly own one). Data resumes when they wear it again.
+3. NEVER-HAD + CONFIRMED NON-WEARER -> honest factual explainer ("Recovery is measured overnight by a
+   smartwatch or fitness tracker"). Descriptive, tells them what unlocks it, never a "go buy one" nag.
+
+Two questions drive it: HAS-NOW decides data-vs-empty; EVER-HAD decides soft-empty-vs-explainer.
+
+### The 4 non-negotiable rules (the contract that makes it airtight)
+1. REAL DATA ALWAYS WINS over any flag or label.
+2. THE LOOKBACK EXISTS (load-bearing, not optional -- see detection below).
+3. CLEAR pj_healthkit_skip THE MOMENT they connect Apple Health (else the flag lies).
+4. A NEUTRAL "no data yet / syncing" MIDDLE STATE for the brief pre-lookback window, so a brand-new
+   real wearer whose data hasn't synced is never falsely told "needs a watch."
+
+### Confirmed-non-wearer detection (two paths)
+- FAST PATH: pj_healthkit_skip (set when the user taps "Maybe later" on the Apple Health onboarding
+  screen) = instant day-one non-wearer signal. It has a real writer (not a dead flag like
+  healthkitConnected). MUST be cleared on connect; real data always overrides it.
+- FALLBACK (LOAD-BEARING): never-had this metric AND ~N days (recommend 14) of active app use with no
+  data for it -> confirmed non-wearer for that metric. This catches users who CONNECTED Apple Health
+  for phone steps but own NO watch (no skip flag, but never any recovery/HRV/etc.). Without this
+  fallback, those users would sit in the neutral middle state forever. The skip flag is just an
+  accelerator; the lookback is what actually confirms non-wearer for everyone else.
+
+### Coaching voice rules (items 1-4)
+- CONFIDENT, NEVER APOLOGETIC. Proactive coaching (smart tips, summaries, Otto) talks only about
+  what's real (food, weight, steps) with full confidence, never hedges with "since we don't have your
+  activity data." Applies to PROACTIVE coaching only; if the user DIRECTLY asks about recovery/HRV,
+  Otto can honestly say it needs a wearable (that's the device-awareness already shipped).
+- NO WEARABLE NUDGING, EVER, from the coaching voice. Otto / smart tips / summaries never suggest
+  buying or wearing a device. A wearable is only ever mentioned in a device-gated empty state
+  (explaining honestly why that card is empty) or a direct answer when the user explicitly asks.
+- NO TONE/PERSONALITY SHIFT wearer vs non-wearer. Same Otto, same voice, same directness. Only the
+  underlying data referenced changes, not the personality.
+- EMPTY-STATE COPY IS FACTUAL ("Recovery is measured overnight by a smartwatch or fitness tracker"),
+  never imperative ("wear your watch"). Factual info that happens to say what unlocks it = fine; an
+  active prompt to go wear it = the nudge we ruled out.
+
+### The derived isLikelyWearer() helper (the "fallback" -- computed live, never stored)
+Used only for the ~2 HOLISTIC decisions a single metric can't answer:
+1. Whether a whole SCREEN should be one clean empty state (the Recovery TAB of the Sleep & Recovery
+   hub -- the only genuine "wall" for a non-wearer).
+2. Whether a REPORT leads with activity or food framing (item 7).
+Everywhere else uses the per-metric check. This helper is computed on demand from metricPresence +
+the detection above; it is NOT a persisted flag. It exists so features answer the coarse question
+CONSISTENTLY (no single source of truth otherwise = features could disagree and feel schizophrenic).
+
+### Reports (item 7) -- narrative consistency
+Use the existing daysWithActivityData / coverage-% signal (already computed in coachAI) to decide
+what a report leads with, so summaries don't randomly bounce between activity-focused and
+food-focused between periods. GUARD against threshold flip-flop: either apply hysteresis (switch TO
+activity-led only above ~60% coverage, away only below ~40%, stay put in between) OR simply don't make
+framing a hard binary at all (just include what's present). The simplest fix is the latter.
+
+### Cards / empty states (item 10) -- keep them, it's not a wall
+- The watch-dependent surfaces are FEW and mostly already handled: the Stats graph picker already
+  hides watch-only graphs for non-wearers (built), At a Glance already drops watch-only rows (built).
+- The Home Sleep & Recovery card STAYS: its Sleep face works via manual entry (fully usable); only
+  the Recovery face is empty for a non-wearer. Card is never dead. Users can hide it via Edit Layout.
+- The ONLY genuine "wall" is the RECOVERY TAB of the Sleep & Recovery hub (all-empty screen for a
+  non-wearer) -> give it ONE clean full-screen empty state, not a stack of empty rows.
+- Do NOT hide watch cards wholesale; a few factual empty states spread out is fine and honest.
+
+### Achievements (item 8) -- confirmed non-issue
+No reframing of any achievement. CONFIRMED by reading achievementData.ts: there is NO watch-REQUIRED
+achievement family (steps come from the phone, sleep works with manual entry, there is no active-cals
+achievement family). So non-wearers can already earn most things. NOTE: the daily GOALS (active cals,
+exercise minutes) effectively need a watch, but those are goals, not achievements, and Phase 1 already
+stops the app from nagging a non-wearer about missing them.
+
+### HR Zones (item 9) -- already correct
+Verified in code: the HR Zones button only renders for Apple Health cardio with a real UUID; manual
+exercises never show it; a session with no recorded HR shows an honest "No heart rate recorded" state.
+No fix needed.
+
+### Accepted tradeoffs (deliberate choices, NOT holes)
+- GROW-ONLY NEVER FORGETS: a user who wore a watch then quit for good keeps their watch cards + soft
+  empty states forever (metricPresence can't distinguish "off day" from "quit 3 months ago"). This is
+  the SAFE direction -- it never wrongly tells someone to buy a watch they already own.
+- NARROW SELF-HEALING EDGE: a brand-new real wearer who doesn't wear the watch for the first ~14 days
+  AND opens the app in that window could see the factual "measured by a wearable" message early. It's
+  TRUE for them anyway (they own one, weren't wearing it), it's factual not naggy, and it corrects
+  PERMANENTLY the instant any watch data ever appears. Make N generous (14) and it's a non-issue.
+
+### Still open / to tune
+- Exact lookback N (recommend ~14 days).
+- Report framing: hysteresis vs simply not making it a hard binary (lean: not a binary).
+- Audit the actual empty-state STRINGS to confirm they're all factual/descriptive, never imperative.
+- "What makes a no-watch user feel this app is FOR them" is largely answered by the voice rules +
+  not over-empty-stating, but worth a final gut-check once F is built.
+
+---
+
 ## RELATION TO OTHER WORK
 
 Independent of SPEC_workout_sessions.md (different subsystem). Shares only the multi-device dedup edge
-case. Can be built on its own track, any time.
+case. Can be built on its own track, any time. The adaptive-TDEE SUGGESTION (Phase 2 above) is
+DELIVERED through the Otto notification hub (SPEC_otto_notifications.md) as a Type A / Replace entry.

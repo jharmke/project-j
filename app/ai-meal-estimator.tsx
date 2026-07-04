@@ -577,10 +577,10 @@ export default function AIMealEstimatorScreen() {
                     style={{ backgroundColor: theme.bgInput, borderWidth: 1, borderColor: theme.borderInput, borderRadius: 10, padding: 14, paddingRight: 46, minHeight: 120, fontSize: 14, color: theme.textPrimary, fontFamily: 'DMSans_400Regular', textAlignVertical: 'top' }}
                     onBlur={() => descRef.current?.setNativeProps({ selection: { start: 0, end: 0 } })}
                   />
-                  {/* Voice mic: focuses the field (and raises the keyboard, where the
-                      system dictation mic lives). True one-tap dictation needs a native
-                      speech module + rebuild; flagged for a later build. */}
-                  <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); descRef.current?.focus(); }} style={{ position: 'absolute', top: 10, right: 8, width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' }}>
+                  {/* Voice mic: INTERIM. True one-tap dictation needs a native speech module +
+                      rebuild (tracked in the roadmap NOW list). For now, tap = a "coming soon"
+                      toast + focus the field so the keyboard's own dictation mic is available. */}
+                  <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); showToast('Voice input is coming soon', undefined, 'info'); descRef.current?.focus(); }} style={{ position: 'absolute', top: 10, right: 8, width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' }}>
                     <Ionicons name="mic-outline" size={20} color={theme.accentBlue} />
                   </TouchableOpacity>
                 </View>

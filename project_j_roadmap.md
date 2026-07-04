@@ -4,6 +4,25 @@
 
 ---
 
+## 🔜 NOW (do before next TestFlight test-group submission)
+- [ ] [NOW] REAL VOICE DICTATION in the AI meal estimator. The mic icon (ai-meal-estimator.tsx ~583)
+  currently only focuses the text field + fires a "Voice input is coming soon" toast (interim, added
+  2026-07-03). True one-tap speech-to-text needs a NATIVE speech-recognition module (e.g.
+  @react-native-voice/voice or expo speech-recognition) + a NEW BUILD (new native package). Build it
+  and swap the toast for real dictation, OR if punting, hide the mic before submitting to testers so
+  there's no half-feature. Do NOT ship the "coming soon" toast to a test group without deciding.
+
+---
+
+- [FIXED 2026-07-03] APPLE-SYNCED CARDIO had no "Logged HH:MM" time-of-day line. Cause: the stamp
+  reads exerciseDoneAt, which is only written when the USER taps the check; Apple cardio auto-imports
+  + auto-checks, so it never got stamped. Fix (workout.tsx): for cardio, fall back to the real
+  HealthKit workout start time (appleStartDate, coerced to ms via new appleStartMs helper) when no
+  manual stamp exists, so it shows WHEN the workout actually happened, not sync time. Pure JS. Manual
+  cardio + lifts unchanged.
+- [FIXED 2026-07-03, INTERIM] AI ESTIMATOR mic felt dead (it only focused the field). Now tap = a
+  "Voice input is coming soon" info toast + still focuses the field so the keyboard's own dictation
+  mic works. Real speech-to-text = the NOW item at the top (needs a native module + build).
 - [DONE 2026-07-03, deployed] OTTO KNOWLEDGE-BASE v2 FULL (audit + rewrite). Triggered by Otto hallucinating that "At a Glance" was on the Home tab (it's a Stats section) and doubling down + routing to Recovery. Root: the knowledge doc (functions/src/assistantAppKnowledge.ts + root ASSISTANT_APP_KNOWLEDGE.md) was "v1 LEAN" and only listed section registries, missing tons of surface. Did a full source audit of every tab and ADDED to both files (kept in sync): every tab's header icons + FABs (incl. Otto's OWN sparkle FAB + name, which he didn't know), At a Glance + Calendar Stats sections, the full 21-metric Trends list, Reports now names Day/Weekly/Monthly Summaries, Log-tab Intermittent Fasting + Edit Meals (grid) + nutrition gear, the Gratitude Streak home card, corrected card labels (Faith Today not "Today's Verse", Smart Tip not "Coach Insight"), Faith Reading Plans + Devotionals sections, the Workout/Food/Exercise Libraries, Head to Head, and a full ACHIEVEMENTS CATALOG (name + criteria per family) with two hard guards: (1) never state the user's live progress/count/earned-status (Otto has no live achievement data; route to the trophy page), (2) summarize-and-route when a list would run past ~8-10 items. ALSO strengthened the system prompt's NO-GUESS rule (companionSystemPrompt.ts): if a named feature/section/card isn't in the map BY NAME, Otto must say he's not certain + route to Settings>Help, never infer a location from a similarly named thing. Deployed to appCompanion. HONEST SCOPE: focused pass on tabs/sections/cards/headers/FABs/major features + full achievements list; a line-by-line deep read could still surface thin spots, and the no-guess rule is the backstop for any straggler. KEEP IN SYNC going forward: both knowledge files + this catalog when achievements or app structure change.
 - [FIXED 2026-07-03] ACHIEVEMENT ONCE-PER-DAY GATES USED UTC, NOT LOCAL DAY. Justin's "Deep Sleeper" (30 green sleep nights) popped at ~7:17pm with no action taken. Root cause: the four once-per-day achievement gates (pj_momentum_checked, pj_workout_ach_checked, pj_sleep_ach_checked, pj_nutrition_ach_checked) stamped/compared `new Date().toISOString()` = a UTC date. In US Central (UTC-5 in July) the UTC calendar day rolls at 7:00pm local, so the morning run stamped the gate and held it, then at ~7pm the UTC date advanced, un-gating the check; the re-run recounted, found the 30th green night (synced/completed since morning), and fired. So legit earned, just announced late by the gate bug + double-firing every evening. FIX: all four now use the existing `localGoalDateKey()` helper (already in achievementData.ts with a comment warning toISOString was wrong -- someone half-migrated it earlier via the goal-hit path but missed these four category gates). Now gated once per LOCAL day, consistent with todayKey everywhere else, no 7pm re-fire. Safe: achievements only ever unlock (never revoke); worst case is one harmless idempotent recount on deploy day when the stored UTC gate value no longer matches the new local format. Pure JS, hot-reloads. File: achievementData.ts. NOTE: the sleep check also only fires on the Home screen when sleepHours transitions null->value (index.tsx ~1390) -- a contributing factor to WHEN it surfaces, left as-is for now.
 

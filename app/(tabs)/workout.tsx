@@ -1587,6 +1587,14 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
   // the lift); cardio reads its own exerciseDoneAt map. Pre-existing logs have no stamp -> no line.
   const formatLoggedAt = (ms?: number | null) =>
     ms ? `Logged ${new Date(ms).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}` : null;
+  // Apple-synced cardio auto-checks on import, so it never gets a manual exerciseDoneAt stamp.
+  // Fall back to the real HealthKit workout start time (when the workout actually happened).
+  const appleStartMs = (e: any): number | null => {
+    const v = e?.appleStartDate;
+    if (v == null) return null;
+    const t = new Date(v).getTime();
+    return Number.isFinite(t) ? t : null;
+  };
   const liftLoggedAt = (exId: string): number | null => {
     const s = setLogs[activeDay]?.[exId];
     if (!s || !s.length) return null;
@@ -1599,7 +1607,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
   const renderExerciseCard = (ex: any, opts: { inGroup?: boolean; isLastInGroup?: boolean } = {}) => {
     const { inGroup = false, isLastInGroup = false } = opts;
     const isDone = dayChecks[ex.id];
-    const loggedAt = ex.isCardio ? (exerciseDoneAt[activeDay]?.[ex.id] ?? null) : (isDone ? liftLoggedAt(ex.id) : null);
+    const loggedAt = ex.isCardio ? (exerciseDoneAt[activeDay]?.[ex.id] ?? appleStartMs(ex) ?? null) : (isDone ? liftLoggedAt(ex.id) : null);
     // Arrow enable/disable must match moveExercise: same-type lanes when an Apple strength container
     // is present (a lift can't be nudged out of the session), otherwise the full visible list.
     const peers = appleSessions.length > 0

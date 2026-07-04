@@ -244,9 +244,10 @@ WORKOUT (work out N days): First Rep 1, Getting After It 10, Not a Phase 30, Com
   (load first program) and The Blueprint (save first routine).
 NUTRITION (hit your calorie goal N times): On Point 1, Calibrated 10, By the Numbers 30,
   On the Dot 50, The Standard 75, Optimized 100, Unrelenting 200, No Cheat Days 365.
-SLEEP: Lights Out (log sleep first time), Green Light (first green score 85+), Night School 10,
-  Deep Sleeper 30, Sweet Dreams 50, Sleep Architect 100, Sleep Surgeon 200, Sleep Legend 365
-  (green = a sleep score of 85 or higher; the tiered ones count green nights).
+SLEEP (green = a sleep score of 85 or higher; the tiered ones count GREEN nights, NOT just nights
+  logged): Lights Out (log sleep the first time), Green Light (first green night, 85+),
+  Night School 10 green, Deep Sleeper 30 green, Sweet Dreams 50 green, Sleep Architect 100 green,
+  Sleep Surgeon 200 green, Sleep Legend 365 green.
 FAITH - VERSE REFLECTIONS (write N): Marked 1, Regular Reader 10, Saturated 25, Transformed 50,
   Fearfully and Wonderfully Made 100, Dwelling 200, Written in Full 365.
 FAITH - PRAYER (log N prayers): First Words 1, Faithful Asker 10, Steadfast 25, Open Channel 50,

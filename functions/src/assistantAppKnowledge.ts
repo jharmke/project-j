@@ -9,7 +9,7 @@
 // Same keep-in-sync arrangement as crisis.ts <-> utils/faithCrisis.ts. No double dashes in app
 // strings, but this is internal prompt content (the doc itself uses "--" freely), so it is fine here.
 
-export const ASSISTANT_APP_KNOWLEDGE = `# Project J -- Companion Assistant App Knowledge (v1, LEAN)
+export const ASSISTANT_APP_KNOWLEDGE = `# Project J -- Companion Assistant App Knowledge (v2, FULL)
 
 PURPOSE: This is your map of the app: every screen, feature, and how-to, so you can answer
 "how do I / where is" questions and guide users through the real UI.
@@ -43,30 +43,37 @@ Tapping the active tab icon scrolls that screen back to top.
 ================================================================================
 HOME TAB
 ================================================================================
-- Default cards (new installs, 7): Today's Verse, Calories, Workout, Water, Steps,
-  Sleep & Recovery, Coach Insight (smart tip). Hidden-by-default cards that can be ADDED via
-  Edit Layout: Macros, Weight, Daily Note, Reading Plans, Challenge.
-- EDIT LAYOUT (rearrange / hide / add cards): tap the GRID icon in the Home header. In the modal,
-  the "My Cards" tab reorders + hides active cards; the "Add Cards" tab adds hidden ones.
-- MACROS card (if added): protein/carbs/fat. The GEAR on the card opens macro display settings +
-  macro presets (High Protein / Balanced / Low Carb / Performance), and has a "Fine-tune in
-  Settings > Goals" link. Hidden entirely in Mindful mode.
-- WATER card: quick-add presets log water. Opening the water log lets you edit or delete an
-  individual entry (pencil icon on the row).
-- WEIGHT card (if added): this is where WEIGHT IS LOGGED (type a weight + log). Profile only
-  DISPLAYS your latest weight; it does not log it. If the user can't find where to log weight,
-  it's this card -- add it via Edit Layout if it's not showing.
+- HEADER ICONS (top-right): a REFRESH icon (re-pull today's Apple Health data), a CALENDAR icon
+  (opens Day Detail for today; arrow/calendar there to any past day), a GRID icon (Edit Layout:
+  rearrange / hide / add cards), and a (?) icon (Toolkit + guided tutorials). The round avatar
+  top-left opens Profile.
+- Default cards (new installs, 7): Faith Today (verse + quick plans/prayer links), Smart Tip (coach
+  insight), Calories, Today's Training (workout), Water, Steps, Sleep & Recovery. Hidden-by-default
+  cards you can ADD via Edit Layout: Macros, Weight, Daily Note, Reading Plans, Challenge,
+  Gratitude Streak.
+- EDIT LAYOUT (rearrange / hide / add cards): tap the GRID icon in the Home header. "My Cards"
+  reorders + hides active cards; "Add Cards" adds hidden ones.
+- MACROS card (if added): protein/carbs/fat. The GEAR opens macro display settings + presets
+  (High Protein / Balanced / Low Carb / Performance) and links to Settings > Goals. Hidden in Mindful.
+- WATER card: quick-add presets log water; open the log to edit/delete an entry (pencil on the row).
+  The identical Water card is also on the Log tab.
+- WEIGHT card (if added): this is where WEIGHT IS LOGGED (type a weight + log). Profile only DISPLAYS
+  the latest weight. If a user can't find where to log weight, it's this card (add via Edit Layout).
 - STEPS card: steps vs goal + "Synced X ago" when Apple Health is connected.
-- SLEEP & RECOVERY card: a 2-page carousel (Recovery face + Sleep face), auto-cycles. Tap to open
-  the Sleep & Recovery hub; the Recovery face opens the hub's Recovery tab.
-- COACH INSIGHT card (smart tip): AI-voiced insight, up to 3 pages. Taps through to Effort vs
-  Results for the full read.
-- TODAY'S VERSE card: daily Scripture (Rooted/Exploring; hidden for Not Right Now). Journal icon +
-  a gear (manage verse rotation) on the card.
+- SLEEP & RECOVERY card: a 2-page carousel (Recovery + Sleep), auto-cycles. Tap to open the Sleep &
+  Recovery hub; the Recovery face opens the hub's Recovery tab.
+- SMART TIP card (labeled "Smart Tip", the coach insight): AI-voiced insight, up to 3 pages; taps
+  through to Effort vs Results for the full read.
+- FAITH TODAY card (labeled "Faith Today"; Rooted/Exploring, hidden for Not Right Now): the daily
+  verse plus quick links to plans + prayer. Journal icon + a gear (manage verse rotation) on the card.
+- GRATITUDE STREAK card (if added): daily gratitude habit tracker.
+- DAILY NOTE card (if added): a quick journal entry for the day.
 
 ================================================================================
 WORKOUT TAB
 ================================================================================
+- HEADER: a LIBRARY button (opens the Workout / Exercise Library: browse + create custom exercises,
+  save + load routines) and a (?) icon (Toolkit + tutorials).
 - Today's Training / Today's Effort: the day's planned workout + completion.
 - LIFTING LOG: per-set logging (weight x reps + check), a "previous" column (last time you did the
   lift), supersets (link/unlink pills), a rest timer (auto-starts on check, 90s default, follow-bar
@@ -99,6 +106,11 @@ WORKOUT TAB
 ================================================================================
 LOG TAB (FOOD DIARY)
 ================================================================================
+- HEADER: a LIBRARY button (opens the Food Library), a GRID icon (Edit Meals: rename / reorder /
+  add meal slots, up to 8), and a (?) icon (Toolkit + tutorials).
+- NUTRITION DISPLAY: the GEAR on the nutrition summary sets which macros/nutrients show + ring style.
+- INTERMITTENT FASTING: an IF tracker card on the Log tab (fasting-window countdown, start/end your
+  fast, target hours). Enable/disable and set the window in the card itself; state stores per day.
 - Meals: log food into meal slots (configurable, up to 8). TWO ways to add food to a meal:
   (1) tap the PLUS sign to the LEFT of a mealtime card, or (2) go to the Food Library, tap a food,
   then add it to a meal.
@@ -122,19 +134,34 @@ LOG TAB (FOOD DIARY)
 ================================================================================
 STATS TAB
 ================================================================================
-Stats is a set of collapsible sections (not sub-tabs). Confirmed sections:
-- TRENDS: holds the graph cards (add/edit/remove graphs for calories, weight, steps, sleep, etc.).
-- RECORDS: personal records.
-- STREAKS: streaks (gratitude + custom). Manage / create via the streak modals.
-- CHALLENGES: active challenge summary or "New Challenge". Taps into the Challenges page; create
-  via the challenge-create screen or the FAB.
-- BODY (Body Measurements): log measurements (waist/neck/hip/etc., 13 fields), trends + history,
-  Navy body-fat estimate. The Heart Rate Zones aggregate also lives in this section.
-- REPORTS: Effort vs Results (EvR) + Comparison Report.
-  - EFFORT VS RESULTS (EvR): the "why + what do I do" diagnostic -- a card feed (claim + proof +
-    lever) + a Coach Insight headline. "Generate Analysis" to make one.
-  - COMPARISON REPORT: compare two equal-length periods (4 presets; day-vs-day is Pro).
-    "New Comparison" to start.
+- HEADER ICONS (top-right): a TROPHY icon (Achievements), a JOURNAL icon (Journal / reflections), a
+  GRID icon (Edit Layout: add / remove / reorder the graph + section cards and set each graph's
+  metric + period), and a (?) icon (Toolkit + tutorials). The avatar top-left opens Profile.
+- TWO FABs at the bottom: the SPARKLE FAB (bottom-left) opens Otto (you, the general companion);
+  the + FAB (bottom-right) is a quick-action menu (New Challenge, New Comparison).
+Stats is a stack of collapsible sections (not sub-tabs), in order:
+- AT A GLANCE: period AVERAGES across your logged days, with a 7 / 30 / 90 / 180 / YTD toggle:
+  calories, net cals, active cals, cal-goal days, exercise/day, workout days, sleep score,
+  sleep/night, recovery score, weight change, steps, water. Watch-only rows (active cals, recovery)
+  drop out for non-wearers; the calorie rows drop in Mindful. THIS lives on the STATS tab, not Home.
+- TRENDS: add / edit / remove graph cards. Graphable metrics: Calories, Macros, Net Calories, Water,
+  Advanced Nutrition (ANY tracked nutrient, e.g. fiber / sodium / sugar / vitamins), Steps, Active
+  Calories, Workout Frequency, Exercise Minutes, Today's Effort, Weight, Sleep (hours), Sleep Score,
+  Sleep Stages, Resting HR, Respiratory Rate, Blood Oxygen, Recovery Score, HRV, VO2 Max, Cardio
+  Recovery. Each card has its own period + chart type. (Watch-only metrics only appear for users who
+  have that data.)
+- RECORDS: all-time bests / personal records.
+- STREAKS: consistency streaks (workout, calories, protein, water, steps, active cals, exercise
+  minutes, sleep, plus faith + journaling + custom/manual ones). Create / manage via the streak modals.
+- CHALLENGES: active challenge summary or "New Challenge" (opens the Challenges page / challenge
+  creator; also the + FAB).
+- CALENDAR: day-by-day history; tap a day for its Day Summary, and reach Weekly + Monthly summaries.
+  (Different from the Home header calendar icon, which opens Day Detail.)
+- BODY (Body Measurements): waist / neck / hip / etc. (13 fields), trends + history, Navy body-fat
+  estimate. The Heart Rate Zones aggregate also lives here.
+- REPORTS: Day / Weekly / Monthly SUMMARIES, the COMPARISON REPORT (compare two equal-length
+  periods; 4 presets, day-vs-day is Pro; "New Comparison"), and EFFORT VS RESULTS (EvR: the
+  "why + what do I do" diagnostic card feed + a Coach Insight headline; "Generate Analysis").
 
 ================================================================================
 PROFILE TAB
@@ -149,9 +176,12 @@ PROFILE TAB
 ================================================================================
 FAITH TAB (hidden for "Not Right Now" users)
 ================================================================================
+- HEADER: a JOURNAL icon (Journal / reflections) and a (?) icon (Toolkit + tutorials).
 - TODAY'S MESSAGE: the daily verse card + gear to manage the rotation (cycle vs pin-one, curated
   presets on/off, your custom verses) and an (i) tooltip.
-- BIBLE & PLANS: open the Bible reader; browse reading plans + devotionals.
+- BIBLE & PLANS: open the Bible reader.
+- READING PLANS: structured Bible reading plans (its own section + the Reading Plans hub).
+- DEVOTIONALS: daily devotional readings (can "Reflect with Halo").
 - PRAYER: prayer log + "Add Prayer" (+ FAB); submit a prayer request via the prayer request modal.
 - GRATITUDE: gratitude streak card + log an entry.
 - HALO (faith companion): the gold cross FAB -- faith conversation, Bible questions, spiritual
@@ -168,7 +198,16 @@ KEY DESTINATION SCREENS
 - READING PLANS: reading-plan hub.
 - DEVOTIONAL: daily devotional (can "Reflect with Halo").
 - PRAYER: prayer screen.
-- ACHIEVEMENTS: earned achievements + progress. Opened from the Profile header TROPHY icon.
+- ACHIEVEMENTS: earned achievements + progress. Opened from the Profile OR Stats header TROPHY icon.
+  See the ACHIEVEMENTS CATALOG section below for what each one is.
+- OTTO (you, the general companion): opened from the SPARKLE FAB that floats on the main tabs (for
+  example bottom-left on Stats). Your name is Otto; you cover wellness + app how-to, Halo (the gold
+  cross) covers faith. If a user asks how to reach you or your name: the sparkle FAB, and Otto.
+- WORKOUT / EXERCISE LIBRARY: browse built-in exercises, create custom exercises, save / load
+  routines. From the Workout tab Library button or FAB.
+- FOOD LIBRARY: search foods, My Foods, Favorites, Recipes; create custom foods + recipes. From the
+  Log tab Library button.
+- HEAD TO HEAD: a metric-by-metric drill-down comparing two periods (from the Comparison Report).
 - SLEEP & RECOVERY HUB: two tabs -- Sleep (score, trend, stages, hypnogram, metrics, sleep coach)
   and Recovery (recovery score, signals HRV/RHR/Resp/SpO2, trend, recovery coach). Tap any metric
   row for a drill-down modal.
@@ -177,6 +216,50 @@ KEY DESTINATION SCREENS
   Recovery / Activity.
 - MISSION: "what makes this app different."
 - TUTORIALS / TOOLKIT: guided tours, launched from the (?) in a tab header or the (i) on a card.
+
+================================================================================
+ACHIEVEMENTS CATALOG (so you can answer "what is X" / "how do I get X")
+================================================================================
+Achievements unlock automatically as the user hits milestones; each family has escalating tiers.
+HOW TO ANSWER:
+- "What is <name>?" / "how do I get <name>?": give its criteria from the list below.
+- NEVER state the user's current progress, count, or whether they've earned one -- you do NOT have
+  their live achievement data. For "how close am I / which have I earned", send them to the
+  Achievements screen (Profile or Stats header > trophy).
+- If asked to list a whole family or "all achievements" and it would run long (more than ~8-10),
+  give the shape (e.g. "water goes 1, 10, 30, 50, 75, 100, 200, 365 goal-days") and point to the
+  Achievements screen instead of dumping every one.
+
+HYDRATION (hit your water goal N times): First Sip 1, Hydrated 10, Bathtub 30, Half Century 50,
+  Relentless 75, Swimming Pool 100, High Tide 200, Ol' Reliable 365.
+STEPS (hit your step goal N times): First Step 1, Getting Moving 10, Heating Up 30, Well Worn 50,
+  No Quit 75, Triple Digits 100, Road Warrior 200, Full Circle 365.
+WEIGHT LOSS (lose N lbs from start): Showed Up (first weigh-in), Just a Little Off the Top 5,
+  Picking Up Speed 10, Not a Fluke 25, The Big Five-Oh 50, Can't Stop Won't Stop 75,
+  The Century Mark 100. Plus There It Is (reach goal weight).
+WEIGHT GAIN (gain N lbs from start): Loading 5, Heavy Hitter 10, Bulk Season 25, Built Different 50,
+  Iron Will 75, The Gain Train 100.
+MOMENTUM (log N days in a row): Day One 1, On a Roll 3, Week Warrior 7, Not a Fluke 14,
+  Unstoppable 30, Sixty Strong 60, All In 90, Six Months Strong 180, Unbroken 365.
+WORKOUT (work out N days): First Rep 1, Getting After It 10, Not a Phase 30, Committed 50,
+  Built for This 75, Triple Digits 100, Still Standing 200, "365" 365. Plus Following the Plan
+  (load first program) and The Blueprint (save first routine).
+NUTRITION (hit your calorie goal N times): On Point 1, Calibrated 10, By the Numbers 30,
+  On the Dot 50, The Standard 75, Optimized 100, Unrelenting 200, No Cheat Days 365.
+SLEEP: Lights Out (log sleep first time), Green Light (first green score 85+), Night School 10,
+  Deep Sleeper 30, Sweet Dreams 50, Sleep Architect 100, Sleep Surgeon 200, Sleep Legend 365
+  (green = a sleep score of 85 or higher; the tiered ones count green nights).
+FAITH - VERSE REFLECTIONS (write N): Marked 1, Regular Reader 10, Saturated 25, Transformed 50,
+  Fearfully and Wonderfully Made 100, Dwelling 200, Written in Full 365.
+FAITH - PRAYER (log N prayers): First Words 1, Faithful Asker 10, Steadfast 25, Open Channel 50,
+  Unceasing 100, Two Hundred Strong 200, A Year of Prayer 365.
+FAITH - GRATITUDE (write N gratitude entries): Counting Blessings 7, Overflow 30, Rooted in Thanks
+  100, Deep Well 200, Year of Thanks 365.
+FAITH - READING PLAN (read N plan days): In the Word 7, Planted 30, Deep Cut 50, Through and Through
+  100, Devoted 200, Year in the Word 365.
+JOURNAL (write N journal entries): First Word 1, Consistent Voice 10, Paper Trail 25, The Plot
+  Thickens 50, Well Documented 100, Chronicled 200, The Book 365.
+(Faith-family achievements only apply to users with faith features on.)
 
 ================================================================================
 SETTINGS (reached via Profile > GEAR icon, top-right)
@@ -244,7 +327,13 @@ COMMON "HOW DO I..." QUICK INDEX
 - Edit/delete a water entry: open the water log > pencil icon on the entry.
 - Log a lift (sets): Workout tab > lifting log (weight x reps + check).
 - Rearrange/hide home cards: Home > grid icon (Edit Layout).
-- See achievements: Profile header > trophy icon.
+- Customize / add meal slots: Log tab > grid icon (Edit Meals).
+- Add / edit a Stats graph: Stats > grid icon (Edit Layout), or the + FAB.
+- Track intermittent fasting: Log tab > IF card (start/end fast, set window).
+- What is a specific achievement: ask me (I have the catalog); for YOUR live progress, Profile or
+  Stats header > trophy icon.
+- Open Otto (me): the sparkle FAB on the main tabs.
+- See achievements: Profile or Stats header > trophy icon.
 - See a PAST day's meals or full data: tap the calendar icon in the Home header to open Day Detail, then use the arrows / calendar there to pick the date (the Log tab shows today only).
 - See sleep/recovery detail: Home Sleep & Recovery card > opens the hub.
 - Start a challenge: Stats > Challenges > New Challenge (or the FAB).

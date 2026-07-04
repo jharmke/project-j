@@ -1598,7 +1598,7 @@ export async function checkMomentumAchievements(): Promise<AchievementDef[]> {
   if (streak === 0) return [];
 
   // Once-per-day gate (only after streak > 0 so journaling before logging doesn't swallow the gate)
-  const todayKey = today.toISOString().split('T')[0];
+  const todayKey = localGoalDateKey(today);
   try {
     const gateRaw = await AsyncStorage.getItem('pj_momentum_checked');
     if (gateRaw === todayKey) return [];
@@ -1713,7 +1713,7 @@ export async function checkFaithAchievements(
 // Loads its own store, writes to AsyncStorage, returns newly unlocked defs.
 
 export async function checkWorkoutAchievements(): Promise<AchievementDef[]> {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localGoalDateKey();
   const checked = await AsyncStorage.getItem('pj_workout_ach_checked');
   if (checked === today) return [];
   const store = await loadAchievements();
@@ -1792,7 +1792,7 @@ function computeSleepScore(
 // Loads its own store, writes to AsyncStorage, returns newly unlocked defs.
 
 export async function checkSleepAchievements(): Promise<AchievementDef[]> {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localGoalDateKey();
   const checked = await AsyncStorage.getItem('pj_sleep_ach_checked');
   if (checked === today) return [];
   const store = await loadAchievements();
@@ -1854,7 +1854,7 @@ export async function checkSleepAchievements(): Promise<AchievementDef[]> {
 
 export async function checkNutritionAchievements(): Promise<AchievementDef[]> {
   // Once-per-day gate
-  const today = new Date().toISOString().split('T')[0];
+  const today = localGoalDateKey();
   try {
     const gateRaw = await AsyncStorage.getItem('pj_nutrition_ach_checked');
     if (gateRaw === today) return [];

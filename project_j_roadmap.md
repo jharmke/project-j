@@ -4,6 +4,10 @@
 
 ---
 
+- [FIXED 2026-07-03] ACHIEVEMENT ONCE-PER-DAY GATES USED UTC, NOT LOCAL DAY. Justin's "Deep Sleeper" (30 green sleep nights) popped at ~7:17pm with no action taken. Root cause: the four once-per-day achievement gates (pj_momentum_checked, pj_workout_ach_checked, pj_sleep_ach_checked, pj_nutrition_ach_checked) stamped/compared `new Date().toISOString()` = a UTC date. In US Central (UTC-5 in July) the UTC calendar day rolls at 7:00pm local, so the morning run stamped the gate and held it, then at ~7pm the UTC date advanced, un-gating the check; the re-run recounted, found the 30th green night (synced/completed since morning), and fired. So legit earned, just announced late by the gate bug + double-firing every evening. FIX: all four now use the existing `localGoalDateKey()` helper (already in achievementData.ts with a comment warning toISOString was wrong -- someone half-migrated it earlier via the goal-hit path but missed these four category gates). Now gated once per LOCAL day, consistent with todayKey everywhere else, no 7pm re-fire. Safe: achievements only ever unlock (never revoke); worst case is one harmless idempotent recount on deploy day when the stored UTC gate value no longer matches the new local format. Pure JS, hot-reloads. File: achievementData.ts. NOTE: the sleep check also only fires on the Home screen when sleepHours transitions null->value (index.tsx ~1390) -- a contributing factor to WHEN it surfaces, left as-is for now.
+
+---
+
 ## ✅ POST-TRIP TEST LIST (verify on the NEXT build after the June 25-28 trip)
 
 TestFlight build cut + device-verified 2026-06-24 (all PASSED): real reinstall -> auto-restored, no onboarding, food photo intact; AI estimator works in TestFlight + unlimited (9999) via devProUnlocked; Halo + coach insights generate; hypnogram ticks, WORKOUT NOTE caps, HR debrief text, water-clobber, protein "logged days" wording all confirmed on device.

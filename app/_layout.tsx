@@ -205,6 +205,7 @@ function RootLayoutNav() {
         <Stack.Screen name="definitions" options={{ headerShown: false }} />
         <Stack.Screen name="tutorials" options={{ headerShown: false }} />
         <Stack.Screen name="sleep" options={{ headerShown: false }} />
+        <Stack.Screen name="adaptive-target" options={{ headerShown: false }} />
       </Stack>
       <ThemedStatusBar />
       <AchievementToastRenderer hold={showSplash} />

@@ -8,6 +8,7 @@ import AssistantFAB from './AssistantFAB';
 import AssistantChat from './AssistantChat';
 import { useAuth } from '../AuthContext';
 import { useCameraActive } from '../utils/assistantFab';
+import { useFloatingBarHeight } from '../utils/floatingBar';
 import { useTooltip } from '../useTooltip';
 import { useTheme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
@@ -48,6 +49,7 @@ export default function AssistantOverlay() {
   const segments = useSegments() as string[];
   const insets = useSafeAreaInsets();
   const cameraActive = useCameraActive();
+  const floatingBarHeight = useFloatingBarHeight();
   const { theme } = useTheme();
   const { seen, markSeen } = useTooltip('companion_fab'); // first-use callout, shown once
   const { activeState, registerTutorialAction, unregisterTutorialAction } = useTutorial();
@@ -100,7 +102,15 @@ export default function AssistantOverlay() {
   // navigator already insets that content above the tab bar (64 + safe-area). This overlay lives
   // ABOVE the tab bar, so to land at the same spot we add the tab-bar height + safe-area + that
   // same 18 gap. Pushed screens (no tab bar) match Halo's 20 + safe-area (as on the Bible reader).
-  const bottom = isTab ? TAB_BAR_HEIGHT + insets.bottom + 18 : insets.bottom + 20;
+  const restingGap = isTab ? 18 : 20;
+  const bottom = (isTab ? TAB_BAR_HEIGHT + insets.bottom : insets.bottom) + restingGap;
+
+  // How far to lift Otto above an active floating save bar. floatingBarHeight is the bar's raw
+  // content height (no insets baked in); `bottom` above already spends `restingGap` clearing the
+  // safe area / tab bar on its own, so the lift only needs to cover what's left of the bar's height
+  // past that resting gap, plus a small visual gap of its own -- NOT the bar's full height again
+  // (that would double-count insets.bottom and overshoot).
+  const barLift = floatingBarHeight > 0 ? Math.max(0, floatingBarHeight - restingGap + 10) : 0;
 
   // First-use callout: shown once (seen === false means loaded + not yet dismissed), only while the
   // chat is closed. Opening the chat (via the callout or the FAB) marks it seen so it never nags.
@@ -112,13 +122,13 @@ export default function AssistantOverlay() {
       {showCallout && (
         <Pressable
           onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openChat(); }}
-          style={[styles.callout, { bottom: bottom + FAB_DISC + 10, backgroundColor: theme.bgSheet, borderColor: theme.accentBlueBorder }]}
+          style={[styles.callout, { bottom: bottom + barLift + FAB_DISC + 10, backgroundColor: theme.bgSheet, borderColor: theme.accentBlueBorder }]}
         >
           <Text style={[styles.calloutTitle, { color: theme.textPrimary }]}>Hey, I'm Otto</Text>
           <Text style={[styles.calloutText, { color: theme.textSecondary }]}>Ask me how to do anything in the app, or how you're tracking. Tap to start.</Text>
         </Pressable>
       )}
-      <AssistantFAB bottom={bottom} onPress={openChat} suppressed={suppressed} showBadge={unread > 0} />
+      <AssistantFAB bottom={bottom} lift={barLift} onPress={openChat} suppressed={suppressed} showBadge={unread > 0} />
       <AssistantChat visible={open} onClose={() => setOpen(false)} />
     </>
   );

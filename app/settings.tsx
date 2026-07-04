@@ -23,6 +23,7 @@ import { shouldSync, uploadAllLocal, resetRestoreGate, verifyBackup } from '../s
 import { backfillAllPhotos } from '../utils/foodPhotos';
 import { storageSet } from '../utils/storage';
 import { setOnboardingPreview } from '../utils/onboardingPreview';
+import { setFloatingBarHeight } from '../utils/floatingBar';
 import { DEFAULT_ORDER, DEFAULT_VISIBLE, DISCIPLINE_ORDER, MINDFUL_ORDER, MINDFUL_VISIBLE, type CardId } from './(tabs)/index';
 import { resolveMaxHR, zoneBounds, timeInZones, fmtZoneTime, ageFromBirthday, tanakaMaxHR } from '../utils/hrZones';
 import { generateDiagnosticReport, ReportWindow, dumpWindowComparison } from '../utils/diagnosticReport';
@@ -137,6 +138,7 @@ function SleepGoalPicker({ value, onChange, theme }: { value: string; onChange: 
   const hourScrollRef  = useRef<ScrollView>(null);
   const minScrollRef   = useRef<ScrollView>(null);
   const isInitializing = useRef(true);
+  const lastEmittedValue = useRef(value);
   const hourIndex = HOUR_OPTIONS.indexOf(currentHourStr);
   const minIndex  = MINUTE_OPTIONS.indexOf(currentMinStr);
 
@@ -150,19 +152,35 @@ function SleepGoalPicker({ value, onChange, theme }: { value: string; onChange: 
     }, 400);
   }, []);
 
+  // Re-sync the wheels when `value` changes for a reason OTHER than our own scroll handlers below
+  // (e.g. Cancel restoring the saved goal). Our own scroll handlers stamp lastEmittedValue first,
+  // so a change that matches it is skipped -- otherwise every self-driven scroll would fight itself.
+  useEffect(() => {
+    if (isInitializing.current || value === lastEmittedValue.current) return;
+    lastEmittedValue.current = value;
+    const validHourIndex = hourIndex >= 0 ? hourIndex : 2;
+    const validMinIndex  = minIndex  >= 0 ? minIndex  : 0;
+    hourScrollRef.current?.scrollTo({ y: validHourIndex * ITEM_HEIGHT, animated: true });
+    minScrollRef.current?.scrollTo({ y: validMinIndex  * ITEM_HEIGHT, animated: true });
+  }, [value]);
+
   const handleHourScroll = (e: any) => {
     if (isInitializing.current) return;
     const index   = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
     const clamped = Math.max(0, Math.min(HOUR_OPTIONS.length - 1, index));
     const mins    = currentMins / 60;
-    onChange(String(parseInt(HOUR_OPTIONS[clamped]) + mins));
+    const next    = String(parseInt(HOUR_OPTIONS[clamped]) + mins);
+    lastEmittedValue.current = next;
+    onChange(next);
   };
   const handleMinScroll = (e: any) => {
     if (isInitializing.current) return;
     const index   = Math.round(e.nativeEvent.contentOffset.y / ITEM_HEIGHT);
     const clamped = Math.max(0, Math.min(MINUTE_OPTIONS.length - 1, index));
     const mins    = parseInt(MINUTE_OPTIONS[clamped]) / 60;
-    onChange(String(currentHours + mins));
+    const next    = String(currentHours + mins);
+    lastEmittedValue.current = next;
+    onChange(next);
   };
 
   const displayGoal = `${currentHours}h${currentMins > 0 ? ` ${currentMins}m` : ''}`;
@@ -589,6 +607,16 @@ export default function SettingsScreen() {
   const goalScrollOffset = useRef(0);
   const GOAL_SAVE_BAR_HEIGHT = 76;
   const hasGoalChangesRef = useRef(false);
+
+  // Tell the global Otto FAB to lift above this floating save bar while it's showing. Reports the
+  // bar's raw content height only (no insets.bottom baked in -- AssistantOverlay's own resting
+  // position already accounts for insets.bottom, so adding it here too would double-count it and
+  // overshoot). Fixed constant, not a live measurement: onLayout only refires on a frame CHANGE, so
+  // toggling the bar back to an identical size a second time never re-fires it.
+  useEffect(() => {
+    setFloatingBarHeight(hasGoalChanges ? GOAL_SAVE_BAR_HEIGHT : 0);
+    return () => { if (hasGoalChanges) setFloatingBarHeight(0); };
+  }, [hasGoalChanges]);
 
   const fixDefaultTags = async () => {
     try {
@@ -1332,6 +1360,19 @@ export default function SettingsScreen() {
                 </View>
                 <ToggleSwitch value={adaptiveTdeeAuto} onValueChange={v => { setAdaptiveTdeeAuto(v); saveSetting('adaptiveTdeeAuto', v); triggerHaptic(Haptics.ImpactFeedbackStyle.Light); }} />
               </View>
+              <TouchableOpacity
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/adaptive-target' as any); }}
+                activeOpacity={0.7}
+              >
+                <View style={{ flex: 1, paddingRight: 12 }}>
+                  <Text style={[styles.goalLabel, { color: theme.textMuted, marginBottom: 2 }]}>Check My Target</Text>
+                  <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', lineHeight: 15 }}>
+                    See whether your target still matches your real burn right now.
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={theme.accentBlue} />
+              </TouchableOpacity>
             </View>
 
             <View style={{ height: 1, backgroundColor: theme.borderCard, marginVertical: 16 }} />
@@ -3497,11 +3538,12 @@ export default function SettingsScreen() {
 
       {/* Floating save bar for goals */}
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ position: 'absolute', bottom: 0, left: 0, right: 0, display: hasGoalChanges ? 'flex' : 'none' }}>
-        <Animated.View style={{
-          paddingHorizontal: 16, paddingTop: 12, paddingBottom: goalKeyboardHeight > 0 ? 12 : 16,
-          backgroundColor: theme.bgSheet, borderTopWidth: 0.5, borderTopColor: theme.borderCard,
-          transform: [{ translateY: goalFloatAnim.interpolate({ inputRange: [0, 1], outputRange: [200, 0] }) }],
-        }}>
+        <Animated.View
+          style={{
+            paddingHorizontal: 16, paddingTop: 12, paddingBottom: (goalKeyboardHeight > 0 ? 12 : 16) + (goalKeyboardHeight > 0 ? 0 : insets.bottom),
+            backgroundColor: theme.bgSheet, borderTopWidth: 0.5, borderTopColor: theme.borderCard,
+            transform: [{ translateY: goalFloatAnim.interpolate({ inputRange: [0, 1], outputRange: [200, 0] }) }],
+          }}>
           <View style={{ flexDirection: 'row', gap: 10 }}>
             <TouchableOpacity
               onPress={() => {

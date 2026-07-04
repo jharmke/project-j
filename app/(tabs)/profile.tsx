@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useToast } from '../../components/Toast';
 import { saveToFirebase } from '../../firebaseConfig';
 import { storageSet } from '../../utils/storage';
+import { setFloatingBarHeight } from '../../utils/floatingBar';
 import { useTheme } from '../../theme';
 import HeaderAvatar from '../../components/HeaderAvatar';
 
@@ -164,6 +165,14 @@ export default function ProfileScreen() {
   const goalWeightInputY = useRef(0);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const hasChangesRef = useRef(false);
+
+  // Tell the global Otto FAB to lift above this floating save bar while it's showing. Reports the
+  // bar's raw content height only -- AssistantOverlay's own resting position already accounts for
+  // insets.bottom/tab-bar height, so it does the final gap math once, correctly, for every screen.
+  useEffect(() => {
+    setFloatingBarHeight(hasChanges ? SAVE_BAR_HEIGHT : 0);
+    return () => { if (hasChanges) setFloatingBarHeight(0); };
+  }, [hasChanges]);
 
   useEffect(() => {
     const show = Keyboard.addListener('keyboardDidShow', e => { setKeyboardHeight(e.endCoordinates.height); });
@@ -590,7 +599,8 @@ export default function ProfileScreen() {
       </ScrollView>
     {/* Floating save bar */}
       <KeyboardAvoidingView behavior="padding" style={{ position: 'absolute', bottom: 0, left: 0, right: 0, display: hasChanges ? 'flex' : 'none' }}>
-      <Animated.View style={{
+      <Animated.View
+        style={{
         bottom: 0,
         left: 0,
         right: 0,

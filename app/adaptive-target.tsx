@@ -76,12 +76,12 @@ export default function AdaptiveTargetScreen() {
   const dir = result?.suggestedTarget != null && result.suggestedTarget < (result.currentTarget ?? 0) ? 'lower' : 'higher';
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }} edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: theme.bgPrimary }} edges={['top']}>
       <View style={[styles.header, { borderBottomColor: theme.borderCard }]}>
         <Pressable onPress={() => router.back()} hitSlop={12} style={styles.backBtn}>
-          <Ionicons name="chevron-back" size={26} color={theme.textPrimary} />
+          <Ionicons name="chevron-back" size={26} color={theme.accentBlue} />
         </Pressable>
-        <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>YOUR TARGET</Text>
+        <Text style={[styles.headerTitle, { color: theme.accentBlueRaw }]}>YOUR TARGET</Text>
         <View style={{ width: 26, alignItems: 'center' }}>
           <TooltipIcon tooltipKey="adaptive_tdee" size={20} />
         </View>
@@ -97,10 +97,10 @@ export default function AdaptiveTargetScreen() {
             <View style={[styles.iconWrap, { backgroundColor: theme.accentBlueBg }]}>
               <Ionicons name="trending-up" size={26} color={theme.accentBlue} />
             </View>
-            <Text style={[styles.title, { color: theme.textPrimary }]}>Your target may need a small adjustment</Text>
+            <Text style={[styles.title, { color: theme.textSecondary }]}>Your target may need a small adjustment</Text>
             <Text style={[styles.lede, { color: theme.textSecondary }]}>
               Based on your weight trend and what you've been eating, your real daily burn looks like about{' '}
-              <Text style={{ fontFamily: 'DMSans_700Bold', color: theme.textPrimary }}>{result!.realTdee} kcal</Text>.
+              <Text style={{ fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{result!.realTdee} kcal</Text>.
               To keep matching your goal pace, your target should shift a bit {dir}.
             </Text>
 
@@ -143,7 +143,7 @@ export default function AdaptiveTargetScreen() {
             <View style={[styles.iconWrap, { backgroundColor: theme.accentBlueBg }]}>
               <Ionicons name="checkmark-circle-outline" size={26} color={theme.accentBlue} />
             </View>
-            <Text style={[styles.title, { color: theme.textPrimary }]}>
+            <Text style={[styles.title, { color: theme.textSecondary }]}>
               {result?.status === 'stale' ? 'Time for a weigh-in' : "You're on track"}
             </Text>
             <Text style={[styles.lede, { color: theme.textSecondary }]}>

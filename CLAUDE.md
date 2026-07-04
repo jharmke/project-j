@@ -24,9 +24,10 @@ Branding: NOT marketed as a "Christian app." Positioned as intentional, encourag
 Read project_j_roadmap.md at the start of every session before touching anything. Parked/future items live in project_j_backlog.md -- read only when planning future sessions.
 
 ## Process
-- Read project_j_roadmap.md at session start, every session, no exceptions. project_j_backlog.md is parked/future items -- read only when planning future sessions
+- Read project_j_roadmap.md at session start, every session, no exceptions. It is the SLIM active roadmap. project_j_roadmap_archive.md is the frozen shipped/fixed history -- read only when you need the story behind a shipped feature. project_j_backlog.md is parked/future items -- read only when planning future sessions
 - After Justin states the task, restate it and wait for explicit go-ahead
 - Update the roadmap in real time the moment anything ships, a bug is found, or a decision is made. Never batch at end of session
+- ROADMAP HYGIENE (non-negotiable, this is why it bloated to 368KB before): when something ships, it gets ONE line under "RECENTLY SHIPPED" in project_j_roadmap.md and the detailed post-mortem goes to project_j_roadmap_archive.md the SAME session. NEVER write a long completed-feature writeup into the active roadmap. Keep the active file lean; the archive is where detail accumulates
 - After every completed feature, recommend a git commit
 - Flag uncertainty explicitly every time -- never state uncertain things as fact
 

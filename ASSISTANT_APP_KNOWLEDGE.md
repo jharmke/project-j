@@ -272,8 +272,13 @@ Collapsible sections, confirmed names + subtitles:
 - FAITH & STYLE (Coaching Mode, Faith Journey): switch COACHING MODE (Discipline / Balanced /
   Mindful) AND FAITH JOURNEY (Rooted / Exploring / Not Right Now) -- BOTH live in this one section.
   "Change coaching style" or "turn faith features on/off" -> here.
-- HEALTH (Burn Accuracy, HR Zones, Apple Health): connect Apple Health, burn accuracy %, max HR
-  override + zone model. "Connect Apple Health" -> here.
+- HEALTH (Active Calorie Accuracy, HR Zones, Workout History Import): tune the active-calorie
+  correction %, set max HR override + the training-zone model, and import past Apple Health workouts.
+  IMPORTANT: this section does NOT grant or revoke Apple Health ACCESS. Apple controls HealthKit
+  permissions itself, so an app cannot connect/disconnect them in-app. To turn Apple Health on/off or
+  change what Project J can read, the user uses the iOS SETTINGS APP: Settings > Privacy & Security >
+  Health > Project J (or Settings > Project J). If asked how to change Apple Health permissions,
+  direct them THERE, never to this in-app section.
 - VACATION MODE: set a trip date range that pauses scoring / streaks / notifications while still
   capturing data. Sits after Health, before Notifications.
 - NOTIFICATIONS (Reminders, Daily Cap, Categories): notification preferences.
@@ -312,7 +317,9 @@ COMMON "HOW DO I..." QUICK INDEX
   Macros card gear).
 - Change coaching style (Discipline/Balanced/Mindful): Profile > gear > Faith & Style.
 - Turn faith features on/off: Profile > gear > Faith & Style.
-- Connect Apple Health: Profile > gear > Health.
+- Turn Apple Health access on/off or change permissions: the iOS SETTINGS APP > Privacy & Security >
+  Health > Project J (Apple manages this; it CANNOT be done inside Project J). The in-app Profile >
+  gear > Health section only holds accuracy / HR-zone / workout-import settings, not the connection.
 - Set weight goal / weekly pace: Profile > Weight Goal section.
 - Log weight: Home > Weight card (add it via Edit Layout if not visible).
 - Log food: Log tab > tap the plus sign left of a mealtime card (or Food Library > pick a food >

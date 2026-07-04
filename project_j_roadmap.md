@@ -11,8 +11,36 @@
   achievements). No banners / no sheets / no chat-bubble. Display leaning TooltipModal. No archive
   (match iOS). Folds in the achievement pop-on-action timing fix. Secretary + Otto settings-change
   are post-v1 (share a confirm-framework). OPEN calls listed in the spec's DECIDED-vs-OPEN summary.
+  - [PHASE 1 CORE BUILT 2026-07-04, device-verified w/ Justin, pure JS] The hub works end to end:
+    utils/notifications.ts (store: Type A replace-by-id / Type B stack, dedupe by stable id, 100 cap,
+    read-then-merge, subscribe + useNotifications hook, markReadIds); components/NotificationPanel.tsx
+    (centered card anchored INSIDE Otto via a topOffset prop so it doesn't poke above his header;
+    opaque bgSheet [bgCard was rgba .85 = the transparency bug]; accent top border + accent title;
+    tap-to-close handle; FIXED uniform size ~60% so it never jumps; uniform-height cards; iOS-style
+    collapsible grouped stacks -- the stack visual was a z-ORDER bug [deepest peek must render FIRST],
+    now cascades correctly, max 2 peeks, 1 peek for a 2-item group, count in the pill; unread = accent
+    dot + rail; Reanimated animations [LayoutAnimation doesn't fire in this GH/Reanimated tree];
+    per-item clear + Clear-all w/ confirm; Done = accent button; relTime caps at weeks). Badge dot on
+    AssistantFAB (breathes WITH the FAB). Bell in AssistantChat header (+ keyboard dismiss on tap).
+    PRODUCERS wired in AchievementToast: achievements (route + highlightId -> scrolls on the page) +
+    daily-goal hits (INFORMATIONAL, no route, grouped under Daily Goals). DEV TOOL "Add sample
+    notifications" in Settings > Dev Tools. READ MODEL locked: "seen = actually VIEWED" -- on close we
+    mark read only singles + groups you EXPANDED; a collapsed group you never opened keeps its dots.
+    Swipe-to-delete: SKIPPED (the X suffices). STILL OPEN (deferred, intentional): the TDEE Type-A
+    producer (needs adaptive TDEE built, Phase 3), real records/summaries producers (the "New PR"
+    sample is a dev placeholder -- no real producer yet), the achievement pop-on-action timing fix,
+    the Mindful copy pass, and verifying Reanimated smoothness on a release build.
 
 ## 📌 PARKED SMALL IDEAS (from 2026-07-04 design chat, do when convenient)
+- [ ] [NEEDS DESIGN, not a quick fix] Goal-hit does NOT reverse when you delete the entry that crossed
+  the goal. Repro: quick-add water over goal (marks goal hit + increments the lifetime hit-count), then
+  delete that water entry -> Achievements still shows the daily goal "achieved today." Cosmetic only
+  (no data loss), BUT reversing is thorny: crossing a goal increments a LIFETIME count that feeds goal
+  ACHIEVEMENTS ("hit water goal 30x") + STREAKS, so un-crossing would mean decrementing + possibly
+  re-LOCKING an achievement, which fights the "achievements never revoke" rule. Same family as the
+  weekly/monthly snapshot-regeneration thorniness. Design it deliberately if it ever bugs users; do NOT
+  bolt on a naive reversal (could corrupt counts). Justin flagged the accidental-quick-add case as
+  common enough to eventually address.
 - [ ] Achievement "pop on the action" timing. Achievements earned by an action (e.g. logging the 60th
   food day) don't pop until the next app-open, because the per-category check is gated once/day and
   runs on open (often BEFORE the action). Sixty Strong popped the morning after + dated a day late.

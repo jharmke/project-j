@@ -24,7 +24,7 @@ const GLOW = 84;
 // `suppressed` keeps the FAB MOUNTED (so its tutorial-target ref stays measurable) but invisible +
 // untappable. Used during other tutorials so it steps aside, then lights back up on its own step
 // without a remount flicker that could mis-place the spotlight.
-export default function AssistantFAB({ onPress, bottom = 18, suppressed = false }: { onPress?: () => void; bottom?: number; suppressed?: boolean }) {
+export default function AssistantFAB({ onPress, bottom = 18, suppressed = false, showBadge = false }: { onPress?: () => void; bottom?: number; suppressed?: boolean; showBadge?: boolean }) {
   const { theme } = useTheme();
   const fabRef = useTutorialTarget('meta_otto_fab'); // spotlight target for the meta tutorial's Otto step
   const breath = useRef(new Animated.Value(0)).current;
@@ -89,6 +89,12 @@ export default function AssistantFAB({ onPress, bottom = 18, suppressed = false 
             <Ionicons name="sparkles" size={24} color="#ffffff" />
           </View>
         </Pressable>
+
+        {/* Pending-notification badge dot (Otto notification hub). Lives INSIDE the breathing
+            transform so it swells with the FAB as one piece instead of sitting there statically. */}
+        {showBadge && !suppressed && (
+          <View pointerEvents="none" style={[styles.badge, { backgroundColor: theme.statusBad, borderColor: '#ffffff' }]} />
+        )}
       </Animated.View>
     </View>
   );
@@ -123,5 +129,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.35,
     shadowRadius: 6,
     elevation: 6,
+  },
+  badge: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 2,
+    zIndex: 2,
   },
 });

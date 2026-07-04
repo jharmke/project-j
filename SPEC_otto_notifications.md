@@ -3,6 +3,34 @@
 STATUS: DESIGN LOCKED for v1 build (2026-07-04, from the gym-notes design thread). Some items are
 DECIDED, some are OPEN and flagged as such. Do NOT treat OPEN items as settled.
 
+## PHASE 1 CORE: BUILT + device-verified 2026-07-04 (pure JS)
+Files: utils/notifications.ts (store + hook), components/NotificationPanel.tsx (the panel),
+components/AssistantFAB.tsx (badge dot), components/AssistantOverlay.tsx (wires the badge),
+components/AssistantChat.tsx (bell in header), components/AchievementToast.tsx (producers),
+app/settings.tsx (dev tool). What shipped:
+- Store: Type A (replace-by-id) / Type B (stack, deduped by stable id), 100 cap, read-then-merge,
+  subscribe + useNotifications hook, markReadIds.
+- Panel: centered card ANCHORED inside Otto (topOffset prop, so it doesn't poke above his header);
+  opaque bgSheet; accent top border + accent title; tap-to-close handle; fixed uniform size (~60%);
+  uniform-height cards; iOS-style collapsible grouped stacks (max 2 peeks, 1 for a 2-item group,
+  count in the pill); unread = accent dot + rail; Reanimated animations; per-item clear + Clear-all
+  with confirm; Done = accent button; relTime caps at weeks.
+- Badge dot on the FAB (breathes with it). Bell in Otto's chat header (+ keyboard dismiss).
+- Producers: achievements (route + highlightId -> scrolls to it) and daily-goal hits (INFORMATIONAL,
+  no route, grouped under Daily Goals). Dev tool "Add sample notifications" in Settings > Dev Tools.
+- READ MODEL LOCKED (was OPEN): "seen = actually VIEWED." On close, mark read ONLY singles + groups
+  you EXPANDED; a collapsed group you never opened keeps its unread dots + badge.
+- Display component decided: a bespoke centered panel (not literally TooltipModal), matching the
+  centered-modal house standard. Swipe-to-delete: SKIPPED (the per-card X suffices).
+Two implementation gotchas for future-me: (1) bgCard is rgba(...,0.85) = translucent on light themes
+-> use bgSheet for opaque modal surfaces. (2) LayoutAnimation does NOT fire inside this
+GestureHandler/Reanimated tree -> use Reanimated layout animations. (3) the collapsed-stack peeks must
+render DEEPEST-first or the z-order inverts and the stack looks scrambled.
+
+STILL DEFERRED (intentional): the TDEE Type-A producer (needs adaptive TDEE built, Phase 3), real
+records/summaries producers (the "New PR" dev sample is a placeholder), the achievement pop-on-action
+timing fix, the Mindful copy pass, and a release-build smoothness check on the animations.
+
 Origin: grew out of "where does the adaptive TDEE suggestion live?" Justin didn't want TDEE floating
 with no home, and had wanted an in-app notification system for a while, so the two merged: route
 in-app notifications through Otto (the general companion), which is always reachable.

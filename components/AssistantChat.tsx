@@ -21,6 +21,8 @@ import { useTutorial } from '../context/TutorialContext';
 import { TAB_TUTORIALS } from '../data/tutorials';
 import { ToastRenderer, useToast } from './Toast';
 import { useTheme } from '../theme';
+import NotificationPanel from './NotificationPanel';
+import { useNotifications } from '../utils/notifications';
 
 // The GENERAL Companion assistant's chat overlay (NOT Halo). Same panel UX as Halo's chat so the
 // two feel like siblings, but re-skinned to the app THEME ACCENT and pointed at the deployed
@@ -289,6 +291,11 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
     return () => { s.remove(); h.remove(); };
   }, []);
 
+  const [notifOpen, setNotifOpen] = useState(false);
+  const { unread } = useNotifications();
+  // Reset the notification panel whenever Otto is dismissed, so it never re-opens stale.
+  useEffect(() => { if (!visible) setNotifOpen(false); }, [visible]);
+
   const close = () => {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     Keyboard.dismiss();
@@ -506,6 +513,10 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
                     </View>
                   </View>
                   <View style={styles.headerActions}>
+                    <Pressable onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); Keyboard.dismiss(); setNotifOpen(true); }} hitSlop={12} style={styles.closeBtn}>
+                      <Ionicons name="notifications-outline" size={20} color={theme.textMuted} />
+                      {unread > 0 && <View style={[styles.bellDot, { backgroundColor: theme.statusBad, borderColor: theme.bgSheet }]} />}
+                    </Pressable>
                     <Pressable onPress={newChat} hitSlop={12} style={styles.closeBtn}>
                       <Ionicons name="refresh" size={20} color={theme.textMuted} />
                     </Pressable>
@@ -634,6 +645,13 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
         </Reanimated.View>
 
         <ToastRenderer />
+
+        <NotificationPanel
+          visible={notifOpen}
+          topOffset={insets.top + 96}
+          onClose={() => setNotifOpen(false)}
+          onNavigate={(route) => { close(); setTimeout(() => { try { router.push(route as any); } catch {} }, 200); }}
+        />
       </GestureHandlerRootView>
     </Modal>
   );
@@ -664,6 +682,7 @@ const styles = StyleSheet.create({
   brandSub:  { fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', marginTop: -2 },
   closeBtn:  { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  bellDot:   { position: 'absolute', top: 6, right: 6, width: 9, height: 9, borderRadius: 5, borderWidth: 1.5 },
   bubble: {
     maxWidth: '86%',
     borderWidth: 0.5,

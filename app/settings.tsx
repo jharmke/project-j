@@ -45,6 +45,7 @@ function vacFmtNice(key: string): string {
 }
 import { voiceDiagnosticCards, getLastVoiceDebug } from '../utils/coachAI';
 import { dumpHomeCoachCandidates, dumpEvrRecoveryDebug, dumpWearableSim } from '../utils/smartTipsEngine';
+import { addNotification } from '../utils/notifications';
 import { TOOLTIP_REGISTRY } from '../tooltipRegistry';
 import TooltipModal from '../components/TooltipModal';
 import TooltipIcon from '../components/TooltipIcon';
@@ -2320,6 +2321,29 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Simulates a no-watch / partial-watch user on a COPY of your real data and shows which coaching rules fire. Writes nothing. Activity/recovery rules in the no-watch list = the bug.</Text>
               </View>
               <Ionicons name="watch-outline" size={18} color={theme.accentGreen} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              const now = Date.now();
+              // Achievements (route + highlightId so tapping SCROLLS to the achievement on the page).
+              await addNotification({ id: `dev_ach_a_${now}`, lifecycle: 'stack', category: 'achievement', title: 'Deep Sleeper', body: 'Earn 30 green sleep scores.', icon: 'moon', iconColor: '#a5b4fc', route: { pathname: '/achievements', params: { highlightId: 'sleep_green_30' } } });
+              await addNotification({ id: `dev_ach_b_${now}`, lifecycle: 'stack', category: 'achievement', title: 'Not a Phase', body: 'Work out 30 days.', icon: 'barbell', iconColor: '#f87171', route: { pathname: '/achievements', params: { highlightId: 'workout_30' } } });
+              await addNotification({ id: `dev_ach_c_${now}`, lifecycle: 'stack', category: 'achievement', title: 'Bathtub', body: 'Hit your water goal 30 times.', icon: 'water', iconColor: '#60a5fa', route: { pathname: '/achievements', params: { highlightId: 'hydration_30' } } });
+              // Daily goals (informational, they group into a "Daily Goals" stack).
+              await addNotification({ id: `dev_goal_w_${now}`, lifecycle: 'stack', category: 'daily_goal', title: 'Water Goal met', body: "You've hit this 34 times.", icon: 'water', iconColor: '#3b82f6' });
+              await addNotification({ id: `dev_goal_s_${now}`, lifecycle: 'stack', category: 'daily_goal', title: 'Step Goal met', body: "You've hit this 12 times.", icon: 'footsteps', iconColor: '#10b981' });
+              await addNotification({ id: `dev_goal_a_${now}`, lifecycle: 'stack', category: 'daily_goal', title: 'Active Cal Goal met', body: "You've hit this 8 times.", icon: 'flame', iconColor: '#f97316' });
+              // A single record + a Type-A TDEE suggestion (replaces itself on repeat taps).
+              await addNotification({ id: `dev_record_${now}`, lifecycle: 'stack', category: 'record', title: 'New PR: Bench Press', body: '185 lb, up from 175.', icon: 'trophy', iconColor: '#d4860a' });
+              await addNotification({ id: 'tdee_suggestion', lifecycle: 'replace', category: 'tdee_suggestion', title: 'Your target may need a bump', body: 'Your recent trend points to about 2,150 kcal. Tap to review.', icon: 'trending-up', iconColor: '#3b82f6' });
+              Alert.alert('Added', 'Sample notifications dropped into the Otto hub (open Otto, tap the bell). Achievements + Daily Goals will each show as a grouped stack.');
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentGreen }]}>Add sample notifications</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Drops sample entries (achievement, goal, record, and a Type-A TDEE suggestion) into the Otto notification hub so you can test the panel + badge. The TDEE one replaces itself on repeat taps; the others stack.</Text>
+              </View>
+              <Ionicons name="notifications-outline" size={18} color={theme.accentGreen} />
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {

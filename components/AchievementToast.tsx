@@ -7,6 +7,7 @@ import { Animated, Dimensions, Easing, PanResponder, StyleSheet, Text, View } fr
 import Svg, { Defs, LinearGradient as SvgLinearGradient, Path, Stop } from 'react-native-svg';
 import { AchievementDef, AchievementDisplayTier } from '../achievementData';
 import { useTheme } from '../theme';
+import { addNotification } from '../utils/notifications';
 
 const CARD_WIDTH = 280;
 const CARD_HEIGHT = 72;
@@ -24,10 +25,31 @@ const listeners: Set<Listener> = new Set();
 export function showAchievementToast(def: AchievementDef) {
   console.log('showAchievementToast global called', def.name, 'listeners:', listeners.size);
   listeners.forEach(fn => fn({ kind: 'achievement', def }));
+  // Also drop it into the Otto notification hub (Type B / stack, deduped by achievement id).
+  addNotification({
+    id: `ach_${def.id}`,
+    lifecycle: 'stack',
+    category: 'achievement',
+    title: def.name,
+    body: def.criteria,
+    icon: def.icon,
+    iconColor: def.iconColor,
+    route: { pathname: '/achievements', params: { highlightId: def.id } },
+  });
 }
 
 export function showDailyGoalToast(name: string, count: number, icon: string, iconColor: string) {
   listeners.forEach(fn => fn({ kind: 'daily_goal', name, count, icon, iconColor }));
+  addNotification({
+    id: `goal_${name}_${count}`,
+    lifecycle: 'stack',
+    category: 'daily_goal',
+    title: `${name} met`,
+    body: `You've hit this ${count} ${count === 1 ? 'time' : 'times'}.`,
+    icon,
+    iconColor,
+    // Goal hits are informational (no clean single destination); they live in the Daily Goals stack.
+  });
 }
 
 function subscribe(fn: Listener) {

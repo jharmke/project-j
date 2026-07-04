@@ -11,6 +11,7 @@ import { useCameraActive } from '../utils/assistantFab';
 import { useTooltip } from '../useTooltip';
 import { useTheme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
+import { useNotifications } from '../utils/notifications';
 
 // Single app-wide mount for the general Companion assistant. Rendered once in the root layout, it
 // decides on every screen whether the FAB should appear, and owns the open/close state for the chat.
@@ -51,6 +52,7 @@ export default function AssistantOverlay() {
   const { seen, markSeen } = useTooltip('companion_fab'); // first-use callout, shown once
   const { activeState } = useTutorial();
   const [open, setOpen] = useState(false);
+  const { unread } = useNotifications();
 
   const isTab = segments[0] === '(tabs)';
   const isFaithTab = isTab && segments[1] === 'faith';
@@ -91,7 +93,7 @@ export default function AssistantOverlay() {
           <Text style={[styles.calloutText, { color: theme.textSecondary }]}>Ask me how to do anything in the app, or how you're tracking. Tap to start.</Text>
         </Pressable>
       )}
-      <AssistantFAB bottom={bottom} onPress={openChat} suppressed={suppressed} />
+      <AssistantFAB bottom={bottom} onPress={openChat} suppressed={suppressed} showBadge={unread > 0} />
       <AssistantChat visible={open} onClose={() => setOpen(false)} />
     </>
   );

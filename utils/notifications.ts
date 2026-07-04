@@ -43,6 +43,25 @@ let cache: NotifItem[] | null = null;
 const listeners = new Set<() => void>();
 function emit() { listeners.forEach(fn => { try { fn(); } catch {} }); }
 
+// ── tour demo overlay ────────────────────────────────────────────────────────
+// The guided notification-hub tour needs a realistic pending item so the FAB badge lights up and the
+// panel isn't empty mid-walkthrough. This is a DISPLAY-ONLY overlay: it is prepended by the hook,
+// never persisted, never written to pj_notifications. So it cannot touch real data, and it vanishes
+// the instant the tour ends. Same spirit as the tutorial ifCardState/yvyDemo demo states.
+let tourDemoActive = false;
+let tourDemoItem: NotifItem | null = null;
+export function setNotifTourDemo(active: boolean): void {
+  tourDemoActive = active;
+  tourDemoItem = active
+    ? {
+        id: '__tour_demo__', lifecycle: 'stack', category: 'achievement',
+        title: 'Sixty Strong', body: 'You logged food 60 days in a row.',
+        icon: 'trophy', iconColor: '#d4860a', createdAt: Date.now(), read: false,
+      }
+    : null;
+  emit();
+}
+
 export function subscribeNotifications(fn: () => void): () => void {
   listeners.add(fn);
   return () => { listeners.delete(fn); };
@@ -112,13 +131,20 @@ export async function clearAllNotifications(): Promise<void> {
 // ── React hook for the badge + panel ─────────────────────────────────────────
 export function useNotifications() {
   const [items, setItems] = useState<NotifItem[]>([]);
+  const [demo, setDemo] = useState<NotifItem | null>(tourDemoItem);
   useEffect(() => {
     let alive = true;
-    const refresh = () => getNotifications().then(l => { if (alive) setItems(l); });
+    const refresh = () => {
+      if (!alive) return;
+      setDemo(tourDemoItem);
+      getNotifications().then(l => { if (alive) setItems(l); });
+    };
     refresh();
     const unsub = subscribeNotifications(refresh);
     return () => { alive = false; unsub(); };
   }, []);
-  const unread = items.reduce((n, i) => (i.read ? n : n + 1), 0);
-  return { items, unread };
+  // The tour demo item is display-only (prepended here, never in the persisted list above).
+  const list = demo ? [demo, ...items] : items;
+  const unread = list.reduce((n, i) => (i.read ? n : n + 1), 0);
+  return { items: list, unread };
 }

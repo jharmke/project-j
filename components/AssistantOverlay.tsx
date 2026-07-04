@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
-import { useSegments } from 'expo-router';
+import { router, useSegments } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
@@ -11,7 +11,7 @@ import { useCameraActive } from '../utils/assistantFab';
 import { useTooltip } from '../useTooltip';
 import { useTheme } from '../theme';
 import { useTutorial } from '../context/TutorialContext';
-import { useNotifications } from '../utils/notifications';
+import { useNotifications, setNotifTourDemo } from '../utils/notifications';
 
 // Single app-wide mount for the general Companion assistant. Rendered once in the root layout, it
 // decides on every screen whether the FAB should appear, and owns the open/close state for the chat.
@@ -50,9 +50,34 @@ export default function AssistantOverlay() {
   const cameraActive = useCameraActive();
   const { theme } = useTheme();
   const { seen, markSeen } = useTooltip('companion_fab'); // first-use callout, shown once
-  const { activeState } = useTutorial();
+  const { activeState, registerTutorialAction, unregisterTutorialAction } = useTutorial();
   const [open, setOpen] = useState(false);
   const { unread } = useNotifications();
+
+  // Notification-hub tour orchestration. These actions own opening/closing Otto's chat and toggling
+  // the display-only demo notification, so the guided tour can drive the whole flow. All are inert
+  // unless the tour fires them, so normal Otto behavior is unchanged.
+  useEffect(() => {
+    registerTutorialAction('prepNotificationHubTour', async () => {
+      setNotifTourDemo(true);   // display-only pending item so the FAB badge + list aren't empty
+      setOpen(false);           // start from a closed Otto on Home so step 0 can spotlight the FAB
+      try { router.navigate('/(tabs)/'); } catch {}
+      await new Promise(r => setTimeout(r, 380));
+    });
+    registerTutorialAction('openOttoForTour', async () => {
+      setOpen(true);
+      await new Promise(r => setTimeout(r, 300)); // let the chat finish opening before measuring the bell
+    });
+    registerTutorialAction('endNotificationHubTour', async () => {
+      setOpen(false);
+      setNotifTourDemo(false);  // remove the demo item; real list restored untouched
+    });
+    return () => {
+      unregisterTutorialAction('prepNotificationHubTour');
+      unregisterTutorialAction('openOttoForTour');
+      unregisterTutorialAction('endNotificationHubTour');
+    };
+  }, [registerTutorialAction, unregisterTutorialAction]);
 
   const isTab = segments[0] === '(tabs)';
   const isFaithTab = isTab && segments[1] === 'faith';

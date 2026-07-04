@@ -22,6 +22,8 @@ import { TAB_TUTORIALS } from '../data/tutorials';
 import { ToastRenderer, useToast } from './Toast';
 import { useTheme } from '../theme';
 import NotificationPanel from './NotificationPanel';
+import TutorialOverlay from './TutorialOverlay';
+import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { useNotifications } from '../utils/notifications';
 
 // The GENERAL Companion assistant's chat overlay (NOT Halo). Same panel UX as Halo's chat so the
@@ -241,7 +243,8 @@ function tutorialTabRoute(id: string): string | null {
 
 export default function AssistantChat({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   const { theme } = useTheme();
-  const { startTutorial } = useTutorial();
+  const { startTutorial, registerTutorialAction, unregisterTutorialAction, skipTutorial, activeState } = useTutorial();
+  const bellRef = useTutorialTarget('notif_bell');
   const insets = useSafeAreaInsets();
   const { showToast } = useToast();
   // theme.accentBlue is already button-safe (theme bakes in the light-theme override), so filled
@@ -296,7 +299,20 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
   // Reset the notification panel whenever Otto is dismissed, so it never re-opens stale.
   useEffect(() => { if (!visible) setNotifOpen(false); }, [visible]);
 
+  // Notification-hub tour: is a step that lives inside Otto currently active? Drives the abort-on-
+  // manual-dismiss guard below (so closing Otto mid-tour ends the tour instead of stranding it).
+  const inOttoTourStep = !!(activeState?.tutorial.steps[activeState.stepIndex] as any)?.inOtto;
+  // The tour opens the notification panel on cue. Inert unless the tour fires it.
+  useEffect(() => {
+    registerTutorialAction('openNotifPanelForTour', async () => {
+      setNotifOpen(true);
+      await new Promise(r => setTimeout(r, 380)); // let the panel spring in before the spotlight measures it
+    });
+    return () => unregisterTutorialAction('openNotifPanelForTour');
+  }, [registerTutorialAction, unregisterTutorialAction]);
+
   const close = () => {
+    if (inOttoTourStep) skipTutorial(); // user dismissed Otto mid-tour -> end the tour cleanly
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     Keyboard.dismiss();
     Animated.timing(anim, { toValue: 0, duration: 180, useNativeDriver: false }).start(() => onClose());
@@ -466,6 +482,7 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
   const panelScale = anim.interpolate({ inputRange: [0, 1], outputRange: [0.97, 1] });
 
   const closeFromDrag = () => {
+    if (inOttoTourStep) skipTutorial(); // dragged Otto away mid-tour -> end the tour cleanly
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     onClose();
   };
@@ -513,7 +530,7 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
                     </View>
                   </View>
                   <View style={styles.headerActions}>
-                    <Pressable onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); Keyboard.dismiss(); setNotifOpen(true); }} hitSlop={12} style={styles.closeBtn}>
+                    <Pressable ref={bellRef} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); Keyboard.dismiss(); setNotifOpen(true); }} hitSlop={12} style={styles.closeBtn}>
                       <Ionicons name="notifications-outline" size={20} color={theme.textMuted} />
                       {unread > 0 && <View style={[styles.bellDot, { backgroundColor: theme.statusBad, borderColor: theme.bgSheet }]} />}
                     </Pressable>
@@ -652,6 +669,11 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
           onClose={() => setNotifOpen(false)}
           onNavigate={(route) => { close(); setTimeout(() => { try { router.push(route as any); } catch {} }, 200); }}
         />
+
+        {/* Modal-scoped tutorial overlay: spotlights targets that live inside this Modal (the bell,
+            the notification panel) for the notification-hub tour. Renders nothing unless an inOtto
+            tour step is active, so it never affects normal Otto use. See TutorialOverlay `scope`. */}
+        <TutorialOverlay scope="modal" />
       </GestureHandlerRootView>
     </Modal>
   );

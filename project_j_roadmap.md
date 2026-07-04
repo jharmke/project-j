@@ -30,6 +30,21 @@
     producer (needs adaptive TDEE built, Phase 3), real records/summaries producers (the "New PR"
     sample is a dev placeholder -- no real producer yet), the achievement pop-on-action timing fix,
     the Mindful copy pass, and verifying Reanimated smoothness on a release build.
+  - [EXPLAINERS BUILT 2026-07-04, pure JS, PENDING DEVICE VERIFY] Tooltip + interactive tutorial for
+    the hub. (1) tooltipRegistry `notification_hub` entry (category Habits) with an (i) in the panel
+    header; three definitions: What Lands Here / New Notifications / Stacks (dropped "The dot" +
+    "No archive" per Justin). (2) Full interactive tour `notification_hub` (data/tutorials.ts, tagged
+    to the HOME toolkit + Settings>Help): spotlights the FAB+badge on Home (root overlay), opens Otto,
+    then spotlights the bell + panel via a NEW modal-scoped TutorialOverlay. THE HARD PART: Otto's chat
+    is an RN Modal (own iOS window), so the root spotlight physically can't paint over it -- solved by
+    giving TutorialOverlay a `scope` prop ('root' default = byte-identical to before; 'modal' instance
+    mounted inside AssistantChat handles steps flagged `inOtto`). A display-only demo notification
+    (utils/notifications.setNotifTourDemo) lights the badge + fills the list mid-tour, never persisted,
+    zero data risk. Tour orchestration via tutorialActions (prep/openOtto/openPanel/end); aborts
+    cleanly if Otto is dismissed mid-tour; end + skip both tear down (demo cleared, Otto closed).
+    ⚠️ ONE THING TO EYEBALL ON DEVICE: the in-Modal spotlight alignment (measureInWindow coords inside
+    the modal window) -- architecturally correct + mirrors the "ToastRenderer inside the Modal" rule,
+    but it's the only piece I can't self-verify. Check the bell + panel highlights land square.
 
 ## 📈 ADAPTIVE TDEE (BUILT 2026-07-04, device-validated) -- Phase 2 of the wearable spec
 Full detail in SPEC_wearable_robustness.md "PHASE 2: ADAPTIVE TDEE -- BUILT". Estimates real burn from
@@ -43,6 +58,12 @@ useRecommendedCal=false (only write; read-then-merge) behind a first-use disclai
 "accuracy depends on consistent/complete logging" caveat. Validated: intake-realTDEE deficit matched
 Justin's real -0.8 lb/wk trend. OPEN: unify with EvR predicted-vs-actual (walled off for v1); tune
 constants if real usage warrants.
+- [EXPLAINER BUILT 2026-07-04] tooltipRegistry `adaptive_tdee` entry (category Fitness): title
+  "Adaptive Target", four definitions (real burn from the scale / suggest-never-silent / needs
+  consistent weigh-ins / helps everyone). (i) added to the top-right of app/adaptive-target.tsx, and
+  it shows in Settings>Help. NOTE the Your Target screen has no menu entry: it only surfaces via the
+  Otto hub suggestion notification (or Settings>Dev Tools "Preview Adaptive Target screen (demo)"), so
+  the Help glossary is the always-available explanation. A permanent Goals entry point is unbuilt (ask).
 
 ## 📌 PARKED SMALL IDEAS (from 2026-07-04 design chat, do when convenient)
 - [ ] [NEEDS DESIGN, not a quick fix] Goal-hit does NOT reverse when you delete the entry that crossed

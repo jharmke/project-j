@@ -27,6 +27,10 @@ export interface TutorialStep {
   ifCardState?: 'idle' | 'active' | 'eating';
   // When true, YvY card renders hardcoded demo values instead of real data.
   yvyDemo?: boolean;
+  // When true, this step's spotlight target lives INSIDE Otto's chat Modal (a separate iOS window),
+  // so it is handled by the modal-scoped TutorialOverlay mounted in AssistantChat rather than the
+  // root overlay. Used by the notification-hub tour. See TutorialOverlay `scope`.
+  inOtto?: boolean;
 }
 
 export interface Tutorial {
@@ -206,6 +210,68 @@ export const TUTORIALS: Tutorial[] = [
           discipline: 'Add Cards shows your custom Stats graphs: pin any to the home screen. Hidden home cards also appear here so you can restore them.',
           balanced: 'Add Cards shows hidden home cards you can restore, plus custom Stats graphs you can pin to your home screen.',
           mindful: 'Add Cards is where hidden cards live and where you can pin Stats graphs to your home screen. Everything\'s here when you want it.',
+        },
+      },
+    ],
+  },
+
+  {
+    id: 'notification_hub',
+    name: 'Your Notifications',
+    description: 'Where Otto keeps your wins, records, and suggestions, and how to manage them.',
+    tab: 'home',
+    // Opens Otto and drives through his notification list. A demo notification is injected (display
+    // only, never persisted) so the badge lights up and the list isn't empty. preAction closes any
+    // open Otto + returns Home so step 0 can spotlight the FAB; the in-Otto steps (inOtto: true) are
+    // handled by the modal-scoped TutorialOverlay mounted inside AssistantChat.
+    preAction: 'prepNotificationHubTour',
+    steps: [
+      {
+        targetKey: 'meta_otto_fab',
+        tutorialAction: 'openOttoForTour',
+        title: 'WHERE WINS SHOW UP',
+        body: {
+          discipline: 'When you earn something worth seeing, an achievement, a goal hit, a record, a suggestion, a dot appears on Otto\'s button from any screen. That\'s your cue something new is waiting. Tap NEXT and we\'ll open it.',
+          balanced: 'Whenever something worth seeing lands, like an achievement or a goal you hit, a dot appears on Otto\'s button from any screen. That\'s how you know something new is waiting. Tap NEXT and we\'ll open it.',
+          mindful: 'When there\'s a little win worth noticing, a gentle dot appears on Otto\'s button from any screen. That\'s your quiet cue something new is waiting. No rush. Tap NEXT and we\'ll take a look.',
+        },
+      },
+      {
+        targetKey: 'notif_bell',
+        inOtto: true,
+        noTabBarOffset: true,
+        highlightPadding: 6,
+        tutorialAction: 'openNotifPanelForTour',
+        title: 'YOUR NOTIFICATIONS',
+        body: {
+          discipline: 'Here\'s the bell. It carries the same dot, and tapping it opens your notification list. Tap NEXT to open it.',
+          balanced: 'This bell opens your notifications, and it carries the same dot when something\'s new. Tap NEXT to open the list.',
+          mindful: 'This bell opens your notifications whenever you\'re ready. It carries the same dot when something new is waiting. Tap NEXT to open it.',
+        },
+      },
+      {
+        targetKey: 'notif_panel',
+        inOtto: true,
+        noTabBarOffset: true,
+        bubbleAtBottom: true,
+        title: 'THE LIST',
+        body: {
+          discipline: 'Each card is one thing worth seeing: a win, a result, or a suggestion. Anything you haven\'t opened keeps an accent dot, and several of the same kind stack into one card you can tap to expand.',
+          balanced: 'Each card is one update: a win, a result, or the occasional suggestion. Unopened ones keep an accent dot, and several of the same kind stack into one card you can expand.',
+          mindful: 'Each card is one update: a win, a result, or a gentle suggestion. Anything you haven\'t opened keeps a soft dot, and similar ones tuck into a single card you can open when you like.',
+        },
+      },
+      {
+        targetKey: 'notif_panel',
+        inOtto: true,
+        noTabBarOffset: true,
+        bubbleAtBottom: true,
+        tutorialAction: 'endNotificationHubTour',
+        title: 'CLEAR ANYTIME',
+        body: {
+          discipline: 'Tap the X icon on any card to clear it, or Clear All to empty the list. Your achievements and records always live on in their own screens, so nothing important is ever lost.',
+          balanced: 'Tap the X icon on a card to clear it, or Clear All to empty the whole list. Your achievements and records always live on in their own screens, so you never lose anything that matters.',
+          mindful: 'Tap the X icon on a card to clear it, or Clear All whenever it feels full. Your achievements and records are always kept safe in their own screens, so nothing is ever lost.',
         },
       },
     ],
@@ -2168,7 +2234,7 @@ export const TUTORIALS: Tutorial[] = [
 // ─── Tab → Tutorial Mapping ───────────────────────────────────────────────────
 
 export const TAB_TUTORIALS: Record<string, string[]> = {
-  home: ['cal_card', 'macros_card', 'sleep_card', 'edit_layout'],
+  home: ['cal_card', 'macros_card', 'sleep_card', 'edit_layout', 'notification_hub'],
   log: ['log_food', 'manage_log', 'barcode', 'log_edit_layout', 'create_food', 'recipes', 'if_card'],
   workout: ['workout_basics', 'programs', 'routines', 'exercise_library'],
   stats: ['graph_creator', 'streaks', 'effort_vs_results', 'day_score'],

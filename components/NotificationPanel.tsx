@@ -21,6 +21,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import { useTheme } from '../theme';
+import TooltipIcon from './TooltipIcon';
+import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import {
   useNotifications, markReadIds, clearNotification, clearAllNotifications, type NotifItem,
 } from '../utils/notifications';
@@ -79,6 +81,7 @@ export default function NotificationPanel({
 }) {
   const { theme } = useTheme();
   const { items } = useNotifications();
+  const panelRef = useTutorialTarget('notif_panel'); // spotlight target for the notification-hub tour
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const sessionExpanded = useRef<Set<string>>(new Set());
 
@@ -251,6 +254,7 @@ export default function NotificationPanel({
       <Pressable style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.45)' }]} onPress={dismiss} />
       <View style={[styles.wrap, { paddingTop: topPad }]} pointerEvents="box-none">
         <Animated.View
+          ref={panelRef as any}
           style={[
             styles.modal,
             { backgroundColor: theme.bgSheet, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, opacity, transform: [{ scale }] },
@@ -261,7 +265,10 @@ export default function NotificationPanel({
           </Pressable>
 
           <View style={styles.headerRow}>
-            <Text style={[styles.title, { color: theme.accentBlue }]}>NOTIFICATIONS</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+              <Text style={[styles.title, { color: theme.accentBlue }]}>NOTIFICATIONS</Text>
+              <TooltipIcon tooltipKey="notification_hub" size={15} />
+            </View>
             {items.length > 0 && (
               <Pressable
                 onPress={() => {

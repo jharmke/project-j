@@ -25,6 +25,18 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     ],
   },
   {
+    key: 'notification_hub',
+    category: 'Habits',
+    title: 'Notifications',
+    tutorialId: 'notification_hub',
+    body: 'This is where Otto keeps the good stuff worth seeing: achievements you earn, daily goals you hit, personal records, and the occasional suggestion like a calorie target tweak. It is a running feed of wins and results, not reminders. Time based nudges, like logging your food or drinking water, stay as regular phone notifications and never land here.\n\nA small dot appears whenever something new is waiting: on Otto\'s button from any screen, and on the bell at the top of his chat. Open the bell to see the list.\n\nAnything you have not opened shows an accent dot. Several events of the same kind stack into one card you can tap to expand. Tap the X icon on a card to clear it, or Clear All to empty the whole list.',
+    definitions: [
+      { term: 'What Lands Here', explanation: 'The hub only shows things that already happened and are worth a look: achievements, goal hits, records, summaries, and suggestions. Time based nudges (log your food, drink water) come through as normal phone notifications instead.' },
+      { term: 'New Notifications', explanation: 'A dot on Otto\'s button and on the bell means something new is waiting. It clears once you open the list and actually see what is there. A stack you never expanded keeps its dot.' },
+      { term: 'Stacks', explanation: 'Several of the same kind of event, say three achievements, collapse into one card with a count so the list never floods. Tap it to expand the individual items.' },
+    ],
+  },
+  {
     key: 'hr_zones',
     category: 'Fitness',
     title: 'HR Zones',
@@ -298,6 +310,18 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
         term: 'Adaptive suppression',
         explanation: 'During a calorie deficit the body unconsciously reduces non-exercise movement to slow the energy drain. You may not notice it happening. Watching your step trend, not just hitting goal on gym days, is how you catch it.',
       },
+    ],
+  },
+  {
+    key: 'adaptive_tdee',
+    category: 'Fitness',
+    title: 'Adaptive Target',
+    body: 'Your calorie target starts from your profile: an estimate of how much you burn based on your stats, activity level, and goal pace. But an estimate is just an estimate. Your real burn shows up on the scale over time.\n\nAdaptive Target watches your weight trend against what you have actually been eating and works backward to your real daily burn. If the scale says you are burning more, or less, than the starting estimate assumed, it suggests a matching target so your plan stays honest to your body instead of a formula.\n\nIt runs on food and weight only, no wearable needed. It waits until it has enough data, holds steady if your weigh-ins go stale rather than drifting on old numbers, and only ever suggests. Nothing changes unless you tap to accept, or you switch on auto-adjust yourself.',
+    definitions: [
+      { term: 'Real burn from the scale', explanation: 'Over a few weeks, the weight you gained or lost tells the true story of your burn: roughly 3,500 calories per pound. Weighed against your logged intake, that reveals your real daily burn more honestly than any starting formula.' },
+      { term: 'Suggest, never silent', explanation: 'By default it only proposes a new target through a notification. You review the reasoning and tap to accept. Accepting does exactly what editing your target by hand does, nothing more. An optional auto-adjust toggle in Goals lets it apply changes quietly if you prefer.' },
+      { term: 'Needs consistent weigh-ins', explanation: 'Accuracy leans on regular weigh-ins and complete food logging. If your newest weigh-in is more than about ten days old, it holds the last good target and waits rather than guessing from stale data.' },
+      { term: 'Helps everyone', explanation: 'This is not only for people without a wearable. It tightens the target for anyone whose real burn differs from the profile estimate, watch or no watch.' },
     ],
   },
   {

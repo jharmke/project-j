@@ -48,8 +48,20 @@ function isOffScreen(l: TargetRect | null, noTabBar = false): boolean {
   return false;
 }
 
-export default function TutorialOverlay() {
-  const { activeState, advanceStep, skipTutorial, getTarget, getScrollViews } = useTutorial();
+// `scope` partitions steps between two mounted instances. The ROOT instance (default, mounted in the
+// root layout) handles normal steps. A MODAL instance can be mounted INSIDE a React Native Modal
+// (e.g. Otto's chat) to spotlight targets that live in that separate native window, which the root
+// overlay physically cannot paint over. A step opts into the modal scope with `inOtto: true`; each
+// instance ignores steps outside its scope (renders null + runs no transitions), so they never fight.
+export default function TutorialOverlay({ scope = 'root' }: { scope?: 'root' | 'modal' }) {
+  const { activeState: rawActiveState, advanceStep, skipTutorial, getTarget, getScrollViews } = useTutorial();
+  const rawStep = rawActiveState?.tutorial.steps[rawActiveState.stepIndex];
+  const inThisScope = !!rawActiveState && (
+    scope === 'modal' ? !!(rawStep as any)?.inOtto : !(rawStep as any)?.inOtto
+  );
+  // Out-of-scope reads as "no tutorial" for this instance, so it cleanly exits/hides its spotlight
+  // while the other instance takes over.
+  const activeState = inThisScope ? rawActiveState : null;
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
 

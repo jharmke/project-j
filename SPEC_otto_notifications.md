@@ -31,6 +31,17 @@ STILL DEFERRED (intentional): the TDEE Type-A producer (needs adaptive TDEE buil
 records/summaries producers (the "New PR" dev sample is a placeholder), the achievement pop-on-action
 timing fix, the Mindful copy pass, and a release-build smoothness check on the animations.
 
+EXPLAINERS BUILT 2026-07-04 (pure JS, pending device verify): an (i) info tooltip in the panel header
+(tooltipRegistry `notification_hub`, defs: What Lands Here / New Notifications / Stacks) AND a full
+INTERACTIVE tutorial (`notification_hub` in data/tutorials.ts, on the Home toolkit + Settings>Help).
+The tour spotlights the FAB+badge on Home, opens Otto, then spotlights the bell + panel. Because Otto's
+chat is an RN Modal (separate iOS window the root spotlight can't cover), TutorialOverlay gained a
+`scope` prop: the default 'root' instance is unchanged; a 'modal' instance mounted inside AssistantChat
+handles steps flagged `inOtto`. A display-only demo notification (setNotifTourDemo) lights the badge +
+fills the list mid-tour, never persisted. Tour has all 3 mode variants; aborts cleanly on manual Otto
+dismiss; end + skip both tear down. NOTE this is the tour explainer, NOT the Mindful COPY pass on the
+notification entries themselves (still deferred).
+
 Origin: grew out of "where does the adaptive TDEE suggestion live?" Justin didn't want TDEE floating
 with no home, and had wanted an in-app notification system for a while, so the two merged: route
 in-app notifications through Otto (the general companion), which is always reachable.

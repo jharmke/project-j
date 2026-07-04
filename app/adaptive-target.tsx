@@ -15,6 +15,7 @@ import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { triggerHaptic } from '@/utils/haptics';
 import { useTheme } from '../theme';
+import TooltipIcon from '../components/TooltipIcon';
 import { useToast, ToastRenderer } from '../components/Toast';
 import { computeAdaptiveTdee, applyAdaptiveTarget, type AdaptiveTdeeResult } from '../utils/adaptiveTdee';
 import { clearNotification } from '../utils/notifications';
@@ -81,7 +82,9 @@ export default function AdaptiveTargetScreen() {
           <Ionicons name="chevron-back" size={26} color={theme.textPrimary} />
         </Pressable>
         <Text style={[styles.headerTitle, { color: theme.textPrimary }]}>YOUR TARGET</Text>
-        <View style={{ width: 26 }} />
+        <View style={{ width: 26, alignItems: 'center' }}>
+          <TooltipIcon tooltipKey="adaptive_tdee" size={20} />
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>

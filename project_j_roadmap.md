@@ -31,6 +31,19 @@
     sample is a dev placeholder -- no real producer yet), the achievement pop-on-action timing fix,
     the Mindful copy pass, and verifying Reanimated smoothness on a release build.
 
+## 📈 ADAPTIVE TDEE (BUILT 2026-07-04, device-validated) -- Phase 2 of the wearable spec
+Full detail in SPEC_wearable_robustness.md "PHASE 2: ADAPTIVE TDEE -- BUILT". Estimates real burn from
+the weight trend vs logged intake (scale-based, watch-independent), suggests a matching calorie target.
+Files: utils/adaptiveTdee.ts, app/adaptive-target.tsx, index.tsx (Home trigger), settings.tsx (Goals
+auto-adjust toggle + dev preview/demo). Weekly-gated; SUGGEST by default via a Type-A Otto hub
+notification (this delivered the deferred "TDEE producer" item #1), auto-adjust toggle OFF by default,
+Mindful = no nudge. Guards: >=5 weigh-ins + >=14 logged days, hold when weigh-ins >=10 days stale,
+surface only at >=150 kcal divergence, moves capped at 120 kcal. Accept writes profile.calTarget +
+useRecommendedCal=false (only write; read-then-merge) behind a first-use disclaimer + a persistent
+"accuracy depends on consistent/complete logging" caveat. Validated: intake-realTDEE deficit matched
+Justin's real -0.8 lb/wk trend. OPEN: unify with EvR predicted-vs-actual (walled off for v1); tune
+constants if real usage warrants.
+
 ## 📌 PARKED SMALL IDEAS (from 2026-07-04 design chat, do when convenient)
 - [ ] [NEEDS DESIGN, not a quick fix] Goal-hit does NOT reverse when you delete the entry that crossed
   the goal. Repro: quick-add water over goal (marks goal hit + increments the lifetime hit-count), then

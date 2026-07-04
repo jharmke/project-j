@@ -313,7 +313,31 @@ for addition 1. (Exact thresholds = open question.)
 
 ---
 
-## PHASE 2 DESIGN: ADAPTIVE TDEE (DRAFT 2026-07-03, NOT signed off -- do NOT build yet)
+## PHASE 2: ADAPTIVE TDEE -- BUILT 2026-07-04, device-validated on Justin's real data
+
+Files: utils/adaptiveTdee.ts (engine + weekly trigger + apply), app/adaptive-target.tsx (accept
+screen), Home mount trigger (index.tsx), auto-adjust toggle (settings.tsx Goals), dev tools
+(preview + demo). HOW IT WORKS:
+- Engine: realTDEE = avgDailyIntake - (weight-trend lbs/day x 3500). Weight trend = least-squares
+  slope over the window's weigh-ins (robust to sparse/irregular weigh-ins; replaces the EMA for
+  sparsity). suggestedTarget = realTDEE + the profile's goal-pace deficit.
+- Locked constants (all tunable, Justin OK'd defaults): 35-day read window; needs >= 5 weigh-ins AND
+  >= 14 logged-food days (consistent logging bar -- scale-based TDEE trusts logged intake at face
+  value); STALE_WEIGH_DAYS = 10 (>= 10 days since last weigh-in -> HOLD, never drift); surface only
+  when |suggested - current| >= 150 kcal; each move capped at 120 kcal.
+- Cadence: a weekly-gated check on Home mount (pj_adaptive_tdee_lastrun). SUGGEST by default -> posts
+  a Type-A hub notification (Otto) routing to /adaptive-target. Auto-adjust toggle (pj_settings
+  .adaptiveTdeeAuto, OFF default) applies silently instead. MINDFUL = no visible nudge.
+- Accept screen: plain-language explanation, current->suggested, first-use disclaimer + inline micro
+  disclaimer + a persistent "accuracy depends on consistent/complete logging" caveat. Accept is the
+  ONLY write: sets profile.calTarget + useRecommendedCal=false (same as editing the target by hand),
+  read-then-merge, then clears the notification. ?demo=1 shows sample numbers and writes nothing.
+- VALIDATED on Justin's data: intake 1826 - realTDEE 2202 = ~376/day deficit = ~0.75 lb/wk, matching
+  his measured -0.8 lb/wk trend (internally consistent). Correctly held (stale, 12-day-old weigh-in).
+STILL OPEN: unify with EvR predicted-vs-actual (walled off for v1 -- follow-up); release-build check.
+
+### (Original design draft below, kept for reference)
+## PHASE 2 DESIGN: ADAPTIVE TDEE (DRAFT 2026-07-03)
 
 Framed deliberately as a walled-off, optional, suggestion-only box so it is a SMALL, reversible change
 to data/app even though it is a BIG feature to design. Justin's core anxiety was "this touches

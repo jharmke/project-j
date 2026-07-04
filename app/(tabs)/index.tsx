@@ -20,6 +20,7 @@ import { ACHIEVEMENTS, AchievementsStore, checkAndUnlock, loadAchievements, weig
 import { loadFromFirebase, saveToFirebase } from '../../firebaseConfig';
 import { storageSet } from '../../utils/storage';
 import { runAfterLaunchSplash } from '../../utils/launchSplashGate';
+import { maybeRunAdaptiveTdee } from '../../utils/adaptiveTdee';
 import { isSyncReady } from '../../services/syncService';
 import { reconcileDayWater, runWaterReconciliation } from '../../utils/waterData';
 import { cancelWaterPaceNotification, cancelWeeklySummaryNotification, cancelMonthlySummaryNotification } from '../../services/notifications';
@@ -1398,6 +1399,14 @@ export default function HomeScreen() {
       prevSleepHoursRef.current = sleepHours;
     }
   }, [activeCalories, steps, sleepHours, sleepStages, restingHR, respiratoryRate, bloodOxygen, exerciseMinutes, activityDataDate, todayKey, loaded, stepGoal, activeCalGoal, exerciseMinsGoal]);
+
+  // Adaptive TDEE: weekly-gated background check (suggest by default, or auto-adjust if opted in;
+  // no visible nudge in Mindful). Safe + silent -- see utils/adaptiveTdee.ts. Runs once on mount.
+  useEffect(() => {
+    const n = new Date();
+    const tk = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
+    maybeRunAdaptiveTdee(tk).catch(() => {});
+  }, []);
 
   // ── Manual workout timer -> exercise minutes (no-watch users) ─────────────────
   // Load today's manual workout minutes on focus (written by the Workout tab's timer). Keyed on

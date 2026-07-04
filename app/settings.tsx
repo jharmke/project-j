@@ -46,6 +46,7 @@ function vacFmtNice(key: string): string {
 import { voiceDiagnosticCards, getLastVoiceDebug } from '../utils/coachAI';
 import { dumpHomeCoachCandidates, dumpEvrRecoveryDebug, dumpWearableSim } from '../utils/smartTipsEngine';
 import { addNotification } from '../utils/notifications';
+import { computeAdaptiveTdee } from '../utils/adaptiveTdee';
 import { TOOLTIP_REGISTRY } from '../tooltipRegistry';
 import TooltipModal from '../components/TooltipModal';
 import TooltipIcon from '../components/TooltipIcon';
@@ -398,6 +399,7 @@ export default function SettingsScreen() {
   const { user, signOut } = useAuth();
   const { showToast } = useToast();
   const [hapticsEnabled, setHapticsEnabled] = useState(true);
+  const [adaptiveTdeeAuto, setAdaptiveTdeeAuto] = useState(false);
   const [showNetCarbs, setShowNetCarbs] = useState(false);
   const [styleMode, setStyleMode] = useState<'discipline' | 'balanced' | 'mindful'>('balanced');
   const [mindfulGrowthAreas, setMindfulGrowthAreas] = useState(false);
@@ -764,6 +766,7 @@ export default function SettingsScreen() {
         if (saved) {
           const data = JSON.parse(saved);
           if (data.hapticsEnabled !== undefined) setHapticsEnabled(data.hapticsEnabled);
+          if (data.adaptiveTdeeAuto !== undefined) setAdaptiveTdeeAuto(data.adaptiveTdeeAuto);
           if (data.showNetCarbs !== undefined) setShowNetCarbs(data.showNetCarbs);
           if (data.styleMode) setStyleMode(data.styleMode);
           if (data.mindfulGrowthAreas !== undefined) setMindfulGrowthAreas(data.mindfulGrowthAreas);
@@ -1314,6 +1317,21 @@ export default function SettingsScreen() {
               {goalProfile.useRecommendedCal === false && (
                 <Text style={[styles.goalHint, { color: theme.textMuted }]}>Enter a custom calorie target.</Text>
               )}
+            </View>
+
+            <View style={{ height: 1, backgroundColor: theme.borderCard, marginVertical: 16 }} />
+
+            {/* Adaptive Target (auto-adjust) */}
+            <View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <View style={{ flex: 1, paddingRight: 12 }}>
+                  <Text style={[styles.goalLabel, { color: theme.textMuted, marginBottom: 2 }]}>Auto-Adjust Target</Text>
+                  <Text style={{ fontSize: 11, color: theme.textDim, fontFamily: 'DMSans_400Regular', lineHeight: 15 }}>
+                    Quietly keep your calorie target matched to your real burn, estimated from your weight trend. Off by default: when off, we only suggest a change and you tap to apply it.
+                  </Text>
+                </View>
+                <ToggleSwitch value={adaptiveTdeeAuto} onValueChange={v => { setAdaptiveTdeeAuto(v); saveSetting('adaptiveTdeeAuto', v); triggerHaptic(Haptics.ImpactFeedbackStyle.Light); }} />
+              </View>
             </View>
 
             <View style={{ height: 1, backgroundColor: theme.borderCard, marginVertical: 16 }} />
@@ -2344,6 +2362,41 @@ export default function SettingsScreen() {
                 <Text style={[styles.rowSub, { color: theme.textMuted }]}>Drops sample entries (achievement, goal, record, and a Type-A TDEE suggestion) into the Otto notification hub so you can test the panel + badge. The TDEE one replaces itself on repeat taps; the others stack.</Text>
               </View>
               <Ionicons name="notifications-outline" size={18} color={theme.accentGreen} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              const now = new Date();
+              const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+              const r = await computeAdaptiveTdee(todayKey);
+              Alert.alert('Adaptive TDEE (preview, read-only)', [
+                `status: ${r.status}`,
+                `current target: ${r.currentTarget} kcal`,
+                `weigh-ins: ${r.weighIns}   food days: ${r.foodDays}`,
+                `days since weigh-in: ${r.daysSinceWeighIn ?? '-'}`,
+                `avg intake: ${r.avgIntake ?? '-'} kcal`,
+                `weight trend: ${r.trendLbsPerWeek ?? '-'} lb/wk`,
+                `estimated real TDEE: ${r.realTdee ?? '-'} kcal`,
+                `divergence from target: ${r.divergence ?? '-'} kcal`,
+                `suggested target: ${r.suggestedTarget ?? '(none)'}`,
+              ].join('\n'));
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentGreen }]}>Adaptive TDEE preview (read-only)</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Runs the Phase 2 engine on your real weight + intake and shows the full math (real TDEE, trend, suggested target, and which guard fired). Writes nothing.</Text>
+              </View>
+              <Ionicons name="calculator-outline" size={18} color={theme.accentGreen} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/adaptive-target?demo=1' as any);
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentGreen }]}>Preview Adaptive Target screen (demo)</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Opens the suggestion + accept screen with sample numbers so you can see the full flow. Demo mode does NOT write your real target.</Text>
+              </View>
+              <Ionicons name="open-outline" size={18} color={theme.accentGreen} />
             </TouchableOpacity>
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {

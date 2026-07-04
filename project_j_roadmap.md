@@ -4,6 +4,14 @@
 
 ---
 
+## 🔔 OTTO NOTIFICATION HUB (spec locked 2026-07-04, building now)
+- SPEC_otto_notifications.md. In-app notification system routed through Otto's FAB (badge dot) + a
+  bell in Otto's chat header. Push (reminders) stays separate per SPEC_notifications.md; the hub is
+  wins/results + the adaptive-TDEE suggestion. Type A (Replace, e.g. TDEE) vs Type B (Stack, e.g.
+  achievements). No banners / no sheets / no chat-bubble. Display leaning TooltipModal. No archive
+  (match iOS). Folds in the achievement pop-on-action timing fix. Secretary + Otto settings-change
+  are post-v1 (share a confirm-framework). OPEN calls listed in the spec's DECIDED-vs-OPEN summary.
+
 ## 📌 PARKED SMALL IDEAS (from 2026-07-04 design chat, do when convenient)
 - [ ] Achievement "pop on the action" timing. Achievements earned by an action (e.g. logging the 60th
   food day) don't pop until the next app-open, because the per-category check is gated once/day and

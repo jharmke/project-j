@@ -2401,6 +2401,20 @@ export default function SettingsScreen() {
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
               triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              const cur = await AsyncStorage.getItem('pj_dev_force_wearstate');
+              const next = cur === 'nonwearer' ? 'unknown' : cur === 'unknown' ? 'wearer' : cur === 'wearer' ? '' : 'nonwearer';
+              if (next) await AsyncStorage.setItem('pj_dev_force_wearstate', next); else await AsyncStorage.removeItem('pj_dev_force_wearstate');
+              Alert.alert('Force wear-state (Defect F)', next ? `Now forcing: ${next}.\n\nOpen Sleep & Recovery > Recovery tab to see the effect (nonwearer = the whole-screen "needs a wearable" state).` : 'Cleared. Using real detection again.');
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentGreen }]}>Force wear-state (Defect F)</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Cycles the coarse wearer inference (nonwearer -&gt; unknown -&gt; wearer -&gt; off) so you can preview the non-wearer treatments without wiping your real watch data. Check the Recovery tab after setting it.</Text>
+              </View>
+              <Ionicons name="watch-outline" size={18} color={theme.accentGreen} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
               try {
                 const d = await dumpHomeCoachCandidates();
                 const fmt = (n: number) => n.toFixed(2);

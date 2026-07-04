@@ -23,6 +23,7 @@ import { triggerHaptic } from '../utils/haptics';
 import { storageSet } from '../utils/storage';
 import { calcSleepScore, sleepScoreColor } from '../utils/sleepScore';
 import { calcRecoveryScore, recoveryZone, RecoveryComponent, RecoveryResult } from '../utils/recoveryScore';
+import { getWearState, type WearState } from '../utils/metricPresence';
 import MetricDrilldownModal, { MetricDrilldownData } from '../components/MetricDrilldownModal';
 import { ScoreRing } from '../components/DaySummaryModal';
 import { CardWash } from '../components/GradientCard';
@@ -539,6 +540,8 @@ export default function SleepHub() {
 
   const { tab: initialTab } = useLocalSearchParams<{ tab?: string }>();
   const [activeTab, setActiveTab] = useState<SleepTab>(initialTab === 'recovery' ? 'recovery' : 'sleep');
+  const [wearState, setWearState] = useState<WearState>('unknown'); // Defect F: coarse wearer inference
+  useEffect(() => { getWearState().then(setWearState).catch(() => {}); }, []);
   const [range, setRange] = useState<'7' | '30'>('7');
   const [history, setHistory] = useState<SleepNight[]>([]);
   // Always-30-night set powering the PERSONAL BASELINES (avg deep/REM/bedtime/wake).
@@ -1187,7 +1190,7 @@ export default function SleepHub() {
         return (
           <View style={[cardStyle, { alignItems: 'center', paddingVertical: 28 }]}>
             <Ionicons name="pulse-outline" size={34} color={theme.iconMuted} />
-            <Text style={{ fontSize: 14, color: theme.textPrimary, fontFamily: 'DMSans_700Bold', marginTop: 10 }}>Recovery data unavailable</Text>
+            <Text style={{ fontSize: 14, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', marginTop: 10 }}>Recovery data unavailable</Text>
             <Text style={{ fontSize: 12, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 4, textAlign: 'center', lineHeight: 18 }}>
               Recovery needs overnight heart data synced to Apple Health. Wear a watch overnight and let it sync to see your Recovery Score.
             </Text>
@@ -1399,6 +1402,24 @@ export default function SleepHub() {
         </View>
       );
     };
+
+    // Defect F: for a CONFIRMED non-wearer with no recovery data, the whole tab is one clean
+    // "needs a wearable" state instead of a wall of empty cards (hero + trend + coach all blank).
+    // A wearer or an as-yet-unknown user still gets the normal cards (the hero shows its own factual
+    // "wear a watch overnight and let it sync" state), so a real wearer is never wrongly walled off.
+    // A confirmed non-wearer never has recovery data anyway (getWearState returns 'wearer' for anyone
+    // who has ever had it), so gate on wearState alone -- this also lets the dev override preview it.
+    if (wearState === 'nonwearer' && !loadingRecovery) {
+      return (
+        <View style={[cardStyle, { alignItems: 'center', paddingVertical: 46, paddingHorizontal: 24 }]}>
+          <Ionicons name="watch-outline" size={40} color={theme.iconMuted} />
+          <Text style={{ fontSize: 16, color: theme.textSecondary, fontFamily: 'DMSans_700Bold', marginTop: 14 }}>Recovery needs a wearable</Text>
+          <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 6, textAlign: 'center', lineHeight: 20 }}>
+            Recovery Score, HRV, and resting heart rate come from a smartwatch or fitness tracker worn overnight. Connect one to Apple Health and this fills in automatically. Your sleep, nutrition, and weight tracking all work fully without it.
+          </Text>
+        </View>
+      );
+    }
 
     return (
       <>

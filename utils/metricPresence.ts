@@ -34,6 +34,14 @@ const ALL_METRICS: PresenceMetric[] = [
   'activeCals', 'exerciseMinutes', 'steps',
 ];
 
+// Metrics ONLY a wearable can produce (steps = phone, exerciseMinutes = manual fallback,
+// sleepScore = manual sleep). Ever having had ANY of these = this user uses a wearable.
+const WEARABLE_METRICS: PresenceMetric[] = [
+  'recovery', 'hrv', 'restingHR', 'respiratoryRate', 'bloodOxygen',
+  'vo2Max', 'cardioRecovery', 'sleepStages', 'activeCals',
+];
+const SKIP_KEY = 'pj_healthkit_skip';
+
 export function emptyPresence(): PresenceMap {
   return ALL_METRICS.reduce((m, k) => { m[k] = false; return m; }, {} as PresenceMap);
 }
@@ -95,12 +103,16 @@ export async function loadMetricPresence(): Promise<PresenceMap> {
 export async function recordMetricPresence(observed: PresenceMetric[]): Promise<PresenceMap> {
   const map = await loadMetricPresence();
   let changed = false;
+  let wearableTurnedOn = false;
   for (const m of observed) {
-    if (map[m] !== true) { map[m] = true; changed = true; }
+    if (map[m] !== true) { map[m] = true; changed = true; if (WEARABLE_METRICS.includes(m)) wearableTurnedOn = true; }
   }
   if (changed) {
     try { await AsyncStorage.setItem(PRESENCE_KEY, JSON.stringify(map)); } catch {}
   }
+  // Real wearable data arrived -> the user IS a wearer; clear any stale "Maybe later" skip flag so
+  // it can never wrongly mark them a non-wearer later (data always wins). Defect F hygiene.
+  if (wearableTurnedOn) { try { await AsyncStorage.removeItem(SKIP_KEY); } catch {} }
   return map;
 }
 
@@ -144,4 +156,50 @@ export async function seedMetricPresenceOnce(windowDays: number = 365): Promise<
   } catch {
     return loadMetricPresence();
   }
+}
+
+// ─── Wear-level (Defect F) ────────────────────────────────────────────────────
+// A DERIVED, computed-on-demand answer (never a stored label) to the coarse "does this person use
+// a wearable at all?" question. Individual cards use per-metric presence (has this metric?); this is
+// only for the FEW holistic decisions a single metric can't answer -- e.g. whether a WHOLE screen
+// (the Recovery hub tab) becomes one clean "needs a wearable" state, or how a report frames itself.
+
+export type WearState = 'wearer' | 'nonwearer' | 'unknown';
+
+// Has the user EVER had any wearable-only metric?
+export function hasEverHadWearable(map: PresenceMap): boolean {
+  return WEARABLE_METRICS.some(m => map[m] === true);
+}
+
+// The 3 states (see SPEC_wearable_robustness.md, Defect F):
+//  - 'wearer'    = they've had wearable data at some point (data always wins).
+//  - 'nonwearer' = CONFIRMED: never had it AND (they skipped the Health opt-in OR they have enough
+//                  history without it that it's not just "hasn't synced yet").
+//  - 'unknown'   = never had it but too new to be sure (could be a wearer whose data hasn't landed).
+// FAIL-SAFE: only 'nonwearer' is treated confidently; 'unknown' is treated like a possible wearer,
+// so a brand-new real wearer is NEVER prematurely told they need a device.
+export async function getWearState(): Promise<WearState> {
+  try {
+    // Dev override (Settings > Dev Tools) so a 24/7 wearer can preview the non-wearer treatment
+    // without wiping real data. No-op in production (the key is never set).
+    const forced = await AsyncStorage.getItem('pj_dev_force_wearstate');
+    if (forced === 'wearer' || forced === 'nonwearer' || forced === 'unknown') return forced;
+
+    const map = await loadMetricPresence();
+    if (hasEverHadWearable(map)) return 'wearer';
+    try { if (await AsyncStorage.getItem(SKIP_KEY)) return 'nonwearer'; } catch {}
+    // Lookback: enough stored history with no wearable metric ever -> confirmed non-wearer.
+    const keys = await AsyncStorage.getAllKeys();
+    const dayKeys = keys.filter(k => /^pj_\d{4}-\d{2}-\d{2}$/.test(k));
+    if (dayKeys.length >= 14) return 'nonwearer';
+    return 'unknown';
+  } catch {
+    return 'unknown';
+  }
+}
+
+// True unless we're CONFIDENT they don't use a wearable. Use to gate hard "needs a device" whole-
+// screen states: show the hard state only when this is false.
+export async function isLikelyWearer(): Promise<boolean> {
+  return (await getWearState()) !== 'nonwearer';
 }

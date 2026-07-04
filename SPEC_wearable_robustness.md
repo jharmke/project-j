@@ -416,7 +416,24 @@ extra without the weight moving.
 
 ---
 
-## DEFECT F: NON-WEARER COACHING PIVOT -- DESIGN LOCKED 2026-07-04
+## DEFECT F: NON-WEARER COACHING PIVOT -- BUILT 2026-07-04 (design + build below)
+
+BUILT: metricPresence.ts now exports getWearState() (3 states: wearer/nonwearer/unknown, computed
+on-demand, never stored) + isLikelyWearer() + hasEverHadWearable(); derived from ever-had-wearable-
+data + pj_healthkit_skip fast-path + a >=14-day-history lookback; fail-safe = only 'nonwearer' is
+treated confidently (a new real wearer whose data hasn't synced is never walled off). Skip-flag
+hygiene: recordMetricPresence auto-clears pj_healthkit_skip the moment any wearable metric turns true
+(data always wins). SURFACE: the Recovery TAB of the Sleep & Recovery hub (sleep.tsx renderRecovery)
+shows ONE whole-screen "needs a wearable" state for a confirmed non-wearer instead of a wall of empty
+cards. Item 7 (report framing) verified a no-op: the weekly/monthly summaries don't do a binary
+activity-vs-food framing, so nothing to make consistent. DEV TOOL "Force wear-state (Defect F)"
+(pj_dev_force_wearstate, checked first in getWearState; no-op in prod) lets a 24/7 wearer preview it.
+NOTE: only the Recovery TAB got the new whole-screen treatment -- Home card + summaries were already
+handled by the earlier empty-state audit; cards stay per-metric by design. STILL OPEN: none required;
+optional future = wire isLikelyWearer into more coarse surfaces if any turn up.
+
+--- (design, kept for reference) ---
+## DEFECT F: NON-WEARER COACHING PIVOT -- DESIGN 2026-07-04
 
 This SUPERSEDES the earlier "WEAR-LEVEL INFERENCE (none/partial/full)" section above. We are NOT
 storing a persistent none/partial/full wear-level label on the user. Reason: a stored classification

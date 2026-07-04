@@ -1581,7 +1581,10 @@ export async function handleDailyGoalHit(
 // unlocked defs so the caller can fire showCelebration + showAchievementToast.
 // Once-per-day gate fires only after today has logged data (streak > 0).
 
-export async function checkMomentumAchievements(): Promise<AchievementDef[]> {
+// `force` bypasses the once-per-day gate: pass true when calling right after a qualifying action
+// (a food log) so the check re-evaluates with today's fresh data, even if app-open already ran the
+// gate earlier today. checkAndUnlock no-ops anything already unlocked, so a forced re-run is safe.
+export async function checkMomentumAchievements(force = false): Promise<AchievementDef[]> {
   // Compute consecutive logging day streak first
   let streak = 0;
   const today = new Date();
@@ -1601,7 +1604,7 @@ export async function checkMomentumAchievements(): Promise<AchievementDef[]> {
   const todayKey = localGoalDateKey(today);
   try {
     const gateRaw = await AsyncStorage.getItem('pj_momentum_checked');
-    if (gateRaw === todayKey) return [];
+    if (!force && gateRaw === todayKey) return [];
   } catch {}
   try { await storageSet('pj_momentum_checked', todayKey); } catch {}
 
@@ -1852,12 +1855,14 @@ export async function checkSleepAchievements(): Promise<AchievementDef[]> {
 // Uses === exact match on count so each achievement fires on exactly one qualifying day.
 // Once-per-day gate via pj_nutrition_ach_checked.
 
-export async function checkNutritionAchievements(): Promise<AchievementDef[]> {
+// `force` bypasses the once-per-day gate (see checkMomentumAchievements) so a same-day food log
+// re-evaluates instead of waiting for the next app-open.
+export async function checkNutritionAchievements(force = false): Promise<AchievementDef[]> {
   // Once-per-day gate
   const today = localGoalDateKey();
   try {
     const gateRaw = await AsyncStorage.getItem('pj_nutrition_ach_checked');
-    if (gateRaw === today) return [];
+    if (!force && gateRaw === today) return [];
   } catch {}
   try { await storageSet('pj_nutrition_ach_checked', today); } catch {}
 

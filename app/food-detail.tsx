@@ -860,12 +860,12 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           const def = ACHIEVEMENTS.find(a => a.id === 'general_first_log');
           if (def) { showAchievementToast(def); showCelebration(getCelebTier(def), def.name, def); }
         }
-        const momentumUnlocked = await checkMomentumAchievements();
+        const momentumUnlocked = await checkMomentumAchievements(true);
         momentumUnlocked.forEach(def => {
           showCelebration(getCelebTier(def), def.name, def);
           showAchievementToast(def);
         });
-        const nutritionUnlocked = await checkNutritionAchievements();
+        const nutritionUnlocked = await checkNutritionAchievements(true);
         nutritionUnlocked.forEach(def => {
           showCelebration(getCelebTier(def), def.name, def);
           showAchievementToast(def);

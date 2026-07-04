@@ -10,6 +10,9 @@ import { saveToFirebase } from '../firebaseConfig';
 import { storageSet } from '../utils/storage';
 import { useTheme } from '../theme';
 import { DEFAULT_MEAL_SLOTS, MealSlot, loadMealSlots } from '../utils/mealSlots';
+import { ACHIEVEMENTS, checkAndUnlock, loadAchievements, checkMomentumAchievements, checkNutritionAchievements, getCelebTier } from '../achievementData';
+import { showAchievementToast } from '../components/AchievementToast';
+import { showCelebration } from '../components/CelebrationOverlay';
 
 export default function RecipeLogScreen() {
   const insets = useSafeAreaInsets();
@@ -145,6 +148,20 @@ export default function RecipeLogScreen() {
       await storageSet(`pj_${date}`, JSON.stringify({ ...current, entries }));
       await saveToFirebase(date, 'entries', entries);
       showToast('Recipe logged', recipe.name, 'success');
+      // A recipe log is a food log: fire the same achievement checks food-detail does, forced past
+      // the once-per-day gate so a same-day threshold pops now instead of on the next app-open.
+      try {
+        const store = await loadAchievements();
+        const result = await checkAndUnlock('general_first_log', store);
+        if (result.newlyUnlocked) {
+          const def = ACHIEVEMENTS.find(a => a.id === 'general_first_log');
+          if (def) { showAchievementToast(def); showCelebration(getCelebTier(def), def.name, def); }
+        }
+        const momentumUnlocked = await checkMomentumAchievements(true);
+        momentumUnlocked.forEach(def => { showCelebration(getCelebTier(def), def.name, def); showAchievementToast(def); });
+        const nutritionUnlocked = await checkNutritionAchievements(true);
+        nutritionUnlocked.forEach(def => { showCelebration(getCelebTier(def), def.name, def); showAchievementToast(def); });
+      } catch {}
       router.back();
       router.back();
     } catch (e) {

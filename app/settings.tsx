@@ -2407,6 +2407,35 @@ export default function SettingsScreen() {
 
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
               triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              try {
+                const raw = await AsyncStorage.getItem('pj_workout_state');
+                const state = raw ? JSON.parse(raw) : {};
+                const prs = { ...(state.prs || {}) };
+                const d = new Date(); d.setDate(d.getDate() - 5);
+                const dk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                const seed: Record<string, any> = {
+                  'bench press':   { name: 'Bench Press',   bestWeight: { value: 135, reps: 5, dateKey: dk }, bestE1RM: { value: 158, weight: 135, reps: 5, dateKey: dk }, updatedAt: dk },
+                  'barbell squat': { name: 'Barbell Squat', bestWeight: { value: 185, reps: 5, dateKey: dk }, bestE1RM: { value: 216, weight: 185, reps: 5, dateKey: dk }, updatedAt: dk },
+                };
+                const added: string[] = [];
+                for (const k of Object.keys(seed)) { if (!prs[k]) { prs[k] = seed[k]; added.push(seed[k].name); } }
+                await storageSet('pj_workout_state', JSON.stringify({ ...state, prs }));
+                Alert.alert(
+                  added.length ? 'PR baselines seeded' : 'Already have those PRs',
+                  (added.length ? `Seeded a prior best for: ${added.join(', ')}.\n\n` : 'Those lifts already have a PR, nothing overwritten.\n\n') +
+                  'Now go to Workout, add Bench Press (beat 135) or Barbell Squat (beat 185) to today, log a HEAVIER set, and check the circle. Otto should fire a New PR and the recap will show it. This only adds/keeps PRs, it never wipes your data.'
+                );
+              } catch (e) { Alert.alert('Error', String(e)); }
+            }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentGreen }]}>Seed lift PR baselines (dev)</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Gives Bench Press (135x5) and Barbell Squat (185x5) a prior best to beat, so you can log a heavier set in Workout and watch the real PR flow fire (bank + Otto + recap). Read-then-merge, never overwrites an existing PR.</Text>
+              </View>
+              <Ionicons name="barbell-outline" size={18} color={theme.accentGreen} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
               const now = new Date();
               const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
               const r = await computeAdaptiveTdee(todayKey);

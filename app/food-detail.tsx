@@ -865,7 +865,10 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           showCelebration(getCelebTier(def), def.name, def);
           showAchievementToast(def);
         });
-        const nutritionUnlocked = await checkNutritionAchievements(true);
+        // NOT forced: nutrition/calorie-goal achievements only ever count COMPLETED days (today is
+        // excluded), so a same-day log can never newly-complete one. Forcing it just popped legit
+        // past-day badges at random mid-day moments. Leave it gated -> fires on app-open, correctly.
+        const nutritionUnlocked = await checkNutritionAchievements();
         nutritionUnlocked.forEach(def => {
           showCelebration(getCelebTier(def), def.name, def);
           showAchievementToast(def);

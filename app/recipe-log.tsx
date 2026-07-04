@@ -159,7 +159,9 @@ export default function RecipeLogScreen() {
         }
         const momentumUnlocked = await checkMomentumAchievements(true);
         momentumUnlocked.forEach(def => { showCelebration(getCelebTier(def), def.name, def); showAchievementToast(def); });
-        const nutritionUnlocked = await checkNutritionAchievements(true);
+        // Not forced (see food-detail): nutrition achievements only count completed days, so a
+        // same-day log can never complete one -- gated is correct, avoids random mid-day pops.
+        const nutritionUnlocked = await checkNutritionAchievements();
         nutritionUnlocked.forEach(def => { showCelebration(getCelebTier(def), def.name, def); showAchievementToast(def); });
       } catch {}
       router.back();

@@ -18,6 +18,7 @@ import { showCelebration } from '../../components/CelebrationOverlay';
 import { checkWorkoutAchievements, getCelebTier } from '../../achievementData';
 import { storageSet } from '../../utils/storage';
 import { cancelActivityNotification } from '../../services/notifications';
+import { addNotification, clearNotification } from '../../utils/notifications';
 import * as Notifications from 'expo-notifications';
 import { useTheme } from '../../theme';
 import HeaderAvatar from '../../components/HeaderAvatar';
@@ -134,8 +135,12 @@ const restEndRef = useRef(0);
 const restIntervalRef = useRef<any>(null);
 const restNotifIdRef = useRef<string | null>(null);
 const restBuzzedRef = useRef(false);
-// All-time PRs per lift (keyed by normalized name). Banked on Finish Workout.
+// All-time PRs per lift (keyed by normalized name). Banked the moment a qualifying set is checked.
 const [prs, setPrs] = useState<Record<string, PRRecord>>({});
+// PRs actually HIT per day: prHitsByDay[dateKey][normalizedLiftName] = hit. Recorded the instant a
+// qualifying set is checked (not gated behind opening the summary), so the recap trophy + Otto
+// notification survive even if the user never opens the summary. Additive on pj_workout_state.
+const [prHitsByDay, setPrHitsByDay] = useState<Record<string, Record<string, any>>>({});
 const [finishSummary, setFinishSummary] = useState<{
   totalVolume: number; doneSets: number; doneExercises: number; prHits: any[]; mindful: boolean;
   hasLifts: boolean; liftDurationSec: number | null;
@@ -709,6 +714,7 @@ useEffect(() => {
           if (data.setLogs) setSetLogs(data.setLogs);
           if (data.exerciseDoneAt) setExerciseDoneAt(data.exerciseDoneAt);
           if (data.prs) setPrs(data.prs);
+          if (data.prHitsByDay) setPrHitsByDay(data.prHitsByDay);
           if (data.activeProgramName) setActiveProgramName(data.activeProgramName);
           if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
         }
@@ -761,6 +767,7 @@ if (data.weeklyTemplate) setWeeklyTemplate(data.weeklyTemplate);
 if (data.setLogs) setSetLogs(data.setLogs);
 if (data.exerciseDoneAt) setExerciseDoneAt(data.exerciseDoneAt);
 if (data.prs) setPrs(data.prs);
+if (data.prHitsByDay) setPrHitsByDay(data.prHitsByDay);
 if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
           }
         } catch (e) {
@@ -772,7 +779,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
     }, [])
   );
 
-  const saveState = async (newChecks = checks, newCardio = cardioComplete, newPrograms = programs, newNotes = workoutNotes, newCardioLogs = cardioLogs, newTemplate = weeklyTemplate, newProgramName = activeProgramName, newNoteNames = workoutNoteNames, newSetLogs = setLogs, newPrs = prs, newExerciseDoneAt = exerciseDoneAt, newTimers = workoutTimers) => {
+  const saveState = async (newChecks = checks, newCardio = cardioComplete, newPrograms = programs, newNotes = workoutNotes, newCardioLogs = cardioLogs, newTemplate = weeklyTemplate, newProgramName = activeProgramName, newNoteNames = workoutNoteNames, newSetLogs = setLogs, newPrs = prs, newExerciseDoneAt = exerciseDoneAt, newTimers = workoutTimers, newPrHitsByDay = prHitsByDay) => {
   try {
     await storageSet('pj_workout_state', JSON.stringify({
       checks: newChecks,
@@ -787,6 +794,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
       prs: newPrs,
       exerciseDoneAt: newExerciseDoneAt,
       workoutTimers: newTimers,
+      prHitsByDay: newPrHitsByDay,
     }));
   } catch (e) {
     console.log('Save error', e);
@@ -875,6 +883,64 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
     return Array.from({ length: n }, () => ({ weight: null, reps, rest, done: false }));
   };
 
+  // Bank a lift's PRs from ITS OWN checked+weighted sets, keyed off the individual set (not whole-
+  // exercise completion) so a partial session (3 of 4 planned sets, walked out without "finishing")
+  // still banks. Pure: takes the current maps, returns updated ones + the newly-hit PR (or null).
+  // A lift's FIRST-ever log sets a silent baseline (not a PR); only beating a prior best is a hit.
+  const bankPRFromSets = (ex: any, sets: SetEntry[], currentPrs: Record<string, PRRecord>, currentHits: Record<string, Record<string, any>>, dateKey: string) => {
+    if (!ex || ex.isCardio || !sets) return null;
+    const weighted = sets.filter(s => s.done && (s.weight || 0) > 0 && (s.reps || 0) > 0);
+    if (!weighted.length) return null;
+    const key = normalizeLiftName(ex.name);
+    const topSet = weighted.reduce((a, b) => (((b.weight as number) > (a.weight as number)) || (b.weight === a.weight && (b.reps as number) > (a.reps as number))) ? b : a);
+    const e1rmSets = weighted.filter(s => (s.reps as number) <= 12);
+    const bestE1RM = e1rmSets.length ? Math.round(Math.max(...e1rmSets.map(s => epley(s.weight as number, s.reps as number)))) : null;
+    const rec = currentPrs[key];
+    const isFirst = !rec;
+    const nr: PRRecord = rec ? { ...rec } : { name: ex.name, bestWeight: null, bestE1RM: null, updatedAt: dateKey };
+    nr.name = ex.name;
+    let weightPR = false, e1rmPR = false;
+    let prevWeightVal: number | undefined, prevE1rmVal: number | undefined;
+    if (!nr.bestWeight || (topSet.weight as number) > nr.bestWeight.value) {
+      if (nr.bestWeight) { weightPR = true; prevWeightVal = nr.bestWeight.value; }
+      nr.bestWeight = { value: topSet.weight as number, reps: topSet.reps || 0, dateKey };
+    }
+    if (bestE1RM != null && (!nr.bestE1RM || bestE1RM > nr.bestE1RM.value)) {
+      if (nr.bestE1RM) { e1rmPR = true; prevE1rmVal = nr.bestE1RM.value; }
+      nr.bestE1RM = { value: bestE1RM, weight: topSet.weight as number, reps: topSet.reps || 0, dateKey };
+    }
+    nr.updatedAt = dateKey;
+    const nextPrs = { ...currentPrs, [key]: nr };
+    // First-ever log = silent baseline; no new best beaten = nothing to celebrate. Still bank the record.
+    if (isFirst || (!weightPR && !e1rmPR)) return { prs: nextPrs, hits: currentHits, newHit: null };
+    const hit = { name: ex.name, weightPR, e1rmPR, weightVal: nr.bestWeight?.value, weightReps: nr.bestWeight?.reps, e1rmVal: nr.bestE1RM?.value, prevWeightVal, prevE1rmVal, at: Date.now() };
+    const dayHits = { ...(currentHits[dateKey] || {}), [key]: hit };
+    return { prs: nextPrs, hits: { ...currentHits, [dateKey]: dayHits }, newHit: hit };
+  };
+
+  // Drop / refresh the Otto hub notification for a lift's PR (only for TODAY's workout, never a past
+  // edit). Records are 'stack' + category 'record' so the hub groups them ("You set N PRs today").
+  // Clear-then-add so a later, heavier same-day PR for the same lift updates the card in place.
+  const firePRNotification = async (hit: any) => {
+    try {
+      const sr = await AsyncStorage.getItem('pj_settings');
+      const mindful = sr ? JSON.parse(sr).styleMode === 'mindful' : false;
+      const parts: string[] = [];
+      if (hit.weightPR) parts.push(hit.prevWeightVal != null ? `${hit.weightVal} lb, up from ${hit.prevWeightVal}` : `${hit.weightVal} lb`);
+      if (hit.e1rmPR) parts.push(hit.prevE1rmVal != null ? `Est. 1RM ${hit.e1rmVal} lb, up from ${hit.prevE1rmVal}` : `Est. 1RM ${hit.e1rmVal} lb`);
+      const id = `pr_${activeDay}_${normalizeLiftName(hit.name)}`;
+      await clearNotification(id);
+      // Informational for now (no route). Piece B (the exercise-library PR home) will add the tap
+      // destination once it exists.
+      await addNotification({
+        id, lifecycle: 'stack', category: 'record',
+        title: mindful ? `New best: ${hit.name}` : `New PR: ${hit.name}`,
+        body: parts.join(' · '),
+        icon: 'trophy', iconColor: '#d4860a',
+      });
+    } catch {}
+  };
+
   const saveSetsForExercise = (exId: string, sets: SetEntry[]) => {
     clearFinished();
     const next = { ...setLogs, [activeDay]: { ...(setLogs[activeDay] || {}), [exId]: sets } };
@@ -888,7 +954,20 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
     const newChecks = changed ? { ...checks, [activeDay]: { ...dayChecksNow, [exId]: allDone } } : checks;
     if (changed) setChecks(newChecks);
     if (allDone && !dayChecksNow[exId] && activeDay === todayKey) cancelActivityNotification();
-    saveState(newChecks, cardioComplete, programs, workoutNotes, cardioLogs, weeklyTemplate, activeProgramName, workoutNoteNames, next);
+    // Bank PRs off this exercise's checked+weighted sets right now, so they survive without ever
+    // opening the summary. Only fire Otto for TODAY (a past-day edit banks silently).
+    const ex = (exercises as any[]).find(e => e.id === exId);
+    const banked = bankPRFromSets(ex, sets, prs, prHitsByDay, activeDay);
+    let nextPrs = prs, nextHits = prHitsByDay;
+    if (banked) {
+      nextPrs = banked.prs; nextHits = banked.hits;
+      setPrs(nextPrs);
+      if (banked.newHit) {
+        setPrHitsByDay(nextHits);
+        if (activeDay === todayKey) firePRNotification(banked.newHit);
+      }
+    }
+    saveState(newChecks, cardioComplete, programs, workoutNotes, cardioLogs, weeklyTemplate, activeProgramName, workoutNoteNames, next, nextPrs, exerciseDoneAt, workoutTimers, nextHits);
   };
 
   // Big per-exercise checkmark on a LIFT marks every set done / undone at once (filling empties
@@ -1088,7 +1167,9 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
     let mindful = false;
     try { const sr = await AsyncStorage.getItem('pj_settings'); mindful = sr ? JSON.parse(sr).styleMode === 'mindful' : false; } catch {}
     const summary = {
-      totalVolume, doneSets, doneExercises, prHits, mindful,
+      // PRs now bank as each set is checked (see bankPRFromSets), so the recap reads the RECORDED
+      // day-hits rather than re-detecting (which would find nothing, since the bests are already banked).
+      totalVolume, doneSets, doneExercises, prHits: Object.values(prHitsByDay[activeDay] || {}), mindful,
       hasLifts: doneSets > 0,
       liftDurationSec,
       liftCalories, liftAvgHr, liftMaxHr, liftItems,

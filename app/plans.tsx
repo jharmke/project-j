@@ -36,6 +36,7 @@ import { useTutorialTarget } from '../hooks/useTutorialTarget';
 const GOLD_RGB = '212,134,10';
 
 type Tab = 'reading' | 'devotionals';
+type SortMode = 'featured' | 'short' | 'az';
 
 export default function PlansScreen() {
   const { theme, themeId } = useTheme();
@@ -47,6 +48,7 @@ export default function PlansScreen() {
   const [planStore, setPlanStore] = useState<ReadingPlansStorage>({});
   const [devStore, setDevStore] = useState<DevotionalsStorage>({});
   const [loading, setLoading] = useState(true);
+  const [sortMode, setSortMode] = useState<SortMode>('featured'); // sorts the browse lists only
   const scrollRef = useRef<ScrollView>(null);
   const { registerScrollView, unregisterScrollView } = useTutorial();
   const segmentRef = useTutorialTarget('faith_plans_segment');
@@ -72,6 +74,13 @@ export default function PlansScreen() {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     setTab(t);
   };
+
+  // Both tabs share one ScrollView, so switching would otherwise carry the other tab's scroll
+  // position (scroll Reading to the bottom, tap Devotionals, it opens at the bottom). Reset to the
+  // top whenever the tab changes so each opens fresh. Fires after the new tab's content commits.
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [tab]);
 
   // ── Reading plan actions ────────────────────────────────────────────────────
   const openReadingPlan = (planId: string) => {
@@ -169,6 +178,16 @@ export default function PlansScreen() {
   const plansAtLimit = activePlans.length >= MAX_ACTIVE_PLANS;
   const devsAtLimit = activeDevs.length >= MAX_ACTIVE_DEVOTIONALS;
 
+  // Sort the BROWSE lists only (in-progress items stay in their own order). 'featured' keeps the
+  // curated data order; 'short' is shortest-first (good for "I want a quick one"); 'az' by title.
+  const sortBrowse = <T extends { name: string; totalDays: number }>(items: T[]): T[] => {
+    if (sortMode === 'short') return [...items].sort((a, b) => a.totalDays - b.totalDays);
+    if (sortMode === 'az') return [...items].sort((a, b) => a.name.localeCompare(b.name));
+    return items;
+  };
+  const browsePlans = sortBrowse(availablePlans);
+  const browseDevs = sortBrowse(availableDevs);
+
   return (
     <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={{ flex: 1, paddingTop: insets.top }}>
 
@@ -242,12 +261,13 @@ export default function PlansScreen() {
               <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>
                 {activePlans.length > 0 ? 'MORE PLANS' : 'CHOOSE A PLAN'}
               </Text>
+              {availablePlans.length > 1 && <SortControl theme={theme} mode={sortMode} onChange={setSortMode} />}
               {plansAtLimit && (
                 <Text style={[styles.capNote, { color: theme.textMuted }]}>
                   Max {MAX_ACTIVE_PLANS} active plans. Drop one to add another.
                 </Text>
               )}
-              {availablePlans.map((plan, i) => (
+              {browsePlans.map((plan, i) => (
                 <View key={plan.id} ref={i === 0 ? planCardRef : undefined} collapsable={false}>
                   <PlanRow
                     theme={theme}
@@ -296,12 +316,13 @@ export default function PlansScreen() {
                   <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>
                     {activeDevs.length > 0 ? 'MORE DEVOTIONALS' : 'CHOOSE A DEVOTIONAL'}
                   </Text>
+                  {availableDevs.length > 1 && <SortControl theme={theme} mode={sortMode} onChange={setSortMode} />}
                   {devsAtLimit && (
                     <Text style={[styles.capNote, { color: theme.textMuted }]}>
                       Max {MAX_ACTIVE_DEVOTIONALS} active devotionals. Drop one to add another.
                     </Text>
                   )}
-                  {availableDevs.map(dev => (
+                  {browseDevs.map(dev => (
                     <PlanRow
                       key={dev.id}
                       theme={theme}
@@ -330,6 +351,38 @@ export default function PlansScreen() {
         </ScrollView>
       )}
     </LinearGradient>
+  );
+}
+
+// Compact sort control for the browse lists. Three chips (Featured keeps the curated order, Shortest
+// by length, A-Z by title); the active one carries the faith gold. Shown only when a list has more
+// than one item to sort.
+function SortControl({ theme, mode, onChange }: { theme: Theme; mode: SortMode; onChange: (m: SortMode) => void }) {
+  const opts: { key: SortMode; label: string }[] = [
+    { key: 'featured', label: 'Featured' },
+    { key: 'short',    label: 'Shortest' },
+    { key: 'az',       label: 'A-Z' },
+  ];
+  return (
+    <View style={styles.sortRow}>
+      {opts.map(o => {
+        const on = mode === o.key;
+        return (
+          <TouchableOpacity
+            key={o.key}
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); onChange(o.key); }}
+            activeOpacity={0.8}
+            hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+            style={[styles.sortChip, {
+              borderColor: on ? `rgba(${GOLD_RGB},0.5)` : theme.borderCard,
+              backgroundColor: on ? `rgba(${GOLD_RGB},0.14)` : 'transparent',
+            }]}
+          >
+            <Text style={[styles.sortChipText, { color: on ? theme.accentAmber : theme.textMuted }]}>{o.label}</Text>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
   );
 }
 
@@ -459,6 +512,9 @@ const styles = StyleSheet.create({
   intro:        { fontSize: 14, fontFamily: 'DMSans_500Medium', lineHeight: 20, marginTop: 8, marginBottom: 16 },
   sectionLabel: { fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', marginBottom: 10, marginTop: 8, marginLeft: 2 },
   capNote:      { fontSize: 12, fontFamily: 'DMSans_500Medium', fontStyle: 'italic', marginBottom: 10, marginLeft: 2 },
+  sortRow:      { flexDirection: 'row', gap: 6, marginBottom: 12, marginTop: 2 },
+  sortChip:     { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 14, borderWidth: 1, minHeight: 32, justifyContent: 'center' },
+  sortChipText: { fontSize: 12, fontFamily: 'DMSans_600SemiBold', letterSpacing: 0.3 },
   card:         { borderRadius: 14, borderWidth: 0.5, borderTopWidth: 2.5, padding: 16, marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.24, shadowRadius: 11, elevation: 5 },
   cardTop:      { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 },
   iconBadge:    { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },

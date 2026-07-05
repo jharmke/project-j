@@ -95,7 +95,9 @@ export default function AssistantFAB({ onPress, bottom = 18, lift = 0, suppresse
           accessibilityRole="button"
           accessibilityLabel="Open Otto, the wellness and app assistant"
         >
-          <View style={[styles.disc, { backgroundColor: accent, shadowColor: glowColor }]}>
+          {/* borderColor = page background: an invisible "moat" over the page, but a visible ring the
+              moment the FAB sits over a same-accent button behind it, so the two never merge. */}
+          <View style={[styles.disc, { backgroundColor: accent, shadowColor: glowColor, borderWidth: 3, borderColor: theme.bgPrimary }]}>
             <Ionicons name="sparkles" size={24} color="#ffffff" />
           </View>
         </Pressable>

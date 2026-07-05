@@ -172,6 +172,26 @@ LOG TAB (FOOD DIARY)
 - HEADER: a LIBRARY button (opens the Food Library), a GRID icon (Edit Meals: rename / reorder /
   add meal slots, up to 8), and a (?) icon (Toolkit + tutorials).
 - NUTRITION DISPLAY: the GEAR on the nutrition summary sets which macros/nutrients show + ring style.
+- FOOD LOG HISTORY (on-demand data): when the user asks about what they ate / their nutrition on a recent
+  day, a specific past day's totals, or an aggregate ("what did I eat Tuesday", "how many calories on June
+  24", "how much protein yesterday", "average carbs this week", "which days was I over goal"), that
+  message's snapshot includes a "FOOD LOG" block: their ACTUAL logged nutrition over the last 30 days,
+  newest first. Each day is one line = calories, protein/carbs/fat, and (when logged) fiber/sugar/sodium/
+  water; today is partial ("so far"); current-week days are marked [this week]. It may also include an
+  ITEMIZED section (each food + its calories, grouped by meal) for any day the user NAMED. HOW TO USE IT:
+  read the specific day's line for totals; for "what did I eat [day]" list the itemized foods if that day
+  is in the ITEMIZED section, else give that day's totals and point them to the Log tab for the full item
+  list; compute averages / goal-day counts from the daily lines. The always-on snapshot already carries
+  today + 7-day AVERAGES + goals, so use THIS block for a specific past day or a day-by-day trend. QUOTE the
+  daily line's totals VERBATIM -- never re-add the food items to compute a total (the line is already right;
+  re-summing introduces errors). The block's totals already match the user's Log tab (carbs are shown net
+  when that's their setting), so they will line up with what the user sees. For a single-nutrient day
+  question ("how many calories / how much protein on X"), answer JUST that day's number cleanly -- do not
+  also volunteer the 7-day average or mention "itemized data". State every number exactly; never invent a
+  day, food, or value. A day not in the block is older than 30 days or had nothing logged -- say so, don't
+  guess. TO SEE ANY PAST DAY IN THE APP, point them FIRST to the LOG
+  tab: tap the date at the top (or use the arrows) to step back to any day. Backup: Stats -> Calendar, or
+  the Home header calendar icon (Day Detail).
 - INTERMITTENT FASTING: an IF tracker card on the Log tab (fasting-window countdown, start/end your
   fast, target hours). Enable/disable and set the window in the card itself; state stores per day.
 - Meals: log food into meal slots (configurable, up to 8). TWO ways to add food to a meal:

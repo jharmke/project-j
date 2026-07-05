@@ -22,6 +22,27 @@ const fmtDate = (dk: string) => {
   catch { return dk; }
 };
 
+// Generic DAY-RECALL detector, SHARED across on-demand datasets. Fires on a broad past-day question with
+// NO explicit dimension word ("what did I do on June 24 / yesterday / Monday / the 24th / this week"). It's
+// really a whole-day ask, so every dataset (workouts, food, sleep, ...) hooks into it: each attaches its
+// own slice, and Otto answers what it has + points to the Calendar for the rest. Errs toward attaching --
+// a false positive is a few tokens; a false negative is Otto claiming it can't see a day it actually can.
+export const isDayRecall = (text: string): boolean => {
+  const t = (text || '').toLowerCase();
+  const dayRef = /\b(yesterday|today|tonight|last night|this morning|monday|tuesday|wednesday|thursday|friday|saturday|sunday|weekend)\b/.test(t)
+    || /\b(this|last|past)\s+(week|weekend|month)\b/.test(t)
+    || /\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s*\d{0,2}\b/.test(t)
+    || /\b\d{1,2}(?:st|nd|rd|th)\b/.test(t)
+    || /\b\d{1,2}\/\d{1,2}\b/.test(t);
+  if (!dayRef) return false;
+  // Full phrasing ("what did I do on June 24"), a verb-less conversational follow-up ("what about July 2",
+  // "how about Monday", "and July 3?"), or a short / bare date reference ("July 2?"). Follow-ups carry the
+  // intent from the prior turn but drop the verb, so requiring one silently dropped them.
+  const followUpLead = /\b(what about|how about|whatabout|and (?:on\s+)?|about|what'?s|how'?s|hows|show me|tell me about)\b/.test(t);
+  const shortMsg = t.trim().split(/\s+/).length <= 5;
+  return (/\bwhat\b/.test(t) && /\b(did|do|done|was|were|happen)\b/.test(t)) || followUpLead || shortMsg;
+};
+
 // Coarse, GENEROUS intent check: does this message look like it's asking about recent workouts / training
 // days / set counts? Errs toward including (a false positive just wastes a few tokens on that message).
 export const messageWantsRecentWorkouts = (text: string): boolean => {
@@ -37,29 +58,8 @@ export const messageWantsRecentWorkouts = (text: string): boolean => {
   // a weekday reference paired with an activity word
   if (/\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/.test(t)
       && /\b(workout|train|did|do|gym|lift|cardio|run|walk|exercise)\b/.test(t)) return true;
-  // Generic DAY-RECALL: "what did I do on June 24 / yesterday / Monday / the 24th / this week" -- a broad
-  // past-day question with NO explicit workout word. It's really a whole-day ask (could mean food/sleep
-  // too), but we attach the workout block so Otto can answer the TRAINING part and point to the Calendar
-  // for the rest. This is the shared entry point future on-demand datasets (food, sleep, ...) will hook
-  // into to enrich the same answer. Errs toward attaching -- a false positive is a few tokens; a false
-  // negative is Otto claiming it has no data for a date it can actually see.
-  const dayRef = /\b(yesterday|today|tonight|last night|this morning|monday|tuesday|wednesday|thursday|friday|saturday|sunday|weekend)\b/.test(t)
-    || /\b(this|last|past)\s+(week|weekend|month)\b/.test(t)
-    || /\b(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s*\d{0,2}\b/.test(t)
-    || /\b\d{1,2}(?:st|nd|rd|th)\b/.test(t)
-    || /\b\d{1,2}\/\d{1,2}\b/.test(t);
-  // A day-recall fires on: the full phrasing ("what did I do on June 24"), a verb-less conversational
-  // follow-up ("what about July 2", "how about Monday", "and July 3?"), or a short / bare date reference
-  // ("July 2?"). Follow-ups carry the intent from the prior turn but drop the verb, so requiring one here
-  // silently dropped them (that's the "what about on July 2?" miss). Errs toward attaching: a false
-  // positive is a few tokens, a false negative is Otto claiming it can't see a day it actually can.
-  const followUpLead = /\b(what about|how about|whatabout|and (?:on\s+)?|about|what'?s|how'?s|hows|show me|tell me about)\b/.test(t);
-  const shortMsg = t.trim().split(/\s+/).length <= 5;
-  if (dayRef && (
-       (/\bwhat\b/.test(t) && /\b(did|do|done|was|were|happen)\b/.test(t))
-    || followUpLead
-    || shortMsg
-  )) return true;
+  // Shared whole-day recall ("what did I do on June 24") -> attach the training slice too.
+  if (isDayRecall(t)) return true;
   return false;
 };
 

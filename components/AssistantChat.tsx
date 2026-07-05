@@ -17,6 +17,7 @@ import { CRISIS_RESPONSE, screenForCrisis } from '../utils/faithCrisis';
 import { buildCompanionStats } from '../utils/companionStats';
 import { buildPRContextIfRelevant } from '../utils/companionPRs';
 import { buildWorkoutContextIfRelevant } from '../utils/companionWorkouts';
+import { buildFoodContextIfRelevant } from '../utils/companionFood';
 import { COMPANION_ROUTES, ROUTE_TRIGGERS } from '../utils/companionRoutes';
 import { TUTORIAL_TRIGGERS, TUTORIAL_ROUTE_OVERLAP } from '../utils/companionTutorials';
 import { useTutorial } from '../context/TutorialContext';
@@ -449,7 +450,8 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
       // out of the always-on snapshot so it costs nothing on unrelated messages). See utils/companionPRs.
       const prCtx = await buildPRContextIfRelevant(text);
       const woCtx = await buildWorkoutContextIfRelevant(text);
-      const extraCtx = [prCtx, woCtx].filter(Boolean).join('\n\n');
+      const foodCtx = await buildFoodContextIfRelevant(text);
+      const extraCtx = [prCtx, woCtx, foodCtx].filter(Boolean).join('\n\n');
       const dataSnapshot = extraCtx ? `${pack.snapshotText}\n\n${extraCtx}` : pack.snapshotText;
       const callable = httpsCallable(getFunctions(app), 'appCompanion');
       const res = await callable({ message: text, history, styleMode, faithTier, userContext, dataSnapshot });

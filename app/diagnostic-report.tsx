@@ -215,59 +215,68 @@ export default function DiagnosticReportScreen() {
         </TouchableOpacity>
 
         {/* Saved reports list */}
-        {savedReports.length > 0 && (
-          <View style={{ marginTop: 8 }}>
-            <Text style={[styles.sectionLabel, { color: t.textMuted }]}>SAVED REPORTS</Text>
-            {(showAllReports ? savedReports : savedReports.slice(0, VISIBLE_REPORTS)).map((r, idx) => {
-              const isCurrent = idx === 0; // most recent is the live one
-              return (
-                <TouchableOpacity
-                  key={r.id}
-                  activeOpacity={0.75}
-                  onPress={() => {
-                    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-                    router.push(`/diagnostic-report-view?id=${encodeURIComponent(r.id)}`);
-                  }}
-                  style={[styles.reportRow, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: isCurrent ? t.accentBlueRaw : t.borderCard, ...shadowStyle }]}
-                >
-                  <View style={{ flex: 1, gap: 4 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      {isCurrent && (
-                        <View style={{ backgroundColor: t.accentBlueBg, borderWidth: 1, borderColor: t.accentBlueBorder, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 }}>
-                          <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: t.accentBlueRaw }}>CURRENT</Text>
-                        </View>
-                      )}
-                      <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: t.textSecondary }}>
-                        Generated {fmtDateFull(localDateKey(r.generatedAt))}
-                      </Text>
-                    </View>
-                    <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: t.textMuted }}>
-                      {r.insufficientData ? 'Insufficient data' : `${r.minLoggedDays} days logged`}
+        {savedReports.length > 0 && (() => {
+          const renderReportRow = (r: DiagnosticReport, idx: number) => {
+            const isCurrent = idx === 0; // most recent is the live one
+            return (
+              <TouchableOpacity
+                key={r.id}
+                activeOpacity={0.75}
+                onPress={() => {
+                  triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+                  router.push(`/diagnostic-report-view?id=${encodeURIComponent(r.id)}`);
+                }}
+                style={[styles.reportRow, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: isCurrent ? t.accentBlueRaw : t.borderCard, ...shadowStyle }]}
+              >
+                <View style={{ flex: 1, gap: 4 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    {isCurrent && (
+                      <View style={{ backgroundColor: t.accentBlueBg, borderWidth: 1, borderColor: t.accentBlueBorder, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 }}>
+                        <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, color: t.accentBlueRaw }}>CURRENT</Text>
+                      </View>
+                    )}
+                    <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: t.textSecondary }}>
+                      Generated {fmtDateFull(localDateKey(r.generatedAt))}
                     </Text>
                   </View>
-                  <TouchableOpacity
-                    onPress={() => handleDelete(r)}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                    style={{ padding: 4 }}
-                  >
-                    <Ionicons name="trash-outline" size={16} color={t.statusBad} />
-                  </TouchableOpacity>
+                  <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: t.textMuted }}>
+                    {r.insufficientData ? 'Insufficient data' : `${r.minLoggedDays} days logged`}
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => handleDelete(r)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  style={{ padding: 4 }}
+                >
+                  <Ionicons name="trash-outline" size={16} color={t.statusBad} />
                 </TouchableOpacity>
-              );
-            })}
-            {savedReports.length > VISIBLE_REPORTS && (
-              <TouchableOpacity
-                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowAllReports(v => !v); }}
-                style={{ paddingVertical: 12, alignItems: 'center' }}
-                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-              >
-                <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: t.accentBlueRaw }}>
-                  {showAllReports ? 'Show less' : `Show ${savedReports.length - VISIBLE_REPORTS} older`}
-                </Text>
               </TouchableOpacity>
-            )}
-          </View>
-        )}
+            );
+          };
+          const olderCount = savedReports.length - VISIBLE_REPORTS;
+          return (
+            <View style={{ marginTop: 8 }}>
+              <Text style={[styles.sectionLabel, { color: t.textMuted }]}>SAVED REPORTS</Text>
+              {savedReports.slice(0, VISIBLE_REPORTS).map((r, idx) => renderReportRow(r, idx))}
+              {olderCount > 0 && (
+                <>
+                  {/* Dropdown row (styled like a report row) that reveals the older reports below it. */}
+                  <TouchableOpacity
+                    activeOpacity={0.75}
+                    onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowAllReports(v => !v); }}
+                    style={[styles.reportRow, { backgroundColor: t.bgCard, borderColor: t.borderCard, borderTopColor: t.borderCard, ...shadowStyle }]}
+                  >
+                    <Text style={{ flex: 1, fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: t.textSecondary }}>
+                      {showAllReports ? 'Hide older reports' : `${olderCount} older report${olderCount === 1 ? '' : 's'}`}
+                    </Text>
+                    <Ionicons name={showAllReports ? 'chevron-up' : 'chevron-down'} size={18} color={t.textMuted} />
+                  </TouchableOpacity>
+                  {showAllReports && savedReports.slice(VISIBLE_REPORTS).map((r, i) => renderReportRow(r, i + VISIBLE_REPORTS))}
+                </>
+              )}
+            </View>
+          );
+        })()}
 
         {/* Empty state when no reports and not blocked */}
         {savedReports.length === 0 && initialized && !blocked && (

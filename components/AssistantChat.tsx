@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  Alert, Animated, Keyboard, Linking, Modal, Platform, Pressable,
+  Alert, Animated, Easing, Keyboard, Linking, Modal, Platform, Pressable,
   ScrollView, Share, StyleSheet, Text, TextInput, View,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, runOnJS } from 'react-native-reanimated';
 import { GestureHandlerRootView, GestureDetector, Gesture } from 'react-native-gesture-handler';
@@ -226,23 +227,63 @@ function CrisisCard({ textPrimary, textSecondary, textDim, bgCard, bgInput, bord
 }
 
 // Three pulsing dots shown while the assistant is composing a reply.
-function TypingDots({ color }: { color: string }) {
-  const a = useRef(new Animated.Value(0.3)).current;
+// Otto's little identity chip, sits to the left of each of his messages (matches the header brand dot).
+const OTTO_AVATAR = 26;
+function OttoAvatar({ accent }: { accent: string }) {
+  return (
+    <View style={{ width: OTTO_AVATAR, height: OTTO_AVATAR, borderRadius: OTTO_AVATAR / 2, backgroundColor: accent, alignItems: 'center', justifyContent: 'center', marginTop: 1 }}>
+      <Ionicons name="sparkles" size={13} color="#ffffff" />
+    </View>
+  );
+}
+
+// Gentle mount animation for each message: fade + slide up as it lands.
+function MountFade({ children }: { children: any }) {
+  const v = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(a, { toValue: 1, duration: 500, useNativeDriver: true }),
-        Animated.timing(a, { toValue: 0.3, duration: 500, useNativeDriver: true }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
+    Animated.timing(v, { toValue: 1, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
   }, []);
   return (
-    <View style={[styles.bubble, styles.assistantBubble, { borderLeftColor: color }]}>
-      <Animated.View style={{ flexDirection: 'row', gap: 5, opacity: a, paddingVertical: 2 }}>
-        {[0, 1, 2].map(i => <View key={i} style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: color }} />)}
-      </Animated.View>
+    <Animated.View style={{ opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }] }}>
+      {children}
+    </Animated.View>
+  );
+}
+
+// Three dots that bounce in a STAGGERED wave (not in unison) so it clearly reads as "typing".
+function TypingDots({ accent }: { accent: string }) {
+  const d0 = useRef(new Animated.Value(0)).current;
+  const d1 = useRef(new Animated.Value(0)).current;
+  const d2 = useRef(new Animated.Value(0)).current;
+  const dots = [d0, d1, d2];
+  useEffect(() => {
+    const loops = dots.map((d, i) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(i * 160),
+          Animated.timing(d, { toValue: 1, duration: 300, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+          Animated.timing(d, { toValue: 0, duration: 300, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+          Animated.delay((2 - i) * 160),
+        ]),
+      ),
+    );
+    loops.forEach(l => l.start());
+    return () => loops.forEach(l => l.stop());
+  }, []);
+  return (
+    <View style={styles.ottoRow}>
+      <OttoAvatar accent={accent} />
+      <View style={[styles.bubble, styles.assistantBubble]}>
+        <View style={{ flexDirection: 'row', gap: 5, paddingVertical: 3, alignItems: 'center' }}>
+          {dots.map((d, i) => (
+            <Animated.View key={i} style={{
+              width: 6, height: 6, borderRadius: 3, backgroundColor: accent,
+              opacity: d.interpolate({ inputRange: [0, 1], outputRange: [0.35, 1] }),
+              transform: [{ translateY: d.interpolate({ inputRange: [0, 1], outputRange: [0, -4] }) }],
+            }} />
+          ))}
+        </View>
+      </View>
     </View>
   );
 }
@@ -543,6 +584,11 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
               { backgroundColor: theme.bgSheet, borderColor: theme.borderSheet, opacity: anim, transform: [{ scale: panelScale }] },
             ]}
           >
+          {/* Theme gradient behind the whole chat, matching every other screen in the app (the chat modal
+              was the one flat-white surface). Rendered at reduced opacity over the sheet base so it's a
+              gentle wash, not the full-strength page gradient (chat bubbles are subtle, so the bg carries
+              more weight here). Clipped by the panel's overflow:hidden rounded corners. */}
+          <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={[StyleSheet.absoluteFill, { opacity: 0.55 }]} pointerEvents="none" />
           <View style={{ flex: 1, paddingBottom: kb }}>
             <GestureDetector gesture={dragGesture}>
               <View>
@@ -602,23 +648,31 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
                 const body = <Text style={[styles.bubbleText, { color: theme.textPrimary }]}>{m.text}</Text>;
                 const isReply = m.role === 'assistant' && i > 0; // opening greeting gets no action row
                 if (!isReply) {
+                  if (m.role === 'user') {
+                    return (
+                      <MountFade key={i}>
+                        <View style={[styles.bubble, { alignSelf: 'flex-end', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
+                          {body}
+                        </View>
+                      </MountFade>
+                    );
+                  }
+                  // Otto greeting: avatar + bubble row.
                   return (
-                    <View
-                      key={i}
-                      style={[
-                        styles.bubble,
-                        m.role === 'user'
-                          ? { alignSelf: 'flex-end', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }
-                          : [styles.assistantBubble, { borderLeftColor: accent }],
-                      ]}
-                    >
-                      {body}
-                    </View>
+                    <MountFade key={i}>
+                      <View style={styles.ottoRow}>
+                        <OttoAvatar accent={accent} />
+                        <View style={[styles.bubble, styles.assistantBubble, { flexShrink: 1 }]}>{body}</View>
+                      </View>
+                    </MountFade>
                   );
                 }
                 return (
-                  <View key={i} style={styles.replyWrap}>
-                    <View style={[styles.bubble, styles.assistantBubble, styles.replyBubble, { borderLeftColor: accent }]}>{body}</View>
+                  <MountFade key={i}>
+                  <View style={styles.ottoRow}>
+                    <OttoAvatar accent={accent} />
+                    <View style={styles.replyCol}>
+                    <View style={[styles.bubble, styles.assistantBubble, styles.replyBubble]}>{body}</View>
                     {((m.routes && m.routes.length > 0) || (m.tutorials && m.tutorials.length > 0)) && (
                       <View style={styles.pillRow}>
                         {m.tutorials?.map(id => {
@@ -654,10 +708,12 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
                         <Ionicons name={m.feedback === 'down' ? 'thumbs-down' : 'thumbs-down-outline'} size={17} color={m.feedback === 'down' ? theme.textSecondary : theme.textMuted} />
                       </Pressable>
                     </View>
-                  </View>
+                    </View>
+                    </View>
+                  </MountFade>
                 );
               })}
-              {sending && <TypingDots color={accent} />}
+              {sending && <TypingDots accent={accent} />}
             </ScrollView>
 
             {showQuota && (
@@ -752,10 +808,10 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     backgroundColor: 'rgba(120,120,140,0.10)',
     borderColor: 'rgba(120,120,140,0.22)',
-    borderLeftWidth: 2.5,
   },
   bubbleText: { fontSize: 14, fontFamily: 'DMSans_400Regular', lineHeight: 20 },
-  replyWrap:   { alignSelf: 'flex-start', maxWidth: '86%', marginBottom: 10 },
+  ottoRow:     { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  replyCol:    { flexShrink: 1, marginBottom: 10 },
   replyBubble: { maxWidth: '100%', marginBottom: 0 },
   actionRow:   { flexDirection: 'row', alignItems: 'center', marginTop: 2, paddingLeft: 2 },
   actionBtn:   { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },

@@ -64,6 +64,24 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     ],
   },
   {
+    key: 'personal_records',
+    category: 'Fitness',
+    title: 'Personal Records',
+    body: 'A PR is a new best on a lift, tracked automatically from your logged sets the moment you check a qualifying set. Two things count as records: your heaviest set and your estimated 1-rep max. Records stay honest: if you uncheck, lower, or delete the set that earned one, it recalculates from your history and rolls back if it is no longer your best.',
+    definitions: [
+      { term: 'Heaviest set', explanation: 'The most weight you moved for a given number of reps. Beat your previous best on a lift and it sets a record. Shown as weight × reps, like 140 lb × 5.' },
+      { term: 'Estimated 1-rep max', explanation: 'The most you could lift for a single all-out rep, calculated from a set you actually did instead of maxing out directly. It is a reliable way to track strength: it can climb even when your top weight looks flat, because more reps at the same weight raises the estimate. Example: 140 lb × 5 works out to about 163 lb for one rep.' },
+    ],
+    example: {
+      label: 'Example',
+      lines: [
+        { desc: 'Heaviest set today', value: '140 lb × 5' },
+        { desc: 'Your previous best', value: '135 lb × 5' },
+      ],
+      result: { desc: 'Estimated 1-rep max', value: '≈ 163 lb' },
+    },
+  },
+  {
     key: 'day_score',
     tutorialId: 'day_score',
     category: 'Reports',

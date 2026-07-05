@@ -150,7 +150,17 @@ Stats is a stack of collapsible sections (not sub-tabs), in order:
   Sleep Stages, Resting HR, Respiratory Rate, Blood Oxygen, Recovery Score, HRV, VO2 Max, Cardio
   Recovery. Each card has its own period + chart type. (Watch-only metrics only appear for users who
   have that data.)
-- RECORDS: all-time bests / personal records.
+- RECORDS / PRs: a PR is a new best on a lift, tracked automatically from logged sets the moment a
+  qualifying set is checked (partial sessions count; no need to open View Summary). Two things count as
+  records: the HEAVIEST SET (most weight for a given rep count, shown as weight x reps like 140 lb x 5)
+  and the ESTIMATED 1-REP MAX (the most you could lift for one all-out rep, calculated from a set you
+  actually did via the Epley formula, weight x (1 + reps/30); e.g. 140 lb x 5 works out to about 163 lb).
+  Estimated 1-rep max can climb even when top-set weight looks flat, because more reps at the same weight
+  raise the estimate. It is the standard way lifters track strength without maxing out directly. PRs stay
+  HONEST: if you uncheck, lower, or delete the set that earned one, the lift's best is recomputed from
+  history and rolled back when it is no longer supported. A new PR fires a "New PR" card in Otto's hub
+  and a trophy in the workout recap. A brand-new lift's first session shows its top set as a PR (with no
+  "up from", since there is no prior best yet).
 - STREAKS: consistency streaks (workout, calories, protein, water, steps, active cals, exercise
   minutes, sleep, plus faith + journaling + custom/manual ones). Create / manage via the streak modals.
 - CHALLENGES: active challenge summary or "New Challenge" (opens the Challenges page / challenge

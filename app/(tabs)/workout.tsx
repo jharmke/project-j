@@ -29,6 +29,7 @@ import ExerciseSetRows from '../../components/ExerciseSetRows';
 import HRZoneModal, { HRZoneData } from '../../components/HRZoneModal';
 import { resolveMaxHR, zoneBounds, timeInZones, ageFromBirthday } from '../../utils/hrZones';
 import { recomputeLiftPR, normalizeLiftName } from '../../utils/liftPR';
+import TooltipIcon from '../../components/TooltipIcon';
 import { showToolkit } from '../../components/ToolkitSheet';
 import { useTutorial } from '../../context/TutorialContext';
 import { useTutorialTarget } from '../../hooks/useTutorialTarget';
@@ -893,21 +894,21 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
   // Drop / refresh the Otto hub notification for a lift's PR (only for TODAY's workout, never a past
   // edit). Records are 'stack' + category 'record' so the hub groups them ("You set N PRs today").
   // Clear-then-add so a later, heavier same-day PR for the same lift updates the card in place.
+  // Wording is identical across all coaching modes (PR = progress, shown to everyone). Each stat gets
+  // its own line (title + up to two body lines) so the card reads clean instead of one crammed string.
   const firePRNotification = async (hit: any) => {
     try {
-      const sr = await AsyncStorage.getItem('pj_settings');
-      const mindful = sr ? JSON.parse(sr).styleMode === 'mindful' : false;
       const parts: string[] = [];
-      if (hit.weightPR) parts.push(hit.prevWeightVal != null ? `${hit.weightVal} lb, up from ${hit.prevWeightVal}` : `${hit.weightVal} lb`);
-      if (hit.e1rmPR) parts.push(hit.prevE1rmVal != null ? `Est. 1RM ${hit.e1rmVal} lb, up from ${hit.prevE1rmVal}` : `Est. 1RM ${hit.e1rmVal} lb`);
+      if (hit.weightPR) parts.push(hit.prevWeightVal != null ? `${hit.weightVal} lb × ${hit.weightReps}, up from ${hit.prevWeightVal}` : `${hit.weightVal} lb × ${hit.weightReps}`);
+      if (hit.e1rmPR) parts.push(hit.prevE1rmVal != null ? `Est. 1-rep max ${hit.e1rmVal} lb, up from ${hit.prevE1rmVal}` : `Est. 1-rep max ${hit.e1rmVal} lb`);
       const id = `pr_${activeDay}_${normalizeLiftName(hit.name)}`;
       await clearNotification(id);
       // Informational for now (no route). Piece B (the exercise-library PR home) will add the tap
       // destination once it exists.
       await addNotification({
         id, lifecycle: 'stack', category: 'record',
-        title: mindful ? `New best: ${hit.name}` : `New PR: ${hit.name}`,
-        body: parts.join(' · '),
+        title: `New PR: ${hit.name}`,
+        body: parts.join('\n'),
         icon: 'trophy', iconColor: '#d4860a',
       });
     } catch {}
@@ -2393,23 +2394,22 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                     <View style={{ backgroundColor: theme.accentAmber + '14', borderWidth: 1, borderColor: theme.accentAmber + '40', borderRadius: 12, padding: 14, marginBottom: 16 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 10 }}>
                         <Ionicons name="trophy" size={16} color={theme.accentAmber} />
-                        <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.accentAmber }}>
-                          {fs.mindful
-                            ? `${fs.prHits.length} new best${fs.prHits.length !== 1 ? 's' : ''}`
-                            : `You set ${fs.prHits.length} PR${fs.prHits.length !== 1 ? 's' : ''} today`}
+                        <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.accentAmber, flex: 1 }}>
+                          {`You set ${fs.prHits.length} PR${fs.prHits.length !== 1 ? 's' : ''} today`}
                         </Text>
+                        <TooltipIcon tooltipKey="personal_records" hideTour color={theme.accentAmber} />
                       </View>
                       {fs.prHits.map((pr: any, i: number) => (
                         <View key={i} style={{ marginBottom: i < fs.prHits.length - 1 ? 10 : 0 }}>
                           <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: theme.textPrimary, marginBottom: 2 }}>{pr.name}</Text>
                           {pr.weightPR && (
                             <Text style={{ fontSize: 12, fontFamily: 'DMSans_500Medium', color: theme.textSecondary }}>
-                              {fs.mindful ? 'Heaviest set' : 'New top set'}: {pr.weightVal} × {pr.weightReps}
+                              New heaviest set: {pr.weightVal} lb × {pr.weightReps}
                             </Text>
                           )}
                           {pr.e1rmPR && (
                             <Text style={{ fontSize: 12, fontFamily: 'DMSans_500Medium', color: theme.textSecondary }}>
-                              {fs.mindful ? 'Best estimated max' : 'New est. 1RM'}: {pr.e1rmVal} lb
+                              New estimated 1-rep max: {pr.e1rmVal} lb
                             </Text>
                           )}
                         </View>

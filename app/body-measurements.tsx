@@ -252,7 +252,7 @@ export default function BodyMeasurementsScreen() {
         </ScrollView>
 
         {/* FAB */}
-        <Animated.View style={[styles.fab, { backgroundColor: accent, bottom: insets.bottom + 24, shadowColor: accent, transform: [{ scale: fabScale }] }]}>
+        <Animated.View style={[styles.fab, { backgroundColor: accent, bottom: insets.bottom + 24, shadowColor: accent, borderWidth: 3, borderColor: theme.bgPrimary, transform: [{ scale: fabScale }] }]}>
           <TouchableOpacity
             onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); router.push('/body-measurement-log'); }}
             onPressIn={() => Animated.timing(fabScale, { toValue: 0.9, duration: 90, useNativeDriver: true }).start()}

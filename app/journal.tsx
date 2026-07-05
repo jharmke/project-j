@@ -725,7 +725,7 @@ export default function JournalScreen() {
           onPressOut={fabPressOut}
           onPress={openCategorySheet}
           activeOpacity={0.99}
-          style={[styles.fabBtn, { backgroundColor: theme.accentBlueRaw }]}
+          style={[styles.fabBtn, { backgroundColor: theme.accentBlueRaw, borderWidth: 3, borderColor: theme.bgPrimary }]}
         >
           <Ionicons name="add" size={28} color="#ffffff" />
         </TouchableOpacity>

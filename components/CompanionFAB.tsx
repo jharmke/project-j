@@ -5,6 +5,7 @@ import * as Haptics from 'expo-haptics';
 import { triggerHaptic } from '@/utils/haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
+import { useTheme } from '../theme';
 
 // "Halo": the faith companion's floating button. Flat and iconographic: a gold disc
 // with a cross. Every few seconds it takes a subtle "breath" (a small scale swell) so it
@@ -25,6 +26,7 @@ const CX = DISC / 2;
 const GLOW = 84; // tight, faint glow
 
 export default function CompanionFAB({ onPress, bottom = 18, tutorialKey }: { onPress?: () => void; bottom?: number; tutorialKey?: string }) {
+  const { theme } = useTheme();
   const [visible, setVisible] = useState(false);
   const breath = useRef(new Animated.Value(0)).current;
   const press  = useRef(new Animated.Value(1)).current;
@@ -98,8 +100,12 @@ export default function CompanionFAB({ onPress, bottom = 18, tutorialKey }: { on
           accessibilityLabel="Open Halo, the faith companion"
         >
           <Svg width={DISC} height={DISC}>
-            <Circle cx={CX} cy={CX} r={DISC / 2 - 0.5} fill={GOLD} />
-            <Circle cx={CX} cy={CX} r={DISC / 2 - 1.5} stroke={GOLD_HI} strokeOpacity={0.45} strokeWidth={1} fill="none" />
+            <Circle cx={CX} cy={CX} r={DISC / 2} fill={GOLD} />
+            {/* Page-colored "moat" ring: the SVG equivalent of the other FABs' borderWidth:3 borderColor:
+                bgPrimary. Invisible over the page, but a visible separating ring the instant Halo overlaps a
+                same-gold/amber button behind it, so the two never merge. */}
+            <Circle cx={CX} cy={CX} r={DISC / 2 - 1.5} stroke={theme.bgPrimary} strokeWidth={3} fill="none" />
+            <Circle cx={CX} cy={CX} r={DISC / 2 - 4} stroke={GOLD_HI} strokeOpacity={0.45} strokeWidth={1} fill="none" />
             {/* Cross. */}
             <Rect x={CX - barW / 2} y={CX - 11} width={barW} height={22} rx={1.5} fill={CROSS} />
             <Rect x={CX - 7}        y={CX - 6}  width={14}   height={barW} rx={1.5} fill={CROSS} />

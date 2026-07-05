@@ -288,7 +288,7 @@ export default function PrayerScreen() {
             onPressIn={() => Animated.timing(fabScale, { toValue: 0.9, duration: 100, useNativeDriver: true }).start()}
             onPressOut={() => Animated.timing(fabScale, { toValue: 1, duration: 150, useNativeDriver: true }).start()}
             onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); setAddOpen(true); }}
-            style={[styles.fabBtn, { backgroundColor: GOLD }]}
+            style={[styles.fabBtn, { backgroundColor: GOLD, borderWidth: 3, borderColor: theme.bgPrimary }]}
           >
             <Ionicons name="add" size={28} color="#fff" />
           </TouchableOpacity>

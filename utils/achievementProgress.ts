@@ -12,6 +12,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { evaluateCalorieGoalHit, paceTargetFromWeightGoal } from './goalHit';
 import { buildDailyBmrMap } from './statsData';
+import { effectiveExerciseMinutes } from './exerciseMinutes';
 
 export async function loadProgressValues(): Promise<Record<string, number>> {
   const values: Record<string, number> = {};
@@ -25,9 +26,13 @@ export async function loadProgressValues(): Promise<Record<string, number>> {
 
     let waterDays      = 0;
     let stepDays       = 0;
+    let activeCalDays  = 0;
+    let exerciseMinDays = 0;
     let sleepAnyDays   = 0;
     let greenSleepDays = 0;
-    const stepGoal     = parsed.stepGoal  ? parseInt(parsed.stepGoal)   : 10000;
+    const stepGoal        = parsed.stepGoal        ? parseInt(parsed.stepGoal)        : 10000;
+    const activeCalGoal   = parsed.activeCalGoal   ? parseInt(parsed.activeCalGoal)   : 500;
+    const exerciseMinsGoal = parsed.exerciseMinsGoal ? parseInt(parsed.exerciseMinsGoal) : 30;
     const sleepGoalNum = parsed.sleepGoal ? parseFloat(parsed.sleepGoal) : 7;
     const FEEL_BONUS: Record<number, number> = { 1: 0, 2: 10, 3: 20, 4: 30, 5: 40 };
 
@@ -43,6 +48,13 @@ export async function loadProgressValues(): Promise<Record<string, number>> {
           const dayWaterGoal = day.waterGoal ? parseInt(day.waterGoal) : profileWaterGoal;
           if ((day.water ?? 0) >= dayWaterGoal) waterDays++;
           if ((day.steps ?? 0) >= stepGoal)    stepDays++;
+          // Active-calorie + exercise-minute goal days -- same thresholds the Home screen uses to fire the
+          // daily-goal celebration, so the Daily Goals card can show an accurate recount instead of its
+          // lossy live tally. Active cals fall back to caloriesBurned (matches statsData); exercise minutes
+          // blend Apple Health + manual timer via effectiveExerciseMinutes.
+          const activeCals = day.activeCalories ?? day.caloriesBurned ?? 0;
+          if (activeCalGoal > 0 && activeCals >= activeCalGoal) activeCalDays++;
+          if (exerciseMinsGoal > 0 && effectiveExerciseMinutes(day) >= exerciseMinsGoal) exerciseMinDays++;
           const sleepHrs = day.sleepOverride ?? day.sleepHours ?? null;
           if (sleepHrs && sleepHrs > 0) {
             sleepAnyDays++;
@@ -64,8 +76,10 @@ export async function loadProgressValues(): Promise<Record<string, number>> {
       } catch { /* skip */ }
     }
 
-    values['waterGoalDays']  = waterDays;
-    values['stepGoalDays']   = stepDays;
+    values['waterGoalDays']       = waterDays;
+    values['stepGoalDays']        = stepDays;
+    values['activeCalGoalDays']   = activeCalDays;
+    values['exerciseMinsGoalDays'] = exerciseMinDays;
     values['sleepAnyDays']   = sleepAnyDays;
     values['greenSleepDays'] = greenSleepDays;
 

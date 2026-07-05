@@ -482,11 +482,15 @@ function DailyGoalHexBadge({ color, icon, size = 56 }: { color: string; icon: st
   );
 }
 
-function DailyGoalCard({ def, counts }: { def: DailyGoalDef; counts: DailyGoalCounts }) {
+// Which loadProgressValues recount key backs each daily goal's COUNT. The count comes from the historical
+// day-scan (same source as the badge progress bars + Otto), NOT the lossy pj_goal_hit_counts tally, which
+// misses backfilled/edited days. The tally is still used for the "Last earned" DATE only.
+const GOAL_RECOUNT_KEY: Record<DailyGoalId, string> = {
+  water: 'waterGoalDays', steps: 'stepGoalDays', activeCals: 'activeCalGoalDays', exerciseMins: 'exerciseMinsGoalDays',
+};
+
+function DailyGoalCard({ def, count, lastEarned }: { def: DailyGoalDef; count: number; lastEarned: string }) {
   const { theme } = useTheme();
-  const entry      = counts[def.id];
-  const count      = entry?.count ?? 0;
-  const lastEarned = entry?.lastEarned ?? '';
   // LOCAL date (must match the writer in achievementData.ts localGoalDateKey) so "Last: Today"
   // lines up with the day the user actually earned it, not the UTC calendar day.
   const ld = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -807,7 +811,7 @@ export default function AchievementsScreen() {
                 <View key={rowIdx} style={{ flexDirection: 'row', gap: 10 }}>
                   {pair.map(def => (
                     <View key={def.id} style={{ flex: 1 }}>
-                      <DailyGoalCard def={def} counts={goalCounts} />
+                      <DailyGoalCard def={def} count={progress[GOAL_RECOUNT_KEY[def.id]] ?? 0} lastEarned={goalCounts[def.id]?.lastEarned ?? ''} />
                     </View>
                   ))}
                   {pair.length === 1 && <View style={{ flex: 1 }} />}

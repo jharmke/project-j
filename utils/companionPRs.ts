@@ -57,11 +57,39 @@ export const buildPRContextIfRelevant = async (message: string): Promise<string 
     return `- ${p.name}: ${parts.join('; ')}${dateKey ? ` (set ${fmtDate(dateKey)})` : ''}`;
   });
 
+  // The full set of REAL exercise names for THIS user, so Otto can tell a real lift with no PR yet
+  // ("Cable Press") from a made-up one ("Push Button") instead of implying it exists. Unioned live from
+  // every source so nothing is missed: the Library catalog, everything scheduled/logged in their programs
+  // + weekly template (catches routine "quick add" customs that never hit the Library), and their PRs.
+  let libraryNames: string[] = [];
+  try {
+    const rawLib = await AsyncStorage.getItem('pj_exercise_library');
+    const lib = rawLib ? JSON.parse(rawLib) : [];
+    if (Array.isArray(lib)) libraryNames = lib.map((e: any) => e?.name).filter((n: any): n is string => typeof n === 'string' && !!n.trim());
+  } catch {}
+  const scheduledNames: string[] = [];
+  for (const map of [programs, template]) {
+    for (const day of Object.values(map || {})) {
+      for (const ex of ((day as any)?.exercises || [])) {
+        if (ex?.name && typeof ex.name === 'string' && ex.name.trim()) scheduledNames.push(ex.name);
+      }
+    }
+  }
+  const known = Array.from(new Set([...libraryNames, ...scheduledNames, ...backed.map(p => p.name)]));
+
   return [
     "LIFT PRs (the user's all-time personal records, from their own logged workouts). State these EXACTLY",
     "as given; never round or invent a number. Estimated 1-rep max is calculated from a real set (Epley).",
     ...lines,
-    "If the user asks about a lift that is NOT in this list, tell them you don't see a logged PR for it yet",
-    "and point them to the PR home (Exercise Library, the PRs button). Never guess a value.",
+    "",
+    "REAL EXERCISES FOR THIS USER (their full library plus everything they have logged or scheduled; this",
+    "is the complete list of exercises that actually exist for them):",
+    known.join(', '),
+    "",
+    "How to answer:",
+    "- Exercise is in the LIFT PRs list -> give its exact numbers, matching the user's wording to the right lift.",
+    "- Exercise is in the library list but NOT in the PRs list -> they have not logged a PR for it yet; point them to the PR home (Exercise Library, PRs button).",
+    "- Exercise is NOT in the library list at all -> tell them you don't recognize it as an exercise in their library. Do NOT imply it exists or that they might have logged it, and do NOT tell them to go check the library for it.",
+    "Never guess or invent a value.",
   ].join('\n');
 };

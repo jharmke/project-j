@@ -20,6 +20,7 @@ import { buildWorkoutContextIfRelevant } from '../utils/companionWorkouts';
 import { buildFoodContextIfRelevant } from '../utils/companionFood';
 import { buildSleepContextIfRelevant } from '../utils/companionSleep';
 import { buildBodyContextIfRelevant } from '../utils/companionBody';
+import { buildAchievementsContextIfRelevant } from '../utils/companionAchievements';
 import { COMPANION_ROUTES, ROUTE_TRIGGERS } from '../utils/companionRoutes';
 import { TUTORIAL_TRIGGERS, TUTORIAL_ROUTE_OVERLAP } from '../utils/companionTutorials';
 import { useTutorial } from '../context/TutorialContext';
@@ -88,6 +89,18 @@ function substituteStats(text: string, valueMap: Record<string, string>): string
       .catch(() => {});
   }
   return cleaned;
+}
+
+// Otto is instructed (system prompt) to reply in PLAIN TEXT, but Haiku occasionally emits markdown anyway
+// (**bold**, `code`). The chat renders a plain Text node, so those characters show up raw. Strip them out
+// rather than trust the model 100%. Conservative: unwrap **bold**/`code`, then drop any stray asterisks.
+function stripInlineFormatting(text: string): string {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\*/g, '')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
 }
 
 type Role = 'user' | 'assistant' | 'system' | 'crisis';
@@ -455,7 +468,8 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
       const foodCtx = await buildFoodContextIfRelevant(text);
       const sleepCtx = await buildSleepContextIfRelevant(text);
       const bodyCtx = await buildBodyContextIfRelevant(text);
-      const extraCtx = [prCtx, woCtx, foodCtx, sleepCtx, bodyCtx].filter(Boolean).join('\n\n');
+      const achCtx = await buildAchievementsContextIfRelevant(text);
+      const extraCtx = [prCtx, woCtx, foodCtx, sleepCtx, bodyCtx, achCtx].filter(Boolean).join('\n\n');
       const dataSnapshot = extraCtx ? `${pack.snapshotText}\n\n${extraCtx}` : pack.snapshotText;
       const callable = httpsCallable(getFunctions(app), 'appCompanion');
       const res = await callable({ message: text, history, styleMode, faithTier, userContext, dataSnapshot });
@@ -474,7 +488,7 @@ export default function AssistantChat({ visible, onClose }: { visible: boolean; 
         // Substitute [[stat:key]] tokens with the exact values from the pack we sent (so any personal
         // number is the app's own number), then pull out [[route:key]] tokens into tappable pills.
         const { text: finalText, routes, tutorials } = substituteRoutes(substituteStats(data.reply!, pack.valueMap), text);
-        setMessages(prev => [...prev, { role: 'assistant', text: finalText, routes, tutorials }]);
+        setMessages(prev => [...prev, { role: 'assistant', text: stripInlineFormatting(finalText), routes, tutorials }]);
       } else if (data.message) {
         setSending(false);
         setMessages(prev => [...prev, { role: 'system', text: data.message! }]);

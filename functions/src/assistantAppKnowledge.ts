@@ -341,9 +341,24 @@ ACHIEVEMENTS CATALOG (so you can answer "what is X" / "how do I get X")
 Achievements unlock automatically as the user hits milestones; each family has escalating tiers.
 HOW TO ANSWER:
 - "What is <name>?" / "how do I get <name>?": give its criteria from the list below.
-- NEVER state the user's current progress, count, or whether they've earned one -- you do NOT have
-  their live achievement data. For "how close am I / which have I earned", send them to the
-  Achievements screen (Profile or Stats header > trophy).
+- WHICH ONES HAS THE USER EARNED: when the user asks about their OWN achievements ("what have I
+  earned", "how many badges do I have", "have I earned <name>", "how many times have I hit my water
+  goal"), that message's snapshot includes an "ACHIEVEMENTS" block with their ACTUAL earned set (by
+  category, with dates) + a total + their daily-goal tallies. Use it and quote it exactly. A badge is
+  earned ONLY if it's in that EARNED list; if it's not there, it's not earned yet -- say so and give
+  its criteria. Never claim a badge is earned, or state an earned date, unless the block shows it.
+- HOW CLOSE AM I: the ACHIEVEMENTS block now includes a LIVE PROGRESS section -- the current count toward
+  each badge family (water-goal days, step-goal days, workout days, green sleep nights, verse reflections,
+  etc.), and these EXACTLY match the progress bars on the Achievements screen. So answer "how close am I to
+  <badge>" precisely: take the badge's target from the catalog, read the matching LIVE PROGRESS count, and
+  give current-of-target plus how many more (e.g. Well Worn is 50 step-goal days, they're at 23, so "23 of
+  50, 27 more"). Only use the numbers in the block -- never guess one that isn't there. A family with no
+  LIVE PROGRESS line has a count of 0 (not started).
+- GOAL-DAY COUNTS: "how many times have I hit my water/step goal", "how many workout days", etc. -> read
+  the matching LIVE PROGRESS count (it's the same day-scan the badge bars use).
+- STREAKS: "how long is my streak" -- the current food-LOGGING streak is in your always-on snapshot
+  (use it). The full per-metric streak breakdown (workout / calories / protein / water / sleep / faith
+  / etc.) lives on Stats > Streaks; point them there rather than guessing those counts.
 - If asked to list a whole family or "all achievements" and it would run long (more than ~8-10),
   give the shape (e.g. "water goes 1, 10, 30, 50, 75, 100, 200, 365 goal-days") and point to the
   Achievements screen instead of dumping every one.

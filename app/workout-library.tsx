@@ -14,7 +14,8 @@ import { ToastRenderer, useToast } from '../components/Toast';
 import { showAchievementToast } from '../components/AchievementToast';
 import { showCelebration } from '../components/CelebrationOverlay';
 import { checkWorkoutAchievements, getCelebTier } from '../achievementData';
-import { PRESET_PROGRAMS, PRESET_ROUTINES, PresetProgram, DayProgram, Exercise, Routine, TAG_COLOR_PALETTE, WorkoutTag, DEFAULT_TAGS } from '../workoutData';
+import { PRESET_PROGRAMS, PRESET_ROUTINES, PresetProgram, DayProgram, Exercise, Routine, TAG_COLOR_PALETTE, WorkoutTag, DEFAULT_TAGS, PRRecord, SetEntry } from '../workoutData';
+import { normalizeLiftName, liftSessionHistory } from '../utils/liftPR';
 import { useTheme } from '../theme';
 import MuscleMap from '../components/MuscleMap';
 import { useTutorial } from '../context/TutorialContext';
@@ -1903,7 +1904,7 @@ export default function WorkoutLibraryScreen() {
   const myRoutinesChevron = useRef(new Animated.Value(1)).current;
   const presetsChevron = useRef(new Animated.Value(1)).current;
 
-  const { selectMode, day, tutorialTab } = useLocalSearchParams<{ selectMode: string; day: string; tutorialTab: string }>();
+  const { selectMode, day, tutorialTab, openPRs } = useLocalSearchParams<{ selectMode: string; day: string; tutorialTab: string; openPRs: string }>();
   const isSelectMode = selectMode === 'true';
   // Programs/Routines tours deep-link straight to the right tab.
   useEffect(() => {
@@ -1936,6 +1937,81 @@ export default function WorkoutLibraryScreen() {
   const detailCardScale = useSharedValue(0.92);
   const detailOverlayStyle = useAnimatedStyle(() => ({ opacity: detailOverlay.value }));
   const detailCardStyle = useAnimatedStyle(() => ({ transform: [{ scale: detailCardScale.value }], opacity: detailCardOpacity.value }));
+
+  // ── PR home: records + per-lift history (data from pj_workout_state) ──────────
+  const [prs, setPrs] = useState<Record<string, PRRecord>>({});
+  const [wSetLogs, setWSetLogs] = useState<Record<string, Record<string, SetEntry[]>>>({});
+  const [wPrograms, setWPrograms] = useState<Record<string, DayProgram>>({});
+  const [wTemplate, setWTemplate] = useState<Record<string, DayProgram>>({});
+  const [showAllPRs, setShowAllPRs] = useState(false);
+  const [prSort, setPrSort] = useState<'recent' | 'az' | 'za'>('recent');
+  const allPRsOverlay = useSharedValue(0);
+  const allPRsScale = useSharedValue(0.92);
+  const allPRsOpacity = useSharedValue(1);
+  const allPRsOverlayStyle = useAnimatedStyle(() => ({ opacity: allPRsOverlay.value }));
+  const allPRsCardStyle = useAnimatedStyle(() => ({ transform: [{ scale: allPRsScale.value }], opacity: allPRsOpacity.value }));
+  const loadWorkoutState = useCallback(async () => {
+    try {
+      const raw = await AsyncStorage.getItem('pj_workout_state');
+      const st = raw ? JSON.parse(raw) : {};
+      setPrs(st.prs || {});
+      setWSetLogs(st.setLogs || {});
+      setWPrograms(st.programs || {});
+      setWTemplate(st.weeklyTemplate || {});
+    } catch {}
+  }, []);
+  useFocusEffect(useCallback(() => { loadWorkoutState(); }, [loadWorkoutState]));
+  const PR_WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const prResolveDay = useCallback(
+    (dk: string) => (wPrograms[dk] || wTemplate[PR_WEEKDAY[new Date(dk + 'T12:00:00').getDay()]])?.exercises || [],
+    [wPrograms, wTemplate],
+  );
+  const fmtPRDate = (dk: string) => { try { return new Date(dk + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); } catch { return dk; } };
+  const openAllPRs = () => {
+    loadWorkoutState();
+    setPrSort('recent');
+    allPRsOverlay.value = 0; allPRsScale.value = 0.92; allPRsOpacity.value = 1;
+    setShowAllPRs(true);
+    allPRsOverlay.value = withTiming(1, { duration: 180 });
+    allPRsScale.value = withSpring(1, { damping: 24, stiffness: 320, overshootClamping: true });
+  };
+  const closeAllPRs = (onDone?: () => void) => {
+    allPRsOverlay.value = withTiming(0, { duration: 160 });
+    allPRsScale.value = withTiming(0.88, { duration: 160 });
+    allPRsOpacity.value = withTiming(0, { duration: 160 }, (finished) => {
+      if (finished) { runOnJS(setShowAllPRs)(false); if (onDone) runOnJS(onDone)(); }
+    });
+  };
+  // Jump from an All-PRs card into that lift's detail modal (match by normalized name).
+  const openLiftDetailByName = (name: string) => {
+    const ex = library.find(e => normalizeLiftName(e.name) === normalizeLiftName(name));
+    if (!ex) { showToast('Not in library', 'This lift is no longer in your Exercise Library.', 'error'); return; }
+    closeAllPRs(() => {
+      setSelectedEx(ex);
+      detailOverlay.value = 0; detailCardScale.value = 0.92; detailCardOpacity.value = 1;
+      setShowDetailModal(true);
+      detailOverlay.value = withTiming(1, { duration: 180 });
+      detailCardScale.value = withSpring(1, { damping: 24, stiffness: 320, overshootClamping: true });
+    });
+  };
+  // Deep-link from the Otto "New PR" card: open the All-PRs modal once on arrival.
+  const prDeepLinkHandled = useRef(false);
+  useEffect(() => {
+    if (openPRs === 'true' && !prDeepLinkHandled.current) {
+      prDeepLinkHandled.current = true;
+      const t = setTimeout(() => openAllPRs(), 300);
+      return () => clearTimeout(t);
+    }
+  }, [openPRs]);
+
+  // The sorted PR list for the All-PRs modal.
+  const prList = Object.values(prs)
+    .filter(p => p && (p.bestWeight || p.bestE1RM))
+    .sort((a, b) => {
+      if (prSort === 'az') return a.name.localeCompare(b.name);
+      if (prSort === 'za') return b.name.localeCompare(a.name);
+      return (b.updatedAt || '').localeCompare(a.updatedAt || ''); // recent
+    });
   const fabScale = useRef(new Animated.Value(1)).current;
   const fabItem1Anim = useRef(new Animated.Value(0)).current; // Create Exercise - bottom, first
   const fabItem2Anim = useRef(new Animated.Value(0)).current; // Create Program - middle
@@ -2504,7 +2580,17 @@ export default function WorkoutLibraryScreen() {
           </View>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{isSelectMode ? `Add to ${fmtLibraryDay(day)}` : 'Exercise Library'}</Text>
-        <View style={{ width: 60 }} />
+        {isSelectMode ? (
+          <View style={{ width: 60 }} />
+        ) : (
+          <TouchableOpacity
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openAllPRs(); }}
+            style={{ width: 60, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="trophy" size={15} color={theme.accentAmber} />
+            <Text style={{ color: theme.accentAmber, fontSize: 14, fontFamily: 'DMSans_600SemiBold' }}>PRs</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <View ref={libSearchRef} collapsable={false} style={styles.searchRow}>
@@ -2928,6 +3014,57 @@ export default function WorkoutLibraryScreen() {
                 </View>
               ) : null}
 
+              {selectedEx.type !== 'cardio' && (() => {
+                const pr = prs[normalizeLiftName(selectedEx.name)];
+                const history = liftSessionHistory(selectedEx.name, wSetLogs, prResolveDay);
+                const hasPR = !!(pr && (pr.bestWeight || pr.bestE1RM));
+                return (
+                  <View style={{ marginBottom: 16 }}>
+                    <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 10 }}>RECORDS & HISTORY</Text>
+                    {hasPR ? (
+                      <View style={{ backgroundColor: theme.accentAmber + '14', borderWidth: 1, borderColor: theme.accentAmber + '33', borderRadius: 12, padding: 12, marginBottom: history.length ? 14 : 0 }}>
+                        {pr.bestWeight && (
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: pr.bestE1RM ? 8 : 0 }}>
+                            <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium' }}>Heaviest set</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                              <Text style={{ color: theme.textSecondary, fontSize: 14, fontFamily: 'DMSans_700Bold' }}>{pr.bestWeight.value} lb × {pr.bestWeight.reps}</Text>
+                              <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_500Medium' }}>{fmtPRDate(pr.bestWeight.dateKey)}</Text>
+                            </View>
+                          </View>
+                        )}
+                        {pr.bestE1RM && (
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium' }}>Est. 1-rep max</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                              <Text style={{ color: theme.textSecondary, fontSize: 14, fontFamily: 'DMSans_700Bold' }}>{pr.bestE1RM.value} lb</Text>
+                              <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_500Medium' }}>{fmtPRDate(pr.bestE1RM.dateKey)}</Text>
+                            </View>
+                          </View>
+                        )}
+                      </View>
+                    ) : (
+                      <View style={{ alignItems: 'center', paddingVertical: 16, marginBottom: 4 }}>
+                        <Ionicons name="trophy-outline" size={22} color={theme.textDim} />
+                        <Text style={{ color: theme.textMuted, fontSize: 13, fontFamily: 'DMSans_600SemiBold', marginTop: 6 }}>No records yet</Text>
+                        <Text style={{ color: theme.textDim, fontSize: 12, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>Log a weighted set to start tracking.</Text>
+                      </View>
+                    )}
+                    {history.length > 0 && (
+                      <>
+                        <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 4 }}>HISTORY</Text>
+                        {history.slice(0, 12).map((h, i) => (
+                          <View key={h.dateKey} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 7, borderTopWidth: i === 0 ? 0 : 0.5, borderTopColor: theme.borderCard }}>
+                            <Text style={{ color: theme.textSecondary, fontSize: 13, fontFamily: 'DMSans_500Medium' }}>{fmtPRDate(h.dateKey)}</Text>
+                            <Text style={{ color: theme.textSecondary, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>{h.topWeight} lb × {h.topReps}</Text>
+                          </View>
+                        ))}
+                        {history.length > 12 && <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular', marginTop: 8, textAlign: 'center' }}>Showing your last 12 sessions</Text>}
+                      </>
+                    )}
+                  </View>
+                );
+              })()}
+
               <TouchableOpacity
                 style={{ backgroundColor: theme.accentBlue, borderRadius: 8, padding: 12, alignItems: 'center', marginBottom: 8 }}
                 onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); setShowDayPicker(true); }}>
@@ -3017,6 +3154,75 @@ export default function WorkoutLibraryScreen() {
             </View>
             </Reanimated.View>
           ) : null}
+        </Reanimated.View>
+      </Modal>
+
+      <Modal visible={showAllPRs} transparent animationType="none" onRequestClose={() => closeAllPRs()}>
+        <ToastRenderer />
+        <Reanimated.View style={[{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center' }, allPRsOverlayStyle]}>
+          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => closeAllPRs()} />
+          <Reanimated.View style={[{ width: '90%' }, allPRsCardStyle]}>
+            <View style={{ backgroundColor: theme.bgSheet, borderRadius: 14, width: '100%', borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, overflow: 'hidden' }}>
+              <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeAllPRs(); }} style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 6 }}>
+                <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
+              </TouchableOpacity>
+              <View style={{ paddingHorizontal: 20, paddingBottom: 12 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: prList.length ? 12 : 0 }}>
+                  <Ionicons name="trophy" size={18} color={theme.accentAmber} />
+                  <Text style={{ fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, color: theme.accentAmber }}>ALL PRs</Text>
+                </View>
+                {prList.length > 0 && (
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    {(([['recent', 'Recent'], ['az', 'A-Z'], ['za', 'Z-A']]) as [typeof prSort, string][]).map(([key, label]) => {
+                      const active = prSort === key;
+                      return (
+                        <TouchableOpacity key={key} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setPrSort(key); }}
+                          style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, backgroundColor: active ? theme.accentBlueBg : theme.bgInset, borderColor: active ? theme.accentBlueBorder : theme.borderCard }}>
+                          <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: active ? theme.accentBlue : theme.textMuted }}>{label}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                )}
+              </View>
+              {prList.length > 0 ? (
+                <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} style={{ maxHeight: Dimensions.get('window').height * 0.6 }} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}>
+                  {prList.map(p => {
+                    const dateKey = p.bestWeight?.dateKey || p.bestE1RM?.dateKey || p.updatedAt;
+                    return (
+                      <TouchableOpacity key={p.name} activeOpacity={0.7}
+                        onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openLiftDetailByName(p.name); }}
+                        style={{ backgroundColor: theme.bgInset, borderRadius: 12, borderWidth: 0.5, borderColor: theme.borderCard, padding: 14, marginBottom: 10 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                          <Text style={{ flex: 1, color: theme.textSecondary, fontSize: 15, fontFamily: 'DMSans_700Bold' }} numberOfLines={1}>{p.name}</Text>
+                          <Ionicons name="trophy" size={15} color={theme.accentAmber} />
+                        </View>
+                        {p.bestWeight && (
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: p.bestE1RM ? 4 : 0 }}>
+                            <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium' }}>Heaviest set</Text>
+                            <Text style={{ color: theme.textSecondary, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>{p.bestWeight.value} lb × {p.bestWeight.reps}</Text>
+                          </View>
+                        )}
+                        {p.bestE1RM && (
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                            <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium' }}>Est. 1-rep max</Text>
+                            <Text style={{ color: theme.textSecondary, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>{p.bestE1RM.value} lb</Text>
+                          </View>
+                        )}
+                        {dateKey ? <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_500Medium', marginTop: 8 }}>Set {fmtPRDate(dateKey)}</Text> : null}
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              ) : (
+                <View style={{ alignItems: 'center', paddingHorizontal: 20, paddingBottom: 28, paddingTop: 8 }}>
+                  <Ionicons name="trophy-outline" size={30} color={theme.textDim} />
+                  <Text style={{ color: theme.textMuted, fontSize: 15, fontFamily: 'DMSans_600SemiBold', marginTop: 10 }}>No PRs yet</Text>
+                  <Text style={{ color: theme.textDim, fontSize: 13, fontFamily: 'DMSans_400Regular', marginTop: 4, textAlign: 'center' }}>Log a weighted set in a workout and check it off to set your first record.</Text>
+                </View>
+              )}
+            </View>
+          </Reanimated.View>
         </Reanimated.View>
       </Modal>
 

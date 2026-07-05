@@ -903,13 +903,12 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
       if (hit.e1rmPR) parts.push(hit.prevE1rmVal != null ? `Est. 1-rep max ${hit.e1rmVal} lb, up from ${hit.prevE1rmVal}` : `Est. 1-rep max ${hit.e1rmVal} lb`);
       const id = `pr_${activeDay}_${normalizeLiftName(hit.name)}`;
       await clearNotification(id);
-      // Informational for now (no route). Piece B (the exercise-library PR home) will add the tap
-      // destination once it exists.
       await addNotification({
         id, lifecycle: 'stack', category: 'record',
         title: `New PR: ${hit.name}`,
         body: parts.join('\n'),
         icon: 'trophy', iconColor: '#d4860a',
+        route: { pathname: '/workout-library', params: { openPRs: 'true' } }, // taps into the PR home (All PRs)
       });
     } catch {}
   };

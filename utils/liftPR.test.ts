@@ -1,7 +1,7 @@
 // Unit tests for the lift PR engine (utils/liftPR.ts). Pure logic, no React/RN.
 // Run: compile with tsc to a temp dir and `node` the output.
 // Covers the revoke bug fix + the "up from" honesty fix + the protected floor (deleted program).
-import { recomputeLiftPR, ResolveDay, PRMap, SetLogs } from './liftPR';
+import { recomputeLiftPR, liftSessionHistory, ResolveDay, PRMap, SetLogs } from './liftPR';
 
 // Node global (no @types/node in this project); erased at compile time, real at runtime.
 declare const process: { exit(code: number): void };
@@ -108,6 +108,26 @@ console.log('\nlift PR engine\n');
   const prog = resolver({ [TODAY]: [{ id: 'b1', name: BENCH }] });
   const r = recomputeLiftPR(BENCH, { [TODAY]: { b1: [set(150, 5)] } }, prog, prs, {}, TODAY, NOW);
   check('isolation: squat record untouched by a bench recompute', r.prs['barbell squat']?.bestWeight?.value === 185, r.prs['barbell squat']?.bestWeight?.value);
+}
+
+// ── 8. Session history (PR home): newest-first, one row per logged day, with that day's top set ──────
+{
+  const prog = resolver({
+    '2026-06-21': [{ id: 'a', name: BENCH }],
+    '2026-06-28': [{ id: 'b', name: BENCH }],
+    [TODAY]: [{ id: 'c', name: BENCH }],
+  });
+  const logs: SetLogs = {
+    '2026-06-21': { a: [set(40, 8), set(40, 6)] },
+    '2026-06-28': { b: [set(45, 5), set(45, 5, false)] }, // unchecked set ignored
+    [TODAY]: { c: [set(50, 5), set(48, 6)] },
+  };
+  const hist = liftSessionHistory(BENCH, logs, prog);
+  check('history: one row per logged day', hist.length === 3, hist.length);
+  check('history: newest first', hist[0].dateKey === TODAY && hist[2].dateKey === '2026-06-21', hist.map(h => h.dateKey));
+  check('history: top set per day (heaviest)', hist[0].topWeight === 50 && hist[0].topReps === 5, { w: hist[0].topWeight, r: hist[0].topReps });
+  check('history: unchecked sets excluded', hist[1].topWeight === 45 && hist[1].topReps === 5, hist[1]);
+  check('history: est-1RM computed per day', hist[0].e1rm !== null && hist[0].e1rm >= 55, hist[0].e1rm);
 }
 
 console.log(`\n${failed === 0 ? '✅ ALL PASS' : '❌ FAILURES'} — ${passed} passed, ${failed} failed`);

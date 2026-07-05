@@ -78,6 +78,41 @@ export const dayHasLoggedLift = (target: string, dateKey: string, logs: SetLogs,
   return false;
 };
 
+// One past session for a lift: the day's top (heaviest) done+weighted set, plus that day's best est.
+// 1RM. Used by the PR home's per-lift "History" list. Sorted newest-first by the caller.
+export interface LiftSession {
+  dateKey: string;
+  topWeight: number;
+  topReps: number;
+  e1rm: number | null;
+}
+
+// Every day this lift was logged (done + weighted), newest first, with that day's heaviest set.
+export const liftSessionHistory = (name: string, logs: SetLogs, resolveDay: ResolveDay): LiftSession[] => {
+  const target = normalizeLiftName(name);
+  if (!target) return [];
+  const out: LiftSession[] = [];
+  for (const d of Object.keys(logs)) {
+    const dayLogs = logs[d];
+    if (!dayLogs) continue;
+    let top: { w: number; r: number } | null = null;
+    let bestE: number | null = null;
+    for (const ex of resolveDay(d)) {
+      if (normalizeLiftName(ex.name) !== target) continue;
+      const sets = dayLogs[ex.id];
+      if (!sets) continue;
+      for (const s of sets) {
+        const w = s.weight || 0, r = s.reps || 0;
+        if (!s.done || w <= 0 || r <= 0) continue;
+        if (!top || w > top.w || (w === top.w && r > top.r)) top = { w, r };
+        if (r <= 12) { const e = Math.round(epley(w, r)); if (bestE === null || e > bestE) bestE = e; }
+      }
+    }
+    if (top) out.push({ dateKey: d, topWeight: top.w, topReps: top.r, e1rm: bestE });
+  }
+  return out.sort((a, b) => (a.dateKey < b.dateKey ? 1 : a.dateKey > b.dateKey ? -1 : 0));
+};
+
 export interface RecomputeResult {
   prs: PRMap;      // updated all-time records (the lift's entry may be raised, lowered, or dropped)
   hits: HitMap;    // updated prHitsByDay (judgeDay's entry may be set or revoked)

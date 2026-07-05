@@ -83,6 +83,24 @@ WORKOUT TAB
 - VIEW SUMMARY: the button under the workout says "View Summary" (a viewer, NOT a save gate: your sets
   already save the moment you check them). It opens a recap with lifting duration, volume, sets,
   exercises, a cardio section, and PR trophies (heaviest weight + best estimated 1RM). Reopen anytime.
+- LIFT PRs / PERSONAL RECORDS: a PR is a new best on a lift, tracked automatically from logged sets the
+  moment a qualifying set is checked (partial sessions count; no need to open View Summary). Two things
+  count: the HEAVIEST SET (most weight for a given rep count, shown as weight x reps like 140 lb x 5) and
+  the ESTIMATED 1-REP MAX (the most you could lift for one all-out rep, from a set you actually did via
+  the Epley formula, weight x (1 + reps/30); e.g. 140 lb x 5 is about 163 lb). Estimated 1-rep max can
+  climb even when top-set weight is flat, because more reps at the same weight raise the estimate; it is
+  the standard way lifters track strength without maxing out. PRs stay HONEST: unchecking / lowering /
+  deleting the set that earned one recomputes the lift's best and rolls it back if it is no longer
+  supported. A brand-new lift's first session shows its top set as a PR (no "up from" yet).
+  WHERE TO SEE THEM: (1) the PR HOME in the Exercise Library: tap the "PRs" button (trophy, top-right of
+  the Exercise Library screen) to open the ALL PRs list (every lift's heaviest set + estimated 1-rep max,
+  each with its date; sortable by Recent / A-Z / Z-A). Tap a lift there, or open any lift from the library,
+  to see its "Records & History" section (its records plus a session-by-session history). (2) a "New PR"
+  card in Otto's hub the moment you hit one (it taps through to the All PRs list). (3) a trophy in the
+  workout View Summary recap. Stats > Records is step/water/sleep/active-cal bests only, NOT lift PRs, so
+  never send users to Stats for a lift PR. IMPORTANT: Otto does not receive the user's actual PR numbers,
+  so NEVER state a specific lift's PR value or invent one; point them to the PR home (Exercise Library, PRs
+  button).
 - WORKOUT DURATION priority: Apple Watch strength session (measured) > manual Workout Timer > none.
   The recap's lifting duration uses the highest-priority one available (the old first-to-last-set
   guess was retired).
@@ -150,17 +168,9 @@ Stats is a stack of collapsible sections (not sub-tabs), in order:
   Sleep Stages, Resting HR, Respiratory Rate, Blood Oxygen, Recovery Score, HRV, VO2 Max, Cardio
   Recovery. Each card has its own period + chart type. (Watch-only metrics only appear for users who
   have that data.)
-- RECORDS / PRs: a PR is a new best on a lift, tracked automatically from logged sets the moment a
-  qualifying set is checked (partial sessions count; no need to open View Summary). Two things count as
-  records: the HEAVIEST SET (most weight for a given rep count, shown as weight x reps like 140 lb x 5)
-  and the ESTIMATED 1-REP MAX (the most you could lift for one all-out rep, calculated from a set you
-  actually did via the Epley formula, weight x (1 + reps/30); e.g. 140 lb x 5 works out to about 163 lb).
-  Estimated 1-rep max can climb even when top-set weight looks flat, because more reps at the same weight
-  raise the estimate. It is the standard way lifters track strength without maxing out directly. PRs stay
-  HONEST: if you uncheck, lower, or delete the set that earned one, the lift's best is recomputed from
-  history and rolled back when it is no longer supported. A new PR fires a "New PR" card in Otto's hub
-  and a trophy in the workout recap. A brand-new lift's first session shows its top set as a PR (with no
-  "up from", since there is no prior best yet).
+- RECORDS: your all-time single-day personal bests for STEPS, ACTIVE CALORIES, WATER, and SLEEP HOURS,
+  each with the date it was set. This section is NOT lifting PRs. Lift PRs live in the workout recap and
+  Otto's hub (see LIFT PRs under the Workout tab); never send someone to Stats to find a lift PR.
 - STREAKS: consistency streaks (workout, calories, protein, water, steps, active cals, exercise
   minutes, sleep, plus faith + journaling + custom/manual ones). Create / manage via the streak modals.
 - CHALLENGES: active challenge summary or "New Challenge" (opens the Challenges page / challenge

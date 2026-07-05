@@ -31,14 +31,21 @@
 
 ---
 
-## 🏋️ PR / RECORDS WORK (Piece A + revoke + wording/explainer shipped; these are the open follow-ups)
-- [ ] FAB contrast/border (GLOBAL design flaw): FABs (Otto's Halo/Assistant FABs, the Workout tab's Add Exercise + Load Routine FABs) are the SAME accent color as accent buttons behind them (e.g. the blue "View Summary" bar), so they visually MERGE when hovering over them on any tab. Give every FAB a distinct treatment -- a thin light border/ring or stronger separating shadow -- so it always reads as a floating button and never blends into an accent surface. Still accent-colored, just separated. Justin flagged this hard.
-- [RESOLVED 2026-07-04] Debut-session PRs: DECIDED to show them. A brand-new lift's debut ramp (135->155->185) surfaces ONE card ending at the top set with NO "up from" (there's no real prior). Grouping already prevents spam, and Justin confirmed the top set should show. Can suppress pure-debut cards in ~2 lines later if it ever feels off.
-- [ ] Otto PR data: Otto's chat snapshot (utils/companionStats.ts) does NOT include the user's actual PR numbers, so Otto can explain what a PR is but can't answer "what's MY bench PR" (it points to the PR home instead). Add the user's top PRs (heaviest set + est 1-rep max per lift) to the snapshotText + valueMap so Otto can state real values. KB already guards against inventing numbers until this lands.
-- [ ] Summaries producer (Otto hub): when a fresh weekly/monthly summary generates, drop a 'summary_ready' hub notification that deep-links to it. Justin confirmed he wants this.
+## ⏭️ NEXT UP (THE single ranked work queue -- READ THIS TOP-DOWN whenever Justin asks "what's next")
+Ranking IS the priority: [NOW] items are committed, do them first. Below them: active tracks, then QUICK
+WINS. Items graduate UP here from the backlog sections so good ideas don't rot down there. When something
+ships it leaves this list. Always offer at least one QUICK WIN when Justin asks what's next, and pull a
+stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
+are separate pre-submission checklists, NOT part of this menu.
 
-## 🔜 NOW (do before next TestFlight test-group submission)
-- [ ] [NOW] REAL VOICE DICTATION in the AI meal estimator. The mic icon (ai-meal-estimator.tsx ~583) currently only focuses the text field + fires a "Voice input is coming soon" toast. True one-tap speech-to-text needs a NATIVE speech-recognition module (@react-native-voice/voice or expo speech-recognition) + a NEW BUILD. Build it and swap the toast for real dictation, OR if punting, hide the mic before submitting so there's no half-feature.
+- [ ] [NOW] Otto PR data (Justin: do this FIRST): Otto's chat snapshot (utils/companionStats.ts) does NOT include the user's actual PR numbers, so Otto can't answer "what's MY bench PR" (it points to the PR home instead). Add the user's top PRs (heaviest set + est 1-rep max per lift) to snapshotText + valueMap so Otto can state real values. KB already guards against inventing numbers until this lands.
+- [ ] [NOW] Faith tab aesthetic: Bible & Plans / Gratitude / Prayer cards drop the cream/tan background wash -> theme.bgCard. Keep every OTHER amber element (top border, icons, buttons, streak hero, prayer boxes, entry box, watermark, verse ref). Today's Message card untouched. Small, isolated, no dependencies.
+- [ ] [NOW] REAL VOICE DICTATION in the AI meal estimator (do before next TestFlight test-group submission): mic (ai-meal-estimator.tsx ~583) only focuses the field + a "coming soon" toast. Needs a native speech-recognition module (@react-native-voice/voice or expo-speech-recognition) + a NEW BUILD. Build it, OR hide the mic before submitting so there's no half-feature.
+- [ ] FAB contrast/border (GLOBAL): FABs (Otto/Halo, Workout tab Add Exercise + Load Routine) are the same accent color as accent buttons behind them and MERGE when over them. Give every FAB a ring/border or stronger separating shadow. Still accent-colored, just separated. Justin flagged hard.
+- [ ] Summaries producer (Otto hub): when a fresh weekly/monthly summary generates, drop a 'summary_ready' hub notification that deep-links to it.
+- [ ] Bedtime "Worth watching" logic: status is computed on the FULL bedtime stdev (>60 min -> isGood false, sleep.tsx:789) while the modal shows a TRIMMED 10th-90th percentile range that reads tighter -> looks contradictory; a single late night trips it. Decide the fix (align status to the displayed range / raise threshold / require 2+ off-nights / surface the stdev). Discussion first.
+- [ ] Faith features audit (discussion-only): sweep Plans, Bible reader, devotionals, journal for cards that may want the same amber/bg treatment as the Faith tab pass. No changes agreed yet.
+- [ ] QUICK WINS (small, grab-when-convenient): notification modal solo (non-stacked) cards get shadows · animate Otto chat bubbles for some life · EvR saved-reports history list getting long -> consolidate/collapse/archive · Day Summaries grouped by week is 9 weeks and growing -> after N weeks group Month -> Week (open to other ideas).
 
 ---
 

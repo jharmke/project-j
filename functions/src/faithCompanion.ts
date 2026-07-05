@@ -93,6 +93,7 @@ export const faithCompanion = onCall(
       message?: unknown;
       tier?: unknown;
       history?: unknown;
+      catalog?: unknown;
     };
     const message = typeof data.message === 'string' ? data.message.trim() : '';
     if (!message) {
@@ -100,6 +101,10 @@ export const faithCompanion = onCall(
     }
     // Default to the gentler Exploring posture if unspecified (never presume belief).
     const tier: FaithTier = data.tier === 'rooted' ? 'rooted' : 'exploring';
+    // Live catalog of reading plans + devotionals, built and sent by the client from the app's own
+    // data so it never drifts. Client-provided, so cap the length as a safety bound. Absent on older
+    // clients, in which case buildSystemPrompt just omits the recommend rules (unchanged behavior).
+    const catalog = typeof data.catalog === 'string' ? data.catalog.slice(0, 6000) : '';
 
     // 2. Server-side crisis re-screen (backstop). Short-circuit before counting or calling AI.
     if (screenForCrisis(message)) {
@@ -162,7 +167,7 @@ export const faithCompanion = onCall(
         system: [
           {
             type: 'text',
-            text: buildSystemPrompt(tier),
+            text: buildSystemPrompt(tier, catalog),
             cache_control: { type: 'ephemeral' }, // caches when the prefix clears the model threshold
           },
         ],

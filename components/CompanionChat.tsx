@@ -21,6 +21,8 @@ import {
   type VerifyResult, type VerifyStatus, type VerseRef,
 } from '../utils/faithVerse';
 import { fetchChapter } from '../data/bible-web';
+import { READING_PLANS } from '../data/readingPlans';
+import { DEVOTIONALS } from '../data/devotionals';
 import { ToastRenderer, useToast } from './Toast';
 import { useTheme } from '../theme';
 
@@ -57,6 +59,26 @@ const openerFor = (ctx?: { ref: string; note?: string } | null): string =>
 // The date is the server's UTC day, so a stale cache self-expires at the daily reset.
 const QUOTA_KEY = 'pj_halo_quota';
 const utcDay = () => new Date().toISOString().slice(0, 10);
+
+// Compact catalog of the app's reading plans + devotionals, built from the LIVE data so it never
+// drifts: add content to the data files and Halo sees it automatically (no hand-maintained list).
+// Built once at module load (the data is static) and sent with every message, so Halo can both
+// discuss them when asked AND offer one when it genuinely fits (her system prompt tells her to do the
+// latter sparingly, engage-first). Kept compact: title, length, one-line description, and the group
+// tag when it differs from the title (e.g. the "Need a Word Right Now" set).
+function buildFaithCatalog(): string {
+  const plans = READING_PLANS
+    .map(p => `- ${p.name} (${p.totalDays}-day reading plan): ${p.description}`)
+    .join('\n');
+  const devos = DEVOTIONALS
+    .map(d => {
+      const grp = d.category && d.category !== d.name ? ` (part of the "${d.category}" set)` : '';
+      return `- ${d.name} (${d.totalDays}-day devotional): ${d.description}${grp}`;
+    })
+    .join('\n');
+  return `READING PLANS (schedules to read through Scripture in the Bible reader):\n${plans}\n\nDEVOTIONALS (short guided readings with a written reflection and a question, talked through with Halo):\n${devos}`;
+}
+const FAITH_CATALOG = buildFaithCatalog();
 
 type Role = 'user' | 'halo' | 'system' | 'crisis';
 // A Halo reply renders as segments so VERIFIED Scripture references become tappable links
@@ -487,7 +509,7 @@ export default function CompanionChat({
 
     try {
       const callable = httpsCallable(getFunctions(app), 'faithCompanion');
-      const res = await callable({ message: outbound, tier, history });
+      const res = await callable({ message: outbound, tier, history, catalog: FAITH_CATALOG });
       const data = (res.data ?? {}) as { ok?: boolean; reply?: string; crisis?: boolean; reason?: string; message?: string; used?: number; cap?: number };
 
       // Track today's usage for the counter. Present on a real reply and on the daily-limit

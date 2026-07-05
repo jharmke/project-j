@@ -152,6 +152,9 @@ export default function NotificationPanel({
       onPress={() => tapItem(n)}
       style={({ pressed }) => [
         styles.card,
+        // Solo (top-level) cards float with the same shadow the collapsed group cards use; nested cards
+        // inside an expanded group stay flat so the group doesn't read as a pile of floating tiles.
+        !opts.nested && styles.cardShadow,
         {
           backgroundColor: theme.bgInput, borderColor: theme.borderCard,
           borderLeftWidth: n.read ? 0.5 : 3, borderLeftColor: n.read ? theme.borderCard : theme.accentBlue,

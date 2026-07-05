@@ -2395,6 +2395,9 @@ export default function SettingsScreen() {
               await addNotification({ id: `dev_goal_a_${now}`, lifecycle: 'stack', category: 'daily_goal', title: 'Active Cal Goal met', body: "You've hit this 8 times.", icon: 'flame', iconColor: '#f97316' });
               // A single record + a Type-A TDEE suggestion (replaces itself on repeat taps).
               await addNotification({ id: `dev_record_${now}`, lifecycle: 'stack', category: 'record', title: 'New PR: Bench Press', body: '185 lb, up from 175.', icon: 'trophy', iconColor: '#d4860a' });
+              // A summary-ready notification (solo card -> tests the summary producer's look + deep-link).
+              const devWs = (() => { const d = new Date(now); d.setDate(d.getDate() - 7); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; })();
+              await addNotification({ id: `dev_summary_${now}`, lifecycle: 'stack', category: 'summary_ready', title: 'Your weekly summary is ready', body: 'Last week is wrapped up. Tap to see how it went.', icon: 'calendar', iconColor: '#3b82f6', route: { pathname: '/weekly-summary', params: { weekStart: devWs } } });
               await addNotification({ id: 'tdee_suggestion', lifecycle: 'replace', category: 'tdee_suggestion', title: 'Your target may need a bump', body: 'Your recent trend points to about 2,150 kcal. Tap to review.', icon: 'trending-up', iconColor: '#3b82f6' });
               Alert.alert('Added', 'Sample notifications dropped into the Otto hub (open Otto, tap the bell). Achievements + Daily Goals will each show as a grouped stack.');
             }}>

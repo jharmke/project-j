@@ -5,6 +5,7 @@
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageSet } from './storage';
+import { addNotification } from './notifications';
 import { DayScore } from './dayScore';
 import { loadCalorieTargets } from './calorieTarget';
 import { CAL_MAX, PROTEIN_MAX, WATER_MAX } from './dayScore';
@@ -482,7 +483,21 @@ export async function checkAndGenerateWeeklySummary(): Promise<void> {
     const weekStart = getLastClosedWeekStart();
     const existing = await loadWeeklySummary(weekStart);
     if (!existing) {
-      await generateWeeklySummary(weekStart);
+      const created = await generateWeeklySummary(weekStart);
+      // Drop an Otto-hub notification only when a summary was actually produced (an empty week returns
+      // null), deep-linking to it. Stable id per week so it can never double-add.
+      if (created) {
+        await addNotification({
+          id: `summary_ready_weekly_${weekStart}`,
+          lifecycle: 'stack',
+          category: 'summary_ready',
+          title: 'Your weekly summary is ready',
+          body: 'Last week is wrapped up. Tap to see how it went.',
+          icon: 'calendar',
+          iconColor: '#3b82f6',
+          route: { pathname: '/weekly-summary', params: { weekStart } },
+        });
+      }
     }
 
     await storageSet(WEEKLY_GATE_KEY, todayKey);

@@ -1034,6 +1034,16 @@ export default function StatsScreen() {
     setExpandedWeeks(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
+  // Once the Day Summaries list gets long, weeks collapse under Month headers (newest month open by
+  // default, older ones collapsed). Below the threshold it stays a flat week list.
+  const MONTH_GROUP_THRESHOLD = 8; // weeks
+  const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({});
+  const toggleMonth = (key: string) => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    LayoutAnimation.configureNext(LayoutAnimation.create(220, LayoutAnimation.Types.easeInEaseOut, LayoutAnimation.Properties.opacity));
+    setExpandedMonths(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
   // Dates that have a (non-excluded) score, for the calendar picker.
   const scoredDateSet = () => {
     const s = new Set<string>();
@@ -1086,6 +1096,43 @@ export default function StatsScreen() {
 
   const renderDayArchive = () => {
     const weeks = archiveWeeks.filter(w => w.loggedCount > 0);
+    const renderWeekRow = (w: ArchiveWeek) => {
+      const isOpen = !!expandedWeeks[w.startKey];
+      return (
+        <View key={w.startKey} style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard }}>
+          <TouchableOpacity onPress={() => toggleWeek(w.startKey)} activeOpacity={0.6}
+            style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 4 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold' }}>{archWeekRange(w.startKey, w.endKey)}</Text>
+              <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>
+                {w.scoredCount} {w.scoredCount === 1 ? 'day' : 'days'} scored
+                {w.avgLabel ? ` · ${w.avgLabel}` : ''}
+              </Text>
+            </View>
+            {w.avgComposite !== null && (
+              <Text style={{ fontSize: 26, lineHeight: 28, fontFamily: 'BebasNeue_400Regular', color: archTierColor(w.avgComposite), marginRight: 10 }}>{Math.round(w.avgComposite)}</Text>
+            )}
+            <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textMuted} />
+          </TouchableOpacity>
+          {isOpen && (
+            <View style={{ paddingBottom: 6 }}>
+              {w.days.filter(d => d.score !== null || d.excluded).map(renderArchiveDayRow)}
+            </View>
+          )}
+        </View>
+      );
+    };
+    // Collapse the (newest-first) week list into month groups, preserving order.
+    const groupWeeksByMonth = (list: ArchiveWeek[]) => {
+      const groups: { monthKey: string; monthLabel: string; weeks: ArchiveWeek[] }[] = [];
+      list.forEach(w => {
+        const mk = weeklyMonthKey(w.startKey);
+        const last = groups[groups.length - 1];
+        if (last && last.monthKey === mk) last.weeks.push(w);
+        else groups.push({ monthKey: mk, monthLabel: weeklyMonthLabel(w.startKey), weeks: [w] });
+      });
+      return groups;
+    };
     return (
       <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, marginTop: 12 }]}>
         <TouchableOpacity
@@ -1117,30 +1164,24 @@ export default function StatsScreen() {
               Your Day Score appears the morning after a logged day. Keep logging and your history fills in here.
             </Text>
           </View>
+        ) : weeks.length <= MONTH_GROUP_THRESHOLD ? (
+          weeks.map(renderWeekRow)
         ) : (
-          weeks.map(w => {
-            const isOpen = !!expandedWeeks[w.startKey];
+          // Long history: collapse weeks under Month headers (weeks are newest-first, so months come out
+          // newest-first too). Newest month open by default, older months collapsed.
+          groupWeeksByMonth(weeks).map((g, gi) => {
+            const open = expandedMonths[g.monthKey] ?? (gi === 0);
             return (
-              <View key={w.startKey} style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard }}>
-                <TouchableOpacity onPress={() => toggleWeek(w.startKey)} activeOpacity={0.6}
+              <View key={g.monthKey} style={{ borderTopWidth: 0.5, borderTopColor: theme.borderCard }}>
+                <TouchableOpacity onPress={() => toggleMonth(g.monthKey)} activeOpacity={0.6}
                   style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 4 }}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ fontSize: 13, color: theme.textPrimary, fontFamily: 'DMSans_600SemiBold' }}>{archWeekRange(w.startKey, w.endKey)}</Text>
-                    <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginTop: 2 }}>
-                      {w.scoredCount} {w.scoredCount === 1 ? 'day' : 'days'} scored
-                      {w.avgLabel ? ` · ${w.avgLabel}` : ''}
-                    </Text>
-                  </View>
-                  {w.avgComposite !== null && (
-                    <Text style={{ fontSize: 26, lineHeight: 28, fontFamily: 'BebasNeue_400Regular', color: archTierColor(w.avgComposite), marginRight: 10 }}>{Math.round(w.avgComposite)}</Text>
-                  )}
-                  <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textMuted} />
+                  <Text style={{ flex: 1, fontSize: 12, letterSpacing: 1.5, textTransform: 'uppercase', color: theme.textSecondary, fontFamily: 'DMSans_700Bold' }}>{g.monthLabel}</Text>
+                  <Text style={{ fontSize: 10, color: theme.textMuted, fontFamily: 'DMSans_400Regular', marginRight: 8 }}>
+                    {g.weeks.length} {g.weeks.length === 1 ? 'week' : 'weeks'}
+                  </Text>
+                  <Ionicons name={open ? 'chevron-up' : 'chevron-down'} size={16} color={theme.textMuted} />
                 </TouchableOpacity>
-                {isOpen && (
-                  <View style={{ paddingBottom: 6 }}>
-                    {w.days.filter(d => d.score !== null || d.excluded).map(renderArchiveDayRow)}
-                  </View>
-                )}
+                {open && <View style={{ paddingLeft: 8 }}>{g.weeks.map(renderWeekRow)}</View>}
               </View>
             );
           })

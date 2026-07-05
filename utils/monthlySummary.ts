@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { storageSet } from './storage';
+import { addNotification } from './notifications';
 import { DayScore } from './dayScore';
 import { loadCalorieTargets } from './calorieTarget';
 import { effectiveExerciseMinutes } from './exerciseMinutes';
@@ -479,7 +480,20 @@ export async function checkAndGenerateMonthly(): Promise<void> {
     const monthKey = getLastClosedMonth();
     const existing = await loadMonthlySummary(monthKey);
     if (!existing) {
-      await generateMonthlySummary(monthKey);
+      const created = await generateMonthlySummary(monthKey);
+      // Otto-hub notification, deep-linking to the fresh monthly summary. Stable id per month.
+      if (created) {
+        await addNotification({
+          id: `summary_ready_monthly_${monthKey}`,
+          lifecycle: 'stack',
+          category: 'summary_ready',
+          title: 'Your monthly summary is ready',
+          body: 'Last month is in. Tap for the full breakdown.',
+          icon: 'stats-chart',
+          iconColor: '#8b5cf6',
+          route: { pathname: '/monthly-summary', params: { monthKey } },
+        });
+      }
     }
 
     await storageSet(MONTHLY_GATE_KEY, todayKey);

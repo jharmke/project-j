@@ -49,8 +49,9 @@ export const messageWantsFood = (text: string): boolean => {
 
 // Resolve any specific days the user NAMED to date keys (for Tier 2 itemizing). Handles yesterday/today,
 // weekday names (most recent past), "June 24" / "jun 24", "6/24", and a bare ordinal "the 24th" (this
-// month, or last month if that would be in the future). Never returns a future date.
-const resolveNamedDays = (t: string, today: Date): string[] => {
+// month, or last month if that would be in the future). Never returns a future date. Exported + shared:
+// the sleep builder (and future date-scoped datasets) reuse this so date parsing lives in one place.
+export const resolveNamedDays = (t: string, today: Date): string[] => {
   const out = new Set<string>();
   const todayKey = keyOf(today);
   const add = (d: Date) => { const k = keyOf(d); if (k <= todayKey) out.add(k); };

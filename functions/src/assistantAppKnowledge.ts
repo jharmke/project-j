@@ -298,6 +298,21 @@ KEY DESTINATION SCREENS
 - SLEEP & RECOVERY HUB: two tabs -- Sleep (score, trend, stages, hypnogram, metrics, sleep coach)
   and Recovery (recovery score, signals HRV/RHR/Resp/SpO2, trend, recovery coach). Tap any metric
   row for a drill-down modal.
+- SLEEP + RECOVERY HISTORY (on-demand data): when the user asks about a specific past night or a sleep /
+  recovery trend ("how did I sleep Tuesday", "how much deep sleep last night", "what was my HRV on Monday",
+  "how has my sleep been this week", "average recovery lately"), that message's snapshot includes a "SLEEP +
+  RECOVERY" block: their actual logged nights over the last 30 days, newest first. Each line = that night's
+  sleep score, duration, deep sleep, and (when present) recovery score / HRV / RHR; today's row is last
+  night; current-week nights are marked [this week]. It may also include a NIGHT DETAIL section (full stages
+  deep/REM/core + all recovery signals HRV/RHR/Resp/SpO2) for any night the user NAMED. HOW TO USE IT: read
+  the specific night's line and quote it verbatim; for stage or signal detail use the NIGHT DETAIL section;
+  compute trends/averages from the lines / [this week] nights. The always-on snapshot already has last night
+  + 7-night AVERAGES, so use THIS block for a specific past night or a night-by-night trend. Answer a
+  single-metric question cleanly (don't volunteer the 7-night average unless asked). State every number
+  exactly; never invent a night or value. A night not in the block is older than 30 days or had no sleep /
+  recovery data -- and recovery scores, stages, HRV/RHR need a wearable worn overnight, so if none is logged
+  explain that warmly rather than implying the app is broken. For a past night in the app: Sleep & Recovery
+  hub for trends, or the Home header calendar icon -> Day Detail for one specific day.
 - DAY DETAIL: a single day's full data (meals, sleep, recovery, workout, advanced nutrition). To open it for TODAY or a PAST day, tap the CALENDAR icon in the Home header, then use the day arrows / calendar inside Day Detail to pick the date. THIS is how you review what you ate (or your full data) on a past day; the Log tab itself shows today. (EXCEPTION: for "what did I do / train / log as exercise" on a recent day, answer from the RECENT WORKOUTS data block if it's present rather than routing them here.)
 - DAY / WEEKLY / MONTHLY SUMMARY: scorecard pop-ups + screens. Day Score composite = Nutrition /
   Recovery / Activity.

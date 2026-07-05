@@ -28,6 +28,7 @@ import MuscleMap from '../../components/MuscleMap';
 import ExerciseSetRows from '../../components/ExerciseSetRows';
 import HRZoneModal, { HRZoneData } from '../../components/HRZoneModal';
 import { resolveMaxHR, zoneBounds, timeInZones, ageFromBirthday } from '../../utils/hrZones';
+import { recomputeLiftPR, normalizeLiftName } from '../../utils/liftPR';
 import { showToolkit } from '../../components/ToolkitSheet';
 import { useTutorial } from '../../context/TutorialContext';
 import { useTutorialTarget } from '../../hooks/useTutorialTarget';
@@ -883,40 +884,11 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
     return Array.from({ length: n }, () => ({ weight: null, reps, rest, done: false }));
   };
 
-  // Bank a lift's PRs from ITS OWN checked+weighted sets, keyed off the individual set (not whole-
-  // exercise completion) so a partial session (3 of 4 planned sets, walked out without "finishing")
-  // still banks. Pure: takes the current maps, returns updated ones + the newly-hit PR (or null).
-  // A lift's FIRST-ever log sets a silent baseline (not a PR); only beating a prior best is a hit.
-  const bankPRFromSets = (ex: any, sets: SetEntry[], currentPrs: Record<string, PRRecord>, currentHits: Record<string, Record<string, any>>, dateKey: string) => {
-    if (!ex || ex.isCardio || !sets) return null;
-    const weighted = sets.filter(s => s.done && (s.weight || 0) > 0 && (s.reps || 0) > 0);
-    if (!weighted.length) return null;
-    const key = normalizeLiftName(ex.name);
-    const topSet = weighted.reduce((a, b) => (((b.weight as number) > (a.weight as number)) || (b.weight === a.weight && (b.reps as number) > (a.reps as number))) ? b : a);
-    const e1rmSets = weighted.filter(s => (s.reps as number) <= 12);
-    const bestE1RM = e1rmSets.length ? Math.round(Math.max(...e1rmSets.map(s => epley(s.weight as number, s.reps as number)))) : null;
-    const rec = currentPrs[key];
-    const isFirst = !rec;
-    const nr: PRRecord = rec ? { ...rec } : { name: ex.name, bestWeight: null, bestE1RM: null, updatedAt: dateKey };
-    nr.name = ex.name;
-    let weightPR = false, e1rmPR = false;
-    let prevWeightVal: number | undefined, prevE1rmVal: number | undefined;
-    if (!nr.bestWeight || (topSet.weight as number) > nr.bestWeight.value) {
-      if (nr.bestWeight) { weightPR = true; prevWeightVal = nr.bestWeight.value; }
-      nr.bestWeight = { value: topSet.weight as number, reps: topSet.reps || 0, dateKey };
-    }
-    if (bestE1RM != null && (!nr.bestE1RM || bestE1RM > nr.bestE1RM.value)) {
-      if (nr.bestE1RM) { e1rmPR = true; prevE1rmVal = nr.bestE1RM.value; }
-      nr.bestE1RM = { value: bestE1RM, weight: topSet.weight as number, reps: topSet.reps || 0, dateKey };
-    }
-    nr.updatedAt = dateKey;
-    const nextPrs = { ...currentPrs, [key]: nr };
-    // First-ever log = silent baseline; no new best beaten = nothing to celebrate. Still bank the record.
-    if (isFirst || (!weightPR && !e1rmPR)) return { prs: nextPrs, hits: currentHits, newHit: null };
-    const hit = { name: ex.name, weightPR, e1rmPR, weightVal: nr.bestWeight?.value, weightReps: nr.bestWeight?.reps, e1rmVal: nr.bestE1RM?.value, prevWeightVal, prevE1rmVal, at: Date.now() };
-    const dayHits = { ...(currentHits[dateKey] || {}), [key]: hit };
-    return { prs: nextPrs, hits: { ...currentHits, [dateKey]: dayHits }, newHit: hit };
-  };
+  // PR engine lives in utils/liftPR.ts (pure + unit-tested). This resolver is the only glue: it maps a
+  // date to that day's exercise list (from a given programs map, falling back to the weekly template)
+  // so the engine can trace a logged set back to a lift name without knowing about app state.
+  const makeDayResolver = (progsMap: Record<string, DayProgram>) => (dateKey: string) =>
+    (progsMap[dateKey] || weeklyTemplate[dayNameOf(dateKey)])?.exercises || [];
 
   // Drop / refresh the Otto hub notification for a lift's PR (only for TODAY's workout, never a past
   // edit). Records are 'stack' + category 'record' so the hub groups them ("You set N PRs today").
@@ -954,17 +926,19 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
     const newChecks = changed ? { ...checks, [activeDay]: { ...dayChecksNow, [exId]: allDone } } : checks;
     if (changed) setChecks(newChecks);
     if (allDone && !dayChecksNow[exId] && activeDay === todayKey) cancelActivityNotification();
-    // Bank PRs off this exercise's checked+weighted sets right now, so they survive without ever
-    // opening the summary. Only fire Otto for TODAY (a past-day edit banks silently).
+    // Recompute this lift's PR from history right now, so it survives without ever opening the summary
+    // AND rolls back if this change (uncheck / edit down / remove a set) no longer earns it. Only touch
+    // Otto for TODAY (a past-day edit re-judges silently).
     const ex = (exercises as any[]).find(e => e.id === exId);
-    const banked = bankPRFromSets(ex, sets, prs, prHitsByDay, activeDay);
     let nextPrs = prs, nextHits = prHitsByDay;
-    if (banked) {
-      nextPrs = banked.prs; nextHits = banked.hits;
+    if (ex && !ex.isCardio) {
+      const r = recomputeLiftPR(ex.name, next, makeDayResolver(programs), prs, prHitsByDay, activeDay, Date.now());
+      nextPrs = r.prs; nextHits = r.hits;
       setPrs(nextPrs);
-      if (banked.newHit) {
-        setPrHitsByDay(nextHits);
-        if (activeDay === todayKey) firePRNotification(banked.newHit);
+      setPrHitsByDay(nextHits);
+      if (activeDay === todayKey) {
+        if (r.hit) firePRNotification(r.hit);
+        else if (r.revoked) clearNotification(`pr_${activeDay}_${normalizeLiftName(ex.name)}`);
       }
     }
     saveState(newChecks, cardioComplete, programs, workoutNotes, cardioLogs, weeklyTemplate, activeProgramName, workoutNoteNames, next, nextPrs, exerciseDoneAt, workoutTimers, nextHits);
@@ -1050,15 +1024,14 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
     startRest(rest, ex.name);
   };
 
-  // ── Finish Workout: recap (volume / sets) + PR detection (heaviest weight + best est. 1RM) ──
-  const epley = (w: number, r: number) => w * (1 + r / 30);
+  // ── View Summary recap (volume / sets / per-lift breakdown) ──
+  // PRs are NOT computed here anymore: they bank + roll back live as each set changes (see the PR
+  // engine in utils/liftPR.ts). This just builds the recap and reads the recorded day-hits for the trophy.
   const finishWorkout = async () => {
     const dayLogs = setLogs[activeDay] || {};
     let totalVolume = 0, doneSets = 0, doneExercises = 0;
-    const prHits: any[] = [];
     // Per-lift breakdown so the recap lists each lift's sets (mirrors the per-cardio HR breakdown).
     const liftItems: { name: string; volume: number; sets: { weight: number; reps: number }[] }[] = [];
-    const newPrs: Record<string, PRRecord> = { ...prs };
     for (const ex of exercises) {
       if (ex.isCardio) continue;
       const sets = dayLogs[ex.id];
@@ -1072,30 +1045,6 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
       for (const s of done) { exVolume += (s.weight || 0) * (s.reps || 0); itemSets.push({ weight: s.weight || 0, reps: s.reps || 0 }); }
       totalVolume += exVolume;
       liftItems.push({ name: ex.name || 'Lift', volume: exVolume, sets: itemSets });
-      const weighted = done.filter(s => (s.weight || 0) > 0 && (s.reps || 0) > 0);
-      if (!weighted.length) continue;
-      const key = normalizeLiftName(ex.name);
-      const topSet = weighted.reduce((a, b) => ((b.weight as number) > (a.weight as number) || (b.weight === a.weight && (b.reps as number) > (a.reps as number))) ? b : a);
-      const e1rmSets = weighted.filter(s => (s.reps as number) <= 12);
-      const bestE1RM = e1rmSets.length ? Math.round(Math.max(...e1rmSets.map(s => epley(s.weight as number, s.reps as number)))) : null;
-      const rec = newPrs[key];
-      const isFirst = !rec;
-      const nr: PRRecord = rec ? { ...rec } : { name: ex.name, bestWeight: null, bestE1RM: null, updatedAt: activeDay };
-      nr.name = ex.name;
-      let weightPR = false, e1rmPR = false;
-      if (!nr.bestWeight || (topSet.weight as number) > nr.bestWeight.value) {
-        if (nr.bestWeight) weightPR = true; // only a PR if it beats a prior best (first log = baseline)
-        nr.bestWeight = { value: topSet.weight as number, reps: topSet.reps || 0, dateKey: activeDay };
-      }
-      if (bestE1RM != null && (!nr.bestE1RM || bestE1RM > nr.bestE1RM.value)) {
-        if (nr.bestE1RM) e1rmPR = true;
-        nr.bestE1RM = { value: bestE1RM, weight: topSet.weight as number, reps: topSet.reps || 0, dateKey: activeDay };
-      }
-      nr.updatedAt = activeDay;
-      newPrs[key] = nr;
-      if (!isFirst && (weightPR || e1rmPR)) {
-        prHits.push({ name: ex.name, weightPR, e1rmPR, weightVal: nr.bestWeight?.value, weightReps: nr.bestWeight?.reps, e1rmVal: nr.bestE1RM?.value });
-      }
     }
     // Lift session duration. Priority: Apple Watch strength session (measured, ground truth) > manual
     // workout timer (no-watch users) > nothing. The old first-to-last checked-set span is RETIRED: it
@@ -1162,13 +1111,11 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
 
     if (doneSets === 0 && cardioCount === 0) { showToast('Nothing logged yet', 'Check off a set or finish some cardio first', 'error'); return; }
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
-    setPrs(newPrs);
-    saveState(checks, cardioComplete, programs, workoutNotes, cardioLogs, weeklyTemplate, activeProgramName, workoutNoteNames, setLogs, newPrs);
     let mindful = false;
     try { const sr = await AsyncStorage.getItem('pj_settings'); mindful = sr ? JSON.parse(sr).styleMode === 'mindful' : false; } catch {}
     const summary = {
-      // PRs now bank as each set is checked (see bankPRFromSets), so the recap reads the RECORDED
-      // day-hits rather than re-detecting (which would find nothing, since the bests are already banked).
+      // PRs bank + roll back live as each set changes (see the PR engine), so the recap just reads the
+      // RECORDED day-hits rather than re-detecting (which would double-count or resurrect a revoked PR).
       totalVolume, doneSets, doneExercises, prHits: Object.values(prHitsByDay[activeDay] || {}), mindful,
       hasLifts: doneSets > 0,
       liftDurationSec,
@@ -1189,7 +1136,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
   // Most recent PRIOR session's logged sets for the same lift (matched by normalized name), so
   // each set row can show last time's weight x reps. Resolves each past day's exercise list from
   // its program override or the weekly template to map the logged exerciseId back to a name.
-  const normalizeLiftName = (name: string) => (name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  // (normalizeLiftName is imported from utils/liftPR so lift-name keys stay identical everywhere.)
   const WEEKDAY_SHORT = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const dayNameOf = (dateKey: string) => WEEKDAY_SHORT[new Date(dateKey + 'T12:00:00').getDay()];
   const getPreviousSets = (ex: any): SetEntry[] | null => {
@@ -1368,6 +1315,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
         triggerHaptic(Haptics.ImpactFeedbackStyle.Heavy);
         clearFinished(day);
         const baseProgram = programs[day] || weeklyTemplate[DATES.find(d => d.key === day)?.dayName || 'Mon'] || BLANK_DAY;
+        const removed = baseProgram.exercises.find(ex => ex.id === id);
         const newPrograms = { ...programs };
         newPrograms[day] = {
           ...baseProgram,
@@ -1376,9 +1324,22 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
         const newDayChecks = { ...(checks[day] || {}) };
         delete newDayChecks[id];
         const newChecks = { ...checks, [day]: newDayChecks };
+        // Removing a lift unmaps its logged sets from this day, so recompute the lift's PR from what's
+        // left in history and roll it back if this exercise was holding the record (Otto only for today).
+        let nextPrs = prs, nextHits = prHitsByDay;
+        if (removed && !(removed as any).isCardio) {
+          const r = recomputeLiftPR(removed.name, setLogs, makeDayResolver(newPrograms), prs, prHitsByDay, day, Date.now());
+          nextPrs = r.prs; nextHits = r.hits;
+          setPrs(nextPrs);
+          setPrHitsByDay(nextHits);
+          if (day === todayKey) {
+            if (r.hit) firePRNotification(r.hit);
+            else if (r.revoked) clearNotification(`pr_${day}_${normalizeLiftName(removed.name)}`);
+          }
+        }
         setPrograms(newPrograms);
         setChecks(newChecks);
-        saveState(newChecks, cardioComplete, newPrograms, workoutNotes, cardioLogs, weeklyTemplate);
+        saveState(newChecks, cardioComplete, newPrograms, workoutNotes, cardioLogs, weeklyTemplate, activeProgramName, workoutNoteNames, setLogs, nextPrs, exerciseDoneAt, workoutTimers, nextHits);
       }
     }
   ]);

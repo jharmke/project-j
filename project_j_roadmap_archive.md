@@ -11,6 +11,42 @@
 
 ---
 
+## 🏋️ PR REVOKE + HONESTY (records follow-up #1, shipped 2026-07-04)
+The problem: Piece A banked a lift PR the instant a qualifying set was checked, and it STUCK -- uncheck/
+edit-down/delete the set and the record stayed. It only stored the current best, not the chain, so there
+was no way to roll back.
+
+The fix (done "right", not taped): PRs are now DERIVED from logged history, never ratcheted-and-stuck.
+- New pure engine `utils/liftPR.ts` (zero React/RN state; caller injects a `resolveDay` that maps a date
+  to that day's exercise list). Exports: normalizeLiftName, epley, heavier/higherE, computeLiftBest,
+  dayHasLoggedLift, recomputeLiftPR. `recomputeLiftPR` recomputes the lift's all-time best from setLogs,
+  re-judges whether the edited day earned a hit, and returns updated prs + prHitsByDay + the Otto hit (or
+  a `revoked` flag to clear the card). `now` is injected so it's deterministic in tests.
+- `workout.tsx` wiring: `saveSetsForExercise` (covers check/uncheck/edit/add/remove-set) and
+  `removeExercise` (delete whole exercise) both call it. The old `bankPRFromSets` append-only helper is
+  gone. Only glue left in the component is `makeDayResolver` (programs[d] || weeklyTemplate[dayNameOf(d)]).
+- Second-writer killed: `finishWorkout` (the internal name behind the "View Summary" button) no longer
+  computes PRs at all -- it just builds the recap and reads the recorded day-hits. One writer, period.
+- Honesty fix rode along for free: "up from" now reads the true prior best (best of days BEFORE today +
+  protected floor), never a same-session intermediate. E.g. prior 145, log 150 then 190 -> card reads
+  "190, up from 145", not "up from 150".
+- Protected floor: a stored record with no surviving logged history (dev seed, or a record whose program
+  was later DELETED) is preserved rather than wiped -- but only when it predates the day being judged, so
+  deleting today's own exercise still revokes today's PR. This is what makes deleted-program PRs survive
+  (Justin flagged program-survival as important). Known edge, real users unaffected: an UNBACKED record
+  beaten-then-fully-undone in the SAME session loses the floor (documented in liftPR.ts; not worth a
+  persistent-baseline field).
+- Debut decision (old OPEN Q): debut-session PRs SHOW. A brand-new lift's ramp surfaces one card ending
+  at the top set with no "up from". Grouping prevents spam.
+
+Testing: `utils/liftPR.test.ts` -- 21 assertions (honesty, revoke-by-uncheck, edit-down, delete-exercise,
+debut, deleted-program floor, lift isolation), all pass. The test caught a real flaw in the first cut (an
+unbacked-baseline honesty bug) which is how we learned real users are unaffected. Device smoke-test passed
+(log a PR, uncheck, card clears). To run the suite: compile liftPR.ts + liftPR.test.ts with tsc to a temp
+dir and `node` the output.
+
+---
+
 ## 🔔 OTTO NOTIFICATION HUB (spec locked 2026-07-04, building now)
 - SPEC_otto_notifications.md. In-app notification system routed through Otto's FAB (badge dot) + a
   bell in Otto's chat header. Push (reminders) stays separate per SPEC_notifications.md; the hub is

@@ -29,7 +29,8 @@ export interface SetEntry {
 }
 
 // All-time personal records per lift (keyed by normalized exercise name in pj_workout_state.prs).
-// Updated on Finish Workout; beating a stored best = a PR.
+// DERIVED from logged history by the PR engine (utils/liftPR.ts): recomputed on every set change, so a
+// record rolls back if the set that earned it is unchecked/edited/deleted. Beating a prior best = a PR.
 export interface PRRecord {
   name: string; // display name as last seen
   bestWeight: { value: number; reps: number; dateKey: string } | null;

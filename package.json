@@ -8,7 +8,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "test:pr": "tsc utils/liftPR.ts utils/liftPR.test.ts --outDir .pr-test --module commonjs --target es2019 --esModuleInterop --skipLibCheck --rootDir . && node .pr-test/utils/liftPR.test.js"
   },
   "dependencies": {
     "@expo-google-fonts/bebas-neue": "^0.4.1",

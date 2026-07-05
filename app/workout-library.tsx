@@ -2186,7 +2186,7 @@ export default function WorkoutLibraryScreen() {
               await storageSet('pj_workout_state', JSON.stringify(updated));
               setActiveProgramName(program.name);
               showToast('Program loaded', program.name, 'success');
-              checkWorkoutAchievements().then(unlocked => {
+              checkWorkoutAchievements(true).then(unlocked => {
                 for (const def of unlocked) {
                   showCelebration(getCelebTier(def), def.name, def);
                   showAchievementToast(def);
@@ -2284,7 +2284,7 @@ export default function WorkoutLibraryScreen() {
     await saveMyRoutines(updated);
     showToast(editingRoutine ? 'Routine saved' : 'Routine created', routine.name, 'success');
     setEditingRoutine(null);
-    checkWorkoutAchievements().then(unlocked => {
+    checkWorkoutAchievements(true).then(unlocked => {
       for (const def of unlocked) {
         showCelebration(getCelebTier(def), def.name, def);
         showAchievementToast(def);

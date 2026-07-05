@@ -1984,6 +1984,13 @@ export default function StatsScreen() {
               color={theme.sleepRem} date={records.sleepHoursDate}
               fmt={(v) => `${Math.floor(v)}h ${Math.round((v % 1) * 60)}m`} />
           </View>
+          <TouchableOpacity
+            onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/achievements' as any); }}
+            activeOpacity={0.85}
+            style={{ paddingVertical: 14, borderRadius: 8, alignItems: 'center', borderWidth: 1, borderColor: theme.accentBlueBorder, backgroundColor: theme.accentBlueBg, flexDirection: 'row', justifyContent: 'center', gap: 8 }}>
+            <Ionicons name="trophy" size={16} color={theme.accentBlue} />
+            <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.accentBlue, letterSpacing: 1 }}>VIEW ALL ACHIEVEMENTS</Text>
+          </TouchableOpacity>
             </CollapsibleSection>
             );
             if (section.systemKey === 'streaks') return (

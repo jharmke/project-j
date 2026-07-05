@@ -2727,7 +2727,7 @@ export default function HomeScreen() {
                   await storageSet(`pj_${todayKey}`, JSON.stringify({ ...cur2, sleepConsistencyPts: pts }));
                 });
                 await saveToFirebase(todayKey,'sleepOverride',val);
-                checkSleepAchievements().then(unlocked => {
+                checkSleepAchievements(true).then(unlocked => {
                   unlocked.forEach(def => {
                     showCelebration(getCelebTier(def), def.name, def);
                     showAchievementToast(def);

@@ -1298,7 +1298,7 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
   saveState(newChecks, cardioComplete, newPrograms, workoutNotes, cardioLogs, weeklyTemplate, activeProgramName, workoutNoteNames, newSetLogs);
   closeAddExerciseModal();
   if (editingExercise) showToast('Exercise updated', form.name, 'success');
-  checkWorkoutAchievements().then(unlocked => {
+  checkWorkoutAchievements(true).then(unlocked => {
     for (const def of unlocked) {
       showCelebration(getCelebTier(def), def.name, def);
       showAchievementToast(def);

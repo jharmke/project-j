@@ -1715,10 +1715,14 @@ export async function checkFaithAchievements(
 // Call after any exercise is logged, program is loaded, or routine is saved.
 // Loads its own store, writes to AsyncStorage, returns newly unlocked defs.
 
-export async function checkWorkoutAchievements(): Promise<AchievementDef[]> {
+// `force` bypasses the once-per-day gate (see checkNutritionAchievements): pass true right after a
+// qualifying action (finishing a workout, loading a program, saving a routine) so the badge pops now
+// instead of waiting for the next app-open. checkAndUnlock no-ops anything already unlocked, so a
+// forced re-run can never double-award.
+export async function checkWorkoutAchievements(force = false): Promise<AchievementDef[]> {
   const today = localGoalDateKey();
   const checked = await AsyncStorage.getItem('pj_workout_ach_checked');
-  if (checked === today) return [];
+  if (!force && checked === today) return [];
   const store = await loadAchievements();
   let updatedStore = store;
   const unlockedDefs: AchievementDef[] = [];
@@ -1794,10 +1798,13 @@ function computeSleepScore(
 // Call after any sleep data is saved (manual or HealthKit).
 // Loads its own store, writes to AsyncStorage, returns newly unlocked defs.
 
-export async function checkSleepAchievements(): Promise<AchievementDef[]> {
+// `force` bypasses the once-per-day gate: pass true right after a manual sleep save so the badge pops
+// now instead of waiting for the next app-open. App-open/HealthKit-sync calls stay unforced.
+// checkAndUnlock no-ops anything already unlocked, so a forced re-run can never double-award.
+export async function checkSleepAchievements(force = false): Promise<AchievementDef[]> {
   const today = localGoalDateKey();
   const checked = await AsyncStorage.getItem('pj_sleep_ach_checked');
-  if (checked === today) return [];
+  if (!force && checked === today) return [];
   const store = await loadAchievements();
   let updatedStore = store;
   const unlockedDefs: AchievementDef[] = [];

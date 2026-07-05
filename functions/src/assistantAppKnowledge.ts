@@ -427,8 +427,9 @@ Collapsible sections, confirmed names + subtitles:
   IMPORTANT: this section does NOT grant or revoke Apple Health ACCESS. Apple controls HealthKit
   permissions itself, so an app cannot connect/disconnect them in-app. To turn Apple Health on/off or
   change what Project J can read, the user uses the iOS SETTINGS APP: Settings > Privacy & Security >
-  Health > Project J (or Settings > Project J). If asked how to change Apple Health permissions,
-  direct them THERE, never to this in-app section.
+  Health > Project J, then toggle the individual data types. If asked how to change Apple Health
+  permissions, direct them THERE, never to the app's own iOS settings page (which has no Health row)
+  and never to this in-app section.
 - VACATION MODE: set a trip date range that pauses scoring / streaks / notifications while still
   capturing data. Sits after Health, before Notifications.
 - NOTIFICATIONS (Reminders, Daily Cap, Categories): notification preferences.

@@ -35,6 +35,7 @@ export const COMPANION_ROUTES: Record<string, CompanionRoute> = {
   journal:       { path: '/journal',                                        label: 'Journal' },
   mission:       { path: '/mission',                                        label: 'What makes this app different' },
   body:          { path: '/body-measurements',                             label: 'Body Measurements' },
+  pr_home:       { path: '/workout-library', params: { openPRs: 'true' },  label: 'All PRs' },
 
   // Tabs
   home:          { path: '/(tabs)',                                         label: 'Home' },
@@ -51,6 +52,7 @@ export const COMPANION_ROUTES: Record<string, CompanionRoute> = {
 // single common words), so a pill only appears when a reply genuinely points at that screen. Used
 // by AssistantChat after the token pass; capped so pills never get noisy.
 export const ROUTE_TRIGGERS: { key: string; phrases: string[] }[] = [
+  { key: 'pr_home',      phrases: ['all prs', 'all-time prs', 'exercise library', 'pr home', 'prs button', 'records & history'] },
   { key: 'recovery_hub', phrases: ['sleep & recovery', 'sleep and recovery', 'recovery hub', 'recovery tab'] },
   { key: 'challenges',   phrases: ['challenges', 'new challenge'] },
   { key: 'achievements', phrases: ['achievements'] },

@@ -2004,9 +2004,10 @@ export default function WorkoutLibraryScreen() {
     }
   }, [openPRs]);
 
-  // The sorted PR list for the All-PRs modal.
+  // The sorted PR list for the All-PRs modal. A record only shows if it is still backed by surviving
+  // logged history (so a PR from a deleted/ghost workout does not linger here forever).
   const prList = Object.values(prs)
-    .filter(p => p && (p.bestWeight || p.bestE1RM))
+    .filter(p => p && (p.bestWeight || p.bestE1RM) && liftSessionHistory(p.name, wSetLogs, prResolveDay).length > 0)
     .sort((a, b) => {
       if (prSort === 'az') return a.name.localeCompare(b.name);
       if (prSort === 'za') return b.name.localeCompare(a.name);
@@ -3017,30 +3018,24 @@ export default function WorkoutLibraryScreen() {
               {selectedEx.type !== 'cardio' && (() => {
                 const pr = prs[normalizeLiftName(selectedEx.name)];
                 const history = liftSessionHistory(selectedEx.name, wSetLogs, prResolveDay);
-                const hasPR = !!(pr && (pr.bestWeight || pr.bestE1RM));
+                // Only credit a record when surviving logged history backs it (ghost PRs from deleted
+                // workouts read as "no records yet" instead of a phantom best).
+                const hasPR = !!(pr && (pr.bestWeight || pr.bestE1RM)) && history.length > 0;
                 return (
                   <View style={{ marginBottom: 16 }}>
                     <Text style={{ fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 10 }}>RECORDS & HISTORY</Text>
                     {hasPR ? (
-                      <View style={{ backgroundColor: theme.accentAmber + '14', borderWidth: 1, borderColor: theme.accentAmber + '33', borderRadius: 12, padding: 12, marginBottom: history.length ? 14 : 0 }}>
-                        {pr.bestWeight && (
-                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: pr.bestE1RM ? 8 : 0 }}>
-                            <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium' }}>Heaviest set</Text>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                              <Text style={{ color: theme.textSecondary, fontSize: 14, fontFamily: 'DMSans_700Bold' }}>{pr.bestWeight.value} lb × {pr.bestWeight.reps}</Text>
-                              <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_500Medium' }}>{fmtPRDate(pr.bestWeight.dateKey)}</Text>
-                            </View>
-                          </View>
-                        )}
-                        {pr.bestE1RM && (
-                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium' }}>Est. 1-rep max</Text>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                              <Text style={{ color: theme.textSecondary, fontSize: 14, fontFamily: 'DMSans_700Bold' }}>{pr.bestE1RM.value} lb</Text>
-                              <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_500Medium' }}>{fmtPRDate(pr.bestE1RM.dateKey)}</Text>
-                            </View>
-                          </View>
-                        )}
+                      <View style={{ flexDirection: 'row', gap: 8, marginBottom: history.length ? 14 : 0 }}>
+                        <View style={{ flex: 1, backgroundColor: theme.accentAmber + '14', borderWidth: 1, borderColor: theme.accentAmber + '33', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 }}>
+                          <Text style={{ fontSize: 8, letterSpacing: 1.5, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 4 }}>Heaviest set</Text>
+                          <Text style={{ color: theme.textSecondary, fontSize: 15, fontFamily: 'DMSans_700Bold' }}>{pr.bestWeight ? `${pr.bestWeight.value} lb × ${pr.bestWeight.reps}` : '—'}</Text>
+                          {pr.bestWeight ? <Text style={{ color: theme.textDim, fontSize: 10, fontFamily: 'DMSans_500Medium', marginTop: 2 }}>{fmtPRDate(pr.bestWeight.dateKey)}</Text> : null}
+                        </View>
+                        <View style={{ flex: 1, backgroundColor: theme.accentAmber + '14', borderWidth: 1, borderColor: theme.accentAmber + '33', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 }}>
+                          <Text style={{ fontSize: 8, letterSpacing: 1.5, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 4 }}>Est. 1-rep max</Text>
+                          <Text style={{ color: theme.textSecondary, fontSize: 15, fontFamily: 'DMSans_700Bold' }}>{pr.bestE1RM ? `${pr.bestE1RM.value} lb` : '—'}</Text>
+                          {pr.bestE1RM ? <Text style={{ color: theme.textDim, fontSize: 10, fontFamily: 'DMSans_500Medium', marginTop: 2 }}>{fmtPRDate(pr.bestE1RM.dateKey)}</Text> : null}
+                        </View>
                       </View>
                     ) : (
                       <View style={{ alignItems: 'center', paddingVertical: 16, marginBottom: 4 }}>
@@ -3186,30 +3181,27 @@ export default function WorkoutLibraryScreen() {
                 )}
               </View>
               {prList.length > 0 ? (
-                <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} style={{ maxHeight: Dimensions.get('window').height * 0.6 }} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}>
+                <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} style={{ maxHeight: Dimensions.get('window').height * 0.68 }} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}>
                   {prList.map(p => {
                     const dateKey = p.bestWeight?.dateKey || p.bestE1RM?.dateKey || p.updatedAt;
                     return (
                       <TouchableOpacity key={p.name} activeOpacity={0.7}
                         onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openLiftDetailByName(p.name); }}
-                        style={{ backgroundColor: theme.bgInset, borderRadius: 12, borderWidth: 0.5, borderColor: theme.borderCard, padding: 14, marginBottom: 10 }}>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                          <Text style={{ flex: 1, color: theme.textSecondary, fontSize: 15, fontFamily: 'DMSans_700Bold' }} numberOfLines={1}>{p.name}</Text>
-                          <Ionicons name="trophy" size={15} color={theme.accentAmber} />
+                        style={{ backgroundColor: theme.bgInset, borderRadius: 12, borderWidth: 0.5, borderColor: theme.borderCard, padding: 12, marginBottom: 10 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                          <Text style={{ flex: 1, color: theme.textSecondary, fontSize: 15, fontFamily: 'DMSans_700Bold', marginRight: 8 }} numberOfLines={1}>{p.name}</Text>
+                          {dateKey ? <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_500Medium' }}>{fmtPRDate(dateKey)}</Text> : null}
                         </View>
-                        {p.bestWeight && (
-                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: p.bestE1RM ? 4 : 0 }}>
-                            <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium' }}>Heaviest set</Text>
-                            <Text style={{ color: theme.textSecondary, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>{p.bestWeight.value} lb × {p.bestWeight.reps}</Text>
+                        <View style={{ flexDirection: 'row', gap: 8 }}>
+                          <View style={{ flex: 1, backgroundColor: theme.bgSheet, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, paddingVertical: 8, paddingHorizontal: 10 }}>
+                            <Text style={{ fontSize: 8, letterSpacing: 1.5, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 3 }}>Heaviest set</Text>
+                            <Text style={{ color: theme.textSecondary, fontSize: 14, fontFamily: 'DMSans_700Bold' }}>{p.bestWeight ? `${p.bestWeight.value} lb × ${p.bestWeight.reps}` : '—'}</Text>
                           </View>
-                        )}
-                        {p.bestE1RM && (
-                          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                            <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium' }}>Est. 1-rep max</Text>
-                            <Text style={{ color: theme.textSecondary, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>{p.bestE1RM.value} lb</Text>
+                          <View style={{ flex: 1, backgroundColor: theme.bgSheet, borderRadius: 8, borderWidth: 0.5, borderColor: theme.borderCard, paddingVertical: 8, paddingHorizontal: 10 }}>
+                            <Text style={{ fontSize: 8, letterSpacing: 1.5, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 3 }}>Est. 1-rep max</Text>
+                            <Text style={{ color: theme.textSecondary, fontSize: 14, fontFamily: 'DMSans_700Bold' }}>{p.bestE1RM ? `${p.bestE1RM.value} lb` : '—'}</Text>
                           </View>
-                        )}
-                        {dateKey ? <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_500Medium', marginTop: 8 }}>Set {fmtPRDate(dateKey)}</Text> : null}
+                        </View>
                       </TouchableOpacity>
                     );
                   })}

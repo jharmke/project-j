@@ -825,6 +825,11 @@ export default function HomeScreen() {
   const [styleMode, setStyleMode] = useState<'discipline' | 'balanced' | 'mindful'>('balanced');
   const [faithJourney, setFaithJourney] = useState<'rooted' | 'exploring' | 'notrightnow'>('rooted');
   const [burnAccuracyPct, setBurnAccuracyPct] = useState(100);
+  // Whether burnAccuracyPct has been loaded from settings yet. The active-cal goal check must wait
+  // for this: burnAccuracyPct defaults to 100, so evaluating before the real value (e.g. 80%) loads
+  // fires the goal on unadjusted calories (a false pop). A value of 100 alone is ambiguous (real vs
+  // not-loaded-yet), so a dedicated flag is required.
+  const [burnAccuracyLoaded, setBurnAccuracyLoaded] = useState(false);
   const [devForceSleepManual, setDevForceSleepManual] = useState(false);
 
   // BMR + profile biometrics
@@ -1374,7 +1379,7 @@ export default function HomeScreen() {
         });
       }
       const adjustedActiveCals = Math.round(activeCalories * burnAccuracyPct / 100);
-      if (!g.activeCals && adjustedActiveCals > 0 && activeCalGoal > 0 && adjustedActiveCals >= activeCalGoal) {
+      if (burnAccuracyLoaded && !g.activeCals && adjustedActiveCals > 0 && activeCalGoal > 0 && adjustedActiveCals >= activeCalGoal) {
         g.activeCals = true;
         handleDailyGoalHit('activeCals').then(({ fired, count: hitCount }) => {
           if (fired) { showCelebration('small', 'ACTIVE CALS'); showDailyGoalToast('Active Cal Goal', hitCount, 'flame', '#f97316'); }
@@ -1398,7 +1403,7 @@ export default function HomeScreen() {
       }
       prevSleepHoursRef.current = sleepHours;
     }
-  }, [activeCalories, steps, sleepHours, sleepStages, restingHR, respiratoryRate, bloodOxygen, exerciseMinutes, activityDataDate, todayKey, loaded, stepGoal, activeCalGoal, exerciseMinsGoal]);
+  }, [activeCalories, steps, sleepHours, sleepStages, restingHR, respiratoryRate, bloodOxygen, exerciseMinutes, activityDataDate, todayKey, loaded, stepGoal, activeCalGoal, exerciseMinsGoal, burnAccuracyPct, burnAccuracyLoaded]);
 
   // Adaptive TDEE: weekly-gated background check (suggest by default, or auto-adjust if opted in;
   // no visible nudge in Mindful). Safe + silent -- see utils/adaptiveTdee.ts. Runs once on mount.
@@ -1827,6 +1832,10 @@ export default function HomeScreen() {
           if (sd.devForceSleepManual !== undefined) setDevForceSleepManual(sd.devForceSleepManual);
           if (sd.showNetCarbs !== undefined) setShowNetCarbs(sd.showNetCarbs);
         }
+        // Burn accuracy is now resolved (the saved value if any, else the correct 100% default), so the
+        // active-cal goal check is safe to run. Set unconditionally (even with no saved value) so a user
+        // genuinely on 100% still gets goal detection.
+        setBurnAccuracyLoaded(true);
 
         // Onboarding -- open Edit Layout sheet if flagged from Screen 7
         const openEditFlag = await AsyncStorage.getItem('pj_open_edit_layout');

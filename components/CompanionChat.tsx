@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  Alert, Animated, Keyboard, Linking, Modal, Platform, Pressable,
+  Alert, Animated, Easing, Keyboard, Linking, Modal, Platform, Pressable,
   ScrollView, Share, StyleSheet, Text, TextInput, View,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Rect } from 'react-native-svg';
 import Reanimated, { useSharedValue, useAnimatedStyle, withTiming, withSpring, runOnJS } from 'react-native-reanimated';
@@ -174,24 +175,64 @@ function CrisisCard({ textPrimary, textSecondary, textDim, bgCard, bgInput, bord
   );
 }
 
-// Three pulsing dots shown while Halo is composing a reply.
-function TypingDots() {
-  const a = useRef(new Animated.Value(0.3)).current;
+// Halo's little identity chip, sits to the left of each of her messages (matches the header badge:
+// her gold cross, mirroring how Otto's avatar carries his sparkle).
+const HALO_AVATAR = 26;
+function HaloAvatar() {
+  return (
+    <View style={{ width: HALO_AVATAR, height: HALO_AVATAR, borderRadius: HALO_AVATAR / 2, backgroundColor: GOLD, alignItems: 'center', justifyContent: 'center', marginTop: 1 }}>
+      <MiniCross size={15} color={CROSS_DARK} />
+    </View>
+  );
+}
+
+// Gentle mount animation for each message: fade + slide up as it lands.
+function MountFade({ children }: { children: any }) {
+  const v = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(a, { toValue: 1,   duration: 500, useNativeDriver: true }),
-        Animated.timing(a, { toValue: 0.3, duration: 500, useNativeDriver: true }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
+    Animated.timing(v, { toValue: 1, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
   }, []);
   return (
-    <View style={[styles.bubble, styles.haloBubble]}>
-      <Animated.View style={{ flexDirection: 'row', gap: 5, opacity: a, paddingVertical: 2 }}>
-        {[0, 1, 2].map(i => <View key={i} style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: GOLD }} />)}
-      </Animated.View>
+    <Animated.View style={{ opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }] }}>
+      {children}
+    </Animated.View>
+  );
+}
+
+// Three dots that bounce in a STAGGERED wave (not in unison) so it clearly reads as "typing".
+function TypingDots() {
+  const d0 = useRef(new Animated.Value(0)).current;
+  const d1 = useRef(new Animated.Value(0)).current;
+  const d2 = useRef(new Animated.Value(0)).current;
+  const dots = [d0, d1, d2];
+  useEffect(() => {
+    const loops = dots.map((d, i) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(i * 160),
+          Animated.timing(d, { toValue: 1, duration: 300, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+          Animated.timing(d, { toValue: 0, duration: 300, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+          Animated.delay((2 - i) * 160),
+        ]),
+      ),
+    );
+    loops.forEach(l => l.start());
+    return () => loops.forEach(l => l.stop());
+  }, []);
+  return (
+    <View style={styles.haloRow}>
+      <HaloAvatar />
+      <View style={[styles.bubble, styles.haloBubble]}>
+        <View style={{ flexDirection: 'row', gap: 5, paddingVertical: 3, alignItems: 'center' }}>
+          {dots.map((d, i) => (
+            <Animated.View key={i} style={{
+              width: 6, height: 6, borderRadius: 3, backgroundColor: GOLD,
+              opacity: d.interpolate({ inputRange: [0, 1], outputRange: [0.35, 1] }),
+              transform: [{ translateY: d.interpolate({ inputRange: [0, 1], outputRange: [0, -4] }) }],
+            }} />
+          ))}
+        </View>
+      </View>
     </View>
   );
 }
@@ -526,6 +567,10 @@ export default function CompanionChat({
               },
             ]}
           >
+          {/* Theme gradient behind the whole chat, matching every other screen (the chat modal was the
+              one flat surface). Reduced opacity over the sheet base so it's a gentle wash, not the
+              full-strength page gradient. Clipped by the panel's overflow:hidden rounded corners. */}
+          <LinearGradient colors={[theme.gradientStart, theme.gradientEnd]} style={[StyleSheet.absoluteFill, { opacity: 0.55 }]} pointerEvents="none" />
           <View style={{ flex: 1, paddingBottom: kb }}>
             {/* Top strip: drag down to dismiss, tap the handle to close. */}
             <GestureDetector gesture={dragGesture}>
@@ -597,22 +642,30 @@ export default function CompanionChat({
                 // greeting and the user's own messages do not.
                 const isReply = m.role === 'halo' && !!m.segments;
                 if (!isReply) {
+                  if (m.role === 'user') {
+                    return (
+                      <MountFade key={i}>
+                        <View style={[styles.bubble, { alignSelf: 'flex-end', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}>
+                          {body}
+                        </View>
+                      </MountFade>
+                    );
+                  }
+                  // Halo greeting: avatar + bubble row.
                   return (
-                    <View
-                      key={i}
-                      style={[
-                        styles.bubble,
-                        m.role === 'user'
-                          ? { alignSelf: 'flex-end', backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }
-                          : styles.haloBubble,
-                      ]}
-                    >
-                      {body}
-                    </View>
+                    <MountFade key={i}>
+                      <View style={styles.haloRow}>
+                        <HaloAvatar />
+                        <View style={[styles.bubble, styles.haloBubble, { flexShrink: 1 }]}>{body}</View>
+                      </View>
+                    </MountFade>
                   );
                 }
                 return (
-                  <View key={i} style={styles.replyWrap}>
+                  <MountFade key={i}>
+                  <View style={styles.haloRow}>
+                    <HaloAvatar />
+                    <View style={styles.replyCol}>
                     <View style={[styles.bubble, styles.haloBubble, styles.replyBubble]}>{body}</View>
                     <View style={styles.actionRow}>
                       <Pressable onPress={() => shareMessage(m.text)} hitSlop={8} style={styles.actionBtn}>
@@ -633,7 +686,9 @@ export default function CompanionChat({
                         />
                       </Pressable>
                     </View>
+                    </View>
                   </View>
+                  </MountFade>
                 );
               })}
               {sending && <TypingDots />}
@@ -735,12 +790,11 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     backgroundColor: 'rgba(232,160,32,0.12)',
     borderColor: 'rgba(232,160,32,0.32)',
-    borderLeftColor: GOLD,
-    borderLeftWidth: 2.5,
   },
   bubbleText: { fontSize: 14, fontFamily: 'DMSans_400Regular', lineHeight: 20 },
   verseLink:  { color: GOLD, fontFamily: 'DMSans_600SemiBold', textDecorationLine: 'underline' },
-  replyWrap:   { alignSelf: 'flex-start', maxWidth: '86%', marginBottom: 10 },
+  haloRow:     { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+  replyCol:    { flexShrink: 1, marginBottom: 10 },
   replyBubble: { maxWidth: '100%', marginBottom: 0 },
   actionRow:   { flexDirection: 'row', alignItems: 'center', marginTop: 2, paddingLeft: 2 },
   actionBtn:   { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },

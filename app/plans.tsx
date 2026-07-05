@@ -355,7 +355,7 @@ function PlanRow({
   const isDark = theme.id === 'dark';
   return (
     <View style={[styles.card, {
-      backgroundColor: isDark ? theme.bgCard : theme.id === 'warm' ? 'rgba(255,253,248,0.96)' : 'rgba(250,244,232,0.92)',
+      backgroundColor: theme.id === 'warm' ? 'rgba(255,253,248,0.96)' : theme.bgCard,
       borderColor: `rgba(${GOLD_RGB},0.22)`,
       borderTopColor: `rgba(${GOLD_RGB},0.6)`,
     }]}>

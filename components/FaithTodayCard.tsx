@@ -113,9 +113,10 @@ function Slide({ width, minHeight, bg, onPress, onContentLayout, watermark, chil
     >
       <Animated.View style={[styles.page, { minHeight, backgroundColor: bg, transform: [{ scale: s }] }]}>
         {/* Soft amber wash: starts translucent (no solid first stop) so the warm fade
-            stays but there is NO hard amber line at the top edge. */}
+            stays but there is NO hard amber line at the top edge. Dropped on dark, where the
+            amber-over-dark wash muddied the top of the card. */}
         <LinearGradient
-          colors={[theme.accentAmber + '2E', theme.accentAmber + '00']}
+          colors={theme.id === 'dark' ? ['transparent', 'transparent'] : [theme.accentAmber + '2E', theme.accentAmber + '00']}
           locations={[0, 1]}
           start={{ x: 0, y: 0 }}
           end={{ x: 0, y: 1 }}

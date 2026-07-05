@@ -495,7 +495,7 @@ function RecoveryTrendChart({ data, theme }: { data: { dateKey: string; score: n
 // Sleep Coach observation for the most recent night. Returns a kind so Mindful
 // mode (without "Allow gentle coaching") can suppress corrective tips and only
 // show positive/neutral summaries.
-function sleepCoachTip(n: SleepNight, score: number, goalH: number, bedSd: number | null, allowCorrective: boolean): { text: string; kind: 'positive' | 'neutral' | 'corrective' } {
+function sleepCoachTip(n: SleepNight, score: number, goalH: number, bedSpan: number | null, allowCorrective: boolean): { text: string; kind: 'positive' | 'neutral' | 'corrective' } {
   const total = n.totalMs;
   const deepPct = total > 0 ? Math.round((n.deepMs / total) * 100) : 0;
   const remPct = total > 0 ? Math.round((n.remMs / total) * 100) : 0;
@@ -504,7 +504,7 @@ function sleepCoachTip(n: SleepNight, score: number, goalH: number, bedSd: numbe
     if (deepPct < 13) return { text: `Deep sleep landed at ${deepPct}% last night (${dur} total). Deep is when your body physically repairs. A cooler, darker room and no heavy meals within 3 hours of bed push it up.`, kind: 'corrective' };
     if (remPct < 15) return { text: `REM came in low at ${remPct}%. REM supports memory and mood, and most of it happens in your last cycles. A steady wake time and skipping late alcohol protect it.`, kind: 'corrective' };
     if (total / 3600000 < goalH * 0.85) return { text: `You slept ${dur} against your ${goalH}h goal. Even 30 minutes earlier tonight compounds fast.`, kind: 'corrective' };
-    if (bedSd !== null && bedSd > 60) return { text: `Your bedtime swung about ${bedSd} minutes across this stretch. A steadier schedule trains your body to reach deep sleep sooner.`, kind: 'corrective' };
+    if (bedSpan !== null && bedSpan > 120) return { text: `Your bedtime has been drifting across about a ${bedSpan}-minute window on your typical nights. A steadier schedule trains your body to reach deep sleep sooner.`, kind: 'corrective' };
   }
   if (score >= 85) return { text: `Strong night: ${dur} with healthy deep (${deepPct}%) and REM (${remPct}%). Same bedtime tonight keeps it going.`, kind: 'positive' };
   return { text: `You logged ${dur} last night, ${deepPct}% deep and ${remPct}% REM.`, kind: 'neutral' };
@@ -716,15 +716,13 @@ export default function SleepHub() {
     const remPct = nights.reduce((a, n) => a + n.remMs / n.totalMs, 0) / nights.length * 100;
     const beds = nights.map(n => n.bedMin).filter((b): b is number => b !== null);
     const bedMin = beds.length ? beds.reduce((a, b) => a + b, 0) / beds.length : null;
-    const bedSd = beds.length >= 2 && bedMin !== null
-      ? Math.round(Math.sqrt(beds.reduce((a, b) => a + (b - bedMin) ** 2, 0) / beds.length)) : null;
     // Bedtime range = 10th-90th percentile of your nights (trims the odd 2 AM
     // night so it doesn't blow the window open). bedMid = your typical (median).
     const sortedBeds = [...beds].sort((a, b) => a - b);
     const pct = (p: number) => sortedBeds.length ? sortedBeds[clamp(Math.round((p / 100) * (sortedBeds.length - 1)), 0, sortedBeds.length - 1)] : null;
     const bedLo = pct(10), bedMid = pct(50), bedHi = pct(90);
     const wake = nights.reduce((a, n) => a + n.awakeCount, 0) / nights.length;
-    return { deepPct, remPct, bedMin, bedSd, bedLo, bedMid, bedHi, wake, count: nights.length };
+    return { deepPct, remPct, bedMin, bedLo, bedMid, bedHi, wake, count: nights.length };
   }, [history30, excludedSet]);
 
   // Sleep Metrics rows computed once so the card AND the metric drill-down read the
@@ -744,9 +742,6 @@ export default function SleepHub() {
     const avgRemPct = withStages.length ? withStages.reduce((a, nt) => a + nt.remMs / nt.totalMs, 0) / withStages.length * 100 : null;
 
     const beds = filteredHistory.map(nt => nt.bedMin).filter((b): b is number => b !== null);
-    const bedMean = beds.length ? beds.reduce((a, b) => a + b, 0) / beds.length : null;
-    const bedSd = beds.length >= 2 && bedMean !== null
-      ? Math.round(Math.sqrt(beds.reduce((a, b) => a + (b - bedMean) ** 2, 0) / beds.length)) : null;
 
     const goalMs = sleepGoal * 3600000;
     const totalSleepMs = filteredHistory.reduce((a, nt) => a + nt.totalMs, 0);
@@ -778,15 +773,19 @@ export default function SleepHub() {
     const bedLo = baseline30?.bedLo ?? rPct(10);
     const bedMid = baseline30?.bedMid ?? rPct(50);
     const bedHi = baseline30?.bedHi ?? rPct(90);
-    const bedSpread = baseline30?.bedSd ?? bedSd;
+    // Judge consistency on the SAME trimmed 10th-90th window we DISPLAY (bedHi - bedLo), not the full
+    // stdev. That way a single 2 AM night, already trimmed out of the shown range, can't secretly flip the
+    // status to "Worth watching." A genuinely wide typical span (a pattern), not one slip, is what flags.
+    const bedSpan = (bedLo !== null && bedHi !== null) ? bedHi - bedLo : null;
     if (bedMid === null) {
       rows.push({ icon: 'time', label: 'Bedtime', value: '—', valueColor: theme.textSecondary, caption: 'Need 2+ nights', dkey: 'bedtime', isGood: null, reference: null });
     } else {
-      const color = (bedSpread === null || bedSpread <= 60) ? good : warn;
-      const word = bedSpread === null ? undefined : bedSpread <= 30 ? 'Consistent' : bedSpread <= 60 ? 'Mostly steady' : 'Variable';
+      const steady = bedSpan === null || bedSpan <= 120;
+      const color = steady ? good : warn;
+      const word = bedSpan === null ? undefined : bedSpan <= 60 ? 'Consistent' : bedSpan <= 120 ? 'Mostly steady' : 'Variable';
       const caption = (bedLo !== null && bedHi !== null && bedLo !== bedHi) ? `Range ${fmtBedMin(bedLo)} to ${fmtBedMin(bedHi)}` : undefined;
       const reference = (bedLo !== null && bedHi !== null && bedLo !== bedHi) ? `Typical ${fmtBedMin(bedMid)}, range ${fmtBedMin(bedLo)} to ${fmtBedMin(bedHi)}` : `Typical ${fmtBedMin(bedMid)}`;
-      rows.push({ icon: 'time', label: 'Bedtime', value: fmtBedMin(bedMid), valueColor: color, delta: word, deltaColor: color, caption, dkey: 'bedtime', isGood: (bedSpread === null || bedSpread <= 60), reference });
+      rows.push({ icon: 'time', label: 'Bedtime', value: fmtBedMin(bedMid), valueColor: color, delta: word, deltaColor: color, caption, dkey: 'bedtime', isGood: steady, reference });
     }
 
     let balValue: string, balColor: string, balWord: string | undefined;
@@ -1573,14 +1572,17 @@ export default function SleepHub() {
     const last = filteredHistory[filteredHistory.length - 1];
     const score = calcSleepScore(last.totalMs / 3600000, { core: last.coreMs, deep: last.deepMs, rem: last.remMs, totalMs: last.totalMs }, sleepGoal).score ?? 0;
     const beds = filteredHistory.map(n => n.bedMin).filter((b): b is number => b !== null);
-    let bedSd: number | null = null;
+    // Trimmed 10th-90th bedtime span (matches the Bedtime metric row's consistency measure), so the coach
+    // never nudges "steadier schedule" while the row reads Consistent.
+    let bedSpan: number | null = null;
     if (beds.length >= 2) {
-      const m = beds.reduce((a, b) => a + b, 0) / beds.length;
-      bedSd = Math.round(Math.sqrt(beds.reduce((a, b) => a + (b - m) ** 2, 0) / beds.length));
+      const sorted = [...beds].sort((a, b) => a - b);
+      const p = (q: number) => sorted[clamp(Math.round((q / 100) * (sorted.length - 1)), 0, sorted.length - 1)];
+      bedSpan = p(90) - p(10);
     }
     const allowCorrective = !(styleMode === 'mindful' && !mindfulGrowth);
     // AI-voiced sleep tip when ready; deterministic observation as the instant fallback.
-    const deterministic = sleepCoachTip(last, score, sleepGoal, bedSd, allowCorrective);
+    const deterministic = sleepCoachTip(last, score, sleepGoal, bedSpan, allowCorrective);
     const body = sleepCoachCache ? resolveTipBody(sleepCoachCache) : deterministic.text;
     return (
       <View style={cardStyle}>

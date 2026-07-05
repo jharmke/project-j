@@ -80,13 +80,72 @@ function buildFaithCatalog(): string {
 }
 const FAITH_CATALOG = buildFaithCatalog();
 
+// ── Halo pills: tappable buttons under a reply ────────────────────────────────
+type HaloPill = { label: string; path: string; params?: Record<string, string> };
+
+// Faith-feature action pills. Halo emits a hidden [[open:key]] token when she genuinely OFFERS one
+// (taught in her prompt); the client strips the token and shows the button. Token-based on purpose:
+// bare words like "prayer" are too common to scan for without false positives.
+const ACTION_PILLS: Record<string, HaloPill> = {
+  prayer:    { label: 'Open Prayer',   path: '/prayer' },
+  bible:     { label: 'Open Bible',    path: '/bible' },
+  gratitude: { label: 'Log Gratitude', path: '/(tabs)/faith', params: { scrollTo: 'gratitude' } },
+  journal:   { label: 'Open Journal',  path: '/journal' },
+};
+
+// Content (recommendation) pills, matched by title from the LIVE data. Multi-word titles only, so a
+// single common word (e.g. "Forgiveness") in ordinary conversation never triggers a pill; a real
+// recommendation names the full title and matches. Routes to the Plans hub, correct tab, and scrolls
+// to that item (never enrolls).
+const CONTENT_ITEMS = [
+  ...READING_PLANS.map(p => ({ id: p.id, name: p.name, tab: 'reading' })),
+  ...DEVOTIONALS.map(d => ({ id: d.id, name: d.name, tab: 'devotionals' })),
+].filter(it => it.name.trim().includes(' '));
+
+// Pull Halo's action-offer tokens out of a RAW reply (before verse verification) into pills; returns
+// the cleaned text and any action pills found.
+function stripActionTokens(text: string): { text: string; actionPills: HaloPill[] } {
+  const actionPills: HaloPill[] = [];
+  const cleaned = text
+    .replace(/\[\[\s*open\s*:\s*(prayer|bible|gratitude|journal)\s*\]\]/gi, (_m, key: string) => {
+      const p = ACTION_PILLS[key.toLowerCase()];
+      if (p && !actionPills.some(x => x.label === p.label)) actionPills.push(p);
+      return '';
+    })
+    // Strip stray markdown: Halo is plain-text only, but Haiku still bolds/headers sometimes, and it
+    // was rendering raw (**like this**). Unwrap pairs, then remove any leftover * ` and heading marks.
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/[*`]/g, '')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/\(\s*\)/g, '')
+    .replace(/\s+([,.;:!?])/g, '$1')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+  return { text: cleaned, actionPills };
+}
+
+// Final pill list for a reply: recommendation pills (from titles Halo named) first, then her action
+// offers, capped so the row never gets noisy.
+function collectPills(finalText: string, actionPills: HaloPill[]): HaloPill[] {
+  const lower = finalText.toLowerCase();
+  const matched = CONTENT_ITEMS.filter(it => lower.includes(it.name.toLowerCase()));
+  // If the reply names MANY titles, it is a catalog LISTING, not a recommendation, so show no content
+  // pills (a few arbitrary ones would just be noise). A genuine recommendation names one or two.
+  const content: HaloPill[] = matched.length > 3
+    ? []
+    : matched.map(it => ({ label: `Open ${it.name}`, path: '/plans', params: { tab: it.tab, focus: it.id } }));
+  return [...content, ...actionPills].slice(0, 3);
+}
+
 type Role = 'user' | 'halo' | 'system' | 'crisis';
 // A Halo reply renders as segments so VERIFIED Scripture references become tappable links
 // while fabricated ones are stripped (see buildSegments). Plain text stays plain text.
 type Segment =
   | { type: 'text'; value: string }
   | { type: 'ref'; value: string; ref: VerseRef; realText: string | null };
-type Msg = { role: Role; text: string; segments?: Segment[]; feedback?: 'up' | 'down'; sent?: string };
+type Msg = { role: Role; text: string; segments?: Segment[]; feedback?: 'up' | 'down'; sent?: string; pills?: HaloPill[] };
 
 // Light cleanup for the gap a stripped (fabricated) reference can leave: empty parens, a
 // space before punctuation, or a doubled space. A safe no-op on normal prose.
@@ -387,6 +446,17 @@ export default function CompanionChat({
     });
   };
 
+  // Open a pill's destination (a recommended plan/devotional, or a faith feature Halo offered). Fades
+  // the chat out like the verse links, then navigates. Never enrolls; it only takes the user there.
+  const openPill = (p: HaloPill) => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    Keyboard.dismiss();
+    Animated.timing(anim, { toValue: 0, duration: 180, useNativeDriver: false }).start(() => {
+      onClose();
+      router.push({ pathname: p.path as any, params: p.params });
+    });
+  };
+
   // Share a reply via the native share sheet (which includes Copy on iOS), so copy + share
   // are one tap with no extra dependency. Shares the clean, verified text.
   const shareMessage = async (text: string) => {
@@ -525,9 +595,13 @@ export default function CompanionChat({
       } else if (data.ok && data.reply) {
         // Verify Scripture BEFORE rendering so nothing fabricated ever flashes. Typing dots
         // stay up for the extra beat (usually instant; one fetch worst case).
-        const built = await buildVerifiedReply(data.reply);
+        // Strip Halo's action-offer tokens into pills BEFORE verse verification, verify/segment the
+        // clean text, then add recommendation pills for any plan/devotional she named by title.
+        const { text: preClean, actionPills } = stripActionTokens(data.reply);
+        const built = await buildVerifiedReply(preClean);
+        const pills = collectPills(built.text, actionPills);
         setSending(false);
-        setMessages(prev => [...prev, { role: 'halo', text: built.text, segments: built.segments }]);
+        setMessages(prev => [...prev, { role: 'halo', text: built.text, segments: built.segments, pills }]);
       } else if (data.message) {
         setSending(false);
         setMessages(prev => [...prev, { role: 'system', text: data.message! }]);
@@ -689,6 +763,16 @@ export default function CompanionChat({
                     <HaloAvatar />
                     <View style={styles.replyCol}>
                     <View style={[styles.bubble, styles.haloBubble, styles.replyBubble]}>{body}</View>
+                    {m.pills && m.pills.length > 0 && (
+                      <View style={styles.pillRow}>
+                        {m.pills.map((p, pi) => (
+                          <Pressable key={pi} onPress={() => openPill(p)} style={[styles.pill, { backgroundColor: 'rgba(232,160,32,0.14)', borderColor: 'rgba(232,160,32,0.5)' }]}>
+                            <Ionicons name="arrow-forward" size={12} color={GOLD} />
+                            <Text style={[styles.pillText, { color: theme.accentAmber }]}>{p.label}</Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                    )}
                     <View style={styles.actionRow}>
                       <Pressable onPress={() => shareMessage(m.text)} hitSlop={8} style={styles.actionBtn}>
                         <Ionicons name="share-outline" size={17} color={theme.textMuted} />
@@ -818,6 +902,9 @@ const styles = StyleSheet.create({
   haloRow:     { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
   replyCol:    { flexShrink: 1, marginBottom: 10 },
   replyBubble: { maxWidth: '100%', marginBottom: 0 },
+  pillRow:  { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8, marginBottom: 2 },
+  pill:     { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 14, borderWidth: 1, minHeight: 32 },
+  pillText: { fontSize: 12, fontFamily: 'DMSans_600SemiBold' },
   actionRow:   { flexDirection: 'row', alignItems: 'center', marginTop: 2, paddingLeft: 2 },
   actionBtn:   { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
   systemMsg:  { fontSize: 12, fontFamily: 'DMSans_400Regular', textAlign: 'center', alignSelf: 'center', maxWidth: '90%', marginVertical: 10, lineHeight: 17 },

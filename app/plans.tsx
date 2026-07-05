@@ -42,7 +42,7 @@ export default function PlansScreen() {
   const { theme, themeId } = useTheme();
   const insets = useSafeAreaInsets();
   const { showToast } = useToast();
-  const params = useLocalSearchParams<{ tab?: string }>();
+  const params = useLocalSearchParams<{ tab?: string; focus?: string }>();
 
   const [tab, setTab] = useState<Tab>(params.tab === 'reading' ? 'reading' : 'devotionals');
   const [planStore, setPlanStore] = useState<ReadingPlansStorage>({});
@@ -50,6 +50,7 @@ export default function PlansScreen() {
   const [loading, setLoading] = useState(true);
   const [sortMode, setSortMode] = useState<SortMode>('featured'); // sorts the browse lists only
   const scrollRef = useRef<ScrollView>(null);
+  const cardOffsets = useRef<Record<string, number>>({}); // plan/devotional id -> y offset, for deep-link scroll-to
   const { registerScrollView, unregisterScrollView } = useTutorial();
   const segmentRef = useTutorialTarget('faith_plans_segment');
   const planCardRef = useTutorialTarget('faith_plans_card');
@@ -81,6 +82,21 @@ export default function PlansScreen() {
   useEffect(() => {
     scrollRef.current?.scrollTo({ y: 0, animated: false });
   }, [tab]);
+
+  // Deep-link focus: when Halo (or any caller) links to a specific plan/devotional, switch to its tab
+  // and scroll to it (mirrors the Faith tab's scroll-to-card). The delay lets the tab content and rows
+  // lay out and register their offsets first. Never enrolls: it only takes the user to the item.
+  useEffect(() => {
+    const focus = params.focus;
+    if (!focus) return;
+    if (DEVOTIONALS.some(d => d.id === focus)) setTab('devotionals');
+    else if (READING_PLANS.some(p => p.id === focus)) setTab('reading');
+    const t = setTimeout(() => {
+      const y = cardOffsets.current[focus];
+      if (typeof y === 'number') scrollRef.current?.scrollTo({ y: Math.max(0, y - 12), animated: true });
+    }, 500);
+    return () => clearTimeout(t);
+  }, [params.focus]);
 
   // ── Reading plan actions ────────────────────────────────────────────────────
   const openReadingPlan = (planId: string) => {
@@ -242,8 +258,8 @@ export default function PlansScreen() {
                   {activePlans.map(plan => {
                     const c = getPlanCompletion(plan, planStore[plan.id]);
                     return (
+                      <View key={plan.id} onLayout={e => { cardOffsets.current[plan.id] = e.nativeEvent.layout.y; }}>
                       <PlanRow
-                        key={plan.id}
                         theme={theme}
                         icon={plan.icon}
                         title={plan.name}
@@ -254,6 +270,7 @@ export default function PlansScreen() {
                         onPrimary={() => openReadingPlan(plan.id)}
                         onDrop={() => confirmDropPlan(plan.id)}
                       />
+                      </View>
                     );
                   })}
                 </>
@@ -268,7 +285,7 @@ export default function PlansScreen() {
                 </Text>
               )}
               {browsePlans.map((plan, i) => (
-                <View key={plan.id} ref={i === 0 ? planCardRef : undefined} collapsable={false}>
+                <View key={plan.id} ref={i === 0 ? planCardRef : undefined} collapsable={false} onLayout={e => { cardOffsets.current[plan.id] = e.nativeEvent.layout.y; }}>
                   <PlanRow
                     theme={theme}
                     icon={plan.icon}
@@ -295,8 +312,8 @@ export default function PlansScreen() {
                     const c = getDevotionalCompletion(dev, devStore[dev.id]);
                     const nextDay = getNextDay(dev, getDevotionalProgress(devStore, dev.id));
                     return (
+                      <View key={dev.id} onLayout={e => { cardOffsets.current[dev.id] = e.nativeEvent.layout.y; }}>
                       <PlanRow
-                        key={dev.id}
                         theme={theme}
                         icon={dev.icon}
                         title={dev.name}
@@ -307,6 +324,7 @@ export default function PlansScreen() {
                         onPrimary={() => openDevotional(dev.id, nextDay)}
                         onDrop={() => confirmDropDevotional(dev.id)}
                       />
+                      </View>
                     );
                   })}
                 </>
@@ -323,8 +341,8 @@ export default function PlansScreen() {
                     </Text>
                   )}
                   {browseDevs.map(dev => (
+                    <View key={dev.id} onLayout={e => { cardOffsets.current[dev.id] = e.nativeEvent.layout.y; }}>
                     <PlanRow
-                      key={dev.id}
                       theme={theme}
                       icon={dev.icon}
                       title={dev.name}
@@ -335,6 +353,7 @@ export default function PlansScreen() {
                       onPrimary={() => startDevotional(dev.id)}
                       disabled={devsAtLimit}
                     />
+                    </View>
                   ))}
                 </>
               ) : activeDevs.length === 0 ? (

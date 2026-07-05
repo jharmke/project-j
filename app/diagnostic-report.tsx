@@ -92,8 +92,10 @@ export default function DiagnosticReportScreen() {
   // Per-pattern windows: there is no window picker. The report blocks only if there is barely
   // anything to analyze; otherwise each finding uses its own lookback internally.
   const MIN_LOGGED = 7;
+  const VISIBLE_REPORTS = 4; // show the current + 3 recent; older collapse behind "Show N older"
 
   const [savedReports, setSavedReports] = useState<DiagnosticReport[]>([]);
+  const [showAllReports, setShowAllReports] = useState(false); // collapse older reports so the list stays short
   const [generating, setGenerating]     = useState(false);
   const [initialized, setInitialized]   = useState(false);
   const [totalLogged, setTotalLogged]   = useState(0);
@@ -216,7 +218,7 @@ export default function DiagnosticReportScreen() {
         {savedReports.length > 0 && (
           <View style={{ marginTop: 8 }}>
             <Text style={[styles.sectionLabel, { color: t.textMuted }]}>SAVED REPORTS</Text>
-            {savedReports.map((r, idx) => {
+            {(showAllReports ? savedReports : savedReports.slice(0, VISIBLE_REPORTS)).map((r, idx) => {
               const isCurrent = idx === 0; // most recent is the live one
               return (
                 <TouchableOpacity
@@ -253,6 +255,17 @@ export default function DiagnosticReportScreen() {
                 </TouchableOpacity>
               );
             })}
+            {savedReports.length > VISIBLE_REPORTS && (
+              <TouchableOpacity
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setShowAllReports(v => !v); }}
+                style={{ paddingVertical: 12, alignItems: 'center' }}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+              >
+                <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: t.accentBlueRaw }}>
+                  {showAllReports ? 'Show less' : `Show ${savedReports.length - VISIBLE_REPORTS} older`}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
 

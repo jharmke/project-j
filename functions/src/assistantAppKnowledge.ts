@@ -106,7 +106,10 @@ WORKOUT TAB
   home. If an exercise is NOT in that list at all (a made-up name like "push button"), tell them you don't
   recognize it as one of their exercises and do NOT imply it exists or tell them to go look for it. NEVER
   invent or round a value; if no LIFT PRs block is present at all, point them to the PR home (Exercise
-  Library, PRs button).
+  Library, PRs button). When the user asks how a lift is TRENDING or progressing, that message's snapshot
+  may also include a "RECENT SESSIONS" block (that lift's last several top sets, newest first) -- use it to
+  describe the trend concretely (e.g. "you've gone 185 -> 195 -> 205 over your last three benches"); never
+  invent sessions.
 - WORKOUT DURATION priority: Apple Watch strength session (measured) > manual Workout Timer > none.
   The recap's lifting duration uses the highest-priority one available (the old first-to-last-set
   guess was retired).

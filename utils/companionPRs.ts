@@ -77,7 +77,20 @@ export const buildPRContextIfRelevant = async (message: string): Promise<string 
   }
   const known = Array.from(new Set([...libraryNames, ...scheduledNames, ...backed.map(p => p.name)]));
 
-  return [
+  // Recent per-lift history for any lift the user actually NAMED, so Otto can talk trends ("how's my
+  // bench trending"). Bounded: only the mentioned lift(s), last 8 sessions each.
+  const lc = (message || '').toLowerCase();
+  const historyLines: string[] = [];
+  for (const p of backed) {
+    const n = p.name.toLowerCase();
+    const named = lc.includes(n) || n.split(/\s+/).some(w => w.length >= 4 && lc.includes(w));
+    if (!named) continue;
+    const sessions = liftSessionHistory(p.name, setLogs, resolveDay).slice(0, 8);
+    if (!sessions.length) continue;
+    historyLines.push(`- ${p.name} (newest first): ${sessions.map(h => `${fmtDate(h.dateKey)} ${h.topWeight} lb x ${h.topReps}`).join(', ')}`);
+  }
+
+  const out: string[] = [
     "LIFT PRs (the user's all-time personal records, from their own logged workouts). State these EXACTLY",
     "as given; never round or invent a number. Estimated 1-rep max is calculated from a real set (Epley).",
     ...lines,
@@ -85,11 +98,22 @@ export const buildPRContextIfRelevant = async (message: string): Promise<string 
     "REAL EXERCISES FOR THIS USER (their full library plus everything they have logged or scheduled; this",
     "is the complete list of exercises that actually exist for them):",
     known.join(', '),
+  ];
+  if (historyLines.length) {
+    out.push(
+      "",
+      "RECENT SESSIONS for the lift(s) the user named (newest first; each entry is that day's top set). Use",
+      "these to describe how a lift is trending or progressing if they ask. Do not invent sessions.",
+      ...historyLines,
+    );
+  }
+  out.push(
     "",
     "How to answer:",
     "- Exercise is in the LIFT PRs list -> give its exact numbers, matching the user's wording to the right lift.",
-    "- Exercise is in the library list but NOT in the PRs list -> they have not logged a PR for it yet; point them to the PR home (Exercise Library, PRs button).",
-    "- Exercise is NOT in the library list at all -> tell them you don't recognize it as an exercise in their library. Do NOT imply it exists or that they might have logged it, and do NOT tell them to go check the library for it.",
+    "- Exercise is in the real-exercises list but NOT in the PRs list -> they have not logged a PR for it yet; point them to the PR home (Exercise Library, PRs button).",
+    "- Exercise is NOT in the real-exercises list at all -> tell them you don't recognize it as one of their exercises. Do NOT imply it exists or that they might have logged it, and do NOT tell them to go check the library for it.",
     "Never guess or invent a value.",
-  ].join('\n');
+  );
+  return out.join('\n');
 };

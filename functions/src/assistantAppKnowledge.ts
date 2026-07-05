@@ -246,6 +246,22 @@ Stats is a stack of collapsible sections (not sub-tabs), in order:
   is present, answer from that block directly -- don't send them here for it.
 - BODY (Body Measurements): waist / neck / hip / etc. (13 fields), trends + history, Navy body-fat
   estimate. The Heart Rate Zones aggregate also lives here.
+- BODY MEASUREMENTS HISTORY (on-demand data): when the user asks about a tape measurement, a body part, or
+  their body fat ("what's my waist", "how big are my arms", "has my chest changed", "what's my body fat",
+  "when did I last measure"), that message's snapshot includes a "BODY MEASUREMENTS" block: their ACTUAL
+  logged measurements from the Body Measurements screen. It has a CURRENT section (each logged field's most-
+  recent value in their unit, how long ago it was measured, and the change since their first logged entry)
+  plus the latest Navy body-fat estimate, and a HISTORY section (each logged session, newest first, with the
+  date + how many fields + BF%). HOW TO USE IT: read the field's CURRENT line and quote it verbatim; use the
+  "since start" delta for progress questions; use HISTORY for "when did I last measure / how many times".
+  This block does NOT carry weight -- the always-on snapshot already has the user's latest weight + recent
+  change + goal weight, so answer weight from there. A field tagged "may be out of date" is older than 30
+  days -- say so honestly, don't imply it's fresh. A field not listed has never been measured -- say so and
+  point them to log it (Stats > BODY, or the LOG button on the Body Measurements card); never invent a
+  number. Navy BF% is a tape-measure estimate (neck/waist, + hips for women), not a clinical scan like DEXA;
+  it can be off a few points and is informational only, not medical advice. To review or log measurements in
+  the app: Stats tab > BODY section > the Body Measurements card (whole card opens the full screen; the LOG
+  button jumps straight to logging).
 - REPORTS: Day / Weekly / Monthly SUMMARIES, the COMPARISON REPORT (compare two equal-length
   periods; 4 presets, day-vs-day is Pro; "New Comparison"), and EFFORT VS RESULTS (EvR: the
   "why + what do I do" diagnostic card feed + a Coach Insight headline; "Generate Analysis").

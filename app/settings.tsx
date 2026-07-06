@@ -67,6 +67,7 @@ import {
   requestNotificationPermission,
 } from '../services/notifications';
 import { TUTORIALS } from '../data/tutorials';
+import { WHATS_NEW } from '../data/whatsNew';
 import { resetAllTutorials, useTutorial } from '../context/TutorialContext';
 import { showToolkit } from '../components/ToolkitSheet';
 import { generateWeeklySummary } from '../utils/weeklySummary';
@@ -2096,11 +2097,18 @@ export default function SettingsScreen() {
         </CollapsibleSection>
 
         {/* ── About ── */}
-        <CollapsibleSection label="About" subtitle="Version · Privacy · Legal" defaultOpen={false} theme={theme}>
+        <CollapsibleSection label="About" subtitle="Version · What's New · Privacy · Legal" defaultOpen={false} theme={theme}>
           <View style={[styles.row, { borderTopColor: theme.borderCard }]}>
             <Text style={[styles.rowTitle, { color: theme.textPrimary, flex: 1 }]}>Version</Text>
             <Text style={[styles.rowSub, { color: theme.textMuted }]}>{appVersion}</Text>
           </View>
+          <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/whats-new'); }} activeOpacity={0.7}>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.rowTitle, { color: theme.textPrimary }]}>What's New</Text>
+              <Text style={[styles.rowSub, { color: theme.textMuted }]}>{WHATS_NEW.version}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
+          </TouchableOpacity>
           <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); Linking.openURL('https://projectj-5d024.web.app/privacy'); }} activeOpacity={0.7}>
             <Text style={[styles.rowTitle, { color: theme.textPrimary, flex: 1 }]}>Privacy Policy</Text>
             <Ionicons name="open-outline" size={14} color={theme.textMuted} />

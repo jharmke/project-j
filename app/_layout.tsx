@@ -200,6 +200,7 @@ function RootLayoutNav() {
         <Stack.Screen name="weekly-summary" options={{ headerShown: false }} />
         <Stack.Screen name="monthly-summary" options={{ headerShown: false }} />
         <Stack.Screen name="mission" options={{ headerShown: false }} />
+        <Stack.Screen name="whats-new" options={{ headerShown: false }} />
         <Stack.Screen name="diagnostic-report" options={{ headerShown: false }} />
         <Stack.Screen name="diagnostic-report-view" options={{ headerShown: false }} />
         <Stack.Screen name="definitions" options={{ headerShown: false }} />

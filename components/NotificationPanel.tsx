@@ -34,6 +34,7 @@ const CAT_LABEL: Record<string, string> = {
   daily_goal: 'Daily Goals',
   record: 'Records',
   summary_ready: 'Summaries',
+  whats_new: "What's New",
   tdee_suggestion: 'Suggestion',
 };
 

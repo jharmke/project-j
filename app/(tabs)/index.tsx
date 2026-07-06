@@ -25,6 +25,8 @@ import { isSyncReady } from '../../services/syncService';
 import { reconcileDayWater, runWaterReconciliation } from '../../utils/waterData';
 import { cancelWaterPaceNotification, cancelWeeklySummaryNotification, cancelMonthlySummaryNotification } from '../../services/notifications';
 import { VERSES, resolveDailyVerse } from '../../data/verses';
+import { WHATS_NEW } from '../../data/whatsNew';
+import { addNotification } from '../../utils/notifications';
 import FaithTodayCard from '../../components/FaithTodayCard';
 import { loadCalorieTargets } from '../../utils/calorieTarget';
 import { useTheme } from '../../theme';
@@ -1321,6 +1323,25 @@ export default function HomeScreen() {
       tipResumeRef.current = setTimeout(startTipAuto, 10000);
     }
   };
+
+  // What's New: surface a ONE-TIME Otto hub notification when the release changes. Gated on
+  // WHATS_NEW.releaseId (not the app version, which EAS manages remotely), so bumping the release
+  // content re-fires it once. Settings > About always links the page regardless of this.
+  useEffect(() => {
+    (async () => {
+      try {
+        const seen = await AsyncStorage.getItem('pj_whats_new_seen');
+        if (seen === WHATS_NEW.releaseId) return;
+        await addNotification({
+          id: 'whats_new', lifecycle: 'replace', category: 'whats_new',
+          title: "What's New", body: `See what changed in the ${WHATS_NEW.version}.`,
+          icon: 'sparkles', iconColor: '#d4860a',
+          route: { pathname: '/whats-new' },
+        });
+        await storageSet('pj_whats_new_seen', WHATS_NEW.releaseId);
+      } catch {}
+    })();
+  }, []);
 
   // ── Persist HealthKit to storage ────────────────────────────────────────────
   useEffect(() => {

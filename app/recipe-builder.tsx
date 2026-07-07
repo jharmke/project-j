@@ -218,10 +218,20 @@ export default function RecipeBuilderScreen() {
     };
   }, []);
 
+  // First focus = the builder just opened. Any ingredient sitting in the shared hand-off slot is a
+  // leftover from a PREVIOUS, abandoned session (a valid one is only ever written AFTER this builder is
+  // already open, i.e. on a later focus), so discard it on open instead of silently attaching an orphan
+  // to this recipe. Subsequent focuses consume the ingredient the user just added.
+  const hasFocusedRef = useRef(false);
   useFocusEffect(
     useCallback(() => {
       const checkPendingIngredient = async () => {
         try {
+          if (!hasFocusedRef.current) {
+            hasFocusedRef.current = true;
+            await AsyncStorage.removeItem('pj_pending_ingredient');
+            return;
+          }
           const pending = await AsyncStorage.getItem('pj_pending_ingredient');
           if (pending) {
             const ingredient = JSON.parse(pending);

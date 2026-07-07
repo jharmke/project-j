@@ -18,6 +18,7 @@ import { fetchTrendData, TrendData, EMPTY_TREND_DATA } from '../utils/statsData'
 import { liftSessionHistory } from '../utils/liftPR';
 import { loadMealSlots, getMealDisplayName } from '../utils/mealSlots';
 import { loadMeasurements, loadBodyMeasureSettings, toDisplay, unitLabel, MEASURE_FIELDS, type MeasurementUnit } from '../utils/bodyMeasurements';
+import { ACHIEVEMENTS, loadAchievements, type AchievementsStore } from '../achievementData';
 import { loadReports, saveReport, newReportId, resolveRange, RANGE_LABELS, Report, ReportRangePreset } from '../utils/reports';
 import { REPORT_CHAPTERS, REPORT_BLOCKS, blocksForChapter, getReportBlock, ReportBlock, REPORT_TEMPLATES, ReportTemplate } from '../utils/reportBlocks';
 
@@ -37,6 +38,7 @@ export default function ReportScreen() {
   const [workoutState, setWorkoutState] = useState<any>(null);     // raw pj_workout_state (history + PRs)
   const [mealCtx, setMealCtx] = useState<{ slots: any[]; cache: any }>({ slots: [], cache: {} });
   const [bodyCtx, setBodyCtx] = useState<{ entries: any[]; unit: MeasurementUnit }>({ entries: [], unit: 'in' });
+  const [achieveStore, setAchieveStore] = useState<AchievementsStore>({});
   const [loading, setLoading] = useState(true);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
@@ -77,7 +79,9 @@ export default function ReportScreen() {
         try { const { mealSlots, slotNameCache } = await loadMealSlots(); mc = { slots: mealSlots, cache: slotNameCache }; } catch {}
         let bc = { entries: [] as any[], unit: 'in' as MeasurementUnit };
         try { const be = await loadMeasurements(); const bs = await loadBodyMeasureSettings(); bc = { entries: be, unit: bs.unit }; } catch {}
-        if (!cancelled) { setData(cur); setPrior(prev); setFoodDays(fd); setWorkoutState(ws); setMealCtx(mc); setBodyCtx(bc); }
+        let ach: AchievementsStore = {};
+        try { ach = await loadAchievements(); } catch {}
+        if (!cancelled) { setData(cur); setPrior(prev); setFoodDays(fd); setWorkoutState(ws); setMealCtx(mc); setBodyCtx(bc); setAchieveStore(ach); }
       } catch { if (!cancelled) { setData(EMPTY_TREND_DATA); setPrior(EMPTY_TREND_DATA); setFoodDays([]); } }
       if (!cancelled) setLoading(false);
     })();
@@ -190,7 +194,7 @@ export default function ReportScreen() {
             {activeBlocks.map((b, i) => (
               <BlockCard key={b.id} block={b} data={data} prior={prior} foodDays={foodDays} workoutState={workoutState}
                 mealSlots={mealCtx.slots} slotCache={mealCtx.cache} bodyEntries={bodyCtx.entries} bodyUnit={bodyCtx.unit}
-                startKey={rangeBounds.startKey} endKey={rangeBounds.endKey} theme={theme}
+                achieveStore={achieveStore} startKey={rangeBounds.startKey} endKey={rangeBounds.endKey} theme={theme}
                 collapsed={collapsed.has(b.id)} onToggle={() => toggleCollapse(b.id)}
                 editMode={libraryOpen} isFirst={i === 0} isLast={i === activeBlocks.length - 1}
                 onUp={() => moveBlock(b.id, -1)} onDown={() => moveBlock(b.id, 1)} onRemove={() => toggleBlock(b.id)} />
@@ -286,11 +290,12 @@ const FULL_DATE = (key: string) => {
 // ── Block renderer ───────────────────────────────────────────────────────────────────────────────
 interface BlockCardProps {
   block: ReportBlock; data: TrendData; prior: TrendData; foodDays: FoodDay[]; workoutState: any;
-  mealSlots: any[]; slotCache: any; bodyEntries: any[]; bodyUnit: MeasurementUnit; startKey: string; endKey: string; theme: any;
+  mealSlots: any[]; slotCache: any; bodyEntries: any[]; bodyUnit: MeasurementUnit; achieveStore: AchievementsStore;
+  startKey: string; endKey: string; theme: any;
   collapsed: boolean; onToggle: () => void; editMode: boolean; isFirst: boolean; isLast: boolean;
   onUp: () => void; onDown: () => void; onRemove: () => void;
 }
-function BlockCard({ block, data, prior, foodDays, workoutState, mealSlots, slotCache, bodyEntries, bodyUnit, startKey, endKey, theme, collapsed, onToggle, editMode, isFirst, isLast, onUp, onDown, onRemove }: BlockCardProps) {
+function BlockCard({ block, data, prior, foodDays, workoutState, mealSlots, slotCache, bodyEntries, bodyUnit, achieveStore, startKey, endKey, theme, collapsed, onToggle, editMode, isFirst, isLast, onUp, onDown, onRemove }: BlockCardProps) {
   // For a trend block, surface its latest value in the header (clean) instead of floating it in the chart.
   const trendLatest = block.form === 'lineTrend' ? latestOf(seriesFor(block.dataKey, data)) : null;
   return (
@@ -330,6 +335,7 @@ function BlockCard({ block, data, prior, foodDays, workoutState, mealSlots, slot
           {block.form === 'exerciseFrequency' && <ExerciseFrequency workoutState={workoutState} startKey={startKey} endKey={endKey} theme={theme} />}
           {block.form === 'sleepStages' && <SleepStages data={data} theme={theme} />}
           {block.form === 'bodyMeasurements' && <BodyMeasurements entries={bodyEntries} unit={bodyUnit} startKey={startKey} endKey={endKey} theme={theme} />}
+          {block.form === 'achievements' && <AchievementsEarned store={achieveStore} startKey={startKey} endKey={endKey} theme={theme} />}
         </>
       )}
     </View>
@@ -744,6 +750,34 @@ function BodyMeasurements({ entries, unit, startKey, endKey, theme }: { entries:
         );
       })}
       {sessions.length > CAP && <Text style={{ fontSize: 11.5, color: theme.textDim, textAlign: 'center', fontFamily: 'DMSans_400Regular', marginTop: 2 }}>+{sessions.length - CAP} earlier sessions. Narrow the range to see them.</Text>}
+    </View>
+  );
+}
+
+// Achievements earned within the range, newest first (name + category + date unlocked).
+function AchievementsEarned({ store, startKey, endKey, theme }: { store: AchievementsStore; startKey: string; endKey: string; theme: any }) {
+  const rows = useMemo(() => {
+    const s = store || {};
+    return ACHIEVEMENTS.filter(a => s[a.id])
+      .map(a => ({ name: a.name, category: String(a.category), date: String(s[a.id].unlockedAt || '').slice(0, 10) }))
+      .filter(r => r.date && r.date >= startKey && r.date <= endKey)
+      .sort((x, y) => y.date.localeCompare(x.date));
+  }, [store, startKey, endKey]);
+  if (!rows.length) return emptyList(theme, 'No achievements earned in this range.');
+  return (
+    <View style={{ gap: 9 }}>
+      {rows.map((r, i) => (
+        <View key={r.name + i} style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
+          <View style={{ width: 30, height: 30, borderRadius: 9, backgroundColor: 'rgba(212,134,10,0.14)', alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="trophy" size={15} color={theme.accentAmber} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text numberOfLines={1} style={{ fontSize: 13.5, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{r.name}</Text>
+            <Text style={{ fontSize: 10.5, fontFamily: 'DMSans_500Medium', color: theme.textMuted, marginTop: 1, textTransform: 'capitalize' }}>{r.category}</Text>
+          </View>
+          <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: theme.textDim }}>{FULL_DATE(r.date)}</Text>
+        </View>
+      ))}
     </View>
   );
 }

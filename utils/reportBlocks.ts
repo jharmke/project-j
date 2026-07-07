@@ -43,7 +43,8 @@ export type BlockForm =
   | 'dayExtremes'   // biggest & lightest calorie days (drill-down)
   | 'exerciseFrequency' // most-performed exercises, ranked (drill-down)
   | 'sleepStages'   // avg deep/REM/core breakdown
-  | 'bodyMeasurements'; // tape measurements, session by session (drill-down)
+  | 'bodyMeasurements' // tape measurements, session by session (drill-down)
+  | 'achievements'; // badges earned in the range (drill-down)
 
 export interface ReportBlock {
   id: string;
@@ -63,6 +64,9 @@ export interface ReportBlock {
 // breakdowns + records blocks come next. Deliberately NOT one-line-graph-per-metric (that would just
 // duplicate the Stats Trends section) -- metrics that aren't a standalone trend live inside a headline.
 export const REPORT_BLOCKS: ReportBlock[] = [
+  // Overview
+  { id: 'achievements_earned', chapter: 'overview', title: 'Achievements earned', desc: 'Badges you unlocked in this range', form: 'achievements', tier: 'core' },
+
   // Nutrition -- drill-down lists lead (the stuff you can't get anywhere else in the app)
   { id: 'top_foods',         chapter: 'nutrition', title: 'Most-logged foods',  desc: 'Your most frequent foods, ranked',     form: 'topFoods',              tier: 'core' },
   { id: 'food_log',          chapter: 'nutrition', title: 'Food log',           desc: 'Every food you logged, day by day',    form: 'foodLog',               tier: 'core' },

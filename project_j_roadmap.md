@@ -72,9 +72,14 @@ are separate pre-submission checklists, NOT part of this menu.
   HIDDEN from the add-exercise picker, backfill existing sessions, additive/display-only (no counting
   changes). Cardio PRs PARKED (see spec). Full spec: SPEC_apple_workout_library.md. Chosen OVER the full
   Sessions rearchitecture (SPEC_workout_sessions.md). Build after the gym list.
-- [TRACK, needs vision] Custom Reports -- user-generated, user-picks-contents, EXPORTABLE reports across
-  nutrition / sleep-recovery / exercise / etc. Distinct from the auto summaries + EvR. Per-domain deep-
-  dive scope still fuzzy (Justin has the idea, not the vision yet). Discuss before spec.
+- [TRACK, VISION LOCKED + SPECCED 2026-07-07 -> ready to build] Custom Reports (Pro). Model: report =
+  date range (week/month/3mo/6mo/1yr/custom) + chapters, each a PICKER into a library of ~55 pre-designed
+  blocks the user assembles freely; templates = pre-filled block sets; exportable (PDF/share); Pro-gated
+  (free = no access; faith DATA still free elsewhere); Mindful + faith-tier aware; wearable-gated blocks.
+  Premium is protected because WE design every block (user picks WHAT, never HOW it looks -- not a build-
+  your-own chart tool). Phase 2 = AI prompt that ASSEMBLES blocks from plain language (blocks are the
+  foundation it needs). Full detail + tiered block catalog: SPEC_custom_reports.md. Live light-theme/cyan
+  mockup built this session. NEXT: rank blocks Core vs Wave 2, pick launch templates, storage + export tech.
 - [x] Otto on-demand data access thread -- COMPLETE 2026-07-05 (one dataset at a time, conditional-injection pattern from utils/companionPRs.ts). SHIPPED: PR values + real-exercise recognition + per-lift TREND + recent-workouts (30-day sessions) + food log (30-day totals + named-day items) + sleep + recovery (30-day nights + named-night detail) + body measurements (per-field value/age/delta + Navy BF% + history) + achievements (earned set + live badge progress via shared achievementProgress scan) + journal/prayer (recent entries + prayers, privacy + faith-tier gated). All device-verified. OPTIONAL later add: full per-metric streak tiles (needs the Stats streak engine extracted into a shared util first). Did NOT build true LLM tool-use (Haiku too flaky); revisit only if Otto moves to a stronger model.
 - [x] FAB contrast/border (GLOBAL) -- COMPLETE 2026-07-05. "bg ring" recipe = borderWidth: 3, borderColor: theme.bgPrimary on the FAB circle (invisible moat over the page, visible ring the moment it overlaps a same-accent button). DONE across every real page FAB: Otto FAB (AssistantFAB) + Workout tab (main + 2 subs) + workout-library (main + 3 subs) + stats (main + 3 subs) + add-food (main + 3 subs) + body-measurements + bible + journal + prayer + Halo (CompanionFAB, SVG special case: drawn page-colored Circle ring at r=DISC/2-1.5 instead of a border, now theme-aware). The other roadmap-listed files had NO floating page FAB (settings/profile/AssistantOverlay = the global Otto FAB already done + save bars; ai-meal-estimator/AddPrayerModal = none; CompanionChat/AssistantChat send buttons = in-bar, not overlap-prone, intentionally excluded). Awaiting 5-theme x all-accent device audit before fully closing the visual gate.
 - [ ] QUICK WINS (small, grab-when-convenient): none queued right now -- add here as they come up. (DONE 2026-07-07: FAB text-label rings app-wide · inline Add Exercise button · the whole gym list.)
@@ -248,7 +253,7 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
 Every major feature has a SPEC_*.md in the repo root. Active ones tied to open work above:
 - Wearable / TDEE: SPEC_wearable_robustness.md | Otto hub: SPEC_otto_notifications.md | Push notifications: SPEC_notifications.md
 - Sleep/Recovery: SPEC_sleep.md, SPEC_recovery_coach.md, SPEC_hr_zones.md | Lifting: SPEC_lifting_log.md | Workout sessions: SPEC_workout_sessions.md
-- Nutrition: SPEC_nutrition.md, SPEC_calorie_goal_hit.md, SPEC_ai_meal_estimator.md | Day/Reports: SPEC_day_score_and_summary.md, SPEC_weekly_summary.md, SPEC_monthly_summary.md, SPEC_evr_redesign.md, SPEC_comparison_challenge.md
+- Nutrition: SPEC_nutrition.md, SPEC_calorie_goal_hit.md, SPEC_ai_meal_estimator.md | Day/Reports: SPEC_day_score_and_summary.md, SPEC_weekly_summary.md, SPEC_monthly_summary.md, SPEC_evr_redesign.md, SPEC_comparison_challenge.md, SPEC_custom_reports.md
 - Faith/Coach: SPEC_faith_ai.md, SPEC_faith_tab.md, SPEC_smart_tips.md, SMART_COACH_SPEC.md, TRIGGER_LIBRARY.md | Cards: SPEC_card_gradient.md | Vacation: SPEC_vacation_mode.md | Tutorials: tutorial_system_spec.md
 - Body: SPEC_body_measurements.md, SPEC_body_progress.md
 - App Store: APP_STORE_CHECKLIST.md, COMPLIANCE_SCAN_findings.md

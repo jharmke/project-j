@@ -2416,6 +2416,14 @@ export default function SettingsScreen() {
               <Ionicons name="notifications-outline" size={18} color={theme.accentGreen} />
             </TouchableOpacity>
 
+            <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/synced-workouts'); }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.rowTitle, { color: theme.accentBlue }]}>View Synced Workouts (Phase 1)</Text>
+                <Text style={[styles.rowSub, { color: theme.textMuted }]}>Temporary: reads your Apple Health workouts, reads the indoor/outdoor flag, and groups them by type + indoor so we can verify the Workout History bucketing on real data before building the library integration.</Text>
+              </View>
+              <Ionicons name="fitness-outline" size={18} color={theme.accentBlue} />
+            </TouchableOpacity>
+
             <TouchableOpacity style={[styles.row, { borderTopColor: theme.borderCard }]} onPress={async () => {
               triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
               try {

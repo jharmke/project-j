@@ -850,6 +850,38 @@ export function useHealthKit() {
     }
   };
 
+  // Synced Workouts (Phase 1): raw Apple workout sessions over the last `days`, WITH the indoor/outdoor
+  // flag read from HealthKit metadata (HKIndoorWorkout). The flag rides on every workout sample already;
+  // this is the first place we actually read it. indoor = true (treadmill/stationary) | false (outdoor) |
+  // null (the recording device never set the flag -> falls to a generic bucket downstream).
+  const fetchSyncedWorkouts = async (days: number): Promise<any[]> => {
+    try {
+      const now = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - days);
+      startDate.setHours(0, 0, 0, 0);
+      const workouts = await queryWorkoutSamples({ limit: 1000, filter: { date: { startDate, endDate: now } } });
+      if (!workouts || workouts.length === 0) return [];
+      return workouts.map((w: any) => {
+        const raw = w.metadata?.HKIndoorWorkout;
+        const indoor = typeof raw === 'boolean' ? raw : raw === 1 ? true : raw === 0 ? false : null;
+        return {
+          uuid: w.uuid,
+          type: w.workoutActivityType,
+          name: WORKOUT_TYPE_NAMES[w.workoutActivityType] ?? 'Workout',
+          indoor,
+          durationSec: w.duration?.quantity ?? 0,
+          distanceMi: w.totalDistance ? Math.round((w.totalDistance.quantity / 1609.34) * 100) / 100 : null,
+          calories: Math.round(w.totalEnergyBurned?.quantity ?? 0),
+          startDate: w.startDate,
+        };
+      });
+    } catch (e) {
+      console.log('Synced workout fetch error', e);
+      return [];
+    }
+  };
+
   // HR ZONES: recent workout time windows (start/end) from Apple Health workout sessions.
   // Used to attach an HR-zone breakdown to each recorded workout. endMs computed from
   // start + duration (robust across HealthKit shapes).
@@ -927,5 +959,5 @@ export function useHealthKit() {
     bloodOxygen !== null || hrv !== null || vo2Max !== null ||
     cardioRecovery !== null || exerciseMinutes !== null;
 
-  return { authorized, hasHealthData, lastSyncedAt, activityDataDate, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, sleepAwakeCount, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, hrv, exerciseMinutes, appleWorkouts, fetchTodayData, fetchHistoricalWorkouts, fetchSleepHistory, fetchLastNightSegments, fetchRecoverySignals, fetchOvernightRHR, fetchWorkoutWindows, fetchWorkoutHeartRate, fetchWorkoutHRByUUID, dumpHRV };
+  return { authorized, hasHealthData, lastSyncedAt, activityDataDate, activeCalories, steps, distance, sleepHours, sleepStages, sleepTimes, sleepAwakeMs, sleepAwakeCount, vo2Max, cardioRecovery, restingHR, respiratoryRate, bloodOxygen, hrv, exerciseMinutes, appleWorkouts, fetchTodayData, fetchHistoricalWorkouts, fetchSyncedWorkouts, fetchSleepHistory, fetchLastNightSegments, fetchRecoverySignals, fetchOvernightRHR, fetchWorkoutWindows, fetchWorkoutHeartRate, fetchWorkoutHRByUUID, dumpHRV };
 }

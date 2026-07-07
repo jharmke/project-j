@@ -36,7 +36,9 @@ export type BlockForm =
   | 'calloutList'   // highlight rows (records / PRs)
   | 'calendar'      // heatmap / goals-hit calendar
   | 'topFoods'      // ranked list of most-logged foods (drill-down)
-  | 'foodLog';      // itemized food log, day by day (drill-down)
+  | 'foodLog'       // itemized food log, day by day (drill-down)
+  | 'workoutHistory' // every workout, day by day (drill-down)
+  | 'records';      // all-time lift PRs (drill-down)
 
 export interface ReportBlock {
   id: string;
@@ -67,7 +69,9 @@ export const REPORT_BLOCKS: ReportBlock[] = [
   { id: 'activity_headline', chapter: 'activity',  title: 'Activity headline',  desc: 'Avg steps, active cal, exercise + trend vs prior', form: 'statTiles',             tier: 'core' },
   { id: 'steps_trend',       chapter: 'activity',  title: 'Steps trend',        desc: 'Daily steps as a line',                form: 'lineTrend', dataKey: 'steps',    tier: 'core' },
 
-  // Workouts
+  // Workouts -- drill-down lists lead (the Strong-style history + records)
+  { id: 'workout_history',   chapter: 'workouts',  title: 'Workout history',    desc: 'Every workout, day by day',            form: 'workoutHistory',        tier: 'core' },
+  { id: 'lift_records',      chapter: 'workouts',  title: 'Records',            desc: 'Your all-time lift PRs',               form: 'records',               tier: 'core' },
   { id: 'effort_trend',      chapter: 'workouts',  title: 'Effort',             desc: 'Effort score over the period',         form: 'lineTrend', dataKey: 'effortScore', tier: 'core' },
 
   // Weight & Body

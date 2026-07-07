@@ -15,6 +15,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { useTheme } from '../theme';
 import { useToast } from '../components/Toast';
 import { fetchTrendData, TrendData, EMPTY_TREND_DATA } from '../utils/statsData';
+import { liftSessionHistory } from '../utils/liftPR';
 import { loadReports, saveReport, newReportId, resolveRange, RANGE_LABELS, Report, ReportRangePreset } from '../utils/reports';
 import { REPORT_CHAPTERS, REPORT_BLOCKS, blocksForChapter, getReportBlock, ReportBlock } from '../utils/reportBlocks';
 
@@ -31,6 +32,7 @@ export default function ReportScreen() {
   const [data, setData] = useState<TrendData>(EMPTY_TREND_DATA);   // current period
   const [prior, setPrior] = useState<TrendData>(EMPTY_TREND_DATA); // the period right before it (for trend arrows)
   const [foodDays, setFoodDays] = useState<FoodDay[]>([]);         // raw itemized food entries over the current period
+  const [workoutState, setWorkoutState] = useState<any>(null);     // raw pj_workout_state (history + PRs)
   const [loading, setLoading] = useState(true);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
@@ -67,7 +69,7 @@ export default function ReportScreen() {
         const full = await fetchTrendData(days * 2, ws, sleepGoal);
         const { cur, prev } = splitTrend(full, startKey);
         const fd = await loadRangeEntries(startKey, endKey);
-        if (!cancelled) { setData(cur); setPrior(prev); setFoodDays(fd); }
+        if (!cancelled) { setData(cur); setPrior(prev); setFoodDays(fd); setWorkoutState(ws); }
       } catch { if (!cancelled) { setData(EMPTY_TREND_DATA); setPrior(EMPTY_TREND_DATA); setFoodDays([]); } }
       if (!cancelled) setLoading(false);
     })();
@@ -119,6 +121,7 @@ export default function ReportScreen() {
   }
 
   const activeBlocks = report.blockIds.map(getReportBlock).filter(Boolean) as ReportBlock[];
+  const rangeBounds = resolveRange(report.range);
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bgPrimary }}>
@@ -160,7 +163,8 @@ export default function ReportScreen() {
         ) : activeBlocks.length > 0 ? (
           <View style={{ marginTop: 14, gap: 12 }}>
             {activeBlocks.map((b, i) => (
-              <BlockCard key={b.id} block={b} data={data} prior={prior} foodDays={foodDays} theme={theme}
+              <BlockCard key={b.id} block={b} data={data} prior={prior} foodDays={foodDays} workoutState={workoutState}
+                startKey={rangeBounds.startKey} endKey={rangeBounds.endKey} theme={theme}
                 collapsed={collapsed.has(b.id)} onToggle={() => toggleCollapse(b.id)}
                 editMode={libraryOpen} isFirst={i === 0} isLast={i === activeBlocks.length - 1}
                 onUp={() => moveBlock(b.id, -1)} onDown={() => moveBlock(b.id, 1)} onRemove={() => toggleBlock(b.id)} />
@@ -262,11 +266,12 @@ const FULL_DATE = (key: string) => {
 
 // ── Block renderer ───────────────────────────────────────────────────────────────────────────────
 interface BlockCardProps {
-  block: ReportBlock; data: TrendData; prior: TrendData; foodDays: FoodDay[]; theme: any;
+  block: ReportBlock; data: TrendData; prior: TrendData; foodDays: FoodDay[]; workoutState: any;
+  startKey: string; endKey: string; theme: any;
   collapsed: boolean; onToggle: () => void; editMode: boolean; isFirst: boolean; isLast: boolean;
   onUp: () => void; onDown: () => void; onRemove: () => void;
 }
-function BlockCard({ block, data, prior, foodDays, theme, collapsed, onToggle, editMode, isFirst, isLast, onUp, onDown, onRemove }: BlockCardProps) {
+function BlockCard({ block, data, prior, foodDays, workoutState, startKey, endKey, theme, collapsed, onToggle, editMode, isFirst, isLast, onUp, onDown, onRemove }: BlockCardProps) {
   // For a trend block, surface its latest value in the header (clean) instead of floating it in the chart.
   const trendLatest = block.form === 'lineTrend' ? latestOf(seriesFor(block.dataKey, data)) : null;
   return (
@@ -299,6 +304,8 @@ function BlockCard({ block, data, prior, foodDays, theme, collapsed, onToggle, e
           {block.form === 'macroSplit' && <MacroSplit data={data} theme={theme} />}
           {block.form === 'topFoods' && <TopFoods foodDays={foodDays} theme={theme} />}
           {block.form === 'foodLog' && <FoodLog foodDays={foodDays} theme={theme} />}
+          {block.form === 'records' && <Records workoutState={workoutState} theme={theme} />}
+          {block.form === 'workoutHistory' && <WorkoutHistory workoutState={workoutState} startKey={startKey} endKey={endKey} theme={theme} />}
         </>
       )}
     </View>
@@ -383,6 +390,129 @@ function FoodLog({ foodDays, theme }: { foodDays: FoodDay[]; theme: any }) {
       {days.length > CAP && (
         <Text style={{ fontSize: 11.5, color: theme.textDim, textAlign: 'center', fontFamily: 'DMSans_400Regular', marginTop: 2 }}>+{days.length - CAP} earlier days. Narrow the range to see them.</Text>
       )}
+    </View>
+  );
+}
+
+// All-time lift records (heaviest set + est. 1-rep max per lift), most recent first. Reads the PR engine's
+// banked records from pj_workout_state.prs.
+function Records({ workoutState, theme }: { workoutState: any; theme: any }) {
+  const rows = useMemo(() => {
+    const prs = workoutState?.prs || {};
+    const setLogs = workoutState?.setLogs || {};
+    const programs = workoutState?.programs || {};
+    const template = workoutState?.weeklyTemplate || {};
+    const WEEKDAY = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    // Same resolver the workout screen's All-PRs list uses.
+    const resolveDay = (dk: string) => {
+      const wd = WEEKDAY[new Date(dk + 'T12:00:00').getDay()];
+      return (programs[dk] || template[wd])?.exercises || [];
+    };
+    return Object.values(prs)
+      // Only records still backed by SURVIVING logged history -- filters out ghost PRs from lifts that
+      // were deleted (matches app/workout-library.tsx). A protected floor otherwise keeps them forever.
+      .filter((p: any) => p && (p.bestWeight || p.bestE1RM) && liftSessionHistory(p.name, setLogs, resolveDay).length > 0)
+      .map((p: any) => ({ name: String(p.name || 'Lift'), bw: p.bestWeight, e1: p.bestE1RM, date: (p.bestWeight?.dateKey || p.bestE1RM?.dateKey || '') }))
+      .sort((a: any, b: any) => b.date.localeCompare(a.date));
+  }, [workoutState]);
+  if (!rows.length) return emptyList(theme, 'No lift records yet. Log a weighted set to start.');
+  return (
+    <View style={{ gap: 9 }}>
+      {rows.map((r: any, i: number) => (
+        <View key={r.name + i} style={{ flexDirection: 'row', alignItems: 'center', gap: 10, borderTopWidth: i === 0 ? 0 : 0.5, borderTopColor: theme.borderCard, paddingTop: i === 0 ? 0 : 9 }}>
+          <View style={{ flex: 1 }}>
+            <Text numberOfLines={1} style={{ fontSize: 13.5, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{r.name}</Text>
+            {r.date ? <Text style={{ fontSize: 10.5, fontFamily: 'DMSans_500Medium', color: theme.textMuted, marginTop: 1 }}>{FULL_DATE(r.date)}</Text> : null}
+          </View>
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{r.bw ? `${r.bw.value} lb × ${r.bw.reps}` : '—'}</Text>
+            {r.e1 ? <Text style={{ fontSize: 10.5, fontFamily: 'DMSans_500Medium', color: theme.textMuted }}>Est. 1RM {r.e1.value} lb</Text> : null}
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+// Cardio detail line: duration · distance · calories (only the parts that are present).
+function cardioDetail(it: any): string {
+  const parts: string[] = [];
+  if (it.duration) parts.push(String(it.duration));
+  const dist = parseFloat(it.distance); if (!isNaN(dist) && dist > 0) parts.push(`${it.distance} mi`);
+  const cal = parseFloat(it.calories); if (!isNaN(cal) && cal > 0) parts.push(`${Math.round(cal)} cal`);
+  return parts.join(' · ') || 'done';
+}
+
+// Every workout in the range, day by day (newest first), collapsible with the most recent open. Shows
+// focus, day volume, PR count, and each exercise's top set (or cardio detail).
+function WorkoutHistory({ workoutState, startKey, endKey, theme }: { workoutState: any; startKey: string; endKey: string; theme: any }) {
+  const days = useMemo(() => {
+    const programs = workoutState?.programs || {};
+    const setLogs = workoutState?.setLogs || {};
+    const checks = workoutState?.checks || {};
+    const prHits = workoutState?.prHitsByDay || {};
+    const out: any[] = [];
+    for (const k of Object.keys(programs)) {
+      if (k < startKey || k > endKey) continue;
+      const prog = programs[k];
+      const exs = Array.isArray(prog?.exercises) ? prog.exercises : [];
+      const dc = checks[k] || {}; const dl = setLogs[k] || {};
+      const done = exs.filter((e: any) => dc[e.id]);
+      if (!done.length) continue;
+      let volume = 0;
+      const items = done.map((e: any) => {
+        const sets = Array.isArray(dl[e.id]) ? dl[e.id] : [];
+        const doneSets = sets.filter((s: any) => s.done);
+        let top: { w: number; r: number } | null = null;
+        for (const s of doneSets) { const w = s.weight || 0, r = s.reps || 0; volume += w * r; if (w > 0 && r > 0 && (!top || w > top.w)) top = { w, r }; }
+        return { name: String(e.name || 'Exercise'), isCardio: !!e.isCardio, setCount: doneSets.length, top, duration: e.duration, distance: e.distance, calories: e.calories };
+      });
+      out.push({ date: k, focus: String(prog.focus || 'Workout'), volume: Math.round(volume), prCount: Object.keys(prHits[k] || {}).length, items });
+    }
+    return out.sort((a, b) => b.date.localeCompare(a.date));
+  }, [workoutState, startKey, endKey]);
+  const [open, setOpen] = useState<Set<string>>(new Set());
+  useEffect(() => { setOpen(new Set(days.length ? [days[0].date] : [])); }, [days.length, days[0]?.date]);
+  if (!days.length) return emptyList(theme, 'No workouts logged in this range.');
+  const CAP = 45;
+  const shown = days.slice(0, CAP);
+  const toggle = (date: string) => setOpen(prev => { const n = new Set(prev); n.has(date) ? n.delete(date) : n.add(date); return n; });
+  return (
+    <View style={{ gap: 10 }}>
+      {shown.map(d => {
+        const isOpen = open.has(d.date);
+        return (
+          <View key={d.date} style={{ backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, overflow: 'hidden' }}>
+            <TouchableOpacity onPress={() => toggle(d.date)} activeOpacity={0.7} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12 }}>
+              <Ionicons name={isOpen ? 'chevron-down' : 'chevron-forward'} size={14} color={theme.textMuted} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 12.5, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{FULL_DATE(d.date)}</Text>
+                <Text numberOfLines={1} style={{ fontSize: 10.5, fontFamily: 'DMSans_500Medium', color: theme.textMuted, marginTop: 1 }}>{d.focus}</Text>
+              </View>
+              {d.prCount > 0 && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3, backgroundColor: 'rgba(212,134,10,0.14)', borderRadius: 999, paddingHorizontal: 7, paddingVertical: 2 }}>
+                  <Ionicons name="trophy" size={10} color={theme.accentAmber} />
+                  <Text style={{ fontSize: 10.5, fontFamily: 'DMSans_700Bold', color: theme.accentAmber }}>{d.prCount}</Text>
+                </View>
+              )}
+              {d.volume > 0 && <Text style={{ fontSize: 11.5, fontFamily: 'DMSans_700Bold', color: theme.accentBlue }}>{d.volume.toLocaleString('en-US')} lb</Text>}
+            </TouchableOpacity>
+            {isOpen && (
+              <View style={{ gap: 5, paddingHorizontal: 12, paddingBottom: 12 }}>
+                {d.items.map((it: any, i: number) => (
+                  <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+                    <Text numberOfLines={1} style={{ flex: 1, fontSize: 12.5, fontFamily: 'DMSans_400Regular', color: theme.textSecondary }}>{it.name}</Text>
+                    <Text style={{ fontSize: 11.5, fontFamily: 'DMSans_500Medium', color: theme.textMuted }}>
+                      {it.isCardio ? cardioDetail(it) : it.top ? `${it.top.w} × ${it.top.r}${it.setCount > 1 ? ` · ${it.setCount} sets` : ''}` : `${it.setCount || 1} set${(it.setCount || 1) === 1 ? '' : 's'}`}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        );
+      })}
+      {days.length > CAP && <Text style={{ fontSize: 11.5, color: theme.textDim, textAlign: 'center', fontFamily: 'DMSans_400Regular', marginTop: 2 }}>+{days.length - CAP} earlier workouts. Narrow the range to see them.</Text>}
     </View>
   );
 }

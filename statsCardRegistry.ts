@@ -56,7 +56,7 @@ export const DEFAULT_STATS_CARDS: StatsCard[] = [
   { id: 'sys_challenges', type: 'system', systemKey: 'challenges', label: 'Challenges',    visible: true, order: 10, period: 7, placement: 'stats' },
   { id: 'sys_hrZones',    type: 'system', systemKey: 'hrZones',    label: 'Body', visible: true, order: 11, period: 7, placement: 'stats' },
   { id: 'sys_calendar',   type: 'system', systemKey: 'calendar',   label: 'Calendar',      visible: true, order: 12, period: 7, placement: 'stats' },
-  { id: 'sys_reports',    type: 'system', systemKey: 'reports',    label: 'Reports',       visible: true, order: 13, period: 30, placement: 'stats' },
+  { id: 'sys_reports',    type: 'system', systemKey: 'reports',    label: 'Reports',       visible: true, order: 0.5, period: 30, placement: 'stats' },
 ];
 
 const LEGACY_NUTRITION_KEY_MAP: Record<string, string> = {
@@ -98,6 +98,11 @@ export async function loadStatsCards(): Promise<StatsCard[]> {
         merged.push({ ...def, order: sib ? sib.order + 0.5 : merged.length });
       }
     }
+    // Reports is pinned 2nd, right under At a Glance (headline feature, not a user-positioned section).
+    // This repositions it for existing users whose saved layout still has it at the old bottom order.
+    const repCard = merged.find(c => c.id === 'sys_reports');
+    const glanceCard = merged.find(c => c.id === 'sys_atAGlance');
+    if (repCard && glanceCard) repCard.order = glanceCard.order + 0.5;
     return merged.sort((a, b) => a.order - b.order);
   } catch {
     return DEFAULT_STATS_CARDS;

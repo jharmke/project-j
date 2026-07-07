@@ -34,7 +34,9 @@ export type BlockForm =
   | 'hbars'         // horizontal category bars (volume by muscle, exercise frequency)
   | 'stackedTrend'  // stacked composition over time (sleep stages)
   | 'calloutList'   // highlight rows (records / PRs)
-  | 'calendar';     // heatmap / goals-hit calendar
+  | 'calendar'      // heatmap / goals-hit calendar
+  | 'topFoods'      // ranked list of most-logged foods (drill-down)
+  | 'foodLog';      // itemized food log, day by day (drill-down)
 
 export interface ReportBlock {
   id: string;
@@ -49,10 +51,32 @@ export interface ReportBlock {
 
 // Starter slice: the three blocks that prove the three core forms (line, stat tiles, macro bar). The
 // registry grows as more forms/blocks come online.
+// Curated so the report reads as a REPORT, not a graph dump: number-forward "headline" blocks (stat
+// tiles + trend arrows vs the prior period) lead each chapter; a few trend lines support. Categorical
+// breakdowns + records blocks come next. Deliberately NOT one-line-graph-per-metric (that would just
+// duplicate the Stats Trends section) -- metrics that aren't a standalone trend live inside a headline.
 export const REPORT_BLOCKS: ReportBlock[] = [
-  { id: 'weight_trend',      chapter: 'body',      title: 'Weight trend',      desc: 'Your weight over the period',              form: 'lineTrend',  dataKey: 'weight',   tier: 'core' },
-  { id: 'nutrition_headline', chapter: 'nutrition', title: 'Nutrition headline', desc: 'Avg calories, protein, and goal adherence', form: 'statTiles',              tier: 'core' },
-  { id: 'macro_split',       chapter: 'nutrition', title: 'Macro split',       desc: 'Average protein / carbs / fat',            form: 'macroSplit',             tier: 'core' },
+  // Nutrition -- drill-down lists lead (the stuff you can't get anywhere else in the app)
+  { id: 'top_foods',         chapter: 'nutrition', title: 'Most-logged foods',  desc: 'Your most frequent foods, ranked',     form: 'topFoods',              tier: 'core' },
+  { id: 'food_log',          chapter: 'nutrition', title: 'Food log',           desc: 'Every food you logged, day by day',    form: 'foodLog',               tier: 'core' },
+  { id: 'nutrition_headline', chapter: 'nutrition', title: 'Nutrition headline', desc: 'Avg calories, protein, carbs, fat + trend vs prior', form: 'statTiles',             tier: 'core' },
+  { id: 'macro_split',       chapter: 'nutrition', title: 'Macro split',        desc: 'Average protein / carbs / fat breakdown', form: 'macroSplit',            tier: 'core' },
+  { id: 'calories_trend',    chapter: 'nutrition', title: 'Calories trend',     desc: 'Daily calories as a line',             form: 'lineTrend', dataKey: 'calories', tier: 'core' },
+
+  // Activity
+  { id: 'activity_headline', chapter: 'activity',  title: 'Activity headline',  desc: 'Avg steps, active cal, exercise + trend vs prior', form: 'statTiles',             tier: 'core' },
+  { id: 'steps_trend',       chapter: 'activity',  title: 'Steps trend',        desc: 'Daily steps as a line',                form: 'lineTrend', dataKey: 'steps',    tier: 'core' },
+
+  // Workouts
+  { id: 'effort_trend',      chapter: 'workouts',  title: 'Effort',             desc: 'Effort score over the period',         form: 'lineTrend', dataKey: 'effortScore', tier: 'core' },
+
+  // Weight & Body
+  { id: 'weight_trend',      chapter: 'body',      title: 'Weight trend',       desc: 'Your weight as a line',                form: 'lineTrend', dataKey: 'weight',   tier: 'core' },
+
+  // Sleep & Recovery
+  { id: 'sleep_headline',    chapter: 'sleep',     title: 'Sleep headline',     desc: 'Avg sleep, score, HRV, resting HR + trend vs prior', form: 'statTiles',             tier: 'core' },
+  { id: 'sleepscore_trend',  chapter: 'sleep',     title: 'Sleep score trend',  desc: 'Nightly sleep score as a line',        form: 'lineTrend', dataKey: 'sleepScore', tier: 'core' },
+  { id: 'hrv_trend',         chapter: 'sleep',     title: 'HRV trend',          desc: 'Heart rate variability as a line',     form: 'lineTrend', dataKey: 'hrv',      wearableGated: true, tier: 'wave2' },
 ];
 
 export const getReportBlock = (id: string): ReportBlock | undefined => REPORT_BLOCKS.find(b => b.id === id);

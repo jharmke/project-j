@@ -28,9 +28,12 @@ export default function ReportScreen() {
   const params = useLocalSearchParams<{ id?: string; new?: string }>();
 
   const [report, setReport] = useState<Report | null>(null);
-  const [data, setData] = useState<TrendData>(EMPTY_TREND_DATA);
+  const [data, setData] = useState<TrendData>(EMPTY_TREND_DATA);   // current period
+  const [prior, setPrior] = useState<TrendData>(EMPTY_TREND_DATA); // the period right before it (for trend arrows)
+  const [foodDays, setFoodDays] = useState<FoodDay[]>([]);         // raw itemized food entries over the current period
   const [loading, setLoading] = useState(true);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const nameRef = useRef<TextInput>(null);
 
   // Load or create the report config.
@@ -58,10 +61,14 @@ export default function ReportScreen() {
         const ws = wsRaw ? JSON.parse(wsRaw) : {};
         let sleepGoal = 8;
         try { const p = await AsyncStorage.getItem('pj_profile'); if (p) sleepGoal = JSON.parse(p).sleepGoal || 8; } catch {}
-        const days = resolveRange(report.range).days;
-        const td = await fetchTrendData(days, ws, sleepGoal);
-        if (!cancelled) setData(td);
-      } catch { if (!cancelled) setData(EMPTY_TREND_DATA); }
+        // Fetch a DOUBLE window and split on the current period's start, so each block can show the
+        // current period AND the one right before it (the "vs prior" trend arrows).
+        const { days, startKey, endKey } = resolveRange(report.range);
+        const full = await fetchTrendData(days * 2, ws, sleepGoal);
+        const { cur, prev } = splitTrend(full, startKey);
+        const fd = await loadRangeEntries(startKey, endKey);
+        if (!cancelled) { setData(cur); setPrior(prev); setFoodDays(fd); }
+      } catch { if (!cancelled) { setData(EMPTY_TREND_DATA); setPrior(EMPTY_TREND_DATA); setFoodDays([]); } }
       if (!cancelled) setLoading(false);
     })();
     return () => { cancelled = true; };
@@ -85,6 +92,23 @@ export default function ReportScreen() {
     const has = report.blockIds.includes(id);
     const blockIds = has ? report.blockIds.filter(b => b !== id) : [...report.blockIds, id];
     persist({ ...report, blockIds });
+  };
+
+  // Reorder a block up (dir -1) or down (dir +1) in the report.
+  const moveBlock = (id: string, dir: -1 | 1) => {
+    if (!report) return;
+    const idx = report.blockIds.indexOf(id);
+    const to = idx + dir;
+    if (idx < 0 || to < 0 || to >= report.blockIds.length) return;
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    const bi = [...report.blockIds];
+    [bi[idx], bi[to]] = [bi[to], bi[idx]];
+    persist({ ...report, blockIds: bi });
+  };
+
+  const toggleCollapse = (id: string) => {
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+    setCollapsed(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   };
 
   const rename = (name: string) => { if (report) setReport({ ...report, name }); };
@@ -135,7 +159,12 @@ export default function ReportScreen() {
           <View style={{ paddingVertical: 50, alignItems: 'center' }}><ActivityIndicator color={theme.accentBlue} /></View>
         ) : activeBlocks.length > 0 ? (
           <View style={{ marginTop: 14, gap: 12 }}>
-            {activeBlocks.map(b => <BlockCard key={b.id} block={b} data={data} theme={theme} />)}
+            {activeBlocks.map((b, i) => (
+              <BlockCard key={b.id} block={b} data={data} prior={prior} foodDays={foodDays} theme={theme}
+                collapsed={collapsed.has(b.id)} onToggle={() => toggleCollapse(b.id)}
+                editMode={libraryOpen} isFirst={i === 0} isLast={i === activeBlocks.length - 1}
+                onUp={() => moveBlock(b.id, -1)} onDown={() => moveBlock(b.id, 1)} onRemove={() => toggleBlock(b.id)} />
+            ))}
           </View>
         ) : !libraryOpen ? (
           <View style={{ alignItems: 'center', paddingTop: 54, paddingHorizontal: 24 }}>
@@ -201,14 +230,159 @@ export default function ReportScreen() {
   );
 }
 
+// ── Food entry loading (drill-down blocks) ────────────────────────────────────────────────────────
+export interface FoodDay { date: string; entries: any[]; }
+const keyDate = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+// Read the raw food entries for every day in [startKey, endKey] via one batched multiGet.
+async function loadRangeEntries(startKey: string, endKey: string): Promise<FoodDay[]> {
+  const start = new Date(startKey + 'T12:00:00');
+  const end = new Date(endKey + 'T12:00:00');
+  const keys: string[] = [];
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) keys.push(`pj_${keyDate(d)}`);
+  const out: FoodDay[] = [];
+  try {
+    const rows = await AsyncStorage.multiGet(keys);
+    for (const [k, val] of rows) {
+      if (!val) continue;
+      try {
+        const day = JSON.parse(val);
+        const entries = Array.isArray(day?.entries) ? day.entries : [];
+        if (entries.length) out.push({ date: k.replace('pj_', ''), entries });
+      } catch {}
+    }
+  } catch {}
+  return out;
+}
+
+const FULL_DATE = (key: string) => {
+  try { return new Date(key + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }); }
+  catch { return key; }
+};
+
 // ── Block renderer ───────────────────────────────────────────────────────────────────────────────
-function BlockCard({ block, data, theme }: { block: ReportBlock; data: TrendData; theme: any }) {
+interface BlockCardProps {
+  block: ReportBlock; data: TrendData; prior: TrendData; foodDays: FoodDay[]; theme: any;
+  collapsed: boolean; onToggle: () => void; editMode: boolean; isFirst: boolean; isLast: boolean;
+  onUp: () => void; onDown: () => void; onRemove: () => void;
+}
+function BlockCard({ block, data, prior, foodDays, theme, collapsed, onToggle, editMode, isFirst, isLast, onUp, onDown, onRemove }: BlockCardProps) {
+  // For a trend block, surface its latest value in the header (clean) instead of floating it in the chart.
+  const trendLatest = block.form === 'lineTrend' ? latestOf(seriesFor(block.dataKey, data)) : null;
   return (
     <View style={{ backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, borderRadius: 14, padding: 16 }}>
-      <Text style={{ fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted, marginBottom: 12 }}>{block.title}</Text>
-      {block.form === 'lineTrend' && <LineTrend series={seriesFor(block.dataKey, data)} theme={theme} />}
-      {block.form === 'statTiles' && <NutritionHeadline data={data} theme={theme} />}
-      {block.form === 'macroSplit' && <MacroSplit data={data} theme={theme} />}
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: collapsed ? 0 : 12 }}>
+        <TouchableOpacity onPress={onToggle} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}>
+          <Ionicons name={collapsed ? 'chevron-forward' : 'chevron-down'} size={15} color={theme.textMuted} />
+          <Text style={{ fontSize: 9, letterSpacing: 3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted }}>{block.title}</Text>
+        </TouchableOpacity>
+        {editMode ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+            <TouchableOpacity onPress={onUp} disabled={isFirst} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }} style={{ padding: 4 }}>
+              <Ionicons name="chevron-up" size={18} color={isFirst ? theme.textDim : theme.accentBlue} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={onDown} disabled={isLast} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }} style={{ padding: 4 }}>
+              <Ionicons name="chevron-down" size={18} color={isLast ? theme.textDim : theme.accentBlue} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={onRemove} hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }} style={{ padding: 4, marginLeft: 2 }}>
+              <Ionicons name="close-circle" size={18} color={theme.textMuted} />
+            </TouchableOpacity>
+          </View>
+        ) : trendLatest != null ? (
+          <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: theme.accentBlue }}>{fmtAxis(trendLatest)}</Text>
+        ) : null}
+      </View>
+      {!collapsed && (
+        <>
+          {block.form === 'lineTrend' && <LineTrend series={seriesFor(block.dataKey, data)} theme={theme} />}
+          {block.form === 'statTiles' && <StatTiles blockId={block.id} data={data} prior={prior} theme={theme} />}
+          {block.form === 'macroSplit' && <MacroSplit data={data} theme={theme} />}
+          {block.form === 'topFoods' && <TopFoods foodDays={foodDays} theme={theme} />}
+          {block.form === 'foodLog' && <FoodLog foodDays={foodDays} theme={theme} />}
+        </>
+      )}
+    </View>
+  );
+}
+
+const emptyList = (theme: any, msg: string) => <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{msg}</Text>;
+
+// Most-logged foods: rank every food by how often it was logged, with a frequency bar + total calories.
+function TopFoods({ foodDays, theme }: { foodDays: FoodDay[]; theme: any }) {
+  const rows = useMemo(() => {
+    const map = new Map<string, { name: string; count: number; cal: number }>();
+    for (const d of foodDays) for (const e of d.entries) {
+      const name = String(e?.name || '').replace(/\s+/g, ' ').trim();
+      if (!name) continue;
+      const k = name.toLowerCase();
+      const cur = map.get(k) || { name, count: 0, cal: 0 };
+      cur.count += 1; cur.cal += Math.round(e?.cal || 0);
+      map.set(k, cur);
+    }
+    return Array.from(map.values()).sort((a, b) => b.count - a.count || b.cal - a.cal).slice(0, 12);
+  }, [foodDays]);
+  if (!rows.length) return emptyList(theme, 'No foods logged in this range.');
+  const maxCount = rows[0].count;
+  return (
+    <View style={{ gap: 10 }}>
+      {rows.map((r, i) => (
+        <View key={r.name} style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
+          <Text style={{ width: 16, fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.textDim, textAlign: 'right' }}>{i + 1}</Text>
+          <View style={{ flex: 1 }}>
+            <Text numberOfLines={1} style={{ fontSize: 13.5, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, marginBottom: 4 }}>{r.name}</Text>
+            <View style={{ height: 5, borderRadius: 3, backgroundColor: theme.bgInset, overflow: 'hidden' }}>
+              <View style={{ height: '100%', borderRadius: 3, backgroundColor: theme.accentBlue, width: `${Math.max(6, (r.count / maxCount) * 100)}%` }} />
+            </View>
+          </View>
+          <View style={{ alignItems: 'flex-end', minWidth: 58 }}>
+            <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>×{r.count}</Text>
+            <Text style={{ fontSize: 10.5, fontFamily: 'DMSans_500Medium', color: theme.textMuted }}>{r.cal.toLocaleString('en-US')} cal</Text>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+// Full food log: every logged item, grouped by day (newest first). Each day collapses; the most recent
+// day starts open and the rest collapsed, so a long range stays scannable.
+function FoodLog({ foodDays, theme }: { foodDays: FoodDay[]; theme: any }) {
+  const days = useMemo(() => [...foodDays].sort((a, b) => b.date.localeCompare(a.date)), [foodDays]);
+  const [open, setOpen] = useState<Set<string>>(new Set());
+  useEffect(() => { setOpen(new Set(days.length ? [days[0].date] : [])); }, [days.length, days[0]?.date]);
+  if (!days.length) return emptyList(theme, 'No foods logged in this range.');
+  const CAP = 45;
+  const shown = days.slice(0, CAP);
+  const toggle = (date: string) => setOpen(prev => { const n = new Set(prev); n.has(date) ? n.delete(date) : n.add(date); return n; });
+  return (
+    <View style={{ gap: 10 }}>
+      {shown.map(d => {
+        const total = Math.round(d.entries.reduce((s, e) => s + (e?.cal || 0), 0));
+        const isOpen = open.has(d.date);
+        return (
+          <View key={d.date} style={{ backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, overflow: 'hidden' }}>
+            <TouchableOpacity onPress={() => toggle(d.date)} activeOpacity={0.7} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12 }}>
+              <Ionicons name={isOpen ? 'chevron-down' : 'chevron-forward'} size={14} color={theme.textMuted} />
+              <Text style={{ flex: 1, fontSize: 12.5, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{FULL_DATE(d.date)}</Text>
+              <Text style={{ fontSize: 10.5, fontFamily: 'DMSans_500Medium', color: theme.textMuted }}>{d.entries.length} item{d.entries.length === 1 ? '' : 's'}</Text>
+              <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.accentBlue }}>{total.toLocaleString('en-US')} cal</Text>
+            </TouchableOpacity>
+            {isOpen && (
+              <View style={{ gap: 5, paddingHorizontal: 12, paddingBottom: 12 }}>
+                {d.entries.map((e, i) => (
+                  <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+                    <Text numberOfLines={1} style={{ flex: 1, fontSize: 12.5, fontFamily: 'DMSans_400Regular', color: theme.textSecondary }}>{String(e?.name || 'Food')}</Text>
+                    <Text style={{ fontSize: 12, fontFamily: 'DMSans_500Medium', color: theme.textMuted, fontVariant: ['tabular-nums'] }}>{Math.round(e?.cal || 0)}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        );
+      })}
+      {days.length > CAP && (
+        <Text style={{ fontSize: 11.5, color: theme.textDim, textAlign: 'center', fontFamily: 'DMSans_400Regular', marginTop: 2 }}>+{days.length - CAP} earlier days. Narrow the range to see them.</Text>
+      )}
     </View>
   );
 }
@@ -218,31 +392,96 @@ function seriesFor(dataKey: string | undefined, data: TrendData): { date: string
     case 'weight': return data.weight;
     case 'steps': return data.steps;
     case 'activeCals': return data.activeCal;
+    case 'exerciseMinutes': return data.exerciseMinutes;
+    case 'vo2Max': return data.vo2Max;
+    case 'calories': return data.cal.map(d => ({ date: d.date, value: d.cal }));
+    case 'water': return data.water;
+    case 'netCal': return data.netCal;
+    case 'fiber': return data.fiber;
+    case 'sodium': return data.sodium;
     case 'sleep': return data.sleep;
+    case 'sleepScore': return data.sleepScore;
+    case 'hrv': return data.hrv;
+    case 'restingHR': return data.restingHR;
+    case 'respiratoryRate': return data.respiratoryRate;
+    case 'bloodOxygen': return data.bloodOxygen;
+    case 'recoveryScore': return data.recoveryScore;
+    case 'effortScore': return data.effortScore;
     default: return [];
   }
 }
 
-// Stat-tiles form: nutrition headline numbers.
-function NutritionHeadline({ data, theme }: { data: TrendData; theme: any }) {
-  const cals = data.cal.map(d => d.cal).filter(v => v > 0);
-  const prot = data.macro.map(d => d.protein).filter(v => v > 0);
-  const carb = data.macro.map(d => d.carbs).filter(v => v > 0);
-  const fat = data.macro.map(d => d.fat).filter(v => v > 0);
-  const tiles = [
-    { label: 'Avg Calories', value: cals.length ? Math.round(avg(cals)).toLocaleString('en-US') : '—' },
-    { label: 'Avg Protein', value: prot.length ? Math.round(avg(prot)) + ' g' : '—' },
-    { label: 'Avg Carbs', value: carb.length ? Math.round(avg(carb)) + ' g' : '—' },
-    { label: 'Avg Fat', value: fat.length ? Math.round(avg(fat)) + ' g' : '—' },
-  ];
+// Split a double-window TrendData into the current period (>= startKey) and the one before it.
+const ARRAY_KEYS: (keyof TrendData)[] = ['weight', 'cal', 'steps', 'activeCal', 'sleep', 'macro', 'workoutDay', 'water', 'netCal', 'sleepScore', 'sleepStages', 'restingHR', 'respiratoryRate', 'bloodOxygen', 'recoveryScore', 'hrv', 'vo2Max', 'cardioRecovery', 'exerciseMinutes', 'fiber', 'sodium', 'cholesterol', 'saturatedFat', 'sugarAlcohols', 'effortScore'];
+function splitTrend(full: TrendData, startKey: string): { cur: TrendData; prev: TrendData } {
+  const cur: any = { ...EMPTY_TREND_DATA };
+  const prev: any = { ...EMPTY_TREND_DATA };
+  for (const k of ARRAY_KEYS) {
+    const arr = (full as any)[k] as { date: string }[];
+    cur[k] = arr.filter(d => d.date >= startKey);
+    prev[k] = arr.filter(d => d.date < startKey);
+  }
+  cur.excludedCounts = full.excludedCounts; prev.excludedCounts = full.excludedCounts;
+  cur.nutrients = full.nutrients; prev.nutrients = full.nutrients;
+  return { cur: cur as TrendData, prev: prev as TrendData };
+}
+
+const fmtHrs = (v: number) => { const h = Math.floor(v); const m = Math.round((v - h) * 60); return `${h}:${String(m).padStart(2, '0')}`; };
+
+// Stat-tiles form: number-forward "headline" numbers + a trend arrow vs the prior period.
+type TileSpec = { label: string; pick: (d: TrendData) => number[]; fmt: (v: number) => string; better: 'up' | 'down' | 'none' };
+const HEADLINES: Record<string, TileSpec[]> = {
+  nutrition_headline: [
+    { label: 'Avg Calories', pick: d => d.cal.map(x => x.cal).filter(v => v > 0), fmt: v => Math.round(v).toLocaleString('en-US'), better: 'none' },
+    { label: 'Avg Protein', pick: d => d.macro.map(x => x.protein).filter(v => v > 0), fmt: v => Math.round(v) + ' g', better: 'up' },
+    { label: 'Avg Carbs', pick: d => d.macro.map(x => x.carbs).filter(v => v > 0), fmt: v => Math.round(v) + ' g', better: 'none' },
+    { label: 'Avg Fat', pick: d => d.macro.map(x => x.fat).filter(v => v > 0), fmt: v => Math.round(v) + ' g', better: 'none' },
+  ],
+  activity_headline: [
+    { label: 'Avg Steps', pick: d => d.steps.map(x => x.value).filter(v => v > 0), fmt: v => Math.round(v).toLocaleString('en-US'), better: 'up' },
+    { label: 'Avg Active Cal', pick: d => d.activeCal.map(x => x.value).filter(v => v > 0), fmt: v => Math.round(v).toLocaleString('en-US'), better: 'up' },
+    { label: 'Avg Exercise', pick: d => d.exerciseMinutes.map(x => x.value).filter(v => v > 0), fmt: v => Math.round(v) + ' min', better: 'up' },
+  ],
+  sleep_headline: [
+    { label: 'Avg Sleep', pick: d => d.sleep.map(x => x.value).filter(v => v > 0), fmt: v => fmtHrs(v), better: 'up' },
+    { label: 'Avg Sleep Score', pick: d => d.sleepScore.map(x => x.value).filter(v => v > 0), fmt: v => Math.round(v).toString(), better: 'up' },
+    { label: 'Avg HRV', pick: d => d.hrv.map(x => x.value).filter(v => v > 0), fmt: v => Math.round(v) + ' ms', better: 'up' },
+    { label: 'Avg Resting HR', pick: d => d.restingHR.map(x => x.value).filter(v => v > 0), fmt: v => Math.round(v) + ' bpm', better: 'down' },
+  ],
+};
+
+function DeltaChip({ cur, prev, better, theme }: { cur: number; prev: number; better: 'up' | 'down' | 'none'; theme: any }) {
+  if (!isFinite(prev) || prev === 0 || !isFinite(cur)) return null;
+  const pct = Math.round(((cur - prev) / Math.abs(prev)) * 100);
+  if (pct === 0) return <Text style={{ fontSize: 10.5, fontFamily: 'DMSans_700Bold', color: theme.textDim, marginTop: 6 }}>No change</Text>;
+  const up = pct > 0;
+  const good = better === 'none' ? null : (better === 'up') === up;
+  const color = good === null ? theme.textMuted : good ? '#0d9268' : '#cc3333';
+  const bg = good === null ? theme.bgCard : good ? 'rgba(13,146,104,0.13)' : 'rgba(204,51,51,0.13)';
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', backgroundColor: bg, borderRadius: 999, paddingHorizontal: 7, paddingVertical: 2, marginTop: 7, gap: 3 }}>
+      <Text style={{ fontSize: 10, color, fontFamily: 'DMSans_700Bold' }}>{up ? '▲' : '▼'}</Text>
+      <Text style={{ fontSize: 11, color, fontFamily: 'DMSans_700Bold' }}>{Math.abs(pct)}%</Text>
+    </View>
+  );
+}
+
+function StatTiles({ blockId, data, prior, theme }: { blockId: string; data: TrendData; prior: TrendData; theme: any }) {
+  const specs = HEADLINES[blockId] || [];
   return (
     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-      {tiles.map(t => (
-        <View key={t.label} style={{ width: '47.6%', flexGrow: 1, backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, paddingVertical: 11, paddingHorizontal: 12 }}>
-          <Text style={{ fontSize: 8.5, letterSpacing: 1.3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted, marginBottom: 5 }}>{t.label}</Text>
-          <Text style={{ fontSize: 20, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{t.value}</Text>
-        </View>
-      ))}
+      {specs.map(spec => {
+        const cv = spec.pick(data); const pv = spec.pick(prior);
+        const cur = cv.length ? avg(cv) : null;
+        const prev = pv.length ? avg(pv) : null;
+        return (
+          <View key={spec.label} style={{ width: '47.6%', flexGrow: 1, backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, paddingVertical: 11, paddingHorizontal: 12 }}>
+            <Text style={{ fontSize: 8.5, letterSpacing: 1.3, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted, marginBottom: 5 }}>{spec.label}</Text>
+            <Text style={{ fontSize: 20, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{cur != null ? spec.fmt(cur) : '—'}</Text>
+            {cur != null && prev != null && <DeltaChip cur={cur} prev={prev} better={spec.better} theme={theme} />}
+          </View>
+        );
+      })}
     </View>
   );
 }
@@ -279,46 +518,81 @@ function MacroSplit({ data, theme }: { data: TrendData; theme: any }) {
   );
 }
 
-// Line-trend form: a gradient-filled SVG line with y-axis labels + endpoint marker.
+// "Nice number" axis: rounds a data range to clean tick values (185/190/195, not 187.3).
+function niceNum(range: number, round: boolean): number {
+  const exp = Math.floor(Math.log10(range));
+  const f = range / Math.pow(10, exp);
+  let nf: number;
+  if (round) nf = f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10;
+  else nf = f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10;
+  return nf * Math.pow(10, exp);
+}
+function niceScale(dmin: number, dmax: number, count: number): { ticks: number[]; niceMin: number; niceMax: number } {
+  const range = niceNum(Math.max(dmax - dmin, 1e-6), false);
+  const step = niceNum(range / Math.max(1, count - 1), true);
+  const niceMin = Math.floor(dmin / step) * step;
+  const niceMax = Math.ceil(dmax / step) * step;
+  const ticks: number[] = [];
+  for (let v = niceMin; v <= niceMax + step * 0.5; v += step) ticks.push(Math.round(v * 1e6) / 1e6);
+  return { ticks, niceMin, niceMax };
+}
+const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const fmtDateKey = (key: string) => { const [, m, d] = key.split('-'); return `${MONTHS_SHORT[(+m) - 1]} ${+d}`; };
+const fmtAxis = (v: number) => (Number.isInteger(v) ? v.toLocaleString('en-US') : (Math.round(v * 10) / 10).toString());
+// Latest valid value in a series (for the trend block's header value).
+function latestOf(series: { value: number }[]): number | null {
+  for (let i = series.length - 1; i >= 0; i--) { const v = series[i]?.value; if (typeof v === 'number' && !isNaN(v) && v > 0) return v; }
+  return null;
+}
+
+// Line-trend form: gradient fill, rounded y-ticks, x-axis date labels, and an endpoint value badge.
 function LineTrend({ series, theme }: { series: { date: string; value: number }[]; theme: any }) {
   const points = useMemo(() => series.filter(d => typeof d.value === 'number' && !isNaN(d.value) && d.value > 0), [series]);
   if (points.length < 2) {
     return <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>Not enough data in this range yet.</Text>;
   }
-  const W = 320, H = 150, padL = 34, padR = 8, padT = 10, padB = 18;
+  const W = 320, H = 172, padL = 44, padR = 14, padT = 16, padB = 30;
   const plotW = W - padL - padR, plotH = H - padT - padB;
   const vals = points.map(p => p.value);
-  let min = Math.min(...vals), max = Math.max(...vals);
-  if (min === max) { min -= 1; max += 1; }
-  const pad = (max - min) * 0.12; min -= pad; max += pad;
+  let dmin = Math.min(...vals), dmax = Math.max(...vals);
+  if (dmin === dmax) { dmin -= 1; dmax += 1; }
+  const { ticks, niceMin, niceMax } = niceScale(dmin, dmax, 4);
+  const min = niceMin, max = niceMax > niceMin ? niceMax : niceMin + 1;
   const X = (i: number) => padL + (i / (points.length - 1)) * plotW;
   const Y = (v: number) => padT + (1 - (v - min) / (max - min)) * plotH;
   const accent = theme.accentBlue;
+  const lastIdx = points.length - 1;
 
   let dLine = '';
   points.forEach((p, i) => { dLine += (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(p.value).toFixed(1) + ' '; });
-  const dArea = dLine + `L${X(points.length - 1).toFixed(1)} ${padT + plotH} L${X(0).toFixed(1)} ${padT + plotH} Z`;
-  const ticks = [max - pad, (max + min) / 2, min + pad];
-  const fmtTick = (v: number) => (Math.abs(v) >= 100 ? Math.round(v).toString() : (Math.round(v * 10) / 10).toString());
+  const dArea = dLine + `L${X(lastIdx).toFixed(1)} ${padT + plotH} L${X(0).toFixed(1)} ${padT + plotH} Z`;
+  const xIdx = Array.from(new Set([0, Math.round(lastIdx / 3), Math.round((2 * lastIdx) / 3), lastIdx]));
 
   return (
     <Svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`}>
       <Defs>
         <SvgGradient id="lt" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor={accent} stopOpacity={0.28} />
-          <Stop offset="0.65" stopColor={accent} stopOpacity={0.07} />
+          <Stop offset="0" stopColor={accent} stopOpacity={0.26} />
+          <Stop offset="0.65" stopColor={accent} stopOpacity={0.06} />
           <Stop offset="1" stopColor={accent} stopOpacity={0} />
         </SvgGradient>
       </Defs>
+      {/* y gridlines + rounded labels */}
       {ticks.map((t, i) => (
-        <React.Fragment key={i}>
+        <React.Fragment key={`y${i}`}>
           <SvgLine x1={padL} y1={Y(t)} x2={W - padR} y2={Y(t)} stroke={theme.borderCard} strokeWidth={1} />
-          <SvgText x={padL - 5} y={Y(t) + 3} fontSize={9} fill={theme.textDim} textAnchor="end" fontFamily="DMSans_600SemiBold">{fmtTick(t)}</SvgText>
+          <SvgText x={padL - 6} y={Y(t) + 3.2} fontSize={9} fill={theme.textDim} textAnchor="end" fontFamily="DMSans_600SemiBold">{fmtAxis(t)}</SvgText>
         </React.Fragment>
       ))}
       <Path d={dArea} fill="url(#lt)" />
       <Path d={dLine} fill="none" stroke={accent} strokeWidth={2.4} strokeLinecap="round" strokeLinejoin="round" />
-      <Circle cx={X(points.length - 1)} cy={Y(points[points.length - 1].value)} r={4} fill={accent} stroke={theme.bgCard} strokeWidth={2} />
+      {/* x-axis date labels */}
+      {xIdx.map((i, k) => (
+        <SvgText key={`x${k}`} x={X(i)} y={H - 9} fontSize={9} fill={theme.textDim} fontFamily="DMSans_600SemiBold"
+          textAnchor={i === 0 ? 'start' : i === lastIdx ? 'end' : 'middle'}>{fmtDateKey(points[i].date)}</SvgText>
+      ))}
+      {/* endpoint marker (latest value now lives in the card header, not floating in the chart) */}
+      <Circle cx={X(lastIdx)} cy={Y(points[lastIdx].value)} r={4} fill={accent} stroke={theme.bgCard} strokeWidth={2} />
     </Svg>
   );
 }

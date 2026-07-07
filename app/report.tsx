@@ -16,6 +16,7 @@ import { useTheme } from '../theme';
 import { useToast } from '../components/Toast';
 import { fetchTrendData, TrendData, EMPTY_TREND_DATA } from '../utils/statsData';
 import { liftSessionHistory } from '../utils/liftPR';
+import { loadMealSlots, getMealDisplayName } from '../utils/mealSlots';
 import { loadReports, saveReport, newReportId, resolveRange, RANGE_LABELS, Report, ReportRangePreset } from '../utils/reports';
 import { REPORT_CHAPTERS, REPORT_BLOCKS, blocksForChapter, getReportBlock, ReportBlock } from '../utils/reportBlocks';
 
@@ -33,6 +34,7 @@ export default function ReportScreen() {
   const [prior, setPrior] = useState<TrendData>(EMPTY_TREND_DATA); // the period right before it (for trend arrows)
   const [foodDays, setFoodDays] = useState<FoodDay[]>([]);         // raw itemized food entries over the current period
   const [workoutState, setWorkoutState] = useState<any>(null);     // raw pj_workout_state (history + PRs)
+  const [mealCtx, setMealCtx] = useState<{ slots: any[]; cache: any }>({ slots: [], cache: {} });
   const [loading, setLoading] = useState(true);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
@@ -69,7 +71,9 @@ export default function ReportScreen() {
         const full = await fetchTrendData(days * 2, ws, sleepGoal);
         const { cur, prev } = splitTrend(full, startKey);
         const fd = await loadRangeEntries(startKey, endKey);
-        if (!cancelled) { setData(cur); setPrior(prev); setFoodDays(fd); setWorkoutState(ws); }
+        let mc = { slots: [] as any[], cache: {} as any };
+        try { const { mealSlots, slotNameCache } = await loadMealSlots(); mc = { slots: mealSlots, cache: slotNameCache }; } catch {}
+        if (!cancelled) { setData(cur); setPrior(prev); setFoodDays(fd); setWorkoutState(ws); setMealCtx(mc); }
       } catch { if (!cancelled) { setData(EMPTY_TREND_DATA); setPrior(EMPTY_TREND_DATA); setFoodDays([]); } }
       if (!cancelled) setLoading(false);
     })();
@@ -164,6 +168,7 @@ export default function ReportScreen() {
           <View style={{ marginTop: 14, gap: 12 }}>
             {activeBlocks.map((b, i) => (
               <BlockCard key={b.id} block={b} data={data} prior={prior} foodDays={foodDays} workoutState={workoutState}
+                mealSlots={mealCtx.slots} slotCache={mealCtx.cache}
                 startKey={rangeBounds.startKey} endKey={rangeBounds.endKey} theme={theme}
                 collapsed={collapsed.has(b.id)} onToggle={() => toggleCollapse(b.id)}
                 editMode={libraryOpen} isFirst={i === 0} isLast={i === activeBlocks.length - 1}
@@ -267,11 +272,11 @@ const FULL_DATE = (key: string) => {
 // ── Block renderer ───────────────────────────────────────────────────────────────────────────────
 interface BlockCardProps {
   block: ReportBlock; data: TrendData; prior: TrendData; foodDays: FoodDay[]; workoutState: any;
-  startKey: string; endKey: string; theme: any;
+  mealSlots: any[]; slotCache: any; startKey: string; endKey: string; theme: any;
   collapsed: boolean; onToggle: () => void; editMode: boolean; isFirst: boolean; isLast: boolean;
   onUp: () => void; onDown: () => void; onRemove: () => void;
 }
-function BlockCard({ block, data, prior, foodDays, workoutState, startKey, endKey, theme, collapsed, onToggle, editMode, isFirst, isLast, onUp, onDown, onRemove }: BlockCardProps) {
+function BlockCard({ block, data, prior, foodDays, workoutState, mealSlots, slotCache, startKey, endKey, theme, collapsed, onToggle, editMode, isFirst, isLast, onUp, onDown, onRemove }: BlockCardProps) {
   // For a trend block, surface its latest value in the header (clean) instead of floating it in the chart.
   const trendLatest = block.form === 'lineTrend' ? latestOf(seriesFor(block.dataKey, data)) : null;
   return (
@@ -306,6 +311,9 @@ function BlockCard({ block, data, prior, foodDays, workoutState, startKey, endKe
           {block.form === 'foodLog' && <FoodLog foodDays={foodDays} theme={theme} />}
           {block.form === 'records' && <Records workoutState={workoutState} theme={theme} />}
           {block.form === 'workoutHistory' && <WorkoutHistory workoutState={workoutState} startKey={startKey} endKey={endKey} theme={theme} />}
+          {block.form === 'caloriesByMeal' && <CaloriesByMeal foodDays={foodDays} mealSlots={mealSlots} slotCache={slotCache} theme={theme} />}
+          {block.form === 'dayExtremes' && <DayExtremes foodDays={foodDays} theme={theme} />}
+          {block.form === 'exerciseFrequency' && <ExerciseFrequency workoutState={workoutState} startKey={startKey} endKey={endKey} theme={theme} />}
         </>
       )}
     </View>
@@ -513,6 +521,105 @@ function WorkoutHistory({ workoutState, startKey, endKey, theme }: { workoutStat
         );
       })}
       {days.length > CAP && <Text style={{ fontSize: 11.5, color: theme.textDim, textAlign: 'center', fontFamily: 'DMSans_400Regular', marginTop: 2 }}>+{days.length - CAP} earlier workouts. Narrow the range to see them.</Text>}
+    </View>
+  );
+}
+
+// Calorie share per meal, as horizontal bars with each meal's % of total + avg/day.
+function CaloriesByMeal({ foodDays, mealSlots, slotCache, theme }: { foodDays: FoodDay[]; mealSlots: any[]; slotCache: any; theme: any }) {
+  const rows = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const d of foodDays) for (const e of d.entries) {
+      const label = getMealDisplayName(e?.meal || '', mealSlots, slotCache) || 'Other';
+      map.set(label, (map.get(label) || 0) + Math.round(e?.cal || 0));
+    }
+    return Array.from(map.entries()).map(([label, cal]) => ({ label, cal })).sort((a, b) => b.cal - a.cal);
+  }, [foodDays, mealSlots]);
+  if (!rows.length) return emptyList(theme, 'No meals logged in this range.');
+  const total = rows.reduce((s, r) => s + r.cal, 0) || 1;
+  const max = rows[0].cal || 1;
+  const nDays = foodDays.length || 1;
+  return (
+    <View style={{ gap: 11 }}>
+      {rows.map(r => {
+        const pct = Math.round((r.cal / total) * 100);
+        return (
+          <View key={r.label} style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
+            <View style={{ flex: 1 }}>
+              <Text numberOfLines={1} style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, marginBottom: 4 }}>{r.label}</Text>
+              <View style={{ height: 6, borderRadius: 3, backgroundColor: theme.bgInset, overflow: 'hidden' }}>
+                <View style={{ height: '100%', borderRadius: 3, backgroundColor: theme.accentBlue, width: `${Math.max(5, (r.cal / max) * 100)}%` }} />
+              </View>
+            </View>
+            <View style={{ alignItems: 'flex-end', minWidth: 64 }}>
+              <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{pct}%</Text>
+              <Text style={{ fontSize: 10.5, fontFamily: 'DMSans_500Medium', color: theme.textMuted }}>~{Math.round(r.cal / nDays).toLocaleString('en-US')}/day</Text>
+            </View>
+          </View>
+        );
+      })}
+    </View>
+  );
+}
+
+// Biggest & lightest calorie days in the range.
+function DayExtremes({ foodDays, theme }: { foodDays: FoodDay[]; theme: any }) {
+  const perDay = useMemo(() => foodDays.map(d => ({ date: d.date, cal: Math.round(d.entries.reduce((s, e) => s + (e?.cal || 0), 0)) })).filter(d => d.cal > 0).sort((a, b) => b.cal - a.cal), [foodDays]);
+  if (!perDay.length) return emptyList(theme, 'No calories logged in this range.');
+  const biggest = perDay.slice(0, 3);
+  const lightest = perDay.length > 3 ? perDay.slice(-3).reverse() : [];
+  const row = (d: { date: string; cal: number }) => (
+    <View key={d.date} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 5 }}>
+      <Text style={{ fontSize: 12.5, fontFamily: 'DMSans_500Medium', color: theme.textSecondary }}>{FULL_DATE(d.date)}</Text>
+      <Text style={{ fontSize: 12.5, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{d.cal.toLocaleString('en-US')} cal</Text>
+    </View>
+  );
+  const label = (t: string) => <Text style={{ fontSize: 9, letterSpacing: 1.5, textTransform: 'uppercase', fontFamily: 'DMSans_700Bold', color: theme.textMuted, marginBottom: 3 }}>{t}</Text>;
+  return (
+    <View style={{ gap: 12 }}>
+      <View>{label('Biggest days')}{biggest.map(row)}</View>
+      {lightest.length > 0 && <View>{label('Lightest days')}{lightest.map(row)}</View>}
+    </View>
+  );
+}
+
+// Most-performed exercises across the range, ranked with a frequency bar (your original example).
+function ExerciseFrequency({ workoutState, startKey, endKey, theme }: { workoutState: any; startKey: string; endKey: string; theme: any }) {
+  const rows = useMemo(() => {
+    const programs = workoutState?.programs || {};
+    const checks = workoutState?.checks || {};
+    const map = new Map<string, { name: string; count: number }>();
+    for (const k of Object.keys(programs)) {
+      if (k < startKey || k > endKey) continue;
+      const exs = Array.isArray(programs[k]?.exercises) ? programs[k].exercises : [];
+      const dc = checks[k] || {};
+      for (const e of exs) {
+        if (!dc[e.id]) continue;
+        const name = String(e?.name || '').trim();
+        if (!name) continue;
+        const key = name.toLowerCase();
+        const cur = map.get(key) || { name, count: 0 };
+        cur.count += 1; map.set(key, cur);
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => b.count - a.count).slice(0, 15);
+  }, [workoutState, startKey, endKey]);
+  if (!rows.length) return emptyList(theme, 'No workouts logged in this range.');
+  const maxCount = rows[0].count;
+  return (
+    <View style={{ gap: 10 }}>
+      {rows.map((r, i) => (
+        <View key={r.name} style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
+          <Text style={{ width: 16, fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.textDim, textAlign: 'right' }}>{i + 1}</Text>
+          <View style={{ flex: 1 }}>
+            <Text numberOfLines={1} style={{ fontSize: 13, fontFamily: 'DMSans_600SemiBold', color: theme.textSecondary, marginBottom: 4 }}>{r.name}</Text>
+            <View style={{ height: 5, borderRadius: 3, backgroundColor: theme.bgInset, overflow: 'hidden' }}>
+              <View style={{ height: '100%', borderRadius: 3, backgroundColor: theme.accentBlue, width: `${Math.max(6, (r.count / maxCount) * 100)}%` }} />
+            </View>
+          </View>
+          <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.textSecondary, minWidth: 30, textAlign: 'right' }}>×{r.count}</Text>
+        </View>
+      ))}
     </View>
   );
 }

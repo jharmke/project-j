@@ -38,7 +38,10 @@ export type BlockForm =
   | 'topFoods'      // ranked list of most-logged foods (drill-down)
   | 'foodLog'       // itemized food log, day by day (drill-down)
   | 'workoutHistory' // every workout, day by day (drill-down)
-  | 'records';      // all-time lift PRs (drill-down)
+  | 'records'       // all-time lift PRs (drill-down)
+  | 'caloriesByMeal' // calorie share per meal (drill-down)
+  | 'dayExtremes'   // biggest & lightest calorie days (drill-down)
+  | 'exerciseFrequency'; // most-performed exercises, ranked (drill-down)
 
 export interface ReportBlock {
   id: string;
@@ -61,6 +64,8 @@ export const REPORT_BLOCKS: ReportBlock[] = [
   // Nutrition -- drill-down lists lead (the stuff you can't get anywhere else in the app)
   { id: 'top_foods',         chapter: 'nutrition', title: 'Most-logged foods',  desc: 'Your most frequent foods, ranked',     form: 'topFoods',              tier: 'core' },
   { id: 'food_log',          chapter: 'nutrition', title: 'Food log',           desc: 'Every food you logged, day by day',    form: 'foodLog',               tier: 'core' },
+  { id: 'calories_by_meal',  chapter: 'nutrition', title: 'Calories by meal',   desc: 'Where your calories come from',        form: 'caloriesByMeal',        tier: 'core' },
+  { id: 'day_extremes',      chapter: 'nutrition', title: 'Biggest & lightest days', desc: 'Your highest and lowest calorie days', form: 'dayExtremes',       tier: 'core' },
   { id: 'nutrition_headline', chapter: 'nutrition', title: 'Nutrition headline', desc: 'Avg calories, protein, carbs, fat + trend vs prior', form: 'statTiles',             tier: 'core' },
   { id: 'macro_split',       chapter: 'nutrition', title: 'Macro split',        desc: 'Average protein / carbs / fat breakdown', form: 'macroSplit',            tier: 'core' },
   { id: 'calories_trend',    chapter: 'nutrition', title: 'Calories trend',     desc: 'Daily calories as a line',             form: 'lineTrend', dataKey: 'calories', tier: 'core' },
@@ -72,6 +77,7 @@ export const REPORT_BLOCKS: ReportBlock[] = [
   // Workouts -- drill-down lists lead (the Strong-style history + records)
   { id: 'workout_history',   chapter: 'workouts',  title: 'Workout history',    desc: 'Every workout, day by day',            form: 'workoutHistory',        tier: 'core' },
   { id: 'lift_records',      chapter: 'workouts',  title: 'Records',            desc: 'Your all-time lift PRs',               form: 'records',               tier: 'core' },
+  { id: 'exercise_frequency', chapter: 'workouts', title: 'Exercise frequency', desc: 'Your most-performed exercises, ranked', form: 'exerciseFrequency',     tier: 'core' },
   { id: 'effort_trend',      chapter: 'workouts',  title: 'Effort',             desc: 'Effort score over the period',         form: 'lineTrend', dataKey: 'effortScore', tier: 'core' },
 
   // Weight & Body

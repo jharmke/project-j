@@ -2137,19 +2137,28 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
         )}
 
         {!isRest && displayExercises.length > 0 && (
-          // Always "View Summary": the button is a viewer, not a save gate (your logged sets already
-          // persist on every circle-check). A snapshot re-opens instantly; otherwise it computes the
-          // live recap (which also banks PRs + snapshots for this session).
-          <TouchableOpacity
-            onPress={() => {
-              if (finishedSummaries[activeDay]) { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openFinishSummary(finishedSummaries[activeDay]); }
-              else finishWorkout();
-            }}
-            style={{ marginTop: 4, marginBottom: 4, backgroundColor: theme.accentBlue, borderRadius: 12, paddingVertical: 15, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8,
-              shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}>
-            <Ionicons name="checkmark-circle" size={18} color={theme.bgPrimary} />
-            <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', letterSpacing: 0.5, color: theme.bgPrimary }}>View Summary</Text>
-          </TouchableOpacity>
+          // Add Exercise + View Summary share one row to save vertical space (tester wanted an inline
+          // Add Exercise; the FAB has it too). Add Exercise is an outlined/solid-card button so it
+          // stands off the page background; View Summary stays the wider filled primary CTA. View
+          // Summary is a viewer, not a save gate -- sets already persist on every circle-check.
+          <View style={{ flexDirection: 'row', gap: 10, marginTop: 4, marginBottom: 4 }}>
+            <TouchableOpacity
+              onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/workout-library', params: { selectMode: 'true', day: activeDay } }); }}
+              style={{ flex: 1.3, backgroundColor: theme.bgCard, borderWidth: 1.5, borderColor: theme.accentBlue, borderRadius: 12, paddingVertical: 15, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 5 }}>
+              <Ionicons name="add" size={19} color={theme.accentBlue} />
+              <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', letterSpacing: 0.3, color: theme.accentBlue }}>Add Exercise</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => {
+                if (finishedSummaries[activeDay]) { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openFinishSummary(finishedSummaries[activeDay]); }
+                else finishWorkout();
+              }}
+              style={{ flex: 1.7, backgroundColor: theme.accentBlue, borderRadius: 12, paddingVertical: 15, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8,
+                shadowColor: theme.accentBlue, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}>
+              <Ionicons name="checkmark-circle" size={18} color={theme.bgPrimary} />
+              <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', letterSpacing: 0.5, color: theme.bgPrimary }}>View Summary</Text>
+            </TouchableOpacity>
+          </View>
         )}
 
         <View ref={effortCardRef} collapsable={false} style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, marginTop: 12 }]}>

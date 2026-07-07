@@ -1454,10 +1454,37 @@ export default function LogScreen() {
                       ref={entry.tutorialEntry ? (tutorialEntryRef as any) : undefined}
                       key={i}
                       style={[styles.foodEntry, { backgroundColor: theme.accentBlueBg }]}
-                      onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); returningFromChild.current = true; router.push({
+                      onPress={() => {
+                        triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+                        returningFromChild.current = true;
+                        // Serving-only recipe entries (recipe had no total weight) have no gram basis, so
+                        // Edit Entry hides the amount box. New logs carry servingOnly; infer it for older
+                        // recipe entries via a recipe-specific signature (flat nutrients, no
+                        // foodNutrients/fsId/my-food/ai, name not grams/oz) so regular foods are never hit.
+                        const e = entry as any;
+                        const nameIsGramsOz = /\((\d+\.?\d*)(g|oz)\)\s*$/.test(entry.name);
+                        const looksLikeRecipe = !!e.isRecipe || (!e.fsId && !e.isMyFood && !e.myFoodId && !e.aiEstimated && !(e.foodNutrients?.length) && (e.fiber != null || e.sugar != null || e.sodium != null));
+                        const servingOnly = e.servingOnly ?? (looksLikeRecipe && !nameIsGramsOz && e.loggedAmount == null);
+                        // Serving-only entries read amount/unit from the "(2 servings)" label, not the
+                        // grams regex (which fails on serving names and falls back to a bogus 100 g).
+                        const labelMatch = entry.name.match(/\(([\d.]+)\s*(.+?)\)\s*$/);
+                        const gramMatch = entry.name.match(/\((\d+\.?\d*)(g|oz|serving)\)/);
+                        const editAmount = e.loggedAmount != null ? String(e.loggedAmount) : servingOnly ? (labelMatch ? labelMatch[1] : '') : (gramMatch ? gramMatch[1] : '100');
+                        const editUnit = e.loggedUnit != null ? e.loggedUnit : servingOnly ? (labelMatch ? labelMatch[2] : 'serving') : (gramMatch ? gramMatch[2] : 'g');
+                        router.push({
                         pathname: '/food-detail',
                         params: {
                           foodJson: JSON.stringify({
+                            // Forward any flat extended-nutrient fields the entry carries (recipe logs
+                            // store fiber/sugar/sodium/micros as flat fields, not a foodNutrients array).
+                            // food-detail's computeExtended reads these so Edit Entry can show them.
+                            // Filtered so only present fields ride along; harmless for regular foods
+                            // (their foodNutrients path takes priority over the flat fallback).
+                            ...Object.fromEntries(
+                              ['fiber','sugar','sodium','cholesterol','saturatedFat','polyunsaturatedFat','monounsaturatedFat','addedSugars','transFat','sugarAlcohols','potassium','calcium','iron','vitaminA','vitaminC','vitaminD','vitaminE','vitaminK','vitaminB6','folate','vitaminB12','biotin','magnesium','zinc','copper','caffeine']
+                                .filter(k => (entry as any)[k] != null)
+                                .map(k => [k, (entry as any)[k]])
+                            ),
                             description: entry.name.replace(/\s*\(.*?\)\s*$/, ''),
                             calPer100g: entry.calPer100g || 0,
                             proteinPer100g: entry.proteinPer100g || 0,
@@ -1468,8 +1495,8 @@ export default function LogScreen() {
                             existingCarbs: entry.carbs || 0,
                             existingFat: entry.fat || 0,
                             foodNutrients: (entry as any).foodNutrients || [],
-                            existingAmount: (entry as any).loggedAmount || (() => { const m = entry.name.match(/\((\d+\.?\d*)(g|oz|serving)\)/); return m ? m[1] : '100'; })(),
-                            existingUnit: (entry as any).loggedUnit || (() => { const m = entry.name.match(/\((\d+\.?\d*)(g|oz|serving)\)/); return m ? m[2] : 'g'; })(),
+                            existingAmount: editAmount,
+                            existingUnit: editUnit,
                             timestamp: entry.timestamp || Date.now(),
                             fsId: (entry as any).fsId || null,
                             myFoodId: (entry as any).myFoodId || null,
@@ -1478,6 +1505,9 @@ export default function LogScreen() {
                             servingGrams: (entry as any).servingGrams || undefined,
                             servingUnit: (entry as any).loggedUnit || undefined,
                             aiEstimated: (entry as any).aiEstimated || false,
+                            servingOnly,
+                            isRecipe: looksLikeRecipe,
+                            originalName: entry.name,
                           }),
                           meal: entry.meal,
                           date: activeDate,

@@ -340,6 +340,9 @@ export default function AddFoodScreen() {
   useEffect(() => {
     foodListRef.current?.scrollToOffset({ offset: 0, animated: false });
   }, [activeTab]);
+  // Which food row is mid-open (openFoodDetail can await 1-2 FatSecret calls before navigating).
+  // Drives a spinner + dim on the tapped row so the tap never reads as unresponsive.
+  const [loadingItemKey, setLoadingItemKey] = useState<string | null>(null);
 const [recentFoods, setRecentFoods] = useState<SearchResult[]>([]);
 const [favorites, setFavorites] = useState<MyFood[]>([]);
 const [recipes, setRecipes] = useState<any[]>([]);
@@ -1786,6 +1789,8 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
           const foodName = nameParts[0];
           const brandName = (item as any).brand || (nameParts.length > 1 ? nameParts.slice(1).join(' · ') : null);
           const isSupplement = (item as any).type === 'supplement';
+          const rowLoadingKey = `${(item as any).id || (item as any).fsId || item.description}_${index}`;
+          const isRowLoading = loadingItemKey === rowLoadingKey;
           return (
             <Animated.View
               ref={
@@ -1795,7 +1800,11 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                 undefined
               }
               style={{ opacity: activeTab === 'favorites' && !query.trim() ? getFavOpacity(item.description) : 1 }}>
-            <TouchableOpacity style={[styles.resultItem, (item as any).isOverride && styles.resultItemSet]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); openFoodDetail(item); }}>
+            <TouchableOpacity style={[styles.resultItem, (item as any).isOverride && styles.resultItemSet, isRowLoading && { opacity: 0.5 }]} disabled={!!loadingItemKey} onPress={async () => {
+              triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
+              setLoadingItemKey(rowLoadingKey);
+              try { await openFoodDetail(item); } finally { setLoadingItemKey(null); }
+            }}>
               <View style={styles.resultLeft}>
                 {/* Badges */}
                 {activeTab === 'favorites' && !query.trim() && ((item as any).isMyFood || (item as any).isCustom) && (
@@ -1881,8 +1890,14 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
                   />
                 </TouchableOpacity>
                 <View style={styles.calBlock}>
-                  <Text style={styles.resultCal}>{getCalories(item)}</Text>
-                  <Text style={styles.resultCalLabel}>kcal</Text>
+                  {isRowLoading ? (
+                    <ActivityIndicator size="small" color={theme.accentBlue} />
+                  ) : (
+                    <>
+                      <Text style={styles.resultCal}>{getCalories(item)}</Text>
+                      <Text style={styles.resultCalLabel}>kcal</Text>
+                    </>
+                  )}
                 </View>
                 {item.isMyFood && activeTab === 'myfoods' && (
                   <>

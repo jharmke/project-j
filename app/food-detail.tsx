@@ -309,7 +309,9 @@ const isTutorialMode = tutorialMode === 'true';
   const [selectedServing, setSelectedServing] = useState<any>(virtualDefaultServing);
   // Resolved base serving size for edit mode -- starts from stored servingGrams, falls back to My Foods lookup
   const [resolvedServingGrams, setResolvedServingGrams] = useState<number>(
-    food?.servingGrams > 0 ? food.servingGrams : 0
+    // Serving-only recipe entries have no grams; treat "1 serving" as the unit (nominal grams = 1) so
+    // the stepper counts servings and the count resolves to the logged servings (existingAmount).
+    food?.servingGrams > 0 ? food.servingGrams : ((food as any)?.servingOnly ? 1 : 0)
   );
 
   // Synthetic serving for custom/My Foods with no fsServings -- enables stepper.
@@ -326,8 +328,8 @@ const isTutorialMode = tutorialMode === 'true';
       carbs: Math.round((food.existingCarbs || 0) * ratio * 10) / 10,
       fat: Math.round((food.existingFat || 0) * ratio * 10) / 10,
       grams: baseGrams,
-      unit: food.servingUnitType || 'g',
-      label: (food.servingUnit && /\d/.test(food.servingUnit)) ? food.servingUnit : `${baseGrams}${food.servingUnitType || 'g'}`,
+      unit: (food as any)?.servingOnly ? 'serving' : (food.servingUnitType || 'g'),
+      label: (food as any)?.servingOnly ? 'serving' : ((food.servingUnit && /\d/.test(food.servingUnit)) ? food.servingUnit : `${baseGrams}${food.servingUnitType || 'g'}`),
       fiber: 0, sugar: 0, sodium: 0, cholesterol: 0, saturatedFat: 0,
       polyunsaturatedFat: 0, monounsaturatedFat: 0, potassium: 0,
       vitaminA: 0, vitaminC: 0, calcium: 0, iron: 0, sugarAlcohols: 0,
@@ -576,6 +578,9 @@ const isTutorialMode = tutorialMode === 'true';
     const [entryTime, setEntryTime] = useState<Date>( food?.timestamp ? new Date(food.timestamp) : new Date());
 const [showTimePicker, setShowTimePicker] = useState(false);
   const isEditing = entryIndex !== undefined && entryIndex !== '';
+  // Serving-count-only recipe entry (recipe had no total weight): no gram basis, so the amount box is
+  // hidden and the save preserves the original "(N servings)" name instead of rewriting it to grams.
+  const isServingOnlyRecipe = !!(food as any)?.servingOnly;
   const originalAmount = food?.existingAmount ||
     (defaultFsServing && defaultFsServing.grams > 0
       ? defaultFsServing.grams.toString()
@@ -814,7 +819,9 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
         });
       }
       const newEntry = {
-  name: `${food.description} (${amount}${unit})`,
+  // Serving-only recipe entries rebuild the name in servings (amount tracks the serving count), so an
+  // edited count is reflected; everything else rebuilds from the edited amount + unit.
+  name: isServingOnlyRecipe ? `${food.description} (${amount} ${amount === '1' ? 'serving' : 'servings'})` : `${food.description} (${amount}${unit})`,
   cal: calories,
   meal: currentMeal,
   protein,
@@ -1266,7 +1273,9 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
           </View>
         )}
 
-        {/* Amount input -- label reflects actual serving unit */}
+        {/* Amount input -- label reflects actual serving unit. Hidden for serving-only recipe
+            entries (no gram basis) so they don't show a bogus "Amount (g): 100". */}
+        {!isServingOnlyRecipe && (
         <View ref={amountRowRef} style={styles.amountRow}>
           <Text style={styles.amountLabel}>Amount ({effectiveServing?.unit || food?.servingUnitType || 'g'})</Text>
           <TextInput
@@ -1287,12 +1296,13 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
             selectTextOnFocus
           />
         </View>
+        )}
 
         {/* Nutrition */}
         <View style={styles.nutritionCard}>
           <Text style={styles.nutritionTitle}>
             {'Nutrition for '}
-            <Text style={{ textTransform: 'none' }}>{amount}{effectiveServing?.unit || unit}</Text>
+            <Text style={{ textTransform: 'none' }}>{isServingOnlyRecipe ? `${amount} ${amount === '1' ? 'serving' : 'servings'}` : `${amount}${effectiveServing?.unit || unit}`}</Text>
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16, marginBottom: 16 }}>
             <MacroDonut protein={protein} carbs={carbs} fat={fat} calories={calories} theme={theme} />

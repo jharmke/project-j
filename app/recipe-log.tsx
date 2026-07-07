@@ -113,6 +113,11 @@ export default function RecipeLogScreen() {
       const label = logMode === 'serving'
         ? `${servingAmount} ${recipe.servingName}`
         : `${weightAmount}${recipe.totalWeightUnit}`;
+      // A recipe with a total weight has a gram basis, so Edit Entry shows the amount box with the real
+      // portion (in the recipe's weight unit). A serving-count-only recipe has no gram basis, so the
+      // entry is flagged servingOnly and Edit Entry hides the amount box (no fake "Amount (g): 100").
+      const hasWeight = totalWeight > 0;
+      const portionInWeightUnit = hasWeight ? Math.round(multiplier * totalWeight * 10) / 10 : 0;
       const newEntry = {
         name: `${recipe.name} (${label})`,
         cal: calories,
@@ -120,6 +125,10 @@ export default function RecipeLogScreen() {
         protein,
         carbs,
         fat,
+        isRecipe: true,
+        servingOnly: !hasWeight,
+        loggedAmount: hasWeight ? portionInWeightUnit : parseFloat(servingAmount),
+        loggedUnit: hasWeight ? (recipe.totalWeightUnit || 'g') : recipe.servingName,
         fiber: Math.round((recipe.totalFiber || 0) * multiplier * 10) / 10,
         sugar: Math.round((recipe.totalSugar || 0) * multiplier * 10) / 10,
         sodium: Math.round((recipe.totalSodium || 0) * multiplier),

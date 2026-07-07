@@ -21,7 +21,7 @@ import MuscleMap from '../components/MuscleMap';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
 import { useHealthKit } from '../useHealthKit';
-import { groupSyncedWorkouts, loadSyncedLabels, saveSyncedLabel, summarizeSessions, sortSessions, groupSessionsByMonth, formatDurationShort, formatDurationLong, SyncedWorkout, SyncedSort } from '../utils/syncedWorkouts';
+import { groupSyncedWorkouts, loadSyncedLabels, saveSyncedLabel, summarizeSessions, sortSessions, groupSessionsByMonth, formatDurationShort, formatDurationLong, loadSyncedCache, saveSyncedCache, SyncedWorkout, SyncedSort } from '../utils/syncedWorkouts';
 
 interface LibraryExercise {
   id: string;
@@ -1920,13 +1920,14 @@ export default function WorkoutLibraryScreen() {
   const [renaming, setRenaming] = useState<{ key: string; value: string; def: string } | null>(null);
   useEffect(() => {
     if (isSelectMode) return;
-    (async () => {
-      const [list, labels] = await Promise.all([fetchSyncedWorkouts(365), loadSyncedLabels()]);
-      const groups = groupSyncedWorkouts(list); // g.label = derived default
-      // Apple strength-ish types (Functional Strength 20, Traditional Strength 50, Core Training 59)
-      // are NOT cardio -- mirror workout.tsx's APPLE_LIFT_TYPES so they filter as 'lift', not 'cardio'.
-      const APPLE_LIFT_TYPES = new Set([20, 50, 59]);
-      setSyncedItems(groups.map(g => ({
+    let cancelled = false;
+    // Apple strength-ish types (Functional Strength 20, Traditional Strength 50, Core Training 59)
+    // are NOT cardio -- mirror workout.tsx's APPLE_LIFT_TYPES so they filter as 'lift', not 'cardio'.
+    const APPLE_LIFT_TYPES = new Set([20, 50, 59]);
+    // Same mapping for both the instant cached paint and the fresh query -> labels applied on top of
+    // the RAW sessions each time (a rename is never baked into the cache).
+    const toItems = (list: SyncedWorkout[], labels: Record<string, string>) =>
+      groupSyncedWorkouts(list).map(g => ({
         id: `synced_${g.key}`,
         name: labels[g.key] || g.label,   // applied label (custom override or default)
         defaultLabel: g.label,             // derived default, for a blank-reset rename
@@ -1935,8 +1936,24 @@ export default function WorkoutLibraryScreen() {
         syncedKey: g.key,
         sessions: g.sessions,
         favorite: false,
-      })));
+      }));
+    (async () => {
+      // 1) Paint the last-known list immediately so the Apple entries are on the first frame.
+      const [cached, labels] = await Promise.all([loadSyncedCache(), loadSyncedLabels()]);
+      if (cancelled) return;
+      if (cached && cached.length) setSyncedItems(toItems(cached, labels));
+      // 2) Revalidate in the background. Keep the cached list on an empty/error return (transient
+      //    permission/timing blips shouldn't flicker the entries to empty); only overwrite on real data.
+      const fresh = await fetchSyncedWorkouts(365);
+      if (cancelled) return;
+      if (fresh.length) {
+        const freshLabels = await loadSyncedLabels(); // re-read: a rename may have landed mid-query
+        if (cancelled) return;
+        setSyncedItems(toItems(fresh, freshLabels));
+        saveSyncedCache(fresh); // fire-and-forget
+      }
     })();
+    return () => { cancelled = true; };
   }, [isSelectMode]);
 
   // Open a synced entry's history modal fresh (reset sort + collapse state each time).

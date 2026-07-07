@@ -164,3 +164,37 @@ export async function saveSyncedLabel(key: string, label: string): Promise<void>
 export function applySyncedLabels(groups: SyncedGroup[], labels: Record<string, string>): SyncedGroup[] {
   return groups.map(g => (labels[g.key] ? { ...g, label: labels[g.key] } : g));
 }
+
+// ── Query cache (perf, stale-while-revalidate) ───────────────────────────────────────────────────
+// The synced library entries derive from a native HealthKit queryWorkoutSamples (1 year, up to 1000
+// sessions) that runs on every Library open, so the Apple entries used to pop in a beat after the
+// list painted. This cache lets the last-known list render on the FIRST frame; a fresh query still
+// runs in the background and updates if anything changed.
+//
+// Display-only + device-local: we cache the RAW SyncedWorkout[] (labels are applied fresh at render,
+// so a rename is never frozen into the cache) and write with plain AsyncStorage, NOT storageSet --
+// this is re-derivable HealthKit data, it must not consume cloud sync. Never touches pj_workout_state,
+// pj_exercise_library, or the label store.
+const CACHE_KEY = 'pj_synced_workout_cache';
+let memCache: SyncedWorkout[] | null = null; // survives navigation within a session (skips even the AsyncStorage read)
+
+// Cached raw list if we have one (in-memory first, else disk). Returns null on a true cold miss.
+export async function loadSyncedCache(): Promise<SyncedWorkout[] | null> {
+  if (memCache) return memCache;
+  try {
+    const raw = await AsyncStorage.getItem(CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) { memCache = parsed; return parsed; }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export async function saveSyncedCache(list: SyncedWorkout[]): Promise<void> {
+  memCache = list;
+  try {
+    await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(list));
+  } catch {}
+}

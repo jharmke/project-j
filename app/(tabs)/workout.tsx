@@ -29,6 +29,7 @@ import ExerciseSetRows from '../../components/ExerciseSetRows';
 import HRZoneModal, { HRZoneData } from '../../components/HRZoneModal';
 import { resolveMaxHR, zoneBounds, timeInZones, ageFromBirthday } from '../../utils/hrZones';
 import { recomputeLiftPR, normalizeLiftName } from '../../utils/liftPR';
+import { syncedGroupLabel, SPLIT_TYPES } from '../../utils/syncedWorkouts';
 import TooltipIcon from '../../components/TooltipIcon';
 import { showToolkit } from '../../components/ToolkitSheet';
 import { useTutorial } from '../../context/TutorialContext';
@@ -542,17 +543,52 @@ useEffect(() => {
 
   const APPLE_LIFT_TYPES = new Set([20, 50, 59]); // Functional Strength, Traditional Strength, Core Training
 
+  // Read the indoor/outdoor flag the same way useHealthKit's synced query does (HKIndoorWorkout rides
+  // on every sample). null = the device never set it. syncedGroupLabel then splits ONLY the genuine
+  // split types (walk/run/cycle/swim/row) into "Indoor X"/"Outdoor X"; everything else stays bare, and
+  // a null flag also stays bare -- so this can never invent nonsense like "Outdoor Yoga".
+  const indoorOf = (w: any): boolean | null => {
+    const raw = w.metadata?.HKIndoorWorkout;
+    return typeof raw === 'boolean' ? raw : raw === 1 ? true : raw === 0 ? false : null;
+  };
+  const labelFor = (w: any): string => {
+    const type = w.workoutActivityType;
+    return syncedGroupLabel(WORKOUT_TYPE_NAMES[type] ?? 'Workout', indoorOf(w), type);
+  };
+
   setPrograms(prev => {
     const current: DayProgram = prev[todayKey] ? { ...prev[todayKey] } : { type: 'cardio', focus: 'Cardio', exercises: [] };
     const existingUUIDs = new Set(current.exercises.map((e: any) => e.appleHealthUUID).filter(Boolean));
-    const newExercises: any[] = [];
 
+    // Retro-fix: earlier imports saved the bare type name ("Walking") before the indoor/outdoor split
+    // existed. Correct an existing Apple entry to the split label, but ONLY when its saved name is still
+    // exactly the bare default for a split type AND the live sample carries a real indoor flag -- so a
+    // manual rename, a non-split type, or a flag-less session is never touched. Name is display-only for
+    // Apple cardio (nothing keys logic off it -- PRs need weighted sets, summaries filter by flag/id),
+    // so this is a safe, surgical in-place relabel.
+    const wByUuid = new Map<string, any>(appleWorkouts.map((w: any) => [w.uuid, w]));
+    let renamed = false;
+    const fixedExisting = current.exercises.map((ex: any) => {
+      if (!ex.fromAppleHealth || !ex.appleHealthUUID) return ex;
+      const w = wByUuid.get(ex.appleHealthUUID);
+      if (!w) return ex;
+      const type = w.workoutActivityType;
+      if (!SPLIT_TYPES.has(type)) return ex;
+      const bareDefault = WORKOUT_TYPE_NAMES[type] ?? 'Workout';
+      if (ex.name !== bareDefault) return ex;        // user-renamed or already split -> leave it
+      const proper = labelFor(w);
+      if (proper === ex.name) return ex;             // flag missing -> stays bare, no change
+      renamed = true;
+      return { ...ex, name: proper };
+    });
+
+    const newExercises: any[] = [];
     for (const w of appleWorkouts) {
       if (existingUUIDs.has(w.uuid)) continue;
       const durationMin = formatDuration(w.duration.quantity);
       const calories = Math.round(w.totalEnergyBurned?.quantity ?? 0);
       const distanceMi = w.totalDistance ? Math.round((w.totalDistance.quantity / 1609.34) * 100) / 100 : null;
-      const name = WORKOUT_TYPE_NAMES[w.workoutActivityType] ?? 'Workout';
+      const name = labelFor(w);
       newExercises.push({
         id: `apple_${w.uuid}`,
         name,
@@ -570,18 +606,20 @@ useEffect(() => {
       });
     }
 
-    if (newExercises.length === 0) return prev;
-    // An Apple Health workout landing on a rest day means it wasn't really a rest day.
-    // Flip off 'rest' so the imported exercises aren't silently hidden by the rest-day view.
-    const flippedType = current.type === 'rest' ? 'cardio' : current.type;
-    const flippedFocus = current.type === 'rest' ? 'Cardio' : current.focus;
+    if (newExercises.length === 0 && !renamed) return prev;
+    // An Apple Health workout landing on a rest day means it wasn't really a rest day. Flip off 'rest'
+    // so the imported exercises aren't silently hidden by the rest-day view. Only a genuine NEW import
+    // should flip the day; a name-only cleanup must not touch the day type.
+    const flip = newExercises.length > 0 && current.type === 'rest';
+    const flippedType = flip ? 'cardio' : current.type;
+    const flippedFocus = flip ? 'Cardio' : current.focus;
     const updated = {
       ...prev,
       [todayKey]: {
         ...current,
         type: flippedType,
         focus: flippedFocus,
-        exercises: [...current.exercises, ...newExercises],
+        exercises: [...fixedExisting, ...newExercises],
       },
     };
     const newCheckIds = newExercises.map((e: any) => e.id);
@@ -589,11 +627,13 @@ useEffect(() => {
       const current2 = saved ? JSON.parse(saved) : {};
       const updatedChecks = { ...(current2.checks || {}), [todayKey]: { ...(current2.checks?.[todayKey] || {}), ...Object.fromEntries(newCheckIds.map((id: string) => [id, true])) } };
       storageSet('pj_workout_state', JSON.stringify({ ...current2, programs: updated, checks: updatedChecks }));
-      setChecks(prevChecks => {
-        const c = { ...prevChecks };
-        c[todayKey] = { ...(c[todayKey] || {}), ...Object.fromEntries(newCheckIds.map((id: string) => [id, true])) };
-        return c;
-      });
+      if (newCheckIds.length) {
+        setChecks(prevChecks => {
+          const c = { ...prevChecks };
+          c[todayKey] = { ...(c[todayKey] || {}), ...Object.fromEntries(newCheckIds.map((id: string) => [id, true])) };
+          return c;
+        });
+      }
     });
     return updated;
   });

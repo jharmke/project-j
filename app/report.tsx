@@ -17,6 +17,7 @@ import { useToast } from '../components/Toast';
 import { fetchTrendData, TrendData, EMPTY_TREND_DATA } from '../utils/statsData';
 import { liftSessionHistory } from '../utils/liftPR';
 import { loadMealSlots, getMealDisplayName } from '../utils/mealSlots';
+import { loadMeasurements, loadBodyMeasureSettings, toDisplay, unitLabel, MEASURE_FIELDS, type MeasurementUnit } from '../utils/bodyMeasurements';
 import { loadReports, saveReport, newReportId, resolveRange, RANGE_LABELS, Report, ReportRangePreset } from '../utils/reports';
 import { REPORT_CHAPTERS, REPORT_BLOCKS, blocksForChapter, getReportBlock, ReportBlock, REPORT_TEMPLATES, ReportTemplate } from '../utils/reportBlocks';
 
@@ -35,6 +36,7 @@ export default function ReportScreen() {
   const [foodDays, setFoodDays] = useState<FoodDay[]>([]);         // raw itemized food entries over the current period
   const [workoutState, setWorkoutState] = useState<any>(null);     // raw pj_workout_state (history + PRs)
   const [mealCtx, setMealCtx] = useState<{ slots: any[]; cache: any }>({ slots: [], cache: {} });
+  const [bodyCtx, setBodyCtx] = useState<{ entries: any[]; unit: MeasurementUnit }>({ entries: [], unit: 'in' });
   const [loading, setLoading] = useState(true);
   const [libraryOpen, setLibraryOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
@@ -73,7 +75,9 @@ export default function ReportScreen() {
         const fd = await loadRangeEntries(startKey, endKey);
         let mc = { slots: [] as any[], cache: {} as any };
         try { const { mealSlots, slotNameCache } = await loadMealSlots(); mc = { slots: mealSlots, cache: slotNameCache }; } catch {}
-        if (!cancelled) { setData(cur); setPrior(prev); setFoodDays(fd); setWorkoutState(ws); setMealCtx(mc); }
+        let bc = { entries: [] as any[], unit: 'in' as MeasurementUnit };
+        try { const be = await loadMeasurements(); const bs = await loadBodyMeasureSettings(); bc = { entries: be, unit: bs.unit }; } catch {}
+        if (!cancelled) { setData(cur); setPrior(prev); setFoodDays(fd); setWorkoutState(ws); setMealCtx(mc); setBodyCtx(bc); }
       } catch { if (!cancelled) { setData(EMPTY_TREND_DATA); setPrior(EMPTY_TREND_DATA); setFoodDays([]); } }
       if (!cancelled) setLoading(false);
     })();
@@ -176,7 +180,7 @@ export default function ReportScreen() {
           <View style={{ marginTop: 14, gap: 12 }}>
             {activeBlocks.map((b, i) => (
               <BlockCard key={b.id} block={b} data={data} prior={prior} foodDays={foodDays} workoutState={workoutState}
-                mealSlots={mealCtx.slots} slotCache={mealCtx.cache}
+                mealSlots={mealCtx.slots} slotCache={mealCtx.cache} bodyEntries={bodyCtx.entries} bodyUnit={bodyCtx.unit}
                 startKey={rangeBounds.startKey} endKey={rangeBounds.endKey} theme={theme}
                 collapsed={collapsed.has(b.id)} onToggle={() => toggleCollapse(b.id)}
                 editMode={libraryOpen} isFirst={i === 0} isLast={i === activeBlocks.length - 1}
@@ -272,11 +276,11 @@ const FULL_DATE = (key: string) => {
 // ── Block renderer ───────────────────────────────────────────────────────────────────────────────
 interface BlockCardProps {
   block: ReportBlock; data: TrendData; prior: TrendData; foodDays: FoodDay[]; workoutState: any;
-  mealSlots: any[]; slotCache: any; startKey: string; endKey: string; theme: any;
+  mealSlots: any[]; slotCache: any; bodyEntries: any[]; bodyUnit: MeasurementUnit; startKey: string; endKey: string; theme: any;
   collapsed: boolean; onToggle: () => void; editMode: boolean; isFirst: boolean; isLast: boolean;
   onUp: () => void; onDown: () => void; onRemove: () => void;
 }
-function BlockCard({ block, data, prior, foodDays, workoutState, mealSlots, slotCache, startKey, endKey, theme, collapsed, onToggle, editMode, isFirst, isLast, onUp, onDown, onRemove }: BlockCardProps) {
+function BlockCard({ block, data, prior, foodDays, workoutState, mealSlots, slotCache, bodyEntries, bodyUnit, startKey, endKey, theme, collapsed, onToggle, editMode, isFirst, isLast, onUp, onDown, onRemove }: BlockCardProps) {
   // For a trend block, surface its latest value in the header (clean) instead of floating it in the chart.
   const trendLatest = block.form === 'lineTrend' ? latestOf(seriesFor(block.dataKey, data)) : null;
   return (
@@ -314,6 +318,8 @@ function BlockCard({ block, data, prior, foodDays, workoutState, mealSlots, slot
           {block.form === 'caloriesByMeal' && <CaloriesByMeal foodDays={foodDays} mealSlots={mealSlots} slotCache={slotCache} theme={theme} />}
           {block.form === 'dayExtremes' && <DayExtremes foodDays={foodDays} theme={theme} />}
           {block.form === 'exerciseFrequency' && <ExerciseFrequency workoutState={workoutState} startKey={startKey} endKey={endKey} theme={theme} />}
+          {block.form === 'sleepStages' && <SleepStages data={data} theme={theme} />}
+          {block.form === 'bodyMeasurements' && <BodyMeasurements entries={bodyEntries} unit={bodyUnit} startKey={startKey} endKey={endKey} theme={theme} />}
         </>
       )}
     </View>
@@ -656,6 +662,78 @@ function ExerciseFrequency({ workoutState, startKey, endKey, theme }: { workoutS
           <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.textSecondary, minWidth: 30, textAlign: 'right' }}>×{r.count}</Text>
         </View>
       ))}
+    </View>
+  );
+}
+
+// Sleep stages: average deep / REM / core (minutes) as a composition bar + legend with per-night avg + %.
+function SleepStages({ data, theme }: { data: TrendData; theme: any }) {
+  const nights = data.sleepStages.filter(s => (s.deep || 0) + (s.rem || 0) + (s.core || 0) > 0);
+  if (!nights.length) return emptyList(theme, 'No sleep stage data in this range.');
+  const avgK = (k: 'deep' | 'rem' | 'core') => Math.round(nights.reduce((s, n) => s + ((n as any)[k] || 0), 0) / nights.length);
+  const deep = avgK('deep'), rem = avgK('rem'), core = avgK('core');
+  const total = deep + rem + core || 1;
+  const fmtMin = (m: number) => { const h = Math.floor(m / 60), mm = m % 60; return h > 0 ? `${h}h ${mm}m` : `${mm}m`; };
+  const COL: Record<string, string> = { Deep: '#3b5bdb', REM: '#7048e8', Core: '#4dabf7' };
+  const segs: [string, number][] = [['Deep', deep], ['REM', rem], ['Core', core]];
+  return (
+    <View>
+      <View style={{ flexDirection: 'row', gap: 2, height: 24, borderRadius: 7, overflow: 'hidden' }}>
+        {segs.map(([name, v]) => <View key={name} style={{ flex: v || 0.01, backgroundColor: COL[name] }} />)}
+      </View>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14, marginTop: 12 }}>
+        {segs.map(([name, v]) => (
+          <View key={name} style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+            <View style={{ width: 11, height: 11, borderRadius: 3.5, backgroundColor: COL[name] }} />
+            <View>
+              <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{name} {Math.round((v / total) * 100)}%</Text>
+              <Text style={{ fontSize: 11, fontFamily: 'DMSans_500Medium', color: theme.textMuted }}>{fmtMin(v)}/night</Text>
+            </View>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// Body measurements: every tape-measurement session in the range (newest first, collapsible, first open),
+// each field shown in the user's unit + the session's body-fat estimate.
+function BodyMeasurements({ entries, unit, startKey, endKey, theme }: { entries: any[]; unit: MeasurementUnit; startKey: string; endKey: string; theme: any }) {
+  const sessions = useMemo(() => entries.filter(e => e?.date >= startKey && e?.date <= endKey).sort((a, b) => b.date.localeCompare(a.date)), [entries, startKey, endKey]);
+  const [open, setOpen] = useState<Set<string>>(new Set());
+  useEffect(() => { setOpen(new Set(sessions.length ? [sessions[0].id] : [])); }, [sessions.length, sessions[0]?.id]);
+  if (!sessions.length) return emptyList(theme, 'No measurements logged in this range.');
+  const CAP = 45;
+  const shown = sessions.slice(0, CAP);
+  const u = unitLabel(unit);
+  const toggle = (id: string) => setOpen(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  return (
+    <View style={{ gap: 10 }}>
+      {shown.map(s => {
+        const isOpen = open.has(s.id);
+        const fields = MEASURE_FIELDS.filter(f => typeof s.values?.[f.key] === 'number');
+        return (
+          <View key={s.id} style={{ backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, overflow: 'hidden' }}>
+            <TouchableOpacity onPress={() => toggle(s.id)} activeOpacity={0.7} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 12 }}>
+              <Ionicons name={isOpen ? 'chevron-down' : 'chevron-forward'} size={14} color={theme.textMuted} />
+              <Text style={{ flex: 1, fontSize: 12.5, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{FULL_DATE(s.date)}</Text>
+              <Text style={{ fontSize: 10.5, fontFamily: 'DMSans_500Medium', color: theme.textMuted }}>{fields.length} field{fields.length === 1 ? '' : 's'}</Text>
+              {typeof s.bodyFat === 'number' && <Text style={{ fontSize: 12, fontFamily: 'DMSans_700Bold', color: theme.accentBlue }}>{s.bodyFat}% BF</Text>}
+            </TouchableOpacity>
+            {isOpen && (
+              <View style={{ gap: 5, paddingHorizontal: 12, paddingBottom: 12 }}>
+                {fields.map(f => (
+                  <View key={f.key} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text style={{ fontSize: 12.5, fontFamily: 'DMSans_400Regular', color: theme.textSecondary }}>{f.label}</Text>
+                    <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: theme.textMuted }}>{toDisplay(s.values[f.key], unit)} {u}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        );
+      })}
+      {sessions.length > CAP && <Text style={{ fontSize: 11.5, color: theme.textDim, textAlign: 'center', fontFamily: 'DMSans_400Regular', marginTop: 2 }}>+{sessions.length - CAP} earlier sessions. Narrow the range to see them.</Text>}
     </View>
   );
 }

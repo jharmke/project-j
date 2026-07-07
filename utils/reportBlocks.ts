@@ -41,7 +41,9 @@ export type BlockForm =
   | 'records'       // all-time lift PRs (drill-down)
   | 'caloriesByMeal' // calorie share per meal (drill-down)
   | 'dayExtremes'   // biggest & lightest calorie days (drill-down)
-  | 'exerciseFrequency'; // most-performed exercises, ranked (drill-down)
+  | 'exerciseFrequency' // most-performed exercises, ranked (drill-down)
+  | 'sleepStages'   // avg deep/REM/core breakdown
+  | 'bodyMeasurements'; // tape measurements, session by session (drill-down)
 
 export interface ReportBlock {
   id: string;
@@ -81,10 +83,12 @@ export const REPORT_BLOCKS: ReportBlock[] = [
   { id: 'effort_trend',      chapter: 'workouts',  title: 'Effort',             desc: 'Effort score over the period',         form: 'lineTrend', dataKey: 'effortScore', tier: 'core' },
 
   // Weight & Body
+  { id: 'body_measurements', chapter: 'body',      title: 'Body measurements',  desc: 'Your tape measurements, session by session', form: 'bodyMeasurements',  tier: 'core' },
   { id: 'weight_trend',      chapter: 'body',      title: 'Weight trend',       desc: 'Your weight as a line',                form: 'lineTrend', dataKey: 'weight',   tier: 'core' },
 
   // Sleep & Recovery
   { id: 'sleep_headline',    chapter: 'sleep',     title: 'Sleep headline',     desc: 'Avg sleep, score, HRV, resting HR + trend vs prior', form: 'statTiles',             tier: 'core' },
+  { id: 'sleep_stages',      chapter: 'sleep',     title: 'Sleep stages',       desc: 'Average deep, REM, and core sleep',    form: 'sleepStages',           wearableGated: true, tier: 'core' },
   { id: 'sleepscore_trend',  chapter: 'sleep',     title: 'Sleep score trend',  desc: 'Nightly sleep score as a line',        form: 'lineTrend', dataKey: 'sleepScore', tier: 'core' },
   { id: 'hrv_trend',         chapter: 'sleep',     title: 'HRV trend',          desc: 'Heart rate variability as a line',     form: 'lineTrend', dataKey: 'hrv',      wearableGated: true, tier: 'wave2' },
 ];

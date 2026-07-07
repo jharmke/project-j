@@ -29,7 +29,7 @@ import ExerciseSetRows from '../../components/ExerciseSetRows';
 import HRZoneModal, { HRZoneData } from '../../components/HRZoneModal';
 import { resolveMaxHR, zoneBounds, timeInZones, ageFromBirthday } from '../../utils/hrZones';
 import { recomputeLiftPR, normalizeLiftName } from '../../utils/liftPR';
-import { syncedGroupLabel, SPLIT_TYPES } from '../../utils/syncedWorkouts';
+import { syncedGroupLabel, SPLIT_TYPES, detectCardioPRs, loadSyncedLabels, CardioPRHit } from '../../utils/syncedWorkouts';
 import TooltipIcon from '../../components/TooltipIcon';
 import { showToolkit } from '../../components/ToolkitSheet';
 import { useTutorial } from '../../context/TutorialContext';
@@ -145,7 +145,7 @@ const [prs, setPrs] = useState<Record<string, PRRecord>>({});
 // notification survive even if the user never opens the summary. Additive on pj_workout_state.
 const [prHitsByDay, setPrHitsByDay] = useState<Record<string, Record<string, any>>>({});
 const [finishSummary, setFinishSummary] = useState<{
-  totalVolume: number; doneSets: number; doneExercises: number; prHits: any[]; mindful: boolean;
+  totalVolume: number; doneSets: number; doneExercises: number; prHits: any[]; cardioPrHits: CardioPRHit[]; mindful: boolean;
   hasLifts: boolean; liftDurationSec: number | null;
   liftCalories: number | null; liftAvgHr: number | null; liftMaxHr: number | null;
   liftItems: { name: string; volume: number; sets: { weight: number; reps: number }[] }[];
@@ -424,7 +424,7 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
   const [editingTag, setEditingTag] = useState<WorkoutTag | null>(null);
   const [tagLabelInput, setTagLabelInput] = useState('');
   const [tagColorInput, setTagColorInput] = useState(TAG_COLOR_PALETTE[0]);
-const { activeCalories, appleWorkouts, fetchTodayData, fetchWorkoutHRByUUID } = useHealthKit();
+const { activeCalories, appleWorkouts, fetchTodayData, fetchWorkoutHRByUUID, fetchSyncedWorkouts } = useHealthKit();
 
 // HR Zones per-workout modal
 const [hrModalVisible, setHrModalVisible] = useState(false);
@@ -1156,10 +1156,18 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     let mindful = false;
     try { const sr = await AsyncStorage.getItem('pj_settings'); mindful = sr ? JSON.parse(sr).styleMode === 'mindful' : false; } catch {}
+    // Cardio PRs: per-drawer records (distance + duration) from the full Apple-synced history vs prior
+    // best. Query is read-only, cached, and only runs on this deliberate Finish tap. Never blocks the
+    // recap if HealthKit is slow/denied -- an empty result just means no cardio PR lines.
+    let cardioPrHits: CardioPRHit[] = [];
+    try {
+      const [syncedAll, syncedLabels] = await Promise.all([fetchSyncedWorkouts(365), loadSyncedLabels()]);
+      cardioPrHits = detectCardioPRs(syncedAll, activeDay, syncedLabels);
+    } catch {}
     const summary = {
       // PRs bank + roll back live as each set changes (see the PR engine), so the recap just reads the
       // RECORDED day-hits rather than re-detecting (which would double-count or resurrect a revoked PR).
-      totalVolume, doneSets, doneExercises, prHits: Object.values(prHitsByDay[activeDay] || {}), mindful,
+      totalVolume, doneSets, doneExercises, prHits: Object.values(prHitsByDay[activeDay] || {}), cardioPrHits, mindful,
       hasLifts: doneSets > 0,
       liftDurationSec,
       liftCalories, liftAvgHr, liftMaxHr, liftItems,
@@ -2441,17 +2449,21 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                     </View>
                   )}
 
-                  {fs.prHits.length > 0 && (
+                  {(() => {
+                    const cardioPrs = fs.cardioPrHits || [];
+                    const totalPRs = fs.prHits.length + cardioPrs.length;
+                    if (totalPRs === 0) return null;
+                    return (
                     <View style={{ backgroundColor: theme.accentAmber + '14', borderWidth: 1, borderColor: theme.accentAmber + '40', borderRadius: 12, padding: 14, marginBottom: 16 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 10 }}>
                         <Ionicons name="trophy" size={16} color={theme.accentAmber} />
                         <Text style={{ fontSize: 13, fontFamily: 'DMSans_700Bold', color: theme.accentAmber, flex: 1 }}>
-                          {`You set ${fs.prHits.length} PR${fs.prHits.length !== 1 ? 's' : ''} today`}
+                          {`You set ${totalPRs} PR${totalPRs !== 1 ? 's' : ''} today`}
                         </Text>
                         <TooltipIcon tooltipKey="personal_records" hideTour color={theme.accentAmber} />
                       </View>
                       {fs.prHits.map((pr: any, i: number) => (
-                        <View key={i} style={{ marginBottom: i < fs.prHits.length - 1 ? 10 : 0 }}>
+                        <View key={`l${i}`} style={{ marginBottom: (i < fs.prHits.length - 1 || cardioPrs.length > 0) ? 10 : 0 }}>
                           <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: theme.textPrimary, marginBottom: 2 }}>{pr.name}</Text>
                           {pr.weightPR && (
                             <Text style={{ fontSize: 12, fontFamily: 'DMSans_500Medium', color: theme.textSecondary }}>
@@ -2465,8 +2477,24 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                           )}
                         </View>
                       ))}
+                      {cardioPrs.map((pr, i) => (
+                        <View key={`c${i}`} style={{ marginBottom: i < cardioPrs.length - 1 ? 10 : 0 }}>
+                          <Text style={{ fontSize: 14, fontFamily: 'DMSans_700Bold', color: theme.textPrimary, marginBottom: 2 }}>{pr.label}</Text>
+                          {pr.distancePR && (
+                            <Text style={{ fontSize: 12, fontFamily: 'DMSans_500Medium', color: theme.textSecondary }}>
+                              New furthest: {pr.distanceMi} mi
+                            </Text>
+                          )}
+                          {pr.durationPR && (
+                            <Text style={{ fontSize: 12, fontFamily: 'DMSans_500Medium', color: theme.textSecondary }}>
+                              New longest: {formatDuration(pr.durationSec)}
+                            </Text>
+                          )}
+                        </View>
+                      ))}
                     </View>
-                  )}
+                    );
+                  })()}
 
                   <TouchableOpacity onPress={closeFinishSummary}
                     style={{ backgroundColor: theme.accentBlue, borderRadius: 12, paddingVertical: 14, alignItems: 'center', marginTop: 10 }}>

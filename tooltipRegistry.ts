@@ -67,10 +67,11 @@ export const TOOLTIP_REGISTRY: TooltipDefinition[] = [
     key: 'personal_records',
     category: 'Fitness',
     title: 'Personal Records',
-    body: 'A PR is a new best on a lift, tracked automatically from your logged sets the moment you check a qualifying set. Two things count as records: your heaviest set and your estimated 1-rep max. Records stay honest: if you uncheck, lower, or delete the set that earned one, it recalculates from your history and rolls back if it is no longer your best.',
+    body: 'A PR is a new best, tracked automatically. Lifts record two things: your heaviest set and your estimated 1-rep max, banked the moment you check a qualifying set. Cardio synced from Apple Health records two more: your furthest distance and longest duration, tracked separately for each activity (your Outdoor Walking records are their own, apart from Indoor Walking or Cycling). Records stay honest: if the session or set that earned one is changed or removed, it recalculates from your history and rolls back if it is no longer your best.',
     definitions: [
       { term: 'Heaviest set', explanation: 'The most weight you moved for a given number of reps. Beat your previous best on a lift and it sets a record. Shown as weight × reps, like 140 lb × 5.' },
       { term: 'Estimated 1-rep max', explanation: 'The most you could lift for a single all-out rep, calculated from a set you actually did instead of maxing out directly. It is a reliable way to track strength: it can climb even when your top weight looks flat, because more reps at the same weight raises the estimate. Example: 140 lb × 5 works out to about 163 lb for one rep.' },
+      { term: 'Cardio records', explanation: 'For each Apple Health cardio type (kept separate for indoor vs outdoor where it matters, like walking, running, and cycling), your furthest distance and longest duration are tracked as records. Beat your previous best for that activity and it shows in your workout summary. Calories are shown as a stat but do not count as a record.' },
     ],
     example: {
       label: 'Example',

@@ -134,6 +134,11 @@ work (no dedicated running spec exists yet as of 2026-07-07 -- start one there a
 
 - Simple envelope-level cardio records (FREE from every sync, low effort): longest duration, longest
   distance, most calories, best average pace (distance / time). These need no extra data.
+  >> SHIPPED 2026-07-07: furthest distance + longest duration now fire as real PRs in the View Summary
+     recap (per drawer, parity with lift PRs) AND show with dates on the library RECORDS tiles. STILL
+     PARKED here: BEST AVERAGE PACE (per-sport unit mess -- min/mi for foot sports vs mph for cycling vs
+     /500m row vs /100m swim; do it with running work) and CALORIES-as-a-PR (deliberately excluded as
+     noise; stays a passive tile only).
 - HARDER / needs its own investigation: "fastest mile" and per-split records require PER-MILE split data,
   which the basic workout envelope does NOT carry. Might be derivable from the workout route / distance
   samples (WorkoutRoute type exists in our HealthKit lib), but that is a separate, heavier running-

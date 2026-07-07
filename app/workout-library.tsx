@@ -3510,10 +3510,14 @@ export default function WorkoutLibraryScreen() {
               ...(sum.hasDistance ? [{ label: 'Distance', value: `${sum.totalMi} mi`, avg: `${sum.avgMi} mi` }] : []),
               { label: 'Calories', value: String(sum.totalCal), avg: String(sum.avgCal) },
             ];
-            const recordTiles: { label: string; value: string }[] = [
-              { label: 'Longest', value: formatDurationShort(sum.longestSec) },
-              ...(sum.hasDistance ? [{ label: 'Furthest', value: `${sum.furthestMi} mi` }] : []),
-              { label: 'Most Calories', value: `${sum.mostCal} cal` },
+            const fmtRecordDate = (d: string | Date | null): string | null => {
+              if (!d) return null;
+              try { return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); } catch { return null; }
+            };
+            const recordTiles: { label: string; value: string; date: string | Date | null }[] = [
+              { label: 'Longest', value: formatDurationShort(sum.longestSec), date: sum.longestDate },
+              ...(sum.hasDistance ? [{ label: 'Furthest', value: `${sum.furthestMi} mi`, date: sum.furthestDate }] : []),
+              { label: 'Most Calories', value: `${sum.mostCal} cal`, date: sum.mostCalDate },
             ];
             const sortOptions: { id: SyncedSort; label: string }[] = [
               { id: 'newest', label: 'Newest' }, { id: 'oldest', label: 'Oldest' },
@@ -3551,7 +3555,7 @@ export default function WorkoutLibraryScreen() {
                           </View>
                         </View>
                         <Text style={{ color: accent, fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{syncedHistory.label}</Text>
-                        <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_400Regular', marginTop: 2, marginBottom: 14 }}>{sum.count} sessions · logs automatically from your watch</Text>
+                        <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_400Regular', marginTop: 2, marginBottom: 14 }}>{sum.count} sessions · Logs automatically from your watch</Text>
                       </View>
                       <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setSyncedHistory(null); }} style={{ paddingTop: 2 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                         <Ionicons name="close" size={22} color={theme.textMuted} />
@@ -3582,6 +3586,12 @@ export default function WorkoutLibraryScreen() {
                         <View key={t.label} style={{ width: '48%', backgroundColor: theme.accentAmber + '14', borderWidth: 1, borderColor: theme.accentAmber + '33', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 }}>
                           <Text style={{ fontSize: 8, letterSpacing: 1.5, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 4 }}>{t.label}</Text>
                           <Text style={{ color: theme.textSecondary, fontSize: 15, fontFamily: 'DMSans_700Bold' }}>{t.value}</Text>
+                          {fmtRecordDate(t.date) ? (
+                            <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4, marginTop: 3 }}>
+                              <Text style={{ fontSize: 7.5, letterSpacing: 1, color: theme.textDim, fontFamily: 'DMSans_700Bold' }}>SET</Text>
+                              <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold' }}>{fmtRecordDate(t.date)}</Text>
+                            </View>
+                          ) : null}
                         </View>
                       ))}
                     </View>

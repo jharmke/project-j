@@ -1,3 +1,6 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { storageSet } from './storage';
+
 // Synced Workouts (Apple Health) grouping -- Phase 1 foundation for the "Workout History" feature.
 // Groups raw Apple workout sessions by { activity type + indoor flag } into labeled drawers. This is
 // the stable KEY the real feature will file entries under (a rename only changes the label, never the
@@ -66,4 +69,36 @@ export function formatDurationShort(seconds: number): string {
   const m = Math.floor((seconds % 3600) / 60);
   if (h > 0) return `${h}h ${m}m`;
   return `${m}m`;
+}
+
+// ── Custom labels (Phase 2) ────────────────────────────────────────────────────────────────────────
+// The ONLY thing the synced-workouts feature persists. A group's entry is otherwise derived live from
+// HealthKit, so this map is purely a rename override keyed by the STABLE group key ({type}_{in|out} or
+// {type}). Additive: read-then-merge, never touches pj_exercise_library or pj_workout_state. An empty
+// label resets the group back to its default ("Indoor Running" etc.).
+const LABELS_KEY = 'pj_synced_workout_labels';
+
+export async function loadSyncedLabels(): Promise<Record<string, string>> {
+  try {
+    const raw = await AsyncStorage.getItem(LABELS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+export async function saveSyncedLabel(key: string, label: string): Promise<void> {
+  try {
+    const raw = await AsyncStorage.getItem(LABELS_KEY);
+    const current: Record<string, string> = raw ? JSON.parse(raw) : {};
+    const trimmed = label.trim();
+    if (trimmed) current[key] = trimmed;
+    else delete current[key];
+    await storageSet(LABELS_KEY, JSON.stringify(current));
+  } catch {}
+}
+
+// Apply saved custom labels over the derived defaults.
+export function applySyncedLabels(groups: SyncedGroup[], labels: Record<string, string>): SyncedGroup[] {
+  return groups.map(g => (labels[g.key] ? { ...g, label: labels[g.key] } : g));
 }

@@ -4,11 +4,11 @@ import { triggerHaptic } from '@/utils/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../theme';
 import { useHealthKit } from '../useHealthKit';
-import { groupSyncedWorkouts, formatDurationShort, SyncedWorkout } from '../utils/syncedWorkouts';
+import { groupSyncedWorkouts, applySyncedLabels, loadSyncedLabels, saveSyncedLabel, formatDurationShort, SyncedWorkout } from '../utils/syncedWorkouts';
 
 // Phase 1 verification screen (temporary): pulls the user's real Apple workouts, reads the indoor flag,
 // and shows them grouped by { type + indoor } so we can confirm the bucketing is correct on real data
@@ -20,17 +20,38 @@ export default function SyncedWorkoutsScreen() {
   const [loading, setLoading] = useState(true);
   const [raw, setRaw] = useState<SyncedWorkout[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [labels, setLabels] = useState<Record<string, string>>({});
 
   useEffect(() => {
     (async () => {
       setLoading(true);
-      const list = await fetchSyncedWorkouts(365);
+      const [list, savedLabels] = await Promise.all([fetchSyncedWorkouts(365), loadSyncedLabels()]);
       setRaw(list);
+      setLabels(savedLabels);
       setLoading(false);
     })();
   }, []);
 
-  const groups = useMemo(() => groupSyncedWorkouts(raw), [raw]);
+  const groups = useMemo(() => applySyncedLabels(groupSyncedWorkouts(raw), labels), [raw, labels]);
+
+  // Rename a group's label (persisted by its stable key). Empty resets to the derived default.
+  const renameGroup = (key: string, current: string) => {
+    Alert.prompt(
+      'Rename',
+      'Custom label for this workout group (blank resets to default).',
+      async (text: string) => {
+        await saveSyncedLabel(key, text ?? '');
+        setLabels(prev => {
+          const next = { ...prev };
+          if (text && text.trim()) next[key] = text.trim();
+          else delete next[key];
+          return next;
+        });
+      },
+      'plain-text',
+      current,
+    );
+  };
   const missingFlag = useMemo(() => raw.filter(w => w.indoor === null).length, [raw]);
 
   const fmtDate = (d: string | Date) => {
@@ -83,7 +104,14 @@ export default function SyncedWorkoutsScreen() {
                       {g.sessions.length} session{g.sessions.length === 1 ? '' : 's'} · type {g.type}
                     </Text>
                   </View>
-                  <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={18} color={theme.textMuted} />
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                    <TouchableOpacity
+                      onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); renameGroup(g.key, g.label); }}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                      <Ionicons name="pencil" size={15} color={theme.accentBlue} />
+                    </TouchableOpacity>
+                    <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={18} color={theme.textMuted} />
+                  </View>
                 </TouchableOpacity>
 
                 {isOpen && (

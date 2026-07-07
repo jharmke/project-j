@@ -71,6 +71,68 @@ export function formatDurationShort(seconds: number): string {
   return `${m}m`;
 }
 
+// ── History-modal summary / sort / month grouping (Phase 3b polish) ──────────────────────────────────
+export type SyncedSort = 'newest' | 'oldest' | 'longest' | 'furthest' | 'mostcal';
+
+export interface SyncedSummary {
+  count: number; totalSec: number; totalMi: number; totalCal: number;
+  avgSec: number; avgMi: number; avgCal: number;
+  longestSec: number; furthestMi: number; mostCal: number;
+  hasDistance: boolean;
+}
+
+export function summarizeSessions(sessions: SyncedWorkout[]): SyncedSummary {
+  let totalSec = 0, totalMi = 0, totalCal = 0, longestSec = 0, furthestMi = 0, mostCal = 0;
+  for (const s of sessions) {
+    totalSec += s.durationSec || 0;
+    totalMi += s.distanceMi || 0;
+    totalCal += s.calories || 0;
+    if ((s.durationSec || 0) > longestSec) longestSec = s.durationSec || 0;
+    if ((s.distanceMi || 0) > furthestMi) furthestMi = s.distanceMi || 0;
+    if ((s.calories || 0) > mostCal) mostCal = s.calories || 0;
+  }
+  const n = sessions.length || 1;
+  return {
+    count: sessions.length, totalSec, totalMi: Math.round(totalMi * 10) / 10, totalCal,
+    avgSec: Math.round(totalSec / n), avgMi: Math.round((totalMi / n) * 100) / 100, avgCal: Math.round(totalCal / n),
+    longestSec, furthestMi: Math.round(furthestMi * 100) / 100, mostCal,
+    hasDistance: sessions.some(s => (s.distanceMi || 0) > 0),
+  };
+}
+
+export function sortSessions(sessions: SyncedWorkout[], sort: SyncedSort): SyncedWorkout[] {
+  const arr = [...sessions];
+  switch (sort) {
+    case 'oldest': arr.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()); break;
+    case 'longest': arr.sort((a, b) => (b.durationSec || 0) - (a.durationSec || 0)); break;
+    case 'furthest': arr.sort((a, b) => (b.distanceMi || 0) - (a.distanceMi || 0)); break;
+    case 'mostcal': arr.sort((a, b) => (b.calories || 0) - (a.calories || 0)); break;
+    default: arr.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
+  }
+  return arr;
+}
+
+export interface MonthSection { key: string; label: string; sessions: SyncedWorkout[]; }
+export function groupSessionsByMonth(sessions: SyncedWorkout[]): MonthSection[] {
+  const map = new Map<string, MonthSection>();
+  for (const s of sessions) {
+    const d = new Date(s.startDate);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    if (!map.has(key)) map.set(key, { key, label: d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }), sessions: [] });
+    map.get(key)!.sessions.push(s);
+  }
+  const sections = Array.from(map.values());
+  sections.sort((a, b) => b.key.localeCompare(a.key)); // newest month first
+  return sections;
+}
+
+export function formatDurationLong(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  if (h > 0) return `${h}h ${m}m`;
+  return `${m}m`;
+}
+
 // ── Custom labels (Phase 2) ────────────────────────────────────────────────────────────────────────
 // The ONLY thing the synced-workouts feature persists. A group's entry is otherwise derived live from
 // HealthKit, so this map is purely a rename override keyed by the STABLE group key ({type}_{in|out} or

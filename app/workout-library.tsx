@@ -20,6 +20,8 @@ import { useTheme } from '../theme';
 import MuscleMap from '../components/MuscleMap';
 import { useTutorial } from '../context/TutorialContext';
 import { useTutorialTarget } from '../hooks/useTutorialTarget';
+import { useHealthKit } from '../useHealthKit';
+import { groupSyncedWorkouts, loadSyncedLabels, saveSyncedLabel, summarizeSessions, sortSessions, groupSessionsByMonth, formatDurationShort, formatDurationLong, SyncedWorkout, SyncedSort } from '../utils/syncedWorkouts';
 
 interface LibraryExercise {
   id: string;
@@ -1906,6 +1908,53 @@ export default function WorkoutLibraryScreen() {
 
   const { selectMode, day, tutorialTab, openPRs } = useLocalSearchParams<{ selectMode: string; day: string; tutorialTab: string; openPRs: string }>();
   const isSelectMode = selectMode === 'true';
+
+  // Synced Apple Health workouts, mixed into the browse list as cardio-shaped, browse-only entries
+  // (never in the add picker -- only loaded when NOT in select mode). Derived live from HealthKit +
+  // custom labels; nothing about the manual library or workout state is touched.
+  const { fetchSyncedWorkouts } = useHealthKit();
+  const [syncedItems, setSyncedItems] = useState<any[]>([]);
+  const [syncedHistory, setSyncedHistory] = useState<{ key: string; label: string; type: 'lift' | 'cardio'; sessions: SyncedWorkout[] } | null>(null);
+  const [syncedSort, setSyncedSort] = useState<SyncedSort>('newest');
+  const [openMonths, setOpenMonths] = useState<Record<string, boolean>>({});
+  const [renaming, setRenaming] = useState<{ key: string; value: string; def: string } | null>(null);
+  useEffect(() => {
+    if (isSelectMode) return;
+    (async () => {
+      const [list, labels] = await Promise.all([fetchSyncedWorkouts(365), loadSyncedLabels()]);
+      const groups = groupSyncedWorkouts(list); // g.label = derived default
+      // Apple strength-ish types (Functional Strength 20, Traditional Strength 50, Core Training 59)
+      // are NOT cardio -- mirror workout.tsx's APPLE_LIFT_TYPES so they filter as 'lift', not 'cardio'.
+      const APPLE_LIFT_TYPES = new Set([20, 50, 59]);
+      setSyncedItems(groups.map(g => ({
+        id: `synced_${g.key}`,
+        name: labels[g.key] || g.label,   // applied label (custom override or default)
+        defaultLabel: g.label,             // derived default, for a blank-reset rename
+        type: (APPLE_LIFT_TYPES.has(g.type) ? 'lift' : 'cardio') as 'lift' | 'cardio',
+        source: 'apple' as const,
+        syncedKey: g.key,
+        sessions: g.sessions,
+        favorite: false,
+      })));
+    })();
+  }, [isSelectMode]);
+
+  // Open a synced entry's history modal fresh (reset sort + collapse state each time).
+  const openSyncedHistory = (item: any) => {
+    setSyncedSort('newest');
+    setOpenMonths({});
+    setSyncedHistory({ key: item.syncedKey, label: item.name, type: item.type, sessions: item.sessions });
+  };
+
+  // Persist a rename, then reflect it in the list + open modal without re-querying HealthKit.
+  const commitSyncedRename = async () => {
+    if (!renaming) return;
+    const finalLabel = renaming.value.trim() || renaming.def;
+    await saveSyncedLabel(renaming.key, renaming.value.trim());
+    setSyncedItems(prev => prev.map(it => it.syncedKey === renaming.key ? { ...it, name: finalLabel } : it));
+    setSyncedHistory(prev => prev && prev.key === renaming.key ? { ...prev, label: finalLabel } : prev);
+    setRenaming(null);
+  };
   // Programs/Routines tours deep-link straight to the right tab.
   useEffect(() => {
     if (tutorialTab === 'programs' || tutorialTab === 'routines') setActiveTab(tutorialTab);
@@ -2390,7 +2439,11 @@ export default function WorkoutLibraryScreen() {
   };
 
   const getFilteredList = () => {
-    let list = [...library];
+    let list: any[] = [...library];
+    // Mix in synced Apple Health entries on the main exercises tab (browse only). They're cardio-shaped,
+    // so the Cardio/All type filter organizes them; they carry no tags/favorite, so tag/favorite filters
+    // exclude them naturally. Not added on the Favorites tab or in select mode.
+    if (!isSelectMode && activeTab === 'all') list = [...list, ...syncedItems];
     if (activeTab === 'favorites') list = list.filter(ex => ex.favorite);
     if (query.trim()) list = list.filter(ex => ex.name.toLowerCase().includes(query.toLowerCase()));
     if (filterType !== 'all') list = list.filter(ex => ex.type === filterType);
@@ -2643,7 +2696,9 @@ export default function WorkoutLibraryScreen() {
             <View ref={index === 0 ? libExerciseRowRef : undefined} collapsable={false}>
             <TouchableOpacity style={styles.exItem} onPress={() => {
               triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
-              if (isSelectMode) {
+              if (item.source === 'apple') {
+                openSyncedHistory(item);
+              } else if (isSelectMode) {
                 selectExercise(item);
               } else {
                 setSelectedEx(item);
@@ -2662,12 +2717,21 @@ export default function WorkoutLibraryScreen() {
                       {item.type.toUpperCase()}
                     </Text>
                   </View>
+                  {item.source === 'apple' && (
+                    <View style={{ backgroundColor: theme.accentGreenBg, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
+                      <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 1, color: theme.accentGreen }}>APPLE HEALTH</Text>
+                    </View>
+                  )}
                   <Text style={styles.exName}>{item.name}</Text>
                 </View>
-                {item.note ? <Text style={styles.exNote}>{item.note}</Text> : null}
+                {item.source === 'apple'
+                  ? <Text style={styles.exNote}>Logs automatically from your watch · {item.sessions.length} session{item.sessions.length === 1 ? '' : 's'}</Text>
+                  : item.note ? <Text style={styles.exNote}>{item.note}</Text> : null}
               </View>
               <View style={styles.exActions}>
-                {isSelectMode ? (
+                {item.source === 'apple' ? (
+                  <Ionicons name="chevron-forward" size={16} color={theme.textMuted} />
+                ) : isSelectMode ? (
                   <TouchableOpacity
                     style={{ backgroundColor: theme.accentGreenBg, borderWidth: 1, borderColor: theme.accentGreenBorder, borderRadius: 6, paddingHorizontal: 12, paddingVertical: 6 }}
                     onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); selectExercise(item); }}>
@@ -3415,6 +3479,180 @@ export default function WorkoutLibraryScreen() {
           <Ionicons name={showFabMenu ? 'close' : 'add'} size={28} color="#ffffff" />
         </TouchableOpacity>
       </Animated.View>
+
+      {/* Synced workout session history (Apple Health) -- mirrors the manual exercise detail modal */}
+      <Modal visible={!!syncedHistory} transparent animationType="fade" onRequestClose={() => setSyncedHistory(null)}>
+        <View style={{ flex: 1, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center' }}>
+          <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => setSyncedHistory(null)} />
+          {syncedHistory && (() => {
+            const accent = syncedHistory.type === 'cardio' ? theme.accentAmber : theme.accentBlue;
+            const sum = summarizeSessions(syncedHistory.sessions);
+            const summaryTiles: { label: string; value: string; avg?: string }[] = [
+              { label: 'Sessions', value: String(sum.count) },
+              { label: 'Total Time', value: formatDurationLong(sum.totalSec), avg: formatDurationShort(sum.avgSec) },
+              ...(sum.hasDistance ? [{ label: 'Distance', value: `${sum.totalMi} mi`, avg: `${sum.avgMi} mi` }] : []),
+              { label: 'Calories', value: String(sum.totalCal), avg: String(sum.avgCal) },
+            ];
+            const recordTiles: { label: string; value: string }[] = [
+              { label: 'Longest', value: formatDurationShort(sum.longestSec) },
+              ...(sum.hasDistance ? [{ label: 'Furthest', value: `${sum.furthestMi} mi` }] : []),
+              { label: 'Most Calories', value: `${sum.mostCal} cal` },
+            ];
+            const sortOptions: { id: SyncedSort; label: string }[] = [
+              { id: 'newest', label: 'Newest' }, { id: 'oldest', label: 'Oldest' },
+              { id: 'longest', label: 'Longest' },
+              ...(sum.hasDistance ? [{ id: 'furthest' as SyncedSort, label: 'Furthest' }] : []),
+              { id: 'mostcal', label: 'Most cal' },
+            ];
+            const chronological = syncedSort === 'newest' || syncedSort === 'oldest';
+            const sorted = sortSessions(syncedHistory.sessions, syncedSort);
+            const sessionRow = (s: SyncedWorkout, i: number) => (
+              <View key={s.uuid} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 8, borderTopWidth: i === 0 ? 0 : 0.5, borderTopColor: theme.borderCard }}>
+                <Text style={{ color: theme.textSecondary, fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>{new Date(s.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</Text>
+                <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_500Medium' }}>{formatDurationShort(s.durationSec)}{s.distanceMi ? ` · ${s.distanceMi} mi` : ''}{s.calories ? ` · ${s.calories} cal` : ''}</Text>
+              </View>
+            );
+            let sections = groupSessionsByMonth(sorted);
+            if (syncedSort === 'oldest') sections = [...sections].reverse();
+            const sectionLabel = { fontSize: 9, letterSpacing: 3, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase' as const, marginBottom: 10, marginTop: 4 };
+            return (
+              <View style={{ width: '90%' }}>
+                <View style={{ backgroundColor: theme.bgSheet, borderRadius: 14, width: '100%', borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, overflow: 'hidden' }}>
+                  <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setSyncedHistory(null); }} style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 6 }} hitSlop={{ top: 8, bottom: 8, left: 40, right: 40 }}>
+                    <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
+                  </TouchableOpacity>
+                  <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} style={{ maxHeight: Dimensions.get('window').height * 0.74 }} contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}>
+                    {/* Header */}
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                      <View style={{ flex: 1 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                          <View style={[styles.typeBadge, syncedHistory.type === 'cardio' && styles.typeBadgeCardio]}>
+                            <Text style={[styles.typeBadgeText, syncedHistory.type === 'cardio' && { color: theme.accentAmber }]}>{syncedHistory.type.toUpperCase()}</Text>
+                          </View>
+                          <View style={{ backgroundColor: theme.accentGreenBg, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 }}>
+                            <Text style={{ fontSize: 8, fontFamily: 'DMSans_700Bold', letterSpacing: 1, color: theme.accentGreen }}>APPLE HEALTH</Text>
+                          </View>
+                        </View>
+                        <Text style={{ color: accent, fontSize: 22, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1 }}>{syncedHistory.label}</Text>
+                        <Text style={{ color: theme.textMuted, fontSize: 12, fontFamily: 'DMSans_400Regular', marginTop: 2, marginBottom: 14 }}>{sum.count} sessions · logs automatically from your watch</Text>
+                      </View>
+                      <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setSyncedHistory(null); }} style={{ paddingTop: 2 }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                        <Ionicons name="close" size={22} color={theme.textMuted} />
+                      </TouchableOpacity>
+                    </View>
+
+                    {/* SUMMARY tiles */}
+                    <Text style={sectionLabel}>SUMMARY</Text>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
+                      {summaryTiles.map(t => (
+                        <View key={t.label} style={{ width: '48%', backgroundColor: theme.bgInset, borderWidth: 1, borderColor: theme.borderCard, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 }}>
+                          <Text style={{ fontSize: 8, letterSpacing: 1.5, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 4 }}>{t.label}</Text>
+                          <Text style={{ color: theme.textSecondary, fontSize: 15, fontFamily: 'DMSans_700Bold' }}>{t.value}</Text>
+                          {t.avg ? (
+                            <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4, marginTop: 3 }}>
+                              <Text style={{ fontSize: 7.5, letterSpacing: 1, color: theme.textDim, fontFamily: 'DMSans_700Bold' }}>AVG</Text>
+                              <Text style={{ fontSize: 11, color: theme.textMuted, fontFamily: 'DMSans_600SemiBold' }}>{t.avg}</Text>
+                            </View>
+                          ) : null}
+                        </View>
+                      ))}
+                    </View>
+
+                    {/* RECORDS tiles (cardio-PR groundwork) */}
+                    <Text style={sectionLabel}>RECORDS</Text>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
+                      {recordTiles.map(t => (
+                        <View key={t.label} style={{ width: '48%', backgroundColor: theme.accentAmber + '14', borderWidth: 1, borderColor: theme.accentAmber + '33', borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12 }}>
+                          <Text style={{ fontSize: 8, letterSpacing: 1.5, color: theme.textMuted, fontFamily: 'DMSans_700Bold', textTransform: 'uppercase', marginBottom: 4 }}>{t.label}</Text>
+                          <Text style={{ color: theme.textSecondary, fontSize: 15, fontFamily: 'DMSans_700Bold' }}>{t.value}</Text>
+                        </View>
+                      ))}
+                    </View>
+
+                    {/* HISTORY + sort */}
+                    <Text style={sectionLabel}>HISTORY</Text>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+                      {sortOptions.map(o => (
+                        <TouchableOpacity key={o.id} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setSyncedSort(o.id); }}
+                          style={{ backgroundColor: syncedSort === o.id ? theme.accentBlueBg : theme.bgInset, borderWidth: 1, borderColor: syncedSort === o.id ? theme.accentBlueBorder : theme.borderCard, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 5 }}>
+                          <Text style={{ fontSize: 12, fontFamily: 'DMSans_600SemiBold', color: syncedSort === o.id ? theme.accentBlue : theme.textMuted }}>{o.label}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+
+                    {chronological ? (
+                      sections.map((sec, si) => {
+                        const isOpen = openMonths[sec.key] ?? si === 0;
+                        return (
+                          <View key={sec.key} style={{ marginBottom: 4 }}>
+                            <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setOpenMonths(p => ({ ...p, [sec.key]: !isOpen })); }}
+                              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 9, paddingHorizontal: 10, backgroundColor: theme.bgInset, borderRadius: 8, marginTop: 3, marginBottom: 2 }}>
+                              <Text style={{ color: theme.textSecondary, fontSize: 14, fontFamily: 'DMSans_700Bold', letterSpacing: 0.3 }}>{sec.label}</Text>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_600SemiBold' }}>{sec.sessions.length}</Text>
+                                <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={15} color={theme.textMuted} />
+                              </View>
+                            </TouchableOpacity>
+                            {isOpen && <View style={{ paddingLeft: 4 }}>{sec.sessions.map((s, i) => sessionRow(s, i))}</View>}
+                          </View>
+                        );
+                      })
+                    ) : (
+                      <>
+                        {sorted.slice(0, 50).map((s, i) => sessionRow(s, i))}
+                        {sorted.length > 50 && <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular', marginTop: 8, textAlign: 'center' }}>Showing top 50</Text>}
+                      </>
+                    )}
+
+                    {/* Edit -- matches the manual exercise modal's footer button; for a synced entry the
+                        name is the only editable field, so it opens the rename editor. */}
+                    <TouchableOpacity
+                      style={{ backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, borderRadius: 8, padding: 12, alignItems: 'center', marginTop: 18 }}
+                      onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); const it = syncedItems.find(x => x.syncedKey === syncedHistory.key); setRenaming({ key: syncedHistory.key, value: syncedHistory.label, def: it?.defaultLabel || syncedHistory.label }); }}>
+                      <Text style={{ color: theme.accentBlue, fontFamily: 'DMSans_600SemiBold', fontSize: 14 }}>Edit</Text>
+                    </TouchableOpacity>
+                  </ScrollView>
+                </View>
+              </View>
+            );
+          })()}
+
+          {/* Rename overlay -- rendered INSIDE the history modal (a second RN <Modal> won't show over
+              an already-open one). Sits on top of the history card. */}
+          {renaming && (
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: theme.overlayBg, justifyContent: 'center', alignItems: 'center' }}>
+              <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => setRenaming(null)} />
+              <View style={{ width: '86%', backgroundColor: theme.bgSheet, borderRadius: 14, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, overflow: 'hidden' }}>
+                <View style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }}>
+                  <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
+                </View>
+                <View style={{ padding: 20, paddingTop: 8 }}>
+                  <Text style={{ color: theme.accentBlueRaw, fontSize: 18, fontFamily: 'BebasNeue_400Regular', letterSpacing: 1, marginBottom: 14 }}>RENAME</Text>
+                  <TextInput
+                    value={renaming?.value ?? ''}
+                    onChangeText={v => setRenaming(p => p ? { ...p, value: v } : p)}
+                    placeholder={renaming?.def}
+                    placeholderTextColor={theme.textPlaceholder}
+                    autoFocus
+                    autoCorrect={false}
+                    spellCheck={false}
+                    style={{ backgroundColor: theme.bgInput, borderWidth: 0.5, borderColor: theme.borderInput, borderRadius: 8, color: theme.textPrimary, padding: 12, fontSize: 15, fontFamily: 'DMSans_400Regular', marginBottom: 8 }}
+                  />
+                  <Text style={{ color: theme.textDim, fontSize: 11, fontFamily: 'DMSans_400Regular', marginBottom: 16 }}>Leave blank to reset to the default name.</Text>
+                  <View style={{ flexDirection: 'row', gap: 10 }}>
+                    <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setRenaming(null); }} style={{ flex: 1, backgroundColor: theme.bgInput, borderWidth: 0.5, borderColor: theme.borderInput, borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}>
+                      <Text style={{ color: theme.textMuted, fontSize: 14, fontFamily: 'DMSans_600SemiBold' }}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); commitSyncedRename(); }} style={{ flex: 1, backgroundColor: theme.accentBlue, borderRadius: 10, paddingVertical: 12, alignItems: 'center' }}>
+                      <Text style={{ color: '#ffffff', fontSize: 14, fontFamily: 'DMSans_600SemiBold' }}>Save</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            </KeyboardAvoidingView>
+          )}
+        </View>
+      </Modal>
 
       {showBuilder && (
         <ProgramBuilderModal

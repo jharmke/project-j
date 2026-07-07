@@ -1929,9 +1929,11 @@ export default function WorkoutLibraryScreen() {
   const addOverlay = useSharedValue(0);
   const addScale = useSharedValue(0.92);
   const addCardOpacity = useSharedValue(1);
-  const addKeyboardY = useSharedValue(0);
+  // Keyboard height caps the card so it fits between the safe-area top and the keyboard; its internal
+  // ScrollView scrolls to reach every field + buttons (replaces the old translateY shift that overran).
+  const [addKbHeight, setAddKbHeight] = useState(0);
   const addOverlayStyle = useAnimatedStyle(() => ({ opacity: addOverlay.value }));
-  const addCardAnimStyle = useAnimatedStyle(() => ({ transform: [{ scale: addScale.value }, { translateY: addKeyboardY.value }], opacity: addCardOpacity.value }));
+  const addCardAnimStyle = useAnimatedStyle(() => ({ transform: [{ scale: addScale.value }], opacity: addCardOpacity.value }));
   const detailOverlay = useSharedValue(0);
   const detailCardOpacity = useSharedValue(1);
   const detailCardScale = useSharedValue(0.92);
@@ -2466,12 +2468,12 @@ export default function WorkoutLibraryScreen() {
   };
 
   useEffect(() => {
-    if (!showAddModal) { addKeyboardY.value = 0; return; }
+    if (!showAddModal) { setAddKbHeight(0); return; }
     const show = Keyboard.addListener('keyboardWillShow', (e) => {
-      addKeyboardY.value = withTiming(-e.endCoordinates.height / 2, { duration: e.duration || 250 });
+      setAddKbHeight(e.endCoordinates.height);
     });
     const hide = Keyboard.addListener('keyboardWillHide', (e) => {
-      addKeyboardY.value = withTiming(0, { duration: e.duration || 250 });
+      setAddKbHeight(0);
     });
     return () => { show.remove(); hide.remove(); };
   }, [showAddModal]);
@@ -3222,18 +3224,18 @@ export default function WorkoutLibraryScreen() {
         <ToastRenderer />
         <Reanimated.View style={[StyleSheet.absoluteFill, { backgroundColor: theme.overlayBg }, addOverlayStyle]} pointerEvents="none" />
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={closeAddModal} />
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }} pointerEvents="box-none">
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16, paddingTop: insets.top + 8, paddingBottom: addKbHeight + 8 }} pointerEvents="box-none">
           <Reanimated.View pointerEvents="box-none" style={[{ width: '100%' }, addCardAnimStyle]}>
-          <View pointerEvents="auto" style={{ backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20 }}>
+          <View pointerEvents="auto" style={{ maxHeight: Dimensions.get('window').height - insets.top - addKbHeight - 24, backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20 }}>
             <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeAddModal(); }} style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }}>
               <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
             </TouchableOpacity>
             <View style={{ paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
               <Text style={styles.modalTitle}>{editingEx ? 'EDIT EXERCISE' : 'ADD EXERCISE'}</Text>
             </View>
-            <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+            <ScrollView style={{ flexShrink: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
               <View style={{ padding: 20 }}>
-                <TextInput style={styles.modalInput} placeholder="Exercise name" placeholderTextColor={theme.textPlaceholder} value={form.name || ''} onChangeText={v => setForm(p => ({ ...p, name: v }))} autoCapitalize="words" />
+                <TextInput style={styles.modalInput} placeholder="Exercise name" placeholderTextColor={theme.textPlaceholder} value={form.name || ''} onChangeText={v => setForm(p => ({ ...p, name: v }))} autoCapitalize="words" autoCorrect={false} spellCheck={false} />
                 <Text style={styles.modalLabel}>Type</Text>
                 <View style={styles.typeRow}>
                   <TouchableOpacity style={[styles.typeBtn, form.type === 'lift' && styles.typeBtnActive]} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setForm(p => ({ ...p, type: 'lift' })); }}>

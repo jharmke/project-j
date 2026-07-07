@@ -63,6 +63,34 @@ ships it leaves this list. Always offer at least one QUICK WIN when Justin asks 
 stale backlog item up now and then. The launch gates further down (REVERT BEFORE LAUNCH, LAUNCH BLOCKERS)
 are separate pre-submission checklists, NOT part of this menu.
 
+- [NOW] GYM LIST (2026-07-07, confirmed bugs -- fix one at a time, read-only diagnose first, then fix):
+  1. [BUG] Modal keyboard-shift overrun -- modal slides up with no ceiling when keyboard opens, card top
+     can cross the safe-area top under the Dynamic Island (confirmed via Edit Exercise screenshot). Fix:
+     clamp translateY to the safe-area top inset (NOT static padding). Then scan every modal sharing the
+     keyboard-shift pattern.
+  2. [BUG] Recipe diary entry drops extended nutrients + fake 100g -- logging a full-ingredient recipe
+     then opening it in Edit Entry shows no fiber/sugar/sodium/etc. AND a bogus "Amount (g): 100". Fix:
+     carry the recipe's nutrients through; ONLY suppress/derive the gram box when the recipe was built
+     with NO total weight (serving-count only). If a total finished gram weight WAS set, show real grams
+     and the actual grams logged.
+  3. [BUG/INVESTIGATE] Library-food tap lag -- tapping a library food to log sometimes stalls multi-second
+     with zero visual feedback (app stays responsive). (a) diagnose cause (FatSecret refetch vs Firebase
+     sync vs other); (b) regardless of cause, add a loading state (dim/spinner) on the tap.
+  4. [BUG] Food library tabs share scroll position -- reset to top on tab switch (match plans/devotionals
+     scroller behavior).
+  5. [BUG] Recipe builder ingredient hand-off unscoped -- single global temp slot, no expiry, no recipe-
+     session link, so an abandoned ingredient search can silently attach to the next unrelated recipe.
+     Fix: scope the hand-off to a recipe session (token/id) + clear on open/exit/expire. Data-correctness
+     bug -> careful handling.
+- [TRACK, design LOCKED 2026-07-07] Apple Workouts in the Exercise Library (lean "Synced Workouts"
+  history) -- give Apple-synced cardio a home in the library, keyed by activity type + indoor flag,
+  auto-created on first sync, rename = editable label (never re-keys), green "Apple Health" badge,
+  HIDDEN from the add-exercise picker, backfill existing sessions, additive/display-only (no counting
+  changes). Cardio PRs PARKED (see spec). Full spec: SPEC_apple_workout_library.md. Chosen OVER the full
+  Sessions rearchitecture (SPEC_workout_sessions.md). Build after the gym list.
+- [TRACK, needs vision] Custom Reports -- user-generated, user-picks-contents, EXPORTABLE reports across
+  nutrition / sleep-recovery / exercise / etc. Distinct from the auto summaries + EvR. Per-domain deep-
+  dive scope still fuzzy (Justin has the idea, not the vision yet). Discuss before spec.
 - [x] Otto on-demand data access thread -- COMPLETE 2026-07-05 (one dataset at a time, conditional-injection pattern from utils/companionPRs.ts). SHIPPED: PR values + real-exercise recognition + per-lift TREND + recent-workouts (30-day sessions) + food log (30-day totals + named-day items) + sleep + recovery (30-day nights + named-night detail) + body measurements (per-field value/age/delta + Navy BF% + history) + achievements (earned set + live badge progress via shared achievementProgress scan) + journal/prayer (recent entries + prayers, privacy + faith-tier gated). All device-verified. OPTIONAL later add: full per-metric streak tiles (needs the Stats streak engine extracted into a shared util first). Did NOT build true LLM tool-use (Haiku too flaky); revisit only if Otto moves to a stronger model.
 - [x] FAB contrast/border (GLOBAL) -- COMPLETE 2026-07-05. "bg ring" recipe = borderWidth: 3, borderColor: theme.bgPrimary on the FAB circle (invisible moat over the page, visible ring the moment it overlaps a same-accent button). DONE across every real page FAB: Otto FAB (AssistantFAB) + Workout tab (main + 2 subs) + workout-library (main + 3 subs) + stats (main + 3 subs) + add-food (main + 3 subs) + body-measurements + bible + journal + prayer + Halo (CompanionFAB, SVG special case: drawn page-colored Circle ring at r=DISC/2-1.5 instead of a border, now theme-aware). The other roadmap-listed files had NO floating page FAB (settings/profile/AssistantOverlay = the global Otto FAB already done + save bars; ai-meal-estimator/AddPrayerModal = none; CompanionChat/AssistantChat send buttons = in-bar, not overlap-prone, intentionally excluded). Awaiting 5-theme x all-accent device audit before fully closing the visual gate.
 - [ ] QUICK WINS (small, grab-when-convenient): none queued right now -- add here as they come up. (DONE this session: animate Otto chat bubbles · notification solo-card shadows · Day Summaries month-grouping · EvR saved-reports collapse.)
@@ -102,6 +130,7 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
 - [ ] Achievement "pop on the action" timing: action-earned achievements don't pop until next app-open (per-category check gated once/day, runs on open before the action). Fix: run the check right after the qualifying action + let a same-day action bypass the once/day gate. BEST DONE with the notification-hub work.
 - [KILLED 2026-07-05] "Manage in Settings" in-app hotlink -- NOT VIABLE. Linking.openSettings() only opens the app's generic iOS page (Local Network / Camera / Siri / Cellular), which has NO Apple Health row, and iOS exposes no deep-link into the Health data-access screen. A button there would mislead. RESOLVED INSTEAD via Otto: his KB gives the correct manual route (Settings > Privacy & Security > Health > Project J, then toggle data types) and is told never to point at the app's iOS page or the in-app Health section. Deployed 2026-07-05.
 - [ ] "View all achievements" button in the Stats Records or Streaks section (trophy icon in the header is buried).
+- [ ] [TS CLEANUP, low] add-food.tsx line ~1526: pre-existing tsc error -- the favorite object built on heart-tap isn't assignable to MyFood[] (MyFood type drifted from the object shape: brand/isMyFood/fsId/type). Runtime-safe (Metro strips types, fields have safe defaults), no crash/data loss. Just makes the file not tsc-clean. Tidy the MyFood type or the object shape eventually.
 
 ---
 

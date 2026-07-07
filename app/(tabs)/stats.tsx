@@ -3084,12 +3084,12 @@ export default function StatsScreen() {
             <Animated.View style={{
               width: '88%', borderRadius: 16, backgroundColor: theme.bgSheet,
               borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderSheet, borderTopColor: theme.accentBlueRaw,
-              padding: 20,
+              paddingHorizontal: 20, paddingTop: 8, paddingBottom: 20,
               transform: [{ translateY: modalKeyboardOffset }],
             }}>
                 <TouchableOpacity style={{ alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: theme.textMuted, opacity: 0.5, marginBottom: 16 }} activeOpacity={0.6} hitSlop={{ top: 16, bottom: 16, left: 40, right: 40 }} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeCreateCustom(); }} />
                 <Text style={{ fontSize: 20, fontFamily: 'BebasNeue_400Regular', letterSpacing: 2, color: theme.accentBlueRaw, marginBottom: 4 }}>CREATE CUSTOM STREAK</Text>
-              <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginBottom: 20 }}>Manual check-in -- tap the tile each day to log it.</Text>
+              <Text style={{ fontSize: 11, fontFamily: 'DMSans_400Regular', color: theme.textDim, marginBottom: 20 }}>Manual check-in: tap the tile each day to log it.</Text>
 
               <Text style={{ fontSize: 9, fontFamily: 'DMSans_700Bold', letterSpacing: 2, textTransform: 'uppercase', color: theme.textMuted, marginBottom: 6 }}>STREAK NAME</Text>
               <TextInput

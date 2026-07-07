@@ -334,6 +334,12 @@ export default function AddFoodScreen() {
   const [searchError, setSearchError] = useState(false);   // online search/barcode-name lookup failed (offline / server)
   const [barcodeLookup, setBarcodeLookup] = useState(false); // barcode -> food lookup in flight (separate from `scanning`, which is the camera being open)
   const [activeTab, setActiveTab] = useState<'recent' | 'myfoods' | 'favorites' | 'recipes' | 'pinned'>('recent');
+  // Reset the results list to the top on tab switch so scroll position doesn't carry between tabs
+  // (all tabs share one FlatList; only its data swaps). Matches the plans/devotionals reset idiom.
+  const foodListRef = useRef<FlatList>(null);
+  useEffect(() => {
+    foodListRef.current?.scrollToOffset({ offset: 0, animated: false });
+  }, [activeTab]);
 const [recentFoods, setRecentFoods] = useState<SearchResult[]>([]);
 const [favorites, setFavorites] = useState<MyFood[]>([]);
 const [recipes, setRecipes] = useState<any[]>([]);
@@ -1688,6 +1694,7 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
 
       {/* Results */}
       <FlatList
+        ref={foodListRef}
         data={query.trim() ? results :
           activeTab === 'recent' ? recentFoods :
           activeTab === 'favorites' ? (() => {

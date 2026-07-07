@@ -7,7 +7,7 @@ import { triggerHaptic } from '@/utils/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Animated, AppState, Keyboard, KeyboardAvoidingView, Modal, PanResponder, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { Alert, Animated, AppState, Dimensions, Keyboard, KeyboardAvoidingView, Modal, PanResponder, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import DraggableFlatList, { RenderItemParams, ScaleDecorator } from 'react-native-draggable-flatlist';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Reanimated, { useAnimatedStyle, useSharedValue, withSpring, withTiming, runOnJS } from 'react-native-reanimated';
@@ -324,8 +324,11 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
   const addExerciseOpacity = useSharedValue(0);
   const addExerciseOverlayAnim = useRef(new Animated.Value(0)).current;
   const addExerciseKeyboardY = useSharedValue(0);
+  // Keyboard height drives the modal's available space: the card is height-capped to fit between the
+  // safe-area top and the keyboard, and its internal ScrollView scrolls to reach every field + buttons.
+  const [addExerciseKbHeight, setAddExerciseKbHeight] = useState(0);
   const addExerciseKeyboardStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: addExerciseScale.value }, { translateY: addExerciseKeyboardY.value }],
+    transform: [{ scale: addExerciseScale.value }],
     opacity: addExerciseOpacity.value,
   }));
 
@@ -392,11 +395,11 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
   useEffect(() => {
     const show = Keyboard.addListener('keyboardWillShow', e => {
       manageTagsKeyboardOffset.value = withTiming(e.endCoordinates.height, { duration: e.duration || 250 });
-      addExerciseKeyboardY.value = withTiming(-e.endCoordinates.height / 2, { duration: e.duration || 250 });
+      setAddExerciseKbHeight(e.endCoordinates.height);
     });
     const hide = Keyboard.addListener('keyboardWillHide', e => {
       manageTagsKeyboardOffset.value = withTiming(0, { duration: e.duration || 250 });
-      addExerciseKeyboardY.value = withTiming(0, { duration: e.duration || 250 });
+      setAddExerciseKbHeight(0);
     });
     return () => { show.remove(); hide.remove(); };
   }, []);
@@ -2483,18 +2486,18 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
       }}>
         <Animated.View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: theme.overlayBg, opacity: addExerciseOverlayAnim }} pointerEvents="none" />
         <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={closeAddExerciseModal} />
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16 }} pointerEvents="box-none">
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 16, paddingTop: insets.top + 8, paddingBottom: addExerciseKbHeight + 8 }} pointerEvents="box-none">
           <Reanimated.View style={[{ width: '100%' }, addExerciseKeyboardStyle]} pointerEvents="box-none">
-            <View pointerEvents="auto" style={{ backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20, overflow: 'hidden' }}>
+            <View pointerEvents="auto" style={{ maxHeight: Dimensions.get('window').height - insets.top - addExerciseKbHeight - 24, backgroundColor: theme.bgSheet, borderRadius: 16, borderWidth: 0.5, borderTopWidth: 1.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20, overflow: 'hidden' }}>
               <TouchableOpacity onPress={closeAddExerciseModal} style={{ alignItems: 'center', paddingTop: 10, paddingBottom: 4 }}>
                 <View style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: theme.borderCard }} />
               </TouchableOpacity>
               <View style={{ paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 0.5, borderBottomColor: theme.borderCard }}>
                 <Text style={[styles.modalTitle, { color: theme.accentBlue }]}>{editingExercise ? 'EDIT EXERCISE' : 'ADD EXERCISE'}</Text>
               </View>
-              <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+              <ScrollView style={{ flexShrink: 1 }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
                 <View style={{ padding: 20 }}>
-                  <TextInput style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} placeholder="Exercise name" placeholderTextColor={theme.textPlaceholder} value={form.name} onChangeText={v => setForm(p => ({ ...p, name: v }))} autoCapitalize="words" />
+                  <TextInput style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} placeholder="Exercise name" placeholderTextColor={theme.textPlaceholder} value={form.name} onChangeText={v => setForm(p => ({ ...p, name: v }))} autoCapitalize="words" autoCorrect={false} spellCheck={false} />
                   <View style={{ flexDirection: 'row', gap: 8, marginBottom: 10 }}>
                     <TouchableOpacity
                       style={[styles.modalCancelBtn, { backgroundColor: theme.bgInput, borderColor: theme.borderInput }, !form.isCardio && { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}

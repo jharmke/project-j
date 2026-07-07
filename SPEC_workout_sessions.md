@@ -1,5 +1,11 @@
 # SPEC: Workout Sessions Model (Workout tab architecture reset)
 
+>> 2026-07-07 UPDATE: A LEAN near-term alternative was chosen instead of this full rearchitecture --
+>> see SPEC_apple_workout_library.md (Apple cardio gets a home in the exercise library, keyed by
+>> activity type + indoor flag, additive/display-only, NO migration). This full Sessions model is now
+>> the "someday, if we still need it" direction. The lean spec's #5/#6 smart-matching ideas fold into
+>> this one if it's ever built.
+
 STATUS: DESIGN IN PROGRESS (skeleton close, several open questions). Do NOT build until this is
 finished and Justin signs off. This is the "workout architecture step-back" from the 2026-07-03 gym
 list. Nothing in the parked #4/#5/#6 cluster gets built until this lands.

@@ -18,7 +18,7 @@ import { fetchTrendData, TrendData, EMPTY_TREND_DATA } from '../utils/statsData'
 import { liftSessionHistory } from '../utils/liftPR';
 import { loadMealSlots, getMealDisplayName } from '../utils/mealSlots';
 import { loadReports, saveReport, newReportId, resolveRange, RANGE_LABELS, Report, ReportRangePreset } from '../utils/reports';
-import { REPORT_CHAPTERS, REPORT_BLOCKS, blocksForChapter, getReportBlock, ReportBlock } from '../utils/reportBlocks';
+import { REPORT_CHAPTERS, REPORT_BLOCKS, blocksForChapter, getReportBlock, ReportBlock, REPORT_TEMPLATES, ReportTemplate } from '../utils/reportBlocks';
 
 const PRESETS: ReportRangePreset[] = ['week', 'month', '3month', '6month', 'year'];
 const avg = (nums: number[]) => (nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0);
@@ -50,7 +50,7 @@ export default function ReportScreen() {
       }
       const now = Date.now();
       setReport({ id: newReportId(), name: 'Untitled Report', range: { preset: 'month' }, blockIds: [], createdAt: now, updatedAt: now });
-      setLibraryOpen(true); // a fresh report opens with the block library visible so the user can add blocks
+      // A fresh empty report shows the template chooser first (not the full picker) to avoid overwhelm.
     })();
   }, [params.id, params.new]);
 
@@ -117,6 +117,14 @@ export default function ReportScreen() {
     setCollapsed(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
   };
 
+  // Apply a template's block set; auto-name the report if it's still untitled.
+  const applyTemplate = (tpl: ReportTemplate) => {
+    if (!report) return;
+    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
+    const name = (!report.name.trim() || report.name === 'Untitled Report') ? tpl.name : report.name;
+    persist({ ...report, name, blockIds: tpl.blockIds.filter(getReportBlock) });
+  };
+
   const rename = (name: string) => { if (report) setReport({ ...report, name }); };
   const commitName = () => { if (report) persist({ ...report, name: report.name.trim() || 'Untitled Report' }); };
 
@@ -176,15 +184,7 @@ export default function ReportScreen() {
             ))}
           </View>
         ) : !libraryOpen ? (
-          <View style={{ alignItems: 'center', paddingTop: 54, paddingHorizontal: 24 }}>
-            <View style={{ width: 60, height: 60, borderRadius: 16, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
-              <Ionicons name="add-circle" size={30} color={theme.accentBlue} />
-            </View>
-            <Text style={{ fontSize: 16, fontFamily: 'DMSans_700Bold', color: theme.textSecondary, marginBottom: 5 }}>Add your first block</Text>
-            <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textMuted, textAlign: 'center', lineHeight: 19 }}>
-              Tap Add Blocks below to build this report.
-            </Text>
-          </View>
+          <TemplateChooser onPick={applyTemplate} onCustom={() => setLibraryOpen(true)} theme={theme} />
         ) : null}
 
         {/* Add / Done Blocks toggle -- clear labeled control (replaces the old icon-only edit toggle) */}
@@ -321,6 +321,42 @@ function BlockCard({ block, data, prior, foodDays, workoutState, mealSlots, slot
 }
 
 const emptyList = (theme: any, msg: string) => <Text style={{ fontSize: 13, color: theme.textMuted, fontFamily: 'DMSans_400Regular' }}>{msg}</Text>;
+
+// New-report front door: pick a ready-made template or build your own. Solves the "too many blocks to
+// choose from" overwhelm -- most users tap a template and are done.
+function TemplateChooser({ onPick, onCustom, theme }: { onPick: (t: ReportTemplate) => void; onCustom: () => void; theme: any }) {
+  return (
+    <View style={{ marginTop: 18 }}>
+      <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: theme.textSecondary, marginBottom: 3 }}>Start from a template</Text>
+      <Text style={{ fontSize: 12.5, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginBottom: 14 }}>Pick a ready-made report, or build your own from scratch.</Text>
+      <View style={{ gap: 10 }}>
+        {REPORT_TEMPLATES.map(t => (
+          <TouchableOpacity key={t.id} activeOpacity={0.8} onPress={() => onPick(t)}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 13, backgroundColor: theme.bgCard, borderWidth: 0.5, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, borderTopWidth: 1.5, borderRadius: 14, padding: 15 }}>
+            <View style={{ width: 42, height: 42, borderRadius: 11, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name={t.icon as any} size={21} color={theme.accentBlue} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 14.5, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{t.name}</Text>
+              <Text numberOfLines={1} style={{ fontSize: 11.5, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 2 }}>{t.desc}</Text>
+            </View>
+            <Text style={{ fontSize: 11, fontFamily: 'DMSans_600SemiBold', color: theme.textDim }}>{t.blockIds.length} blocks</Text>
+          </TouchableOpacity>
+        ))}
+        <TouchableOpacity activeOpacity={0.8} onPress={onCustom}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 13, backgroundColor: theme.bgCard, borderWidth: 1.5, borderStyle: 'dashed', borderColor: theme.borderCard, borderRadius: 14, padding: 15 }}>
+          <View style={{ width: 42, height: 42, borderRadius: 11, backgroundColor: theme.bgInset, alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name="add" size={22} color={theme.textMuted} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 14.5, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>Build your own</Text>
+            <Text style={{ fontSize: 11.5, fontFamily: 'DMSans_400Regular', color: theme.textMuted, marginTop: 2 }}>Start blank and pick blocks yourself</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
 
 // Most-logged foods: rank every food by how often it was logged, with a frequency bar + total calories.
 function TopFoods({ foodDays, theme }: { foodDays: FoodDay[]; theme: any }) {

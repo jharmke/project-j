@@ -89,6 +89,21 @@ export const REPORT_BLOCKS: ReportBlock[] = [
   { id: 'hrv_trend',         chapter: 'sleep',     title: 'HRV trend',          desc: 'Heart rate variability as a line',     form: 'lineTrend', dataKey: 'hrv',      wearableGated: true, tier: 'wave2' },
 ];
 
+// ── Templates ────────────────────────────────────────────────────────────────────────────────────
+// Ready-made block sets shown when creating a new report, so most users never face the full picker.
+// A template is just a pre-filled blockIds list; "Build your own" opens the empty picker.
+export interface ReportTemplate { id: string; name: string; icon: string; desc: string; blockIds: string[]; }
+export const REPORT_TEMPLATES: ReportTemplate[] = [
+  { id: 'nutrition', name: 'Nutrition Deep-Dive', icon: 'restaurant', desc: 'Foods, meals, macros, and calorie patterns',
+    blockIds: ['top_foods', 'calories_by_meal', 'food_log', 'macro_split', 'day_extremes', 'nutrition_headline'] },
+  { id: 'training', name: 'Training Log', icon: 'barbell', desc: 'Workout history, records, and exercise frequency',
+    blockIds: ['workout_history', 'lift_records', 'exercise_frequency', 'effort_trend'] },
+  { id: 'checkup', name: 'Health Check-Up', icon: 'medkit', desc: 'Weight, sleep, activity, and nutrition at a glance',
+    blockIds: ['weight_trend', 'sleep_headline', 'activity_headline', 'nutrition_headline'] },
+  { id: 'recap', name: 'Weekly Recap', icon: 'calendar', desc: 'A quick cross-section of your week',
+    blockIds: ['nutrition_headline', 'activity_headline', 'sleep_headline', 'workout_history'] },
+];
+
 export const getReportBlock = (id: string): ReportBlock | undefined => REPORT_BLOCKS.find(b => b.id === id);
 export const blocksForChapter = (c: ReportChapter): ReportBlock[] => REPORT_BLOCKS.filter(b => b.chapter === c);
 export const getChapterMeta = (c: ReportChapter): ReportChapterMeta | undefined => REPORT_CHAPTERS.find(x => x.key === c);

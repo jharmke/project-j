@@ -92,9 +92,14 @@ escape hatch.
   roll-ups for a year, so a 1-year line is never 365 cramped dots.
 - Gracefully handle "your data only goes back to X" for long ranges on a newer account.
 
-## 8. Export
-A Share/Export button on the report -> PDF and/or share sheet (image/PDF). Same report, exported. This is
-what serves the doctor/trainer/coach case. Feasible via expo-print / RN html-to-pdf; mechanics TBD at build.
+## 8. Export + LIVE-vs-SNAPSHOT (DECISION 2026-07-07: HYBRID)
+Reports are **LIVE in-app**: a saved report persists only its config and re-renders from current data on
+every open, so a PRESET range (week/month/...) rolls forward (reopening a "Month" report in 2 weeks shows
+the latest month, not what it first showed). A small green "Live: these numbers update as you log" indicator
+under the range chips makes this explicit. **EXPORT (PDF) is the frozen snapshot** -- that's the hybrid, and
+export is what serves the doctor/trainer/coach case. No separate in-app "snapshot/freeze" mode for now.
+A Share/Export button -> PDF and/or share sheet. Feasible via expo-print / RN html-to-pdf; mechanics TBD.
+(Templates can also pin the range when applied -- e.g. Weekly Recap sets Week, Health Check-Up sets 3 Months.)
 
 ## 9. Pro-gating (decided)
 **Free users get NO access to Custom Reports.** It is a paid-tier feature and must earn the paywall

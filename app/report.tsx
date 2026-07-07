@@ -126,7 +126,8 @@ export default function ReportScreen() {
     if (!report) return;
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     const name = (!report.name.trim() || report.name === 'Untitled Report') ? tpl.name : report.name;
-    persist({ ...report, name, blockIds: tpl.blockIds.filter(getReportBlock) });
+    const range = tpl.range ? { preset: tpl.range } : report.range;
+    persist({ ...report, name, range, blockIds: tpl.blockIds.filter(getReportBlock) });
   };
 
   const rename = (name: string) => { if (report) setReport({ ...report, name }); };
@@ -173,6 +174,14 @@ export default function ReportScreen() {
             );
           })}
         </View>
+
+        {/* Live indicator -- a report re-renders from current data, so numbers move as you keep logging. */}
+        {activeBlocks.length > 0 && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 9, marginBottom: 2 }}>
+            <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: theme.accentGreen }} />
+            <Text style={{ fontSize: 11, fontFamily: 'DMSans_500Medium', color: theme.textMuted }}>Live: these numbers update as you log. Export to save a snapshot.</Text>
+          </View>
+        )}
 
         {loading ? (
           <View style={{ paddingVertical: 50, alignItems: 'center' }}><ActivityIndicator color={theme.accentBlue} /></View>

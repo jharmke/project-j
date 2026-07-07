@@ -203,6 +203,8 @@ function RootLayoutNav() {
         <Stack.Screen name="whats-new" options={{ headerShown: false }} />
         <Stack.Screen name="diagnostic-report" options={{ headerShown: false }} />
         <Stack.Screen name="diagnostic-report-view" options={{ headerShown: false }} />
+        <Stack.Screen name="reports" options={{ headerShown: false }} />
+        <Stack.Screen name="report" options={{ headerShown: false }} />
         <Stack.Screen name="definitions" options={{ headerShown: false }} />
         <Stack.Screen name="tutorials" options={{ headerShown: false }} />
         <Stack.Screen name="sleep" options={{ headerShown: false }} />

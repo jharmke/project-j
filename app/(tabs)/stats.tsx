@@ -342,6 +342,7 @@ export default function StatsScreen() {
   const fabItem1Anim = useRef(new Animated.Value(0)).current; // Comparison (top, last)
   const fabItem2Anim = useRef(new Animated.Value(0)).current; // Add Graph (bottom, first)
   const fabItem3Anim = useRef(new Animated.Value(0)).current; // Challenges (very top)
+  const fabItem4Anim = useRef(new Animated.Value(0)).current; // Custom Reports (topmost)
 
   // Card edit modal
   const [editCard, setEditCard] = useState<StatsCard | null>(null);
@@ -1686,11 +1687,13 @@ export default function StatsScreen() {
     fabItem1Anim.setValue(0);
     fabItem2Anim.setValue(0);
     fabItem3Anim.setValue(0);
+    fabItem4Anim.setValue(0);
     setShowFabMenu(true);
     Animated.stagger(70, [
       Animated.spring(fabItem2Anim, { toValue: 1, useNativeDriver: true, friction: 7, tension: 120 }),
       Animated.spring(fabItem1Anim, { toValue: 1, useNativeDriver: true, friction: 7, tension: 120 }),
       Animated.spring(fabItem3Anim, { toValue: 1, useNativeDriver: true, friction: 7, tension: 120 }),
+      Animated.spring(fabItem4Anim, { toValue: 1, useNativeDriver: true, friction: 7, tension: 120 }),
     ]).start();
   };
 
@@ -1699,6 +1702,7 @@ export default function StatsScreen() {
       Animated.timing(fabItem1Anim, { toValue: 0, duration: 130, useNativeDriver: true }),
       Animated.timing(fabItem2Anim, { toValue: 0, duration: 130, useNativeDriver: true }),
       Animated.timing(fabItem3Anim, { toValue: 0, duration: 130, useNativeDriver: true }),
+      Animated.timing(fabItem4Anim, { toValue: 0, duration: 130, useNativeDriver: true }),
     ]).start(() => setShowFabMenu(false));
   };
 
@@ -2171,7 +2175,20 @@ export default function StatsScreen() {
             );
             if (section.systemKey === 'reports') return (
               <View key={section.id} onLayout={e => { reportsLayoutY.current = e.nativeEvent.layout.y; }}>
-              <CollapsibleSection label={section.label} subtitle="Summaries, Comparison and Effort vs. Results" defaultOpen={isFirst} theme={theme} first={isFirst} forceOpen={reportsSectionForceOpen}>
+              <CollapsibleSection label={section.label} subtitle="Custom Reports, Summaries, Comparison and Effort vs. Results" defaultOpen={isFirst} theme={theme} first={isFirst} forceOpen={reportsSectionForceOpen}>
+                {/* Custom Reports (Pro; beta-open to all testers) -- build-your-own report */}
+                <TouchableOpacity activeOpacity={0.8} onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); router.push('/reports'); }}
+                  style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, overflow: 'hidden', marginBottom: 12, flexDirection: 'row', alignItems: 'center', gap: 13 }]}>
+                  <Ionicons name="documents" size={120} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -22, bottom: -26, opacity: 0.10 }} />
+                  <View style={{ width: 42, height: 42, borderRadius: 11, backgroundColor: theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder, alignItems: 'center', justifyContent: 'center' }}>
+                    <Ionicons name="document-text" size={22} color={theme.accentBlue} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.cardLabel, { color: theme.textMuted }]}>CUSTOM REPORTS</Text>
+                    <Text style={{ fontSize: 13, fontFamily: 'DMSans_400Regular', color: theme.textSecondary, lineHeight: 18, marginTop: 4 }}>Build your own: pick a date range and the blocks you care about.</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
+                </TouchableOpacity>
                 <View style={[styles.card, { backgroundColor: theme.bgCard, borderColor: theme.borderCard, borderTopColor: theme.accentBlueRaw, ...shadowStyle, overflow: 'hidden' }]}>
                   {evrCardOpen && <Ionicons name="analytics" size={130} color={theme.accentBlueRaw} style={{ position: 'absolute', right: -24, bottom: -28, opacity: 0.10 }} />}
                   <TouchableOpacity
@@ -2766,6 +2783,22 @@ export default function StatsScreen() {
       {/* ── FAB speed dial items ── */}
       {showFabMenu && (
         <View style={{ position: 'absolute', bottom: 86, right: 20, alignItems: 'flex-end', gap: 12 }}>
+          {/* Custom Reports -- opens the Reports hub */}
+          <Animated.View style={{ opacity: fabItem4Anim, transform: [{ translateY: fabItem4Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <TouchableOpacity
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); setTimeout(() => router.push('/reports'), 150); }}
+                style={{ backgroundColor: theme.accentBlueRaw, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 8, borderWidth: 2, borderColor: theme.bgPrimary, shadowColor: theme.accentBlueRaw, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <Text style={{ color: '#ffffff', fontSize: 13, fontFamily: 'DMSans_600SemiBold' }}>Reports</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); closeFabMenu(); setTimeout(() => router.push('/reports'), 150); }}
+                style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.accentBlueRaw, alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: theme.bgPrimary, shadowColor: theme.accentBlueRaw, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 6 }}>
+                <Ionicons name="document-text" size={20} color="#ffffff" />
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+
           {/* Challenges -- opens the Challenges page */}
           <Animated.View style={{ opacity: fabItem3Anim, transform: [{ translateY: fabItem3Anim.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }] }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>

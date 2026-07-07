@@ -80,6 +80,13 @@ are separate pre-submission checklists, NOT part of this menu.
   your-own chart tool). Phase 2 = AI prompt that ASSEMBLES blocks from plain language (blocks are the
   foundation it needs). Full detail + tiered block catalog: SPEC_custom_reports.md. Live light-theme/cyan
   mockup built this session. NEXT: rank blocks Core vs Wave 2, pick launch templates, storage + export tech.
+  >> SLICE 1 BUILT 2026-07-07 (foundation, testable end-to-end, pure JS no rebuild): utils/reports.ts
+     (pj_reports store, additive) + utils/reportBlocks.ts (block registry + 7-chapter taxonomy) + app/
+     reports.tsx (hub: list/new/delete, beta-open to all) + app/report.tsx (report screen: range chips +
+     block picker + 3 purpose-built renderers -- gradient SVG line trend, stat tiles, macro bar, all live
+     from fetchTrendData) + Stats > Reports entry card. 3 starter blocks: Weight trend, Nutrition headline,
+     Macro split. REMAINING: more blocks (grow the ~55), custom date range UI, export (PDF/share),
+     templates, per-chapter faith-tier/wearable gating in the picker, tooltip + Otto KB. Device-verify pending.
 - [x] Otto on-demand data access thread -- COMPLETE 2026-07-05 (one dataset at a time, conditional-injection pattern from utils/companionPRs.ts). SHIPPED: PR values + real-exercise recognition + per-lift TREND + recent-workouts (30-day sessions) + food log (30-day totals + named-day items) + sleep + recovery (30-day nights + named-night detail) + body measurements (per-field value/age/delta + Navy BF% + history) + achievements (earned set + live badge progress via shared achievementProgress scan) + journal/prayer (recent entries + prayers, privacy + faith-tier gated). All device-verified. OPTIONAL later add: full per-metric streak tiles (needs the Stats streak engine extracted into a shared util first). Did NOT build true LLM tool-use (Haiku too flaky); revisit only if Otto moves to a stronger model.
 - [x] FAB contrast/border (GLOBAL) -- COMPLETE 2026-07-05. "bg ring" recipe = borderWidth: 3, borderColor: theme.bgPrimary on the FAB circle (invisible moat over the page, visible ring the moment it overlaps a same-accent button). DONE across every real page FAB: Otto FAB (AssistantFAB) + Workout tab (main + 2 subs) + workout-library (main + 3 subs) + stats (main + 3 subs) + add-food (main + 3 subs) + body-measurements + bible + journal + prayer + Halo (CompanionFAB, SVG special case: drawn page-colored Circle ring at r=DISC/2-1.5 instead of a border, now theme-aware). The other roadmap-listed files had NO floating page FAB (settings/profile/AssistantOverlay = the global Otto FAB already done + save bars; ai-meal-estimator/AddPrayerModal = none; CompanionChat/AssistantChat send buttons = in-bar, not overlap-prone, intentionally excluded). Awaiting 5-theme x all-accent device audit before fully closing the visual gate.
 - [ ] QUICK WINS (small, grab-when-convenient): none queued right now -- add here as they come up. (DONE 2026-07-07: FAB text-label rings app-wide · inline Add Exercise button · the whole gym list.)
@@ -92,6 +99,7 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
 2. ⚠️ devProUnlocked = FREE UNLIMITED PRO. Settings dev toggle grants Pro with no payment. Before launch: gate Pro on a real subscription (RevenueCat/StoreKit) and REMOVE the override + toggle.
 3. ⚠️ AI ESTIMATOR QUOTA RAISED. PRO_LIMIT bumped to effectively unlimited (services/aiMealEstimator.ts). Before launch: restore real caps.
 4. ⚠️ BETA CAPS RAISED (2026-07-01). Otto FREE_DAILY_CAP 10->100/day; Halo 5->50/day; AI Meal Estimator FREE_LIMIT 3->100/month. All marked with loud BETA HACK comments. Before launch: revert to 10 / 5 / 3 (or final caps).
+5. ⚠️ CUSTOM REPORTS OPEN TO ALL (2026-07-07). Reports is a Pro feature but REPORTS_BETA_OPEN=true in app/reports.tsx grants every TestFlight user full access. Before launch: gate on the real subscription + set false (the Pro-gate architecture is already in place, so it's a one-line flip).
 
 ---
 

@@ -191,8 +191,9 @@ export default function ReportScreen() {
           <TemplateChooser onPick={applyTemplate} onCustom={() => setLibraryOpen(true)} theme={theme} />
         ) : null}
 
-        {/* Add / Done Blocks toggle -- clear labeled control (replaces the old icon-only edit toggle) */}
-        {!loading && (
+        {/* Add / Done Blocks toggle. Hidden while the template chooser is up (its "Build your own" card
+            covers that), shown once the report has blocks or the picker is already open. */}
+        {!loading && (activeBlocks.length > 0 || libraryOpen) && (
           <TouchableOpacity onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Medium); setLibraryOpen(o => !o); }}
             style={{ marginTop: 16, borderRadius: 12, paddingVertical: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: libraryOpen ? theme.bgCard : theme.accentBlueBg, borderWidth: 1, borderColor: theme.accentBlueBorder }}>
             <Ionicons name={libraryOpen ? 'checkmark' : 'add'} size={18} color={theme.accentBlue} />

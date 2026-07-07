@@ -2455,8 +2455,10 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
         </Reanimated.View>
       </Modal>
 
-      {/* FAB -- only in browse/library mode */}
-      {meal === 'browse' && (
+      {/* FAB (AI Estimate / Create Recipe / Create Food) -- shows in browse AND when adding to a meal,
+          so you can create a food without backing out to the Library first (tester feedback). Hidden
+          only when adding an ingredient to a recipe, where that flow is different. */}
+      {!isRecipeMode && (
         <>
           {showFabMenu && (
             <TouchableOpacity

@@ -759,7 +759,7 @@ function AchievementsEarned({ store, startKey, endKey, theme }: { store: Achieve
   const rows = useMemo(() => {
     const s = store || {};
     return ACHIEVEMENTS.filter(a => s[a.id])
-      .map(a => ({ name: a.name, category: String(a.category), date: String(s[a.id].unlockedAt || '').slice(0, 10) }))
+      .map(a => ({ name: a.name, category: String(a.category), icon: a.icon, iconColor: a.iconColor, bgColor: a.bgColor, date: String(s[a.id].unlockedAt || '').slice(0, 10) }))
       .filter(r => r.date && r.date >= startKey && r.date <= endKey)
       .sort((x, y) => y.date.localeCompare(x.date));
   }, [store, startKey, endKey]);
@@ -768,8 +768,8 @@ function AchievementsEarned({ store, startKey, endKey, theme }: { store: Achieve
     <View style={{ gap: 9 }}>
       {rows.map((r, i) => (
         <View key={r.name + i} style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
-          <View style={{ width: 30, height: 30, borderRadius: 9, backgroundColor: 'rgba(212,134,10,0.14)', alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="trophy" size={15} color={theme.accentAmber} />
+          <View style={{ width: 30, height: 30, borderRadius: 9, backgroundColor: r.bgColor || theme.bgInset, alignItems: 'center', justifyContent: 'center' }}>
+            <Ionicons name={(r.icon as any) || 'trophy'} size={15} color={r.iconColor || theme.accentAmber} />
           </View>
           <View style={{ flex: 1 }}>
             <Text numberOfLines={1} style={{ fontSize: 13.5, fontFamily: 'DMSans_700Bold', color: theme.textSecondary }}>{r.name}</Text>

@@ -156,17 +156,19 @@ export default function ReportScreen() {
     triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     setExporting(true);
     try {
-      // Lazy-require the native modules so the app still launches on a build that predates them (they
-      // only exist after the next dev build). On an old build this throws and we show a friendly toast.
-      let captureRef: any, Sharing: any;
-      try {
-        captureRef = require('react-native-view-shot').captureRef;
-        Sharing = require('expo-sharing');
-      } catch {
+      // Probe for the native module WITHOUT loading view-shot. view-shot calls TurboModuleRegistry
+      // .getEnforcing('RNViewShot') at import, which THROWS on a build that predates it -- and in dev
+      // that throw redboxes even inside a try/catch (Metro reports module-load errors itself). get()
+      // returns null instead of throwing, so we can check first and never require the missing module.
+      let hasNative = false;
+      try { hasNative = !!(require('react-native').TurboModuleRegistry?.get?.('RNViewShot')); } catch { hasNative = false; }
+      if (!hasNative) {
         showToast('Update needed', 'Export needs the latest app build. Rebuild to enable it.', 'error');
         setExporting(false);
         return;
       }
+      const captureRef = require('react-native-view-shot').captureRef;
+      const Sharing = require('expo-sharing');
       if (libraryOpen) setLibraryOpen(false); // don't capture edit controls
       await new Promise(r => setTimeout(r, 60)); // let any layout settle
       const uri = await captureRef(shotRef, { format: 'png', quality: 0.98, result: 'tmpfile' });

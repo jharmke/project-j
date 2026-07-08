@@ -110,12 +110,17 @@ Buttons: [Set to maintenance] [I understand, continue]
 - No double-dash in the user-facing strings (app-wide rule). Internal docs like this are fine.
 - Warm, direct, not scolding. Proper capitalization.
 
-## Buttons (behavior)
-- "Choose a slower pace": jumps to / opens the pace picker. Open: should it pre-select the gentlest
-  pace that clears the line, or just open the picker? (TBD)
-- "Adjust activity level": jumps to the activity-level setting.
-- "Set to maintenance": sets weightGoal to maintain (Case 4's one honest actionable option).
-- "I understand, continue": acknowledges, keeps the real target, dismisses. Persisted (see below).
+## Buttons (behavior) -- LOCKED 2026-07-08
+- "Choose a slower pace" (cases 1 & 2): sets weightGoal to the GENTLEST pace that clears the modal
+  zone in ONE tap (flavor a: jump-to-safe, not step-down). If even the gentlest loss can't clear it,
+  lands on the gentlest available.
+- "Adjust activity level" (cases 1 & 3): closes the modal, jumps/scrolls to the activity-level setting.
+  (Confirm at build time where that control lives -- if on the profile screen, just scroll to it.)
+- "Set to maintenance" (case 4): sets weightGoal to maintain.
+- "I understand, continue" (all): keeps the real target, records the acknowledgment (see persistence),
+  dismisses.
+MODAL TRIGGER: fires when a pace selection lands the target in the MODAL zone AND that target has not
+already been acknowledged.
 
 ## Inline caution (WHISPER + MODAL zones) -- BUILT (Slice 2)
 Small amber (theme.statusWarn) line shown whenever the target zone is not green. Copy (LOCKED,

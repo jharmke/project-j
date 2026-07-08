@@ -43,14 +43,25 @@ const prevLabel = (p: SetEntry | undefined, time: boolean) => {
 };
 
 // Shared column flex so the header cells sit dead-center over their data cells, and the row
-// spans the full card width with the check + remove pinned to the right edge.
-const COL = { set: 0.6, prev: 1.3, input: 1.5 };
+// spans the full card width with the check + remove pinned to the right edge. The input columns are
+// widened enough that the TIME box shows a full M:SS alongside its play button (see PLAY_W below).
+const COL = { set: 0.7, prev: 1.15, weight: 1.4, track: 1.75 };
+// The hold play button lives in its OWN fixed-width slot BETWEEN the weight and time columns (NOT inside
+// the time box). That keeps the TIME box a normal centered box, so its header centers over it exactly like
+// KGS does -- no offset math. A matching spacer sits in the header row so the columns stay aligned.
+const PLAY_SLOT = 24;
 const CHECK_W = 34;
 const X_W = 22;
 
 export default function ExerciseSetRows({ initialSets, previousSets, defaultRest, onPersist, onSetChecked, unit, onUnitPress, trackingType, onTrackingTypePress, onStartHold, activeHoldIndex, theme: t }: Props) {
   const [sets, setSets] = useState<SetEntry[]>(initialSets);
   const atMax = sets.length >= MAX_SETS;
+
+  // While a TIME field is focused, show the RAW digits being typed ("145") and only format to clock
+  // (1:45) on blur. Editing the formatted value directly makes every keystroke reformat and the cursor
+  // jump ("0:004" -> "0:04"); typing raw digits fills cleanly with no flicker. durationSec updates live.
+  const [holdEdit, setHoldEdit] = useState<{ i: number; raw: string } | null>(null);
+  const holdDigitsFor = (sec: number | null | undefined) => (sec ? String(Math.floor(sec / 60) * 100 + (sec % 60)) : '');
   const isTime = trackingType === 'time';
 
   const numStr = (n: number | null) => (n != null ? String(n) : '');
@@ -107,18 +118,20 @@ export default function ExerciseSetRows({ initialSets, previousSets, defaultRest
     <View style={{ marginTop: 12 }}>
       {/* Column headers -- same flex as the data rows so they line up */}
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
-        <Text style={[headerCell, { flex: COL.set }]}>Set</Text>
-        <Text style={[headerCell, { flex: COL.prev }]}>Prev</Text>
+        <Text numberOfLines={1} style={[headerCell, { flex: COL.set }]}>Set</Text>
+        <Text numberOfLines={1} style={[headerCell, { flex: COL.prev }]}>Prev</Text>
         <TouchableOpacity
-          style={{ flex: COL.input, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2 }}
+          style={{ flex: COL.weight, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2 }}
           onPress={onUnitPress}
           disabled={!onUnitPress}
           hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}>
           <Text style={headerCell}>{weightUnitHeader(unit)}</Text>
           {onUnitPress ? <Ionicons name="swap-horizontal" size={11} color={t.textMuted} /> : null}
         </TouchableOpacity>
+        {/* Fixed spacer matching the data row's play-button slot, so TIME lines up over its box. */}
+        {isTime && onStartHold ? <View style={{ width: PLAY_SLOT }} /> : null}
         <TouchableOpacity
-          style={{ flex: COL.input, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2 }}
+          style={{ flex: COL.track, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2 }}
           onPress={onTrackingTypePress}
           disabled={!onTrackingTypePress}
           hitSlop={{ top: 10, bottom: 10, left: 6, right: 6 }}>
@@ -132,6 +145,11 @@ export default function ExerciseSetRows({ initialSets, previousSets, defaultRest
       {sets.map((s, i) => {
         const prev = prevLabel(previousSets?.[i], isTime);
         const pd = previousSets?.[i]?.durationSec;
+        // Hold time cell: while focused, the shown seconds come from the live digit buffer; otherwise
+        // from the stored durationSec. A transparent input on top captures typing so the visible clock
+        // (a plain Text) never reformats mid-keystroke -- no flash, no cursor jump.
+        const holdActive = holdEdit != null && holdEdit.i === i;
+        const holdSec = holdActive ? (holdEdit.raw ? parseHoldInput(holdEdit.raw) : null) : (s.durationSec ?? null);
         return (
           <View
             key={i}
@@ -145,7 +163,7 @@ export default function ExerciseSetRows({ initialSets, previousSets, defaultRest
             <Text style={{ flex: COL.prev, textAlign: 'center', fontSize: 11, fontFamily: 'DMSans_500Medium', color: t.textDim }} numberOfLines={1}>
               {prev ?? '—'}
             </Text>
-            <View style={{ flex: COL.input, paddingHorizontal: 4 }}>
+            <View style={{ flex: COL.weight, paddingHorizontal: 4 }}>
               <TextInput
                 style={inputStyle(s.done)}
                 value={numStr(s.weight)}
@@ -157,25 +175,38 @@ export default function ExerciseSetRows({ initialSets, previousSets, defaultRest
                 returnKeyType="done"
               />
             </View>
-            <View style={{ flex: COL.input, paddingHorizontal: 4 }}>
+            {/* Play button in its own fixed slot (time mode only), so the time box stays centered. The
+                icon shows only for un-done sets: once a hold is logged, re-pressing it would count down
+                from the logged time and hand off to rest. Uncheck the set to redo. Slot stays for alignment. */}
+            {isTime && onStartHold ? (
+              <View style={{ width: PLAY_SLOT, alignItems: 'center' }}>
+                {!s.done ? (
+                  <TouchableOpacity
+                    onPress={() => { if (activeHoldIndex === i) return; onPersist(sets); onStartHold(i, s.durationSec ?? null); }}
+                    hitSlop={{ top: 8, bottom: 8, left: 2, right: 2 }}>
+                    <Ionicons name={activeHoldIndex === i ? 'radio-button-on' : 'play-circle'} size={22} color={activeHoldIndex === i ? t.accentGreen : t.accentBlue} />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            ) : null}
+            <View style={{ flex: COL.track, paddingHorizontal: 4 }}>
               {isTime ? (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
-                  {onStartHold ? (
-                    <TouchableOpacity
-                      onPress={() => { if (activeHoldIndex === i) return; onPersist(sets); onStartHold(i, s.durationSec ?? null); }}
-                      hitSlop={{ top: 8, bottom: 8, left: 4, right: 0 }}>
-                      <Ionicons name={activeHoldIndex === i ? 'radio-button-on' : 'play-circle'} size={22} color={activeHoldIndex === i ? t.accentGreen : t.accentBlue} />
-                    </TouchableOpacity>
-                  ) : null}
+                // Display (plain Text) + invisible input on top: the box you SEE is never the box you
+                // TYPE into, so the formatted clock can't flicker as it reformats each keystroke.
+                <View style={[inputStyle(s.done), { justifyContent: 'center', alignItems: 'center' }]}>
+                  <Text style={{ fontSize: 15, fontFamily: 'DMSans_700Bold', color: holdSec != null ? t.textSecondary : t.textDim }} numberOfLines={1}>
+                    {holdSec != null ? formatHold(holdSec) : (pd != null ? formatHold(pd) : '—')}
+                  </Text>
                   <TextInput
-                    style={[inputStyle(s.done), { width: undefined, flex: 1 }]}
-                    value={s.durationSec != null ? formatHold(s.durationSec) : ''}
-                    onChangeText={txt => { const d = txt.replace(/\D/g, ''); edit(i, { durationSec: d === '' ? null : parseHoldInput(d) }); }}
-                    onEndEditing={() => onPersist(sets)}
+                    value={holdActive ? holdEdit.raw : holdDigitsFor(s.durationSec)}
+                    onFocus={() => setHoldEdit({ i, raw: holdDigitsFor(s.durationSec) })}
+                    onChangeText={txt => { const d = txt.replace(/\D/g, '').slice(-4); setHoldEdit({ i, raw: d }); edit(i, { durationSec: d === '' ? null : parseHoldInput(d) }); }}
+                    onEndEditing={() => { setHoldEdit(null); onPersist(sets); }}
+                    onBlur={() => setHoldEdit(null)}
                     keyboardType="number-pad"
-                    placeholder={pd != null ? formatHold(pd) : '0:45'}
-                    placeholderTextColor={t.textDim}
+                    caretHidden
                     returnKeyType="done"
+                    style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, color: 'transparent', textAlign: 'center', paddingVertical: 0 }}
                   />
                 </View>
               ) : (

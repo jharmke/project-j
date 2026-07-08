@@ -1725,6 +1725,16 @@ const handleBarcodeScan = async ({ data }: { data: string }) => {
     brand: (f as any).brand || null,
     // Carry the AI flag through so openFoodDetail skips the FatSecret name-search for it.
     aiEstimated: (f as any).aiEstimated || false,
+    // AI favorites have no gram serving; hand food-detail an existing-value basis (1 serving =
+    // the whole estimate) so it renders "1 serving" instead of a bogus "Amount (g): 100".
+    ...((f as any).aiEstimated ? {
+      existingCal: f.cal,
+      existingProtein: f.protein || 0,
+      existingCarbs: f.carbs || 0,
+      existingFat: f.fat || 0,
+      existingAmount: '1',
+      existingUnit: 'serving',
+    } : {}),
   });
   const regularFavs = applySortToFoodItems(favorites.filter(f => f.type !== 'supplement').map(mapFav));
   const suppFavs = applySortToFoodItems(favorites.filter(f => f.type === 'supplement').map(mapFav));

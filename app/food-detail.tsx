@@ -306,12 +306,15 @@ const isTutorialMode = tutorialMode === 'true';
   const menuAnim = useRef(new Animated.Value(0)).current;
   const starScale = useRef(new Animated.Value(1)).current;
   const [showServingPicker, setShowServingPicker] = useState(false);
+  // AI-estimated meals have no real gram serving, so treat them like serving-only recipes: the
+  // stepper counts servings (1 serving = the whole estimate) instead of showing a bogus gram amount.
+  const isServingOnly = !!(food as any)?.servingOnly || !!food?.aiEstimated;
   const [selectedServing, setSelectedServing] = useState<any>(virtualDefaultServing);
   // Resolved base serving size for edit mode -- starts from stored servingGrams, falls back to My Foods lookup
   const [resolvedServingGrams, setResolvedServingGrams] = useState<number>(
     // Serving-only recipe entries have no grams; treat "1 serving" as the unit (nominal grams = 1) so
     // the stepper counts servings and the count resolves to the logged servings (existingAmount).
-    food?.servingGrams > 0 ? food.servingGrams : ((food as any)?.servingOnly ? 1 : 0)
+    food?.servingGrams > 0 ? food.servingGrams : (isServingOnly ? 1 : 0)
   );
 
   // Synthetic serving for custom/My Foods with no fsServings -- enables stepper.
@@ -328,8 +331,8 @@ const isTutorialMode = tutorialMode === 'true';
       carbs: Math.round((food.existingCarbs || 0) * ratio * 10) / 10,
       fat: Math.round((food.existingFat || 0) * ratio * 10) / 10,
       grams: baseGrams,
-      unit: (food as any)?.servingOnly ? 'serving' : (food.servingUnitType || 'g'),
-      label: (food as any)?.servingOnly ? 'serving' : ((food.servingUnit && /\d/.test(food.servingUnit)) ? food.servingUnit : `${baseGrams}${food.servingUnitType || 'g'}`),
+      unit: isServingOnly ? 'serving' : (food.servingUnitType || 'g'),
+      label: isServingOnly ? 'serving' : ((food.servingUnit && /\d/.test(food.servingUnit)) ? food.servingUnit : `${baseGrams}${food.servingUnitType || 'g'}`),
       fiber: 0, sugar: 0, sodium: 0, cholesterol: 0, saturatedFat: 0,
       polyunsaturatedFat: 0, monounsaturatedFat: 0, potassium: 0,
       vitaminA: 0, vitaminC: 0, calcium: 0, iron: 0, sugarAlcohols: 0,
@@ -591,7 +594,7 @@ const [showTimePicker, setShowTimePicker] = useState(false);
   const isEditing = entryIndex !== undefined && entryIndex !== '';
   // Serving-count-only recipe entry (recipe had no total weight): no gram basis, so the amount box is
   // hidden and the save preserves the original "(N servings)" name instead of rewriting it to grams.
-  const isServingOnlyRecipe = !!(food as any)?.servingOnly;
+  const isServingOnlyRecipe = isServingOnly;
   const originalAmount = food?.existingAmount ||
     (defaultFsServing && defaultFsServing.grams > 0
       ? defaultFsServing.grams.toString()
@@ -856,6 +859,9 @@ const [currentMeal, setCurrentMeal] = useState(meal === 'browse' || !meal ? 'ms_
   isMyFood: !!(food.isMyFood || food.myFoodData || (food as any)?.myFoodId),
   brand: food.brand || food.description?.split(' · ')[1] || null,
   ...(food.type === 'supplement' ? { type: 'supplement' } : {}),
+  // Preserve the AI flag on the saved entry so a re-logged AI meal keeps its "AI ESTIMATE" badge,
+  // its serving-only (1 serving) display, and its immunity from FatSecret name-search enrichment.
+  ...(food.aiEstimated ? { aiEstimated: true } : {}),
 };
       if (isEditing) {
         entries[parseInt(entryIndex)] = { ...entries[parseInt(entryIndex)], ...newEntry };

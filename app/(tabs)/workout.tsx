@@ -182,7 +182,7 @@ const [weeklyTemplate, setWeeklyTemplate] = useState<Record<string, DayProgram>>
   const { registerScrollView, unregisterScrollView, registerTutorialAction, unregisterTutorialAction } = useTutorial();
   const hasScrolled = useRef(false);
 const [labelInput, setLabelInput] = useState('');
-  const [form, setForm] = useState({ name: '', sets: '', reps: '', rest: '', note: '', isCardio: false, duration: '', distance: '', speed: '', incline: '', resistance: '', hr: '', calories: ''});
+  const [form, setForm] = useState({ name: '', sets: '', reps: '', rest: '', note: '', isCardio: false, weightUnit: 'lb' as 'lb' | 'kg', duration: '', distance: '', speed: '', incline: '', resistance: '', hr: '', calories: ''});
 const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
   // Manual workout timer per day. startedAt = epoch ms while running (null when stopped); elapsedSec =
   // banked seconds from prior run segments. Opt-in; only relevant on days WITHOUT an Apple strength
@@ -353,6 +353,7 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
         rest: exercise.rest,
         note: exercise.note,
         isCardio: exercise.isCardio ?? false,
+        weightUnit: (exercise.weightUnit ?? 'lb') as 'lb' | 'kg',
         duration: exercise.duration ?? '',
         distance: exercise.distance ?? '',
         speed: exercise.speed ?? '',
@@ -364,7 +365,7 @@ const [cardioLogs, setCardioLogs] = useState<Record<string, any>>({});
       setForm(editValues);
       originalForm.current = editValues;
     } else {
-      setForm({ name: '', sets: '', reps: '', rest: '', note: '', isCardio: false, duration: '', distance: '', speed: '', incline: '', resistance: '', hr: '', calories: '' });
+      setForm({ name: '', sets: '', reps: '', rest: '', note: '', isCardio: false, weightUnit: 'lb', duration: '', distance: '', speed: '', incline: '', resistance: '', hr: '', calories: '' });
       originalForm.current = null;
     }
     setShowAddModal(true);
@@ -679,6 +680,7 @@ useEffect(() => {
       rest: ex.rest,
       note: ex.note,
       isCardio: ex.isCardio,
+      weightUnit: (ex.weightUnit ?? 'lb') as 'lb' | 'kg',
       duration: '',
       distance: '',
       speed: '',
@@ -1393,7 +1395,19 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
   if (newChecks !== checks) setChecks(newChecks);
   setPrograms(newPrograms);
   setDayLabel(newPrograms[activeDay]?.customLabel || '');
-  saveState(newChecks, cardioComplete, newPrograms, workoutNotes, cardioLogs, weeklyTemplate, activeProgramName, workoutNoteNames, newSetLogs);
+  // Editing a lift can change its weight unit (or set targets), which changes how its logged sets compare,
+  // so recompute that lift's PR now -- keeps the record + displayed unit honest, same as the inline picker.
+  let nextPrs = prs, nextHits = prHitsByDay;
+  if (editingExercise && !form.isCardio) {
+    const r = recomputeLiftPR(form.name, newSetLogs, makeDayResolver(newPrograms), prs, prHitsByDay, modalDay, Date.now());
+    nextPrs = r.prs; nextHits = r.hits;
+    setPrs(nextPrs); setPrHitsByDay(nextHits);
+    if (modalDay === todayKey) {
+      if (r.hit) firePRNotification(r.hit);
+      else if (r.revoked) clearNotification(`pr_${modalDay}_${normalizeLiftName(form.name)}`);
+    }
+  }
+  saveState(newChecks, cardioComplete, newPrograms, workoutNotes, cardioLogs, weeklyTemplate, activeProgramName, workoutNoteNames, newSetLogs, nextPrs, exerciseDoneAt, workoutTimers, nextHits);
   closeAddExerciseModal();
   if (editingExercise) showToast('Exercise updated', form.name, 'success');
   checkWorkoutAchievements(true).then(unlocked => {
@@ -2706,11 +2720,27 @@ if (data.workoutTimers) setWorkoutTimers(data.workoutTimers);
                       ))}
                     </>
                   ) : (
+                    <>
+                    {/* Weight unit for this lift (lb/kg). Mirrors the inline set-row picker; defaults to lb. */}
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                      <Text style={{ fontSize: 11, letterSpacing: 1.5, textTransform: 'uppercase', color: theme.textMuted, fontFamily: 'DMSans_700Bold', width: 56 }}>Weight</Text>
+                      <TouchableOpacity
+                        style={[styles.modalCancelBtn, { flex: 1, backgroundColor: theme.bgInput, borderColor: theme.borderInput }, form.weightUnit !== 'kg' && { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+                        onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setForm(p => ({ ...p, weightUnit: 'lb' })); }}>
+                        <Text style={[styles.modalCancelBtnText, { color: theme.textMuted }, form.weightUnit !== 'kg' && { color: theme.accentBlue }]}>LB</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.modalCancelBtn, { flex: 1, backgroundColor: theme.bgInput, borderColor: theme.borderInput }, form.weightUnit === 'kg' && { backgroundColor: theme.accentBlueBg, borderColor: theme.accentBlueBorder }]}
+                        onPress={() => { triggerHaptic(Haptics.ImpactFeedbackStyle.Light); setForm(p => ({ ...p, weightUnit: 'kg' })); }}>
+                        <Text style={[styles.modalCancelBtnText, { color: theme.textMuted }, form.weightUnit === 'kg' && { color: theme.accentBlue }]}>KG</Text>
+                      </TouchableOpacity>
+                    </View>
                     <View style={styles.modalRow}>
                       <TextInput style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, flex: 1 }]} placeholder="Sets" placeholderTextColor={theme.textPlaceholder} keyboardType="number-pad" value={form.sets || ''} onChangeText={v => setForm(p => ({ ...p, sets: v.replace(/[^0-9]/g, '') }))} />
                       <TextInput style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, flex: 1 }]} placeholder="Reps" placeholderTextColor={theme.textPlaceholder} keyboardType="number-pad" value={form.reps || ''} onChangeText={v => setForm(p => ({ ...p, reps: v.replace(/[^0-9]/g, '') }))} />
                       <TextInput style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary, flex: 1 }]} placeholder="Rest" placeholderTextColor={theme.textPlaceholder} keyboardType="number-pad" value={form.rest || ''} onChangeText={v => setForm(p => ({ ...p, rest: v.replace(/[^0-9]/g, '') }))} />
                     </View>
+                    </>
                   )}
                   <TextInput style={[styles.modalInput, { backgroundColor: theme.bgInput, borderColor: theme.borderInput, color: theme.textPrimary }]} placeholder="Note (optional)" placeholderTextColor={theme.textPlaceholder} value={form.note} onChangeText={v => setForm(p => ({ ...p, note: v }))} />
                   <View style={styles.modalBtns}>

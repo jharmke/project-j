@@ -83,6 +83,17 @@ are separate pre-submission checklists, NOT part of this menu.
   continue = ack), persistence pj_calorie_warning_acknowledged (only re-asks if target drops BELOW what was okayed).
   Core is COMPLETE (no Mindful variant -- decided out, copy is mode-agnostic). Separate follow-ons: pace granularity
   (.25/.75), activity nudge, onboarding activity wording. Full detail: SPEC_calorie_floor.md.
+- [TRACK, DESIGN LOCKED 2026-07-08, ready to build] WORKOUT UNITS + TIME TRACKING (Cengiz feedback). Two
+  features, one flow, fully additive to pj_workout_state (missing unit = lb, missing type = reps, nothing
+  ever converted/rewritten). (1) PER-EXERCISE lb/kg: inline LBS-dropdown on the log row + Weight[LB|KG] in
+  the Add/Edit modal; every hardcoded "lb" display made unit-aware; PR engine gets an internal kg CONVERTER
+  so mixed-unit logging never breaks a record (compares in kg, displays in the unit lifted). Volume tile
+  splits per unit (Lbs Volume / Kg Volume, no conversion). (2) REPS->TIME: inline REPS-dropdown + Track[Reps
+  |Time] in the modal; clock-style M:SS input; SetEntry.durationSec; hold presets flipped to Time; a HOLD-mode
+  timer pill built on the rest-timer foundation (identity label HOLD-PLANK-SET-N, count down from target / up
+  from empty, buzz+log+check, hands off to rest). Time sets never touch weight/e1RM PRs; they DO earn a new
+  longest-hold PR (PRRecord.bestDuration, duration = trophy, weight = context for loaded carries). Build =
+  8 steps top-down, each device-verified. Full detail + data-integrity checklist: SPEC_workout_units_and_time.md.
 - [TRACK, design LOCKED 2026-07-07] Apple Workouts in the Exercise Library (lean "Synced Workouts"
   history) -- give Apple-synced cardio a home in the library, keyed by activity type + indoor flag,
   auto-created on first sync, rename = editable label (never re-keys), green "Apple Health" badge,
@@ -196,8 +207,6 @@ Temporary for Justin's TestFlight testing (added 2026-06-24). EVERY ONE must be 
 - Calorie target transparency -- (i) tooltip explaining how the recommendation is calculated (BMR/lifestyle/pace). settings.tsx.
 
 ### Workout
-- Per-exercise weight unit (lb/kg) toggle -- currently the unit is a GLOBAL all-or-nothing setting. Power/Olympic lifters use kg on main lifts + lb on accessories, so make the unit a per-exercise dropdown (on the lb field) instead. (Cengiz feedback 2026-07-08.)
-- Reps -> Time column toggle -- let an exercise track DURATION instead of reps (planks, holds, carries) via a dropdown on the "reps" column. (Cengiz feedback 2026-07-08.)
 - Load routine modal polish -- editable/deletable presets are a bigger dedicated-session item.
 - Workout tab muscle group breakdown -- aggregated session-level summary (MuscleMap is per-exercise only).
 - Daily exercise + active-calorie goal progress display -- goals settable + celebration fires, but no home progress display. Design decision: Fitness Metrics card vs Activity Rings vs under Steps.
